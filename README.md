@@ -56,6 +56,9 @@ curl https://get.starport.network/cosmos/interchain-security@latest! | sudo bash
 
 ## Learn more
 
+- [IBC Docs](https://docs.cosmos.network/master/ibc/)
+- [IBC Protocol](https://ibcprotocol.org/)
+- [IBC Specs](https://github.com/cosmos/ibc)
 - [Starport](https://github.com/tendermint/starport)
 - [Starport Docs](https://docs.starport.network)
 - [Cosmos SDK documentation](https://docs.cosmos.network)
