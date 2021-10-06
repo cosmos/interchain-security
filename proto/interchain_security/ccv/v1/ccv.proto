@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package interchain_security.ccv.v1;
+
+option go_package = "github.com/cosmos/interchain-security/x/ccv/types";
+
+import "gogoproto/gogo.proto";
+import "tendermint/abci/types.proto";
+
+// This packet is sent from parent chain to baby chain if the validator set for baby chain
+// changes (due to new bonding/unbonding messages or slashing events)
+// The acknowledgement from baby chain will be sent asynchronously once unbonding period is over,
+// and this will function as `UnbondingOver` message for this packet.
+message ValidatorSetChangePacketData {
+  repeated .tendermint.abci.ValidatorUpdate validator_updates = 1
+      [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"validator_updates\""];
+}
+
+// Status defines if the ccv channel is in one of the following states:
+// UNINITIALIZED, INITIALIZING, VALIDATING, INVALID
+enum Status {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // Default State
+  STATUS_UNINITIALIZED_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "UNINITIALIZED"];
+  // channel is in handshake process
+  STATUS_INITIALIZING = 1 [(gogoproto.enumvalue_customname) = "INITIALIZING"];
+  // channel is open and validating
+  STATUS_VALIDATING = 2 [(gogoproto.enumvalue_customname) = "VALIDATING"];
+  // channel is invalid and can no longer process packets
+  STATUS_INVALID = 3 [(gogoproto.enumvalue_customname) = "INVALID"];
+}
