@@ -11,6 +11,8 @@ import (
 	host "github.com/cosmos/ibc-go/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/testing"
+	"github.com/cosmos/interchain-security/app"
+	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/child"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
@@ -18,6 +20,10 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/suite"
 )
+
+func init() {
+	ibctesting.DefaultTestingAppInit = simapp.SetupTestingApp
+}
 
 type ChildTestSuite struct {
 	suite.Suite
@@ -57,7 +63,7 @@ func (suite *ChildTestSuite) SetupTest() {
 	suite.parentConsState = suite.parentChain.LastHeader.ConsensusState()
 
 	childGenesis := types.NewInitialChildGenesisState(suite.parentClient, suite.parentConsState)
-	suite.childChain.GetSimApp().ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
+	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	// create the ccv path and set child's clientID to genesis client
 	path := ibctesting.NewPath(suite.childChain, suite.parentChain)
@@ -67,7 +73,7 @@ func (suite *ChildTestSuite) SetupTest() {
 	path.EndpointB.ChannelConfig.Version = types.Version
 	path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-	parentClient, ok := suite.childChain.GetSimApp().ChildKeeper.GetParentClient(suite.childChain.GetContext())
+	parentClient, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentClient(suite.childChain.GetContext())
 	if !ok {
 		panic("must already have parent client on child chain")
 	}
@@ -107,7 +113,7 @@ func (suite *ChildTestSuite) TestOnChanOpenInit() {
 		{
 			name: "invalid: parent channel already established",
 			setup: func(suite *ChildTestSuite) {
-				suite.childChain.GetSimApp().ChildKeeper.SetParentChannel(suite.ctx, "channel-2")
+				suite.childChain.App.(*app.App).ChildKeeper.SetParentChannel(suite.ctx, "channel-2")
 				// Set INIT channel on child chain
 				suite.childChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, childtypes.PortID, channelID,
 					channeltypes.NewChannel(
@@ -200,7 +206,7 @@ func (suite *ChildTestSuite) TestOnChanOpenInit() {
 			suite.SetupTest() // reset suite
 			tc.setup(suite)
 
-			childModule := child.NewAppModule(suite.childChain.GetSimApp().ChildKeeper)
+			childModule := child.NewAppModule(suite.childChain.App.(*app.App).ChildKeeper)
 			chanCap, err := suite.childChain.App.GetScopedIBCKeeper().NewCapability(suite.ctx, host.ChannelCapabilityPath(childtypes.PortID, suite.path.EndpointA.ChannelID))
 			suite.Require().NoError(err)
 
@@ -218,7 +224,7 @@ func (suite *ChildTestSuite) TestOnChanOpenInit() {
 
 func (suite *ChildTestSuite) TestOnChanOpenTry() {
 	// OnOpenTry must error even with correct arguments
-	childModule := child.NewAppModule(suite.childChain.GetSimApp().ChildKeeper)
+	childModule := child.NewAppModule(suite.childChain.App.(*app.App).ChildKeeper)
 	chanCap, err := suite.childChain.App.GetScopedIBCKeeper().NewCapability(suite.ctx, host.ChannelCapabilityPath(childtypes.PortID, suite.path.EndpointA.ChannelID))
 	suite.Require().NoError(err)
 
@@ -250,7 +256,7 @@ func (suite *ChildTestSuite) TestOnChanOpenAck() {
 		{
 			name: "invalid: parent channel already established",
 			setup: func(suite *ChildTestSuite) {
-				suite.childChain.GetSimApp().ChildKeeper.SetParentChannel(suite.ctx, "channel-2")
+				suite.childChain.App.(*app.App).ChildKeeper.SetParentChannel(suite.ctx, "channel-2")
 				// Set INIT channel on child chain
 				suite.childChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, childtypes.PortID, channelID,
 					channeltypes.NewChannel(
@@ -284,7 +290,7 @@ func (suite *ChildTestSuite) TestOnChanOpenAck() {
 			suite.SetupTest() // reset suite
 			tc.setup(suite)
 
-			childModule := child.NewAppModule(suite.childChain.GetSimApp().ChildKeeper)
+			childModule := child.NewAppModule(suite.childChain.App.(*app.App).ChildKeeper)
 
 			err := childModule.OnChanOpenAck(suite.ctx, childtypes.PortID, channelID, suite.path.EndpointB.ChannelConfig.Version)
 
@@ -304,7 +310,7 @@ func (suite *ChildTestSuite) TestOnChanOpenConfirm() {
 			[]string{"connection-1"}, ccv.Version,
 		))
 
-	childModule := child.NewAppModule(suite.childChain.GetSimApp().ChildKeeper)
+	childModule := child.NewAppModule(suite.childChain.App.(*app.App).ChildKeeper)
 
 	err := childModule.OnChanOpenConfirm(suite.ctx, childtypes.PortID, "channel-1")
 	suite.Require().Error(err, "OnChanOpenConfirm must always fail")
@@ -327,7 +333,7 @@ func (suite *ChildTestSuite) TestOnChanCloseInit() {
 						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
 				)
 				suite.path.EndpointA.ChannelID = channelID
-				suite.childChain.GetSimApp().ChildKeeper.SetParentChannel(suite.ctx, "different-channel")
+				suite.childChain.App.(*app.App).ChildKeeper.SetParentChannel(suite.ctx, "different-channel")
 			},
 			expError: false,
 		},
@@ -336,7 +342,7 @@ func (suite *ChildTestSuite) TestOnChanCloseInit() {
 			setup: func(suite *ChildTestSuite) {
 				// create open channel
 				suite.coordinator.CreateChannels(suite.path)
-				suite.childChain.GetSimApp().ChildKeeper.SetParentChannel(suite.ctx, "different-channel")
+				suite.childChain.App.(*app.App).ChildKeeper.SetParentChannel(suite.ctx, "different-channel")
 			},
 			expError: false,
 		},
@@ -358,7 +364,7 @@ func (suite *ChildTestSuite) TestOnChanCloseInit() {
 			setup: func(suite *ChildTestSuite) {
 				// create open channel
 				suite.coordinator.CreateChannels(suite.path)
-				suite.childChain.GetSimApp().ChildKeeper.SetParentChannel(suite.ctx, suite.path.EndpointA.ChannelID)
+				suite.childChain.App.(*app.App).ChildKeeper.SetParentChannel(suite.ctx, suite.path.EndpointA.ChannelID)
 			},
 			expError: true,
 		},
@@ -370,7 +376,7 @@ func (suite *ChildTestSuite) TestOnChanCloseInit() {
 			suite.SetupTest() // reset suite
 			tc.setup(suite)
 
-			childModule := child.NewAppModule(suite.childChain.GetSimApp().ChildKeeper)
+			childModule := child.NewAppModule(suite.childChain.App.(*app.App).ChildKeeper)
 
 			err := childModule.OnChanCloseInit(suite.ctx, childtypes.PortID, suite.path.EndpointA.ChannelID)
 

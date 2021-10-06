@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-func (k Keeper) InitGenesis(ctx sdk.Context, genState types.ParentGenesisState) {
+func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.ParentGenesisState) {
 	k.SetPort(ctx, parenttypes.PortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
@@ -30,7 +30,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState types.ParentGenesisState) 
 	}
 }
 
-func (k Keeper) ExportGenesis(ctx sdk.Context) types.ParentGenesisState {
+func (k Keeper) ExportGenesis(ctx sdk.Context) *types.ParentGenesisState {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte(parenttypes.ChannelToChainKeyPrefix+"/"))
 	defer iterator.Close()

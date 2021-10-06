@@ -5,6 +5,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
+	"github.com/cosmos/interchain-security/app"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
@@ -12,22 +13,22 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestGenesis() {
-	genesis := suite.childChain.GetSimApp().ChildKeeper.ExportGenesis(suite.childChain.GetContext())
+	genesis := suite.childChain.App.(*app.App).ChildKeeper.ExportGenesis(suite.childChain.GetContext())
 
 	suite.Require().Equal(suite.parentClient, genesis.ParentClientState)
 	suite.Require().Equal(suite.parentConsState, genesis.ParentConsensusState)
 
 	suite.Require().NotPanics(func() {
-		suite.childChain.GetSimApp().ChildKeeper.InitGenesis(suite.childChain.GetContext(), genesis)
+		suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), genesis)
 		// reset suite to reset parent client
 		suite.SetupTest()
 	})
 
 	ctx := suite.childChain.GetContext()
-	portId := suite.childChain.GetSimApp().ChildKeeper.GetPort(ctx)
+	portId := suite.childChain.App.(*app.App).ChildKeeper.GetPort(ctx)
 	suite.Require().Equal(childtypes.PortID, portId)
 
-	clientId, ok := suite.childChain.GetSimApp().ChildKeeper.GetParentClient(ctx)
+	clientId, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentClient(ctx)
 	suite.Require().True(ok)
 	clientState, ok := suite.childChain.App.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientId)
 	suite.Require().True(ok)
@@ -55,20 +56,20 @@ func (suite *KeeperTestSuite) TestGenesis() {
 	)
 	packet := channeltypes.NewPacket(pd.GetBytes(), 1, parenttypes.PortID, suite.path.EndpointB.ChannelID, childtypes.PortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
-	suite.childChain.GetSimApp().ChildKeeper.OnRecvPacket(suite.childChain.GetContext(), packet, pd)
+	suite.childChain.App.(*app.App).ChildKeeper.OnRecvPacket(suite.childChain.GetContext(), packet, pd)
 
-	restartGenesis := suite.childChain.GetSimApp().ChildKeeper.ExportGenesis(suite.childChain.GetContext())
+	restartGenesis := suite.childChain.App.(*app.App).ChildKeeper.ExportGenesis(suite.childChain.GetContext())
 
 	// ensure reset genesis is set correctly
 	parentChannel := suite.path.EndpointA.ChannelID
 	suite.Require().Equal(parentChannel, restartGenesis.ParentChannelId)
-	unbondingTime := suite.childChain.GetSimApp().ChildKeeper.GetUnbondingTime(suite.childChain.GetContext(), 1)
+	unbondingTime := suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingTime(suite.childChain.GetContext(), 1)
 	suite.Require().Equal(uint64(origTime.Add(childtypes.UnbondingTime).UnixNano()), unbondingTime, "unbonding time is not set correctly in genesis")
-	unbondingPacket, err := suite.childChain.GetSimApp().ChildKeeper.GetUnbondingPacket(suite.childChain.GetContext(), 1)
+	unbondingPacket, err := suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingPacket(suite.childChain.GetContext(), 1)
 	suite.Require().NoError(err)
 	suite.Require().Equal(&packet, unbondingPacket, "unbonding packet is not set correctly in genesis")
 
 	suite.Require().NotPanics(func() {
-		suite.childChain.GetSimApp().ChildKeeper.InitGenesis(suite.childChain.GetContext(), restartGenesis)
+		suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), restartGenesis)
 	})
 }

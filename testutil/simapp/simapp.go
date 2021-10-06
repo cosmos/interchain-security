@@ -1,9 +1,13 @@
 package simapp
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/simapp"
+
+	ibctesting "github.com/cosmos/ibc-go/testing"
+
 	"github.com/tendermint/spm/cosmoscmd"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -46,4 +50,12 @@ var defaultConsensusParams = &abci.ConsensusParams{
 			tmtypes.ABCIPubKeyTypeEd25519,
 		},
 	},
+}
+
+func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
+	db := tmdb.NewMemDB()
+	// encCdc := app.MakeTestEncodingConfig()
+	encoding := cosmoscmd.MakeEncodingConfig(app.ModuleBasics)
+	testApp := app.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
+	return testApp, app.NewDefaultGenesisState(encoding.Marshaler)
 }

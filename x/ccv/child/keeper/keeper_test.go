@@ -14,11 +14,17 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
+	"github.com/cosmos/interchain-security/app"
+	"github.com/cosmos/interchain-security/testutil/simapp"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
+
+func init() {
+	ibctesting.DefaultTestingAppInit = simapp.SetupTestingApp
+}
 
 type KeeperTestSuite struct {
 	suite.Suite
@@ -58,7 +64,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.parentConsState = suite.parentChain.LastHeader.ConsensusState()
 
 	childGenesis := types.NewInitialChildGenesisState(suite.parentClient, suite.parentConsState)
-	suite.childChain.GetSimApp().ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
+	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	suite.ctx = suite.childChain.GetContext()
 
@@ -69,7 +75,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.path.EndpointB.ChannelConfig.Version = types.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-	parentClient, ok := suite.childChain.GetSimApp().ChildKeeper.GetParentClient(suite.ctx)
+	parentClient, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentClient(suite.ctx)
 	if !ok {
 		panic("must already have parent client on child chain")
 	}
@@ -85,7 +91,7 @@ func (suite *KeeperTestSuite) SetupCCVChannel() {
 }
 
 func (suite *KeeperTestSuite) TestParentClient() {
-	parentClient, ok := suite.childChain.GetSimApp().ChildKeeper.GetParentClient(suite.ctx)
+	parentClient, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentClient(suite.ctx)
 	suite.Require().True(ok)
 
 	clientState, ok := suite.childChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, parentClient)
@@ -93,10 +99,10 @@ func (suite *KeeperTestSuite) TestParentClient() {
 }
 
 func (suite *KeeperTestSuite) TestParentChannel() {
-	_, ok := suite.childChain.GetSimApp().ChildKeeper.GetParentChannel(suite.ctx)
+	_, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentChannel(suite.ctx)
 	suite.Require().False(ok)
-	suite.childChain.GetSimApp().ChildKeeper.SetParentChannel(suite.ctx, "channelID")
-	channelID, ok := suite.childChain.GetSimApp().ChildKeeper.GetParentChannel(suite.ctx)
+	suite.childChain.App.(*app.App).ChildKeeper.SetParentChannel(suite.ctx, "channelID")
+	channelID, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentChannel(suite.ctx)
 	suite.Require().True(ok)
 	suite.Require().Equal("channelID", channelID)
 }
@@ -120,34 +126,34 @@ func (suite *KeeperTestSuite) TestPendingChanges() {
 		},
 	)
 
-	suite.childChain.GetSimApp().ChildKeeper.SetPendingChanges(suite.ctx, pd)
-	gotPd, ok := suite.childChain.GetSimApp().ChildKeeper.GetPendingChanges(suite.ctx)
+	suite.childChain.App.(*app.App).ChildKeeper.SetPendingChanges(suite.ctx, pd)
+	gotPd, ok := suite.childChain.App.(*app.App).ChildKeeper.GetPendingChanges(suite.ctx)
 	suite.Require().True(ok)
 	suite.Require().Equal(&pd, gotPd, "packet data in store does not equal packet data set")
-	suite.childChain.GetSimApp().ChildKeeper.DeletePendingChanges(suite.ctx)
-	gotPd, ok = suite.childChain.GetSimApp().ChildKeeper.GetPendingChanges(suite.ctx)
+	suite.childChain.App.(*app.App).ChildKeeper.DeletePendingChanges(suite.ctx)
+	gotPd, ok = suite.childChain.App.(*app.App).ChildKeeper.GetPendingChanges(suite.ctx)
 	suite.Require().False(ok)
 	suite.Require().Nil(gotPd, "got non-nil pending changes after Delete")
 }
 
 func (suite *KeeperTestSuite) TestUnbondingTime() {
-	suite.childChain.GetSimApp().ChildKeeper.SetUnbondingTime(suite.ctx, 1, 10)
-	suite.childChain.GetSimApp().ChildKeeper.SetUnbondingTime(suite.ctx, 2, 25)
-	suite.childChain.GetSimApp().ChildKeeper.SetUnbondingTime(suite.ctx, 5, 15)
-	suite.childChain.GetSimApp().ChildKeeper.SetUnbondingTime(suite.ctx, 6, 40)
+	suite.childChain.App.(*app.App).ChildKeeper.SetUnbondingTime(suite.ctx, 1, 10)
+	suite.childChain.App.(*app.App).ChildKeeper.SetUnbondingTime(suite.ctx, 2, 25)
+	suite.childChain.App.(*app.App).ChildKeeper.SetUnbondingTime(suite.ctx, 5, 15)
+	suite.childChain.App.(*app.App).ChildKeeper.SetUnbondingTime(suite.ctx, 6, 40)
 
-	suite.childChain.GetSimApp().ChildKeeper.DeleteUnbondingTime(suite.ctx, 6)
+	suite.childChain.App.(*app.App).ChildKeeper.DeleteUnbondingTime(suite.ctx, 6)
 
-	suite.Require().Equal(uint64(10), suite.childChain.GetSimApp().ChildKeeper.GetUnbondingTime(suite.ctx, 1))
-	suite.Require().Equal(uint64(25), suite.childChain.GetSimApp().ChildKeeper.GetUnbondingTime(suite.ctx, 2))
-	suite.Require().Equal(uint64(15), suite.childChain.GetSimApp().ChildKeeper.GetUnbondingTime(suite.ctx, 5))
-	suite.Require().Equal(uint64(0), suite.childChain.GetSimApp().ChildKeeper.GetUnbondingTime(suite.ctx, 3))
-	suite.Require().Equal(uint64(0), suite.childChain.GetSimApp().ChildKeeper.GetUnbondingTime(suite.ctx, 6))
+	suite.Require().Equal(uint64(10), suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingTime(suite.ctx, 1))
+	suite.Require().Equal(uint64(25), suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingTime(suite.ctx, 2))
+	suite.Require().Equal(uint64(15), suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingTime(suite.ctx, 5))
+	suite.Require().Equal(uint64(0), suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingTime(suite.ctx, 3))
+	suite.Require().Equal(uint64(0), suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingTime(suite.ctx, 6))
 
 	orderedTimes := [][]uint64{{1, 10}, {2, 25}, {5, 15}}
 	i := 0
 
-	suite.childChain.GetSimApp().ChildKeeper.IterateUnbondingTime(suite.ctx, func(seq, time uint64) bool {
+	suite.childChain.App.(*app.App).ChildKeeper.IterateUnbondingTime(suite.ctx, func(seq, time uint64) bool {
 		// require that we iterate through unbonding time in order of sequence
 		suite.Require().Equal(orderedTimes[i][0], seq)
 		suite.Require().Equal(orderedTimes[i][1], time)
@@ -177,22 +183,22 @@ func (suite *KeeperTestSuite) TestUnbondingPacket() {
 		)
 		packet := channeltypes.NewPacket(pd.GetBytes(), uint64(i), "parent", "channel-1", "child", "channel-1",
 			clienttypes.NewHeight(1, 0), 0)
-		suite.childChain.GetSimApp().ChildKeeper.SetUnbondingPacket(suite.ctx, uint64(i), packet)
+		suite.childChain.App.(*app.App).ChildKeeper.SetUnbondingPacket(suite.ctx, uint64(i), packet)
 	}
 
 	// ensure that packets are iterated by sequence
 	i := 0
-	suite.childChain.GetSimApp().ChildKeeper.IterateUnbondingPacket(suite.ctx, func(seq uint64, packet channeltypes.Packet) bool {
+	suite.childChain.App.(*app.App).ChildKeeper.IterateUnbondingPacket(suite.ctx, func(seq uint64, packet channeltypes.Packet) bool {
 		suite.Require().Equal(uint64(i), seq)
-		gotPacket, err := suite.childChain.GetSimApp().ChildKeeper.GetUnbondingPacket(suite.ctx, seq)
+		gotPacket, err := suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingPacket(suite.ctx, seq)
 		suite.Require().NoError(err)
 		suite.Require().Equal(&packet, gotPacket, "packet from get and iteration do not match")
 		i++
 		return false
 	})
 
-	suite.childChain.GetSimApp().ChildKeeper.DeleteUnbondingPacket(suite.ctx, 0)
-	gotPacket, err := suite.childChain.GetSimApp().ChildKeeper.GetUnbondingPacket(suite.ctx, 0)
+	suite.childChain.App.(*app.App).ChildKeeper.DeleteUnbondingPacket(suite.ctx, 0)
+	gotPacket, err := suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingPacket(suite.ctx, 0)
 	suite.Require().Error(err)
 	suite.Require().Nil(gotPacket, "packet is not nil after delete")
 }
@@ -220,7 +226,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				)
 				suite.path.EndpointA.ChannelID = channelID
 				// set channel status to INITIALIZING
-				suite.childChain.GetSimApp().ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
 			},
 			expError: false,
 		},
@@ -241,7 +247,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				suite.path.EndpointA.ChannelID = channelID
 
 				// set channel status to validating
-				suite.childChain.GetSimApp().ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.VALIDATING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.VALIDATING)
 			},
 			expError: true,
 		},
@@ -256,7 +262,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				// set channelID without creating channel
 				suite.path.EndpointA.ChannelID = "channel-1"
 				// set channel status to INITIALIZING
-				suite.childChain.GetSimApp().ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
 			},
 			expError: true,
 		},
@@ -277,7 +283,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				suite.path.EndpointA.ChannelID = channelID
 
 				// set channel status to INITIALIZING
-				suite.childChain.GetSimApp().ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
 			},
 			expError: true,
 		},
@@ -298,7 +304,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				suite.path.EndpointA.ChannelID = channelID
 
 				// set channel status to INITIALIZING
-				suite.childChain.GetSimApp().ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
 			},
 			expError: true,
 		},
@@ -322,7 +328,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				suite.path.EndpointA.ChannelID = channelID
 
 				// set channel status to INITIALIZING
-				suite.childChain.GetSimApp().ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
 			},
 			expError: true,
 		},
@@ -336,7 +342,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 			tc.setup(suite)
 
 			// Verify ParentChain on child chain using path returned by setup
-			err := suite.childChain.GetSimApp().ChildKeeper.VerifyParentChain(suite.ctx, suite.path.EndpointA.ChannelID)
+			err := suite.childChain.App.(*app.App).ChildKeeper.VerifyParentChain(suite.ctx, suite.path.EndpointA.ChannelID)
 
 			if tc.expError {
 				suite.Require().Error(err, "invalid case did not return error")

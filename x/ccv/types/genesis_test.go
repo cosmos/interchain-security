@@ -36,7 +36,7 @@ func TestValidateInitialChildGenesisState(t *testing.T) {
 
 	cases := []struct {
 		name     string
-		gs       types.ChildGenesisState
+		gs       *types.ChildGenesisState
 		expError bool
 	}{
 		{
@@ -66,7 +66,7 @@ func TestValidateInitialChildGenesisState(t *testing.T) {
 		},
 		{
 			"invalid new child genesis state: channel id not empty",
-			types.ChildGenesisState{
+			&types.ChildGenesisState{
 				false,
 				"ccvchannel",
 				true,
@@ -78,7 +78,7 @@ func TestValidateInitialChildGenesisState(t *testing.T) {
 		},
 		{
 			"invalid new child genesis state: non-nil unbonding sequences",
-			types.ChildGenesisState{
+			&types.ChildGenesisState{
 				false,
 				"",
 				true,
@@ -141,7 +141,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 
 	cases := []struct {
 		name     string
-		gs       types.ChildGenesisState
+		gs       *types.ChildGenesisState
 		expError bool
 	}{
 		{
@@ -240,7 +240,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		},
 		{
 			"invalid restart child genesis: client state defined",
-			types.ChildGenesisState{
+			&types.ChildGenesisState{
 				false,
 				"ccvchannel",
 				false,
@@ -252,7 +252,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		},
 		{
 			"invalid restart child genesis: consensus state defined",
-			types.ChildGenesisState{
+			&types.ChildGenesisState{
 				false,
 				"ccvchannel",
 				false,
@@ -277,7 +277,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 func TestValidateParentGenesisState(t *testing.T) {
 	testCases := []struct {
 		name     string
-		genState types.ParentGenesisState
+		genState *types.ParentGenesisState
 		expPass  bool
 	}{
 		{

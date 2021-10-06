@@ -8,8 +8,8 @@ import (
 
 // NewInitialChildGenesisState returns a child GenesisState for a completely new child chain.
 // TODO: Include chain status
-func NewInitialChildGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState) ChildGenesisState {
-	return ChildGenesisState{
+func NewInitialChildGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState) *ChildGenesisState {
+	return &ChildGenesisState{
 		NewChain:             true,
 		ParentClientState:    cs,
 		ParentConsensusState: consState,
@@ -17,8 +17,8 @@ func NewInitialChildGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtyp
 }
 
 // NewRestartChildGenesisState returns a child GenesisState that has already been established.
-func NewRestartChildGenesisState(channelID string, unbondingSequences []UnbondingSequence) ChildGenesisState {
-	return ChildGenesisState{
+func NewRestartChildGenesisState(channelID string, unbondingSequences []UnbondingSequence) *ChildGenesisState {
+	return &ChildGenesisState{
 		ParentChannelId:    channelID,
 		UnbondingSequences: unbondingSequences,
 		NewChain:           false,
@@ -27,8 +27,8 @@ func NewRestartChildGenesisState(channelID string, unbondingSequences []Unbondin
 
 // DefaultGenesisState returns a default disabled child chain genesis state. This allows the module to be hooked up to app without getting use
 // unless explicitly specified in genesis.
-func DefaultChildGenesisState() ChildGenesisState {
-	return ChildGenesisState{
+func DefaultChildGenesisState() *ChildGenesisState {
+	return &ChildGenesisState{
 		Disabled: true,
 	}
 }
@@ -86,14 +86,14 @@ func (us UnbondingSequence) Validate() error {
 	return nil
 }
 
-func NewParentGenesisState(childStates []ChildState) ParentGenesisState {
-	return ParentGenesisState{
+func NewParentGenesisState(childStates []ChildState) *ParentGenesisState {
+	return &ParentGenesisState{
 		ChildStates: childStates,
 	}
 }
 
-func DefaultParentGenesisState() ParentGenesisState {
-	return ParentGenesisState{}
+func DefaultParentGenesisState() *ParentGenesisState {
+	return &ParentGenesisState{}
 }
 
 func (gs ParentGenesisState) Validate() error {
