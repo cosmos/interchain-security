@@ -83,13 +83,17 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
+	ibcchild "github.com/cosmos/interchain-security/x/ccv/child"
+	ibcchildkeeper "github.com/cosmos/interchain-security/x/ccv/child/keeper"
+	ibcchildtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
+	ibcparent "github.com/cosmos/interchain-security/x/ccv/parent"
+	ibcparentkeeper "github.com/cosmos/interchain-security/x/ccv/parent/keeper"
+	ibcparenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
+
 	"github.com/tendermint/spm/cosmoscmd"
 	"github.com/tendermint/spm/openapiconsole"
 
 	"github.com/cosmos/interchain-security/docs"
-	ccvmodule "github.com/cosmos/interchain-security/x/ccv"
-	ccvmodulekeeper "github.com/cosmos/interchain-security/x/ccv/keeper"
-	ccvmoduletypes "github.com/cosmos/interchain-security/x/ccv/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -140,7 +144,8 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
-		ccvmodule.AppModuleBasic{},
+		ibcchild.AppModuleBasic{},
+		ibcparent.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
@@ -204,13 +209,14 @@ type App struct {
 	EvidenceKeeper   evidencekeeper.Keeper
 	TransferKeeper   ibctransferkeeper.Keeper
 	FeeGrantKeeper   feegrantkeeper.Keeper
+	ChildKeeper      ibcchildkeeper.Keeper
+	ParentKeeper     ibcparentkeeper.Keeper
 
 	// make scoped keepers public for test purposes
-	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
-	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
-
-	CcvKeeper ccvmodulekeeper.Keeper
-	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
+	ScopedIBCKeeper       capabilitykeeper.ScopedKeeper
+	ScopedTransferKeeper  capabilitykeeper.ScopedKeeper
+	ScopedIBCChildKeeper  capabilitykeeper.ScopedKeeper
+	ScopedIBCParentKeeper capabilitykeeper.ScopedKeeper
 
 	// the module manager
 	mm *module.Manager
@@ -243,7 +249,7 @@ func New(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
-		ccvmoduletypes.StoreKey,
+		ibcchildtypes.StoreKey, ibcparenttypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -271,6 +277,8 @@ func New(
 	// grant capabilities for the ibc and ibc-transfer modules
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
+	scopedIBCChildKeeper := app.CapabilityKeeper.ScopeToModule(ibcchildtypes.ModuleName)
+	scopedIBCParentKeeper := app.CapabilityKeeper.ScopeToModule(ibcparenttypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/scopedKeeper
 
 	// add keepers
@@ -342,18 +350,22 @@ func New(
 		&stakingKeeper, govRouter,
 	)
 
-	app.CcvKeeper = *ccvmodulekeeper.NewKeeper(
-		appCodec,
-		keys[ccvmoduletypes.StoreKey],
-		keys[ccvmoduletypes.MemStoreKey],
+	// Create CCV child and parent keepers and modules
+	app.ChildKeeper = ibcchildkeeper.NewKeeper(appCodec, keys[ibcchildtypes.StoreKey], scopedIBCChildKeeper,
+		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper,
 	)
-	ccvModule := ccvmodule.NewAppModule(appCodec, app.CcvKeeper)
+	childModule := ibcchild.NewAppModule(app.ChildKeeper)
+	app.ParentKeeper = ibcparentkeeper.NewKeeper(appCodec, keys[ibcparenttypes.StoreKey], scopedIBCParentKeeper,
+		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper, nil)
+	parentModule := ibcparent.NewAppModule(app.ParentKeeper)
 
 	// this line is used by starport scaffolding # stargate/app/keeperDefinition
 
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := ibcporttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
+	ibcRouter.AddRoute(ibcchildtypes.ModuleName, childModule)
+	ibcRouter.AddRoute(ibcparenttypes.ModuleName, parentModule)
 	// this line is used by starport scaffolding # ibc/app/router
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -387,7 +399,8 @@ func New(
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
-		ccvModule,
+		childModule,
+		parentModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -397,11 +410,10 @@ func New(
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName, capabilitytypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
-		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
-		feegrant.ModuleName,
+		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName, feegrant.ModuleName,
 	)
 
-	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName)
+	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName, ibcchildtypes.ModuleName, ibcparenttypes.ModuleName)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -422,7 +434,8 @@ func New(
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
-		ccvmoduletypes.ModuleName,
+		ibcchildtypes.ModuleName,
+		ibcparenttypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 
@@ -463,6 +476,8 @@ func New(
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
+	app.ScopedIBCChildKeeper = scopedIBCChildKeeper
+	app.ScopedIBCParentKeeper = scopedIBCParentKeeper
 	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
 
 	return app
@@ -610,7 +625,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
-	paramsKeeper.Subspace(ccvmoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper
