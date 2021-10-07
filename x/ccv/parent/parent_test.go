@@ -1,30 +1,22 @@
-package keeper_test
+package parent_test
 
 import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/testing"
-
 	"github.com/cosmos/interchain-security/app"
-	"github.com/cosmos/interchain-security/testutil/simapp"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
-
 	"github.com/stretchr/testify/suite"
 )
 
-func init() {
-	ibctesting.DefaultTestingAppInit = simapp.SetupTestingApp
-}
-
-type KeeperTestSuite struct {
+type ParentTestSuite struct {
 	suite.Suite
 
 	coordinator *ibctesting.Coordinator
@@ -41,7 +33,7 @@ type KeeperTestSuite struct {
 	ctx sdk.Context
 }
 
-func (suite *KeeperTestSuite) SetupTest() {
+func (suite *ParentTestSuite) SetupTest() {
 	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
 	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(0))
 	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
@@ -72,7 +64,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.path.EndpointA.ChannelConfig.Version = types.Version
 	suite.path.EndpointB.ChannelConfig.Version = types.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
-	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
+	suite.path.EndpointB.ChannelConfig.OrApp.(*app.App)eltypes.ORDERED
 	parentClient, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentClient(suite.childChain.GetContext())
 	if !ok {
 		panic("must already have parent client on child chain")
@@ -85,6 +77,6 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.parentChain.App.(*app.App).ParentKeeper.SetChildClient(suite.parentChain.GetContext(), suite.childChain.ChainID, suite.path.EndpointB.ClientID)
 }
 
-func TestKeeperTestSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
+func TestParentTestSuite(t *testing.T) {
+	suite.Run(t, new(ParentTestSuite))
 }

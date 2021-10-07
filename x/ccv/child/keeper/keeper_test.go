@@ -81,11 +81,13 @@ func (suite *KeeperTestSuite) SetupTest() {
 	}
 	// set child endpoint's clientID
 	suite.path.EndpointA.ClientID = parentClient
+
+	// create child client on parent chain and set as child client for child chainID in parent keeper.
+	suite.path.EndpointB.CreateClient()
+	suite.parentChain.App.(*app.App).ParentKeeper.SetChildClient(suite.parentChain.GetContext(), suite.childChain.ChainID, suite.path.EndpointB.ClientID)
 }
 
 func (suite *KeeperTestSuite) SetupCCVChannel() {
-	// create child client on parent chain
-	suite.path.EndpointB.CreateClient()
 	suite.coordinator.CreateConnections(suite.path)
 	suite.coordinator.CreateChannels(suite.path)
 }

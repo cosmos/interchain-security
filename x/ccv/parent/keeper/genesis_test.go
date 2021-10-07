@@ -11,9 +11,9 @@ func (suite *KeeperTestSuite) TestGenesis() {
 	// set some chain-channel pairs before exporting
 	ctx := suite.parentChain.GetContext()
 	for i := 0; i < 4; i++ {
-		suite.parentChain.App.(*app.App).ParentKeeper.SetChainToChannel(ctx, fmt.Sprintf("chainid-%d", i), fmt.Sprintf("channel-%d", i))
-		suite.parentChain.App.(*app.App).ParentKeeper.SetChannelToChain(ctx, fmt.Sprintf("channel-%d", i), fmt.Sprintf("chainid-%d", i))
-		suite.parentChain.App.(*app.App).ParentKeeper.SetChannelStatus(ctx, fmt.Sprintf("channel-%d", i), types.Status(i))
+		suite.parentChain.App.(*app.App).ParentKeeper.SetChainToChannel(ctx, fmt.Sprintf("chainid-%d", i), fmt.Sprintf("channelid-%d", i))
+		suite.parentChain.App.(*app.App).ParentKeeper.SetChannelToChain(ctx, fmt.Sprintf("channelid-%d", i), fmt.Sprintf("chainid-%d", i))
+		suite.parentChain.App.(*app.App).ParentKeeper.SetChannelStatus(ctx, fmt.Sprintf("channelid-%d", i), types.Status(i))
 	}
 
 	genState := suite.parentChain.App.(*app.App).ParentKeeper.ExportGenesis(suite.parentChain.GetContext())
@@ -32,6 +32,6 @@ func (suite *KeeperTestSuite) TestGenesis() {
 		suite.Require().Equal(expectedChannelId, channelID, "did not store correct channel id for given chain id")
 
 		status := suite.childChain.App.(*app.App).ParentKeeper.GetChannelStatus(ctx, channelID)
-		suite.Require().Equal(int32(i), status, "status is unexpected for given channel id: %s", channelID)
+		suite.Require().Equal(types.Status(i), status, "status is unexpected for given channel id: %s", channelID)
 	}
 }
