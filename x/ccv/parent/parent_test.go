@@ -4,17 +4,25 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/testing"
+
 	"github.com/cosmos/interchain-security/app"
+	"github.com/cosmos/interchain-security/testutil/simapp"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
+
 	"github.com/stretchr/testify/suite"
 )
+
+func init() {
+	ibctesting.DefaultTestingAppInit = simapp.SetupTestingApp
+}
 
 type ParentTestSuite struct {
 	suite.Suite
@@ -64,7 +72,7 @@ func (suite *ParentTestSuite) SetupTest() {
 	suite.path.EndpointA.ChannelConfig.Version = types.Version
 	suite.path.EndpointB.ChannelConfig.Version = types.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
-	suite.path.EndpointB.ChannelConfig.OrApp.(*app.App)eltypes.ORDERED
+	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 	parentClient, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentClient(suite.childChain.GetContext())
 	if !ok {
 		panic("must already have parent client on child chain")
