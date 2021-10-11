@@ -17,7 +17,8 @@ const (
 )
 
 var (
-	_ govtypes.Content = &CreateChildChainProposal{}
+	_ govtypes.Content                   = &CreateChildChainProposal{}
+	_ codectypes.UnpackInterfacesMessage = &CreateChildChainProposal{}
 )
 
 func init() {
