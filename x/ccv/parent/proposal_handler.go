@@ -15,7 +15,7 @@ func NewCreateChildChainHandler(k keeper.Keeper) govtypes.Handler {
 		case *ccv.CreateChildChainProposal:
 			return k.CreateChildChainProposal(ctx, c)
 		default:
-			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized ibc proposal content type: %T", c)
+			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized ccv proposal content type: %T", c)
 		}
 	}
 }
