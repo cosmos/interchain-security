@@ -24,11 +24,7 @@ func (k Keeper) CreateChildChainProposal(ctx sdk.Context, p *ccv.CreateChildChai
 		return err
 	}
 	if ctx.BlockTime().After(p.SpawnTime) {
-		err = k.CreateChildClient(ctx, p.ChainId, clientState)
-		if err != nil {
-			return err
-		}
-		return nil
+		return k.CreateChildClient(ctx, p.ChainId, clientState)
 	}
 
 	k.SetPendingClient(ctx, p.SpawnTime, p.ChainId, clientState)
@@ -75,7 +71,7 @@ func (k Keeper) SetPendingClient(ctx sdk.Context, timestamp time.Time, chainID s
 func (k Keeper) GetPendingClient(ctx sdk.Context, timestamp time.Time, chainID string) ibcexported.ClientState {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingClientKey(timestamp, chainID))
-	if bz == nil {
+	if len(bz) == 0 {
 		return nil
 	}
 	return clienttypes.MustUnmarshalClientState(k.cdc, bz)
