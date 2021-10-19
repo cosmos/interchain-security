@@ -1,0 +1,122 @@
+# The global section has parameters that apply globally to the relayer operation.
+[global]
+
+# Specify the strategy to be used by the relayer. Default: 'packets'
+# Two options are currently supported:
+#   - 'all': Relay packets and perform channel and connection handshakes.
+#   - 'packets': Relay packets only.
+strategy = 'all'
+
+tx_confirmation = true
+
+# Enable or disable the filtering mechanism. Default: 'false'
+# Valid options are 'true', 'false'.
+# Currently Hermes supports two filters:
+# 1. Packet filtering on a per-chain basis; see the chain-specific
+#   filter specification below in [chains.packet_filter].
+# 2. Filter for all activities based on client state trust threshold; this filter
+#   is parametrized with (numerator = 1, denominator = 3) so that clients with
+#  thresholds different than this will be ignored.
+# If set to 'true', both of the above filters will be enabled.
+filter = false
+
+# Specify the verbosity for the relayer logging output. Default: 'info'
+# Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
+log_level = 'info'
+
+# Parametrize the periodic packet clearing feature.
+# Interval (in number of blocks) at which pending packets
+# should be eagerly cleared. A value of '0' will disable
+# periodic packet clearing. Default: 100
+clear_packets_interval = 50
+
+
+# The REST section defines parameters for Hermes' built-in RESTful API.
+# https://hermes.informal.systems/rest.html
+[rest]
+
+# Whether or not to enable the REST service. Default: false
+enabled = true
+
+# Specify the IPv4/6 host over which the built-in HTTP server will serve the RESTful
+# API requests. Default: 127.0.0.1
+host = '127.0.0.1'
+
+# Specify the port over which the built-in HTTP server will serve the restful API
+# requests. Default: 3000
+port = 7000
+
+
+
+# The telemetry section defines parameters for Hermes' built-in telemetry capabilities.
+# https://hermes.informal.systems/telemetry.html
+[telemetry]
+
+# Whether or not to enable the telemetry service. Default: false
+enabled = false
+
+# Specify the IPv4/6 host over which the built-in HTTP server will serve the metrics
+# gathered by the telemetry service. Default: 127.0.0.1
+host = '127.0.0.1'
+
+# Specify the port over which the built-in HTTP server will serve the metrics gathered
+# by the telemetry service. Default: 3001
+port = 7001
+
+# This section specifies the filters for policy based relaying.
+# Default: no policy/ filters
+# The section is ignored if the global 'filter' option is set to 'false'.
+# If the global 'filter' option is set to 'true' and this section is missing then no filtering is performed for this chain.
+# Only packet filtering based on channel identifier can be specified.
+# A channel filter has two fields:
+# 1. `policy` - one of two types are supported:
+#       - 'allow': permit relaying _only on_ the port/channel id in the list below,
+#       - 'deny': permit relaying on any channel _except for_ the list below.
+# 2. `list` - the list of channels specified by the port and channel identifiers.
+#
+# Example configuration of a channel filter, denying packet relaying on channel with port ID 'transfer' and channel ID 'channel-0':
+#
+# [chains.packet_filter]
+# policy = 'deny'
+# list = [
+#   ['transfer', 'channel-0'],
+# ]
+
+
+[[chains]]
+id = 'parent'
+rpc_addr = 'http://127.0.0.1:10001'
+grpc_addr = 'http://127.0.0.1:10002'
+websocket_addr = 'ws://127.0.0.1:10001/websocket'
+rpc_timeout = '15s'
+account_prefix = 'parent'
+key_name = 'parent'
+max_tx_size = 450000
+store_prefix = 'ibc'
+max_msg_num = 30
+max_gas = 600000
+gas_price = { price = 0.001, denom = 'uparent' }
+gas_adjustment = 0.1
+clock_drift ='10s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+
+
+
+[[chains]]
+id = 'child'
+rpc_addr = 'http://localhost:20001'
+websocket_addr = 'ws://localhost:20001/websocket'
+grpc_addr = 'http://localhost:20002'
+rpc_timeout = '15s'
+account_prefix = 'child'
+key_name = 'child'
+max_tx_size = 450000
+store_prefix = 'ibc'
+max_msg_num = 30
+max_gas = 600000
+gas_price = { price = 0.001, denom = 'uchild' }
+gas_adjustment = 0.1
+clock_drift ='10s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
