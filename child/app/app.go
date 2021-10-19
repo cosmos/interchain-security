@@ -96,7 +96,6 @@ import (
 	"github.com/tendermint/spm/cosmoscmd"
 	"github.com/tendermint/spm/openapiconsole"
 
-	"github.com/cosmos/interchain-security/docs"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 

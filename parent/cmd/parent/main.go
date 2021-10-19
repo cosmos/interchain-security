@@ -4,7 +4,7 @@ import (
 	"os"
 
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	"github.com/cosmos/interchain-security/app"
+	"github.com/cosmos/interchain-security/parent/app"
 	"github.com/tendermint/spm/cosmoscmd"
 )
 
