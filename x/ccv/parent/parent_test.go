@@ -11,7 +11,7 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/testing"
 
-	"github.com/cosmos/interchain-security/app"
+	"github.com/cosmos/interchain-security/parent/app"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"

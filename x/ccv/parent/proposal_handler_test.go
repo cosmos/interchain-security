@@ -10,7 +10,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/testing"
-	"github.com/cosmos/interchain-security/app"
+	"github.com/cosmos/interchain-security/child/app"
 	"github.com/cosmos/interchain-security/x/ccv/parent"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )

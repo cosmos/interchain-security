@@ -2,7 +2,6 @@ package app
 
 import (
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -91,11 +90,11 @@ import (
 	ibcchildkeeper "github.com/cosmos/interchain-security/x/ccv/child/keeper"
 	ibcchildtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	// ibcparent "github.com/cosmos/interchain-security/x/ccv/parent"
+	// ibcparentkeeper "github.com/cosmos/interchain-security/x/ccv/parent/keeper"
+	// ibcparenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 
 	"github.com/tendermint/spm/cosmoscmd"
-	"github.com/tendermint/spm/openapiconsole"
-
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -147,7 +146,7 @@ var (
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		ibcchild.AppModuleBasic{},
-]		// this line is used by starport scaffolding # stargate/app/moduleBasic
+		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
 	// module account permissions
@@ -249,7 +248,7 @@ func New(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
-		ibcchildtypes.StoreKey, 
+		ibcchildtypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -278,7 +277,6 @@ func New(
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedIBCChildKeeper := app.CapabilityKeeper.ScopeToModule(ibcchildtypes.ModuleName)
-	scopedIBCParentKeeper := app.CapabilityKeeper.ScopeToModule(ibcparenttypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/scopedKeeper
 
 	// add keepers
@@ -327,9 +325,6 @@ func New(
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper,
 	)
 	childModule := ibcchild.NewAppModule(app.ChildKeeper)
-	app.ParentKeeper = ibcparentkeeper.NewKeeper(appCodec, keys[ibcparenttypes.StoreKey], scopedIBCParentKeeper,
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper, nil)
-	parentModule := ibcparent.NewAppModule(app.ParentKeeper)
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
@@ -337,8 +332,7 @@ func New(
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
-		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(ccv.RouterKey, ibcparent.NewCreateChildChainHandler(app.ParentKeeper))
+		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 
 	// Create Transfer Keepers
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
@@ -364,7 +358,6 @@ func New(
 	ibcRouter := ibcporttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
 	ibcRouter.AddRoute(ibcchildtypes.ModuleName, childModule)
-	ibcRouter.AddRoute(ibcparenttypes.ModuleName, parentModule)
 	// this line is used by starport scaffolding # ibc/app/router
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -399,7 +392,7 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 		childModule,
-		parentModule,
+
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 
@@ -412,7 +405,7 @@ func New(
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName, feegrant.ModuleName,
 	)
 
-	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName, ibcchildtypes.ModuleName, ibcparenttypes.ModuleName)
+	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName, ibcchildtypes.ModuleName)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -434,7 +427,6 @@ func New(
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibcchildtypes.ModuleName,
-		ibcparenttypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	)
 
@@ -476,7 +468,6 @@ func New(
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	app.ScopedIBCChildKeeper = scopedIBCChildKeeper
-	app.ScopedIBCParentKeeper = scopedIBCParentKeeper
 	// this line is used by starport scaffolding # stargate/app/beforeInitReturn
 
 	return app
@@ -614,8 +605,8 @@ func (app *App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig
 	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// register app's OpenAPI routes.
-	apiSvr.Router.Handle("/static/openapi.yml", http.FileServer(http.FS(docs.Docs)))
-	apiSvr.Router.HandleFunc("/", openapiconsole.Handler(Name, "/static/openapi.yml"))
+	// apiSvr.Router.Handle("/static/openapi.yml", http.FileServer(http.FS(docs.Docs)))
+	// apiSvr.Router.HandleFunc("/", openapiconsole.Handler(Name, "/static/openapi.yml"))
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.
