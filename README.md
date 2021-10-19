@@ -42,16 +42,20 @@ Get binaries named parent and child.  Do it in three windows using iterm2 or sim
 
 **parent chain ports**
 
-P2P: 6969
-RPC: 6970
-GRPC: 6971
+P2P: 10000
+
+RPC: 10001
+
+GRPC: 10002
 
 
 
 **child chain ports**
 
-P2P: 6979
-RPC: 6980
-GRPC: 6981
+P2P: 20000
+RPC: 20001
+GRPC: 20002
+
+For the child chains, you may wish to have many of them.  In that case, feel free to iterate the ports such that each child gets ten ports.
 
 
