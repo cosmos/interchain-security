@@ -61,7 +61,9 @@ GRPC: 10002
 **child chain ports**
 
 P2P: 20000
+
 RPC: 20001
+
 GRPC: 20002
 
 For the child chains, you may wish to have many of them.  In that case, feel free to iterate the ports such that each child gets ten ports.
