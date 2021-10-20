@@ -21,6 +21,7 @@ https://github.com/cosmos/gaia/blob/main/docs/interchain-security.md
 Bidirectionally it should look like:
 
 **Parent**
+
 client: 07-tendermint-0
 
 connection: connection-0
@@ -30,6 +31,7 @@ channel: channel-0
 port: parent
 
 **child**
+
 client: 07-tendermint-0
 
 connection: connection-0
