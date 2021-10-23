@@ -38,6 +38,12 @@ const (
 	// PendingClientKeyPrefix is the key prefix for storing the pending identified child chain client before the spawn time occurs.
 	// The key includes the BigEndian timestamp to allow for efficient chronological iteration
 	PendingClientKeyPrefix = "pendingclient"
+	// UnbondingDelegationEntryPrefix is the key prefix that stores a record of all the ids of child chains that
+	// need to unbond before a given delegation can unbond on this chain.
+	UnbondingDelegationEntryPrefix = "ubdeholds"
+
+	// ValidatorSetUpdateIdPrefix is the key prefix that stores the current validator set update id
+	ValidatorSetUpdateIdPrefix = "valsetupdateid"
 )
 
 var (
@@ -65,4 +71,11 @@ func PendingClientKey(timestamp time.Time, chainID string) []byte {
 	timeBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(timeBytes, uint64(timestamp.UnixNano()))
 	return []byte(fmt.Sprintf("%s/%s/%s", PendingClientKeyPrefix, timeBytes, chainID))
+}
+
+func UnbondingDelegationEntryKey(unbondingDelegationEntryID uint64) []byte {
+	bz := make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, unbondingDelegationEntryID)
+
+	return append([]byte(UnbondingDelegationEntryPrefix), bz...)
 }

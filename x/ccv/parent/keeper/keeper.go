@@ -1,6 +1,9 @@
 package keeper
 
 import (
+	"encoding/binary"
+	"time"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -238,6 +241,16 @@ func (k Keeper) SetChildChain(ctx sdk.Context, channelID string) error {
 	return nil
 }
 
+func (k Keeper) SetUnbondingDelegationEntry(ctx sdk.Context, unbondingDelegationEntry ccv.UnbondingDelegationEntry) error {
+	store := ctx.KVStore(k.storeKey)
+	bz, err := unbondingDelegationEntry.Marshal()
+	if err != nil {
+		return err
+	}
+	store.Set(types.UnbondingDelegationEntryKey(unbondingDelegationEntry.UnbondingDelegationEntryId), bz)
+	return nil
+}
+
 func (k Keeper) getUnderlyingClient(ctx sdk.Context, channelID string) (string, *ibctmtypes.ClientState, error) {
 	// Retrieve the underlying client state.
 	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
@@ -271,4 +284,47 @@ func (k Keeper) chanCloseInit(ctx sdk.Context, channelID string) error {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	return k.channelKeeper.ChanCloseInit(ctx, types.PortID, channelID, chanCap)
+}
+
+func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get([]byte(types.ValidatorSetUpdateIdPrefix))
+
+	// Unmarshal and increment
+	validatorSetUpdateId := binary.BigEndian.Uint64(bz)
+	validatorSetUpdateId = validatorSetUpdateId + 1
+
+	// Convert back into bytes for storage
+	bz = make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, validatorSetUpdateId)
+
+	store.Set([]byte(types.ValidatorSetUpdateIdPrefix), bz)
+}
+
+func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get([]byte(types.ValidatorSetUpdateIdPrefix))
+
+	// Unmarshal
+	validatorSetUpdateId := binary.BigEndian.Uint64(bz)
+
+	return validatorSetUpdateId
+}
+
+func (k Keeper) UnbondingDelegationEntryCreated(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress,
+	creationHeight int64, completionTime time.Time, balance sdk.Int, id uint64) error {
+	var childChainIds []string
+
+	k.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
+		childChainIds = append(childChainIds, chainID)
+		return false
+	})
+	ubde := ccv.UnbondingDelegationEntry{
+		UnbondingDelegationEntryId: id,
+		ValidatorSetUpdateId:       k.GetValidatorSetUpdateId(ctx),
+		ChildChainIds:              childChainIds,
+	}
+
+	k.SetUnbondingDelegationEntry(ctx, ubde)
+	return nil
 }

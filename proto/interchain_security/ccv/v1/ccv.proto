@@ -30,3 +30,9 @@ enum Status {
   // channel is invalid and can no longer process packets
   STATUS_INVALID = 3 [(gogoproto.enumvalue_customname) = "INVALID"];
 }
+
+message UnbondingDelegationEntry {
+  uint64 unbonding_delegation_entry_id = 1;
+  uint64 validator_set_update_id = 2;
+  repeated string child_chain_ids = 3;
+}
