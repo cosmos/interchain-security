@@ -51,6 +51,16 @@ func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.Va
 	return nil
 }
 
+func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
+	for _, y := range slice {
+		if x != y {
+			newSlice = append(newSlice, y)
+		}
+	}
+
+	return newSlice, len(slice) - len(newSlice)
+}
+
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorSetChangePacketData, ack channeltypes.Acknowledgement) error {
 	chainID, ok := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !ok {
@@ -60,6 +70,30 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		return err
 	}
 	k.registryKeeper.UnbondValidators(ctx, chainID, data.ValidatorUpdates)
+
+	UBDEs, _ := k.GetUBDEsFromIndex(ctx, chainID, data.ValsetUpdateId)
+
+	for _, UBDE := range UBDEs {
+		// remove child chain ID from ubde
+		UBDE.UnbondingChildChains, _ = removeStringFromSlice(UBDE.UnbondingChildChains, chainID)
+
+		// If UBDE is completely unbonded from all relevant child chains
+		if len(UBDE.UnbondingChildChains) == 0 {
+			// Attempt to complete unbonding in staking module
+			err, _ := k.stakingKeeper.CompleteStoppedUnbonding(ctx, UBDE.UnbondingDelegationEntryId)
+			if err != nil {
+				return err
+			}
+			// Delete UBDE
+			k.DeleteUnbondingDelegationEntry(ctx, UBDE.UnbondingDelegationEntryId)
+		} else {
+			k.SetUnbondingDelegationEntry(ctx, UBDE)
+		}
+	}
+
+	// clean up index
+	k.DeleteUBDEIndex(ctx, chainID, data.ValsetUpdateId)
+
 	return nil
 }
 
@@ -80,5 +114,6 @@ func (k Keeper) EndBlockCallback(ctx sdk.Context, chainID string) bool {
 	if len(valUpdates) != 0 {
 		k.SendPacket(ctx, chainID, valUpdates)
 	}
+	k.IncrementValidatorSetUpdateId(ctx)
 	return false
 }

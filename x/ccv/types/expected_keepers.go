@@ -50,4 +50,8 @@ type ClientKeeper interface {
 	GetLatestClientConsensusState(ctx sdk.Context, clientID string) (ibcexported.ConsensusState, bool)
 }
 
+type StakingKeeper interface {
+	CompleteStoppedUnbonding(ctx sdk.Context, id uint64) (err error, found bool)
+}
+
 // TODO: Expected interfaces for distribution on parent and baby chains
