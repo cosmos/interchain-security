@@ -35,7 +35,7 @@ func (suite *ParentTestSuite) TestCreateChildChainProposalHandler() {
 				)
 				// ctx blocktime is after proposal's spawn time
 				ctx = suite.parentChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content, err = ccv.NewCreateChildChainProposal("title", "description", "chainID", clientState, []byte("gen_hash"), time.Now())
+				content, err = ccv.NewCreateChildChainProposal("title", "description", "chainID", clientState, []byte("gen_hash"), []byte("bin_hash"), time.Now())
 				suite.Require().NoError(err)
 			}, true,
 		},

@@ -52,8 +52,10 @@ message CreateChildChainProposal {
   google.protobuf.Any client_state = 4 [(gogoproto.moretags) = "yaml:\"client_state\""];
   // genesis hash with no staking information included.
   bytes genesis_hash = 5 [(gogoproto.moretags) = "yaml:\"genesis_hash\""];
+  // binary hash is the hash of the binary that should be used by validators on chain initialization.
+  bytes binary_hash = 6 [(gogoproto.moretags) = "yaml:\"binary_hash\""];
   // spawn time is the time on the parent chain at which the child chain genesis is finalized and all validators
   // will be responsible for starting their child chain validator node.
-  google.protobuf.Timestamp spawn_time = 6
+  google.protobuf.Timestamp spawn_time = 7
       [(gogoproto.moretags) = "yaml:\"spawn_time\"", (gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }

@@ -26,7 +26,7 @@ func init() {
 }
 
 // NewCreateChildChainProposal creates a new create childchain proposal.
-func NewCreateChildChainProposal(title, description, chainID string, clientState exported.ClientState, genesisHash []byte, spawnTime time.Time) (govtypes.Content, error) {
+func NewCreateChildChainProposal(title, description, chainID string, clientState exported.ClientState, genesisHash, binaryHash []byte, spawnTime time.Time) (govtypes.Content, error) {
 	any, err := clienttypes.PackClientState(clientState)
 	if err != nil {
 		return nil, err
@@ -37,6 +37,7 @@ func NewCreateChildChainProposal(title, description, chainID string, clientState
 		ChainId:     chainID,
 		ClientState: any,
 		GenesisHash: genesisHash,
+		BinaryHash:  binaryHash,
 		SpawnTime:   spawnTime,
 	}, nil
 }
@@ -75,6 +76,9 @@ func (cccp *CreateChildChainProposal) ValidateBasic() error {
 	if len(cccp.GenesisHash) == 0 {
 		return sdkerrors.Wrap(ErrInvalidProposal, "genesis hash cannot be empty")
 	}
+	if len(cccp.BinaryHash) == 0 {
+		return sdkerrors.Wrap(ErrInvalidProposal, "binary hash cannot be empty")
+	}
 
 	if cccp.SpawnTime.IsZero() {
 		return sdkerrors.Wrap(ErrInvalidProposal, "spawn time cannot be zero")
@@ -98,7 +102,8 @@ func (cccp *CreateChildChainProposal) String() string {
 	ChainID: %s
 	ClientState: %s
 	GenesisHash: %s
-	SpawnTime: %s`, cccp.Title, cccp.Description, cccp.ChainId, childClientStr, cccp.GenesisHash, cccp.SpawnTime)
+	BinaryHash: %s
+	SpawnTime: %s`, cccp.Title, cccp.Description, cccp.ChainId, childClientStr, cccp.GenesisHash, cccp.BinaryHash, cccp.SpawnTime)
 }
 
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces

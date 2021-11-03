@@ -38,7 +38,7 @@ func (suite *KeeperTestSuite) TestCreateChildChainProposal() {
 			"valid create child chain proposal: spawn time reached", func(suite *KeeperTestSuite) {
 				// ctx blocktime is after proposal's spawn time
 				ctx = suite.parentChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content, err := ccv.NewCreateChildChainProposal("title", "description", chainID, clientState, []byte("gen_hash"), time.Now())
+				content, err := ccv.NewCreateChildChainProposal("title", "description", chainID, clientState, []byte("gen_hash"), []byte("bin_hash"), time.Now())
 				suite.Require().NoError(err)
 				proposal, ok = content.(*ccv.CreateChildChainProposal)
 				suite.Require().True(ok)
@@ -48,7 +48,7 @@ func (suite *KeeperTestSuite) TestCreateChildChainProposal() {
 			"valid proposal: spawn time has not yet been reached", func(suite *KeeperTestSuite) {
 				// ctx blocktime is before proposal's spawn time
 				ctx = suite.parentChain.GetContext().WithBlockTime(time.Now())
-				content, err := ccv.NewCreateChildChainProposal("title", "description", chainID, clientState, []byte("gen_hash"), time.Now().Add(time.Hour))
+				content, err := ccv.NewCreateChildChainProposal("title", "description", chainID, clientState, []byte("gen_hash"), []byte("bin_hash"), time.Now().Add(time.Hour))
 				suite.Require().NoError(err)
 				proposal, ok = content.(*ccv.CreateChildChainProposal)
 				suite.Require().True(ok)
@@ -66,6 +66,7 @@ func (suite *KeeperTestSuite) TestCreateChildChainProposal() {
 					ChainId:     chainID,
 					ClientState: any,
 					GenesisHash: []byte("gen_hash"),
+					BinaryHash:  []byte("bin_hash"),
 					SpawnTime:   time.Now(),
 				}
 			}, false, false,
