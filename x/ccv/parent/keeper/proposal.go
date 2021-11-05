@@ -8,8 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
-	"github.com/cosmos/ibc-go/modules/core/exported"
-	ibcexported "github.com/cosmos/ibc-go/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -19,21 +17,29 @@ import (
 // If the spawn time has already passed, then set the child chain. Otherwise store the client
 // as a pending client, and set once spawn time has passed.
 func (k Keeper) CreateChildChainProposal(ctx sdk.Context, p *ccv.CreateChildChainProposal) error {
-	clientState, err := clienttypes.UnpackClientState(p.ClientState)
-	if err != nil {
-		return err
-	}
 	if ctx.BlockTime().After(p.SpawnTime) {
-		return k.CreateChildClient(ctx, p.ChainId, clientState)
+		return k.CreateChildClient(ctx, p.ChainId, p.InitialHeight)
 	}
 
-	k.SetPendingClient(ctx, p.SpawnTime, p.ChainId, clientState)
+	k.SetPendingClientInfo(ctx, p.SpawnTime, p.ChainId, p.InitialHeight)
 	return nil
 }
 
 // CreateChildClient will create the CCV client for the given child chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right child chain.
-func (k Keeper) CreateChildClient(ctx sdk.Context, chainID string, clientState ibcexported.ClientState) error {
+func (k Keeper) CreateChildClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height) error {
+	var unbondingTime time.Duration
+	// TODO: Remove this clause once registry keeper is hooked up to CCV
+	if k.registryKeeper == nil {
+		// default to 4 weeks
+		unbondingTime = 4 * 7 * 24 * time.Hour
+	} else {
+		unbondingTime = k.registryKeeper.UnbondingTime(ctx)
+	}
+	// create clientstate with static parameters on behalf of child chain.
+	// TODO: Allow parent chain governance to change clientstate parameters by making thenm governance-controlled parameters
+	clientState := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, unbondingTime/2, unbondingTime,
+		time.Second*10, initialHeight, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, true, true)
 	// TODO: Allow for current validators to set different keys
 	consensusState := ibctmtypes.NewConsensusState(ctx.BlockTime(), commitmenttypes.NewMerkleRoot([]byte(ibctmtypes.SentinelRoot)), ctx.BlockHeader().NextValidatorsHash)
 	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)
@@ -56,10 +62,10 @@ func (k Keeper) GetChildClient(ctx sdk.Context, chainID string) string {
 	return string(store.Get(types.ChainToClientKey(chainID)))
 }
 
-// SetPendingClient sets an IdentifiedClient for the given timestamp
-func (k Keeper) SetPendingClient(ctx sdk.Context, timestamp time.Time, chainID string, clientState ibcexported.ClientState) error {
+// SetPendingClientInfo sets the initial height for the given timestamp and chainID
+func (k Keeper) SetPendingClientInfo(ctx sdk.Context, timestamp time.Time, chainID string, initialHeight clienttypes.Height) error {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := k.cdc.MarshalInterface(clientState)
+	bz, err := k.cdc.Marshal(&initialHeight)
 	if err != nil {
 		return err
 	}
@@ -67,19 +73,21 @@ func (k Keeper) SetPendingClient(ctx sdk.Context, timestamp time.Time, chainID s
 	return nil
 }
 
-// GetPendingClient gets an IdentifiedClient for the given timestamp
-func (k Keeper) GetPendingClient(ctx sdk.Context, timestamp time.Time, chainID string) ibcexported.ClientState {
+// GetPendingClient gets the initial height for the given timestamp and chainID
+func (k Keeper) GetPendingClientInfo(ctx sdk.Context, timestamp time.Time, chainID string) clienttypes.Height {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingClientKey(timestamp, chainID))
 	if len(bz) == 0 {
-		return nil
+		return clienttypes.Height{}
 	}
-	return clienttypes.MustUnmarshalClientState(k.cdc, bz)
+	var initialHeight clienttypes.Height
+	k.cdc.MustUnmarshal(bz, &initialHeight)
+	return initialHeight
 }
 
-// IteratePendingClients iterates over the pending clients in order and sets the child client if the spawn time has passed,
+// IteratePendingClientInfo iterates over the pending client info in order and creates the child client if the spawn time has passed,
 // otherwise it will break out of loop and return.
-func (k Keeper) IteratePendingClients(ctx sdk.Context) {
+func (k Keeper) IteratePendingClientInfo(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte(types.PendingClientKeyPrefix+"/"))
 	defer iterator.Close()
@@ -95,11 +103,11 @@ func (k Keeper) IteratePendingClients(ctx sdk.Context) {
 
 		timeNano := binary.BigEndian.Uint64([]byte(splitKey[0]))
 		spawnTime := time.Unix(0, int64(timeNano))
-		var cs exported.ClientState
-		k.cdc.UnmarshalInterface(iterator.Value(), cs)
+		var initialHeight clienttypes.Height
+		k.cdc.MustUnmarshal(iterator.Value(), &initialHeight)
 
 		if ctx.BlockTime().After(spawnTime) {
-			k.CreateChildClient(ctx, splitKey[1], cs)
+			k.CreateChildClient(ctx, splitKey[1], initialHeight)
 		} else {
 			break
 		}

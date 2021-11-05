@@ -8,6 +8,7 @@ import "gogoproto/gogo.proto";
 import "tendermint/abci/types.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
+import "ibc/core/client/v1/client.proto";
 
 // This packet is sent from parent chain to baby chain if the validator set for baby chain
 // changes (due to new bonding/unbonding messages or slashing events)
@@ -47,9 +48,9 @@ message CreateChildChainProposal {
   // the proposed chain-id of the new child chain, must be different from all other child chain ids of the executing
   // parent chain.
   string chain_id = 3 [(gogoproto.moretags) = "yaml:\"chain_id\""];
-  // the proposed client state of new child chain.
-  // Since it contains no consensus information, this may be created before child chain is created.
-  google.protobuf.Any client_state = 4 [(gogoproto.moretags) = "yaml:\"client_state\""];
+  // the proposed initial height of new child chain.
+  // For a completely new chain, this will be {0,1}. However, it may be different if this is a chain that is converting to a child chain.
+  ibc.core.client.v1.Height initial_height = 4 [(gogoproto.moretags) = "yaml:\"initial_height\"", (gogoproto.nullable) = false];
   // genesis hash with no staking information included.
   bytes genesis_hash = 5 [(gogoproto.moretags) = "yaml:\"genesis_hash\""];
   // binary hash is the hash of the binary that should be used by validators on chain initialization.

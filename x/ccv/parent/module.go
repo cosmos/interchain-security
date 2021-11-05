@@ -150,7 +150,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
 	am.keeper.IterateBabyChains(ctx, am.keeper.EndBlockCallback)
-	am.keeper.IteratePendingClients(ctx)
+	am.keeper.IteratePendingClientInfo(ctx)
 	return []abci.ValidatorUpdate{}
 }
 

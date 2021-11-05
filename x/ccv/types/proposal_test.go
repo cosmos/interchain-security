@@ -13,9 +13,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/ibc-go/testing"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -24,10 +22,7 @@ func TestValidateBasic(t *testing.T) {
 		proposal govtypes.Content
 		err      error
 	)
-	clientState := ibctmtypes.NewClientState(
-		"chainID", ibctesting.DefaultTrustLevel, ibctesting.TrustingPeriod, ibctesting.UnbondingPeriod, ibctesting.MaxClockDrift,
-		clienttypes.NewHeight(0, 1), commitmenttypes.GetSDKSpecs(), ibctesting.UpgradePath, true, true,
-	)
+	initialHeight := clienttypes.NewHeight(2, 3)
 
 	testCases := []struct {
 		name     string
@@ -36,66 +31,50 @@ func TestValidateBasic(t *testing.T) {
 	}{
 		{
 			"success", func() {
-				proposal, err = types.NewCreateChildChainProposal("title", "description", "chainID", clientState, []byte("gen_hash"), []byte("bin_hash"), time.Now())
+				proposal, err = types.NewCreateChildChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
 				require.NoError(t, err)
 			}, true,
 		},
 		{
 			"fails validate abstract - empty title", func() {
-				proposal, err = types.NewCreateChildChainProposal(" ", "description", "chainID", clientState, []byte("gen_hash"), []byte("bin_hash"), time.Now())
+				proposal, err = types.NewCreateChildChainProposal(" ", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
 				require.NoError(t, err)
 			}, false,
 		},
 		{
 			"chainID is empty", func() {
-				proposal, err = types.NewCreateChildChainProposal("title", "description", " ", clientState, []byte("gen_hash"), []byte("bin_hash"), time.Now())
+				proposal, err = types.NewCreateChildChainProposal("title", "description", " ", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
 				require.NoError(t, err)
 			}, false,
 		},
 		{
-			"clientstate is nil", func() {
+			"initial height is zero", func() {
 				proposal = &types.CreateChildChainProposal{
-					Title:       "title",
-					Description: "description",
-					ChainId:     "chainID",
-					ClientState: nil,
-					GenesisHash: []byte("gen_hash"),
-					BinaryHash:  []byte("bin_hash"),
-					SpawnTime:   time.Now(),
-				}
-			}, false,
-		},
-		{
-			"clientstate cannot be unpacked", func() {
-				any, err := clienttypes.PackConsensusState(&ibctmtypes.ConsensusState{})
-				require.NoError(t, err)
-
-				proposal = &types.CreateChildChainProposal{
-					Title:       "title",
-					Description: "description",
-					ChainId:     "chainID",
-					ClientState: any,
-					GenesisHash: []byte("gen_hash"),
-					BinaryHash:  []byte("bin_hash"),
-					SpawnTime:   time.Now(),
+					Title:         "title",
+					Description:   "description",
+					ChainId:       "chainID",
+					InitialHeight: clienttypes.Height{},
+					GenesisHash:   []byte("gen_hash"),
+					BinaryHash:    []byte("bin_hash"),
+					SpawnTime:     time.Now(),
 				}
 			}, false,
 		},
 		{
 			"genesis hash is empty", func() {
-				proposal, err = types.NewCreateChildChainProposal("title", "description", "chainID", clientState, []byte(""), []byte("bin_hash"), time.Now())
+				proposal, err = types.NewCreateChildChainProposal("title", "description", "chainID", initialHeight, []byte(""), []byte("bin_hash"), time.Now())
 				require.NoError(t, err)
 			}, false,
 		},
 		{
 			"binary hash is empty", func() {
-				proposal, err = types.NewCreateChildChainProposal("title", "description", "chainID", clientState, []byte("gen_hash"), []byte(""), time.Now())
+				proposal, err = types.NewCreateChildChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte(""), time.Now())
 				require.NoError(t, err)
 			}, false,
 		},
 		{
 			"time is zero", func() {
-				proposal, err = types.NewCreateChildChainProposal("title", "description", "chainID", clientState, []byte("gen_hash"), []byte("bin_hash"), time.Time{})
+				proposal, err = types.NewCreateChildChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Time{})
 				require.NoError(t, err)
 			}, false,
 		},
@@ -114,11 +93,7 @@ func TestValidateBasic(t *testing.T) {
 }
 
 func TestMarshalCreateChildChainProposal(t *testing.T) {
-	clientState := ibctmtypes.NewClientState(
-		"chainID", ibctesting.DefaultTrustLevel, ibctesting.TrustingPeriod, ibctesting.UnbondingPeriod, ibctesting.MaxClockDrift,
-		clienttypes.NewHeight(0, 1), commitmenttypes.GetSDKSpecs(), ibctesting.UpgradePath, true, true,
-	)
-	content, err := types.NewCreateChildChainProposal("title", "description", "chainID", clientState, []byte("gen_hash"), []byte("bin_hash"), time.Now().UTC())
+	content, err := types.NewCreateChildChainProposal("title", "description", "chainID", clienttypes.NewHeight(0, 1), []byte("gen_hash"), []byte("bin_hash"), time.Now().UTC())
 	require.NoError(t, err)
 
 	cccp, ok := content.(*types.CreateChildChainProposal)
@@ -141,29 +116,23 @@ func TestMarshalCreateChildChainProposal(t *testing.T) {
 	err = cdc.UnmarshalJSON(bz, newCccp)
 	require.NoError(t, err)
 
-	_, err = clienttypes.UnpackClientState(newCccp.ClientState)
-	require.NoError(t, err)
-
 	require.True(t, proto.Equal(cccp, newCccp), "unmarshalled proposal does not equal original proposal")
 }
 
 func TestCreateChildChainProposalString(t *testing.T) {
-	clientState := ibctmtypes.NewClientState(
-		"chainID", ibctesting.DefaultTrustLevel, ibctesting.TrustingPeriod, ibctesting.UnbondingPeriod, ibctesting.MaxClockDrift,
-		clienttypes.NewHeight(0, 1), commitmenttypes.GetSDKSpecs(), ibctesting.UpgradePath, true, true,
-	)
+	initialHeight := clienttypes.NewHeight(2, 3)
 	spawnTime := time.Now()
-	proposal, err := types.NewCreateChildChainProposal("title", "description", "chainID", clientState, []byte("gen_hash"), []byte("bin_hash"), spawnTime)
+	proposal, err := types.NewCreateChildChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), spawnTime)
 	require.NoError(t, err)
 
 	expect := fmt.Sprintf(`CreateChildChain Proposal
 	Title: title
 	Description: description
 	ChainID: chainID
-	ClientState: %s
+	InitialHeight: %s
 	GenesisHash: %s
 	BinaryHash: %s
-	SpawnTime: %s`, clientState.String(), []byte("gen_hash"), []byte("bin_hash"), spawnTime)
+	SpawnTime: %s`, initialHeight, []byte("gen_hash"), []byte("bin_hash"), spawnTime)
 
 	require.Equal(t, expect, proposal.String(), "string method for CreateChildChainProposal returned unexpected string")
 }

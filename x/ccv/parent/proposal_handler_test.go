@@ -7,8 +7,6 @@ import (
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/testing"
 	"github.com/cosmos/interchain-security/app"
 	"github.com/cosmos/interchain-security/x/ccv/parent"
@@ -29,13 +27,10 @@ func (suite *ParentTestSuite) TestCreateChildChainProposalHandler() {
 	}{
 		{
 			"valid create childchain proposal", func(suite *ParentTestSuite) {
-				clientState := ibctmtypes.NewClientState(
-					"chainID", ibctesting.DefaultTrustLevel, ibctesting.TrustingPeriod, ibctesting.UnbondingPeriod, ibctesting.MaxClockDrift,
-					clienttypes.NewHeight(0, 1), commitmenttypes.GetSDKSpecs(), ibctesting.UpgradePath, true, true,
-				)
+				initialHeight := clienttypes.NewHeight(2, 3)
 				// ctx blocktime is after proposal's spawn time
 				ctx = suite.parentChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content, err = ccv.NewCreateChildChainProposal("title", "description", "chainID", clientState, []byte("gen_hash"), []byte("bin_hash"), time.Now())
+				content, err = ccv.NewCreateChildChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
 				suite.Require().NoError(err)
 			}, true,
 		},

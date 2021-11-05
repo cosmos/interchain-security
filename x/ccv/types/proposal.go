@@ -5,11 +5,9 @@ import (
 	"strings"
 	time "time"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
-	"github.com/cosmos/ibc-go/modules/core/exported"
 )
 
 const (
@@ -17,8 +15,7 @@ const (
 )
 
 var (
-	_ govtypes.Content                   = &CreateChildChainProposal{}
-	_ codectypes.UnpackInterfacesMessage = &CreateChildChainProposal{}
+	_ govtypes.Content = &CreateChildChainProposal{}
 )
 
 func init() {
@@ -26,19 +23,15 @@ func init() {
 }
 
 // NewCreateChildChainProposal creates a new create childchain proposal.
-func NewCreateChildChainProposal(title, description, chainID string, clientState exported.ClientState, genesisHash, binaryHash []byte, spawnTime time.Time) (govtypes.Content, error) {
-	any, err := clienttypes.PackClientState(clientState)
-	if err != nil {
-		return nil, err
-	}
+func NewCreateChildChainProposal(title, description, chainID string, initialHeight clienttypes.Height, genesisHash, binaryHash []byte, spawnTime time.Time) (govtypes.Content, error) {
 	return &CreateChildChainProposal{
-		Title:       title,
-		Description: description,
-		ChainId:     chainID,
-		ClientState: any,
-		GenesisHash: genesisHash,
-		BinaryHash:  binaryHash,
-		SpawnTime:   spawnTime,
+		Title:         title,
+		Description:   description,
+		ChainId:       chainID,
+		InitialHeight: initialHeight,
+		GenesisHash:   genesisHash,
+		BinaryHash:    binaryHash,
+		SpawnTime:     spawnTime,
 	}, nil
 }
 
@@ -64,13 +57,8 @@ func (cccp *CreateChildChainProposal) ValidateBasic() error {
 		return sdkerrors.Wrap(ErrInvalidProposal, "child chain id must not be blank")
 	}
 
-	if cccp.ClientState == nil {
-		return sdkerrors.Wrap(ErrInvalidProposal, "child client state cannot be nil")
-	}
-
-	_, err := clienttypes.UnpackClientState(cccp.ClientState)
-	if err != nil {
-		return sdkerrors.Wrap(err, "failed to unpack child client state")
+	if cccp.InitialHeight.IsZero() {
+		return sdkerrors.Wrap(ErrInvalidProposal, "initial height cannot be zero")
 	}
 
 	if len(cccp.GenesisHash) == 0 {
@@ -88,25 +76,12 @@ func (cccp *CreateChildChainProposal) ValidateBasic() error {
 
 // String returns the string representation of the CreateChildChainProposal.
 func (cccp *CreateChildChainProposal) String() string {
-	var childClientStr string
-	upgradedClient, err := clienttypes.UnpackClientState(cccp.ClientState)
-	if err != nil {
-		childClientStr = "invalid IBC Client State"
-	} else {
-		childClientStr = upgradedClient.String()
-	}
-
 	return fmt.Sprintf(`CreateChildChain Proposal
 	Title: %s
 	Description: %s
 	ChainID: %s
-	ClientState: %s
+	InitialHeight: %s
 	GenesisHash: %s
 	BinaryHash: %s
-	SpawnTime: %s`, cccp.Title, cccp.Description, cccp.ChainId, childClientStr, cccp.GenesisHash, cccp.BinaryHash, cccp.SpawnTime)
-}
-
-// UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (cccp CreateChildChainProposal) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
-	return unpacker.UnpackAny(cccp.ClientState, new(exported.ClientState))
+	SpawnTime: %s`, cccp.Title, cccp.Description, cccp.ChainId, cccp.InitialHeight, cccp.GenesisHash, cccp.BinaryHash, cccp.SpawnTime)
 }
