@@ -20,4 +20,3 @@ message ChildState {
     string channel_id = 2 [(gogoproto.moretags) = "yaml:\"channel_id\""];
     interchain_security.ccv.v1.Status status     = 3;
 }
-  

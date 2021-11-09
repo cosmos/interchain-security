@@ -11,9 +11,11 @@ import (
 
 // InitGenesis initializes the CCV child state and binds to PortID.
 func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) {
-	if state.Disabled {
+	k.SetParams(ctx, state.Params)
+	if !state.Params.Enabled {
 		return
 	}
+
 	k.SetPort(ctx, types.PortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
@@ -49,6 +51,11 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) {
 // ExportGenesis exports the CCV child state. If the channel has already been established, then we export
 // parent chain. Otherwise, this is still considered a new chain and we export latest client state.
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
+	params := k.GetParams(ctx)
+	if !params.Enabled {
+		return types.DefaultGenesisState()
+	}
+
 	if channelID, ok := k.GetParentChannel(ctx); ok {
 		gs := types.NewRestartGenesisState(channelID, nil)
 

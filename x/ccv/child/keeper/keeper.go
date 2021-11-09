@@ -8,10 +8,13 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/modules/core/24-host"
+
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -21,6 +24,7 @@ import (
 type Keeper struct {
 	storeKey         sdk.StoreKey
 	cdc              codec.BinaryCodec
+	paramSpace       paramtypes.Subspace
 	scopedKeeper     capabilitykeeper.ScopedKeeper
 	channelKeeper    ccv.ChannelKeeper
 	portKeeper       ccv.PortKeeper
@@ -30,13 +34,19 @@ type Keeper struct {
 
 // NewKeeper creates a new Child Keeper instance
 func NewKeeper(
-	cdc codec.BinaryCodec, key sdk.StoreKey, scopedKeeper capabilitykeeper.ScopedKeeper,
+	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper capabilitykeeper.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 ) Keeper {
+	// set KeyTable if it has not already been set
+	if !paramSpace.HasKeyTable() {
+		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
+	}
+
 	return Keeper{
 		cdc:              cdc,
 		storeKey:         key,
+		paramSpace:       paramSpace,
 		scopedKeeper:     scopedKeeper,
 		channelKeeper:    channelKeeper,
 		portKeeper:       portKeeper,

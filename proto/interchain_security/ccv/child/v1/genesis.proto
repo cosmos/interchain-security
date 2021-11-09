@@ -7,10 +7,11 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/child/types";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "ibc/core/channel/v1/channel.proto";
 import "gogoproto/gogo.proto";
+import "interchain_security/ccv/child/v1/child.proto";
 
 // GenesisState defines the CCV child chain genesis state
 message GenesisState {
-    bool   disabled          = 1;
+    Params   params          = 1 [(gogoproto.nullable) = false];
     string parent_channel_id = 2
         [(gogoproto.moretags) = "yaml:\"parent_channel_id\""]; // empty for a completely new chain
     bool new_chain = 3

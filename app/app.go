@@ -329,7 +329,7 @@ func New(
 	)
 
 	// Create CCV child and parent keepers and modules
-	app.ChildKeeper = ibcchildkeeper.NewKeeper(appCodec, keys[ibcchildtypes.StoreKey], scopedIBCChildKeeper,
+	app.ChildKeeper = ibcchildkeeper.NewKeeper(appCodec, keys[ibcchildtypes.StoreKey], app.GetSubspace(ibcchildtypes.ModuleName), scopedIBCChildKeeper,
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper,
 	)
 	childModule := ibcchild.NewAppModule(app.ChildKeeper)
@@ -658,6 +658,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(ibcparenttypes.ModuleName)
+	paramsKeeper.Subspace(ibcchildtypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper

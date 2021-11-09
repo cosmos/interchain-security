@@ -10,6 +10,7 @@ import (
 // TODO: Include chain status
 func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState) *GenesisState {
 	return &GenesisState{
+		Params:               NewParams(true),
 		NewChain:             true,
 		ParentClientState:    cs,
 		ParentConsensusState: consState,
@@ -19,6 +20,7 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 // NewRestartGenesisState returns a child GenesisState that has already been established.
 func NewRestartGenesisState(channelID string, unbondingSequences []UnbondingSequence) *GenesisState {
 	return &GenesisState{
+		Params:             NewParams(true),
 		ParentChannelId:    channelID,
 		UnbondingSequences: unbondingSequences,
 		NewChain:           false,
@@ -29,13 +31,13 @@ func NewRestartGenesisState(channelID string, unbondingSequences []UnbondingSequ
 // unless explicitly specified in genesis.
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
-		Disabled: true,
+		Params: DefaultParams(),
 	}
 }
 
 // Validate performs basic genesis state validation returning an error upon any failure.
 func (gs GenesisState) Validate() error {
-	if gs.Disabled {
+	if !gs.Params.Enabled {
 		return nil
 	}
 	if gs.NewChain {
