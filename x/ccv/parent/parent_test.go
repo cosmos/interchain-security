@@ -61,7 +61,7 @@ func (suite *ParentTestSuite) SetupTest() {
 	)
 	suite.parentConsState = suite.parentChain.LastHeader.ConsensusState()
 
-	childGenesis := types.NewInitialChildGenesisState(suite.parentClient, suite.parentConsState)
+	childGenesis := childtypes.NewInitialGenesisState(suite.parentClient, suite.parentConsState)
 	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	suite.ctx = suite.parentChain.GetContext()

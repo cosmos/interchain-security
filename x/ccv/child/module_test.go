@@ -14,9 +14,9 @@ import (
 	"github.com/cosmos/interchain-security/app"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/child"
+	"github.com/cosmos/interchain-security/x/ccv/child/types"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/suite"
 )
@@ -62,15 +62,15 @@ func (suite *ChildTestSuite) SetupTest() {
 	)
 	suite.parentConsState = suite.parentChain.LastHeader.ConsensusState()
 
-	childGenesis := types.NewInitialChildGenesisState(suite.parentClient, suite.parentConsState)
+	childGenesis := types.NewInitialGenesisState(suite.parentClient, suite.parentConsState)
 	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	// create the ccv path and set child's clientID to genesis client
 	path := ibctesting.NewPath(suite.childChain, suite.parentChain)
 	path.EndpointA.ChannelConfig.PortID = childtypes.PortID
 	path.EndpointB.ChannelConfig.PortID = parenttypes.PortID
-	path.EndpointA.ChannelConfig.Version = types.Version
-	path.EndpointB.ChannelConfig.Version = types.Version
+	path.EndpointA.ChannelConfig.Version = ccv.Version
+	path.EndpointB.ChannelConfig.Version = ccv.Version
 	path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 	parentClient, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentClient(suite.childChain.GetContext())
@@ -177,8 +177,8 @@ func (suite *ChildTestSuite) TestOnChanOpenInit() {
 				path := ibctesting.NewPath(suite.childChain, suite.parentChain)
 				path.EndpointA.ChannelConfig.PortID = childtypes.PortID
 				path.EndpointB.ChannelConfig.PortID = parenttypes.PortID
-				path.EndpointA.ChannelConfig.Version = types.Version
-				path.EndpointB.ChannelConfig.Version = types.Version
+				path.EndpointA.ChannelConfig.Version = ccv.Version
+				path.EndpointB.ChannelConfig.Version = ccv.Version
 				path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 				path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 

@@ -7,11 +7,10 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // InitGenesis initializes the CCV child state and binds to PortID.
-func (k Keeper) InitGenesis(ctx sdk.Context, state *ccv.ChildGenesisState) {
+func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) {
 	if state.Disabled {
 		return
 	}
@@ -49,14 +48,14 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *ccv.ChildGenesisState) {
 
 // ExportGenesis exports the CCV child state. If the channel has already been established, then we export
 // parent chain. Otherwise, this is still considered a new chain and we export latest client state.
-func (k Keeper) ExportGenesis(ctx sdk.Context) *ccv.ChildGenesisState {
+func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	if channelID, ok := k.GetParentChannel(ctx); ok {
-		gs := ccv.NewRestartChildGenesisState(channelID, nil)
+		gs := types.NewRestartGenesisState(channelID, nil)
 
-		unbondingSequences := []ccv.UnbondingSequence{}
+		unbondingSequences := []types.UnbondingSequence{}
 		cb := func(seq uint64, packet channeltypes.Packet) bool {
 			timeNs := k.GetUnbondingTime(ctx, seq)
-			us := ccv.UnbondingSequence{
+			us := types.UnbondingSequence{
 				Sequence:        seq,
 				UnbondingTime:   timeNs,
 				UnbondingPacket: packet,
@@ -73,7 +72,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *ccv.ChildGenesisState {
 	// if parent clientID and channelID don't exist on the child chain, then CCV protocol is disabled for this chain
 	// return a disabled genesis state
 	if !ok {
-		return ccv.DefaultChildGenesisState()
+		return types.DefaultGenesisState()
 	}
 	cs, ok := k.clientKeeper.GetClientState(ctx, clientID)
 	if !ok {
@@ -91,5 +90,5 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *ccv.ChildGenesisState {
 	if !ok {
 		panic("parent consensus state is not tendermint consensus state")
 	}
-	return ccv.NewInitialChildGenesisState(tmCs, tmConsState)
+	return types.NewInitialGenesisState(tmCs, tmConsState)
 }

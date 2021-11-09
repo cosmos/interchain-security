@@ -10,13 +10,12 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // CreateChildChainProposal will receive the child chain's client state from the proposal.
 // If the spawn time has already passed, then set the child chain. Otherwise store the client
 // as a pending client, and set once spawn time has passed.
-func (k Keeper) CreateChildChainProposal(ctx sdk.Context, p *ccv.CreateChildChainProposal) error {
+func (k Keeper) CreateChildChainProposal(ctx sdk.Context, p *types.CreateChildChainProposal) error {
 	if ctx.BlockTime().After(p.SpawnTime) {
 		return k.CreateChildClient(ctx, p.ChainId, p.InitialHeight)
 	}
@@ -36,10 +35,14 @@ func (k Keeper) CreateChildClient(ctx sdk.Context, chainID string, initialHeight
 	} else {
 		unbondingTime = k.registryKeeper.UnbondingTime(ctx)
 	}
-	// create clientstate with static parameters on behalf of child chain.
-	// TODO: Allow parent chain governance to change clientstate parameters by making thenm governance-controlled parameters
-	clientState := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, unbondingTime/2, unbondingTime,
-		time.Second*10, initialHeight, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, true, true)
+
+	// create clientstate by getting template client from parameters and filling in zeroed fields from proposal.
+	clientState := k.GetTemplateClient(ctx)
+	clientState.ChainId = chainID
+	clientState.LatestHeight = initialHeight
+	clientState.TrustingPeriod = unbondingTime / 2
+	clientState.UnbondingPeriod = unbondingTime
+
 	// TODO: Allow for current validators to set different keys
 	consensusState := ibctmtypes.NewConsensusState(ctx.BlockTime(), commitmenttypes.NewMerkleRoot([]byte(ibctmtypes.SentinelRoot)), ctx.BlockHeader().NextValidatorsHash)
 	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)

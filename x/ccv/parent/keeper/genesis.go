@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/interchain-security/x/ccv/parent/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.ParentGenesisState) {
+func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	k.SetPort(ctx, parenttypes.PortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
@@ -28,15 +28,17 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.ParentGenesisState)
 		k.SetChannelToChain(ctx, cc.ChannelId, cc.ChainId)
 		k.SetChannelStatus(ctx, cc.ChannelId, cc.Status)
 	}
+
+	k.SetParams(ctx, genState.Params)
 }
 
-func (k Keeper) ExportGenesis(ctx sdk.Context) *types.ParentGenesisState {
+func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte(parenttypes.ChannelToChainKeyPrefix+"/"))
 	defer iterator.Close()
 
 	if !iterator.Valid() {
-		return types.DefaultParentGenesisState()
+		return types.DefaultGenesisState()
 	}
 
 	var childStates []types.ChildState
@@ -54,5 +56,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.ParentGenesisState {
 		childStates = append(childStates, cc)
 	}
 
-	return types.NewParentGenesisState(childStates)
+	params := k.GetParams(ctx)
+
+	return types.NewGenesisState(childStates, params)
 }

@@ -14,7 +14,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/parent/types"
 )
 
 func TestValidateBasic(t *testing.T) {

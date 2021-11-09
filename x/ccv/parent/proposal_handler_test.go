@@ -10,7 +10,7 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/testing"
 	"github.com/cosmos/interchain-security/app"
 	"github.com/cosmos/interchain-security/x/ccv/parent"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/parent/types"
 )
 
 func (suite *ParentTestSuite) TestCreateChildChainProposalHandler() {
@@ -30,7 +30,7 @@ func (suite *ParentTestSuite) TestCreateChildChainProposalHandler() {
 				initialHeight := clienttypes.NewHeight(2, 3)
 				// ctx blocktime is after proposal's spawn time
 				ctx = suite.parentChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content, err = ccv.NewCreateChildChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
+				content, err = types.NewCreateChildChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
 				suite.Require().NoError(err)
 			}, true,
 		},

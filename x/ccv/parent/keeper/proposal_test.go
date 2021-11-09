@@ -7,13 +7,13 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/app"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/parent/types"
 )
 
 func (suite *KeeperTestSuite) TestCreateChildChainProposal() {
 	var (
 		ctx      sdk.Context
-		proposal *ccv.CreateChildChainProposal
+		proposal *types.CreateChildChainProposal
 		ok       bool
 	)
 
@@ -30,9 +30,9 @@ func (suite *KeeperTestSuite) TestCreateChildChainProposal() {
 			"valid create child chain proposal: spawn time reached", func(suite *KeeperTestSuite) {
 				// ctx blocktime is after proposal's spawn time
 				ctx = suite.parentChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content, err := ccv.NewCreateChildChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
+				content, err := types.NewCreateChildChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
 				suite.Require().NoError(err)
-				proposal, ok = content.(*ccv.CreateChildChainProposal)
+				proposal, ok = content.(*types.CreateChildChainProposal)
 				suite.Require().True(ok)
 			}, true, true,
 		},
@@ -40,9 +40,9 @@ func (suite *KeeperTestSuite) TestCreateChildChainProposal() {
 			"valid proposal: spawn time has not yet been reached", func(suite *KeeperTestSuite) {
 				// ctx blocktime is before proposal's spawn time
 				ctx = suite.parentChain.GetContext().WithBlockTime(time.Now())
-				content, err := ccv.NewCreateChildChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now().Add(time.Hour))
+				content, err := types.NewCreateChildChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now().Add(time.Hour))
 				suite.Require().NoError(err)
-				proposal, ok = content.(*ccv.CreateChildChainProposal)
+				proposal, ok = content.(*types.CreateChildChainProposal)
 				suite.Require().True(ok)
 			}, true, false,
 		},
