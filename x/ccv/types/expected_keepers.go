@@ -2,10 +2,13 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	conntypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/modules/core/exported"
+
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -15,9 +18,7 @@ import (
 // as well as which validators are staking for a given chain.
 type RegistryKeeper interface {
 	GetValidatorSetChanges(chainID string) []abci.ValidatorUpdate
-	// This method is not required by CCV module explicitly but necessary for init protocol
-	GetInitialValidatorSet(chainID string) []sdk.Tx
-	GetValidatorSet(ctx sdk.Context, chainID string) []sdk.ValAddress
+	GetValidatorSet(ctx sdk.Context, chainID string) stakingtypes.ValidatorSet
 	UnbondValidators(ctx sdk.Context, chainID string, valUpdates []abci.ValidatorUpdate)
 }
 
