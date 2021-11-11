@@ -12,6 +12,7 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
@@ -376,6 +377,19 @@ func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) uint64 {
 	validatorSetUpdateId := binary.BigEndian.Uint64(bz)
 
 	return validatorSetUpdateId
+}
+
+// Hooks wrapper struct for slashing keeper
+type Hooks struct {
+	stakingtypes.StakingHooksTemplate
+	k Keeper
+}
+
+var _ stakingtypes.StakingHooks = Hooks{}
+
+// Return the wrapper struct
+func (k Keeper) Hooks() Hooks {
+	return Hooks{k}
 }
 
 // TODO JEHAN: This should be registered to the hook on the staking module
