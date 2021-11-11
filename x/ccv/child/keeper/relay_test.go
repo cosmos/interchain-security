@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"sort"
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -23,56 +24,95 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 	suite.Require().NoError(err)
 	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	suite.Require().NoError(err)
+	pk3, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	suite.Require().NoError(err)
+
+	changes1 := []abci.ValidatorUpdate{
+		{
+			PubKey: pk1,
+			Power:  30,
+		},
+		{
+			PubKey: pk2,
+			Power:  20,
+		},
+	}
+
+	changes2 := []abci.ValidatorUpdate{
+		{
+			PubKey: pk2,
+			Power:  40,
+		},
+		{
+			PubKey: pk3,
+			Power:  10,
+		},
+	}
 
 	pd := types.NewValidatorSetChangePacketData(
-		[]abci.ValidatorUpdate{
-			{
-				PubKey: pk1,
-				Power:  30,
-			},
-			{
-				PubKey: pk2,
-				Power:  20,
-			},
-		},
+		changes1,
 	)
 
-	packet := channeltypes.NewPacket(pd.GetBytes(), 1, parenttypes.PortID, suite.path.EndpointB.ChannelID, childtypes.PortID, suite.path.EndpointA.ChannelID,
-		clienttypes.NewHeight(1, 0), 0)
+	pd2 := types.NewValidatorSetChangePacketData(
+		changes2,
+	)
 
 	testCases := []struct {
-		name           string
-		malleatePacket func()
-		expErrorAck    bool
+		name                   string
+		packet                 channeltypes.Packet
+		newChanges             types.ValidatorSetChangePacketData
+		expectedPendingChanges types.ValidatorSetChangePacketData
+		expErrorAck            bool
 	}{
 		{
 			"success on first packet",
-			func() {},
+			channeltypes.NewPacket(pd.GetBytes(), 1, parenttypes.PortID, suite.path.EndpointB.ChannelID, childtypes.PortID, suite.path.EndpointA.ChannelID,
+				clienttypes.NewHeight(1, 0), 0),
+			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			false,
 		},
 		{
 			"success on subsequent packet",
-			func() {
-				packet.Sequence = 2
-			},
+			channeltypes.NewPacket(pd.GetBytes(), 2, parenttypes.PortID, suite.path.EndpointB.ChannelID, childtypes.PortID, suite.path.EndpointA.ChannelID,
+				clienttypes.NewHeight(1, 0), 0),
+			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			false,
+		},
+		{
+			"success on packet with more changes",
+			channeltypes.NewPacket(pd2.GetBytes(), 3, parenttypes.PortID, suite.path.EndpointB.ChannelID, childtypes.PortID, suite.path.EndpointA.ChannelID,
+				clienttypes.NewHeight(1, 0), 0),
+			types.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
+			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
+				{
+					PubKey: pk1,
+					Power:  30,
+				},
+				{
+					PubKey: pk2,
+					Power:  40,
+				},
+				{
+					PubKey: pk3,
+					Power:  10,
+				},
+			}},
 			false,
 		},
 		{
 			"invalid packet: different destination channel than parent channel",
-			func() {
-				packet.Sequence = 1
-				// change destination channel to different channelID than parent channel
-				packet.DestinationChannel = "invalidChannel"
-			},
+			channeltypes.NewPacket(pd.GetBytes(), 1, parenttypes.PortID, suite.path.EndpointB.ChannelID, childtypes.PortID, "InvalidChannel",
+				clienttypes.NewHeight(1, 0), 0),
+			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{}},
+			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{}},
 			true,
 		},
 	}
 
 	for _, tc := range testCases {
-		// malleate packet for each case
-		tc.malleatePacket()
-
-		ack := suite.childChain.App.(*app.App).ChildKeeper.OnRecvPacket(suite.ctx, packet, pd)
+		ack := suite.childChain.App.(*app.App).ChildKeeper.OnRecvPacket(suite.ctx, tc.packet, tc.newChanges)
 
 		if tc.expErrorAck {
 			suite.Require().NotNil(ack, "invalid test case: %s did not return ack", tc.name)
@@ -83,17 +123,27 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 				"channel status is not valdidating after receive packet for valid test case: %s", tc.name)
 			parentChannel, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentChannel(suite.ctx)
 			suite.Require().True(ok)
-			suite.Require().Equal(packet.DestinationChannel, parentChannel,
+			suite.Require().Equal(tc.packet.DestinationChannel, parentChannel,
 				"parent channel is not destination channel on successful receive for valid test case: %s", tc.name)
-			actualPd, ok := suite.childChain.App.(*app.App).ChildKeeper.GetPendingChanges(suite.ctx)
+
+			// Check that pending changes are accumulated and stored correctly
+			actualPendingChanges, ok := suite.childChain.App.(*app.App).ChildKeeper.GetPendingChanges(suite.ctx)
 			suite.Require().True(ok)
-			suite.Require().Equal(&pd, actualPd, "pending changes not equal to packet data after successful packet receive. case: %s", tc.name)
+			// Sort to avoid dumb inequalities
+			sort.SliceStable(actualPendingChanges.ValidatorUpdates, func(i, j int) bool {
+				return actualPendingChanges.ValidatorUpdates[i].PubKey.Compare(actualPendingChanges.ValidatorUpdates[j].PubKey) == -1
+			})
+			sort.SliceStable(tc.expectedPendingChanges.ValidatorUpdates, func(i, j int) bool {
+				return tc.expectedPendingChanges.ValidatorUpdates[i].PubKey.Compare(tc.expectedPendingChanges.ValidatorUpdates[j].PubKey) == -1
+			})
+			suite.Require().Equal(tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
+
 			expectedTime := uint64(suite.ctx.BlockTime().Add(childtypes.UnbondingTime).UnixNano())
-			unbondingTime := suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingTime(suite.ctx, packet.Sequence)
+			unbondingTime := suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingTime(suite.ctx, tc.packet.Sequence)
 			suite.Require().Equal(expectedTime, unbondingTime, "unbonding time has unexpected value for case: %s", tc.name)
-			unbondingPacket, err := suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingPacket(suite.ctx, packet.Sequence)
+			unbondingPacket, err := suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingPacket(suite.ctx, tc.packet.Sequence)
 			suite.Require().NoError(err)
-			suite.Require().Equal(&packet, unbondingPacket, "packet is not added to unbonding queue after successful receive. case: %s", tc.name)
+			suite.Require().Equal(&tc.packet, unbondingPacket, "packet is not added to unbonding queue after successful receive. case: %s", tc.name)
 		}
 	}
 }
