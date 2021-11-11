@@ -16,9 +16,10 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/app"
 	"github.com/cosmos/interchain-security/testutil/simapp"
+	"github.com/cosmos/interchain-security/x/ccv/child/types"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -63,7 +64,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	)
 	suite.parentConsState = suite.parentChain.LastHeader.ConsensusState()
 
-	childGenesis := types.NewInitialChildGenesisState(suite.parentClient, suite.parentConsState)
+	childGenesis := types.NewInitialGenesisState(suite.parentClient, suite.parentConsState)
 	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	suite.ctx = suite.childChain.GetContext()
@@ -71,8 +72,8 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.path = ibctesting.NewPath(suite.childChain, suite.parentChain)
 	suite.path.EndpointA.ChannelConfig.PortID = childtypes.PortID
 	suite.path.EndpointB.ChannelConfig.PortID = parenttypes.PortID
-	suite.path.EndpointA.ChannelConfig.Version = types.Version
-	suite.path.EndpointB.ChannelConfig.Version = types.Version
+	suite.path.EndpointA.ChannelConfig.Version = ccv.Version
+	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 	parentClient, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentClient(suite.ctx)
@@ -81,11 +82,13 @@ func (suite *KeeperTestSuite) SetupTest() {
 	}
 	// set child endpoint's clientID
 	suite.path.EndpointA.ClientID = parentClient
+
+	// create child client on parent chain and set as child client for child chainID in parent keeper.
+	suite.path.EndpointB.CreateClient()
+	suite.parentChain.App.(*app.App).ParentKeeper.SetChildClient(suite.parentChain.GetContext(), suite.childChain.ChainID, suite.path.EndpointB.ClientID)
 }
 
 func (suite *KeeperTestSuite) SetupCCVChannel() {
-	// create child client on parent chain
-	suite.path.EndpointB.CreateClient()
 	suite.coordinator.CreateConnections(suite.path)
 	suite.coordinator.CreateChannels(suite.path)
 }
@@ -113,7 +116,7 @@ func (suite *KeeperTestSuite) TestPendingChanges() {
 	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	suite.Require().NoError(err)
 
-	pd := types.NewValidatorSetChangePacketData(
+	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{
 			{
 				PubKey: pk1,
@@ -169,7 +172,7 @@ func (suite *KeeperTestSuite) TestUnbondingPacket() {
 	suite.Require().NoError(err)
 
 	for i := 0; i < 5; i++ {
-		pd := types.NewValidatorSetChangePacketData(
+		pd := ccv.NewValidatorSetChangePacketData(
 			[]abci.ValidatorUpdate{
 				{
 					PubKey: pk1,
@@ -226,7 +229,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				)
 				suite.path.EndpointA.ChannelID = channelID
 				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, ccv.INITIALIZING)
 			},
 			expError: false,
 		},
@@ -247,7 +250,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				suite.path.EndpointA.ChannelID = channelID
 
 				// set channel status to validating
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.VALIDATING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, ccv.VALIDATING)
 			},
 			expError: true,
 		},
@@ -262,7 +265,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				// set channelID without creating channel
 				suite.path.EndpointA.ChannelID = "channel-1"
 				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, ccv.INITIALIZING)
 			},
 			expError: true,
 		},
@@ -283,7 +286,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				suite.path.EndpointA.ChannelID = channelID
 
 				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, ccv.INITIALIZING)
 			},
 			expError: true,
 		},
@@ -304,7 +307,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				suite.path.EndpointA.ChannelID = channelID
 
 				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, ccv.INITIALIZING)
 			},
 			expError: true,
 		},
@@ -328,7 +331,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				suite.path.EndpointA.ChannelID = channelID
 
 				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, types.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, ccv.INITIALIZING)
 			},
 			expError: true,
 		},

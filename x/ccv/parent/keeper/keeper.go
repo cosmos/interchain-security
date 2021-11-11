@@ -6,14 +6,18 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
+
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -21,6 +25,7 @@ import (
 type Keeper struct {
 	storeKey         sdk.StoreKey
 	cdc              codec.BinaryCodec
+	paramSpace       paramtypes.Subspace
 	scopedKeeper     capabilitykeeper.ScopedKeeper
 	channelKeeper    ccv.ChannelKeeper
 	portKeeper       ccv.PortKeeper
@@ -31,14 +36,20 @@ type Keeper struct {
 
 // NewKeeper creates a new parent Keeper instance
 func NewKeeper(
-	cdc codec.BinaryCodec, key sdk.StoreKey, scopedKeeper capabilitykeeper.ScopedKeeper,
+	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper capabilitykeeper.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	registryKeeper ccv.RegistryKeeper,
 ) Keeper {
+	// set KeyTable if it has not already been set
+	if !paramSpace.HasKeyTable() {
+		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
+	}
+
 	return Keeper{
 		cdc:              cdc,
 		storeKey:         key,
+		paramSpace:       paramSpace,
 		scopedKeeper:     scopedKeeper,
 		channelKeeper:    channelKeeper,
 		portKeeper:       portKeeper,
@@ -188,11 +199,14 @@ func (k Keeper) VerifyChildChain(ctx sdk.Context, channelID string) error {
 	if status != ccv.INITIALIZING {
 		return sdkerrors.Wrap(ccv.ErrInvalidStatus, "CCV channel status must be in Initializing state")
 	}
-	_, tmClient, err := k.getUnderlyingClient(ctx, channelID)
+	clientID, tmClient, err := k.getUnderlyingClient(ctx, channelID)
 	if err != nil {
 		return err
 	}
-	// TODO: Verify consensus state against initial validator set of the child chain
+	ccvClientId := k.GetChildClient(ctx, tmClient.ChainId)
+	if ccvClientId != clientID {
+		return sdkerrors.Wrapf(ccv.ErrInvalidChildClient, "CCV channel must be built on top of CCV client. expected %s, got %s", ccvClientId, clientID)
+	}
 
 	// Verify that there isn't already a CCV channel for the child chain
 	if prevChannel, ok := k.GetChainToChannel(ctx, tmClient.ChainId); ok {

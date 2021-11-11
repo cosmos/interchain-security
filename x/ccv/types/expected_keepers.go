@@ -1,6 +1,8 @@
 package types
 
 import (
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	conntypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
@@ -19,6 +21,7 @@ type RegistryKeeper interface {
 	GetInitialValidatorSet(chainID string) []sdk.Tx
 	GetValidatorSet(ctx sdk.Context, chainID string) []sdk.ValAddress
 	UnbondValidators(ctx sdk.Context, chainID string, valUpdates []abci.ValidatorUpdate)
+	UnbondingTime(ctx sdk.Context) time.Duration
 }
 
 // ChannelKeeper defines the expected IBC channel keeper

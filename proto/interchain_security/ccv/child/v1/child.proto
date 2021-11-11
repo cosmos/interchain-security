@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package interchain_security.ccv.child.v1;
+
+option go_package = "github.com/cosmos/interchain-security/x/ccv/child/types";
+
+// Params defines the parameters for CCV child module
+message Params {
+    bool Enabled = 1;
+}
