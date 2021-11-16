@@ -389,7 +389,7 @@ var _ stakingtypes.StakingHooks = Hooks{}
 
 // Return the wrapper struct
 func (k Keeper) Hooks() Hooks {
-	return Hooks{k}
+	return Hooks{stakingtypes.StakingHooksTemplate{}, k}
 }
 
 // TODO JEHAN: This should be registered to the hook on the staking module
