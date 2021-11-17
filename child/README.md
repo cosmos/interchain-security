@@ -16,7 +16,7 @@ https://github.com/cosmos/gaia/blob/main/docs/interchain-security.md
 ## Operational Notes
 
 * Hermes set to "all"
-* Go-relayer configured on the child port to the parent and on the parent port to the child
+* Go-relayer configured on the parent port to the parent and on the child port to the child
 
 Bidirectionally it should look like:
 
