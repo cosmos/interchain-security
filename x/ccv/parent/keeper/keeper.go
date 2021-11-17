@@ -379,31 +379,30 @@ func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) uint64 {
 	return validatorSetUpdateId
 }
 
-// Hooks wrapper struct for slashing keeper
-type Hooks struct {
+type StakingHooks struct {
 	stakingtypes.StakingHooksTemplate
 	k Keeper
 }
 
-var _ stakingtypes.StakingHooks = Hooks{}
+var _ stakingtypes.StakingHooks = StakingHooks{}
 
 // Return the wrapper struct
-func (k Keeper) Hooks() Hooks {
-	return Hooks{stakingtypes.StakingHooksTemplate{}, k}
+func (k Keeper) Hooks() StakingHooks {
+	return StakingHooks{stakingtypes.StakingHooksTemplate{}, k}
 }
 
-// TODO JEHAN: This should be registered to the hook on the staking module
-func (k Keeper) UnbondingDelegationEntryCreated(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress,
+// This stores a record of each ubde from staking, allowing us to track which child chains have unbonded
+func (h StakingHooks) UnbondingDelegationEntryCreated(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress,
 	creationHeight int64, completionTime time.Time, balance sdk.Int, ID uint64) {
 	var childChainIDS []string
 
 	// TODO: once registryKeeper is implemented, we will get a list of child chains for
 	// the specific validator
-	k.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
+	h.k.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
 		childChainIDS = append(childChainIDS, chainID)
 		return false
 	})
-	valsetUpdateID := k.GetValidatorSetUpdateId(ctx)
+	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
 	ubde := ccv.UnbondingDelegationEntry{
 		UnbondingDelegationEntryId: ID,
 		ValidatorSetUpdateId:       valsetUpdateID,
@@ -412,21 +411,19 @@ func (k Keeper) UnbondingDelegationEntryCreated(ctx sdk.Context, delegatorAddr s
 
 	// Add to indexes
 	for _, childChainID := range childChainIDS {
-		index, _ := k.GetUBDEIndex(ctx, childChainID, valsetUpdateID)
+		index, _ := h.k.GetUBDEIndex(ctx, childChainID, valsetUpdateID)
 		index = append(index, ID)
-		k.SetUBDEIndex(ctx, childChainID, valsetUpdateID, index)
+		h.k.SetUBDEIndex(ctx, childChainID, valsetUpdateID, index)
 	}
 
 	// Set UBDE
-	k.SetUnbondingDelegationEntry(ctx, ubde)
+	h.k.SetUnbondingDelegationEntry(ctx, ubde)
 }
 
-// TODO JEHAN: This should be registered to the hook on the staking module
-// If this ubde is still waiting on some chains to unbond, this hook will return true when
-// the completionTimes has passed, putting the ubde into the stopped ubde store in the
-// staking module.
-func (k Keeper) BeforeUnbondingDelegationEntryComplete(ctx sdk.Context, ID uint64) bool {
-	_, found := k.GetUnbondingDelegationEntry(ctx, ID)
+// If this ubde is still waiting on some chains to unbond, this hook will return true,
+// putting the ubde into the stopped ubde store in the staking module.
+func (h StakingHooks) BeforeUnbondingDelegationEntryComplete(ctx sdk.Context, ID uint64) bool {
+	_, found := h.k.GetUnbondingDelegationEntry(ctx, ID)
 
 	return found
 }
