@@ -33,7 +33,7 @@ channel: channel-0
 port: child
 
 
-## Imlementation
+## Implementation
 
 Split repository into parent and child, with a cmd under each & app.go, etc.
 
