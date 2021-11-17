@@ -11,8 +11,8 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.ValidatorUpdate) error {
-	packetData := ccv.NewValidatorSetChangePacketData(valUpdates)
+func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.ValidatorUpdate, valUpdateID uint64) error {
+	packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID)
 	packetDataBytes := packetData.GetBytes()
 
 	channelID, ok := k.GetChainToChannel(ctx, chainID)
@@ -80,7 +80,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		// If UBDE is completely unbonded from all relevant child chains
 		if len(UBDE.UnbondingChildChains) == 0 {
 			// Attempt to complete unbonding in staking module
-			err, _ := k.stakingKeeper.CompleteStoppedUnbonding(ctx, UBDE.UnbondingDelegationEntryId)
+			_, err := k.stakingKeeper.CompleteStoppedUnbonding(ctx, UBDE.UnbondingDelegationEntryId)
 			if err != nil {
 				return err
 			}
@@ -105,15 +105,14 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 
 // EndBlockCallback is called for each baby chain in Endblock. It sends latest validator updates to each baby chain
 // in a packet over the CCV channel.
-func (k Keeper) EndBlockCallback(ctx sdk.Context, chainID string) bool {
+func (k Keeper) EndBlockCallback(ctx sdk.Context, chainID string, valUpdateID uint64) bool {
 	// SKIP THIS UNTIL registryKeeper is implemented
 	if k.registryKeeper == nil {
 		return false
 	}
 	valUpdates := k.registryKeeper.GetValidatorSetChanges(chainID)
 	if len(valUpdates) != 0 {
-		k.SendPacket(ctx, chainID, valUpdates)
+		k.SendPacket(ctx, chainID, valUpdates, valUpdateID)
 	}
-	k.IncrementValidatorSetUpdateId(ctx)
 	return false
 }

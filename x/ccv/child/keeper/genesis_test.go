@@ -53,6 +53,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 				Power:  20,
 			},
 		},
+		1,
 	)
 	packet := channeltypes.NewPacket(pd.GetBytes(), 1, parenttypes.PortID, suite.path.EndpointB.ChannelID, childtypes.PortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)

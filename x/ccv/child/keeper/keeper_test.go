@@ -127,6 +127,7 @@ func (suite *KeeperTestSuite) TestPendingChanges() {
 				Power:  20,
 			},
 		},
+		1,
 	)
 
 	suite.childChain.App.(*app.App).ChildKeeper.SetPendingChanges(suite.ctx, pd)
@@ -183,6 +184,7 @@ func (suite *KeeperTestSuite) TestUnbondingPacket() {
 					Power:  int64(i + 5),
 				},
 			},
+			1,
 		)
 		packet := channeltypes.NewPacket(pd.GetBytes(), uint64(i), "parent", "channel-1", "child", "channel-1",
 			clienttypes.NewHeight(1, 0), 0)

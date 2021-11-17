@@ -51,7 +51,7 @@ type ClientKeeper interface {
 }
 
 type StakingKeeper interface {
-	CompleteStoppedUnbonding(ctx sdk.Context, id uint64) (err error, found bool)
+	CompleteStoppedUnbonding(ctx sdk.Context, id uint64) (found bool, err error)
 }
 
 // TODO: Expected interfaces for distribution on parent and baby chains

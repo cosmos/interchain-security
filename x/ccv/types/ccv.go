@@ -5,9 +5,10 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate) ValidatorSetChangePacketData {
+func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate, valUpdateID uint64) ValidatorSetChangePacketData {
 	return ValidatorSetChangePacketData{
 		ValidatorUpdates: valUpdates,
+		ValsetUpdateId:   valUpdateID,
 	}
 }
 

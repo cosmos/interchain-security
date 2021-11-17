@@ -245,6 +245,7 @@ func (k Keeper) SetChildChain(ctx sdk.Context, channelID string) error {
 	return nil
 }
 
+// Save UnbondingDelegationEntry by unique ID
 func (k Keeper) SetUnbondingDelegationEntry(ctx sdk.Context, unbondingDelegationEntry ccv.UnbondingDelegationEntry) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := unbondingDelegationEntry.Marshal()
@@ -255,6 +256,7 @@ func (k Keeper) SetUnbondingDelegationEntry(ctx sdk.Context, unbondingDelegation
 	return nil
 }
 
+// Get UnbondingDelegationEntry by unique ID
 func (k Keeper) GetUnbondingDelegationEntry(ctx sdk.Context, ubdeID uint64) (ccv.UnbondingDelegationEntry, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.UnbondingDelegationEntryKey(ubdeID))
@@ -270,6 +272,7 @@ func (k Keeper) DeleteUnbondingDelegationEntry(ctx sdk.Context, ubdeID uint64) {
 	store.Delete(types.UnbondingDelegationEntryKey(ubdeID))
 }
 
+// This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
 func (k Keeper) SetUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, UBDEIDs []uint64) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -281,6 +284,7 @@ func (k Keeper) SetUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uin
 	store.Set(types.UBDEIndexKey(chainID, valsetUpdateID), bz)
 }
 
+// This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
 func (k Keeper) GetUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) ([]uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.UBDEIndexKey(chainID, valsetUpdateID))
@@ -297,11 +301,13 @@ func (k Keeper) GetUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uin
 	return UBDEIDs, true
 }
 
+// This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
 func (k Keeper) DeleteUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.UBDEIndexKey(chainID, valsetUpdateID))
 }
 
+// Retrieve UnbondingDelegationEntries by chainID and valsetUpdateID
 func (k Keeper) GetUBDEsFromIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (entries []ccv.UnbondingDelegationEntry, found bool) {
 	ids, found := k.GetUBDEIndex(ctx, chainID, valsetUpdateID)
 	if !found {
