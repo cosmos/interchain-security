@@ -45,7 +45,7 @@ func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper capabilitykeeper.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
-	registryKeeper ccv.RegistryKeeper,
+	registryKeeper ccv.RegistryKeeper, stakingKeeper ccv.StakingKeeper,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -62,6 +62,7 @@ func NewKeeper(
 		connectionKeeper: connectionKeeper,
 		clientKeeper:     clientKeeper,
 		registryKeeper:   registryKeeper,
+		stakingKeeper:    stakingKeeper,
 	}
 }
 
