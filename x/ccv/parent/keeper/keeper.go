@@ -428,7 +428,7 @@ func (h StakingHooks) UnbondingDelegationEntryCreated(ctx sdk.Context, delegator
 }
 
 // If this ubde is still waiting on some chains to unbond, this hook will return true,
-// putting the ubde into the stopped ubde store in the staking module.
+// causing the staking module not to complete unbonding
 func (h StakingHooks) BeforeUnbondingDelegationEntryComplete(ctx sdk.Context, ID uint64) bool {
 	_, found := h.k.GetUnbondingDelegationEntry(ctx, ID)
 
