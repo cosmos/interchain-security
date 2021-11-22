@@ -52,14 +52,14 @@ func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.Va
 }
 
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorSetChangePacketData, ack channeltypes.Acknowledgement) error {
-	chainID, ok := k.GetChannelToChain(ctx, packet.DestinationChannel)
+	_, ok := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !ok {
 		return sdkerrors.Wrapf(ccv.ErrInvalidChildChain, "chain ID doesn't exist for channel ID: %s", packet.DestinationChannel)
 	}
 	if err := data.Unmarshal(packet.GetData()); err != nil {
 		return err
 	}
-	k.registryKeeper.UnbondValidators(ctx, chainID, data.ValidatorUpdates)
+	// TODO: unbond validators (remove hold on this child chain)
 	return nil
 }
 
@@ -72,11 +72,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 // EndBlockCallback is called for each baby chain in Endblock. It sends latest validator updates to each baby chain
 // in a packet over the CCV channel.
 func (k Keeper) EndBlockCallback(ctx sdk.Context, chainID string) bool {
-	// SKIP THIS UNTIL registryKeeper is implemented
-	if k.registryKeeper == nil {
-		return false
-	}
-	valUpdates := k.registryKeeper.GetValidatorSetChanges(chainID)
+	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 	if len(valUpdates) != 0 {
 		k.SendPacket(ctx, chainID, valUpdates)
 	}

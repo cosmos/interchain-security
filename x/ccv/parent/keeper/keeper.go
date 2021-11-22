@@ -26,7 +26,7 @@ type Keeper struct {
 	portKeeper       ccv.PortKeeper
 	connectionKeeper ccv.ConnectionKeeper
 	clientKeeper     ccv.ClientKeeper
-	registryKeeper   ccv.RegistryKeeper
+	stakingKeeper    ccv.StakingKeeper
 }
 
 // NewKeeper creates a new parent Keeper instance
@@ -34,7 +34,7 @@ func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, scopedKeeper capabilitykeeper.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
-	registryKeeper ccv.RegistryKeeper,
+	stakingKeeper ccv.StakingKeeper,
 ) Keeper {
 	return Keeper{
 		cdc:              cdc,
@@ -44,7 +44,7 @@ func NewKeeper(
 		portKeeper:       portKeeper,
 		connectionKeeper: connectionKeeper,
 		clientKeeper:     clientKeeper,
-		registryKeeper:   registryKeeper,
+		stakingKeeper:    stakingKeeper,
 	}
 }
 
