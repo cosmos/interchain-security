@@ -1,4 +1,4 @@
-package keeper_test
+package parent_test
 
 import (
 	"testing"
@@ -24,7 +24,7 @@ func init() {
 	ibctesting.DefaultTestingAppInit = simapp.SetupTestingApp
 }
 
-type KeeperTestSuite struct {
+type ParentTestSuite struct {
 	suite.Suite
 
 	coordinator *ibctesting.Coordinator
@@ -41,7 +41,7 @@ type KeeperTestSuite struct {
 	ctx sdk.Context
 }
 
-func (suite *KeeperTestSuite) SetupTest() {
+func (suite *ParentTestSuite) SetupTest() {
 	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
 	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(0))
 	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
@@ -85,6 +85,6 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.parentChain.App.(*app.App).ParentKeeper.SetChildClient(suite.parentChain.GetContext(), suite.childChain.ChainID, suite.path.EndpointB.ClientID)
 }
 
-func TestKeeperTestSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
+func TestParentTestSuite(t *testing.T) {
+	suite.Run(t, new(ParentTestSuite))
 }

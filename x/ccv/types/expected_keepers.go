@@ -1,6 +1,8 @@
 package types
 
 import (
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -16,6 +18,7 @@ import (
 // so we do not need a registry module between the staking module and CCV.
 type StakingKeeper interface {
 	GetValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
+	UnbondingTime(ctx sdk.Context) time.Duration
 }
 
 // ChannelKeeper defines the expected IBC channel keeper
