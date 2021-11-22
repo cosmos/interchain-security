@@ -69,7 +69,6 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 	if err := data.Unmarshal(packet.GetData()); err != nil {
 		return err
 	}
-	k.registryKeeper.UnbondValidators(ctx, chainID, data.ValidatorUpdates)
 
 	UBDEs, _ := k.GetUBDEsFromIndex(ctx, chainID, data.ValsetUpdateId)
 
@@ -106,11 +105,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 // EndBlockCallback is called for each baby chain in Endblock. It sends latest validator updates to each baby chain
 // in a packet over the CCV channel.
 func (k Keeper) EndBlockCallback(ctx sdk.Context, chainID string, valUpdateID uint64) bool {
-	// SKIP THIS UNTIL registryKeeper is implemented
-	if k.registryKeeper == nil {
-		return false
-	}
-	valUpdates := k.registryKeeper.GetValidatorSetChanges(chainID)
+	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 	if len(valUpdates) != 0 {
 		k.SendPacket(ctx, chainID, valUpdates, valUpdateID)
 	}

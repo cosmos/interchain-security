@@ -1,8 +1,6 @@
 package types
 
 import (
-	"time"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	conntypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
@@ -11,17 +9,12 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// RegistryKeeper defines the contract expected by parent-chain ccv module from a Registry Module that will keep track
-// of chain creators and respective validator sets
-// RegistryKeeper is responsible for verifying that chain creator is authorized to create a chain with given chain-id,
-// as well as which validators are staking for a given chain.
-type RegistryKeeper interface {
-	GetValidatorSetChanges(chainID string) []abci.ValidatorUpdate
-	// This method is not required by CCV module explicitly but necessary for init protocol
-	GetInitialValidatorSet(chainID string) []sdk.Tx
-	GetValidatorSet(ctx sdk.Context, chainID string) []sdk.ValAddress
-	UnbondValidators(ctx sdk.Context, chainID string, valUpdates []abci.ValidatorUpdate)
-	UnbondingTime(ctx sdk.Context) time.Duration
+// StakingKeeper defines the contract expected by parent-chain ccv module from a Staking Module that will keep track
+// of the parent validator set. This version of the interchain-security protocol will mirror the parent chain's changes
+// so we do not need a registry module between the staking module and CCV.
+type StakingKeeper interface {
+	GetValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
+	CompleteStoppedUnbonding(ctx sdk.Context, id uint64) (found bool, err error)
 }
 
 // ChannelKeeper defines the expected IBC channel keeper
@@ -48,10 +41,6 @@ type ClientKeeper interface {
 	CreateClient(ctx sdk.Context, clientState ibcexported.ClientState, consensusState ibcexported.ConsensusState) (string, error)
 	GetClientState(ctx sdk.Context, clientID string) (ibcexported.ClientState, bool)
 	GetLatestClientConsensusState(ctx sdk.Context, clientID string) (ibcexported.ConsensusState, bool)
-}
-
-type StakingKeeper interface {
-	CompleteStoppedUnbonding(ctx sdk.Context, id uint64) (found bool, err error)
 }
 
 // TODO: Expected interfaces for distribution on parent and baby chains
