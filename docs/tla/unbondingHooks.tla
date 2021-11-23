@@ -17,12 +17,17 @@ VARIABLES
 \*     consumer_unbondingValsets
 \* >>
 
-StakingUbde == [ onHold: BOOLEAN, unbonded: BOOLEAN, ubdeId: 0..2 ]
+\* StakingUbde == [ onHold: BOOLEAN, unbonded: BOOLEAN, ubdeId: 0..2 ]
 
-CcvUbde == [ ubdeId: 0..2, valsetUpdateId: 0..2, unbondingConsumerChains: 0..2 ]
+\* I don't know how to express the type of unbondingConsumerChains, which can be any one of
+\* {}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}, or {0, 1, 2}
+\* CcvUbde == [ ubdeId: 0..2, valsetUpdateId: 0..2, unbondingConsumerChains:  ]
 
 \* This is fixed for now, every validator is on every consumer chain *\
 ConsumerChains == { 0, 1, 2 }
+
+MaxUbdeIdCounter == 3
+MaxValsetIdCounter == 3
 
 Init ==
     /\ staking_ubdes = {}
@@ -30,6 +35,10 @@ Init ==
     /\ ccv_ubdes = {}
     /\ ccv_valsetIdCounter = 0
     /\ consumer_unbondingValsets = [ p \in ConsumerChains |-> <<>> ]
+
+\* TypeOK ==
+\*     /\ staking_ubdes \subseteq StakingUbde
+\*     /\ ccv_ubdes     \subseteq CcvUbde
 
 Consumer_ReceiveValsetChangePacket(consumer) ==
     \* consumer receives ValsetChangePacket and adds this valsetId to its unbonding valsets
@@ -110,7 +119,7 @@ Staking_CompleteUnbonding ==
 
 Staking_Undelegate ==
     \* Stop from going forever
-    IF staking_ubdeIdCounter < 3 THEN
+    IF staking_ubdeIdCounter < MaxUbdeIdCounter THEN
         \* Create new UBDE with incremented id
         /\ staking_ubdes' = staking_ubdes \union {[
                 ubdeId |-> staking_ubdeIdCounter,
@@ -136,7 +145,7 @@ Staking_Undelegate ==
 
 Staking_SendValsetChangePacket ==
     \* Stop from going forever
-    IF ccv_valsetIdCounter < 3 THEN
+    IF ccv_valsetIdCounter < MaxValsetIdCounter THEN
         \* Send packet to all consumer chains
         \E c \in ConsumerChains:
             Consumer_ReceiveValsetChangePacket(c)
