@@ -334,7 +334,7 @@ func New(
 	)
 	childModule := ibcchild.NewAppModule(app.ChildKeeper)
 	app.ParentKeeper = ibcparentkeeper.NewKeeper(appCodec, keys[ibcparenttypes.StoreKey], app.GetSubspace(ibcparenttypes.ModuleName), scopedIBCParentKeeper,
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper, nil, app.StakingKeeper)
+		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper, app.StakingKeeper)
 	parentModule := ibcparent.NewAppModule(app.ParentKeeper)
 
 	// register the proposal types

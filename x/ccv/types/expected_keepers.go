@@ -1,11 +1,15 @@
 package types
 
 import (
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	conntypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/modules/core/exported"
+
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -15,6 +19,7 @@ import (
 type StakingKeeper interface {
 	GetValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 	CompleteStoppedUnbonding(ctx sdk.Context, id uint64) (found bool, err error)
+	UnbondingTime(ctx sdk.Context) time.Duration
 }
 
 // ChannelKeeper defines the expected IBC channel keeper
