@@ -2,9 +2,12 @@ package parent_test
 
 import (
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
@@ -87,4 +90,69 @@ func (suite *ParentTestSuite) SetupTest() {
 
 func TestParentTestSuite(t *testing.T) {
 	suite.Run(t, new(ParentTestSuite))
+
+}
+
+func (suite *ParentTestSuite) TestStakingHooks() {
+	parentCtx := suite.parentChain.GetContext()
+	childCtx := suite.childChain.GetContext()
+	parentStakingKeeper := suite.parentChain.App.GetStakingKeeper()
+	suite.coordinator.Setup(suite.path)
+
+	origTime := suite.ctx.BlockTime()
+	var valsetUpdateId uint64
+	valsetUpdateId = 1
+	bondAmt := sdk.NewInt(1000000)
+
+	delAddr := suite.parentChain.SenderAccount.GetAddress()
+	validator := suite.parentChain.Vals.Validators[0]
+	valAddr := validator.Address
+
+	// - Bond and unbond some tokens on provider
+	shares, err := parentStakingKeeper.Delegate(parentCtx, delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+	_, err = parentStakingKeeper.Undelegate(parentCtx, delAddr, valAddr, shares)
+
+	// - Check if CCV UBDE is created
+	ccvUbdes, found := suite.parentChain.App.(*app.App).ParentKeeper.GetUBDEsFromIndex(parentCtx, suite.parentChain.ChainID, valsetUpdateId)
+
+	ccvUbde := ccvUbdes[0]
+
+	// - Send CCV packet to consumer
+	suite.parentChain.App.(*app.App).ParentKeeper.EndBlockCallback(parentCtx, suite.childChain.ChainID, valsetUpdateId)
+
+	// - End provider unbonding period
+	parentCtx = parentCtx.WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
+
+	// - Check if hook was called and that unbonding did not succeed
+	stakingUbde, found := GetStakingUbde(parentCtx, parentStakingKeeper, ccvUbde.UnbondingDelegationEntryId)
+
+	stakingUbde.OnHold  // Should equal true
+	stakingUbde.Balance // Should probably check some other properties too
+
+	// - End consumer unbonding period
+	childCtx = childCtx.WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
+
+	// - Check if unbonding succeeded
+	stakingUbde, found := parentStakingKeeper.GetUnbondingDelegationByEntry(parentCtx, ubdeId)
+
+	// - Bond and unbond some tokens on provider
+	// - Send CCV packet to consumer
+	// - Get consumer to send ack back (consumer unbonding period expires)
+	// - Check if CompleteStoppedUnbonding was attempted
+	// - End provider unbonding period
+	// - Check if tokens are unbonded
+}
+
+func GetStakingUbde(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (stakingUbde stakingtypes.UnbondingDelegationEntry, found bool) {
+	stakingUbd, found := k.GetUnbondingDelegationByEntry(ctx, id)
+
+	for _, entry := range stakingUbd.Entries {
+		if entry.Id == id {
+			stakingUbde = entry
+			found = true
+			break
+		}
+	}
+
+	return stakingUbde, found
 }
