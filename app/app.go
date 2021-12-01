@@ -318,7 +318,7 @@ func New(
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
 	app.StakingKeeper = *stakingKeeper.SetHooks(
-		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks()),
+		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks(), app.ParentKeeper.Hooks()),
 	)
 
 	// ... other modules keepers
@@ -334,7 +334,7 @@ func New(
 	)
 	childModule := ibcchild.NewAppModule(app.ChildKeeper)
 	app.ParentKeeper = ibcparentkeeper.NewKeeper(appCodec, keys[ibcparenttypes.StoreKey], app.GetSubspace(ibcparenttypes.ModuleName), scopedIBCParentKeeper,
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper, nil)
+		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper, app.StakingKeeper)
 	parentModule := ibcparent.NewAppModule(app.ParentKeeper)
 
 	// register the proposal types

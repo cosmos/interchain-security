@@ -27,14 +27,7 @@ func (k Keeper) CreateChildChainProposal(ctx sdk.Context, p *types.CreateChildCh
 // CreateChildClient will create the CCV client for the given child chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right child chain.
 func (k Keeper) CreateChildClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height) error {
-	var unbondingTime time.Duration
-	// TODO: Remove this clause once registry keeper is hooked up to CCV
-	if k.registryKeeper == nil {
-		// default to 4 weeks
-		unbondingTime = 4 * 7 * 24 * time.Hour
-	} else {
-		unbondingTime = k.registryKeeper.UnbondingTime(ctx)
-	}
+	unbondingTime := k.stakingKeeper.UnbondingTime(ctx)
 
 	// create clientstate by getting template client from parameters and filling in zeroed fields from proposal.
 	clientState := k.GetTemplateClient(ctx)

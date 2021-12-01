@@ -1,0 +1,30 @@
+# render using https://www.websequencediagrams.com/
+note right of Staking: User undelegates and\nprovider unbonding period starts
+note over Staking: UBDE record is created in Staking\n-UBDEID uint64
+Staking->CCV: UnbondingDelegationEntryCreated()\n-UBDEID uint64
+note over CCV: UBDE record is created in CCV\n-valsetUpdateID uint64\n-UBDEID uint64\n-unbondingConsumerChains [chainID]
+CCV->+Consumer: ValidatorSetChangePacket\n-valsetUpdateID uint64\n-validator powers etc
+note over Consumer: Consumer unbonding period starts
+opt if provider unbonding period ends before all consumer chains have unbonded
+    Staking->CCV: BeforeUnbondingDelegationEntryComplete()\n-UBDEID uint64
+    note over CCV: len(UBDE.unbondingConsumerChains) > 0
+    CCV->Staking: return true to stop unbonding
+end
+loop repeat until all consumer chains are unbonded
+    Consumer->CCV: ValidatorSetChangePacketAck\n-valsetUpdateID uint64\n-consumerChainID string
+    note over CCV: remove consumerChainID from\nUBDE.unbondingConsumerChains[]
+end
+note over CCV: len(UBDE.unbondingConsumerChains) == 0
+deactivate Consumer
+CCV->Staking: CompleteStoppedUnbonding()\n-UBDEID uint64
+alt if unbonding period has ended on provider
+    note over Staking: user gets their coins back
+else if unbonding period has not ended on provider
+    note over Staking: nothing happens
+end
+opt if provider unbonding period ends after all consumer chains have unbonded
+    Staking->CCV: BeforeUnbondingDelegationEntryComplete()\n-UBDEID uint64
+    note over CCV: len(UBDE.unbondingConsumerChains) == 0
+    CCV->Staking: return false to allow unbonding
+    note over Staking: user gets their coins back
+end

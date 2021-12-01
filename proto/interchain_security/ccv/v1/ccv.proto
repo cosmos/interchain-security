@@ -14,6 +14,7 @@ import "tendermint/abci/types.proto";
 message ValidatorSetChangePacketData {
   repeated .tendermint.abci.ValidatorUpdate validator_updates = 1
       [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"validator_updates\""];
+  uint64 valset_update_id = 2;
 }
 
 // Status defines if the ccv channel is in one of the following states:
@@ -29,4 +30,11 @@ enum Status {
   STATUS_VALIDATING = 2 [(gogoproto.enumvalue_customname) = "VALIDATING"];
   // channel is invalid and can no longer process packets
   STATUS_INVALID = 3 [(gogoproto.enumvalue_customname) = "INVALID"];
+}
+
+message UnbondingDelegationEntry {
+  uint64 unbonding_delegation_entry_id = 1;
+  uint64 validator_set_update_id = 2;
+  // child chains that are still unbonding
+  repeated string unbonding_child_chains = 3;
 }

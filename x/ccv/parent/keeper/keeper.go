@@ -1,6 +1,10 @@
 package keeper
 
 import (
+	"encoding/binary"
+	"encoding/json"
+	"time"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -8,6 +12,7 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
@@ -31,7 +36,7 @@ type Keeper struct {
 	portKeeper       ccv.PortKeeper
 	connectionKeeper ccv.ConnectionKeeper
 	clientKeeper     ccv.ClientKeeper
-	registryKeeper   ccv.RegistryKeeper
+	stakingKeeper    ccv.StakingKeeper
 }
 
 // NewKeeper creates a new parent Keeper instance
@@ -39,7 +44,7 @@ func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper capabilitykeeper.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
-	registryKeeper ccv.RegistryKeeper,
+	stakingKeeper ccv.StakingKeeper,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -55,7 +60,7 @@ func NewKeeper(
 		portKeeper:       portKeeper,
 		connectionKeeper: connectionKeeper,
 		clientKeeper:     clientKeeper,
-		registryKeeper:   registryKeeper,
+		stakingKeeper:    stakingKeeper,
 	}
 }
 
@@ -238,6 +243,87 @@ func (k Keeper) SetChildChain(ctx sdk.Context, channelID string) error {
 	return nil
 }
 
+// Save UnbondingDelegationEntry by unique ID
+func (k Keeper) SetUnbondingDelegationEntry(ctx sdk.Context, unbondingDelegationEntry ccv.UnbondingDelegationEntry) error {
+	store := ctx.KVStore(k.storeKey)
+	bz, err := unbondingDelegationEntry.Marshal()
+	if err != nil {
+		return err
+	}
+	store.Set(types.UnbondingDelegationEntryKey(unbondingDelegationEntry.UnbondingDelegationEntryId), bz)
+	return nil
+}
+
+// Get UnbondingDelegationEntry by unique ID
+func (k Keeper) GetUnbondingDelegationEntry(ctx sdk.Context, ubdeID uint64) (ccv.UnbondingDelegationEntry, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.UnbondingDelegationEntryKey(ubdeID))
+	if bz == nil {
+		return ccv.UnbondingDelegationEntry{}, false
+	}
+
+	return types.MustUnmarshalUnbondingDelegationEntry(k.cdc, bz), true
+}
+
+func (k Keeper) DeleteUnbondingDelegationEntry(ctx sdk.Context, ubdeID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.UnbondingDelegationEntryKey(ubdeID))
+}
+
+// This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
+func (k Keeper) SetUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, UBDEIDs []uint64) {
+	store := ctx.KVStore(k.storeKey)
+
+	bz, err := json.Marshal(UBDEIDs)
+	if err != nil {
+		panic("Failed to JSON marshal")
+	}
+
+	store.Set(types.UBDEIndexKey(chainID, valsetUpdateID), bz)
+}
+
+// This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
+func (k Keeper) GetUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) ([]uint64, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.UBDEIndexKey(chainID, valsetUpdateID))
+	if bz == nil {
+		return []uint64{}, false
+	}
+
+	var UBDEIDs []uint64
+	err := json.Unmarshal(bz, &UBDEIDs)
+	if err != nil {
+		panic("Failed to JSON unmarshal")
+	}
+
+	return UBDEIDs, true
+}
+
+// This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
+func (k Keeper) DeleteUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.UBDEIndexKey(chainID, valsetUpdateID))
+}
+
+// Retrieve UnbondingDelegationEntries by chainID and valsetUpdateID
+func (k Keeper) GetUBDEsFromIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (entries []ccv.UnbondingDelegationEntry, found bool) {
+	ids, found := k.GetUBDEIndex(ctx, chainID, valsetUpdateID)
+	if !found {
+		return entries, false
+	}
+
+	for _, id := range ids {
+		entry, found := k.GetUnbondingDelegationEntry(ctx, id)
+		if !found {
+			// TODO JEHAN: is this the correct way to deal with this?
+			panic("did not find UnbondingDelegationEntry according to index- index was probably not correctly updated")
+		}
+		entries = append(entries, entry)
+	}
+
+	return entries, true
+}
+
 func (k Keeper) getUnderlyingClient(ctx sdk.Context, channelID string) (string, *ibctmtypes.ClientState, error) {
 	// Retrieve the underlying client state.
 	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
@@ -271,4 +357,81 @@ func (k Keeper) chanCloseInit(ctx sdk.Context, channelID string) error {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	return k.channelKeeper.ChanCloseInit(ctx, types.PortID, channelID, chanCap)
+}
+
+func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+
+	// Unmarshal and increment
+	validatorSetUpdateId := k.GetValidatorSetUpdateId(ctx)
+	validatorSetUpdateId = validatorSetUpdateId + 1
+
+	// Convert back into bytes for storage
+	bz := make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, validatorSetUpdateId)
+
+	store.Set([]byte(types.ValidatorSetUpdateIdPrefix), bz)
+}
+
+func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId uint64) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get([]byte(types.ValidatorSetUpdateIdPrefix))
+
+	if bz == nil {
+		validatorSetUpdateId = 0
+	} else {
+		// Unmarshal
+		validatorSetUpdateId = binary.BigEndian.Uint64(bz)
+	}
+
+	return validatorSetUpdateId
+}
+
+type StakingHooks struct {
+	stakingtypes.StakingHooksTemplate
+	k Keeper
+}
+
+var _ stakingtypes.StakingHooks = StakingHooks{}
+
+// Return the wrapper struct
+func (k Keeper) Hooks() StakingHooks {
+	return StakingHooks{stakingtypes.StakingHooksTemplate{}, k}
+}
+
+// This stores a record of each ubde from staking, allowing us to track which child chains have unbonded
+func (h StakingHooks) UnbondingDelegationEntryCreated(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress,
+	creationHeight int64, completionTime time.Time, balance sdk.Int, ID uint64) {
+	var childChainIDS []string
+
+	// TODO: once registryKeeper is implemented, we will get a list of child chains for
+	// the specific validator
+	h.k.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
+		childChainIDS = append(childChainIDS, chainID)
+		return false
+	})
+	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
+	ubde := ccv.UnbondingDelegationEntry{
+		UnbondingDelegationEntryId: ID,
+		ValidatorSetUpdateId:       valsetUpdateID,
+		UnbondingChildChains:       childChainIDS,
+	}
+
+	// Add to indexes
+	for _, childChainID := range childChainIDS {
+		index, _ := h.k.GetUBDEIndex(ctx, childChainID, valsetUpdateID)
+		index = append(index, ID)
+		h.k.SetUBDEIndex(ctx, childChainID, valsetUpdateID, index)
+	}
+
+	// Set UBDE
+	h.k.SetUnbondingDelegationEntry(ctx, ubde)
+}
+
+// If this ubde is still waiting on some chains to unbond, this hook will return true,
+// causing the staking module not to complete unbonding
+func (h StakingHooks) BeforeUnbondingDelegationEntryComplete(ctx sdk.Context, ID uint64) bool {
+	_, found := h.k.GetUnbondingDelegationEntry(ctx, ID)
+
+	return found
 }

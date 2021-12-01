@@ -121,6 +121,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 				Power:  20,
 			},
 		},
+		1,
 	)
 	pdBytes1, err := pd1.Marshal()
 	require.NoError(t, err, "cannot marshal packet data")
@@ -136,6 +137,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 				Power:  80,
 			},
 		},
+		2,
 	)
 	pdBytes2, err := pd2.Marshal()
 	require.NoError(t, err, "cannot marshal packet data")

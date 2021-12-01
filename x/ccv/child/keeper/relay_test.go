@@ -51,10 +51,12 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 
 	pd := types.NewValidatorSetChangePacketData(
 		changes1,
+		1,
 	)
 
 	pd2 := types.NewValidatorSetChangePacketData(
 		changes2,
+		2,
 	)
 
 	testCases := []struct {
@@ -169,6 +171,7 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 				Power:  20,
 			},
 		},
+		1,
 	)
 
 	origTime := suite.ctx.BlockTime()
