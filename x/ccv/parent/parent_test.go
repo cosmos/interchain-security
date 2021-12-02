@@ -88,6 +88,11 @@ func (suite *ParentTestSuite) SetupTest() {
 	suite.parentChain.App.(*app.App).ParentKeeper.SetChildClient(suite.parentChain.GetContext(), suite.childChain.ChainID, suite.path.EndpointB.ClientID)
 }
 
+func (suite *ParentTestSuite) SetupCCVChannel() {
+	suite.coordinator.CreateConnections(suite.path)
+	suite.coordinator.CreateChannels(suite.path)
+}
+
 func TestParentTestSuite(t *testing.T) {
 	suite.Run(t, new(ParentTestSuite))
 
@@ -97,7 +102,7 @@ func (suite *ParentTestSuite) TestStakingHooks() {
 	parentCtx := suite.parentChain.GetContext()
 	childCtx := suite.childChain.GetContext()
 	parentStakingKeeper := suite.parentChain.App.GetStakingKeeper()
-	suite.coordinator.Setup(suite.path)
+	suite.SetupCCVChannel()
 
 	origTime := suite.ctx.BlockTime()
 	var valsetUpdateId uint64
