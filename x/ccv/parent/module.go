@@ -92,11 +92,11 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule represents the AppModule for this module
 type AppModule struct {
 	AppModuleBasic
-	keeper keeper.Keeper
+	keeper *keeper.Keeper
 }
 
 // NewAppModule creates a new parent module
-func NewAppModule(k keeper.Keeper) AppModule {
+func NewAppModule(k *keeper.Keeper) AppModule {
 	return AppModule{
 		keeper: k,
 	}
@@ -196,7 +196,7 @@ func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.Weig
 // supported version.
 func ValidateParentChannelParams(
 	ctx sdk.Context,
-	keeper keeper.Keeper,
+	keeper *keeper.Keeper,
 	order channeltypes.Order,
 	portID string,
 	channelID string,

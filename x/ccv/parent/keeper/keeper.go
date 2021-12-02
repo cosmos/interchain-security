@@ -389,13 +389,13 @@ func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId u
 
 type StakingHooks struct {
 	stakingtypes.StakingHooksTemplate
-	k Keeper
+	k *Keeper
 }
 
 var _ stakingtypes.StakingHooks = StakingHooks{}
 
 // Return the wrapper struct
-func (k Keeper) Hooks() StakingHooks {
+func (k *Keeper) Hooks() StakingHooks {
 	return StakingHooks{stakingtypes.StakingHooksTemplate{}, k}
 }
 
