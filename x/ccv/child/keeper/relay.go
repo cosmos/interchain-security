@@ -17,6 +17,7 @@ import (
 // OnRecvPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
 // and set the unbonding time for the packet so that we can WriteAcknowledgement after unbonding time is over.
 func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) *channeltypes.Acknowledgement {
+	println("====OnRecvPacket======")
 	// packet is not sent on parent channel, return error acknowledgement and close channel
 	if parentChannel, ok := k.GetParentChannel(ctx); ok && parentChannel != packet.DestinationChannel {
 		ack := channeltypes.NewErrorAcknowledgement(
@@ -53,6 +54,7 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 // UnbondMaturePackets will iterate over the unbonding packets in order and write acknowledgements for all
 // packets that have finished unbonding.
 func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
+	fmt.Printf("====UnbondMaturePackets======               StoreKey: %#v\n", k.storeKey)
 	store := ctx.KVStore(k.storeKey)
 	unbondingIterator := sdk.KVStorePrefixIterator(store, []byte(types.UnbondingTimePrefix))
 	defer unbondingIterator.Close()
@@ -69,6 +71,7 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 	}
 
 	for unbondingIterator.Valid() {
+		println("unbondingIterator iteration")
 		sequence := types.GetSequenceFromUnbondingTimeKey(unbondingIterator.Key())
 		if currentTime > binary.BigEndian.Uint64(unbondingIterator.Value()) {
 			// write successful ack and delete unbonding information

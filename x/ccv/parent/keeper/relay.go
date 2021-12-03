@@ -62,6 +62,7 @@ func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemo
 }
 
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorSetChangePacketData, ack channeltypes.Acknowledgement) error {
+	println("+++++  OnAcknowledgementPacket")
 	chainID, ok := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !ok {
 		return sdkerrors.Wrapf(ccv.ErrInvalidChildChain, "chain ID doesn't exist for channel ID: %s", packet.DestinationChannel)
@@ -104,10 +105,15 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 
 // EndBlockCallback is called for each baby chain in Endblock. It sends latest validator updates to each baby chain
 // in a packet over the CCV channel.
-func (k Keeper) EndBlockCallback(ctx sdk.Context, chainID string, valUpdateID uint64) bool {
-	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
-	if len(valUpdates) != 0 {
-		k.SendPacket(ctx, chainID, valUpdates, valUpdateID)
-	}
-	return false
+func (k Keeper) EndBlockCallback(ctx sdk.Context) {
+	valUpdateID := k.GetValidatorSetUpdateId(ctx)
+	k.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
+		println("iter EndBlockCallback")
+		valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
+		if len(valUpdates) != 0 {
+			k.SendPacket(ctx, chainID, valUpdates, valUpdateID)
+		}
+		return false
+	})
+	k.IncrementValidatorSetUpdateId(ctx)
 }
