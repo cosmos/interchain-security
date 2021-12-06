@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
@@ -44,6 +46,7 @@ func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.Va
 		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
 		clienttypes.Height{}, uint64(types.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
 	)
+	fmt.Printf("%#v\n", packet)
 	if err := k.channelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
 		return err
 	}
@@ -111,6 +114,7 @@ func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 		println("iter EndBlockCallback")
 		valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 		if len(valUpdates) != 0 {
+			fmt.Println("enter endblock")
 			k.SendPacket(ctx, chainID, valUpdates, valUpdateID)
 		}
 		return false
