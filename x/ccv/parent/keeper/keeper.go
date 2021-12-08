@@ -3,7 +3,6 @@ package keeper
 import (
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -237,8 +236,7 @@ func (k Keeper) SetChildChain(ctx sdk.Context, channelID string) error {
 		k.chanCloseInit(ctx, channelID)
 		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for child chain %s", prevChannel, chainID)
 	}
-	fmt.Println("confirm chainID", tmClient.ChainId)
-	fmt.Println("confirm channelID", channelID)
+
 	// set channel mappings
 	k.SetChainToChannel(ctx, tmClient.ChainId, channelID)
 	k.SetChannelToChain(ctx, channelID, tmClient.ChainId)
@@ -276,7 +274,6 @@ func (k Keeper) DeleteUnbondingDelegationEntry(ctx sdk.Context, ubdeID uint64) {
 
 // This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
 func (k Keeper) SetUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, UBDEIDs []uint64) {
-	fmt.Printf("====SetUBDEIndex======               StoreKey: %#v\n", k.storeKey)
 	store := ctx.KVStore(k.storeKey)
 
 	bz, err := json.Marshal(UBDEIDs)
@@ -284,19 +281,12 @@ func (k Keeper) SetUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uin
 		panic("Failed to JSON marshal")
 	}
 
-	fmt.Printf("SET SetUBDEIndex!!! %#v\n", types.UBDEIndexKey(chainID, valsetUpdateID))
-	fmt.Printf("chainID: %#v\n", chainID)
-	fmt.Printf("valsetUpdateID: %#v\n\n", valsetUpdateID)
-
 	store.Set(types.UBDEIndexKey(chainID, valsetUpdateID), bz)
 }
 
 // This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
 func (k Keeper) GetUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) ([]uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
-	fmt.Printf("GET GetUBDEIndex!!! %#v\n", types.UBDEIndexKey(chainID, valsetUpdateID))
-	fmt.Printf("chainID: %#v\n", chainID)
-	fmt.Printf("valsetUpdateID: %#v\n\n", valsetUpdateID)
 
 	bz := store.Get(types.UBDEIndexKey(chainID, valsetUpdateID))
 	if bz == nil {
@@ -321,7 +311,6 @@ func (k Keeper) DeleteUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID 
 // Retrieve UnbondingDelegationEntries by chainID and valsetUpdateID
 func (k Keeper) GetUBDEsFromIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (entries []ccv.UnbondingDelegationEntry, found bool) {
 	ids, found := k.GetUBDEIndex(ctx, chainID, valsetUpdateID)
-	println("GetUBDEsFromIndex")
 	if !found {
 		return entries, false
 	}
@@ -425,7 +414,6 @@ func (k *Keeper) Hooks() StakingHooks {
 // This stores a record of each ubde from staking, allowing us to track which child chains have unbonded
 func (h StakingHooks) UnbondingDelegationEntryCreated(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress,
 	creationHeight int64, completionTime time.Time, balance sdk.Int, ID uint64) {
-	println("HOOKED UP")
 	var childChainIDS []string
 
 	// TODO: once registryKeeper is implemented, we will get a list of child chains for

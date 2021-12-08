@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
@@ -14,9 +12,7 @@ import (
 )
 
 func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.ValidatorUpdate, valUpdateID uint64) error {
-	fmt.Println("send packet", chainID)
 	packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID)
-	fmt.Printf("Send Packet Data: %#v\n", packetData)
 	packetDataBytes := packetData.GetBytes()
 
 	channelID, ok := k.GetChainToChannel(ctx, chainID)
@@ -48,7 +44,7 @@ func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.Va
 		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
 		clienttypes.Height{}, uint64(types.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
 	)
-	fmt.Printf("%#v\n", packet)
+
 	if err := k.channelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
 		return err
 	}
@@ -67,7 +63,6 @@ func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemo
 }
 
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorSetChangePacketData, ack channeltypes.Acknowledgement) error {
-	println("+++++  OnAcknowledgementPacket")
 	chainID, ok := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !ok {
 		return sdkerrors.Wrapf(ccv.ErrInvalidChildChain, "chain ID doesn't exist for channel ID: %s", packet.DestinationChannel)
@@ -113,10 +108,8 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	k.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
-		println("iter EndBlockCallback")
 		valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 		if len(valUpdates) != 0 {
-			fmt.Println("enter endblock")
 			k.SendPacket(ctx, chainID, valUpdates, valUpdateID)
 			k.IncrementValidatorSetUpdateId(ctx)
 		}

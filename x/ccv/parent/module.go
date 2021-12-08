@@ -330,7 +330,6 @@ func (am AppModule) OnAcknowledgementPacket(
 	acknowledgement []byte,
 	_ sdk.AccAddress,
 ) (*sdk.Result, error) {
-	fmt.Println("ACKNOWLEDGEMENT PACKET")
 	var ack channeltypes.Acknowledgement
 	if err := ccv.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal parent packet acknowledgement: %v", err)

@@ -324,13 +324,11 @@ func (am AppModule) OnRecvPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	fmt.Println("HELLOOO!!!!!!")
 	var (
 		ack  exported.Acknowledgement
 		data ccv.ValidatorSetChangePacketData
 	)
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		fmt.Println("ERR UNMARSHAL")
 		errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("cannot unmarshal CCV packet data: %s", err.Error()))
 		ack = &errAck
 	} else {
