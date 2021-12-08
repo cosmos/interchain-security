@@ -14,7 +14,9 @@ import (
 )
 
 func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.ValidatorUpdate, valUpdateID uint64) error {
+	fmt.Println("send packet", chainID)
 	packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID)
+	fmt.Printf("Send Packet Data: %#v\n", packetData)
 	packetDataBytes := packetData.GetBytes()
 
 	channelID, ok := k.GetChainToChannel(ctx, chainID)
@@ -70,7 +72,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 	if !ok {
 		return sdkerrors.Wrapf(ccv.ErrInvalidChildChain, "chain ID doesn't exist for channel ID: %s", packet.DestinationChannel)
 	}
-	if err := data.Unmarshal(packet.GetData()); err != nil {
+	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
 		return err
 	}
 
@@ -116,8 +118,8 @@ func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 		if len(valUpdates) != 0 {
 			fmt.Println("enter endblock")
 			k.SendPacket(ctx, chainID, valUpdates, valUpdateID)
+			k.IncrementValidatorSetUpdateId(ctx)
 		}
 		return false
 	})
-	k.IncrementValidatorSetUpdateId(ctx)
 }

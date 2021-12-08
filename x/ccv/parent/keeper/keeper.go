@@ -135,7 +135,8 @@ func (k Keeper) IterateBabyChains(ctx sdk.Context, cb func(ctx sdk.Context, chai
 	}
 
 	for ; iterator.Valid(); iterator.Next() {
-		chainID := string(iterator.Key())
+		// remove prefix + "/" from key to retrieve chainID
+		chainID := string(iterator.Key()[len(types.ChainToChannelKeyPrefix)+1:])
 
 		stop := cb(ctx, chainID)
 		if stop {
@@ -236,6 +237,8 @@ func (k Keeper) SetChildChain(ctx sdk.Context, channelID string) error {
 		k.chanCloseInit(ctx, channelID)
 		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for child chain %s", prevChannel, chainID)
 	}
+	fmt.Println("confirm chainID", tmClient.ChainId)
+	fmt.Println("confirm channelID", channelID)
 	// set channel mappings
 	k.SetChainToChannel(ctx, tmClient.ChainId, channelID)
 	k.SetChannelToChain(ctx, channelID, tmClient.ChainId)
@@ -379,6 +382,16 @@ func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
 	// Convert back into bytes for storage
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, validatorSetUpdateId)
+
+	store.Set([]byte(types.ValidatorSetUpdateIdPrefix), bz)
+}
+
+func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
+	store := ctx.KVStore(k.storeKey)
+
+	// Convert back into bytes for storage
+	bz := make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, valUpdateID)
 
 	store.Set([]byte(types.ValidatorSetUpdateIdPrefix), bz)
 }

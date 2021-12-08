@@ -21,6 +21,6 @@ func (vsc ValidatorSetChangePacketData) ValidateBasic() error {
 }
 
 func (vsc ValidatorSetChangePacketData) GetBytes() []byte {
-	valUpdateBytes, _ := vsc.Marshal()
+	valUpdateBytes := ModuleCdc.MustMarshalJSON(&vsc)
 	return valUpdateBytes
 }

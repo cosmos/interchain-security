@@ -133,6 +133,9 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	am.keeper.InitGenesis(ctx, &genesisState)
+	// initialize validator update id
+	// TODO: Include in genesis and initialize from genesis value
+	am.keeper.SetValidatorSetUpdateId(ctx, 1)
 	return []abci.ValidatorUpdate{}
 }
 
@@ -327,6 +330,7 @@ func (am AppModule) OnAcknowledgementPacket(
 	acknowledgement []byte,
 	_ sdk.AccAddress,
 ) (*sdk.Result, error) {
+	fmt.Println("ACKNOWLEDGEMENT PACKET")
 	var ack channeltypes.Acknowledgement
 	if err := ccv.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal parent packet acknowledgement: %v", err)

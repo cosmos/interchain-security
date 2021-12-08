@@ -1,6 +1,7 @@
 package parent_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -101,10 +102,11 @@ func TestParentTestSuite(t *testing.T) {
 }
 
 func (suite *ParentTestSuite) TestStakingHooks() {
-	parentCtx := suite.parentChain.GetContext()
-	childCtx := suite.childChain.GetContext()
-	parentStakingKeeper := suite.parentChain.App.GetStakingKeeper()
+	fmt.Println("START TEST")
+
 	suite.SetupCCVChannel()
+	parentCtx := suite.parentChain.GetContext()
+	parentStakingKeeper := suite.parentChain.App.GetStakingKeeper()
 
 	origTime := suite.ctx.BlockTime()
 	// var valsetUpdateId uint64
@@ -123,6 +125,9 @@ func (suite *ParentTestSuite) TestStakingHooks() {
 	// // - Check if Staking UBD is created
 	// stakingUbde, found := GetStakingUbde(parentCtx, parentStakingKeeper, 0)
 	// suite.Require().True(found)
+
+	// suite.parentChain.App.EndBlock(abci.RequestEndBlock{})
+	// suite.parentChain.NextBlock()
 
 	// - Bond and unbond some tokens on provider
 	println("\n- Bond and unbond some tokens on provider")
@@ -149,16 +154,24 @@ func (suite *ParentTestSuite) TestStakingHooks() {
 	println("\n- Send CCV packet to consumer")
 	// suite.parentChain.App.(*app.App).ParentKeeper.EndBlockCallback(parentCtx)
 	suite.parentChain.App.EndBlock(abci.RequestEndBlock{})
+
+	// get validator update created in Endblock
+	valUpdates := parentStakingKeeper.GetValidatorUpdates(parentCtx)
+
+	// commit block on parent chain and update child chain's client
+	suite.coordinator.CommitBlock(suite.parentChain)
+	suite.path.EndpointA.UpdateClient()
 	println("END CALLBACK")
 
 	// Receive CCV packet on consumer chain
 	// reconstruct packet
-	valUpdate := validator.ABCIValidatorUpdate(suite.parentChain.App.GetStakingKeeper().PowerReduction(suite.parentChain.GetContext()))
-	packetData := types.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{valUpdate}, 1)
-	timeout := uint64(parenttypes.GetTimeoutTimestamp(suite.parentChain.GetContext().BlockTime()).UnixNano())
+	packetData := types.NewValidatorSetChangePacketData(valUpdates, 1)
+	timeout := uint64(parenttypes.GetTimeoutTimestamp(parentCtx.BlockTime()).UnixNano())
+	fmt.Printf("Reconstructed Packet Data: %#v\n", packetData)
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, parenttypes.PortID, suite.path.EndpointB.ChannelID,
 		childtypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
+	fmt.Printf("RECONSTRUCTED PACKET: %#v\n", packet)
 	suite.path.EndpointA.RecvPacket(packet)
 
 	// - End provider unbonding period
@@ -175,10 +188,18 @@ func (suite *ParentTestSuite) TestStakingHooks() {
 
 	// - End consumer unbonding period
 	println("\n- End consumer unbonding period")
-	childCtx = childCtx.WithBlockTime(origTime.Add(3 * childtypes.UnbondingTime).Add(3 * time.Hour))
-	suite.childChain.App.(*app.App).ChildKeeper.UnbondMaturePackets(childCtx)
+	childCtx := suite.childChain.GetContext().WithBlockTime(origTime.Add(3 * childtypes.UnbondingTime).Add(3 * time.Hour))
+	err = suite.childChain.App.(*app.App).ChildKeeper.UnbondMaturePackets(childCtx)
+	suite.Require().NoError(err)
+
+	// commit child chain and update parent chain client
+	suite.coordinator.CommitBlock(suite.childChain)
+	suite.path.EndpointB.UpdateClient()
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	fmt.Printf("RECONSTRUCTED ACK: %#v\n", ack)
+	fmt.Printf("RECONSTRUCTED acknowledgement: %X\n", ack.Acknowledgement())
+
 	suite.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
 
 	// - Check if unbonding succeeded in CCV

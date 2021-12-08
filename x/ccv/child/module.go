@@ -21,6 +21,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/modules/core/24-host"
+	"github.com/cosmos/ibc-go/modules/core/exported"
 	ibcexported "github.com/cosmos/ibc-go/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/child/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
@@ -273,7 +274,7 @@ func (am AppModule) OnChanOpenAck(
 	channelID string,
 	counterpartyVersion string,
 ) error {
-	// ensure parent channel hasn't already been created
+	// ensure parent channel has already been created
 	if parentChannel, ok := am.keeper.GetParentChannel(ctx); ok {
 		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "parent channel: %s already established", parentChannel)
 	}
@@ -323,11 +324,13 @@ func (am AppModule) OnRecvPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
+	fmt.Println("HELLOOO!!!!!!")
 	var (
-		ack  *channeltypes.Acknowledgement
+		ack  exported.Acknowledgement
 		data ccv.ValidatorSetChangePacketData
 	)
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
+		fmt.Println("ERR UNMARSHAL")
 		errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("cannot unmarshal CCV packet data: %s", err.Error()))
 		ack = &errAck
 	} else {
