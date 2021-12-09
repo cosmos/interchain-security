@@ -1,6 +1,7 @@
 package parent_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -99,65 +100,168 @@ func TestParentTestSuite(t *testing.T) {
 
 }
 
-func (suite *ParentTestSuite) TestPacketRoundtrip() {
-	suite.SetupCCVChannel()
-	parentCtx := suite.parentChain.GetContext()
-	parentStakingKeeper := suite.parentChain.App.GetStakingKeeper()
+func (s *ParentTestSuite) TestPacketRoundtrip() {
+	s.SetupCCVChannel()
+	parentCtx := s.parentChain.GetContext()
+	parentStakingKeeper := s.parentChain.App.GetStakingKeeper()
 
-	origTime := suite.ctx.BlockTime()
+	origTime := s.ctx.BlockTime()
 	bondAmt := sdk.NewInt(1000000)
 
-	delAddr := suite.parentChain.SenderAccount.GetAddress()
+	delAddr := s.parentChain.SenderAccount.GetAddress()
 
 	// Choose a validator, and get its address and data structure into the correct types
-	tmValidator := suite.parentChain.Vals.Validators[0]
+	tmValidator := s.parentChain.Vals.Validators[0]
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
-	suite.Require().NoError(err)
-	validator, found := parentStakingKeeper.GetValidator(parentCtx, valAddr)
-	suite.Require().True(found)
+	s.Require().NoError(err)
+	validator, found := parentStakingKeeper.GetValidator(s.parentCtx(), valAddr)
+	s.Require().True(found)
 
 	// Bond some tokens on provider to change validator powers
-	_, err = parentStakingKeeper.Delegate(parentCtx, delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
-	suite.Require().NoError(err)
+	_, err = parentStakingKeeper.Delegate(s.parentCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+	s.Require().NoError(err)
 
 	// Send CCV packet to consumer
-	suite.parentChain.App.EndBlock(abci.RequestEndBlock{})
+	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
 
 	// Get validator update created in Endblock to use in reconstructing packet
-	valUpdates := parentStakingKeeper.GetValidatorUpdates(parentCtx)
+	valUpdates := parentStakingKeeper.GetValidatorUpdates(s.parentCtx())
 
 	// commit block on parent chain and update child chain's client
-	suite.coordinator.CommitBlock(suite.parentChain)
-	suite.path.EndpointA.UpdateClient()
+	oldBlockTime := s.parentCtx().BlockTime()
+	s.coordinator.CommitBlock(s.parentChain)
+	s.path.EndpointA.UpdateClient()
 
 	// Reconstruct packet
 	packetData := types.NewValidatorSetChangePacketData(valUpdates, 1)
-	timeout := uint64(parenttypes.GetTimeoutTimestamp(parentCtx.BlockTime()).UnixNano())
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, parenttypes.PortID, suite.path.EndpointB.ChannelID,
-		childtypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+	timeout := uint64(parenttypes.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, parenttypes.PortID, s.path.EndpointB.ChannelID,
+		childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
 	// Receive CCV packet on consumer chain
-	err = suite.path.EndpointA.RecvPacket(packet)
-	suite.Require().NoError(err)
+	err = s.path.EndpointA.RecvPacket(packet)
+	s.Require().NoError(err)
 
 	// - End provider unbonding period
 	parentCtx = parentCtx.WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
-	parentStakingKeeper.BlockValidatorUpdates(parentCtx)
+	parentStakingKeeper.BlockValidatorUpdates(s.parentCtx())
 
 	// - End consumer unbonding period
-	childCtx := suite.childChain.GetContext().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
-	err = suite.childChain.App.(*app.App).ChildKeeper.UnbondMaturePackets(childCtx)
-	suite.Require().NoError(err)
+	childCtx := s.childCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
+	err = s.childChain.App.(*app.App).ChildKeeper.UnbondMaturePackets(childCtx)
+	s.Require().NoError(err)
 
 	// commit child chain and update parent chain client
-	suite.coordinator.CommitBlock(suite.childChain)
-	err = suite.path.EndpointB.UpdateClient()
-	suite.Require().NoError(err)
+	s.coordinator.CommitBlock(s.childChain)
+	err = s.path.EndpointB.UpdateClient()
+	s.Require().NoError(err)
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 
-	err = suite.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
-	suite.Require().NoError(err)
+	err = s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
+	s.Require().NoError(err)
+}
+
+func (s *ParentTestSuite) parentCtx() sdk.Context {
+	return s.parentChain.GetContext()
+}
+
+func (s *ParentTestSuite) childCtx() sdk.Context {
+	return s.childChain.GetContext()
+}
+
+func (s *ParentTestSuite) TestStakingHooks() {
+	s.SetupCCVChannel()
+	bondAmt := sdk.NewInt(1000000)
+
+	delAddr := s.parentChain.SenderAccount.GetAddress()
+
+	// Choose a validator, and get its address and data structure into the correct types
+	tmValidator := s.parentChain.Vals.Validators[0]
+	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
+	s.Require().NoError(err)
+	validator, found := s.parentChain.App.GetStakingKeeper().GetValidator(s.parentCtx(), valAddr)
+	s.Require().True(found)
+
+	// INITIAL BOND
+	// ============
+
+	// Bond some tokens on provider to change validator powers
+	shares, err := s.parentChain.App.GetStakingKeeper().Delegate(s.parentCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+	s.Require().NoError(err)
+
+	// Send CCV packet to consumer
+	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
+
+	// Get validator update created in Endblock to use in reconstructing packet
+	valUpdates := s.parentChain.App.GetStakingKeeper().GetValidatorUpdates(s.parentCtx())
+
+	fmt.Printf("VALUPDATES 1 %#v\n", valUpdates)
+
+	// commit block on parent chain and update child chain's client
+	oldBlockTime := s.parentCtx().BlockTime()
+	s.coordinator.CommitBlock(s.parentChain)
+	s.path.EndpointA.UpdateClient()
+
+	// Reconstruct packet
+	packetData := types.NewValidatorSetChangePacketData(valUpdates, 1)
+	timeout := uint64(parenttypes.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, parenttypes.PortID, s.path.EndpointB.ChannelID,
+		childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	// Receive CCV packet on consumer chain
+	err = s.path.EndpointA.RecvPacket(packet)
+	s.Require().NoError(err)
+
+	// UNBOND
+	// ======
+
+	// Unbond some tokens on provider
+	_, err = s.parentChain.App.GetStakingKeeper().Undelegate(s.parentCtx(), delAddr, valAddr, shares.QuoInt64(2))
+	s.Require().NoError(err)
+
+	// Send CCV packet to consumer
+	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
+
+	// Get validator update created in Endblock to use in reconstructing packet
+	valUpdates = s.parentChain.App.GetStakingKeeper().GetValidatorUpdates(s.parentCtx())
+	fmt.Printf("VALUPDATES 2 %#v\n", valUpdates)
+
+	// commit block on parent chain and update child chain's client
+	oldBlockTime = s.parentCtx().BlockTime()
+	s.coordinator.CommitBlock(s.parentChain)
+	s.path.EndpointA.UpdateClient()
+
+	// Reconstruct packet
+	packetData = types.NewValidatorSetChangePacketData(valUpdates, 2)
+	timeout = uint64(parenttypes.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	packet = channeltypes.NewPacket(packetData.GetBytes(), 1, parenttypes.PortID, s.path.EndpointB.ChannelID,
+		childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	// Receive CCV packet on consumer chain
+	err = s.path.EndpointA.RecvPacket(packet)
+	s.Require().NoError(err)
+
+	// ====================================================================
+
+	// // - End provider unbonding period
+	// parentCtx = parentCtx.WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
+	// parentStakingKeeper.BlockValidatorUpdates(parentCtx)
+
+	// // - End consumer unbonding period
+	// childCtx := suite.childChain.GetContext().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
+	// err = suite.childChain.App.(*app.App).ChildKeeper.UnbondMaturePackets(childCtx)
+	// suite.Require().NoError(err)
+
+	// // commit child chain and update parent chain client
+	// suite.coordinator.CommitBlock(suite.childChain)
+	// err = suite.path.EndpointB.UpdateClient()
+	// suite.Require().NoError(err)
+
+	// ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+
+	// err = suite.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
+	// suite.Require().NoError(err)
 }
 
 // func (suite *ParentTestSuite) TestStakingHooks() {
@@ -190,17 +294,19 @@ func (suite *ParentTestSuite) TestPacketRoundtrip() {
 
 // 	// - Bond and unbond some tokens on provider
 // 	println("\n- Bond and unbond some tokens on provider")
-// 	_, err = parentStakingKeeper.Delegate(parentCtx, delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+// 	shares, err := parentStakingKeeper.Delegate(parentCtx, delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
 // 	suite.Require().NoError(err)
-// 	// _, err = parentStakingKeeper.Undelegate(parentCtx, delAddr, valAddr, shares)
-// 	// suite.Require().NoError(err)
+
+// 	// Unbond half the tokens
+// 	_, err = parentStakingKeeper.Undelegate(parentCtx, delAddr, valAddr, shares.QuoInt64(2))
+// 	suite.Require().NoError(err)
 
 // 	// - Check if Staking UBD is created
 // 	// println("\n- Check if Staking UBD is created")
 // 	// stakingUbde, found := GetStakingUbde(parentCtx, parentStakingKeeper, 1)
 // 	// suite.Require().True(found)
 // 	// fmt.Printf("stakingUbde %#v\n", stakingUbde)
-// 	// // suite.Require().True(false)
+// 	// suite.Require().True(false)
 
 // 	// // - Check if CCV UBDE is created
 // 	// println("\n- Check if CCV UBDE is created")
