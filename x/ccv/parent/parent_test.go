@@ -193,20 +193,11 @@ func (s *ParentTestSuite) TestStakingHooks() {
 		return s.parentChain.App.(*app.App).BankKeeper.GetBalance(s.parentCtx(), delAddr, s.parentBondDenom()).Amount
 	}
 
-	// Get initial balance of our delegator
-	initialBalance := delBalance()
-
-	fmt.Printf("INIT BALANCE %#v\n", initialBalance.Int64())
-
 	// INITIAL BOND
 
 	// Bond some tokens on provider to change validator powers
 	shares, err := s.parentChain.App.GetStakingKeeper().Delegate(s.parentCtx(), delAddr, sdk.NewInt(10000000), stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
-	fmt.Printf("SHARES %#v\n", shares)
 	s.Require().NoError(err)
-
-	afterBondBalance := delBalance()
-	fmt.Printf("AFTER BOND BALANCE %#v\n", afterBondBalance.Int64())
 
 	// UNDELEGATE
 
@@ -228,8 +219,6 @@ func (s *ParentTestSuite) TestStakingHooks() {
 
 	// Get validator update created in Endblock to use in reconstructing packet
 	valUpdates := s.parentChain.App.GetStakingKeeper().GetValidatorUpdates(s.parentCtx())
-
-	fmt.Printf("VALUPDATES %#v\n", valUpdates)
 
 	// commit block on parent chain and update child chain's client
 	oldBlockTime := s.parentCtx().BlockTime()
