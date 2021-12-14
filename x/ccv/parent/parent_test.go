@@ -119,8 +119,7 @@ func (s *ParentTestSuite) TestPacketRoundtrip() {
 	s.Require().True(found)
 
 	// Bond some tokens on provider to change validator powers
-	shares, err := parentStakingKeeper.Delegate(s.parentCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
-	fmt.Printf("SHARES %#v %#v\n", shares, sdk.NewDec(1).QuoInt64(2))
+	_, err = parentStakingKeeper.Delegate(s.parentCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
 	s.Require().NoError(err)
 
 	// Send CCV packet to consumer
@@ -128,7 +127,6 @@ func (s *ParentTestSuite) TestPacketRoundtrip() {
 
 	// Get validator update created in Endblock to use in reconstructing packet
 	valUpdates := parentStakingKeeper.GetValidatorUpdates(s.parentCtx())
-	fmt.Printf("VALUPDATES 1 %#v\n", valUpdates)
 
 	// commit block on parent chain and update child chain's client
 	oldBlockTime := s.parentCtx().BlockTime()
@@ -174,12 +172,16 @@ func (s *ParentTestSuite) childCtx() sdk.Context {
 	return s.childChain.GetContext()
 }
 
+func (s *ParentTestSuite) parentBondDenom() string {
+	return s.parentChain.App.(*app.App).StakingKeeper.BondDenom(s.parentCtx())
+}
+
 func (s *ParentTestSuite) TestStakingHooks() {
 	s.SetupCCVChannel()
 	// bondAmt := sdk.NewInt(1000000)
 
 	delAddr := s.parentChain.SenderAccount.GetAddress()
-
+	origTime := s.ctx.BlockTime()
 	// Choose a validator, and get its address and data structure into the correct types
 	tmValidator := s.parentChain.Vals.Validators[0]
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
@@ -187,22 +189,40 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	validator, found := s.parentChain.App.GetStakingKeeper().GetValidator(s.parentCtx(), valAddr)
 	s.Require().True(found)
 
+	delBalance := func() sdk.Int {
+		return s.parentChain.App.(*app.App).BankKeeper.GetBalance(s.parentCtx(), delAddr, s.parentBondDenom()).Amount
+	}
+
+	// Get initial balance of our delegator
+	initialBalance := delBalance()
+
+	fmt.Printf("INIT BALANCE %#v\n", initialBalance.Int64())
+
 	// INITIAL BOND
 
 	// Bond some tokens on provider to change validator powers
-	_, err = s.parentChain.App.GetStakingKeeper().Delegate(s.parentCtx(), delAddr, sdk.NewInt(1000000), stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+	shares, err := s.parentChain.App.GetStakingKeeper().Delegate(s.parentCtx(), delAddr, sdk.NewInt(1000000), stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+	fmt.Printf("SHARES %#v\n", shares)
 	s.Require().NoError(err)
 
-	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
+	afterBondBalance := delBalance()
+	fmt.Printf("AFTER BOND BALANCE %#v\n", afterBondBalance.Int64())
 
 	// UNDELEGATE
 
-	_, err = s.parentChain.App.GetStakingKeeper().Undelegate(s.parentCtx(), delAddr, valAddr, sdk.NewDec(1).QuoInt64(2))
+	// Undelegate half
+	_, err = s.parentChain.App.GetStakingKeeper().Undelegate(s.parentCtx(), delAddr, valAddr, shares.QuoInt64(2))
 	s.Require().NoError(err)
 
 	// check that staking ubde was created
 	_, found = GetStakingUbde(s.parentCtx(), s.parentChain.App.GetStakingKeeper(), 1)
 	s.Require().True(found)
+
+	// check that CCV ubde was created
+	_, found = s.parentChain.App.(*app.App).ParentKeeper.GetUBDEsFromIndex(s.parentCtx(), s.childChain.ChainID, 1)
+	s.Require().True(found)
+
+	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
 
 	// SEND PACKET
 
@@ -225,6 +245,32 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	// Receive CCV packet on consumer chain
 	err = s.path.EndpointA.RecvPacket(packet)
 	s.Require().NoError(err)
+
+	// ACKNOWLEDGE PACKET
+
+	// - End provider unbonding period
+	parentCtx := s.parentCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
+	// s.parentChain.App.EndBlock(abci.RequestEndBlock{}) <- this doesn't work because we can't modify the ctx
+	s.parentChain.App.GetStakingKeeper().BlockValidatorUpdates(parentCtx)
+
+	// - End consumer unbonding period
+	childCtx := s.childCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
+	// s.childChain.App.EndBlock(abci.RequestEndBlock{})  <- this doesn't work because we can't modify the ctx
+	err = s.childChain.App.(*app.App).ChildKeeper.UnbondMaturePackets(childCtx)
+	s.Require().NoError(err)
+
+	// commit child chain and update parent chain client
+	s.coordinator.CommitBlock(s.childChain)
+	err = s.path.EndpointB.UpdateClient()
+	s.Require().NoError(err)
+
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+
+	err = s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
+	s.Require().NoError(err)
+
+	endBalance := delBalance()
+	fmt.Printf("END BOND BALANCE %#v\n", endBalance.Int64())
 }
 
 // func (suite *ParentTestSuite) TestStakingHooks() {
