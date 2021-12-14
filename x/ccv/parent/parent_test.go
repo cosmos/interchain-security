@@ -201,7 +201,7 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	// INITIAL BOND
 
 	// Bond some tokens on provider to change validator powers
-	shares, err := s.parentChain.App.GetStakingKeeper().Delegate(s.parentCtx(), delAddr, sdk.NewInt(1000000), stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+	shares, err := s.parentChain.App.GetStakingKeeper().Delegate(s.parentCtx(), delAddr, sdk.NewInt(10000000), stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
 	fmt.Printf("SHARES %#v\n", shares)
 	s.Require().NoError(err)
 
