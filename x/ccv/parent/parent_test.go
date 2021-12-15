@@ -192,6 +192,12 @@ func (s *ParentTestSuite) TestStakingHooks() {
 		return s.parentChain.App.(*app.App).BankKeeper.GetBalance(s.parentCtx(), delAddr, s.parentBondDenom()).Amount
 	}
 
+	checkStakingUBDE := func(id uint64, found bool, onHold bool) {
+		stakingUBDE, wasFound := GetStakingUbde(s.parentCtx(), s.parentChain.App.GetStakingKeeper(), id)
+		s.Require().True(found == wasFound)
+		s.Require().True(onHold == stakingUBDE.OnHold)
+	}
+
 	initBalance := delBalance()
 
 	// INITIAL BOND
@@ -215,9 +221,7 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	s.Require().True(afterbondBalance.Equal(delBalance()))
 
 	// check that staking ubde was created and onHold is false
-	stakingUBDE, found := GetStakingUbde(s.parentCtx(), s.parentChain.App.GetStakingKeeper(), 1)
-	s.Require().True(found)
-	s.Require().False(stakingUBDE.OnHold)
+	checkStakingUBDE(1, true, false)
 
 	// check that CCV ubde was created
 	_, found = s.parentChain.App.(*app.App).ParentKeeper.GetUBDEsFromIndex(s.parentCtx(), s.childChain.ChainID, 1)
@@ -253,8 +257,7 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	s.parentChain.App.GetStakingKeeper().BlockValidatorUpdates(parentCtx)
 
 	// check that onHold is true
-	stakingUBDE, _ = GetStakingUbde(s.parentCtx(), s.parentChain.App.GetStakingKeeper(), 1)
-	s.Require().True(stakingUBDE.OnHold)
+	checkStakingUBDE(1, true, false)
 
 	// - End consumer unbonding period
 	childCtx := s.childCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
@@ -280,8 +283,7 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	s.Require().False(found)
 
 	// Check that staking UBDE has been deleted
-	stakingUBDE, found = GetStakingUbde(s.parentCtx(), s.parentChain.App.GetStakingKeeper(), 1)
-	s.Require().False(found)
+	checkStakingUBDE(1, false, false)
 
 	// Check that unbonding has completed
 	s.Require().True(delBalance().Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
