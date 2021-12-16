@@ -175,18 +175,27 @@ func (s *ParentTestSuite) parentBondDenom() string {
 	return s.parentChain.App.(*app.App).StakingKeeper.BondDenom(s.parentCtx())
 }
 
+func (s *ParentTestSuite) getVal(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {
+	// Choose a validator, and get its address and data structure into the correct types
+	tmValidator := s.parentChain.Vals.Validators[index]
+	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
+	s.Require().NoError(err)
+	validator, found := s.parentChain.App.GetStakingKeeper().GetValidator(s.parentCtx(), valAddr)
+	s.Require().True(found)
+
+	return validator, valAddr
+}
+
 func (s *ParentTestSuite) TestStakingHooks() {
 	s.SetupCCVChannel()
 	bondAmt := sdk.NewInt(10000000)
 
 	delAddr := s.parentChain.SenderAccount.GetAddress()
+
 	origTime := s.ctx.BlockTime()
+
 	// Choose a validator, and get its address and data structure into the correct types
-	tmValidator := s.parentChain.Vals.Validators[0]
-	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
-	s.Require().NoError(err)
-	validator, found := s.parentChain.App.GetStakingKeeper().GetValidator(s.parentCtx(), valAddr)
-	s.Require().True(found)
+	validator, valAddr := s.getVal(0)
 
 	delBalance := func() sdk.Int {
 		return s.parentChain.App.(*app.App).BankKeeper.GetBalance(s.parentCtx(), delAddr, s.parentBondDenom()).Amount
@@ -196,6 +205,29 @@ func (s *ParentTestSuite) TestStakingHooks() {
 		stakingUBDE, wasFound := GetStakingUbde(s.parentCtx(), s.parentChain.App.GetStakingKeeper(), id)
 		s.Require().True(found == wasFound)
 		s.Require().True(onHold == stakingUBDE.OnHold)
+	}
+
+	checkCCVUBDE := func(chainID string, valUpdateID uint64, found bool) {
+		_, wasFound := s.parentChain.App.(*app.App).ParentKeeper.GetUBDEsFromIndex(s.parentCtx(), chainID, valUpdateID)
+		s.Require().True(found == wasFound)
+	}
+
+	sendValUpdatePacket := func(valUpdates []abci.ValidatorUpdate, valUpdateId uint64, blockTime time.Time, packetSequence uint64) channeltypes.Packet {
+		packetData := types.NewValidatorSetChangePacketData(valUpdates, valUpdateId)
+		timeout := uint64(parenttypes.GetTimeoutTimestamp(blockTime).UnixNano())
+		packet := channeltypes.NewPacket(packetData.GetBytes(), packetSequence, parenttypes.PortID, s.path.EndpointB.ChannelID,
+			childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+		// Receive CCV packet on consumer chain
+		err := s.path.EndpointA.RecvPacket(packet)
+		s.Require().NoError(err)
+
+		return packet
+	}
+
+	commitParentBlock := func() {
+		s.coordinator.CommitBlock(s.parentChain)
+		s.path.EndpointA.UpdateClient()
 	}
 
 	initBalance := delBalance()
@@ -224,8 +256,7 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	checkStakingUBDE(1, true, false)
 
 	// check that CCV ubde was created
-	_, found = s.parentChain.App.(*app.App).ParentKeeper.GetUBDEsFromIndex(s.parentCtx(), s.childChain.ChainID, 1)
-	s.Require().True(found)
+	checkCCVUBDE(s.childChain.ChainID, 1, true)
 
 	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
 
@@ -234,34 +265,33 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	// Get validator update created in Endblock to use in reconstructing packet
 	valUpdates := s.parentChain.App.GetStakingKeeper().GetValidatorUpdates(s.parentCtx())
 
-	// commit block on parent chain and update child chain's client
+	// Get current blocktime
 	oldBlockTime := s.parentCtx().BlockTime()
-	s.coordinator.CommitBlock(s.parentChain)
-	s.path.EndpointA.UpdateClient()
 
-	// Reconstruct packet
-	packetData := types.NewValidatorSetChangePacketData(valUpdates, 1)
-	timeout := uint64(parenttypes.GetTimeoutTimestamp(oldBlockTime).UnixNano())
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, parenttypes.PortID, s.path.EndpointB.ChannelID,
-		childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
-
-	// Receive CCV packet on consumer chain
-	err = s.path.EndpointA.RecvPacket(packet)
-	s.Require().NoError(err)
+	// commit block on parent chain and update consumer chain's client
+	commitParentBlock()
+	// Relay actual packet content to consumer chain
+	packet := sendValUpdatePacket(valUpdates, 1, oldBlockTime, 1)
 
 	// ACKNOWLEDGE PACKET
 
+	// Some time passes
+	// s.coordinator.IncrementTimeBy(childtypes.UnbondingTime + (3 * time.Hour))
+
 	// - End provider unbonding period
 	parentCtx := s.parentCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
-	// s.parentChain.App.EndBlock(abci.RequestEndBlock{}) <- this doesn't work because we can't modify the ctx
+	// s.parentChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
 	s.parentChain.App.GetStakingKeeper().BlockValidatorUpdates(parentCtx)
 
 	// check that onHold is true
-	checkStakingUBDE(1, true, false)
+	checkStakingUBDE(1, true, true)
+
+	// Check that unbonding has not yet completed
+	s.Require().True(delBalance().Equal(initBalance.Sub(bondAmt)))
 
 	// - End consumer unbonding period
 	childCtx := s.childCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
-	// s.childChain.App.EndBlock(abci.RequestEndBlock{})  <- this doesn't work because we can't modify the ctx
+	// s.childChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
 	err = s.childChain.App.(*app.App).ChildKeeper.UnbondMaturePackets(childCtx)
 	s.Require().NoError(err)
 
@@ -272,15 +302,13 @@ func (s *ParentTestSuite) TestStakingHooks() {
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 
-	// Check that unbonding has not yet completed
-	s.Require().True(delBalance().Equal(initBalance.Sub(bondAmt)))
-
 	err = s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
 	s.Require().NoError(err)
 
 	// Check that ccv ubde has been deleted
-	_, found = s.parentChain.App.(*app.App).ParentKeeper.GetUBDEsFromIndex(s.parentCtx(), s.childChain.ChainID, 1)
-	s.Require().False(found)
+	// _, found = s.parentChain.App.(*app.App).ParentKeeper.GetUBDEsFromIndex(s.parentCtx(), s.childChain.ChainID, 1)
+	// s.Require().False(found)
+	checkCCVUBDE(s.childChain.ChainID, 1, false)
 
 	// Check that staking UBDE has been deleted
 	checkStakingUBDE(1, false, false)
