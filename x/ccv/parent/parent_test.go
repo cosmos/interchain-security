@@ -306,8 +306,6 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	s.Require().NoError(err)
 
 	// Check that ccv ubde has been deleted
-	// _, found = s.parentChain.App.(*app.App).ParentKeeper.GetUBDEsFromIndex(s.parentCtx(), s.childChain.ChainID, 1)
-	// s.Require().False(found)
 	checkCCVUBDE(s.childChain.ChainID, 1, false)
 
 	// Check that staking UBDE has been deleted
