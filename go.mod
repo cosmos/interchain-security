@@ -3,7 +3,7 @@ module github.com/cosmos/interchain-security
 go 1.16
 
 require (
-	github.com/cosmos/cosmos-sdk v0.44.1-0.20211116231134-8f6658bab5d4
+	github.com/cosmos/cosmos-sdk v0.44.1-0.20220106232020-8ae6404991b8
 	github.com/cosmos/iavl v0.17.1 // indirect
 	github.com/cosmos/ibc-go v1.2.1-0.20211111105346-12a60b13a024
 	github.com/gogo/protobuf v1.3.3
@@ -26,8 +26,8 @@ require (
 	github.com/tendermint/tendermint v0.34.14
 	github.com/tendermint/tm-db v0.6.4
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
-	google.golang.org/genproto v0.0.0-20210903162649-d08c68adba83
-	google.golang.org/grpc v1.40.0
+	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
+	google.golang.org/grpc v1.43.0
 	google.golang.org/protobuf v1.27.1
 )
 

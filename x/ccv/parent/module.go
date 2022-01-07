@@ -92,11 +92,11 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule represents the AppModule for this module
 type AppModule struct {
 	AppModuleBasic
-	keeper keeper.Keeper
+	keeper *keeper.Keeper
 }
 
 // NewAppModule creates a new parent module
-func NewAppModule(k keeper.Keeper) AppModule {
+func NewAppModule(k *keeper.Keeper) AppModule {
 	return AppModule{
 		keeper: k,
 	}
@@ -133,6 +133,9 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	am.keeper.InitGenesis(ctx, &genesisState)
+	// initialize validator update id
+	// TODO: Include in genesis and initialize from genesis value
+	am.keeper.SetValidatorSetUpdateId(ctx, 1)
 	return []abci.ValidatorUpdate{}
 }
 
@@ -154,12 +157,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
 	// For each child chain, call the endblock method which gets relevant validator set changes and
 	// sends them to the child chain
-	valUpdateID := am.keeper.GetValidatorSetUpdateId(ctx)
-	am.keeper.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
-		return am.keeper.EndBlockCallback(ctx, chainID, valUpdateID)
-	})
+	am.keeper.EndBlockCallback(ctx)
 	am.keeper.IteratePendingClientInfo(ctx)
-	am.keeper.IncrementValidatorSetUpdateId(ctx)
 	return []abci.ValidatorUpdate{}
 }
 
@@ -196,7 +195,7 @@ func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.Weig
 // supported version.
 func ValidateParentChannelParams(
 	ctx sdk.Context,
-	keeper keeper.Keeper,
+	keeper *keeper.Keeper,
 	order channeltypes.Order,
 	portID string,
 	channelID string,

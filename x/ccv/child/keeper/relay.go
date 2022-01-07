@@ -8,6 +8,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/modules/core/24-host"
+	"github.com/cosmos/ibc-go/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
@@ -16,7 +17,7 @@ import (
 
 // OnRecvPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
 // and set the unbonding time for the packet so that we can WriteAcknowledgement after unbonding time is over.
-func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) *channeltypes.Acknowledgement {
+func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) exported.Acknowledgement {
 	// packet is not sent on parent channel, return error acknowledgement and close channel
 	if parentChannel, ok := k.GetParentChannel(ctx); ok && parentChannel != packet.DestinationChannel {
 		ack := channeltypes.NewErrorAcknowledgement(

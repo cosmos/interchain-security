@@ -134,7 +134,8 @@ func (k Keeper) IterateBabyChains(ctx sdk.Context, cb func(ctx sdk.Context, chai
 	}
 
 	for ; iterator.Valid(); iterator.Next() {
-		chainID := string(iterator.Key())
+		// remove prefix + "/" from key to retrieve chainID
+		chainID := string(iterator.Key()[len(types.ChainToChannelKeyPrefix)+1:])
 
 		stop := cb(ctx, chainID)
 		if stop {
@@ -235,6 +236,7 @@ func (k Keeper) SetChildChain(ctx sdk.Context, channelID string) error {
 		k.chanCloseInit(ctx, channelID)
 		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for child chain %s", prevChannel, chainID)
 	}
+
 	// set channel mappings
 	k.SetChainToChannel(ctx, tmClient.ChainId, channelID)
 	k.SetChannelToChain(ctx, channelID, tmClient.ChainId)
@@ -285,6 +287,7 @@ func (k Keeper) SetUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uin
 // This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
 func (k Keeper) GetUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) ([]uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
+
 	bz := store.Get(types.UBDEIndexKey(chainID, valsetUpdateID))
 	if bz == nil {
 		return []uint64{}, false
@@ -311,7 +314,6 @@ func (k Keeper) GetUBDEsFromIndex(ctx sdk.Context, chainID string, valsetUpdateI
 	if !found {
 		return entries, false
 	}
-
 	for _, id := range ids {
 		entry, found := k.GetUnbondingDelegationEntry(ctx, id)
 		if !found {
@@ -373,6 +375,16 @@ func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
 	store.Set([]byte(types.ValidatorSetUpdateIdPrefix), bz)
 }
 
+func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
+	store := ctx.KVStore(k.storeKey)
+
+	// Convert back into bytes for storage
+	bz := make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, valUpdateID)
+
+	store.Set([]byte(types.ValidatorSetUpdateIdPrefix), bz)
+}
+
 func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId uint64) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get([]byte(types.ValidatorSetUpdateIdPrefix))
@@ -389,13 +401,13 @@ func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId u
 
 type StakingHooks struct {
 	stakingtypes.StakingHooksTemplate
-	k Keeper
+	k *Keeper
 }
 
 var _ stakingtypes.StakingHooks = StakingHooks{}
 
 // Return the wrapper struct
-func (k Keeper) Hooks() StakingHooks {
+func (k *Keeper) Hooks() StakingHooks {
 	return StakingHooks{stakingtypes.StakingHooksTemplate{}, k}
 }
 

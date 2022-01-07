@@ -7070,6 +7070,17 @@ paths:
                             description: >-
                               balance defines the tokens to receive at
                               completion.
+                          id:
+                            type: string
+                            format: uint64
+                            title: >-
+                              Incrementing id that uniquely identifies this
+                              entry
+                          onHold:
+                            type: boolean
+                            title: >-
+                              True if this entry's unbonding has been stopped by
+                              an external module
                         description: >-
                           UnbondingDelegationEntry defines an unbonding object
                           with relevant metadata.
@@ -11225,6 +11236,15 @@ paths:
                         balance:
                           type: string
                           description: balance defines the tokens to receive at completion.
+                        id:
+                          type: string
+                          format: uint64
+                          title: Incrementing id that uniquely identifies this entry
+                        onHold:
+                          type: boolean
+                          title: >-
+                            True if this entry's unbonding has been stopped by
+                            an external module
                       description: >-
                         UnbondingDelegationEntry defines an unbonding object
                         with relevant metadata.
@@ -11491,6 +11511,17 @@ paths:
                             description: >-
                               balance defines the tokens to receive at
                               completion.
+                          id:
+                            type: string
+                            format: uint64
+                            title: >-
+                              Incrementing id that uniquely identifies this
+                              entry
+                          onHold:
+                            type: boolean
+                            title: >-
+                              True if this entry's unbonding has been stopped by
+                              an external module
                         description: >-
                           UnbondingDelegationEntry defines an unbonding object
                           with relevant metadata.
@@ -16982,6 +17013,15 @@ definitions:
                   balance:
                     type: string
                     description: balance defines the tokens to receive at completion.
+                  id:
+                    type: string
+                    format: uint64
+                    title: Incrementing id that uniquely identifies this entry
+                  onHold:
+                    type: boolean
+                    title: >-
+                      True if this entry's unbonding has been stopped by an
+                      external module
                 description: >-
                   UnbondingDelegationEntry defines an unbonding object with
                   relevant metadata.
@@ -18217,6 +18257,15 @@ definitions:
                 balance:
                   type: string
                   description: balance defines the tokens to receive at completion.
+                id:
+                  type: string
+                  format: uint64
+                  title: Incrementing id that uniquely identifies this entry
+                onHold:
+                  type: boolean
+                  title: >-
+                    True if this entry's unbonding has been stopped by an
+                    external module
               description: >-
                 UnbondingDelegationEntry defines an unbonding object with
                 relevant metadata.
@@ -18629,6 +18678,15 @@ definitions:
                   balance:
                     type: string
                     description: balance defines the tokens to receive at completion.
+                  id:
+                    type: string
+                    format: uint64
+                    title: Incrementing id that uniquely identifies this entry
+                  onHold:
+                    type: boolean
+                    title: >-
+                      True if this entry's unbonding has been stopped by an
+                      external module
                 description: >-
                   UnbondingDelegationEntry defines an unbonding object with
                   relevant metadata.
@@ -19221,6 +19279,15 @@ definitions:
             balance:
               type: string
               description: balance defines the tokens to receive at completion.
+            id:
+              type: string
+              format: uint64
+              title: Incrementing id that uniquely identifies this entry
+            onHold:
+              type: boolean
+              title: >-
+                True if this entry's unbonding has been stopped by an external
+                module
           description: >-
             UnbondingDelegationEntry defines an unbonding object with relevant
             metadata.
@@ -19247,6 +19314,13 @@ definitions:
       balance:
         type: string
         description: balance defines the tokens to receive at completion.
+      id:
+        type: string
+        format: uint64
+        title: Incrementing id that uniquely identifies this entry
+      onHold:
+        type: boolean
+        title: True if this entry's unbonding has been stopped by an external module
     description: >-
       UnbondingDelegationEntry defines an unbonding object with relevant
       metadata.

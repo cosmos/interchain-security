@@ -315,13 +315,13 @@ func New(
 	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(appCodec, keys[feegrant.StoreKey], app.AccountKeeper)
 	app.UpgradeKeeper = upgradekeeper.NewKeeper(skipUpgradeHeights, keys[upgradetypes.StoreKey], appCodec, homePath, app.BaseApp)
 
+	// ... other modules keepers
+
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
 	app.StakingKeeper = *stakingKeeper.SetHooks(
 		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks(), app.ParentKeeper.Hooks()),
 	)
-
-	// ... other modules keepers
 
 	// Create IBC Keeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
@@ -335,7 +335,7 @@ func New(
 	childModule := ibcchild.NewAppModule(app.ChildKeeper)
 	app.ParentKeeper = ibcparentkeeper.NewKeeper(appCodec, keys[ibcparenttypes.StoreKey], app.GetSubspace(ibcparenttypes.ModuleName), scopedIBCParentKeeper,
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper, app.StakingKeeper)
-	parentModule := ibcparent.NewAppModule(app.ParentKeeper)
+	parentModule := ibcparent.NewAppModule(&app.ParentKeeper)
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
