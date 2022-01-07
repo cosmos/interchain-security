@@ -3,3 +3,4 @@ vue/dist
 release/
 docs/tla/states/
 *.out
+testnet/artifacts
