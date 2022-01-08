@@ -14,9 +14,11 @@ client:
 faucet:
   name: bob
   coins: ["5token", "100000stake"]
+  host: ":4501"
 host:
-  rpc: ":26659"
-  p2p: ":26658"
-  prof: ":6061"
+  rpc: ":26661"
+  p2p: ":26660"
+  prof: ":6062"
   grpc: ":9092"
-  api: ":1318"
+  grpc-web: "0.0.0.0:9093"
+  api: ":1319"
