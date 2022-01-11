@@ -107,11 +107,12 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 // in a packet over the CCV channel.
 func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
+	// k.IncrementValidatorSetUpdateId(ctx) TODO: move this here
 	k.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
 		valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 		if len(valUpdates) != 0 {
 			k.SendPacket(ctx, chainID, valUpdates, valUpdateID)
-			k.IncrementValidatorSetUpdateId(ctx)
+			k.IncrementValidatorSetUpdateId(ctx) // TODO: this needs to be moved out of this scope
 		}
 		return false
 	})
