@@ -55,7 +55,8 @@ const (
 
 var (
 	// PortKey defines the key to store the port ID in store
-	PortKey = []byte{0x01}
+	PortKey                         = []byte{0x01}
+	LastDistributionTransmissionKey = []byte{0x02}
 )
 
 // ParentChannelKey returns the key for storing channelID of the parent chain.

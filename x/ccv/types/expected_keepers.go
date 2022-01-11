@@ -1,13 +1,16 @@
 package types
 
 import (
+	context "context"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
@@ -71,4 +74,38 @@ type ClientKeeper interface {
 // ChildHooks event hooks for newly bonded cross-chain validators
 type ChildHooks interface {
 	AfterValidatorBonded(ctx sdk.Context, consAddr sdk.ConsAddress, _ sdk.ValAddress)
+}
+
+// BankKeeper defines the expected interface needed to retrieve account balances.
+type BankKeeper interface {
+	GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
+}
+
+// AccountKeeper defines the expected account keeper used for simulations
+type AccountKeeper interface {
+	GetModuleAccount(ctx sdk.Context, name string) auth.ModuleAccountI
+}
+
+// IBCTransferKeeper defines the expected interface needed for distribution transfer
+// of tokens from the consumer to the provider chain
+type IBCTransferKeeper interface {
+	SendTransfer(
+		ctx sdk.Context,
+		sourcePort,
+		sourceChannel string,
+		token sdk.Coin,
+		sender sdk.AccAddress,
+		receiver string,
+		timeoutHeight clienttypes.Height,
+		timeoutTimestamp uint64,
+	) error
+}
+
+// IBCKeeper defines the expected interface needed for openning a
+// channel
+type IBCCoreKeeper interface {
+	ChannelOpenInit(
+		goCtx context.Context,
+		msg *channeltypes.MsgChannelOpenInit,
+	) (*channeltypes.MsgChannelOpenInitResponse, error)
 }

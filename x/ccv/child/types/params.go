@@ -7,7 +7,10 @@ import (
 )
 
 var (
-	KeyEnabled = []byte("Enabled")
+	KeyEnabled                           = []byte("Enabled")
+	KeyBlocksPerDistributionTransmission = []byte("BlocksPerDistributionTransmission")
+	KeyProviderFeePoolAddrStr            = []byte("ProviderFeePoolAddrStr")
+	KeyDistributionTransmissionChannel   = []byte("KeyDistributionTransmissionChannel")
 )
 
 // ParamKeyTable type declaration for parameters

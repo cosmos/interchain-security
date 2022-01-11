@@ -3,15 +3,27 @@ package interchain_security.ccv.child.v1;
 
 option go_package = "github.com/cosmos/interchain-security/x/ccv/child/types";
 
-
-// Params defines the parameters for CCV child module
-message Params {
-    bool Enabled = 1;
-}
-
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
 
 // CrossChainValidator defines the validators for CCV child module
 message CrossChainValidator {
     bytes address = 1;
     int64 power = 2;
+}
+
+// Params defines the parameters for CCV child module
+message Params {
+    bool Enabled = 1;
+
+    // distribution params
+    int64  BlocksPerDistributionTransmission = 2; 
+    string ProviderFeePoolAddrStr = 3; 
+    string DistributionTransmissionChannel = 4; 
+}
+
+// LastTransmissionBlockHeight is the last time validator holding
+// pools were transmitted to the provider chain
+message LastTransmissionBlockHeight {
+  int64 height = 1; 
 }

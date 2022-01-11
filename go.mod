@@ -11,6 +11,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gravity-devs/liquidity v1.4.5
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.3 // indirect
 	github.com/kylelemons/godebug v1.1.0
 	github.com/prometheus/common v0.30.0 // indirect
 	github.com/rakyll/statik v0.1.7

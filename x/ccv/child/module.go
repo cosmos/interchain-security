@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/gorilla/mux"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
+	abci "github.com/tendermint/tendermint/abci/types"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -13,18 +18,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	"github.com/gorilla/mux"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
 
+	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
+
 	"github.com/cosmos/interchain-security/x/ccv/child/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
+	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -166,6 +169,9 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	am.keeper.DeletePendingChanges(ctx)
 	am.keeper.UnbondMaturePackets(ctx)
 
+	// distribution transmission
+	am.keeper.DistributeToProviderValidatorSet(ctx)
+
 	return data.ValidatorUpdates
 }
 
@@ -225,6 +231,7 @@ func ValidateChildChannelParams(
 }
 
 // OnChanOpenInit implements the IBCModule interface
+// this function is called by the relayer.
 func (am AppModule) OnChanOpenInit(
 	ctx sdk.Context,
 	order channeltypes.Order,
@@ -237,25 +244,26 @@ func (am AppModule) OnChanOpenInit(
 ) error {
 	// ensure parent channel hasn't already been created
 	if parentChannel, ok := am.keeper.GetParentChannel(ctx); ok {
-		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "parent channel: %s already set", parentChannel)
+		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
+			"parent channel: %s already set", parentChannel)
 	}
 
-	if err := ValidateChildChannelParams(ctx, am.keeper, order, portID, channelID, version); err != nil {
+	if err := ValidateChildChannelParams(
+		ctx, am.keeper, order, portID, channelID, version,
+	); err != nil {
 		return err
 	}
 
 	// Claim channel capability passed back by IBC module
-	if err := am.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
+	if err := am.keeper.ClaimCapability(
+		ctx, chanCap, host.ChannelCapabilityPath(portID, channelID),
+	); err != nil {
 		return err
 	}
 
 	am.keeper.SetChannelStatus(ctx, channelID, ccv.INITIALIZING)
 
-	if err := am.keeper.VerifyParentChain(ctx, channelID, connectionHops); err != nil {
-		return err
-	}
-
-	return nil
+	return am.keeper.VerifyParentChain(ctx, channelID, connectionHops)
 }
 
 // OnChanOpenTry implements the IBCModule interface
@@ -268,7 +276,7 @@ func (am AppModule) OnChanOpenTry(
 	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
-) (version string, err error) {
+) (string, error) {
 	return "", sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by child chain")
 }
 
@@ -277,16 +285,51 @@ func (am AppModule) OnChanOpenAck(
 	ctx sdk.Context,
 	portID,
 	channelID string,
-	counterpartyVersion string,
+	counterpartyMetadata string,
 ) error {
 	// ensure parent channel has already been created
 	if parentChannel, ok := am.keeper.GetParentChannel(ctx); ok {
-		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "parent channel: %s already established", parentChannel)
+		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
+			"parent channel: %s already established", parentChannel)
 	}
 
-	if counterpartyVersion != ccv.Version {
-		return sdkerrors.Wrapf(ccv.ErrInvalidVersion, "invalid counterparty version: %s, expected %s", counterpartyVersion, ccv.Version)
+	var md parenttypes.HandshakeMetadata
+	if err := (&md).Unmarshal([]byte(counterpartyMetadata)); err != nil {
+		return sdkerrors.Wrapf(ccv.ErrInvalidHandshakeMetadata,
+			"error unmarshalling ibc-ack metadata: ", err)
 	}
+
+	if md.Version != ccv.Version {
+		return sdkerrors.Wrapf(ccv.ErrInvalidVersion,
+			"invalid counterparty version: %s, expected %s", md.Version, ccv.Version)
+	}
+
+	am.keeper.SetProviderFeePoolAddrStr(ctx, md.ProviderFeePoolAddr)
+
+	///////////////////////////////////////////////////
+	// Initialize distribution token transfer channel
+	// NOTE the handshake for this channel is handled by
+	//      the ibc-go/transfer module
+
+	// reuse the connection hops for this channel for the
+	// transfer channel being created.
+	connHops := am.channelKeeper.GetChannel(ctx, portID, channelID).ConnectionHops
+
+	distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
+		transfertypes.PortID,
+		transfertypes.Version,
+		channeltypes.UNORDERED,
+		connHops,
+		transfertypes.PortID,
+		"", // signer unused
+	)
+
+	resp, err := am.keeper.ChannelOpenInit(ctx, distrTransferMsg)
+	if err != nil {
+		return err
+	}
+	am.keeper.SetDistributionTransmissionChannel(ctx, resp.ChannelID)
+
 	return nil
 }
 
@@ -330,7 +373,7 @@ func (am AppModule) OnRecvPacket(
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
 	var (
-		ack  exported.Acknowledgement
+		ack  ibcexported.Acknowledgement
 		data ccv.ValidatorSetChangePacketData
 	)
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {

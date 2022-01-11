@@ -246,9 +246,12 @@ func (am AppModule) OnChanOpenTry(
 	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
-) (version string, err error) {
-	if err := ValidateParentChannelParams(ctx, am.keeper, order, portID, channelID, ccv.Version); err != nil {
-		return ccv.Version, err
+) (metadata string, err error) {
+
+	if err := ValidateParentChannelParams(
+		ctx, am.keeper, order, portID, channelID, ccv.Version,
+	); err != nil {
+		return "", err
 	}
 
 	if counterpartyVersion != ccv.Version {
@@ -270,10 +273,22 @@ func (am AppModule) OnChanOpenTry(
 
 	am.keeper.SetChannelStatus(ctx, channelID, ccv.INITIALIZING)
 
-	if err := am.keeper.VerifyChildChain(ctx, channelID, connectionHops); err != nil {
+	if err := am.keeper.VerifyChildChain(
+		ctx, channelID, connectionHops,
+	); err != nil {
 		return ccv.Version, err
 	}
-	return ccv.Version, nil
+
+	md := types.HandshakeMetadata{
+		Version:             version,
+		ProviderFeePoolAddr: am.keeper.GetFeeCollectorAddressStr(ctx),
+	}
+	mdBz, err := (&md).Marshal()
+	if err != nil {
+		return "", sdkerrors.Wrapf(ccv.ErrInvalidHandshakeMetadata,
+			"error marshalling ibc-try metadata: ", err)
+	}
+	return string(mdBz), nil
 }
 
 // OnChanOpenAck implements the IBCModule interface

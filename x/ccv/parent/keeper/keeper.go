@@ -37,16 +37,20 @@ type Keeper struct {
 	channelKeeper    ccv.ChannelKeeper
 	portKeeper       ccv.PortKeeper
 	connectionKeeper ccv.ConnectionKeeper
+	accountKeeper    ccv.AccountKeeper
 	clientKeeper     ccv.ClientKeeper
 	stakingKeeper    ccv.StakingKeeper
 	slashingKeeper   ccv.SlashingKeeper
+	feeCollectorName string
 }
 
 // NewKeeper creates a new parent Keeper instance
 func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper capabilitykeeper.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
-	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper, stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
+	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
+	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
+	accountKeeper ccv.AccountKeeper, feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -61,9 +65,11 @@ func NewKeeper(
 		channelKeeper:    channelKeeper,
 		portKeeper:       portKeeper,
 		connectionKeeper: connectionKeeper,
+		accountKeeper:    accountKeeper,
 		clientKeeper:     clientKeeper,
 		stakingKeeper:    stakingKeeper,
 		slashingKeeper:   slashingKeeper,
+		feeCollectorName: feeCollectorName,
 	}
 }
 

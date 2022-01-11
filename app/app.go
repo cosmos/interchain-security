@@ -440,6 +440,11 @@ func New(
 		app.IBCKeeper.ConnectionKeeper,
 		app.IBCKeeper.ClientKeeper,
 		app.SlashingKeeper,
+		app.BankKeeper,
+		app.AccountKeeper,
+		&app.TransferKeeper,
+		app.IBCKeeper,
+		authtypes.FeeCollectorName,
 	)
 
 	app.ParentKeeper = ibcparentkeeper.NewKeeper(
@@ -453,6 +458,8 @@ func New(
 		app.IBCKeeper.ClientKeeper,
 		app.StakingKeeper,
 		app.SlashingKeeper,
+		app.AccountKeeper,
+		authtypes.FeeCollectorName,
 	)
 	parentModule := ibcparent.NewAppModule(&app.ParentKeeper)
 

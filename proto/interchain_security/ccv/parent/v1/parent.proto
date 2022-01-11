@@ -36,8 +36,12 @@ message CreateChildChainProposal {
         [(gogoproto.moretags) = "yaml:\"spawn_time\"", (gogoproto.stdtime) = true, (gogoproto.nullable) = false];
   }
   
-  // Params defines the parameters for CCV Parent module
-  message Params {
-    ibc.lightclients.tendermint.v1.ClientState template_client = 1 [(gogoproto.moretags) = "yaml:\"template_client\""];
-  }
+// Params defines the parameters for CCV Parent module
+message Params {
+  ibc.lightclients.tendermint.v1.ClientState template_client = 1 [(gogoproto.moretags) = "yaml:\"template_client\""];
+}
   
+message HandshakeMetadata {
+  string provider_fee_pool_addr = 1;
+  string version = 2;
+}

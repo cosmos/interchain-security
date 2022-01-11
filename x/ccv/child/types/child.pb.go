@@ -5,6 +5,8 @@ package types
 
 import (
 	fmt "fmt"
+	_ "github.com/cosmos/cosmos-sdk/types"
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
@@ -25,6 +27,11 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // Params defines the parameters for CCV child module
 type Params struct {
 	Enabled bool `protobuf:"varint,1,opt,name=Enabled,proto3" json:"Enabled,omitempty"`
+	// distribution params
+	BlocksPerDistributionTransmission int64  `protobuf:"varint,2,opt,name=BlocksPerDistributionTransmission,proto3" json:"BlocksPerDistributionTransmission,omitempty"`
+	ProviderFeePoolAddrStr            string `protobuf:"bytes,3,opt,name=ProviderFeePoolAddrStr,proto3" json:"ProviderFeePoolAddrStr,omitempty"`
+	DistributionTransmissionChannel   string `protobuf:"bytes,4,opt,name=DistributionTransmissionChannel,proto3" json:"DistributionTransmissionChannel,omitempty"`
+	DistributionTransmissionPort      string `protobuf:"bytes,5,opt,name=DistributionTransmissionPort,proto3" json:"DistributionTransmissionPort,omitempty"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
@@ -67,6 +74,7 @@ func (m *Params) GetEnabled() bool {
 	return false
 }
 
+<<<<<<< HEAD
 // CrossChainValidator defines the validators for CCV child module
 type CrossChainValidator struct {
 	Address []byte `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
@@ -85,6 +93,54 @@ func (m *CrossChainValidator) XXX_Unmarshal(b []byte) error {
 func (m *CrossChainValidator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_CrossChainValidator.Marshal(b, m, deterministic)
+=======
+func (m *Params) GetBlocksPerDistributionTransmission() int64 {
+	if m != nil {
+		return m.BlocksPerDistributionTransmission
+	}
+	return 0
+}
+
+func (m *Params) GetProviderFeePoolAddrStr() string {
+	if m != nil {
+		return m.ProviderFeePoolAddrStr
+	}
+	return ""
+}
+
+func (m *Params) GetDistributionTransmissionChannel() string {
+	if m != nil {
+		return m.DistributionTransmissionChannel
+	}
+	return ""
+}
+
+func (m *Params) GetDistributionTransmissionPort() string {
+	if m != nil {
+		return m.DistributionTransmissionPort
+	}
+	return ""
+}
+
+// LastTransmissionBlockHeight is the last time validator holding
+// pools were transmitted to the provider chain
+type LastTransmissionBlockHeight struct {
+	Height int64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
+}
+
+func (m *LastTransmissionBlockHeight) Reset()         { *m = LastTransmissionBlockHeight{} }
+func (m *LastTransmissionBlockHeight) String() string { return proto.CompactTextString(m) }
+func (*LastTransmissionBlockHeight) ProtoMessage()    {}
+func (*LastTransmissionBlockHeight) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d00ed7c78fea69b9, []int{1}
+}
+func (m *LastTransmissionBlockHeight) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *LastTransmissionBlockHeight) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_LastTransmissionBlockHeight.Marshal(b, m, deterministic)
+>>>>>>> Simple Distribution
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -94,6 +150,7 @@ func (m *CrossChainValidator) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
+<<<<<<< HEAD
 func (m *CrossChainValidator) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CrossChainValidator.Merge(m, src)
 }
@@ -116,13 +173,34 @@ func (m *CrossChainValidator) GetAddress() []byte {
 func (m *CrossChainValidator) GetPower() int64 {
 	if m != nil {
 		return m.Power
+=======
+func (m *LastTransmissionBlockHeight) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LastTransmissionBlockHeight.Merge(m, src)
+}
+func (m *LastTransmissionBlockHeight) XXX_Size() int {
+	return m.Size()
+}
+func (m *LastTransmissionBlockHeight) XXX_DiscardUnknown() {
+	xxx_messageInfo_LastTransmissionBlockHeight.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LastTransmissionBlockHeight proto.InternalMessageInfo
+
+func (m *LastTransmissionBlockHeight) GetHeight() int64 {
+	if m != nil {
+		return m.Height
+>>>>>>> Simple Distribution
 	}
 	return 0
 }
 
 func init() {
 	proto.RegisterType((*Params)(nil), "interchain_security.ccv.child.v1.Params")
+<<<<<<< HEAD
 	proto.RegisterType((*CrossChainValidator)(nil), "interchain_security.ccv.child.v1.CrossChainValidator")
+=======
+	proto.RegisterType((*LastTransmissionBlockHeight)(nil), "interchain_security.ccv.child.v1.LastTransmissionBlockHeight")
+>>>>>>> Simple Distribution
 }
 
 func init() {
@@ -130,6 +208,7 @@ func init() {
 }
 
 var fileDescriptor_d00ed7c78fea69b9 = []byte{
+<<<<<<< HEAD
 	// 229 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0xc9, 0xcc, 0x2b, 0x49,
 	0x2d, 0x4a, 0xce, 0x48, 0xcc, 0xcc, 0x8b, 0x2f, 0x4e, 0x4d, 0x2e, 0x2d, 0xca, 0x2c, 0xa9, 0xd4,
@@ -146,6 +225,31 @@ var fileDescriptor_d00ed7c78fea69b9 = []byte{
 	0xe7, 0xe6, 0x17, 0xeb, 0x23, 0x1c, 0xae, 0x0b, 0xf7, 0x66, 0x05, 0x92, 0x47, 0x4b, 0x2a, 0x0b,
 	0x52, 0x8b, 0x93, 0xd8, 0xc0, 0xde, 0x34, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff, 0xf9, 0x5a, 0x61,
 	0xa5, 0x16, 0x01, 0x00, 0x00,
+=======
+	// 347 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0xbf, 0x4e, 0xeb, 0x30,
+	0x18, 0xc5, 0x9b, 0xf6, 0xde, 0xde, 0x8b, 0xc7, 0x08, 0x55, 0x51, 0x41, 0x26, 0x74, 0xea, 0x00,
+	0xb1, 0x22, 0x04, 0xcc, 0x94, 0x3f, 0xea, 0xd0, 0x21, 0x04, 0x26, 0x16, 0xe4, 0x38, 0x56, 0x62,
+	0x91, 0xf8, 0xab, 0x6c, 0x37, 0xa2, 0x6f, 0xc1, 0xd3, 0xf0, 0x0c, 0x8c, 0x1d, 0x19, 0x51, 0xfb,
+	0x22, 0x08, 0xa7, 0x40, 0x07, 0x4a, 0xb7, 0xf3, 0xf9, 0xfb, 0xf9, 0x48, 0xf6, 0x39, 0xe8, 0x40,
+	0x48, 0xc3, 0x15, 0xcb, 0xa9, 0x90, 0xf7, 0x9a, 0xb3, 0x89, 0x12, 0x66, 0x4a, 0x18, 0xab, 0x08,
+	0xcb, 0x45, 0x91, 0x92, 0x2a, 0xac, 0x45, 0x30, 0x56, 0x60, 0xc0, 0xf5, 0x7f, 0xa0, 0x03, 0xc6,
+	0xaa, 0xa0, 0x86, 0xaa, 0xb0, 0xbb, 0x9d, 0x41, 0x06, 0x16, 0x26, 0x1f, 0xaa, 0xbe, 0xd7, 0xc5,
+	0x0c, 0x74, 0x09, 0x9a, 0x24, 0x54, 0x73, 0x52, 0x85, 0x09, 0x37, 0x34, 0x24, 0x0c, 0x84, 0xac,
+	0xf7, 0xbd, 0xe7, 0x26, 0x6a, 0x47, 0x54, 0xd1, 0x52, 0xbb, 0x1e, 0xfa, 0x77, 0x29, 0x69, 0x52,
+	0xf0, 0xd4, 0x73, 0x7c, 0xa7, 0xff, 0x3f, 0xfe, 0x1c, 0xdd, 0x11, 0xda, 0x1f, 0x14, 0xc0, 0x1e,
+	0x74, 0xc4, 0xd5, 0x85, 0xd0, 0x46, 0x89, 0x64, 0x62, 0x04, 0xc8, 0x5b, 0x45, 0xa5, 0x2e, 0x85,
+	0xd6, 0x02, 0xa4, 0xd7, 0xf4, 0x9d, 0x7e, 0x2b, 0xde, 0x0c, 0xba, 0x27, 0xa8, 0x13, 0x29, 0xa8,
+	0x44, 0xca, 0xd5, 0x15, 0xe7, 0x11, 0x40, 0x71, 0x96, 0xa6, 0xea, 0xc6, 0x28, 0xaf, 0xe5, 0x3b,
+	0xfd, 0xad, 0x78, 0xcd, 0xd6, 0x1d, 0xa2, 0xbd, 0x75, 0x9e, 0xe7, 0x39, 0x95, 0x92, 0x17, 0xde,
+	0x1f, 0x6b, 0xb0, 0x09, 0x73, 0x07, 0x68, 0x77, 0x1d, 0x12, 0x81, 0x32, 0xde, 0x5f, 0x6b, 0xf3,
+	0x2b, 0xd3, 0x3b, 0x46, 0x3b, 0x23, 0xaa, 0xcd, 0xea, 0xb9, 0x7d, 0xfa, 0x90, 0x8b, 0x2c, 0x37,
+	0x6e, 0x07, 0xb5, 0x73, 0xab, 0xec, 0x5f, 0xb6, 0xe2, 0xe5, 0x34, 0xb8, 0x7e, 0x99, 0x63, 0x67,
+	0x36, 0xc7, 0xce, 0xdb, 0x1c, 0x3b, 0x4f, 0x0b, 0xdc, 0x98, 0x2d, 0x70, 0xe3, 0x75, 0x81, 0x1b,
+	0x77, 0xa7, 0x99, 0x30, 0xf9, 0x24, 0x09, 0x18, 0x94, 0x64, 0x19, 0xda, 0x77, 0xe6, 0x87, 0x5f,
+	0x0d, 0x79, 0x5c, 0xe9, 0x88, 0x99, 0x8e, 0xb9, 0x4e, 0xda, 0x36, 0xc9, 0xa3, 0xf7, 0x00, 0x00,
+	0x00, 0xff, 0xff, 0x54, 0xe8, 0xda, 0x38, 0x51, 0x02, 0x00, 0x00,
+>>>>>>> Simple Distribution
 }
 
 func (m *Params) Marshal() (dAtA []byte, err error) {
@@ -168,6 +272,32 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.DistributionTransmissionPort) > 0 {
+		i -= len(m.DistributionTransmissionPort)
+		copy(dAtA[i:], m.DistributionTransmissionPort)
+		i = encodeVarintChild(dAtA, i, uint64(len(m.DistributionTransmissionPort)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.DistributionTransmissionChannel) > 0 {
+		i -= len(m.DistributionTransmissionChannel)
+		copy(dAtA[i:], m.DistributionTransmissionChannel)
+		i = encodeVarintChild(dAtA, i, uint64(len(m.DistributionTransmissionChannel)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.ProviderFeePoolAddrStr) > 0 {
+		i -= len(m.ProviderFeePoolAddrStr)
+		copy(dAtA[i:], m.ProviderFeePoolAddrStr)
+		i = encodeVarintChild(dAtA, i, uint64(len(m.ProviderFeePoolAddrStr)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.BlocksPerDistributionTransmission != 0 {
+		i = encodeVarintChild(dAtA, i, uint64(m.BlocksPerDistributionTransmission))
+		i--
+		dAtA[i] = 0x10
+	}
 	if m.Enabled {
 		i--
 		if m.Enabled {
@@ -181,7 +311,11 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+<<<<<<< HEAD
 func (m *CrossChainValidator) Marshal() (dAtA []byte, err error) {
+=======
+func (m *LastTransmissionBlockHeight) Marshal() (dAtA []byte, err error) {
+>>>>>>> Simple Distribution
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -191,16 +325,25 @@ func (m *CrossChainValidator) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
+<<<<<<< HEAD
 func (m *CrossChainValidator) MarshalTo(dAtA []byte) (int, error) {
+=======
+func (m *LastTransmissionBlockHeight) MarshalTo(dAtA []byte) (int, error) {
+>>>>>>> Simple Distribution
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
+<<<<<<< HEAD
 func (m *CrossChainValidator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+=======
+func (m *LastTransmissionBlockHeight) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+>>>>>>> Simple Distribution
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
+<<<<<<< HEAD
 	if m.Power != 0 {
 		i = encodeVarintChild(dAtA, i, uint64(m.Power))
 		i--
@@ -212,6 +355,12 @@ func (m *CrossChainValidator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintChild(dAtA, i, uint64(len(m.Address)))
 		i--
 		dAtA[i] = 0xa
+=======
+	if m.Height != 0 {
+		i = encodeVarintChild(dAtA, i, uint64(m.Height))
+		i--
+		dAtA[i] = 0x8
+>>>>>>> Simple Distribution
 	}
 	return len(dAtA) - i, nil
 }
@@ -235,6 +384,33 @@ func (m *Params) Size() (n int) {
 	_ = l
 	if m.Enabled {
 		n += 2
+	}
+	if m.BlocksPerDistributionTransmission != 0 {
+		n += 1 + sovChild(uint64(m.BlocksPerDistributionTransmission))
+	}
+	l = len(m.ProviderFeePoolAddrStr)
+	if l > 0 {
+		n += 1 + l + sovChild(uint64(l))
+	}
+	l = len(m.DistributionTransmissionChannel)
+	if l > 0 {
+		n += 1 + l + sovChild(uint64(l))
+	}
+	l = len(m.DistributionTransmissionPort)
+	if l > 0 {
+		n += 1 + l + sovChild(uint64(l))
+	}
+	return n
+}
+
+func (m *LastTransmissionBlockHeight) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Height != 0 {
+		n += 1 + sovChild(uint64(m.Height))
 	}
 	return n
 }
@@ -310,6 +486,190 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Enabled = bool(v != 0)
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlocksPerDistributionTransmission", wireType)
+			}
+			m.BlocksPerDistributionTransmission = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowChild
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BlocksPerDistributionTransmission |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderFeePoolAddrStr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowChild
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthChild
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthChild
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProviderFeePoolAddrStr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DistributionTransmissionChannel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowChild
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthChild
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthChild
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DistributionTransmissionChannel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DistributionTransmissionPort", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowChild
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthChild
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthChild
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DistributionTransmissionPort = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipChild(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthChild
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LastTransmissionBlockHeight) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowChild
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LastTransmissionBlockHeight: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LastTransmissionBlockHeight: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+			}
+			m.Height = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowChild
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Height |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipChild(dAtA[iNdEx:])
