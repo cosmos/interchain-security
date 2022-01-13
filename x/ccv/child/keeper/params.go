@@ -6,13 +6,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 )
 
-// GetEnabled returns the enabled flag for the child module
-func (k Keeper) GetEnabled(ctx sdk.Context) bool {
-	var enabled bool
-	k.paramSpace.Get(ctx, types.KeyEnabled, &enabled)
-	return enabled
-}
-
 // GetParams returns the paramset for the child module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(k.GetEnabled(ctx))
@@ -21,4 +14,17 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 // SetParams sets the paramset for the child module
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramSpace.SetParamSet(ctx, &params)
+}
+
+// GetEnabled returns the enabled flag for the child module
+func (k Keeper) GetEnabled(ctx sdk.Context) bool {
+	var enabled bool
+	k.paramSpace.Get(ctx, types.KeyEnabled, &enabled)
+	return enabled
+}
+
+func (k Keeper) GetBlocksPerDistributionTransmission(ctx sdk.Context) int64 {
+	var bpdt int64
+	k.paramSpace.Get(ctx, types.KeyBlocksPerDistributionTransmission, &bpdt)
+	return bpdt
 }

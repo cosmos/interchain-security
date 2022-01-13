@@ -160,6 +160,10 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	}
 	am.keeper.DeletePendingChanges(ctx)
 	am.keeper.UnbondMaturePackets(ctx)
+
+	// distribution transmission
+	am.keeper.TransmitAllHoldingsToProvider(ctx)
+
 	return data.ValidatorUpdates
 }
 

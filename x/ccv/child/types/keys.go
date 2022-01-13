@@ -3,6 +3,8 @@ package types
 import (
 	"encoding/binary"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/types/address"
 )
 
 const (
@@ -43,7 +45,9 @@ const (
 
 var (
 	// PortKey defines the key to store the port ID in store
-	PortKey = []byte{0x01}
+	PortKey                                   = []byte{0x01}
+	LastDistributionTransmissionKey           = []byte{0x02}
+	DistributionValidatorHoldingPoolKeyPrefix = []byte{0x03}
 )
 
 // ParentChannelKey returns the key for storing channelID of the parent chain.
@@ -77,4 +81,9 @@ func UnbondingTimeKey(sequence uint64) []byte {
 
 func GetSequenceFromUnbondingTimeKey(key []byte) uint64 {
 	return binary.BigEndian.Uint64(key[len(UnbondingTimePrefix):])
+}
+
+func DistributionValidatorHoldingPoolKey(operAddr sdk.ValAddress) []byte {
+	return append(DistributionValidatorHoldingPoolKeyPrefix,
+		address.MustLengthPrefix(operAddr.Bytes())...)
 }

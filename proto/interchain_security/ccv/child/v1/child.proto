@@ -1,10 +1,38 @@
 syntax = "proto3";
-
 package interchain_security.ccv.child.v1;
 
 option go_package = "github.com/cosmos/interchain-security/x/ccv/child/types";
 
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
 // Params defines the parameters for CCV child module
 message Params {
     bool Enabled = 1;
+
+    // blocks per distribution transmission to the provider chain
+    int64 BlocksPerDistributionTransmission = 2
+}
+
+// ProviderValidatorHoldingPool is a validators holding pool for later
+// distribution on the provider chain.
+message ProviderValidatorHoldingPool {
+  // operator_address defines the address of the validator's operator; bech encoded in JSON.
+  string operator_address = 1 [
+    (gogoproto.moretags) = "yaml:\"operator_address\""];
+  repeated cosmos.base.v1beta1.DecCoin pool = 1 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
+    (gogoproto.moretags)     = "yaml:\"provider_validator_holding_pool\""
+  ];
+}
+
+message ProviderPool {
+  repeated ProviderValidatorHoldingPool Entries = 1;
+}
+
+// LastTransmissionBlockHeight is the last time validator holding
+// pools were transmitted to the provider chain
+message LastTransmissionBlockHeight {
+  int64 height = 1; 
 }
