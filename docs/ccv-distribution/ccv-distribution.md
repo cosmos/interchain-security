@@ -13,23 +13,23 @@
   Chain  ─┤   │ tendermint votes,      │distribute funds from fee-collector│ │
           │   │ power, & proposer ────▶│to per-validator holding pool      │ │
           │   │                        │using AllocateTokens-              │ │
-          │   │                        │ToProviderValidatorHoldingPool.    │ │
+          │   │                        │ToProviderValidatorHoldingPool     │ │
           │   │                        │(pools held with key prefix: [K2]) │ │                          
           │   │                        └───────────────────────────────────┘ │
           │   └─────────────────┬────────────────────────────────────────────┘
           │                     │                                  ▲ 
-          │              Wait [P1] Blocks                          │ 
+          │     wait [P1] blocks from last distribution [K1]       │ 
           │                     │                                  │               
           │                     ▼                                  │               
           │   ┌──────────────────────────────────────────┐         │            
-          │   │Combine all rewards held in all per-      │         │            
+          │   │combine all rewards held in all per-      │         │            
           │   │validator holding pools into a single pool│  send back remainder
           │   │(ProviderPoolTokens) while recording      │  to fee-collector for
           │   │the fraction of this pool owed to each    │  use in next block
           │   │validate into a ProviderPoolWeights object│         │            
           │   └───────────┬───────────┬──────────────────┘         │            
           │               │           │    ┌───────────────────────┴─────┐    
-          │     ┌─────────┴─────────┐ └────┤Truncate ProviderPoolTokens  │ 
+          │     ┌─────────┴─────────┐ └────┤truncate ProviderPoolTokens  │ 
           │     │ProviderPoolWeights│      │converting: DecCoins -> Coins│
           │     └─────────┬─────────┘      └─────────────┬───────────────┘  
           │               │                              │                
@@ -40,17 +40,17 @@
           ┌─             │                               │
           │              │                    ┌──────────┘
           │              │                    │      
-          │     Wait for both packets to be received
+          │     wait for both packets to be received
           │              │                          
   Provider│    ┌─initialize────────────────────────────────────────────┐
   Chain  ─┤    │QualifiedTotalWeight := ProviderPoolWeights.TotalWeight│
-          │    │DisqualiedPool       := 0                              │
+          │    │DisqualifiedPool       := 0                              │
           │    └─────────┬─────────────────────────────────────────────┘
           │              │
           │              ▼
           │    ┌─for each validator[i] in ProviderPool───────────────────────────────┐
           │    │┌──────────────┐    ┌──────────────────────────────────────────────┐ │
-          │    ││Does validator│    │Validator forfeits rewards:                   │ │
+          │    ││does validator│    │validator forfeits rewards:                   │ │
           │    ││still exist?  │    │                                              │ │
           │    │└──┬───┬───────┘    │DisqualifiedPool = ProviderPoolTokens         │ │     
           │    │   │   │            │                      * ProviderPoolWeights[i]│ │     
@@ -66,7 +66,7 @@
           │              ▼                                                                         
           │    ┌─for each qualified validator[i]─────────────────────────────────────┐ 
           │    │┌──────────────────────────────────────┐┌───────────────────────────┐│ 
-          │    ││Calculate rewards:                    ││Final distribution using   ││ 
+          │    ││calculate rewards:                    ││final distribution using   ││ 
           │    ││TW := ProviderPoolWeights.TotalWeight ││AllocateTokensToValidator: ││ 
           │    ││W  := ProviderPoolWeights[i]          ││ -> delegator rewards      ││ 
           │    ││ValRewards := ProviderPoolTokens*W/TW ││ -> validator commission   ││ 
