@@ -37,43 +37,41 @@
           ┌─    transmit to provider            transmit to provider                            
   Relayer─┤     chain on CCV ordered            chain on unordered                                      
           └─    IBC channel                     IBC channel (ICS-20)                                     
-          ┌─             │                               │
-          │              │                    ┌──────────┘
-          │              │                    │      
-          │     wait for both packets to be received
-          │              │                          
-  Provider│    ┌─initialize────────────────────────────────────────────┐
-  Chain  ─┤    │QualifiedTotalWeight := ProviderPoolWeights.TotalWeight│
-          │    │DisqualifiedPool       := 0                              │
-          │    └─────────┬─────────────────────────────────────────────┘
-          │              │
-          │              ▼
-          │    ┌─for each validator[i] in ProviderPool───────────────────────────────┐
-          │    │┌──────────────┐    ┌──────────────────────────────────────────────┐ │
-          │    ││does validator│    │validator forfeits rewards:                   │ │
-          │    ││still exist?  │    │                                              │ │
-          │    │└──┬───┬───────┘    │DisqualifiedPool = ProviderPoolTokens         │ │     
-          │    │   │   │            │                      * ProviderPoolWeights[i]│ │     
-          │    │   │   └──yes──────▶│QualifiedTotalWeight -= ProviderPoolWeights[i]│ │              
-          │    │   │                └──────────────────────────────────────────────┘ │
-          │    │   │                ┌───────────────────────┐                        │
-          │    │   └───────no──────▶│added to array         │                        │
-          │    │                    │of qualified validators│                        │
-          │    │                    └───────────────────────┘                        │
-          │    └─────────┬───────────────────────────────────────────────────────────┘
+          ┌─             │                               │                                            
+          │              │                    ┌──────────┘                                           
+          │              │                    │                                                       
+          │     wait for both packets to be received                                                          
+          │              │                                                                                    
+  Provider│    ┌─initialize────────────────┐             -- Diagram Aliases --                                
+  Chain  ─┤    │QualifiedTotalWeight := TW │             TW  = ProviderPoolWeights.TotalWeight        
+          │    │DisqualifiedPool     := 0  │             PPT = ProviderPoolTokens                        
+          │    └─────────┬─────────────────┘             W[i]= ProviderPoolWeights[i]                    
+          │              │                                                                                
+          │              ▼                                                                                   
+          │    ┌─for each validator[i] in ProviderPool───────────────────────┐
+          │    │┌──────────────┐    ┌──────────────────────────────────────┐ │
+          │    ││does validator│    │validator forfeits rewards:           │ │
+          │    ││still exist?  │    │                                      │ │
+          │    │└──┬───┬───────┘    │DisqualifiedPool     += PPT * W[i]/TW │ │     
+          │    │   │   └──yes──────▶│QualifiedTotalWeight -= W[i]          │ │     
+          │    │   │                └──────────────────────────────────────┘ │
+          │    │   │                ┌───────────────────────┐                │
+          │    │   └───────no──────▶│added to array         │                │
+          │    │                    │of qualified validators│                │
+          │    │                    └───────────────────────┘                │
+          │    └─────────┬───────────────────────────────────────────────────┘
           │              ├───▶if no qualified validators send DisqualifiedPool
           │              │    to provider community pool (edge case)       
           │              ▼                                                                         
-          │    ┌─for each qualified validator[i]─────────────────────────────────────┐ 
-          │    │┌──────────────────────────────────────┐┌───────────────────────────┐│ 
-          │    ││calculate rewards:                    ││final distribution using   ││ 
-          │    ││TW := ProviderPoolWeights.TotalWeight ││AllocateTokensToValidator: ││ 
-          │    ││W  := ProviderPoolWeights[i]          ││ -> delegator rewards      ││ 
-          │    ││ValRewards := ProviderPoolTokens*W/TW ││ -> validator commission   ││ 
-          │    ││              + DisqualifiedPool      ││                           ││ 
-          │    ││              * W/QualifiedTotalWeight││                           ││   
-          │    │└──────────────────────────────────────┘└───────────────────────────┘│ 
-          └─   └─────────────────────────────────────────────────────────────────────┘ 
+          │    ┌─for each qualified validator[i]─────────────────────────────────┐ 
+          │    │┌──────────────────────────────────┐┌───────────────────────────┐│ 
+          │    ││calculate rewards:                ││final distribution using   ││ 
+          │    ││ValRewards =                      ││AllocateTokensToValidator: ││ 
+          │    ││       PPT * W[i]/TW              ││ -> delegator rewards      ││ 
+          │    ││       + DisqualifiedPool         ││ -> validator commission   ││ 
+          │    ││       * W[i]/QualifiedTotalWeight││                           ││ 
+          │    │└──────────────────────────────────┘└───────────────────────────┘│ 
+          └─   └─────────────────────────────────────────────────────────────────┘ 
                                                                                                
 ```        
            
