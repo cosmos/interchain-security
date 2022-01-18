@@ -53,10 +53,10 @@
           │    ││does validator│    │validator forfeits rewards:           │ │
           │    ││still exist?  │    │                                      │ │
           │    │└──┬───┬───────┘    │DisqualifiedPool     += PPT * W[i]/TW │ │     
-          │    │   │   └──yes──────▶│QualifiedTotalWeight -= W[i]          │ │     
+          │    │   │   └──no───────▶│QualifiedTotalWeight -= W[i]          │ │     
           │    │   │                └──────────────────────────────────────┘ │
           │    │   │                ┌───────────────────────┐                │
-          │    │   └───────no──────▶│added to array         │                │
+          │    │   └──────yes──────▶│added to array         │                │
           │    │                    │of qualified validators│                │
           │    │                    └───────────────────────┘                │
           │    └─────────┬───────────────────────────────────────────────────┘
