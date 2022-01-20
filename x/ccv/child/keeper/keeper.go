@@ -30,13 +30,14 @@ type Keeper struct {
 	portKeeper       ccv.PortKeeper
 	connectionKeeper ccv.ConnectionKeeper
 	clientKeeper     ccv.ClientKeeper
+	slashingKeeper   ccv.SlashingKeeper
 }
 
 // NewKeeper creates a new Child Keeper instance
 func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper capabilitykeeper.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
-	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
+	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper, slashingKeeper ccv.SlashingKeeper,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -52,6 +53,7 @@ func NewKeeper(
 		portKeeper:       portKeeper,
 		connectionKeeper: connectionKeeper,
 		clientKeeper:     clientKeeper,
+		slashingKeeper:   slashingKeeper,
 	}
 }
 
@@ -313,4 +315,17 @@ func (k Keeper) VerifyParentChain(ctx sdk.Context, channelID string) error {
 	}
 
 	return nil
+}
+
+// GetLastUnbondingPacket returns the last unbounding packet stored in lexical order
+func (k Keeper) GetLastUnbondingPacket(ctx sdk.Context) ccv.ValidatorSetChangePacketData {
+	ubdPacket := &channeltypes.Packet{}
+	k.IterateUnbondingPacket(ctx, func(seq uint64, packet channeltypes.Packet) bool {
+		*ubdPacket = packet
+		return false
+	})
+	var data ccv.ValidatorSetChangePacketData
+
+	ccv.ModuleCdc.UnmarshalJSON(ubdPacket.GetData(), &data)
+	return data
 }

@@ -305,7 +305,7 @@ func New(
 		appCodec, keys[distrtypes.StoreKey], app.GetSubspace(distrtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
 		&stakingKeeper, authtypes.FeeCollectorName, app.ModuleAccountAddrs(),
 	)
-	app.SlashingKeeper = slashingkeeper.NewKeeper(
+	slashingKeeper := slashingkeeper.NewKeeper(
 		appCodec, keys[slashingtypes.StoreKey], &stakingKeeper, app.GetSubspace(slashingtypes.ModuleName),
 	)
 	app.CrisisKeeper = crisiskeeper.NewKeeper(
@@ -320,7 +320,7 @@ func New(
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
 	app.StakingKeeper = *stakingKeeper.SetHooks(
-		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks(), app.ParentKeeper.Hooks()),
+		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), slashingKeeper.Hooks(), app.ParentKeeper.Hooks()),
 	)
 
 	// Create IBC Keeper
@@ -330,11 +330,16 @@ func New(
 
 	// Create CCV child and parent keepers and modules
 	app.ChildKeeper = ibcchildkeeper.NewKeeper(appCodec, keys[ibcchildtypes.StoreKey], app.GetSubspace(ibcchildtypes.ModuleName), scopedIBCChildKeeper,
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper,
+		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper, slashingKeeper,
 	)
+
+	// register the slashing hooks, do it here so that
+	// the ChildKeeper has already been constructed
+	app.SlashingKeeper = *slashingKeeper.SetHooks(app.ChildKeeper.Hooks())
+
 	childModule := ibcchild.NewAppModule(app.ChildKeeper)
 	app.ParentKeeper = ibcparentkeeper.NewKeeper(appCodec, keys[ibcparenttypes.StoreKey], app.GetSubspace(ibcparenttypes.ModuleName), scopedIBCParentKeeper,
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper, app.StakingKeeper)
+		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper, app.IBCKeeper.ConnectionKeeper, app.IBCKeeper.ClientKeeper, app.StakingKeeper, app.SlashingKeeper)
 	parentModule := ibcparent.NewAppModule(&app.ParentKeeper)
 
 	// register the proposal types

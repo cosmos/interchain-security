@@ -1,11 +1,15 @@
 package keeper
 
 import (
+	"fmt"
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/modules/core/24-host"
+	"github.com/cosmos/ibc-go/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -23,6 +27,7 @@ func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.Va
 	if !ok {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
 	}
+
 	channelCap, ok := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(types.PortID, channelID))
 	if !ok {
 		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
@@ -42,7 +47,7 @@ func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.Va
 		packetDataBytes, sequence,
 		types.PortID, channelID,
 		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
-		clienttypes.Height{}, uint64(types.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
+		clienttypes.Height{}, uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
 	)
 
 	if err := k.channelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
@@ -113,7 +118,57 @@ func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 		if len(valUpdates) != 0 {
 			k.SendPacket(ctx, chainID, valUpdates, valUpdateID)
 			k.IncrementValidatorSetUpdateId(ctx) // TODO: this needs to be moved out of this scope
+			k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()))
 		}
 		return false
 	})
+}
+
+// OnRecvPacket slahes and jails the given validator in the packet data
+func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorDowntimePacketData) exported.Acknowledgement {
+	if childChannel, ok := k.GetChannelToChain(ctx, packet.DestinationChannel); !ok && childChannel != packet.DestinationChannel {
+		ack := channeltypes.NewErrorAcknowledgement(
+			fmt.Sprintf("packet sent on a channel %s other than the established child channel %s", packet.DestinationChannel, childChannel),
+		)
+		chanCap, _ := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(packet.DestinationPort, packet.DestinationChannel))
+		k.channelKeeper.ChanCloseInit(ctx, packet.DestinationPort, packet.DestinationChannel, chanCap)
+		return &ack
+	}
+
+	// initiate slashing and jailing
+	if err := k.HandleConsumerDowntime(ctx, data); err != nil {
+		ack := channeltypes.NewErrorAcknowledgement(err.Error())
+		return &ack
+	}
+
+	return nil
+}
+
+// HandleConsumerDowntime gets the validator and the downtime infraction height from the packet data
+// validator address and valset upate ID. Then it executes the slashing the and jailing accordingly.
+func (k Keeper) HandleConsumerDowntime(ctx sdk.Context, downtimeData ccv.ValidatorDowntimePacketData) error {
+	// get the validator consensus address
+	consAddr := sdk.ConsAddress(downtimeData.Validator.Address)
+
+	// get the validator data
+	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+	if !found {
+		return fmt.Errorf("cannot find validator with address %s", consAddr.String())
+	}
+
+	// get the downtime block height from the valsetUpdateID
+	blockHeight := k.GetValsetUpdateBlockHeight(ctx, downtimeData.ValsetUpdateId)
+	if blockHeight == 0 {
+		return fmt.Errorf("cannot find validator update id %d", downtimeData.ValsetUpdateId)
+	}
+
+	// slash and jail the validator
+	k.stakingKeeper.Slash(ctx, consAddr, int64(blockHeight), downtimeData.Validator.Power, sdk.NewDec(1).QuoInt64(downtimeData.SlashFraction))
+	if !val.Jailed {
+		k.stakingKeeper.Jail(ctx, consAddr)
+	}
+	// TODO: check if the missed block bits and sign info need to be reseted
+	k.slashingKeeper.JailUntil(ctx, consAddr, ctx.BlockHeader().Time.Add(time.Duration(downtimeData.JailTime)))
+
+	return nil
 }

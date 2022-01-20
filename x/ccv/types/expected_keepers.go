@@ -6,6 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	conntypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/modules/core/exported"
@@ -20,6 +22,19 @@ type StakingKeeper interface {
 	GetValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 	CompleteStoppedUnbonding(ctx sdk.Context, id uint64) (found bool, err error)
 	UnbondingTime(ctx sdk.Context) time.Duration
+	GetValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) (validator types.Validator, found bool)
+	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
+	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
+	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec)
+}
+
+type SlashingKeeper interface {
+	JailUntil(sdk.Context, sdk.ConsAddress, time.Time)
+	GetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress) (info slashingtypes.ValidatorSigningInfo, found bool)
+	SetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress, info slashingtypes.ValidatorSigningInfo)
+	DowntimeJailDuration(sdk.Context) time.Duration
+	SlashFractionDowntime(sdk.Context) sdk.Dec
+	ClearValidatorMissedBlockBitArray(ctx sdk.Context, address sdk.ConsAddress)
 }
 
 // ChannelKeeper defines the expected IBC channel keeper
@@ -49,3 +64,8 @@ type ClientKeeper interface {
 }
 
 // TODO: Expected interfaces for distribution on parent and baby chains
+// SlashingHooks event hooks for jailing and slashing validator
+type SlashingHooks interface {
+	// Is triggered when the validator missed too many blocks
+	AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress, power int64)
+}

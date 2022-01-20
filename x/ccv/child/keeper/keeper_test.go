@@ -3,24 +3,27 @@ package keeper_test
 import (
 	"fmt"
 	"testing"
-
-	ibctesting "github.com/cosmos/ibc-go/testing"
-	"github.com/stretchr/testify/suite"
+	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
+	ibctesting "github.com/cosmos/ibc-go/testing"
 	"github.com/cosmos/interchain-security/app"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
+	// 	slashing "github.com/cosmos/cosmos-sdk/x/slashing"
+	// staking "github.com/cosmos/cosmos-sdk/x/staking"
 )
 
 func init() {
@@ -360,4 +363,113 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 
 func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
+}
+
+// TestValidatorDowntime tests that the slashing hooks
+// are registred and triggered when a validator has downtime
+func (suite *KeeperTestSuite) TestValidatorDowntime() {
+	// initial setup
+	app := suite.childChain.App.(*app.App)
+	ctx := suite.childChain.GetContext()
+
+	// create a validator pubkey and address
+	pubkey := ed25519.GenPrivKey().PubKey()
+	consAddr := sdk.ConsAddress(pubkey.Address())
+
+	// add the validator pubkey and signing info to the store
+	app.SlashingKeeper.AddPubkey(ctx, pubkey)
+
+	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, ctx.BlockHeight(), ctx.BlockHeight()-1,
+		time.Time{}.UTC(), false, int64(0))
+	app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, valInfo)
+
+	// Sign 1000 blocks
+	valPower := int64(1)
+	height := int64(0)
+	for ; height < app.SlashingKeeper.SignedBlocksWindow(ctx); height++ {
+		ctx = ctx.WithBlockHeight(height)
+		app.SlashingKeeper.HandleValidatorSignature(ctx, pubkey.Address().Bytes(), valPower, true)
+	}
+	// Miss 500 blocks
+	for ; height < app.SlashingKeeper.SignedBlocksWindow(ctx)+(app.SlashingKeeper.SignedBlocksWindow(ctx)-app.SlashingKeeper.MinSignedPerWindow(ctx))+1; height++ {
+		ctx = ctx.WithBlockHeight(height)
+		app.SlashingKeeper.HandleValidatorSignature(ctx, pubkey.Address().Bytes(), valPower, false)
+	}
+
+	signInfo, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+	suite.Require().True(found)
+	suite.Require().NotZero(signInfo.JailedUntil)
+	suite.Require().Zero(signInfo.MissedBlocksCounter)
+	suite.Require().Zero(signInfo.IndexOffset)
+	app.SlashingKeeper.IterateValidatorMissedBlockBitArray(ctx, consAddr, func(_ int64, missed bool) bool {
+		suite.Require().False(missed)
+		return false
+	})
+}
+
+// TestAfterValidatorDowntimeHook tests the slashing hook implementation logic
+func (suite *KeeperTestSuite) TestAfterValidatorDowntimeHook() {
+	app := suite.childChain.App.(*app.App)
+	ctx := suite.ctx
+
+	consAddr := sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Bytes()).Bytes()
+
+	now := time.Now()
+
+	// Cover the cases when the validatir jailing duration
+	// is either elapsed, null or still going
+	testcases := []struct {
+		jailedUntil time.Time
+		expUpdate   bool
+	}{{
+		jailedUntil: now.Add(-1 * time.Hour),
+		expUpdate:   true,
+	}, {
+		jailedUntil: time.Time{}, // null
+		expUpdate:   true,
+	}, {
+		jailedUntil: now.Add(1 * time.Hour),
+		expUpdate:   false,
+	},
+	}
+
+	// synchronize the block time with the test cases
+	ctx = ctx.WithBlockTime(now)
+	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, int64(1), int64(1),
+		time.Time{}.UTC(), false, int64(0))
+
+	for _, tc := range testcases {
+		// set the current unjailing time
+		valInfo.JailedUntil = tc.jailedUntil
+		app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, valInfo)
+		// execute the hook logic
+		app.ChildKeeper.AfterValidatorDowntime(
+			ctx, consAddr, int64(1))
+		// verify if we have the expected output
+		signInfo, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+		suite.Require().True(found)
+		suite.Require().True(tc.expUpdate == !(signInfo.JailedUntil.Equal(tc.jailedUntil)))
+	}
+
+	suite.Require()
+}
+
+func (suite *KeeperTestSuite) TestGetLastUnboundingPacket() {
+	app := suite.childChain.App.(*app.App)
+	ctx := suite.childChain.GetContext()
+
+	ubdPacket := app.ChildKeeper.GetLastUnbondingPacket(ctx)
+	suite.Require().Zero(ubdPacket.ValsetUpdateId)
+	for i := 0; i < 5; i++ {
+		pd := ccv.NewValidatorSetChangePacketData(
+			[]abci.ValidatorUpdate{},
+			uint64(i),
+		)
+		packet := channeltypes.NewPacket(pd.GetBytes(), uint64(i), "", "", "", "",
+			clienttypes.NewHeight(1, 0), 0)
+		app.ChildKeeper.SetUnbondingPacket(ctx, uint64(i), packet)
+	}
+
+	ubdPacket = app.ChildKeeper.GetLastUnbondingPacket(ctx)
+	suite.Require().Equal(uint64(4), ubdPacket.ValsetUpdateId)
 }

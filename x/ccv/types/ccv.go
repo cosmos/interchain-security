@@ -24,3 +24,37 @@ func (vsc ValidatorSetChangePacketData) GetBytes() []byte {
 	valUpdateBytes := ModuleCdc.MustMarshalJSON(&vsc)
 	return valUpdateBytes
 }
+
+func NewValidatorDowtimePacketData(validator abci.Validator, valUpdateId uint64, slashFraction, jailTime int64) ValidatorDowntimePacketData {
+	return ValidatorDowntimePacketData{
+		Validator:      validator,
+		SlashFraction:  slashFraction,
+		JailTime:       jailTime,
+		ValsetUpdateId: valUpdateId,
+	}
+}
+
+func (vdt ValidatorDowntimePacketData) ValidateBasic() error {
+	if len(vdt.Validator.Address) == 0 || vdt.Validator.Power == 0 {
+		return sdkerrors.Wrap(ErrInvalidPacketData, "validator fields cannot be empty")
+	}
+
+	if vdt.JailTime <= 0 {
+		return sdkerrors.Wrap(ErrInvalidPacketData, "jail duration must be positive")
+	}
+
+	if vdt.SlashFraction <= 0 {
+		return sdkerrors.Wrap(ErrInvalidPacketData, "slash fraction must be positive")
+	}
+
+	if vdt.ValsetUpdateId == 0 {
+		return sdkerrors.Wrap(ErrInvalidPacketData, "valset update id cannot be equal to zero")
+	}
+
+	return nil
+}
+
+func (vdt ValidatorDowntimePacketData) GetBytes() []byte {
+	valDowntimeBytes := ModuleCdc.MustMarshalJSON(&vdt)
+	return valDowntimeBytes
+}

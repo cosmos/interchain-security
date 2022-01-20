@@ -37,14 +37,14 @@ type Keeper struct {
 	connectionKeeper ccv.ConnectionKeeper
 	clientKeeper     ccv.ClientKeeper
 	stakingKeeper    ccv.StakingKeeper
+	slashingKeeper   ccv.SlashingKeeper
 }
 
 // NewKeeper creates a new parent Keeper instance
 func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper capabilitykeeper.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
-	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
-	stakingKeeper ccv.StakingKeeper,
+	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper, stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -61,6 +61,7 @@ func NewKeeper(
 		connectionKeeper: connectionKeeper,
 		clientKeeper:     clientKeeper,
 		stakingKeeper:    stakingKeeper,
+		slashingKeeper:   slashingKeeper,
 	}
 }
 
@@ -446,4 +447,28 @@ func (h StakingHooks) BeforeUnbondingDelegationEntryComplete(ctx sdk.Context, ID
 	_, found := h.k.GetUnbondingDelegationEntry(ctx, ID)
 
 	return found
+}
+
+// SetValsetUpdateBlockHeight sets the block height for a given valset update id
+func (k Keeper) SetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId, blockHeight uint64) {
+	store := ctx.KVStore(k.storeKey)
+	heightBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(heightBytes, blockHeight)
+	store.Set(types.ValsetUpdateBlockHeightKey(valsetUpdateId), heightBytes)
+}
+
+// GetValsetUpdateBlockHeight gets the block height for a given valset update id
+func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
+	if bz == nil {
+		return 0
+	}
+	return binary.BigEndian.Uint64(bz)
+}
+
+// DeleteValsetUpdateBlockHeight deletes the block height value for a given vaset update id
+func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
 }

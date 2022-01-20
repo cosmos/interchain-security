@@ -88,3 +88,45 @@ func (suite *KeeperTestSuite) SetupTest() {
 func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
+
+func (suite *KeeperTestSuite) TestValsetUpdateBlockHeight() {
+	app := suite.parentChain.App.(*app.App)
+	ctx := suite.ctx
+
+	blockHeight := app.ParentKeeper.GetValsetUpdateBlockHeight(ctx, uint64(0))
+	suite.Require().Zero(blockHeight)
+
+	app.ParentKeeper.SetValsetUpdateBlockHeight(ctx, uint64(1), uint64(2))
+	blockHeight = app.ParentKeeper.GetValsetUpdateBlockHeight(ctx, uint64(1))
+	suite.Require().Equal(blockHeight, uint64(2))
+
+	app.ParentKeeper.DeleteValsetUpdateBlockHeight(ctx, uint64(1))
+	blockHeight = app.ParentKeeper.GetValsetUpdateBlockHeight(ctx, uint64(1))
+	suite.Require().Zero(blockHeight)
+
+	app.ParentKeeper.SetValsetUpdateBlockHeight(ctx, uint64(1), uint64(2))
+	app.ParentKeeper.SetValsetUpdateBlockHeight(ctx, uint64(3), uint64(4))
+	blockHeight = app.ParentKeeper.GetValsetUpdateBlockHeight(ctx, uint64(3))
+	suite.Require().Equal(blockHeight, uint64(4))
+}
+
+// func (suite KeeperTestSuite) TestOnRecvPacket() {
+// 	ctx, t := suite.ctx, suite.T()
+
+// 	// Get a validator
+
+// 	// app := suite.parentChain.App.(*app.App)
+// 	valset := suite.parentChain.Vals
+// 	val, err := valset.Validators[0].ToProto()
+// 	suite.Require().NoError(err)
+
+// 	tests := []struct {
+// 		pubkey   crypto.PubKey
+// 		jailTime int64
+// 	}{{
+// 		pubkey:   val.PubKey,
+// 		jailTime: int64(0),
+// 	}}
+// 	app.ParentKeeper.
+// 		t.Logf("%+v", val.PubKey)
+// }

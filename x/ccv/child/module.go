@@ -351,10 +351,15 @@ func (am AppModule) OnRecvPacket(
 // OnAcknowledgementPacket implements the IBCModule interface
 func (am AppModule) OnAcknowledgementPacket(
 	ctx sdk.Context,
-	packet channeltypes.Packet,
+	_ channeltypes.Packet,
 	acknowledgement []byte,
 	_ sdk.AccAddress,
 ) (*sdk.Result, error) {
+	var ack channeltypes.Acknowledgement
+	if err := ccv.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
+		fmt.Println(err)
+		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal parent packet acknowledgement: %v", err)
+	}
 	return nil, sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "cannot receive acknowledgement on child port, child chain does not send packet over channel.")
 }
 
