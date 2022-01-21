@@ -21,6 +21,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/modules/core/24-host"
+	"github.com/cosmos/ibc-go/modules/core/exported"
 	ibcexported "github.com/cosmos/ibc-go/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/parent/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
@@ -320,7 +321,28 @@ func (am AppModule) OnRecvPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	return channeltypes.NewErrorAcknowledgement("cannot receive packet on parent chain")
+	var (
+		ack  exported.Acknowledgement
+		data ccv.ValidatorDowntimePacketData
+	)
+	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
+		errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("cannot unmarshal CCV packet data: %s", err.Error()))
+		ack = &errAck
+	} else {
+		ack = am.keeper.OnRecvPacket(ctx, packet, data)
+	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			ccv.EventTypePacket,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(ccv.AttributeKeyAckSuccess, fmt.Sprintf("%t", ack != nil)),
+		),
+	)
+
+	// NOTE: In successful case, acknowledgement will be written asynchronously
+	// after unbonding period has elapsed.
+	return ack
 }
 
 // OnAcknowledgementPacket implements the IBCModule interface

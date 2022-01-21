@@ -49,6 +49,9 @@ const (
 	// ChildChainToUBDEsPrefix is for the index for looking up which unbonding delegation entries are waiting for a given
 	// child chain to unbond
 	UBDEIndexPrefix = "childchaintoubdes"
+
+	//ValsetUpdateBlockHeightPrefix
+	ValsetUpdateBlockHeightPrefix = "valsetupdateblockheigt"
 )
 
 var (
@@ -109,4 +112,10 @@ func UnbondingDelegationEntryKey(unbondingDelegationEntryID uint64) []byte {
 	binary.BigEndian.PutUint64(bz, unbondingDelegationEntryID)
 
 	return append([]byte(UnbondingDelegationEntryPrefix), bz...)
+}
+
+func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
+	vuidBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(vuidBytes, valsetUpdateId)
+	return append([]byte(ValsetUpdateBlockHeightPrefix), vuidBytes...)
 }

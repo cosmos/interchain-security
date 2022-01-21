@@ -6,6 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/modules/core/24-host"
 	"github.com/cosmos/ibc-go/modules/core/exported"
@@ -86,5 +87,59 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 		}
 		unbondingIterator.Next()
 	}
+	return nil
+}
+
+// SendPacket sends a packet that initiates the given validator
+// slashing and jailing on the provider chain.
+func (k Keeper) SendPacket(ctx sdk.Context, val abci.Validator, slashFraction, jailedUntil int64) error {
+
+	// check the setup
+	channelID, ok := k.GetParentChannel(ctx)
+	if !ok {
+		return sdkerrors.Wrap(channeltypes.ErrChannelNotFound, "parent channel not set")
+	}
+	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
+	if !ok {
+		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
+	}
+	channelCap, ok := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(types.PortID, channelID))
+	if !ok {
+		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
+	}
+
+	// get the next sequence
+	sequence, found := k.channelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
+	if !found {
+		return sdkerrors.Wrapf(
+			channeltypes.ErrSequenceSendNotFound,
+			"source port: %s, source channel: %s", types.PortID, channelID,
+		)
+	}
+
+	// add the last ValsetUpdateId to the packet data so that the provider
+	// can find the block height when the downtime happened
+	valsetUpdateId := k.GetLastUnbondingPacket(ctx).ValsetUpdateId
+	if valsetUpdateId == 0 {
+		return sdkerrors.Wrapf(ccv.ErrInvalidChildState, "last valset update id not set")
+	}
+	packetData := ccv.NewValidatorDowtimePacketData(val, valsetUpdateId, slashFraction, jailedUntil)
+	packetDataBytes := packetData.GetBytes()
+
+	// send ValidatorDowntime infractions in IBC packet
+	packet := channeltypes.NewPacket(
+		packetDataBytes, sequence,
+		types.PortID, channelID,
+		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
+		clienttypes.Height{}, uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
+	)
+	if err := k.channelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	return nil
 }
