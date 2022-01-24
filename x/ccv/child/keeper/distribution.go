@@ -2,12 +2,49 @@
 
 import (
 	"fmt"
+	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 )
 
+// Simple model, donate tokens to the fee pool of the provider validator set
+// reference: cosmos/ibc-go/modules/apps/transfer/keeper/msg_server.go
+func (k Keeper) DonateToProviderValidatorSet(ctx sdk.Context) {
+	if !k.shouldTransmit(ctx) {
+		return
+	}
+
+	sender := clientCtx.GetFromAddress().String()
+	srcPort := 0    // ???
+	srcChannel := 0 // ???
+
+	// work around to reuse the IBC token transfer logic
+	recipientAcc := k.ak.GetModuleAccount(ctx, recipientModule).GetAddress().String()
+
+	var token sdk.Coin
+
+	if !strings.HasPrefix(coin.Denom, "ibc/") {
+		denomTrace := types.ParseDenomTrace(coin.Denom)
+		coin.Denom = denomTrace.IBCDenom()
+	}
+
+	timeoutHeight := 0
+	timeoutTimestamp := 0
+
+	return k.trkeeper.SendTransfer(ctx,
+		srcPort,
+		srcChannel,
+		token,
+		sender,
+		recipientAcc,
+		timeoutHeight,
+		timeoutTimestamp,
+	)
+}
+
+// -----------------------------------------------------------
 // XXX rewrite comment
 // Return a validator-allocation function where the tokens are allocated
 // to is intended to be used in conjunction with IBC
