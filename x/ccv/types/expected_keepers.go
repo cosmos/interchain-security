@@ -9,6 +9,7 @@ import (
 	conntypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/modules/core/exported"
+	types "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 )
@@ -48,4 +49,27 @@ type ClientKeeper interface {
 	GetLatestClientConsensusState(ctx sdk.Context, clientID string) (ibcexported.ConsensusState, bool)
 }
 
-// TODO: Expected interfaces for distribution on parent and baby chains
+// BankKeeper defines the expected interface needed to retrieve account balances.
+type BankKeeper interface {
+	GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
+}
+
+// IBCKeeper defines the expexted interface needed for distribution transfer
+// of tokens from the consumer to the provider chain
+type IBCKeeper interface {
+	SendTransfer(
+		ctx sdk.Context,
+		sourcePort,
+		sourceChannel string,
+		token sdk.Coin,
+		sender sdk.AccAddress,
+		receiver string,
+		timeoutHeight clienttypes.Height,
+		timeoutTimestamp uint64,
+	) error
+}
+
+// AccountKeeper defines the expected account keeper used for simulations
+type AccountKeeper interface {
+	GetModuleAccount(ctx sdk.Context, name string) types.ModuleAccountI
+}

@@ -2,11 +2,13 @@
 
 import (
 	"fmt"
-	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
+
+	// XXX delete or uncomment this block before merge
+	//ibctypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 )
 
 // Simple model, donate tokens to the fee pool of the provider validator set
@@ -16,32 +18,35 @@ func (k Keeper) DonateToProviderValidatorSet(ctx sdk.Context) {
 		return
 	}
 
-	sender := clientCtx.GetFromAddress().String()
 	srcPort := 0    // ???
 	srcChannel := 0 // ???
 
 	// work around to reuse the IBC token transfer logic
-	recipientAcc := k.ak.GetModuleAccount(ctx, recipientModule).GetAddress().String()
+	consumerFeePoolAddr := k.accountKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
+	providerFeePoolAddrStr := k.accountKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
 
-	var token sdk.Coin
+	tokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr.GetAddress())
+	for _, token := range tokens {
 
-	if !strings.HasPrefix(coin.Denom, "ibc/") {
-		denomTrace := types.ParseDenomTrace(coin.Denom)
-		coin.Denom = denomTrace.IBCDenom()
+		// XXX delete or uncomment this block before merge
+		//if !strings.HasPrefix(token.Denom, "ibc/") {
+		//    denomTrace := ibctypes.ParseDenomTrace(token.Denom)
+		//    token.Denom = denomTrace.IBCDenom()
+		//}
+
+		timeoutHeight := 0
+		timeoutTimestamp := 0
+
+		return k.ibcKeeper.SendTransfer(ctx,
+			srcPort,
+			srcChannel,
+			token,
+			consumerFeePoolAcc.String(),
+			providerFeePoolAcc.String(),
+			timeoutHeight,
+			timeoutTimestamp,
+		)
 	}
-
-	timeoutHeight := 0
-	timeoutTimestamp := 0
-
-	return k.trkeeper.SendTransfer(ctx,
-		srcPort,
-		srcChannel,
-		token,
-		sender,
-		recipientAcc,
-		timeoutHeight,
-		timeoutTimestamp,
-	)
 }
 
 // -----------------------------------------------------------
