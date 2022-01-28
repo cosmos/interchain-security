@@ -91,6 +91,7 @@ import (
 	ibcchildkeeper "github.com/cosmos/interchain-security/x/ccv/child/keeper"
 	ibcchildtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	ibcparent "github.com/cosmos/interchain-security/x/ccv/parent"
+	ibcparentclient "github.com/cosmos/interchain-security/x/ccv/parent/client"
 	ibcparentkeeper "github.com/cosmos/interchain-security/x/ccv/parent/keeper"
 	ibcparenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -118,6 +119,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		distrclient.ProposalHandler,
 		upgradeclient.ProposalHandler,
 		upgradeclient.CancelProposalHandler,
+		ibcparentclient.ProposalHandler,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
 
