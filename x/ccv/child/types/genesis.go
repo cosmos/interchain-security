@@ -1,19 +1,25 @@
 package types
 
 import (
+	"bytes"
+
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // NewInitialGenesisState returns a child GenesisState for a completely new child chain.
 // TODO: Include chain status
-func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState) *GenesisState {
+func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState, initValSet []abci.ValidatorUpdate) *GenesisState {
 	return &GenesisState{
 		Params:               NewParams(true),
 		NewChain:             true,
 		ParentClientState:    cs,
 		ParentConsensusState: consState,
+		InitialValSet:        initValSet,
 	}
 }
 
@@ -58,6 +64,20 @@ func (gs GenesisState) Validate() error {
 		}
 		if gs.UnbondingSequences != nil {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "unbonding sequences must be nil for new chain")
+		}
+		if len(gs.InitialValSet) == 0 {
+			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "initial validator set is empty")
+		}
+
+		// ensure that initial validator set is same as initial consensus state on provider client.
+		// this will be verified by provider module on channel handshake.
+		vals, err := tmtypes.PB2TM.ValidatorUpdates(gs.InitialValSet)
+		if err != nil {
+			return sdkerrors.Wrap(err, "could not convert val updates to validator set")
+		}
+		valSet := tmtypes.NewValidatorSet(vals)
+		if !bytes.Equal(gs.ParentConsensusState.NextValidatorsHash, valSet.Hash()) {
+			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "initial validators does not hash to NextValidatorsHash on provider client")
 		}
 	} else {
 		if gs.ParentChannelId == "" {

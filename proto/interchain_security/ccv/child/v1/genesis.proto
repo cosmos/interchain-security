@@ -8,6 +8,7 @@ import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "ibc/core/channel/v1/channel.proto";
 import "gogoproto/gogo.proto";
 import "interchain_security/ccv/child/v1/child.proto";
+import "tendermint/abci/types.proto";
 
 // GenesisState defines the CCV child chain genesis state
 message GenesisState {
@@ -24,7 +25,9 @@ message GenesisState {
         [(gogoproto.moretags) = "yaml:\"parent_consensus_state\""];
     repeated UnbondingSequence unbonding_sequences = 6
         [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"unbonding_sequences\""];
-  }
+    repeated .tendermint.abci.ValidatorUpdate initial_val_set = 7
+        [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"initial_val_set\""];  
+}
   
   // UnbondingSequence defines the genesis information for each unbonding packet sequence.
   message UnbondingSequence {
