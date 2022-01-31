@@ -1,7 +1,6 @@
 package types_test
 
 import (
-	"crypto/sha256"
 	"testing"
 	"time"
 
@@ -129,8 +128,18 @@ func TestValidateInitialGenesisState(t *testing.T) {
 }
 
 func TestValidateRestartGenesisState(t *testing.T) {
+	// generate validator private/public key
+	privVal := mock.NewPV()
+	pubKey, err := privVal.GetPubKey()
+	require.NoError(t, err)
+
+	// create validator set with single validator
+	validator := tmtypes.NewValidator(pubKey, 1)
+	valSet := tmtypes.NewValidatorSet([]*tmtypes.Validator{validator})
+	valHash := valSet.Hash()
+	valUpdates := tmtypes.TM2PB.ValidatorUpdates(valSet)
+
 	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath, false, false)
-	valHash := sha256.Sum256([]byte("mockvalsHash"))
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash[:])
 	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	require.NoError(t, err)
@@ -176,7 +185,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 	}{
 		{
 			"valid restart child genesis state: empty unbonding sequences",
-			types.NewRestartGenesisState("ccvchannel", nil),
+			types.NewRestartGenesisState("ccvchannel", nil, valUpdates),
 			false,
 		},
 		{
@@ -212,12 +221,12 @@ func TestValidateRestartGenesisState(t *testing.T) {
 						clienttypes.NewHeight(9, 432), 0,
 					},
 				},
-			}),
+			}, valUpdates),
 			false,
 		},
 		{
 			"invalid restart child genesis state: channel id is empty",
-			types.NewRestartGenesisState("", nil),
+			types.NewRestartGenesisState("", nil, valUpdates),
 			true,
 		},
 		{
@@ -233,7 +242,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 						clienttypes.NewHeight(0, 100), 0,
 					},
 				},
-			}),
+			}, valUpdates),
 			true,
 		},
 		{
@@ -249,7 +258,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 						clienttypes.NewHeight(0, 100), 0,
 					},
 				},
-			}),
+			}, valUpdates),
 			true,
 		},
 		{
@@ -265,7 +274,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 						clienttypes.NewHeight(0, 100), 0,
 					},
 				},
-			}),
+			}, valUpdates),
 			true,
 		},
 		{
@@ -277,7 +286,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 				cs,
 				nil,
 				nil,
-				nil,
+				valUpdates,
 			},
 			true,
 		},
@@ -290,8 +299,13 @@ func TestValidateRestartGenesisState(t *testing.T) {
 				nil,
 				consensusState,
 				nil,
-				nil,
+				valUpdates,
 			},
+			true,
+		},
+		{
+			"invalid restart child genesis state: nil initial validator set",
+			types.NewRestartGenesisState("ccvchannel", nil, nil),
 			true,
 		},
 	}

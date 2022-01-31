@@ -24,12 +24,13 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 }
 
 // NewRestartGenesisState returns a child GenesisState that has already been established.
-func NewRestartGenesisState(channelID string, unbondingSequences []UnbondingSequence) *GenesisState {
+func NewRestartGenesisState(channelID string, unbondingSequences []UnbondingSequence, initValSet []abci.ValidatorUpdate) *GenesisState {
 	return &GenesisState{
 		Params:             NewParams(true),
 		ParentChannelId:    channelID,
 		UnbondingSequences: unbondingSequences,
 		NewChain:           false,
+		InitialValSet:      initValSet,
 	}
 }
 
@@ -46,6 +47,10 @@ func (gs GenesisState) Validate() error {
 	if !gs.Params.Enabled {
 		return nil
 	}
+	if len(gs.InitialValSet) == 0 {
+		return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "initial validator set is empty")
+	}
+
 	if gs.NewChain {
 		if gs.ParentClientState == nil {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "parent client state cannot be nil for new chain")
@@ -64,9 +69,6 @@ func (gs GenesisState) Validate() error {
 		}
 		if gs.UnbondingSequences != nil {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "unbonding sequences must be nil for new chain")
-		}
-		if len(gs.InitialValSet) == 0 {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "initial validator set is empty")
 		}
 
 		// ensure that initial validator set is same as initial consensus state on provider client.
