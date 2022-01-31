@@ -7,13 +7,15 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
+
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // InitGenesis initializes the CCV child state and binds to PortID.
-func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) {
+func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.ValidatorUpdate {
 	k.SetParams(ctx, state.Params)
 	if !state.Params.Enabled {
-		return
+		return nil
 	}
 
 	k.SetPort(ctx, types.PortID)
@@ -29,6 +31,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) {
 		}
 	}
 
+	// initialValSet is checked in NewChain case by ValidateGenesis
 	if state.NewChain {
 		// Create the parent client in InitGenesis for new child chain. CCV Handshake must be established with this client id.
 		clientID, err := k.clientKeeper.CreateClient(ctx, state.ParentClientState, state.ParentConsensusState)
@@ -46,6 +49,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) {
 			k.SetUnbondingPacket(ctx, us.Sequence, us.UnbondingPacket)
 		}
 	}
+
+	return state.InitialValSet
 }
 
 // ExportGenesis exports the CCV child state. If the channel has already been established, then we export

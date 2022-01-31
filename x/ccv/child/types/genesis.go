@@ -24,9 +24,10 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 }
 
 // NewRestartGenesisState returns a child GenesisState that has already been established.
-func NewRestartGenesisState(channelID string, unbondingSequences []UnbondingSequence, initValSet []abci.ValidatorUpdate) *GenesisState {
+func NewRestartGenesisState(clientID, channelID string, unbondingSequences []UnbondingSequence, initValSet []abci.ValidatorUpdate) *GenesisState {
 	return &GenesisState{
 		Params:             NewParams(true),
+		ParentClientId:     clientID,
 		ParentChannelId:    channelID,
 		UnbondingSequences: unbondingSequences,
 		NewChain:           false,
@@ -64,6 +65,9 @@ func (gs GenesisState) Validate() error {
 		if err := gs.ParentConsensusState.ValidateBasic(); err != nil {
 			return sdkerrors.Wrapf(ccv.ErrInvalidGenesis, "parent consensus state invalid for new chain %s", err.Error())
 		}
+		if gs.ParentClientId != "" {
+			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "parent client id cannot be set for new chain. It must be established on handshake")
+		}
 		if gs.ParentChannelId != "" {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "parent channel id cannot be set for new chain. It must be established on handshake")
 		}
@@ -82,6 +86,9 @@ func (gs GenesisState) Validate() error {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "initial validators does not hash to NextValidatorsHash on provider client")
 		}
 	} else {
+		if gs.ParentClientId == "" {
+			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "parent client id must be set for a restarting child genesis state")
+		}
 		if gs.ParentChannelId == "" {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "parent channel id must be set for a restarting child genesis state")
 		}
