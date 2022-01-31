@@ -86,6 +86,7 @@ func (gs GenesisState) Validate() error {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "initial validators does not hash to NextValidatorsHash on provider client")
 		}
 	} else {
+		// NOTE: For restart genesis, we will verify initial validator set in InitGenesis.
 		if gs.ParentClientId == "" {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "parent client id must be set for a restarting child genesis state")
 		}

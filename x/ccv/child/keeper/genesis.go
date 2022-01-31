@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -9,6 +10,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // InitGenesis initializes the CCV child state and binds to PortID.
@@ -41,6 +43,31 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		// set parent client id.
 		k.SetParentClient(ctx, clientID)
 	} else {
+		// verify that latest consensus state on parent client matches the initial validator set of restarted chain
+		// thus, IBC genesis MUST run before CCV child genesis
+		consState, ok := k.clientKeeper.GetLatestClientConsensusState(ctx, state.ParentClientId)
+		if !ok {
+			panic("consensus state for parent client not found. MUST run IBC genesis before CCV child genesis")
+		}
+		tmConsState, ok := consState.(*ibctmtypes.ConsensusState)
+		if !ok {
+			panic(fmt.Sprintf("consensus state has wrong type. expected: %T, got: %T", &ibctmtypes.ConsensusState{}, consState))
+		}
+
+		// ensure that initial validator set is same as initial consensus state on provider client.
+		// this will be verified by provider module on channel handshake.
+		vals, err := tmtypes.PB2TM.ValidatorUpdates(state.InitialValSet)
+		if err != nil {
+			panic(err)
+		}
+		valSet := tmtypes.NewValidatorSet(vals)
+
+		if !bytes.Equal(tmConsState.NextValidatorsHash, valSet.Hash()) {
+			panic("initial validator set does not match last consensus state of the provider client")
+		}
+
+		// set parent client id
+		k.SetParentClient(ctx, state.ParentClientId)
 		// set parent channel id.
 		k.SetParentChannel(ctx, state.ParentChannelId)
 		// set all unbonding sequences
@@ -62,7 +89,12 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	if channelID, ok := k.GetParentChannel(ctx); ok {
-		gs := types.NewRestartGenesisState(channelID, nil)
+		clientID, ok := k.GetParentClient(ctx)
+		if !ok {
+			panic("parent client does not exist")
+		}
+		// ValUpdates must be filled in off-line
+		gs := types.NewRestartGenesisState(clientID, channelID, nil, nil)
 
 		unbondingSequences := []types.UnbondingSequence{}
 		cb := func(seq uint64, packet channeltypes.Packet) bool {
@@ -102,5 +134,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	if !ok {
 		panic("parent consensus state is not tendermint consensus state")
 	}
-	return types.NewInitialGenesisState(tmCs, tmConsState)
+	// ValUpdates must be filled in off-line
+	return types.NewInitialGenesisState(tmCs, tmConsState, nil)
 }
