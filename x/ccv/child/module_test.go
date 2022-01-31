@@ -5,12 +5,14 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	host "github.com/cosmos/ibc-go/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/testing"
+
 	"github.com/cosmos/interchain-security/app"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/child"
@@ -18,6 +20,9 @@ import (
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+
+	tmtypes "github.com/tendermint/tendermint/types"
+
 	"github.com/stretchr/testify/suite"
 )
 
@@ -62,7 +67,11 @@ func (suite *ChildTestSuite) SetupTest() {
 	)
 	suite.parentConsState = suite.parentChain.LastHeader.ConsensusState()
 
-	childGenesis := types.NewInitialGenesisState(suite.parentClient, suite.parentConsState)
+	// mocking the fact that child chain validators should be parent chain validators
+	// TODO: Fix testing suite so we can initialize both chains with the same validator set
+	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.parentChain.Vals)
+
+	childGenesis := types.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates)
 	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	// create the ccv path and set child's clientID to genesis client

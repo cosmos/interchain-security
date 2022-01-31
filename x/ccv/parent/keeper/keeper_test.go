@@ -17,6 +17,8 @@ import (
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 
+	tmtypes "github.com/tendermint/tendermint/types"
+
 	"github.com/stretchr/testify/suite"
 )
 
@@ -61,7 +63,9 @@ func (suite *KeeperTestSuite) SetupTest() {
 	)
 	suite.parentConsState = suite.parentChain.LastHeader.ConsensusState()
 
-	childGenesis := childtypes.NewInitialGenesisState(suite.parentClient, suite.parentConsState)
+	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.parentChain.Vals)
+
+	childGenesis := childtypes.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates)
 	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	suite.ctx = suite.parentChain.GetContext()

@@ -27,6 +27,7 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/bytes"
+	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -72,7 +73,9 @@ func (suite *ParentTestSuite) SetupTest() {
 	)
 	suite.parentConsState = suite.parentChain.LastHeader.ConsensusState()
 
-	childGenesis := childtypes.NewInitialGenesisState(suite.parentClient, suite.parentConsState)
+	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.parentChain.Vals)
+
+	childGenesis := childtypes.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates)
 	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	suite.ctx = suite.parentChain.GetContext()
