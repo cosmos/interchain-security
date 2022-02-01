@@ -6,6 +6,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
@@ -44,20 +45,39 @@ func (k Keeper) CreateChildClient(ctx sdk.Context, chainID string, initialHeight
 	if err != nil {
 		return err
 	}
+
 	k.SetChildClient(ctx, chainID, clientID)
-	k.SetChildGenesis(ctx, chainID, k.makeChildGenesis(clientState, consensusState))
+	childGen, err := k.makeChildGenesis(ctx)
+	if err != nil {
+		return err
+	}
+
+	k.SetChildGenesis(ctx, chainID, childGen)
 	return nil
 }
 
-func (k Keeper) makeChildGenesis(clientState *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState) (gen childtypes.GenesisState) {
+func (k Keeper) makeChildGenesis(ctx sdk.Context) (gen childtypes.GenesisState, err error) {
+	unbondingTime := k.stakingKeeper.UnbondingTime(ctx)
+	height := clienttypes.GetSelfHeight(ctx)
+
+	clientState := k.GetTemplateClient(ctx)
+	clientState.ChainId = ctx.ChainID()
+	clientState.LatestHeight = height //(+-1???)
+	clientState.TrustingPeriod = unbondingTime / 2
+	clientState.UnbondingPeriod = unbondingTime
+
+	consState, ok := k.clientKeeper.GetSelfConsensusState(ctx, height)
+	if !ok {
+		return gen, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "self consensus state not found for height: %s", height)
+	}
+
 	gen.Params.Enabled = true
 	gen.NewChain = true
-	gen.ParentChannelId = "I don't know" // TODO: figure out how to get the real one
 	gen.ParentClientState = clientState
-	gen.ParentConsensusState = consState
+	gen.ParentConsensusState = consState.(*ibctmtypes.ConsensusState)
 	// TODO: Add the new initial_val_set from Aditya's PR
 
-	return gen
+	return gen, nil
 }
 
 // SetChildClient sets the clientID for the given chainID
