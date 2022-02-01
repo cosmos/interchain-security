@@ -47,7 +47,7 @@ func (k Keeper) CreateChildClient(ctx sdk.Context, chainID string, initialHeight
 	}
 
 	k.SetChildClient(ctx, chainID, clientID)
-	childGen, err := k.makeChildGenesis(ctx)
+	childGen, err := k.MakeChildGenesis(ctx)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (k Keeper) CreateChildClient(ctx sdk.Context, chainID string, initialHeight
 	return nil
 }
 
-func (k Keeper) makeChildGenesis(ctx sdk.Context) (gen childtypes.GenesisState, err error) {
+func (k Keeper) MakeChildGenesis(ctx sdk.Context) (gen childtypes.GenesisState, err error) {
 	unbondingTime := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
 
