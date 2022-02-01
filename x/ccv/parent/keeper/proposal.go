@@ -10,6 +10,8 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
+
+	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 )
 
 // CreateChildChainProposal will receive the child chain's client state from the proposal.
@@ -43,7 +45,19 @@ func (k Keeper) CreateChildClient(ctx sdk.Context, chainID string, initialHeight
 		return err
 	}
 	k.SetChildClient(ctx, chainID, clientID)
+	k.SetChildGenesis(ctx, chainID, k.makeChildGenesis(clientState, consensusState))
 	return nil
+}
+
+func (k Keeper) makeChildGenesis(clientState *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState) (gen childtypes.GenesisState) {
+	gen.Params.Enabled = true
+	gen.NewChain = true
+	gen.ParentChannelId = "I don't know" // TODO: figure out how to get the real one
+	gen.ParentClientState = clientState
+	gen.ParentConsensusState = consState
+	// TODO: Add the new initial_val_set from Aditya's PR
+
+	return gen
 }
 
 // SetChildClient sets the clientID for the given chainID

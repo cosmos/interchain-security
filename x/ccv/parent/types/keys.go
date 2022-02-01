@@ -46,12 +46,15 @@ const (
 	// ValidatorSetUpdateIdPrefix is the key prefix that stores the current validator set update id
 	ValidatorSetUpdateIdPrefix = "valsetupdateid"
 
-	// ChildChainToUBDEsPrefix is for the index for looking up which unbonding delegation entries are waiting for a given
+	// UBDEIndexPrefix is for the index for looking up which unbonding delegation entries are waiting for a given
 	// child chain to unbond
 	UBDEIndexPrefix = "childchaintoubdes"
 
 	//ValsetUpdateBlockHeightPrefix
 	ValsetUpdateBlockHeightPrefix = "valsetupdateblockheigt"
+
+	// ChildGenesisStatePrefix stores child genesis state material (consensus state and client state) indexed by child chain id
+	ChildGenesisPrefix = "childgenesisstate"
 )
 
 var (
@@ -60,6 +63,7 @@ var (
 )
 
 // Ouputs a fixed length 32 byte hash for any string
+// TODO: use this pattern for all keys
 func HashString(x string) []byte {
 	hash := sha256.Sum256([]byte(x))
 	return hash[:]
@@ -118,4 +122,8 @@ func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
 	vuidBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(vuidBytes, valsetUpdateId)
 	return append([]byte(ValsetUpdateBlockHeightPrefix), vuidBytes...)
+}
+
+func ChildGenesisKey(chainID string) []byte {
+	return append(HashString(ChildGenesisPrefix), []byte(chainID)...)
 }
