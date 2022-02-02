@@ -3,13 +3,17 @@ package keeper_test
 import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
+
 	"github.com/cosmos/interchain-security/app"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
+
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 func (suite *KeeperTestSuite) TestGenesis() {
@@ -59,7 +63,12 @@ func (suite *KeeperTestSuite) TestGenesis() {
 		clienttypes.NewHeight(1, 0), 0)
 	suite.childChain.App.(*app.App).ChildKeeper.OnRecvPacket(suite.childChain.GetContext(), packet, pd)
 
+	// mocking the fact that child chain validators should be parent chain validators
+	// TODO: Fix testing suite so we can initialize both chains with the same validator set
+	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.parentChain.Vals)
+
 	restartGenesis := suite.childChain.App.(*app.App).ChildKeeper.ExportGenesis(suite.childChain.GetContext())
+	restartGenesis.InitialValSet = valUpdates
 
 	// ensure reset genesis is set correctly
 	parentChannel := suite.path.EndpointA.ChannelID
