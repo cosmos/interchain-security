@@ -1,6 +1,7 @@
 package parent
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -23,6 +24,7 @@ import (
 	host "github.com/cosmos/ibc-go/modules/core/24-host"
 	"github.com/cosmos/ibc-go/modules/core/exported"
 	ibcexported "github.com/cosmos/ibc-go/modules/core/exported"
+	"github.com/cosmos/interchain-security/x/ccv/parent/client/cli"
 	"github.com/cosmos/interchain-security/x/ccv/parent/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -76,6 +78,7 @@ func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Rout
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-parent module.
 // TODO
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 }
 
 // GetTxCmd implements AppModuleBasic interface
@@ -87,7 +90,7 @@ func (AppModuleBasic) GetTxCmd() *cobra.Command {
 // GetQueryCmd implements AppModuleBasic interface
 // TODO
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return nil
+	return cli.NewQueryCmd()
 }
 
 // AppModule represents the AppModule for this module
@@ -126,6 +129,7 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 // RegisterServices registers module services.
 // TODO
 func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
 // InitGenesis performs genesis initialization for the parent module. It returns
