@@ -11,6 +11,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
+	tmtypes "github.com/tendermint/tendermint/abci/types"
 
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 )
@@ -75,7 +76,15 @@ func (k Keeper) MakeChildGenesis(ctx sdk.Context) (gen childtypes.GenesisState, 
 	gen.NewChain = true
 	gen.ParentClientState = clientState
 	gen.ParentConsensusState = consState.(*ibctmtypes.ConsensusState)
-	// TODO: Add the new initial_val_set from Aditya's PR
+
+	vals := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	updates := []tmtypes.ValidatorUpdate{}
+
+	for _, v := range vals {
+		updates = append(updates, v.ABCIValidatorUpdate(k.stakingKeeper.PowerReduction(ctx)))
+	}
+
+	gen.InitialValSet = updates
 
 	return gen, nil
 }
