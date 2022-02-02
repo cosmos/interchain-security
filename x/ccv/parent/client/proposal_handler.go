@@ -25,7 +25,7 @@ var ProposalHandler = govclient.NewProposalHandler(NewCreateChildChainProposalTx
 // a new consumer chain proposal governance transaction.
 func NewCreateChildChainProposalTxCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "create-child-chain [test-arg]",
+		Use:   "create-child-chain [proposal-file]",
 		Args:  cobra.ExactArgs(1),
 		Short: "Submit a child chain creation proposal",
 		Long: `
