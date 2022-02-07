@@ -40,14 +40,14 @@ Where proposal.json contains:
 {
     "title": "Create the FooChain",
     "description": "Gonna be a great chain",
-    "chainId": "foochain",
-    "initialHeight": {
+    "chain_id": "foochain",
+    "initial_height": {
         "revision_number": 2,
         "revision_height": 3
     },
-    "genesisHash": "Z2VuZXNpcyBoYXNo",
-    "binaryHash": "YmluYXJ5IGhhc2g=",
-    "spawnTime": "2022-01-27T15:59:50.121607-08:00",
+    "genesis_hash": "Z2VuZXNpcyBoYXNo",
+    "binary_hash": "YmluYXJ5IGhhc2g=",
+    "spawn_time": "2022-01-27T15:59:50.121607-08:00",
     "deposit": "10000stake"
 }
 		`,
@@ -89,11 +89,11 @@ Where proposal.json contains:
 type CreateChildChainProposalJSON struct {
 	Title         string             `json:"title"`
 	Description   string             `json:"description"`
-	ChainId       string             `json:"chainId"`
-	InitialHeight clienttypes.Height `json:"initialHeight"`
-	GenesisHash   []byte             `json:"genesisHash"`
-	BinaryHash    []byte             `json:"binaryHash"`
-	SpawnTime     time.Time          `json:"spawnTime"`
+	ChainId       string             `json:"chain_id"`
+	InitialHeight clienttypes.Height `json:"initial_height"`
+	GenesisHash   []byte             `json:"genesis_hash"`
+	BinaryHash    []byte             `json:"binary_hash"`
+	SpawnTime     time.Time          `json:"spawn_time"`
 	Deposit       string             `json:"deposit"`
 }
 
