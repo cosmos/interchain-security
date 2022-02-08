@@ -94,7 +94,6 @@ import (
 	ibcparentclient "github.com/cosmos/interchain-security/x/ccv/parent/client"
 	ibcparentkeeper "github.com/cosmos/interchain-security/x/ccv/parent/keeper"
 	ibcparenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	"github.com/tendermint/spm/cosmoscmd"
 	"github.com/tendermint/spm/openapiconsole"
@@ -351,7 +350,7 @@ func New(
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(ccv.RouterKey, ibcparent.NewCreateChildChainHandler(app.ParentKeeper))
+		AddRoute(ibcparenttypes.RouterKey, ibcparent.NewCreateChildChainHandler(app.ParentKeeper))
 
 	// Create Transfer Keepers
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
