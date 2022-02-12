@@ -6,7 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/simapp"
 
-	ibctesting "github.com/cosmos/ibc-go/testing"
+	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	"github.com/tendermint/spm/cosmoscmd"
 	abci "github.com/tendermint/tendermint/abci/types"
