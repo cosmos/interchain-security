@@ -238,8 +238,7 @@ func (suite *ChildTestSuite) TestOnChanOpenTry() {
 	chanCap, err := suite.childChain.App.GetScopedIBCKeeper().NewCapability(suite.ctx, host.ChannelCapabilityPath(childtypes.PortID, suite.path.EndpointA.ChannelID))
 	suite.Require().NoError(err)
 
-	err = childModule.OnChanOpenTry(suite.ctx, channeltypes.ORDERED, []string{"connection-1"}, childtypes.PortID, "channel-1", chanCap,
-		channeltypes.NewCounterparty(parenttypes.PortID, "channel-1"), ccv.Version, ccv.Version)
+	_, err = childModule.OnChanOpenTry(suite.ctx, channeltypes.ORDERED, []string{"connection-1"}, childtypes.PortID, "channel-1", chanCap, channeltypes.NewCounterparty(parenttypes.PortID, "channel-1"), ccv.Version)
 	suite.Require().Error(err, "OnChanOpenTry callback must error on child chain")
 }
 

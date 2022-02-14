@@ -79,7 +79,7 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 				return err
 			}
 			ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-			k.channelKeeper.WriteAcknowledgement(ctx, channelCap, packet, ack.Acknowledgement())
+			k.channelKeeper.WriteAcknowledgement(ctx, channelCap, packet, ack)
 			k.DeleteUnbondingTime(ctx, sequence)
 			k.DeleteUnbondingPacket(ctx, sequence)
 		} else {
