@@ -9,11 +9,14 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/gorilla/mux v1.8.0
+	github.com/gravity-devs/liquidity v1.4.5
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/prometheus/common v0.30.0 // indirect
+	github.com/rakyll/statik v0.1.7
 	github.com/rs/zerolog v1.25.0 // indirect
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/cobra v1.3.0
+	github.com/strangelove-ventures/packet-forward-middleware v1.0.1
 	github.com/stretchr/testify v1.7.0
 	github.com/tendermint/spm v0.1.9
 	github.com/tendermint/tendermint v0.34.14

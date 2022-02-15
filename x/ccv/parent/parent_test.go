@@ -55,8 +55,8 @@ type ParentTestSuite struct {
 
 func (suite *ParentTestSuite) SetupTest() {
 	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
-	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(0))
-	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
+	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
+	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
 
 	tmConfig := ibctesting.NewTendermintConfig()
 
