@@ -71,8 +71,8 @@ func (gs GenesisState) Validate() error {
 		if gs.ParentChannelId != "" {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "parent channel id cannot be set for new chain. It must be established on handshake")
 		}
-		if gs.UnbondingSequences != nil {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "unbonding sequences must be nil for new chain")
+		if len(gs.UnbondingSequences) != 0 {
+			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "unbonding sequences must be empty for new chain")
 		}
 
 		// ensure that initial validator set is same as initial consensus state on provider client.
