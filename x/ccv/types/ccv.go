@@ -25,7 +25,7 @@ func (vsc ValidatorSetChangePacketData) GetBytes() []byte {
 	return valUpdateBytes
 }
 
-func NewValidatorDowtimePacketData(validator abci.Validator, valUpdateId uint64, slashFraction, jailTime int64) ValidatorDowntimePacketData {
+func NewValidatorDowntimePacketData(validator abci.Validator, valUpdateId uint64, slashFraction, jailTime int64) ValidatorDowntimePacketData {
 	return ValidatorDowntimePacketData{
 		Validator:      validator,
 		SlashFraction:  slashFraction,
@@ -38,8 +38,8 @@ func (vdt ValidatorDowntimePacketData) ValidateBasic() error {
 	if len(vdt.Validator.Address) == 0 || vdt.Validator.Power == 0 {
 		return sdkerrors.Wrap(ErrInvalidPacketData, "validator fields cannot be empty")
 	}
-
-	if vdt.JailTime <= 0 {
+	// allow slahing with 0 jail time
+	if vdt.JailTime < 0 {
 		return sdkerrors.Wrap(ErrInvalidPacketData, "jail duration must be positive")
 	}
 

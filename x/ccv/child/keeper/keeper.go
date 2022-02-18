@@ -317,15 +317,26 @@ func (k Keeper) VerifyParentChain(ctx sdk.Context, channelID string) error {
 	return nil
 }
 
-// GetLastUnbondingPacket returns the last unbounding packet stored in lexical order
-func (k Keeper) GetLastUnbondingPacket(ctx sdk.Context) ccv.ValidatorSetChangePacketData {
-	ubdPacket := &channeltypes.Packet{}
-	k.IterateUnbondingPacket(ctx, func(seq uint64, packet channeltypes.Packet) bool {
-		*ubdPacket = packet
-		return false
-	})
-	var data ccv.ValidatorSetChangePacketData
+// GetLastUnbondingPacket returns the last unbounding packet data stored in lexical order
+func (k Keeper) GetLastUnbondingPacketData(ctx sdk.Context) (ccv.ValidatorSetChangePacketData, error) {
+	store := ctx.KVStore(k.storeKey)
+	// use a reverse iterator to get the last entry
+	iterator := sdk.KVStoreReversePrefixIterator(store, []byte(types.UnbondingPacketPrefix))
+	if !iterator.Valid() {
+		return ccv.ValidatorSetChangePacketData{}, sdkerrors.Wrapf(ccv.ErrInvalidChildState, "Invalid unbonding packet iterator")
+	}
 
-	ccv.ModuleCdc.UnmarshalJSON(ubdPacket.GetData(), &data)
-	return data
+	var packet channeltypes.Packet
+	err := packet.Unmarshal(iterator.Value())
+	if err != nil {
+		return ccv.ValidatorSetChangePacketData{}, err
+	}
+
+	var data ccv.ValidatorSetChangePacketData
+	err = ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data)
+	if err != nil {
+		return ccv.ValidatorSetChangePacketData{}, err
+	}
+
+	return data, nil
 }

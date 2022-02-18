@@ -113,24 +113,3 @@ func (suite *KeeperTestSuite) TestValsetUpdateBlockHeight() {
 	blockHeight = app.ParentKeeper.GetValsetUpdateBlockHeight(ctx, uint64(3))
 	suite.Require().Equal(blockHeight, uint64(4))
 }
-
-// func (suite KeeperTestSuite) TestOnRecvPacket() {
-// 	ctx, t := suite.ctx, suite.T()
-
-// 	// Get a validator
-
-// 	// app := suite.parentChain.App.(*app.App)
-// 	valset := suite.parentChain.Vals
-// 	val, err := valset.Validators[0].ToProto()
-// 	suite.Require().NoError(err)
-
-// 	tests := []struct {
-// 		pubkey   crypto.PubKey
-// 		jailTime int64
-// 	}{{
-// 		pubkey:   val.PubKey,
-// 		jailTime: int64(0),
-// 	}}
-// 	app.ParentKeeper.
-// 		t.Logf("%+v", val.PubKey)
-// }

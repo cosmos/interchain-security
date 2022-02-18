@@ -42,7 +42,7 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 	} else {
 		pendingChanges = utils.AccumulateChanges(currentChanges.ValidatorUpdates, newChanges.ValidatorUpdates)
 	}
-	k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{ValidatorUpdates: pendingChanges})
+	k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{ValidatorUpdates: pendingChanges, ValsetUpdateId: newChanges.ValsetUpdateId})
 
 	// Save unbonding time and packet
 	unbondingTime := ctx.BlockTime().Add(types.UnbondingTime)
@@ -90,9 +90,8 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 	return nil
 }
 
-// SendPacket sends a packet that initiates the given validator
-// slashing and jailing on the provider chain.
-func (k Keeper) SendPacket(ctx sdk.Context, val abci.Validator, slashFraction, jailedUntil int64) error {
+// SendPenalty sends a given validator slashing and jailing penalties
+func (k Keeper) SendPenalties(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, slashFraction, jailedUntil int64) error {
 
 	// check the setup
 	channelID, ok := k.GetParentChannel(ctx)
@@ -117,13 +116,7 @@ func (k Keeper) SendPacket(ctx sdk.Context, val abci.Validator, slashFraction, j
 		)
 	}
 
-	// add the last ValsetUpdateId to the packet data so that the provider
-	// can find the block height when the downtime happened
-	valsetUpdateId := k.GetLastUnbondingPacket(ctx).ValsetUpdateId
-	if valsetUpdateId == 0 {
-		return sdkerrors.Wrapf(ccv.ErrInvalidChildState, "last valset update id not set")
-	}
-	packetData := ccv.NewValidatorDowtimePacketData(val, valsetUpdateId, slashFraction, jailedUntil)
+	packetData := ccv.NewValidatorDowntimePacketData(validator, valsetUpdateID, slashFraction, jailedUntil)
 	packetDataBytes := packetData.GetBytes()
 
 	// send ValidatorDowntime infractions in IBC packet
@@ -140,6 +133,9 @@ func (k Keeper) SendPacket(ctx sdk.Context, val abci.Validator, slashFraction, j
 	return nil
 }
 
-func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
+func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorDowntimePacketData, ack channeltypes.Acknowledgement) error {
+	if err := ack.GetError(); err != "" {
+		return fmt.Errorf(err)
+	}
 	return nil
 }

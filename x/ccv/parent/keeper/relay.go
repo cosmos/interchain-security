@@ -112,23 +112,23 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 // in a packet over the CCV channel.
 func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
-	// k.IncrementValidatorSetUpdateId(ctx) TODO: move this here
+	k.IncrementValidatorSetUpdateId(ctx)
 	k.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
 		valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 		if len(valUpdates) != 0 {
+			fmt.Println(valUpdateID)
 			k.SendPacket(ctx, chainID, valUpdates, valUpdateID)
-			k.IncrementValidatorSetUpdateId(ctx) // TODO: this needs to be moved out of this scope
 			k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()))
 		}
 		return false
 	})
 }
 
-// OnRecvPacket slahes and jails the given validator in the packet data
+// OnRecvPacket slashes and jails the given validator in the packet data
 func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorDowntimePacketData) exported.Acknowledgement {
-	if childChannel, ok := k.GetChannelToChain(ctx, packet.DestinationChannel); !ok && childChannel != packet.DestinationChannel {
+	if chainID, ok := k.GetChannelToChain(ctx, packet.DestinationChannel); !ok {
 		ack := channeltypes.NewErrorAcknowledgement(
-			fmt.Sprintf("packet sent on a channel %s other than the established child channel %s", packet.DestinationChannel, childChannel),
+			fmt.Sprintf("chain ID doesn't exist for channel ID: %s", chainID),
 		)
 		chanCap, _ := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(packet.DestinationPort, packet.DestinationChannel))
 		k.channelKeeper.ChanCloseInit(ctx, packet.DestinationPort, packet.DestinationChannel, chanCap)
@@ -141,7 +141,8 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data c
 		return &ack
 	}
 
-	return nil
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	return ack
 }
 
 // HandleConsumerDowntime gets the validator and the downtime infraction height from the packet data
@@ -151,9 +152,15 @@ func (k Keeper) HandleConsumerDowntime(ctx sdk.Context, downtimeData ccv.Validat
 	consAddr := sdk.ConsAddress(downtimeData.Validator.Address)
 
 	// get the validator data
-	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
 	if !found {
 		return fmt.Errorf("cannot find validator with address %s", consAddr.String())
+	}
+
+	// make sure the validator is not yet unbonded;
+	// stakingKeeper.Slash() panics otherwise
+	if validator.IsUnbonded() {
+		return fmt.Errorf("should not be slashing unbonded validator: %s", validator.GetOperator())
 	}
 
 	// get the downtime block height from the valsetUpdateID
@@ -164,10 +171,10 @@ func (k Keeper) HandleConsumerDowntime(ctx sdk.Context, downtimeData ccv.Validat
 
 	// slash and jail the validator
 	k.stakingKeeper.Slash(ctx, consAddr, int64(blockHeight), downtimeData.Validator.Power, sdk.NewDec(1).QuoInt64(downtimeData.SlashFraction))
-	if !val.Jailed {
+	if !validator.IsJailed() {
 		k.stakingKeeper.Jail(ctx, consAddr)
 	}
-	// TODO: check if the missed block bits and sign info need to be reseted
+
 	k.slashingKeeper.JailUntil(ctx, consAddr, ctx.BlockHeader().Time.Add(time.Duration(downtimeData.JailTime)))
 
 	return nil

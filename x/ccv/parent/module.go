@@ -340,8 +340,6 @@ func (am AppModule) OnRecvPacket(
 		),
 	)
 
-	// NOTE: In successful case, acknowledgement will be written asynchronously
-	// after unbonding period has elapsed.
 	return ack
 }
 

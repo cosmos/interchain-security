@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -17,6 +18,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/testing"
+
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	"github.com/cosmos/interchain-security/app"
@@ -106,7 +108,6 @@ func (suite *ParentTestSuite) SetupCCVChannel() {
 
 func TestParentTestSuite(t *testing.T) {
 	suite.Run(t, new(ParentTestSuite))
-
 }
 
 func (s *ParentTestSuite) TestPacketRoundtrip() {
@@ -130,6 +131,9 @@ func (s *ParentTestSuite) TestPacketRoundtrip() {
 	_, err = parentStakingKeeper.Delegate(s.parentCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
 	s.Require().NoError(err)
 
+	// Save valset update ID to reconstruct packet
+	valUpdateID := s.parentChain.App.(*app.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
+
 	// Send CCV packet to consumer
 	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
 
@@ -142,7 +146,7 @@ func (s *ParentTestSuite) TestPacketRoundtrip() {
 	s.path.EndpointA.UpdateClient()
 
 	// Reconstruct packet
-	packetData := types.NewValidatorSetChangePacketData(valUpdates, 1)
+	packetData := types.NewValidatorSetChangePacketData(valUpdates, valUpdateID)
 	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, parenttypes.PortID, s.path.EndpointB.ChannelID,
 		childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
@@ -261,11 +265,14 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	// Check that the tokens have not been returned yet
 	s.Require().True(afterbondBalance.Equal(delBalance()))
 
+	// save the current valset update ID
+	valUpdateID := s.parentChain.App.(*app.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
+
 	// check that staking ubde was created and onHold is false
 	checkStakingUBDE(1, true, false)
 
 	// check that CCV ubde was created
-	checkCCVUBDE(s.childChain.ChainID, 1, true)
+	checkCCVUBDE(s.childChain.ChainID, valUpdateID, true)
 
 	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
 
@@ -280,7 +287,7 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	// commit block on parent chain and update consumer chain's client
 	commitParentBlock()
 	// Relay actual packet content to consumer chain
-	packet := sendValUpdatePacket(valUpdates, 1, oldBlockTime, 1)
+	packet := sendValUpdatePacket(valUpdates, valUpdateID, oldBlockTime, 1)
 
 	// ACKNOWLEDGE PACKET
 
@@ -315,10 +322,10 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	s.Require().NoError(err)
 
 	// Check that ccv ubde has been deleted
-	checkCCVUBDE(s.childChain.ChainID, 1, false)
+	checkCCVUBDE(s.childChain.ChainID, valUpdateID, false)
 
 	// Check that staking UBDE has been deleted
-	checkStakingUBDE(1, false, false)
+	checkStakingUBDE(valUpdateID, false, false)
 
 	// Check that unbonding has completed
 	s.Require().True(delBalance().Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
@@ -341,14 +348,20 @@ func GetStakingUbde(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (staking
 // TestSendDowntimePacket tests to the consumer initiated slashing and jailing
 //  on the provider chain by the consumer chain
 func (s *ParentTestSuite) TestSendDowntimePacket() {
-	// initial setup
+	// set two validators per chain
+	ibctesting.ValidatorsPerChain = 4
+	s.SetupTest()
 	s.SetupCCVChannel()
+	s.Require().Len(s.parentChain.Vals.Validators, ibctesting.ValidatorsPerChain)
+
 	parentStakingKeeper := s.parentChain.App.GetStakingKeeper()
 	parentSlashingKeeper := s.parentChain.App.(*app.App).SlashingKeeper
 
 	// get a parent chain validator address and balance
-	tmVal := s.parentChain.Vals.Validators[0]
-	val, err := s.parentChain.Vals.Validators[0].ToProto()
+	tmVals := s.parentChain.Vals.Validators
+	tmVal := tmVals[0]
+
+	val, err := tmVal.ToProto()
 	s.Require().NoError(err)
 	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
 	s.Require().Nil(err)
@@ -376,7 +389,7 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	// with the slashing and jailing parameters
 	oldBlockTime := s.childCtx().BlockTime()
 	slashFraction := int64(100)
-	packetData := types.NewValidatorDowtimePacketData(validator, valsetUpdateId, slashFraction,
+	packetData := types.NewValidatorDowntimePacketData(validator, valsetUpdateId, slashFraction,
 		int64(slashingtypes.DefaultDowntimeJailDuration))
 	timeout := uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, childtypes.PortID, s.path.EndpointA.ChannelID,
@@ -386,16 +399,15 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	err = s.path.EndpointA.SendPacket(packet)
 	s.Require().NoError(err)
 
-	// commit block on the child chain and update the parent's client state
-	s.childChain.App.EndBlock(abci.RequestEndBlock{})
-	s.coordinator.CommitBlock(s.childChain)
-	err = s.path.EndpointB.UpdateClient()
-	s.Require().NoError(err)
-
-	// receive the downtime packet on the provider chain
+	// receive the downtime packet on the provider chain;
+	// tell the parentchain to slash and jail the validator
+	// err = s.path.EndpointB.RecvPacket(packet)
 	s.path.EndpointB.RecvPacket(packet)
 
-	// validator should be jailed on the provider chain
+	// check that the validator was removed from the chain validator set
+	s.Require().Len(s.parentChain.Vals.Validators, ibctesting.ValidatorsPerChain-1)
+
+	// check that the validator is successfully jailed
 	valAddr, err := sdk.ValAddressFromHex(tmVal.Address.String())
 	s.Require().NoError(err)
 	validatorJailed, ok := s.parentChain.App.GetStakingKeeper().GetValidator(s.parentCtx(), valAddr)
@@ -403,15 +415,19 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	s.Require().True(validatorJailed.Jailed)
 	s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
 
-	// validator should have been slashed
+	// check that the validator's token was slashed
 	slashedAmout := sdk.NewDec(1).QuoInt64(slashFraction).Mul(valOldBalance.ToDec())
 	resultingTokens := valOldBalance.Sub(slashedAmout.TruncateInt())
 	s.Require().Equal(resultingTokens, validatorJailed.GetTokens())
 
-	// validator JailedUntil timestamp should be in the future
+	// check that the validator's unjailing time is updated
 	valSignInfo, found := parentSlashingKeeper.GetValidatorSigningInfo(s.parentCtx(), consAddr)
 	s.Require().True(found)
 	s.Require().True(valSignInfo.JailedUntil.After(s.parentCtx().BlockHeader().Time))
+
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
+	s.Require().NoError(err)
 }
 
 // TestHandleConsumerDowntime tests the slashing and jailing on the provider
@@ -427,7 +443,7 @@ func (s *ParentTestSuite) TestHandleConsumerDowntime() {
 	// Should return an error when the validator doesn't exists
 	err := s.parentChain.App.(*app.App).ParentKeeper.HandleConsumerDowntime(
 		s.parentCtx(),
-		types.NewValidatorDowtimePacketData(
+		types.NewValidatorDowntimePacketData(
 			abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), int64(4), int64(1),
 		),
 	)
@@ -446,6 +462,9 @@ func (s *ParentTestSuite) TestHandleConsumerDowntime() {
 	ubdTime := time.Now()
 	parentCtx := s.parentCtx().WithBlockTime(ubdTime)
 	parentStakingKeeper.Undelegate(parentCtx, delAddr, valAddr, sdk.NewDec(1))
+
+	// Save valset update ID
+	valUpdateID := s.parentChain.App.(*app.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
 
 	// The undelegation creates a change in the valset thus
 	// the valset update ID is saved with the current block height
@@ -484,8 +503,14 @@ func (s *ParentTestSuite) TestHandleConsumerDowntime() {
 		// Slash 1/4 of the validator tokens
 		err := s.parentChain.App.(*app.App).ParentKeeper.HandleConsumerDowntime(
 			parentCtx,
-			types.NewValidatorDowtimePacketData(
-				abci.Validator{Address: tmValidator.Address, Power: int64(1)}, uint64(1), int64(4), int64(1),
+			types.NewValidatorDowntimePacketData(
+				abci.Validator{
+					Address: tmValidator.Address,
+					Power:   int64(1),
+				},
+				valUpdateID,
+				int64(4),
+				int64(1),
 			),
 		)
 		s.Require().NoError(err)

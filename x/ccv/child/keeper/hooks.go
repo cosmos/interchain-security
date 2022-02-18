@@ -20,10 +20,16 @@ func (k Keeper) AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress
 		return
 	}
 
+	// get last the valset update id
+	valsetUpdate, err := k.GetLastUnbondingPacketData(ctx)
+	if err != nil {
+		return
+	}
+
 	// increase jail time
 	signInfo.JailedUntil = ctx.BlockHeader().Time.Add(k.slashingKeeper.DowntimeJailDuration(ctx))
 
-	// reset the missed block counters
+	// reset missed block counters
 	signInfo.MissedBlocksCounter = 0
 	signInfo.IndexOffset = 0
 	k.slashingKeeper.ClearValidatorMissedBlockBitArray(ctx, consAddr)
@@ -32,15 +38,18 @@ func (k Keeper) AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress
 	k.slashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signInfo)
 
 	// send packet to initiate slashing on the provider chain
-	k.SendPacket(
+	err = k.SendPenalties(
 		ctx,
 		abci.Validator{
 			Address: consAddr.Bytes(),
 			Power:   power,
 		},
+		valsetUpdate.ValsetUpdateId,
 		k.slashingKeeper.SlashFractionDowntime(ctx).TruncateInt64(),
 		signInfo.JailedUntil.UnixNano(),
 	)
+
+	panic(err)
 }
 
 // Hooks wrapper struct for ChildKeeper

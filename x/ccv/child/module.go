@@ -350,16 +350,49 @@ func (am AppModule) OnRecvPacket(
 // OnAcknowledgementPacket implements the IBCModule interface
 func (am AppModule) OnAcknowledgementPacket(
 	ctx sdk.Context,
-	_ channeltypes.Packet,
+	packet channeltypes.Packet,
 	acknowledgement []byte,
 	_ sdk.AccAddress,
 ) (*sdk.Result, error) {
 	var ack channeltypes.Acknowledgement
 	if err := ccv.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
-		fmt.Println(err)
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal parent packet acknowledgement: %v", err)
+		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal child packet acknowledgement: %v", err)
 	}
-	return nil, sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "cannot receive acknowledgement on child port, child chain does not send packet over channel.")
+	var data ccv.ValidatorDowntimePacketData
+	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
+		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal child packet data: %s", err.Error())
+	}
+
+	if err := am.keeper.OnAcknowledgementPacket(ctx, packet, data, ack); err != nil {
+		return nil, err
+	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			ccv.EventTypePacket,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(ccv.AttributeKeyAck, ack.String()),
+		),
+	)
+	switch resp := ack.Response.(type) {
+	case *channeltypes.Acknowledgement_Result:
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				ccv.EventTypePacket,
+				sdk.NewAttribute(ccv.AttributeKeyAckSuccess, string(resp.Result)),
+			),
+		)
+	case *channeltypes.Acknowledgement_Error:
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				ccv.EventTypePacket,
+				sdk.NewAttribute(ccv.AttributeKeyAckError, resp.Error),
+			),
+		)
+	}
+	return &sdk.Result{
+		Events: ctx.EventManager().Events().ToABCIEvents(),
+	}, nil
 }
 
 // OnTimeoutPacket implements the IBCModule interface

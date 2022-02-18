@@ -372,8 +372,13 @@ func TestKeeperTestSuite(t *testing.T) {
 // are registred and triggered when a validator has downtime
 func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	// initial setup
-	app := suite.childChain.App.(*app.App)
-	ctx := suite.childChain.GetContext()
+	suite.SetupCCVChannel()
+	app, ctx := suite.childChain.App.(*app.App), suite.ctx
+	channelID := suite.path.EndpointA.ChannelID
+
+	// add parent channel to childkeeper store
+	app.ChildKeeper.SetParentChannel(ctx, channelID)
+	app.IBCKeeper.ChannelKeeper.SetChannel(ctx, types.PortID, channelID, suite.path.EndpointB.GetChannel())
 
 	// create a validator pubkey and address
 	pubkey := ed25519.GenPrivKey().PubKey()
@@ -382,9 +387,17 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	// add the validator pubkey and signing info to the store
 	app.SlashingKeeper.AddPubkey(ctx, pubkey)
 
+	// set unbounding packet with valset update id
+	vscPacket := ccv.ValidatorSetChangePacketData{ValsetUpdateId: uint64(3)}
+	app.ChildKeeper.SetUnbondingPacket(ctx, uint64(0), channeltypes.Packet{Data: vscPacket.GetBytes()})
+
 	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, ctx.BlockHeight(), ctx.BlockHeight()-1,
 		time.Time{}.UTC(), false, int64(0))
 	app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, valInfo)
+
+	// save next sequence before sending slashing packet
+	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, suite.path.EndpointA.ChannelID)
+	suite.Require().True(ok)
 
 	// Sign 1000 blocks
 	valPower := int64(1)
@@ -399,70 +412,109 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 		app.SlashingKeeper.HandleValidatorSignature(ctx, pubkey.Address().Bytes(), valPower, false)
 	}
 
+	// check that the validator signing info are correctly updated
 	signInfo, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
 	suite.Require().True(found)
-	suite.Require().NotZero(signInfo.JailedUntil)
-	suite.Require().Zero(signInfo.MissedBlocksCounter)
+	suite.Require().NotZero(signInfo.JailedUntil, "did not update validator unjail until")
+	suite.Require().Zero(signInfo.MissedBlocksCounter, "did not reset validator missed block counter")
 	suite.Require().Zero(signInfo.IndexOffset)
 	app.SlashingKeeper.IterateValidatorMissedBlockBitArray(ctx, consAddr, func(_ int64, missed bool) bool {
 		suite.Require().False(missed)
 		return false
 	})
+
+	// verify that the slashing packet was sent
+	commit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, types.PortID, channelID, seq)
+	suite.Require().NotNil(commit, "did not found slashing packet commitment")
 }
 
 // TestAfterValidatorDowntimeHook tests the slashing hook implementation logic
 func (suite *KeeperTestSuite) TestAfterValidatorDowntimeHook() {
-	app := suite.childChain.App.(*app.App)
-	ctx := suite.ctx
+	// initial setup
+	suite.SetupCCVChannel()
+
+	app, ctx := suite.childChain.App.(*app.App), suite.ctx
+	channelID := suite.path.EndpointA.ChannelID
+	app.ChildKeeper.SetParentChannel(ctx, channelID)
+	app.IBCKeeper.ChannelKeeper.SetChannel(ctx, types.PortID, channelID, suite.path.EndpointB.GetChannel())
 
 	consAddr := sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Bytes()).Bytes()
 
-	now := time.Now()
+	// set initial validator signing info
+	signInfo := slashingtypes.NewValidatorSigningInfo(consAddr, int64(1), int64(1),
+		time.Time{}.UTC(), false, int64(0))
+	app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signInfo)
 
-	// Cover the cases when the validatir jailing duration
-	// is either elapsed, null or still going
+	// store sequence
+	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, suite.path.EndpointA.ChannelID)
+	suite.Require().True(ok)
+
+	// expect no updates when no unbonding packets exist
+	app.ChildKeeper.AfterValidatorDowntime(ctx, consAddr, int64(1))
+	newSignInfo, _ := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+
+	suite.Require().True(signInfo.JailedUntil.Equal(newSignInfo.JailedUntil), "updated signing info when no unbonding packets exist")
+
+	// check that no slashing packet was sent
+	commit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, types.PortID, channelID, seq)
+	suite.Require().Nil(commit, "sent slashing packet when no unbonding packets exist")
+
+	// set unbounding packet with valset update id
+	vscPacket := ccv.ValidatorSetChangePacketData{ValsetUpdateId: uint64(3)}
+	app.ChildKeeper.SetUnbondingPacket(ctx, uint64(0), channeltypes.Packet{Data: vscPacket.GetBytes()})
+
+	blockTime := suite.childChain.GetContext().BlockTime()
+
+	// test cases with jailing times being zero, elapsed and pending
 	testcases := []struct {
 		jailedUntil time.Time
 		expUpdate   bool
-	}{{
-		jailedUntil: now.Add(-1 * time.Hour),
-		expUpdate:   true,
-	}, {
-		jailedUntil: time.Time{}, // null
-		expUpdate:   true,
-	}, {
-		jailedUntil: now.Add(1 * time.Hour),
-		expUpdate:   false,
-	},
+	}{
+		{
+			jailedUntil: time.Time{},
+			expUpdate:   true,
+		}, {
+			jailedUntil: blockTime.Add(-1 * time.Hour),
+			expUpdate:   true,
+		}, {
+			jailedUntil: blockTime.Add(1 * time.Hour),
+			expUpdate:   false,
+		},
 	}
-
-	// synchronize the block time with the test cases
-	ctx = ctx.WithBlockTime(now)
-	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, int64(1), int64(1),
-		time.Time{}.UTC(), false, int64(0))
 
 	for _, tc := range testcases {
-		// set the current unjailing time
-		valInfo.JailedUntil = tc.jailedUntil
-		app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, valInfo)
-		// execute the hook logic
-		app.ChildKeeper.AfterValidatorDowntime(
-			ctx, consAddr, int64(1))
-		// verify if we have the expected output
-		signInfo, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
-		suite.Require().True(found)
-		suite.Require().True(tc.expUpdate == !(signInfo.JailedUntil.Equal(tc.jailedUntil)))
-	}
+		// set test case signing info
+		signInfo = slashingtypes.NewValidatorSigningInfo(consAddr, int64(1), int64(1), tc.jailedUntil, false, int64(0))
+		app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signInfo)
+		// save current sequence
+		seq, _ = app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, suite.path.EndpointA.ChannelID)
+		// execute hook logic
+		app.ChildKeeper.AfterValidatorDowntime(ctx, consAddr, int64(1))
+		// check signing info state
+		newSignInfo, _ = app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+		suite.Require().True(tc.expUpdate == !(signInfo.JailedUntil.Equal(newSignInfo.JailedUntil)))
 
-	suite.Require()
+		// check that slashing packet was sent only if expected
+		commit = app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, types.PortID, channelID, seq)
+		suite.Require().Equal(tc.expUpdate, commit != nil)
+	}
 }
 
 func (suite *KeeperTestSuite) TestGetLastUnboundingPacket() {
 	app := suite.childChain.App.(*app.App)
 	ctx := suite.childChain.GetContext()
 
-	ubdPacket := app.ChildKeeper.GetLastUnbondingPacket(ctx)
-	suite.Require().Zero(ubdPacket.ValsetUpdateId)
+	// check if IBC packet is valid
+	_, err := app.ChildKeeper.GetLastUnbondingPacketData(ctx)
+	suite.NotNil(err)
+
+	app.ChildKeeper.SetUnbondingPacket(ctx, uint64(0), channeltypes.Packet{Sequence: 1})
+
+	// check if unbouding packet data is valid
+	_, err = app.ChildKeeper.GetLastUnbondingPacketData(ctx)
+	suite.NotNil(err)
+
+	// check if the last packet stored is returned
 	for i := 0; i < 5; i++ {
 		pd := ccv.NewValidatorSetChangePacketData(
 			[]abci.ValidatorUpdate{},
@@ -473,6 +525,7 @@ func (suite *KeeperTestSuite) TestGetLastUnboundingPacket() {
 		app.ChildKeeper.SetUnbondingPacket(ctx, uint64(i), packet)
 	}
 
-	ubdPacket = app.ChildKeeper.GetLastUnbondingPacket(ctx)
+	ubdPacket, err := app.ChildKeeper.GetLastUnbondingPacketData(ctx)
+	suite.Nil(err)
 	suite.Require().Equal(uint64(4), ubdPacket.ValsetUpdateId)
 }
