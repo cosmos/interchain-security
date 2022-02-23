@@ -286,21 +286,16 @@ func (k Keeper) DeleteUnbondingPacket(ctx sdk.Context, sequence uint64) {
 
 // VerifyParentChain verifies that the chain trying to connect on the channel handshake
 // is the expected parent chain.
-func (k Keeper) VerifyParentChain(ctx sdk.Context, channelID string) error {
+func (k Keeper) VerifyParentChain(ctx sdk.Context, channelID string, connectionHops []string) error {
 	// Verify CCV channel is in Initialized state
 	status := k.GetChannelStatus(ctx, channelID)
 	if status != ccv.INITIALIZING {
 		return sdkerrors.Wrap(ccv.ErrInvalidStatus, "CCV channel status must be in Initializing state")
 	}
-	// Retrieve the underlying client state.
-	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
-	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
-	}
-	if len(channel.ConnectionHops) != 1 {
+	if len(connectionHops) != 1 {
 		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to parent chain")
 	}
-	connectionID := channel.ConnectionHops[0]
+	connectionID := connectionHops[0]
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
 	if !ok {
 		return sdkerrors.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)

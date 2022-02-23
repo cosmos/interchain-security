@@ -94,6 +94,10 @@ func (suite *ParentTestSuite) SetupTest() {
 	// set child endpoint's clientID
 	suite.path.EndpointA.ClientID = parentClient
 
+	// TODO: No idea why or how this works, but it seems that it needs to be done.
+	suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
+	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(6)
+
 	// create child client on parent chain and set as child client for child chainID in parent keeper.
 	suite.path.EndpointB.CreateClient()
 	suite.parentChain.App.(*app.App).ParentKeeper.SetChildClient(suite.parentChain.GetContext(), suite.childChain.ChainID, suite.path.EndpointB.ClientID)

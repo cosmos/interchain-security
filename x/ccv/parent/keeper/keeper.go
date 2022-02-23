@@ -200,13 +200,17 @@ func (k Keeper) GetChannelStatus(ctx sdk.Context, channelID string) ccv.Status {
 
 // VerifyChildChain verifies that the chain trying to connect on the channel handshake
 // is the expected baby chain.
-func (k Keeper) VerifyChildChain(ctx sdk.Context, channelID string) error {
+func (k Keeper) VerifyChildChain(ctx sdk.Context, channelID string, connectionHops []string) error {
 	// Verify CCV channel is in Initialized state
 	status := k.GetChannelStatus(ctx, channelID)
 	if status != ccv.INITIALIZING {
 		return sdkerrors.Wrap(ccv.ErrInvalidStatus, "CCV channel status must be in Initializing state")
 	}
-	clientID, tmClient, err := k.getUnderlyingClient(ctx, channelID)
+	if len(connectionHops) != 1 {
+		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to parent chain")
+	}
+	connectionID := connectionHops[0]
+	clientID, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
 	if err != nil {
 		return err
 	}
@@ -226,7 +230,15 @@ func (k Keeper) VerifyChildChain(ctx sdk.Context, channelID string) error {
 // and set the channel status to validating.
 // If there is already a ccv channel between the parent and child chain then close the channel, so that another channel can be made.
 func (k Keeper) SetChildChain(ctx sdk.Context, channelID string) error {
-	chainID, tmClient, err := k.getUnderlyingClient(ctx, channelID)
+	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
+	if !ok {
+		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
+	}
+	if len(channel.ConnectionHops) != 1 {
+		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to baby chain")
+	}
+	connectionID := channel.ConnectionHops[0]
+	chainID, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
 	if err != nil {
 		return err
 	}
@@ -327,16 +339,8 @@ func (k Keeper) GetUBDEsFromIndex(ctx sdk.Context, chainID string, valsetUpdateI
 	return entries, true
 }
 
-func (k Keeper) getUnderlyingClient(ctx sdk.Context, channelID string) (string, *ibctmtypes.ClientState, error) {
+func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (string, *ibctmtypes.ClientState, error) {
 	// Retrieve the underlying client state.
-	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
-	if !ok {
-		return "", nil, sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
-	}
-	if len(channel.ConnectionHops) != 1 {
-		return "", nil, sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to baby chain")
-	}
-	connectionID := channel.ConnectionHops[0]
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
 	if !ok {
 		return "", nil, sdkerrors.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
