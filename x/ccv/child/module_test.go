@@ -6,12 +6,12 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
-	host "github.com/cosmos/ibc-go/modules/core/24-host"
-	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/ibc-go/testing"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
+	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	"github.com/cosmos/interchain-security/app"
 	"github.com/cosmos/interchain-security/testutil/simapp"
@@ -49,8 +49,8 @@ type ChildTestSuite struct {
 
 func (suite *ChildTestSuite) SetupTest() {
 	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
-	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(0))
-	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
+	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
+	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
 
 	tmConfig := ibctesting.NewTendermintConfig()
 
@@ -88,6 +88,10 @@ func (suite *ChildTestSuite) SetupTest() {
 	}
 	// set child endpoint's clientID
 	path.EndpointA.ClientID = parentClient
+
+	// TODO: No idea why or how this works, but it seems that it needs to be done.
+	path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
+	path.EndpointA.Chain.SenderAccount.SetAccountNumber(6)
 
 	// create child client on parent chain and set as child client for child chainID in parent keeper.
 	path.EndpointB.CreateClient()
@@ -238,8 +242,7 @@ func (suite *ChildTestSuite) TestOnChanOpenTry() {
 	chanCap, err := suite.childChain.App.GetScopedIBCKeeper().NewCapability(suite.ctx, host.ChannelCapabilityPath(childtypes.PortID, suite.path.EndpointA.ChannelID))
 	suite.Require().NoError(err)
 
-	err = childModule.OnChanOpenTry(suite.ctx, channeltypes.ORDERED, []string{"connection-1"}, childtypes.PortID, "channel-1", chanCap,
-		channeltypes.NewCounterparty(parenttypes.PortID, "channel-1"), ccv.Version, ccv.Version)
+	_, err = childModule.OnChanOpenTry(suite.ctx, channeltypes.ORDERED, []string{"connection-1"}, childtypes.PortID, "channel-1", chanCap, channeltypes.NewCounterparty(parenttypes.PortID, "channel-1"), ccv.Version)
 	suite.Require().Error(err, "OnChanOpenTry callback must error on child chain")
 }
 

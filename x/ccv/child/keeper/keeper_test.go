@@ -9,11 +9,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/ibc-go/testing"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	"github.com/cosmos/interchain-security/app"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
@@ -50,8 +50,8 @@ type KeeperTestSuite struct {
 
 func (suite *KeeperTestSuite) SetupTest() {
 	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
-	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(0))
-	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
+	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
+	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
 
 	tmConfig := ibctesting.NewTendermintConfig()
 
@@ -88,6 +88,10 @@ func (suite *KeeperTestSuite) SetupTest() {
 	}
 	// set child endpoint's clientID
 	suite.path.EndpointA.ClientID = parentClient
+
+	// TODO: No idea why or how this works, but it seems that it needs to be done.
+	suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
+	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(6)
 
 	// create child client on parent chain and set as child client for child chainID in parent keeper.
 	suite.path.EndpointB.CreateClient()
@@ -215,11 +219,13 @@ func (suite *KeeperTestSuite) TestUnbondingPacket() {
 }
 
 func (suite *KeeperTestSuite) TestVerifyParentChain() {
-	channelID := "channel-1"
+	var connectionHops []string
+	channelID := "channel-0"
 	testCases := []struct {
-		name     string
-		setup    func(suite *KeeperTestSuite)
-		expError bool
+		name           string
+		setup          func(suite *KeeperTestSuite)
+		connectionHops []string
+		expError       bool
 	}{
 		{
 			name: "success",
@@ -229,17 +235,13 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 
 				suite.coordinator.CreateConnections(suite.path)
 
-				// Set INIT channel on child chain
-				suite.childChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, childtypes.PortID, channelID,
-					channeltypes.NewChannel(
-						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(parenttypes.PortID, ""),
-						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
-				)
-				suite.path.EndpointA.ChannelID = channelID
 				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, ccv.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
+				// set connection hops to be connection hop from path endpoint
+				connectionHops = []string{suite.path.EndpointA.ConnectionID}
 			},
-			expError: false,
+			connectionHops: []string{suite.path.EndpointA.ConnectionID},
+			expError:       false,
 		},
 		{
 			name: "not initializing status",
@@ -249,31 +251,10 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 
 				suite.coordinator.CreateConnections(suite.path)
 
-				// Set INIT channel on child chain
-				suite.childChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, childtypes.PortID, channelID,
-					channeltypes.NewChannel(
-						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(parenttypes.PortID, ""),
-						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
-				)
-				suite.path.EndpointA.ChannelID = channelID
-
 				// set channel status to validating
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, ccv.VALIDATING)
-			},
-			expError: true,
-		},
-		{
-			name: "channel does not exist",
-			setup: func(suite *KeeperTestSuite) {
-				// create child client on parent chain
-				suite.path.EndpointB.CreateClient()
-
-				suite.coordinator.CreateConnections(suite.path)
-
-				// set channelID without creating channel
-				suite.path.EndpointA.ChannelID = "channel-1"
-				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, ccv.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.VALIDATING)
+				// set connection hops to be connection hop from path endpoint
+				connectionHops = []string{suite.path.EndpointA.ConnectionID}
 			},
 			expError: true,
 		},
@@ -285,37 +266,20 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 
 				suite.coordinator.CreateConnections(suite.path)
 
-				// Set INIT channel on child chain with multiple connection hops
-				suite.childChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, childtypes.PortID, channelID,
-					channeltypes.NewChannel(
-						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(parenttypes.PortID, ""),
-						[]string{suite.path.EndpointA.ConnectionID, "connection-2"}, suite.path.EndpointA.ChannelConfig.Version),
-				)
-				suite.path.EndpointA.ChannelID = channelID
-
 				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, ccv.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
+				// set connection hops to be connection hop from path endpoint
+				connectionHops = []string{suite.path.EndpointA.ConnectionID, "connection-2"}
 			},
 			expError: true,
 		},
 		{
 			name: "connection does not exist",
 			setup: func(suite *KeeperTestSuite) {
-				// create child client on parent chain
-				suite.path.EndpointB.CreateClient()
-
-				suite.coordinator.CreateConnections(suite.path)
-
-				// Set INIT channel on child chain with nonexistent connection
-				suite.childChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, childtypes.PortID, channelID,
-					channeltypes.NewChannel(
-						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(parenttypes.PortID, ""),
-						[]string{"nonexistent-connection"}, suite.path.EndpointA.ChannelConfig.Version),
-				)
-				suite.path.EndpointA.ChannelID = channelID
-
 				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, ccv.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
+				// set connection hops to be connection hop from path endpoint
+				connectionHops = []string{"connection-dne"}
 			},
 			expError: true,
 		},
@@ -330,16 +294,10 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 
 				suite.coordinator.CreateConnections(suite.path)
 
-				// Set INIT channel on child chain
-				suite.childChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, childtypes.PortID, channelID,
-					channeltypes.NewChannel(
-						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(parenttypes.PortID, ""),
-						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
-				)
-				suite.path.EndpointA.ChannelID = channelID
-
 				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID, ccv.INITIALIZING)
+				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
+				// set connection hops to be connection hop from path endpoint
+				connectionHops = []string{suite.path.EndpointA.ConnectionID}
 			},
 			expError: true,
 		},
@@ -353,7 +311,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 			tc.setup(suite)
 
 			// Verify ParentChain on child chain using path returned by setup
-			err := suite.childChain.App.(*app.App).ChildKeeper.VerifyParentChain(suite.ctx, suite.path.EndpointA.ChannelID)
+			err := suite.childChain.App.(*app.App).ChildKeeper.VerifyParentChain(suite.ctx, channelID, connectionHops)
 
 			if tc.expError {
 				suite.Require().Error(err, "invalid case did not return error")

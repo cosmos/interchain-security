@@ -51,7 +51,7 @@ const (
 	UBDEIndexPrefix = "childchaintoubdes"
 
 	//ValsetUpdateBlockHeightPrefix
-	ValsetUpdateBlockHeightPrefix = "valsetupdateblockheigt"
+	ValsetUpdateBlockHeightPrefix = "valsetupdateblockheight"
 )
 
 var (

@@ -6,6 +6,9 @@ install: go.sum
 		export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
 		go install $(BUILD_FLAGS) ./cmd/interchain-securityd
 
+test: 
+	    go test ./...
+
 BUILD_TARGETS := build
 
 build: BUILD_ARGS=-o $(BUILDDIR)/
