@@ -1,6 +1,7 @@
 package parent_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -349,7 +350,7 @@ func GetStakingUbde(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (staking
 //  on the provider chain by the consumer chain
 func (s *ParentTestSuite) TestSendDowntimePacket() {
 	// set two validators per chain
-	ibctesting.ValidatorsPerChain = 4
+	ibctesting.ValidatorsPerChain = 2
 	s.SetupTest()
 	s.SetupCCVChannel()
 	s.Require().Len(s.parentChain.Vals.Validators, ibctesting.ValidatorsPerChain)
@@ -377,6 +378,7 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 
 	// create a valseUpdateId that allows to retrieve the infraction block height on the provider
 	valsetUpdateId := uint64(1)
+
 	// save the current block height for the last valsetUpdateId
 	s.parentChain.App.(*app.App).ParentKeeper.SetValsetUpdateBlockHeight(s.parentCtx(), valsetUpdateId,
 		uint64(s.parentCtx().BlockHeight()))
@@ -401,7 +403,6 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 
 	// receive the downtime packet on the provider chain;
 	// tell the parentchain to slash and jail the validator
-	// err = s.path.EndpointB.RecvPacket(packet)
 	s.path.EndpointB.RecvPacket(packet)
 
 	// check that the validator was removed from the chain validator set
@@ -466,9 +467,9 @@ func (s *ParentTestSuite) TestHandleConsumerDowntime() {
 	// Save valset update ID
 	valUpdateID := s.parentChain.App.(*app.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
 
-	// The undelegation creates a change in the valset thus
-	// the valset update ID is saved with the current block height
-	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
+	// save the current block height for the last valsetUpdateId
+	s.parentChain.App.(*app.App).ParentKeeper.SetValsetUpdateBlockHeight(s.parentCtx(), valUpdateID,
+		uint64(s.parentCtx().BlockHeight()))
 
 	// Save unbonding balance before slashing
 	ubd, found := parentStakingKeeper.GetUnbondingDelegation(parentCtx, delAddr, valAddr)
@@ -518,7 +519,6 @@ func (s *ParentTestSuite) TestHandleConsumerDowntime() {
 		newUbdBalance, found := parentStakingKeeper.GetUnbondingDelegation(parentCtx, delAddr, valAddr)
 		s.Require().Len(newUbdBalance.Entries, 1)
 		s.Require().True(found)
-
 		s.Require().True(tc.expSlashAmount.Abs().Equal(ubdBalance.Sub(newUbdBalance.Entries[0].Balance)))
 	}
 }

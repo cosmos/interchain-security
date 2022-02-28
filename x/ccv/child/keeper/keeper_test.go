@@ -364,21 +364,12 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 	}
 }
 
-func TestKeeperTestSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
-}
-
-// TestValidatorDowntime tests that the slashing hooks
-// are registred and triggered when a validator has downtime
 func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	// initial setup
-	suite.SetupCCVChannel()
+	suite.SendFirstCCVPacket()
+
 	app, ctx := suite.childChain.App.(*app.App), suite.ctx
 	channelID := suite.path.EndpointA.ChannelID
-
-	// add parent channel to childkeeper store
-	app.ChildKeeper.SetParentChannel(ctx, channelID)
-	app.IBCKeeper.ChannelKeeper.SetChannel(ctx, types.PortID, channelID, suite.path.EndpointB.GetChannel())
 
 	// create a validator pubkey and address
 	pubkey := ed25519.GenPrivKey().PubKey()
@@ -396,7 +387,7 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, valInfo)
 
 	// save next sequence before sending slashing packet
-	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, suite.path.EndpointA.ChannelID)
+	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
 	suite.Require().True(ok)
 
 	// Sign 1000 blocks
@@ -431,12 +422,10 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 // TestAfterValidatorDowntimeHook tests the slashing hook implementation logic
 func (suite *KeeperTestSuite) TestAfterValidatorDowntimeHook() {
 	// initial setup
-	suite.SetupCCVChannel()
+	suite.SendFirstCCVPacket()
 
 	app, ctx := suite.childChain.App.(*app.App), suite.ctx
 	channelID := suite.path.EndpointA.ChannelID
-	app.ChildKeeper.SetParentChannel(ctx, channelID)
-	app.IBCKeeper.ChannelKeeper.SetChannel(ctx, types.PortID, channelID, suite.path.EndpointB.GetChannel())
 
 	consAddr := sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Bytes()).Bytes()
 
@@ -446,7 +435,7 @@ func (suite *KeeperTestSuite) TestAfterValidatorDowntimeHook() {
 	app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signInfo)
 
 	// store sequence
-	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, suite.path.EndpointA.ChannelID)
+	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
 	suite.Require().True(ok)
 
 	// expect no updates when no unbonding packets exist
@@ -487,7 +476,7 @@ func (suite *KeeperTestSuite) TestAfterValidatorDowntimeHook() {
 		signInfo = slashingtypes.NewValidatorSigningInfo(consAddr, int64(1), int64(1), tc.jailedUntil, false, int64(0))
 		app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signInfo)
 		// save current sequence
-		seq, _ = app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, suite.path.EndpointA.ChannelID)
+		seq, _ = app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
 		// execute hook logic
 		app.ChildKeeper.AfterValidatorDowntime(ctx, consAddr, int64(1))
 		// check signing info state
@@ -528,4 +517,27 @@ func (suite *KeeperTestSuite) TestGetLastUnboundingPacket() {
 	ubdPacket, err := app.ChildKeeper.GetLastUnbondingPacketData(ctx)
 	suite.Nil(err)
 	suite.Require().Equal(uint64(4), ubdPacket.ValsetUpdateId)
+}
+
+func (suite *KeeperTestSuite) SendFirstCCVPacket() {
+	suite.SetupCCVChannel()
+
+	oldBlockTime := suite.parentChain.GetContext().BlockTime()
+	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+
+	packetData := ccv.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{}, uint64(1))
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, parenttypes.PortID, suite.path.EndpointB.ChannelID,
+		childtypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	suite.path.EndpointB.SendPacket(packet)
+
+	err := suite.path.EndpointA.RecvPacket(packet)
+	suite.Require().NoError(err)
+
+	status := suite.childChain.App.(*app.App).ChildKeeper.GetChannelStatus(suite.childChain.GetContext(), suite.path.EndpointA.ChannelID)
+	suite.Require().EqualValues(int32(2), status)
+}
+
+func TestKeeperTestSuite(t *testing.T) {
+	suite.Run(t, new(KeeperTestSuite))
 }

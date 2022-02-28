@@ -46,7 +46,7 @@ func (k Keeper) AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress
 		},
 		valsetUpdate.ValsetUpdateId,
 		k.slashingKeeper.SlashFractionDowntime(ctx).TruncateInt64(),
-		signInfo.JailedUntil.UnixNano(),
+		k.slashingKeeper.DowntimeJailDuration(ctx).Nanoseconds(),
 	)
 
 	panic(err)

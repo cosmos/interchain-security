@@ -92,7 +92,6 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 
 // SendPenalty sends a given validator slashing and jailing penalties
 func (k Keeper) SendPenalties(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, slashFraction, jailedUntil int64) error {
-
 	// check the setup
 	channelID, ok := k.GetParentChannel(ctx)
 	if !ok {

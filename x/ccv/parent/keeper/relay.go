@@ -112,16 +112,17 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 // in a packet over the CCV channel.
 func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
-	k.IncrementValidatorSetUpdateId(ctx)
 	k.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
 		valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 		if len(valUpdates) != 0 {
-			fmt.Println(valUpdateID)
 			k.SendPacket(ctx, chainID, valUpdates, valUpdateID)
-			k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()))
 		}
 		return false
 	})
+	// Set the current valset update ID to next block height,
+	// in which the validators states are be updated
+	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
+	k.IncrementValidatorSetUpdateId(ctx)
 }
 
 // OnRecvPacket slashes and jails the given validator in the packet data
@@ -168,6 +169,9 @@ func (k Keeper) HandleConsumerDowntime(ctx sdk.Context, downtimeData ccv.Validat
 	if blockHeight == 0 {
 		return fmt.Errorf("cannot find validator update id %d", downtimeData.ValsetUpdateId)
 	}
+
+	fmt.Println("Current Block Height: ", ctx.BlockHeight())
+	fmt.Println("Infraction Block Height: ", blockHeight)
 
 	// slash and jail the validator
 	k.stakingKeeper.Slash(ctx, consAddr, int64(blockHeight), downtimeData.Validator.Power, sdk.NewDec(1).QuoInt64(downtimeData.SlashFraction))

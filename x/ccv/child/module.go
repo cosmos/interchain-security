@@ -395,6 +395,7 @@ func (am AppModule) OnAcknowledgementPacket(
 	}, nil
 }
 
+// TODO: need to be updated it's no longer accurate
 // OnTimeoutPacket implements the IBCModule interface
 func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
