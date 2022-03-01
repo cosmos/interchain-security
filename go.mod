@@ -33,7 +33,8 @@ require (
 
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
-	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.44.1-0.20220112185710-fa19ad5f85c5
+	// github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.44.1-0.20220112185710-fa19ad5f85c5
+	github.com/cosmos/cosmos-sdk => /Users/simon/Dev/go-workspace/src/github.com/sainoe/cosmos-sdk
 	github.com/cosmos/ibc-go => github.com/sainoe/ibc-go v1.2.1-0.20220218173609-8bbfac63fdd7
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2

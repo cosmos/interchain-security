@@ -3,6 +3,9 @@ package types
 import (
 	"encoding/binary"
 	"time"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 )
 
 const (
@@ -39,6 +42,8 @@ const (
 
 	// UnbondingTime is set to 4 weeks
 	UnbondingTime = 4 * 7 * 24 * time.Hour
+
+	PenaltySentToProviderPrefix = "penaltysenttoprovider"
 )
 
 var (
@@ -77,4 +82,8 @@ func UnbondingTimeKey(sequence uint64) []byte {
 
 func GetSequenceFromUnbondingTimeKey(key []byte) uint64 {
 	return binary.BigEndian.Uint64(key[len(UnbondingTimePrefix):])
+}
+
+func PenaltySentToProviderKey(v sdk.ConsAddress) []byte {
+	return append([]byte(PenaltySentToProviderPrefix), address.MustLengthPrefix(v.Bytes())...)
 }

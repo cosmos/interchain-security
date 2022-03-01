@@ -538,6 +538,27 @@ func (suite *KeeperTestSuite) SendFirstCCVPacket() {
 	suite.Require().EqualValues(int32(2), status)
 }
 
+func (suite *KeeperTestSuite) TestIsValidatorSlashingSent() {
+	app := suite.childChain.App.(*app.App)
+	ctx := suite.childChain.GetContext()
+
+	consAddr := sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Bytes()).Bytes()
+
+	ok := app.ChildKeeper.IsPenaltySentToProvider(ctx, consAddr)
+	suite.False(ok)
+
+	app.ChildKeeper.PenaltySentToProvider(ctx, consAddr)
+
+	ok = app.ChildKeeper.IsPenaltySentToProvider(ctx, consAddr)
+	suite.True(ok)
+
+	app.ChildKeeper.ClearPenaltySentToProvider(ctx, consAddr)
+
+	ok = app.ChildKeeper.IsPenaltySentToProvider(ctx, consAddr)
+	suite.False(ok)
+
+}
+
 func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }

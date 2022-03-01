@@ -12,11 +12,9 @@ var _ slashingtypes.SlashingHooks = Keeper{}
 // in order either to add it the downtime jailing duration and initiated its slashing
 // on the provider chain or perfom a no-op
 func (k Keeper) AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress, power int64) {
-	// get validator signing info
-	signInfo, _ := k.slashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
 
-	// do nothing if validator is jailed
-	if ctx.BlockTime().UnixNano() < int64(signInfo.JailedUntil.UnixNano()) {
+	// return if penalty already sent to the provider
+	if k.IsPenaltySentToProvider(ctx, consAddr) {
 		return
 	}
 
@@ -26,19 +24,8 @@ func (k Keeper) AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress
 		return
 	}
 
-	// increase jail time
-	signInfo.JailedUntil = ctx.BlockHeader().Time.Add(k.slashingKeeper.DowntimeJailDuration(ctx))
-
-	// reset missed block counters
-	signInfo.MissedBlocksCounter = 0
-	signInfo.IndexOffset = 0
-	k.slashingKeeper.ClearValidatorMissedBlockBitArray(ctx, consAddr)
-
-	// update signing info
-	k.slashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signInfo)
-
 	// send packet to initiate slashing on the provider chain
-	err = k.SendPenalties(
+	k.SendPenalties(
 		ctx,
 		abci.Validator{
 			Address: consAddr.Bytes(),
@@ -49,7 +36,8 @@ func (k Keeper) AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress
 		k.slashingKeeper.DowntimeJailDuration(ctx).Nanoseconds(),
 	)
 
-	panic(err)
+	// set penalty to validator address
+	k.PenaltySentToProvider(ctx, consAddr)
 }
 
 // Hooks wrapper struct for ChildKeeper
