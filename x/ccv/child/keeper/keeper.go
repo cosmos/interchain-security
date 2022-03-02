@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/binary"
+	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -317,26 +318,44 @@ func (k Keeper) VerifyParentChain(ctx sdk.Context, channelID string) error {
 	return nil
 }
 
-// GetLastUnbondingPacket returns the last unbounding packet data stored in lexical order
-func (k Keeper) GetLastUnbondingPacketData(ctx sdk.Context) (ccv.ValidatorSetChangePacketData, error) {
+// SetheightValsetUpdateID sets the valset update id for a given block height
+func (k Keeper) SetHeightValsetUpdateID(ctx sdk.Context, height, valsetUpdateId uint64) {
 	store := ctx.KVStore(k.storeKey)
-	// use a reverse iterator to get the last entry
-	iterator := sdk.KVStoreReversePrefixIterator(store, []byte(types.UnbondingPacketPrefix))
-	if !iterator.Valid() {
-		return ccv.ValidatorSetChangePacketData{}, sdkerrors.Wrapf(ccv.ErrInvalidChildState, "Invalid unbonding packet iterator")
+	valBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(valBytes, valsetUpdateId)
+	store.Set(types.HeightValsetUpdateIDKey(height), valBytes)
+}
+
+// GetheightValsetUpdateID gets the valset update id for a given block height
+func (k Keeper) GetHeightValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.HeightValsetUpdateIDKey(height))
+	if bz == nil {
+		return 0
+	}
+	return binary.BigEndian.Uint64(bz)
+}
+
+// Delete the valset update id for a given block height
+func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.HeightValsetUpdateIDKey(height))
+}
+
+// HeightToValsetUpdateID returns a valset update ID stored for a block height equal or inferior
+// than the given block height.
+func (k Keeper) HeightToValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	revIterator := sdk.KVStoreReversePrefixIterator(store, []byte(types.HeightValsetUpdateIDPrefix))
+
+	for ; revIterator.Valid(); revIterator.Next() {
+		keyBytes := revIterator.Key()[len([]byte(types.HeightValsetUpdateIDPrefix)):]
+		currHeight := binary.BigEndian.Uint64(keyBytes)
+		if currHeight <= height {
+			return binary.BigEndian.Uint64(revIterator.Value())
+		}
+		fmt.Println(revIterator.Value())
 	}
 
-	var packet channeltypes.Packet
-	err := packet.Unmarshal(iterator.Value())
-	if err != nil {
-		return ccv.ValidatorSetChangePacketData{}, err
-	}
-
-	var data ccv.ValidatorSetChangePacketData
-	err = ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data)
-	if err != nil {
-		return ccv.ValidatorSetChangePacketData{}, err
-	}
-
-	return data, nil
+	return 0
 }

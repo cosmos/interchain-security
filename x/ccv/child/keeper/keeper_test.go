@@ -489,36 +489,6 @@ func (suite *KeeperTestSuite) TestAfterValidatorDowntimeHook() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestGetLastUnboundingPacket() {
-	app := suite.childChain.App.(*app.App)
-	ctx := suite.childChain.GetContext()
-
-	// check if IBC packet is valid
-	_, err := app.ChildKeeper.GetLastUnbondingPacketData(ctx)
-	suite.NotNil(err)
-
-	app.ChildKeeper.SetUnbondingPacket(ctx, uint64(0), channeltypes.Packet{Sequence: 1})
-
-	// check if unbouding packet data is valid
-	_, err = app.ChildKeeper.GetLastUnbondingPacketData(ctx)
-	suite.NotNil(err)
-
-	// check if the last packet stored is returned
-	for i := 0; i < 5; i++ {
-		pd := ccv.NewValidatorSetChangePacketData(
-			[]abci.ValidatorUpdate{},
-			uint64(i),
-		)
-		packet := channeltypes.NewPacket(pd.GetBytes(), uint64(i), "", "", "", "",
-			clienttypes.NewHeight(1, 0), 0)
-		app.ChildKeeper.SetUnbondingPacket(ctx, uint64(i), packet)
-	}
-
-	ubdPacket, err := app.ChildKeeper.GetLastUnbondingPacketData(ctx)
-	suite.Nil(err)
-	suite.Require().Equal(uint64(4), ubdPacket.ValsetUpdateId)
-}
-
 func (suite *KeeperTestSuite) SendFirstCCVPacket() {
 	suite.SetupCCVChannel()
 
@@ -536,6 +506,53 @@ func (suite *KeeperTestSuite) SendFirstCCVPacket() {
 
 	status := suite.childChain.App.(*app.App).ChildKeeper.GetChannelStatus(suite.childChain.GetContext(), suite.path.EndpointA.ChannelID)
 	suite.Require().EqualValues(int32(2), status)
+}
+
+func (suite *KeeperTestSuite) TestGetLastBlockHeightValsetUpdateID() {
+	app := suite.childChain.App.(*app.App)
+	ctx := suite.childChain.GetContext()
+
+	valUpdateID := app.ChildKeeper.GetHeightValsetUpdateID(ctx, 1)
+	suite.Require().Zero(valUpdateID)
+	for i := 0; i < 5; i++ {
+		app.ChildKeeper.SetHeightValsetUpdateID(ctx, uint64(i), uint64(i))
+	}
+
+	valUpdateID = app.ChildKeeper.GetHeightValsetUpdateID(ctx, 0)
+	suite.Require().Equal(uint64(0), valUpdateID)
+
+	valUpdateID = app.ChildKeeper.GetHeightValsetUpdateID(ctx, 1)
+	suite.Require().Equal(uint64(1), valUpdateID)
+
+	valUpdateID = app.ChildKeeper.HeightToValsetUpdateID(ctx, uint64(2))
+	suite.Require().Equal(uint64(2), valUpdateID)
+
+	app.ChildKeeper.SetHeightValsetUpdateID(ctx, uint64(6), uint64(6))
+
+	valUpdateID = app.ChildKeeper.HeightToValsetUpdateID(ctx, uint64(5))
+	suite.Require().Equal(uint64(4), valUpdateID, "did not return the last valset update ID stored in or before block height 5")
+
+}
+
+func (suite *KeeperTestSuite) TestBlockHeightValsetUpdateID() {
+	app := suite.childChain.App.(*app.App)
+	ctx := suite.ctx
+
+	valUpdateID := app.ChildKeeper.GetHeightValsetUpdateID(ctx, uint64(0))
+	suite.Require().Zero(valUpdateID)
+
+	app.ChildKeeper.SetHeightValsetUpdateID(ctx, uint64(1), uint64(2))
+	valUpdateID = app.ChildKeeper.HeightToValsetUpdateID(ctx, uint64(1))
+	suite.Require().Equal(valUpdateID, uint64(2))
+
+	app.ChildKeeper.DeleteHeightValsetUpdateID(ctx, uint64(1))
+	valUpdateID = app.ChildKeeper.GetHeightValsetUpdateID(ctx, uint64(1))
+	suite.Require().Zero(valUpdateID)
+
+	app.ChildKeeper.SetHeightValsetUpdateID(ctx, uint64(3), uint64(2))
+	app.ChildKeeper.SetHeightValsetUpdateID(ctx, uint64(3), uint64(4))
+	valUpdateID = app.ChildKeeper.GetHeightValsetUpdateID(ctx, uint64(3))
+	suite.Require().Equal(valUpdateID, uint64(4))
 }
 
 func TestKeeperTestSuite(t *testing.T) {

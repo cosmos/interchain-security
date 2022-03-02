@@ -435,11 +435,9 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 // by varying the downtime infraction block height
 func (s *ParentTestSuite) TestHandleConsumerDowntime() {
 	s.SetupCCVChannel()
-
+	// parentCtx := s.parentChain.GetContext()
 	parentStakingKeeper := s.parentChain.App.GetStakingKeeper()
-	parentSlashingKeeper := s.parentChain.App.(*app.App).SlashingKeeper
-
-	delAddr := s.parentChain.SenderAccount.GetAddress()
+	// parentSlashingKeeper := s.parentChain.App.(*app.App).SlashingKeeper
 
 	// Should return an error when the validator doesn't exists
 	err := s.parentChain.App.(*app.App).ParentKeeper.HandleConsumerDowntime(
@@ -450,75 +448,168 @@ func (s *ParentTestSuite) TestHandleConsumerDowntime() {
 	)
 	s.Require().Error(err)
 
+	// origTime := s.ctx.BlockTime()
+	bondAmt := sdk.NewInt(1000000)
+
+	delAddr := s.parentChain.SenderAccount.GetAddress()
+
 	// Choose a validator, and get its address and data structure into the correct types
-	tmValidator := s.parentChain.Vals.Validators[0]
-	valAddr := sdk.ValAddress(tmValidator.Address)
+	validator, valAddr := s.getVal(0)
 
-	// Create a signing info to jail the validator for downtime
-	valInfo := slashingtypes.NewValidatorSigningInfo(sdk.ConsAddress(tmValidator.Address), s.parentCtx().BlockHeight(),
-		s.parentCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
-	parentSlashingKeeper.SetValidatorSigningInfo(s.parentCtx(), sdk.ConsAddress(tmValidator.Address), valInfo)
+	// initDel := s.parentChain.App.(*app.App).BankKeeper.GetBalance(s.parentCtx(), delAddr, s.parentBondDenom()).Amount
+	// INITIAL BOND
 
-	// Undelegate the shares from the validator
-	ubdTime := time.Now()
-	parentCtx := s.parentCtx().WithBlockTime(ubdTime)
-	parentStakingKeeper.Undelegate(parentCtx, delAddr, valAddr, sdk.NewDec(1))
+	// Bond some tokens on provider to change validator powers
+	shares, err := s.parentChain.App.GetStakingKeeper().Delegate(s.parentCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+	s.Require().NoError(err)
 
-	// Save valset update ID
+	// afterbondBalance := s.parentChain.App.(*app.App).BankKeeper.GetBalance(s.parentCtx(), delAddr, s.parentBondDenom()).Amount
+
+	// Save valset update ID to reconstruct packet
 	valUpdateID := s.parentChain.App.(*app.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
 
-	// save the current block height for the last valsetUpdateId
-	s.parentChain.App.(*app.App).ParentKeeper.SetValsetUpdateBlockHeight(s.parentCtx(), valUpdateID,
-		uint64(s.parentCtx().BlockHeight()))
+	// Send CCV packet to consumer
+	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
 
-	// Save unbonding balance before slashing
-	ubd, found := parentStakingKeeper.GetUnbondingDelegation(parentCtx, delAddr, valAddr)
-	s.Require().Len(ubd.Entries, 1)
+	// Get validator update created in Endblock to use in reconstructing packet
+	valUpdates := parentStakingKeeper.GetValidatorUpdates(s.parentCtx())
+
+	// commit block on parent chain and update child chain's client
+	oldBlockTime := s.parentCtx().BlockTime()
+	s.coordinator.CommitBlock(s.parentChain)
+	s.path.EndpointA.UpdateClient()
+
+	// Reconstruct packet
+	packetData := types.NewValidatorSetChangePacketData(valUpdates, valUpdateID)
+	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, parenttypes.PortID, s.path.EndpointB.ChannelID,
+		childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	// Receive CCV packet on consumer chain
+	err = s.path.EndpointA.RecvPacket(packet)
+	s.Require().NoError(err)
+
+	// Undelegate half
+	_, err = s.parentChain.App.GetStakingKeeper().Undelegate(s.parentCtx(), delAddr, valAddr, shares.QuoInt64(2))
+	s.Require().NoError(err)
+
+	ubd, found := parentStakingKeeper.GetUnbondingDelegation(s.parentCtx(), delAddr, valAddr)
 	s.Require().True(found)
-	ubdBalance := ubd.Entries[0].Balance
+	fmt.Println(ubd.Entries[0].String())
 
-	// test the slashing at different block time and height
-	testCases := []struct {
-		blockHeight    int64
-		currentTime    time.Time
-		expSlashAmount sdk.Int
-	}{{
-		blockHeight:    s.parentCtx().BlockHeight(),
-		currentTime:    ubdTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour),
-		expSlashAmount: sdk.NewInt(0),
-	},
-		{
-			blockHeight:    s.parentCtx().BlockHeight() + 1,
-			currentTime:    ubdTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour),
-			expSlashAmount: sdk.NewInt(0),
-		},
-		{
-			blockHeight:    s.parentCtx().BlockHeight() + 1,
-			currentTime:    ubdTime.Add(3 * time.Hour),
-			expSlashAmount: ubdBalance.ToDec().Mul(sdk.NewDec(1).QuoInt64(4)).TruncateInt(),
-		},
-	}
+	// Save valset update ID to reconstruct packet
+	valUpdateID = s.parentChain.App.(*app.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
 
-	for _, tc := range testCases {
-		parentCtx = s.parentCtx().WithBlockHeight(tc.blockHeight).WithBlockTime(tc.currentTime)
-		// Slash 1/4 of the validator tokens
-		err := s.parentChain.App.(*app.App).ParentKeeper.HandleConsumerDowntime(
-			parentCtx,
-			types.NewValidatorDowntimePacketData(
-				abci.Validator{
-					Address: tmValidator.Address,
-					Power:   int64(1),
-				},
-				valUpdateID,
-				int64(4),
-				int64(1),
-			),
-		)
-		s.Require().NoError(err)
+	// Send CCV packet to consumer
+	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
 
-		newUbdBalance, found := parentStakingKeeper.GetUnbondingDelegation(parentCtx, delAddr, valAddr)
-		s.Require().Len(newUbdBalance.Entries, 1)
-		s.Require().True(found)
-		s.Require().True(tc.expSlashAmount.Abs().Equal(ubdBalance.Sub(newUbdBalance.Entries[0].Balance)))
-	}
+	// Get validator update created in Endblock to use in reconstructing packet
+	valUpdates = parentStakingKeeper.GetValidatorUpdates(s.parentCtx())
+
+	// commit block on parent chain and update child chain's client
+	oldBlockTime = s.parentCtx().BlockTime()
+	s.coordinator.CommitBlock(s.parentChain)
+	s.path.EndpointA.UpdateClient()
+	// undelegate half token
+
+	// // Create a signing info to jail the validator for downtime
+	// valInfo := slashingtypes.NewValidatorSigningInfo(sdk.ConsAddress(tmValidator.Address), s.parentCtx().BlockHeight(),
+	// 	s.parentCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
+	// parentSlashingKeeper.SetValidatorSigningInfo(s.parentCtx(), sdk.ConsAddress(tmValidator.Address), valInfo)
+
+	// // Undelegate the shares from the validator
+	// // ubdTime := time.Now()
+	// // parentCtx := s.parentCtx().WithBlockTime(ubdTime)
+	// del := parentStakingKeeper.Delegation(s.parentCtx(), delAddr, valAddr)
+	// fmt.Println(del.GetShares().String())
+	// parentStakingKeeper.Undelegate(s.parentCtx(), delAddr, valAddr, del.GetShares().QuoInt64(2))
+
+	// // Save valset update ID
+	// valUpdateID := s.parentChain.App.(*app.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
+	// valUpdates := parentStakingKeeper.BlockValidatorUpdates(s.parentCtx())
+
+	// // end and commit block
+	// oldBlockTime := s.parentCtx().BlockTime()
+	// s.parentChain.App.EndBlock(abci.RequestEndBlock{})
+	// // Get validator update created in Endblock to use in reconstructing packet
+	// s.coordinator.CommitBlock(s.parentChain)
+	// s.path.EndpointA.UpdateClient()
+
+	// // Reconstruct packet
+	// packetData := types.NewValidatorSetChangePacketData(valUpdates, valUpdateID)
+	// timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	// packet := channeltypes.NewPacket(packetData.GetBytes(), 1, parenttypes.PortID, s.path.EndpointB.ChannelID,
+	// 	childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	// // Receive CCV packet on consumer chain
+	// err = s.path.EndpointA.RecvPacket(packet)
+	// s.Require().NoError(err)
+	// // s.childChain.App.EndBlock(abci.RequestEndBlock{})
+
+	// // s.coordinator.CommitBlock(s.parentChain)
+	// s.path.EndpointA.UpdateClient()
+
+	// h := s.childChain.App.(*app.App).ChildKeeper.HeightToValsetUpdateID(s.childCtx(), uint64(s.childCtx().BlockHeight()-1))
+	// fmt.Println(h)
+
+	// do round time trip and test heights
+
+	// h1 := s.childChain.App.(*app.App).ChildKeeper.GetHeightValsetUpdateID(s.childCtx(), uint64(18))
+	// fmt.Println(h1)
+
+	// valUpdateID = s.parentChain.App.(*app.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
+
+	// fmt.Println(valUpdateID)
+	// fmt.Println(valUpdates)
+
+	// // Save unbonding balance before slashing
+	// ubd, found := parentStakingKeeper.GetUnbondingDelegation(parentCtx, delAddr, valAddr)
+	// s.Require().Len(ubd.Entries, 1)
+	// s.Require().True(found)
+	// ubdBalance := ubd.Entries[0].Balance
+
+	// // test the slashing at different block time and height
+	// testCases := []struct {
+	// 	blockHeight    int64
+	// 	currentTime    time.Time
+	// 	expSlashAmount sdk.Int
+	// }{{
+	// 	blockHeight:    s.parentCtx().BlockHeight(),
+	// 	currentTime:    ubdTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour),
+	// 	expSlashAmount: sdk.NewInt(0),
+	// },
+	// 	{
+	// 		blockHeight:    s.parentCtx().BlockHeight() + 1,
+	// 		currentTime:    ubdTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour),
+	// 		expSlashAmount: sdk.NewInt(0),
+	// 	},
+	// 	{
+	// 		blockHeight:    s.parentCtx().BlockHeight() + 1,
+	// 		currentTime:    ubdTime.Add(3 * time.Hour),
+	// 		expSlashAmount: ubdBalance.ToDec().Mul(sdk.NewDec(1).QuoInt64(4)).TruncateInt(),
+	// 	},
+	// }
+
+	// for _, tc := range testCases {
+	// 	parentCtx = s.parentCtx().WithBlockHeight(tc.blockHeight).WithBlockTime(tc.currentTime)
+	// 	// Slash 1/4 of the validator tokens
+	// 	err := s.parentChain.App.(*app.App).ParentKeeper.HandleConsumerDowntime(
+	// 		parentCtx,
+	// 		types.NewValidatorDowntimePacketData(
+	// 			abci.Validator{
+	// 				Address: tmValidator.Address,
+	// 				Power:   int64(1),
+	// 			},
+	// 			valUpdateID,
+	// 			int64(4),
+	// 			int64(1),
+	// 		),
+	// 	)
+	// 	s.Require().NoError(err)
+
+	// 	newUbdBalance, found := parentStakingKeeper.GetUnbondingDelegation(parentCtx, delAddr, valAddr)
+	// 	s.Require().Len(newUbdBalance.Entries, 1)
+	// 	s.Require().True(found)
+	// 	s.Require().True(tc.expSlashAmount.Abs().Equal(ubdBalance.Sub(newUbdBalance.Entries[0].Balance)))
+	// }
 }

@@ -39,6 +39,9 @@ const (
 
 	// UnbondingTime is set to 4 weeks
 	UnbondingTime = 4 * 7 * 24 * time.Hour
+
+	//ValsetUpdateBlockHeightPrefix
+	HeightValsetUpdateIDPrefix = "heightvalsetupdateid"
 )
 
 var (
@@ -77,4 +80,10 @@ func UnbondingTimeKey(sequence uint64) []byte {
 
 func GetSequenceFromUnbondingTimeKey(key []byte) uint64 {
 	return binary.BigEndian.Uint64(key[len(UnbondingTimePrefix):])
+}
+
+func HeightValsetUpdateIDKey(height uint64) []byte {
+	hBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(hBytes, height)
+	return append([]byte(HeightValsetUpdateIDPrefix), hBytes...)
 }
