@@ -255,7 +255,7 @@ func (am AppModule) OnChanOpenTry(
 	}
 
 	if counterpartyVersion != ccv.Version {
-		return ccv.Version, sdkerrors.Wrapf(
+		return "", sdkerrors.Wrapf(
 			ccv.ErrInvalidVersion, "invalid counterparty version: got: %s, expected %s",
 			counterpartyVersion, ccv.Version)
 	}
@@ -267,7 +267,7 @@ func (am AppModule) OnChanOpenTry(
 	if !am.keeper.AuthenticateCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)) {
 		// Only claim channel capability passed back by IBC module if we do not already own it
 		if err := am.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
-			return ccv.Version, err
+			return "", err
 		}
 	}
 
@@ -276,17 +276,17 @@ func (am AppModule) OnChanOpenTry(
 	if err := am.keeper.VerifyChildChain(
 		ctx, channelID, connectionHops,
 	); err != nil {
-		return ccv.Version, err
+		return "", err
 	}
 
 	md := types.HandshakeMetadata{
-		Version:             version,
 		ProviderFeePoolAddr: am.keeper.GetFeeCollectorAddressStr(ctx),
+		Version:             ccv.Version,
 	}
 	mdBz, err := (&md).Marshal()
 	if err != nil {
 		return "", sdkerrors.Wrapf(ccv.ErrInvalidHandshakeMetadata,
-			"error marshalling ibc-try metadata: ", err)
+			"error marshalling ibc-try metadata: %v", err)
 	}
 	return string(mdBz), nil
 }

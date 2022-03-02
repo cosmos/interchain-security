@@ -305,8 +305,14 @@ func (suite *ChildTestSuite) TestOnChanOpenAck() {
 
 			childModule := child.NewAppModule(suite.childChain.App.(*app.App).ChildKeeper)
 
-			err := childModule.OnChanOpenAck(suite.ctx, childtypes.PortID, channelID, suite.path.EndpointB.ChannelConfig.Version)
+			md := parenttypes.HandshakeMetadata{
+				ProviderFeePoolAddr: "", // dummy address used
+				Version:             suite.path.EndpointB.ChannelConfig.Version,
+			}
+			mdBz, err := (&md).Marshal()
+			suite.Require().NoError(err)
 
+			err = childModule.OnChanOpenAck(suite.ctx, childtypes.PortID, channelID, string(mdBz))
 			if tc.expError {
 				suite.Require().Error(err)
 			} else {

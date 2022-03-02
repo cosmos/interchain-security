@@ -10,7 +10,7 @@ var (
 	KeyEnabled                           = []byte("Enabled")
 	KeyBlocksPerDistributionTransmission = []byte("BlocksPerDistributionTransmission")
 	KeyProviderFeePoolAddrStr            = []byte("ProviderFeePoolAddrStr")
-	KeyDistributionTransmissionChannel   = []byte("KeyDistributionTransmissionChannel")
+	KeyDistributionTransmissionChannel   = []byte("DistributionTransmissionChannel")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -38,13 +38,32 @@ func (p Params) Validate() error {
 // ParamSetPairs implements params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, validateEnabled),
+		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, validateBool),
+		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,
+			p.BlocksPerDistributionTransmission, validateInt64),
+		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
+			p.ProviderFeePoolAddrStr, validateString),
+		paramtypes.NewParamSetPair(KeyDistributionTransmissionChannel,
+			p.DistributionTransmissionChannel, validateString),
 	}
 }
 
-func validateEnabled(i interface{}) error {
-	_, ok := i.(bool)
-	if !ok {
+func validateBool(i interface{}) error {
+	if _, ok := i.(bool); !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	return nil
+}
+
+func validateInt64(i interface{}) error {
+	if _, ok := i.(int64); !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	return nil
+}
+
+func validateString(i interface{}) error {
+	if _, ok := i.(string); !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 	return nil

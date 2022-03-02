@@ -2,15 +2,18 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	transfertypes "github.com/cosmos/ibc-go/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
+	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // Simple model, donate tokens to the fee pool of the provider validator set
-// reference: cosmos/ibc-go/modules/apps/transfer/keeper/msg_server.go
+// reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
 func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	if !k.shouldTransmit(ctx) {
 		return nil
@@ -54,4 +57,13 @@ func (k Keeper) shouldTransmit(ctx sdk.Context) bool {
 func (k Keeper) ChannelOpenInit(ctx sdk.Context, msg *channeltypes.MsgChannelOpenInit) (
 	*channeltypes.MsgChannelOpenInitResponse, error) {
 	return k.ibcCoreKeeper.ChannelOpenInit(sdk.WrapSDKContext(ctx), msg)
+}
+
+func (k Keeper) GetConnectionHops(ctx sdk.Context, srcPort, srcChan string) ([]string, error) {
+	ch, found := k.channelKeeper.GetChannel(ctx, srcPort, srcChan)
+	if !found {
+		return []string{}, sdkerrors.Wrapf(ccv.ErrChannelNotFound,
+			"cannot get connection hops from non-existent channel")
+	}
+	return ch.ConnectionHops, nil
 }
