@@ -20,6 +20,9 @@ func (k Keeper) AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress
 
 	// get the previous block height valsetUpdateID when the infraction occured
 	valsetUpdateID := k.HeightToValsetUpdateID(ctx, uint64(ctx.BlockHeight()-sdk.ValidatorUpdateDelay-1))
+	if valsetUpdateID < 1 {
+		return
+	}
 
 	// send packet to initiate slashing on the provider chain
 	k.SendPenalties(
