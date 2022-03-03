@@ -22,9 +22,6 @@ func (k Keeper) AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress
 
 	// get the previous block height valsetUpdateID when the infraction occured
 	valsetUpdateID := k.HeightToValsetUpdateID(ctx, uint64(ctx.BlockHeight()-sdk.ValidatorUpdateDelay-1))
-	if valsetUpdateID == 0 {
-		panic("Expected to find the last validator update ID")
-	}
 
 	// increase jail time
 	signInfo.JailedUntil = ctx.BlockHeader().Time.Add(k.slashingKeeper.DowntimeJailDuration(ctx))

@@ -489,30 +489,13 @@ func (suite *KeeperTestSuite) TestAfterValidatorDowntimeHook() {
 	}
 }
 
-func (suite *KeeperTestSuite) SendFirstCCVPacket() {
-	suite.SetupCCVChannel()
-
-	oldBlockTime := suite.parentChain.GetContext().BlockTime()
-	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
-
-	packetData := ccv.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{}, uint64(1))
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, parenttypes.PortID, suite.path.EndpointB.ChannelID,
-		childtypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
-
-	suite.path.EndpointB.SendPacket(packet)
-
-	err := suite.path.EndpointA.RecvPacket(packet)
-	suite.Require().NoError(err)
-
-	status := suite.childChain.App.(*app.App).ChildKeeper.GetChannelStatus(suite.childChain.GetContext(), suite.path.EndpointA.ChannelID)
-	suite.Require().EqualValues(int32(2), status)
-}
-
-func (suite *KeeperTestSuite) TestGetLastBlockHeightValsetUpdateID() {
+func (suite *KeeperTestSuite) TestHeightToValsetUpdateID() {
 	app := suite.childChain.App.(*app.App)
 	ctx := suite.childChain.GetContext()
 
 	valUpdateID := app.ChildKeeper.GetHeightValsetUpdateID(ctx, 1)
+	suite.Require().Equal(uint64(0), valUpdateID)
+
 	suite.Require().Zero(valUpdateID)
 	for i := 0; i < 5; i++ {
 		app.ChildKeeper.SetHeightValsetUpdateID(ctx, uint64(i), uint64(i))
@@ -530,29 +513,29 @@ func (suite *KeeperTestSuite) TestGetLastBlockHeightValsetUpdateID() {
 	app.ChildKeeper.SetHeightValsetUpdateID(ctx, uint64(6), uint64(6))
 
 	valUpdateID = app.ChildKeeper.HeightToValsetUpdateID(ctx, uint64(5))
-	suite.Require().Equal(uint64(4), valUpdateID, "did not return the last valset update ID stored in or before block height 5")
+	suite.Require().Equal(uint64(4), valUpdateID)
 
+	valUpdateID = app.ChildKeeper.HeightToValsetUpdateID(ctx, uint64(8))
+	suite.Require().Equal(uint64(6), valUpdateID)
 }
 
-func (suite *KeeperTestSuite) TestBlockHeightValsetUpdateID() {
-	app := suite.childChain.App.(*app.App)
-	ctx := suite.ctx
+func (suite *KeeperTestSuite) SendFirstCCVPacket() {
+	suite.SetupCCVChannel()
 
-	valUpdateID := app.ChildKeeper.GetHeightValsetUpdateID(ctx, uint64(0))
-	suite.Require().Zero(valUpdateID)
+	oldBlockTime := suite.parentChain.GetContext().BlockTime()
+	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 
-	app.ChildKeeper.SetHeightValsetUpdateID(ctx, uint64(1), uint64(2))
-	valUpdateID = app.ChildKeeper.HeightToValsetUpdateID(ctx, uint64(1))
-	suite.Require().Equal(valUpdateID, uint64(2))
+	packetData := ccv.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{}, uint64(1))
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, parenttypes.PortID, suite.path.EndpointB.ChannelID,
+		childtypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
-	app.ChildKeeper.DeleteHeightValsetUpdateID(ctx, uint64(1))
-	valUpdateID = app.ChildKeeper.GetHeightValsetUpdateID(ctx, uint64(1))
-	suite.Require().Zero(valUpdateID)
+	suite.path.EndpointB.SendPacket(packet)
 
-	app.ChildKeeper.SetHeightValsetUpdateID(ctx, uint64(3), uint64(2))
-	app.ChildKeeper.SetHeightValsetUpdateID(ctx, uint64(3), uint64(4))
-	valUpdateID = app.ChildKeeper.GetHeightValsetUpdateID(ctx, uint64(3))
-	suite.Require().Equal(valUpdateID, uint64(4))
+	err := suite.path.EndpointA.RecvPacket(packet)
+	suite.Require().NoError(err)
+
+	status := suite.childChain.App.(*app.App).ChildKeeper.GetChannelStatus(suite.childChain.GetContext(), suite.path.EndpointA.ChannelID)
+	suite.Require().EqualValues(int32(2), status)
 }
 
 func TestKeeperTestSuite(t *testing.T) {

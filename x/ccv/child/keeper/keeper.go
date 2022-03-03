@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"encoding/binary"
-	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -318,7 +317,7 @@ func (k Keeper) VerifyParentChain(ctx sdk.Context, channelID string) error {
 	return nil
 }
 
-// SetheightValsetUpdateID sets the valset update id for a given block height
+// SetHeightValsetUpdateID sets the valset update id for a given block height
 func (k Keeper) SetHeightValsetUpdateID(ctx sdk.Context, height, valsetUpdateId uint64) {
 	store := ctx.KVStore(k.storeKey)
 	valBytes := make([]byte, 8)
@@ -326,7 +325,7 @@ func (k Keeper) SetHeightValsetUpdateID(ctx sdk.Context, height, valsetUpdateId 
 	store.Set(types.HeightValsetUpdateIDKey(height), valBytes)
 }
 
-// GetheightValsetUpdateID gets the valset update id for a given block height
+// GetHeightValsetUpdateID gets the valset update id recorded for a given block height
 func (k Keeper) GetHeightValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.HeightValsetUpdateIDKey(height))
@@ -336,14 +335,14 @@ func (k Keeper) GetHeightValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 	return binary.BigEndian.Uint64(bz)
 }
 
-// Delete the valset update id for a given block height
+// DeleteHeightValsetUpdateID deletes the valset update id for a given block height
 func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.HeightValsetUpdateIDKey(height))
 }
 
-// HeightToValsetUpdateID returns a valset update ID stored for a block height equal or inferior
-// than the given block height.
+// HeightToValsetUpdateID returns the last valset update ID stored for a block
+// which height is lesser or equal than the given height
 func (k Keeper) HeightToValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 	store := ctx.KVStore(k.storeKey)
 	revIterator := sdk.KVStoreReversePrefixIterator(store, []byte(types.HeightValsetUpdateIDPrefix))
@@ -354,7 +353,6 @@ func (k Keeper) HeightToValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 		if currHeight <= height {
 			return binary.BigEndian.Uint64(revIterator.Value())
 		}
-		fmt.Println(revIterator.Value())
 	}
 
 	return 0
