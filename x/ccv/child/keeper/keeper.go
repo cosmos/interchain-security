@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -15,6 +14,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/modules/core/24-host"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -356,4 +356,23 @@ func (k Keeper) HeightToValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 	}
 
 	return 0
+}
+
+// IsValidatorSlashingSent returns true
+func (k Keeper) IsPenaltySentToProvider(ctx sdk.Context, address sdk.ConsAddress) bool {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.PenaltySentToProviderKey(address))
+	return bz != nil
+}
+
+// ValidatorSlashingSent sets
+func (k Keeper) PenaltySentToProvider(ctx sdk.Context, address sdk.ConsAddress) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.PenaltySentToProviderKey(address), []byte{})
+}
+
+// ResetValidatorSlashingSent deletes
+func (k Keeper) ClearPenaltySentToProvider(ctx sdk.Context, address sdk.ConsAddress) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.PenaltySentToProviderKey(address))
 }

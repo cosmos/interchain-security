@@ -3,6 +3,9 @@ package types
 import (
 	"encoding/binary"
 	"time"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 )
 
 const (
@@ -40,8 +43,13 @@ const (
 	// UnbondingTime is set to 4 weeks
 	UnbondingTime = 4 * 7 * 24 * time.Hour
 
-	//ValsetUpdateBlockHeightPrefix
+	// HeightValsetUpdateIDPrefix is the key prefix that will store the mapping from block height valset update ID
+	// for each VSC packet received
 	HeightValsetUpdateIDPrefix = "heightvalsetupdateid"
+
+	// PenaltySentToProviderPrefix is the key prefix that will store each bonded validator addresses for whom
+	// a penalty packet is sent to the provider
+	PenaltySentToProviderPrefix = "penaltysenttoprovider"
 )
 
 var (
@@ -86,4 +94,8 @@ func HeightValsetUpdateIDKey(height uint64) []byte {
 	hBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(hBytes, height)
 	return append([]byte(HeightValsetUpdateIDPrefix), hBytes...)
+}
+
+func PenaltySentToProviderKey(v sdk.ConsAddress) []byte {
+	return append([]byte(PenaltySentToProviderPrefix), address.MustLengthPrefix(v.Bytes())...)
 }
