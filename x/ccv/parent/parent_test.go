@@ -79,7 +79,8 @@ func (suite *ParentTestSuite) SetupTest() {
 
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.parentChain.Vals)
 
-	childGenesis := childtypes.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates)
+	childGenesis := childtypes.NewInitialGenesisState(
+		suite.parentClient, suite.parentConsState, valUpdates, childtypes.DefaultParams())
 	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	suite.ctx = suite.parentChain.GetContext()
@@ -736,15 +737,29 @@ func (s *ParentTestSuite) TestDistribution() {
 	// Choose a validator, and get its address and data structure into the correct types
 	//valAddr := sdk.ValAddress(tmValidator.Address)
 
+	pChain, cChain := s.parentChain, s.childChain
+	pApp, cApp := pChain.App.(*app.App), cChain.App.(*app.App)
+	pKeep, cKeep := pApp.ParentKeeper, cApp.ChildKeeper
+	_ = pKeep
+
 	// Get the receiving fee pool on the provider chain
-	fcAddrProvider := s.parentChain.App.(*app.App).ParentKeeper.
-		GetFeeCollectorAddressStr(s.parentChain.GetContext())
+	fcAddr := pApp.ParentKeeper.GetFeeCollectorAddressStr(pChain.GetContext())
 
 	// Ensure that the provider fee pool address stored on the consumer chain
 	// is the correct address
-	fcAddrConsumersProvider := s.childChain.App.(*app.App).ChildKeeper.
-		GetProviderFeePoolAddrStr(s.childChain.GetContext())
-	s.Require().Equal(fcAddrProvider, fcAddrConsumersProvider)
+	fcAddr2 := cApp.ChildKeeper.GetProviderFeePoolAddrStr(cChain.GetContext())
+	s.Require().Equal(fcAddr, fcAddr2)
+
+	// make sure we're starting at consumer height 16 (some blocks commited during setup)
+	s.Require().Equal(int64(16), cChain.GetContext().BlockHeight())
+
+	// get last consumer transmission
+	ltbh, err := cKeep.GetLastTransmissionBlockHeight(cChain.GetContext())
+	s.Require().NoError(err)
+	s.Require().Equal(int64(0), ltbh.Height)
+
+	bpdt := cKeep.GetBlocksPerDistributionTransmission(cChain.GetContext())
+	s.Require().Equal(int64(100), bpdt)
 
 	// test to make sure the address is different on the child chain
 	// TODO fails apps have same name

@@ -56,33 +56,35 @@ func TestValidateInitialGenesisState(t *testing.T) {
 	}{
 		{
 			"valid new child genesis state",
-			types.NewInitialGenesisState(cs, consensusState, valUpdates),
+			types.NewInitialGenesisState(cs, consensusState, valUpdates, types.DefaultParams()),
 			false,
 		},
 		{
 			"invalid new child genesis state: nil client state",
-			types.NewInitialGenesisState(nil, consensusState, valUpdates),
+			types.NewInitialGenesisState(nil, consensusState, valUpdates, types.DefaultParams()),
 			true,
 		},
 		{
 			"invalid new child genesis state: invalid client state",
-			types.NewInitialGenesisState(&ibctmtypes.ClientState{ChainId: "badClientState"}, consensusState, valUpdates),
+			types.NewInitialGenesisState(&ibctmtypes.ClientState{ChainId: "badClientState"},
+				consensusState, valUpdates, types.DefaultParams()),
 			true,
 		},
 		{
 			"invalid new child genesis state: nil consensus state",
-			types.NewInitialGenesisState(cs, nil, valUpdates),
+			types.NewInitialGenesisState(cs, nil, valUpdates, types.DefaultParams()),
 			true,
 		},
 		{
 			"invalid new child genesis state: invalid consensus state",
-			types.NewInitialGenesisState(cs, &ibctmtypes.ConsensusState{Timestamp: time.Now()}, valUpdates),
+			types.NewInitialGenesisState(cs, &ibctmtypes.ConsensusState{Timestamp: time.Now()},
+				valUpdates, types.DefaultParams()),
 			true,
 		},
 		{
 			"invalid new child genesis state: client id not empty",
 			&types.GenesisState{
-				types.NewParams(true),
+				types.DefaultParams(),
 				"ccvclient",
 				"",
 				true,
@@ -96,7 +98,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 		{
 			"invalid new child genesis state: channel id not empty",
 			&types.GenesisState{
-				types.NewParams(true),
+				types.DefaultParams(),
 				"",
 				"ccvchannel",
 				true,
@@ -110,7 +112,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 		{
 			"invalid new child genesis state: non-empty unbonding sequences",
 			&types.GenesisState{
-				types.NewParams(true),
+				types.DefaultParams(),
 				"",
 				"",
 				true,
@@ -123,12 +125,15 @@ func TestValidateInitialGenesisState(t *testing.T) {
 		},
 		{
 			"invalid new child genesis state: nil initial validator set",
-			types.NewInitialGenesisState(cs, consensusState, nil),
+			types.NewInitialGenesisState(cs, consensusState, nil, types.DefaultParams()),
 			true,
 		},
 		{
 			"invalid new child genesis state: initial validator set does not match validator set hash",
-			types.NewInitialGenesisState(cs, ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), []byte("wrong_hash")), valUpdates),
+			types.NewInitialGenesisState(
+				cs, ibctmtypes.NewConsensusState(
+					time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), []byte("wrong_hash")),
+				valUpdates, types.DefaultParams()),
 			true,
 		},
 	}
@@ -203,7 +208,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 	}{
 		{
 			"valid restart child genesis state: empty unbonding sequences",
-			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, valUpdates),
+			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, valUpdates, types.DefaultParams()),
 			false,
 		},
 		{
@@ -239,17 +244,17 @@ func TestValidateRestartGenesisState(t *testing.T) {
 						clienttypes.NewHeight(9, 432), 0,
 					},
 				},
-			}, valUpdates),
+			}, valUpdates, types.DefaultParams()),
 			false,
 		},
 		{
 			"invalid restart child genesis state: channel id is empty",
-			types.NewRestartGenesisState("", "ccvchannel", nil, valUpdates),
+			types.NewRestartGenesisState("", "ccvchannel", nil, valUpdates, types.DefaultParams()),
 			true,
 		},
 		{
 			"invalid restart child genesis state: channel id is empty",
-			types.NewRestartGenesisState("ccvclient", "", nil, valUpdates),
+			types.NewRestartGenesisState("ccvclient", "", nil, valUpdates, types.DefaultParams()),
 			true,
 		},
 		{
@@ -265,7 +270,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 						clienttypes.NewHeight(0, 100), 0,
 					},
 				},
-			}, valUpdates),
+			}, valUpdates, types.DefaultParams()),
 			true,
 		},
 		{
@@ -281,7 +286,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 						clienttypes.NewHeight(0, 100), 0,
 					},
 				},
-			}, valUpdates),
+			}, valUpdates, types.DefaultParams()),
 			true,
 		},
 		{
@@ -297,13 +302,13 @@ func TestValidateRestartGenesisState(t *testing.T) {
 						clienttypes.NewHeight(0, 100), 0,
 					},
 				},
-			}, valUpdates),
+			}, valUpdates, types.DefaultParams()),
 			true,
 		},
 		{
 			"invalid restart child genesis: client state defined",
 			&types.GenesisState{
-				types.NewParams(true),
+				types.DefaultParams(),
 				"ccvclient",
 				"ccvchannel",
 				false,
@@ -317,7 +322,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		{
 			"invalid restart child genesis: consensus state defined",
 			&types.GenesisState{
-				types.NewParams(true),
+				types.DefaultParams(),
 				"ccvclient",
 				"ccvchannel",
 				false,
@@ -330,7 +335,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		},
 		{
 			"invalid restart child genesis state: nil initial validator set",
-			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, nil),
+			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, nil, types.DefaultParams()),
 			true,
 		},
 	}

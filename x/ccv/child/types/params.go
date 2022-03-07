@@ -19,18 +19,24 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates new child parameters with provided arguments
-func NewParams(enabled bool) Params {
+func NewParams(enabled bool, blocksPerDistributionTransmission int64,
+	providerFeePoolAddrStr, distributionTransmissionChannel string) Params {
 	return Params{
 		Enabled:                           enabled,
-		BlocksPerDistributionTransmission: 0,
-		ProviderFeePoolAddrStr:            "",
-		DistributionTransmissionChannel:   "",
+		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
+		ProviderFeePoolAddrStr:            providerFeePoolAddrStr,
+		DistributionTransmissionChannel:   distributionTransmissionChannel,
 	}
 }
 
 // DefaultParams is the default params for the child module
 func DefaultParams() Params {
-	return NewParams(false)
+	return NewParams(
+		false,
+		1000, // about 2 hr at 7.6 seconds per blocks
+		"",
+		"",
+	)
 }
 
 // Validate all ccv-child module parameters

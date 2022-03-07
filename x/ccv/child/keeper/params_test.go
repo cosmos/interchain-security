@@ -6,13 +6,13 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestParams() {
-	// suite setup initializes genesis with enabled = true
-	expParams := types.NewParams(true)
+	// suite setup initializes genesis
+	expParams := types.NewParams(true, 1000, "", "") // these are the default params
 
 	params := suite.childChain.App.(*app.App).ChildKeeper.GetParams(suite.childChain.GetContext())
 	suite.Require().Equal(expParams, params)
 
-	newParams := types.NewParams(false)
+	newParams := types.NewParams(false, 1000, "abc", "def")
 	suite.childChain.App.(*app.App).ChildKeeper.SetParams(suite.childChain.GetContext(), newParams)
 	params = suite.childChain.App.(*app.App).ChildKeeper.GetParams(suite.childChain.GetContext())
 	suite.Require().Equal(newParams, params)

@@ -99,7 +99,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			panic("parent client does not exist")
 		}
 		// ValUpdates must be filled in off-line
-		gs := types.NewRestartGenesisState(clientID, channelID, nil, nil)
+		gs := types.NewRestartGenesisState(clientID, channelID, nil, nil, params)
 
 		unbondingSequences := []types.UnbondingSequence{}
 		cb := func(seq uint64, packet channeltypes.Packet) bool {
@@ -140,5 +140,5 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic("parent consensus state is not tendermint consensus state")
 	}
 	// ValUpdates must be filled in off-line
-	return types.NewInitialGenesisState(tmCs, tmConsState, nil)
+	return types.NewInitialGenesisState(tmCs, tmConsState, nil, params)
 }

@@ -12,10 +12,19 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-// Simple model, donate tokens to the fee pool of the provider validator set
+// Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
 func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
-	if !k.shouldTransmit(ctx) {
+
+	ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
+	if err != nil {
+		return err
+	}
+	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
+	curHeight := ctx.BlockHeight()
+
+	if (curHeight - ltbh.Height) < bpdt {
+		// not enough blocks have passed for  a transmission to occur
 		return nil
 	}
 
@@ -36,22 +45,10 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 			return err
 		}
 	}
-	ltbh := types.LastTransmissionBlockHeight{
+	newLtbh := types.LastTransmissionBlockHeight{
 		Height: ctx.BlockHeight(),
 	}
-	return k.SetLastTransmissionBlockHeight(ctx, ltbh)
-}
-
-// test to see if enough blocks have passed for
-// a transmission to occur
-func (k Keeper) shouldTransmit(ctx sdk.Context) bool {
-	ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
-	if err != nil {
-		return false
-	}
-	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
-	curHeight := ctx.BlockHeight()
-	return (curHeight - ltbh.Height) >= bpdt
+	return k.SetLastTransmissionBlockHeight(ctx, newLtbh)
 }
 
 func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) (

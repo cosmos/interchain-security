@@ -8,7 +8,12 @@ import (
 
 // GetParams returns the paramset for the child module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
-	return types.NewParams(k.GetEnabled(ctx))
+	return types.NewParams(
+		k.GetEnabled(ctx),
+		k.GetBlocksPerDistributionTransmission(ctx),
+		k.GetProviderFeePoolAddrStr(ctx),
+		k.GetDistributionTransmissionChannel(ctx),
+	)
 }
 
 // SetParams sets the paramset for the child module
