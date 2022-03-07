@@ -36,22 +36,49 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 			return err
 		}
 	}
-	return nil
+	ltbh := types.LastTransmissionBlockHeight{
+		Height: ctx.BlockHeight(),
+	}
+	return k.SetLastTransmissionBlockHeight(ctx, ltbh)
 }
 
 // test to see if enough blocks have passed for
 // a transmission to occur
 func (k Keeper) shouldTransmit(ctx sdk.Context) bool {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.LastDistributionTransmissionKey)
-	if bz == nil {
-		return true
+	ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
+	if err != nil {
+		return false
 	}
-	ltbh := &types.LastTransmissionBlockHeight{}
-	ltbh.Unmarshal(bz)
 	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
 	curHeight := ctx.BlockHeight()
 	return (curHeight - ltbh.Height) >= bpdt
+}
+
+func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) (
+	*types.LastTransmissionBlockHeight, error) {
+
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.LastDistributionTransmissionKey)
+	ltbh := &types.LastTransmissionBlockHeight{}
+	if bz != nil {
+		err := ltbh.Unmarshal(bz)
+		if err != nil {
+			return ltbh, err
+		}
+	}
+	return ltbh, nil
+}
+
+func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context,
+	ltbh types.LastTransmissionBlockHeight) error {
+
+	store := ctx.KVStore(k.storeKey)
+	bz, err := ltbh.Marshal()
+	if err != nil {
+		return err
+	}
+	store.Set(types.LastDistributionTransmissionKey, bz)
+	return nil
 }
 
 func (k Keeper) ChannelOpenInit(ctx sdk.Context, msg *channeltypes.MsgChannelOpenInit) (

@@ -29,6 +29,10 @@ func (k Keeper) GetBlocksPerDistributionTransmission(ctx sdk.Context) int64 {
 	return bpdt
 }
 
+func (k Keeper) SetBlocksPerDistributionTransmission(ctx sdk.Context, bpdt int64) {
+	k.paramSpace.Set(ctx, types.KeyBlocksPerDistributionTransmission, bpdt)
+}
+
 func (k Keeper) GetProviderFeePoolAddrStr(ctx sdk.Context) string {
 	var s string
 	k.paramSpace.Get(ctx, types.KeyProviderFeePoolAddrStr, &s)

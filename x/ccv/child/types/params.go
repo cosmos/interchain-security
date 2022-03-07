@@ -1,7 +1,7 @@
 package types
 
 import (
-	fmt "fmt"
+	"fmt"
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
@@ -21,7 +21,10 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates new child parameters with provided arguments
 func NewParams(enabled bool) Params {
 	return Params{
-		Enabled: enabled,
+		Enabled:                           enabled,
+		BlocksPerDistributionTransmission: 0,
+		ProviderFeePoolAddrStr:            "",
+		DistributionTransmissionChannel:   "",
 	}
 }
 

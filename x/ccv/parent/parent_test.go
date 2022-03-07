@@ -722,3 +722,48 @@ func (s *ParentTestSuite) UpdateChildHistInfo(changes []abci.ValidatorUpdate) {
 	hi := stakingtypes.NewHistoricalInfo(s.ctx.BlockHeader(), validators, sdk.DefaultPowerReduction)
 	s.childChain.App.GetStakingKeeper().SetHistoricalInfo(s.childCtx(), s.childCtx().BlockHeight(), &hi)
 }
+
+// TestDistribution tests that tokens are distributed to the
+// provider chain from the consumer chain appropriately
+func (s *ParentTestSuite) TestDistribution() {
+	s.SetupCCVChannel()
+
+	//parentStakingKeeper := s.parentChain.App.GetStakingKeeper()
+	//parentSlashingKeeper := s.parentChain.App.(*app.App).SlashingKeeper
+
+	//delAddr := s.parentChain.SenderAccount.GetAddress()
+
+	// Choose a validator, and get its address and data structure into the correct types
+	//valAddr := sdk.ValAddress(tmValidator.Address)
+
+	// Get the receiving fee pool on the provider chain
+	fcAddrProvider := s.parentChain.App.(*app.App).ParentKeeper.
+		GetFeeCollectorAddressStr(s.parentChain.GetContext())
+
+	// Ensure that the provider fee pool address stored on the consumer chain
+	// is the correct address
+	fcAddrConsumersProvider := s.childChain.App.(*app.App).ChildKeeper.
+		GetProviderFeePoolAddrStr(s.childChain.GetContext())
+	s.Require().Equal(fcAddrProvider, fcAddrConsumersProvider)
+
+	// test to make sure the address is different on the child chain
+	// TODO fails apps have same name
+	//fcAddrConsumer := s.childChain.App.(*app.App).ParentKeeper.
+	//    GetFeeCollectorAddressStr(s.childChain.GetContext())
+	//s.Require().NotEqual(fcAddrProvider, fcAddrConsumer)
+
+	// Get the fee pool on the consumer chain
+	//fcAddrConsumer := s.childChain.App.(*app.App).ParentKeeper.
+	//    GetFeeCollectorAddressStr(s.childChain.GetContext())
+	//fcAddrConsumer := s.childChain.App.(*app.App).ChildKeeper.
+	//    GetProviderFeePoolAddrStr(s.childChain.GetContext())
+	//s.Require().Equal(fcAddrProvider, fcAddrConsumer)
+
+	//
+
+	// Set the distribution event blocks
+	// Ensure the current block number and commit some new blocks
+	// (commit blocks less than the distribution event blocks)
+	// s.coordinator.CommitNBlock(suite.parentChain, 10)
+
+}
