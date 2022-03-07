@@ -79,8 +79,9 @@ func (suite *ParentTestSuite) SetupTest() {
 
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.parentChain.Vals)
 
-	childGenesis := childtypes.NewInitialGenesisState(
-		suite.parentClient, suite.parentConsState, valUpdates, childtypes.DefaultParams())
+	params := childtypes.DefaultParams()
+	params.Enabled = true
+	childGenesis := childtypes.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates, params)
 	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	suite.ctx = suite.parentChain.GetContext()
@@ -759,7 +760,7 @@ func (s *ParentTestSuite) TestDistribution() {
 	s.Require().Equal(int64(0), ltbh.Height)
 
 	bpdt := cKeep.GetBlocksPerDistributionTransmission(cChain.GetContext())
-	s.Require().Equal(int64(100), bpdt)
+	s.Require().Equal(int64(1000), bpdt)
 
 	// test to make sure the address is different on the child chain
 	// TODO fails apps have same name

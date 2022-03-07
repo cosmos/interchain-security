@@ -71,7 +71,9 @@ func (suite *ChildTestSuite) SetupTest() {
 	// TODO: Fix testing suite so we can initialize both chains with the same validator set
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.parentChain.Vals)
 
-	childGenesis := types.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates, childtypes.DefaultParams())
+	params := childtypes.DefaultParams()
+	params.Enabled = true
+	childGenesis := types.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates, params)
 	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	// create the ccv path and set child's clientID to genesis client

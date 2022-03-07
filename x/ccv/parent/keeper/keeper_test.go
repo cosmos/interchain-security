@@ -65,8 +65,9 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.parentChain.Vals)
 
-	childGenesis := childtypes.NewInitialGenesisState(
-		suite.parentClient, suite.parentConsState, valUpdates, childtypes.DefaultParams())
+	params := childtypes.DefaultParams()
+	params.Enabled = true
+	childGenesis := childtypes.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates, params)
 	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	suite.ctx = suite.parentChain.GetContext()
