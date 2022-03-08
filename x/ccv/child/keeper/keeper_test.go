@@ -3,12 +3,10 @@ package keeper_test
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
@@ -366,27 +364,25 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 
 func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	// initial setup
+	suite.SetupCCVChannel()
 	suite.SendFirstCCVPacket()
 
-	app, ctx := suite.childChain.App.(*app.App), suite.ctx
+	app, ctx := suite.childChain.App.(*app.App), suite.childChain.GetContext()
 	channelID := suite.path.EndpointA.ChannelID
 
 	// create a validator pubkey and address
 	pubkey := ed25519.GenPrivKey().PubKey()
 	consAddr := sdk.ConsAddress(pubkey.Address())
 
-	// add the validator pubkey and signing info to the store
+	// init validator data
 	app.SlashingKeeper.AddPubkey(ctx, pubkey)
+	app.SlashingKeeper.AfterValidatorBonded(ctx, consAddr, sdk.ValAddress{})
 
-	// set unbounding packet with valset update id
-	vscPacket := ccv.ValidatorSetChangePacketData{ValsetUpdateId: uint64(3)}
-	app.ChildKeeper.SetUnbondingPacket(ctx, uint64(0), channeltypes.Packet{Data: vscPacket.GetBytes()})
+	// save signInfo
+	signInfo, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+	suite.Require().True(found)
 
-	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, ctx.BlockHeight(), ctx.BlockHeight()-1,
-		time.Time{}.UTC(), false, int64(0))
-	app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, valInfo)
-
-	// save next sequence before sending slashing packet
+	// save next sequence before sending penalty packet
 	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
 	suite.Require().True(ok)
 
@@ -403,16 +399,18 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 		app.SlashingKeeper.HandleValidatorSignature(ctx, pubkey.Address().Bytes(), valPower, false)
 	}
 
-	// check that the validator signing info are correctly updated
-	signInfo, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
-	suite.Require().True(found)
-	suite.Require().NotZero(signInfo.JailedUntil, "did not update validator unjail until")
-	suite.Require().Zero(signInfo.MissedBlocksCounter, "did not reset validator missed block counter")
-	suite.Require().Zero(signInfo.IndexOffset)
+	// check that the validator signing info wasn't updated
+	res, _ := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+	suite.Require().True(res.JailedUntil.Equal(signInfo.JailedUntil), "did update validator jailed until signing info")
+	suite.Require().NotZero(res.MissedBlocksCounter, "did reset validator missed block counter")
+	suite.Require().NotZero(res.IndexOffset)
 	app.SlashingKeeper.IterateValidatorMissedBlockBitArray(ctx, consAddr, func(_ int64, missed bool) bool {
-		suite.Require().False(missed)
+		suite.Require().True(missed)
 		return false
 	})
+
+	// verify that the penalty packet was sent
+	suite.Require().True(app.ChildKeeper.IsPenaltySentToProvider(ctx, consAddr))
 
 	// verify that the slashing packet was sent
 	commit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, types.PortID, channelID, seq)
@@ -441,8 +439,14 @@ func (suite *KeeperTestSuite) TestAfterValidatorDowntimeHook() {
 	valUpdateID := app.ChildKeeper.HeightToValsetUpdateID(suite.childChain.GetContext(), uint64(suite.childChain.GetContext().BlockHeight()))
 	suite.Require().NotZero(valUpdateID)
 
-	// pass 2 blocks to a distribution height
-	// equals than the current block height ("distributionHeight" up to -ValidatorUpdateDelay-1,)
+	// check that hook is getting a valset update ID for the right distribution height
+	// ("distributionHeight" up to -ValidatorUpdateDelay-1,)
+
+	app.ChildKeeper.AfterValidatorDowntime(suite.childChain.GetContext(), consAddr, int64(1))
+	suite.Require().False(app.ChildKeeper.IsPenaltySentToProvider(suite.childChain.GetContext(), consAddr))
+
+	// pass 2 blocks in order to a have a distribution height
+	// equals to the block height the first VSC packet was stored
 	suite.coordinator.CommitNBlocks(suite.childChain, uint64(3))
 
 	// save next packet sequence to verify the commitment
@@ -461,7 +465,6 @@ func (suite *KeeperTestSuite) TestAfterValidatorDowntimeHook() {
 	app.ChildKeeper.AfterValidatorDowntime(suite.childChain.GetContext(), consAddr, int64(1))
 	commit = app.IBCKeeper.ChannelKeeper.GetPacketCommitment(suite.childChain.GetContext(), types.PortID, channelID, seq)
 	suite.Require().True(commit == nil)
-
 }
 
 func (suite *KeeperTestSuite) SendFirstCCVPacket() {

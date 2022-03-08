@@ -50,6 +50,8 @@ const (
 	// PenaltySentToProviderPrefix is the key prefix that will store each bonded validator addresses for whom
 	// a penalty packet is sent to the provider
 	PenaltySentToProviderPrefix = "penaltysenttoprovider"
+
+	ValidatorByConsAddrPrefix = "validatorbyconsaddress"
 )
 
 var (
@@ -98,4 +100,10 @@ func HeightValsetUpdateIDKey(height uint64) []byte {
 
 func PenaltySentToProviderKey(v sdk.ConsAddress) []byte {
 	return append([]byte(PenaltySentToProviderPrefix), address.MustLengthPrefix(v.Bytes())...)
+}
+
+// GetValidatorByConsAddrKey creates the key for the validator with pubkey
+// VALUE: validator operator address ([]byte)
+func GetValidatorByConsAddrKey(addr sdk.ConsAddress) []byte {
+	return append([]byte(ValidatorByConsAddrPrefix), address.MustLengthPrefix(addr)...)
 }

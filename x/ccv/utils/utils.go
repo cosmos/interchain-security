@@ -1,7 +1,9 @@
 package utils
 
 import (
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci.ValidatorUpdate {
@@ -21,4 +23,31 @@ func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci
 		out = append(out, update)
 	}
 	return out
+}
+
+// GetNewChanges returns the validator changes for whom their validator is not
+// part of the validator set
+func GetNewChanges(changes []abci.ValidatorUpdate, valset tmtypes.ValidatorSet) ([]abci.ValidatorUpdate, error) {
+	newChanges := []abci.ValidatorUpdate{}
+	for _, change := range changes {
+		pk, err := cryptocodec.FromTmProtoPublicKey(change.PubKey)
+		if err != nil {
+			return nil, err
+		}
+		if !valset.HasAddress(pk.Address()) {
+			newChanges = append(newChanges, change)
+		}
+	}
+
+	return newChanges, nil
+}
+
+func ChangesToValset(changes []abci.ValidatorUpdate) (valset tmtypes.ValidatorSet, err error) {
+	vals, err := tmtypes.PB2TM.ValidatorUpdates(changes)
+	if err != nil {
+		return
+	}
+
+	valset = *tmtypes.NewValidatorSet(vals)
+	return
 }

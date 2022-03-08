@@ -1,10 +1,21 @@
 syntax = "proto3";
-
 package interchain_security.ccv.child.v1;
 
+import "google/protobuf/any.proto";
+import "cosmos_proto/cosmos.proto";
+
 option go_package = "github.com/cosmos/interchain-security/x/ccv/child/types";
+
 
 // Params defines the parameters for CCV child module
 message Params {
     bool Enabled = 1;
+}
+
+message Validator {
+    string consensus_address = 1;
+    google.protobuf.Any consensus_pubkey = 2
+    [(cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey"];
+    int64 voting_power = 3;
+    bool jailed = 4;
 }
