@@ -3,7 +3,7 @@ module github.com/cosmos/interchain-security
 go 1.16
 
 require (
-	github.com/cosmos/cosmos-sdk v0.44.1-0.20220106232020-8ae6404991b8
+	github.com/cosmos/cosmos-sdk v0.44.1-0.20220224231828-a03ffd545e83
 	github.com/cosmos/iavl v0.17.1 // indirect
 	github.com/cosmos/ibc-go v1.2.1-0.20211111105346-12a60b13a024
 	github.com/gogo/protobuf v1.3.3
@@ -34,7 +34,7 @@ require (
 
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
-	github.com/cosmos/cosmos-sdk => /cosmos-sdk
+	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.44.1-0.20220224231828-a03ffd545e83
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )
