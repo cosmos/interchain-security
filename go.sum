@@ -1197,9 +1197,14 @@ github.com/regen-network/protobuf v1.3.3-alpha.regen.1/go.mod h1:2DjTFR1HhMQhiWC
 =======
 github.com/rigelrozanski/cosmos-sdk v0.44.6-0.20220225061633-380e4b6a9a5c h1:DGsL38EyKQgq2648ME0Z5TlJqFHDI5w8iyPYwte2/uU=
 github.com/rigelrozanski/cosmos-sdk v0.44.6-0.20220225061633-380e4b6a9a5c/go.mod h1:XXS/asyCqWNWkx2rW6pSuen+EVcpAFxq6khrhnZgHaQ=
+<<<<<<< HEAD
 github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220214205135-4e834c9c6adc h1:poYoqCT1S2LTRjQ8kV2mr1HuUCIC5ctf7mDzfHsa/lc=
 github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220214205135-4e834c9c6adc/go.mod h1:VFtxCEVvhoTFJP6HA3oT2N27bcV5JbV72AiyCO253/Y=
 >>>>>>> distr code compiling, existing tests pass, fix old ibc in proto
+=======
+github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220308003458-17b91d5b571f h1:dDsKcATy7mnIPLOliuqkuH89JSn/Qxp1SUrhRexYLjQ=
+github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220308003458-17b91d5b571f/go.mod h1:VFtxCEVvhoTFJP6HA3oT2N27bcV5JbV72AiyCO253/Y=
+>>>>>>> working
 github.com/rjeczalik/notify v0.9.1/go.mod h1:rKwnCoCGeuQnwBtTSPL9Dad03Vh2n40ePRrjvIXnJho=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=

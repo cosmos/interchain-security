@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -15,6 +17,7 @@ import (
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
 func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
+	//fmt.Println("DistributeToProviderValidatorSet called")
 
 	ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
 	if err != nil {
@@ -27,6 +30,11 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		// not enough blocks have passed for  a transmission to occur
 		return nil
 	}
+
+	fmt.Println("debug about to distribute")
+	//fmt.Printf(
+	//    "distribution log:\nltbh:%v\nbpdt:%v\ncurrHeight:%v\n(curHeight - ltbh.Height) < bpdt:%v\n",
+	//    ltbh.Height, bpdt, curHeight, (curHeight-ltbh.Height) < bpdt)
 
 	// work around to reuse the IBC token transfer logic
 	consumerFeePoolAddr := k.accountKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
@@ -41,6 +49,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 			clienttypes.Height{0, 0},
 			uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
 		)
+		fmt.Println(err) // XXX debugging
 		if err != nil {
 			return err
 		}

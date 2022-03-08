@@ -1,6 +1,7 @@
 package parent_test
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -22,6 +23,7 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/interchain-security/app"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
@@ -730,14 +732,6 @@ func (s *ParentTestSuite) UpdateChildHistInfo(changes []abci.ValidatorUpdate) {
 func (s *ParentTestSuite) TestDistribution() {
 	s.SetupCCVChannel()
 
-	//parentStakingKeeper := s.parentChain.App.GetStakingKeeper()
-	//parentSlashingKeeper := s.parentChain.App.(*app.App).SlashingKeeper
-
-	//delAddr := s.parentChain.SenderAccount.GetAddress()
-
-	// Choose a validator, and get its address and data structure into the correct types
-	//valAddr := sdk.ValAddress(tmValidator.Address)
-
 	pChain, cChain := s.parentChain, s.childChain
 	pApp, cApp := pChain.App.(*app.App), cChain.App.(*app.App)
 	pKeep, cKeep := pApp.ParentKeeper, cApp.ChildKeeper
@@ -762,24 +756,53 @@ func (s *ParentTestSuite) TestDistribution() {
 	bpdt := cKeep.GetBlocksPerDistributionTransmission(cChain.GetContext())
 	s.Require().Equal(int64(1000), bpdt)
 
-	// test to make sure the address is different on the child chain
-	// TODO fails apps have same name
-	//fcAddrConsumer := s.childChain.App.(*app.App).ParentKeeper.
-	//    GetFeeCollectorAddressStr(s.childChain.GetContext())
-	//s.Require().NotEqual(fcAddrProvider, fcAddrConsumer)
+	// check the consumer chain fee pool
+	consumerFeePoolAddr := cApp.AccountKeeper.GetModuleAccount(
+		cChain.GetContext(), authtypes.FeeCollectorName).GetAddress()
+	tokens := cApp.BankKeeper.GetAllBalances(cChain.GetContext(), consumerFeePoolAddr)
+	s.Require().Len(tokens, 1)
+	s.Require().Equal(tokens[0].Denom, "stake")
+	s.Require().Equal(tokens[0].Amount, sdk.NewInt(205974705409))
 
-	// Get the fee pool on the consumer chain
-	//fcAddrConsumer := s.childChain.App.(*app.App).ParentKeeper.
-	//    GetFeeCollectorAddressStr(s.childChain.GetContext())
-	//fcAddrConsumer := s.childChain.App.(*app.App).ChildKeeper.
-	//    GetProviderFeePoolAddrStr(s.childChain.GetContext())
-	//s.Require().Equal(fcAddrProvider, fcAddrConsumer)
+	// Commit some new blocks (commit blocks less than the distribution event blocks)
+	s.coordinator.CommitNBlocks(cChain, 1000-16)
 
-	//
+	// check the consumer chain fee pool (should have increased
+	tokens = cApp.BankKeeper.GetAllBalances(cChain.GetContext(), consumerFeePoolAddr)
+	s.Require().Len(tokens, 1)
+	s.Require().Equal(tokens[0].Denom, "stake")
+	s.Require().Equal(tokens[0].Amount, sdk.NewInt(206083575410))
 
-	// Set the distribution event blocks
-	// Ensure the current block number and commit some new blocks
-	// (commit blocks less than the distribution event blocks)
-	// s.coordinator.CommitNBlock(suite.parentChain, 10)
+	// check the provider chain fee pool
+
+	ctx := cChain.GetContext()
+	ltbh, err = cKeep.GetLastTransmissionBlockHeight(ctx)
+	s.Require().NoError(err)
+	bpdt = cKeep.GetBlocksPerDistributionTransmission(ctx)
+	curHeight := ctx.BlockHeight()
+	fmt.Printf(
+		"before distribution:\nltbh:%v\nbpdt:%v\ncurrHeight:%v\n(curHeight - ltbh.Height) < bpdt:%v\n",
+		ltbh.Height, bpdt, curHeight, (curHeight-ltbh.Height) < bpdt)
+
+	// commit 1 more block (which should invoke a distribution event
+	s.coordinator.CommitNBlocks(cChain, 1)
+
+	ctx = cChain.GetContext()
+	ltbh, err = cKeep.GetLastTransmissionBlockHeight(ctx)
+	s.Require().NoError(err)
+	bpdt = cKeep.GetBlocksPerDistributionTransmission(ctx)
+	curHeight = ctx.BlockHeight()
+	fmt.Printf(
+		"after distribution:\nltbh:%v\nbpdt:%v\ncurrHeight:%v\n(curHeight - ltbh.Height) < bpdt:%v\n",
+		ltbh.Height, bpdt, curHeight, (curHeight-ltbh.Height) < bpdt)
+
+	// check the consumer chain fee pool which should be now emptied
+	tokens = cApp.BankKeeper.GetAllBalances(cChain.GetContext(), consumerFeePoolAddr)
+	s.Require().Len(tokens, 1)
+	s.Require().Equal(tokens[0].Denom, "stake")
+	s.Require().Equal(tokens[0].Amount, sdk.NewInt(20))
+
+	// check the provider chain fee pool which should now have
+	// the consumer chain tokens
 
 }
