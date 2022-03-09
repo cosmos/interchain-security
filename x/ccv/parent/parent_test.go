@@ -24,6 +24,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	"github.com/cosmos/interchain-security/app"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
@@ -764,18 +765,34 @@ func (s *ParentTestSuite) TestDistribution() {
 	s.Require().Equal(tokens[0].Denom, "stake")
 	s.Require().Equal(tokens[0].Amount, sdk.NewInt(205974705409))
 
+	//err = s.path.EndpointA.UpdateClient()
+	//err = s.path.EndpointB.UpdateClient()
+
+	ctx := cChain.GetContext()
+	sourcePort := transfertypes.PortID
+	sourceChannel := cKeep.GetDistributionTransmissionChannel(ctx)
+	sourceChannelEnd, found := cApp.IBCKeeper.ChannelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
+	s.Require().True(found)
+	destinationChannel := sourceChannelEnd.GetCounterparty().GetChannelID()
+	fmt.Printf("debug destinationChannel: %v\n", destinationChannel)
+
 	// Commit some new blocks (commit blocks less than the distribution event blocks)
 	s.coordinator.CommitNBlocks(cChain, 1000-16)
+	err = s.path.EndpointB.UpdateClient()
+
+	// Commit some new blocks on the parent chain too
+	//s.coordinator.CommitNBlocks(pChain, 10)
+	//err = s.path.EndpointA.UpdateClient()
 
 	// check the consumer chain fee pool (should have increased
 	tokens = cApp.BankKeeper.GetAllBalances(cChain.GetContext(), consumerFeePoolAddr)
 	s.Require().Len(tokens, 1)
 	s.Require().Equal(tokens[0].Denom, "stake")
-	s.Require().Equal(tokens[0].Amount, sdk.NewInt(206083575410))
+	s.Require().Equal(tokens[0].Amount, sdk.NewInt(206083686059))
 
 	// check the provider chain fee pool
 
-	ctx := cChain.GetContext()
+	ctx = cChain.GetContext()
 	ltbh, err = cKeep.GetLastTransmissionBlockHeight(ctx)
 	s.Require().NoError(err)
 	bpdt = cKeep.GetBlocksPerDistributionTransmission(ctx)
@@ -783,6 +800,18 @@ func (s *ParentTestSuite) TestDistribution() {
 	fmt.Printf(
 		"before distribution:\nltbh:%v\nbpdt:%v\ncurrHeight:%v\n(curHeight - ltbh.Height) < bpdt:%v\n",
 		ltbh.Height, bpdt, curHeight, (curHeight-ltbh.Height) < bpdt)
+
+	// Verify that the destinationChannel exists
+	// XXX if this doesn't exist then the transfer logic will fail when
+	// a the distribution transfer is invoked in the next block.
+	ctx = cChain.GetContext()
+	sourcePort = transfertypes.PortID
+	sourceChannel = cKeep.GetDistributionTransmissionChannel(ctx)
+	sourceChannelEnd, found = cApp.IBCKeeper.ChannelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
+	s.Require().True(found)
+	destinationChannel = sourceChannelEnd.GetCounterparty().GetChannelID()
+	fmt.Printf("debug destinationChannel: %v\n", destinationChannel)
+	s.Require().True(len(destinationChannel) > 0)
 
 	// commit 1 more block (which should invoke a distribution event
 	s.coordinator.CommitNBlocks(cChain, 1)

@@ -40,6 +40,10 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	consumerFeePoolAddr := k.accountKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
 	tokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 	for _, token := range tokens {
+		fmt.Printf("debug GetDistributionTransmissionChannel: %v\n", k.GetDistributionTransmissionChannel(ctx))
+		fmt.Printf("debug transfertypes.PortID: %v\n", transfertypes.PortID)
+		fmt.Printf("debug token: %v\n", token)
+		fmt.Printf("debug consumerFeePoolAddr: %v\n", consumerFeePoolAddr)
 		err := k.ibcTransferKeeper.SendTransfer(ctx,
 			transfertypes.PortID,
 			k.GetDistributionTransmissionChannel(ctx),
@@ -49,8 +53,8 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 			clienttypes.Height{0, 0},
 			uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
 		)
-		fmt.Println(err) // XXX debugging
 		if err != nil {
+			panic(err)
 			return err
 		}
 	}
