@@ -26,7 +26,8 @@ type StakingKeeper interface {
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
 	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
 	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec)
-	GetBondedValidatorsByPower(ctx sdk.Context) []types.Validator
+	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator types.Validator, found bool)
+	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
 	PowerReduction(ctx sdk.Context) sdk.Int
 }
 

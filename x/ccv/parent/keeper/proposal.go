@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
@@ -77,11 +78,35 @@ func (k Keeper) MakeChildGenesis(ctx sdk.Context) (gen childtypes.GenesisState, 
 	gen.ParentClientState = clientState
 	gen.ParentConsensusState = consState.(*ibctmtypes.ConsensusState)
 
-	vals := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	var lastPowers []stakingtypes.LastValidatorPower
+
+	k.stakingKeeper.IterateLastValidatorPowers(ctx, func(addr sdk.ValAddress, power int64) (stop bool) {
+		lastPowers = append(lastPowers, stakingtypes.LastValidatorPower{Address: addr.String(), Power: power})
+		return false
+	})
+
 	updates := []tmtypes.ValidatorUpdate{}
 
-	for _, v := range vals {
-		updates = append(updates, v.ABCIValidatorUpdate(k.stakingKeeper.PowerReduction(ctx)))
+	for _, p := range lastPowers {
+		addr, err := sdk.ValAddressFromBech32(p.Address)
+		if err != nil {
+			panic(err)
+		}
+
+		val, found := k.stakingKeeper.GetValidator(ctx, addr)
+		if !found {
+			panic("Validator from LastValidatorPowers not found in staking keeper")
+		}
+
+		tmProtoPk, err := val.TmConsPublicKey()
+		if err != nil {
+			panic(err)
+		}
+
+		updates = append(updates, tmtypes.ValidatorUpdate{
+			PubKey: tmProtoPk,
+			Power:  p.Power,
+		})
 	}
 
 	gen.InitialValSet = updates
