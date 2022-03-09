@@ -63,7 +63,6 @@ var (
 )
 
 // Ouputs a fixed length 32 byte hash for any string
-// TODO: use this pattern for all keys
 func HashString(x string) []byte {
 	hash := sha256.Sum256([]byte(x))
 	return hash[:]
