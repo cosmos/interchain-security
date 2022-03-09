@@ -67,7 +67,6 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.parentConsState = suite.parentChain.LastHeader.ConsensusState()
 
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.parentChain.Vals)
-
 	childGenesis := types.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates)
 	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
@@ -493,4 +492,8 @@ func (suite *KeeperTestSuite) SendFirstCCVPacket() {
 
 func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
+}
+
+func (suite *KeeperTestSuite) TestChild2() {
+	suite.childChain = &ibctesting.TestChain{}
 }

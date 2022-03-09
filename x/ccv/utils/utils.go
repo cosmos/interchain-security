@@ -25,8 +25,8 @@ func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci
 	return out
 }
 
-// GetNewChanges returns the validator changes for whom their validator is not
-// part of the validator set
+// GetNewChanges returns the changes with validator not being
+// part of the validator set and having a positive voting power
 func GetNewChanges(changes []abci.ValidatorUpdate, valset tmtypes.ValidatorSet) ([]abci.ValidatorUpdate, error) {
 	newChanges := []abci.ValidatorUpdate{}
 	for _, change := range changes {
@@ -34,7 +34,7 @@ func GetNewChanges(changes []abci.ValidatorUpdate, valset tmtypes.ValidatorSet) 
 		if err != nil {
 			return nil, err
 		}
-		if !valset.HasAddress(pk.Address()) {
+		if !valset.HasAddress(pk.Address()) && change.Power > 0 {
 			newChanges = append(newChanges, change)
 		}
 	}
@@ -50,4 +50,18 @@ func ChangesToValset(changes []abci.ValidatorUpdate) (valset tmtypes.ValidatorSe
 
 	valset = *tmtypes.NewValidatorSet(vals)
 	return
+}
+
+func ApplyChangesToValset(valset *tmtypes.ValidatorSet, changes []abci.ValidatorUpdate) error {
+	changeSet, err := tmtypes.PB2TM.ValidatorUpdates(changes)
+	if err != nil {
+		return err
+	}
+
+	err = valset.UpdateWithChangeSet(changeSet)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -17,5 +17,4 @@ message Validator {
     google.protobuf.Any consensus_pubkey = 2
     [(cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey"];
     int64 voting_power = 3;
-    bool jailed = 4;
 }

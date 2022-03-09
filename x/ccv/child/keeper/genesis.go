@@ -77,6 +77,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		}
 	}
 
+	k.ApplyValidatorChanges(ctx, state.InitialValSet)
+
 	return state.InitialValSet
 }
 

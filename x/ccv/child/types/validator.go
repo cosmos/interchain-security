@@ -6,6 +6,7 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -21,10 +22,6 @@ func NewValidator(pubKey cryptotypes.PubKey, power int64) (Validator, error) {
 		ConsensusPubkey:  pkAny,
 		VotingPower:      power,
 	}, nil
-}
-
-func (v Validator) IsJailed() bool {
-	return v.Jailed
 }
 
 func (v Validator) ToTmValidator() (tmtypes.Validator, error) {
@@ -70,6 +67,30 @@ func (v Validator) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 	return unpacker.UnpackAny(v.ConsensusPubkey, &pk)
 }
 
+// UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
+func (v Validators) UnpackInterfaces(c codectypes.AnyUnpacker) error {
+	for i := range v {
+		if err := v[i].UnpackInterfaces(c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type Validators []Validator
+
+func (vals Validators) GetValset() (tmtypes.ValidatorSet, error) {
+	valset := tmtypes.ValidatorSet{}
+	for _, val := range vals {
+		valTm, err := val.ToTmValidator()
+		if err != nil {
+			return valset, err
+		}
+		valset.Validators = append(valset.Validators, &valTm)
+	}
+	return valset, nil
+}
+
 func FromTmValidator(val tmtypes.Validator) (Validator, error) {
 	pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
 	if err != nil {
@@ -88,4 +109,13 @@ func MustParseConsAdrr(addr string) sdk.ConsAddress {
 	}
 
 	return out
+}
+
+func (v Validator) ToChange() (change abci.ValidatorUpdate, err error) {
+	tmVal, err := v.ToTmValidator()
+	if err != nil {
+		return
+	}
+	change = tmtypes.TM2PB.ValidatorUpdate(&tmVal)
+	return
 }

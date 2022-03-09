@@ -3,39 +3,12 @@ package keeper
 import (
 	"fmt"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
-
-// GetValsetFromValidators returns the validators valset
-func (k Keeper) GetValsetFromValidators(ctx sdk.Context) (valset tmtypes.ValidatorSet, err error) {
-	validators := k.GetAllValidators(ctx)
-	if len(validators) == 0 {
-		return valset, fmt.Errorf("expecting to have at least one validator")
-	}
-
-	for _, val := range validators {
-		valTm, err := val.ToTmValidator()
-		if err != nil {
-			return valset, err
-		}
-		valset.Validators = append(valset.Validators, &valTm)
-	}
-
-	return valset, err
-}
-
-func (k Keeper) SetValidatorsFromValset(ctx sdk.Context, valset tmtypes.ValidatorSet) error {
-	for _, tmVal := range valset.Validators {
-		val, err := types.FromTmValidator(*tmVal)
-		if err != nil {
-			return err
-		}
-		k.SetValidatorByConsAddr(ctx, val)
-	}
-	return nil
-}
 
 // validator index
 func (k Keeper) SetValidatorByConsAddr(ctx sdk.Context, v types.Validator) {
@@ -57,7 +30,12 @@ func (k Keeper) GetValidatorByConsAddr(ctx sdk.Context, addr sdk.ConsAddress) (v
 	return validator, true
 }
 
-// get the set of all validators with no limits, used during genesis dump
+func (k Keeper) DeleteValidatorByConsAddr(ctx sdk.Context, addr sdk.ConsAddress) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetValidatorByConsAddrKey(addr))
+}
+
+// get the set of all validators
 func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []types.Validator) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -71,4 +49,58 @@ func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []types.Validator)
 	}
 
 	return validators
+}
+
+// GetValsetFromValidators returns the validators valset
+func (k Keeper) GetValsetFromValidators(ctx sdk.Context) (valset tmtypes.ValidatorSet, err error) {
+	vals := k.GetAllValidators(ctx)
+	return types.Validators(vals).GetValset()
+}
+
+// ProcessNewChanges computes and proccess the changes which validator are not part
+// of the given valset
+func (k Keeper) ApplyValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) ([]sdk.ConsAddress, error) {
+	// newChanges, err := utils.GetNewChanges(changes, valset)
+	newValAddrs := []sdk.ConsAddress{}
+	for _, change := range changes {
+		pk, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
+		if err != nil {
+			return nil, err
+		}
+		consAddr := sdk.ConsAddress(pk.Address())
+		val, found := k.GetValidatorByConsAddr(ctx, consAddr)
+
+		if change.Power < 1 {
+			if found {
+				k.DeleteValidatorByConsAddr(ctx, consAddr)
+				continue
+			}
+			return nil, fmt.Errorf("failed to find validator %X to remove", consAddr)
+		}
+
+		if !found {
+			val, err = types.NewValidator(pk, change.Power)
+			if err != nil {
+				return nil, err
+			}
+			newValAddrs = append(newValAddrs, consAddr)
+		} else {
+			val.VotingPower = change.Power
+		}
+
+		k.SetValidatorByConsAddr(ctx, val)
+	}
+
+	if len(newValAddrs) > 0 {
+		k.HandleNewBondings(ctx, newValAddrs)
+	}
+
+	return newValAddrs, nil
+}
+
+func (k Keeper) HandleNewBondings(ctx sdk.Context, valAddresses []sdk.ConsAddress) {
+	for _, addr := range valAddresses {
+		k.slashingKeeper.AfterValidatorBonded(ctx, addr, nil)
+		k.ClearPenaltySentToProvider(ctx, addr)
+	}
 }

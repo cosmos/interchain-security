@@ -35,6 +35,7 @@ type SlashingKeeper interface {
 	DowntimeJailDuration(sdk.Context) time.Duration
 	SlashFractionDowntime(sdk.Context) sdk.Dec
 	ClearValidatorMissedBlockBitArray(ctx sdk.Context, address sdk.ConsAddress)
+	AfterValidatorBonded(ctx sdk.Context, address sdk.ConsAddress, _ sdk.ValAddress)
 }
 
 // ChannelKeeper defines the expected IBC channel keeper

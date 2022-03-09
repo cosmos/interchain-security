@@ -7,15 +7,13 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/testing"
 	"github.com/cosmos/interchain-security/app"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // TestValidatorByConsAddr
 func (s *KeeperTestSuite) TestValidatorByConsAddr() {
 	childKeeper := s.childChain.App.(*app.App).ChildKeeper
-	ctx := s.childChain.GetContext()
+	ctx := s.ctx
 
 	// create validator
 	pubKey := ed25519.GenPrivKey().PubKey()
@@ -51,7 +49,7 @@ func (s *KeeperTestSuite) TestValidatorByConsAddr() {
 
 func (s *KeeperTestSuite) TestGetAllValidators() {
 	childKeeper := s.childChain.App.(*app.App).ChildKeeper
-	ctx := s.childChain.GetContext()
+	ctx := s.ctx
 
 	// create and persist three validators
 	vals := map[string]types.Validator{}
@@ -79,7 +77,7 @@ func (s *KeeperTestSuite) TestGetAllValidators() {
 // TestValidatorsToValset
 func (s *KeeperTestSuite) TestGetValsetFromValidators() {
 	childKeeper := s.childChain.App.(*app.App).ChildKeeper
-	ctx := s.childChain.GetContext()
+	ctx := s.ctx
 	vals := map[string]types.Validator{}
 
 	for i := 0; i < 3; i++ {
@@ -109,41 +107,102 @@ func (s *KeeperTestSuite) TestGetValsetFromValidators() {
 	}
 }
 
-func (s *KeeperTestSuite) TestApplyChanges() {
-	ibctesting.ValidatorsPerChain = 5
+func (s KeeperTestSuite) TestInitGenesis() {
+	ibctesting.ValidatorsPerChain = 2
 	s.SetupTest()
 
 	childKeeper := s.childChain.App.(*app.App).ChildKeeper
-	ctx := s.childChain.GetContext()
+	ctx := s.ctx
 
-	// get valset from childchain
-	valset := s.childChain.Vals
+	// check that child genesis state meaning
+	// the parent validators are sotre into child CCV module
+	tmVals := s.parentChain.Vals.Validators
+	s.Require().Len(tmVals, 2)
+	vals := childKeeper.GetAllValidators(ctx)
+	s.Require().Len(vals, 2)
 
-	// create validator updates
-	valUpdates := []abci.ValidatorUpdate{}
+	for i, v := range vals {
+		got, err := types.FromTmValidator(*tmVals[i])
+		s.Require().NoError(err)
+		s.Require().True(v.GetConsensusPubkey().Equal(got.GetConsensusPubkey()))
+		s.Require().Equal(v.VotingPower, got.VotingPower)
+		s.Require().Equal(v.ConsensusAddress, got.ConsensusAddress)
+	}
+}
 
-	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
+func (s KeeperTestSuite) TestApplyValidatorChanges() {
+	ibctesting.ValidatorsPerChain = 3
+	s.SetupTest()
+
+	childKeeper := s.childChain.App.(*app.App).ChildKeeper
+	ctx := s.ctx
+
+	// expect an error if the change contains
+	// a new validator with voting power 0
+	pk, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	s.Require().NoError(err)
-	valUpdates = append(valUpdates, abci.ValidatorUpdate{PubKey: pk1, Power: int64(20)})
+	_, err = childKeeper.ApplyValidatorChanges(ctx, []abci.ValidatorUpdate{{PubKey: pk, Power: 0}})
+	s.Require().Error(err)
 
-	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
+	vals := childKeeper.GetAllValidators(ctx)
+
+	// create 4 changes:
+	// 2 new bondings, 1 delegation, 1 jailing
+	changes := []abci.ValidatorUpdate{}
+	expVotingPower := int64(0)
+
+	for i, val := range vals {
+		val.VotingPower = int64(i * 10)
+		change, err := val.ToChange()
+		s.Require().NoError(err)
+		changes = append(changes, change)
+		expVotingPower += val.VotingPower
+	}
+
+	// Append three new bonded validators
+	for i := 1; i < 4; i++ {
+		pk, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
+		s.Require().NoError(err)
+		changes = append(changes, abci.ValidatorUpdate{PubKey: pk, Power: int64(i * 10)})
+		expVotingPower += int64(i * 10)
+	}
+
+	// apply changes
+	newValidators, err := childKeeper.ApplyValidatorChanges(ctx, changes)
 	s.Require().NoError(err)
-	valUpdates = append(valUpdates, abci.ValidatorUpdate{PubKey: pk2, Power: int64(30)})
+	s.Require().Len(newValidators, 3)
 
-	newVals, err := utils.GetNewChanges(valUpdates, *valset)
+	// check that the validator changes
+	valset, err := childKeeper.GetValsetFromValidators(ctx)
 	s.Require().NoError(err)
-	s.Require().NotNil(newVals)
-	s.Require().Len(newVals, 2)
+	s.Require().Len(valset.Validators, 5)
+	s.Require().Equal(valset.TotalVotingPower(), expVotingPower)
+}
 
-	changeSet, err := tmtypes.PB2TM.ValidatorUpdates(valUpdates)
-	s.Require().NoError(err)
+func (s KeeperTestSuite) TestHandleNewBondings() {
+	ibctesting.ValidatorsPerChain = 3
+	s.SetupTest()
 
-	// apply valset changes - with removals
-	valset.UpdateWithChangeSet(changeSet)
+	childKeeper := s.childChain.App.(*app.App).ChildKeeper
+	ctx := s.ctx
+	vals := childKeeper.GetAllValidators(ctx)
 
-	childKeeper.SetValidatorsFromValset(ctx, *valset)
-	s.Require().NoError(err)
+	addrs := []sdk.ConsAddress{}
 
-	valsUpdated := childKeeper.GetAllValidators(ctx)
-	s.Require().Len(valsUpdated, 7)
+	for _, val := range vals {
+
+		consAddr, err := val.GetConsAddr()
+		s.Require().NoError(err)
+		addrs = append(addrs, consAddr)
+	}
+
+	for _, addr := range addrs {
+		childKeeper.PenaltySentToProvider(ctx, addr)
+	}
+
+	childKeeper.HandleNewBondings(ctx, addrs)
+
+	for _, addr := range addrs {
+		s.Require().False(childKeeper.IsPenaltySentToProvider(ctx, addr))
+	}
 }
