@@ -57,8 +57,8 @@ func (k Keeper) GetValsetFromValidators(ctx sdk.Context) (valset tmtypes.Validat
 	return types.Validators(vals).GetValset()
 }
 
-// ProcessNewChanges computes and proccess the changes which validator are not part
-// of the given valset
+// ApplyValidatorChanges applies the given changes to the current CCV validator states
+// then handles the new validator bonded to finally return their respective consensus address
 func (k Keeper) ApplyValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) ([]sdk.ConsAddress, error) {
 	// newChanges, err := utils.GetNewChanges(changes, valset)
 	newValAddrs := []sdk.ConsAddress{}
@@ -70,6 +70,7 @@ func (k Keeper) ApplyValidatorChanges(ctx sdk.Context, changes []abci.ValidatorU
 		consAddr := sdk.ConsAddress(pk.Address())
 		val, found := k.GetValidatorByConsAddr(ctx, consAddr)
 
+		// remove jailed validators and continue
 		if change.Power < 1 {
 			if found {
 				k.DeleteValidatorByConsAddr(ctx, consAddr)
@@ -78,7 +79,10 @@ func (k Keeper) ApplyValidatorChanges(ctx sdk.Context, changes []abci.ValidatorU
 			return nil, fmt.Errorf("failed to find validator %X to remove", consAddr)
 		}
 
+		// set new and existing validators
 		if !found {
+			// construct new bonded validator
+			// and store its consensus address
 			val, err = types.NewValidator(pk, change.Power)
 			if err != nil {
 				return nil, err
@@ -92,15 +96,17 @@ func (k Keeper) ApplyValidatorChanges(ctx sdk.Context, changes []abci.ValidatorU
 	}
 
 	if len(newValAddrs) > 0 {
-		k.HandleNewBondings(ctx, newValAddrs)
+		k.HandleValidatorsBonded(ctx, newValAddrs)
 	}
 
 	return newValAddrs, nil
 }
 
-func (k Keeper) HandleNewBondings(ctx sdk.Context, valAddresses []sdk.ConsAddress) {
+// HandleValidatorsBonded handles the given validator bonded by clearing
+// their potential outsanding penalty and calling the afterbonded CCV consumer hook
+func (k Keeper) HandleValidatorsBonded(ctx sdk.Context, valAddresses []sdk.ConsAddress) {
 	for _, addr := range valAddresses {
-		k.slashingKeeper.AfterValidatorBonded(ctx, addr, nil)
+		k.hooks.AfterValidatorBonded(ctx, addr, nil)
 		k.ClearPenaltySentToProvider(ctx, addr)
 	}
 }

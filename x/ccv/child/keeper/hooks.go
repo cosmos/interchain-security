@@ -2,11 +2,11 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-var _ slashingtypes.SlashingHooks = Keeper{}
+var _ ccv.SlashingHooks = Keeper{}
 
 // AfterValidatorDowntime gets the given validator address jailing time
 // in order either to add it the downtime jailing duration and initiated its slashing
@@ -53,4 +53,24 @@ func (k Keeper) Hooks() Hooks {
 // AfterValidatorDowntime implements the slashing hook interface
 func (h Hooks) AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress, power int64) {
 	h.k.AfterValidatorDowntime(ctx, consAddr, power)
+}
+
+func (k Keeper) AfterValidatorBonded(ctx sdk.Context, address sdk.ConsAddress, _ sdk.ValAddress) {
+	if k.hooks != nil {
+		k.hooks.AfterValidatorBonded(ctx, address, nil)
+	}
+}
+
+// AfterValidatorCreated adds the address-pubkey relation when a validator is created.
+func (k Keeper) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
+	if k.hooks != nil {
+		k.hooks.AfterValidatorCreated(ctx, valAddr)
+	}
+}
+
+// AfterValidatorRemoved deletes the address-pubkey relation when a validator is removed,
+func (k Keeper) AfterValidatorRemoved(ctx sdk.Context, address sdk.ConsAddress) {
+	if k.hooks != nil {
+		k.hooks.AfterValidatorRemoved(ctx, address, nil)
+	}
 }

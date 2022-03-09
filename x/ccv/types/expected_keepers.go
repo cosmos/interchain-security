@@ -70,3 +70,9 @@ type SlashingHooks interface {
 	// Is triggered when the validator missed too many blocks
 	AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress, power int64)
 }
+
+type CVVHooks interface {
+	AfterValidatorBonded(ctx sdk.Context, address sdk.ConsAddress, _ sdk.ValAddress)
+	AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress)
+	AfterValidatorRemoved(ctx sdk.Context, consAddr sdk.ConsAddress, _ sdk.ValAddress)
+}

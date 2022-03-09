@@ -157,6 +157,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	if !ok {
 		return []abci.ValidatorUpdate{}
 	}
+	am.keeper.ApplyValidatorChanges(ctx, data.ValidatorUpdates)
 	am.keeper.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()+1), data.ValsetUpdateId)
 	am.keeper.DeletePendingChanges(ctx)
 	am.keeper.UnbondMaturePackets(ctx)

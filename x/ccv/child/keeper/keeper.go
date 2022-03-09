@@ -31,6 +31,7 @@ type Keeper struct {
 	connectionKeeper ccv.ConnectionKeeper
 	clientKeeper     ccv.ClientKeeper
 	slashingKeeper   ccv.SlashingKeeper
+	hooks            ccv.CVVHooks
 }
 
 // NewKeeper creates a new Child Keeper instance
@@ -55,6 +56,16 @@ func NewKeeper(
 		clientKeeper:     clientKeeper,
 		slashingKeeper:   slashingKeeper,
 	}
+}
+
+func (k *Keeper) SetHooks(sh ccv.CVVHooks) *Keeper {
+	if k.hooks != nil {
+		panic("cannot set validator hooks twice")
+	}
+
+	k.hooks = sh
+
+	return k
 }
 
 // Logger returns a module-specific logger.

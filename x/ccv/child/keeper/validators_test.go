@@ -7,6 +7,7 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/testing"
 	"github.com/cosmos/interchain-security/app"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -130,6 +131,32 @@ func (s KeeperTestSuite) TestInitGenesis() {
 	}
 }
 
+func (s KeeperTestSuite) TestEndBlock() {
+	childKeeper := s.childChain.App.(*app.App).ChildKeeper
+	ctx := s.ctx
+
+	// check that child genesis state meaning
+	// the parent validators are sotre into child CCV module
+	vals := childKeeper.GetAllValidators(ctx)
+	s.Require().Len(vals, 1)
+
+	// create and set change in CCV pending change states
+	vals[0].VotingPower = int64(100)
+	change, err := vals[0].ToChange()
+	s.Require().NoError(err)
+	err = childKeeper.SetPendingChanges(s.childChain.GetContext(), ccv.ValidatorSetChangePacketData{
+		ValidatorUpdates: []abci.ValidatorUpdate{change},
+		ValsetUpdateId:   uint64(1),
+	})
+
+	s.Require().NoError(err)
+
+	s.childChain.App.EndBlock(abci.RequestEndBlock{})
+	val, found := childKeeper.GetValidatorByConsAddr(s.childChain.GetContext(), types.MustParseConsAdrr(vals[0].ConsensusAddress))
+	s.Require().True(found)
+	s.Require().Equal(int64(100), val.VotingPower)
+}
+
 func (s KeeperTestSuite) TestApplyValidatorChanges() {
 	ibctesting.ValidatorsPerChain = 3
 	s.SetupTest()
@@ -179,11 +206,28 @@ func (s KeeperTestSuite) TestApplyValidatorChanges() {
 	s.Require().Equal(valset.TotalVotingPower(), expVotingPower)
 }
 
-func (s KeeperTestSuite) TestHandleNewBondings() {
+type MockCCVHooks struct {
+	calledBonded  bool
+	calledCreated bool
+	calledRemoved bool
+}
+
+func (h *MockCCVHooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
+	h.calledBonded = true
+}
+func (h *MockCCVHooks) AfterValidatorRemoved(ctx sdk.Context, consAddr sdk.ConsAddress, _ sdk.ValAddress) {
+	h.calledCreated = true
+}
+func (h *MockCCVHooks) AfterValidatorDowntime(_ sdk.Context, _ sdk.ConsAddress, _ int64) {
+	h.calledRemoved = true
+}
+
+func (s KeeperTestSuite) TestHandleValidatorsBonded() {
 	ibctesting.ValidatorsPerChain = 3
 	s.SetupTest()
 
 	childKeeper := s.childChain.App.(*app.App).ChildKeeper
+
 	ctx := s.ctx
 	vals := childKeeper.GetAllValidators(ctx)
 
@@ -200,9 +244,11 @@ func (s KeeperTestSuite) TestHandleNewBondings() {
 		childKeeper.PenaltySentToProvider(ctx, addr)
 	}
 
-	childKeeper.HandleNewBondings(ctx, addrs)
+	childKeeper.HandleValidatorsBonded(ctx, addrs)
 
 	for _, addr := range addrs {
 		s.Require().False(childKeeper.IsPenaltySentToProvider(ctx, addr))
+		_, found := s.childChain.App.(*app.App).SlashingKeeper.GetValidatorSigningInfo(ctx, addr)
+		s.Require().True(found)
 	}
 }
