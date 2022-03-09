@@ -778,6 +778,9 @@ func (s *ParentTestSuite) TestDistribution() {
 	fcAddr2 := cApp.ChildKeeper.GetProviderFeePoolAddrStr(cChain.GetContext())
 	s.Require().Equal(fcAddr, fcAddr2)
 
+	// make sure we're starting at consumer height 21 (some blocks commited during setup)
+	s.Require().Equal(int64(21), cChain.GetContext().BlockHeight())
+
 	// get last consumer transmission
 	ltbh, err := cKeep.GetLastTransmissionBlockHeight(cChain.GetContext())
 	s.Require().NoError(err)
@@ -806,7 +809,7 @@ func (s *ParentTestSuite) TestDistribution() {
 	fmt.Printf("debug destinationChannel: %v\n", destinationChannel)
 
 	// Commit some new blocks (commit blocks less than the distribution event blocks)
-	s.coordinator.CommitNBlocks(cChain, 1000-16)
+	s.coordinator.CommitNBlocks(cChain, 1000-21)
 	err = s.path.EndpointB.UpdateClient()
 
 	// Commit some new blocks on the parent chain too
