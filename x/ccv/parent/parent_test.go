@@ -53,7 +53,8 @@ type ParentTestSuite struct {
 	parentClient    *ibctmtypes.ClientState
 	parentConsState *ibctmtypes.ConsensusState
 
-	path *ibctesting.Path
+	path         *ibctesting.Path
+	transferPath *ibctesting.Path
 
 	ctx sdk.Context
 }
@@ -110,11 +111,42 @@ func (suite *ParentTestSuite) SetupTest() {
 	// create child client on parent chain and set as child client for child chainID in parent keeper.
 	suite.path.EndpointB.CreateClient()
 	suite.parentChain.App.(*app.App).ParentKeeper.SetChildClient(suite.parentChain.GetContext(), suite.childChain.ChainID, suite.path.EndpointB.ClientID)
+
+	suite.transferPath = ibctesting.NewPath(suite.childChain, suite.parentChain)
+	suite.transferPath.EndpointA.ChannelConfig.PortID = transfertypes.PortID
+	suite.transferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
+	suite.transferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
+	suite.transferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
 }
 
 func (suite *ParentTestSuite) SetupCCVChannel() {
 	suite.coordinator.CreateConnections(suite.path)
+
+	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
+	// so transfer channel will be on stage INIT when CreateChannels for ccv path returns.
 	suite.coordinator.CreateChannels(suite.path)
+
+	// transfer path will use the same connection as ccv path
+	suite.transferPath.EndpointA.ClientID = suite.path.EndpointA.ClientID
+	suite.transferPath.EndpointA.ConnectionID = suite.path.EndpointA.ConnectionID
+	suite.transferPath.EndpointB.ClientID = suite.path.EndpointB.ClientID
+	suite.transferPath.EndpointB.ConnectionID = suite.path.EndpointB.ConnectionID
+
+	// INIT step for transfer path has already been called during CCV channel setup
+	suite.transferPath.EndpointA.ChannelID = suite.childChain.App.(*app.App).ChildKeeper.GetDistributionTransmissionChannel(suite.childChain.GetContext())
+
+	// Complete TRY, ACK, CONFIRM for transfer path
+	err := suite.transferPath.EndpointB.ChanOpenTry()
+	suite.Require().NoError(err)
+
+	err = suite.transferPath.EndpointA.ChanOpenAck()
+	suite.Require().NoError(err)
+
+	err = suite.transferPath.EndpointB.ChanOpenConfirm()
+	suite.Require().NoError(err)
+
+	// ensure counterparty is up to date
+	suite.transferPath.EndpointA.UpdateClient()
 }
 
 func (s *ParentTestSuite) CreateChildChain() {
@@ -745,9 +777,6 @@ func (s *ParentTestSuite) TestDistribution() {
 	// is the correct address
 	fcAddr2 := cApp.ChildKeeper.GetProviderFeePoolAddrStr(cChain.GetContext())
 	s.Require().Equal(fcAddr, fcAddr2)
-
-	// make sure we're starting at consumer height 16 (some blocks commited during setup)
-	s.Require().Equal(int64(16), cChain.GetContext().BlockHeight())
 
 	// get last consumer transmission
 	ltbh, err := cKeep.GetLastTransmissionBlockHeight(cChain.GetContext())
