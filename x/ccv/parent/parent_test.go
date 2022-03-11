@@ -7,11 +7,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
@@ -32,6 +30,7 @@ import (
 	"github.com/tendermint/tendermint/libs/bytes"
 	tmtypes "github.com/tendermint/tendermint/types"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -352,83 +351,228 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	// set two validators per chain
 	ibctesting.ValidatorsPerChain = 2
 	s.SetupTest()
+	// fmt.Println("-")
 	s.SetupCCVChannel()
-	s.Require().Len(s.parentChain.Vals.Validators, ibctesting.ValidatorsPerChain)
+	childKeeper := s.childChain.App.(*app.App).ChildKeeper
 
-	parentStakingKeeper := s.parentChain.App.GetStakingKeeper()
+	childKeeper.AfterValidatorBonded(s.childCtx(), nil, nil)
+	fmt.Println("-")
+
+	// parentStakingKeeper := s.parentChain.App.GetStakingKeeper()
 	parentSlashingKeeper := s.parentChain.App.(*app.App).SlashingKeeper
 
-	// get a parent chain validator address and balance
-	tmVals := s.parentChain.Vals.Validators
-	tmVal := tmVals[0]
-
-	val, err := tmVal.ToProto()
+	vals := childKeeper.GetAllValidators(s.childCtx())
+	pubkey, err := vals[0].ConsPubKey()
 	s.Require().NoError(err)
-	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
-	s.Require().Nil(err)
-	consAddr := sdk.GetConsAddress(pubkey)
-	valData, found := parentStakingKeeper.GetValidatorByConsAddr(s.parentCtx(), consAddr)
-	s.Require().True(found)
-	valOldBalance := valData.Tokens
+	consAddr := sdk.ConsAddress(pubkey.Address())
 
-	// create the validator's signing info record to allow jailing
+	// test to unjail validator from parent
+	pk, err := cryptocodec.ToTmProtoPublicKey(pubkey)
+	s.Require().NoError(err)
+	pd := ccv.NewValidatorSetChangePacketData(
+		[]abci.ValidatorUpdate{
+			{
+				PubKey: pk,
+				Power:  int64(100),
+			},
+		},
+		1,
+	)
+	oldBlockTime := s.parentChain.GetContext().BlockTime()
+	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+
+	// save next sequence before sending penalty packet
+	// seq, ok = s.parentChain.App.(*app.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(s.parentCtx(), parenttypes.PortID, s.path.EndpointB.ChannelID)
+	// s.Require().True(ok)
+
+	packet2 := channeltypes.NewPacket(pd.GetBytes(), 1, parenttypes.PortID, s.path.EndpointB.ChannelID,
+		childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	fmt.Println("SEND FROM B")
+
+	// Receive CCV packet on consumer chain
+	err = s.path.EndpointB.SendPacket(packet2)
+	s.Require().NoError(err)
+
+	// seq, ok := s.parentChain.App.(*app.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(s.parentCtx(), parenttypes.PortID, s.path.EndpointB.ChannelID)
+	// s.Require().True(ok)
+
+	fmt.Println("RECV TO A")
+
+	// Receive CCV packet on consumer chain
+	err = s.path.EndpointA.RecvPacket(packet2)
+	s.Require().NoError(err)
+
+	// valData, found := parentStakingKeeper.GetValidatorByConsAddr(s.parentCtx(), consAddr)
+	// s.Require().True(found)
+	// valOldBalance := valData.Tokens
+
+	// // create the validator's signing info record to allow jailing
 	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, s.parentCtx().BlockHeight(),
 		s.parentCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
 	parentSlashingKeeper.SetValidatorSigningInfo(s.parentCtx(), consAddr, valInfo)
 
 	// create a valseUpdateId that allows to retrieve the infraction block height on the provider
+	childBlockHeight := s.childCtx().BlockHeight()
 	valsetUpdateId := uint64(1)
 
 	// save the current block height for the last valsetUpdateId
-	s.parentChain.App.(*app.App).ParentKeeper.SetValsetUpdateBlockHeight(s.parentCtx(), valsetUpdateId,
-		uint64(s.parentCtx().BlockHeight()))
+	childKeeper.SetHeightValsetUpdateID(s.childCtx(), uint64(childBlockHeight), uint64(childBlockHeight))
+	s.parentChain.App.(*app.App).ParentKeeper.SetValsetUpdateBlockHeight(s.parentCtx(), valsetUpdateId, uint64(s.parentCtx().BlockHeight()))
+
 	validator := abci.Validator{
-		Address: tmVal.Address,
+		Address: pubkey.Address(),
 		Power:   int64(1),
 	}
 
 	// construct the downtime packet with the validator address and power along
 	// with the slashing and jailing parameters
-	oldBlockTime := s.childCtx().BlockTime()
+	oldBlockTime = s.childCtx().BlockTime()
 	slashFraction := int64(100)
 	packetData := types.NewValidatorDowntimePacketData(validator, valsetUpdateId, slashFraction,
 		int64(slashingtypes.DefaultDowntimeJailDuration))
-	timeout := uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	timeout = uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	// save next sequence before sending penalty packet
+	// seq, ok = s.childChain.App.(*app.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(s.childCtx(), childtypes.PortID, s.path.EndpointA.ChannelID)
+	// s.Require().True(ok)
+
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, childtypes.PortID, s.path.EndpointA.ChannelID,
 		parenttypes.PortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
-	// Send the downtime packet through CCV
+	// send penatly
+	// err = childKeeper.SendPenalties(s.childCtx(), validator, childBlockHeight+1+sdk.ValidatorUpdateDelay, slashFraction,
+	// 	int64(slashingtypes.DefaultDowntimeJailDuration))
+	// s.Require().NoError(err)
+
+	fmt.Println("SEND FROM A")
 	err = s.path.EndpointA.SendPacket(packet)
 	s.Require().NoError(err)
+	childKeeper.PenaltySentToProvider(s.childCtx(), consAddr)
+
+	// seq, ok = s.childChain.App.(*app.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(s.childCtx(), childtypes.PortID, s.path.EndpointA.ChannelID)
+	// s.Require().True(ok)
 
 	// receive the downtime packet on the provider chain;
 	// tell the parentchain to slash and jail the validator
-	s.path.EndpointB.RecvPacket(packet)
+	fmt.Println("RECV TO B")
+	oldBlockTime = s.parentChain.GetContext().BlockTime()
+	timeout = uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	pd = ccv.NewValidatorSetChangePacketData(
+		[]abci.ValidatorUpdate{
+			{
+				PubKey: pk,
+				Power:  int64(0),
+			},
+		},
+		12,
+	)
 
-	// check that the validator was removed from the chain validator set
-	s.Require().Len(s.parentChain.Vals.Validators, ibctesting.ValidatorsPerChain-1)
-
-	// check that the validator is successfully jailed
-	valAddr, err := sdk.ValAddressFromHex(tmVal.Address.String())
+	err = s.path.EndpointB.RecvPacket(packet)
 	s.Require().NoError(err)
-	validatorJailed, ok := s.parentChain.App.GetStakingKeeper().GetValidator(s.parentCtx(), valAddr)
-	s.Require().True(ok)
-	s.Require().True(validatorJailed.Jailed)
-	s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
+	fmt.Println("SEND FROM B")      // VSC packet sent from provider endblock
+	s.path.EndpointA.UpdateClient() // so update consumer client
 
-	// check that the validator's token was slashed
-	slashedAmout := sdk.NewDec(1).QuoInt64(slashFraction).Mul(valOldBalance.ToDec())
-	resultingTokens := valOldBalance.Sub(slashedAmout.TruncateInt())
-	s.Require().Equal(resultingTokens, validatorJailed.GetTokens())
+	packet2 = channeltypes.NewPacket(pd.GetBytes(), 2, parenttypes.PortID, s.path.EndpointB.ChannelID,
+		childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
-	// check that the validator's unjailing time is updated
-	valSignInfo, found := parentSlashingKeeper.GetValidatorSigningInfo(s.parentCtx(), consAddr)
-	s.Require().True(found)
-	s.Require().True(valSignInfo.JailedUntil.After(s.parentCtx().BlockHeader().Time))
-
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
+	fmt.Println("RECV TO A")
+	err = s.path.EndpointA.RecvPacket(packet2)
 	s.Require().NoError(err)
+
+	pd = ccv.NewValidatorSetChangePacketData(
+		[]abci.ValidatorUpdate{
+			{
+				PubKey: pk,
+				Power:  int64(50),
+			},
+		},
+		2,
+	)
+
+	oldBlockTime = s.parentChain.GetContext().BlockTime()
+	timeout = uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	packet2 = channeltypes.NewPacket(pd.GetBytes(), 3, parenttypes.PortID, s.path.EndpointB.ChannelID,
+		childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	// Receive CCV packet on consumer chain
+	fmt.Println("SEND FROM B AGAIN")
+	err = s.path.EndpointB.SendPacket(packet2)
+	s.Require().NoError(err)
+
+	// seq, ok = s.parentChain.App.(*app.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(s.parentCtx(), parenttypes.PortID, s.path.EndpointB.ChannelID)
+	// s.Require().True(ok)
+
+	// Receive CCV packet on consumer chain
+	fmt.Println("RECV TO A AGAIN")
+	err = s.path.EndpointA.RecvPacket(packet2)
+	s.Require().NoError(err)
+	childKeeper.AfterValidatorBonded(s.childCtx(), consAddr, nil)
+	fmt.Println("-")
+	// s.path.EndpointA.Chain.App.(*app.App).ChildKeeper.AfterValidatorBonded(s.childCtx(), consAddr, nil)
+	// s.path.EndpointA.Chain.App.(*app.App).ChildKeeper.SetHooks(s.childChain.App.(*app.App).SlashingKeeper.Hooks())
+	// s.path.EndpointA.Chain.App.(*app.App).ChildKeeper.AfterValidatorBonded(s.childCtx(), consAddr, nil)
+
+	// // check that the validator was removed from the chain validator set
+	// // s.Require().Len(s.parentChain.Vals.Validators, ibctesting.ValidatorsPerChain-1)
+
+	// // check that the validator is successfully jailed
+	// // valAddr := sdk.ValAddress(pubkey.Address())
+	// // s.Require().NoError(err)
+	// // validatorJailed, ok := s.parentChain.App.GetStakingKeeper().GetValidator(s.parentCtx(), valAddr)
+	// // s.Require().True(ok)
+	// // s.Require().True(validatorJailed.Jailed)
+	// // s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
+
+	// // check that the validator's token was slashed
+	// // slashedAmout := sdk.NewDec(1).QuoInt64(slashFraction).Mul(valOldBalance.ToDec())
+	// // resultingTokens := valOldBalance.Sub(slashedAmout.TruncateInt())
+	// // s.Require().Equal(resultingTokens, validatorJailed.GetTokens())
+
+	// // check that the validator's unjailing time is updated
+	// // valSignInfo, found := parentSlashingKeeper.GetValidatorSigningInfo(s.parentCtx(), consAddr)
+	// // s.Require().True(found)
+	// // s.Require().True(valSignInfo.JailedUntil.After(s.parentCtx().BlockHeader().Time))
+
+	// // ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	// // err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
+	// // s.Require().NoError(err)
+
+	// // test to unjail validator from parent
+	// pk, err := cryptocodec.ToTmProtoPublicKey(pubkey)
+	// s.Require().NoError(err)
+	// pd := ccv.NewValidatorSetChangePacketData(
+	// 	[]abci.ValidatorUpdate{
+	// 		{
+	// 			PubKey: pk,
+	// 			Power:  int64(100),
+	// 		},
+	// 	},
+	// 	valsetUpdateId+1,
+	// )
+	// oldBlockTime = s.parentChain.GetContext().BlockTime()
+	// timeout = uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+
+	// // save next sequence before sending penalty packet
+	// // seq, ok = s.parentChain.App.(*app.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(s.parentCtx(), parenttypes.PortID, s.path.EndpointB.ChannelID)
+	// // s.Require().True(ok)
+
+	// packet2 := channeltypes.NewPacket(pd.GetBytes(), 2, parenttypes.PortID, s.path.EndpointB.ChannelID,
+	// 	childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	// // Receive CCV packet on consumer chain
+	// err = s.path.EndpointB.SendPacket(packet2)
+	// s.Require().NoError(err)
+
+	// seq, ok = s.parentChain.App.(*app.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(s.parentCtx(), parenttypes.PortID, s.path.EndpointB.ChannelID)
+	// s.Require().True(ok)
+	// fmt.Println(seq)
+
+	// // Receive CCV packet on consumer chain
+	// err = s.path.EndpointA.RecvPacket(packet2)
+	// s.Require().NoError(err)
+
+	// // 	return packet
+
 }
 
 // TestHandleConsumerDowntime tests the slashing and jailing on the provider

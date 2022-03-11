@@ -3,6 +3,7 @@ package keeper_test
 import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctesting "github.com/cosmos/ibc-go/testing"
 	"github.com/cosmos/interchain-security/app"
@@ -206,22 +207,6 @@ func (s KeeperTestSuite) TestApplyValidatorChanges() {
 	s.Require().Equal(valset.TotalVotingPower(), expVotingPower)
 }
 
-type MockCCVHooks struct {
-	calledBonded  bool
-	calledCreated bool
-	calledRemoved bool
-}
-
-func (h *MockCCVHooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
-	h.calledBonded = true
-}
-func (h *MockCCVHooks) AfterValidatorRemoved(ctx sdk.Context, consAddr sdk.ConsAddress, _ sdk.ValAddress) {
-	h.calledCreated = true
-}
-func (h *MockCCVHooks) AfterValidatorDowntime(_ sdk.Context, _ sdk.ConsAddress, _ int64) {
-	h.calledRemoved = true
-}
-
 func (s KeeperTestSuite) TestHandleValidatorsBonded() {
 	ibctesting.ValidatorsPerChain = 3
 	s.SetupTest()
@@ -231,13 +216,17 @@ func (s KeeperTestSuite) TestHandleValidatorsBonded() {
 	ctx := s.ctx
 	vals := childKeeper.GetAllValidators(ctx)
 
+	valsKeys := make(map[string]cryptotypes.PubKey, len(vals))
 	addrs := []sdk.ConsAddress{}
 
 	for _, val := range vals {
-
 		consAddr, err := val.GetConsAddr()
 		s.Require().NoError(err)
 		addrs = append(addrs, consAddr)
+
+		pk, err := val.ConsPubKey()
+		s.Require().NoError(err)
+		valsKeys[consAddr.String()] = pk
 	}
 
 	for _, addr := range addrs {
@@ -250,5 +239,8 @@ func (s KeeperTestSuite) TestHandleValidatorsBonded() {
 		s.Require().False(childKeeper.IsPenaltySentToProvider(ctx, addr))
 		_, found := s.childChain.App.(*app.App).SlashingKeeper.GetValidatorSigningInfo(ctx, addr)
 		s.Require().True(found)
+		pk, err := s.childChain.App.(*app.App).SlashingKeeper.GetPubkey(ctx, valsKeys[addr.String()].Address())
+		s.Require().NoError(err)
+		s.Require().NotNil(pk)
 	}
 }

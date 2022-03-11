@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -31,7 +33,7 @@ func (k Keeper) AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress
 			Address: consAddr.Bytes(),
 			Power:   power,
 		},
-		valsetUpdateID,
+		int64(1),
 		k.slashingKeeper.SlashFractionDowntime(ctx).TruncateInt64(),
 		k.slashingKeeper.DowntimeJailDuration(ctx).Nanoseconds(),
 	)
@@ -56,6 +58,13 @@ func (h Hooks) AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress,
 }
 
 func (k Keeper) AfterValidatorBonded(ctx sdk.Context, address sdk.ConsAddress, _ sdk.ValAddress) {
+	if k.hooks == nil {
+		panic("dd")
+		fmt.Println("HOOK NIL")
+	} else {
+		fmt.Println("HOOK NOT NIL")
+
+	}
 	if k.hooks != nil {
 		k.hooks.AfterValidatorBonded(ctx, address, nil)
 	}

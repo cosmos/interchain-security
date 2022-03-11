@@ -6,18 +6,17 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	conntypes "github.com/cosmos/ibc-go/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/modules/core/exported"
-
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // StakingKeeper defines the contract expected by parent-chain ccv module from a Staking Module that will keep track
 // of the parent validator set. This version of the interchain-security protocol will mirror the parent chain's changes
 // so we do not need a registry module between the staking module and CCV.
+
 type StakingKeeper interface {
 	GetValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 	CompleteStoppedUnbonding(ctx sdk.Context, id uint64) (found bool, err error)
@@ -30,8 +29,8 @@ type StakingKeeper interface {
 
 type SlashingKeeper interface {
 	JailUntil(sdk.Context, sdk.ConsAddress, time.Time)
-	GetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress) (info slashingtypes.ValidatorSigningInfo, found bool)
-	SetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress, info slashingtypes.ValidatorSigningInfo)
+	// GetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress) (info slashingtypes.ValidatorSigningInfo, found bool)
+	// SetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress, info slashingtypes.ValidatorSigningInfo)
 	DowntimeJailDuration(sdk.Context) time.Duration
 	SlashFractionDowntime(sdk.Context) sdk.Dec
 	ClearValidatorMissedBlockBitArray(ctx sdk.Context, address sdk.ConsAddress)

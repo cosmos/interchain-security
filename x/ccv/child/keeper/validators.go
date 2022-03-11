@@ -62,6 +62,7 @@ func (k Keeper) GetValsetFromValidators(ctx sdk.Context) (valset tmtypes.Validat
 func (k Keeper) ApplyValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) ([]sdk.ConsAddress, error) {
 	// newChanges, err := utils.GetNewChanges(changes, valset)
 	newValAddrs := []sdk.ConsAddress{}
+
 	for _, change := range changes {
 		pk, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
 		if err != nil {
@@ -81,6 +82,7 @@ func (k Keeper) ApplyValidatorChanges(ctx sdk.Context, changes []abci.ValidatorU
 
 		// set new and existing validators
 		if !found {
+
 			// construct new bonded validator
 			// and store its consensus address
 			val, err = types.NewValidator(pk, change.Power)
@@ -106,7 +108,8 @@ func (k Keeper) ApplyValidatorChanges(ctx sdk.Context, changes []abci.ValidatorU
 // their potential outsanding penalty and calling the afterbonded CCV consumer hook
 func (k Keeper) HandleValidatorsBonded(ctx sdk.Context, valAddresses []sdk.ConsAddress) {
 	for _, addr := range valAddresses {
-		k.hooks.AfterValidatorBonded(ctx, addr, nil)
+		k.AfterValidatorBonded(ctx, addr, nil)
+		k.AfterValidatorCreated(ctx, sdk.ValAddress(addr.Bytes()))
 		k.ClearPenaltySentToProvider(ctx, addr)
 	}
 }

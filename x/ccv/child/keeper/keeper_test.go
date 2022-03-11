@@ -20,8 +20,8 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
+	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
 	tmtypes "github.com/tendermint/tendermint/types"
-	// 	slashing "github.com/cosmos/cosmos-sdk/x/slashing"
 	// staking "github.com/cosmos/cosmos-sdk/x/staking"
 )
 
@@ -370,16 +370,11 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	channelID := suite.path.EndpointA.ChannelID
 
 	// create a validator pubkey and address
-	pubkey := ed25519.GenPrivKey().PubKey()
+	// pubkey := ed25519.GenPrivKey().PubKey()
+	vals := app.ChildKeeper.GetAllValidators(ctx)
+	pubkey, err := vals[0].ConsPubKey()
+	suite.Require().NoError(err)
 	consAddr := sdk.ConsAddress(pubkey.Address())
-
-	// init validator data
-	app.SlashingKeeper.AddPubkey(ctx, pubkey)
-	app.SlashingKeeper.AfterValidatorBonded(ctx, consAddr, sdk.ValAddress{})
-
-	// save signInfo
-	signInfo, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
-	suite.Require().True(found)
 
 	// save next sequence before sending penalty packet
 	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
@@ -399,8 +394,9 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	}
 
 	// check that the validator signing info wasn't updated
-	res, _ := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
-	suite.Require().True(res.JailedUntil.Equal(signInfo.JailedUntil), "did update validator jailed until signing info")
+	res, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+	suite.Require().True(found)
+	suite.Require().Zero(res.JailedUntil.Unix(), "did update validator jailed until")
 	suite.Require().NotZero(res.MissedBlocksCounter, "did reset validator missed block counter")
 	suite.Require().NotZero(res.IndexOffset)
 	app.SlashingKeeper.IterateValidatorMissedBlockBitArray(ctx, consAddr, func(_ int64, missed bool) bool {
@@ -472,9 +468,18 @@ func (suite *KeeperTestSuite) SendFirstCCVPacket() {
 	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 
 	valUpdateID := uint64(1)
+	// child is initiated with the parent validators
+	val := suite.parentChain.Vals.Validators[0]
+	pk, err := cryptoenc.PubKeyToProto(val.PubKey)
+	suite.Require().NoError(err)
 
 	pd := ccv.NewValidatorSetChangePacketData(
-		[]abci.ValidatorUpdate{},
+		[]abci.ValidatorUpdate{
+			{
+				PubKey: pk,
+				Power:  int64(100),
+			},
+		},
 		valUpdateID,
 	)
 
@@ -483,17 +488,19 @@ func (suite *KeeperTestSuite) SendFirstCCVPacket() {
 
 	suite.path.EndpointB.SendPacket(packet)
 
-	err := suite.path.EndpointA.RecvPacket(packet)
+	err = suite.path.EndpointA.RecvPacket(packet)
 	suite.Require().NoError(err)
 
 	status := suite.childChain.App.(*app.App).ChildKeeper.GetChannelStatus(suite.childChain.GetContext(), suite.path.EndpointA.ChannelID)
 	suite.Require().EqualValues(int32(2), status)
+
+	suite.coordinator.CommitBlock(suite.childChain)
 }
 
 func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 
-func (suite *KeeperTestSuite) TestChild2() {
+func (suite *KeeperTestSuite) TestCopyParent() {
 	suite.childChain = &ibctesting.TestChain{}
 }

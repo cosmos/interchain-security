@@ -91,7 +91,7 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 }
 
 // SendPenalty sends a given validator slashing and jailing penalties
-func (k Keeper) SendPenalties(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, slashFraction, jailedUntil int64) error {
+func (k Keeper) SendPenalties(ctx sdk.Context, validator abci.Validator, infractionHeight int64, slashFraction, jailedUntil int64) error {
 	// check the setup
 	channelID, ok := k.GetParentChannel(ctx)
 	if !ok {
@@ -115,6 +115,12 @@ func (k Keeper) SendPenalties(ctx sdk.Context, validator abci.Validator, valsetU
 		)
 	}
 
+	valsetUpdateID := k.HeightToValsetUpdateID(ctx, uint64(infractionHeight))
+	// TODO: handle infractions commited before CCV channel init
+	if valsetUpdateID < 1 {
+		return nil
+	}
+
 	packetData := ccv.NewValidatorDowntimePacketData(validator, valsetUpdateID, slashFraction, jailedUntil)
 	packetDataBytes := packetData.GetBytes()
 
@@ -125,9 +131,13 @@ func (k Keeper) SendPenalties(ctx sdk.Context, validator abci.Validator, valsetU
 		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
 		clienttypes.Height{}, uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
 	)
+
+	fmt.Printf("%#v\n", packetData)
 	if err := k.channelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
 		return err
 	}
+
+	k.PenaltySentToProvider(ctx, sdk.ConsAddress(validator.Address))
 
 	return nil
 }

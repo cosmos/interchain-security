@@ -17,6 +17,8 @@ import (
 
 func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.ValidatorUpdate, valUpdateID uint64) error {
 	packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID)
+	fmt.Println(packetData.ValsetUpdateId)
+
 	packetDataBytes := packetData.GetBytes()
 
 	channelID, ok := k.GetChainToChannel(ctx, chainID)
@@ -111,6 +113,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 // EndBlockCallback is called for each baby chain in Endblock. It sends latest validator updates to each baby chain
 // in a packet over the CCV channel.
 func (k Keeper) EndBlockCallback(ctx sdk.Context) {
+
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	k.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
 		valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)

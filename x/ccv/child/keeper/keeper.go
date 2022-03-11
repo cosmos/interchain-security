@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/binary"
+	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -59,6 +60,7 @@ func NewKeeper(
 }
 
 func (k *Keeper) SetHooks(sh ccv.CVVHooks) *Keeper {
+	fmt.Println("SETHOOKS")
 	if k.hooks != nil {
 		panic("cannot set validator hooks twice")
 	}
