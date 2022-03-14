@@ -56,6 +56,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
+	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/cosmos-sdk/x/mint"
@@ -88,12 +89,13 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-	ibcchild "github.com/cosmos/interchain-security/x/ccv/child"
-	ibcchildkeeper "github.com/cosmos/interchain-security/x/ccv/child/keeper"
-	ibcchildtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
-	ibcparent "github.com/cosmos/interchain-security/x/ccv/parent"
-	ibcparentkeeper "github.com/cosmos/interchain-security/x/ccv/parent/keeper"
-	ibcparenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
+
+	// ibcchild "github.com/cosmos/interchain-security/x/ccv/child"
+	// ibcchildkeeper "github.com/cosmos/interchain-security/x/ccv/child/keeper"
+	// ibcchildtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
+	// ibcparent "github.com/cosmos/interchain-security/x/ccv/parent"
+	// ibcparentkeeper "github.com/cosmos/interchain-security/x/ccv/parent/keeper"
+	// ibcparenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	"github.com/gorilla/mux"
@@ -108,9 +110,13 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
-	//"github.com/strangelove-ventures/packet-forward-middleware/router"
-	//routerkeeper "github.com/strangelove-ventures/packet-forward-middleware/router/keeper"
-	//routertypes "github.com/strangelove-ventures/packet-forward-middleware/router/types"
+	ibcchild "github.com/cosmos/interchain-security/x/ccv/child"
+	ibcchildkeeper "github.com/cosmos/interchain-security/x/ccv/child/keeper"
+	ibcchildtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
+	ibcparent "github.com/cosmos/interchain-security/x/ccv/parent"
+	ibcparentclient "github.com/cosmos/interchain-security/x/ccv/parent/client"
+	ibcparentkeeper "github.com/cosmos/interchain-security/x/ccv/parent/keeper"
+	ibcparenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 
 	"github.com/tendermint/spm/cosmoscmd"
 	//gaiaappparams "github.com/cosmos/gaia/v7/app/params"
@@ -124,6 +130,24 @@ const (
 	upgradeName          = "v07-Theta"
 	AccountAddressPrefix = "cosmos"
 )
+
+// this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
+
+func getGovProposalHandlers() []govclient.ProposalHandler {
+	var govProposalHandlers []govclient.ProposalHandler
+	// this line is used by starport scaffolding # stargate/app/govProposalHandlers
+
+	govProposalHandlers = append(govProposalHandlers,
+		paramsclient.ProposalHandler,
+		distrclient.ProposalHandler,
+		upgradeclient.ProposalHandler,
+		upgradeclient.CancelProposalHandler,
+		ibcparentclient.ProposalHandler,
+		// this line is used by starport scaffolding # stargate/app/govProposalHandler
+	)
+
+	return govProposalHandlers
+}
 
 var (
 	// DefaultNodeHome default home directories for the application daemon
@@ -455,6 +479,8 @@ func New(
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
+		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
+		AddRoute(ibcparenttypes.RouterKey, ibcparent.NewCreateChildChainHandler(app.ParentKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(ccv.RouterKey, ibcparent.NewCreateChildChainHandler(app.ParentKeeper))
 

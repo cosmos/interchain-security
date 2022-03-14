@@ -6,10 +6,15 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
+	abci "github.com/tendermint/tendermint/abci/types"
+
+	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 )
 
 // CreateChildChainProposal will receive the child chain's client state from the proposal.
@@ -42,8 +47,71 @@ func (k Keeper) CreateChildClient(ctx sdk.Context, chainID string, initialHeight
 	if err != nil {
 		return err
 	}
+
 	k.SetChildClient(ctx, chainID, clientID)
+	childGen, err := k.MakeChildGenesis(ctx)
+	if err != nil {
+		return err
+	}
+
+	k.SetChildGenesis(ctx, chainID, childGen)
 	return nil
+}
+
+func (k Keeper) MakeChildGenesis(ctx sdk.Context) (gen childtypes.GenesisState, err error) {
+	unbondingTime := k.stakingKeeper.UnbondingTime(ctx)
+	height := clienttypes.GetSelfHeight(ctx)
+
+	clientState := k.GetTemplateClient(ctx)
+	clientState.ChainId = ctx.ChainID()
+	clientState.LatestHeight = height //(+-1???)
+	clientState.TrustingPeriod = unbondingTime / 2
+	clientState.UnbondingPeriod = unbondingTime
+
+	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
+	if err != nil {
+		return gen, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
+	}
+
+	gen.Params.Enabled = true
+	gen.NewChain = true
+	gen.ParentClientState = clientState
+	gen.ParentConsensusState = consState.(*ibctmtypes.ConsensusState)
+
+	var lastPowers []stakingtypes.LastValidatorPower
+
+	k.stakingKeeper.IterateLastValidatorPowers(ctx, func(addr sdk.ValAddress, power int64) (stop bool) {
+		lastPowers = append(lastPowers, stakingtypes.LastValidatorPower{Address: addr.String(), Power: power})
+		return false
+	})
+
+	updates := []abci.ValidatorUpdate{}
+
+	for _, p := range lastPowers {
+		addr, err := sdk.ValAddressFromBech32(p.Address)
+		if err != nil {
+			panic(err)
+		}
+
+		val, found := k.stakingKeeper.GetValidator(ctx, addr)
+		if !found {
+			panic("Validator from LastValidatorPowers not found in staking keeper")
+		}
+
+		tmProtoPk, err := val.TmConsPublicKey()
+		if err != nil {
+			panic(err)
+		}
+
+		updates = append(updates, abci.ValidatorUpdate{
+			PubKey: tmProtoPk,
+			Power:  p.Power,
+		})
+	}
+
+	gen.InitialValSet = updates
+
+	return gen, nil
 }
 
 // SetChildClient sets the clientID for the given chainID

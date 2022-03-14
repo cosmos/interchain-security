@@ -1,6 +1,7 @@
 package parent
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -21,8 +22,8 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
+	"github.com/cosmos/interchain-security/x/ccv/parent/client/cli"
 	"github.com/cosmos/interchain-security/x/ccv/parent/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -76,6 +77,7 @@ func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Rout
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-parent module.
 // TODO
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 }
 
 // GetTxCmd implements AppModuleBasic interface
@@ -87,7 +89,7 @@ func (AppModuleBasic) GetTxCmd() *cobra.Command {
 // GetQueryCmd implements AppModuleBasic interface
 // TODO
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return nil
+	return cli.NewQueryCmd()
 }
 
 // AppModule represents the AppModule for this module
@@ -126,6 +128,7 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 // RegisterServices registers module services.
 // TODO
 func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
 // InitGenesis performs genesis initialization for the parent module. It returns
@@ -152,6 +155,8 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+	// Check if there are any consumer chains that are due to be started
+	am.keeper.IteratePendingClientInfo(ctx)
 }
 
 // EndBlock implements the AppModule interface
@@ -159,7 +164,6 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	// For each child chain, call the endblock method which gets relevant validator set changes and
 	// sends them to the child chain
 	am.keeper.EndBlockCallback(ctx)
-	am.keeper.IteratePendingClientInfo(ctx)
 	return []abci.ValidatorUpdate{}
 }
 
@@ -323,7 +327,7 @@ func (am AppModule) OnRecvPacket(
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
 	var (
-		ack  exported.Acknowledgement
+		ack  ibcexported.Acknowledgement
 		data ccv.ValidatorDowntimePacketData
 	)
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {

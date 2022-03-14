@@ -108,7 +108,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 			true,
 		},
 		{
-			"invalid new child genesis state: non-nil unbonding sequences",
+			"invalid new child genesis state: non-empty unbonding sequences",
 			&types.GenesisState{
 				types.NewParams(true),
 				"",
@@ -116,7 +116,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				true,
 				cs,
 				consensusState,
-				[]types.UnbondingSequence{},
+				[]types.UnbondingSequence{{}},
 				valUpdates,
 			},
 			true,

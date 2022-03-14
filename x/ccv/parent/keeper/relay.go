@@ -21,7 +21,7 @@ func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.Va
 
 	channelID, ok := k.GetChainToChannel(ctx, chainID)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
+		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for chain ID: %s", chainID)
 	}
 	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
 	if !ok {

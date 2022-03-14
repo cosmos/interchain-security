@@ -6,5 +6,6 @@ import (
 
 // Parent sentinel errors
 var (
-	ErrInvalidProposal = sdkerrors.Register(ModuleName, 1, "invalid create child chain proposal")
+	ErrInvalidProposal   = sdkerrors.Register(ModuleName, 1, "invalid create child chain proposal")
+	ErrUnknownChildChain = sdkerrors.Register(ModuleName, 2, "no child chain with this chain id")
 )

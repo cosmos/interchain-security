@@ -20,6 +20,7 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 
+	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
@@ -180,6 +181,29 @@ func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, 
 			break
 		}
 	}
+}
+
+func (k Keeper) SetChildGenesis(ctx sdk.Context, chainID string, gen childtypes.GenesisState) error {
+	store := ctx.KVStore(k.storeKey)
+	bz, err := gen.Marshal()
+	if err != nil {
+		return err
+	}
+	store.Set(types.ChildGenesisKey(chainID), bz)
+
+	return nil
+}
+
+func (k Keeper) GetChildGenesis(ctx sdk.Context, chainID string) (childtypes.GenesisState, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ChildGenesisKey(chainID))
+	if bz == nil {
+		return childtypes.GenesisState{}, false
+	}
+
+	var data childtypes.GenesisState
+	data.Unmarshal(bz)
+	return data, true
 }
 
 // SetChannelStatus sets the status of a CCV channel with the given status

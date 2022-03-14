@@ -26,6 +26,9 @@ type StakingKeeper interface {
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
 	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
 	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec)
+	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator types.Validator, found bool)
+	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
+	PowerReduction(ctx sdk.Context) sdk.Int
 }
 
 type SlashingKeeper interface {
@@ -61,6 +64,7 @@ type ClientKeeper interface {
 	CreateClient(ctx sdk.Context, clientState ibcexported.ClientState, consensusState ibcexported.ConsensusState) (string, error)
 	GetClientState(ctx sdk.Context, clientID string) (ibcexported.ClientState, bool)
 	GetLatestClientConsensusState(ctx sdk.Context, clientID string) (ibcexported.ConsensusState, bool)
+	GetSelfConsensusState(ctx sdk.Context, height ibcexported.Height) (ibcexported.ConsensusState, error)
 }
 
 // TODO: Expected interfaces for distribution on parent and baby chains
