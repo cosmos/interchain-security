@@ -12,11 +12,11 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/ibc-go/testing"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	"github.com/cosmos/interchain-security/app"
@@ -55,8 +55,8 @@ type ParentTestSuite struct {
 
 func (suite *ParentTestSuite) SetupTest() {
 	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
-	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(0))
-	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
+	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
+	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
 
 	tmConfig := ibctesting.NewTendermintConfig()
 
@@ -93,6 +93,10 @@ func (suite *ParentTestSuite) SetupTest() {
 	}
 	// set child endpoint's clientID
 	suite.path.EndpointA.ClientID = parentClient
+
+	// TODO: No idea why or how this works, but it seems that it needs to be done.
+	suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
+	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(6)
 
 	// create child client on parent chain and set as child client for child chainID in parent keeper.
 	suite.path.EndpointB.CreateClient()
