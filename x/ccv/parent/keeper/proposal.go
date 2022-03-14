@@ -12,7 +12,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
-	tmtypes "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 )
@@ -85,7 +85,7 @@ func (k Keeper) MakeChildGenesis(ctx sdk.Context) (gen childtypes.GenesisState, 
 		return false
 	})
 
-	updates := []tmtypes.ValidatorUpdate{}
+	updates := []abci.ValidatorUpdate{}
 
 	for _, p := range lastPowers {
 		addr, err := sdk.ValAddressFromBech32(p.Address)
@@ -103,7 +103,7 @@ func (k Keeper) MakeChildGenesis(ctx sdk.Context) (gen childtypes.GenesisState, 
 			panic(err)
 		}
 
-		updates = append(updates, tmtypes.ValidatorUpdate{
+		updates = append(updates, abci.ValidatorUpdate{
 			PubKey: tmProtoPk,
 			Power:  p.Power,
 		})
