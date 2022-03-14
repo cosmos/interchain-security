@@ -156,6 +156,8 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+	// Check if there are any consumer chains that are due to be started
+	am.keeper.IteratePendingClientInfo(ctx)
 }
 
 // EndBlock implements the AppModule interface
@@ -163,7 +165,6 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	// For each child chain, call the endblock method which gets relevant validator set changes and
 	// sends them to the child chain
 	am.keeper.EndBlockCallback(ctx)
-	am.keeper.IteratePendingClientInfo(ctx)
 	return []abci.ValidatorUpdate{}
 }
 
