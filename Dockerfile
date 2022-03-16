@@ -6,9 +6,6 @@ RUN dnf install -y git make gcc gcc-c++ which iproute iputils procps-ng vim-mini
 
 RUN PATH="$HOME/.cargo/bin:$PATH" && cargo install ibc-relayer-cli --bin hermes --locked
 
-# Copy cosmos-sdk to debug something
-# ADD ./cosmos-sdk /cosmos-sdk
-
 # Copy in the repo under test
 ADD . /interchain-security
 

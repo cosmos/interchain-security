@@ -113,4 +113,7 @@ func (s System) startDocker() {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+
+	err = cmd.Wait()
+	log.Fatalf("StartDocker exited with error: %v", err)
 }

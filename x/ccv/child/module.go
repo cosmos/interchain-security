@@ -18,11 +18,11 @@ import (
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/modules/core/24-host"
-	"github.com/cosmos/ibc-go/modules/core/exported"
-	ibcexported "github.com/cosmos/ibc-go/modules/core/exported"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	"github.com/cosmos/ibc-go/v3/modules/core/exported"
+	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/child/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -244,7 +244,7 @@ func (am AppModule) OnChanOpenInit(
 
 	am.keeper.SetChannelStatus(ctx, channelID, ccv.INITIALIZING)
 
-	if err := am.keeper.VerifyParentChain(ctx, channelID); err != nil {
+	if err := am.keeper.VerifyParentChain(ctx, channelID, connectionHops); err != nil {
 		return err
 	}
 
@@ -260,10 +260,9 @@ func (am AppModule) OnChanOpenTry(
 	channelID string,
 	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
-	version,
 	counterpartyVersion string,
-) error {
-	return sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by child chain")
+) (version string, err error) {
+	return "", sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by child chain")
 }
 
 // OnChanOpenAck implements the IBCModule interface
@@ -353,13 +352,13 @@ func (am AppModule) OnAcknowledgementPacket(
 	_ channeltypes.Packet,
 	acknowledgement []byte,
 	_ sdk.AccAddress,
-) (*sdk.Result, error) {
+) error {
 	var ack channeltypes.Acknowledgement
 	if err := ccv.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
 		fmt.Println(err)
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal parent packet acknowledgement: %v", err)
+		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal parent packet acknowledgement: %v", err)
 	}
-	return nil, sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "cannot receive acknowledgement on child port, child chain does not send packet over channel.")
+	return sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "cannot receive acknowledgement on child port, child chain does not send packet over channel.")
 }
 
 // OnTimeoutPacket implements the IBCModule interface
@@ -367,6 +366,6 @@ func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
-) (*sdk.Result, error) {
-	return nil, sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "cannot timeout packet on child port, child chain does not send packet over channel.")
+) error {
+	return sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "cannot timeout packet on child port, child chain does not send packet over channel.")
 }

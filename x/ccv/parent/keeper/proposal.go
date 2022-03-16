@@ -8,11 +8,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/modules/light-clients/07-tendermint/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
-	tmtypes "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 )
@@ -68,9 +68,9 @@ func (k Keeper) MakeChildGenesis(ctx sdk.Context) (gen childtypes.GenesisState, 
 	clientState.TrustingPeriod = unbondingTime / 2
 	clientState.UnbondingPeriod = unbondingTime
 
-	consState, ok := k.clientKeeper.GetSelfConsensusState(ctx, height)
-	if !ok {
-		return gen, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "self consensus state not found for height: %s", height)
+	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
+	if err != nil {
+		return gen, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
 	}
 
 	gen.Params.Enabled = true
@@ -85,7 +85,7 @@ func (k Keeper) MakeChildGenesis(ctx sdk.Context) (gen childtypes.GenesisState, 
 		return false
 	})
 
-	updates := []tmtypes.ValidatorUpdate{}
+	updates := []abci.ValidatorUpdate{}
 
 	for _, p := range lastPowers {
 		addr, err := sdk.ValAddressFromBech32(p.Address)
@@ -103,7 +103,7 @@ func (k Keeper) MakeChildGenesis(ctx sdk.Context) (gen childtypes.GenesisState, 
 			panic(err)
 		}
 
-		updates = append(updates, tmtypes.ValidatorUpdate{
+		updates = append(updates, abci.ValidatorUpdate{
 			PubKey: tmProtoPk,
 			Power:  p.Power,
 		})
