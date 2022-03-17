@@ -795,7 +795,7 @@ func (s *ParentTestSuite) TestDistribution() {
 	tokens := cApp.BankKeeper.GetAllBalances(cChain.GetContext(), consumerFeePoolAddr)
 	s.Require().Len(tokens, 1)
 	s.Require().Equal(tokens[0].Denom, "stake")
-	s.Require().Equal(tokens[0].Amount, sdk.NewInt(205974705409))
+	s.Require().Equal(tokens[0].Amount, sdk.NewInt(205975516703))
 
 	//err = s.path.EndpointA.UpdateClient()
 	//err = s.path.EndpointB.UpdateClient()
@@ -809,10 +809,11 @@ func (s *ParentTestSuite) TestDistribution() {
 	fmt.Printf("debug destinationChannel: %v\n", destinationChannel)
 
 	// Commit some new blocks (commit blocks less than the distribution event blocks)
-	s.coordinator.CommitNBlocks(cChain, 1000-21)
+	s.coordinator.CommitNBlocks(cChain, (1000-1)-21)
 	err = s.path.EndpointB.UpdateClient()
+	s.Require().Equal(int64(1000), cChain.GetContext().BlockHeight())
 
-	// Commit some new blocks on the parent chain too
+	//// Commit some new blocks on the parent chain too
 	//s.coordinator.CommitNBlocks(pChain, 10)
 	//err = s.path.EndpointA.UpdateClient()
 
@@ -820,7 +821,7 @@ func (s *ParentTestSuite) TestDistribution() {
 	tokens = cApp.BankKeeper.GetAllBalances(cChain.GetContext(), consumerFeePoolAddr)
 	s.Require().Len(tokens, 1)
 	s.Require().Equal(tokens[0].Denom, "stake")
-	s.Require().Equal(tokens[0].Amount, sdk.NewInt(206083686059))
+	s.Require().Equal(tokens[0].Amount, sdk.NewInt(206083833592))
 
 	// check the provider chain fee pool
 
@@ -834,7 +835,7 @@ func (s *ParentTestSuite) TestDistribution() {
 		ltbh.Height, bpdt, curHeight, (curHeight-ltbh.Height) < bpdt)
 
 	// Verify that the destinationChannel exists
-	// XXX if this doesn't exist then the transfer logic will fail when
+	// if this doesn't exist then the transfer logic will fail when
 	// a the distribution transfer is invoked in the next block.
 	ctx = cChain.GetContext()
 	sourcePort = transfertypes.PortID
@@ -846,7 +847,12 @@ func (s *ParentTestSuite) TestDistribution() {
 	s.Require().True(len(destinationChannel) > 0)
 
 	// commit 1 more block (which should invoke a distribution event
+	fmt.Println("----------- committing block")
 	s.coordinator.CommitNBlocks(cChain, 1)
+	err = s.path.EndpointB.UpdateClient()
+	s.Require().NoError(err)
+	err = s.path.EndpointA.UpdateClient()
+	s.Require().NoError(err)
 
 	ctx = cChain.GetContext()
 	ltbh, err = cKeep.GetLastTransmissionBlockHeight(ctx)

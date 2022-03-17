@@ -32,9 +32,9 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	}
 
 	fmt.Println("debug about to distribute")
-	//fmt.Printf(
-	//    "distribution log:\nltbh:%v\nbpdt:%v\ncurrHeight:%v\n(curHeight - ltbh.Height) < bpdt:%v\n",
-	//    ltbh.Height, bpdt, curHeight, (curHeight-ltbh.Height) < bpdt)
+	fmt.Printf(
+		"distribution log:\nltbh:%v\nbpdt:%v\ncurrHeight:%v\n(curHeight - ltbh.Height) < bpdt:%v\n",
+		ltbh.Height, bpdt, curHeight, (curHeight-ltbh.Height) < bpdt)
 
 	// work around to reuse the IBC token transfer logic
 	consumerFeePoolAddr := k.accountKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
@@ -43,7 +43,8 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		fmt.Printf("debug GetDistributionTransmissionChannel: %v\n", k.GetDistributionTransmissionChannel(ctx))
 		fmt.Printf("debug transfertypes.PortID: %v\n", transfertypes.PortID)
 		fmt.Printf("debug token: %v\n", token)
-		fmt.Printf("debug consumerFeePoolAddr: %v\n", consumerFeePoolAddr)
+		fmt.Printf("debug consumerFeePoolAddr: %s\n", consumerFeePoolAddr)
+		fmt.Printf("debug k.GetProviderFeePoolAddrStr(ctx): %v\n", k.GetProviderFeePoolAddrStr(ctx))
 		err := k.ibcTransferKeeper.SendTransfer(ctx,
 			transfertypes.PortID,
 			k.GetDistributionTransmissionChannel(ctx),
