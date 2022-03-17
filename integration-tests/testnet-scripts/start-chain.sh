@@ -56,8 +56,6 @@ mv /$CHAIN_ID/edited-genesis.json /$CHAIN_ID/genesis.json
 for i in $(seq 0 $(($NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].number")
-    # make the folders for this validator
-    mkdir -p /$CHAIN_ID/validator$VAL_ID/config/
 
     # Generate an application key for each validator
     # Sets up an arbitrary number of validators on a single machine by manipulating
@@ -110,8 +108,7 @@ do
         --home /$CHAIN_ID/validator$VAL_ID \
         --keyring-backend test \
         --moniker validator$VAL_ID \
-        --chain-id=$CHAIN_ID \
-        --ip $CHAIN_IP_PREFIX.$VAL_ID
+        --chain-id=$CHAIN_ID
     
     # Copy gentxs to the first validator for possible future collection. 
     # Obviously we don't need to copy the first validator's gentx to itself

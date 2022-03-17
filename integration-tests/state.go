@@ -69,13 +69,45 @@ func (s System) getChainState(chain uint, modelState ChainState) ChainState {
 	}
 
 	if modelState.ValPowers != nil {
-		// TODO: this hack should correct intermittent failures, replace with something that waits a block
-		time.Sleep(100 * time.Millisecond)
 		powers := s.getValPowers(chain, *modelState.ValPowers)
 		chainState.ValPowers = &powers
 	}
 
 	return chainState
+}
+
+var blockHeightRegex = regexp.MustCompile(`block_height: "(\d+)"`)
+
+func (s System) getBlockHeight(chain uint) uint {
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+
+		"query", "tendermint-validator-set",
+
+		`--node`, s.getValidatorNode(chain, s.getValidatorNum(chain)),
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	blockHeight, err := strconv.Atoi(blockHeightRegex.FindStringSubmatch(string(bz))[1])
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return uint(blockHeight)
+}
+
+func (s System) waitBlocks(chain uint, blocks uint) {
+	startBlock := s.getBlockHeight(chain)
+
+	for {
+		thisBlock := s.getBlockHeight(chain)
+		if thisBlock >= startBlock+blocks {
+			return
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 func (s System) getBalances(chain uint, modelState map[uint]uint) map[uint]uint {

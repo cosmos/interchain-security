@@ -492,6 +492,8 @@ func (s System) relayPackets(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	s.waitBlocks(action.chain, 1)
 }
 
 type DelegateTokensAction struct {
