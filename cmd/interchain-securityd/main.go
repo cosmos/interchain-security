@@ -9,9 +9,6 @@ import (
 	"github.com/tendermint/spm/cosmoscmd"
 )
 
-//var _ cosmoscmd.AppBuilder = app.New
-//var _ cosmoscmd.App = *app.App
-
 func main() {
 	rootCmd, _ := cosmoscmd.NewRootCmd(
 		app.AppName,

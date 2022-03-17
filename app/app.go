@@ -90,14 +90,6 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
-	// ibcchild "github.com/cosmos/interchain-security/x/ccv/child"
-	// ibcchildkeeper "github.com/cosmos/interchain-security/x/ccv/child/keeper"
-	// ibcchildtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
-	// ibcparent "github.com/cosmos/interchain-security/x/ccv/parent"
-	// ibcparentkeeper "github.com/cosmos/interchain-security/x/ccv/parent/keeper"
-	// ibcparenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-
 	"github.com/gorilla/mux"
 	"github.com/gravity-devs/liquidity/x/liquidity"
 	liquiditykeeper "github.com/gravity-devs/liquidity/x/liquidity/keeper"
@@ -119,7 +111,6 @@ import (
 	ibcparenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 
 	"github.com/tendermint/spm/cosmoscmd"
-	//gaiaappparams "github.com/cosmos/gaia/v7/app/params"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -171,6 +162,7 @@ var (
 			upgradeclient.CancelProposalHandler,
 			ibcclientclient.UpdateClientProposalHandler,
 			ibcclientclient.UpgradeProposalHandler,
+			ibcparentclient.ProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
@@ -242,9 +234,8 @@ type App struct { // nolint: golint
 	FeeGrantKeeper   feegrantkeeper.Keeper
 	AuthzKeeper      authzkeeper.Keeper
 	LiquidityKeeper  liquiditykeeper.Keeper
-	//RouterKeeper     routerkeeper.Keeper
-	ChildKeeper  ibcchildkeeper.Keeper
-	ParentKeeper ibcparentkeeper.Keeper
+	ChildKeeper      ibcchildkeeper.Keeper
+	ParentKeeper     ibcparentkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper       capabilitykeeper.ScopedKeeper
@@ -298,7 +289,6 @@ func New(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, liquiditytypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
-		//routertypes.StoreKey,
 		ibcchildtypes.StoreKey, ibcparenttypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, stakingtypes.TStoreKey)
@@ -454,7 +444,6 @@ func New(
 
 	// register the slashing hooks, do it here so that
 	// the ChildKeeper has already been constructed
-	//app.SlashingKeeper = *slashingKeeper.SetHooks(app.ChildKeeper.Hooks())
 	app.SlashingKeeper = *app.SlashingKeeper.SetHooks(app.ChildKeeper.Hooks())
 
 	childModule := ibcchild.NewAppModule(app.ChildKeeper)
@@ -481,8 +470,7 @@ func New(
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(ibcparenttypes.RouterKey, ibcparent.NewCreateChildChainHandler(app.ParentKeeper)).
-		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(ccv.RouterKey, ibcparent.NewCreateChildChainHandler(app.ParentKeeper))
+		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 
 	app.GovKeeper = govkeeper.NewKeeper(
 		appCodec,
@@ -508,12 +496,9 @@ func New(
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
 	ibcmodule := transfer.NewIBCModule(app.TransferKeeper)
 
-	//app.RouterKeeper = routerkeeper.NewKeeper(appCodec, keys[routertypes.StoreKey], app.GetSubspace(routertypes.ModuleName), app.TransferKeeper, app.DistrKeeper)
-
-	//routerModule := router.NewAppModule(app.RouterKeeper, ibcmodule)
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule) //ibcRouter.AddRoute(ibctransfertypes.ModuleName, routerModule)
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule)
 	ibcRouter.AddRoute(ibcchildtypes.ModuleName, childModule)
 	ibcRouter.AddRoute(ibcparenttypes.ModuleName, parentModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
@@ -557,7 +542,6 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		liquidity.NewAppModule(appCodec, app.LiquidityKeeper, app.AccountKeeper, app.BankKeeper, app.DistrKeeper),
 		transferModule,
-		//routerModule,
 		childModule,
 		parentModule,
 	)
@@ -577,7 +561,6 @@ func New(
 		liquiditytypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
-		//routertypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
@@ -599,7 +582,6 @@ func New(
 		liquiditytypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
-		//routertypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
 		capabilitytypes.ModuleName,
@@ -640,7 +622,6 @@ func New(
 		authz.ModuleName,
 		authtypes.ModuleName,
 		genutiltypes.ModuleName,
-		//routertypes.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
@@ -683,7 +664,6 @@ func New(
 	app.MountTransientStores(tkeys)
 	app.MountMemoryStores(memKeys)
 
-	//
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
 			HandlerOptions: ante.HandlerOptions{
@@ -937,7 +917,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(liquiditytypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
-	//paramsKeeper.Subspace(routertypes.ModuleName).WithKeyTable(routertypes.ParamKeyTable())
 	paramsKeeper.Subspace(ibcparenttypes.ModuleName)
 	paramsKeeper.Subspace(ibcchildtypes.ModuleName)
 
