@@ -10,7 +10,7 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-var verbose = true
+var verbose = false
 
 func main() {
 	s := DefaultSystemConfig()

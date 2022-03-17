@@ -69,6 +69,7 @@ func (s System) getChainState(chain uint, modelState ChainState) ChainState {
 	}
 
 	if modelState.ValPowers != nil {
+		s.waitBlocks(chain, 1)
 		powers := s.getValPowers(chain, *modelState.ValPowers)
 		chainState.ValPowers = &powers
 	}
