@@ -127,6 +127,7 @@ func (suite *ParentTestSuite) SetupCCVChannel() {
 	suite.coordinator.CreateChannels(suite.path)
 
 	// transfer path will use the same connection as ccv path
+
 	suite.transferPath.EndpointA.ClientID = suite.path.EndpointA.ClientID
 	suite.transferPath.EndpointA.ConnectionID = suite.path.EndpointA.ConnectionID
 	suite.transferPath.EndpointB.ClientID = suite.path.EndpointB.ClientID
@@ -763,7 +764,7 @@ func (s *ParentTestSuite) UpdateChildHistInfo(changes []abci.ValidatorUpdate) {
 // TestDistribution tests that tokens are distributed to the
 // provider chain from the consumer chain appropriately
 func (s *ParentTestSuite) TestDistribution() {
-	s.SetupCCVChannel()
+	s.SetupCCVChannel() // also sets up transfer channels
 
 	pChain, cChain := s.parentChain, s.childChain
 	pApp, cApp := pChain.App.(*app.App), cChain.App.(*app.App)
@@ -777,6 +778,10 @@ func (s *ParentTestSuite) TestDistribution() {
 	// is the correct address
 	fcAddr2 := cApp.ChildKeeper.GetProviderFeePoolAddrStr(cChain.GetContext())
 	s.Require().Equal(fcAddr, fcAddr2)
+
+	//// XXX Alternative Fee Pool Address debug
+	//altAddr := s.parentChain.SenderAccount.GetAddress()
+	//cApp.ChildKeeper.SetProviderFeePoolAddrStr(cChain.GetContext(), altAddr.String())
 
 	// make sure we're starting at consumer height 21 (some blocks commited during setup)
 	s.Require().Equal(int64(21), cChain.GetContext().BlockHeight())
@@ -800,13 +805,13 @@ func (s *ParentTestSuite) TestDistribution() {
 	//err = s.path.EndpointA.UpdateClient()
 	//err = s.path.EndpointB.UpdateClient()
 
-	ctx := cChain.GetContext()
-	sourcePort := transfertypes.PortID
-	sourceChannel := cKeep.GetDistributionTransmissionChannel(ctx)
-	sourceChannelEnd, found := cApp.IBCKeeper.ChannelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
-	s.Require().True(found)
-	destinationChannel := sourceChannelEnd.GetCounterparty().GetChannelID()
-	fmt.Printf("debug destinationChannel: %v\n", destinationChannel)
+	//ctx := cChain.GetContext()
+	//sourcePort := transfertypes.PortID
+	//sourceChannel := cKeep.GetDistributionTransmissionChannel(ctx)
+	//sourceChannelEnd, found := cApp.IBCKeeper.ChannelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
+	//s.Require().True(found)
+	//destinationChannel := sourceChannelEnd.GetCounterparty().GetChannelID()
+	//fmt.Printf("debug destinationChannel: %v\n", destinationChannel)
 
 	// Commit some new blocks (commit blocks less than the distribution event blocks)
 	s.coordinator.CommitNBlocks(cChain, (1000-1)-21)
@@ -824,50 +829,49 @@ func (s *ParentTestSuite) TestDistribution() {
 	s.Require().Equal(tokens[0].Amount, sdk.NewInt(206083833592))
 
 	// check the provider chain fee pool
-
-	ctx = cChain.GetContext()
-	ltbh, err = cKeep.GetLastTransmissionBlockHeight(ctx)
-	s.Require().NoError(err)
-	bpdt = cKeep.GetBlocksPerDistributionTransmission(ctx)
-	curHeight := ctx.BlockHeight()
-	fmt.Printf(
-		"before distribution:\nltbh:%v\nbpdt:%v\ncurrHeight:%v\n(curHeight - ltbh.Height) < bpdt:%v\n",
-		ltbh.Height, bpdt, curHeight, (curHeight-ltbh.Height) < bpdt)
+	//ctx = cChain.GetContext()
+	//ltbh, err = cKeep.GetLastTransmissionBlockHeight(ctx)
+	//s.Require().NoError(err)
+	//bpdt = cKeep.GetBlocksPerDistributionTransmission(ctx)
+	//curHeight := ctx.BlockHeight()
+	//fmt.Printf(
+	//    "before distribution:\nltbh:%v\nbpdt:%v\ncurrHeight:%v\n(curHeight - ltbh.Height) < bpdt:%v\n",
+	//    ltbh.Height, bpdt, curHeight, (curHeight-ltbh.Height) < bpdt)
 
 	// Verify that the destinationChannel exists
 	// if this doesn't exist then the transfer logic will fail when
 	// a the distribution transfer is invoked in the next block.
-	ctx = cChain.GetContext()
-	sourcePort = transfertypes.PortID
-	sourceChannel = cKeep.GetDistributionTransmissionChannel(ctx)
-	sourceChannelEnd, found = cApp.IBCKeeper.ChannelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
+	ctx := cChain.GetContext()
+	sourcePort := transfertypes.PortID
+	sourceChannel := cKeep.GetDistributionTransmissionChannel(ctx)
+	sourceChannelEnd, found := cApp.IBCKeeper.ChannelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
 	s.Require().True(found)
-	destinationChannel = sourceChannelEnd.GetCounterparty().GetChannelID()
+	destinationChannel := sourceChannelEnd.GetCounterparty().GetChannelID()
 	fmt.Printf("debug destinationChannel: %v\n", destinationChannel)
 	s.Require().True(len(destinationChannel) > 0)
 
 	// commit 1 more block (which should invoke a distribution event
 	fmt.Println("----------- committing block")
 	s.coordinator.CommitNBlocks(cChain, 1)
-	err = s.path.EndpointB.UpdateClient()
+	err = s.transferPath.EndpointB.UpdateClient()
 	s.Require().NoError(err)
-	err = s.path.EndpointA.UpdateClient()
+	err = s.transferPath.EndpointA.UpdateClient()
 	s.Require().NoError(err)
 
-	ctx = cChain.GetContext()
-	ltbh, err = cKeep.GetLastTransmissionBlockHeight(ctx)
-	s.Require().NoError(err)
-	bpdt = cKeep.GetBlocksPerDistributionTransmission(ctx)
-	curHeight = ctx.BlockHeight()
-	fmt.Printf(
-		"after distribution:\nltbh:%v\nbpdt:%v\ncurrHeight:%v\n(curHeight - ltbh.Height) < bpdt:%v\n",
-		ltbh.Height, bpdt, curHeight, (curHeight-ltbh.Height) < bpdt)
+	//ctx = cChain.GetContext()
+	//ltbh, err = cKeep.GetLastTransmissionBlockHeight(ctx)
+	//s.Require().NoError(err)
+	//bpdt = cKeep.GetBlocksPerDistributionTransmission(ctx)
+	//curHeight = ctx.BlockHeight()
+	//fmt.Printf(
+	//    "after distribution:\nltbh:%v\nbpdt:%v\ncurrHeight:%v\n(curHeight - ltbh.Height) < bpdt:%v\n",
+	//    ltbh.Height, bpdt, curHeight, (curHeight-ltbh.Height) < bpdt)
 
 	// check the consumer chain fee pool which should be now emptied
 	tokens = cApp.BankKeeper.GetAllBalances(cChain.GetContext(), consumerFeePoolAddr)
 	s.Require().Len(tokens, 1)
 	s.Require().Equal(tokens[0].Denom, "stake")
-	s.Require().Equal(tokens[0].Amount, sdk.NewInt(20))
+	s.Require().Equal(tokens[0].Amount, sdk.NewInt(20)) // XXX should be something small, not nessisarily 20
 
 	// check the provider chain fee pool which should now have
 	// the consumer chain tokens
