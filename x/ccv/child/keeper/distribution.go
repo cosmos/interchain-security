@@ -45,6 +45,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		fmt.Printf("debug token: %v\n", token)
 		fmt.Printf("debug consumerFeePoolAddr: %s\n", consumerFeePoolAddr)
 		fmt.Printf("debug k.GetProviderFeePoolAddrStr(ctx): %v\n", k.GetProviderFeePoolAddrStr(ctx))
+		fmt.Printf("debug events len distribute %v\n", len(ctx.EventManager().Events()))
 		err := k.ibcTransferKeeper.SendTransfer(ctx,
 			transfertypes.PortID,
 			k.GetDistributionTransmissionChannel(ctx),
@@ -54,6 +55,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 			clienttypes.Height{0, 0},
 			uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
 		)
+		fmt.Printf("debug events len distribute %v\n", len(ctx.EventManager().Events()))
 		if err != nil {
 			panic(err)
 			return err

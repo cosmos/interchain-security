@@ -134,7 +134,8 @@ func (suite *ParentTestSuite) SetupCCVChannel() {
 	suite.transferPath.EndpointB.ConnectionID = suite.path.EndpointB.ConnectionID
 
 	// INIT step for transfer path has already been called during CCV channel setup
-	suite.transferPath.EndpointA.ChannelID = suite.childChain.App.(*app.App).ChildKeeper.GetDistributionTransmissionChannel(suite.childChain.GetContext())
+	suite.transferPath.EndpointA.ChannelID = suite.childChain.App.(*app.App).
+		ChildKeeper.GetDistributionTransmissionChannel(suite.childChain.GetContext())
 
 	// Complete TRY, ACK, CONFIRM for transfer path
 	err := suite.transferPath.EndpointB.ChanOpenTry()
@@ -765,6 +766,8 @@ func (s *ParentTestSuite) UpdateChildHistInfo(changes []abci.ValidatorUpdate) {
 // provider chain from the consumer chain appropriately
 func (s *ParentTestSuite) TestDistribution() {
 	s.SetupCCVChannel() // also sets up transfer channels
+	// NOTE s.transferPath.EndpointA == Consumer Chain
+	//      s.transferPath.EndpointB == Provider Chain
 
 	pChain, cChain := s.parentChain, s.childChain
 	pApp, cApp := pChain.App.(*app.App), cChain.App.(*app.App)
@@ -779,9 +782,9 @@ func (s *ParentTestSuite) TestDistribution() {
 	fcAddr2 := cApp.ChildKeeper.GetProviderFeePoolAddrStr(cChain.GetContext())
 	s.Require().Equal(fcAddr, fcAddr2)
 
-	//// XXX Alternative Fee Pool Address debug
-	//altAddr := s.parentChain.SenderAccount.GetAddress()
-	//cApp.ChildKeeper.SetProviderFeePoolAddrStr(cChain.GetContext(), altAddr.String())
+	// XXX Alternative Fee Pool Address debug
+	altAddr := s.parentChain.SenderAccount.GetAddress()
+	cApp.ChildKeeper.SetProviderFeePoolAddrStr(cChain.GetContext(), altAddr.String())
 
 	// make sure we're starting at consumer height 21 (some blocks commited during setup)
 	s.Require().Equal(int64(21), cChain.GetContext().BlockHeight())
@@ -797,13 +800,8 @@ func (s *ParentTestSuite) TestDistribution() {
 	// check the consumer chain fee pool
 	consumerFeePoolAddr := cApp.AccountKeeper.GetModuleAccount(
 		cChain.GetContext(), authtypes.FeeCollectorName).GetAddress()
-	tokens := cApp.BankKeeper.GetAllBalances(cChain.GetContext(), consumerFeePoolAddr)
-	s.Require().Len(tokens, 1)
-	s.Require().Equal(tokens[0].Denom, "stake")
-	s.Require().Equal(tokens[0].Amount, sdk.NewInt(205975516703))
-
-	//err = s.path.EndpointA.UpdateClient()
-	//err = s.path.EndpointB.UpdateClient()
+	balance := cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
+	s.Require().Equal(balance.Amount.Int64(), int64(205975516703))
 
 	//ctx := cChain.GetContext()
 	//sourcePort := transfertypes.PortID
@@ -823,10 +821,8 @@ func (s *ParentTestSuite) TestDistribution() {
 	//err = s.path.EndpointA.UpdateClient()
 
 	// check the consumer chain fee pool (should have increased
-	tokens = cApp.BankKeeper.GetAllBalances(cChain.GetContext(), consumerFeePoolAddr)
-	s.Require().Len(tokens, 1)
-	s.Require().Equal(tokens[0].Denom, "stake")
-	s.Require().Equal(tokens[0].Amount, sdk.NewInt(206083833592))
+	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
+	s.Require().Equal(balance.Amount.Int64(), int64(206083833592))
 
 	// check the provider chain fee pool
 	//ctx = cChain.GetContext()
@@ -847,31 +843,93 @@ func (s *ParentTestSuite) TestDistribution() {
 	sourceChannelEnd, found := cApp.IBCKeeper.ChannelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
 	s.Require().True(found)
 	destinationChannel := sourceChannelEnd.GetCounterparty().GetChannelID()
-	fmt.Printf("debug destinationChannel: %v\n", destinationChannel)
+	//fmt.Printf("debug destinationChannel: %v\n", destinationChannel)
 	s.Require().True(len(destinationChannel) > 0)
 
 	// commit 1 more block (which should invoke a distribution event
+	// similar to s.coordinator.CommitNBlocks function
 	fmt.Println("----------- committing block")
-	s.coordinator.CommitNBlocks(cChain, 1)
-	err = s.transferPath.EndpointB.UpdateClient()
-	s.Require().NoError(err)
+	cChain.App.BeginBlock(abci.RequestBeginBlock{Header: cChain.CurrentHeader})
+	rspEB := cChain.App.EndBlock(abci.RequestEndBlock{Height: cChain.CurrentHeader.Height})
+	cChain.App.Commit()
+	cChain.NextBlock()
+	s.coordinator.IncrementTime()
+
+	//err = s.transferPath.EndpointB.UpdateClient() // XXX remove one of these
+	//s.Require().NoError(err)
 	err = s.transferPath.EndpointA.UpdateClient()
 	s.Require().NoError(err)
 
-	//ctx = cChain.GetContext()
-	//ltbh, err = cKeep.GetLastTransmissionBlockHeight(ctx)
+	// get the packet
+	var packet channeltypes.Packet
+	var ftpd transfertypes.FungibleTokenPacketData
+	for _, evnt := range rspEB.Events {
+		if evnt.Type == channeltypes.EventTypeSendPacket {
+			attrMap := make(map[string][]byte)
+			for _, attr := range evnt.Attributes {
+				attrMap[string(attr.Key)] = attr.Value
+			}
+
+			sequence, err := strconv.Atoi(string(attrMap[string(channeltypes.AttributeKeySequence)]))
+			s.Require().NoError(err)
+			timeoutTimestamp, err := strconv.Atoi(string(attrMap[string(channeltypes.AttributeKeyTimeoutTimestamp)]))
+			fmt.Printf("debug timeoutTimestamp: %v\n", string(attrMap[string(channeltypes.AttributeKeyTimeoutTimestamp)]))
+			s.Require().NoError(err)
+			timeoutHeight, err := clienttypes.ParseHeight(string(attrMap[string(channeltypes.AttributeKeyTimeoutHeight)]))
+			s.Require().NoError(err)
+			packet = channeltypes.NewPacket(
+				attrMap[string(channeltypes.AttributeKeyData)], // data
+				uint64(sequence),
+				string(attrMap[string(channeltypes.AttributeKeySrcPort)]),    //sourcePort,
+				string(attrMap[string(channeltypes.AttributeKeySrcChannel)]), //sourceChannel,
+				string(attrMap[string(channeltypes.AttributeKeyDstPort)]),    //destinationPort,
+				string(attrMap[string(channeltypes.AttributeKeyDstChannel)]), //destinationChannel string,
+				timeoutHeight,
+				uint64(timeoutTimestamp),
+			)
+			cApp.AppCodec().MustUnmarshalJSON(packet.GetData(), &ftpd)
+		}
+	}
+	fmt.Printf("debug packet: %+v\n", packet)
+	fmt.Printf("debug ftpd: %+v\n", ftpd)
+
+	/////////////////////
+	// RELAY the packet
+
+	err = s.transferPath.RelayPacket(packet)
+	s.Require().NoError(err)
+
+	//// send the packet on the consumer chain
+	////err = s.transferPath.EndpointA.SendPacket(packet)
+	////s.Require().NoError(err)
+
+	//err = s.transferPath.EndpointB.UpdateClient()
 	//s.Require().NoError(err)
-	//bpdt = cKeep.GetBlocksPerDistributionTransmission(ctx)
-	//curHeight = ctx.BlockHeight()
-	//fmt.Printf(
-	//    "after distribution:\nltbh:%v\nbpdt:%v\ncurrHeight:%v\n(curHeight - ltbh.Height) < bpdt:%v\n",
-	//    ltbh.Height, bpdt, curHeight, (curHeight-ltbh.Height) < bpdt)
+
+	//res, err := s.transferPath.EndpointB.RecvPacketWithResult(packet)
+	//s.Require().NoError(err)
+
+	//ack, err := ibctesting.ParseAckFromEvents(res.GetEvents())
+	//s.Require().NoError(err)
+	//fmt.Printf("debug ack: %s\n", ack)
+
+	//err = s.transferPath.EndpointA.AcknowledgePacket(packet, ack)
+	//s.Require().NoError(err)
+
+	// update clients TODO remove?
+	err = s.transferPath.EndpointA.UpdateClient()
+	s.Require().NoError(err)
+	err = s.transferPath.EndpointB.UpdateClient()
+	s.Require().NoError(err)
 
 	// check the consumer chain fee pool which should be now emptied
-	tokens = cApp.BankKeeper.GetAllBalances(cChain.GetContext(), consumerFeePoolAddr)
-	s.Require().Len(tokens, 1)
-	s.Require().Equal(tokens[0].Denom, "stake")
-	s.Require().Equal(tokens[0].Amount, sdk.NewInt(20)) // XXX should be something small, not nessisarily 20
+	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
+	s.Assert().Equal(balance.Amount.Int64(), int64(1180264)) // XXX should be something small, not nessisarily this value
+
+	//balances := cApp.BankKeeper.GetAllBalances(pChain.GetContext(), altAddr)
+	//fmt.Printf("debug balances: %+v\n", balances)
+	//balance = cApp.BankKeeper.GetBalance(pChain.GetContext(), altAddr, "stake")
+	//s.Assert().Equal(balance.Amount.Int64(), int64(206083870475)) // XXX should be something small, not nessisarily this value
 
 	// check the provider chain fee pool which should now have
 	// the consumer chain tokens
