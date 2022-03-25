@@ -328,7 +328,7 @@ func (am AppModule) OnRecvPacket(
 ) ibcexported.Acknowledgement {
 	var (
 		ack  ibcexported.Acknowledgement
-		data ccv.ValidatorDowntimePacketData
+		data ccv.ValidatorPenaltyPacketData
 	)
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
 		errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("cannot unmarshal CCV packet data: %s", err.Error()))
@@ -345,8 +345,6 @@ func (am AppModule) OnRecvPacket(
 		),
 	)
 
-	// NOTE: In successful case, acknowledgement will be written asynchronously
-	// after unbonding period has elapsed.
 	return ack
 }
 

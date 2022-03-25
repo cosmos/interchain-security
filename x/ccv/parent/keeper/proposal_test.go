@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/interchain-security/app"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
@@ -34,7 +35,8 @@ func (suite *KeeperTestSuite) TestMakeChildGenesis() {
 	actualGenesis.ParentConsensusState.NextValidatorsHash = []byte{}
 	expectedGenesis.ParentConsensusState.NextValidatorsHash = []byte{}
 
-	actualGenesis.InitialValSet[0].PubKey = crypto.PublicKey{}
+	// set valset to one empty validator because SetupTest() creates 4 validators per chain
+	actualGenesis.InitialValSet = []abci.ValidatorUpdate{{PubKey: crypto.PublicKey{}, Power: actualGenesis.InitialValSet[0].Power}}
 	expectedGenesis.InitialValSet[0].PubKey = crypto.PublicKey{}
 
 	actualGenesis.ParentConsensusState.Root.Hash = []byte{}

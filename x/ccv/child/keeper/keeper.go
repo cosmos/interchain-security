@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -15,6 +14,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -31,6 +31,7 @@ type Keeper struct {
 	connectionKeeper ccv.ConnectionKeeper
 	clientKeeper     ccv.ClientKeeper
 	slashingKeeper   ccv.SlashingKeeper
+	hooks            ccv.ChildHooks
 }
 
 // NewKeeper creates a new Child Keeper instance
@@ -60,6 +61,16 @@ func NewKeeper(
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
+}
+
+func (k *Keeper) SetHooks(sh ccv.ChildHooks) *Keeper {
+	if k.hooks != nil {
+		panic("cannot set validator hooks twice")
+	}
+
+	k.hooks = sh
+
+	return k
 }
 
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
@@ -312,15 +323,108 @@ func (k Keeper) VerifyParentChain(ctx sdk.Context, channelID string, connectionH
 	return nil
 }
 
-// GetLastUnbondingPacket returns the last unbounding packet stored in lexical order
-func (k Keeper) GetLastUnbondingPacket(ctx sdk.Context) ccv.ValidatorSetChangePacketData {
-	ubdPacket := &channeltypes.Packet{}
-	k.IterateUnbondingPacket(ctx, func(seq uint64, packet channeltypes.Packet) bool {
-		*ubdPacket = packet
-		return false
-	})
-	var data ccv.ValidatorSetChangePacketData
+// SetHeightValsetUpdateID sets the valset update id for a given block height
+func (k Keeper) SetHeightValsetUpdateID(ctx sdk.Context, height, valsetUpdateId uint64) {
+	store := ctx.KVStore(k.storeKey)
+	valBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(valBytes, valsetUpdateId)
+	store.Set(types.HeightValsetUpdateIDKey(height), valBytes)
+}
 
-	ccv.ModuleCdc.UnmarshalJSON(ubdPacket.GetData(), &data)
-	return data
+// GetHeightValsetUpdateID gets the valset update id recorded for a given block height
+func (k Keeper) GetHeightValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.HeightValsetUpdateIDKey(height))
+	if bz == nil {
+		return 0
+	}
+	return binary.BigEndian.Uint64(bz)
+}
+
+// DeleteHeightValsetUpdateID deletes the valset update id for a given block height
+func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.HeightValsetUpdateIDKey(height))
+}
+
+// HeightToValsetUpdateID returns the last valset update ID stored for a block
+// which height is lesser or equal than the given height
+func (k Keeper) HeightToValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	revIterator := sdk.KVStoreReversePrefixIterator(store, []byte(types.HeightValsetUpdateIDPrefix))
+
+	for ; revIterator.Valid(); revIterator.Next() {
+		keyBytes := revIterator.Key()[len([]byte(types.HeightValsetUpdateIDPrefix)):]
+		currHeight := binary.BigEndian.Uint64(keyBytes)
+		if currHeight <= height {
+			return binary.BigEndian.Uint64(revIterator.Value())
+		}
+	}
+
+	return 0
+}
+
+// OutstandingPenalty returns the outstanding penalty flag for a given validator
+func (k Keeper) OutstandingPenalty(ctx sdk.Context, address sdk.ConsAddress) bool {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.OutstandingPenaltyKey(address))
+	return bz != nil
+}
+
+// SetOutstandingPenalty sets the outstanding penalty flag for a given validator
+func (k Keeper) SetOutstandingPenalty(ctx sdk.Context, address sdk.ConsAddress) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.OutstandingPenaltyKey(address), []byte{})
+}
+
+// ClearOutstandingPenalty clears the outstanding penalty flag for a given validator
+func (k Keeper) ClearOutstandingPenalty(ctx sdk.Context, address string) {
+	consAddr, err := sdk.ConsAddressFromBech32(address)
+	if err != nil {
+		return
+	}
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.OutstandingPenaltyKey(consAddr))
+}
+
+// SetCCValidator sets a cross-chain validator under its validator address
+func (k Keeper) SetCCValidator(ctx sdk.Context, v types.CrossChainValidator) {
+	store := ctx.KVStore(k.storeKey)
+	bz := k.cdc.MustMarshal(&v)
+
+	store.Set(types.GetCrossChainValidatorKey(v.Address), bz)
+}
+
+// GetCCValidator returns a cross-chain validator for a given address
+func (k Keeper) GetCCValidator(ctx sdk.Context, addr []byte) (validator types.CrossChainValidator, found bool) {
+	store := ctx.KVStore(k.storeKey)
+	v := store.Get(types.GetCrossChainValidatorKey(addr))
+	if v == nil {
+		return
+	}
+	k.cdc.MustUnmarshal(v, &validator)
+	found = true
+
+	return
+}
+
+// DeleteCCValidator deletes a cross-chain validator for a given address
+func (k Keeper) DeleteCCValidator(ctx sdk.Context, addr []byte) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.GetCrossChainValidatorKey(addr))
+}
+
+// GetAllCCValidator returns all cross-chain validators
+func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChainValidator) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte(types.CrossChainValidatorPrefix))
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		val := types.CrossChainValidator{}
+		k.cdc.MustUnmarshal(iterator.Value(), &val)
+		validators = append(validators, val)
+	}
+
+	return validators
 }

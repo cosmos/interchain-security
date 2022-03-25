@@ -24,12 +24,12 @@ func TestPacketDataValidateBasic(t *testing.T) {
 		{
 			"nil packet data",
 			true,
-			types.NewValidatorSetChangePacketData(nil, 1),
+			types.NewValidatorSetChangePacketData(nil, 1, nil),
 		},
 		{
 			"empty packet data",
 			true,
-			types.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{}, 2),
+			types.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{}, 2, nil),
 		},
 		{
 			"valid packet data",
@@ -46,6 +46,7 @@ func TestPacketDataValidateBasic(t *testing.T) {
 					},
 				},
 				3,
+				nil,
 			),
 		},
 	}
@@ -78,6 +79,7 @@ func TestMarshalPacketData(t *testing.T) {
 			},
 		},
 		1,
+		nil,
 	)
 
 	bz, err := vpd.Marshal()

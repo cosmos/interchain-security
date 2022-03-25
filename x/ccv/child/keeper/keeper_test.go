@@ -3,12 +3,10 @@ package keeper_test
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
@@ -22,9 +20,8 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmcryptoc "github.com/tendermint/tendermint/crypto/encoding"
 	tmtypes "github.com/tendermint/tendermint/types"
-	// 	slashing "github.com/cosmos/cosmos-sdk/x/slashing"
-	// staking "github.com/cosmos/cosmos-sdk/x/staking"
 )
 
 func init() {
@@ -138,6 +135,7 @@ func (suite *KeeperTestSuite) TestPendingChanges() {
 			},
 		},
 		1,
+		nil,
 	)
 
 	suite.childChain.App.(*app.App).ChildKeeper.SetPendingChanges(suite.ctx, pd)
@@ -195,6 +193,7 @@ func (suite *KeeperTestSuite) TestUnbondingPacket() {
 				},
 			},
 			1,
+			nil,
 		)
 		packet := channeltypes.NewPacket(pd.GetBytes(), uint64(i), "parent", "channel-1", "child", "channel-1",
 			clienttypes.NewHeight(1, 0), 0)
@@ -322,115 +321,173 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 	}
 }
 
-func TestKeeperTestSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
-}
-
-// TestValidatorDowntime tests that the slashing hooks
-// are registred and triggered when a validator has downtime
+// TestValidatorDowntime tests if a penalty packet is sent
+// and if the outstanding penalty flag is switched
+// when a validator has downtime on the slashing module
 func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	// initial setup
-	app := suite.childChain.App.(*app.App)
-	ctx := suite.childChain.GetContext()
+	suite.SetupCCVChannel()
+	suite.SendEmptyVSCPacket()
 
-	// create a validator pubkey and address
-	pubkey := ed25519.GenPrivKey().PubKey()
-	consAddr := sdk.ConsAddress(pubkey.Address())
+	app, ctx := suite.childChain.App.(*app.App), suite.childChain.GetContext()
+	channelID := suite.path.EndpointA.ChannelID
 
-	// add the validator pubkey and signing info to the store
-	app.SlashingKeeper.AddPubkey(ctx, pubkey)
+	// pick a cross-chain validator
+	vals := app.ChildKeeper.GetAllCCValidator(ctx)
+	consAddr := sdk.ConsAddress(vals[0].Address)
 
-	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, ctx.BlockHeight(), ctx.BlockHeight()-1,
-		time.Time{}.UTC(), false, int64(0))
-	app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, valInfo)
+	// save sign info before slashing
+	// signInfo, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+	// suite.Require().True(found)
+
+	// save next sequence before sending a penalty packet
+	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
+	suite.Require().True(ok)
 
 	// Sign 1000 blocks
 	valPower := int64(1)
 	height := int64(0)
 	for ; height < app.SlashingKeeper.SignedBlocksWindow(ctx); height++ {
 		ctx = ctx.WithBlockHeight(height)
-		app.SlashingKeeper.HandleValidatorSignature(ctx, pubkey.Address().Bytes(), valPower, true)
+		app.SlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, true)
 	}
-	// Miss 500 blocks
+	// Miss 500 blocks and expect a penalty packet to be sent
 	for ; height < app.SlashingKeeper.SignedBlocksWindow(ctx)+(app.SlashingKeeper.SignedBlocksWindow(ctx)-app.SlashingKeeper.MinSignedPerWindow(ctx))+1; height++ {
 		ctx = ctx.WithBlockHeight(height)
-		app.SlashingKeeper.HandleValidatorSignature(ctx, pubkey.Address().Bytes(), valPower, false)
+		app.SlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, false)
 	}
 
-	signInfo, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
-	suite.Require().True(found)
-	suite.Require().NotZero(signInfo.JailedUntil)
-	suite.Require().Zero(signInfo.MissedBlocksCounter)
-	suite.Require().Zero(signInfo.IndexOffset)
+	// check validator signing info
+	res, _ := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+	// expect increased jail time
+	suite.Require().True(res.JailedUntil.Equal(ctx.BlockTime().Add(app.SlashingKeeper.DowntimeJailDuration(ctx))), "did not update validator jailed until signing info")
+	// expect missed block counters reseted
+	suite.Require().Zero(res.MissedBlocksCounter, "did not reset validator missed block counter")
+	suite.Require().Zero(res.IndexOffset)
 	app.SlashingKeeper.IterateValidatorMissedBlockBitArray(ctx, consAddr, func(_ int64, missed bool) bool {
-		suite.Require().False(missed)
+		suite.Require().True(missed)
+		return false
+	})
+
+	// verify that the slashing packet was sent
+	commit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, types.PortID, channelID, seq)
+	suite.Require().NotNil(commit, "did not found slashing packet commitment")
+
+	// verify that the penalty packet was sent
+	suite.Require().True(app.ChildKeeper.OutstandingPenalty(ctx, consAddr))
+
+	// check that the outstanding penalty flag prevents
+	// to update the jailed validator's missed block
+	for ; height < app.SlashingKeeper.SignedBlocksWindow(ctx)+
+		(2*(app.SlashingKeeper.SignedBlocksWindow(ctx)-app.SlashingKeeper.MinSignedPerWindow(ctx))+1); height++ {
+		ctx = ctx.WithBlockHeight(height)
+		app.SlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, false)
+	}
+
+	res, _ = app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+
+	suite.Require().Zero(res.MissedBlocksCounter, "did not reset validator missed block counter")
+	suite.Require().Zero(res.IndexOffset)
+	app.SlashingKeeper.IterateValidatorMissedBlockBitArray(ctx, consAddr, func(_ int64, missed bool) bool {
+		suite.Require().True(missed, "did not reset validator missed block bit array")
 		return false
 	})
 }
 
-// TestAfterValidatorDowntimeHook tests the slashing hook implementation logic
-func (suite *KeeperTestSuite) TestAfterValidatorDowntimeHook() {
-	app := suite.childChain.App.(*app.App)
-	ctx := suite.ctx
-
-	consAddr := sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Bytes()).Bytes()
-
-	now := time.Now()
-
-	// Cover the cases when the validatir jailing duration
-	// is either elapsed, null or still going
-	testcases := []struct {
-		jailedUntil time.Time
-		expUpdate   bool
-	}{{
-		jailedUntil: now.Add(-1 * time.Hour),
-		expUpdate:   true,
-	}, {
-		jailedUntil: time.Time{}, // null
-		expUpdate:   true,
-	}, {
-		jailedUntil: now.Add(1 * time.Hour),
-		expUpdate:   false,
-	},
-	}
-
-	// synchronize the block time with the test cases
-	ctx = ctx.WithBlockTime(now)
-	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, int64(1), int64(1),
-		time.Time{}.UTC(), false, int64(0))
-
-	for _, tc := range testcases {
-		// set the current unjailing time
-		valInfo.JailedUntil = tc.jailedUntil
-		app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, valInfo)
-		// execute the hook logic
-		app.ChildKeeper.AfterValidatorDowntime(
-			ctx, consAddr, int64(1))
-		// verify if we have the expected output
-		signInfo, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
-		suite.Require().True(found)
-		suite.Require().True(tc.expUpdate == !(signInfo.JailedUntil.Equal(tc.jailedUntil)))
-	}
-
-	suite.Require()
-}
-
-func (suite *KeeperTestSuite) TestGetLastUnboundingPacket() {
+func (suite *KeeperTestSuite) TestHeightToValsetUpdateID() {
 	app := suite.childChain.App.(*app.App)
 	ctx := suite.childChain.GetContext()
 
-	ubdPacket := app.ChildKeeper.GetLastUnbondingPacket(ctx)
-	suite.Require().Zero(ubdPacket.ValsetUpdateId)
-	for i := 0; i < 5; i++ {
-		pd := ccv.NewValidatorSetChangePacketData(
-			[]abci.ValidatorUpdate{},
-			uint64(i),
-		)
-		packet := channeltypes.NewPacket(pd.GetBytes(), uint64(i), "", "", "", "",
-			clienttypes.NewHeight(1, 0), 0)
-		app.ChildKeeper.SetUnbondingPacket(ctx, uint64(i), packet)
+	// set some equal block height valset update id pairs
+	for i := 1; i < 8; i += 3 {
+		app.ChildKeeper.SetHeightValsetUpdateID(ctx, uint64(i), uint64(i))
 	}
 
-	ubdPacket = app.ChildKeeper.GetLastUnbondingPacket(ctx)
-	suite.Require().Equal(uint64(4), ubdPacket.ValsetUpdateId)
+	// set height and expected valset update id
+	tests := [][]uint64{
+		{0, 0},
+		{1, 1},
+		{5, 4},
+		{7, 7},
+		{8, 7},
+		{261, 7},
+	}
+
+	for _, t := range tests {
+		valUpdateID := app.ChildKeeper.HeightToValsetUpdateID(ctx, t[0])
+		suite.Require().Equal(t[1], valUpdateID)
+	}
+}
+
+func (suite *KeeperTestSuite) TestCrossChainValidator() {
+	app := suite.childChain.App.(*app.App)
+	ctx := suite.childChain.GetContext()
+
+	// should return false
+	ccVal, foud := app.ChildKeeper.GetCCValidator(ctx, ed25519.GenPrivKey().PubKey().Address())
+	suite.Require().False(foud)
+
+	// get a validator from child chain
+	val := suite.parentChain.Vals.Validators[0]
+	pk2, err := tmcryptoc.PubKeyToProto(val.PubKey)
+	suite.Require().NoError(err)
+	// set cross chain validator
+
+	ccVal = types.CrossChainValidator{
+		Address: val.Address,
+		ValidatorUpdate: abci.ValidatorUpdate{
+			PubKey: pk2,
+			Power:  1000,
+		},
+	}
+
+	app.ChildKeeper.SetCCValidator(ctx, ccVal)
+
+	// should return true
+	ccVal, foud = app.ChildKeeper.GetCCValidator(ctx, ccVal.Address)
+	suite.Require().True(foud)
+
+	app.ChildKeeper.DeleteCCValidator(ctx, ccVal.Address)
+
+	// should return false
+	ccVal, foud = app.ChildKeeper.GetCCValidator(ctx, ccVal.Address)
+	suite.Require().False(foud)
+}
+
+// SendEmptyVSCPacket sends a VSC packet without any changes
+// to ensure that the channel gets established
+func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
+
+	childKeeper := suite.childChain.App.(*app.App).ChildKeeper
+	parentKeeper := suite.parentChain.App.(*app.App).ParentKeeper
+
+	oldBlockTime := suite.parentChain.GetContext().BlockTime()
+	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+
+	valUpdateID := parentKeeper.GetValidatorSetUpdateId(suite.parentChain.GetContext())
+
+	pd := ccv.NewValidatorSetChangePacketData(
+		[]abci.ValidatorUpdate{},
+		valUpdateID,
+		nil,
+	)
+
+	seq, ok := suite.parentChain.App.(*app.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
+		suite.parentChain.GetContext(), parenttypes.PortID, suite.path.EndpointB.ChannelID)
+	suite.Require().True(ok)
+
+	packet := channeltypes.NewPacket(pd.GetBytes(), seq, parenttypes.PortID, suite.path.EndpointB.ChannelID,
+		childtypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	suite.path.EndpointB.SendPacket(packet)
+	err := suite.path.EndpointA.RecvPacket(packet)
+	suite.Require().NoError(err)
+
+	// check that the channel is established
+	status := childKeeper.GetChannelStatus(suite.childChain.GetContext(), suite.path.EndpointA.ChannelID)
+	suite.Require().EqualValues(int32(2), status)
+}
+
+func TestKeeperTestSuite(t *testing.T) {
+	suite.Run(t, new(KeeperTestSuite))
 }

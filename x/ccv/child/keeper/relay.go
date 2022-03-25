@@ -33,7 +33,6 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 		k.SetChannelStatus(ctx, packet.DestinationChannel, ccv.VALIDATING)
 		k.SetParentChannel(ctx, packet.DestinationChannel)
 	}
-
 	// Set pending changes by accumulating changes from this packet with all prior changes
 	var pendingChanges []abci.ValidatorUpdate
 	currentChanges, exists := k.GetPendingChanges(ctx)
@@ -42,12 +41,22 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 	} else {
 		pendingChanges = utils.AccumulateChanges(currentChanges.ValidatorUpdates, newChanges.ValidatorUpdates)
 	}
-	k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{ValidatorUpdates: pendingChanges})
+	// pending changes and valsetupdate id are used in enblock
+	k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{
+		ValidatorUpdates: pendingChanges,
+		ValsetUpdateId:   newChanges.ValsetUpdateId,
+	})
 
 	// Save unbonding time and packet
 	unbondingTime := ctx.BlockTime().Add(types.UnbondingTime)
 	k.SetUnbondingTime(ctx, packet.Sequence, uint64(unbondingTime.UnixNano()))
 	k.SetUnbondingPacket(ctx, packet.Sequence, packet)
+
+	// set outstanding penalty flags to false
+	for _, addr := range newChanges.GetPenaltyAcks() {
+		k.ClearOutstandingPenalty(ctx, addr)
+	}
+
 	// ack will be sent asynchronously
 	return nil
 }
@@ -90,13 +99,12 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 	return nil
 }
 
-// SendPacket sends a packet that initiates the given validator
-// slashing and jailing on the provider chain.
-func (k Keeper) SendPacket(ctx sdk.Context, val abci.Validator, slashFraction, jailedUntil int64) error {
-
-	// check the setup
+// SendPenalties sends a penalty packet containing the given validator and its slashing and jailing penalty info
+func (k Keeper) SendPenalties(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, slashFraction, jailedUntil int64) error {
+	// check that parent channel is established
 	channelID, ok := k.GetParentChannel(ctx)
 	if !ok {
+		// TODO: implement pending penalties here
 		return sdkerrors.Wrap(channeltypes.ErrChannelNotFound, "parent channel not set")
 	}
 	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
@@ -117,13 +125,8 @@ func (k Keeper) SendPacket(ctx sdk.Context, val abci.Validator, slashFraction, j
 		)
 	}
 
-	// add the last ValsetUpdateId to the packet data so that the provider
-	// can find the block height when the downtime happened
-	valsetUpdateId := k.GetLastUnbondingPacket(ctx).ValsetUpdateId
-	if valsetUpdateId == 0 {
-		return sdkerrors.Wrapf(ccv.ErrInvalidChildState, "last valset update id not set")
-	}
-	packetData := ccv.NewValidatorDowtimePacketData(val, valsetUpdateId, slashFraction, jailedUntil)
+	// construct penalty packet
+	packetData := ccv.NewValidatorPenaltyPacketData(validator, valsetUpdateID, slashFraction, jailedUntil)
 	packetDataBytes := packetData.GetBytes()
 
 	// send ValidatorDowntime infractions in IBC packet
@@ -140,6 +143,21 @@ func (k Keeper) SendPacket(ctx sdk.Context, val abci.Validator, slashFraction, j
 	return nil
 }
 
-func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
+func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorPenaltyPacketData, ack channeltypes.Acknowledgement) error {
+	if err := ack.GetError(); err != "" {
+		// penalty packet was sent to a nonestablished channel
+		if err != sdkerrors.Wrap(
+			channeltypes.ErrInvalidChannelState,
+			packet.DestinationChannel,
+		).Error() {
+			return fmt.Errorf(err)
+		}
+	}
+
+	return nil
+}
+
+func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorPenaltyPacketData) error {
+	k.SetChannelStatus(ctx, packet.DestinationChannel, ccv.INVALID)
 	return nil
 }

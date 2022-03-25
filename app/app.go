@@ -442,11 +442,6 @@ func New(
 		app.SlashingKeeper,
 	)
 
-	// register the slashing hooks, do it here so that
-	// the ChildKeeper has already been constructed
-	app.SlashingKeeper = *app.SlashingKeeper.SetHooks(app.ChildKeeper.Hooks())
-
-	childModule := ibcchild.NewAppModule(app.ChildKeeper)
 	app.ParentKeeper = ibcparentkeeper.NewKeeper(
 		appCodec,
 		keys[ibcparenttypes.StoreKey],
@@ -460,6 +455,19 @@ func New(
 		app.SlashingKeeper,
 	)
 	parentModule := ibcparent.NewAppModule(&app.ParentKeeper)
+
+	// child keeper satfies the staking keeper interface
+	// of the slashing module
+	app.SlashingKeeper = slashingkeeper.NewKeeper(
+		appCodec,
+		keys[slashingtypes.StoreKey],
+		app.ChildKeeper,
+		app.GetSubspace(slashingtypes.ModuleName),
+	)
+
+	// register slashing module StakingHooks to the child keeper
+	app.ChildKeeper = *app.ChildKeeper.SetHooks(app.SlashingKeeper.Hooks())
+	childModule := ibcchild.NewAppModule(app.ChildKeeper)
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()

@@ -5,10 +5,11 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate, valUpdateID uint64) ValidatorSetChangePacketData {
+func NewValidatorSetChangePacketData(valUpdates []abci.ValidatorUpdate, valUpdateID uint64, penaltyAcks []string) ValidatorSetChangePacketData {
 	return ValidatorSetChangePacketData{
 		ValidatorUpdates: valUpdates,
 		ValsetUpdateId:   valUpdateID,
+		PenaltyAcks:      penaltyAcks,
 	}
 }
 
@@ -25,8 +26,8 @@ func (vsc ValidatorSetChangePacketData) GetBytes() []byte {
 	return valUpdateBytes
 }
 
-func NewValidatorDowtimePacketData(validator abci.Validator, valUpdateId uint64, slashFraction, jailTime int64) ValidatorDowntimePacketData {
-	return ValidatorDowntimePacketData{
+func NewValidatorPenaltyPacketData(validator abci.Validator, valUpdateId uint64, slashFraction, jailTime int64) ValidatorPenaltyPacketData {
+	return ValidatorPenaltyPacketData{
 		Validator:      validator,
 		SlashFraction:  slashFraction,
 		JailTime:       jailTime,
@@ -34,12 +35,12 @@ func NewValidatorDowtimePacketData(validator abci.Validator, valUpdateId uint64,
 	}
 }
 
-func (vdt ValidatorDowntimePacketData) ValidateBasic() error {
+func (vdt ValidatorPenaltyPacketData) ValidateBasic() error {
 	if len(vdt.Validator.Address) == 0 || vdt.Validator.Power == 0 {
 		return sdkerrors.Wrap(ErrInvalidPacketData, "validator fields cannot be empty")
 	}
-
-	if vdt.JailTime <= 0 {
+	// allow slahing with 0 jail time
+	if vdt.JailTime < 0 {
 		return sdkerrors.Wrap(ErrInvalidPacketData, "jail duration must be positive")
 	}
 
@@ -54,7 +55,7 @@ func (vdt ValidatorDowntimePacketData) ValidateBasic() error {
 	return nil
 }
 
-func (vdt ValidatorDowntimePacketData) GetBytes() []byte {
+func (vdt ValidatorPenaltyPacketData) GetBytes() []byte {
 	valDowntimeBytes := ModuleCdc.MustMarshalJSON(&vdt)
 	return valDowntimeBytes
 }

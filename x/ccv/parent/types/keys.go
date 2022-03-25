@@ -51,10 +51,13 @@ const (
 	UBDEIndexPrefix = "childchaintoubdes"
 
 	//ValsetUpdateBlockHeightPrefix
-	ValsetUpdateBlockHeightPrefix = "valsetupdateblockheigt"
+	ValsetUpdateBlockHeightPrefix = "valsetupdateblockheight"
 
 	// ChildGenesisStatePrefix stores child genesis state material (consensus state and client state) indexed by child chain id
 	ChildGenesisPrefix = "childgenesisstate"
+
+	// PenaltyAcks
+	PenaltyAcksPrefix = "penaltyacks"
 )
 
 var (
@@ -125,4 +128,9 @@ func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
 
 func ChildGenesisKey(chainID string) []byte {
 	return append(HashString(ChildGenesisPrefix), []byte(chainID)...)
+}
+
+// PenaltyAcksKey returns the key under which penalty acks are stored for a given chain ID
+func PenaltyAcksKey(chainID string) []byte {
+	return []byte(fmt.Sprintf("%s/%s", PenaltyAcksPrefix, chainID))
 }

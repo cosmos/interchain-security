@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"time"
@@ -499,4 +500,75 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint6
 func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
+}
+
+// SetPenaltyAcks sets the penalty acks under the given chain ID
+func (k Keeper) SetPenaltyAcks(ctx sdk.Context, chainID string, acks []string) {
+	store := ctx.KVStore(k.storeKey)
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(acks)
+	if err != nil {
+		panic("failed to encode json")
+	}
+	store.Set(types.PenaltyAcksKey(chainID), buf.Bytes())
+}
+
+// GetPenaltyAcks returns the penalty acks stored under the given chain ID
+func (k Keeper) GetPenaltyAcks(ctx sdk.Context, chainID string) []string {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.PenaltyAcksKey(chainID))
+	if bz == nil {
+		return nil
+	}
+	var acks []string
+	buf := bytes.NewBuffer(bz)
+
+	json.NewDecoder(buf).Decode(&acks)
+	if len(acks) == 0 {
+		panic("failed to decode json")
+	}
+
+	return acks
+}
+
+// EmptyPenaltyAcks empties and returns the penalty acks for a given chain ID
+func (k Keeper) EmptyPenaltyAcks(ctx sdk.Context, chainID string) (acks []string) {
+	acks = k.GetPenaltyAcks(ctx, chainID)
+	if len(acks) < 1 {
+		return
+	}
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.PenaltyAcksKey(chainID))
+	return
+}
+
+// IteratePenaltyAcks iterates through the penalty acks set in the store
+func (k Keeper) IteratePenaltyAcks(ctx sdk.Context, cb func(chainID string, acks []string) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte(types.PenaltyAcksPrefix))
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+
+		id := string(iterator.Key()[len(types.PenaltyAcksPrefix)+1:])
+
+		var data []string
+		buf := bytes.NewBuffer(iterator.Value())
+
+		json.NewDecoder(buf).Decode(&data)
+		if len(data) == 0 {
+			panic("failed to decode json")
+		}
+
+		if !cb(id, data) {
+			return
+		}
+	}
+}
+
+// AppendPenaltyAck appends the given penalty ack to the given chain ID penalty acks in store
+func (k Keeper) AppendPenaltyAck(ctx sdk.Context, chainID, ack string) {
+	acks := k.GetPenaltyAcks(ctx, chainID)
+	acks = append(acks, ack)
+	k.SetPenaltyAcks(ctx, chainID, acks)
 }

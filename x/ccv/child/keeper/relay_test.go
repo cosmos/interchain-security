@@ -14,6 +14,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/libs/bytes"
 )
 
 func (suite *KeeperTestSuite) TestOnRecvPacket() {
@@ -52,11 +53,13 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 	pd := types.NewValidatorSetChangePacketData(
 		changes1,
 		1,
+		nil,
 	)
 
 	pd2 := types.NewValidatorSetChangePacketData(
 		changes2,
 		2,
+		nil,
 	)
 
 	testCases := []struct {
@@ -172,6 +175,7 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 			},
 		},
 		1,
+		nil,
 	)
 
 	origTime := suite.ctx.BlockTime()
@@ -238,4 +242,24 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	suite.Require().False(ok)
 	suite.Require().Nil(ackBytes3, "acknowledgement written for unbonding packet 3")
 
+}
+
+func (suite *KeeperTestSuite) TestOnAcknowledgement() {
+	packetData := types.NewValidatorPenaltyPacketData(
+		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), int64(4), int64(1),
+	)
+
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, parenttypes.PortID, suite.path.EndpointB.ChannelID,
+		childtypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, uint64(time.Now().Add(60*time.Second).UnixNano()))
+	ack := channeltypes.NewResultAcknowledgement([]byte{1})
+
+	// expect no error
+	err := suite.childChain.App.(*app.App).ChildKeeper.OnAcknowledgementPacket(suite.ctx, packet, packetData, ack)
+	suite.Nil(err)
+
+	// expect an error
+	ack = channeltypes.NewErrorAcknowledgement("error")
+
+	err = suite.childChain.App.(*app.App).ChildKeeper.OnAcknowledgementPacket(suite.ctx, packet, packetData, ack)
+	suite.NotNil(err)
 }
