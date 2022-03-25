@@ -899,20 +899,13 @@ func (s *ParentTestSuite) TestDistribution() {
 	err = s.transferPath.RelayPacket(packet)
 	s.Require().NoError(err)
 
-	//// send the packet on the consumer chain
-	////err = s.transferPath.EndpointA.SendPacket(packet)
-	////s.Require().NoError(err)
-
 	//err = s.transferPath.EndpointB.UpdateClient()
 	//s.Require().NoError(err)
-
 	//res, err := s.transferPath.EndpointB.RecvPacketWithResult(packet)
 	//s.Require().NoError(err)
-
 	//ack, err := ibctesting.ParseAckFromEvents(res.GetEvents())
 	//s.Require().NoError(err)
 	//fmt.Printf("debug ack: %s\n", ack)
-
 	//err = s.transferPath.EndpointA.AcknowledgePacket(packet, ack)
 	//s.Require().NoError(err)
 
