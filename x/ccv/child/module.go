@@ -162,7 +162,10 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
 
 	// distribution transmission
-	am.keeper.DistributeToProviderValidatorSet(ctx)
+	err := am.keeper.DistributeToProviderValidatorSet(ctx)
+	if err != nil {
+		panic(err)
+	}
 
 	data, ok := am.keeper.GetPendingChanges(ctx)
 	if !ok {

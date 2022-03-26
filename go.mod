@@ -48,11 +48,16 @@ replace (
 =======
 	github.com/cosmos/cosmos-sdk => github.com/rigelrozanski/cosmos-sdk v0.44.6-0.20220225061633-380e4b6a9a5c
 <<<<<<< HEAD
+<<<<<<< HEAD
 	github.com/cosmos/ibc-go/v3 => github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220214205135-4e834c9c6adc
 >>>>>>> distr code compiling, existing tests pass, fix old ibc in proto
 =======
 	github.com/cosmos/ibc-go/v3 => github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220308003458-17b91d5b571f
 >>>>>>> working
+=======
+	github.com/cosmos/ibc-go/v3 => github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220326001208-950b7818cd4c
+	//github.com/cosmos/ibc-go/v3 => ../ibc-go
+>>>>>>> debugging, state lost during commit
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )

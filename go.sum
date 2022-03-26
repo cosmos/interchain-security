@@ -1204,7 +1204,12 @@ github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220214205135-4e834c9c6adc/g
 =======
 github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220308003458-17b91d5b571f h1:dDsKcATy7mnIPLOliuqkuH89JSn/Qxp1SUrhRexYLjQ=
 github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220308003458-17b91d5b571f/go.mod h1:VFtxCEVvhoTFJP6HA3oT2N27bcV5JbV72AiyCO253/Y=
+<<<<<<< HEAD
 >>>>>>> working
+=======
+github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220326001208-950b7818cd4c h1:zFuqy4T4HGjWHSAz/7y5eNY+1KcndlWaf3rIElXa5Ls=
+github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220326001208-950b7818cd4c/go.mod h1:VFtxCEVvhoTFJP6HA3oT2N27bcV5JbV72AiyCO253/Y=
+>>>>>>> debugging, state lost during commit
 github.com/rjeczalik/notify v0.9.1/go.mod h1:rKwnCoCGeuQnwBtTSPL9Dad03Vh2n40ePRrjvIXnJho=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=

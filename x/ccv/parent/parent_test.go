@@ -782,9 +782,9 @@ func (s *ParentTestSuite) TestDistribution() {
 	fcAddr2 := cApp.ChildKeeper.GetProviderFeePoolAddrStr(cChain.GetContext())
 	s.Require().Equal(fcAddr, fcAddr2)
 
-	// XXX Alternative Fee Pool Address debug
-	altAddr := s.parentChain.SenderAccount.GetAddress()
-	cApp.ChildKeeper.SetProviderFeePoolAddrStr(cChain.GetContext(), altAddr.String())
+	//// XXX Alternative Fee Pool Address debug
+	//altAddr := s.parentChain.SenderAccount.GetAddress()
+	//cApp.ChildKeeper.SetProviderFeePoolAddrStr(cChain.GetContext(), altAddr.String())
 
 	// make sure we're starting at consumer height 21 (some blocks commited during setup)
 	s.Require().Equal(int64(21), cChain.GetContext().BlockHeight())
@@ -822,7 +822,7 @@ func (s *ParentTestSuite) TestDistribution() {
 
 	// check the consumer chain fee pool (should have increased
 	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-	s.Require().Equal(balance.Amount.Int64(), int64(206083833592))
+	s.Require().Equal(balance.Amount.Int64(), int64(206047762826))
 
 	// check the provider chain fee pool
 	//ctx = cChain.GetContext()
@@ -849,18 +849,32 @@ func (s *ParentTestSuite) TestDistribution() {
 	// commit 1 more block (which should invoke a distribution event
 	// similar to s.coordinator.CommitNBlocks function
 	fmt.Println("----------- committing block")
-	cChain.App.BeginBlock(abci.RequestBeginBlock{Header: cChain.CurrentHeader})
+	//cChain.App.BeginBlock(abci.RequestBeginBlock{Header: cChain.CurrentHeader})
 	rspEB := cChain.App.EndBlock(abci.RequestEndBlock{Height: cChain.CurrentHeader.Height})
+
+	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
+	fmt.Printf("debug ibc-go sender stake (test-post-EB): %s\n", balance)
+
 	cChain.App.Commit()
 	cChain.NextBlock()
+
+	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
+	fmt.Printf("debug ibc-go sender stake (test-post-commit): %s\n", balance)
+
 	s.coordinator.IncrementTime()
+
+	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
+	fmt.Printf("debug ibc-go sender stake (test2): %s\n", balance)
 
 	//err = s.transferPath.EndpointB.UpdateClient() // XXX remove one of these
 	//s.Require().NoError(err)
 	err = s.transferPath.EndpointA.UpdateClient()
 	s.Require().NoError(err)
 
-	// get the packet
+	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
+	fmt.Printf("debug ibc-go sender stake (test3): %s\n", balance)
+
+	// get the packet from the endblock events
 	var packet channeltypes.Packet
 	var ftpd transfertypes.FungibleTokenPacketData
 	for _, evnt := range rspEB.Events {
@@ -896,23 +910,38 @@ func (s *ParentTestSuite) TestDistribution() {
 	/////////////////////
 	// RELAY the packet
 
-	err = s.transferPath.RelayPacket(packet)
+	//err = s.transferPath.RelayPacket(packet)
+	//s.Require().NoError(err)
+
+	err = s.transferPath.EndpointB.UpdateClient()
 	s.Require().NoError(err)
+	res, err := s.transferPath.EndpointB.RecvPacketWithResult(packet)
+	s.Require().NoError(err)
+	ack, err := ibctesting.ParseAckFromEvents(res.GetEvents())
+	s.Require().NoError(err)
+	fmt.Printf("debug ack: %s\n", ack)
+	err = s.transferPath.EndpointA.AcknowledgePacket(packet, ack)
+	s.Require().NoError(err)
+
+	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
+	fmt.Printf("debug ibc-go sender stake (test4): %s\n", balance)
 
 	//err = s.transferPath.EndpointB.UpdateClient()
 	//s.Require().NoError(err)
-	//res, err := s.transferPath.EndpointB.RecvPacketWithResult(packet)
+	//err = s.transferPath.EndpointB.RecvPacket(packet)
 	//s.Require().NoError(err)
-	//ack, err := ibctesting.ParseAckFromEvents(res.GetEvents())
-	//s.Require().NoError(err)
-	//fmt.Printf("debug ack: %s\n", ack)
-	//err = s.transferPath.EndpointA.AcknowledgePacket(packet, ack)
+	//ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	//err = s.transferPath.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
 	//s.Require().NoError(err)
 
 	// update clients TODO remove?
 	err = s.transferPath.EndpointA.UpdateClient()
 	s.Require().NoError(err)
 	err = s.transferPath.EndpointB.UpdateClient()
+	s.Require().NoError(err)
+	err = s.path.EndpointA.UpdateClient()
+	s.Require().NoError(err)
+	err = s.path.EndpointB.UpdateClient()
 	s.Require().NoError(err)
 
 	// check the consumer chain fee pool which should be now emptied

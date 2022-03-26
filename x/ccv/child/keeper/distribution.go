@@ -55,7 +55,10 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 			clienttypes.Height{0, 0},
 			uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
 		)
-		fmt.Printf("debug events len distribute %v\n", len(ctx.EventManager().Events()))
+
+		balance := k.bankKeeper.GetBalance(ctx, consumerFeePoolAddr, "stake")
+		fmt.Printf("debug ibc-go sender stake (distr): %s\n", balance)
+
 		if err != nil {
 			panic(err)
 			return err
