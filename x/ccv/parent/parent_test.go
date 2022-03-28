@@ -782,9 +782,9 @@ func (s *ParentTestSuite) TestDistribution() {
 	fcAddr2 := cApp.ChildKeeper.GetProviderFeePoolAddrStr(cChain.GetContext())
 	s.Require().Equal(fcAddr, fcAddr2)
 
-	//// XXX Alternative Fee Pool Address debug
-	//altAddr := s.parentChain.SenderAccount.GetAddress()
-	//cApp.ChildKeeper.SetProviderFeePoolAddrStr(cChain.GetContext(), altAddr.String())
+	// XXX Alternative Fee Pool Address debug
+	altAddr := s.parentChain.SenderAccount.GetAddress()
+	cApp.ChildKeeper.SetProviderFeePoolAddrStr(cChain.GetContext(), altAddr.String())
 
 	// make sure we're starting at consumer height 21 (some blocks commited during setup)
 	s.Require().Equal(int64(21), cChain.GetContext().BlockHeight())
@@ -852,27 +852,25 @@ func (s *ParentTestSuite) TestDistribution() {
 	//cChain.App.BeginBlock(abci.RequestBeginBlock{Header: cChain.CurrentHeader})
 	rspEB := cChain.App.EndBlock(abci.RequestEndBlock{Height: cChain.CurrentHeader.Height})
 
-	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-	fmt.Printf("debug ibc-go sender stake (test-post-EB): %s\n", balance)
+	cKeep.DebugFeePool(cChain.GetContext(), "test-post-EB")
 
 	cChain.App.Commit()
 	cChain.NextBlock()
 
-	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-	fmt.Printf("debug ibc-go sender stake (test-post-commit): %s\n", balance)
+	cKeep.DebugFeePool(cChain.GetContext(), "test-post-commit")
 
 	s.coordinator.IncrementTime()
 
-	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-	fmt.Printf("debug ibc-go sender stake (test2): %s\n", balance)
+	cKeep.DebugFeePool(cChain.GetContext(), "test2")
 
 	//err = s.transferPath.EndpointB.UpdateClient() // XXX remove one of these
 	//s.Require().NoError(err)
 	err = s.transferPath.EndpointA.UpdateClient()
 	s.Require().NoError(err)
 
-	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-	fmt.Printf("debug ibc-go sender stake (test3): %s\n", balance)
+	cKeep.DebugFeePool(cChain.GetContext(), "test3")
+	pbalance := pApp.BankKeeper.GetAllBalances(pChain.GetContext(), consumerFeePoolAddr)
+	fmt.Printf("pbalance (test3): %+v\n", pbalance)
 
 	// get the packet from the endblock events
 	var packet channeltypes.Packet
@@ -923,8 +921,7 @@ func (s *ParentTestSuite) TestDistribution() {
 	err = s.transferPath.EndpointA.AcknowledgePacket(packet, ack)
 	s.Require().NoError(err)
 
-	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-	fmt.Printf("debug ibc-go sender stake (test4): %s\n", balance)
+	cKeep.DebugFeePool(cChain.GetContext(), "test4")
 
 	//err = s.transferPath.EndpointB.UpdateClient()
 	//s.Require().NoError(err)
@@ -943,6 +940,12 @@ func (s *ParentTestSuite) TestDistribution() {
 	s.Require().NoError(err)
 	err = s.path.EndpointB.UpdateClient()
 	s.Require().NoError(err)
+
+	cKeep.DebugFeePool(cChain.GetContext(), "test5")
+	pbalance = pApp.BankKeeper.GetAllBalances(pChain.GetContext(), consumerFeePoolAddr)
+	fmt.Printf("pbalance (test5): %+v\n", pbalance)
+	pbalance = pApp.BankKeeper.GetAllBalances(pChain.GetContext(), altAddr)
+	fmt.Printf("altAddr (test5): %+v\n", pbalance)
 
 	// check the consumer chain fee pool which should be now emptied
 	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")

@@ -14,6 +14,15 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
+// XXX delete
+func (k Keeper) DebugFeePool(ctx sdk.Context, where string) {
+	consumerFeePoolAddr := k.accountKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
+	balanceFP := k.bankKeeper.GetBalance(ctx, consumerFeePoolAddr, "stake")
+	escrowAddress := transfertypes.GetEscrowAddress(transfertypes.PortID, k.GetDistributionTransmissionChannel(ctx))
+	balEscrow := k.bankKeeper.GetBalance(ctx, escrowAddress, "stake")
+	fmt.Printf("debug (%v) consumerFeePoolAddr: %s, escrow: %s\n", where, balanceFP, balEscrow)
+}
+
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
 func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
@@ -56,8 +65,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 			uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
 		)
 
-		balance := k.bankKeeper.GetBalance(ctx, consumerFeePoolAddr, "stake")
-		fmt.Printf("debug ibc-go sender stake (distr): %s\n", balance)
+		k.DebugFeePool(ctx, "distr")
 
 		if err != nil {
 			panic(err)
@@ -67,6 +75,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	newLtbh := types.LastTransmissionBlockHeight{
 		Height: ctx.BlockHeight(),
 	}
+
 	return k.SetLastTransmissionBlockHeight(ctx, newLtbh)
 }
 
