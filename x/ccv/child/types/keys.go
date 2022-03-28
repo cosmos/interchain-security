@@ -46,8 +46,8 @@ const (
 	// ValsetUpdateBlockHeightPrefix
 	HeightValsetUpdateIDPrefix = "heightvalsetupdateid"
 
-	// OutstandingPenaltyPrefix
-	OutstandingPenaltyPrefix = "outstandingpenalty"
+	// OutstandingDowntimePrefix
+	OutstandingDowntimePrefix = "OutstandingDowntime"
 
 	// CrossChainValidatorPrefix
 	CrossChainValidatorPrefix = "crosschainvalidator"
@@ -97,8 +97,8 @@ func HeightValsetUpdateIDKey(height uint64) []byte {
 	return append([]byte(HeightValsetUpdateIDPrefix), hBytes...)
 }
 
-func OutstandingPenaltyKey(v sdk.ConsAddress) []byte {
-	return append([]byte(OutstandingPenaltyPrefix), address.MustLengthPrefix(v.Bytes())...)
+func OutstandingDowntimeKey(v sdk.ConsAddress) []byte {
+	return append([]byte(OutstandingDowntimePrefix), address.MustLengthPrefix(v.Bytes())...)
 }
 
 func GetCrossChainValidatorKey(addr []byte) []byte {

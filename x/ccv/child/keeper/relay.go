@@ -53,8 +53,8 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 	k.SetUnbondingPacket(ctx, packet.Sequence, packet)
 
 	// set outstanding penalty flags to false
-	for _, addr := range newChanges.GetPenaltyAcks() {
-		k.ClearOutstandingPenalty(ctx, addr)
+	for _, addr := range newChanges.GetSlashAcks() {
+		k.ClearOutstandingDowntime(ctx, addr)
 	}
 
 	// ack will be sent asynchronously
@@ -99,8 +99,8 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 	return nil
 }
 
-// SendPenalties sends a penalty packet containing the given validator and its slashing and jailing penalty info
-func (k Keeper) SendPenalties(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, slashFraction, jailedUntil int64) error {
+// SendSlashPacket sends a penalty packet containing the given validator and its slashing and jailing penalty info
+func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, slashFraction, jailedUntil int64) error {
 	// check that parent channel is established
 	channelID, ok := k.GetParentChannel(ctx)
 	if !ok {
@@ -126,7 +126,7 @@ func (k Keeper) SendPenalties(ctx sdk.Context, validator abci.Validator, valsetU
 	}
 
 	// construct penalty packet
-	packetData := ccv.NewValidatorPenaltyPacketData(validator, valsetUpdateID, slashFraction, jailedUntil)
+	packetData := ccv.NewSlashPacketData(validator, valsetUpdateID, slashFraction, jailedUntil)
 	packetDataBytes := packetData.GetBytes()
 
 	// send ValidatorDowntime infractions in IBC packet
@@ -143,7 +143,7 @@ func (k Keeper) SendPenalties(ctx sdk.Context, validator abci.Validator, valsetU
 	return nil
 }
 
-func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorPenaltyPacketData, ack channeltypes.Acknowledgement) error {
+func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
 		// penalty packet was sent to a nonestablished channel
 		if err != sdkerrors.Wrap(
@@ -157,7 +157,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 	return nil
 }
 
-func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorPenaltyPacketData) error {
+func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) error {
 	k.SetChannelStatus(ctx, packet.DestinationChannel, ccv.INVALID)
 	return nil
 }

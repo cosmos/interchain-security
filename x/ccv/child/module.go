@@ -359,7 +359,7 @@ func (am AppModule) OnAcknowledgementPacket(
 	if err := ccv.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal child packet acknowledgement: %v", err)
 	}
-	var data ccv.ValidatorPenaltyPacketData
+	var data ccv.SlashPacketData
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal child packet data: %s", err.Error())
 	}
@@ -400,7 +400,7 @@ func (am AppModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {
-	var data ccv.ValidatorPenaltyPacketData
+	var data ccv.SlashPacketData
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal child packet data: %s", err.Error())
 	}

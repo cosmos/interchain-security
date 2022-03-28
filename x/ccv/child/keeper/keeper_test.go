@@ -374,7 +374,7 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	suite.Require().NotNil(commit, "did not found slashing packet commitment")
 
 	// verify that the penalty packet was sent
-	suite.Require().True(app.ChildKeeper.OutstandingPenalty(ctx, consAddr))
+	suite.Require().True(app.ChildKeeper.OutstandingDowntime(ctx, consAddr))
 
 	// check that the outstanding penalty flag prevents
 	// to update the jailed validator's missed block

@@ -456,7 +456,7 @@ func New(
 	)
 	parentModule := ibcparent.NewAppModule(&app.ParentKeeper)
 
-	// child keeper satfies the staking keeper interface
+	// child keeper satisfies the staking keeper interface
 	// of the slashing module
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
 		appCodec,

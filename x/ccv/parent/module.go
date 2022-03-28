@@ -328,7 +328,7 @@ func (am AppModule) OnRecvPacket(
 ) ibcexported.Acknowledgement {
 	var (
 		ack  ibcexported.Acknowledgement
-		data ccv.ValidatorPenaltyPacketData
+		data ccv.SlashPacketData
 	)
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
 		errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("cannot unmarshal CCV packet data: %s", err.Error()))

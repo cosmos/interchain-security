@@ -15,9 +15,9 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.ValidatorUpdate, valUpdateID uint64, penaltyAcks []string) error {
+func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.ValidatorUpdate, valUpdateID uint64, SlashAcks []string) error {
 
-	packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, penaltyAcks)
+	packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, SlashAcks)
 	packetDataBytes := packetData.GetBytes()
 
 	channelID, ok := k.GetChainToChannel(ctx, chainID)
@@ -113,7 +113,7 @@ func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 	k.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
 		valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 		if len(valUpdates) != 0 {
-			k.SendPacket(ctx, chainID, valUpdates, valUpdateID, k.EmptyPenaltyAcks(ctx, chainID))
+			k.SendPacket(ctx, chainID, valUpdates, valUpdateID, k.EmptySlashAcks(ctx, chainID))
 		}
 		return false
 	})
@@ -122,7 +122,7 @@ func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 }
 
 // OnRecvPacket slashes and jails the given validator in the packet data
-func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorPenaltyPacketData) exported.Acknowledgement {
+func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
 	// check that the channel is established
 	chainID, ok := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !ok {
@@ -152,7 +152,7 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data c
 
 // HandleConsumerDowntime gets the validator and the downtime infraction height from the packet data
 // validator address and valset upate ID. Then it executes the slashing the and jailing accordingly.
-func (k Keeper) HandleConsumerDowntime(ctx sdk.Context, downtimeData ccv.ValidatorPenaltyPacketData) error {
+func (k Keeper) HandleConsumerDowntime(ctx sdk.Context, downtimeData ccv.SlashPacketData) error {
 	// get the validator consensus address
 	consAddr := sdk.ConsAddress(downtimeData.Validator.Address)
 

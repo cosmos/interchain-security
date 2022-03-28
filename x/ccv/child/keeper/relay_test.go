@@ -245,7 +245,7 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 }
 
 func (suite *KeeperTestSuite) TestOnAcknowledgement() {
-	packetData := types.NewValidatorPenaltyPacketData(
+	packetData := types.NewSlashPacketData(
 		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), int64(4), int64(1),
 	)
 

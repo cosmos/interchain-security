@@ -118,14 +118,14 @@ func (suite *KeeperTestSuite) TestValsetUpdateBlockHeight() {
 	suite.Require().Equal(blockHeight, uint64(4))
 }
 
-func (suite *KeeperTestSuite) TestPenaltyAcks() {
+func (suite *KeeperTestSuite) TestSlashAcks() {
 	app := suite.parentChain.App.(*app.App)
 	ctx := suite.ctx
 
 	var chainsAcks [][]string
 
 	penaltiesfN := func() (penalties []string) {
-		app.ParentKeeper.IteratePenaltyAcks(ctx, func(id string, acks []string) bool {
+		app.ParentKeeper.IterateSlashAcks(ctx, func(id string, acks []string) bool {
 			chainsAcks = append(chainsAcks, acks)
 			return true
 		})
@@ -134,26 +134,26 @@ func (suite *KeeperTestSuite) TestPenaltyAcks() {
 
 	chainID := "consumer"
 
-	acks := app.ParentKeeper.GetPenaltyAcks(ctx, chainID)
+	acks := app.ParentKeeper.GetSlashAcks(ctx, chainID)
 	suite.Require().Nil(acks)
 
 	p := []string{"alice", "bob", "charlie"}
-	app.ParentKeeper.SetPenaltyAcks(ctx, chainID, p)
+	app.ParentKeeper.SetSlashAcks(ctx, chainID, p)
 
-	acks = app.ParentKeeper.GetPenaltyAcks(ctx, chainID)
+	acks = app.ParentKeeper.GetSlashAcks(ctx, chainID)
 	suite.Require().NotNil(acks)
 
 	suite.Require().Len(acks, 3)
-	emptied := app.ParentKeeper.EmptyPenaltyAcks(ctx, chainID)
+	emptied := app.ParentKeeper.EmptySlashAcks(ctx, chainID)
 	suite.Require().Len(emptied, 3)
 
-	acks = app.ParentKeeper.GetPenaltyAcks(ctx, chainID)
+	acks = app.ParentKeeper.GetSlashAcks(ctx, chainID)
 	suite.Require().Nil(acks)
 
 	chains := []string{"c1", "c2", "c3"}
 
 	for _, c := range chains {
-		app.ParentKeeper.SetPenaltyAcks(ctx, c, p)
+		app.ParentKeeper.SetSlashAcks(ctx, c, p)
 	}
 
 	penaltiesfN()
@@ -166,15 +166,15 @@ func (suite *KeeperTestSuite) TestAppendPenaltyAck() {
 
 	p := []string{"alice", "bob", "charlie"}
 	chains := []string{"c1", "c2"}
-	app.ParentKeeper.SetPenaltyAcks(ctx, chains[0], p)
+	app.ParentKeeper.SetSlashAcks(ctx, chains[0], p)
 
 	app.ParentKeeper.AppendPenaltyAck(ctx, chains[0], p[0])
-	acks := app.ParentKeeper.GetPenaltyAcks(ctx, chains[0])
+	acks := app.ParentKeeper.GetSlashAcks(ctx, chains[0])
 	suite.Require().NotNil(acks)
 	suite.Require().Len(acks, len(p)+1)
 
 	app.ParentKeeper.AppendPenaltyAck(ctx, chains[1], p[0])
-	acks = app.ParentKeeper.GetPenaltyAcks(ctx, chains[1])
+	acks = app.ParentKeeper.GetSlashAcks(ctx, chains[1])
 	suite.Require().NotNil(acks)
 	suite.Require().Len(acks, 1)
 }

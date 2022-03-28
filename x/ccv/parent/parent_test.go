@@ -406,7 +406,7 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	// with the slashing and jailing parameters
 	oldBlockTime := s.childCtx().BlockTime()
 	slashFraction := int64(100)
-	packetData := types.NewValidatorPenaltyPacketData(validator, valsetUpdateId, slashFraction,
+	packetData := types.NewSlashPacketData(validator, valsetUpdateId, slashFraction,
 		int64(slashingtypes.DefaultDowntimeJailDuration))
 	timeout := uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, childtypes.PortID, s.path.EndpointA.ChannelID,
@@ -417,7 +417,7 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	s.Require().NoError(err)
 
 	// Set outstanding penalty flag
-	s.childChain.App.(*app.App).ChildKeeper.SetOutstandingPenalty(s.childCtx(), consAddr)
+	s.childChain.App.(*app.App).ChildKeeper.SetOutstandingDowntime(s.childCtx(), consAddr)
 
 	// save next VSC packet info
 	oldBlockTime = s.parentCtx().BlockTime()
@@ -477,7 +477,7 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	s.Require().True(valSignInfo.JailedUntil.After(s.parentCtx().BlockHeader().Time))
 
 	// check that the outstanding penalty flag is reset on the consumer
-	pFlag := s.childChain.App.(*app.App).ChildKeeper.OutstandingPenalty(s.childCtx(), consAddr)
+	pFlag := s.childChain.App.(*app.App).ChildKeeper.OutstandingDowntime(s.childCtx(), consAddr)
 	s.Require().False(pFlag)
 
 	// check that penalty packet gets acknowledged
@@ -577,7 +577,7 @@ func (s *ParentTestSuite) TestHandleConsumerDowntime() {
 	},
 	}
 
-	penaltyPkt := ccv.ValidatorPenaltyPacketData{Validator: abci.Validator{
+	penaltyPkt := ccv.SlashPacketData{Validator: abci.Validator{
 		Address: consAdrr.Bytes(),
 		Power:   int64(1),
 	},
@@ -607,7 +607,7 @@ func (s *ParentTestSuite) TestHandleConsumerDowntimeErrors() {
 
 	// construct slashing packet containing unkown validator
 	pk := ed25519.GenPrivKey().PubKey()
-	penaltyPkt := ccv.NewValidatorPenaltyPacketData(
+	penaltyPkt := ccv.NewSlashPacketData(
 		abci.Validator{Address: pk.Address(), Power: int64(0)}, uint64(0), int64(1), int64(0),
 	)
 
@@ -654,13 +654,13 @@ func (s *ParentTestSuite) TestPenaltyPacketAcknowldgement() {
 	packet := channeltypes.NewPacket([]byte{}, 1, childtypes.PortID, s.path.EndpointA.ChannelID,
 		parenttypes.PortID, "wrongchannel", clienttypes.Height{}, 0)
 
-	ack := parentKeeper.OnRecvPacket(s.parentCtx(), packet, ccv.ValidatorPenaltyPacketData{})
+	ack := parentKeeper.OnRecvPacket(s.parentCtx(), packet, ccv.SlashPacketData{})
 	s.Require().NotNil(ack)
 
-	err := childKeeper.OnAcknowledgementPacket(s.childCtx(), packet, ccv.ValidatorPenaltyPacketData{}, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))
+	err := childKeeper.OnAcknowledgementPacket(s.childCtx(), packet, ccv.SlashPacketData{}, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))
 	s.Require().NoError(err)
 
-	err = childKeeper.OnAcknowledgementPacket(s.childCtx(), packet, ccv.ValidatorPenaltyPacketData{}, channeltypes.NewErrorAcknowledgement("another error"))
+	err = childKeeper.OnAcknowledgementPacket(s.childCtx(), packet, ccv.SlashPacketData{}, channeltypes.NewErrorAcknowledgement("another error"))
 	s.Require().Error(err)
 }
 

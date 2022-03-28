@@ -502,21 +502,21 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 	store.Delete(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
 }
 
-// SetPenaltyAcks sets the penalty acks under the given chain ID
-func (k Keeper) SetPenaltyAcks(ctx sdk.Context, chainID string, acks []string) {
+// SetSlashAcks sets the penalty acks under the given chain ID
+func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	store := ctx.KVStore(k.storeKey)
 	buf := &bytes.Buffer{}
 	err := json.NewEncoder(buf).Encode(acks)
 	if err != nil {
 		panic("failed to encode json")
 	}
-	store.Set(types.PenaltyAcksKey(chainID), buf.Bytes())
+	store.Set(types.SlashAcksKey(chainID), buf.Bytes())
 }
 
-// GetPenaltyAcks returns the penalty acks stored under the given chain ID
-func (k Keeper) GetPenaltyAcks(ctx sdk.Context, chainID string) []string {
+// GetSlashAcks returns the penalty acks stored under the given chain ID
+func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PenaltyAcksKey(chainID))
+	bz := store.Get(types.SlashAcksKey(chainID))
 	if bz == nil {
 		return nil
 	}
@@ -531,26 +531,26 @@ func (k Keeper) GetPenaltyAcks(ctx sdk.Context, chainID string) []string {
 	return acks
 }
 
-// EmptyPenaltyAcks empties and returns the penalty acks for a given chain ID
-func (k Keeper) EmptyPenaltyAcks(ctx sdk.Context, chainID string) (acks []string) {
-	acks = k.GetPenaltyAcks(ctx, chainID)
+// EmptySlashAcks empties and returns the penalty acks for a given chain ID
+func (k Keeper) EmptySlashAcks(ctx sdk.Context, chainID string) (acks []string) {
+	acks = k.GetSlashAcks(ctx, chainID)
 	if len(acks) < 1 {
 		return
 	}
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.PenaltyAcksKey(chainID))
+	store.Delete(types.SlashAcksKey(chainID))
 	return
 }
 
-// IteratePenaltyAcks iterates through the penalty acks set in the store
-func (k Keeper) IteratePenaltyAcks(ctx sdk.Context, cb func(chainID string, acks []string) bool) {
+// IterateSlashAcks iterates through the penalty acks set in the store
+func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) bool) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.PenaltyAcksPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte(types.SlashAcksPrefix))
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 
-		id := string(iterator.Key()[len(types.PenaltyAcksPrefix)+1:])
+		id := string(iterator.Key()[len(types.SlashAcksPrefix)+1:])
 
 		var data []string
 		buf := bytes.NewBuffer(iterator.Value())
@@ -568,7 +568,7 @@ func (k Keeper) IteratePenaltyAcks(ctx sdk.Context, cb func(chainID string, acks
 
 // AppendPenaltyAck appends the given penalty ack to the given chain ID penalty acks in store
 func (k Keeper) AppendPenaltyAck(ctx sdk.Context, chainID, ack string) {
-	acks := k.GetPenaltyAcks(ctx, chainID)
+	acks := k.GetSlashAcks(ctx, chainID)
 	acks = append(acks, ack)
-	k.SetPenaltyAcks(ctx, chainID, acks)
+	k.SetSlashAcks(ctx, chainID, acks)
 }

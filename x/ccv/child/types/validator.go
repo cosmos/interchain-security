@@ -7,8 +7,8 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-func NewCCValidator(change abci.ValidatorUpdate) *CrossChainValidator {
-	return &CrossChainValidator{
+func NewCCValidator(change abci.ValidatorUpdate) CrossChainValidator {
+	return CrossChainValidator{
 		Address:         utils.GetChangePubKeyAddress(change),
 		ValidatorUpdate: change,
 	}

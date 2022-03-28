@@ -364,27 +364,27 @@ func (k Keeper) HeightToValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 	return 0
 }
 
-// OutstandingPenalty returns the outstanding penalty flag for a given validator
-func (k Keeper) OutstandingPenalty(ctx sdk.Context, address sdk.ConsAddress) bool {
+// OutstandingDowntime returns the outstanding downtime flag for a given validator
+func (k Keeper) OutstandingDowntime(ctx sdk.Context, address sdk.ConsAddress) bool {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.OutstandingPenaltyKey(address))
+	bz := store.Get(types.OutstandingDowntimeKey(address))
 	return bz != nil
 }
 
-// SetOutstandingPenalty sets the outstanding penalty flag for a given validator
-func (k Keeper) SetOutstandingPenalty(ctx sdk.Context, address sdk.ConsAddress) {
+// SetOutstandingDowntime sets the outstanding downtime flag for a given validator
+func (k Keeper) SetOutstandingDowntime(ctx sdk.Context, address sdk.ConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.OutstandingPenaltyKey(address), []byte{})
+	store.Set(types.OutstandingDowntimeKey(address), []byte{})
 }
 
-// ClearOutstandingPenalty clears the outstanding penalty flag for a given validator
-func (k Keeper) ClearOutstandingPenalty(ctx sdk.Context, address string) {
+// ClearOutstandingDowntime clears the outstanding downtime flag for a given validator
+func (k Keeper) ClearOutstandingDowntime(ctx sdk.Context, address string) {
 	consAddr, err := sdk.ConsAddressFromBech32(address)
 	if err != nil {
 		return
 	}
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.OutstandingPenaltyKey(consAddr))
+	store.Delete(types.OutstandingDowntimeKey(consAddr))
 }
 
 // SetCCValidator sets a cross-chain validator under its validator address

@@ -56,8 +56,8 @@ const (
 	// ChildGenesisStatePrefix stores child genesis state material (consensus state and client state) indexed by child chain id
 	ChildGenesisPrefix = "childgenesisstate"
 
-	// PenaltyAcks
-	PenaltyAcksPrefix = "penaltyacks"
+	// SlashAcks
+	SlashAcksPrefix = "slashacks"
 )
 
 var (
@@ -130,7 +130,7 @@ func ChildGenesisKey(chainID string) []byte {
 	return append(HashString(ChildGenesisPrefix), []byte(chainID)...)
 }
 
-// PenaltyAcksKey returns the key under which penalty acks are stored for a given chain ID
-func PenaltyAcksKey(chainID string) []byte {
-	return []byte(fmt.Sprintf("%s/%s", PenaltyAcksPrefix, chainID))
+// SlashAcksKey returns the key under which penalty acks are stored for a given chain ID
+func SlashAcksKey(chainID string) []byte {
+	return []byte(fmt.Sprintf("%s/%s", SlashAcksPrefix, chainID))
 }

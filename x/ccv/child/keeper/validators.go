@@ -11,54 +11,35 @@ import (
 )
 
 // ApplyCCValidatorChanges applies the given changes to the cross-chain validators states
-// then handles and returns the new bonded validators
-func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) (newVals []types.CrossChainValidator, err error) {
+func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) error {
 	for _, change := range changes {
 		addr := utils.GetChangePubKeyAddress(change)
-		val, found := k.GetCCValidator(ctx, utils.GetChangePubKeyAddress(change))
+		val, found := k.GetCCValidator(ctx, addr)
 
-		// filter unbonding validators
+		// set new validator bonded
+		if !found {
+			consAddr := sdk.ConsAddress(addr)
+			if change.Power < 1 {
+				return fmt.Errorf("failed to find validator: %s", consAddr)
+			}
+			k.SetCCValidator(ctx, types.NewCCValidator(change))
+			k.AfterValidatorBonded(ctx, consAddr, nil)
+			continue
+		}
+
+		// remove unbonding existing-validators
 		if change.Power < 1 {
 			if found {
-				k.DeleteCCValidator(ctx, val.Address)
-				continue
+				k.DeleteCCValidator(ctx, addr)
 			}
-			return nil, fmt.Errorf("failed to find validator %s ", sdk.ConsAddress(addr))
+			continue
 		}
 
-		// update bonded validators
-		if !found {
-			val = *types.NewCCValidator(change)
-			newVals = append(newVals, val)
-		} else {
-			val.ValidatorUpdate = change
-		}
-
+		// update existing validators power
+		val.ValidatorUpdate.Power = change.Power
 		k.SetCCValidator(ctx, val)
 	}
 
-	// handle the new bonded validators
-	if len(newVals) > 0 {
-		err = k.HandleCCValidatorsBonded(ctx, newVals)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return
-}
-
-// HandleCCValidatorsBonded handles the given cross-chain validators newly bonded
-func (k Keeper) HandleCCValidatorsBonded(ctx sdk.Context, newVals []types.CrossChainValidator) error {
-	for _, v := range newVals {
-		consAddr := sdk.ConsAddress(v.Address)
-		// check that the cross-chain validator exists
-		if _, found := k.GetCCValidator(ctx, v.Address); found {
-			k.AfterValidatorBonded(ctx, consAddr, nil)
-		} else {
-			return fmt.Errorf("new validator unfound in cross-chain validator states")
-		}
-	}
 	return nil
 }
 
@@ -74,7 +55,7 @@ func (k Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.Val
 
 // IsJailed returns the outstanding penalty flag for the given validator adddress
 func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
-	return k.OutstandingPenalty(ctx, addr.Bytes())
+	return k.OutstandingDowntime(ctx, addr)
 }
 
 // ValidatorByConsAddr returns an empty validator
@@ -87,7 +68,7 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFraction sdk.Dec) {
 
 	// check that the penalty flag is not set
-	if k.OutstandingPenalty(ctx, addr) {
+	if k.OutstandingDowntime(ctx, addr) {
 		return
 	}
 
@@ -99,7 +80,7 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 	}
 
 	// send penalties
-	k.SendPenalties(
+	k.SendSlashPacket(
 		ctx,
 		abci.Validator{
 			Address: addr.Bytes(),
@@ -112,7 +93,7 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 
 // Jail sets the penalty flag to true for the given validator address
 func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {
-	k.SetOutstandingPenalty(ctx, addr)
+	k.SetOutstandingDowntime(ctx, addr)
 }
 
 func (k Keeper) Unjail(sdk.Context, sdk.ConsAddress) {}
