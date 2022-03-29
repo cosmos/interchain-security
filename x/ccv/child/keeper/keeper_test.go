@@ -321,8 +321,8 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 	}
 }
 
-// TestValidatorDowntime tests if a penalty packet is sent
-// and if the outstanding penalty flag is switched
+// TestValidatorDowntime tests if a slashing packet is sent
+// and if the outstanding slashing flag is switched
 // when a validator has downtime on the slashing module
 func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	// initial setup
@@ -340,7 +340,7 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	// signInfo, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
 	// suite.Require().True(found)
 
-	// save next sequence before sending a penalty packet
+	// save next sequence before sending a slashing packet
 	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
 	suite.Require().True(ok)
 
@@ -351,7 +351,7 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 		ctx = ctx.WithBlockHeight(height)
 		app.SlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, true)
 	}
-	// Miss 500 blocks and expect a penalty packet to be sent
+	// Miss 500 blocks and expect a slashing packet to be sent
 	for ; height < app.SlashingKeeper.SignedBlocksWindow(ctx)+(app.SlashingKeeper.SignedBlocksWindow(ctx)-app.SlashingKeeper.MinSignedPerWindow(ctx))+1; height++ {
 		ctx = ctx.WithBlockHeight(height)
 		app.SlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, false)
@@ -373,10 +373,10 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	commit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, types.PortID, channelID, seq)
 	suite.Require().NotNil(commit, "did not found slashing packet commitment")
 
-	// verify that the penalty packet was sent
+	// verify that the slashing packet was sent
 	suite.Require().True(app.ChildKeeper.OutstandingDowntime(ctx, consAddr))
 
-	// check that the outstanding penalty flag prevents
+	// check that the outstanding slashing flag prevents
 	// to update the jailed validator's missed block
 	for ; height < app.SlashingKeeper.SignedBlocksWindow(ctx)+
 		(2*(app.SlashingKeeper.SignedBlocksWindow(ctx)-app.SlashingKeeper.MinSignedPerWindow(ctx))+1); height++ {

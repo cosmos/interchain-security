@@ -130,7 +130,7 @@ func ChildGenesisKey(chainID string) []byte {
 	return append(HashString(ChildGenesisPrefix), []byte(chainID)...)
 }
 
-// SlashAcksKey returns the key under which penalty acks are stored for a given chain ID
+// SlashAcksKey returns the key under which slashing acks are stored for a given chain ID
 func SlashAcksKey(chainID string) []byte {
 	return []byte(fmt.Sprintf("%s/%s", SlashAcksPrefix, chainID))
 }

@@ -53,7 +53,7 @@ func (k Keeper) Validator(ctx sdk.Context, addr sdk.ValAddress) stakingtypes.Val
 	panic("unimplemented on CCV keeper")
 }
 
-// IsJailed returns the outstanding penalty flag for the given validator adddress
+// IsJailed returns the outstanding slashing flag for the given validator adddress
 func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
 	return k.OutstandingDowntime(ctx, addr)
 }
@@ -64,16 +64,16 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 }
 
 // Slash sends a slashing request to the provider chain
-// if the penalty flag for the given validator address is set to false
+// if the slashing flag for the given validator address is set to false
 func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFraction sdk.Dec) {
 
-	// check that the penalty flag is not set
+	// check that the slashing flag is not set
 	if k.OutstandingDowntime(ctx, addr) {
 		return
 	}
 
 	// get current valset update ID
-	// TODO: use pending penalty when channel not established yet
+	// TODO: use pending slashing packet when channel not established yet
 	valsetUpdateID := k.HeightToValsetUpdateID(ctx, uint64(infractionHeight))
 	if valsetUpdateID < 1 {
 		return
@@ -89,12 +89,12 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		slashFraction.TruncateInt64(),
 		k.slashingKeeper.DowntimeJailDuration(ctx).Nanoseconds(),
 	)
-}
 
-// Jail sets the penalty flag to true for the given validator address
-func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {
+	// set outstanding downtime flag
 	k.SetOutstandingDowntime(ctx, addr)
 }
+
+func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {}
 
 func (k Keeper) Unjail(sdk.Context, sdk.ConsAddress) {}
 

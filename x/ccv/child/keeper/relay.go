@@ -52,7 +52,7 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 	k.SetUnbondingTime(ctx, packet.Sequence, uint64(unbondingTime.UnixNano()))
 	k.SetUnbondingPacket(ctx, packet.Sequence, packet)
 
-	// set outstanding penalty flags to false
+	// set outstanding slashing flags to false
 	for _, addr := range newChanges.GetSlashAcks() {
 		k.ClearOutstandingDowntime(ctx, addr)
 	}
@@ -99,7 +99,7 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 	return nil
 }
 
-// SendSlashPacket sends a penalty packet containing the given validator and its slashing and jailing penalty info
+// SendSlashPacket sends a slashing packet containing the given validator and its slashing and jailing slashing info
 func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, slashFraction, jailedUntil int64) error {
 	// check that parent channel is established
 	channelID, ok := k.GetParentChannel(ctx)
@@ -125,7 +125,7 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 		)
 	}
 
-	// construct penalty packet
+	// construct slashing packet
 	packetData := ccv.NewSlashPacketData(validator, valsetUpdateID, slashFraction, jailedUntil)
 	packetDataBytes := packetData.GetBytes()
 
@@ -145,7 +145,7 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
-		// penalty packet was sent to a nonestablished channel
+		// slashing packet was sent to a nonestablished channel
 		if err != sdkerrors.Wrap(
 			channeltypes.ErrInvalidChannelState,
 			packet.DestinationChannel,

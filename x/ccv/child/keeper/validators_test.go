@@ -7,7 +7,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-func (k KeeperTestSuite) TestApplyCCValidatorChain() {
+func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
 	childKeeper := k.childChain.App.(*app.App).ChildKeeper
 	ctx := k.ctx
 

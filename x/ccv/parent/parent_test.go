@@ -416,7 +416,7 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	err = s.path.EndpointA.SendPacket(packet)
 	s.Require().NoError(err)
 
-	// Set outstanding penalty flag
+	// Set outstanding slashing flag
 	s.childChain.App.(*app.App).ChildKeeper.SetOutstandingDowntime(s.childCtx(), consAddr)
 
 	// save next VSC packet info
@@ -476,11 +476,11 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	s.Require().True(found)
 	s.Require().True(valSignInfo.JailedUntil.After(s.parentCtx().BlockHeader().Time))
 
-	// check that the outstanding penalty flag is reset on the consumer
+	// check that the outstanding slashing flag is reset on the consumer
 	pFlag := s.childChain.App.(*app.App).ChildKeeper.OutstandingDowntime(s.childCtx(), consAddr)
 	s.Require().False(pFlag)
 
-	// check that penalty packet gets acknowledged
+	// check that slashing packet gets acknowledged
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
 	s.Require().NoError(err)
@@ -577,7 +577,7 @@ func (s *ParentTestSuite) TestHandleConsumerDowntime() {
 	},
 	}
 
-	penaltyPkt := ccv.SlashPacketData{Validator: abci.Validator{
+	slashingPkt := ccv.SlashPacketData{Validator: abci.Validator{
 		Address: consAdrr.Bytes(),
 		Power:   int64(1),
 	},
@@ -585,11 +585,11 @@ func (s *ParentTestSuite) TestHandleConsumerDowntime() {
 
 	for _, t := range tests {
 		// set test case parameters
-		penaltyPkt.ValsetUpdateId = t.valsetUpdateID
-		penaltyPkt.SlashFraction = t.slashFraction
+		slashingPkt.ValsetUpdateId = t.valsetUpdateID
+		slashingPkt.SlashFraction = t.slashFraction
 
 		// slash
-		err := parentKeeper.HandleConsumerDowntime(s.parentCtx(), penaltyPkt)
+		err := parentKeeper.HandleConsumerDowntime(s.parentCtx(), slashingPkt)
 		s.Require().NoError(err)
 
 		// check that second undelegation was slashed
@@ -607,11 +607,11 @@ func (s *ParentTestSuite) TestHandleConsumerDowntimeErrors() {
 
 	// construct slashing packet containing unkown validator
 	pk := ed25519.GenPrivKey().PubKey()
-	penaltyPkt := ccv.NewSlashPacketData(
+	slashingPkt := ccv.NewSlashPacketData(
 		abci.Validator{Address: pk.Address(), Power: int64(0)}, uint64(0), int64(1), int64(0),
 	)
 
-	err := parentKeeper.HandleConsumerDowntime(s.parentCtx(), penaltyPkt)
+	err := parentKeeper.HandleConsumerDowntime(s.parentCtx(), slashingPkt)
 	s.Require().Error(err, "did slash unknown validator")
 
 	val := s.parentChain.Vals.Validators[0]
@@ -624,30 +624,30 @@ func (s *ParentTestSuite) TestHandleConsumerDowntimeErrors() {
 	parentStakingKeeper.Jail(s.parentCtx(), consAddr)
 	s.coordinator.CommitBlock(s.parentChain)
 
-	penaltyPkt.Validator.Address = val.Address
+	slashingPkt.Validator.Address = val.Address
 
-	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), penaltyPkt)
+	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), slashingPkt)
 	s.Require().Error(err, "did slash unbonded validator")
 
 	val = s.parentChain.Vals.Validators[1]
-	penaltyPkt.Validator.Address = val.Address
+	slashingPkt.Validator.Address = val.Address
 
-	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), penaltyPkt)
+	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), slashingPkt)
 	s.Require().Error(err, "did slash without infraction height")
 
 	// set current valset update ID
-	penaltyPkt.ValsetUpdateId = vID
+	slashingPkt.ValsetUpdateId = vID
 
 	// create validator signing info
 	valInfo := slashingtypes.NewValidatorSigningInfo(sdk.ConsAddress(val.Address), s.parentCtx().BlockHeight(),
 		s.parentCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
 	parentSlashingKeeper.SetValidatorSigningInfo(s.parentCtx(), sdk.ConsAddress(val.Address), valInfo)
 
-	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), penaltyPkt)
+	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), slashingPkt)
 	s.Require().NoError(err)
 }
 
-func (s *ParentTestSuite) TestPenaltyPacketAcknowldgement() {
+func (s *ParentTestSuite) TestslashingPacketAcknowldgement() {
 	parentKeeper := s.parentChain.App.(*app.App).ParentKeeper
 	childKeeper := s.childChain.App.(*app.App).ChildKeeper
 

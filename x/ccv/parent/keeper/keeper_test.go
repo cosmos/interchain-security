@@ -160,7 +160,7 @@ func (suite *KeeperTestSuite) TestSlashAcks() {
 	suite.Require().Len(chainsAcks, len(chains))
 }
 
-func (suite *KeeperTestSuite) TestAppendPenaltyAck() {
+func (suite *KeeperTestSuite) TestAppendslashingAck() {
 	app := suite.parentChain.App.(*app.App)
 	ctx := suite.ctx
 
@@ -168,12 +168,12 @@ func (suite *KeeperTestSuite) TestAppendPenaltyAck() {
 	chains := []string{"c1", "c2"}
 	app.ParentKeeper.SetSlashAcks(ctx, chains[0], p)
 
-	app.ParentKeeper.AppendPenaltyAck(ctx, chains[0], p[0])
+	app.ParentKeeper.AppendslashingAck(ctx, chains[0], p[0])
 	acks := app.ParentKeeper.GetSlashAcks(ctx, chains[0])
 	suite.Require().NotNil(acks)
 	suite.Require().Len(acks, len(p)+1)
 
-	app.ParentKeeper.AppendPenaltyAck(ctx, chains[1], p[0])
+	app.ParentKeeper.AppendslashingAck(ctx, chains[1], p[0])
 	acks = app.ParentKeeper.GetSlashAcks(ctx, chains[1])
 	suite.Require().NotNil(acks)
 	suite.Require().Len(acks, 1)

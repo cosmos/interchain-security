@@ -137,14 +137,14 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data c
 		return &ack
 	}
 
-	// apply penalty
+	// apply slashing
 	if err := k.HandleConsumerDowntime(ctx, data); err != nil {
 		ack := channeltypes.NewErrorAcknowledgement(err.Error())
 		return &ack
 	}
 
-	// add penalty ack to child chain
-	k.AppendPenaltyAck(ctx, chainID, sdk.ConsAddress(data.Validator.Address).String())
+	// add slashing ack to child chain
+	k.AppendslashingAck(ctx, chainID, sdk.ConsAddress(data.Validator.Address).String())
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
