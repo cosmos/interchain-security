@@ -50,14 +50,18 @@ const (
 	// child chain to unbond
 	UBDEIndexPrefix = "childchaintoubdes"
 
-	//ValsetUpdateBlockHeightPrefix
+	//ValsetUpdateBlockHeightPrefix is the key prefix that will store the mapping from valset update ID to block height
 	ValsetUpdateBlockHeightPrefix = "valsetupdateblockheight"
 
 	// ChildGenesisStatePrefix stores child genesis state material (consensus state and client state) indexed by child chain id
 	ChildGenesisPrefix = "childgenesisstate"
 
-	// SlashAcks
+	// SlashAcksPrefix is the key prefix that will store consensus address of child chain validators successfully slashed on the parent chain
 	SlashAcksPrefix = "slashacks"
+
+	// InitChainHeightPrefix is the key prefix that will store the mapping from a chain id to the corresponding block height on the provider
+	// this child chain was initialized
+	InitChainHeightPrefix = "initchainheight"
 )
 
 var (
@@ -133,4 +137,9 @@ func ChildGenesisKey(chainID string) []byte {
 // SlashAcksKey returns the key under which slashing acks are stored for a given chain ID
 func SlashAcksKey(chainID string) []byte {
 	return []byte(fmt.Sprintf("%s/%s", SlashAcksPrefix, chainID))
+}
+
+// InitChainHeightKey returns the key under which the block height for a given chain ID is stored
+func InitChainHeightKey(chainID string) []byte {
+	return []byte(fmt.Sprintf("%s/%s", InitChainHeightPrefix, chainID))
 }

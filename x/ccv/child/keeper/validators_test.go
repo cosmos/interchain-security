@@ -15,9 +15,10 @@ func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
 	k.Require().NoError(err)
 
 	// expect an error when trying to unbound a validator not found in the child states
-	err = childKeeper.ApplyCCValidatorChanges(ctx,
-		[]abci.ValidatorUpdate{{PubKey: pk, Power: 0}})
-	k.Require().Error(err)
+	k.Require().Panics(func() {
+		childKeeper.ApplyCCValidatorChanges(ctx,
+			[]abci.ValidatorUpdate{{PubKey: pk, Power: 0}})
+	})
 
 	// get validators created from genesis
 	vals := childKeeper.GetAllCCValidator(ctx)
@@ -43,8 +44,7 @@ func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
 	}
 
 	// apply changes to child states
-	err = childKeeper.ApplyCCValidatorChanges(ctx, changes)
-	k.Require().NoError(err)
+	childKeeper.ApplyCCValidatorChanges(ctx, changes)
 
 	// check total voting power
 	ccVals := childKeeper.GetAllCCValidator(ctx)
@@ -64,8 +64,7 @@ func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
 	}
 
 	// apply and verify changes from the child states
-	err = childKeeper.ApplyCCValidatorChanges(ctx, changes[0:2])
-	k.Require().NoError(err)
+	childKeeper.ApplyCCValidatorChanges(ctx, changes[0:2])
 
 	ccVals = childKeeper.GetAllCCValidator(ctx)
 	k.Require().NoError(err)

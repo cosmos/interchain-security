@@ -520,11 +520,11 @@ func (s *ParentTestSuite) TestHandleConsumerDowntime() {
 		return undel()
 	}
 
-	// save valset update ID which maps the next block height
+	// save valset update ID mapping the next block height
 	valseUpdateID1 := parentKeeper.GetValidatorSetUpdateId(s.parentCtx())
-	// create a valset update ID to map the current block height
+
+	// get valset update ID mapping the current block height
 	valseUpdateID0 := valseUpdateID1 - 1
-	parentKeeper.SetValsetUpdateBlockHeight(s.parentCtx(), valseUpdateID0, uint64(s.parentCtx().BlockHeight()))
 
 	// create first undelegation entry
 	ubdBalance := ubdAmount.Mul(bondAmt.ToDec()).TruncateInt()
@@ -556,24 +556,21 @@ func (s *ParentTestSuite) TestHandleConsumerDowntime() {
 
 	// resulting balance after slashing
 	ubdBalanceSlashed := ubdBalance.Sub(ubdBalance.Quo(sdk.NewInt(4)))
+	ubdBalanceSlashed2 := ubdBalanceSlashed.Sub(ubdBalance.Quo(sdk.NewInt(4)))
 
 	// test slashing using the valset update IDs
 	tests := []struct {
 		expBalances    []sdk.Int
 		valsetUpdateID uint64
-		slashFraction  int64
 	}{{ // both undelegations slashed: valseUpdateID0  maps to 1st undelegation height
 		expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed},
 		valsetUpdateID: valseUpdateID0,
-		slashFraction:  int64(4),
 	}, { // second undelegation is slashed again: valseUpdateID1 maps to 2nd undelegation height
-		expBalances:    []sdk.Int{ubdBalanceSlashed, sdk.NewInt(0)},
+		expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed2},
 		valsetUpdateID: valseUpdateID1,
-		slashFraction:  int64(1),
 	}, { // no slashing: valseUpdateID2 maps to 2nd undelegation height + 1
-		expBalances:    []sdk.Int{ubdBalanceSlashed, sdk.NewInt(0)},
+		expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed2},
 		valsetUpdateID: valseUpdateID2,
-		slashFraction:  int64(1),
 	},
 	}
 
@@ -581,15 +578,15 @@ func (s *ParentTestSuite) TestHandleConsumerDowntime() {
 		Address: consAdrr.Bytes(),
 		Power:   int64(1),
 	},
+		SlashFraction: int64(4),
 	}
 
 	for _, t := range tests {
 		// set test case parameters
 		slashingPkt.ValsetUpdateId = t.valsetUpdateID
-		slashingPkt.SlashFraction = t.slashFraction
 
 		// slash
-		err := parentKeeper.HandleConsumerDowntime(s.parentCtx(), slashingPkt)
+		err := parentKeeper.HandleConsumerDowntime(s.parentCtx(), s.childChain.ChainID, slashingPkt)
 		s.Require().NoError(err)
 
 		// check that second undelegation was slashed
@@ -604,46 +601,65 @@ func (s *ParentTestSuite) TestHandleConsumerDowntimeErrors() {
 	parentStakingKeeper := s.parentChain.App.GetStakingKeeper()
 	parentKeeper := s.parentChain.App.(*app.App).ParentKeeper
 	parentSlashingKeeper := s.parentChain.App.(*app.App).SlashingKeeper
+	childChainID := s.childChain.ChainID
 
-	// construct slashing packet containing unkown validator
-	pk := ed25519.GenPrivKey().PubKey()
-	slashingPkt := ccv.NewSlashPacketData(
-		abci.Validator{Address: pk.Address(), Power: int64(0)}, uint64(0), int64(1), int64(0),
-	)
-
-	err := parentKeeper.HandleConsumerDowntime(s.parentCtx(), slashingPkt)
+	// expect an error if initial block height isn't set for child chain
+	err := parentKeeper.HandleConsumerDowntime(s.parentCtx(), childChainID, types.SlashPacketData{})
 	s.Require().Error(err, "did slash unknown validator")
 
-	val := s.parentChain.Vals.Validators[0]
-	consAddr := sdk.ConsAddress(val.Address)
-
-	// save valset update ID
+	s.SetupCCVChannel()
+	// save VSC ID
 	vID := parentKeeper.GetValidatorSetUpdateId(s.parentCtx())
 
-	// jail validator
+	// set faulty block height for current VSC ID
+	parentKeeper.SetValsetUpdateBlockHeight(s.parentCtx(), vID, 0)
+
+	// expect an error if block height mapping VSC ID is zero
+	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), childChainID, types.SlashPacketData{ValsetUpdateId: vID})
+	s.Require().Error(err, "did slash unknown validator")
+
+	// construct slashing packet with non existing validator
+	slashingPkt := ccv.NewSlashPacketData(
+		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
+			Power: int64(0)}, uint64(0), int64(1), int64(0),
+	)
+	//expect an error if validator doesn't exist
+	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), childChainID, slashingPkt)
+	s.Require().Error(err, "did slash unknown validator")
+
+	// jail an existing validator
+	val := s.parentChain.Vals.Validators[0]
+	consAddr := sdk.ConsAddress(val.Address)
+	origTime := s.parentCtx().BlockTime()
 	parentStakingKeeper.Jail(s.parentCtx(), consAddr)
+	// commit block to set VSC ID
 	s.coordinator.CommitBlock(s.parentChain)
+	s.Require().NotZero(parentKeeper.GetValsetUpdateBlockHeight(s.parentCtx(), vID))
 
+	// end validator unbonding period
+	parentCtx := s.parentCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
+	s.parentChain.App.GetStakingKeeper().BlockValidatorUpdates(parentCtx)
+
+	// replace validator address
 	slashingPkt.Validator.Address = val.Address
-
-	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), slashingPkt)
+	// expect an error since the validator is already jailed
+	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), childChainID, slashingPkt)
 	s.Require().Error(err, "did slash unbonded validator")
 
+	// replace validator address
 	val = s.parentChain.Vals.Validators[1]
 	slashingPkt.Validator.Address = val.Address
 
-	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), slashingPkt)
-	s.Require().Error(err, "did slash without infraction height")
-
-	// set current valset update ID
+	// set VSC ID
 	slashingPkt.ValsetUpdateId = vID
 
-	// create validator signing info
+	// // set current valset update ID
 	valInfo := slashingtypes.NewValidatorSigningInfo(sdk.ConsAddress(val.Address), s.parentCtx().BlockHeight(),
 		s.parentCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
 	parentSlashingKeeper.SetValidatorSigningInfo(s.parentCtx(), sdk.ConsAddress(val.Address), valInfo)
 
-	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), slashingPkt)
+	// expect no error
+	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), childChainID, slashingPkt)
 	s.Require().NoError(err)
 }
 

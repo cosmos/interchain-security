@@ -347,23 +347,6 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 	store.Delete(types.HeightValsetUpdateIDKey(height))
 }
 
-// HeightToValsetUpdateID returns the last valset update ID stored for a block
-// which height is lesser or equal than the given height
-func (k Keeper) HeightToValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
-	store := ctx.KVStore(k.storeKey)
-	revIterator := sdk.KVStoreReversePrefixIterator(store, []byte(types.HeightValsetUpdateIDPrefix))
-
-	for ; revIterator.Valid(); revIterator.Next() {
-		keyBytes := revIterator.Key()[len([]byte(types.HeightValsetUpdateIDPrefix)):]
-		currHeight := binary.BigEndian.Uint64(keyBytes)
-		if currHeight <= height {
-			return binary.BigEndian.Uint64(revIterator.Value())
-		}
-	}
-
-	return 0
-}
-
 // OutstandingDowntime returns the outstanding downtime flag for a given validator
 func (k Keeper) OutstandingDowntime(ctx sdk.Context, address sdk.ConsAddress) bool {
 	store := ctx.KVStore(k.storeKey)

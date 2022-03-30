@@ -138,13 +138,10 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data c
 	}
 
 	// apply slashing
-	if err := k.HandleConsumerDowntime(ctx, data); err != nil {
+	if err := k.HandleConsumerDowntime(ctx, chainID, data); err != nil {
 		ack := channeltypes.NewErrorAcknowledgement(err.Error())
 		return &ack
 	}
-
-	// add slashing ack to child chain
-	k.AppendslashingAck(ctx, chainID, sdk.ConsAddress(data.Validator.Address).String())
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
@@ -152,7 +149,20 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data c
 
 // HandleConsumerDowntime gets the validator and the downtime infraction height from the packet data
 // validator address and valset upate ID. Then it executes the slashing the and jailing accordingly.
-func (k Keeper) HandleConsumerDowntime(ctx sdk.Context, downtimeData ccv.SlashPacketData) error {
+func (k Keeper) HandleConsumerDowntime(ctx sdk.Context, chainID string, downtimeData ccv.SlashPacketData) error {
+
+	// map VSC ID to infraction height for the given chain ID
+	var infractionHeight uint64
+	if downtimeData.ValsetUpdateId == 0 {
+		infractionHeight = k.GetInitChainHeight(ctx, chainID)
+	} else {
+		infractionHeight = k.GetValsetUpdateBlockHeight(ctx, downtimeData.ValsetUpdateId)
+	}
+
+	if infractionHeight == 0 {
+		return fmt.Errorf("cannot find validator update id %d for chain %s", downtimeData.ValsetUpdateId, chainID)
+	}
+
 	// get the validator consensus address
 	consAddr := sdk.ConsAddress(downtimeData.Validator.Address)
 
@@ -168,19 +178,16 @@ func (k Keeper) HandleConsumerDowntime(ctx sdk.Context, downtimeData ccv.SlashPa
 		return fmt.Errorf("should not be slashing unbonded validator: %s", validator.GetOperator())
 	}
 
-	// get the downtime block height from the valsetUpdateID
-	blockHeight := k.GetValsetUpdateBlockHeight(ctx, downtimeData.ValsetUpdateId)
-	if blockHeight == 0 {
-		return fmt.Errorf("cannot find validator update id %d", downtimeData.ValsetUpdateId)
-	}
-
 	// slash and jail the validator
-	k.stakingKeeper.Slash(ctx, consAddr, int64(blockHeight), downtimeData.Validator.Power, sdk.NewDec(1).QuoInt64(downtimeData.SlashFraction))
+	k.stakingKeeper.Slash(ctx, consAddr, int64(infractionHeight), downtimeData.Validator.Power, sdk.NewDec(1).QuoInt64(downtimeData.SlashFraction))
 	if !validator.IsJailed() {
 		k.stakingKeeper.Jail(ctx, consAddr)
 	}
 
 	k.slashingKeeper.JailUntil(ctx, consAddr, ctx.BlockHeader().Time.Add(time.Duration(downtimeData.JailTime)))
+
+	// add slashing ack to child chain
+	k.AppendslashingAck(ctx, chainID, consAddr.String())
 
 	return nil
 }

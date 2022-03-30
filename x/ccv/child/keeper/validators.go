@@ -11,7 +11,7 @@ import (
 )
 
 // ApplyCCValidatorChanges applies the given changes to the cross-chain validators states
-func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) error {
+func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) {
 	for _, change := range changes {
 		addr := utils.GetChangePubKeyAddress(change)
 		val, found := k.GetCCValidator(ctx, addr)
@@ -20,7 +20,7 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 		if !found {
 			consAddr := sdk.ConsAddress(addr)
 			if change.Power < 1 {
-				return fmt.Errorf("failed to find validator: %s", consAddr)
+				panic(fmt.Errorf("failed to find validator: %s", consAddr))
 			}
 			k.SetCCValidator(ctx, types.NewCCValidator(change))
 			k.AfterValidatorBonded(ctx, consAddr, nil)
@@ -39,8 +39,6 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 		val.ValidatorUpdate.Power = change.Power
 		k.SetCCValidator(ctx, val)
 	}
-
-	return nil
 }
 
 // IterateValidators - unimplemented on CCV keeper
@@ -72,20 +70,14 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		return
 	}
 
-	// get current valset update ID
-	// TODO: use pending slashing packet when channel not established yet
-	valsetUpdateID := k.HeightToValsetUpdateID(ctx, uint64(infractionHeight))
-	if valsetUpdateID < 1 {
-		return
-	}
-
 	// send penalties
 	k.SendSlashPacket(
 		ctx,
 		abci.Validator{
 			Address: addr.Bytes(),
 			Power:   power},
-		valsetUpdateID,
+		// get VSC ID for infraction height
+		k.GetHeightValsetUpdateID(ctx, uint64(infractionHeight)),
 		slashFraction.TruncateInt64(),
 		k.slashingKeeper.DowntimeJailDuration(ctx).Nanoseconds(),
 	)
@@ -94,14 +86,18 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 	k.SetOutstandingDowntime(ctx, addr)
 }
 
+// Jail - unimplemented on CCV keeper
 func (k Keeper) Jail(ctx sdk.Context, addr sdk.ConsAddress) {}
 
+// Unjail - unimplemented on CCV keeper
 func (k Keeper) Unjail(sdk.Context, sdk.ConsAddress) {}
 
+// Delegation - unimplemented on CCV keeper
 func (k Keeper) Delegation(sdk.Context, sdk.AccAddress, sdk.ValAddress) stakingtypes.DelegationI {
 	panic("unimplemented on CCV keeper")
 }
 
+// MaxValidators - unimplemented on CCV keeper
 func (k Keeper) MaxValidators(sdk.Context) uint32 {
 	panic("unimplemented on CCV keeper")
 }

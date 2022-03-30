@@ -394,31 +394,6 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	})
 }
 
-func (suite *KeeperTestSuite) TestHeightToValsetUpdateID() {
-	app := suite.childChain.App.(*app.App)
-	ctx := suite.childChain.GetContext()
-
-	// set some equal block height valset update id pairs
-	for i := 1; i < 8; i += 3 {
-		app.ChildKeeper.SetHeightValsetUpdateID(ctx, uint64(i), uint64(i))
-	}
-
-	// set height and expected valset update id
-	tests := [][]uint64{
-		{0, 0},
-		{1, 1},
-		{5, 4},
-		{7, 7},
-		{8, 7},
-		{261, 7},
-	}
-
-	for _, t := range tests {
-		valUpdateID := app.ChildKeeper.HeightToValsetUpdateID(ctx, t[0])
-		suite.Require().Equal(t[1], valUpdateID)
-	}
-}
-
 func (suite *KeeperTestSuite) TestCrossChainValidator() {
 	app := suite.childChain.App.(*app.App)
 	ctx := suite.childChain.GetContext()

@@ -147,7 +147,11 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock implements the AppModule interface
+// Set the VSC ID for the subsequent block to the same value as the current block
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+	blockHeight := uint64(ctx.BlockHeight())
+	vID := am.keeper.GetHeightValsetUpdateID(ctx, blockHeight)
+	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight+1, vID)
 }
 
 // EndBlock implements the AppModule interface
@@ -157,10 +161,11 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	if !ok {
 		return []abci.ValidatorUpdate{}
 	}
+	// apply changes to cross-chain validator set
 	am.keeper.ApplyCCValidatorChanges(ctx, data.ValidatorUpdates)
-	am.keeper.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()+1), data.ValsetUpdateId)
 	am.keeper.DeletePendingChanges(ctx)
 	am.keeper.UnbondMaturePackets(ctx)
+
 	return data.ValidatorUpdates
 }
 

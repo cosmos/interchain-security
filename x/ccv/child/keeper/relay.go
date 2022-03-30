@@ -41,10 +41,8 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 	} else {
 		pendingChanges = utils.AccumulateChanges(currentChanges.ValidatorUpdates, newChanges.ValidatorUpdates)
 	}
-	// pending changes and valsetupdate id are used in enblock
 	k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{
 		ValidatorUpdates: pendingChanges,
-		ValsetUpdateId:   newChanges.ValsetUpdateId,
 	})
 
 	// Save unbonding time and packet

@@ -178,3 +178,25 @@ func (suite *KeeperTestSuite) TestAppendslashingAck() {
 	suite.Require().NotNil(acks)
 	suite.Require().Len(acks, 1)
 }
+
+func (suite *KeeperTestSuite) TestInitHeight() {
+	app := suite.parentChain.App.(*app.App)
+	ctx := suite.ctx
+
+	tc := []struct {
+		chainID  string
+		expected uint64
+	}{
+		{expected: 0, chainID: "chain"},
+		{expected: 10, chainID: "chain1"},
+		{expected: 12, chainID: "chain2"},
+	}
+
+	app.ParentKeeper.SetInitChainHeight(ctx, tc[1].chainID, tc[1].expected)
+	app.ParentKeeper.SetInitChainHeight(ctx, tc[2].chainID, tc[2].expected)
+
+	for _, t := range tc {
+		height := app.ParentKeeper.GetInitChainHeight(ctx, t.chainID)
+		suite.Require().EqualValues(t.expected, height)
+	}
+}

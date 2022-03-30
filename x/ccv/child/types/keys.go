@@ -43,13 +43,13 @@ const (
 	// UnbondingTime is set to 4 weeks
 	UnbondingTime = 4 * 7 * 24 * time.Hour
 
-	// ValsetUpdateBlockHeightPrefix
+	// HeightValsetUpdateIDPrefix is the key prefix that will store the mapping from block height to valset update ID
 	HeightValsetUpdateIDPrefix = "heightvalsetupdateid"
 
-	// OutstandingDowntimePrefix
-	OutstandingDowntimePrefix = "OutstandingDowntime"
+	// OutstandingDowntimePrefix is the key prefix that will store the validators outstanding downtime by consensus address
+	OutstandingDowntimePrefix = "outstandingdowntime"
 
-	// CrossChainValidatorPrefix
+	// CrossChainValidatorPrefix is the key prefix that will store cross-chain validators by consensus address
 	CrossChainValidatorPrefix = "crosschainvalidator"
 )
 

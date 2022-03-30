@@ -278,6 +278,8 @@ func (k Keeper) SetChildChain(ctx sdk.Context, channelID string) error {
 	// set channel mappings
 	k.SetChainToChannel(ctx, tmClient.ChainId, channelID)
 	k.SetChannelToChain(ctx, channelID, tmClient.ChainId)
+	// set current block height for the child chain initialization
+	k.SetInitChainHeight(ctx, tmClient.ChainId, uint64(ctx.BlockHeight()))
 	// Set CCV channel status to Validating
 	k.SetChannelStatus(ctx, channelID, ccv.VALIDATING)
 	return nil
@@ -571,4 +573,24 @@ func (k Keeper) AppendslashingAck(ctx sdk.Context, chainID, ack string) {
 	acks := k.GetSlashAcks(ctx, chainID)
 	acks = append(acks, ack)
 	k.SetSlashAcks(ctx, chainID, acks)
+}
+
+// SetInitChainHeight sets the parent block height when the given child chain was initiated
+func (k Keeper) SetInitChainHeight(ctx sdk.Context, chainID string, height uint64) {
+	store := ctx.KVStore(k.storeKey)
+	heightBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(heightBytes, height)
+
+	store.Set(types.InitChainHeightKey(chainID), heightBytes)
+}
+
+// GetInitChainHeight returns the parent block height when the given child chain was initiated
+func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.InitChainHeightKey(chainID))
+	if bz == nil {
+		return 0
+	}
+
+	return binary.BigEndian.Uint64(bz)
 }
