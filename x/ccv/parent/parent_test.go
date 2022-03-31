@@ -373,7 +373,9 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	parentStakingKeeper := s.parentChain.App.GetStakingKeeper()
 	parentSlashingKeeper := s.parentChain.App.(*app.App).SlashingKeeper
 
-	// get a cross-chain validator address, pubkey and tokens
+	childKeeper := s.childChain.App.(*app.App).ChildKeeper
+
+	// get a cross-chain validator address, pubkey and balance
 	tmVals := s.childChain.Vals.Validators
 	tmVal := tmVals[0]
 
@@ -391,19 +393,16 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 		s.parentCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
 	parentSlashingKeeper.SetValidatorSigningInfo(s.parentCtx(), consAddr, valInfo)
 
-	// create a valseUpdateId that allows to retrieve the infraction block height on the provider
-	valsetUpdateId := uint64(1)
-
-	// save the current block height for the last valsetUpdateId
-	s.parentChain.App.(*app.App).ParentKeeper.SetValsetUpdateBlockHeight(s.parentCtx(), valsetUpdateId,
-		uint64(s.parentCtx().BlockHeight()))
-	validator := abci.Validator{
-		Address: tmVal.Address,
-		Power:   int64(1),
-	}
+	// get valseUpdateId for current block height
+	valsetUpdateId := childKeeper.GetHeightValsetUpdateID(s.childCtx(), uint64(s.childCtx().BlockHeight()))
 
 	// construct the downtime packet with the validator address and power along
 	// with the slashing and jailing parameters
+	validator := abci.Validator{
+		Address: tmVal.Address,
+		Power:   tmVal.VotingPower,
+	}
+
 	oldBlockTime := s.childCtx().BlockTime()
 	slashFraction := int64(100)
 	packetData := types.NewSlashPacketData(validator, valsetUpdateId, slashFraction,
@@ -424,13 +423,18 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	timeout = uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 	valsetUpdateID := s.parentChain.App.(*app.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
 
-	// receive the downtime packet on the provider chain;
-	// RecvPacket() calls the provider endblocker thus sends a VSC packet to the consumer
+	// receive the downtime packet on the parent chain;
+	// RecvPacket() calls the parent endblocker thus sends a VSC packet to the consumer
 	err = s.path.EndpointB.RecvPacket(packet)
 	s.Require().NoError(err)
 
 	// check that the validator was removed from the parent validator set
 	s.Require().Len(s.parentChain.Vals.Validators, validatorsPerChain-1)
+	// check that the VSC ID is updated on the child chain
+
+	// update child client on the VSC packet sent from parent
+	err = s.path.EndpointA.UpdateClient()
+	s.Require().NoError(err)
 
 	// reconstruct VSC packet
 	valUpdates := []abci.ValidatorUpdate{
@@ -443,13 +447,12 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	packet2 := channeltypes.NewPacket(packetData2.GetBytes(), 1, parenttypes.PortID, s.path.EndpointB.ChannelID,
 		childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
-	// update consumer client on the VSC packet sent from provider
-	err = s.path.EndpointA.UpdateClient()
-	s.Require().NoError(err)
-
-	// receive VSC packet about jailing on consumer
+	// receive VSC packet about jailing on the child chain
 	err = s.path.EndpointA.RecvPacket(packet2)
 	s.Require().NoError(err)
+
+	// check that the child update its VSC ID for the subsequent block
+	s.Require().Equal(childKeeper.GetHeightValsetUpdateID(s.childCtx(), uint64(s.childCtx().BlockHeight())+1), valsetUpdateID)
 
 	// update child chain hist info
 	s.UpdateChildHistInfo(packetData2.ValidatorUpdates)
@@ -460,7 +463,7 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	err = s.path.EndpointB.UpdateClient()
 	s.Require().NoError(err)
 
-	// check that the validator is successfully jailed on provider
+	// check that the validator is successfully jailed on parent
 	validatorJailed, ok := s.parentChain.App.GetStakingKeeper().GetValidatorByConsAddr(s.parentCtx(), consAddr)
 	s.Require().True(ok)
 	s.Require().True(validatorJailed.Jailed)
@@ -476,7 +479,7 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	s.Require().True(found)
 	s.Require().True(valSignInfo.JailedUntil.After(s.parentCtx().BlockHeader().Time))
 
-	// check that the outstanding slashing flag is reset on the consumer
+	// check that the outstanding slashing flag is reset on the child
 	pFlag := s.childChain.App.(*app.App).ChildKeeper.OutstandingDowntime(s.childCtx(), consAddr)
 	s.Require().False(pFlag)
 

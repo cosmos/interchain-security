@@ -50,6 +50,9 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 	k.SetUnbondingTime(ctx, packet.Sequence, uint64(unbondingTime.UnixNano()))
 	k.SetUnbondingPacket(ctx, packet.Sequence, packet)
 
+	// set height to VSC id mapping
+	k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())+1, newChanges.ValsetUpdateId)
+
 	// set outstanding slashing flags to false
 	for _, addr := range newChanges.GetSlashAcks() {
 		k.ClearOutstandingDowntime(ctx, addr)
