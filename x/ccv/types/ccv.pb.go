@@ -68,8 +68,8 @@ func (Status) EnumDescriptor() ([]byte, []int) {
 type ValidatorSetChangePacketData struct {
 	ValidatorUpdates []types.ValidatorUpdate `protobuf:"bytes,1,rep,name=validator_updates,json=validatorUpdates,proto3" json:"validator_updates" yaml:"validator_updates"`
 	ValsetUpdateId   uint64                  `protobuf:"varint,2,opt,name=valset_update_id,json=valsetUpdateId,proto3" json:"valset_update_id,omitempty"`
-	// list of validators consensus address acknowledging
-	// their slashing and jailing to the initiating chain
+	// consensus address of child chain validators
+	// successfully slashed on the parent chain
 	SlashAcks []string `protobuf:"bytes,3,rep,name=slash_acks,json=slashAcks,proto3" json:"slash_acks,omitempty"`
 }
 

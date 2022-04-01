@@ -22,7 +22,7 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 			if change.Power < 1 {
 				panic(fmt.Errorf("failed to find validator: %s", consAddr))
 			}
-			k.SetCCValidator(ctx, types.NewCCValidator(change))
+			k.SetCCValidator(ctx, types.NewCCValidator(addr, change.Power))
 			k.AfterValidatorBonded(ctx, consAddr, nil)
 			continue
 		}
@@ -36,7 +36,7 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 		}
 
 		// update existing validators power
-		val.ValidatorUpdate.Power = change.Power
+		val.Power = change.Power
 		k.SetCCValidator(ctx, val)
 	}
 }

@@ -1,23 +1,8 @@
 package types
 
-import (
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
-	abci "github.com/tendermint/tendermint/abci/types"
-)
-
-func NewCCValidator(change abci.ValidatorUpdate) CrossChainValidator {
+func NewCCValidator(address []byte, power int64) CrossChainValidator {
 	return CrossChainValidator{
-		Address:         utils.GetChangePubKeyAddress(change),
-		ValidatorUpdate: change,
+		Address: address,
+		Power:   power,
 	}
-}
-
-func (v CrossChainValidator) PublicKey() cryptotypes.PubKey {
-	pk, err := cryptocodec.FromTmProtoPublicKey(v.ValidatorUpdate.PubKey)
-	if err != nil {
-		panic(err)
-	}
-	return pk
 }

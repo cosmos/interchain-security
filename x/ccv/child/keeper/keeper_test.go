@@ -20,7 +20,6 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmcryptoc "github.com/tendermint/tendermint/crypto/encoding"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -404,17 +403,9 @@ func (suite *KeeperTestSuite) TestCrossChainValidator() {
 
 	// get a validator from child chain
 	val := suite.parentChain.Vals.Validators[0]
-	pk2, err := tmcryptoc.PubKeyToProto(val.PubKey)
-	suite.Require().NoError(err)
-	// set cross chain validator
 
-	ccVal = types.CrossChainValidator{
-		Address: val.Address,
-		ValidatorUpdate: abci.ValidatorUpdate{
-			PubKey: pk2,
-			Power:  1000,
-		},
-	}
+	// set cross chain validator
+	ccVal = types.NewCCValidator(val.Address, 1000)
 
 	app.ChildKeeper.SetCCValidator(ctx, ccVal)
 

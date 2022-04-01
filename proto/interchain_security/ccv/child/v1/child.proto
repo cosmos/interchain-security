@@ -1,9 +1,6 @@
 syntax = "proto3";
 package interchain_security.ccv.child.v1;
 
-import "gogoproto/gogo.proto";
-import "tendermint/abci/types.proto";
-
 option go_package = "github.com/cosmos/interchain-security/x/ccv/child/types";
 
 
@@ -16,6 +13,5 @@ message Params {
 // CrossChainValidator defines the validators for CCV child module
 message CrossChainValidator {
     bytes address = 1;
-    tendermint.abci.ValidatorUpdate validator_update = 2
-      [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"last_update\""];
+   int64 power = 2;
 }
