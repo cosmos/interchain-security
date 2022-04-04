@@ -20,7 +20,7 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 		if !found {
 			consAddr := sdk.ConsAddress(addr)
 			if change.Power < 1 {
-				panic(fmt.Errorf("failed to find validator: %s", consAddr))
+				panic(fmt.Errorf("new validator bonded with zero voting power: %s", consAddr))
 			}
 			k.SetCCValidator(ctx, types.NewCCValidator(addr, change.Power))
 			k.AfterValidatorBonded(ctx, consAddr, nil)
@@ -29,9 +29,7 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 
 		// remove unbonding existing-validators
 		if change.Power < 1 {
-			if found {
-				k.DeleteCCValidator(ctx, addr)
-			}
+			k.DeleteCCValidator(ctx, addr)
 			continue
 		}
 
