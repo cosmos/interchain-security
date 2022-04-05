@@ -51,6 +51,9 @@ const (
 
 	// CrossChainValidatorPrefix is the key prefix that will store cross-chain validators by consensus address
 	CrossChainValidatorPrefix = "crosschainvalidator"
+
+	// ConsumerRedistributeName the root string for the consumer-redistribution account address
+	ConsumerRedistributeName = "cons_redistribute"
 )
 
 var (

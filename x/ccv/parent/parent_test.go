@@ -841,8 +841,8 @@ func (s *ParentTestSuite) TestDistribution() {
 
 	// check the consumer chain fee pool (should have increased
 	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-	expTransferAmt := int64(4175822659438993)
-	s.Assert().Equal(balance.Amount.Int64(), expTransferAmt)
+	expFeePoolAtDistr := int64(4175822659438993)
+	s.Assert().Equal(balance.Amount.Int64(), expFeePoolAtDistr)
 
 	// Verify that the destinationChannel exists
 	// if this doesn't exist then the transfer logic will fail when
@@ -873,7 +873,9 @@ func (s *ParentTestSuite) TestDistribution() {
 	s.Require().True(found)
 
 	// ensure the correct amount is being transmitted within the packet
-	s.Assert().Equal(ftpd.Amount, fmt.Sprintf("%v", expTransferAmt))
+	expConsRedistrAmt := expFeePoolAtDistr / 2 // because of default 50% redistribute fraction (will truc decimal)
+	expProviderAmt := expFeePoolAtDistr - expConsRedistrAmt
+	s.Assert().Equal(ftpd.Amount, fmt.Sprintf("%v", expProviderAmt))
 
 	// halt provider distribution (for testing purposes to be able to review the
 	// provider fee pool)
@@ -883,15 +885,22 @@ func (s *ParentTestSuite) TestDistribution() {
 	err = s.transferPath.RelayPacket(packet)
 	s.Require().NoError(err)
 
-	// check the consumer chain fee pool which should be now emptied
+	// check the consumer chain fee pool which should be now emptied (besides
+	// new minted tokens since the transfer)
 	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-	s.Assert().Equal(balance.Amount.Int64(), int64(26786189989304)) // this is "small" (new minted tokens since the transfer)
+	s.Assert().Equal(balance.Amount.Int64(), int64(26786189989304)) // this is "small"
 
 	// check the provider chain fee pool which should now have
 	// the consumer chain tokens
 	balance = pApp.BankKeeper.GetBalance(pChain.GetContext(), providerFeePoolAddr,
 		"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9")
-	s.Assert().Equal(balance.Amount.Int64(), expTransferAmt)
+	s.Assert().Equal(balance.Amount.Int64(), expProviderAmt)
+
+	// check the consumer redistribution amount arrives in the module account
+	consumerRedistrAddr := cApp.AccountKeeper.GetModuleAccount(ctx,
+		childtypes.ConsumerRedistributeName).GetAddress()
+	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerRedistrAddr, "stake")
+	s.Assert().Equal(balance.Amount.Int64(), expConsRedistrAmt)
 
 	// Ensure provider pool emptied and that allocation was called normally
 	// allocation would result in validator rewards, but due to limitations in
@@ -906,5 +915,5 @@ func (s *ParentTestSuite) TestDistribution() {
 	communityPool := pApp.DistrKeeper.GetFeePool(pChain.GetContext()).CommunityPool
 	balanceI64 := communityPool.AmountOf(
 		"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9").RoundInt64()
-	s.Assert().Equal(balanceI64, expTransferAmt)
+	s.Assert().Equal(balanceI64, expProviderAmt)
 }

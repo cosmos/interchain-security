@@ -15,7 +15,6 @@ import (
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
 func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
-	//fmt.Println("DistributeToProviderValidatorSet called")
 
 	ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
 	if err != nil {
@@ -31,16 +30,36 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 
 	// work around to reuse the IBC token transfer logic
 	consumerFeePoolAddr := k.accountKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
-	tokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
-	for _, token := range tokens {
+	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
+
+	// split the fee pool, send the consumer's fraction to the consumer redistribution address
+	fracStr := k.GetConsumerRedistributeFrac(ctx)
+	frac, err := sdk.NewDecFromStr(fracStr)
+	if err != nil {
+		return err
+	}
+	decFPTokens := sdk.NewDecCoinsFromCoins(fpTokens...)
+	consRedistrTokens, _ := decFPTokens.MulDec(frac).TruncateDecimal()
+	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName, types.ConsumerRedistributeName, consRedistrTokens)
+	if err != nil {
+		return err
+	}
+
+	// Send the remainder to the Provider fee pool over ibc
+	remainingTokens := fpTokens.Sub(consRedistrTokens)
+	ch := k.GetDistributionTransmissionChannel(ctx)
+	providerAddr := k.GetProviderFeePoolAddrStr(ctx)
+	timeoutHeight := clienttypes.Height{0, 0}
+	timeoutTimestamp := uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano())
+	for _, token := range remainingTokens {
 		err := k.ibcTransferKeeper.SendTransfer(ctx,
 			transfertypes.PortID,
-			k.GetDistributionTransmissionChannel(ctx),
+			ch,
 			token,
 			consumerFeePoolAddr,
-			k.GetProviderFeePoolAddrStr(ctx),
-			clienttypes.Height{0, 0},
-			uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
+			providerAddr,
+			timeoutHeight,
+			timeoutTimestamp,
 		)
 		if err != nil {
 			return err
