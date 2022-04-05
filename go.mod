@@ -4,11 +4,15 @@ go 1.16
 
 require (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	github.com/cosmos/cosmos-sdk v0.45.2-0.20220323162444-29c717a470a3
 	github.com/cosmos/ibc-go v1.2.2
 =======
 	github.com/cosmos/cosmos-sdk v0.45.2
 >>>>>>> distr code compiling, existing tests pass, fix old ibc in proto
+=======
+	github.com/cosmos/cosmos-sdk v0.45.2-0.20220323162444-29c717a470a3
+>>>>>>> simple distr working
 	github.com/cosmos/ibc-go/v3 v3.0.0-alpha1.0.20220210141024-fb2f0416254b
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
@@ -44,6 +48,7 @@ require (
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
 <<<<<<< HEAD
+<<<<<<< HEAD
 	github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-alpha1.0.20220324094541-59c537264e54
 =======
 	github.com/cosmos/cosmos-sdk => github.com/rigelrozanski/cosmos-sdk v0.44.6-0.20220225061633-380e4b6a9a5c
@@ -58,6 +63,11 @@ replace (
 	github.com/cosmos/ibc-go/v3 => github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220326001208-950b7818cd4c
 	//github.com/cosmos/ibc-go/v3 => ../ibc-go
 >>>>>>> debugging, state lost during commit
+=======
+	//github.com/cosmos/cosmos-sdk => ../cosmos-sdk
+	github.com/cosmos/ibc-go/v3 => ../ibc-go
+	//github.com/cosmos/ibc-go/v3 => github.com/rigelrozanski/ibc-go/v3 v3.0.0-alpha1.0.20220405163147-3409592918d5
+>>>>>>> simple distr working
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )
