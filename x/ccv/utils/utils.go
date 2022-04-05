@@ -1,6 +1,7 @@
 package utils
 
 import (
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -21,4 +22,13 @@ func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci
 		out = append(out, update)
 	}
 	return out
+}
+
+func GetChangePubKeyAddress(change abci.ValidatorUpdate) (addr []byte) {
+	pk, err := cryptocodec.FromTmProtoPublicKey(change.PubKey)
+	if err != nil {
+		panic(err)
+	}
+
+	return pk.Address()
 }

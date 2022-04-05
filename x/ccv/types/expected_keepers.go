@@ -31,13 +31,12 @@ type StakingKeeper interface {
 	PowerReduction(ctx sdk.Context) sdk.Int
 }
 
+// SlashingKeeper defines the contract expected to perform ccv slashing
 type SlashingKeeper interface {
-	JailUntil(sdk.Context, sdk.ConsAddress, time.Time)
+	JailUntil(sdk.Context, sdk.ConsAddress, time.Time) // called from parent keeper only
 	GetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress) (info slashingtypes.ValidatorSigningInfo, found bool)
-	SetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress, info slashingtypes.ValidatorSigningInfo)
 	DowntimeJailDuration(sdk.Context) time.Duration
 	SlashFractionDowntime(sdk.Context) sdk.Dec
-	ClearValidatorMissedBlockBitArray(ctx sdk.Context, address sdk.ConsAddress)
 }
 
 // ChannelKeeper defines the expected IBC channel keeper
@@ -68,8 +67,8 @@ type ClientKeeper interface {
 }
 
 // TODO: Expected interfaces for distribution on parent and baby chains
-// SlashingHooks event hooks for jailing and slashing validator
-type SlashingHooks interface {
-	// Is triggered when the validator missed too many blocks
-	AfterValidatorDowntime(ctx sdk.Context, consAddr sdk.ConsAddress, power int64)
+
+// ChildHooks event hooks for newly bonded cross-chain validators
+type ChildHooks interface {
+	AfterValidatorBonded(ctx sdk.Context, consAddr sdk.ConsAddress, _ sdk.ValAddress)
 }

@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"time"
@@ -277,6 +278,8 @@ func (k Keeper) SetChildChain(ctx sdk.Context, channelID string) error {
 	// set channel mappings
 	k.SetChainToChannel(ctx, tmClient.ChainId, channelID)
 	k.SetChannelToChain(ctx, channelID, tmClient.ChainId)
+	// set current block height for the child chain initialization
+	k.SetInitChainHeight(ctx, tmClient.ChainId, uint64(ctx.BlockHeight()))
 	// Set CCV channel status to Validating
 	k.SetChannelStatus(ctx, channelID, ccv.VALIDATING)
 	return nil
@@ -499,4 +502,95 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint6
 func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
+}
+
+// SetSlashAcks sets the slashing acks under the given chain ID
+func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
+	store := ctx.KVStore(k.storeKey)
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(acks)
+	if err != nil {
+		panic("failed to encode json")
+	}
+	store.Set(types.SlashAcksKey(chainID), buf.Bytes())
+}
+
+// GetSlashAcks returns the slashing acks stored under the given chain ID
+func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.SlashAcksKey(chainID))
+	if bz == nil {
+		return nil
+	}
+	var acks []string
+	buf := bytes.NewBuffer(bz)
+
+	json.NewDecoder(buf).Decode(&acks)
+	if len(acks) == 0 {
+		panic("failed to decode json")
+	}
+
+	return acks
+}
+
+// EmptySlashAcks empties and returns the slashing acks for a given chain ID
+func (k Keeper) EmptySlashAcks(ctx sdk.Context, chainID string) (acks []string) {
+	acks = k.GetSlashAcks(ctx, chainID)
+	if len(acks) < 1 {
+		return
+	}
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.SlashAcksKey(chainID))
+	return
+}
+
+// IterateSlashAcks iterates through the slashing acks set in the store
+func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte(types.SlashAcksPrefix))
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+
+		id := string(iterator.Key()[len(types.SlashAcksPrefix)+1:])
+
+		var data []string
+		buf := bytes.NewBuffer(iterator.Value())
+
+		json.NewDecoder(buf).Decode(&data)
+		if len(data) == 0 {
+			panic("failed to decode json")
+		}
+
+		if !cb(id, data) {
+			return
+		}
+	}
+}
+
+// AppendslashingAck appends the given slashing ack to the given chain ID slashing acks in store
+func (k Keeper) AppendslashingAck(ctx sdk.Context, chainID, ack string) {
+	acks := k.GetSlashAcks(ctx, chainID)
+	acks = append(acks, ack)
+	k.SetSlashAcks(ctx, chainID, acks)
+}
+
+// SetInitChainHeight sets the parent block height when the given child chain was initiated
+func (k Keeper) SetInitChainHeight(ctx sdk.Context, chainID string, height uint64) {
+	store := ctx.KVStore(k.storeKey)
+	heightBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(heightBytes, height)
+
+	store.Set(types.InitChainHeightKey(chainID), heightBytes)
+}
+
+// GetInitChainHeight returns the parent block height when the given child chain was initiated
+func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.InitChainHeightKey(chainID))
+	if bz == nil {
+		return 0
+	}
+
+	return binary.BigEndian.Uint64(bz)
 }

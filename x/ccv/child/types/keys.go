@@ -3,6 +3,9 @@ package types
 import (
 	"encoding/binary"
 	"time"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 )
 
 const (
@@ -39,6 +42,15 @@ const (
 
 	// UnbondingTime is set to 4 weeks
 	UnbondingTime = 4 * 7 * 24 * time.Hour
+
+	// HeightValsetUpdateIDPrefix is the key prefix that will store the mapping from block height to valset update ID
+	HeightValsetUpdateIDPrefix = "heightvalsetupdateid"
+
+	// OutstandingDowntimePrefix is the key prefix that will store the validators outstanding downtime by consensus address
+	OutstandingDowntimePrefix = "outstandingdowntime"
+
+	// CrossChainValidatorPrefix is the key prefix that will store cross-chain validators by consensus address
+	CrossChainValidatorPrefix = "crosschainvalidator"
 )
 
 var (
@@ -77,4 +89,18 @@ func UnbondingTimeKey(sequence uint64) []byte {
 
 func GetSequenceFromUnbondingTimeKey(key []byte) uint64 {
 	return binary.BigEndian.Uint64(key[len(UnbondingTimePrefix):])
+}
+
+func HeightValsetUpdateIDKey(height uint64) []byte {
+	hBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(hBytes, height)
+	return append([]byte(HeightValsetUpdateIDPrefix), hBytes...)
+}
+
+func OutstandingDowntimeKey(v sdk.ConsAddress) []byte {
+	return append([]byte(OutstandingDowntimePrefix), address.MustLengthPrefix(v.Bytes())...)
+}
+
+func GetCrossChainValidatorKey(addr []byte) []byte {
+	return append([]byte(CrossChainValidatorPrefix), addr...)
 }

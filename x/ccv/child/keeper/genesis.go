@@ -40,6 +40,9 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		if err != nil {
 			panic(err)
 		}
+
+		// Set default value for valset update ID
+		k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()), uint64(0))
 		// set parent client id.
 		k.SetParentClient(ctx, clientID)
 	} else {
@@ -76,6 +79,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 			k.SetUnbondingPacket(ctx, us.Sequence, us.UnbondingPacket)
 		}
 	}
+
+	k.ApplyCCValidatorChanges(ctx, state.InitialValSet)
 
 	return state.InitialValSet
 }

@@ -118,23 +118,85 @@ func (suite *KeeperTestSuite) TestValsetUpdateBlockHeight() {
 	suite.Require().Equal(blockHeight, uint64(4))
 }
 
-// func (suite KeeperTestSuite) TestOnRecvPacket() {
-// 	ctx, t := suite.ctx, suite.T()
+func (suite *KeeperTestSuite) TestSlashAcks() {
+	app := suite.parentChain.App.(*app.App)
+	ctx := suite.ctx
 
-// 	// Get a validator
+	var chainsAcks [][]string
 
-// 	// app := suite.parentChain.App.(*app.App)
-// 	valset := suite.parentChain.Vals
-// 	val, err := valset.Validators[0].ToProto()
-// 	suite.Require().NoError(err)
+	penaltiesfN := func() (penalties []string) {
+		app.ParentKeeper.IterateSlashAcks(ctx, func(id string, acks []string) bool {
+			chainsAcks = append(chainsAcks, acks)
+			return true
+		})
+		return
+	}
 
-// 	tests := []struct {
-// 		pubkey   crypto.PubKey
-// 		jailTime int64
-// 	}{{
-// 		pubkey:   val.PubKey,
-// 		jailTime: int64(0),
-// 	}}
-// 	app.ParentKeeper.
-// 		t.Logf("%+v", val.PubKey)
-// }
+	chainID := "consumer"
+
+	acks := app.ParentKeeper.GetSlashAcks(ctx, chainID)
+	suite.Require().Nil(acks)
+
+	p := []string{"alice", "bob", "charlie"}
+	app.ParentKeeper.SetSlashAcks(ctx, chainID, p)
+
+	acks = app.ParentKeeper.GetSlashAcks(ctx, chainID)
+	suite.Require().NotNil(acks)
+
+	suite.Require().Len(acks, 3)
+	emptied := app.ParentKeeper.EmptySlashAcks(ctx, chainID)
+	suite.Require().Len(emptied, 3)
+
+	acks = app.ParentKeeper.GetSlashAcks(ctx, chainID)
+	suite.Require().Nil(acks)
+
+	chains := []string{"c1", "c2", "c3"}
+
+	for _, c := range chains {
+		app.ParentKeeper.SetSlashAcks(ctx, c, p)
+	}
+
+	penaltiesfN()
+	suite.Require().Len(chainsAcks, len(chains))
+}
+
+func (suite *KeeperTestSuite) TestAppendslashingAck() {
+	app := suite.parentChain.App.(*app.App)
+	ctx := suite.ctx
+
+	p := []string{"alice", "bob", "charlie"}
+	chains := []string{"c1", "c2"}
+	app.ParentKeeper.SetSlashAcks(ctx, chains[0], p)
+
+	app.ParentKeeper.AppendslashingAck(ctx, chains[0], p[0])
+	acks := app.ParentKeeper.GetSlashAcks(ctx, chains[0])
+	suite.Require().NotNil(acks)
+	suite.Require().Len(acks, len(p)+1)
+
+	app.ParentKeeper.AppendslashingAck(ctx, chains[1], p[0])
+	acks = app.ParentKeeper.GetSlashAcks(ctx, chains[1])
+	suite.Require().NotNil(acks)
+	suite.Require().Len(acks, 1)
+}
+
+func (suite *KeeperTestSuite) TestInitHeight() {
+	app := suite.parentChain.App.(*app.App)
+	ctx := suite.ctx
+
+	tc := []struct {
+		chainID  string
+		expected uint64
+	}{
+		{expected: 0, chainID: "chain"},
+		{expected: 10, chainID: "chain1"},
+		{expected: 12, chainID: "chain2"},
+	}
+
+	app.ParentKeeper.SetInitChainHeight(ctx, tc[1].chainID, tc[1].expected)
+	app.ParentKeeper.SetInitChainHeight(ctx, tc[2].chainID, tc[2].expected)
+
+	for _, t := range tc {
+		height := app.ParentKeeper.GetInitChainHeight(ctx, t.chainID)
+		suite.Require().EqualValues(t.expected, height)
+	}
+}
