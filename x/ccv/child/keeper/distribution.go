@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -13,15 +11,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
-
-// XXX delete
-func (k Keeper) DebugFeePool(ctx sdk.Context, where string) {
-	consumerFeePoolAddr := k.accountKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
-	balanceFP := k.bankKeeper.GetBalance(ctx, consumerFeePoolAddr, "stake")
-	escrowAddress := transfertypes.GetEscrowAddress(transfertypes.PortID, k.GetDistributionTransmissionChannel(ctx))
-	balEscrow := k.bankKeeper.GetBalance(ctx, escrowAddress, "stake")
-	fmt.Printf("debug (%v) consumerFeePoolAddr: %s, escrow: %s\n", where, balanceFP, balEscrow)
-}
 
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
@@ -40,21 +29,10 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		return nil
 	}
 
-	fmt.Println("debug about to distribute")
-	fmt.Printf(
-		"distribution log:\nltbh:%v\nbpdt:%v\ncurrHeight:%v\n(curHeight - ltbh.Height) < bpdt:%v\n",
-		ltbh.Height, bpdt, curHeight, (curHeight-ltbh.Height) < bpdt)
-
 	// work around to reuse the IBC token transfer logic
 	consumerFeePoolAddr := k.accountKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
 	tokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 	for _, token := range tokens {
-		fmt.Printf("debug GetDistributionTransmissionChannel: %v\n", k.GetDistributionTransmissionChannel(ctx))
-		fmt.Printf("debug transfertypes.PortID: %v\n", transfertypes.PortID)
-		fmt.Printf("debug token: %v\n", token)
-		fmt.Printf("debug consumerFeePoolAddr: %s\n", consumerFeePoolAddr)
-		fmt.Printf("debug k.GetProviderFeePoolAddrStr(ctx): %v\n", k.GetProviderFeePoolAddrStr(ctx))
-		fmt.Printf("debug events len distribute %v\n", len(ctx.EventManager().Events()))
 		err := k.ibcTransferKeeper.SendTransfer(ctx,
 			transfertypes.PortID,
 			k.GetDistributionTransmissionChannel(ctx),
@@ -64,11 +42,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 			clienttypes.Height{0, 0},
 			uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
 		)
-
-		k.DebugFeePool(ctx, "distr")
-
 		if err != nil {
-			panic(err)
 			return err
 		}
 	}

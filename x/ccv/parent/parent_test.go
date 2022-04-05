@@ -1,7 +1,6 @@
 package parent_test
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"testing"
@@ -806,8 +805,7 @@ func (s *ParentTestSuite) TestDistribution() {
 
 	pChain, cChain := s.parentChain, s.childChain
 	pApp, cApp := pChain.App.(*app.App), cChain.App.(*app.App)
-	pKeep, cKeep := pApp.ParentKeeper, cApp.ChildKeeper
-	_ = pKeep // XXX use or remove
+	cKeep := cApp.ChildKeeper
 
 	// Get the receiving fee pool on the provider chain
 	fcAddr := pApp.ParentKeeper.GetFeeCollectorAddressStr(pChain.GetContext())
@@ -834,7 +832,7 @@ func (s *ParentTestSuite) TestDistribution() {
 	providerFeePoolAddr := pApp.AccountKeeper.GetModuleAccount(
 		pChain.GetContext(), authtypes.FeeCollectorName).GetAddress()
 	balance := cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-	s.Assert().Equal(balance.Amount.Int64(), int64(16271952201618))
+	s.Assert().Equal(balance.Amount.Int64(), int64(140062235461521))
 
 	// Commit some new blocks (commit blocks less than the distribution event blocks)
 	s.coordinator.CommitNBlocks(cChain, (1000-1)-21)
@@ -843,7 +841,7 @@ func (s *ParentTestSuite) TestDistribution() {
 
 	// check the consumer chain fee pool (should have increased
 	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-	expTransferAmt := int64(419848789305644)
+	expTransferAmt := int64(4175822659438993)
 	s.Assert().Equal(balance.Amount.Int64(), expTransferAmt)
 
 	// Verify that the destinationChannel exists
@@ -857,18 +855,13 @@ func (s *ParentTestSuite) TestDistribution() {
 	destinationChannel := sourceChannelEnd.GetCounterparty().GetChannelID()
 	s.Require().True(len(destinationChannel) > 0)
 
-	// commit 1 more block (which should invoke a distribution event
-	// similar to s.coordinator.CommitNBlocks function besides that the
-	// endblock response to stored)
-	rspEB := cChain.App.EndBlock(abci.RequestEndBlock{Height: cChain.CurrentHeader.Height})
-	cChain.App.Commit()
-	cChain.NextBlock()
-	s.coordinator.IncrementTime()
+	// commit 1 more block (which should invoke a distribution event)
+	rspEB, _, _ := s.coordinator.CommitBlockGetResponses(cChain)
 
 	// get the packet from the endblock events
 	var packet channeltypes.Packet
 	var ftpd transfertypes.FungibleTokenPacketData
-	found := false
+	found = false
 	for _, evnt := range rspEB.Events {
 		if evnt.Type == channeltypes.EventTypeSendPacket {
 			found = true
@@ -892,7 +885,7 @@ func (s *ParentTestSuite) TestDistribution() {
 
 	// check the consumer chain fee pool which should be now emptied
 	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-	s.Assert().Equal(balance.Amount.Int64(), int64(3090720868136)) // this is "small" (new minted tokens since the transfer)
+	s.Assert().Equal(balance.Amount.Int64(), int64(26786189989304)) // this is "small" (new minted tokens since the transfer)
 
 	// check the provider chain fee pool which should now have
 	// the consumer chain tokens
@@ -914,6 +907,4 @@ func (s *ParentTestSuite) TestDistribution() {
 	balanceI64 := communityPool.AmountOf(
 		"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9").RoundInt64()
 	s.Assert().Equal(balanceI64, expTransferAmt)
-
-	s.Require().NoError(errors.New("ha"))
 }

@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
@@ -57,6 +55,5 @@ func (k Keeper) GetDistributionTransmissionChannel(ctx sdk.Context) string {
 }
 
 func (k Keeper) SetDistributionTransmissionChannel(ctx sdk.Context, channel string) {
-	fmt.Printf("debug SetDistributionTransmissionChannel to: %v\n", channel)
 	k.paramSpace.Set(ctx, types.KeyDistributionTransmissionChannel, channel)
 }
