@@ -83,7 +83,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		// If UBDE is completely unbonded from all relevant child chains
 		if len(UBDE.UnbondingChildChains) == 0 {
 			// Attempt to complete unbonding in staking module
-			_, err := k.stakingKeeper.CompleteStoppedUnbonding(ctx, UBDE.UnbondingDelegationEntryId)
+			err := k.stakingKeeper.UnbondingOpCanComplete(ctx, UBDE.UnbondingDelegationEntryId)
 			if err != nil {
 				return err
 			}

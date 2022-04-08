@@ -454,8 +454,6 @@ func (h StakingHooks) UnbondingDelegationEntryCreated(ctx sdk.Context, delegator
 	creationHeight int64, completionTime time.Time, balance sdk.Int, ID uint64) {
 	var childChainIDS []string
 
-	// TODO: once registryKeeper is implemented, we will get a list of child chains for
-	// the specific validator
 	h.k.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
 		childChainIDS = append(childChainIDS, chainID)
 		return false
@@ -476,14 +474,9 @@ func (h StakingHooks) UnbondingDelegationEntryCreated(ctx sdk.Context, delegator
 
 	// Set UBDE
 	h.k.SetUnbondingDelegationEntry(ctx, ubde)
-}
 
-// If this ubde is still waiting on some chains to unbond, this hook will return true,
-// causing the staking module not to complete unbonding
-func (h StakingHooks) BeforeUnbondingDelegationEntryComplete(ctx sdk.Context, ID uint64) bool {
-	_, found := h.k.GetUnbondingDelegationEntry(ctx, ID)
-
-	return found
+	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
+	h.k.stakingKeeper.PutUnbondingOpOnHold(ctx, ID)
 }
 
 // SetValsetUpdateBlockHeight sets the block height for a given valset update id
