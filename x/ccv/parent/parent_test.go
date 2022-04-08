@@ -234,7 +234,7 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	checkStakingUBDE := func(id uint64, found bool, onHold bool) {
 		stakingUBDE, wasFound := GetStakingUbde(s.parentCtx(), s.parentChain.App.GetStakingKeeper(), id)
 		s.Require().True(found == wasFound)
-		s.Require().True(onHold == stakingUBDE.OnHold)
+		s.Require().True(onHold == stakingUBDE.UnbondingOnHold)
 	}
 
 	checkCCVUBDE := func(chainID string, valUpdateID uint64, found bool) {
@@ -352,10 +352,10 @@ func (s *ParentTestSuite) TestStakingHooks() {
 }
 
 func GetStakingUbde(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (stakingUbde stakingtypes.UnbondingDelegationEntry, found bool) {
-	stakingUbd, found := k.GetUnbondingDelegationByEntry(ctx, id)
+	stakingUbd, found := k.GetUnbondingDelegationByUnbondingOpId(ctx, id)
 
 	for _, entry := range stakingUbd.Entries {
-		if entry.Id == id {
+		if entry.UnbondingOpId == id {
 			stakingUbde = entry
 			found = true
 			break
