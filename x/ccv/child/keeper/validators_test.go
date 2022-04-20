@@ -60,7 +60,7 @@ func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
 	ccVals := getCCVals()
 	k.Require().Len(ccVals, len(tcVals)-1)
 
-	// test behaviours
+	// test behaviors
 	testCases := []struct {
 		changes       []abci.ValidatorUpdate
 		expTotalPower int64

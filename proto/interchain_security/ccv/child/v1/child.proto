@@ -1,6 +1,8 @@
 syntax = "proto3";
 package interchain_security.ccv.child.v1;
 
+import "interchain_security/ccv/v1/ccv.proto";
+
 option go_package = "github.com/cosmos/interchain-security/x/ccv/child/types";
 
 
@@ -14,4 +16,11 @@ message Params {
 message CrossChainValidator {
     bytes address = 1;
     int64 power = 2;
+}
+
+
+// SlashRequest defines a slashing request for CCV child module
+message SlashRequest {
+    interchain_security.ccv.v1.SlashPacketData packet = 1;
+    bool downtime = 2;
 }

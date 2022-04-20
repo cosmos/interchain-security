@@ -51,6 +51,10 @@ const (
 
 	// CrossChainValidatorPrefix is the key prefix that will store cross-chain validators by consensus address
 	CrossChainValidatorPrefix = "crosschainvalidator"
+
+	// PendingSlashRequestsPrefix is the prefix that will store a list of slash request that must be sent
+	// to the parent chain once the CCV channel is established
+	PendingSlashRequestsPrefix = "pendingslashrequests"
 )
 
 var (
