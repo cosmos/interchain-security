@@ -39,16 +39,16 @@ const (
 	// PendingClientKeyPrefix is the key prefix for storing the pending identified child chain client before the spawn time occurs.
 	// The key includes the BigEndian timestamp to allow for efficient chronological iteration
 	PendingClientKeyPrefix = "pendingclient"
-	// UnbondingDelegationEntryPrefix is the key prefix that stores a record of all the ids of child chains that
+	// UnbondingOpPrefix is the key prefix that stores a record of all the ids of child chains that
 	// need to unbond before a given delegation can unbond on this chain.
-	UnbondingDelegationEntryPrefix = "ubdeholds"
+	UnbondingOpPrefix = "unbondingops"
 
 	// ValidatorSetUpdateIdPrefix is the key prefix that stores the current validator set update id
 	ValidatorSetUpdateIdPrefix = "valsetupdateid"
 
-	// UBDEIndexPrefix is for the index for looking up which unbonding delegation entries are waiting for a given
+	// UnbondingOpIndexPrefix is for the index for looking up which unbonding delegation entries are waiting for a given
 	// child chain to unbond
-	UBDEIndexPrefix = "childchaintoubdes"
+	UnbondingOpIndexPrefix = "childchaintounbondingops"
 
 	//ValsetUpdateBlockHeightPrefix is the key prefix that will store the mapping from valset update ID to block height
 	ValsetUpdateBlockHeightPrefix = "valsetupdateblockheight"
@@ -113,15 +113,15 @@ func PendingClientKey(timestamp time.Time, chainID string) []byte {
 	return []byte(fmt.Sprintf("%s/%s/%s", PendingClientKeyPrefix, timeBytes, chainID))
 }
 
-func UBDEIndexKey(chainID string, valsetUpdateID uint64) []byte {
-	return AppendMany(HashString(UBDEIndexPrefix), HashString(chainID), Uint64ToBytes(valsetUpdateID))
+func UnbondingOpIndexKey(chainID string, valsetUpdateID uint64) []byte {
+	return AppendMany(HashString(UnbondingOpIndexPrefix), HashString(chainID), Uint64ToBytes(valsetUpdateID))
 }
 
-func UnbondingDelegationEntryKey(unbondingDelegationEntryID uint64) []byte {
+func UnbondingOpKey(id uint64) []byte {
 	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, unbondingDelegationEntryID)
+	binary.BigEndian.PutUint64(bz, id)
 
-	return append([]byte(UnbondingDelegationEntryPrefix), bz...)
+	return append([]byte(UnbondingOpPrefix), bz...)
 }
 
 func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {

@@ -36,9 +36,9 @@ enum Status {
   STATUS_INVALID = 3 [(gogoproto.enumvalue_customname) = "INVALID"];
 }
 
-message UnbondingDelegationEntry {
-  uint64 unbonding_delegation_entry_id = 1;
-  uint64 validator_set_update_id = 2;
+message UnbondingOp {
+  uint64 id = 1;
+  uint64 valset_update_id = 2;
   // child chains that are still unbonding
   repeated string unbonding_child_chains = 3;
 }
