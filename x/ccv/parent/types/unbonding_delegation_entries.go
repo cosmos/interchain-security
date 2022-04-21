@@ -5,8 +5,8 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-func MustUnmarshalUnbondingDelegationEntry(cdc codec.BinaryCodec, value []byte) ccv.UnbondingOp {
-	delegation, err := UnmarshalUnbondingDelegationEntry(cdc, value)
+func MustUnmarshalUnbondingOp(cdc codec.BinaryCodec, value []byte) ccv.UnbondingOp {
+	delegation, err := UnmarshalUnbondingOp(cdc, value)
 	if err != nil {
 		panic(err)
 	}
@@ -14,7 +14,7 @@ func MustUnmarshalUnbondingDelegationEntry(cdc codec.BinaryCodec, value []byte) 
 	return delegation
 }
 
-func UnmarshalUnbondingDelegationEntry(cdc codec.BinaryCodec, value []byte) (unbondingOp ccv.UnbondingOp, err error) {
+func UnmarshalUnbondingOp(cdc codec.BinaryCodec, value []byte) (unbondingOp ccv.UnbondingOp, err error) {
 	err = cdc.Unmarshal(value, &unbondingOp)
 	return unbondingOp, err
 }

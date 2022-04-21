@@ -290,18 +290,18 @@ func (k Keeper) SetChildChain(ctx sdk.Context, channelID string) error {
 	return nil
 }
 
-// Save UnbondingDelegationEntry by unique ID
-func (k Keeper) SetUnbondingDelegationEntry(ctx sdk.Context, unbondingDelegationEntry ccv.UnbondingOp) error {
+// Save UnbondingOp by unique ID
+func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp ccv.UnbondingOp) error {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := unbondingDelegationEntry.Marshal()
+	bz, err := unbondingOp.Marshal()
 	if err != nil {
 		return err
 	}
-	store.Set(types.UnbondingOpKey(unbondingDelegationEntry.Id), bz)
+	store.Set(types.UnbondingOpKey(unbondingOp.Id), bz)
 	return nil
 }
 
-// Get UnbondingDelegationEntry by unique ID
+// Get UnbondingOp by unique ID
 func (k Keeper) GetUnbondingOp(ctx sdk.Context, id uint64) (ccv.UnbondingOp, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.UnbondingOpKey(id))
@@ -309,7 +309,7 @@ func (k Keeper) GetUnbondingOp(ctx sdk.Context, id uint64) (ccv.UnbondingOp, boo
 		return ccv.UnbondingOp{}, false
 	}
 
-	return types.MustUnmarshalUnbondingDelegationEntry(k.cdc, bz), true
+	return types.MustUnmarshalUnbondingOp(k.cdc, bz), true
 }
 
 func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
@@ -363,7 +363,7 @@ func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valset
 		entry, found := k.GetUnbondingOp(ctx, id)
 		if !found {
 			// TODO JEHAN: is this the correct way to deal with this?
-			panic("did not find UnbondingDelegationEntry according to index- index was probably not correctly updated")
+			panic("did not find UnbondingOp according to index- index was probably not correctly updated")
 		}
 		entries = append(entries, entry)
 	}
@@ -471,7 +471,7 @@ func (h StakingHooks) AfterUnbondingOpInitiated(ctx sdk.Context, ID uint64) {
 	}
 
 	// Set unbondingOp
-	h.k.SetUnbondingDelegationEntry(ctx, unbondingOp)
+	h.k.SetUnbondingOp(ctx, unbondingOp)
 
 	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
 	h.k.stakingKeeper.PutUnbondingOpOnHold(ctx, ID)

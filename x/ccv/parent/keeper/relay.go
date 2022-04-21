@@ -90,7 +90,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			// Delete unbonding op
 			k.DeleteUnbondingOp(ctx, UnbondingOp.Id)
 		} else {
-			k.SetUnbondingDelegationEntry(ctx, UnbondingOp)
+			k.SetUnbondingOp(ctx, UnbondingOp)
 		}
 	}
 

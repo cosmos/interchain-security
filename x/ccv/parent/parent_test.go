@@ -292,10 +292,8 @@ func doUnbonding(s *ParentTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (i
 	shares, err := s.parentChain.App.GetStakingKeeper().Delegate(s.parentCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
 	s.Require().NoError(err)
 
-	afterbondBalance := getBalance(s, delAddr)
-
-	// Check that the correct number of tokens were taken
-	s.Require().True(initBalance.Sub(afterbondBalance).Equal(bondAmt))
+	// Check that the correct number of tokens were taken out of the delegator's account
+	s.Require().True(getBalance(s, delAddr).Equal(initBalance.Sub(bondAmt)))
 
 	// UNDELEGATE
 	// Undelegate half
@@ -303,7 +301,7 @@ func doUnbonding(s *ParentTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (i
 	s.Require().NoError(err)
 
 	// Check that the tokens have not been returned yet
-	s.Require().True(afterbondBalance.Equal(getBalance(s, delAddr)))
+	s.Require().True(getBalance(s, delAddr).Equal(initBalance.Sub(bondAmt)))
 
 	// save the current valset update ID
 	valsetUpdateID := s.parentChain.App.(*app.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
@@ -315,6 +313,7 @@ func endParentUnbondingPeriod(s *ParentTestSuite, origTime time.Time) {
 	// - End provider unbonding period
 	parentCtx := s.parentCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
 	// s.parentChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
+	fmt.Println("it thinks the time is: ", parentCtx.BlockTime())
 	s.parentChain.App.GetStakingKeeper().BlockValidatorUpdates(parentCtx)
 }
 
@@ -326,6 +325,55 @@ func endChildUnbondingPeriod(s *ParentTestSuite, origTime time.Time) {
 	s.Require().NoError(err)
 }
 
+func checkStakingUnbondingOps(s *ParentTestSuite, id uint64, found bool, onHold bool) {
+	stakingUnbondingOp, wasFound := GetStakingUnbondingDelegationEntry(s.parentCtx(), s.parentChain.App.GetStakingKeeper(), id)
+	s.Require().True(found == wasFound)
+	s.Require().True(onHold == stakingUnbondingOp.UnbondingOnHold)
+}
+
+func checkCCVUnbondingOp(s *ParentTestSuite, chainID string, valUpdateID uint64, found bool) {
+	_, wasFound := s.parentChain.App.(*app.App).ParentKeeper.GetUnbondingOpsFromIndex(s.parentCtx(), chainID, valUpdateID)
+	s.Require().True(found == wasFound)
+}
+
+func sendValUpdatePacket(s *ParentTestSuite, valUpdates []abci.ValidatorUpdate, valUpdateId uint64, blockTime time.Time, packetSequence uint64) channeltypes.Packet {
+	packetData := types.NewValidatorSetChangePacketData(valUpdates, valUpdateId, nil)
+	timeout := uint64(ccv.GetTimeoutTimestamp(blockTime).UnixNano())
+	packet := channeltypes.NewPacket(packetData.GetBytes(), packetSequence, parenttypes.PortID, s.path.EndpointB.ChannelID,
+		childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	// Receive CCV packet on consumer chain
+	err := s.path.EndpointA.RecvPacket(packet)
+	s.Require().NoError(err)
+
+	// update child chain hist info
+	s.UpdateChildHistInfo(valUpdates)
+
+	return packet
+}
+
+func commitParentBlock(s *ParentTestSuite) {
+	s.coordinator.CommitBlock(s.parentChain)
+	err := s.path.EndpointA.UpdateClient()
+	s.Require().NoError(err)
+}
+
+func commitChildBlock(s *ParentTestSuite) {
+	// commit child chain and update parent chain client
+	s.coordinator.CommitBlock(s.childChain)
+	err := s.path.EndpointB.UpdateClient()
+	s.Require().NoError(err)
+}
+
+func sendValUpdateAck(s *ParentTestSuite, packet channeltypes.Packet) {
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	err := s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
+	s.Require().NoError(err)
+}
+
+// TODO: this test is broken because the time that the blockchain logic sees when AcknowledgePacket
+// is called is completely different, and in fact before the time that it sees when other operations
+// happen. For this reason, the provider's unbondingOp is not able to mature.
 func (s *ParentTestSuite) TestStakingHooks() {
 	s.SetupCCVChannel()
 	bondAmt := sdk.NewInt(10000000)
@@ -334,63 +382,16 @@ func (s *ParentTestSuite) TestStakingHooks() {
 
 	origTime := s.ctx.BlockTime()
 
-	checkStakingUnbondingOps := func(id uint64, found bool, onHold bool) {
-		stakingUnbondingOp, wasFound := GetStakingUnbondingOps(s.parentCtx(), s.parentChain.App.GetStakingKeeper(), id)
-		s.Require().True(found == wasFound)
-		s.Require().True(onHold == stakingUnbondingOp.UnbondingOnHold)
-	}
-
-	checkCCVUnbondingOp := func(chainID string, valUpdateID uint64, found bool) {
-		_, wasFound := s.parentChain.App.(*app.App).ParentKeeper.GetUnbondingOpsFromIndex(s.parentCtx(), chainID, valUpdateID)
-		s.Require().True(found == wasFound)
-	}
-
-	sendValUpdatePacket := func(valUpdates []abci.ValidatorUpdate, valUpdateId uint64, blockTime time.Time, packetSequence uint64) channeltypes.Packet {
-		packetData := types.NewValidatorSetChangePacketData(valUpdates, valUpdateId, nil)
-		timeout := uint64(ccv.GetTimeoutTimestamp(blockTime).UnixNano())
-		packet := channeltypes.NewPacket(packetData.GetBytes(), packetSequence, parenttypes.PortID, s.path.EndpointB.ChannelID,
-			childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
-
-		// Receive CCV packet on consumer chain
-		err := s.path.EndpointA.RecvPacket(packet)
-		s.Require().NoError(err)
-
-		// update child chain hist info
-		s.UpdateChildHistInfo(valUpdates)
-
-		return packet
-	}
-
-	commitParentBlock := func() {
-		s.coordinator.CommitBlock(s.parentChain)
-		err := s.path.EndpointA.UpdateClient()
-		s.Require().NoError(err)
-	}
-
-	commitChildBlock := func() {
-		// commit child chain and update parent chain client
-		s.coordinator.CommitBlock(s.childChain)
-		err := s.path.EndpointB.UpdateClient()
-		s.Require().NoError(err)
-	}
-
-	sendValUpdateAck := func(packet channeltypes.Packet) {
-		ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-		err := s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
-		s.Require().NoError(err)
-	}
-
 	initBalance, valsetUpdateID := doUnbonding(s, delAddr, bondAmt)
 
-	// check that staking unbonding op was created and onHold is false
-	checkStakingUnbondingOps(1, true, false)
+	// check that staking unbonding op was created and onHold is true
+	checkStakingUnbondingOps(s, 1, true, true)
 
 	// check that CCV unbonding op was created
-	checkCCVUnbondingOp(s.childChain.ChainID, valsetUpdateID, true)
-
-	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
+	checkCCVUnbondingOp(s, s.childChain.ChainID, valsetUpdateID, true)
 
 	// SEND PACKET
+	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
 
 	// Get validator update created in Endblock to use in reconstructing packet
 	valUpdates := s.parentChain.App.GetStakingKeeper().GetValidatorUpdates(s.parentCtx())
@@ -399,38 +400,41 @@ func (s *ParentTestSuite) TestStakingHooks() {
 	oldBlockTime := s.parentCtx().BlockTime()
 
 	// commit block on parent chain and update consumer chain's client
-	commitParentBlock()
+	commitParentBlock(s)
 	// Relay packet to consumer chain
-	packet := sendValUpdatePacket(valUpdates, valsetUpdateID, oldBlockTime, 1)
+	packet := sendValUpdatePacket(s, valUpdates, valsetUpdateID, oldBlockTime, 1)
 
 	// ACKNOWLEDGE PACKET
 	endParentUnbondingPeriod(s, origTime)
 	// check that onHold is true
-	checkStakingUnbondingOps(1, true, true)
+	checkStakingUnbondingOps(s, 1, true, true)
 
-	// Check that unbonding has not yet completed
+	// Check that unbonding has not yet completed. The initBalance is still lower
+	// by the bond amount, because it has been taken out of the delegator's account
 	s.Require().True(getBalance(s, delAddr).Equal(initBalance.Sub(bondAmt)))
 
 	// end child's unbonding period by advancing time and calling UnbondMaturePackets
 	endChildUnbondingPeriod(s, origTime)
 
 	// commit block on child and update parent client
-	commitChildBlock()
-
+	commitChildBlock(s)
+	println("yo")
 	// send acknowledgement to parent
-	sendValUpdateAck(packet)
-
+	sendValUpdateAck(s, packet)
+	println("dawg")
 	// Check that ccv unbonding op has been deleted
-	checkCCVUnbondingOp(s.childChain.ChainID, valsetUpdateID, false)
+	checkCCVUnbondingOp(s, s.childChain.ChainID, valsetUpdateID, false)
 
 	// Check that staking unbonding op has been deleted
-	checkStakingUnbondingOps(valsetUpdateID, false, false)
+	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
 
 	// Check that unbonding has completed
+	fmt.Println(bondAmt, initBalance, getBalance(s, delAddr))
+	s.Require().False(getBalance(s, delAddr).Equal(initBalance.Sub(bondAmt)))
 	s.Require().True(getBalance(s, delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
 }
 
-func GetStakingUnbondingOps(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
+func GetStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
 	stakingUbd, found := k.GetUnbondingDelegationByUnbondingOpId(ctx, id)
 
 	for _, entry := range stakingUbd.Entries {

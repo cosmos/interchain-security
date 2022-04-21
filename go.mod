@@ -3,7 +3,7 @@ module github.com/cosmos/interchain-security
 go 1.16
 
 require (
-	github.com/cosmos/cosmos-sdk v0.45.2-0.20220418201056-32dc5a30711e
+	github.com/cosmos/cosmos-sdk v0.45.2-0.20220421223926-3e3d83dec013
 	github.com/cosmos/ibc-go v1.2.2
 	github.com/cosmos/ibc-go/v3 v3.0.0-alpha1.0.20220210141024-fb2f0416254b
 	github.com/gogo/protobuf v1.3.3
@@ -35,4 +35,5 @@ replace (
 	github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-alpha1.0.20220405190259-988da4519455
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
+	github.com/cosmos/cosmos-sdk => ../cosmos-sdk
 )
