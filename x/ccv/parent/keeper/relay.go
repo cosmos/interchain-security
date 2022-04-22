@@ -74,23 +74,23 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		return sdkerrors.Wrapf(ccv.ErrInvalidChildChain, "chain ID doesn't exist for channel ID: %s", packet.DestinationChannel)
 	}
 
-	UnbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
+	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
 
-	for _, UnbondingOp := range UnbondingOps {
+	for _, unbondingOp := range unbondingOps {
 		// remove child chain ID from unbonding op record
-		UnbondingOp.UnbondingChildChains, _ = removeStringFromSlice(UnbondingOp.UnbondingChildChains, chainID)
+		unbondingOp.UnbondingChildChains, _ = removeStringFromSlice(unbondingOp.UnbondingChildChains, chainID)
 
 		// If unbonding op is completely unbonded from all relevant child chains
-		if len(UnbondingOp.UnbondingChildChains) == 0 {
+		if len(unbondingOp.UnbondingChildChains) == 0 {
 			// Attempt to complete unbonding in staking module
-			err := k.stakingKeeper.UnbondingOpCanComplete(ctx, UnbondingOp.Id)
+			err := k.stakingKeeper.UnbondingOpCanComplete(ctx, unbondingOp.Id)
 			if err != nil {
 				return err
 			}
 			// Delete unbonding op
-			k.DeleteUnbondingOp(ctx, UnbondingOp.Id)
+			k.DeleteUnbondingOp(ctx, unbondingOp.Id)
 		} else {
-			k.SetUnbondingOp(ctx, UnbondingOp)
+			k.SetUnbondingOp(ctx, unbondingOp)
 		}
 	}
 
