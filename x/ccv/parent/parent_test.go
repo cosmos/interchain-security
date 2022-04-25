@@ -491,9 +491,14 @@ func (s *ParentTestSuite) TestHandleConsumerDowntimeErrors() {
 	parentCtx := s.parentCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
 	s.parentChain.App.GetStakingKeeper().BlockValidatorUpdates(parentCtx)
 
+	// set manually validator status from unbonding to unbonded
+	err = s.parentChain.App.GetStakingKeeper().UnbondingOpCanComplete(parentCtx, uint64(1))
+	s.Require().NoError(err)
+
 	// replace validator address
 	slashingPkt.Validator.Address = val.Address
-	// expect an error since the validator is already jailed
+
+	// expect an error since the validator is already unbonded
 	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), childChainID, slashingPkt)
 	s.Require().Error(err, "did slash unbonded validator")
 
