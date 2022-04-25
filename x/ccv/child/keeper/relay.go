@@ -33,7 +33,7 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 		k.SetChannelStatus(ctx, packet.DestinationChannel, ccv.VALIDATING)
 		k.SetParentChannel(ctx, packet.DestinationChannel)
 		// Send pending slash requests in states
-		k.SendPendingSlashRequest(ctx)
+		k.SendPendingSlashRequests(ctx)
 	}
 	// Set pending changes by accumulating changes from this packet with all prior changes
 	var pendingChanges []abci.ValidatorUpdate
@@ -107,7 +107,7 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 
 	// return if an outstanding downtime request is set for the validator
 	consAddr := sdk.ConsAddress(validator.Address)
-	if k.OutstandingDowntime(ctx, consAddr) { // TODO: add downtime boolean flag
+	if k.OutstandingDowntime(ctx, consAddr) { // TODO: add to condition if the slash is for downtime
 		return
 	}
 
@@ -156,12 +156,12 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 	}
 
 	// set outstanding downtime flag for the validator
-	k.SetOutstandingDowntime(ctx, consAddr)
+	k.SetOutstandingDowntime(ctx, consAddr) // TODO: do this only if the slash is for downtime
 }
 
-// SendPendingSlashRequest iterates over the stored pending slash requests in reverse order
+// SendPendingSlashRequests iterates over the stored pending slash requests in reverse order
 // and sends the embedded slash packets to the provider chain
-func (k Keeper) SendPendingSlashRequest(ctx sdk.Context) {
+func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 	channelID, ok := k.GetParentChannel(ctx)
 	if !ok {
 		panic(fmt.Errorf("%s: CCV channel not set", channeltypes.ErrChannelNotFound))
@@ -205,7 +205,7 @@ func (k Keeper) SendPendingSlashRequest(ctx sdk.Context) {
 			}
 
 			// set validator outstanding downtime flag to true
-			if slashReq.Downtime { // TODO : add downtime boolean to the condition
+			if slashReq.Downtime { // TODO: add to condition if the slash is for downtime
 				k.SetOutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address))
 			}
 		}
