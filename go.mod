@@ -34,5 +34,4 @@ replace (
 	github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-alpha1.0.20220324094541-59c537264e54
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
-	github.com/cosmos/cosmos-sdk => ../cosmos-sdk
 )
