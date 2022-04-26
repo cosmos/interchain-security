@@ -312,8 +312,10 @@ func (am AppModule) OnChanOpenAck(
 
 	///////////////////////////////////////////////////
 	// Initialize distribution token transfer channel
-	// NOTE the handshake for this channel is handled by
-	//      the ibc-go/transfer module
+	//
+	// NOTE The handshake for this channel is handled by the ibc-go/transfer
+	// module. If the transfer-channel fails here (unlikely) then the transfer
+	// channel should be manually created and ccv parameters set accordingly.
 
 	// reuse the connection hops for this channel for the
 	// transfer channel being created.

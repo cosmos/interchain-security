@@ -275,6 +275,10 @@ func (am AppModule) OnChanOpenTry(
 	}
 
 	md := types.HandshakeMetadata{
+		// NOTE that the fee pool collector address string provided to the
+		// the consumer chain must be excluded from the blocked addresses
+		// blacklist or all all ibc-transfers from the consumer chain to the
+		// provider chain will fail
 		ProviderFeePoolAddr: am.keeper.GetFeeCollectorAddressStr(ctx),
 		Version:             ccv.Version,
 	}
