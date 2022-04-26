@@ -74,28 +74,28 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		return sdkerrors.Wrapf(ccv.ErrInvalidChildChain, "chain ID doesn't exist for channel ID: %s", packet.DestinationChannel)
 	}
 
-	UBDEs, _ := k.GetUBDEsFromIndex(ctx, chainID, data.ValsetUpdateId)
+	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
 
-	for _, UBDE := range UBDEs {
-		// remove child chain ID from ubde
-		UBDE.UnbondingChildChains, _ = removeStringFromSlice(UBDE.UnbondingChildChains, chainID)
+	for _, unbondingOp := range unbondingOps {
+		// remove child chain ID from unbonding op record
+		unbondingOp.UnbondingChildChains, _ = removeStringFromSlice(unbondingOp.UnbondingChildChains, chainID)
 
-		// If UBDE is completely unbonded from all relevant child chains
-		if len(UBDE.UnbondingChildChains) == 0 {
+		// If unbonding op is completely unbonded from all relevant child chains
+		if len(unbondingOp.UnbondingChildChains) == 0 {
 			// Attempt to complete unbonding in staking module
-			_, err := k.stakingKeeper.CompleteStoppedUnbonding(ctx, UBDE.UnbondingDelegationEntryId)
+			err := k.stakingKeeper.UnbondingOpCanComplete(ctx, unbondingOp.Id)
 			if err != nil {
 				return err
 			}
-			// Delete UBDE
-			k.DeleteUnbondingDelegationEntry(ctx, UBDE.UnbondingDelegationEntryId)
+			// Delete unbonding op
+			k.DeleteUnbondingOp(ctx, unbondingOp.Id)
 		} else {
-			k.SetUnbondingDelegationEntry(ctx, UBDE)
+			k.SetUnbondingOp(ctx, unbondingOp)
 		}
 	}
 
 	// clean up index
-	k.DeleteUBDEIndex(ctx, chainID, data.ValsetUpdateId)
+	k.DeleteUnbondingOpIndex(ctx, chainID, data.ValsetUpdateId)
 
 	return nil
 }
