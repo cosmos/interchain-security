@@ -40,7 +40,7 @@ func DefaultParams() Params {
 		1000, // about 2 hr at 7.6 seconds per blocks
 		"",
 		"",
-		"0.5",
+		"0", // everything goes to the provider
 	)
 }
 

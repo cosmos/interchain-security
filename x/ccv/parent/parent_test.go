@@ -85,8 +85,13 @@ func (suite *ParentTestSuite) SetupTest() {
 
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.parentChain.Vals)
 
-	params := childtypes.DefaultParams()
-	params.Enabled = true
+	params := childtypes.NewParams(
+		true,
+		1000, // about 2 hr at 7.6 seconds per blocks
+		"",
+		"",
+		"0.5", // 50%
+	)
 	childGenesis := childtypes.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates, params)
 	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
