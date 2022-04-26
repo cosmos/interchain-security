@@ -1,4 +1,7 @@
 # CCV Distribution
+
+This diagram describes an more correct ccv distribution mechanism. Note that
+this is not the simple distribution mechanism. 
                                                                              
 ```                                                                          
               ┌─for each block────────────────────────────────────┐     

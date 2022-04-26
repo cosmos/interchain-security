@@ -28,7 +28,6 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		return nil
 	}
 
-	// work around to reuse the IBC token transfer logic
 	consumerFeePoolAddr := k.accountKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
 	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 
@@ -39,8 +38,10 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		return err
 	}
 	decFPTokens := sdk.NewDecCoinsFromCoins(fpTokens...)
+	// NOTE the truncated decimal remainder will be sent to the provider fee pool
 	consRedistrTokens, _ := decFPTokens.MulDec(frac).TruncateDecimal()
-	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName, types.ConsumerRedistributeName, consRedistrTokens)
+	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
+		types.ConsumerRedistributeName, consRedistrTokens)
 	if err != nil {
 		return err
 	}
