@@ -204,7 +204,6 @@ func ValidateParentChannelParams(
 	order channeltypes.Order,
 	portID string,
 	channelID string,
-	version string,
 ) error {
 	if order != channeltypes.ORDERED {
 		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.ORDERED, order)
@@ -214,10 +213,6 @@ func ValidateParentChannelParams(
 	boundPort := keeper.GetPort(ctx)
 	if boundPort != portID {
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
-	}
-
-	if version != ccv.Version {
-		return sdkerrors.Wrapf(ccv.ErrInvalidVersion, "got %s, expected %s", version, ccv.Version)
 	}
 	return nil
 }
@@ -249,7 +244,7 @@ func (am AppModule) OnChanOpenTry(
 ) (metadata string, err error) {
 
 	if err := ValidateParentChannelParams(
-		ctx, am.keeper, order, portID, channelID, ccv.Version,
+		ctx, am.keeper, order, portID, channelID,
 	); err != nil {
 		return "", err
 	}
