@@ -453,7 +453,6 @@ func (h StakingHooks) AfterUnbondingOpInitiated(ctx sdk.Context, ID uint64) {
 	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
 	unbondingOp := ccv.UnbondingOp{
 		Id:                   ID,
-		ValsetUpdateId:       valsetUpdateID,
 		UnbondingChildChains: childChainIDS,
 	}
 

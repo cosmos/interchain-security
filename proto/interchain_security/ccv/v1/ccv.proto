@@ -38,9 +38,8 @@ enum Status {
 
 message UnbondingOp {
   uint64 id = 1;
-  uint64 valset_update_id = 2;
   // child chains that are still unbonding
-  repeated string unbonding_child_chains = 3;
+  repeated string unbonding_child_chains = 2;
 }
 
 // This packet is sent from the consumer chain to the provider chain.
