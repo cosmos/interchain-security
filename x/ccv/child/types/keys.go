@@ -54,6 +54,9 @@ const (
 
 	// ConsumerRedistributeName the root string for the consumer-redistribution account address
 	ConsumerRedistributeName = "cons_redistribute"
+
+	// ConsumerToSendToProviderName is a "buffer" address for outgoing fees to be transferred to the provider chain.
+	ConsumerToSendToProviderName = "cons_to_send_to_provider"
 )
 
 var (

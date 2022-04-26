@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -11,6 +13,8 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
+
+const TransferTimeDelay = 1 * 7 * 24 * time.Hour // 1 weeks
 
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
@@ -46,18 +50,31 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		return err
 	}
 
-	// Send the remainder to the Provider fee pool over ibc
+	// Send the remainder to the Provider fee pool over ibc. Buffer these
+	// through a secondary address on the consumer chain to ensure that the
+	// tokens do not go through the consumer redistribute split twice in the
+	// event that the transfer fails the tokens are returned to the consumer
+	// chain.
 	remainingTokens := fpTokens.Sub(consRedistrTokens)
+	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
+		types.ConsumerToSendToProviderName, remainingTokens)
+	if err != nil {
+		return err
+	}
+	// empty out the toSendToProviderTokens address
+	tstProviderAddr := k.accountKeeper.GetModuleAccount(ctx,
+		types.ConsumerToSendToProviderName).GetAddress()
+	tstProviderTokens := k.bankKeeper.GetAllBalances(ctx, tstProviderAddr)
 	ch := k.GetDistributionTransmissionChannel(ctx)
 	providerAddr := k.GetProviderFeePoolAddrStr(ctx)
 	timeoutHeight := clienttypes.Height{0, 0}
-	timeoutTimestamp := uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano())
-	for _, token := range remainingTokens {
+	timeoutTimestamp := uint64(ctx.BlockTime().Add(TransferTimeDelay).UnixNano())
+	for _, token := range tstProviderTokens {
 		err := k.ibcTransferKeeper.SendTransfer(ctx,
 			transfertypes.PortID,
 			ch,
 			token,
-			consumerFeePoolAddr,
+			tstProviderAddr,
 			providerAddr,
 			timeoutHeight,
 			timeoutTimestamp,
