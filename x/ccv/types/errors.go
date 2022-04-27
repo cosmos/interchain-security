@@ -20,4 +20,6 @@ var (
 	ErrInvalidChildState        = sdkerrors.Register(ModuleName, 13, "parent chain has invalid state for child chain")
 	ErrInvalidChildClient       = sdkerrors.Register(ModuleName, 14, "ccv channel is not built on correct client")
 	ErrInvalidProposal          = sdkerrors.Register(ModuleName, 15, "invalid create child chain proposal")
+	ErrInvalidHandshakeMetadata = sdkerrors.Register(ModuleName, 16, "invalid parent handshake metadata")
+	ErrChannelNotFound          = sdkerrors.Register(ModuleName, 17, "channel not found")
 )

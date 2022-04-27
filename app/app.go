@@ -182,14 +182,16 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:     nil,
-		distrtypes.ModuleName:          nil,
-		minttypes.ModuleName:           {authtypes.Minter},
-		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:            {authtypes.Burner},
-		liquiditytypes.ModuleName:      {authtypes.Minter, authtypes.Burner},
-		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+		authtypes.FeeCollectorName:                 nil,
+		ibcchildtypes.ConsumerRedistributeName:     nil,
+		ibcchildtypes.ConsumerToSendToProviderName: nil,
+		distrtypes.ModuleName:                      nil,
+		minttypes.ModuleName:                       {authtypes.Minter},
+		stakingtypes.BondedPoolName:                {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:             {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                        {authtypes.Burner},
+		liquiditytypes.ModuleName:                  {authtypes.Minter, authtypes.Burner},
+		ibctransfertypes.ModuleName:                {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -223,19 +225,24 @@ type App struct { // nolint: golint
 	StakingKeeper    stakingkeeper.Keeper
 	SlashingKeeper   slashingkeeper.Keeper
 	MintKeeper       mintkeeper.Keeper
-	DistrKeeper      distrkeeper.Keeper
-	GovKeeper        govkeeper.Keeper
-	CrisisKeeper     crisiskeeper.Keeper
-	UpgradeKeeper    upgradekeeper.Keeper
-	ParamsKeeper     paramskeeper.Keeper
-	IBCKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	EvidenceKeeper   evidencekeeper.Keeper
-	TransferKeeper   ibctransferkeeper.Keeper
-	FeeGrantKeeper   feegrantkeeper.Keeper
-	AuthzKeeper      authzkeeper.Keeper
-	LiquidityKeeper  liquiditykeeper.Keeper
-	ChildKeeper      ibcchildkeeper.Keeper
-	ParentKeeper     ibcparentkeeper.Keeper
+
+	// NOTE the distribution keeper should either be removed
+	// from consumer chain or set to use an independant
+	// different fee-pool from the consumer chain ChildKeeper
+	DistrKeeper distrkeeper.Keeper
+
+	GovKeeper       govkeeper.Keeper
+	CrisisKeeper    crisiskeeper.Keeper
+	UpgradeKeeper   upgradekeeper.Keeper
+	ParamsKeeper    paramskeeper.Keeper
+	IBCKeeper       *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
+	EvidenceKeeper  evidencekeeper.Keeper
+	TransferKeeper  ibctransferkeeper.Keeper
+	FeeGrantKeeper  feegrantkeeper.Keeper
+	AuthzKeeper     authzkeeper.Keeper
+	LiquidityKeeper liquiditykeeper.Keeper
+	ChildKeeper     ibcchildkeeper.Keeper
+	ParentKeeper    ibcparentkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper       capabilitykeeper.ScopedKeeper
@@ -244,7 +251,7 @@ type App struct { // nolint: golint
 	ScopedIBCParentKeeper capabilitykeeper.ScopedKeeper
 
 	// the module manager
-	mm *module.Manager
+	MM *module.Manager
 
 	// simulation manager
 	sm           *module.SimulationManager
@@ -338,12 +345,20 @@ func New(
 		authtypes.ProtoBaseAccount,
 		maccPerms,
 	)
+
+	// Remove the fee-pool from the group of blocked recipient addresses in bank
+	// this is required for the provider chain to be able to receive tokens from
+	// the consumer chain
+	bankBlockedAddrs := app.ModuleAccountAddrs()
+	delete(bankBlockedAddrs, authtypes.NewModuleAddress(
+		authtypes.FeeCollectorName).String())
+
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
 		keys[banktypes.StoreKey],
 		app.AccountKeeper,
 		app.GetSubspace(banktypes.ModuleName),
-		app.ModuleAccountAddrs(),
+		bankBlockedAddrs,
 	)
 	app.AuthzKeeper = authzkeeper.NewKeeper(
 		keys[authzkeeper.StoreKey],
@@ -440,6 +455,11 @@ func New(
 		app.IBCKeeper.ConnectionKeeper,
 		app.IBCKeeper.ClientKeeper,
 		app.SlashingKeeper,
+		app.BankKeeper,
+		app.AccountKeeper,
+		&app.TransferKeeper,
+		app.IBCKeeper,
+		authtypes.FeeCollectorName,
 	)
 
 	app.ParentKeeper = ibcparentkeeper.NewKeeper(
@@ -453,6 +473,8 @@ func New(
 		app.IBCKeeper.ClientKeeper,
 		app.StakingKeeper,
 		app.SlashingKeeper,
+		app.AccountKeeper,
+		authtypes.FeeCollectorName,
 	)
 	parentModule := ibcparent.NewAppModule(&app.ParentKeeper)
 
@@ -525,7 +547,7 @@ func New(
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
-	app.mm = module.NewManager(
+	app.MM = module.NewManager(
 		genutil.NewAppModule(
 			app.AccountKeeper,
 			app.StakingKeeper,
@@ -559,7 +581,7 @@ func New(
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
-	app.mm.SetOrderBeginBlockers(
+	app.MM.SetOrderBeginBlockers(
 		// upgrades should be run first
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
@@ -583,7 +605,7 @@ func New(
 		ibcchildtypes.ModuleName,
 		ibcparenttypes.ModuleName,
 	)
-	app.mm.SetOrderEndBlockers(
+	app.MM.SetOrderEndBlockers(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
@@ -613,7 +635,7 @@ func New(
 	// NOTE: Capability module must occur first so that it can initialize any capabilities
 	// so that other modules that want to create or claim capabilities afterwards in InitChain
 	// can do so safely.
-	app.mm.SetOrderInitGenesis(
+	app.MM.SetOrderInitGenesis(
 		capabilitytypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
@@ -637,11 +659,11 @@ func New(
 		ibcparenttypes.ModuleName,
 	)
 
-	app.mm.RegisterInvariants(&app.CrisisKeeper)
-	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
+	app.MM.RegisterInvariants(&app.CrisisKeeper)
+	app.MM.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
 
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
-	app.mm.RegisterServices(app.configurator)
+	app.MM.RegisterServices(app.configurator)
 
 	// create the simulation manager and define the order of the modules for deterministic simulations
 	//
@@ -700,13 +722,13 @@ func New(
 
 			fromVM := make(map[string]uint64)
 
-			for moduleName, eachModule := range app.mm.Modules {
+			for moduleName, eachModule := range app.MM.Modules {
 				fromVM[moduleName] = eachModule.ConsensusVersion()
 			}
 
 			ctx.Logger().Info("start to run module migrations...")
 
-			return app.mm.RunMigrations(ctx, app.configurator, fromVM)
+			return app.MM.RunMigrations(ctx, app.configurator, fromVM)
 		},
 	)
 
@@ -741,12 +763,12 @@ func (app *App) Name() string { return app.BaseApp.Name() }
 
 // BeginBlocker application updates every begin block
 func (app *App) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	return app.mm.BeginBlock(ctx, req)
+	return app.MM.BeginBlock(ctx, req)
 }
 
 // EndBlocker application updates every end block
 func (app *App) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.ResponseEndBlock {
-	return app.mm.EndBlock(ctx, req)
+	return app.MM.EndBlock(ctx, req)
 }
 
 // InitChainer application update at chain initialization
@@ -756,9 +778,9 @@ func (app *App) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.Res
 		panic(err)
 	}
 
-	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap())
+	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.MM.GetVersionMap())
 
-	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
+	return app.MM.InitGenesis(ctx, app.appCodec, genesisState)
 }
 
 // LoadHeight loads a particular height

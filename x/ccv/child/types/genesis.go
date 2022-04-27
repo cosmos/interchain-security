@@ -13,9 +13,11 @@ import (
 
 // NewInitialGenesisState returns a child GenesisState for a completely new child chain.
 // TODO: Include chain status
-func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState, initValSet []abci.ValidatorUpdate) *GenesisState {
+func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
+	initValSet []abci.ValidatorUpdate, params Params) *GenesisState {
+
 	return &GenesisState{
-		Params:               NewParams(true),
+		Params:               params,
 		NewChain:             true,
 		ParentClientState:    cs,
 		ParentConsensusState: consState,
@@ -24,9 +26,12 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 }
 
 // NewRestartGenesisState returns a child GenesisState that has already been established.
-func NewRestartGenesisState(clientID, channelID string, unbondingSequences []UnbondingSequence, initValSet []abci.ValidatorUpdate) *GenesisState {
+func NewRestartGenesisState(clientID, channelID string,
+	unbondingSequences []UnbondingSequence,
+	initValSet []abci.ValidatorUpdate, params Params) *GenesisState {
+
 	return &GenesisState{
-		Params:             NewParams(true),
+		Params:             params,
 		ParentClientId:     clientID,
 		ParentChannelId:    channelID,
 		UnbondingSequences: unbondingSequences,

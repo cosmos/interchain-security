@@ -1,23 +1,27 @@
 package parent_test
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
+	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	"github.com/cosmos/interchain-security/app"
 	"github.com/cosmos/interchain-security/testutil/simapp"
@@ -47,7 +51,10 @@ type ParentTestSuite struct {
 	parentClient    *ibctmtypes.ClientState
 	parentConsState *ibctmtypes.ConsensusState
 
-	path *ibctesting.Path
+	path         *ibctesting.Path
+	transferPath *ibctesting.Path
+
+	providerDistrIndex int
 
 	ctx sdk.Context
 }
@@ -58,6 +65,7 @@ func (suite *ParentTestSuite) SetupTest() {
 	// create child chain with parent chain valset
 	suite.CreateChildChain()
 	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
+	suite.DisableConsumerDistribution()
 
 	tmConfig := ibctesting.NewTendermintConfig()
 
@@ -76,7 +84,14 @@ func (suite *ParentTestSuite) SetupTest() {
 
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.parentChain.Vals)
 
-	childGenesis := childtypes.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates)
+	params := childtypes.NewParams(
+		true,
+		1000, // about 2 hr at 7.6 seconds per blocks
+		"",
+		"",
+		"0.5", // 50%
+	)
+	childGenesis := childtypes.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates, params)
 	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	suite.ctx = suite.parentChain.GetContext()
@@ -102,11 +117,44 @@ func (suite *ParentTestSuite) SetupTest() {
 	// create child client on parent chain and set as child client for child chainID in parent keeper.
 	suite.path.EndpointB.CreateClient()
 	suite.parentChain.App.(*app.App).ParentKeeper.SetChildClient(suite.parentChain.GetContext(), suite.childChain.ChainID, suite.path.EndpointB.ClientID)
+
+	suite.transferPath = ibctesting.NewPath(suite.childChain, suite.parentChain)
+	suite.transferPath.EndpointA.ChannelConfig.PortID = transfertypes.PortID
+	suite.transferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
+	suite.transferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
+	suite.transferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
 }
 
 func (suite *ParentTestSuite) SetupCCVChannel() {
 	suite.coordinator.CreateConnections(suite.path)
+
+	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
+	// so transfer channel will be on stage INIT when CreateChannels for ccv path returns.
 	suite.coordinator.CreateChannels(suite.path)
+
+	// transfer path will use the same connection as ccv path
+
+	suite.transferPath.EndpointA.ClientID = suite.path.EndpointA.ClientID
+	suite.transferPath.EndpointA.ConnectionID = suite.path.EndpointA.ConnectionID
+	suite.transferPath.EndpointB.ClientID = suite.path.EndpointB.ClientID
+	suite.transferPath.EndpointB.ConnectionID = suite.path.EndpointB.ConnectionID
+
+	// INIT step for transfer path has already been called during CCV channel setup
+	suite.transferPath.EndpointA.ChannelID = suite.childChain.App.(*app.App).
+		ChildKeeper.GetDistributionTransmissionChannel(suite.childChain.GetContext())
+
+	// Complete TRY, ACK, CONFIRM for transfer path
+	err := suite.transferPath.EndpointB.ChanOpenTry()
+	suite.Require().NoError(err)
+
+	err = suite.transferPath.EndpointA.ChanOpenAck()
+	suite.Require().NoError(err)
+
+	err = suite.transferPath.EndpointB.ChanOpenConfirm()
+	suite.Require().NoError(err)
+
+	// ensure counterparty is up to date
+	suite.transferPath.EndpointA.UpdateClient()
 }
 
 func (s *ParentTestSuite) CreateChildChain() {
@@ -574,4 +622,158 @@ func (s *ParentTestSuite) UpdateChildHistInfo(changes []abci.ValidatorUpdate) {
 	// update chain historical info
 	hi := stakingtypes.NewHistoricalInfo(s.ctx.BlockHeader(), validators, sdk.DefaultPowerReduction)
 	s.childChain.App.GetStakingKeeper().SetHistoricalInfo(s.childCtx(), s.childCtx().BlockHeight(), &hi)
+}
+
+func (s *ParentTestSuite) DisableConsumerDistribution() {
+	cChain := s.childChain
+	cApp := cChain.App.(*app.App)
+	for i, moduleName := range cApp.MM.OrderBeginBlockers {
+		if moduleName == distrtypes.ModuleName {
+			cApp.MM.OrderBeginBlockers = append(cApp.MM.OrderBeginBlockers[:i], cApp.MM.OrderBeginBlockers[i+1:]...)
+			return
+		}
+	}
+}
+
+func (s *ParentTestSuite) DisableProviderDistribution() {
+	pChain := s.parentChain
+	pApp := pChain.App.(*app.App)
+	for i, moduleName := range pApp.MM.OrderBeginBlockers {
+		if moduleName == distrtypes.ModuleName {
+			s.providerDistrIndex = i
+			pApp.MM.OrderBeginBlockers = append(pApp.MM.OrderBeginBlockers[:i], pApp.MM.OrderBeginBlockers[i+1:]...)
+			return
+		}
+	}
+}
+
+func (s *ParentTestSuite) ReenableProviderDistribution() {
+	pChain := s.parentChain
+	pApp := pChain.App.(*app.App)
+	i := s.providerDistrIndex
+	pApp.MM.OrderBeginBlockers = append(
+		pApp.MM.OrderBeginBlockers[:i+1], pApp.MM.OrderBeginBlockers[i:]...) // make space
+	pApp.MM.OrderBeginBlockers[i] = distrtypes.ModuleName // set value
+}
+
+// TestDistribution tests that tokens are distributed to the
+// provider chain from the consumer chain appropriately
+func (s *ParentTestSuite) TestDistribution() {
+	s.SetupCCVChannel() // also sets up transfer channels
+	// NOTE s.transferPath.EndpointA == Consumer Chain
+	//      s.transferPath.EndpointB == Provider Chain
+
+	pChain, cChain := s.parentChain, s.childChain
+	pApp, cApp := pChain.App.(*app.App), cChain.App.(*app.App)
+	cKeep := cApp.ChildKeeper
+
+	// Get the receiving fee pool on the provider chain
+	fcAddr := pApp.ParentKeeper.GetFeeCollectorAddressStr(pChain.GetContext())
+
+	// Ensure that the provider fee pool address stored on the consumer chain
+	// is the correct address
+	fcAddr2 := cApp.ChildKeeper.GetProviderFeePoolAddrStr(cChain.GetContext())
+	s.Require().Equal(fcAddr, fcAddr2)
+
+	// make sure we're starting at consumer height 21 (some blocks commited during setup)
+	s.Require().Equal(int64(21), cChain.GetContext().BlockHeight())
+
+	// get last consumer transmission
+	ltbh, err := cKeep.GetLastTransmissionBlockHeight(cChain.GetContext())
+	s.Require().NoError(err)
+	s.Require().Equal(int64(0), ltbh.Height)
+
+	bpdt := cKeep.GetBlocksPerDistributionTransmission(cChain.GetContext())
+	s.Require().Equal(int64(1000), bpdt)
+
+	// check the consumer chain fee pool
+	consumerFeePoolAddr := cApp.AccountKeeper.GetModuleAccount(
+		cChain.GetContext(), authtypes.FeeCollectorName).GetAddress()
+	providerFeePoolAddr := pApp.AccountKeeper.GetModuleAccount(
+		pChain.GetContext(), authtypes.FeeCollectorName).GetAddress()
+	balance := cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
+	s.Assert().Equal(balance.Amount.Int64(), int64(140062235461521))
+
+	// Commit some new blocks (commit blocks less than the distribution event blocks)
+	s.coordinator.CommitNBlocks(cChain, (1000-1)-21)
+	err = s.path.EndpointB.UpdateClient()
+	s.Require().Equal(int64(1000), cChain.GetContext().BlockHeight())
+
+	// check the consumer chain fee pool (should have increased
+	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
+	expFeePoolAtDistr := int64(4175822659438993)
+	s.Assert().Equal(balance.Amount.Int64(), expFeePoolAtDistr)
+
+	// Verify that the destinationChannel exists
+	// if this doesn't exist then the transfer logic will fail when
+	// a the distribution transfer is invoked in the next block.
+	ctx := cChain.GetContext()
+	sourcePort := transfertypes.PortID
+	sourceChannel := cKeep.GetDistributionTransmissionChannel(ctx)
+	sourceChannelEnd, found := cApp.IBCKeeper.ChannelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
+	s.Require().True(found)
+	destinationChannel := sourceChannelEnd.GetCounterparty().GetChannelID()
+	s.Require().True(len(destinationChannel) > 0)
+
+	// commit 1 more block (which should invoke a distribution event)
+	rspEB, _, _ := s.coordinator.CommitBlockGetResponses(cChain)
+
+	// get the packet from the endblock events
+	var packet channeltypes.Packet
+	var ftpd transfertypes.FungibleTokenPacketData
+	found = false
+	for _, evnt := range rspEB.Events {
+		if evnt.Type == channeltypes.EventTypeSendPacket {
+			found = true
+			packet, err = channelkeeper.ReconstructPacketFromEvent(evnt)
+			s.Require().NoError(err)
+			cApp.AppCodec().MustUnmarshalJSON(packet.GetData(), &ftpd)
+		}
+	}
+	s.Require().True(found)
+
+	// ensure the correct amount is being transmitted within the packet
+	expConsRedistrAmt := expFeePoolAtDistr / 2 // because of default 50% redistribute fraction (will truc decimal)
+	expProviderAmt := expFeePoolAtDistr - expConsRedistrAmt
+	s.Assert().Equal(ftpd.Amount, fmt.Sprintf("%v", expProviderAmt))
+
+	// halt provider distribution (for testing purposes to be able to review the
+	// provider fee pool)
+	s.DisableProviderDistribution()
+
+	// relay the packet
+	err = s.transferPath.RelayPacket(packet)
+	s.Require().NoError(err)
+
+	// check the consumer chain fee pool which should be now emptied (besides
+	// new minted tokens since the transfer)
+	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
+	s.Assert().Equal(balance.Amount.Int64(), int64(26786189989304)) // this is "small"
+
+	// check the provider chain fee pool which should now have
+	// the consumer chain tokens
+	balance = pApp.BankKeeper.GetBalance(pChain.GetContext(), providerFeePoolAddr,
+		"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9")
+	s.Assert().Equal(balance.Amount.Int64(), expProviderAmt)
+
+	// check the consumer redistribution amount arrives in the module account
+	consumerRedistrAddr := cApp.AccountKeeper.GetModuleAccount(ctx,
+		childtypes.ConsumerRedistributeName).GetAddress()
+	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerRedistrAddr, "stake")
+	s.Assert().Equal(balance.Amount.Int64(), expConsRedistrAmt)
+
+	// Ensure provider pool emptied and that allocation was called normally
+	// allocation would result in validator rewards, but due to limitations in
+	// the testing framework (where validators do not actually sign votes and
+	// therefor do not produce abci.VoteInfo) the expected behaviour of
+	// allocation is to send all rewards to the community pool
+	s.ReenableProviderDistribution()
+	s.coordinator.CommitNBlocks(pChain, 1)
+	balance = pApp.BankKeeper.GetBalance(pChain.GetContext(), providerFeePoolAddr,
+		"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9")
+	s.Assert().Equal(balance.Amount.Int64(), int64(0))
+	communityPool := pApp.DistrKeeper.GetFeePool(pChain.GetContext()).CommunityPool
+	balanceI64 := communityPool.AmountOf(
+		"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9").RoundInt64()
+	s.Assert().Equal(balanceI64, expProviderAmt)
 }

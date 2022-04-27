@@ -24,23 +24,34 @@ import (
 
 // Keeper defines the Cross-Chain Validation Child Keeper
 type Keeper struct {
-	storeKey         sdk.StoreKey
-	cdc              codec.BinaryCodec
-	paramSpace       paramtypes.Subspace
-	scopedKeeper     capabilitykeeper.ScopedKeeper
-	channelKeeper    ccv.ChannelKeeper
-	portKeeper       ccv.PortKeeper
-	connectionKeeper ccv.ConnectionKeeper
-	clientKeeper     ccv.ClientKeeper
-	slashingKeeper   ccv.SlashingKeeper
-	hooks            ccv.ChildHooks
+	storeKey          sdk.StoreKey
+	cdc               codec.BinaryCodec
+	paramSpace        paramtypes.Subspace
+	scopedKeeper      capabilitykeeper.ScopedKeeper
+	channelKeeper     ccv.ChannelKeeper
+	portKeeper        ccv.PortKeeper
+	connectionKeeper  ccv.ConnectionKeeper
+	clientKeeper      ccv.ClientKeeper
+	slashingKeeper    ccv.SlashingKeeper
+	hooks             ccv.ChildHooks
+	bankKeeper        ccv.BankKeeper
+	accountKeeper     ccv.AccountKeeper
+	ibcTransferKeeper ccv.IBCTransferKeeper
+	ibcCoreKeeper     ccv.IBCCoreKeeper
+	feeCollectorName  string
 }
 
 // NewKeeper creates a new Child Keeper instance
+// NOTE: the feeCollectorName is in reference to the consumer-chain fee
+// collector (and not the provider chain)
 func NewKeeper(
-	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper capabilitykeeper.ScopedKeeper,
+	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
+	scopedKeeper capabilitykeeper.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
-	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper, slashingKeeper ccv.SlashingKeeper,
+	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
+	slashingKeeper ccv.SlashingKeeper, bankKeeper ccv.BankKeeper, accountKeeper ccv.AccountKeeper,
+	ibcTransferKeeper ccv.IBCTransferKeeper, ibcCoreKeeper ccv.IBCCoreKeeper,
+	feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -48,15 +59,20 @@ func NewKeeper(
 	}
 
 	return Keeper{
-		cdc:              cdc,
-		storeKey:         key,
-		paramSpace:       paramSpace,
-		scopedKeeper:     scopedKeeper,
-		channelKeeper:    channelKeeper,
-		portKeeper:       portKeeper,
-		connectionKeeper: connectionKeeper,
-		clientKeeper:     clientKeeper,
-		slashingKeeper:   slashingKeeper,
+		storeKey:          key,
+		cdc:               cdc,
+		paramSpace:        paramSpace,
+		scopedKeeper:      scopedKeeper,
+		channelKeeper:     channelKeeper,
+		portKeeper:        portKeeper,
+		connectionKeeper:  connectionKeeper,
+		clientKeeper:      clientKeeper,
+		slashingKeeper:    slashingKeeper,
+		bankKeeper:        bankKeeper,
+		accountKeeper:     accountKeeper,
+		ibcTransferKeeper: ibcTransferKeeper,
+		ibcCoreKeeper:     ibcCoreKeeper,
+		feeCollectorName:  feeCollectorName,
 	}
 }
 

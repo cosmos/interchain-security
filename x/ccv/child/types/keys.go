@@ -52,6 +52,12 @@ const (
 	// CrossChainValidatorPrefix is the key prefix that will store cross-chain validators by consensus address
 	CrossChainValidatorPrefix = "crosschainvalidator"
 
+	// ConsumerRedistributeName the root string for the consumer-redistribution account address
+	ConsumerRedistributeName = "cons_redistribute"
+
+	// ConsumerToSendToProviderName is a "buffer" address for outgoing fees to be transferred to the provider chain.
+	ConsumerToSendToProviderName = "cons_to_send_to_provider"
+
 	// PendingSlashRequestsPrefix is the prefix that will store a list of slash request that must be sent
 	// to the parent chain once the CCV channel is established
 	PendingSlashRequestsPrefix = "pendingslashrequests"
@@ -59,7 +65,8 @@ const (
 
 var (
 	// PortKey defines the key to store the port ID in store
-	PortKey = []byte{0x01}
+	PortKey                         = []byte{0x01}
+	LastDistributionTransmissionKey = []byte{0x02}
 )
 
 // ParentChannelKey returns the key for storing channelID of the parent chain.

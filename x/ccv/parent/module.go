@@ -204,7 +204,6 @@ func ValidateParentChannelParams(
 	order channeltypes.Order,
 	portID string,
 	channelID string,
-	version string,
 ) error {
 	if order != channeltypes.ORDERED {
 		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.ORDERED, order)
@@ -214,10 +213,6 @@ func ValidateParentChannelParams(
 	boundPort := keeper.GetPort(ctx)
 	if boundPort != portID {
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
-	}
-
-	if version != ccv.Version {
-		return sdkerrors.Wrapf(ccv.ErrInvalidVersion, "got %s, expected %s", version, ccv.Version)
 	}
 	return nil
 }
@@ -246,13 +241,16 @@ func (am AppModule) OnChanOpenTry(
 	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
-) (version string, err error) {
-	if err := ValidateParentChannelParams(ctx, am.keeper, order, portID, channelID, ccv.Version); err != nil {
-		return ccv.Version, err
+) (metadata string, err error) {
+
+	if err := ValidateParentChannelParams(
+		ctx, am.keeper, order, portID, channelID,
+	); err != nil {
+		return "", err
 	}
 
 	if counterpartyVersion != ccv.Version {
-		return ccv.Version, sdkerrors.Wrapf(
+		return "", sdkerrors.Wrapf(
 			ccv.ErrInvalidVersion, "invalid counterparty version: got: %s, expected %s",
 			counterpartyVersion, ccv.Version)
 	}
@@ -264,16 +262,32 @@ func (am AppModule) OnChanOpenTry(
 	if !am.keeper.AuthenticateCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)) {
 		// Only claim channel capability passed back by IBC module if we do not already own it
 		if err := am.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
-			return ccv.Version, err
+			return "", err
 		}
 	}
 
 	am.keeper.SetChannelStatus(ctx, channelID, ccv.INITIALIZING)
 
-	if err := am.keeper.VerifyChildChain(ctx, channelID, connectionHops); err != nil {
-		return ccv.Version, err
+	if err := am.keeper.VerifyChildChain(
+		ctx, channelID, connectionHops,
+	); err != nil {
+		return "", err
 	}
-	return ccv.Version, nil
+
+	md := types.HandshakeMetadata{
+		// NOTE that the fee pool collector address string provided to the
+		// the consumer chain must be excluded from the blocked addresses
+		// blacklist or all all ibc-transfers from the consumer chain to the
+		// provider chain will fail
+		ProviderFeePoolAddr: am.keeper.GetFeeCollectorAddressStr(ctx),
+		Version:             ccv.Version,
+	}
+	mdBz, err := (&md).Marshal()
+	if err != nil {
+		return "", sdkerrors.Wrapf(ccv.ErrInvalidHandshakeMetadata,
+			"error marshalling ibc-try metadata: %v", err)
+	}
+	return string(mdBz), nil
 }
 
 // OnChanOpenAck implements the IBCModule interface
