@@ -1,7 +1,9 @@
 package keeper
 
 import (
+	"bytes"
 	"encoding/binary"
+	"encoding/json"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -426,4 +428,44 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 	}
 
 	return validators
+}
+
+// SetPendingSlashRequests sets the pending slash requests in store
+func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests []types.SlashRequest) {
+	store := ctx.KVStore(k.storeKey)
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(&requests)
+	if err != nil {
+		panic("failed to encode json")
+	}
+	store.Set([]byte(types.PendingSlashRequestsPrefix), buf.Bytes())
+}
+
+// GetPendingSlashRequest returns the pending slash requests in store
+func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) (requests []types.SlashRequest) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get([]byte(types.PendingSlashRequestsPrefix))
+	if bz == nil {
+		return
+	}
+	buf := bytes.NewBuffer(bz)
+	json.NewDecoder(buf).Decode(&requests)
+	if len(requests) == 0 {
+		panic("failed to decode json")
+	}
+
+	return
+}
+
+// AppendPendingSlashRequests appends the given slash request to the pending slash requests in store
+func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashRequest) {
+	requests := k.GetPendingSlashRequests(ctx)
+	requests = append(requests, req)
+	k.SetPendingSlashRequests(ctx, requests)
+}
+
+// ClearPendingSlashRequests clears the pending slash requests in store
+func (k Keeper) ClearPendingSlashRequests(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete([]byte(types.PendingSlashRequestsPrefix))
 }

@@ -57,6 +57,10 @@ const (
 
 	// ConsumerToSendToProviderName is a "buffer" address for outgoing fees to be transferred to the provider chain.
 	ConsumerToSendToProviderName = "cons_to_send_to_provider"
+
+	// PendingSlashRequestsPrefix is the prefix that will store a list of slash request that must be sent
+	// to the parent chain once the CCV channel is established
+	PendingSlashRequestsPrefix = "pendingslashrequests"
 )
 
 var (

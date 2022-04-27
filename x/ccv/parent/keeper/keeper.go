@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -291,80 +290,80 @@ func (k Keeper) SetChildChain(ctx sdk.Context, channelID string) error {
 	return nil
 }
 
-// Save UnbondingDelegationEntry by unique ID
-func (k Keeper) SetUnbondingDelegationEntry(ctx sdk.Context, unbondingDelegationEntry ccv.UnbondingDelegationEntry) error {
+// Save UnbondingOp by unique ID
+func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp ccv.UnbondingOp) error {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := unbondingDelegationEntry.Marshal()
+	bz, err := unbondingOp.Marshal()
 	if err != nil {
 		return err
 	}
-	store.Set(types.UnbondingDelegationEntryKey(unbondingDelegationEntry.UnbondingDelegationEntryId), bz)
+	store.Set(types.UnbondingOpKey(unbondingOp.Id), bz)
 	return nil
 }
 
-// Get UnbondingDelegationEntry by unique ID
-func (k Keeper) GetUnbondingDelegationEntry(ctx sdk.Context, ubdeID uint64) (ccv.UnbondingDelegationEntry, bool) {
+// Get UnbondingOp by unique ID
+func (k Keeper) GetUnbondingOp(ctx sdk.Context, id uint64) (ccv.UnbondingOp, bool) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.UnbondingDelegationEntryKey(ubdeID))
+	bz := store.Get(types.UnbondingOpKey(id))
 	if bz == nil {
-		return ccv.UnbondingDelegationEntry{}, false
+		return ccv.UnbondingOp{}, false
 	}
 
-	return types.MustUnmarshalUnbondingDelegationEntry(k.cdc, bz), true
+	return types.MustUnmarshalUnbondingOp(k.cdc, bz), true
 }
 
-func (k Keeper) DeleteUnbondingDelegationEntry(ctx sdk.Context, ubdeID uint64) {
+func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.UnbondingDelegationEntryKey(ubdeID))
+	store.Delete(types.UnbondingOpKey(id))
 }
 
 // This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
-func (k Keeper) SetUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, UBDEIDs []uint64) {
+func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, IDs []uint64) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz, err := json.Marshal(UBDEIDs)
+	bz, err := json.Marshal(IDs)
 	if err != nil {
 		panic("Failed to JSON marshal")
 	}
 
-	store.Set(types.UBDEIndexKey(chainID, valsetUpdateID), bz)
+	store.Set(types.UnbondingOpIndexKey(chainID, valsetUpdateID), bz)
 }
 
 // This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
-func (k Keeper) GetUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) ([]uint64, bool) {
+func (k Keeper) GetUnbodingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) ([]uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz := store.Get(types.UBDEIndexKey(chainID, valsetUpdateID))
+	bz := store.Get(types.UnbondingOpIndexKey(chainID, valsetUpdateID))
 	if bz == nil {
 		return []uint64{}, false
 	}
 
-	var UBDEIDs []uint64
-	err := json.Unmarshal(bz, &UBDEIDs)
+	var ids []uint64
+	err := json.Unmarshal(bz, &ids)
 	if err != nil {
 		panic("Failed to JSON unmarshal")
 	}
 
-	return UBDEIDs, true
+	return ids, true
 }
 
 // This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
-func (k Keeper) DeleteUBDEIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) {
+func (k Keeper) DeleteUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.UBDEIndexKey(chainID, valsetUpdateID))
+	store.Delete(types.UnbondingOpIndexKey(chainID, valsetUpdateID))
 }
 
 // Retrieve UnbondingDelegationEntries by chainID and valsetUpdateID
-func (k Keeper) GetUBDEsFromIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (entries []ccv.UnbondingDelegationEntry, found bool) {
-	ids, found := k.GetUBDEIndex(ctx, chainID, valsetUpdateID)
+func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (entries []ccv.UnbondingOp, found bool) {
+	ids, found := k.GetUnbodingOpIndex(ctx, chainID, valsetUpdateID)
 	if !found {
 		return entries, false
 	}
 	for _, id := range ids {
-		entry, found := k.GetUnbondingDelegationEntry(ctx, id)
+		entry, found := k.GetUnbondingOp(ctx, id)
 		if !found {
 			// TODO JEHAN: is this the correct way to deal with this?
-			panic("did not find UnbondingDelegationEntry according to index- index was probably not correctly updated")
+			panic("did not find UnbondingOp according to index- index was probably not correctly updated")
 		}
 		entries = append(entries, entry)
 	}
@@ -449,41 +448,32 @@ func (k *Keeper) Hooks() StakingHooks {
 	return StakingHooks{stakingtypes.StakingHooksTemplate{}, k}
 }
 
-// This stores a record of each ubde from staking, allowing us to track which child chains have unbonded
-func (h StakingHooks) UnbondingDelegationEntryCreated(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress,
-	creationHeight int64, completionTime time.Time, balance sdk.Int, ID uint64) {
+// This stores a record of each unbonding op from staking, allowing us to track which child chains have unbonded
+func (h StakingHooks) AfterUnbondingOpInitiated(ctx sdk.Context, ID uint64) {
 	var childChainIDS []string
 
-	// TODO: once registryKeeper is implemented, we will get a list of child chains for
-	// the specific validator
 	h.k.IterateBabyChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
 		childChainIDS = append(childChainIDS, chainID)
 		return false
 	})
 	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
-	ubde := ccv.UnbondingDelegationEntry{
-		UnbondingDelegationEntryId: ID,
-		ValidatorSetUpdateId:       valsetUpdateID,
-		UnbondingChildChains:       childChainIDS,
+	unbondingOp := ccv.UnbondingOp{
+		Id:                   ID,
+		UnbondingChildChains: childChainIDS,
 	}
 
 	// Add to indexes
 	for _, childChainID := range childChainIDS {
-		index, _ := h.k.GetUBDEIndex(ctx, childChainID, valsetUpdateID)
+		index, _ := h.k.GetUnbodingOpIndex(ctx, childChainID, valsetUpdateID)
 		index = append(index, ID)
-		h.k.SetUBDEIndex(ctx, childChainID, valsetUpdateID, index)
+		h.k.SetUnbondingOpIndex(ctx, childChainID, valsetUpdateID, index)
 	}
 
-	// Set UBDE
-	h.k.SetUnbondingDelegationEntry(ctx, ubde)
-}
+	// Set unbondingOp
+	h.k.SetUnbondingOp(ctx, unbondingOp)
 
-// If this ubde is still waiting on some chains to unbond, this hook will return true,
-// causing the staking module not to complete unbonding
-func (h StakingHooks) BeforeUnbondingDelegationEntryComplete(ctx sdk.Context, ID uint64) bool {
-	_, found := h.k.GetUnbondingDelegationEntry(ctx, ID)
-
-	return found
+	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
+	h.k.stakingKeeper.PutUnbondingOpOnHold(ctx, ID)
 }
 
 // SetValsetUpdateBlockHeight sets the block height for a given valset update id

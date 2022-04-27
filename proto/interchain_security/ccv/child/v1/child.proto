@@ -1,15 +1,11 @@
 syntax = "proto3";
 package interchain_security.ccv.child.v1;
 
+import "interchain_security/ccv/v1/ccv.proto";
+
 option go_package = "github.com/cosmos/interchain-security/x/ccv/child/types";
 
 import "gogoproto/gogo.proto";
-
-// CrossChainValidator defines the validators for CCV child module
-message CrossChainValidator {
-    bytes address = 1;
-    int64 power = 2;
-}
 
 // Params defines the parameters for CCV child module
 message Params {
@@ -17,7 +13,6 @@ message Params {
 
     ///////////////////////
     // Distribution Params
-
     // Number of blocks between ibc-token-transfers from the consumer chain to
     // the provider chain. Note that at this transmission event a fraction of
     // the accumulated tokens are divided and sent consumer redistribution
@@ -40,4 +35,16 @@ message Params {
 // pools were transmitted to the provider chain
 message LastTransmissionBlockHeight {
   int64 Height = 1; 
+}
+
+// CrossChainValidator defines the validators for CCV child module
+message CrossChainValidator {
+    bytes address = 1;
+    int64 power = 2;
+}
+
+// SlashRequest defines a slashing request for CCV child module
+message SlashRequest {
+    interchain_security.ccv.v1.SlashPacketData packet = 1;
+    bool downtime = 2;
 }

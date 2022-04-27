@@ -12,7 +12,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
@@ -251,166 +250,6 @@ func (s *ParentTestSuite) parentBondDenom() string {
 	return s.parentChain.App.(*app.App).StakingKeeper.BondDenom(s.parentCtx())
 }
 
-func (s *ParentTestSuite) getVal(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {
-	// Choose a validator, and get its address and data structure into the correct types
-	tmValidator := s.parentChain.Vals.Validators[index]
-	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
-	s.Require().NoError(err)
-	validator, found := s.parentChain.App.GetStakingKeeper().GetValidator(s.parentCtx(), valAddr)
-	s.Require().True(found)
-
-	return validator, valAddr
-}
-
-func (s *ParentTestSuite) TestStakingHooks() {
-	s.SetupCCVChannel()
-	bondAmt := sdk.NewInt(10000000)
-
-	delAddr := s.parentChain.SenderAccount.GetAddress()
-
-	origTime := s.ctx.BlockTime()
-
-	// Choose a validator, and get its address and data structure into the correct types
-	validator, valAddr := s.getVal(0)
-
-	delBalance := func() sdk.Int {
-		return s.parentChain.App.(*app.App).BankKeeper.GetBalance(s.parentCtx(), delAddr, s.parentBondDenom()).Amount
-	}
-
-	checkStakingUBDE := func(id uint64, found bool, onHold bool) {
-		stakingUBDE, wasFound := GetStakingUbde(s.parentCtx(), s.parentChain.App.GetStakingKeeper(), id)
-		s.Require().True(found == wasFound)
-		s.Require().True(onHold == stakingUBDE.OnHold)
-	}
-
-	checkCCVUBDE := func(chainID string, valUpdateID uint64, found bool) {
-		_, wasFound := s.parentChain.App.(*app.App).ParentKeeper.GetUBDEsFromIndex(s.parentCtx(), chainID, valUpdateID)
-		s.Require().True(found == wasFound)
-	}
-
-	sendValUpdatePacket := func(valUpdates []abci.ValidatorUpdate, valUpdateId uint64, blockTime time.Time, packetSequence uint64) channeltypes.Packet {
-		packetData := types.NewValidatorSetChangePacketData(valUpdates, valUpdateId, nil)
-		timeout := uint64(ccv.GetTimeoutTimestamp(blockTime).UnixNano())
-		packet := channeltypes.NewPacket(packetData.GetBytes(), packetSequence, parenttypes.PortID, s.path.EndpointB.ChannelID,
-			childtypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
-
-		// Receive CCV packet on consumer chain
-		err := s.path.EndpointA.RecvPacket(packet)
-		s.Require().NoError(err)
-
-		// update child chain hist info
-		s.UpdateChildHistInfo(valUpdates)
-
-		return packet
-	}
-
-	commitParentBlock := func() {
-		s.coordinator.CommitBlock(s.parentChain)
-		s.path.EndpointA.UpdateClient()
-	}
-
-	initBalance := delBalance()
-
-	// INITIAL BOND
-
-	// Bond some tokens on provider to change validator powers
-	shares, err := s.parentChain.App.GetStakingKeeper().Delegate(s.parentCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
-	s.Require().NoError(err)
-
-	afterbondBalance := delBalance()
-
-	// Check that the correct number of tokens were taken
-	s.Require().True(initBalance.Sub(afterbondBalance).Equal(bondAmt))
-
-	// UNDELEGATE
-
-	// Undelegate half
-	_, err = s.parentChain.App.GetStakingKeeper().Undelegate(s.parentCtx(), delAddr, valAddr, shares.QuoInt64(2))
-	s.Require().NoError(err)
-
-	// Check that the tokens have not been returned yet
-	s.Require().True(afterbondBalance.Equal(delBalance()))
-
-	// save the current valset update ID
-	valUpdateID := s.parentChain.App.(*app.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
-
-	// check that staking ubde was created and onHold is false
-	checkStakingUBDE(1, true, false)
-
-	// check that CCV ubde was created
-	checkCCVUBDE(s.childChain.ChainID, valUpdateID, true)
-
-	s.parentChain.App.EndBlock(abci.RequestEndBlock{})
-
-	// SEND PACKET
-
-	// Get validator update created in Endblock to use in reconstructing packet
-	valUpdates := s.parentChain.App.GetStakingKeeper().GetValidatorUpdates(s.parentCtx())
-
-	// Get current blocktime
-	oldBlockTime := s.parentCtx().BlockTime()
-
-	// commit block on parent chain and update consumer chain's client
-	commitParentBlock()
-	// Relay actual packet content to consumer chain
-	packet := sendValUpdatePacket(valUpdates, valUpdateID, oldBlockTime, 1)
-
-	// ACKNOWLEDGE PACKET
-
-	// Some time passes
-	// s.coordinator.IncrementTimeBy(childtypes.UnbondingTime + (3 * time.Hour))
-
-	// - End provider unbonding period
-	parentCtx := s.parentCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
-	// s.parentChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
-	s.parentChain.App.GetStakingKeeper().BlockValidatorUpdates(parentCtx)
-
-	// check that onHold is true
-	checkStakingUBDE(1, true, true)
-
-	// Check that unbonding has not yet completed
-	s.Require().True(delBalance().Equal(initBalance.Sub(bondAmt)))
-
-	// - End consumer unbonding period
-	childCtx := s.childCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
-	// s.childChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
-	err = s.childChain.App.(*app.App).ChildKeeper.UnbondMaturePackets(childCtx)
-	s.Require().NoError(err)
-
-	// commit child chain and update parent chain client
-	s.coordinator.CommitBlock(s.childChain)
-	err = s.path.EndpointB.UpdateClient()
-	s.Require().NoError(err)
-
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-
-	err = s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
-	s.Require().NoError(err)
-
-	// Check that ccv ubde has been deleted
-	checkCCVUBDE(s.childChain.ChainID, valUpdateID, false)
-
-	// Check that staking UBDE has been deleted
-	checkStakingUBDE(valUpdateID, false, false)
-
-	// Check that unbonding has completed
-	s.Require().True(delBalance().Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
-}
-
-func GetStakingUbde(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (stakingUbde stakingtypes.UnbondingDelegationEntry, found bool) {
-	stakingUbd, found := k.GetUnbondingDelegationByEntry(ctx, id)
-
-	for _, entry := range stakingUbd.Entries {
-		if entry.Id == id {
-			stakingUbde = entry
-			found = true
-			break
-		}
-	}
-
-	return stakingUbde, found
-}
-
 // TestSendDowntimePacket tests consumer initiated slashing
 func (s *ParentTestSuite) TestSendDowntimePacket() {
 	s.SetupCCVChannel()
@@ -533,6 +372,17 @@ func (s *ParentTestSuite) TestSendDowntimePacket() {
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
 	s.Require().NoError(err)
+}
+
+func (s *ParentTestSuite) getVal(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {
+	// Choose a validator, and get its address and data structure into the correct types
+	tmValidator := s.parentChain.Vals.Validators[index]
+	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
+	s.Require().NoError(err)
+	validator, found := s.parentChain.App.GetStakingKeeper().GetValidator(s.parentCtx(), valAddr)
+	s.Require().True(found)
+
+	return validator, valAddr
 }
 
 // TestHandleConsumerDowntime tests the slashing distribution
@@ -689,9 +539,14 @@ func (s *ParentTestSuite) TestHandleConsumerDowntimeErrors() {
 	parentCtx := s.parentCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
 	s.parentChain.App.GetStakingKeeper().BlockValidatorUpdates(parentCtx)
 
+	// set manually validator status from unbonding to unbonded
+	err = s.parentChain.App.GetStakingKeeper().UnbondingOpCanComplete(parentCtx, uint64(1))
+	s.Require().NoError(err)
+
 	// replace validator address
 	slashingPkt.Validator.Address = val.Address
-	// expect an error since the validator is already jailed
+
+	// expect an error since the validator is already unbonded
 	err = parentKeeper.HandleConsumerDowntime(s.parentCtx(), childChainID, slashingPkt)
 	s.Require().Error(err, "did slash unbonded validator")
 

@@ -22,9 +22,6 @@ func (suite *KeeperTestSuite) TestMakeChildGenesis() {
 	actualGenesis, err := suite.parentChain.App.(*app.App).ParentKeeper.MakeChildGenesis(ctx)
 	suite.Require().NoError(err)
 
-	// bz, err := json.Marshal(actualGenesis)
-	// println(string(bz))
-
 	jsonString := `{"params":{"Enabled":true},"new_chain":true,"parent_client_state":{"chain_id":"testchain1","trust_level":{"numerator":1,"denominator":3},"trusting_period":907200000000000,"unbonding_period":1814400000000000,"max_clock_drift":10000000000,"frozen_height":{},"latest_height":{"revision_height":5},"proof_specs":[{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":33,"min_prefix_length":4,"max_prefix_length":12,"hash":1}},{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":32,"min_prefix_length":1,"max_prefix_length":1,"hash":1}}],"upgrade_path":["upgrade","upgradedIBCState"],"allow_update_after_expiry":true,"allow_update_after_misbehaviour":true},"parent_consensus_state":{"timestamp":"2020-01-02T00:00:25Z","root":{"hash":"LpGpeyQVLUo9HpdsgJr12NP2eCICspcULiWa5u9udOA="},"next_validators_hash":"E30CE736441FB9101FADDAF7E578ABBE6DFDB67207112350A9A904D554E1F5BE"},"unbonding_sequences":null,"initial_val_set":[{"pub_key":{"Sum":{"ed25519":"dcASx5/LIKZqagJWN0frOlFtcvz91frYmj/zmoZRWro="}},"power":1}]}`
 
 	var expectedGenesis childtypes.GenesisState

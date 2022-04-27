@@ -5,6 +5,7 @@ package types
 
 import (
 	fmt "fmt"
+	types "github.com/cosmos/interchain-security/x/ccv/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	io "io"
@@ -23,74 +24,32 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// CrossChainValidator defines the validators for CCV child module
-type CrossChainValidator struct {
-	Address []byte `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	Power   int64  `protobuf:"varint,2,opt,name=power,proto3" json:"power,omitempty"`
-}
-
-func (m *CrossChainValidator) Reset()         { *m = CrossChainValidator{} }
-func (m *CrossChainValidator) String() string { return proto.CompactTextString(m) }
-func (*CrossChainValidator) ProtoMessage()    {}
-func (*CrossChainValidator) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d00ed7c78fea69b9, []int{0}
-}
-func (m *CrossChainValidator) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CrossChainValidator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CrossChainValidator.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *CrossChainValidator) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CrossChainValidator.Merge(m, src)
-}
-func (m *CrossChainValidator) XXX_Size() int {
-	return m.Size()
-}
-func (m *CrossChainValidator) XXX_DiscardUnknown() {
-	xxx_messageInfo_CrossChainValidator.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CrossChainValidator proto.InternalMessageInfo
-
-func (m *CrossChainValidator) GetAddress() []byte {
-	if m != nil {
-		return m.Address
-	}
-	return nil
-}
-
-func (m *CrossChainValidator) GetPower() int64 {
-	if m != nil {
-		return m.Power
-	}
-	return 0
-}
-
 // Params defines the parameters for CCV child module
 type Params struct {
 	Enabled bool `protobuf:"varint,1,opt,name=Enabled,proto3" json:"Enabled,omitempty"`
-	// distribution params
-	BlocksPerDistributionTransmission int64  `protobuf:"varint,2,opt,name=BlocksPerDistributionTransmission,proto3" json:"BlocksPerDistributionTransmission,omitempty"`
-	DistributionTransmissionChannel   string `protobuf:"bytes,3,opt,name=DistributionTransmissionChannel,proto3" json:"DistributionTransmissionChannel,omitempty"`
-	ProviderFeePoolAddrStr            string `protobuf:"bytes,4,opt,name=ProviderFeePoolAddrStr,proto3" json:"ProviderFeePoolAddrStr,omitempty"`
-	ConsumerRedistributeFrac          string `protobuf:"bytes,5,opt,name=ConsumerRedistributeFrac,proto3" json:"ConsumerRedistributeFrac,omitempty"`
+	///////////////////////
+	// Distribution Params
+	// Number of blocks between ibc-token-transfers from the consumer chain to
+	// the provider chain. Note that at this transmission event a fraction of
+	// the accumulated tokens are divided and sent consumer redistribution
+	// address.
+	BlocksPerDistributionTransmission int64 `protobuf:"varint,2,opt,name=BlocksPerDistributionTransmission,proto3" json:"BlocksPerDistributionTransmission,omitempty"`
+	// Channel, and provider-chain receiving address to send distribution token
+	// transfers over. These parameters is auto-set during the consumer <->
+	// provider handshake procedure.
+	DistributionTransmissionChannel string `protobuf:"bytes,3,opt,name=DistributionTransmissionChannel,proto3" json:"DistributionTransmissionChannel,omitempty"`
+	ProviderFeePoolAddrStr          string `protobuf:"bytes,4,opt,name=ProviderFeePoolAddrStr,proto3" json:"ProviderFeePoolAddrStr,omitempty"`
+	// The fraction of tokens allocated to the consumer redistribution address
+	// during distribution events. The fraction is a string representing a
+	// decimal number. For example "0.5" would represent 50%.
+	ConsumerRedistributeFrac string `protobuf:"bytes,5,opt,name=ConsumerRedistributeFrac,proto3" json:"ConsumerRedistributeFrac,omitempty"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
 func (m *Params) String() string { return proto.CompactTextString(m) }
 func (*Params) ProtoMessage()    {}
 func (*Params) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d00ed7c78fea69b9, []int{1}
+	return fileDescriptor_d00ed7c78fea69b9, []int{0}
 }
 func (m *Params) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -164,7 +123,7 @@ func (m *LastTransmissionBlockHeight) Reset()         { *m = LastTransmissionBlo
 func (m *LastTransmissionBlockHeight) String() string { return proto.CompactTextString(m) }
 func (*LastTransmissionBlockHeight) ProtoMessage()    {}
 func (*LastTransmissionBlockHeight) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d00ed7c78fea69b9, []int{2}
+	return fileDescriptor_d00ed7c78fea69b9, []int{1}
 }
 func (m *LastTransmissionBlockHeight) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -200,10 +159,117 @@ func (m *LastTransmissionBlockHeight) GetHeight() int64 {
 	return 0
 }
 
+// CrossChainValidator defines the validators for CCV child module
+type CrossChainValidator struct {
+	Address []byte `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	Power   int64  `protobuf:"varint,2,opt,name=power,proto3" json:"power,omitempty"`
+}
+
+func (m *CrossChainValidator) Reset()         { *m = CrossChainValidator{} }
+func (m *CrossChainValidator) String() string { return proto.CompactTextString(m) }
+func (*CrossChainValidator) ProtoMessage()    {}
+func (*CrossChainValidator) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d00ed7c78fea69b9, []int{2}
+}
+func (m *CrossChainValidator) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CrossChainValidator) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CrossChainValidator.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *CrossChainValidator) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CrossChainValidator.Merge(m, src)
+}
+func (m *CrossChainValidator) XXX_Size() int {
+	return m.Size()
+}
+func (m *CrossChainValidator) XXX_DiscardUnknown() {
+	xxx_messageInfo_CrossChainValidator.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CrossChainValidator proto.InternalMessageInfo
+
+func (m *CrossChainValidator) GetAddress() []byte {
+	if m != nil {
+		return m.Address
+	}
+	return nil
+}
+
+func (m *CrossChainValidator) GetPower() int64 {
+	if m != nil {
+		return m.Power
+	}
+	return 0
+}
+
+// SlashRequest defines a slashing request for CCV child module
+type SlashRequest struct {
+	Packet   *types.SlashPacketData `protobuf:"bytes,1,opt,name=packet,proto3" json:"packet,omitempty"`
+	Downtime bool                   `protobuf:"varint,2,opt,name=downtime,proto3" json:"downtime,omitempty"`
+}
+
+func (m *SlashRequest) Reset()         { *m = SlashRequest{} }
+func (m *SlashRequest) String() string { return proto.CompactTextString(m) }
+func (*SlashRequest) ProtoMessage()    {}
+func (*SlashRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d00ed7c78fea69b9, []int{3}
+}
+func (m *SlashRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *SlashRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_SlashRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *SlashRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SlashRequest.Merge(m, src)
+}
+func (m *SlashRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *SlashRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_SlashRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SlashRequest proto.InternalMessageInfo
+
+func (m *SlashRequest) GetPacket() *types.SlashPacketData {
+	if m != nil {
+		return m.Packet
+	}
+	return nil
+}
+
+func (m *SlashRequest) GetDowntime() bool {
+	if m != nil {
+		return m.Downtime
+	}
+	return false
+}
+
 func init() {
-	proto.RegisterType((*CrossChainValidator)(nil), "interchain_security.ccv.child.v1.CrossChainValidator")
 	proto.RegisterType((*Params)(nil), "interchain_security.ccv.child.v1.Params")
 	proto.RegisterType((*LastTransmissionBlockHeight)(nil), "interchain_security.ccv.child.v1.LastTransmissionBlockHeight")
+	proto.RegisterType((*CrossChainValidator)(nil), "interchain_security.ccv.child.v1.CrossChainValidator")
+	proto.RegisterType((*SlashRequest)(nil), "interchain_security.ccv.child.v1.SlashRequest")
 }
 
 func init() {
@@ -211,66 +277,35 @@ func init() {
 }
 
 var fileDescriptor_d00ed7c78fea69b9 = []byte{
-	// 379 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0xbd, 0x8e, 0xd3, 0x40,
-	0x14, 0x85, 0xe3, 0x0d, 0x1b, 0x60, 0x44, 0x35, 0xac, 0x56, 0x16, 0x48, 0xc6, 0xa4, 0x4a, 0x01,
-	0xb6, 0x56, 0x08, 0x90, 0xe8, 0x58, 0xb3, 0x51, 0x8a, 0x14, 0xc6, 0x20, 0x0a, 0x1a, 0x34, 0x9e,
-	0x19, 0xd9, 0x23, 0xec, 0xb9, 0xd1, 0xbd, 0x63, 0x43, 0xde, 0x82, 0x27, 0xe1, 0x39, 0x28, 0x53,
-	0x52, 0xa2, 0xe4, 0x45, 0x50, 0xec, 0x04, 0x52, 0x6c, 0x94, 0xee, 0x1e, 0x9d, 0xf3, 0xdd, 0xf9,
-	0xd1, 0x61, 0xcf, 0x8c, 0x75, 0x1a, 0x65, 0x29, 0x8c, 0xfd, 0x42, 0x5a, 0x36, 0x68, 0xdc, 0x32,
-	0x96, 0xb2, 0x8d, 0x65, 0x69, 0x2a, 0x15, 0xb7, 0x57, 0xfd, 0x10, 0x2d, 0x10, 0x1c, 0xf0, 0xf0,
-	0x96, 0x74, 0x24, 0x65, 0x1b, 0xf5, 0xa1, 0xf6, 0xea, 0xd1, 0x45, 0x01, 0x05, 0x74, 0xe1, 0x78,
-	0x3b, 0xf5, 0xdc, 0xf8, 0x86, 0x3d, 0x4c, 0x10, 0x88, 0x92, 0x2d, 0xf9, 0x49, 0x54, 0x46, 0x09,
-	0x07, 0xc8, 0x7d, 0x76, 0x57, 0x28, 0x85, 0x9a, 0xc8, 0xf7, 0x42, 0x6f, 0xf2, 0x20, 0xdb, 0x4b,
-	0x7e, 0xc1, 0xce, 0x17, 0xf0, 0x4d, 0xa3, 0x7f, 0x16, 0x7a, 0x93, 0x61, 0xd6, 0x8b, 0xf1, 0xcf,
-	0x33, 0x36, 0x4a, 0x05, 0x8a, 0x9a, 0xb6, 0xe8, 0x8d, 0x15, 0x79, 0xa5, 0x55, 0x87, 0xde, 0xcb,
-	0xf6, 0x92, 0xcf, 0xd9, 0xd3, 0xeb, 0x0a, 0xe4, 0x57, 0x4a, 0x35, 0xbe, 0x33, 0xe4, 0xd0, 0xe4,
-	0x8d, 0x33, 0x60, 0x3f, 0xa2, 0xb0, 0x54, 0x1b, 0x22, 0x03, 0x76, 0xb7, 0xf6, 0x74, 0x90, 0xcf,
-	0xd8, 0x93, 0x63, 0x5e, 0x52, 0x0a, 0x6b, 0x75, 0xe5, 0x0f, 0x43, 0x6f, 0x72, 0x3f, 0x3b, 0x15,
-	0xe3, 0xaf, 0xd8, 0x65, 0x8a, 0xd0, 0x1a, 0xa5, 0x71, 0xaa, 0x75, 0x0a, 0x50, 0xbd, 0x55, 0x0a,
-	0x3f, 0x38, 0xf4, 0xef, 0x74, 0x0b, 0x8e, 0xb8, 0xfc, 0x0d, 0xf3, 0x13, 0xb0, 0xd4, 0xd4, 0x1a,
-	0x33, 0xad, 0xf6, 0x87, 0xe8, 0x29, 0x0a, 0xe9, 0x9f, 0x77, 0xe4, 0x51, 0x7f, 0xfc, 0x92, 0x3d,
-	0x9e, 0x0b, 0x72, 0x87, 0xd7, 0xe9, 0x9e, 0x3c, 0xd3, 0xa6, 0x28, 0x1d, 0xbf, 0x64, 0xa3, 0x7e,
-	0xea, 0xfe, 0x70, 0x98, 0xed, 0xd4, 0xf5, 0xfb, 0x5f, 0xeb, 0xc0, 0x5b, 0xad, 0x03, 0xef, 0xcf,
-	0x3a, 0xf0, 0x7e, 0x6c, 0x82, 0xc1, 0x6a, 0x13, 0x0c, 0x7e, 0x6f, 0x82, 0xc1, 0xe7, 0xd7, 0x85,
-	0x71, 0x65, 0x93, 0x47, 0x12, 0xea, 0x58, 0x02, 0xd5, 0x40, 0xf1, 0xff, 0x4a, 0x3c, 0xff, 0x57,
-	0xa0, 0xef, 0x07, 0x15, 0x72, 0xcb, 0x85, 0xa6, 0x7c, 0xd4, 0x15, 0xe1, 0xc5, 0xdf, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0xa4, 0x54, 0x74, 0x6b, 0x70, 0x02, 0x00, 0x00,
-}
-
-func (m *CrossChainValidator) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CrossChainValidator) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CrossChainValidator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Power != 0 {
-		i = encodeVarintChild(dAtA, i, uint64(m.Power))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Address) > 0 {
-		i -= len(m.Address)
-		copy(dAtA[i:], m.Address)
-		i = encodeVarintChild(dAtA, i, uint64(len(m.Address)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
+	// 443 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x52, 0xc1, 0x6e, 0xd3, 0x40,
+	0x10, 0x8d, 0x1b, 0x1a, 0xc2, 0xd2, 0xd3, 0x52, 0x55, 0x56, 0x90, 0x4c, 0x88, 0x38, 0x44, 0x02,
+	0x6c, 0x05, 0x04, 0x48, 0xdc, 0x68, 0xda, 0xaa, 0x87, 0x1e, 0x8c, 0x8b, 0x38, 0x70, 0x41, 0x9b,
+	0xdd, 0x51, 0xbc, 0xaa, 0xbd, 0x13, 0x76, 0xd6, 0x2e, 0xfd, 0x0b, 0xbe, 0x84, 0xef, 0xe0, 0xd8,
+	0x23, 0x47, 0x94, 0xfc, 0x08, 0xca, 0x3a, 0x29, 0x3d, 0x60, 0xf5, 0xf6, 0x9e, 0xe7, 0xcd, 0x7b,
+	0xf6, 0xf8, 0xb1, 0x17, 0xda, 0x38, 0xb0, 0x32, 0x17, 0xda, 0x7c, 0x25, 0x90, 0x95, 0xd5, 0xee,
+	0x2a, 0x91, 0xb2, 0x4e, 0x64, 0xae, 0x0b, 0x95, 0xd4, 0x93, 0x06, 0xc4, 0x0b, 0x8b, 0x0e, 0xf9,
+	0xf0, 0x3f, 0xea, 0x58, 0xca, 0x3a, 0x6e, 0x44, 0xf5, 0x64, 0xf0, 0xac, 0xcd, 0x6f, 0xed, 0x24,
+	0xeb, 0xc6, 0x67, 0xb0, 0x3f, 0xc7, 0x39, 0x7a, 0x98, 0xac, 0x51, 0xf3, 0x74, 0xf4, 0x73, 0x87,
+	0xf5, 0x52, 0x61, 0x45, 0x49, 0x3c, 0x64, 0xf7, 0x8f, 0x8d, 0x98, 0x15, 0xa0, 0xc2, 0x60, 0x18,
+	0x8c, 0xfb, 0xd9, 0x96, 0xf2, 0x33, 0xf6, 0xf4, 0xb0, 0x40, 0x79, 0x41, 0x29, 0xd8, 0x23, 0x4d,
+	0xce, 0xea, 0x59, 0xe5, 0x34, 0x9a, 0x4f, 0x56, 0x18, 0x2a, 0x35, 0x91, 0x46, 0x13, 0xee, 0x0c,
+	0x83, 0x71, 0x37, 0xbb, 0x5b, 0xc8, 0x4f, 0xd9, 0x93, 0xb6, 0xd9, 0x34, 0x17, 0xc6, 0x40, 0x11,
+	0x76, 0x87, 0xc1, 0xf8, 0x41, 0x76, 0x97, 0x8c, 0xbf, 0x65, 0x07, 0xa9, 0xc5, 0x5a, 0x2b, 0xb0,
+	0x27, 0x00, 0x29, 0x62, 0xf1, 0x41, 0x29, 0x7b, 0xee, 0x6c, 0x78, 0xcf, 0x1b, 0xb4, 0x4c, 0xf9,
+	0x7b, 0x16, 0x4e, 0xd1, 0x50, 0x55, 0x82, 0xcd, 0x40, 0x6d, 0x43, 0xe0, 0xc4, 0x0a, 0x19, 0xee,
+	0xfa, 0xcd, 0xd6, 0xf9, 0xe8, 0x0d, 0x7b, 0x7c, 0x26, 0xc8, 0xdd, 0x7e, 0x1d, 0xff, 0xc9, 0xa7,
+	0xa0, 0xe7, 0xb9, 0xe3, 0x07, 0xac, 0xd7, 0x20, 0x7f, 0xc3, 0x6e, 0xb6, 0x61, 0xa3, 0x63, 0xf6,
+	0x68, 0x6a, 0x91, 0x68, 0xba, 0xfe, 0x4b, 0x9f, 0x45, 0xa1, 0x95, 0x70, 0x68, 0xd7, 0x37, 0x17,
+	0x4a, 0x59, 0x20, 0xf2, 0xfa, 0xbd, 0x6c, 0x4b, 0xf9, 0x3e, 0xdb, 0x5d, 0xe0, 0x25, 0xd8, 0xcd,
+	0x5d, 0x1b, 0x32, 0x42, 0xb6, 0x77, 0x5e, 0x08, 0xca, 0x33, 0xf8, 0x56, 0x01, 0x39, 0x3e, 0x65,
+	0xbd, 0x85, 0x90, 0x17, 0xd0, 0xc4, 0x3d, 0x7c, 0xf5, 0x3c, 0x6e, 0x6b, 0x4b, 0x3d, 0x89, 0xfd,
+	0x66, 0xea, 0xe5, 0x47, 0xc2, 0x89, 0x6c, 0xb3, 0xca, 0x07, 0xac, 0xaf, 0xf0, 0xd2, 0x38, 0x5d,
+	0x82, 0x4f, 0xeb, 0x67, 0x37, 0xfc, 0xf0, 0xe3, 0xaf, 0x65, 0x14, 0x5c, 0x2f, 0xa3, 0xe0, 0xcf,
+	0x32, 0x0a, 0x7e, 0xac, 0xa2, 0xce, 0xf5, 0x2a, 0xea, 0xfc, 0x5e, 0x45, 0x9d, 0x2f, 0xef, 0xe6,
+	0xda, 0xe5, 0xd5, 0x2c, 0x96, 0x58, 0x26, 0x12, 0xa9, 0x44, 0x4a, 0xfe, 0x65, 0xbf, 0xbc, 0xe9,
+	0xe1, 0xf7, 0x5b, 0xcd, 0x76, 0x57, 0x0b, 0xa0, 0x59, 0xcf, 0x37, 0xef, 0xf5, 0xdf, 0x00, 0x00,
+	0x00, 0xff, 0xff, 0x60, 0xe6, 0x0d, 0x2c, 0x07, 0x03, 0x00, 0x00,
 }
 
 func (m *Params) Marshal() (dAtA []byte, err error) {
@@ -360,6 +395,86 @@ func (m *LastTransmissionBlockHeight) MarshalToSizedBuffer(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 
+func (m *CrossChainValidator) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CrossChainValidator) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CrossChainValidator) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Power != 0 {
+		i = encodeVarintChild(dAtA, i, uint64(m.Power))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Address) > 0 {
+		i -= len(m.Address)
+		copy(dAtA[i:], m.Address)
+		i = encodeVarintChild(dAtA, i, uint64(len(m.Address)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SlashRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SlashRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SlashRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Downtime {
+		i--
+		if m.Downtime {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Packet != nil {
+		{
+			size, err := m.Packet.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintChild(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintChild(dAtA []byte, offset int, v uint64) int {
 	offset -= sovChild(v)
 	base := offset
@@ -371,22 +486,6 @@ func encodeVarintChild(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *CrossChainValidator) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Address)
-	if l > 0 {
-		n += 1 + l + sovChild(uint64(l))
-	}
-	if m.Power != 0 {
-		n += 1 + sovChild(uint64(m.Power))
-	}
-	return n
-}
-
 func (m *Params) Size() (n int) {
 	if m == nil {
 		return 0
@@ -426,114 +525,43 @@ func (m *LastTransmissionBlockHeight) Size() (n int) {
 	return n
 }
 
+func (m *CrossChainValidator) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Address)
+	if l > 0 {
+		n += 1 + l + sovChild(uint64(l))
+	}
+	if m.Power != 0 {
+		n += 1 + sovChild(uint64(m.Power))
+	}
+	return n
+}
+
+func (m *SlashRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Packet != nil {
+		l = m.Packet.Size()
+		n += 1 + l + sovChild(uint64(l))
+	}
+	if m.Downtime {
+		n += 2
+	}
+	return n
+}
+
 func sovChild(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozChild(x uint64) (n int) {
 	return sovChild(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (m *CrossChainValidator) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowChild
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CrossChainValidator: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CrossChainValidator: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowChild
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthChild
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthChild
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Address = append(m.Address[:0], dAtA[iNdEx:postIndex]...)
-			if m.Address == nil {
-				m.Address = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Power", wireType)
-			}
-			m.Power = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowChild
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Power |= int64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipChild(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthChild
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
 }
 func (m *Params) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -768,6 +796,215 @@ func (m *LastTransmissionBlockHeight) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipChild(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthChild
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CrossChainValidator) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowChild
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CrossChainValidator: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CrossChainValidator: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowChild
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthChild
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthChild
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Address = append(m.Address[:0], dAtA[iNdEx:postIndex]...)
+			if m.Address == nil {
+				m.Address = []byte{}
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Power", wireType)
+			}
+			m.Power = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowChild
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Power |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipChild(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthChild
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SlashRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowChild
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SlashRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SlashRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Packet", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowChild
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthChild
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthChild
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Packet == nil {
+				m.Packet = &types.SlashPacketData{}
+			}
+			if err := m.Packet.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Downtime", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowChild
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Downtime = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipChild(dAtA[iNdEx:])

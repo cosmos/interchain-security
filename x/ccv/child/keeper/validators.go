@@ -60,15 +60,7 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 }
 
 // Slash sends a slashing request to the provider chain
-// if the slashing flag for the given validator address is set to false
 func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, slashFraction sdk.Dec) {
-
-	// check that the slashing flag is not set
-	if k.OutstandingDowntime(ctx, addr) {
-		return
-	}
-
-	// send penalties
 	k.SendSlashPacket(
 		ctx,
 		abci.Validator{
@@ -79,9 +71,6 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		slashFraction.TruncateInt64(),
 		k.slashingKeeper.DowntimeJailDuration(ctx).Nanoseconds(),
 	)
-
-	// set outstanding downtime flag
-	k.SetOutstandingDowntime(ctx, addr)
 }
 
 // Jail - unimplemented on CCV keeper

@@ -395,6 +395,73 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	})
 }
 
+func (suite *KeeperTestSuite) TestPendingSlashRequestsLogic() {
+	suite.SetupCCVChannel()
+
+	app := suite.childChain.App.(*app.App)
+	ctx := suite.childChain.GetContext()
+	channelID := suite.path.EndpointA.ChannelID
+
+	// check that CCV channel isn't established
+	_, ok := app.ChildKeeper.GetParentChannel(ctx)
+	suite.Require().False(ok)
+
+	// expect to store 4 slash requests
+	validators := []abci.Validator{}
+	for i := 0; i < 4; i++ {
+		addr := ed25519.GenPrivKey().PubKey().Address()
+		val := abci.Validator{
+			Address: addr}
+		app.ChildKeeper.SendSlashPacket(ctx, val, 0, 0, 0)
+		validators = append(validators, val)
+	}
+
+	// expect to store a duplicate for each slash request
+	// in order to test the outstanding downtime logic
+	for _, v := range validators {
+		app.ChildKeeper.SendSlashPacket(ctx, v, 0, 0, 0)
+	}
+
+	// verify that all requests are stored
+	requests := app.ChildKeeper.GetPendingSlashRequests(ctx)
+	suite.Require().Len(requests, 8)
+
+	// save child next sequence
+	seq, _ := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
+
+	// establish ccv channel by sending an empty VSC packet to child endpoint
+	suite.SendEmptyVSCPacket()
+
+	// check that each pending slash requests is sent once
+	// and that the duplicates are skipped (due to the outstanding downtime flag)
+	for i := 0; i < 7; i++ {
+		commit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, types.PortID, channelID, seq+uint64(i))
+		if i > 3 {
+			suite.Require().Nil(commit)
+			continue
+		}
+		suite.Require().NotNil(commit)
+	}
+
+	// check that outstanding downtime flags are all set to true
+	for _, r := range requests {
+		if r.Downtime {
+			consAddr := sdk.ConsAddress(r.Packet.Validator.Address)
+			suite.Require().True(app.ChildKeeper.OutstandingDowntime(ctx, consAddr))
+		}
+	}
+
+	// check that pending slash requests get cleared after being sent
+	requests = app.ChildKeeper.GetPendingSlashRequests(ctx)
+	suite.Require().Len(requests, 0)
+
+	// check that slash requests aren't stored when channel is established
+	app.ChildKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, 0, 0)
+
+	requests = app.ChildKeeper.GetPendingSlashRequests(ctx)
+	suite.Require().Len(requests, 0)
+}
+
 func (suite *KeeperTestSuite) TestCrossChainValidator() {
 	app := suite.childChain.App.(*app.App)
 	ctx := suite.childChain.GetContext()
@@ -420,6 +487,40 @@ func (suite *KeeperTestSuite) TestCrossChainValidator() {
 	// should return false
 	ccVal, foud = app.ChildKeeper.GetCCValidator(ctx, ccVal.Address)
 	suite.Require().False(foud)
+}
+
+func (suite *KeeperTestSuite) TestPendingSlashRequests() {
+	childKeeper := suite.childChain.App.(*app.App).ChildKeeper
+	ctx := suite.childChain.GetContext()
+
+	// prepare test setup by storing 10 pending slash requests
+	request := []types.SlashRequest{}
+	for i := 0; i < 10; i++ {
+		request = append(request, types.SlashRequest{})
+		childKeeper.SetPendingSlashRequests(ctx, request)
+	}
+
+	// test set, append and clear operations
+	testCases := []struct {
+		operation func()
+		expLen    int
+	}{{
+		operation: func() {},
+		expLen:    10,
+	}, {
+		operation: func() { childKeeper.AppendPendingSlashRequests(ctx, types.SlashRequest{}) },
+		expLen:    11,
+	}, {
+		operation: func() { childKeeper.ClearPendingSlashRequests(ctx) },
+		expLen:    0,
+	},
+	}
+
+	for _, t := range testCases {
+		t.operation()
+		requests := childKeeper.GetPendingSlashRequests(ctx)
+		suite.Require().Len(requests, t.expLen)
+	}
 }
 
 // SendEmptyVSCPacket sends a VSC packet without any changes
