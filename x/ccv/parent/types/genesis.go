@@ -1,7 +1,7 @@
 package types
 
 import (
-	"fmt"
+	"strings"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
@@ -33,8 +33,8 @@ func (gs GenesisState) Validate() error {
 }
 
 func (cs ChildState) Validate() error {
-	if cs.ChainId == "" {
-		return fmt.Errorf("child chain id cannot be blank")
+	if strings.TrimSpace(cs.ChainId) == "" {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidChainID, "chain id cannot be empty string")
 	}
 	if err := host.ChannelIdentifierValidator(cs.ChannelId); err != nil {
 		return sdkerrors.Wrapf(err, "ccv channel id for chain %s is not valid", cs.ChainId)
