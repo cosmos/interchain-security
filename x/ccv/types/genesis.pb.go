@@ -26,30 +26,30 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// ChildGenesisState defines the CCV child chain genesis state
-type ChildGenesisState struct {
+// ConsumerGenesisState defines the CCV consumer chain genesis state
+type ConsumerGenesisState struct {
 	Disabled        bool   `protobuf:"varint,1,opt,name=disabled,proto3" json:"disabled,omitempty"`
-	ParentChannelId string `protobuf:"bytes,2,opt,name=parent_channel_id,json=parentChannelId,proto3" json:"parent_channel_id,omitempty" yaml:"parent_channel_id"`
+	ProviderChannelId string `protobuf:"bytes,2,opt,name=provider_channel_id,json=providerChannelId,proto3" json:"provider_channel_id,omitempty" yaml:"provider_channel_id"`
 	NewChain        bool   `protobuf:"varint,3,opt,name=new_chain,json=newChain,proto3" json:"new_chain,omitempty" yaml:"new_chain"`
-	// ParentClientState filled in on new chain, nil on restart.
-	ParentClientState *types.ClientState `protobuf:"bytes,4,opt,name=parent_client_state,json=parentClientState,proto3" json:"parent_client_state,omitempty" yaml:"parent_client_state"`
-	// ParentConsensusState filled in on new chain, nil on restart.
-	ParentConsensusState *types.ConsensusState `protobuf:"bytes,5,opt,name=parent_consensus_state,json=parentConsensusState,proto3" json:"parent_consensus_state,omitempty" yaml:"parent_consensus_state"`
+	// ProviderClientState filled in on new chain, nil on restart.
+	ProviderClientState *types.ClientState `protobuf:"bytes,4,opt,name=provider_client_state,json=providerClientState,proto3" json:"provider_client_state,omitempty" yaml:"provider_client_state"`
+	// ProviderConsensusState filled in on new chain, nil on restart.
+	ProviderConsensusState *types.ConsensusState `protobuf:"bytes,5,opt,name=provider_consensus_state,json=providerConsensusState,proto3" json:"provider_consensus_state,omitempty" yaml:"provider_consensus_state"`
 	UnbondingSequences   []UnbondingSequence   `protobuf:"bytes,6,rep,name=unbonding_sequences,json=unbondingSequences,proto3" json:"unbonding_sequences" yaml:"unbonding_sequences"`
 }
 
-func (m *ChildGenesisState) Reset()         { *m = ChildGenesisState{} }
-func (m *ChildGenesisState) String() string { return proto.CompactTextString(m) }
-func (*ChildGenesisState) ProtoMessage()    {}
-func (*ChildGenesisState) Descriptor() ([]byte, []int) {
+func (m *ConsumerGenesisState) Reset()         { *m = ConsumerGenesisState{} }
+func (m *ConsumerGenesisState) String() string { return proto.CompactTextString(m) }
+func (*ConsumerGenesisState) ProtoMessage()    {}
+func (*ConsumerGenesisState) Descriptor() ([]byte, []int) {
 	return fileDescriptor_5e4d0563aa343ce3, []int{0}
 }
-func (m *ChildGenesisState) XXX_Unmarshal(b []byte) error {
+func (m *ConsumerGenesisState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ChildGenesisState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ConsumerGenesisState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ChildGenesisState.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ConsumerGenesisState.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -59,54 +59,54 @@ func (m *ChildGenesisState) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return b[:n], nil
 	}
 }
-func (m *ChildGenesisState) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ChildGenesisState.Merge(m, src)
+func (m *ConsumerGenesisState) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ConsumerGenesisState.Merge(m, src)
 }
-func (m *ChildGenesisState) XXX_Size() int {
+func (m *ConsumerGenesisState) XXX_Size() int {
 	return m.Size()
 }
-func (m *ChildGenesisState) XXX_DiscardUnknown() {
-	xxx_messageInfo_ChildGenesisState.DiscardUnknown(m)
+func (m *ConsumerGenesisState) XXX_DiscardUnknown() {
+	xxx_messageInfo_ConsumerGenesisState.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ChildGenesisState proto.InternalMessageInfo
+var xxx_messageInfo_ConsumerGenesisState proto.InternalMessageInfo
 
-func (m *ChildGenesisState) GetDisabled() bool {
+func (m *ConsumerGenesisState) GetDisabled() bool {
 	if m != nil {
 		return m.Disabled
 	}
 	return false
 }
 
-func (m *ChildGenesisState) GetParentChannelId() string {
+func (m *ConsumerGenesisState) GetProviderChannelId() string {
 	if m != nil {
-		return m.ParentChannelId
+		return m.ProviderChannelId
 	}
 	return ""
 }
 
-func (m *ChildGenesisState) GetNewChain() bool {
+func (m *ConsumerGenesisState) GetNewChain() bool {
 	if m != nil {
 		return m.NewChain
 	}
 	return false
 }
 
-func (m *ChildGenesisState) GetParentClientState() *types.ClientState {
+func (m *ConsumerGenesisState) GetProviderClientState() *types.ClientState {
 	if m != nil {
-		return m.ParentClientState
+		return m.ProviderClientState
 	}
 	return nil
 }
 
-func (m *ChildGenesisState) GetParentConsensusState() *types.ConsensusState {
+func (m *ConsumerGenesisState) GetProviderConsensusState() *types.ConsensusState {
 	if m != nil {
-		return m.ParentConsensusState
+		return m.ProviderConsensusState
 	}
 	return nil
 }
 
-func (m *ChildGenesisState) GetUnbondingSequences() []UnbondingSequence {
+func (m *ConsumerGenesisState) GetUnbondingSequences() []UnbondingSequence {
 	if m != nil {
 		return m.UnbondingSequences
 	}
@@ -174,23 +174,23 @@ func (m *UnbondingSequence) GetUnbondingPacket() types1.Packet {
 	return types1.Packet{}
 }
 
-// ParentGenesisState defines the CCV parent chain genesis state
-type ParentGenesisState struct {
-	ChildStates []ChildState `protobuf:"bytes,1,rep,name=child_states,json=childStates,proto3" json:"child_states" yaml:"child_states"`
+// ProviderGenesisState defines the CCV provider chain genesis state
+type ProviderGenesisState struct {
+	ConsumerStates []ConsumerState `protobuf:"bytes,1,rep,name=consumer_states,json=consumerStates,proto3" json:"consumer_states" yaml:"consumer_states"`
 }
 
-func (m *ParentGenesisState) Reset()         { *m = ParentGenesisState{} }
-func (m *ParentGenesisState) String() string { return proto.CompactTextString(m) }
-func (*ParentGenesisState) ProtoMessage()    {}
-func (*ParentGenesisState) Descriptor() ([]byte, []int) {
+func (m *ProviderGenesisState) Reset()         { *m = ProviderGenesisState{} }
+func (m *ProviderGenesisState) String() string { return proto.CompactTextString(m) }
+func (*ProviderGenesisState) ProtoMessage()    {}
+func (*ProviderGenesisState) Descriptor() ([]byte, []int) {
 	return fileDescriptor_5e4d0563aa343ce3, []int{2}
 }
-func (m *ParentGenesisState) XXX_Unmarshal(b []byte) error {
+func (m *ProviderGenesisState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ParentGenesisState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ProviderGenesisState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ParentGenesisState.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ProviderGenesisState.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -200,44 +200,44 @@ func (m *ParentGenesisState) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return b[:n], nil
 	}
 }
-func (m *ParentGenesisState) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ParentGenesisState.Merge(m, src)
+func (m *ProviderGenesisState) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProviderGenesisState.Merge(m, src)
 }
-func (m *ParentGenesisState) XXX_Size() int {
+func (m *ProviderGenesisState) XXX_Size() int {
 	return m.Size()
 }
-func (m *ParentGenesisState) XXX_DiscardUnknown() {
-	xxx_messageInfo_ParentGenesisState.DiscardUnknown(m)
+func (m *ProviderGenesisState) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProviderGenesisState.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ParentGenesisState proto.InternalMessageInfo
+var xxx_messageInfo_ProviderGenesisState proto.InternalMessageInfo
 
-func (m *ParentGenesisState) GetChildStates() []ChildState {
+func (m *ProviderGenesisState) GetConsumerStates() []ConsumerState {
 	if m != nil {
-		return m.ChildStates
+		return m.ConsumerStates
 	}
 	return nil
 }
 
-// ChildState defines the state that the parent chain stores for each child chain
-type ChildState struct {
+// ConsumerState defines the state that the provider chain stores for each consumer chain
+type ConsumerState struct {
 	ChainId   string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty" yaml:"chain_id"`
 	ChannelId string `protobuf:"bytes,2,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty" yaml:"channel_id"`
 	Status    Status `protobuf:"varint,3,opt,name=status,proto3,enum=interchain_security.ccv.v1.Status" json:"status,omitempty"`
 }
 
-func (m *ChildState) Reset()         { *m = ChildState{} }
-func (m *ChildState) String() string { return proto.CompactTextString(m) }
-func (*ChildState) ProtoMessage()    {}
-func (*ChildState) Descriptor() ([]byte, []int) {
+func (m *ConsumerState) Reset()         { *m = ConsumerState{} }
+func (m *ConsumerState) String() string { return proto.CompactTextString(m) }
+func (*ConsumerState) ProtoMessage()    {}
+func (*ConsumerState) Descriptor() ([]byte, []int) {
 	return fileDescriptor_5e4d0563aa343ce3, []int{3}
 }
-func (m *ChildState) XXX_Unmarshal(b []byte) error {
+func (m *ConsumerState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ChildState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ConsumerState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ChildState.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ConsumerState.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -247,33 +247,33 @@ func (m *ChildState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *ChildState) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ChildState.Merge(m, src)
+func (m *ConsumerState) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ConsumerState.Merge(m, src)
 }
-func (m *ChildState) XXX_Size() int {
+func (m *ConsumerState) XXX_Size() int {
 	return m.Size()
 }
-func (m *ChildState) XXX_DiscardUnknown() {
-	xxx_messageInfo_ChildState.DiscardUnknown(m)
+func (m *ConsumerState) XXX_DiscardUnknown() {
+	xxx_messageInfo_ConsumerState.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ChildState proto.InternalMessageInfo
+var xxx_messageInfo_ConsumerState proto.InternalMessageInfo
 
-func (m *ChildState) GetChainId() string {
+func (m *ConsumerState) GetChainId() string {
 	if m != nil {
 		return m.ChainId
 	}
 	return ""
 }
 
-func (m *ChildState) GetChannelId() string {
+func (m *ConsumerState) GetChannelId() string {
 	if m != nil {
 		return m.ChannelId
 	}
 	return ""
 }
 
-func (m *ChildState) GetStatus() Status {
+func (m *ConsumerState) GetStatus() Status {
 	if m != nil {
 		return m.Status
 	}
@@ -281,10 +281,10 @@ func (m *ChildState) GetStatus() Status {
 }
 
 func init() {
-	proto.RegisterType((*ChildGenesisState)(nil), "interchain_security.ccv.v1.ChildGenesisState")
+	proto.RegisterType((*ConsumerGenesisState)(nil), "interchain_security.ccv.v1.ConsumerGenesisState")
 	proto.RegisterType((*UnbondingSequence)(nil), "interchain_security.ccv.v1.UnbondingSequence")
-	proto.RegisterType((*ParentGenesisState)(nil), "interchain_security.ccv.v1.ParentGenesisState")
-	proto.RegisterType((*ChildState)(nil), "interchain_security.ccv.v1.ChildState")
+	proto.RegisterType((*ProviderGenesisState)(nil), "interchain_security.ccv.v1.ProviderGenesisState")
+	proto.RegisterType((*ConsumerState)(nil), "interchain_security.ccv.v1.ConsumerState")
 }
 
 func init() {
@@ -339,7 +339,7 @@ var fileDescriptor_5e4d0563aa343ce3 = []byte{
 	0x00, 0x00,
 }
 
-func (m *ChildGenesisState) Marshal() (dAtA []byte, err error) {
+func (m *ConsumerGenesisState) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -349,12 +349,12 @@ func (m *ChildGenesisState) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ChildGenesisState) MarshalTo(dAtA []byte) (int, error) {
+func (m *ConsumerGenesisState) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ChildGenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ConsumerGenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -373,9 +373,9 @@ func (m *ChildGenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x32
 		}
 	}
-	if m.ParentConsensusState != nil {
+	if m.ProviderConsensusState != nil {
 		{
-			size, err := m.ParentConsensusState.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.ProviderConsensusState.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -385,9 +385,9 @@ func (m *ChildGenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x2a
 	}
-	if m.ParentClientState != nil {
+	if m.ProviderClientState != nil {
 		{
-			size, err := m.ParentClientState.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.ProviderClientState.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -407,10 +407,10 @@ func (m *ChildGenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x18
 	}
-	if len(m.ParentChannelId) > 0 {
-		i -= len(m.ParentChannelId)
-		copy(dAtA[i:], m.ParentChannelId)
-		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ParentChannelId)))
+	if len(m.ProviderChannelId) > 0 {
+		i -= len(m.ProviderChannelId)
+		copy(dAtA[i:], m.ProviderChannelId)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ProviderChannelId)))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -470,7 +470,7 @@ func (m *UnbondingSequence) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ParentGenesisState) Marshal() (dAtA []byte, err error) {
+func (m *ProviderGenesisState) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -480,20 +480,20 @@ func (m *ParentGenesisState) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ParentGenesisState) MarshalTo(dAtA []byte) (int, error) {
+func (m *ProviderGenesisState) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ParentGenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ProviderGenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.ChildStates) > 0 {
-		for iNdEx := len(m.ChildStates) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.ConsumerStates) > 0 {
+		for iNdEx := len(m.ConsumerStates) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.ChildStates[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.ConsumerStates[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -507,7 +507,7 @@ func (m *ParentGenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ChildState) Marshal() (dAtA []byte, err error) {
+func (m *ConsumerState) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -517,12 +517,12 @@ func (m *ChildState) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ChildState) MarshalTo(dAtA []byte) (int, error) {
+func (m *ConsumerState) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ChildState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ConsumerState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -560,7 +560,7 @@ func encodeVarintGenesis(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *ChildGenesisState) Size() (n int) {
+func (m *ConsumerGenesisState) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -569,19 +569,19 @@ func (m *ChildGenesisState) Size() (n int) {
 	if m.Disabled {
 		n += 2
 	}
-	l = len(m.ParentChannelId)
+	l = len(m.ProviderChannelId)
 	if l > 0 {
 		n += 1 + l + sovGenesis(uint64(l))
 	}
 	if m.NewChain {
 		n += 2
 	}
-	if m.ParentClientState != nil {
-		l = m.ParentClientState.Size()
+	if m.ProviderClientState != nil {
+		l = m.ProviderClientState.Size()
 		n += 1 + l + sovGenesis(uint64(l))
 	}
-	if m.ParentConsensusState != nil {
-		l = m.ParentConsensusState.Size()
+	if m.ProviderConsensusState != nil {
+		l = m.ProviderConsensusState.Size()
 		n += 1 + l + sovGenesis(uint64(l))
 	}
 	if len(m.UnbondingSequences) > 0 {
@@ -610,14 +610,14 @@ func (m *UnbondingSequence) Size() (n int) {
 	return n
 }
 
-func (m *ParentGenesisState) Size() (n int) {
+func (m *ProviderGenesisState) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.ChildStates) > 0 {
-		for _, e := range m.ChildStates {
+	if len(m.ConsumerStates) > 0 {
+		for _, e := range m.ConsumerStates {
 			l = e.Size()
 			n += 1 + l + sovGenesis(uint64(l))
 		}
@@ -625,7 +625,7 @@ func (m *ParentGenesisState) Size() (n int) {
 	return n
 }
 
-func (m *ChildState) Size() (n int) {
+func (m *ConsumerState) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -651,7 +651,7 @@ func sovGenesis(x uint64) (n int) {
 func sozGenesis(x uint64) (n int) {
 	return sovGenesis(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *ChildGenesisState) Unmarshal(dAtA []byte) error {
+func (m *ConsumerGenesisState) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -674,10 +674,10 @@ func (m *ChildGenesisState) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ChildGenesisState: wiretype end group for non-group")
+			return fmt.Errorf("proto: ConsumerGenesisState: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ChildGenesisState: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ConsumerGenesisState: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -702,7 +702,7 @@ func (m *ChildGenesisState) Unmarshal(dAtA []byte) error {
 			m.Disabled = bool(v != 0)
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ParentChannelId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderChannelId", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -730,7 +730,7 @@ func (m *ChildGenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ParentChannelId = string(dAtA[iNdEx:postIndex])
+			m.ProviderChannelId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -754,7 +754,7 @@ func (m *ChildGenesisState) Unmarshal(dAtA []byte) error {
 			m.NewChain = bool(v != 0)
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ParentClientState", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderClientState", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -781,16 +781,16 @@ func (m *ChildGenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ParentClientState == nil {
-				m.ParentClientState = &types.ClientState{}
+			if m.ProviderClientState == nil {
+				m.ProviderClientState = &types.ClientState{}
 			}
-			if err := m.ParentClientState.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ProviderClientState.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ParentConsensusState", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderConsensusState", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -817,10 +817,10 @@ func (m *ChildGenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ParentConsensusState == nil {
-				m.ParentConsensusState = &types.ConsensusState{}
+			if m.ProviderConsensusState == nil {
+				m.ProviderConsensusState = &types.ConsensusState{}
 			}
-			if err := m.ParentConsensusState.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ProviderConsensusState.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1000,7 +1000,7 @@ func (m *UnbondingSequence) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ParentGenesisState) Unmarshal(dAtA []byte) error {
+func (m *ProviderGenesisState) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1023,15 +1023,15 @@ func (m *ParentGenesisState) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ParentGenesisState: wiretype end group for non-group")
+			return fmt.Errorf("proto: ProviderGenesisState: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ParentGenesisState: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ProviderGenesisState: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ChildStates", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerStates", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1058,8 +1058,8 @@ func (m *ParentGenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ChildStates = append(m.ChildStates, ChildState{})
-			if err := m.ChildStates[len(m.ChildStates)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.ConsumerStates = append(m.ConsumerStates, ConsumerState{})
+			if err := m.ConsumerStates[len(m.ConsumerStates)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1084,7 +1084,7 @@ func (m *ParentGenesisState) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ChildState) Unmarshal(dAtA []byte) error {
+func (m *ConsumerState) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1107,10 +1107,10 @@ func (m *ChildState) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ChildState: wiretype end group for non-group")
+			return fmt.Errorf("proto: ConsumerState: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ChildState: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ConsumerState: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

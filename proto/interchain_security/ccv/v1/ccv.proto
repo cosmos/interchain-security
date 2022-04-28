@@ -8,16 +8,16 @@ import "gogoproto/gogo.proto";
 import "tendermint/abci/types.proto";
 
 
-// This packet is sent from parent chain to baby chain if the validator set for baby chain
+// This packet is sent from provider chain to consumer chain if the validator set for consumer chain
 // changes (due to new bonding/unbonding messages or slashing events)
-// The acknowledgement from baby chain will be sent asynchronously once unbonding period is over,
+// The acknowledgement from consumer chain will be sent asynchronously once unbonding period is over,
 // and this will function as `UnbondingOver` message for this packet.
 message ValidatorSetChangePacketData {
   repeated .tendermint.abci.ValidatorUpdate validator_updates = 1
       [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"validator_updates\""];
   uint64 valset_update_id = 2;
-  // consensus address of child chain validators 
-  // successfully slashed on the parent chain
+  // consensus address of consumer chain validators 
+  // successfully slashed on the provider chain
   repeated string slash_acks = 3;
 }
 
@@ -38,8 +38,8 @@ enum Status {
 
 message UnbondingOp {
   uint64 id = 1;
-  // child chains that are still unbonding
-  repeated string unbonding_child_chains = 2;
+  // consumer chains that are still unbonding
+  repeated string unbonding_consumer_chains = 2;
 }
 
 // This packet is sent from the consumer chain to the provider chain.

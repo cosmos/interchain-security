@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package interchain_security.ccv.provider.v1;
+
+option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types";
+
+import "gogoproto/gogo.proto";
+import "interchain_security/ccv/v1/ccv.proto";
+import "interchain_security/ccv/provider/v1/provider.proto";
+
+// GenesisState defines the CCV provider chain genesis state
+message GenesisState {
+    repeated ConsumerState consumer_states = 1 [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"consumer_states\""];
+    Params params = 2 [(gogoproto.nullable) = false];
+}
+
+// ConsumerState defines the state that the provider chain stores for each consumer chain
+message ConsumerState {
+    string chain_id   = 1 [(gogoproto.moretags) = "yaml:\"chain_id\""];
+    string channel_id = 2 [(gogoproto.moretags) = "yaml:\"channel_id\""];
+    interchain_security.ccv.v1.Status status     = 3;
+}

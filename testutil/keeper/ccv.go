@@ -4,7 +4,7 @@ package keeper
 // 	"testing"
 
 // 	sdk "github.com/cosmos/cosmos-sdk/types"
-// 	"github.com/cosmos/interchain-security/x/ccv/child/keeper"
+// 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 // )
 
 // func CcvKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {

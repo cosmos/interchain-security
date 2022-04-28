@@ -102,13 +102,13 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
-	ibcchild "github.com/cosmos/interchain-security/x/ccv/child"
-	ibcchildkeeper "github.com/cosmos/interchain-security/x/ccv/child/keeper"
-	ibcchildtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
-	ibcparent "github.com/cosmos/interchain-security/x/ccv/parent"
-	ibcparentclient "github.com/cosmos/interchain-security/x/ccv/parent/client"
-	ibcparentkeeper "github.com/cosmos/interchain-security/x/ccv/parent/keeper"
-	ibcparenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
+	ibcconsumer "github.com/cosmos/interchain-security/x/ccv/consumer"
+	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
+	ibcconsumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ibcprovider "github.com/cosmos/interchain-security/x/ccv/provider"
+	ibcproviderclient "github.com/cosmos/interchain-security/x/ccv/provider/client"
+	ibcproviderkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	ibcprovidertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
 	"github.com/tendermint/spm/cosmoscmd"
 
@@ -133,7 +133,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		distrclient.ProposalHandler,
 		upgradeclient.ProposalHandler,
 		upgradeclient.CancelProposalHandler,
-		ibcparentclient.ProposalHandler,
+		ibcproviderclient.ProposalHandler,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
 
@@ -162,7 +162,7 @@ var (
 			upgradeclient.CancelProposalHandler,
 			ibcclientclient.UpdateClientProposalHandler,
 			ibcclientclient.UpgradeProposalHandler,
-			ibcparentclient.ProposalHandler,
+			ibcproviderclient.ProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
@@ -176,15 +176,15 @@ var (
 		vesting.AppModuleBasic{},
 		liquidity.AppModuleBasic{},
 		//router.AppModuleBasic{},
-		ibcchild.AppModuleBasic{},
-		ibcparent.AppModuleBasic{},
+		ibcconsumer.AppModuleBasic{},
+		ibcprovider.AppModuleBasic{},
 	)
 
 	// module account permissions
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName:                 nil,
-		ibcchildtypes.ConsumerRedistributeName:     nil,
-		ibcchildtypes.ConsumerToSendToProviderName: nil,
+		ibcconsumertypes.ConsumerRedistributeName:     nil,
+		ibcconsumertypes.ConsumerToSendToProviderName: nil,
 		distrtypes.ModuleName:                      nil,
 		minttypes.ModuleName:                       {authtypes.Minter},
 		stakingtypes.BondedPoolName:                {authtypes.Burner, authtypes.Staking},
@@ -228,7 +228,7 @@ type App struct { // nolint: golint
 
 	// NOTE the distribution keeper should either be removed
 	// from consumer chain or set to use an independant
-	// different fee-pool from the consumer chain ChildKeeper
+	// different fee-pool from the consumer chain ConsumerKeeper
 	DistrKeeper distrkeeper.Keeper
 
 	GovKeeper       govkeeper.Keeper
@@ -241,14 +241,14 @@ type App struct { // nolint: golint
 	FeeGrantKeeper  feegrantkeeper.Keeper
 	AuthzKeeper     authzkeeper.Keeper
 	LiquidityKeeper liquiditykeeper.Keeper
-	ChildKeeper     ibcchildkeeper.Keeper
-	ParentKeeper    ibcparentkeeper.Keeper
+	ConsumerKeeper     ibcconsumerkeeper.Keeper
+	ProviderKeeper    ibcproviderkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper       capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper  capabilitykeeper.ScopedKeeper
-	ScopedIBCChildKeeper  capabilitykeeper.ScopedKeeper
-	ScopedIBCParentKeeper capabilitykeeper.ScopedKeeper
+	ScopedIBCConsumerKeeper  capabilitykeeper.ScopedKeeper
+	ScopedIBCProviderKeeper capabilitykeeper.ScopedKeeper
 
 	// the module manager
 	MM *module.Manager
@@ -296,7 +296,7 @@ func New(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, liquiditytypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
-		ibcchildtypes.StoreKey, ibcparenttypes.StoreKey,
+		ibcconsumertypes.StoreKey, ibcprovidertypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, stakingtypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -333,8 +333,8 @@ func New(
 	)
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
-	scopedIBCChildKeeper := app.CapabilityKeeper.ScopeToModule(ibcchildtypes.ModuleName)
-	scopedIBCParentKeeper := app.CapabilityKeeper.ScopeToModule(ibcparenttypes.ModuleName)
+	scopedIBCConsumerKeeper := app.CapabilityKeeper.ScopeToModule(ibcconsumertypes.ModuleName)
+	scopedIBCProviderKeeper := app.CapabilityKeeper.ScopeToModule(ibcprovidertypes.ModuleName)
 	app.CapabilityKeeper.Seal()
 
 	// add keepers
@@ -431,7 +431,7 @@ func New(
 		stakingtypes.NewMultiStakingHooks(
 			app.DistrKeeper.Hooks(),
 			app.SlashingKeeper.Hooks(),
-			app.ParentKeeper.Hooks(),
+			app.ProviderKeeper.Hooks(),
 		),
 	)
 
@@ -444,12 +444,12 @@ func New(
 		scopedIBCKeeper,
 	)
 
-	// Create CCV child and parent keepers and modules
-	app.ChildKeeper = ibcchildkeeper.NewKeeper(
+	// Create CCV consumer and provider keepers and modules
+	app.ConsumerKeeper = ibcconsumerkeeper.NewKeeper(
 		appCodec,
-		keys[ibcchildtypes.StoreKey],
-		app.GetSubspace(ibcchildtypes.ModuleName),
-		scopedIBCChildKeeper,
+		keys[ibcconsumertypes.StoreKey],
+		app.GetSubspace(ibcconsumertypes.ModuleName),
+		scopedIBCConsumerKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		&app.IBCKeeper.PortKeeper,
 		app.IBCKeeper.ConnectionKeeper,
@@ -462,11 +462,11 @@ func New(
 		authtypes.FeeCollectorName,
 	)
 
-	app.ParentKeeper = ibcparentkeeper.NewKeeper(
+	app.ProviderKeeper = ibcproviderkeeper.NewKeeper(
 		appCodec,
-		keys[ibcparenttypes.StoreKey],
-		app.GetSubspace(ibcparenttypes.ModuleName),
-		scopedIBCParentKeeper,
+		keys[ibcprovidertypes.StoreKey],
+		app.GetSubspace(ibcprovidertypes.ModuleName),
+		scopedIBCProviderKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		&app.IBCKeeper.PortKeeper,
 		app.IBCKeeper.ConnectionKeeper,
@@ -476,20 +476,20 @@ func New(
 		app.AccountKeeper,
 		authtypes.FeeCollectorName,
 	)
-	parentModule := ibcparent.NewAppModule(&app.ParentKeeper)
+	providerModule := ibcprovider.NewAppModule(&app.ProviderKeeper)
 
-	// child keeper satisfies the staking keeper interface
+	// consumer keeper satisfies the staking keeper interface
 	// of the slashing module
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
 		appCodec,
 		keys[slashingtypes.StoreKey],
-		app.ChildKeeper,
+		app.ConsumerKeeper,
 		app.GetSubspace(slashingtypes.ModuleName),
 	)
 
-	// register slashing module StakingHooks to the child keeper
-	app.ChildKeeper = *app.ChildKeeper.SetHooks(app.SlashingKeeper.Hooks())
-	childModule := ibcchild.NewAppModule(app.ChildKeeper)
+	// register slashing module StakingHooks to the consumer keeper
+	app.ConsumerKeeper = *app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
+	consumerModule := ibcconsumer.NewAppModule(app.ConsumerKeeper)
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
@@ -499,7 +499,7 @@ func New(
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(ibcparenttypes.RouterKey, ibcparent.NewCreateChildChainHandler(app.ParentKeeper)).
+		AddRoute(ibcprovidertypes.RouterKey, ibcprovider.NewCreateConsumerChainHandler(app.ProviderKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 
 	app.GovKeeper = govkeeper.NewKeeper(
@@ -529,8 +529,8 @@ func New(
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule)
-	ibcRouter.AddRoute(ibcchildtypes.ModuleName, childModule)
-	ibcRouter.AddRoute(ibcparenttypes.ModuleName, parentModule)
+	ibcRouter.AddRoute(ibcconsumertypes.ModuleName, consumerModule)
+	ibcRouter.AddRoute(ibcprovidertypes.ModuleName, providerModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
@@ -572,8 +572,8 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		liquidity.NewAppModule(appCodec, app.LiquidityKeeper, app.AccountKeeper, app.BankKeeper, app.DistrKeeper),
 		transferModule,
-		childModule,
-		parentModule,
+		consumerModule,
+		providerModule,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -602,8 +602,8 @@ func New(
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
-		ibcchildtypes.ModuleName,
-		ibcparenttypes.ModuleName,
+		ibcconsumertypes.ModuleName,
+		ibcprovidertypes.ModuleName,
 	)
 	app.MM.SetOrderEndBlockers(
 		crisistypes.ModuleName,
@@ -625,8 +625,8 @@ func New(
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
-		ibcchildtypes.ModuleName,
-		ibcparenttypes.ModuleName,
+		ibcconsumertypes.ModuleName,
+		ibcprovidertypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -655,8 +655,8 @@ func New(
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
-		ibcchildtypes.ModuleName,
-		ibcparenttypes.ModuleName,
+		ibcconsumertypes.ModuleName,
+		ibcprovidertypes.ModuleName,
 	)
 
 	app.MM.RegisterInvariants(&app.CrisisKeeper)
@@ -752,8 +752,8 @@ func New(
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
-	app.ScopedIBCChildKeeper = scopedIBCChildKeeper
-	app.ScopedIBCParentKeeper = scopedIBCParentKeeper
+	app.ScopedIBCConsumerKeeper = scopedIBCConsumerKeeper
+	app.ScopedIBCProviderKeeper = scopedIBCProviderKeeper
 
 	return app
 }
@@ -947,8 +947,8 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(liquiditytypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
-	paramsKeeper.Subspace(ibcparenttypes.ModuleName)
-	paramsKeeper.Subspace(ibcchildtypes.ModuleName)
+	paramsKeeper.Subspace(ibcprovidertypes.ModuleName)
+	paramsKeeper.Subspace(ibcconsumertypes.ModuleName)
 
 	return paramsKeeper
 }
