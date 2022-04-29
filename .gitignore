@@ -4,3 +4,4 @@ vue/dist
 release/
 docs/tla/states/
 *.out
+vendor/
