@@ -5,7 +5,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	host "github.com/cosmos/ibc-go/modules/core/24-host"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -49,12 +48,13 @@ func SendPacketOverIBC(
 	channelID string,
 	portID string,
 	packetData []byte,
+	hostCapabilityPath string,
 ) error {
 	channel, ok := channelKeeper.GetChannel(ctx, portID, channelID)
 	if !ok {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
 	}
-	channelCap, ok := scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portID, channelID))
+	channelCap, ok := scopedKeeper.GetCapability(ctx, hostCapabilityPath)
 	if !ok {
 		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
 	}

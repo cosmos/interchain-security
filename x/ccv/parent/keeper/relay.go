@@ -39,6 +39,7 @@ func (k Keeper) SendValidatorSetChangePacket(
 		channelID,    // source channel id
 		types.PortID, // source port id
 		packetData.GetBytes(),
+		host.ChannelCapabilityPath(types.PortID, channelID),
 	)
 }
 

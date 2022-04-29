@@ -132,6 +132,7 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 		channelID,    // source channel id
 		types.PortID, // source port id
 		packetData.GetBytes(),
+		host.ChannelCapabilityPath(types.PortID, channelID),
 	)
 	if err != nil {
 		panic(err)
@@ -165,6 +166,7 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 				channelID,    // source channel id
 				types.PortID, // source port id
 				requests[i].Packet.GetBytes(),
+				host.ChannelCapabilityPath(types.PortID, channelID),
 			)
 			if err != nil {
 				panic(err)
