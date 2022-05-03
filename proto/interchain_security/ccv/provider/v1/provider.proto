@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package interchain_security.ccv.provider.v1;
+
+option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "ibc/core/client/v1/client.proto";
+import "ibc/lightclients/tendermint/v1/tendermint.proto";
+
+// CreateConsumerChainProposal is a governance proposal on the provider chain to spawn a new consumer chain.
+// If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
+// or get slashed. It is recommended that spawn time occurs after the proposal end time.
+message CreateConsumerChainProposal {
+    option (gogoproto.goproto_getters)  = false;
+    option (gogoproto.goproto_stringer) = false;
+  
+    // the title of the proposal
+    string title = 1;
+    // the description of the proposal
+    string description = 2;
+    // the proposed chain-id of the new consumer chain, must be different from all other consumer chain ids of the executing
+    // provider chain.
+    string chain_id = 3 [(gogoproto.moretags) = "yaml:\"chain_id\""];
+    // the proposed initial height of new consumer chain.
+    // For a completely new chain, this will be {0,1}. However, it may be different if this is a chain that is converting to a consumer chain.
+    ibc.core.client.v1.Height initial_height = 4 [(gogoproto.moretags) = "yaml:\"initial_height\"", (gogoproto.nullable) = false];
+    // genesis hash with no staking information included.
+    bytes genesis_hash = 5 [(gogoproto.moretags) = "yaml:\"genesis_hash\""];
+    // binary hash is the hash of the binary that should be used by validators on chain initialization.
+    bytes binary_hash = 6 [(gogoproto.moretags) = "yaml:\"binary_hash\""];
+    // spawn time is the time on the provider chain at which the consumer chain genesis is finalized and all validators
+    // will be responsible for starting their consumer chain validator node.
+    google.protobuf.Timestamp spawn_time = 7
+        [(gogoproto.moretags) = "yaml:\"spawn_time\"", (gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  }
+  
+// Params defines the parameters for CCV Provider module
+message Params {
+  ibc.lightclients.tendermint.v1.ClientState template_client = 1 [(gogoproto.moretags) = "yaml:\"template_client\""];
+}
+  
+message HandshakeMetadata {
+  string provider_fee_pool_addr = 1;
+  string version = 2;
+}

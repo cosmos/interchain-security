@@ -1,0 +1,25 @@
+syntax = "proto3";
+package interchain_security.ccv.provider.v1;
+
+option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types";
+
+import "google/api/annotations.proto";
+import "gogoproto/gogo.proto";
+import "interchain_security/ccv/consumer/v1/genesis.proto";
+
+
+service Query {
+  // ConsumerGenesis queries the genesis state needed to start a consumer chain whose proposal
+  // has been accepted
+  rpc ConsumerGenesis(QueryConsumerGenesisRequest) returns (QueryConsumerGenesisResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/provider/consumer_genesis/{chain_id}";
+  }
+}
+
+message QueryConsumerGenesisRequest {
+  string chain_id = 1;
+}
+
+message QueryConsumerGenesisResponse {
+    interchain_security.ccv.consumer.v1.GenesisState genesis_state = 1 [(gogoproto.nullable) = false];
+}

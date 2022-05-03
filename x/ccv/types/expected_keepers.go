@@ -18,8 +18,8 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// StakingKeeper defines the contract expected by parent-chain ccv module from a Staking Module that will keep track
-// of the parent validator set. This version of the interchain-security protocol will mirror the parent chain's changes
+// StakingKeeper defines the contract expected by provider-chain ccv module from a Staking Module that will keep track
+// of the provider validator set. This version of the interchain-security protocol will mirror the provider chain's changes
 // so we do not need a registry module between the staking module and CCV.
 type StakingKeeper interface {
 	GetValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
@@ -37,7 +37,7 @@ type StakingKeeper interface {
 
 // SlashingKeeper defines the contract expected to perform ccv slashing
 type SlashingKeeper interface {
-	JailUntil(sdk.Context, sdk.ConsAddress, time.Time) // called from parent keeper only
+	JailUntil(sdk.Context, sdk.ConsAddress, time.Time) // called from provider keeper only
 	GetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress) (info slashingtypes.ValidatorSigningInfo, found bool)
 	DowntimeJailDuration(sdk.Context) time.Duration
 	SlashFractionDowntime(sdk.Context) sdk.Dec
@@ -70,10 +70,10 @@ type ClientKeeper interface {
 	GetSelfConsensusState(ctx sdk.Context, height ibcexported.Height) (ibcexported.ConsensusState, error)
 }
 
-// TODO: Expected interfaces for distribution on parent and baby chains
+// TODO: Expected interfaces for distribution on provider and consumer chains
 
-// ChildHooks event hooks for newly bonded cross-chain validators
-type ChildHooks interface {
+// ConsumerHooks event hooks for newly bonded cross-chain validators
+type ConsumerHooks interface {
 	AfterValidatorBonded(ctx sdk.Context, consAddr sdk.ConsAddress, _ sdk.ValAddress)
 }
 

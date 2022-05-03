@@ -195,7 +195,7 @@ func (s System) getProposal(chain uint, proposal uint) Proposal {
 			Title:       title,
 			Description: description,
 		}
-	case "/interchain_security.ccv.parent.v1.CreateChildChainProposal":
+	case "/interchain_security.ccv.provider.v1.CreateConsumerChainProposal":
 		chainId := gjson.Get(string(bz), `content.chain_id`).String()
 		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time().Sub(s.containerConfig.now)
 

@@ -181,7 +181,7 @@ type SubmitConsumerProposalAction struct {
 }
 
 // TODO: import this directly from the module once it is merged
-type CreateChildChainProposalJSON struct {
+type CreateConsumerChainProposalJSON struct {
 	Title         string             `json:"title"`
 	Description   string             `json:"description"`
 	ChainId       string             `json:"chain_id"`
@@ -197,7 +197,7 @@ func (s System) submitConsumerProposal(
 	verbose bool,
 ) {
 	spawnTime := s.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
-	prop := CreateChildChainProposalJSON{
+	prop := CreateConsumerChainProposalJSON{
 		Title:         "Create a chain",
 		Description:   "Gonna be a great chain",
 		ChainId:       s.chainConfigs[action.consumerChain].chainId,
@@ -221,7 +221,7 @@ func (s System) submitConsumerProposal(
 
 	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
 
-		"tx", "gov", "submit-proposal", "create-child-chain",
+		"tx", "gov", "submit-proposal", "create-consumer-chain",
 		"/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
@@ -291,7 +291,7 @@ func (s System) startConsumerChain(
 ) {
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
 
-		"query", "parent", "child-genesis",
+		"query", "provider", "consumer-genesis",
 		s.chainConfigs[action.consumerChain].chainId,
 
 		`--node`, s.getValidatorNode(action.providerChain, s.getValidatorNum(action.providerChain)),
@@ -305,7 +305,7 @@ func (s System) startConsumerChain(
 	s.startChain(StartChainAction{
 		chain:          1,
 		validators:     action.validators,
-		genesisChanges: ".app_state.ccvchild = " + string(bz),
+		genesisChanges: ".app_state.ccvconsumer = " + string(bz),
 		skipGentx:      true,
 	}, verbose)
 }

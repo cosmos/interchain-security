@@ -156,8 +156,8 @@ var happyPathSteps = []Step{
 			chainA:      1,
 			chainB:      0,
 			connectionA: 0,
-			portA:       "child",
-			portB:       "parent",
+			portA:       "consumer",
+			portB:       "provider",
 			order:       "ordered",
 		},
 		state: State{},
@@ -165,7 +165,7 @@ var happyPathSteps = []Step{
 	{
 		action: RelayPacketsAction{
 			chain:   0,
-			port:    "parent",
+			port:    "provider",
 			channel: 0,
 		},
 		state: State{},
@@ -201,7 +201,7 @@ var happyPathSteps = []Step{
 	{
 		action: RelayPacketsAction{
 			chain:   0,
-			port:    "parent",
+			port:    "provider",
 			channel: 0,
 		},
 		state: State{

@@ -4,7 +4,7 @@ const (
 	// ModuleName defines the CCV module name
 	ModuleName = "CCV"
 
-	// Version defines the current version the IBC CCV parent and child
+	// Version defines the current version the IBC CCV provider and consumer
 	// module supports
 	Version = "1"
 
@@ -14,7 +14,7 @@ const (
 	RouterKey = ModuleName
 )
 
-// ChannelStatusKey returns the key under which the Status of a baby chain is stored.
+// ChannelStatusKey returns the key under which the Status of a consumer chain is stored.
 func ChannelStatusKey(channelID string) []byte {
 	return []byte(ChannelStatusKeyPrefix + "/" + channelID)
 }
