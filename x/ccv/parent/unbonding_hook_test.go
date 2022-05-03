@@ -11,6 +11,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
+	childApp "github.com/cosmos/interchain-security/app_child"
 	parentApp "github.com/cosmos/interchain-security/app_parent"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
@@ -204,7 +205,7 @@ func endChildUnbondingPeriod(s *ParentTestSuite, origTime time.Time) {
 	// - End consumer unbonding period
 	childCtx := s.childCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
 	// s.childChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
-	err := s.childChain.App.(*parentApp.App).ChildKeeper.UnbondMaturePackets(childCtx)
+	err := s.childChain.App.(*childApp.App).ChildKeeper.UnbondMaturePackets(childCtx)
 	s.Require().NoError(err)
 }
 

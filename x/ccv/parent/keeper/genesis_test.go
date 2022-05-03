@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"fmt"
 
+	childApp "github.com/cosmos/interchain-security/app_child"
 	parentApp "github.com/cosmos/interchain-security/app_parent"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 )
@@ -18,20 +19,20 @@ func (suite *KeeperTestSuite) TestGenesis() {
 
 	genState := suite.parentChain.App.(*parentApp.App).ParentKeeper.ExportGenesis(suite.parentChain.GetContext())
 
-	suite.childChain.App.(*parentApp.App).ParentKeeper.InitGenesis(suite.childChain.GetContext(), genState)
+	suite.childChain.App.(*childApp.App).ParentKeeper.InitGenesis(suite.childChain.GetContext(), genState)
 
 	ctx = suite.childChain.GetContext()
 	for i := 0; i < 4; i++ {
 		expectedChainId := fmt.Sprintf("chainid-%d", i)
 		expectedChannelId := fmt.Sprintf("channelid-%d", i)
-		channelID, channelOk := suite.childChain.App.(*parentApp.App).ParentKeeper.GetChainToChannel(ctx, expectedChainId)
-		chainID, chainOk := suite.childChain.App.(*parentApp.App).ParentKeeper.GetChannelToChain(ctx, expectedChannelId)
+		channelID, channelOk := suite.childChain.App.(*childApp.App).ParentKeeper.GetChainToChannel(ctx, expectedChainId)
+		chainID, chainOk := suite.childChain.App.(*childApp.App).ParentKeeper.GetChannelToChain(ctx, expectedChannelId)
 		suite.Require().True(channelOk)
 		suite.Require().True(chainOk)
 		suite.Require().Equal(expectedChainId, chainID, "did not store correct chain id for given channel id")
 		suite.Require().Equal(expectedChannelId, channelID, "did not store correct channel id for given chain id")
 
-		status := suite.childChain.App.(*parentApp.App).ParentKeeper.GetChannelStatus(ctx, channelID)
+		status := suite.childChain.App.(*childApp.App).ParentKeeper.GetChannelStatus(ctx, channelID)
 		suite.Require().Equal(types.Status(i), status, "status is unexpected for given channel id: %s", channelID)
 	}
 }
