@@ -36,6 +36,9 @@ import (
 )
 
 func init() {
+	/*
+		TODO: This overwrites a default param so it's pretty hacky and should be removed
+	*/
 	ibctesting.DefaultTestingAppInit = simapp.SetupTestingApp
 }
 
