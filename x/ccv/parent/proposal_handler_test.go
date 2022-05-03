@@ -8,7 +8,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-	"github.com/cosmos/interchain-security/app"
+	parentApp "github.com/cosmos/interchain-security/app_parent"
 	"github.com/cosmos/interchain-security/x/ccv/parent"
 	"github.com/cosmos/interchain-security/x/ccv/parent/types"
 )
@@ -56,7 +56,7 @@ func (suite *ParentTestSuite) TestCreateChildChainProposalHandler() {
 
 			tc.malleate(suite)
 
-			proposalHandler := parent.NewCreateChildChainHandler(suite.parentChain.App.(*app.App).ParentKeeper)
+			proposalHandler := parent.NewCreateChildChainHandler(suite.parentChain.App.(*parentApp.App).ParentKeeper)
 
 			err = proposalHandler(ctx, content)
 

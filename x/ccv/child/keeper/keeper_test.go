@@ -12,7 +12,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-	"github.com/cosmos/interchain-security/app"
+	parentApp "github.com/cosmos/interchain-security/app_parent"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
@@ -41,9 +41,6 @@ type KeeperTestSuite struct {
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
-	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
-	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
-	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
 	suite.coordinator, suite.parentChain, suite.childChain = simapp.NewParentChildCoordinator(suite.T())
 
 	tmConfig := ibctesting.NewTendermintConfig()
@@ -66,7 +63,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	params := childtypes.DefaultParams()
 	params.Enabled = true
 	childGenesis := types.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates, params)
-	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
+	suite.childChain.App.(*parentApp.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	suite.ctx = suite.childChain.GetContext()
 
@@ -77,7 +74,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-	parentClient, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentClient(suite.ctx)
+	parentClient, ok := suite.childChain.App.(*parentApp.App).ChildKeeper.GetParentClient(suite.ctx)
 	if !ok {
 		panic("must already have parent client on child chain")
 	}
@@ -90,7 +87,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	// create child client on parent chain and set as child client for child chainID in parent keeper.
 	suite.path.EndpointB.CreateClient()
-	suite.parentChain.App.(*app.App).ParentKeeper.SetChildClient(suite.parentChain.GetContext(), suite.childChain.ChainID, suite.path.EndpointB.ClientID)
+	suite.parentChain.App.(*parentApp.App).ParentKeeper.SetChildClient(suite.parentChain.GetContext(), suite.childChain.ChainID, suite.path.EndpointB.ClientID)
 }
 
 func (suite *KeeperTestSuite) SetupCCVChannel() {
@@ -99,7 +96,7 @@ func (suite *KeeperTestSuite) SetupCCVChannel() {
 }
 
 func (suite *KeeperTestSuite) TestParentClient() {
-	parentClient, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentClient(suite.ctx)
+	parentClient, ok := suite.childChain.App.(*parentApp.App).ChildKeeper.GetParentClient(suite.ctx)
 	suite.Require().True(ok)
 
 	clientState, ok := suite.childChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, parentClient)
@@ -107,10 +104,10 @@ func (suite *KeeperTestSuite) TestParentClient() {
 }
 
 func (suite *KeeperTestSuite) TestParentChannel() {
-	_, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentChannel(suite.ctx)
+	_, ok := suite.childChain.App.(*parentApp.App).ChildKeeper.GetParentChannel(suite.ctx)
 	suite.Require().False(ok)
-	suite.childChain.App.(*app.App).ChildKeeper.SetParentChannel(suite.ctx, "channelID")
-	channelID, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentChannel(suite.ctx)
+	suite.childChain.App.(*parentApp.App).ChildKeeper.SetParentChannel(suite.ctx, "channelID")
+	channelID, ok := suite.childChain.App.(*parentApp.App).ChildKeeper.GetParentChannel(suite.ctx)
 	suite.Require().True(ok)
 	suite.Require().Equal("channelID", channelID)
 }
@@ -136,34 +133,34 @@ func (suite *KeeperTestSuite) TestPendingChanges() {
 		nil,
 	)
 
-	suite.childChain.App.(*app.App).ChildKeeper.SetPendingChanges(suite.ctx, pd)
-	gotPd, ok := suite.childChain.App.(*app.App).ChildKeeper.GetPendingChanges(suite.ctx)
+	suite.childChain.App.(*parentApp.App).ChildKeeper.SetPendingChanges(suite.ctx, pd)
+	gotPd, ok := suite.childChain.App.(*parentApp.App).ChildKeeper.GetPendingChanges(suite.ctx)
 	suite.Require().True(ok)
 	suite.Require().Equal(&pd, gotPd, "packet data in store does not equal packet data set")
-	suite.childChain.App.(*app.App).ChildKeeper.DeletePendingChanges(suite.ctx)
-	gotPd, ok = suite.childChain.App.(*app.App).ChildKeeper.GetPendingChanges(suite.ctx)
+	suite.childChain.App.(*parentApp.App).ChildKeeper.DeletePendingChanges(suite.ctx)
+	gotPd, ok = suite.childChain.App.(*parentApp.App).ChildKeeper.GetPendingChanges(suite.ctx)
 	suite.Require().False(ok)
 	suite.Require().Nil(gotPd, "got non-nil pending changes after Delete")
 }
 
 func (suite *KeeperTestSuite) TestUnbondingTime() {
-	suite.childChain.App.(*app.App).ChildKeeper.SetUnbondingTime(suite.ctx, 1, 10)
-	suite.childChain.App.(*app.App).ChildKeeper.SetUnbondingTime(suite.ctx, 2, 25)
-	suite.childChain.App.(*app.App).ChildKeeper.SetUnbondingTime(suite.ctx, 5, 15)
-	suite.childChain.App.(*app.App).ChildKeeper.SetUnbondingTime(suite.ctx, 6, 40)
+	suite.childChain.App.(*parentApp.App).ChildKeeper.SetUnbondingTime(suite.ctx, 1, 10)
+	suite.childChain.App.(*parentApp.App).ChildKeeper.SetUnbondingTime(suite.ctx, 2, 25)
+	suite.childChain.App.(*parentApp.App).ChildKeeper.SetUnbondingTime(suite.ctx, 5, 15)
+	suite.childChain.App.(*parentApp.App).ChildKeeper.SetUnbondingTime(suite.ctx, 6, 40)
 
-	suite.childChain.App.(*app.App).ChildKeeper.DeleteUnbondingTime(suite.ctx, 6)
+	suite.childChain.App.(*parentApp.App).ChildKeeper.DeleteUnbondingTime(suite.ctx, 6)
 
-	suite.Require().Equal(uint64(10), suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingTime(suite.ctx, 1))
-	suite.Require().Equal(uint64(25), suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingTime(suite.ctx, 2))
-	suite.Require().Equal(uint64(15), suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingTime(suite.ctx, 5))
-	suite.Require().Equal(uint64(0), suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingTime(suite.ctx, 3))
-	suite.Require().Equal(uint64(0), suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingTime(suite.ctx, 6))
+	suite.Require().Equal(uint64(10), suite.childChain.App.(*parentApp.App).ChildKeeper.GetUnbondingTime(suite.ctx, 1))
+	suite.Require().Equal(uint64(25), suite.childChain.App.(*parentApp.App).ChildKeeper.GetUnbondingTime(suite.ctx, 2))
+	suite.Require().Equal(uint64(15), suite.childChain.App.(*parentApp.App).ChildKeeper.GetUnbondingTime(suite.ctx, 5))
+	suite.Require().Equal(uint64(0), suite.childChain.App.(*parentApp.App).ChildKeeper.GetUnbondingTime(suite.ctx, 3))
+	suite.Require().Equal(uint64(0), suite.childChain.App.(*parentApp.App).ChildKeeper.GetUnbondingTime(suite.ctx, 6))
 
 	orderedTimes := [][]uint64{{1, 10}, {2, 25}, {5, 15}}
 	i := 0
 
-	suite.childChain.App.(*app.App).ChildKeeper.IterateUnbondingTime(suite.ctx, func(seq, time uint64) bool {
+	suite.childChain.App.(*parentApp.App).ChildKeeper.IterateUnbondingTime(suite.ctx, func(seq, time uint64) bool {
 		// require that we iterate through unbonding time in order of sequence
 		suite.Require().Equal(orderedTimes[i][0], seq)
 		suite.Require().Equal(orderedTimes[i][1], time)
@@ -195,22 +192,22 @@ func (suite *KeeperTestSuite) TestUnbondingPacket() {
 		)
 		packet := channeltypes.NewPacket(pd.GetBytes(), uint64(i), "parent", "channel-1", "child", "channel-1",
 			clienttypes.NewHeight(1, 0), 0)
-		suite.childChain.App.(*app.App).ChildKeeper.SetUnbondingPacket(suite.ctx, uint64(i), packet)
+		suite.childChain.App.(*parentApp.App).ChildKeeper.SetUnbondingPacket(suite.ctx, uint64(i), packet)
 	}
 
 	// ensure that packets are iterated by sequence
 	i := 0
-	suite.childChain.App.(*app.App).ChildKeeper.IterateUnbondingPacket(suite.ctx, func(seq uint64, packet channeltypes.Packet) bool {
+	suite.childChain.App.(*parentApp.App).ChildKeeper.IterateUnbondingPacket(suite.ctx, func(seq uint64, packet channeltypes.Packet) bool {
 		suite.Require().Equal(uint64(i), seq)
-		gotPacket, err := suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingPacket(suite.ctx, seq)
+		gotPacket, err := suite.childChain.App.(*parentApp.App).ChildKeeper.GetUnbondingPacket(suite.ctx, seq)
 		suite.Require().NoError(err)
 		suite.Require().Equal(&packet, gotPacket, "packet from get and iteration do not match")
 		i++
 		return false
 	})
 
-	suite.childChain.App.(*app.App).ChildKeeper.DeleteUnbondingPacket(suite.ctx, 0)
-	gotPacket, err := suite.childChain.App.(*app.App).ChildKeeper.GetUnbondingPacket(suite.ctx, 0)
+	suite.childChain.App.(*parentApp.App).ChildKeeper.DeleteUnbondingPacket(suite.ctx, 0)
+	gotPacket, err := suite.childChain.App.(*parentApp.App).ChildKeeper.GetUnbondingPacket(suite.ctx, 0)
 	suite.Require().Error(err)
 	suite.Require().Nil(gotPacket, "packet is not nil after delete")
 }
@@ -233,7 +230,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				suite.coordinator.CreateConnections(suite.path)
 
 				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
+				suite.childChain.App.(*parentApp.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{suite.path.EndpointA.ConnectionID}
 			},
@@ -249,7 +246,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				suite.coordinator.CreateConnections(suite.path)
 
 				// set channel status to validating
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.VALIDATING)
+				suite.childChain.App.(*parentApp.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.VALIDATING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{suite.path.EndpointA.ConnectionID}
 			},
@@ -264,7 +261,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				suite.coordinator.CreateConnections(suite.path)
 
 				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
+				suite.childChain.App.(*parentApp.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{suite.path.EndpointA.ConnectionID, "connection-2"}
 			},
@@ -274,7 +271,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 			name: "connection does not exist",
 			setup: func(suite *KeeperTestSuite) {
 				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
+				suite.childChain.App.(*parentApp.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{"connection-dne"}
 			},
@@ -292,7 +289,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 				suite.coordinator.CreateConnections(suite.path)
 
 				// set channel status to INITIALIZING
-				suite.childChain.App.(*app.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
+				suite.childChain.App.(*parentApp.App).ChildKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{suite.path.EndpointA.ConnectionID}
 			},
@@ -308,7 +305,7 @@ func (suite *KeeperTestSuite) TestVerifyParentChain() {
 			tc.setup(suite)
 
 			// Verify ParentChain on child chain using path returned by setup
-			err := suite.childChain.App.(*app.App).ChildKeeper.VerifyParentChain(suite.ctx, channelID, connectionHops)
+			err := suite.childChain.App.(*parentApp.App).ChildKeeper.VerifyParentChain(suite.ctx, channelID, connectionHops)
 
 			if tc.expError {
 				suite.Require().Error(err, "invalid case did not return error")
@@ -327,7 +324,7 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	suite.SetupCCVChannel()
 	suite.SendEmptyVSCPacket()
 
-	app, ctx := suite.childChain.App.(*app.App), suite.childChain.GetContext()
+	app, ctx := suite.childChain.App.(*parentApp.App), suite.childChain.GetContext()
 	channelID := suite.path.EndpointA.ChannelID
 
 	// pick a cross-chain validator
@@ -395,7 +392,7 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 func (suite *KeeperTestSuite) TestPendingSlashRequestsLogic() {
 	suite.SetupCCVChannel()
 
-	app := suite.childChain.App.(*app.App)
+	app := suite.childChain.App.(*parentApp.App)
 	ctx := suite.childChain.GetContext()
 	channelID := suite.path.EndpointA.ChannelID
 
@@ -460,7 +457,7 @@ func (suite *KeeperTestSuite) TestPendingSlashRequestsLogic() {
 }
 
 func (suite *KeeperTestSuite) TestCrossChainValidator() {
-	app := suite.childChain.App.(*app.App)
+	app := suite.childChain.App.(*parentApp.App)
 	ctx := suite.childChain.GetContext()
 
 	// should return false
@@ -487,7 +484,7 @@ func (suite *KeeperTestSuite) TestCrossChainValidator() {
 }
 
 func (suite *KeeperTestSuite) TestPendingSlashRequests() {
-	childKeeper := suite.childChain.App.(*app.App).ChildKeeper
+	childKeeper := suite.childChain.App.(*parentApp.App).ChildKeeper
 	ctx := suite.childChain.GetContext()
 
 	// prepare test setup by storing 10 pending slash requests
@@ -524,8 +521,8 @@ func (suite *KeeperTestSuite) TestPendingSlashRequests() {
 // to ensure that the channel gets established
 func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
 
-	childKeeper := suite.childChain.App.(*app.App).ChildKeeper
-	parentKeeper := suite.parentChain.App.(*app.App).ParentKeeper
+	childKeeper := suite.childChain.App.(*parentApp.App).ChildKeeper
+	parentKeeper := suite.parentChain.App.(*parentApp.App).ParentKeeper
 
 	oldBlockTime := suite.parentChain.GetContext().BlockTime()
 	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
@@ -538,7 +535,7 @@ func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
 		nil,
 	)
 
-	seq, ok := suite.parentChain.App.(*app.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
+	seq, ok := suite.parentChain.App.(*parentApp.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
 		suite.parentChain.GetContext(), parenttypes.PortID, suite.path.EndpointB.ChannelID)
 	suite.Require().True(ok)
 

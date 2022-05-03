@@ -11,7 +11,7 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
-	"github.com/cosmos/interchain-security/app"
+	parentApp "github.com/cosmos/interchain-security/app_parent"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
@@ -65,7 +65,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	params := childtypes.DefaultParams()
 	params.Enabled = true
 	childGenesis := childtypes.NewInitialGenesisState(suite.parentClient, suite.parentConsState, valUpdates, params)
-	suite.childChain.App.(*app.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
+	suite.childChain.App.(*parentApp.App).ChildKeeper.InitGenesis(suite.childChain.GetContext(), childGenesis)
 
 	suite.ctx = suite.parentChain.GetContext()
 
@@ -76,7 +76,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.path.EndpointB.ChannelConfig.Version = types.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-	parentClient, ok := suite.childChain.App.(*app.App).ChildKeeper.GetParentClient(suite.childChain.GetContext())
+	parentClient, ok := suite.childChain.App.(*parentApp.App).ChildKeeper.GetParentClient(suite.childChain.GetContext())
 	if !ok {
 		panic("must already have parent client on child chain")
 	}
@@ -89,7 +89,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	// create child client on parent chain and set as child client for child chainID in parent keeper.
 	suite.path.EndpointB.CreateClient()
-	suite.parentChain.App.(*app.App).ParentKeeper.SetChildClient(suite.parentChain.GetContext(), suite.childChain.ChainID, suite.path.EndpointB.ClientID)
+	suite.parentChain.App.(*parentApp.App).ParentKeeper.SetChildClient(suite.parentChain.GetContext(), suite.childChain.ChainID, suite.path.EndpointB.ClientID)
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -97,7 +97,7 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (suite *KeeperTestSuite) TestValsetUpdateBlockHeight() {
-	app := suite.parentChain.App.(*app.App)
+	app := suite.parentChain.App.(*parentApp.App)
 	ctx := suite.ctx
 
 	blockHeight := app.ParentKeeper.GetValsetUpdateBlockHeight(ctx, uint64(0))
@@ -118,7 +118,7 @@ func (suite *KeeperTestSuite) TestValsetUpdateBlockHeight() {
 }
 
 func (suite *KeeperTestSuite) TestSlashAcks() {
-	app := suite.parentChain.App.(*app.App)
+	app := suite.parentChain.App.(*parentApp.App)
 	ctx := suite.ctx
 
 	var chainsAcks [][]string
@@ -160,7 +160,7 @@ func (suite *KeeperTestSuite) TestSlashAcks() {
 }
 
 func (suite *KeeperTestSuite) TestAppendslashingAck() {
-	app := suite.parentChain.App.(*app.App)
+	app := suite.parentChain.App.(*parentApp.App)
 	ctx := suite.ctx
 
 	p := []string{"alice", "bob", "charlie"}
@@ -179,7 +179,7 @@ func (suite *KeeperTestSuite) TestAppendslashingAck() {
 }
 
 func (suite *KeeperTestSuite) TestInitHeight() {
-	app := suite.parentChain.App.(*app.App)
+	app := suite.parentChain.App.(*parentApp.App)
 	ctx := suite.ctx
 
 	tc := []struct {

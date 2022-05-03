@@ -117,7 +117,7 @@ import (
 )
 
 const (
-	AppName              = "interchain-security"
+	AppName              = "interchain-security-p"
 	upgradeName          = "v07-Theta"
 	AccountAddressPrefix = "cosmos"
 )
