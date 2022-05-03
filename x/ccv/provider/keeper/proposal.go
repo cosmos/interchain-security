@@ -73,7 +73,7 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 		return gen, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
 	}
 
-	gen = *childtypes.DefaultGenesisState()
+	gen = *consumertypes.DefaultGenesisState()
 
 	gen.Params.Enabled = true
 	gen.NewChain = true
