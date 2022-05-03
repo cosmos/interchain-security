@@ -79,3 +79,16 @@ func NewBasicCoordinator(t *testing.T) *ibctesting.Coordinator {
 	coord.Chains = chains
 	return coord
 }
+
+// NewCoordinator initializes Coordinator with 0 TestChains
+func NewParentChildCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain) {
+	coordinator := NewBasicCoordinator(t)
+	chainID := ibctesting.GetChainID(0)
+	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingParentApp, chainID)
+	parentChain := coordinator.GetChain(chainID)
+	chainID = ibctesting.GetChainID(1)
+	coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(t, coordinator,
+		SetupTestingChildApp, chainID, parentChain.Vals, parentChain.Signers)
+	childChain := coordinator.GetChain(chainID)
+	return coordinator, parentChain, childChain
+}

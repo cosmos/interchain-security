@@ -26,10 +26,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func init() {
-	ibctesting.DefaultTestingAppInit = simapp.SetupTestingApp
-}
-
 type ChildTestSuite struct {
 	suite.Suite
 
@@ -48,9 +44,7 @@ type ChildTestSuite struct {
 }
 
 func (suite *ChildTestSuite) SetupTest() {
-	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
-	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
-	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
+	suite.coordinator, suite.parentChain, suite.childChain = simapp.NewParentChildCoordinator(suite.T())
 
 	tmConfig := ibctesting.NewTendermintConfig()
 

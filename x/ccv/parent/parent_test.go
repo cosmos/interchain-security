@@ -2,7 +2,6 @@ package parent_test
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 	"time"
 
@@ -35,13 +34,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func init() {
-	/*
-		TODO: This overwrites a default param so it's pretty hacky and should be removed
-	*/
-	ibctesting.DefaultTestingAppInit = simapp.SetupTestingApp
-}
-
 type ParentTestSuite struct {
 	suite.Suite
 
@@ -63,14 +55,8 @@ type ParentTestSuite struct {
 }
 
 func (suite *ParentTestSuite) SetupTest() {
-	suite.coordinator = simapp.NewBasicCoordinator(suite.T())
-	chainID := ibctesting.GetChainID(0)
-	suite.coordinator.Chains[chainID] = ibctesting.NewTestChain(suite.T(), suite.coordinator, simapp.SetupTestingParentApp, chainID)
-	suite.parentChain = suite.coordinator.GetChain(chainID)
-	chainID = ibctesting.GetChainID(1)
-	suite.coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(suite.T(), suite.coordinator,
-		simapp.SetupTestingChildApp, chainID, suite.parentChain.Vals, suite.parentChain.Signers)
-	suite.childChain = suite.coordinator.GetChain(chainID)
+
+	suite.coordinator, suite.parentChain, suite.childChain = simapp.NewParentChildCoordinator(suite.T())
 
 	suite.DisableConsumerDistribution()
 
@@ -162,13 +148,6 @@ func (suite *ParentTestSuite) SetupCCVChannel() {
 
 	// ensure counterparty is up to date
 	suite.transferPath.EndpointA.UpdateClient()
-}
-
-func (s *ParentTestSuite) CreateChildChain() {
-	parent := s.parentChain
-	chainID := ibctesting.ChainIDPrefix + strconv.Itoa(len(s.coordinator.Chains)+1)
-	child := ibctesting.NewTestChainWithValSet(s.T(), s.coordinator, chainID, parent.Vals, parent.Signers)
-	s.coordinator.Chains[child.ChainID] = child
 }
 
 func TestParentTestSuite(t *testing.T) {

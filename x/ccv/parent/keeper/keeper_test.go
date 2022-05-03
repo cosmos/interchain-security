@@ -22,10 +22,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func init() {
-	ibctesting.DefaultTestingAppInit = simapp.SetupTestingApp
-}
-
 type KeeperTestSuite struct {
 	suite.Suite
 
@@ -47,6 +43,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
 	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
 	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
+	suite.coordinator, suite.parentChain, suite.childChain = simapp.NewParentChildCoordinator(suite.T())
 
 	tmConfig := ibctesting.NewTendermintConfig()
 
