@@ -2,6 +2,7 @@ package simapp
 
 import (
 	"encoding/json"
+	"testing"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/simapp"
@@ -52,10 +53,29 @@ var defaultConsensusParams = &abci.ConsensusParams{
 	},
 }
 
-func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
+func SetupTestingParentApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	db := tmdb.NewMemDB()
 	// encCdc := app.MakeTestEncodingConfig()
 	encoding := cosmoscmd.MakeEncodingConfig(app.ModuleBasics)
 	testApp := app.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
 	return testApp, app.NewDefaultGenesisState(encoding.Marshaler)
+}
+
+func SetupTestingChildApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
+	db := tmdb.NewMemDB()
+	// encCdc := app.MakeTestEncodingConfig()
+	encoding := cosmoscmd.MakeEncodingConfig(app.ModuleBasics)
+	testApp := app.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
+	return testApp, app.NewDefaultGenesisState(encoding.Marshaler)
+}
+
+// NewCoordinator initializes Coordinator with 0 TestChains
+func NewBasicCoordinator(t *testing.T) *ibctesting.Coordinator {
+	chains := make(map[string]*ibctesting.TestChain)
+	coord := &ibctesting.Coordinator{
+		T:           t,
+		CurrentTime: ibctesting.GlobalStartTime,
+	}
+	coord.Chains = chains
+	return coord
 }

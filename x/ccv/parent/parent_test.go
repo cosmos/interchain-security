@@ -63,11 +63,15 @@ type ParentTestSuite struct {
 }
 
 func (suite *ParentTestSuite) SetupTest() {
-	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 1)
-	suite.parentChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
-	// create child chain with parent chain valset
-	suite.CreateChildChain()
-	suite.childChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
+	suite.coordinator = simapp.NewBasicCoordinator(suite.T())
+	chainID := ibctesting.GetChainID(0)
+	suite.coordinator.Chains[chainID] = ibctesting.NewTestChain(suite.T(), suite.coordinator, simapp.SetupTestingParentApp, chainID)
+	suite.parentChain = suite.coordinator.GetChain(chainID)
+	chainID = ibctesting.GetChainID(1)
+	suite.coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(suite.T(), suite.coordinator,
+		simapp.SetupTestingChildApp, chainID, suite.parentChain.Vals, suite.parentChain.Signers)
+	suite.childChain = suite.coordinator.GetChain(chainID)
+
 	suite.DisableConsumerDistribution()
 
 	tmConfig := ibctesting.NewTendermintConfig()
