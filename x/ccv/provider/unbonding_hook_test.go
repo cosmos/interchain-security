@@ -6,6 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -13,7 +15,6 @@ import (
 
 	appConsumer "github.com/cosmos/interchain-security/app_consumer"
 	appProvider "github.com/cosmos/interchain-security/app_provider"
-	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -159,8 +160,8 @@ func (s *ProviderTestSuite) TestStakingHooks1() {
 	s.Require().True(getBalance(s, newProviderCtx, delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
 }
 
-func getBalance(s *ParentTestSuite, parentCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
-	return s.parentChain.App.(*appProvider.App).BankKeeper.GetBalance(parentCtx, delAddr, s.parentBondDenom()).Amount
+func getBalance(s *ProviderTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
+	return s.providerChain.App.(*appProvider.App).BankKeeper.GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
 
 func doUnbonding(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBalance sdk.Int, valsetUpdateId uint64) {
@@ -186,7 +187,7 @@ func doUnbonding(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) 
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
 	// save the current valset update ID
-	valsetUpdateID := s.parentChain.App.(*appProvider.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
+	valsetUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	return initBalance, valsetUpdateID
 }
@@ -202,9 +203,9 @@ func endProviderUnbondingPeriod(s *ProviderTestSuite, origTime time.Time) sdk.Co
 
 func endConsumerUnbondingPeriod(s *ProviderTestSuite, origTime time.Time) {
 	// - End consumer unbonding period
-	childCtx := s.childCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
-	// s.childChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
-	err := s.childChain.App.(*appConsumer.App).ChildKeeper.UnbondMaturePackets(childCtx)
+	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
+	// s.consumerChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
+	err := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondMaturePackets(consumerCtx)
 	s.Require().NoError(err)
 }
 
@@ -214,8 +215,8 @@ func checkStakingUnbondingOps(s *ProviderTestSuite, id uint64, found bool, onHol
 	s.Require().True(onHold == stakingUnbondingOp.UnbondingOnHold)
 }
 
-func checkCCVUnbondingOp(s *ParentTestSuite, parentCtx sdk.Context, chainID string, valUpdateID uint64, found bool) {
-	_, wasFound := s.parentChain.App.(*appProvider.App).ParentKeeper.GetUnbondingOpsFromIndex(parentCtx, chainID, valUpdateID)
+func checkCCVUnbondingOp(s *ProviderTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool) {
+	_, wasFound := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
 	s.Require().True(found == wasFound)
 }
 
@@ -258,7 +259,7 @@ func sendValUpdateAck(s *ProviderTestSuite, providerCtx sdk.Context, packet chan
 	// err := s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
 	// s.Require().NoError(err)
 
-	err := s.parentChain.App.(*appProvider.App).ParentKeeper.OnAcknowledgementPacket(parentCtx, packet, packetData, ack)
+	err := s.providerChain.App.(*appProvider.App).ProviderKeeper.OnAcknowledgementPacket(providerCtx, packet, packetData, ack)
 	s.Require().NoError(err)
 }
 

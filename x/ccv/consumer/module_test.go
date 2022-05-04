@@ -26,10 +26,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func init() {
-	ibctesting.DefaultTestingAppInit = simapp.SetupTestingApp
-}
-
 type ConsumerTestSuite struct {
 	suite.Suite
 
@@ -37,7 +33,7 @@ type ConsumerTestSuite struct {
 
 	// testing chains
 	providerChain *ibctesting.TestChain
-	consumerChain  *ibctesting.TestChain
+	consumerChain *ibctesting.TestChain
 
 	providerClient    *ibctmtypes.ClientState
 	providerConsState *ibctmtypes.ConsensusState
@@ -48,9 +44,7 @@ type ConsumerTestSuite struct {
 }
 
 func (suite *ConsumerTestSuite) SetupTest() {
-	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
-	suite.providerChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
-	suite.consumerChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
+	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
 
 	tmConfig := ibctesting.NewTendermintConfig()
 

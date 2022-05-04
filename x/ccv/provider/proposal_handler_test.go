@@ -9,8 +9,8 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	appProvider "github.com/cosmos/interchain-security/app_provider"
-	"github.com/cosmos/interchain-security/x/ccv/parent"
-	"github.com/cosmos/interchain-security/x/ccv/parent/types"
+	"github.com/cosmos/interchain-security/x/ccv/provider"
+	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
 func (suite *ProviderTestSuite) TestCreateConsumerChainProposalHandler() {
@@ -56,7 +56,7 @@ func (suite *ProviderTestSuite) TestCreateConsumerChainProposalHandler() {
 
 			tc.malleate(suite)
 
-			proposalHandler := parent.NewCreateChildChainHandler(suite.parentChain.App.(*appProvider.App).ParentKeeper)
+			proposalHandler := provider.NewCreateConsumerChainHandler(suite.providerChain.App.(*appProvider.App).ProviderKeeper)
 
 			err = proposalHandler(ctx, content)
 
