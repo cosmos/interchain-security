@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	childApp "github.com/cosmos/interchain-security/app_child"
+	appConsumer "github.com/cosmos/interchain-security/app_consumer"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
@@ -117,22 +117,22 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 	}
 
 	for _, tc := range testCases {
-		ack := suite.childChain.App.(*childApp.App).ChildKeeper.OnRecvPacket(suite.ctx, tc.packet, tc.newChanges)
+		ack := suite.childChain.App.(*appConsumer.App).ChildKeeper.OnRecvPacket(suite.ctx, tc.packet, tc.newChanges)
 
 		if tc.expErrorAck {
 			suite.Require().NotNil(ack, "invalid test case: %s did not return ack", tc.name)
 			suite.Require().False(ack.Success(), "invalid test case: %s did not return an Error Acknowledgment")
 		} else {
 			suite.Require().Nil(ack, "successful packet must send ack asynchronously. case: %s", tc.name)
-			suite.Require().Equal(ccv.VALIDATING, suite.childChain.App.(*childApp.App).ChildKeeper.GetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID),
+			suite.Require().Equal(ccv.VALIDATING, suite.childChain.App.(*appConsumer.App).ChildKeeper.GetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID),
 				"channel status is not valdidating after receive packet for valid test case: %s", tc.name)
-			parentChannel, ok := suite.childChain.App.(*childApp.App).ChildKeeper.GetParentChannel(suite.ctx)
+			parentChannel, ok := suite.childChain.App.(*appConsumer.App).ChildKeeper.GetParentChannel(suite.ctx)
 			suite.Require().True(ok)
 			suite.Require().Equal(tc.packet.DestinationChannel, parentChannel,
 				"parent channel is not destination channel on successful receive for valid test case: %s", tc.name)
 
 			// Check that pending changes are accumulated and stored correctly
-			actualPendingChanges, ok := suite.childChain.App.(*childApp.App).ChildKeeper.GetPendingChanges(suite.ctx)
+			actualPendingChanges, ok := suite.childChain.App.(*appConsumer.App).ChildKeeper.GetPendingChanges(suite.ctx)
 			suite.Require().True(ok)
 			// Sort to avoid dumb inequalities
 			sort.SliceStable(actualPendingChanges.ValidatorUpdates, func(i, j int) bool {
@@ -144,9 +144,9 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			suite.Require().Equal(tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
 
 			expectedTime := uint64(suite.ctx.BlockTime().Add(childtypes.UnbondingTime).UnixNano())
-			unbondingTime := suite.childChain.App.(*childApp.App).ChildKeeper.GetUnbondingTime(suite.ctx, tc.packet.Sequence)
+			unbondingTime := suite.childChain.App.(*appConsumer.App).ChildKeeper.GetUnbondingTime(suite.ctx, tc.packet.Sequence)
 			suite.Require().Equal(expectedTime, unbondingTime, "unbonding time has unexpected value for case: %s", tc.name)
-			unbondingPacket, err := suite.childChain.App.(*childApp.App).ChildKeeper.GetUnbondingPacket(suite.ctx, tc.packet.Sequence)
+			unbondingPacket, err := suite.childChain.App.(*appConsumer.App).ChildKeeper.GetUnbondingPacket(suite.ctx, tc.packet.Sequence)
 			suite.Require().NoError(err)
 			suite.Require().Equal(&tc.packet, unbondingPacket, "packet is not added to unbonding queue after successful receive. case: %s", tc.name)
 		}
@@ -183,7 +183,7 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	// send first packet
 	packet := channeltypes.NewPacket(pd.GetBytes(), 1, parenttypes.PortID, suite.path.EndpointB.ChannelID, childtypes.PortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
-	ack := suite.childChain.App.(*childApp.App).ChildKeeper.OnRecvPacket(suite.ctx, packet, pd)
+	ack := suite.childChain.App.(*appConsumer.App).ChildKeeper.OnRecvPacket(suite.ctx, packet, pd)
 	suite.Require().Nil(ack)
 
 	// update time and send second packet
@@ -191,7 +191,7 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	pd.ValidatorUpdates[0].Power = 15
 	packet.Data = pd.GetBytes()
 	packet.Sequence = 2
-	ack = suite.childChain.App.(*childApp.App).ChildKeeper.OnRecvPacket(suite.ctx, packet, pd)
+	ack = suite.childChain.App.(*appConsumer.App).ChildKeeper.OnRecvPacket(suite.ctx, packet, pd)
 	suite.Require().Nil(ack)
 
 	// update time and send third packet
@@ -199,25 +199,25 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	pd.ValidatorUpdates[1].Power = 40
 	packet.Data = pd.GetBytes()
 	packet.Sequence = 3
-	ack = suite.childChain.App.(*childApp.App).ChildKeeper.OnRecvPacket(suite.ctx, packet, pd)
+	ack = suite.childChain.App.(*appConsumer.App).ChildKeeper.OnRecvPacket(suite.ctx, packet, pd)
 	suite.Require().Nil(ack)
 
 	// move ctx time forward such that first two packets are unbonded but third is not.
 	suite.ctx = suite.ctx.WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
 
-	suite.childChain.App.(*childApp.App).ChildKeeper.UnbondMaturePackets(suite.ctx)
+	suite.childChain.App.(*appConsumer.App).ChildKeeper.UnbondMaturePackets(suite.ctx)
 
 	// ensure first two packets are unbonded and acknowledgement is written
 	// unbonded time is deleted
-	time1 := suite.childChain.App.(*childApp.App).ChildKeeper.GetUnbondingTime(suite.ctx, 1)
-	time2 := suite.childChain.App.(*childApp.App).ChildKeeper.GetUnbondingTime(suite.ctx, 2)
+	time1 := suite.childChain.App.(*appConsumer.App).ChildKeeper.GetUnbondingTime(suite.ctx, 1)
+	time2 := suite.childChain.App.(*appConsumer.App).ChildKeeper.GetUnbondingTime(suite.ctx, 2)
 	suite.Require().Equal(uint64(0), time1, "unbonding time not deleted for mature packet 1")
 	suite.Require().Equal(uint64(0), time2, "unbonding time not deleted for mature packet 2")
 
 	// unbonded packets are deleted
-	_, err = suite.childChain.App.(*childApp.App).ChildKeeper.GetUnbondingPacket(suite.ctx, 1)
+	_, err = suite.childChain.App.(*appConsumer.App).ChildKeeper.GetUnbondingPacket(suite.ctx, 1)
 	suite.Require().Error(err, "retrieved unbonding packet for matured packet 1")
-	_, err = suite.childChain.App.(*childApp.App).ChildKeeper.GetUnbondingPacket(suite.ctx, 2)
+	_, err = suite.childChain.App.(*appConsumer.App).ChildKeeper.GetUnbondingPacket(suite.ctx, 2)
 	suite.Require().Error(err, "retrieved unbonding packet for matured packet 1")
 
 	expectedWriteAckBytes := channeltypes.CommitAcknowledgement(channeltypes.NewResultAcknowledgement([]byte{byte(1)}).Acknowledgement())
@@ -231,9 +231,9 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	suite.Require().Equal(expectedWriteAckBytes, ackBytes2, "did not write successful ack for matue packet 1")
 
 	// ensure that third packet did not get ack written and is still in store
-	time3 := suite.childChain.App.(*childApp.App).ChildKeeper.GetUnbondingTime(suite.ctx, 3)
+	time3 := suite.childChain.App.(*appConsumer.App).ChildKeeper.GetUnbondingTime(suite.ctx, 3)
 	suite.Require().True(time3 > uint64(suite.ctx.BlockTime().UnixNano()), "Unbonding time for packet 3 is not after current time")
-	packet3, err := suite.childChain.App.(*childApp.App).ChildKeeper.GetUnbondingPacket(suite.ctx, 3)
+	packet3, err := suite.childChain.App.(*appConsumer.App).ChildKeeper.GetUnbondingPacket(suite.ctx, 3)
 	suite.Require().NoError(err, "retrieving unbonding packet 3 returned error")
 	suite.Require().Equal(&packet, packet3, "unbonding packet 3 has unexpected value")
 
@@ -254,12 +254,12 @@ func (suite *KeeperTestSuite) TestOnAcknowledgement() {
 	ack := channeltypes.NewResultAcknowledgement([]byte{1})
 
 	// expect no error
-	err := suite.childChain.App.(*childApp.App).ChildKeeper.OnAcknowledgementPacket(suite.ctx, packet, packetData, ack)
+	err := suite.childChain.App.(*appConsumer.App).ChildKeeper.OnAcknowledgementPacket(suite.ctx, packet, packetData, ack)
 	suite.Nil(err)
 
 	// expect an error
 	ack = channeltypes.NewErrorAcknowledgement("error")
 
-	err = suite.childChain.App.(*childApp.App).ChildKeeper.OnAcknowledgementPacket(suite.ctx, packet, packetData, ack)
+	err = suite.childChain.App.(*appConsumer.App).ChildKeeper.OnAcknowledgementPacket(suite.ctx, packet, packetData, ack)
 	suite.NotNil(err)
 }

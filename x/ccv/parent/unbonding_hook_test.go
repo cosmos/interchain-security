@@ -11,8 +11,8 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
-	childApp "github.com/cosmos/interchain-security/app_child"
-	parentApp "github.com/cosmos/interchain-security/app_parent"
+	appConsumer "github.com/cosmos/interchain-security/app_consumer"
+	appProvider "github.com/cosmos/interchain-security/app_provider"
 	childtypes "github.com/cosmos/interchain-security/x/ccv/child/types"
 	parenttypes "github.com/cosmos/interchain-security/x/ccv/parent/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
@@ -161,7 +161,7 @@ func (s *ParentTestSuite) TestStakingHooks1() {
 }
 
 func getBalance(s *ParentTestSuite, parentCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
-	return s.parentChain.App.(*parentApp.App).BankKeeper.GetBalance(parentCtx, delAddr, s.parentBondDenom()).Amount
+	return s.parentChain.App.(*appProvider.App).BankKeeper.GetBalance(parentCtx, delAddr, s.parentBondDenom()).Amount
 }
 
 func doUnbonding(s *ParentTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBalance sdk.Int, valsetUpdateId uint64) {
@@ -187,7 +187,7 @@ func doUnbonding(s *ParentTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (i
 	s.Require().True(getBalance(s, s.parentCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
 	// save the current valset update ID
-	valsetUpdateID := s.parentChain.App.(*parentApp.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
+	valsetUpdateID := s.parentChain.App.(*appProvider.App).ParentKeeper.GetValidatorSetUpdateId(s.parentCtx())
 
 	return initBalance, valsetUpdateID
 }
@@ -205,7 +205,7 @@ func endChildUnbondingPeriod(s *ParentTestSuite, origTime time.Time) {
 	// - End consumer unbonding period
 	childCtx := s.childCtx().WithBlockTime(origTime.Add(childtypes.UnbondingTime).Add(3 * time.Hour))
 	// s.childChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
-	err := s.childChain.App.(*childApp.App).ChildKeeper.UnbondMaturePackets(childCtx)
+	err := s.childChain.App.(*appConsumer.App).ChildKeeper.UnbondMaturePackets(childCtx)
 	s.Require().NoError(err)
 }
 
@@ -216,7 +216,7 @@ func checkStakingUnbondingOps(s *ParentTestSuite, id uint64, found bool, onHold 
 }
 
 func checkCCVUnbondingOp(s *ParentTestSuite, parentCtx sdk.Context, chainID string, valUpdateID uint64, found bool) {
-	_, wasFound := s.parentChain.App.(*parentApp.App).ParentKeeper.GetUnbondingOpsFromIndex(parentCtx, chainID, valUpdateID)
+	_, wasFound := s.parentChain.App.(*appProvider.App).ParentKeeper.GetUnbondingOpsFromIndex(parentCtx, chainID, valUpdateID)
 	s.Require().True(found == wasFound)
 }
 
@@ -259,7 +259,7 @@ func sendValUpdateAck(s *ParentTestSuite, parentCtx sdk.Context, packet channelt
 	// err := s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
 	// s.Require().NoError(err)
 
-	err := s.parentChain.App.(*parentApp.App).ParentKeeper.OnAcknowledgementPacket(parentCtx, packet, packetData, ack)
+	err := s.parentChain.App.(*appProvider.App).ParentKeeper.OnAcknowledgementPacket(parentCtx, packet, packetData, ack)
 	s.Require().NoError(err)
 }
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	app "github.com/cosmos/interchain-security/app_child"
+	app "github.com/cosmos/interchain-security/app_consumer"
 	"github.com/tendermint/spm/cosmoscmd"
 )
 

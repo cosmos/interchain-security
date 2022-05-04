@@ -16,8 +16,8 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
 
-	childApp "github.com/cosmos/interchain-security/app_child"
-	parentApp "github.com/cosmos/interchain-security/app_parent"
+	appConsumer "github.com/cosmos/interchain-security/app_consumer"
+	appProvider "github.com/cosmos/interchain-security/app_provider"
 )
 
 var defaultConsensusParams = &abci.ConsensusParams{
@@ -37,20 +37,20 @@ var defaultConsensusParams = &abci.ConsensusParams{
 	},
 }
 
-func SetupTestingParentApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
+func SetupTestingappProvider() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	db := tmdb.NewMemDB()
 	// encCdc := app.MakeTestEncodingConfig()
-	encoding := cosmoscmd.MakeEncodingConfig(parentApp.ModuleBasics)
-	testApp := parentApp.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
-	return testApp, parentApp.NewDefaultGenesisState(encoding.Marshaler)
+	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
+	testApp := appProvider.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
+	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
 }
 
-func SetupTestingChildApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
+func SetupTestingappConsumer() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	db := tmdb.NewMemDB()
 	// encCdc := app.MakeTestEncodingConfig()
-	encoding := cosmoscmd.MakeEncodingConfig(childApp.ModuleBasics)
-	testApp := childApp.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
-	return testApp, childApp.NewDefaultGenesisState(encoding.Marshaler)
+	encoding := cosmoscmd.MakeEncodingConfig(appConsumer.ModuleBasics)
+	testApp := appConsumer.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
+	return testApp, appConsumer.NewDefaultGenesisState(encoding.Marshaler)
 }
 
 // NewCoordinator initializes Coordinator with 0 TestChains
@@ -68,11 +68,11 @@ func NewBasicCoordinator(t *testing.T) *ibctesting.Coordinator {
 func NewParentChildCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain) {
 	coordinator := NewBasicCoordinator(t)
 	chainID := ibctesting.GetChainID(0)
-	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingParentApp, chainID)
+	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingappProvider, chainID)
 	parentChain := coordinator.GetChain(chainID)
 	chainID = ibctesting.GetChainID(1)
 	coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(t, coordinator,
-		SetupTestingChildApp, chainID, parentChain.Vals, parentChain.Signers)
+		SetupTestingappConsumer, chainID, parentChain.Vals, parentChain.Signers)
 	childChain := coordinator.GetChain(chainID)
 	return coordinator, parentChain, childChain
 }

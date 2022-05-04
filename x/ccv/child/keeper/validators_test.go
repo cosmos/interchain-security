@@ -1,14 +1,14 @@
 package keeper_test
 
 import (
-	childApp "github.com/cosmos/interchain-security/app_child"
+	appConsumer "github.com/cosmos/interchain-security/app_consumer"
 	"github.com/cosmos/interchain-security/x/ccv/child/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
-	childKeeper := k.childChain.App.(*childApp.App).ChildKeeper
+	childKeeper := k.childChain.App.(*appConsumer.App).ChildKeeper
 	ctx := k.ctx
 
 	// utility functions
