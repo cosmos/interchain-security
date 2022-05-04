@@ -80,7 +80,7 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"invalid chain id",
 			types.NewGenesisState(
-				[]types.ConsumerState{{"invalidid{}", "channelid", 2}},
+				[]types.ConsumerState{{" ", "channelid", 2}},
 				types.DefaultParams(),
 			),
 			false,
