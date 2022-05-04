@@ -11,7 +11,8 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
-	"github.com/cosmos/interchain-security/app"
+	appConsumer "github.com/cosmos/interchain-security/app_consumer"
+	appProvider "github.com/cosmos/interchain-security/app_provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -62,7 +63,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	params := consumertypes.DefaultParams()
 	params.Enabled = true
 	consumerGenesis := consumertypes.NewInitialGenesisState(suite.providerClient, suite.providerConsState, valUpdates, params)
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), consumerGenesis)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), consumerGenesis)
 
 	suite.ctx = suite.providerChain.GetContext()
 
@@ -73,7 +74,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.path.EndpointB.ChannelConfig.Version = types.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-	providerClient, ok := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
+	providerClient, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
@@ -86,7 +87,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	suite.path.EndpointB.CreateClient()
-	suite.providerChain.App.(*app.App).ProviderKeeper.SetConsumerClient(suite.providerChain.GetContext(), suite.consumerChain.ChainID, suite.path.EndpointB.ClientID)
+	suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(suite.providerChain.GetContext(), suite.consumerChain.ChainID, suite.path.EndpointB.ClientID)
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -94,7 +95,7 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (suite *KeeperTestSuite) TestValsetUpdateBlockHeight() {
-	app := suite.providerChain.App.(*app.App)
+	app := suite.providerChain.App.(*appProvider.App)
 	ctx := suite.ctx
 
 	blockHeight := app.ProviderKeeper.GetValsetUpdateBlockHeight(ctx, uint64(0))
@@ -115,7 +116,7 @@ func (suite *KeeperTestSuite) TestValsetUpdateBlockHeight() {
 }
 
 func (suite *KeeperTestSuite) TestSlashAcks() {
-	app := suite.providerChain.App.(*app.App)
+	app := suite.providerChain.App.(*appProvider.App)
 	ctx := suite.ctx
 
 	var chainsAcks [][]string
@@ -157,7 +158,7 @@ func (suite *KeeperTestSuite) TestSlashAcks() {
 }
 
 func (suite *KeeperTestSuite) TestAppendslashingAck() {
-	app := suite.providerChain.App.(*app.App)
+	app := suite.providerChain.App.(*appProvider.App)
 	ctx := suite.ctx
 
 	p := []string{"alice", "bob", "charlie"}
@@ -176,7 +177,7 @@ func (suite *KeeperTestSuite) TestAppendslashingAck() {
 }
 
 func (suite *KeeperTestSuite) TestInitHeight() {
-	app := suite.providerChain.App.(*app.App)
+	app := suite.providerChain.App.(*appProvider.App)
 	ctx := suite.ctx
 
 	tc := []struct {
