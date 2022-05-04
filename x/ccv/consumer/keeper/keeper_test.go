@@ -96,7 +96,7 @@ func (suite *KeeperTestSuite) SetupCCVChannel() {
 	suite.coordinator.CreateChannels(suite.path)
 }
 
-func (suite *KeeperTestSuite) TestproviderClient() {
+func (suite *KeeperTestSuite) TestProviderClient() {
 	providerClient, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.ctx)
 	suite.Require().True(ok)
 
