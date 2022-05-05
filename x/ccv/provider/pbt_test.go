@@ -2,6 +2,7 @@ package provider_test
 
 import (
 	"testing"
+	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,6 +22,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -40,8 +42,7 @@ type PBTTestSuite struct {
 	providerClient    *ibctmtypes.ClientState
 	providerConsState *ibctmtypes.ConsensusState
 
-	path         *ibctesting.Path
-	transferPath *ibctesting.Path
+	path *ibctesting.Path
 
 	providerDistrIndex int
 
@@ -127,29 +128,22 @@ func (suite *PBTTestSuite) SetupCCVChannel() {
 	// so transfer channel will be on stage INIT when CreateChannels for ccv path returns.
 	suite.coordinator.CreateChannels(suite.path)
 
-	// transfer path will use the same connection as ccv path
-
-	suite.transferPath.EndpointA.ClientID = suite.path.EndpointA.ClientID
-	suite.transferPath.EndpointA.ConnectionID = suite.path.EndpointA.ConnectionID
-	suite.transferPath.EndpointB.ClientID = suite.path.EndpointB.ClientID
-	suite.transferPath.EndpointB.ConnectionID = suite.path.EndpointB.ConnectionID
-
 	// INIT step for transfer path has already been called during CCV channel setup
-	suite.transferPath.EndpointA.ChannelID = suite.consumerChain.App.(*appConsumer.App).
+	suite.path.EndpointA.ChannelID = suite.consumerChain.App.(*appConsumer.App).
 		ConsumerKeeper.GetDistributionTransmissionChannel(suite.consumerChain.GetContext())
 
 	// Complete TRY, ACK, CONFIRM for transfer path
-	err := suite.transferPath.EndpointB.ChanOpenTry()
+	err := suite.path.EndpointB.ChanOpenTry()
 	suite.Require().NoError(err)
 
-	err = suite.transferPath.EndpointA.ChanOpenAck()
+	err = suite.path.EndpointA.ChanOpenAck()
 	suite.Require().NoError(err)
 
-	err = suite.transferPath.EndpointB.ChanOpenConfirm()
+	err = suite.path.EndpointB.ChanOpenConfirm()
 	suite.Require().NoError(err)
 
 	// ensure counterparty is up to date
-	suite.transferPath.EndpointA.UpdateClient()
+	suite.path.EndpointA.UpdateClient()
 }
 
 func (s *PBTTestSuite) providerCtx() sdk.Context {
@@ -232,13 +226,83 @@ func (suite *PBTTestSuite) SetupTest() {
 	suite.path.EndpointB.CreateClient()
 	suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(suite.providerChain.GetContext(), suite.consumerChain.ChainID, suite.path.EndpointB.ClientID)
 
-	suite.transferPath = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
-	suite.transferPath.EndpointA.ChannelConfig.PortID = transfertypes.PortID
-	suite.transferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
-	suite.transferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
-	suite.transferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
+	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
+	suite.path.EndpointA.ChannelConfig.PortID = transfertypes.PortID
+	suite.path.EndpointB.ChannelConfig.PortID = transfertypes.PortID
+	suite.path.EndpointA.ChannelConfig.Version = transfertypes.Version
+	suite.path.EndpointB.ChannelConfig.Version = transfertypes.Version
 }
 
 func TestPBTTestSuite(t *testing.T) {
 	suite.Run(t, new(PBTTestSuite))
+}
+
+func (s *PBTTestSuite) TestDummy() {
+	s.SetupCCVChannel()
+	providerCtx := s.providerChain.GetContext()
+	providerStakingKeeper := s.providerChain.App.GetStakingKeeper()
+
+	origTime := s.ctx.BlockTime()
+	bondAmt := sdk.NewInt(1000000)
+
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+
+	// Choose a validator, and get its address and data structure into the correct types
+	tmValidator := s.providerChain.Vals.Validators[0]
+	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
+	s.Require().NoError(err)
+	validator, found := providerStakingKeeper.GetValidator(s.providerCtx(), valAddr)
+	s.Require().True(found)
+
+	// Bond some tokens on provider to change validator powers
+	_, err = providerStakingKeeper.Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+	s.Require().NoError(err)
+
+	// Save valset update ID to reconstruct packet
+	valUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
+
+	// Send CCV packet to consumer
+	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
+
+	// Get validator update created in Endblock to use in reconstructing packet
+	valUpdates := providerStakingKeeper.GetValidatorUpdates(s.providerCtx())
+
+	// commit block on provider chain and update consumer chain's client
+	oldBlockTime := s.providerCtx().BlockTime()
+	s.coordinator.CommitBlock(s.providerChain)
+	s.path.EndpointA.UpdateClient()
+
+	// Reconstruct packet
+	packetData := types.NewValidatorSetChangePacketData(valUpdates, valUpdateID, nil)
+	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, providertypes.PortID, s.path.EndpointB.ChannelID,
+		consumertypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	// Receive CCV packet on consumer chain
+	err = s.path.EndpointA.RecvPacket(packet)
+	s.Require().NoError(err)
+
+	// Update chilchain hist info for the current block
+	s.UpdateConsumerHistInfo(packetData.ValidatorUpdates)
+
+	// - End provider unbonding period
+	providerCtx = providerCtx.WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
+	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
+
+	// - End consumer unbonding period
+	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
+	// TODO: why doesn't this work: s.consumerChain.App.EndBlock(abci.RequestEndBlock{})
+	err = s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondMaturePackets(consumerCtx)
+	s.Require().NoError(err)
+
+	// commit consumer chain and update provider chain client
+	s.coordinator.CommitBlock(s.consumerChain)
+
+	err = s.path.EndpointB.UpdateClient()
+	s.Require().NoError(err)
+
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+
+	err = s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
+	s.Require().NoError(err)
 }
