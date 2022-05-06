@@ -2,14 +2,10 @@ package provider_test
 
 import (
 	"testing"
-	"time"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
@@ -22,9 +18,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
-	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/stretchr/testify/suite"
@@ -41,132 +35,16 @@ type PBTTestSuite struct {
 
 	providerClient    *ibctmtypes.ClientState
 	providerConsState *ibctmtypes.ConsensusState
+	consumerClient    *ibctmtypes.ClientState
+	consumerConsState *ibctmtypes.ConsensusState
 
 	path *ibctesting.Path
-
-	providerDistrIndex int
 
 	ctx sdk.Context
 }
 
-// UpdateConsumerHistInfo updates consumer chains historical info manually since
-// the staking keeper is disabled. Provider chains need this to update their client trusted validators
-// in IBC-GO testing (see ConstructUpdateTMClientHeaderWithTrustedHeight in chain.go)
-func (s *PBTTestSuite) UpdateConsumerHistInfo(changes []abci.ValidatorUpdate) {
-	// map changes per pubkey
-	changesPower := make(map[string]int64)
-	for _, c := range changes {
-		pk, err := cryptocodec.FromTmProtoPublicKey(c.PubKey)
-		s.Require().NoError(err)
-		changesPower[pk.String()] = c.Power
-	}
-
-	// update validators power
-	var validators stakingtypes.Validators
-	for _, v := range s.consumerChain.Vals.Validators {
-		pk, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
-		s.Require().NoError(err)
-		val, err := stakingtypes.NewValidator(nil, pk, stakingtypes.Description{})
-		s.Require().NoError(err)
-
-		if p, ok := changesPower[pk.String()]; ok {
-			val.Tokens = sdk.TokensFromConsensusPower(p, sdk.DefaultPowerReduction)
-		} else {
-			val.Tokens = sdk.TokensFromConsensusPower(v.VotingPower, sdk.DefaultPowerReduction)
-		}
-
-		if val.Tokens.IsZero() {
-			val.Status = stakingtypes.Unbonding
-			val.Jailed = true
-		} else {
-			val.Status = stakingtypes.Bonded
-		}
-		validators = append(validators, val)
-	}
-
-	// update chain historical info
-	hi := stakingtypes.NewHistoricalInfo(s.ctx.BlockHeader(), validators, sdk.DefaultPowerReduction)
-	s.consumerChain.App.GetStakingKeeper().SetHistoricalInfo(s.consumerCtx(), s.consumerCtx().BlockHeight(), &hi)
-}
-
-func (s *PBTTestSuite) DisableConsumerDistribution() {
-	cChain := s.consumerChain
-	cApp := cChain.App.(*appConsumer.App)
-	for i, moduleName := range cApp.MM.OrderBeginBlockers {
-		if moduleName == distrtypes.ModuleName {
-			cApp.MM.OrderBeginBlockers = append(cApp.MM.OrderBeginBlockers[:i], cApp.MM.OrderBeginBlockers[i+1:]...)
-			return
-		}
-	}
-}
-
-func (s *PBTTestSuite) DisableProviderDistribution() {
-	pChain := s.providerChain
-	pApp := pChain.App.(*appProvider.App)
-	for i, moduleName := range pApp.MM.OrderBeginBlockers {
-		if moduleName == distrtypes.ModuleName {
-			s.providerDistrIndex = i
-			pApp.MM.OrderBeginBlockers = append(pApp.MM.OrderBeginBlockers[:i], pApp.MM.OrderBeginBlockers[i+1:]...)
-			return
-		}
-	}
-}
-
-func (s *PBTTestSuite) ReenableProviderDistribution() {
-	pChain := s.providerChain
-	pApp := pChain.App.(*appProvider.App)
-	i := s.providerDistrIndex
-	pApp.MM.OrderBeginBlockers = append(
-		pApp.MM.OrderBeginBlockers[:i+1], pApp.MM.OrderBeginBlockers[i:]...) // make space
-	pApp.MM.OrderBeginBlockers[i] = distrtypes.ModuleName // set value
-}
-
-func (suite *PBTTestSuite) SetupCCVChannel() {
-	suite.coordinator.CreateConnections(suite.path)
-
-	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
-	// so transfer channel will be on stage INIT when CreateChannels for ccv path returns.
-	suite.coordinator.CreateChannels(suite.path)
-
-	// INIT step for transfer path has already been called during CCV channel setup
-	suite.path.EndpointA.ChannelID = suite.consumerChain.App.(*appConsumer.App).
-		ConsumerKeeper.GetDistributionTransmissionChannel(suite.consumerChain.GetContext())
-
-	// Complete TRY, ACK, CONFIRM for transfer path
-	err := suite.path.EndpointB.ChanOpenTry()
-	suite.Require().NoError(err)
-
-	err = suite.path.EndpointA.ChanOpenAck()
-	suite.Require().NoError(err)
-
-	err = suite.path.EndpointB.ChanOpenConfirm()
-	suite.Require().NoError(err)
-
-	// ensure counterparty is up to date
-	suite.path.EndpointA.UpdateClient()
-}
-
-func (s *PBTTestSuite) providerCtx() sdk.Context {
-	return s.providerChain.GetContext()
-}
-
-func (s *PBTTestSuite) consumerCtx() sdk.Context {
-	return s.consumerChain.GetContext()
-}
-
-func (s *PBTTestSuite) providerBondDenom() string {
-	return s.providerChain.App.(*appProvider.App).StakingKeeper.BondDenom(s.providerCtx())
-}
-
-func (s *PBTTestSuite) getVal(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {
-	// Choose a validator, and get its address and data structure into the correct types
-	tmValidator := s.providerChain.Vals.Validators[index]
-	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
-	s.Require().NoError(err)
-	validator, found := s.providerChain.App.GetStakingKeeper().GetValidator(s.providerCtx(), valAddr)
-	s.Require().True(found)
-
-	return validator, valAddr
+func TestPBTTestSuite(t *testing.T) {
+	suite.Run(t, new(ProviderTestSuite))
 }
 
 func (suite *PBTTestSuite) SetupTest() {
@@ -225,84 +103,55 @@ func (suite *PBTTestSuite) SetupTest() {
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	suite.path.EndpointB.CreateClient()
 	suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(suite.providerChain.GetContext(), suite.consumerChain.ChainID, suite.path.EndpointB.ClientID)
-
-	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
-	suite.path.EndpointA.ChannelConfig.PortID = transfertypes.PortID
-	suite.path.EndpointB.ChannelConfig.PortID = transfertypes.PortID
-	suite.path.EndpointA.ChannelConfig.Version = transfertypes.Version
-	suite.path.EndpointB.ChannelConfig.Version = transfertypes.Version
 }
 
-func TestPBTTestSuite(t *testing.T) {
-	suite.Run(t, new(PBTTestSuite))
+// TODO: clear up these hacks after stripping provider/consumer
+func (s *PBTTestSuite) DisableConsumerDistribution() {
+	cChain := s.consumerChain
+	cApp := cChain.App.(*appConsumer.App)
+	for i, moduleName := range cApp.MM.OrderBeginBlockers {
+		if moduleName == distrtypes.ModuleName {
+			cApp.MM.OrderBeginBlockers = append(cApp.MM.OrderBeginBlockers[:i], cApp.MM.OrderBeginBlockers[i+1:]...)
+			return
+		}
+	}
 }
 
-func (s *PBTTestSuite) TestDummy() {
-	s.SetupCCVChannel()
-	providerCtx := s.providerChain.GetContext()
-	providerStakingKeeper := s.providerChain.App.GetStakingKeeper()
+type DelegateAction struct {
+	del     string
+	val     string
+	amt     int64
+	succeed bool
+}
+type UndelegateAction struct {
+	del     string
+	val     string
+	amt     int64
+	succeed bool
+}
+type BeginRedelegateAction struct {
+	del       string
+	valSrc    string
+	valDst    string
+	amt       int
+	succeed64 bool
+}
+type ProviderSlashAction struct {
+	val              string
+	infractionHeight int64
+	power            int64
+	slashFactor      float64
+}
+type ProviderJailAction struct{}
+type ProviderUnjailAction struct{}
+type ProviderJumpToBlock struct {
+	height int64
+}
+type ConsumerSlashAction struct{}
+type ConsumerJumpToBlock struct {
+	height int64
+}
 
-	origTime := s.ctx.BlockTime()
-	bondAmt := sdk.NewInt(1000000)
+func TestDummy(t *testing.T) {
 
-	delAddr := s.providerChain.SenderAccount.GetAddress()
-
-	// Choose a validator, and get its address and data structure into the correct types
-	tmValidator := s.providerChain.Vals.Validators[0]
-	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
-	s.Require().NoError(err)
-	validator, found := providerStakingKeeper.GetValidator(s.providerCtx(), valAddr)
-	s.Require().True(found)
-
-	// Bond some tokens on provider to change validator powers
-	_, err = providerStakingKeeper.Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
-	s.Require().NoError(err)
-
-	// Save valset update ID to reconstruct packet
-	valUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
-
-	// Send CCV packet to consumer
-	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
-
-	// Get validator update created in Endblock to use in reconstructing packet
-	valUpdates := providerStakingKeeper.GetValidatorUpdates(s.providerCtx())
-
-	// commit block on provider chain and update consumer chain's client
-	oldBlockTime := s.providerCtx().BlockTime()
-	s.coordinator.CommitBlock(s.providerChain)
-	s.path.EndpointA.UpdateClient()
-
-	// Reconstruct packet
-	packetData := types.NewValidatorSetChangePacketData(valUpdates, valUpdateID, nil)
-	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, providertypes.PortID, s.path.EndpointB.ChannelID,
-		consumertypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
-
-	// Receive CCV packet on consumer chain
-	err = s.path.EndpointA.RecvPacket(packet)
-	s.Require().NoError(err)
-
-	// Update chilchain hist info for the current block
-	s.UpdateConsumerHistInfo(packetData.ValidatorUpdates)
-
-	// - End provider unbonding period
-	providerCtx = providerCtx.WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
-	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
-
-	// - End consumer unbonding period
-	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
-	// TODO: why doesn't this work: s.consumerChain.App.EndBlock(abci.RequestEndBlock{})
-	err = s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondMaturePackets(consumerCtx)
-	s.Require().NoError(err)
-
-	// commit consumer chain and update provider chain client
-	s.coordinator.CommitBlock(s.consumerChain)
-
-	err = s.path.EndpointB.UpdateClient()
-	s.Require().NoError(err)
-
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-
-	err = s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
-	s.Require().NoError(err)
 }
