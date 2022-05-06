@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/stretchr/testify/suite"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -21,7 +22,8 @@ import (
 
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/stretchr/testify/suite"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 type PBTTestSuite struct {
@@ -47,28 +49,28 @@ func TestPBTTestSuite(t *testing.T) {
 	suite.Run(t, new(ProviderTestSuite))
 }
 
-func (suite *PBTTestSuite) SetupTest() {
+func (s *PBTTestSuite) SetupTest() {
 
-	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
+	s.coordinator, s.providerChain, s.consumerChain = simapp.NewProviderConsumerCoordinator(s.T())
 
-	suite.DisableConsumerDistribution()
+	s.DisableConsumerDistribution()
 
 	tmConfig := ibctesting.NewTendermintConfig()
 
 	// commit a block on provider chain before creating client
-	suite.coordinator.CommitBlock(suite.providerChain)
+	s.coordinator.CommitBlock(s.providerChain)
 
 	// create client and consensus state of provider chain to initialize consumer chain genesis.
-	height := suite.providerChain.LastHeader.GetHeight().(clienttypes.Height)
+	height := s.providerChain.LastHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
 
-	suite.providerClient = ibctmtypes.NewClientState(
-		suite.providerChain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
+	s.providerClient = ibctmtypes.NewClientState(
+		s.providerChain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
 	)
-	suite.providerConsState = suite.providerChain.LastHeader.ConsensusState()
+	s.providerConsState = s.providerChain.LastHeader.ConsensusState()
 
-	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
+	valUpdates := tmtypes.TM2PB.ValidatorUpdates(s.providerChain.Vals)
 
 	params := consumertypes.NewParams(
 		true,
@@ -77,32 +79,40 @@ func (suite *PBTTestSuite) SetupTest() {
 		"",
 		"0.5", // 50%
 	)
-	consumerGenesis := consumertypes.NewInitialGenesisState(suite.providerClient, suite.providerConsState, valUpdates, params)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), consumerGenesis)
+	consumerGenesis := consumertypes.NewInitialGenesisState(s.providerClient, s.providerConsState, valUpdates, params)
+	s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(s.consumerChain.GetContext(), consumerGenesis)
 
-	suite.ctx = suite.providerChain.GetContext()
+	s.ctx = s.providerChain.GetContext()
 
-	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
-	suite.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
-	suite.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
-	suite.path.EndpointA.ChannelConfig.Version = types.Version
-	suite.path.EndpointB.ChannelConfig.Version = types.Version
-	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
-	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-	providerClient, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
+	s.path = ibctesting.NewPath(s.consumerChain, s.providerChain)
+	s.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
+	s.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
+	s.path.EndpointA.ChannelConfig.Version = types.Version
+	s.path.EndpointB.ChannelConfig.Version = types.Version
+	s.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
+	s.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
+	providerClient, ok := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(s.consumerChain.GetContext())
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
 	// set consumer endpoint's clientID
-	suite.path.EndpointA.ClientID = providerClient
+	s.path.EndpointA.ClientID = providerClient
 
 	// TODO: No idea why or how this works, but it seems that it needs to be done.
-	suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(6)
+	s.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
+	s.path.EndpointA.Chain.SenderAccount.SetAccountNumber(6)
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
-	suite.path.EndpointB.CreateClient()
-	suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(suite.providerChain.GetContext(), suite.consumerChain.ChainID, suite.path.EndpointB.ClientID)
+	s.path.EndpointB.CreateClient()
+	s.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(s.providerChain.GetContext(), s.consumerChain.ChainID, s.path.EndpointB.ClientID)
+
+	// TODO: I added this here
+	s.coordinator.CreateConnections(s.path)
+
+	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
+	// so transfer channel will be on stage INIT when CreateChannels for ccv path returns.
+	s.coordinator.CreateChannels(s.path)
+
 }
 
 // TODO: clear up these hacks after stripping provider/consumer
@@ -152,6 +162,42 @@ type ConsumerJumpToBlock struct {
 	height int64
 }
 
-func TestDummy(t *testing.T) {
+func scaledAmt(modelAmt int) sdk.Int {
+	return sdk.TokensFromConsensusPower(int64(modelAmt), sdk.DefaultPowerReduction)
+}
 
+func (s *ProviderTestSuite) TestDelegateHardCoded() {
+
+	psk := s.providerChain.App.GetStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(psk)
+
+	denom := sdk.DefaultBondDenom
+	coin := sdk.NewCoin(denom, scaledAmt(42))
+	msg := stakingtypes.NewMsgDelegate(delegator, val, coin)
+	ctx := s.providerChain.GetContext()
+	pskServer.Delegate(ctx, msg)
+}
+
+func (s *ProviderTestSuite) TestUndelegateHardCoded() {
+
+	psk := s.providerChain.App.GetStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(psk)
+
+	denom := sdk.DefaultBondDenom
+	coin := sdk.NewCoin(denom, scaledAmt(42))
+	msg := stakingtypes.NewMsgUndelegate(delegator, val, coin)
+	ctx := s.providerChain.GetContext()
+	pskServer.Delegate(ctx, msg)
+}
+
+func (s *ProviderTestSuite) TestBeginRedelegateHardCoded() {
+
+	psk := s.providerChain.App.GetStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(psk)
+
+	denom := sdk.DefaultBondDenom
+	coin := sdk.NewCoin(denom, scaledAmt(42))
+	msg := stakingtypes.NewMsgBeginRedelegateDelegate(delegator, valSrc, valDst, coin)
+	ctx := s.providerChain.GetContext()
+	pskServer.Delegate(ctx, msg)
 }
