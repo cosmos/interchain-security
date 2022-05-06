@@ -40,13 +40,14 @@ type PBTTestSuite struct {
 	consumerClient    *ibctmtypes.ClientState
 	consumerConsState *ibctmtypes.ConsensusState
 
-	path *ibctesting.Path
+	providerCtx sdk.Context
+	consumerCtx sdk.Context
 
-	ctx sdk.Context
+	path *ibctesting.Path
 }
 
 func TestPBTTestSuite(t *testing.T) {
-	suite.Run(t, new(ProviderTestSuite))
+	suite.Run(t, new(PBTTestSuite))
 }
 
 func (s *PBTTestSuite) SetupTest() {
@@ -82,7 +83,7 @@ func (s *PBTTestSuite) SetupTest() {
 	consumerGenesis := consumertypes.NewInitialGenesisState(s.providerClient, s.providerConsState, valUpdates, params)
 	s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(s.consumerChain.GetContext(), consumerGenesis)
 
-	s.ctx = s.providerChain.GetContext()
+	s.providerCtx = s.providerChain.GetContext()
 
 	s.path = ibctesting.NewPath(s.consumerChain, s.providerChain)
 	s.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
@@ -106,12 +107,15 @@ func (s *PBTTestSuite) SetupTest() {
 	s.path.EndpointB.CreateClient()
 	s.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(s.providerChain.GetContext(), s.consumerChain.ChainID, s.path.EndpointB.ClientID)
 
-	// TODO: I added this here
+	// TODO: I added this section
+	//~~~~~~~~~~
+
 	s.coordinator.CreateConnections(s.path)
 
 	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
 	// so transfer channel will be on stage INIT when CreateChannels for ccv path returns.
 	s.coordinator.CreateChannels(s.path)
+	//~~~~~~~~~~
 
 }
 
@@ -166,38 +170,59 @@ func scaledAmt(modelAmt int) sdk.Int {
 	return sdk.TokensFromConsensusPower(int64(modelAmt), sdk.DefaultPowerReduction)
 }
 
-func (s *ProviderTestSuite) TestDelegateHardCoded() {
+func getDelegator(s *PBTTestSuite) sdk.AccAddress {
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	return delAddr
 
-	psk := s.providerChain.App.GetStakingKeeper()
-	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-
-	denom := sdk.DefaultBondDenom
-	coin := sdk.NewCoin(denom, scaledAmt(42))
-	msg := stakingtypes.NewMsgDelegate(delegator, val, coin)
-	ctx := s.providerChain.GetContext()
-	pskServer.Delegate(ctx, msg)
 }
 
-func (s *ProviderTestSuite) TestUndelegateHardCoded() {
-
-	psk := s.providerChain.App.GetStakingKeeper()
-	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-
-	denom := sdk.DefaultBondDenom
-	coin := sdk.NewCoin(denom, scaledAmt(42))
-	msg := stakingtypes.NewMsgUndelegate(delegator, val, coin)
-	ctx := s.providerChain.GetContext()
-	pskServer.Delegate(ctx, msg)
+func getValidator(s *PBTTestSuite, i int) sdk.ValAddress {
+	// Choose a validator, and get its address and data structure into the correct types
+	tmValidator := s.providerChain.Vals.Validators[0]
+	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
+	s.Require().NoError(err)
+	return valAddr
 }
 
-func (s *ProviderTestSuite) TestBeginRedelegateHardCoded() {
+func (s *PBTTestSuite) TestDelegateHardCoded() {
+	// Run go test -run TestPBTTestSuite/TestDelegateHardCoded
+
+	s.Require().True(false)
 
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
 
 	denom := sdk.DefaultBondDenom
-	coin := sdk.NewCoin(denom, scaledAmt(42))
-	msg := stakingtypes.NewMsgBeginRedelegateDelegate(delegator, valSrc, valDst, coin)
-	ctx := s.providerChain.GetContext()
-	pskServer.Delegate(ctx, msg)
+	amt := sdk.NewCoin(denom, scaledAmt(42))
+	del := getDelegator(s)
+	val := getValidator(s, 0)
+	msg := stakingtypes.NewMsgDelegate(del, val, amt)
+	pskServer.Delegate(sdk.WrapSDKContext(s.providerCtx), msg)
+}
+
+func (s *PBTTestSuite) TestUndelegateHardCoded() {
+
+	psk := s.providerChain.App.GetStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(psk)
+
+	denom := sdk.DefaultBondDenom
+	amt := sdk.NewCoin(denom, scaledAmt(42))
+	del := getDelegator(s)
+	val := getValidator(s, 0)
+	msg := stakingtypes.NewMsgUndelegate(del, val, amt)
+	pskServer.Undelegate(sdk.WrapSDKContext(s.providerCtx), msg)
+}
+
+func (s *PBTTestSuite) TestBeginRedelegateHardCoded() {
+
+	psk := s.providerChain.App.GetStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(psk)
+
+	denom := sdk.DefaultBondDenom
+	amt := sdk.NewCoin(denom, scaledAmt(42))
+	del := getDelegator(s)
+	valSrc := getValidator(s, 0)
+	valDst := getValidator(s, 1)
+	msg := stakingtypes.NewMsgBeginRedelegate(del, valSrc, valDst, amt)
+	pskServer.BeginRedelegate(sdk.WrapSDKContext(s.providerCtx), msg)
 }
