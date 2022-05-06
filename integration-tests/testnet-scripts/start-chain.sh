@@ -187,7 +187,7 @@ done
 
 # poll for chain start
 set +e
-until interchain-securityd query block --node "tcp://$CHAIN_IP_PREFIX.$FIRST_VAL_ID:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
+until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$FIRST_VAL_ID:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
 set -e
 
 echo "done!!!!!!!!"
