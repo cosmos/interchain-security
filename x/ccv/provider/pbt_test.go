@@ -156,8 +156,6 @@ type ProviderSlashAction struct {
 	power            int64
 	slashFactor      float64
 }
-type ProviderJailAction struct{}
-type ProviderUnjailAction struct{}
 type ProviderJumpToBlock struct {
 	height int64
 }
@@ -177,15 +175,20 @@ func getDelegator(s *PBTTestSuite) sdk.AccAddress {
 }
 
 func getValidator(s *PBTTestSuite, i int) sdk.ValAddress {
-	// Choose a validator, and get its address and data structure into the correct types
 	tmValidator := s.providerChain.Vals.Validators[0]
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
 	s.Require().NoError(err)
 	return valAddr
 }
 
-func (s *PBTTestSuite) TestDelegateHardCoded() {
-	// Run go test -run TestPBTTestSuite/TestDelegateHardCoded
+func GetConsAddr(s *PBTTestSuite, i int) sdk.ConsAddress {
+	val := s.providerChain.Vals.Validators[0]
+	consAddr := sdk.ConsAddress(val.Address)
+	return consAddr
+}
+
+func (s *PBTTestSuite) TestDelegateHardcoded() {
+	// Run go test -run TestPBTTestSuite/TestDelegateHardcoded
 
 	s.Require().True(false)
 
@@ -200,7 +203,7 @@ func (s *PBTTestSuite) TestDelegateHardCoded() {
 	pskServer.Delegate(sdk.WrapSDKContext(s.providerCtx), msg)
 }
 
-func (s *PBTTestSuite) TestUndelegateHardCoded() {
+func (s *PBTTestSuite) TestUndelegateHardcoded() {
 
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
@@ -213,7 +216,7 @@ func (s *PBTTestSuite) TestUndelegateHardCoded() {
 	pskServer.Undelegate(sdk.WrapSDKContext(s.providerCtx), msg)
 }
 
-func (s *PBTTestSuite) TestBeginRedelegateHardCoded() {
+func (s *PBTTestSuite) TestBeginRedelegateHardcoded() {
 
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
@@ -225,4 +228,30 @@ func (s *PBTTestSuite) TestBeginRedelegateHardCoded() {
 	valDst := getValidator(s, 1)
 	msg := stakingtypes.NewMsgBeginRedelegate(del, valSrc, valDst, amt)
 	pskServer.BeginRedelegate(sdk.WrapSDKContext(s.providerCtx), msg)
+}
+
+func (s *PBTTestSuite) TestProviderSlashHardcoded() {
+	psk := s.providerChain.App.GetStakingKeeper()
+	val := GetConsAddr(s, 0)
+	h := int64(1)
+	power := int64(100)
+	factor := sdk.NewDec(5) // TODO: I think it's a percentage (from 100)?
+	psk.Slash(s.providerCtx, val, h, power, factor)
+}
+
+func (s *PBTTestSuite) TestConsumerSlashHardcoded() {
+	cccvk := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	val := GetConsAddr(0)
+	h := int64(1)
+	power := int64(100)
+	fraction := sdk.NewDec(5) // TODO: I think it's a percentage (from 100)?
+	cccvk.Slash(s.consumerCtx, val, h, power, fraction)
+}
+
+func (s *PBTTestSuite) JumpToFutureProviderBlock(h int64) {
+
+}
+
+func (s *PBTTestSuite) JumpToFutureConsumerBlock(h int64) {
+
 }
