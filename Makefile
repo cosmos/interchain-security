@@ -92,6 +92,7 @@ proto-update-deps:
 	@mkdir -p $(TM_TYPES)
 	@curl -sSL $(TM_URL)/types/types.proto > $(TM_TYPES)/types.proto
 	@curl -sSL $(TM_URL)/types/params.proto > $(TM_TYPES)/params.proto
+	@curl -sSL $(TM_URL)/types/validator.proto > $(TM_TYPES)/validator.proto
 
 	@mkdir -p $(TM_ABCI)
 	@curl -sSL $(TM_URL)/abci/types.proto > $(TM_ABCI)/types.proto
