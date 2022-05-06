@@ -138,22 +138,6 @@ func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability
 	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
 }
 
-// SetChannelStatus sets the status of a CCV channel with the given status
-func (k Keeper) SetChannelStatus(ctx sdk.Context, channelID string, status ccv.Status) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(ccv.ChannelStatusKey(channelID), []byte{byte(status)})
-}
-
-// GetChannelStatus gets the status of a CCV channel
-func (k Keeper) GetChannelStatus(ctx sdk.Context, channelID string) ccv.Status {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(ccv.ChannelStatusKey(channelID))
-	if bz == nil {
-		return ccv.UNINITIALIZED
-	}
-	return ccv.Status(bz[0])
-}
-
 // SetProviderClient sets the provider clientID that is validating the chain.
 // Set in InitGenesis
 func (k Keeper) SetProviderClient(ctx sdk.Context, clientID string) {
@@ -317,10 +301,6 @@ func (k Keeper) DeleteUnbondingPacket(ctx sdk.Context, sequence uint64) {
 // is the expected provider chain.
 func (k Keeper) VerifyProviderChain(ctx sdk.Context, channelID string, connectionHops []string) error {
 	// Verify CCV channel is in Initialized state
-	status := k.GetChannelStatus(ctx, channelID)
-	if status != ccv.INITIALIZING {
-		return sdkerrors.Wrap(ccv.ErrInvalidStatus, "CCV channel status must be in Initializing state")
-	}
 	if len(connectionHops) != 1 {
 		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
 	}

@@ -12,7 +12,6 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/bytes"
 )
@@ -124,8 +123,6 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			suite.Require().False(ack.Success(), "invalid test case: %s did not return an Error Acknowledgment")
 		} else {
 			suite.Require().Nil(ack, "successful packet must send ack asynchronously. case: %s", tc.name)
-			suite.Require().Equal(ccv.VALIDATING, suite.consumerChain.App.(*app.App).ConsumerKeeper.GetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID),
-				"channel status is not valdidating after receive packet for valid test case: %s", tc.name)
 			providerChannel, ok := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderChannel(suite.ctx)
 			suite.Require().True(ok)
 			suite.Require().Equal(tc.packet.DestinationChannel, providerChannel,

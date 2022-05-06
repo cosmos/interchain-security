@@ -9,8 +9,6 @@
     - [UnbondingOp](#interchain_security.ccv.v1.UnbondingOp)
     - [ValidatorSetChangePacketData](#interchain_security.ccv.v1.ValidatorSetChangePacketData)
   
-    - [Status](#interchain_security.ccv.v1.Status)
-  
 - [interchain_security/ccv/consumer/v1/consumer.proto](#interchain_security/ccv/consumer/v1/consumer.proto)
     - [CrossChainValidator](#interchain_security.ccv.consumer.v1.CrossChainValidator)
     - [LastTransmissionBlockHeight](#interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight)
@@ -109,21 +107,6 @@ and this will function as `UnbondingOver` message for this packet.
 
 
  <!-- end messages -->
-
-
-<a name="interchain_security.ccv.v1.Status"></a>
-
-### Status
-Status defines if the ccv channel is in one of the following states:
-UNINITIALIZED, INITIALIZING, VALIDATING, INVALID
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNINITIALIZED_UNSPECIFIED | 0 | Default State |
-| STATUS_INITIALIZING | 1 | channel is in handshake process |
-| STATUS_VALIDATING | 2 | channel is open and validating |
-| STATUS_INVALID | 3 | channel is invalid and can no longer process packets |
-
 
  <!-- end enums -->
 
@@ -358,7 +341,6 @@ ConsumerState defines the state that the provider chain stores for each consumer
 | ----- | ---- | ----- | ----------- |
 | `chain_id` | [string](#string) |  |  |
 | `channel_id` | [string](#string) |  |  |
-| `status` | [interchain_security.ccv.v1.Status](#interchain_security.ccv.v1.Status) |  |  |
 
 
 
