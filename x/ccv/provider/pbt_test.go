@@ -178,7 +178,7 @@ type JumpToBlockAction struct {
 	chain  string
 	height int
 }
-type DeliverAction struct {
+type UpdateClientAction struct {
 	chain string
 }
 
@@ -273,7 +273,7 @@ func (s *PBTTestSuite) jumpToBlock(a JumpToBlockAction) {
 	s.coordinator.CommitNBlocks(m[a.chain], dt)
 }
 
-func (s *PBTTestSuite) deliver(a DeliverAction) {
+func (s *PBTTestSuite) updateClient(a UpdateClientAction) {
 	/*
 	   I need to think about this more but it seems we might be able to
 	   get away with using UpdateClient
@@ -362,8 +362,8 @@ func executeTrace(s *PBTTestSuite, trace []Action) {
 				a.chain,
 				a.height,
 			})
-		case "deliver":
-			s.deliver(DeliverAction{a.chain})
+		case "updateClient":
+			s.updateClient(UpdateClientAction{a.chain})
 		}
 
 	}
@@ -411,7 +411,7 @@ func (s *PBTTestSuite) TestTrace() {
 			height: 22,
 		},
 		{
-			kind:  "deliver",
+			kind:  "updateClient",
 			chain: "provider",
 		},
 	}
