@@ -131,37 +131,52 @@ func (s *PBTTestSuite) DisableConsumerDistribution() {
 	}
 }
 
+type Action struct {
+	kind             string
+	valSrc           int
+	valDst           int
+	amt              int
+	succeed          bool
+	chain            string
+	height           int
+	infractionHeight int
+	power            int
+	slashPercentage  int
+}
 type DelegateAction struct {
-	del     string
-	val     string
-	amt     int64
+	val     int
+	amt     int
 	succeed bool
 }
 type UndelegateAction struct {
-	del     string
-	val     string
-	amt     int64
+	val     int
+	amt     int
 	succeed bool
 }
 type BeginRedelegateAction struct {
-	del       string
-	valSrc    string
-	valDst    string
-	amt       int
-	succeed64 bool
+	valSrc  int
+	valDst  int
+	amt     int
+	succeed bool
 }
 type ProviderSlashAction struct {
-	val              string
-	infractionHeight int64
-	power            int64
-	slashFactor      float64
+	val              int
+	infractionHeight int
+	power            int
+	slashPercentage  int
 }
-type ProviderJumpToBlock struct {
-	height int64
+type ConsumerSlashAction struct {
+	val              int
+	infractionHeight int
+	power            int
+	slashPercentage  int
 }
-type ConsumerSlashAction struct{}
-type ConsumerJumpToBlock struct {
-	height int64
+type JumpToBlockAction struct {
+	chain  string
+	height int
+}
+type DeliverAction struct {
+	chain string
 }
 
 func scaledAmt(modelAmt int) sdk.Int {
@@ -248,15 +263,107 @@ func (s *PBTTestSuite) TestConsumerSlashHardcoded() {
 	cccvk.Slash(s.consumerCtx, val, h, power, fraction)
 }
 
-func (s *PBTTestSuite) TestJumpToFutureBlock() {
+func (s *PBTTestSuite) TestJumpToFutureBlockHardcoded() {
 	h := int64(42)
 	hCurr := s.providerChain.CurrentHeader.Height
 	s.Assert().LessOrEqual(int64(0), h-hCurr)
 	dt := uint64(h - hCurr)
 	s.coordinator.CommitNBlocks(s.providerChain, dt)
-
 }
 
-func (s *PBTTestSuite) JumpToFutureConsumerBlock(h int64) {
+func (s *PBTTestSuite) TestDeliverHardcoded() {
+}
+
+// TODO: it's here!~~~~~~
+
+func (s *PBTTestSuite) delegate(a DelegateAction) {
+	psk := s.providerChain.App.GetStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(psk)
+	denom := sdk.DefaultBondDenom
+	amt := sdk.NewCoin(denom, scaledAmt(int(a.amt)))
+	del := getDelegator(s)
+	val := getValidator(s, a.val)
+	msg := stakingtypes.NewMsgDelegate(del, val, amt)
+	pskServer.Delegate(sdk.WrapSDKContext(s.providerCtx), msg)
+}
+
+func (s *PBTTestSuite) undelegate(a UndelegateAction) {
+
+	psk := s.providerChain.App.GetStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(psk)
+	denom := sdk.DefaultBondDenom
+	amt := sdk.NewCoin(denom, scaledAmt(a.amt))
+	del := getDelegator(s)
+	val := getValidator(s, a.val)
+	msg := stakingtypes.NewMsgUndelegate(del, val, amt)
+	pskServer.Undelegate(sdk.WrapSDKContext(s.providerCtx), msg)
+}
+
+func (s *PBTTestSuite) beginRedelegate(a BeginRedelegateAction) {
+
+	psk := s.providerChain.App.GetStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(psk)
+
+	denom := sdk.DefaultBondDenom
+	amt := sdk.NewCoin(denom, scaledAmt(a.amt))
+	del := getDelegator(s)
+	valSrc := getValidator(s, a.valSrc)
+	valDst := getValidator(s, a.valDst)
+	msg := stakingtypes.NewMsgBeginRedelegate(del, valSrc, valDst, amt)
+	pskServer.BeginRedelegate(sdk.WrapSDKContext(s.providerCtx), msg)
+}
+
+func (s *PBTTestSuite) providerSlash(a ProviderSlashAction) {
+	psk := s.providerChain.App.GetStakingKeeper()
+	val := getConsAddr(s, a.val)
+	h := int64(a.infractionHeight)
+	power := int64(a.power)
+	factor := sdk.NewDec(int64(a.slashPercentage)) // TODO: I think it's a percentage (from 100)?
+	psk.Slash(s.providerCtx, val, h, power, factor)
+}
+
+func (s *PBTTestSuite) consumerSlash(a ConsumerSlashAction) {
+	cccvk := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	val := getConsAddr(s, a.val)
+	h := int64(a.infractionHeight)
+	power := int64(a.power)
+	factor := sdk.NewDec(int64(a.slashPercentage)) // TODO: I think it's a percentage (from 100)?
+	cccvk.Slash(s.consumerCtx, val, h, power, factor)
+}
+
+func (s *PBTTestSuite) jumpToBlock(a JumpToBlockAction) {
+	h := int64(a.height)
+	m := make(map[string]*ibctesting.TestChain)
+	m["provider"] = s.providerChain
+	m["consumer"] = s.consumerChain
+	hCurr := m[a.chain].CurrentHeader.Height
+	s.Assert().LessOrEqual(int64(0), h-hCurr)
+	dt := uint64(h - hCurr)
+	s.coordinator.CommitNBlocks(m[a.chain], dt)
+}
+
+func (s *PBTTestSuite) deliver(a DeliverAction) {
+}
+
+func executeTrace(s *PBTTestSuite, trace []Action) {
+
+	for _, a := range trace {
+		succeed := a.succeed
+		switch state.kind {
+		case "delegate":
+			delegate(DelegateAction{
+				a.valDst,
+				a.amt,
+				a.succeed,
+			})
+		case "undelegate":
+		case "beginRedelegate":
+		case "providerSlash":
+		case "consumerSlash":
+		case "jumpToBlock":
+		case "deliver":
+		}
+
+	}
 
 }
