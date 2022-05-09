@@ -202,78 +202,6 @@ func getConsAddr(s *PBTTestSuite, i int) sdk.ConsAddress {
 	return consAddr
 }
 
-func (s *PBTTestSuite) TestDelegateHardcoded() {
-	// Run go test -run TestPBTTestSuite/TestDelegateHardcoded
-
-	s.Require().True(false)
-
-	psk := s.providerChain.App.GetStakingKeeper()
-	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-
-	denom := sdk.DefaultBondDenom
-	amt := sdk.NewCoin(denom, scaledAmt(42))
-	del := getDelegator(s)
-	val := getValidator(s, 0)
-	msg := stakingtypes.NewMsgDelegate(del, val, amt)
-	pskServer.Delegate(sdk.WrapSDKContext(s.providerCtx), msg)
-}
-
-func (s *PBTTestSuite) TestUndelegateHardcoded() {
-
-	psk := s.providerChain.App.GetStakingKeeper()
-	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-
-	denom := sdk.DefaultBondDenom
-	amt := sdk.NewCoin(denom, scaledAmt(42))
-	del := getDelegator(s)
-	val := getValidator(s, 0)
-	msg := stakingtypes.NewMsgUndelegate(del, val, amt)
-	pskServer.Undelegate(sdk.WrapSDKContext(s.providerCtx), msg)
-}
-
-func (s *PBTTestSuite) TestBeginRedelegateHardcoded() {
-
-	psk := s.providerChain.App.GetStakingKeeper()
-	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-
-	denom := sdk.DefaultBondDenom
-	amt := sdk.NewCoin(denom, scaledAmt(42))
-	del := getDelegator(s)
-	valSrc := getValidator(s, 0)
-	valDst := getValidator(s, 1)
-	msg := stakingtypes.NewMsgBeginRedelegate(del, valSrc, valDst, amt)
-	pskServer.BeginRedelegate(sdk.WrapSDKContext(s.providerCtx), msg)
-}
-
-func (s *PBTTestSuite) TestProviderSlashHardcoded() {
-	psk := s.providerChain.App.GetStakingKeeper()
-	val := getConsAddr(s, 0)
-	h := int64(1)
-	power := int64(100)
-	factor := sdk.NewDec(5) // TODO: I think it's a percentage (from 100)?
-	psk.Slash(s.providerCtx, val, h, power, factor)
-}
-
-func (s *PBTTestSuite) TestConsumerSlashHardcoded() {
-	cccvk := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
-	val := getConsAddr(s, 0)
-	h := int64(1)
-	power := int64(100)
-	fraction := sdk.NewDec(5) // TODO: I think it's a percentage (from 100)?
-	cccvk.Slash(s.consumerCtx, val, h, power, fraction)
-}
-
-func (s *PBTTestSuite) TestJumpToFutureBlockHardcoded() {
-	h := int64(42)
-	hCurr := s.providerChain.CurrentHeader.Height
-	s.Assert().LessOrEqual(int64(0), h-hCurr)
-	dt := uint64(h - hCurr)
-	s.coordinator.CommitNBlocks(s.providerChain, dt)
-}
-
-func (s *PBTTestSuite) TestDeliverHardcoded() {
-}
-
 // TODO: it's here!~~~~~~
 
 func (s *PBTTestSuite) delegate(a DelegateAction) {
@@ -348,22 +276,100 @@ func (s *PBTTestSuite) deliver(a DeliverAction) {
 func executeTrace(s *PBTTestSuite, trace []Action) {
 
 	for _, a := range trace {
-		succeed := a.succeed
-		switch state.kind {
+		// succeed := a.succeed
+		switch a.kind {
 		case "delegate":
-			delegate(DelegateAction{
+			s.delegate(DelegateAction{
 				a.valDst,
 				a.amt,
 				a.succeed,
 			})
 		case "undelegate":
+			s.undelegate(UndelegateAction{
+				a.valDst,
+				a.amt,
+				a.succeed,
+			})
 		case "beginRedelegate":
+			s.beginRedelegate(BeginRedelegateAction{
+				a.valSrc,
+				a.valDst,
+				a.amt,
+				a.succeed,
+			})
 		case "providerSlash":
+			s.providerSlash(ProviderSlashAction{
+				a.valDst,
+				a.infractionHeight,
+				a.power,
+				a.slashPercentage,
+			})
 		case "consumerSlash":
+			s.consumerSlash(ConsumerSlashAction{
+				a.valDst,
+				a.infractionHeight,
+				a.power,
+				a.slashPercentage,
+			})
 		case "jumpToBlock":
+			s.jumpToBlock(JumpToBlockAction{
+				a.chain,
+				a.height,
+			})
 		case "deliver":
+			s.deliver(DeliverAction{a.chain})
 		}
 
 	}
+}
+
+func (s *PBTTestSuite) TestTrace() {
+
+	trace := []Action{
+		{
+			kind:    "delegate",
+			valDst:  0,
+			amt:     1,
+			succeed: true,
+		},
+		{
+			kind:    "undelegate",
+			valDst:  0,
+			amt:     1,
+			succeed: true,
+		},
+		{
+			kind:    "beginRedelegate",
+			valSrc:  0,
+			valDst:  1,
+			amt:     1,
+			succeed: true,
+		},
+		{
+			kind:             "providerSlash",
+			valDst:           0,
+			infractionHeight: 22,
+			power:            1,
+			slashPercentage:  5,
+		},
+		{
+			kind:             "consumerSlash",
+			valDst:           0,
+			infractionHeight: 22,
+			power:            0,
+			slashPercentage:  5,
+		},
+		{
+			kind:   "jumpToBlock",
+			chain:  "provider",
+			height: 22,
+		},
+		{
+			kind:  "deliver",
+			chain: "provider",
+		},
+	}
+
+	executeTrace(s, trace)
 
 }
