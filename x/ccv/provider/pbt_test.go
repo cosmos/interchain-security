@@ -1,15 +1,18 @@
 package provider_test
 
 import (
+	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
+	exported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
@@ -271,6 +274,49 @@ func (s *PBTTestSuite) jumpToBlock(a JumpToBlockAction) {
 }
 
 func (s *PBTTestSuite) deliver(a DeliverAction) {
+	/*
+	   I need to think about this more but it seems we might be able to
+	   get away with using UpdateClient
+	*/
+	chains := make(map[string]*ibctesting.TestChain)
+	chains["provider"] = s.providerChain
+	chains["consumer"] = s.consumerChain
+	endpoints := make(map[string]*ibctesting.Endpoint)
+	endpoints["provider"] = s.path.EndpointB
+	endpoints["consumer"] = s.path.EndpointA
+	ctxs := make(map[string]*sdk.Context)
+	ctxs["provider"] = &s.providerCtx //TODO: is using passbyvalue ctx on the suite ok?
+	ctxs["consumer"] = &s.consumerCtx
+	chain := chains[a.chain]
+	endpoint := endpoints[a.chain]
+	ctx := ctxs[a.chain]
+
+	var header exported.Header
+
+	var err error
+	switch endpoint.ClientConfig.GetClientType() {
+	case exported.Tendermint:
+		header, err = endpoint.Chain.ConstructUpdateTMClientHeader(endpoint.Counterparty.Chain, endpoint.ClientID)
+	default:
+		err = fmt.Errorf("client type %s is not supported", endpoint.ClientConfig.GetClientType())
+	}
+
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	msg, err := clienttypes.NewMsgUpdateClient(
+		endpoint.ClientID, header,
+		endpoint.Chain.SenderAccount.GetAddress().String(),
+	)
+
+	require.NoError(endpoint.Chain.T, err)
+
+	_, err = chain.App.GetIBCKeeper().UpdateClient(sdk.WrapSDKContext(*ctx), msg)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
 }
 
 func executeTrace(s *PBTTestSuite, trace []Action) {
