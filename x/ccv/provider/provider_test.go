@@ -46,7 +46,7 @@ type ProviderTestSuite struct {
 
 	// testing chains
 	providerChain *ibctesting.TestChain
-	consumerChain  *ibctesting.TestChain
+	consumerChain *ibctesting.TestChain
 
 	providerClient    *ibctmtypes.ClientState
 	providerConsState *ibctmtypes.ConsensusState
@@ -540,7 +540,7 @@ func (s *ProviderTestSuite) TestHandleConsumerDowntimeErrors() {
 	s.providerChain.App.GetStakingKeeper().BlockValidatorUpdates(providerCtx)
 
 	// set manually validator status from unbonding to unbonded
-	err = s.providerChain.App.GetStakingKeeper().UnbondingOpCanComplete(providerCtx, uint64(1))
+	err = s.providerChain.App.GetStakingKeeper().UnbondingCanComplete(providerCtx, uint64(1))
 	s.Require().NoError(err)
 
 	// replace validator address
