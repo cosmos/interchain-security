@@ -83,7 +83,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		// If unbonding op is completely unbonded from all relevant consumer chains
 		if len(unbondingOp.UnbondingConsumerChains) == 0 {
 			// Attempt to complete unbonding in staking module
-			err := k.stakingKeeper.UnbondingOpCanComplete(ctx, unbondingOp.Id)
+			err := k.stakingKeeper.UnbondingCanComplete(ctx, unbondingOp.Id)
 			if err != nil {
 				return err
 			}

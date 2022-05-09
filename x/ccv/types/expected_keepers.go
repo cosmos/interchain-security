@@ -23,7 +23,7 @@ import (
 // so we do not need a registry module between the staking module and CCV.
 type StakingKeeper interface {
 	GetValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
-	UnbondingOpCanComplete(ctx sdk.Context, id uint64) error
+	UnbondingCanComplete(ctx sdk.Context, id uint64) error
 	UnbondingTime(ctx sdk.Context) time.Duration
 	GetValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) (validator types.Validator, found bool)
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
@@ -32,7 +32,7 @@ type StakingKeeper interface {
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator types.Validator, found bool)
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
 	PowerReduction(ctx sdk.Context) sdk.Int
-	PutUnbondingOpOnHold(ctx sdk.Context, id uint64) error
+	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
 }
 
 // SlashingKeeper defines the contract expected to perform ccv slashing

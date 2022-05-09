@@ -263,10 +263,10 @@ func sendValUpdateAck(s *ProviderTestSuite, providerCtx sdk.Context, packet chan
 }
 
 func GetStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
-	stakingUbd, found := k.GetUnbondingDelegationByUnbondingOpId(ctx, id)
+	stakingUbd, found := k.GetUnbondingDelegationByUnbondingId(ctx, id)
 
 	for _, entry := range stakingUbd.Entries {
-		if entry.UnbondingOpId == id {
+		if entry.UnbondingId == id {
 			stakingUnbondingOp = entry
 			found = true
 			break
