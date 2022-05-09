@@ -181,7 +181,7 @@ func getValidator(s *PBTTestSuite, i int) sdk.ValAddress {
 	return valAddr
 }
 
-func GetConsAddr(s *PBTTestSuite, i int) sdk.ConsAddress {
+func getConsAddr(s *PBTTestSuite, i int) sdk.ConsAddress {
 	val := s.providerChain.Vals.Validators[0]
 	consAddr := sdk.ConsAddress(val.Address)
 	return consAddr
@@ -232,7 +232,7 @@ func (s *PBTTestSuite) TestBeginRedelegateHardcoded() {
 
 func (s *PBTTestSuite) TestProviderSlashHardcoded() {
 	psk := s.providerChain.App.GetStakingKeeper()
-	val := GetConsAddr(s, 0)
+	val := getConsAddr(s, 0)
 	h := int64(1)
 	power := int64(100)
 	factor := sdk.NewDec(5) // TODO: I think it's a percentage (from 100)?
@@ -241,14 +241,19 @@ func (s *PBTTestSuite) TestProviderSlashHardcoded() {
 
 func (s *PBTTestSuite) TestConsumerSlashHardcoded() {
 	cccvk := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
-	val := GetConsAddr(0)
+	val := getConsAddr(s, 0)
 	h := int64(1)
 	power := int64(100)
 	fraction := sdk.NewDec(5) // TODO: I think it's a percentage (from 100)?
 	cccvk.Slash(s.consumerCtx, val, h, power, fraction)
 }
 
-func (s *PBTTestSuite) JumpToFutureProviderBlock(h int64) {
+func (s *PBTTestSuite) TestJumpToFutureBlock() {
+	h := int64(42)
+	hCurr := s.providerChain.CurrentHeader.Height
+	s.Assert().LessOrEqual(int64(0), h-hCurr)
+	dt := uint64(h - hCurr)
+	s.coordinator.CommitNBlocks(s.providerChain, dt)
 
 }
 
