@@ -371,6 +371,15 @@ func executeTrace(s *PBTTestSuite, trace []Action) {
 
 func (s *PBTTestSuite) TestTrace() {
 
+	/*
+		TODO: There's a few things I need to do to check the driver is in any way usable
+		1. Hardcode a couple of traces
+			1. Query validator balances to find out how much is staked at each one
+			2. Query delegator balance to see how much is available
+		2.
+
+	*/
+
 	trace := []Action{
 		{
 			kind:    "delegate",
