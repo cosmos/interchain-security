@@ -16,8 +16,8 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
 
-	appConsumer "github.com/cosmos/interchain-security/app_consumer"
-	appProvider "github.com/cosmos/interchain-security/app_provider"
+	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/app/provider"
 )
 
 var defaultConsensusParams = &abci.ConsensusParams{

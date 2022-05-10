@@ -3,8 +3,8 @@ package keeper_test
 import (
 	"fmt"
 
-	appConsumer "github.com/cosmos/interchain-security/app_consumer"
-	appProvider "github.com/cosmos/interchain-security/app_provider"
+	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 )
 

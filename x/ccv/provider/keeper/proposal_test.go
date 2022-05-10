@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	appProvider "github.com/cosmos/interchain-security/app_provider"
+	appProvider "github.com/cosmos/interchain-security/app/provider"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	abci "github.com/tendermint/tendermint/abci/types"

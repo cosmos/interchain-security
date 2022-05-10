@@ -1,7 +1,7 @@
 package keeper_test
 
 import (
-	app "github.com/cosmos/interchain-security/app_consumer"
+	app "github.com/cosmos/interchain-security/app/consumer"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 )
 
