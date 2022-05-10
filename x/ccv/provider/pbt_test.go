@@ -54,6 +54,7 @@ const c = "consumer"
 
 // TODO: do I need different denoms for each chain?
 const denom = sdk.DefaultBondDenom
+const maxValidators = 3
 
 func TestPBTTestSuite(t *testing.T) {
 	suite.Run(t, new(PBTTestSuite))
@@ -215,14 +216,14 @@ func (s *PBTTestSuite) delegator() sdk.AccAddress {
 }
 
 func (s *PBTTestSuite) validator(i int64) sdk.ValAddress {
-	tmValidator := s.providerChain.Vals.Validators[0]
+	tmValidator := s.providerChain.Vals.Validators[i]
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
 	s.Require().NoError(err)
 	return valAddr
 }
 
 func (s *PBTTestSuite) consAddr(i int64) sdk.ConsAddress {
-	val := s.providerChain.Vals.Validators[0]
+	val := s.providerChain.Vals.Validators[i]
 	consAddr := sdk.ConsAddress(val.Address)
 	return consAddr
 }
@@ -236,6 +237,7 @@ func (s *PBTTestSuite) validatorStatus(chain string, i int64) stakingtypes.BondS
 	return val.GetStatus()
 }
 
+// TODO: this is probably useless
 func (s *PBTTestSuite) delegatorBalance() int64 {
 	del := s.delegator()
 	app := s.providerChain.App.(*appProvider.App)
@@ -357,10 +359,9 @@ func (s *PBTTestSuite) updateClient(a UpdateClientAction) {
 }
 
 func adjustParams(s *PBTTestSuite) {
-	sp := s.providerChain.App.GetStakingKeeper().GetParams(s.providerCtx)
-	sp.MaxValidators = 3
-	s.providerChain.App.GetStakingKeeper().SetParams(s.providerCtx, sp)
-	// s.consumerChain.App.GetStakingKeeper().SetParams(s.consumerCtx, sp)
+	p := s.providerChain.App.GetStakingKeeper().GetParams(s.providerCtx)
+	p.MaxValidators = maxValidators
+	s.providerChain.App.GetStakingKeeper().SetParams(s.providerCtx, p)
 }
 
 func (s *PBTTestSuite) TestAssumptions() {
@@ -369,7 +370,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 
 	/*
 		TODO:
-		1. check delegator balance
+		1. check delegator balance (done manually)
 		2. check max validators
 		3. check delegations to each provider validator
 		4. check validator tokens
@@ -379,26 +380,62 @@ func (s *PBTTestSuite) TestAssumptions() {
 		8. do I need to check the params are the same on both chains?
 	*/
 
-	// See chain.go::NewTestChainWithValSet
-	delegatorBalance, _ := sdk.NewIntFromString("1000000000000000000")
-
-	if delegatorBalance.Int64() != s.delegatorBalance() {
-		s.T().Fatal("Bad test")
-	}
+	/*
+		delegatorBalance() overflows int64 because it is set to a number greater than 2^63 in genesis.
+		It's easiest to assume we have enough funds.
+	*/
 
 	maxValsE := uint32(3)
 	maxVals := s.providerChain.App.GetStakingKeeper().GetParams(s.providerCtx).MaxValidators
+
 	if maxValsE != maxVals {
 		s.T().Fatal("Bad test")
 	}
 
-	delE := sdk.TokensFromConsensusPower(1, sdk.DefaultPowerReduction).Int64()
-
 	for i := 0; i < 4; i++ {
+		// This is the genesis delegation
+		delE := sdk.TokensFromConsensusPower(1, sdk.DefaultPowerReduction).Int64()
 		del := s.delegation(int64(i))
 		if delE != del {
 			s.T().Fatal("Bad test")
 		}
+	}
+
+	step := sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction).Int64()
+	for i := 0; i < 4; i++ {
+		s.delegate(DelegateAction{int64(i), (4 - int64(i)) * step, true})
+	}
+
+	for i := 0; i < 4; i++ {
+		delE := (4-int64(i))*step + sdk.TokensFromConsensusPower(1, sdk.DefaultPowerReduction).Int64()
+		del := s.delegation(int64(i))
+		if delE != del {
+			s.T().Fatal("Bad test")
+		}
+	}
+
+	for i := 0; i < maxValidators; i++ {
+		// First ones should be bonded
+		A := s.validatorStatus(p, int64(i))
+		E := stakingtypes.Bonded
+		if E != A {
+			s.T().Fatal("Bad test")
+		}
+	}
+
+	for i := maxValidators; i < 4; i++ {
+		// It will still be bonded because we didn't do valStateChange yet
+		A := s.validatorStatus(p, int64(i))
+		E := stakingtypes.Bonded
+		if E != A {
+			s.T().Fatal("Bad test")
+		}
+	}
+
+	ph := s.providerChain.GetContext().BlockHeader().Height
+	ch := s.consumerChain.GetContext().BlockHeader().Height
+	if ph != ch {
+		s.T().Fatal("Bad test")
 	}
 
 }
