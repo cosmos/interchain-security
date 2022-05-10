@@ -188,10 +188,6 @@ type UpdateClientAction struct {
 	chain string
 }
 
-func scaledAmt(amt int64) sdk.Int {
-	return sdk.TokensFromConsensusPower(int64(amt), sdk.DefaultPowerReduction)
-}
-
 func (s *PBTTestSuite) chain(chain string) *ibctesting.TestChain {
 	chains := make(map[string]*ibctesting.TestChain)
 	chains["provider"] = s.providerChain
@@ -268,7 +264,7 @@ func (s *PBTTestSuite) delegation(i int64) int64 {
 func (s *PBTTestSuite) delegate(a DelegateAction) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-	amt := sdk.NewCoin(denom, scaledAmt(int64(a.amt)))
+	amt := sdk.NewCoin(denom, sdk.NewInt(a.amt))
 	del := s.delegator()
 	val := s.validator(a.val)
 	msg := stakingtypes.NewMsgDelegate(del, val, amt)
@@ -279,7 +275,7 @@ func (s *PBTTestSuite) undelegate(a UndelegateAction) {
 
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-	amt := sdk.NewCoin(denom, scaledAmt(a.amt))
+	amt := sdk.NewCoin(denom, sdk.NewInt(a.amt))
 	del := s.delegator()
 	val := s.validator(a.val)
 	msg := stakingtypes.NewMsgUndelegate(del, val, amt)
@@ -291,7 +287,7 @@ func (s *PBTTestSuite) beginRedelegate(a BeginRedelegateAction) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
 
-	amt := sdk.NewCoin(denom, scaledAmt(a.amt))
+	amt := sdk.NewCoin(denom, sdk.NewInt(a.amt))
 	del := s.delegator()
 	valSrc := s.validator(a.valSrc)
 	valDst := s.validator(a.valDst)
