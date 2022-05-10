@@ -45,7 +45,7 @@ func SetupTestingappProvider() (ibctesting.TestingApp, map[string]json.RawMessag
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
 }
 
-func SetupTestingappConsumer() (ibctesting.TestingApp, map[string]json.RawMessage) {
+func SetupTestingAppConsumer() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	db := tmdb.NewMemDB()
 	// encCdc := app.MakeTestEncodingConfig()
 	encoding := cosmoscmd.MakeEncodingConfig(appConsumer.ModuleBasics)
@@ -72,7 +72,7 @@ func NewProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibc
 	providerChain := coordinator.GetChain(chainID)
 	chainID = ibctesting.GetChainID(2)
 	coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(t, coordinator,
-		SetupTestingappConsumer, chainID, providerChain.Vals, providerChain.Signers)
+		SetupTestingAppConsumer, chainID, providerChain.Vals, providerChain.Signers)
 	consumerChain := coordinator.GetChain(chainID)
 	return coordinator, providerChain, consumerChain
 }
