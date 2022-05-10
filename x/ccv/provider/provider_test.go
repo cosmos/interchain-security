@@ -366,7 +366,6 @@ func (s *ProviderTestSuite) TestSendSlashPacketDoubleSign() {
 
 	providerStakingKeeper := s.providerChain.App.GetStakingKeeper()
 	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
-
 	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 
 	// get a cross-chain validator address, pubkey and balance
