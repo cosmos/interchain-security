@@ -142,53 +142,53 @@ func (s *PBTTestSuite) DisableConsumerDistribution() {
 
 type Action struct {
 	kind             string
-	valSrc           int
-	valDst           int
-	amt              int
+	valSrc           int64
+	valDst           int64
+	amt              int64
 	succeed          bool
 	chain            string
-	height           int
-	infractionHeight int
-	power            int
-	slashPercentage  int
+	height           int64
+	infractionHeight int64
+	power            int64
+	slashPercentage  int64
 }
 type DelegateAction struct {
-	val     int
-	amt     int
+	val     int64
+	amt     int64
 	succeed bool
 }
 type UndelegateAction struct {
-	val     int
-	amt     int
+	val     int64
+	amt     int64
 	succeed bool
 }
 type BeginRedelegateAction struct {
-	valSrc  int
-	valDst  int
-	amt     int
+	valSrc  int64
+	valDst  int64
+	amt     int64
 	succeed bool
 }
 type ProviderSlashAction struct {
-	val              int
-	infractionHeight int
-	power            int
-	slashPercentage  int
+	val              int64
+	infractionHeight int64
+	power            int64
+	slashPercentage  int64
 }
 type ConsumerSlashAction struct {
-	val              int
-	infractionHeight int
-	power            int
-	slashPercentage  int
+	val              int64
+	infractionHeight int64
+	power            int64
+	slashPercentage  int64
 }
 type JumpToBlockAction struct {
 	chain  string
-	height int
+	height int64
 }
 type UpdateClientAction struct {
 	chain string
 }
 
-func scaledAmt(amt int) sdk.Int {
+func scaledAmt(amt int64) sdk.Int {
 	return sdk.TokensFromConsensusPower(int64(amt), sdk.DefaultPowerReduction)
 }
 
@@ -218,20 +218,20 @@ func (s *PBTTestSuite) delegator() sdk.AccAddress {
 	return delAddr
 }
 
-func (s *PBTTestSuite) validator(i int) sdk.ValAddress {
+func (s *PBTTestSuite) validator(i int64) sdk.ValAddress {
 	tmValidator := s.providerChain.Vals.Validators[0]
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
 	s.Require().NoError(err)
 	return valAddr
 }
 
-func (s *PBTTestSuite) consAddr(i int) sdk.ConsAddress {
+func (s *PBTTestSuite) consAddr(i int64) sdk.ConsAddress {
 	val := s.providerChain.Vals.Validators[0]
 	consAddr := sdk.ConsAddress(val.Address)
 	return consAddr
 }
 
-func (s *PBTTestSuite) validatorStatus(chain string, i int) stakingtypes.BondStatus {
+func (s *PBTTestSuite) validatorStatus(chain string, i int64) stakingtypes.BondStatus {
 	addr := s.validator(i)
 	val, found := s.chain(chain).App.GetStakingKeeper().GetValidator(*s.ctx(chain), addr)
 	if !found {
@@ -240,17 +240,17 @@ func (s *PBTTestSuite) validatorStatus(chain string, i int) stakingtypes.BondSta
 	return val.GetStatus()
 }
 
-func (s *PBTTestSuite) delegatorBalance() int {
+func (s *PBTTestSuite) delegatorBalance() int64 {
 	del := s.delegator()
 	app := s.providerChain.App.(*appProvider.App)
 	bal := app.BankKeeper.GetBalance(s.providerCtx, del, denom)
-	return int(bal.Amount.Int64())
+	return int64(bal.Amount.Int64())
 }
 
 func (s *PBTTestSuite) delegate(a DelegateAction) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-	amt := sdk.NewCoin(denom, scaledAmt(int(a.amt)))
+	amt := sdk.NewCoin(denom, scaledAmt(int64(a.amt)))
 	del := s.delegator()
 	val := s.validator(a.val)
 	msg := stakingtypes.NewMsgDelegate(del, val, amt)
