@@ -16,8 +16,8 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
-	appConsumer "github.com/cosmos/interchain-security/app_consumer"
-	appProvider "github.com/cosmos/interchain-security/app_provider"
+	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -357,6 +357,12 @@ func (s *PBTTestSuite) updateClient(a UpdateClientAction) {
 }
 
 func executeTrace(s *PBTTestSuite, trace []Action) {
+
+	hardcoded, _ := sdk.NewIntFromString("1000000000000000000")
+
+	if s.delegatorBalance() != hardcoded.Int64() {
+		s.T().Fatal("Bad test")
+	}
 
 	for _, a := range trace {
 		// succeed := a.succeed
