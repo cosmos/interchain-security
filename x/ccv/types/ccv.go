@@ -2,6 +2,7 @@ package types
 
 import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -26,12 +27,11 @@ func (vsc ValidatorSetChangePacketData) GetBytes() []byte {
 	return valUpdateBytes
 }
 
-func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, slashFraction, jailTime int64) SlashPacketData {
+func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infractionType stakingtypes.InfractionType) SlashPacketData {
 	return SlashPacketData{
 		Validator:      validator,
-		SlashFraction:  slashFraction,
-		JailTime:       jailTime,
 		ValsetUpdateId: valUpdateId,
+		Infraction:     infractionType,
 	}
 }
 
@@ -39,17 +39,12 @@ func (vdt SlashPacketData) ValidateBasic() error {
 	if len(vdt.Validator.Address) == 0 || vdt.Validator.Power == 0 {
 		return sdkerrors.Wrap(ErrInvalidPacketData, "validator fields cannot be empty")
 	}
-	// allow slahing with 0 jail time
-	if vdt.JailTime < 0 {
-		return sdkerrors.Wrap(ErrInvalidPacketData, "jail duration must be positive")
-	}
-
-	if vdt.SlashFraction <= 0 {
-		return sdkerrors.Wrap(ErrInvalidPacketData, "slash fraction must be positive")
-	}
-
 	if vdt.ValsetUpdateId == 0 {
 		return sdkerrors.Wrap(ErrInvalidPacketData, "valset update id cannot be equal to zero")
+	}
+
+	if vdt.Infraction == stakingtypes.InfractionEmpty {
+		return sdkerrors.Wrap(ErrInvalidPacketData, "invalid infraction type")
 	}
 
 	return nil

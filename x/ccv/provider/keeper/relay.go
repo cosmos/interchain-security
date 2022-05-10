@@ -6,8 +6,11 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -16,7 +19,6 @@ import (
 )
 
 func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.ValidatorUpdate, valUpdateID uint64, SlashAcks []string) error {
-
 	packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, SlashAcks)
 	packetDataBytes := packetData.GetBytes()
 
@@ -138,7 +140,7 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data c
 	}
 
 	// apply slashing
-	if err := k.HandleConsumerDowntime(ctx, chainID, data); err != nil {
+	if err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
 		ack := channeltypes.NewErrorAcknowledgement(err.Error())
 		return &ack
 	}
@@ -147,47 +149,72 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data c
 	return ack
 }
 
-// HandleConsumerDowntime gets the validator and the downtime infraction height from the packet data
+// HandleSlashPacket gets the validator and the downtime infraction height from the packet data
 // validator address and valset upate ID. Then it executes the slashing the and jailing accordingly.
-func (k Keeper) HandleConsumerDowntime(ctx sdk.Context, chainID string, downtimeData ccv.SlashPacketData) error {
-
+func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) error {
 	// map VSC ID to infraction height for the given chain ID
 	var infractionHeight uint64
-	if downtimeData.ValsetUpdateId == 0 {
+	if data.ValsetUpdateId == 0 {
 		infractionHeight = k.GetInitChainHeight(ctx, chainID)
 	} else {
-		infractionHeight = k.GetValsetUpdateBlockHeight(ctx, downtimeData.ValsetUpdateId)
+		infractionHeight = k.GetValsetUpdateBlockHeight(ctx, data.ValsetUpdateId)
 	}
 
 	if infractionHeight == 0 {
-		return fmt.Errorf("cannot find validator update id %d for chain %s", downtimeData.ValsetUpdateId, chainID)
+		return fmt.Errorf("cannot find validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
-	// get the validator consensus address
-	consAddr := sdk.ConsAddress(downtimeData.Validator.Address)
-
-	// get the validator data
+	// get the validator
+	consAddr := sdk.ConsAddress(data.Validator.Address)
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
-	if !found {
-		return fmt.Errorf("cannot find validator with address %s", consAddr.String())
-	}
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
-	if validator.IsUnbonded() {
+	if !found || validator.IsUnbonded() {
 		return fmt.Errorf("should not be slashing unbonded validator: %s", validator.GetOperator())
 	}
 
-	// slash and jail the validator
-	k.stakingKeeper.Slash(ctx, consAddr, int64(infractionHeight), downtimeData.Validator.Power, sdk.NewDec(1).QuoInt64(downtimeData.SlashFraction))
+	// spare jailaed and/or tombstoned validator
+	if validator.IsJailed() || k.slashingKeeper.IsTombstoned(ctx, consAddr) {
+		return fmt.Errorf("should not be slashing jailed and/or tombstoned validator: %s", validator.GetOperator())
+	}
+
+	// slash and jail validator according to their data type
+	// and using the provider chain parameters
+	var (
+		jailTime      time.Time
+		slashFraction sdk.Dec
+	)
+
+	if data.Infraction == stakingtypes.Downtime {
+		slashFraction = k.slashingKeeper.SlashFractionDowntime(ctx)
+		// jail validator for the downtime duration
+		jailTime = ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
+		// add slash ack for the chain id
+		k.AppendSlashAck(ctx, chainID, consAddr.String())
+	} else {
+		slashFraction = k.slashingKeeper.SlashFractionDoubleSign(ctx)
+		// jail forever and tombstone validator for double-signing infraction
+		jailTime = evidencetypes.DoubleSignJailEndTime
+		k.slashingKeeper.Tombstone(ctx, consAddr)
+	}
+
+	// slash validator
+	k.stakingKeeper.Slash(
+		ctx,
+		consAddr,
+		int64(infractionHeight),
+		data.Validator.Power,
+		slashFraction,
+		data.Infraction,
+	)
+
+	// jail validator if it isn't already
 	if !validator.IsJailed() {
 		k.stakingKeeper.Jail(ctx, consAddr)
 	}
 
-	k.slashingKeeper.JailUntil(ctx, consAddr, ctx.BlockHeader().Time.Add(time.Duration(downtimeData.JailTime)))
-
-	// add slashing ack to consumer chain
-	k.AppendslashingAck(ctx, chainID, consAddr.String())
+	k.slashingKeeper.JailUntil(ctx, consAddr, jailTime)
 
 	return nil
 }

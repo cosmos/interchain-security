@@ -23,6 +23,9 @@ require (
 	github.com/tendermint/tendermint v0.34.14
 	github.com/tendermint/tm-db v0.6.4
 	github.com/tidwall/gjson v1.6.7
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
+	golang.org/x/sys v0.0.0-20220315194320-039c03cc5b86 // indirect
 	google.golang.org/genproto v0.0.0-20220317150908-0efb43f6373e
 	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.27.1
@@ -31,7 +34,8 @@ require (
 
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
-	github.com/cosmos/cosmos-sdk => /Users/simon/Dev/go-workspace/src/github.com/sainoe/cosmos-sdk
+	//github.com/cosmos/cosmos-sdk => github.com/sainoe/cosmos-sdk v0.44.4-0.20220509095148-590b75afa297
+	github.com/cosmos/cosmos-sdk => github.com/sainoe/cosmos-sdk v0.44.4-0.20220510144203-a0f64cfd6249
 	github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-alpha1.0.20220405190259-988da4519455
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
