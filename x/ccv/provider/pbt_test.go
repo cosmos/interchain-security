@@ -49,6 +49,9 @@ type PBTTestSuite struct {
 	path *ibctesting.Path
 }
 
+const p = "provider"
+const c = "consumer"
+
 func TestPBTTestSuite(t *testing.T) {
 	suite.Run(t, new(PBTTestSuite))
 }
@@ -182,38 +185,65 @@ type UpdateClientAction struct {
 	chain string
 }
 
-func scaledAmt(modelAmt int) sdk.Int {
-	return sdk.TokensFromConsensusPower(int64(modelAmt), sdk.DefaultPowerReduction)
+func scaledAmt(amt int) sdk.Int {
+	return sdk.TokensFromConsensusPower(int64(amt), sdk.DefaultPowerReduction)
 }
 
-func getDelegator(s *PBTTestSuite) sdk.AccAddress {
+func (s *PBTTestSuite) chain(chain string) *ibctesting.TestChain {
+	chains := make(map[string]*ibctesting.TestChain)
+	chains["provider"] = s.providerChain
+	chains["consumer"] = s.consumerChain
+	return chains[chain]
+}
+
+func (s *PBTTestSuite) endpoint(chain string) *ibctesting.Endpoint {
+	endpoints := make(map[string]*ibctesting.Endpoint)
+	endpoints["provider"] = s.path.EndpointB
+	endpoints["consumer"] = s.path.EndpointA
+	return endpoints[chain]
+}
+
+func (s *PBTTestSuite) ctx(chain string) *sdk.Context {
+	ctxs := make(map[string]*sdk.Context)
+	ctxs["provider"] = &s.providerCtx //TODO: is using passbyvalue ctx on the suite ok?
+	ctxs["consumer"] = &s.consumerCtx
+	return ctxs[chain]
+}
+
+func (s *PBTTestSuite) delegator() sdk.AccAddress {
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	return delAddr
-
 }
 
-func getValidator(s *PBTTestSuite, i int) sdk.ValAddress {
+func (s *PBTTestSuite) validator(i int) sdk.ValAddress {
 	tmValidator := s.providerChain.Vals.Validators[0]
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
 	s.Require().NoError(err)
 	return valAddr
 }
 
-func getConsAddr(s *PBTTestSuite, i int) sdk.ConsAddress {
+func (s *PBTTestSuite) consAddr(i int) sdk.ConsAddress {
 	val := s.providerChain.Vals.Validators[0]
 	consAddr := sdk.ConsAddress(val.Address)
 	return consAddr
 }
 
-// TODO: it's here!~~~~~~
+func (s *PBTTestSuite) validatorStatus(chain string, i int) stakingtypes.BondStatus {
+	addr := s.validator(i)
+	val, found := s.chain(chain).App.GetStakingKeeper().GetValidator(*s.ctx(chain), addr)
+	if !found {
+		s.T().Fatal("Couldn't GetValidator")
+	}
+	return val.GetStatus()
+}
 
 func (s *PBTTestSuite) delegate(a DelegateAction) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
 	denom := sdk.DefaultBondDenom
 	amt := sdk.NewCoin(denom, scaledAmt(int(a.amt)))
-	del := getDelegator(s)
-	val := getValidator(s, a.val)
+	del := s.delegator()
+	val := s.validator(a.val)
 	msg := stakingtypes.NewMsgDelegate(del, val, amt)
 	pskServer.Delegate(sdk.WrapSDKContext(s.providerCtx), msg)
 }
@@ -224,8 +254,8 @@ func (s *PBTTestSuite) undelegate(a UndelegateAction) {
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
 	denom := sdk.DefaultBondDenom
 	amt := sdk.NewCoin(denom, scaledAmt(a.amt))
-	del := getDelegator(s)
-	val := getValidator(s, a.val)
+	del := s.delegator()
+	val := s.validator(a.val)
 	msg := stakingtypes.NewMsgUndelegate(del, val, amt)
 	pskServer.Undelegate(sdk.WrapSDKContext(s.providerCtx), msg)
 }
@@ -237,16 +267,16 @@ func (s *PBTTestSuite) beginRedelegate(a BeginRedelegateAction) {
 
 	denom := sdk.DefaultBondDenom
 	amt := sdk.NewCoin(denom, scaledAmt(a.amt))
-	del := getDelegator(s)
-	valSrc := getValidator(s, a.valSrc)
-	valDst := getValidator(s, a.valDst)
+	del := s.delegator()
+	valSrc := s.validator(a.valSrc)
+	valDst := s.validator(a.valDst)
 	msg := stakingtypes.NewMsgBeginRedelegate(del, valSrc, valDst, amt)
 	pskServer.BeginRedelegate(sdk.WrapSDKContext(s.providerCtx), msg)
 }
 
 func (s *PBTTestSuite) providerSlash(a ProviderSlashAction) {
 	psk := s.providerChain.App.GetStakingKeeper()
-	val := getConsAddr(s, a.val)
+	val := s.consAddr(a.val)
 	h := int64(a.infractionHeight)
 	power := int64(a.power)
 	factor := sdk.NewDec(int64(a.slashPercentage)) // TODO: I think it's a percentage (from 100)?
@@ -255,7 +285,7 @@ func (s *PBTTestSuite) providerSlash(a ProviderSlashAction) {
 
 func (s *PBTTestSuite) consumerSlash(a ConsumerSlashAction) {
 	cccvk := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
-	val := getConsAddr(s, a.val)
+	val := s.consAddr(a.val)
 	h := int64(a.infractionHeight)
 	power := int64(a.power)
 	factor := sdk.NewDec(int64(a.slashPercentage)) // TODO: I think it's a percentage (from 100)?
@@ -264,32 +294,18 @@ func (s *PBTTestSuite) consumerSlash(a ConsumerSlashAction) {
 
 func (s *PBTTestSuite) jumpToBlock(a JumpToBlockAction) {
 	h := int64(a.height)
-	m := make(map[string]*ibctesting.TestChain)
-	m["provider"] = s.providerChain
-	m["consumer"] = s.consumerChain
-	hCurr := m[a.chain].CurrentHeader.Height
-	s.Assert().LessOrEqual(int64(0), h-hCurr)
+	hCurr := s.chain(a.chain).CurrentHeader.Height
+	if h <= hCurr {
+		s.T().Fatal("Can only jump to future block")
+	}
 	dt := uint64(h - hCurr)
-	s.coordinator.CommitNBlocks(m[a.chain], dt)
+	s.coordinator.CommitNBlocks(s.chain(a.chain), dt)
 }
 
 func (s *PBTTestSuite) updateClient(a UpdateClientAction) {
-	/*
-	   I need to think about this more but it seems we might be able to
-	   get away with using UpdateClient
-	*/
-	chains := make(map[string]*ibctesting.TestChain)
-	chains["provider"] = s.providerChain
-	chains["consumer"] = s.consumerChain
-	endpoints := make(map[string]*ibctesting.Endpoint)
-	endpoints["provider"] = s.path.EndpointB
-	endpoints["consumer"] = s.path.EndpointA
-	ctxs := make(map[string]*sdk.Context)
-	ctxs["provider"] = &s.providerCtx //TODO: is using passbyvalue ctx on the suite ok?
-	ctxs["consumer"] = &s.consumerCtx
-	chain := chains[a.chain]
-	endpoint := endpoints[a.chain]
-	ctx := ctxs[a.chain]
+	chain := s.chain(a.chain)
+	endpoint := s.endpoint(a.chain)
+	ctx := s.ctx(a.chain)
 
 	var header exported.Header
 
