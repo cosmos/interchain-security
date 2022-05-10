@@ -61,7 +61,6 @@ TM_CRYPTO_TYPES     = third_party/proto/tendermint/crypto
 TM_ABCI_TYPES       = third_party/proto/tendermint/abci
 TM_TYPES            = third_party/proto/tendermint/types
 TM_VERSION          = third_party/proto/tendermint/version
-TM_ABCI             = third_party/proto/tendermint/abci
 TM_LIBS             = third_party/proto/tendermint/libs/bits
 TM_P2P              = third_party/proto/tendermint/p2p
 
@@ -94,8 +93,8 @@ proto-update-deps:
 	@curl -sSL $(TM_URL)/types/params.proto > $(TM_TYPES)/params.proto
 	@curl -sSL $(TM_URL)/types/validator.proto > $(TM_TYPES)/validator.proto
 
-	@mkdir -p $(TM_ABCI)
-	@curl -sSL $(TM_URL)/abci/types.proto > $(TM_ABCI)/types.proto
+	@mkdir -p $(TM_ABCI_TYPES)
+	@curl -sSL $(TM_URL)/abci/types.proto > $(TM_ABCI_TYPES)/types.proto
 
 	@mkdir -p $(TM_VERSION)
 	@curl -sSL $(TM_URL)/version/types.proto > $(TM_VERSION)/types.proto
