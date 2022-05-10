@@ -379,8 +379,6 @@ func (s *ProviderTestSuite) TestHandleConsumerDowntime() {
 	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
 	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
 
-	// bonded amount
-	bondAmt := sdk.NewInt(1000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 
 	// choose a validator and get its delegations
@@ -393,15 +391,20 @@ func (s *ProviderTestSuite) TestHandleConsumerDowntime() {
 	consAdrr, err := validator.GetConsAddr()
 	s.Require().NoError(err)
 
-	ubdAmount := del.Shares.QuoInt64(2)
+	ubdShares := del.Shares.QuoInt64(2)
+
+	// This is how many shares are being unbonded
+	s.Require().Equal(sdk.NewInt(500000), ubdShares.TruncateInt())
+
 	undel := func() stakingtypes.UnbondingDelegation {
 		ubd, found := providerStakingKeeper.GetUnbondingDelegation(s.providerCtx(), delAddr, valAddr)
 		s.Require().True(found)
 		return ubd
 	}
-	// undelegate half of the tokens
-	unboundHalf := func() stakingtypes.UnbondingDelegation {
-		_, err := providerStakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, ubdAmount)
+
+	// undelegate half of the shares
+	unbondHalf := func() stakingtypes.UnbondingDelegation {
+		_, err := providerStakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, ubdShares)
 		s.Require().NoError(err)
 		return undel()
 	}
@@ -412,11 +415,9 @@ func (s *ProviderTestSuite) TestHandleConsumerDowntime() {
 	// get valset update ID mapping the current block height
 	valseUpdateID0 := valseUpdateID1 - 1
 
-	// create first undelegation entry
-	ubdBalance := ubdAmount.Mul(bondAmt.ToDec()).TruncateInt()
-	ubd := unboundHalf()
+	ubd := unbondHalf()
 	s.Require().Len(ubd.Entries, 1)
-	s.Require().Equal(ubdBalance, ubd.Entries[0].Balance)
+	s.Require().Equal(ubdShares.TruncateInt(), ubd.Entries[0].Balance.ToDec().TruncateInt())
 
 	// check valset update ID height mapping
 	s.coordinator.CommitBlock(s.providerChain)
@@ -425,13 +426,13 @@ func (s *ProviderTestSuite) TestHandleConsumerDowntime() {
 	s.Require().EqualValues(valsetUpdateIDHeight, ubd.Entries[0].CreationHeight+1)
 
 	// create second undelegation entry
-	ubd = unboundHalf()
+	ubd = unbondHalf()
 	s.Require().Len(ubd.Entries, 2)
-	s.Require().Equal(ubdBalance, ubd.Entries[1].Balance)
-	valseUpdateID2 := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	s.Require().Equal(ubdShares.TruncateInt(), ubd.Entries[1].Balance.ToDec().TruncateInt())
+	valsetUpdateID2 := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	s.coordinator.CommitBlock(s.providerChain)
-	valsetUpdateIDHeight = providerKeeper.GetValsetUpdateBlockHeight(s.providerCtx(), valseUpdateID2)
+	valsetUpdateIDHeight = providerKeeper.GetValsetUpdateBlockHeight(s.providerCtx(), valsetUpdateID2)
 
 	s.Require().EqualValues(valsetUpdateIDHeight, ubd.Entries[1].CreationHeight+1)
 
@@ -440,23 +441,23 @@ func (s *ProviderTestSuite) TestHandleConsumerDowntime() {
 		s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
 	providerSlashingKeeper.SetValidatorSigningInfo(s.providerCtx(), consAdrr, valInfo)
 
-	// resulting balance after slashing
-	ubdBalanceSlashed := ubdBalance.Sub(ubdBalance.Quo(sdk.NewInt(4)))
-	ubdBalanceSlashed2 := ubdBalanceSlashed.Sub(ubdBalance.Quo(sdk.NewInt(4)))
+	// resulting balance after slashing(s)
+	ubdBalanceSlashed := ubdShares.Sub(ubdShares.Quo(sdk.NewDec(4)))
+	ubdBalanceSlashed2x := ubdShares.Sub(ubdShares.Quo(sdk.NewDec(4))).Sub(ubdShares.Quo(sdk.NewDec(4)))
 
 	// test slashing using the valset update IDs
 	tests := []struct {
-		expBalances    []sdk.Int
+		expBalances    []sdk.Dec
 		valsetUpdateID uint64
 	}{{ // both undelegations slashed: valseUpdateID0  maps to 1st undelegation height
-		expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed},
+		expBalances:    []sdk.Dec{ubdBalanceSlashed, ubdBalanceSlashed},
 		valsetUpdateID: valseUpdateID0,
 	}, { // second undelegation is slashed again: valseUpdateID1 maps to 2nd undelegation height
-		expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed2},
+		expBalances:    []sdk.Dec{ubdBalanceSlashed, ubdBalanceSlashed2x},
 		valsetUpdateID: valseUpdateID1,
 	}, { // no slashing: valseUpdateID2 maps to 2nd undelegation height + 1
-		expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed2},
-		valsetUpdateID: valseUpdateID2,
+		expBalances:    []sdk.Dec{ubdBalanceSlashed, ubdBalanceSlashed2x},
+		valsetUpdateID: valsetUpdateID2,
 	},
 	}
 
@@ -478,8 +479,9 @@ func (s *ProviderTestSuite) TestHandleConsumerDowntime() {
 		// check that second undelegation was slashed
 		ubd = undel()
 
-		s.Require().EqualValues(t.expBalances[0], ubd.Entries[0].Balance)
-		s.Require().EqualValues(t.expBalances[1], ubd.Entries[1].Balance)
+		s.Require().EqualValues(t.expBalances[0], ubd.Entries[0].Balance.ToDec())
+		s.Require().EqualValues(t.expBalances[1], ubd.Entries[1].Balance.ToDec())
+		s.T().Fatal("canary")
 	}
 }
 
