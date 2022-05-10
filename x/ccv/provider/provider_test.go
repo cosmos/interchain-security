@@ -481,7 +481,6 @@ func (s *ProviderTestSuite) TestHandleConsumerDowntime() {
 
 		s.Require().EqualValues(t.expBalances[0], ubd.Entries[0].Balance.ToDec())
 		s.Require().EqualValues(t.expBalances[1], ubd.Entries[1].Balance.ToDec())
-		s.T().Fatal("canary")
 	}
 }
 
