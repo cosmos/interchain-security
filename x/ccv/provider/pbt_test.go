@@ -356,13 +356,54 @@ func (s *PBTTestSuite) updateClient(a UpdateClientAction) {
 
 }
 
-func executeTrace(s *PBTTestSuite, trace []Action) {
+func adjustParams(s *PBTTestSuite) {
+	sp := s.providerChain.App.GetStakingKeeper().GetParams(s.providerCtx)
+	sp.MaxValidators = 3
+	s.providerChain.App.GetStakingKeeper().SetParams(s.providerCtx, sp)
+	// s.consumerChain.App.GetStakingKeeper().SetParams(s.consumerCtx, sp)
+}
 
-	hardcoded, _ := sdk.NewIntFromString("1000000000000000000")
+func (s *PBTTestSuite) TestAssumptions() {
 
-	if s.delegatorBalance() != hardcoded.Int64() {
+	adjustParams(s)
+
+	/*
+		TODO:
+		1. check delegator balance
+		2. check max validators
+		3. check delegations to each provider validator
+		4. check validator tokens
+		5. check validator status
+		6. check heights on both chains
+		7. check there are 4 validators
+		8. do I need to check the params are the same on both chains?
+	*/
+
+	// See chain.go::NewTestChainWithValSet
+	delegatorBalance, _ := sdk.NewIntFromString("1000000000000000000")
+
+	if delegatorBalance.Int64() != s.delegatorBalance() {
 		s.T().Fatal("Bad test")
 	}
+
+	maxValsE := uint32(3)
+	maxVals := s.providerChain.App.GetStakingKeeper().GetParams(s.providerCtx).MaxValidators
+	if maxValsE != maxVals {
+		s.T().Fatal("Bad test")
+	}
+
+	delE := sdk.TokensFromConsensusPower(1, sdk.DefaultPowerReduction).Int64()
+
+	for i := 0; i < 4; i++ {
+		del := s.delegation(int64(i))
+		if delE != del {
+			s.T().Fatal("Bad test")
+		}
+	}
+
+}
+
+func executeTrace(s *PBTTestSuite, trace []Action) {
 
 	for _, a := range trace {
 		// succeed := a.succeed
