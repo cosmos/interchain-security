@@ -244,7 +244,25 @@ func (s *PBTTestSuite) delegatorBalance() int64 {
 	del := s.delegator()
 	app := s.providerChain.App.(*appProvider.App)
 	bal := app.BankKeeper.GetBalance(s.providerCtx, del, denom)
-	return int64(bal.Amount.Int64())
+	return bal.Amount.Int64()
+}
+
+func (s *PBTTestSuite) validatorTokens(chain string, i int64) int64 {
+	addr := s.validator(i)
+	val, found := s.chain(chain).App.GetStakingKeeper().GetValidator(*s.ctx(chain), addr)
+	if !found {
+		s.T().Fatal("Couldn't GetValidator")
+	}
+	return val.Tokens.Int64()
+}
+
+func (s *PBTTestSuite) delegation(i int64) int64 {
+	addr := s.delegator()
+	del, found := s.providerChain.App.GetStakingKeeper().GetDelegation(s.providerCtx, addr, s.validator(i))
+	if !found {
+		s.T().Fatal("Couldn't GetDelegation")
+	}
+	return del.Shares.TruncateInt64()
 }
 
 func (s *PBTTestSuite) delegate(a DelegateAction) {
