@@ -43,9 +43,6 @@ type PBTTestSuite struct {
 	consumerClient    *ibctmtypes.ClientState
 	consumerConsState *ibctmtypes.ConsensusState
 
-	providerCtx sdk.Context
-	consumerCtx sdk.Context
-
 	path *ibctesting.Path
 }
 
@@ -92,8 +89,6 @@ func (s *PBTTestSuite) SetupTest() {
 	)
 	consumerGenesis := consumertypes.NewInitialGenesisState(s.providerClient, s.providerConsState, valUpdates, params)
 	s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(s.consumerChain.GetContext(), consumerGenesis)
-
-	s.providerCtx = s.providerChain.GetContext()
 
 	s.path = ibctesting.NewPath(s.consumerChain, s.providerChain)
 	s.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
@@ -203,11 +198,8 @@ func (s *PBTTestSuite) endpoint(chain string) *ibctesting.Endpoint {
 	return endpoints[chain]
 }
 
-func (s *PBTTestSuite) ctx(chain string) *sdk.Context {
-	ctxs := make(map[string]*sdk.Context)
-	ctxs["provider"] = &s.providerCtx //TODO: is using passbyvalue ctx on the suite ok?
-	ctxs["consumer"] = &s.consumerCtx
-	return ctxs[chain]
+func (s *PBTTestSuite) ctx(chain string) sdk.Context {
+	return s.chain(chain).GetContext()
 }
 
 func (s *PBTTestSuite) delegator() sdk.AccAddress {
@@ -230,7 +222,7 @@ func (s *PBTTestSuite) consAddr(i int64) sdk.ConsAddress {
 
 func (s *PBTTestSuite) validatorStatus(chain string, i int64) stakingtypes.BondStatus {
 	addr := s.validator(i)
-	val, found := s.chain(chain).App.GetStakingKeeper().GetValidator(*s.ctx(chain), addr)
+	val, found := s.chain(chain).App.GetStakingKeeper().GetValidator(s.ctx(chain), addr)
 	if !found {
 		s.T().Fatal("Couldn't GetValidator")
 	}
@@ -241,13 +233,13 @@ func (s *PBTTestSuite) validatorStatus(chain string, i int64) stakingtypes.BondS
 func (s *PBTTestSuite) delegatorBalance() int64 {
 	del := s.delegator()
 	app := s.providerChain.App.(*appProvider.App)
-	bal := app.BankKeeper.GetBalance(s.providerCtx, del, denom)
+	bal := app.BankKeeper.GetBalance(s.ctx(p), del, denom)
 	return bal.Amount.Int64()
 }
 
 func (s *PBTTestSuite) validatorTokens(chain string, i int64) int64 {
 	addr := s.validator(i)
-	val, found := s.chain(chain).App.GetStakingKeeper().GetValidator(*s.ctx(chain), addr)
+	val, found := s.chain(chain).App.GetStakingKeeper().GetValidator(s.ctx(chain), addr)
 	if !found {
 		s.T().Fatal("Couldn't GetValidator")
 	}
@@ -256,7 +248,7 @@ func (s *PBTTestSuite) validatorTokens(chain string, i int64) int64 {
 
 func (s *PBTTestSuite) delegation(i int64) int64 {
 	addr := s.delegator()
-	del, found := s.providerChain.App.GetStakingKeeper().GetDelegation(s.providerCtx, addr, s.validator(i))
+	del, found := s.providerChain.App.GetStakingKeeper().GetDelegation(s.ctx(p), addr, s.validator(i))
 	if !found {
 		s.T().Fatal("Couldn't GetDelegation")
 	}
@@ -270,7 +262,7 @@ func (s *PBTTestSuite) delegate(a DelegateAction) {
 	del := s.delegator()
 	val := s.validator(a.val)
 	msg := stakingtypes.NewMsgDelegate(del, val, amt)
-	pskServer.Delegate(sdk.WrapSDKContext(s.providerCtx), msg)
+	pskServer.Delegate(sdk.WrapSDKContext(s.ctx(p)), msg)
 }
 
 func (s *PBTTestSuite) undelegate(a UndelegateAction) {
@@ -281,7 +273,7 @@ func (s *PBTTestSuite) undelegate(a UndelegateAction) {
 	del := s.delegator()
 	val := s.validator(a.val)
 	msg := stakingtypes.NewMsgUndelegate(del, val, amt)
-	pskServer.Undelegate(sdk.WrapSDKContext(s.providerCtx), msg)
+	pskServer.Undelegate(sdk.WrapSDKContext(s.ctx(p)), msg)
 }
 
 func (s *PBTTestSuite) beginRedelegate(a BeginRedelegateAction) {
@@ -294,7 +286,7 @@ func (s *PBTTestSuite) beginRedelegate(a BeginRedelegateAction) {
 	valSrc := s.validator(a.valSrc)
 	valDst := s.validator(a.valDst)
 	msg := stakingtypes.NewMsgBeginRedelegate(del, valSrc, valDst, amt)
-	pskServer.BeginRedelegate(sdk.WrapSDKContext(s.providerCtx), msg)
+	pskServer.BeginRedelegate(sdk.WrapSDKContext(s.ctx(p)), msg)
 }
 
 func (s *PBTTestSuite) providerSlash(a ProviderSlashAction) {
@@ -303,7 +295,7 @@ func (s *PBTTestSuite) providerSlash(a ProviderSlashAction) {
 	h := int64(a.infractionHeight)
 	power := int64(a.power)
 	factor := sdk.NewDec(int64(a.slashPercentage)) // TODO: I think it's a percentage (from 100)?
-	psk.Slash(s.providerCtx, val, h, power, factor)
+	psk.Slash(s.ctx(p), val, h, power, factor)
 }
 
 func (s *PBTTestSuite) consumerSlash(a ConsumerSlashAction) {
@@ -312,7 +304,7 @@ func (s *PBTTestSuite) consumerSlash(a ConsumerSlashAction) {
 	h := int64(a.infractionHeight)
 	power := int64(a.power)
 	factor := sdk.NewDec(int64(a.slashPercentage)) // TODO: I think it's a percentage (from 100)?
-	cccvk.Slash(s.consumerCtx, val, h, power, factor)
+	cccvk.Slash(s.ctx(c), val, h, power, factor)
 }
 
 func (s *PBTTestSuite) jumpToBlock(a JumpToBlockAction) {
@@ -351,7 +343,7 @@ func (s *PBTTestSuite) updateClient(a UpdateClientAction) {
 
 	require.NoError(endpoint.Chain.T, err)
 
-	_, err = chain.App.GetIBCKeeper().UpdateClient(sdk.WrapSDKContext(*ctx), msg)
+	_, err = chain.App.GetIBCKeeper().UpdateClient(sdk.WrapSDKContext(ctx), msg)
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -359,9 +351,9 @@ func (s *PBTTestSuite) updateClient(a UpdateClientAction) {
 }
 
 func adjustParams(s *PBTTestSuite) {
-	p := s.providerChain.App.GetStakingKeeper().GetParams(s.providerCtx)
-	p.MaxValidators = maxValidators
-	s.providerChain.App.GetStakingKeeper().SetParams(s.providerCtx, p)
+	params := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(p))
+	params.MaxValidators = maxValidators
+	s.providerChain.App.GetStakingKeeper().SetParams(s.ctx(p), params)
 }
 
 func (s *PBTTestSuite) TestAssumptions() {
@@ -386,7 +378,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 	*/
 
 	maxValsE := uint32(3)
-	maxVals := s.providerChain.App.GetStakingKeeper().GetParams(s.providerCtx).MaxValidators
+	maxVals := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(p)).MaxValidators
 
 	if maxValsE != maxVals {
 		s.T().Fatal("Bad test")
@@ -435,7 +427,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 	ph := s.providerChain.GetContext().BlockHeader().Height
 	ch := s.consumerChain.GetContext().BlockHeader().Height
 	if ph != ch {
-		s.T().Fatal("Bad test")
+		s.T().Fatal("Bad test") //TODO: debug, ph = 17, ch = 16
 	}
 
 }
