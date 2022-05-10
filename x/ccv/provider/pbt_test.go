@@ -52,6 +52,9 @@ type PBTTestSuite struct {
 const p = "provider"
 const c = "consumer"
 
+// TODO: do I need different denoms for each chain?
+const denom = sdk.DefaultBondDenom
+
 func TestPBTTestSuite(t *testing.T) {
 	suite.Run(t, new(PBTTestSuite))
 }
@@ -113,7 +116,7 @@ func (s *PBTTestSuite) SetupTest() {
 	s.path.EndpointB.CreateClient()
 	s.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(s.providerChain.GetContext(), s.consumerChain.ChainID, s.path.EndpointB.ClientID)
 
-	// TODO: I added this section
+	// TODO: I added this section, should I remove it or move it?
 	//~~~~~~~~~~
 
 	s.coordinator.CreateConnections(s.path)
@@ -237,10 +240,16 @@ func (s *PBTTestSuite) validatorStatus(chain string, i int) stakingtypes.BondSta
 	return val.GetStatus()
 }
 
+func (s *PBTTestSuite) delegatorBalance() int {
+	del := s.delegator()
+	app := s.providerChain.App.(*appProvider.App)
+	bal := app.BankKeeper.GetBalance(s.providerCtx, del, denom)
+	return int(bal.Amount.Int64())
+}
+
 func (s *PBTTestSuite) delegate(a DelegateAction) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-	denom := sdk.DefaultBondDenom
 	amt := sdk.NewCoin(denom, scaledAmt(int(a.amt)))
 	del := s.delegator()
 	val := s.validator(a.val)
@@ -252,7 +261,6 @@ func (s *PBTTestSuite) undelegate(a UndelegateAction) {
 
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-	denom := sdk.DefaultBondDenom
 	amt := sdk.NewCoin(denom, scaledAmt(a.amt))
 	del := s.delegator()
 	val := s.validator(a.val)
@@ -265,7 +273,6 @@ func (s *PBTTestSuite) beginRedelegate(a BeginRedelegateAction) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
 
-	denom := sdk.DefaultBondDenom
 	amt := sdk.NewCoin(denom, scaledAmt(a.amt))
 	del := s.delegator()
 	valSrc := s.validator(a.valSrc)
@@ -386,15 +393,6 @@ func executeTrace(s *PBTTestSuite, trace []Action) {
 }
 
 func (s *PBTTestSuite) TestTrace() {
-
-	/*
-		TODO: There's a few things I need to do to check the driver is in any way usable
-		1. Hardcode a couple of traces
-			1. Query validator balances to find out how much is staked at each one
-			2. Query delegator balance to see how much is available
-		2.
-
-	*/
 
 	trace := []Action{
 		{
