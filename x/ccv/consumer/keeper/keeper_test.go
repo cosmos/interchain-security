@@ -12,7 +12,8 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-	"github.com/cosmos/interchain-security/app"
+	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -23,10 +24,6 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-func init() {
-	ibctesting.DefaultTestingAppInit = simapp.SetupTestingApp
-}
-
 type KeeperTestSuite struct {
 	suite.Suite
 
@@ -34,7 +31,7 @@ type KeeperTestSuite struct {
 
 	// testing chains
 	providerChain *ibctesting.TestChain
-	consumerChain  *ibctesting.TestChain
+	consumerChain *ibctesting.TestChain
 
 	providerClient    *ibctmtypes.ClientState
 	providerConsState *ibctmtypes.ConsensusState
@@ -45,9 +42,7 @@ type KeeperTestSuite struct {
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
-	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
-	suite.providerChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
-	suite.consumerChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
+	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
 
 	tmConfig := ibctesting.NewTendermintConfig()
 
@@ -69,7 +64,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	params := consumertypes.DefaultParams()
 	params.Enabled = true
 	consumerGenesis := types.NewInitialGenesisState(suite.providerClient, suite.providerConsState, valUpdates, params)
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), consumerGenesis)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), consumerGenesis)
 
 	suite.ctx = suite.consumerChain.GetContext()
 
@@ -80,7 +75,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-	providerClient, ok := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderClient(suite.ctx)
+	providerClient, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.ctx)
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
@@ -93,7 +88,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	suite.path.EndpointB.CreateClient()
-	suite.providerChain.App.(*app.App).ProviderKeeper.SetConsumerClient(suite.providerChain.GetContext(), suite.consumerChain.ChainID, suite.path.EndpointB.ClientID)
+	suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(suite.providerChain.GetContext(), suite.consumerChain.ChainID, suite.path.EndpointB.ClientID)
 }
 
 func (suite *KeeperTestSuite) SetupCCVChannel() {
@@ -102,7 +97,7 @@ func (suite *KeeperTestSuite) SetupCCVChannel() {
 }
 
 func (suite *KeeperTestSuite) TestProviderClient() {
-	providerClient, ok := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderClient(suite.ctx)
+	providerClient, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.ctx)
 	suite.Require().True(ok)
 
 	clientState, ok := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClient)
@@ -110,10 +105,10 @@ func (suite *KeeperTestSuite) TestProviderClient() {
 }
 
 func (suite *KeeperTestSuite) TestProviderChannel() {
-	_, ok := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderChannel(suite.ctx)
+	_, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.ctx)
 	suite.Require().False(ok)
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.SetProviderChannel(suite.ctx, "channelID")
-	channelID, ok := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderChannel(suite.ctx)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetProviderChannel(suite.ctx, "channelID")
+	channelID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.ctx)
 	suite.Require().True(ok)
 	suite.Require().Equal("channelID", channelID)
 }
@@ -139,34 +134,34 @@ func (suite *KeeperTestSuite) TestPendingChanges() {
 		nil,
 	)
 
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.SetPendingChanges(suite.ctx, pd)
-	gotPd, ok := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPendingChanges(suite.ctx)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingChanges(suite.ctx, pd)
+	gotPd, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPendingChanges(suite.ctx)
 	suite.Require().True(ok)
 	suite.Require().Equal(&pd, gotPd, "packet data in store does not equal packet data set")
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.DeletePendingChanges(suite.ctx)
-	gotPd, ok = suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPendingChanges(suite.ctx)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeletePendingChanges(suite.ctx)
+	gotPd, ok = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPendingChanges(suite.ctx)
 	suite.Require().False(ok)
 	suite.Require().Nil(gotPd, "got non-nil pending changes after Delete")
 }
 
 func (suite *KeeperTestSuite) TestUnbondingTime() {
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, 1, 10)
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, 2, 25)
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, 5, 15)
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, 6, 40)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, 1, 10)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, 2, 25)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, 5, 15)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, 6, 40)
 
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.DeleteUnbondingTime(suite.ctx, 6)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeleteUnbondingTime(suite.ctx, 6)
 
-	suite.Require().Equal(uint64(10), suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 1))
-	suite.Require().Equal(uint64(25), suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 2))
-	suite.Require().Equal(uint64(15), suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 5))
-	suite.Require().Equal(uint64(0), suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 3))
-	suite.Require().Equal(uint64(0), suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 6))
+	suite.Require().Equal(uint64(10), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 1))
+	suite.Require().Equal(uint64(25), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 2))
+	suite.Require().Equal(uint64(15), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 5))
+	suite.Require().Equal(uint64(0), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 3))
+	suite.Require().Equal(uint64(0), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 6))
 
 	orderedTimes := [][]uint64{{1, 10}, {2, 25}, {5, 15}}
 	i := 0
 
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.IterateUnbondingTime(suite.ctx, func(seq, time uint64) bool {
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IterateUnbondingTime(suite.ctx, func(seq, time uint64) bool {
 		// require that we iterate through unbonding time in order of sequence
 		suite.Require().Equal(orderedTimes[i][0], seq)
 		suite.Require().Equal(orderedTimes[i][1], time)
@@ -198,22 +193,22 @@ func (suite *KeeperTestSuite) TestUnbondingPacket() {
 		)
 		packet := channeltypes.NewPacket(pd.GetBytes(), uint64(i), "provider", "channel-1", "consumer", "channel-1",
 			clienttypes.NewHeight(1, 0), 0)
-		suite.consumerChain.App.(*app.App).ConsumerKeeper.SetUnbondingPacket(suite.ctx, uint64(i), packet)
+		suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingPacket(suite.ctx, uint64(i), packet)
 	}
 
 	// ensure that packets are iterated by sequence
 	i := 0
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.IterateUnbondingPacket(suite.ctx, func(seq uint64, packet channeltypes.Packet) bool {
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IterateUnbondingPacket(suite.ctx, func(seq uint64, packet channeltypes.Packet) bool {
 		suite.Require().Equal(uint64(i), seq)
-		gotPacket, err := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingPacket(suite.ctx, seq)
+		gotPacket, err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingPacket(suite.ctx, seq)
 		suite.Require().NoError(err)
 		suite.Require().Equal(&packet, gotPacket, "packet from get and iteration do not match")
 		i++
 		return false
 	})
 
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.DeleteUnbondingPacket(suite.ctx, 0)
-	gotPacket, err := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingPacket(suite.ctx, 0)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeleteUnbondingPacket(suite.ctx, 0)
+	gotPacket, err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingPacket(suite.ctx, 0)
 	suite.Require().Error(err)
 	suite.Require().Nil(gotPacket, "packet is not nil after delete")
 }
@@ -236,7 +231,7 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 				suite.coordinator.CreateConnections(suite.path)
 
 				// set channel status to INITIALIZING
-				suite.consumerChain.App.(*app.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
+				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{suite.path.EndpointA.ConnectionID}
 			},
@@ -252,7 +247,7 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 				suite.coordinator.CreateConnections(suite.path)
 
 				// set channel status to validating
-				suite.consumerChain.App.(*app.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.VALIDATING)
+				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.VALIDATING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{suite.path.EndpointA.ConnectionID}
 			},
@@ -267,7 +262,7 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 				suite.coordinator.CreateConnections(suite.path)
 
 				// set channel status to INITIALIZING
-				suite.consumerChain.App.(*app.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
+				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{suite.path.EndpointA.ConnectionID, "connection-2"}
 			},
@@ -277,7 +272,7 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 			name: "connection does not exist",
 			setup: func(suite *KeeperTestSuite) {
 				// set channel status to INITIALIZING
-				suite.consumerChain.App.(*app.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
+				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{"connection-dne"}
 			},
@@ -295,7 +290,7 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 				suite.coordinator.CreateConnections(suite.path)
 
 				// set channel status to INITIALIZING
-				suite.consumerChain.App.(*app.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
+				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{suite.path.EndpointA.ConnectionID}
 			},
@@ -311,7 +306,7 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 			tc.setup(suite)
 
 			// Verify ProviderChain on consumer chain using path returned by setup
-			err := suite.consumerChain.App.(*app.App).ConsumerKeeper.VerifyProviderChain(suite.ctx, channelID, connectionHops)
+			err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.VerifyProviderChain(suite.ctx, channelID, connectionHops)
 
 			if tc.expError {
 				suite.Require().Error(err, "invalid case did not return error")
@@ -330,7 +325,7 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	suite.SetupCCVChannel()
 	suite.SendEmptyVSCPacket()
 
-	app, ctx := suite.consumerChain.App.(*app.App), suite.consumerChain.GetContext()
+	app, ctx := suite.consumerChain.App.(*appConsumer.App), suite.consumerChain.GetContext()
 	channelID := suite.path.EndpointA.ChannelID
 
 	// pick a cross-chain validator
@@ -398,7 +393,7 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 func (suite *KeeperTestSuite) TestPendingSlashRequestsLogic() {
 	suite.SetupCCVChannel()
 
-	app := suite.consumerChain.App.(*app.App)
+	app := suite.consumerChain.App.(*appConsumer.App)
 	ctx := suite.consumerChain.GetContext()
 	channelID := suite.path.EndpointA.ChannelID
 
@@ -463,7 +458,7 @@ func (suite *KeeperTestSuite) TestPendingSlashRequestsLogic() {
 }
 
 func (suite *KeeperTestSuite) TestCrossChainValidator() {
-	app := suite.consumerChain.App.(*app.App)
+	app := suite.consumerChain.App.(*appConsumer.App)
 	ctx := suite.consumerChain.GetContext()
 
 	// should return false
@@ -490,7 +485,7 @@ func (suite *KeeperTestSuite) TestCrossChainValidator() {
 }
 
 func (suite *KeeperTestSuite) TestPendingSlashRequests() {
-	consumerKeeper := suite.consumerChain.App.(*app.App).ConsumerKeeper
+	consumerKeeper := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	ctx := suite.consumerChain.GetContext()
 
 	// prepare test setup by storing 10 pending slash requests
@@ -527,8 +522,8 @@ func (suite *KeeperTestSuite) TestPendingSlashRequests() {
 // to ensure that the channel gets established
 func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
 
-	consumerKeeper := suite.consumerChain.App.(*app.App).ConsumerKeeper
-	providerKeeper := suite.providerChain.App.(*app.App).ProviderKeeper
+	consumerKeeper := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 
 	oldBlockTime := suite.providerChain.GetContext().BlockTime()
 	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
@@ -541,7 +536,7 @@ func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
 		nil,
 	)
 
-	seq, ok := suite.providerChain.App.(*app.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
+	seq, ok := suite.providerChain.App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
 		suite.providerChain.GetContext(), providertypes.PortID, suite.path.EndpointB.ChannelID)
 	suite.Require().True(ok)
 
