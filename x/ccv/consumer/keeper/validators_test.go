@@ -1,7 +1,7 @@
 package keeper_test
 
 import (
-	appConsumer "github.com/cosmos/interchain-security/app_consumer"
+	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"

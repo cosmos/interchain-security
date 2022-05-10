@@ -16,8 +16,8 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
 
-	appConsumer "github.com/cosmos/interchain-security/app_consumer"
-	appProvider "github.com/cosmos/interchain-security/app_provider"
+	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/app/provider"
 )
 
 var defaultConsensusParams = &abci.ConsensusParams{
@@ -45,7 +45,7 @@ func SetupTestingappProvider() (ibctesting.TestingApp, map[string]json.RawMessag
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
 }
 
-func SetupTestingappConsumer() (ibctesting.TestingApp, map[string]json.RawMessage) {
+func SetupTestingAppConsumer() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	db := tmdb.NewMemDB()
 	// encCdc := app.MakeTestEncodingConfig()
 	encoding := cosmoscmd.MakeEncodingConfig(appConsumer.ModuleBasics)
@@ -67,12 +67,12 @@ func NewBasicCoordinator(t *testing.T) *ibctesting.Coordinator {
 // NewCoordinator initializes Coordinator with 0 TestChains
 func NewProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain) {
 	coordinator := NewBasicCoordinator(t)
-	chainID := ibctesting.GetChainID(0)
+	chainID := ibctesting.GetChainID(1)
 	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingappProvider, chainID)
 	providerChain := coordinator.GetChain(chainID)
-	chainID = ibctesting.GetChainID(1)
+	chainID = ibctesting.GetChainID(2)
 	coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(t, coordinator,
-		SetupTestingappConsumer, chainID, providerChain.Vals, providerChain.Signers)
+		SetupTestingAppConsumer, chainID, providerChain.Vals, providerChain.Signers)
 	consumerChain := coordinator.GetChain(chainID)
 	return coordinator, providerChain, consumerChain
 }
