@@ -127,7 +127,8 @@ require (
 
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
-	//github.com/cosmos/cosmos-sdk => github.com/sainoe/cosmos-sdk v0.44.4-0.20220509095148-590b75afa297
+
+	// TODO: update cosmos-sdk import once #11921 gets merged
 	github.com/cosmos/cosmos-sdk => github.com/sainoe/cosmos-sdk v0.44.4-0.20220510144203-a0f64cfd6249
 	github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-alpha1.0.20220505161112-1f45da82fc75
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
