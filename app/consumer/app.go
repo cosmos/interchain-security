@@ -778,6 +778,13 @@ func (app *App) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.Res
 
 	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.MM.GetVersionMap())
 
+	for i, moduleName := range app.MM.OrderBeginBlockers {
+		if moduleName == distrtypes.ModuleName {
+			app.MM.OrderBeginBlockers = append(app.MM.OrderBeginBlockers[:i], app.MM.OrderBeginBlockers[i+1:]...)
+			break
+		}
+	}
+
 	return app.MM.InitGenesis(ctx, app.appCodec, genesisState)
 }
 

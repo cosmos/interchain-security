@@ -446,7 +446,8 @@ func (s System) addIbcChannel(
 		"--port-b", action.portB,
 		"-o", action.order,
 		"--channel-version", s.containerConfig.ccvVersion,
-		"--connection-a", "connection-"+fmt.Sprint(action.connectionA),
+		// "--connection-a",
+		"connection-"+fmt.Sprint(action.connectionA),
 	)
 
 	cmdReader, err := cmd.StdoutPipe()
@@ -490,6 +491,9 @@ func (s System) relayPackets(
 		s.chainConfigs[action.chain].chainId, action.port, "channel-"+fmt.Sprint(action.channel),
 	).CombinedOutput()
 
+	fmt.Println(s.chainConfigs[action.chain].chainId, action.port, "channel-"+fmt.Sprint(action.channel))
+	fmt.Println(string(bz))
+
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -520,6 +524,15 @@ func (s System) delegateTokens(
 		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()
+
+	fmt.Println(`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, s.chainConfigs[action.chain].chainId,
+		`--home`, s.getValidatorHome(action.chain, action.from),
+		`--node`, s.getValidatorNode(action.chain, action.from),
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`)
+	fmt.Println(string(bz))
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
