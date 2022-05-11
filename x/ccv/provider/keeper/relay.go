@@ -174,6 +174,8 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		return fmt.Errorf("should not be slashing unbonded validator: %s", validator.GetOperator())
 	}
 
+	// fmt.Println(validator.String())
+
 	// spare jailaed and/or tombstoned validator
 	if validator.IsJailed() || k.slashingKeeper.IsTombstoned(ctx, consAddr) {
 		return fmt.Errorf("should not be slashing jailed and/or tombstoned validator: %s", validator.GetOperator())

@@ -363,6 +363,9 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
 	providerSlashingKeeper := suite.providerChain.App.(*app.App).SlashingKeeper
 	consumerChainID := suite.consumerChain.ChainID
 
+	// sync context
+	suite.ctx = suite.providerChain.GetContext()
+
 	// expect an error if initial block height isn't set for consumer chain
 	err := ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, ccv.SlashPacketData{})
 	suite.Require().Error(err, "did slash unknown validator")
@@ -381,7 +384,7 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
 	// construct slashing packet with non existing validator
 	slashingPkt := ccv.NewSlashPacketData(
 		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
-			Power: int64(0)}, uint64(0), 0,
+			Power: int64(0)}, uint64(0), stakingtypes.Downtime,
 	)
 	//expect an error if validator doesn't exist
 	err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
@@ -390,23 +393,45 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
 	// jail an existing validator
 	val := suite.providerChain.Vals.Validators[0]
 	consAddr := sdk.ConsAddress(val.Address)
-	origTime := suite.ctx.BlockTime()
+	// origTime := suite.ctx.BlockTime()
 	providerStakingKeeper.Jail(suite.ctx, consAddr)
 	// commit block to set VSC ID
 	suite.coordinator.CommitBlock(suite.providerChain)
 	// Update suite.ctx bc CommitBlock updates only providerChain's current header block height
 	suite.ctx = suite.providerChain.GetContext()
-	suite.Require().NotZero(ProviderKeeper.GetValsetUpdateBlockHeight(suite.ctx, vID))
+	//suite.Require().NotZero(ProviderKeeper.GetValsetUpdateBlockHeight(suite.ctx, vID))
 
-	// end validator unbonding period
-	ctx := suite.ctx.WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
-	suite.providerChain.App.GetStakingKeeper().BlockValidatorUpdates(ctx)
+	// fmt.Println(suite.providerChain.GetContext().BlockHeight())
+	// fmt.Println(suite.ctx.BlockHeight())
+	// validator, f := providerStakingKeeper.GetValidatorByConsAddr(suite.providerChain.GetContext(), consAddr)
+	// suite.Require().True(f)
+	// fmt.Printf(validator.String())
 
 	// replace validator address
 	slashingPkt.Validator.Address = val.Address
-	// expect an error since the validator is already jailed
-	err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
-	suite.Require().Error(err, "did slash unbonded validator")
+	slashingPkt.ValsetUpdateId = vID
+
+	err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
+	suite.Require().Error(err, "did slash jail validator")
+
+	// end validator unbonding period
+	// suite.ctx = suite.ctx.WithBlockTime(origTime.Add(10 * consumertypes.UnbondingTime).Add(3 * time.Hour))
+	// // suite.providerChain.App.EndBlock(abci.RequestEndBlock{})
+	// suite.providerChain.App.GetStakingKeeper().BlockValidatorUpdates(suite.ctx)
+
+	// validator, f := providerStakingKeeper.GetValidatorByConsAddr(suite.providerChain.GetContext(), consAddr)
+	// suite.Require().True(f)
+	// valAddr, err := sdk.ValAddressFromBech32(validator.OperatorAddress)
+	// suite.Require().NoError(err)
+	// err = providerSlashingKeeper.Unjail(suite.ctx, valAddr)
+	// suite.Require().NoError(err)
+
+	// // validator, f := providerStakingKeeper.GetValidatorByConsAddr(suite.ctx, consAddr)
+	// // suite.Require().True(f)
+	// // fmt.Printf(validator.String())
+	// // expect no-error
+	// err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
+	// suite.Require().NoError(err)
 
 	// replace validator address
 	val = suite.providerChain.Vals.Validators[1]
@@ -414,13 +439,14 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
 
 	// set VSC ID
 	slashingPkt.ValsetUpdateId = vID
+	slashingPkt.Infraction = stakingtypes.DoubleSign
 
 	// // set current valset update ID
-	valInfo := slashingtypes.NewValidatorSigningInfo(sdk.ConsAddress(val.Address), ctx.BlockHeight(),
+	valInfo := slashingtypes.NewValidatorSigningInfo(sdk.ConsAddress(val.Address), suite.ctx.BlockHeight(),
 		suite.ctx.BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
-	providerSlashingKeeper.SetValidatorSigningInfo(ctx, sdk.ConsAddress(val.Address), valInfo)
+	providerSlashingKeeper.SetValidatorSigningInfo(suite.ctx, sdk.ConsAddress(val.Address), valInfo)
 
 	// expect no error
-	err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
+	err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
 	suite.Require().NoError(err)
 }
