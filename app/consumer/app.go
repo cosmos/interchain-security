@@ -182,16 +182,16 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:                 nil,
+		authtypes.FeeCollectorName:                    nil,
 		ibcconsumertypes.ConsumerRedistributeName:     nil,
 		ibcconsumertypes.ConsumerToSendToProviderName: nil,
-		distrtypes.ModuleName:                      nil,
-		minttypes.ModuleName:                       {authtypes.Minter},
-		stakingtypes.BondedPoolName:                {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName:             {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:                        {authtypes.Burner},
-		liquiditytypes.ModuleName:                  {authtypes.Minter, authtypes.Burner},
-		ibctransfertypes.ModuleName:                {authtypes.Minter, authtypes.Burner},
+		distrtypes.ModuleName:                         nil,
+		minttypes.ModuleName:                          {authtypes.Minter},
+		stakingtypes.BondedPoolName:                   {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:                {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                           {authtypes.Burner},
+		liquiditytypes.ModuleName:                     {authtypes.Minter, authtypes.Burner},
+		ibctransfertypes.ModuleName:                   {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -241,13 +241,13 @@ type App struct { // nolint: golint
 	FeeGrantKeeper  feegrantkeeper.Keeper
 	AuthzKeeper     authzkeeper.Keeper
 	LiquidityKeeper liquiditykeeper.Keeper
-	ConsumerKeeper     ibcconsumerkeeper.Keeper
-	ProviderKeeper    ibcproviderkeeper.Keeper
+	ConsumerKeeper  ibcconsumerkeeper.Keeper
+	ProviderKeeper  ibcproviderkeeper.Keeper
 
 	// make scoped keepers public for test purposes
-	ScopedIBCKeeper       capabilitykeeper.ScopedKeeper
-	ScopedTransferKeeper  capabilitykeeper.ScopedKeeper
-	ScopedIBCConsumerKeeper  capabilitykeeper.ScopedKeeper
+	ScopedIBCKeeper         capabilitykeeper.ScopedKeeper
+	ScopedTransferKeeper    capabilitykeeper.ScopedKeeper
+	ScopedIBCConsumerKeeper capabilitykeeper.ScopedKeeper
 	ScopedIBCProviderKeeper capabilitykeeper.ScopedKeeper
 
 	// the module manager
@@ -779,6 +779,13 @@ func (app *App) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.Res
 	}
 
 	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.MM.GetVersionMap())
+
+	for i, moduleName := range app.MM.OrderBeginBlockers {
+		if moduleName == distrtypes.ModuleName {
+			app.MM.OrderBeginBlockers = append(app.MM.OrderBeginBlockers[:i], app.MM.OrderBeginBlockers[i+1:]...)
+			break
+		}
+	}
 
 	return app.MM.InitGenesis(ctx, app.appCodec, genesisState)
 }
