@@ -3,6 +3,7 @@ package provider_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -144,10 +145,12 @@ type Action struct {
 	amt              int64
 	succeed          bool
 	chain            string
-	height           int64
 	infractionHeight int64
 	power            int64
 	slashPercentage  int64
+	blocks           int64
+	seconds          int64
+	secondsPerBlock  int64
 }
 type DelegateAction struct {
 	val     int64
@@ -177,9 +180,13 @@ type ConsumerSlashAction struct {
 	power            int64
 	slashPercentage  int64
 }
-type JumpToBlockAction struct {
-	chain  string
-	height int64
+type JumpNBlocksAction struct {
+	chain           string
+	blocks          int64
+	secondsPerBlock int64
+}
+type IncrementTimeAction struct {
+	seconds int64
 }
 type UpdateClientAction struct {
 	chain string
@@ -312,15 +319,20 @@ func (s *PBTTestSuite) consumerSlash(a ConsumerSlashAction) {
 	cccvk.Slash(s.ctx(c), val, h, power, factor)
 }
 
-func (s *PBTTestSuite) jumpToBlock(a JumpToBlockAction) {
-	h := int64(a.height)
-	hCurr := s.height(a.chain)
-	if h <= hCurr {
-		s.T().Fatal("Can only jump to future block")
+func (s *PBTTestSuite) jumpNBlocks(a JumpNBlocksAction) {
+	for i := int64(0); i < a.blocks; i++ {
+		s.chain(a.chain).NextBlock()
+		s.coordinator.IncrementTimeBy(time.Second * time.Duration(a.secondsPerBlock))
 	}
-	dt := uint64(h - hCurr)
-	s.coordinator.CommitNBlocks(s.chain(a.chain), dt)
 }
+
+func (s *PBTTestSuite) incrementTime(a IncrementTimeAction) {
+	s.coordinator.IncrementTimeBy(time.Second * time.Duration(a.seconds))
+}
+
+/*
+TODO: there should probably be an additional increment time method
+*/
 
 func (s *PBTTestSuite) updateClient(a UpdateClientAction) {
 	chain := s.chain(a.chain)
@@ -366,7 +378,7 @@ func equalHeights(s *PBTTestSuite) {
 	ch := s.height(c)
 	if ph != ch {
 		// s.T().Fatal("Bad test")
-		s.T().Log("Goober")
+		s.T().Log("Foo")
 	}
 }
 
@@ -374,9 +386,9 @@ func (s *PBTTestSuite) TestAssumptions() {
 
 	adjustParams(s)
 
-	s.jumpToBlock(JumpToBlockAction{p, s.height(p) + 1})
+	s.jumpNBlocks(JumpNBlocksAction{p, 1, 5})
 	// TODO: Does this make sense?
-	s.jumpToBlock(JumpToBlockAction{c, s.height(p)})
+	s.jumpNBlocks(JumpNBlocksAction{c, 2, 5})
 
 	equalHeights(s)
 
@@ -486,10 +498,15 @@ func executeTrace(s *PBTTestSuite, trace []Action) {
 				a.power,
 				a.slashPercentage,
 			})
-		case "jumpToBlock":
-			s.jumpToBlock(JumpToBlockAction{
+		case "jumpNBlocks":
+			s.jumpNBlocks(JumpNBlocksAction{
 				a.chain,
-				a.height,
+				a.blocks,
+				a.secondsPerBlock,
+			})
+		case "incrementTIme":
+			s.incrementTime(IncrementTimeAction{
+				a.seconds,
 			})
 		case "updateClient":
 			s.updateClient(UpdateClientAction{a.chain})
@@ -521,6 +538,10 @@ func (s *PBTTestSuite) TestTrace() {
 			succeed: true,
 		},
 		{
+			kind:    "incrementTime",
+			seconds: 100,
+		},
+		{
 			kind:             "providerSlash",
 			valDst:           0,
 			infractionHeight: 22,
@@ -535,9 +556,9 @@ func (s *PBTTestSuite) TestTrace() {
 			slashPercentage:  5,
 		},
 		{
-			kind:   "jumpToBlock",
+			kind:   "jumpNBlocks",
 			chain:  "provider",
-			height: 22,
+			blocks: 1,
 		},
 		{
 			kind:  "updateClient",
