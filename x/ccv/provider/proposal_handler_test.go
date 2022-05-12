@@ -8,7 +8,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-	"github.com/cosmos/interchain-security/app"
+	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/x/ccv/provider"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
@@ -56,7 +56,7 @@ func (suite *ProviderTestSuite) TestCreateConsumerChainProposalHandler() {
 
 			tc.malleate(suite)
 
-			proposalHandler := provider.NewCreateConsumerChainHandler(suite.providerChain.App.(*app.App).ProviderKeeper)
+			proposalHandler := provider.NewCreateConsumerChainHandler(suite.providerChain.App.(*appProvider.App).ProviderKeeper)
 
 			err = proposalHandler(ctx, content)
 

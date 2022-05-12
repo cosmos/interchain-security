@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -17,7 +18,8 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
-	"github.com/cosmos/interchain-security/app"
+	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -28,10 +30,6 @@ import (
 
 	"github.com/stretchr/testify/suite"
 )
-
-func init() {
-	ibctesting.DefaultTestingAppInit = simapp.SetupTestingApp
-}
 
 type KeeperTestSuite struct {
 	suite.Suite
@@ -51,9 +49,7 @@ type KeeperTestSuite struct {
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
-	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
-	suite.providerChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
-	suite.consumerChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
+	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
 
 	tmConfig := ibctesting.NewTendermintConfig()
 
@@ -75,7 +71,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	params := consumertypes.DefaultParams()
 	params.Enabled = true
 	consumerGenesis := consumertypes.NewInitialGenesisState(suite.providerClient, suite.providerConsState, valUpdates, params)
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), consumerGenesis)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), consumerGenesis)
 
 	suite.ctx = suite.providerChain.GetContext()
 
@@ -86,7 +82,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.path.EndpointB.ChannelConfig.Version = types.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-	providerClient, ok := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
+	providerClient, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
@@ -99,7 +95,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	suite.path.EndpointB.CreateClient()
-	suite.providerChain.App.(*app.App).ProviderKeeper.SetConsumerClient(suite.providerChain.GetContext(), suite.consumerChain.ChainID, suite.path.EndpointB.ClientID)
+	suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(suite.providerChain.GetContext(), suite.consumerChain.ChainID, suite.path.EndpointB.ClientID)
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -107,7 +103,7 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (suite *KeeperTestSuite) TestValsetUpdateBlockHeight() {
-	app := suite.providerChain.App.(*app.App)
+	app := suite.providerChain.App.(*appProvider.App)
 	ctx := suite.ctx
 
 	blockHeight := app.ProviderKeeper.GetValsetUpdateBlockHeight(ctx, uint64(0))
@@ -128,7 +124,7 @@ func (suite *KeeperTestSuite) TestValsetUpdateBlockHeight() {
 }
 
 func (suite *KeeperTestSuite) TestSlashAcks() {
-	app := suite.providerChain.App.(*app.App)
+	app := suite.providerChain.App.(*appProvider.App)
 	ctx := suite.ctx
 
 	var chainsAcks [][]string
@@ -170,7 +166,7 @@ func (suite *KeeperTestSuite) TestSlashAcks() {
 }
 
 func (suite *KeeperTestSuite) TestAppendSlashgAck() {
-	app := suite.providerChain.App.(*app.App)
+	app := suite.providerChain.App.(*appProvider.App)
 	ctx := suite.ctx
 
 	p := []string{"alice", "bob", "charlie"}
@@ -189,7 +185,7 @@ func (suite *KeeperTestSuite) TestAppendSlashgAck() {
 }
 
 func (suite *KeeperTestSuite) TestInitHeight() {
-	app := suite.providerChain.App.(*app.App)
+	app := suite.providerChain.App.(*appProvider.App)
 	ctx := suite.ctx
 
 	tc := []struct {
@@ -212,8 +208,8 @@ func (suite *KeeperTestSuite) TestInitHeight() {
 
 func (suite *KeeperTestSuite) TestHandleSlashPacketDistribution() {
 	providerStakingKeeper := suite.providerChain.App.GetStakingKeeper()
-	providerSlashingKeeper := suite.providerChain.App.(*app.App).SlashingKeeper
-	ProviderKeeper := suite.providerChain.App.(*app.App).ProviderKeeper
+	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
+	ProviderKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 
 	// bonded amount
 	bondAmt := sdk.NewInt(1000000)
@@ -327,8 +323,8 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketDistribution() {
 }
 
 func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
-	ProviderKeeper := suite.providerChain.App.(*app.App).ProviderKeeper
-	providerSlashingKeeper := suite.providerChain.App.(*app.App).SlashingKeeper
+	ProviderKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
+	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
 
 	val := suite.providerChain.Vals.Validators
 	consAddr := sdk.ConsAddress(val[0].Address)
@@ -359,18 +355,17 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
 
 func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
 	providerStakingKeeper := suite.providerChain.App.GetStakingKeeper()
-	ProviderKeeper := suite.providerChain.App.(*app.App).ProviderKeeper
-	providerSlashingKeeper := suite.providerChain.App.(*app.App).SlashingKeeper
+	ProviderKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
+	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
 	consumerChainID := suite.consumerChain.ChainID
 
-	// sync context
+	// sync contexts block height
 	suite.ctx = suite.providerChain.GetContext()
 
 	// expect an error if initial block height isn't set for consumer chain
 	err := ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, ccv.SlashPacketData{})
-	suite.Require().Error(err, "did slash unknown validator")
+	suite.Require().Error(err, "slash validator with invalid infraction")
 
-	// suite.SetupCCVChannel()
 	// save VSC ID
 	vID := ProviderKeeper.GetValidatorSetUpdateId(suite.ctx)
 
@@ -386,6 +381,10 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
 		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
 			Power: int64(0)}, uint64(0), stakingtypes.Downtime,
 	)
+
+	// Set initial block height for consumer chain
+	ProviderKeeper.SetInitChainHeight(suite.ctx, consumerChainID, uint64(suite.ctx.BlockHeight()))
+
 	//expect an error if validator doesn't exist
 	err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
 	suite.Require().Error(err, "did slash unknown validator")
@@ -393,60 +392,56 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
 	// jail an existing validator
 	val := suite.providerChain.Vals.Validators[0]
 	consAddr := sdk.ConsAddress(val.Address)
-	// origTime := suite.ctx.BlockTime()
+	origTime := suite.ctx.BlockTime()
 	providerStakingKeeper.Jail(suite.ctx, consAddr)
 	// commit block to set VSC ID
 	suite.coordinator.CommitBlock(suite.providerChain)
 	// Update suite.ctx bc CommitBlock updates only providerChain's current header block height
 	suite.ctx = suite.providerChain.GetContext()
-	//suite.Require().NotZero(ProviderKeeper.GetValsetUpdateBlockHeight(suite.ctx, vID))
+	suite.Require().NotZero(ProviderKeeper.GetValsetUpdateBlockHeight(suite.ctx, vID))
 
-	// fmt.Println(suite.providerChain.GetContext().BlockHeight())
-	// fmt.Println(suite.ctx.BlockHeight())
-	// validator, f := providerStakingKeeper.GetValidatorByConsAddr(suite.providerChain.GetContext(), consAddr)
-	// suite.Require().True(f)
-	// fmt.Printf(validator.String())
-
-	// replace validator address
+	// update validator address and VSC ID
 	slashingPkt.Validator.Address = val.Address
 	slashingPkt.ValsetUpdateId = vID
 
 	err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
 	suite.Require().Error(err, "did slash jail validator")
 
-	// end validator unbonding period
-	// suite.ctx = suite.ctx.WithBlockTime(origTime.Add(10 * consumertypes.UnbondingTime).Add(3 * time.Hour))
-	// // suite.providerChain.App.EndBlock(abci.RequestEndBlock{})
-	// suite.providerChain.App.GetStakingKeeper().BlockValidatorUpdates(suite.ctx)
+	// end validator unbonding period and unjail validator
+	suite.ctx = suite.ctx.WithBlockTime(origTime.Add(10 * consumertypes.UnbondingTime).Add(3 * time.Hour))
+	suite.providerChain.App.GetStakingKeeper().BlockValidatorUpdates(suite.ctx)
 
-	// validator, f := providerStakingKeeper.GetValidatorByConsAddr(suite.providerChain.GetContext(), consAddr)
-	// suite.Require().True(f)
-	// valAddr, err := sdk.ValAddressFromBech32(validator.OperatorAddress)
-	// suite.Require().NoError(err)
-	// err = providerSlashingKeeper.Unjail(suite.ctx, valAddr)
-	// suite.Require().NoError(err)
+	validator, f := providerStakingKeeper.GetValidatorByConsAddr(suite.providerChain.GetContext(), consAddr)
+	suite.Require().True(f)
+	valAddr, err := sdk.ValAddressFromBech32(validator.OperatorAddress)
+	suite.Require().NoError(err)
 
-	// // validator, f := providerStakingKeeper.GetValidatorByConsAddr(suite.ctx, consAddr)
-	// // suite.Require().True(f)
-	// // fmt.Printf(validator.String())
-	// // expect no-error
-	// err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
-	// suite.Require().NoError(err)
+	err = suite.providerChain.App.(*appProvider.App).BankKeeper.SendCoins(suite.ctx, suite.providerChain.SenderAccount.GetAddress(), sdk.AccAddress(valAddr), sdk.NewCoins(sdk.NewCoin("stake", sdk.NewInt(1000000))))
+	suite.Require().NoError(err)
 
-	// replace validator address
-	val = suite.providerChain.Vals.Validators[1]
-	slashingPkt.Validator.Address = val.Address
+	_, err = providerStakingKeeper.Delegate(suite.ctx, sdk.AccAddress(valAddr), sdk.NewInt(1000000), stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+	suite.Require().NoError(err)
 
-	// set VSC ID
-	slashingPkt.ValsetUpdateId = vID
-	slashingPkt.Infraction = stakingtypes.DoubleSign
+	suite.Require().NoError(err)
+	err = providerSlashingKeeper.Unjail(suite.ctx, valAddr)
+	suite.Require().NoError(err)
 
-	// // set current valset update ID
+	// expect no error
 	valInfo := slashingtypes.NewValidatorSigningInfo(sdk.ConsAddress(val.Address), suite.ctx.BlockHeight(),
 		suite.ctx.BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
 	providerSlashingKeeper.SetValidatorSigningInfo(suite.ctx, sdk.ConsAddress(val.Address), valInfo)
 
-	// expect no error
 	err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
 	suite.Require().NoError(err)
+
+	// change validator and infraction type
+	tmAddr := suite.providerChain.Vals.Validators[1].Address
+	slashingPkt.Validator.Address = tmAddr
+	slashingPkt.Infraction = stakingtypes.InfractionEmpty
+
+	valInfo.Address = sdk.ConsAddress(tmAddr).String()
+	providerSlashingKeeper.SetValidatorSigningInfo(suite.ctx, sdk.ConsAddress(tmAddr), valInfo)
+
+	err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
+	suite.Require().EqualError(err, fmt.Sprintf("invalid infraction type: %v", stakingtypes.InfractionEmpty))
 }
