@@ -288,7 +288,7 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketDistribution() {
 			expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed},
 			valsetUpdateID: valseUpdateID0,
 		},
-		// TODO SIMON: unjail validators after each test case to slash a validator more than once
+		// TODO Simon: implement this tests using other validators
 		// { // second undelegation is slashed again: valseUpdateID1 maps to 2nd undelegation height
 		// 	expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed2},
 		// 	valsetUpdateID: valseUpdateID1,
