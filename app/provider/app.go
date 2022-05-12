@@ -525,7 +525,7 @@ func New(
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec,
 		keys[evidencetypes.StoreKey],
-		app.ConsumerKeeper,
+		&app.StakingKeeper,
 		app.SlashingKeeper,
 	)
 
