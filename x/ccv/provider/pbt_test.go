@@ -88,7 +88,7 @@ func (s *PBTTestSuite) SetupTest() {
 		"0.5", // 50%
 	)
 	consumerGenesis := consumertypes.NewInitialGenesisState(s.providerClient, s.providerConsState, valUpdates, params)
-	s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(s.consumerChain.GetContext(), consumerGenesis)
+	s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(s.ctx(c), consumerGenesis)
 
 	s.path = ibctesting.NewPath(s.consumerChain, s.providerChain)
 	s.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
@@ -97,7 +97,7 @@ func (s *PBTTestSuite) SetupTest() {
 	s.path.EndpointB.ChannelConfig.Version = types.Version
 	s.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	s.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-	providerClient, ok := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(s.consumerChain.GetContext())
+	providerClient, ok := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(s.ctx(c))
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
@@ -110,7 +110,7 @@ func (s *PBTTestSuite) SetupTest() {
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	s.path.EndpointB.CreateClient()
-	s.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(s.providerChain.GetContext(), s.consumerChain.ChainID, s.path.EndpointB.ClientID)
+	s.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(s.ctx(p), s.consumerChain.ChainID, s.path.EndpointB.ClientID)
 
 	// TODO: I added this section, should I remove it or move it?
 	//~~~~~~~~~~
@@ -424,8 +424,8 @@ func (s *PBTTestSuite) TestAssumptions() {
 		}
 	}
 
-	ph := s.providerChain.GetContext().BlockHeader().Height
-	ch := s.consumerChain.GetContext().BlockHeader().Height
+	ph := s.ctx(p).BlockHeader().Height
+	ch := s.ctx(c).BlockHeader().Height
 	if ph != ch {
 		s.T().Fatal("Bad test") //TODO: debug, ph = 17, ch = 16
 	}
