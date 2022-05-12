@@ -446,8 +446,7 @@ func (s System) addIbcChannel(
 		"--port-b", action.portB,
 		"-o", action.order,
 		"--channel-version", s.containerConfig.ccvVersion,
-		// "--connection-a",
-		"connection-"+fmt.Sprint(action.connectionA),
+		"--connection-a", "connection-"+fmt.Sprint(action.connectionA),
 	)
 
 	cmdReader, err := cmd.StdoutPipe()
