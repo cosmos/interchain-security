@@ -387,7 +387,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 	adjustParams(s)
 
 	s.jumpNBlocks(JumpNBlocksAction{p, 1, 5})
-	// TODO: Does this make sense?
+	// TODO: Is it correct to catch the consumer up with the provider here?
 	s.jumpNBlocks(JumpNBlocksAction{c, 2, 5})
 
 	equalHeights(s)
@@ -425,13 +425,14 @@ func (s *PBTTestSuite) TestAssumptions() {
 		}
 	}
 
-	step := int64(100)
-	for i := 0; i < 4; i++ {
-		s.delegate(DelegateAction{int64(i), (4 - int64(i)) * step, true})
+	step := int64(1)
+
+	for i := 0; i < 3; i++ {
+		s.delegate(DelegateAction{int64(i), (3 - int64(i)) * step, true})
 	}
 
 	for i := 0; i < 4; i++ {
-		delE := (4-int64(i))*step + int64(1)
+		delE := (3-int64(i))*step + int64(1)
 		del := s.delegation(int64(i))
 		if delE != del {
 			s.T().Fatal("Bad test")
@@ -457,6 +458,16 @@ func (s *PBTTestSuite) TestAssumptions() {
 	}
 
 	equalHeights(s)
+
+	for i := 0; i < maxValidators; i++ {
+		A := s.validatorTokens(p, int64(i))
+		E := (3-int64(i))*step + int64(1)
+		if E != A {
+			s.T().Fatal("Bad test")
+		}
+	}
+
+	// validator tokens are 4,3,2,1
 
 }
 
