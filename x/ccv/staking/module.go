@@ -28,13 +28,15 @@ type AppModuleBasic struct {
 type AppModule struct {
 	// embed the Cosmos SDK's x/staking AppModule
 	staking.AppModule
+
+	keeper keeper.Keeper
 }
 
 // NewAppModule creates a new AppModule object using the native x/staking module
 // AppModule constructor.
 func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak types.AccountKeeper, bk types.BankKeeper) AppModule {
 	stakingAppMod := staking.NewAppModule(cdc, keeper, ak, bk)
-	return AppModule{stakingAppMod}
+	return AppModule{AppModule: stakingAppMod, keeper: keeper}
 }
 
 // InitGenesis performs a no-op in that it returns no validator set updates.
@@ -48,6 +50,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 // validators are tracked via the consumer chain's x/cvv/consumer module. Validators
 // contained within this module act as "pseudo" validators, in that they may be
 // used in the consumer chain's governance system.
-func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+	_ = am.keeper.BlockValidatorUpdates(ctx)
 	return []abci.ValidatorUpdate{}
 }
