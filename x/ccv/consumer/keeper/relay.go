@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
@@ -124,34 +123,17 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 		)
 		return
 	}
-	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
-	if !ok {
-		panic(sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID))
-	}
-	channelCap, ok := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(types.PortID, channelID))
-	if !ok {
-		panic(sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability"))
-	}
 
-	// get the next sequence
-	sequence, found := k.channelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
-	if !found {
-		panic(sdkerrors.Wrapf(
-			channeltypes.ErrSequenceSendNotFound,
-			"source port: %s, source channel: %s", types.PortID, channelID,
-		))
-	}
-
-	// construct IBC packet
-	packetDataBytes := packetData.GetBytes()
-	packet := channeltypes.NewPacket(
-		packetDataBytes, sequence,
-		types.PortID, channelID,
-		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
-		clienttypes.Height{}, uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
+	// send packet over IBC
+	err := utils.SendIBCPacket(
+		ctx,
+		k.scopedKeeper,
+		k.channelKeeper,
+		channelID,    // source channel id
+		types.PortID, // source port id
+		packetData.GetBytes(),
 	)
-	// send IBC packet
-	if err := k.channelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
+	if err != nil {
 		panic(err)
 	}
 
@@ -166,14 +148,6 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 	if !ok {
 		panic(fmt.Errorf("%s: CCV channel not set", channeltypes.ErrChannelNotFound))
 	}
-	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
-	if !ok {
-		panic(fmt.Errorf("%s: channel not found for channel ID: %s", channeltypes.ErrChannelNotFound, channelID))
-	}
-	channelCap, ok := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(types.PortID, channelID))
-	if !ok {
-		panic(fmt.Errorf("%s: module does not own channel capability", channeltypes.ErrChannelCapabilityNotFound))
-	}
 
 	// iterate over pending slash requests in reverse order
 	requests := k.GetPendingSlashRequests(ctx)
@@ -183,24 +157,16 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 		// send the emebdded slash packet to the CCV channel
 		// if the outstanding downtime flag is false for the validator
 		if !slashReq.Downtime || !k.OutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address)) {
-			sequence, found := k.channelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
-			if !found {
-				panic(fmt.Errorf(
-					"%s: source port: %s, source channel: %s", channeltypes.ErrSequenceSendNotFound, types.PortID, channelID,
-				))
-			}
-
-			// construct IBC packet
-			packetDataBytes := requests[i].Packet.GetBytes()
-			packet := channeltypes.NewPacket(
-				packetDataBytes, sequence,
-				types.PortID, channelID,
-				channel.Counterparty.PortId, channel.Counterparty.ChannelId,
-				clienttypes.Height{}, uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
+			// send packet over IBC
+			err := utils.SendIBCPacket(
+				ctx,
+				k.scopedKeeper,
+				k.channelKeeper,
+				channelID,    // source channel id
+				types.PortID, // source port id
+				requests[i].Packet.GetBytes(),
 			)
-
-			// send slash packet
-			if err := k.channelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
+			if err != nil {
 				panic(err)
 			}
 
