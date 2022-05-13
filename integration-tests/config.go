@@ -20,12 +20,12 @@ type ChainConfig struct {
 	ipPrefix       string
 	votingWaitTime uint
 	genesisChanges string
+	binaryName     string
 }
 
 type ContainerConfig struct {
 	containerName string
 	instanceName  string
-	binaryName    string
 	ccvVersion    string
 	now           time.Time
 }
@@ -43,7 +43,6 @@ func DefaultSystemConfig() System {
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-container",
 			instanceName:  "interchain-security-instance",
-			binaryName:    "interchain-securityd",
 			ccvVersion:    "1",
 			now:           time.Now(),
 		},
@@ -76,12 +75,14 @@ func DefaultSystemConfig() System {
 		chainConfigs: []ChainConfig{
 			{
 				chainId:        "provider",
+				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 5,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\"",
 			},
 			{
 				chainId:        "consumer",
+				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 10,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\"",

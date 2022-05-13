@@ -25,7 +25,8 @@ func (s System) sendTokens(
 	action SendTokensAction,
 	verbose bool,
 ) {
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+	binaryName := s.chainConfigs[action.chain].binaryName
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, binaryName,
 
 		"tx", "bank", "send",
 		s.validatorConfigs[action.from].delAddress,
@@ -97,7 +98,7 @@ func (s System) startChain(
 	}
 
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/bin/bash",
-		"/testnet-scripts/start-chain.sh", s.containerConfig.binaryName, string(vals),
+		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
 		chainConfig.chainId, chainConfig.ipPrefix, genesisChanges,
 		fmt.Sprint(action.skipGentx),
 		`s/timeout_commit = "5s"/timeout_commit = "500ms"/;`+
@@ -149,7 +150,7 @@ func (s System) submitTextProposal(
 	action SubmitTextProposalAction,
 	verbose bool,
 ) {
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
 
 		"tx", "gov", "submit-proposal",
 		`--title`, action.title,
@@ -219,7 +220,7 @@ func (s System) submitConsumerProposal(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
 
 		"tx", "gov", "submit-proposal", "create-consumer-chain",
 		"/temp-proposal.json",
@@ -255,7 +256,7 @@ func (s System) voteGovProposal(
 		vote := action.vote[i]
 		go func(val uint, vote string) {
 			defer wg.Done()
-			bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+			bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
 
 				"tx", "gov", "vote",
 				fmt.Sprint(action.propNumber), vote,
@@ -289,7 +290,7 @@ func (s System) startConsumerChain(
 	action StartConsumerChainAction,
 	verbose bool,
 ) {
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.consumerChain].binaryName,
 
 		"query", "provider", "consumer-genesis",
 		s.chainConfigs[action.consumerChain].chainId,
@@ -505,7 +506,7 @@ func (s System) delegateTokens(
 	action DelegateTokensAction,
 	verbose bool,
 ) {
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
 
 		"tx", "staking", "delegate",
 		s.validatorConfigs[action.to].valoperAddress,

@@ -80,7 +80,7 @@ func (s System) getChainState(chain uint, modelState ChainState) ChainState {
 var blockHeightRegex = regexp.MustCompile(`block_height: "(\d+)"`)
 
 func (s System) getBlockHeight(chain uint) uint {
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
 		"query", "tendermint-validator-set",
 
@@ -139,7 +139,7 @@ func (s System) getValPowers(chain uint, modelState map[uint]uint) map[uint]uint
 }
 
 func (s System) getBalance(chain uint, validator uint) uint {
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
 		"query", "bank", "balances",
 		s.validatorConfigs[validator].delAddress,
@@ -161,7 +161,7 @@ var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
 
 // interchain-securityd query gov proposals
 func (s System) getProposal(chain uint, proposal uint) Proposal {
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
@@ -239,7 +239,7 @@ type ValPubKey struct {
 }
 
 func (s System) getValPower(chain uint, validator uint) uint {
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.containerConfig.binaryName,
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
 		"query", "tendermint-validator-set",
 
