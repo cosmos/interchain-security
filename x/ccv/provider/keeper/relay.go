@@ -8,56 +8,41 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-func (k Keeper) SendPacket(ctx sdk.Context, chainID string, valUpdates []abci.ValidatorUpdate, valUpdateID uint64, SlashAcks []string) error {
+func (k Keeper) SendValidatorSetChangePacket(
+	ctx sdk.Context,
+	chainID string,
+	valUpdates []abci.ValidatorUpdate,
+	valUpdateID uint64,
+	SlashAcks []string,
+) error {
+	// construct validator set change packet data
 	packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, SlashAcks)
-	packetDataBytes := packetData.GetBytes()
 
+	// get the id of the CCV channel to the chain with chainID
 	channelID, ok := k.GetChainToChannel(ctx, chainID)
 	if !ok {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for chain ID: %s", chainID)
 	}
-	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
-	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
-	}
 
-	channelCap, ok := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(types.PortID, channelID))
-	if !ok {
-		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
-	}
-
-	// get the next sequence
-	sequence, found := k.channelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
-	if !found {
-		return sdkerrors.Wrapf(
-			channeltypes.ErrSequenceSendNotFound,
-			"source port: %s, source channel: %s", types.PortID, channelID,
-		)
-	}
-
-	// Send ValidatorSet changes in IBC packet
-	packet := channeltypes.NewPacket(
-		packetDataBytes, sequence,
-		types.PortID, channelID,
-		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
-		clienttypes.Height{}, uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
+	// send packet over IBC
+	return utils.SendIBCPacket(
+		ctx,
+		k.scopedKeeper,
+		k.channelKeeper,
+		channelID,    // source channel id
+		types.PortID, // source port id
+		packetData.GetBytes(),
 	)
-
-	if err := k.channelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
@@ -115,7 +100,7 @@ func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
 		valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 		if len(valUpdates) != 0 {
-			k.SendPacket(ctx, chainID, valUpdates, valUpdateID, k.EmptySlashAcks(ctx, chainID))
+			k.SendValidatorSetChangePacket(ctx, chainID, valUpdates, valUpdateID, k.EmptySlashAcks(ctx, chainID))
 		}
 		return false
 	})
