@@ -38,7 +38,8 @@ func (s *ProviderTestSuite) TestStakingHooks2() {
 
 	origTime := s.ctx.BlockTime()
 
-	initBalance, valsetUpdateID := doUnbonding(s, delAddr, bondAmt)
+	// delegate bondAmt and undelegate 1/2 of it
+	initBalance, valsetUpdateID := doUnbonding(s, delAddr, bondAmt, 2)
 
 	// check that staking unbonding op was created and onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
@@ -99,7 +100,6 @@ func (s *ProviderTestSuite) TestStakingHooks2() {
 // Check that unbonding on staking is not allowed to complete
 // Advance time so that provider's unbonding op completes
 // Check that unbonding has finally completed in provider staking
-
 func (s *ProviderTestSuite) TestStakingHooks1() {
 	s.SetupCCVChannel()
 	bondAmt := sdk.NewInt(10000000)
@@ -108,7 +108,8 @@ func (s *ProviderTestSuite) TestStakingHooks1() {
 
 	origTime := s.ctx.BlockTime()
 
-	initBalance, valsetUpdateID := doUnbonding(s, delAddr, bondAmt)
+	// delegate bondAmt and undelegate 1/2 of it
+	initBalance, valsetUpdateID := doUnbonding(s, delAddr, bondAmt, 2)
 
 	// check that staking unbonding op was created and onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
@@ -160,11 +161,95 @@ func (s *ProviderTestSuite) TestStakingHooks1() {
 	s.Require().True(getBalance(s, newProviderCtx, delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
 }
 
+// EDGE CASE
+// Bond some tokens on provider
+// Unbond all of them to create unbonding op, w/o updating the validator set
+// Check unbonding ops on both sides
+// Check that a packet commitment was store in state
+// Relay valset update to consumer
+// Check that unbonding on staking is not allowed to complete
+// Advance time so that consumer's unbonding op completes
+// Relay ack to provider
+// Advance time so that provider's unbonding op completes
+// Check that unbonding has finally completed in provider staking
+func (s *ProviderTestSuite) TestUnbondingEdgeCase() {
+	s.SetupCCVChannel()
+	bondAmt := sdk.NewInt(10000000)
+
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+
+	origTime := s.ctx.BlockTime()
+
+	// delegate bondAmt and undelegate all of it
+	initBalance, valsetUpdateID := doUnbonding(s, delAddr, bondAmt, 1)
+
+	// check that staking unbonding op was created and onHold is true
+	checkStakingUnbondingOps(s, 1, true, true)
+
+	// check that CCV unbonding op was created
+	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true)
+
+	channelID := s.path.EndpointB.ChannelID
+
+	// save next sequence before sending a packet
+	seq, ok := s.providerChain.App.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(s.providerCtx(), providertypes.PortID, channelID)
+	s.Require().True(ok)
+
+	// SEND PACKET
+	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
+
+	// verify that the packet was sent
+	commit := s.providerChain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(s.providerCtx(), providertypes.PortID, channelID, seq)
+	s.Require().NotNil(commit, "did not find packet commitment")
+
+	// Get validator update created in Endblock to use in reconstructing packet
+	valUpdates := s.providerChain.App.GetStakingKeeper().GetValidatorUpdates(s.providerCtx())
+
+	// Get current blocktime
+	oldBlockTime := s.providerCtx().BlockTime()
+
+	// commit block on provider chain and update consumer chain's client
+	commitProviderBlock(s)
+	// Relay packet to consumer chain
+	packet, packetData := sendValUpdatePacket(s, valUpdates, valsetUpdateID, oldBlockTime, 1)
+
+	// CHECK THAT UNBONDING IS NOT COMPLETE
+	// Check that unbonding has not yet completed. The initBalance is still lower
+	// by the bond amount, because it has been taken out of the delegator's account
+	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
+
+	// END CONSUMER UNBONDING
+	// end consumer's unbonding period by advancing time and calling UnbondMaturePackets
+	endConsumerUnbondingPeriod(s, origTime)
+
+	// commit block on consumer and update provider client
+	commitConsumerBlock(s)
+
+	// send acknowledgement to provider
+	sendValUpdateAck(s, s.providerCtx(), packet, packetData)
+
+	// END PROVIDER UNBONDING
+	newProviderCtx := endProviderUnbondingPeriod(s, origTime)
+
+	// CHECK THAT UNBONDING IS COMPLETE
+	// Check that ccv unbonding op has been deleted
+	checkCCVUnbondingOp(s, newProviderCtx, s.consumerChain.ChainID, valsetUpdateID, false)
+
+	// Check that staking unbonding op has been deleted
+	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
+
+	// Check that unbonding has completed
+	// Check that half the coins have been returned
+	s.Require().True(getBalance(s, newProviderCtx, delAddr).Equal(initBalance))
+}
+
 func getBalance(s *ProviderTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
 	return s.providerChain.App.(*appProvider.App).BankKeeper.GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
 
-func doUnbonding(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBalance sdk.Int, valsetUpdateId uint64) {
+// doUnbonding delegates bondAmt from delAddr to the first validator
+// and then immediately undelegates 1/shareDiv of that delegation
+func doUnbonding(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, shareDiv int64) (initBalance sdk.Int, valsetUpdateId uint64) {
 	initBalance = getBalance(s, s.providerCtx(), delAddr)
 
 	// Choose a validator, and get its address and data structure into the correct types
@@ -180,7 +265,7 @@ func doUnbonding(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) 
 
 	// UNDELEGATE
 	// Undelegate half
-	_, err = s.providerChain.App.GetStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, shares.QuoInt64(2))
+	_, err = s.providerChain.App.GetStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, shares.QuoInt64(shareDiv))
 	s.Require().NoError(err)
 
 	// Check that the tokens have not been returned yet
