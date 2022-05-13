@@ -1,10 +1,8 @@
 package types
 
 import (
-	"errors"
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
@@ -13,7 +11,6 @@ var (
 	KeyBlocksPerDistributionTransmission = []byte("BlocksPerDistributionTransmission")
 	KeyDistributionTransmissionChannel   = []byte("DistributionTransmissionChannel")
 	KeyProviderFeePoolAddrStr            = []byte("ProviderFeePoolAddrStr")
-	KeyConsumerRedistributeFrac          = []byte("ConsumerRedistributeFrac")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -23,13 +20,12 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates new consumer parameters with provided arguments
 func NewParams(enabled bool, blocksPerDistributionTransmission int64,
-	distributionTransmissionChannel, providerFeePoolAddrStr, consumerRedistributeFrac string) Params {
+	distributionTransmissionChannel, providerFeePoolAddrStr string) Params {
 	return Params{
 		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
 		DistributionTransmissionChannel:   distributionTransmissionChannel,
 		ProviderFeePoolAddrStr:            providerFeePoolAddrStr,
-		ConsumerRedistributeFrac:          consumerRedistributeFrac,
 	}
 }
 
@@ -40,7 +36,6 @@ func DefaultParams() Params {
 		1000, // about 2 hr at 7.6 seconds per blocks
 		"",
 		"",
-		"0", // everything goes to the provider
 	)
 }
 
@@ -59,8 +54,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.DistributionTransmissionChannel, validateString),
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
 			p.ProviderFeePoolAddrStr, validateString),
-		paramtypes.NewParamSetPair(KeyConsumerRedistributeFrac,
-			p.ConsumerRedistributeFrac, validateStrDecLTE1),
 	}
 }
 
@@ -74,21 +67,6 @@ func validateBool(i interface{}) error {
 func validateInt64(i interface{}) error {
 	if _, ok := i.(int64); !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	return nil
-}
-
-func validateStrDecLTE1(i interface{}) error {
-	str, ok := i.(string)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	d, err := sdk.NewDecFromStr(str)
-	if !ok {
-		return fmt.Errorf("error in decimal string: %v", err)
-	}
-	if d.GT(sdk.OneDec()) {
-		return errors.New("invalid decimal, decimal cannot exceed value of 1")
 	}
 	return nil
 }

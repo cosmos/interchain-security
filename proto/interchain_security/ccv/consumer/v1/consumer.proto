@@ -24,11 +24,6 @@ message Params {
     // provider handshake procedure.
     string DistributionTransmissionChannel = 3; 
     string ProviderFeePoolAddrStr = 4; 
-
-    // The fraction of tokens allocated to the consumer redistribution address
-    // during distribution events. The fraction is a string representing a
-    // decimal number. For example "0.5" would represent 50%. 
-    string ConsumerRedistributeFrac = 5;  
 }
 
 // LastTransmissionBlockHeight is the last time validator holding
