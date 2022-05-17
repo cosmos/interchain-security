@@ -287,19 +287,6 @@ func (s *PBTTestSuite) undelegate(a UndelegateAction) {
 	pskServer.Undelegate(sdk.WrapSDKContext(s.ctx(p)), msg)
 }
 
-func (s *PBTTestSuite) beginRedelegate(a BeginRedelegateAction) {
-
-	psk := s.providerChain.App.GetStakingKeeper()
-	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-
-	amt := sdk.NewCoin(denom, sdk.NewInt(a.amt))
-	del := s.delegator()
-	valSrc := s.validator(a.valSrc)
-	valDst := s.validator(a.valDst)
-	msg := stakingtypes.NewMsgBeginRedelegate(del, valSrc, valDst, amt)
-	pskServer.BeginRedelegate(sdk.WrapSDKContext(s.ctx(p)), msg)
-}
-
 func (s *PBTTestSuite) providerSlash(a ProviderSlashAction) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	val := s.consAddr(a.val)
@@ -487,13 +474,6 @@ func executeTrace(s *PBTTestSuite, trace []Action) {
 				a.amt,
 				a.succeed,
 			})
-		case "beginRedelegate":
-			s.beginRedelegate(BeginRedelegateAction{
-				a.valSrc,
-				a.valDst,
-				a.amt,
-				a.succeed,
-			})
 		case "providerSlash":
 			s.providerSlash(ProviderSlashAction{
 				a.valDst,
@@ -537,13 +517,6 @@ func (s *PBTTestSuite) TestTrace() {
 		{
 			kind:    "undelegate",
 			valDst:  0,
-			amt:     1,
-			succeed: true,
-		},
-		{
-			kind:    "beginRedelegate",
-			valSrc:  0,
-			valDst:  1,
 			amt:     1,
 			succeed: true,
 		},
