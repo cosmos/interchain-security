@@ -241,7 +241,6 @@ func (s *PBTTestSuite) validatorStatus(chain string, i int64) stakingtypes.BondS
 	return val.GetStatus()
 }
 
-// TODO: this is probably useless
 func (s *PBTTestSuite) delegatorBalance() int64 {
 	del := s.delegator()
 	app := s.providerChain.App.(*appProvider.App)
