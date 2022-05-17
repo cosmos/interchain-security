@@ -312,39 +312,6 @@ func (s *PBTTestSuite) jumpNBlocks(a JumpNBlocksAction) {
 	}
 }
 
-func (s *PBTTestSuite) updateClient(a UpdateClientAction) {
-	chain := s.chain(a.chain)
-	endpoint := s.endpoint(a.chain)
-	ctx := s.ctx(a.chain)
-
-	var header exported.Header
-
-	var err error
-	switch endpoint.ClientConfig.GetClientType() {
-	case exported.Tendermint:
-		header, err = endpoint.Chain.ConstructUpdateTMClientHeader(endpoint.Counterparty.Chain, endpoint.ClientID)
-	default:
-		err = fmt.Errorf("client type %s is not supported", endpoint.ClientConfig.GetClientType())
-	}
-
-	if err != nil {
-		s.T().Fatal(err)
-	}
-
-	msg, err := clienttypes.NewMsgUpdateClient(
-		endpoint.ClientID, header,
-		endpoint.Chain.SenderAccount.GetAddress().String(),
-	)
-
-	require.NoError(endpoint.Chain.T, err)
-
-	_, err = chain.App.GetIBCKeeper().UpdateClient(sdk.WrapSDKContext(ctx), msg)
-	if err != nil {
-		s.T().Fatal(err)
-	}
-
-}
-
 func adjustParams(s *PBTTestSuite) {
 	params := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(p))
 	params.MaxValidators = maxValidators
