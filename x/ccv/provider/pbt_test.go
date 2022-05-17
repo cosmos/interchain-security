@@ -312,14 +312,6 @@ func (s *PBTTestSuite) jumpNBlocks(a JumpNBlocksAction) {
 	}
 }
 
-func (s *PBTTestSuite) incrementTime(a IncrementTimeAction) {
-	s.coordinator.IncrementTimeBy(time.Second * time.Duration(a.seconds))
-}
-
-/*
-TODO: there should probably be an additional increment time method
-*/
-
 func (s *PBTTestSuite) updateClient(a UpdateClientAction) {
 	chain := s.chain(a.chain)
 	endpoint := s.endpoint(a.chain)
@@ -363,8 +355,7 @@ func equalHeights(s *PBTTestSuite) {
 	ph := s.height(p)
 	ch := s.height(c)
 	if ph != ch {
-		// s.T().Fatal("Bad test")
-		s.T().Log("Foo")
+		s.T().Fatal("Bad test")
 	}
 }
 
@@ -377,18 +368,6 @@ func (s *PBTTestSuite) TestAssumptions() {
 	s.jumpNBlocks(JumpNBlocksAction{c, 2, 5})
 
 	equalHeights(s)
-
-	/*
-		TODO:
-		1. check delegator balance (done manually)
-		2. check max validators
-		3. check delegations to each provider validator
-		4. check validator tokens
-		5. check validator status
-		6. check heights on both chains
-		7. check there are 4 validators
-		8. do I need to check the params are the same on both chains?
-	*/
 
 	/*
 		delegatorBalance() overflows int64 because it is set to a number greater than 2^63 in genesis.
@@ -494,13 +473,6 @@ func executeTrace(s *PBTTestSuite, trace []Action) {
 				a.blocks,
 				a.secondsPerBlock,
 			})
-		case "incrementTIme":
-			s.incrementTime(IncrementTimeAction{
-				a.seconds,
-			})
-		case "updateClient":
-			s.updateClient(UpdateClientAction{a.chain})
-		}
 
 	}
 }
@@ -521,10 +493,6 @@ func (s *PBTTestSuite) TestTrace() {
 			succeed: true,
 		},
 		{
-			kind:    "incrementTime",
-			seconds: 100,
-		},
-		{
 			kind:             "providerSlash",
 			valDst:           0,
 			infractionHeight: 22,
@@ -542,10 +510,6 @@ func (s *PBTTestSuite) TestTrace() {
 			kind:   "jumpNBlocks",
 			chain:  "provider",
 			blocks: 1,
-		},
-		{
-			kind:  "updateClient",
-			chain: "provider",
 		},
 	}
 
