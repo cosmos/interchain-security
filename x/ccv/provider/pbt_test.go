@@ -162,35 +162,24 @@ type UndelegateAction struct {
 	amt     int64
 	succeed bool
 }
-type BeginRedelegateAction struct {
-	valSrc  int64
-	valDst  int64
-	amt     int64
-	succeed bool
-}
 type ProviderSlashAction struct {
 	val              int64
 	infractionHeight int64
 	power            int64
-	slashPercentage  int64
+	slashFactor  int64
 }
 type ConsumerSlashAction struct {
 	val              int64
 	infractionHeight int64
 	power            int64
-	slashPercentage  int64
+	isDowntime  bool
 }
 type JumpNBlocksAction struct {
 	chain           string
 	blocks          int64
 	secondsPerBlock int64
 }
-type IncrementTimeAction struct {
-	seconds int64
-}
-type UpdateClientAction struct {
-	chain string
-}
+
 
 func (s *PBTTestSuite) chain(chain string) *ibctesting.TestChain {
 	chains := make(map[string]*ibctesting.TestChain)
@@ -292,7 +281,7 @@ func (s *PBTTestSuite) providerSlash(a ProviderSlashAction) {
 	val := s.consAddr(a.val)
 	h := int64(a.infractionHeight)
 	power := int64(a.power)
-	factor := sdk.NewDec(int64(a.slashPercentage)) // TODO: I think it's a percentage (from 100)?
+	factor := sdk.NewDec(int64(a.slashFactor)) // TODO: I think it's a percentage (from 100)?
 	psk.Slash(s.ctx(p), val, h, power, factor)
 }
 
@@ -301,7 +290,7 @@ func (s *PBTTestSuite) consumerSlash(a ConsumerSlashAction) {
 	val := s.consAddr(a.val)
 	h := int64(a.infractionHeight)
 	power := int64(a.power)
-	factor := sdk.NewDec(int64(a.slashPercentage)) // TODO: I think it's a percentage (from 100)?
+	factor := sdk.NewDec(int64(a.isDowntime)) // TODO: I think it's a percentage (from 100)?
 	cccvk.Slash(s.ctx(c), val, h, power, factor)
 }
 
@@ -464,14 +453,14 @@ func (s *PBTTestSuite) TestTrace() {
 			valDst:           0,
 			infractionHeight: 22,
 			power:            1,
-			slashPercentage:  5,
+			slashfactor:  5,
 		},
 		{
 			kind:             "consumerSlash",
 			valDst:           0,
 			infractionHeight: 22,
 			power:            0,
-			slashPercentage:  5,
+			isDowntime:  true,
 		},
 		{
 			kind:   "jumpNBlocks",
