@@ -1,8 +1,0 @@
-make --dry-run --always-make --keep-going --print-directory
-make: Entering directory `/Users/markobaricevic/code/CoTend/interchain-security'
-export GOFLAGS='-buildmode=pie'
-export CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2"
-export CGO_LDFLAGS="-Wl,-z,relro,-z,now -fstack-protector"
-go install  ./cmd/interchain-securityd
-make: Leaving directory `/Users/markobaricevic/code/CoTend/interchain-security'
- 
