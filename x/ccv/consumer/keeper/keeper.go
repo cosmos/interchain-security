@@ -11,6 +11,7 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -357,6 +358,24 @@ func (k Keeper) GetHeightValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 		return 0
 	}
 	return binary.BigEndian.Uint64(bz)
+}
+
+// type HistoricalInfo struct {
+// 	Header types.Header `protobuf:"bytes,1,opt,name=header,proto3" json:"header"`
+// 	Valset []Validator  `protobuf:"bytes,2,rep,name=valset,proto3" json:"valset"`
+// }
+
+// GetHistoricalInfo gets the historical info at a given height
+func (k Keeper) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool) {
+	// store := ctx.KVStore(k.storeKey)
+	// key := stakingtypes.GetHistoricalInfoKey(height)
+
+	// value := store.Get(key)
+	// if value == nil {
+	// 	return stakingtypes.HistoricalInfo{}, false
+	// }
+
+	// return stakingtypes.MustUnmarshalHistoricalInfo(k.cdc, value), true
 }
 
 // DeleteHeightValsetUpdateID deletes the valset update id for a given block height
