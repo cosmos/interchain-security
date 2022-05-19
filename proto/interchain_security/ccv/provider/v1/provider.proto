@@ -22,23 +22,23 @@ message CreateConsumerChainProposal {
   string description = 2;
   // the proposed chain-id of the new consumer chain, must be different from all other consumer chain ids of the executing
   // provider chain.
-  string chain_id = 3 [(gogoproto.moretags) = "yaml:\"chain_id\""];
+  string chain_id = 3;
   // the proposed initial height of new consumer chain.
   // For a completely new chain, this will be {0,1}. However, it may be different if this is a chain that is converting to a consumer chain.
-  ibc.core.client.v1.Height initial_height = 4 [(gogoproto.moretags) = "yaml:\"initial_height\"", (gogoproto.nullable) = false];
+  ibc.core.client.v1.Height initial_height = 4 [(gogoproto.nullable) = false];
   // genesis hash with no staking information included.
-  bytes genesis_hash = 5 [(gogoproto.moretags) = "yaml:\"genesis_hash\""];
+  bytes genesis_hash = 5;
   // binary hash is the hash of the binary that should be used by validators on chain initialization.
-  bytes binary_hash = 6 [(gogoproto.moretags) = "yaml:\"binary_hash\""];
+  bytes binary_hash = 6;
   // spawn time is the time on the provider chain at which the consumer chain genesis is finalized and all validators
   // will be responsible for starting their consumer chain validator node.
   google.protobuf.Timestamp spawn_time = 7
-      [(gogoproto.moretags) = "yaml:\"spawn_time\"", (gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+      [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }
 
 // Params defines the parameters for CCV Provider module
 message Params {
-  ibc.lightclients.tendermint.v1.ClientState template_client = 1 [(gogoproto.moretags) = "yaml:\"template_client\""];
+  ibc.lightclients.tendermint.v1.ClientState template_client = 1;
 }
 
 message HandshakeMetadata {
