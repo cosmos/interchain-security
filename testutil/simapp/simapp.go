@@ -67,12 +67,15 @@ func NewBasicCoordinator(t *testing.T) *ibctesting.Coordinator {
 // NewCoordinator initializes Coordinator with 0 TestChains
 func NewProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain) {
 	coordinator := NewBasicCoordinator(t)
+
 	chainID := ibctesting.GetChainID(1)
 	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingappProvider, chainID)
 	providerChain := coordinator.GetChain(chainID)
+
 	chainID = ibctesting.GetChainID(2)
 	coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(t, coordinator,
 		SetupTestingAppConsumer, chainID, providerChain.Vals, providerChain.Signers)
 	consumerChain := coordinator.GetChain(chainID)
+
 	return coordinator, providerChain, consumerChain
 }

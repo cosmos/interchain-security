@@ -59,8 +59,6 @@ func (suite *ProviderTestSuite) SetupTest() {
 
 	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
 
-	suite.DisableConsumerDistribution()
-
 	tmConfig := ibctesting.NewTendermintConfig()
 
 	// commit a block on provider chain before creating client
@@ -611,29 +609,6 @@ func (s *ProviderTestSuite) UpdateConsumerHistInfo(changes []abci.ValidatorUpdat
 	s.consumerChain.App.GetStakingKeeper().SetHistoricalInfo(s.consumerCtx(), s.consumerCtx().BlockHeight(), &hi)
 }
 
-func (s *ProviderTestSuite) DisableConsumerDistribution() {
-	cChain := s.consumerChain
-	cApp := cChain.App.(*appConsumer.App)
-	for i, moduleName := range cApp.MM.OrderBeginBlockers {
-		if moduleName == distrtypes.ModuleName {
-			cApp.MM.OrderBeginBlockers = append(cApp.MM.OrderBeginBlockers[:i], cApp.MM.OrderBeginBlockers[i+1:]...)
-			return
-		}
-	}
-}
-
-func (s *ProviderTestSuite) DisableProviderDistribution() {
-	pChain := s.providerChain
-	pApp := pChain.App.(*appProvider.App)
-	for i, moduleName := range pApp.MM.OrderBeginBlockers {
-		if moduleName == distrtypes.ModuleName {
-			s.providerDistrIndex = i
-			pApp.MM.OrderBeginBlockers = append(pApp.MM.OrderBeginBlockers[:i], pApp.MM.OrderBeginBlockers[i+1:]...)
-			return
-		}
-	}
-}
-
 func (s *ProviderTestSuite) ReenableProviderDistribution() {
 	pChain := s.providerChain
 	pApp := pChain.App.(*appProvider.App)
@@ -723,10 +698,6 @@ func (s *ProviderTestSuite) TestDistribution() {
 	expConsRedistrAmt := expFeePoolAtDistr / 2 // because of default 50% redistribute fraction (will truc decimal)
 	expProviderAmt := expFeePoolAtDistr - expConsRedistrAmt
 	s.Assert().Equal(ftpd.Amount, fmt.Sprintf("%v", expProviderAmt))
-
-	// halt provider distribution (for testing purposes to be able to review the
-	// provider fee pool)
-	s.DisableProviderDistribution()
 
 	// relay the packet
 	err = s.transferPath.RelayPacket(packet)
