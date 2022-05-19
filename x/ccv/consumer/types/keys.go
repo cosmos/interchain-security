@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/binary"
+	"strconv"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -67,6 +68,8 @@ var (
 	// PortKey defines the key to store the port ID in store
 	PortKey                         = []byte{0x01}
 	LastDistributionTransmissionKey = []byte{0x02}
+
+	HistoricalInfoKey = []byte{0x03} // prefix for the historical info
 )
 
 // ProviderChannelKey returns the key for storing channelID of the provider chain.
@@ -114,4 +117,9 @@ func OutstandingDowntimeKey(v sdk.ConsAddress) []byte {
 
 func GetCrossChainValidatorKey(addr []byte) []byte {
 	return append([]byte(CrossChainValidatorPrefix), addr...)
+}
+
+// GetHistoricalInfoKey returns a key prefix for indexing HistoricalInfo objects.
+func GetHistoricalInfoKey(height int64) []byte {
+	return append(HistoricalInfoKey, []byte(strconv.FormatInt(height, 10))...)
 }
