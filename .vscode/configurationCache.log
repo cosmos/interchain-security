@@ -1,0 +1,1 @@
+{"buildTargets":[".PHONY","build","install","proto-all","proto-check-breaking","proto-format","proto-gen","proto-gen-any","proto-lint","proto-swagger-gen","proto-update-deps","test"],"launchTargets":[],"customConfigurationProvider":{"workspaceBrowse":{"browsePath":[],"compilerArgs":[]},"fileIndex":[]}}
