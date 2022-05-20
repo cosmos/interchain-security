@@ -1,21 +1,17 @@
-from .actions import *
 from .constants import *
 
 
-def staking_without_slashing(trace):
+def staking_without_slashing(blocks):
     """
     The total number of tokens in the system is constant
     if there is no slashing.
     """
-    for a in trace.actions:
-        if isinstance(a, ProviderSlash):
-            return True
-        if isinstance(a, ConsumerSlash):
-            return True
-    if len(trace.states) < 2:
+    blocks = blocks.blocks[P]
+    if len(blocks) < 2:
         return True
-    initial = trace.states[0]
-    states = trace.states[1:]
+
+    initial = blocks[0]
+    states = blocks[1:]
 
     def value(s):
         s = s.staking
@@ -32,9 +28,9 @@ def staking_without_slashing(trace):
     return True
 
 
-def bond_based_consumer_voting_power(trace):
-    partial_order = trace.states[-1].blocks.partial_order
-    blocks = trace.states[-1].blocks.blocks
+def bond_based_consumer_voting_power(blocks):
+    partial_order = blocks.partial_order
+    blocks = blocks.blocks
 
     def inner(hc):
 
