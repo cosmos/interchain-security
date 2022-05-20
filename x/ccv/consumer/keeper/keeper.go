@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 
+	abci "github.com/tendermint/tendermint/abci/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
@@ -419,6 +421,11 @@ func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
 	key := types.GetHistoricalInfoKey(height)
 
 	store.Delete(key)
+}
+
+func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx sdk.Context) (updates []abci.ValidatorUpdate, err error) {
+	// TODO: confirm this is ok like this
+	return nil, nil
 }
 
 // DeleteHeightValsetUpdateID deletes the valset update id for a given block height
