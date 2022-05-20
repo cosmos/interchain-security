@@ -27,7 +27,6 @@ class Trace:
             "actions": [
                 {"kind": e.__class__.__name__} | asdict(e) for e in self.actions
             ],
-            "states": [e.json() for e in self.states],
         }
 
     def write(self, fn):

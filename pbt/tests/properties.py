@@ -33,8 +33,8 @@ def staking_without_slashing(trace):
 
 
 def bond_based_consumer_voting_power(trace):
-    partial_order = trace.states[-1].verify.partial_order
-    blocks = trace.states[-1].verify.blocks
+    partial_order = trace.states[-1].blocks.partial_order
+    blocks = trace.states[-1].blocks.blocks
 
     def inner(hc):
 

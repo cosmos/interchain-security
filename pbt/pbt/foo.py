@@ -3,6 +3,7 @@ from os.path import isfile, join
 import json
 import shutil, os
 
+
 def interesting(obj):
     return True
 

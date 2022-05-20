@@ -1,6 +1,6 @@
-from .constants import *
-from recordclass import recordclass, asdict
+from recordclass import recordclass
 from collections import defaultdict
+from .constants import *
 from .blockchain import *
 
 
@@ -28,13 +28,12 @@ Packet = recordclass(
 )
 
 
-def create_packet(data, send_height):
-    zero_timeout_height = ZERO_TIMEOUT_HEIGHT
-    ccv_timeout_timestamp = CCV_TIMEOUT_TIMESTAMP
-    return Packet(zero_timeout_height, ccv_timeout_timestamp, data, send_height)
-
-
 class Outbox:
+    def create_packet(data, send_height):
+        zero_timeout_height = ZERO_TIMEOUT_HEIGHT
+        ccv_timeout_timestamp = CCV_TIMEOUT_TIMESTAMP
+        return Packet(zero_timeout_height, ccv_timeout_timestamp, data, send_height)
+
     def __init__(self, model, chain):
         self.m = model
         self.chain = chain
@@ -44,7 +43,7 @@ class Outbox:
     def add(self, data):
         # send height is used to establish ordering
         # between blocks on different chains
-        self.fifo.append(create_packet(data, self.m.h[self.chain]))
+        self.fifo.append(Outbox.create_packet(data, self.m.h[self.chain]))
 
     def is_empty(self):
         return 0 == len(self.fifo_committed)
@@ -58,16 +57,9 @@ class Outbox:
         self.fifo_committed.extend(self.fifo)
         self.fifo = []
 
-    def json(self):
-        v = vars(self)
-        del v["m"]
-        return v
-
 
 class Staking:
-    """
-    Provider staking module.
-    """
+    """Provider staking"""
 
     def __init__(self, model):
         self.m = model
@@ -111,34 +103,6 @@ class Staking:
         self.updates = {}
         # required for computation of self.updates
         self.last_tokens = list(self.tokens)
-
-    def sanity(self):
-        assert isinstance(self.delegation, list)
-        assert isinstance(self.tokens, list)
-        assert isinstance(self.undelegationQ, list)
-        assert isinstance(self.validatorQ, list)
-        assert isinstance(self.status, list)
-        assert isinstance(self.unbonding_height, list)
-        assert isinstance(self.unbonding_time, list)
-        assert isinstance(self.jailed, list)
-        assert isinstance(self.delegator_tokens, int)
-        assert isinstance(self.last_vals, list)
-        assert len(self.delegation) == NUM_VALIDATORS
-        assert len(self.tokens) == NUM_VALIDATORS
-        assert len(self.validatorQ) <= NUM_VALIDATORS
-        assert len(self.status) == NUM_VALIDATORS
-        assert len(self.unbonding_height) == NUM_VALIDATORS
-        assert len(self.unbonding_time) == NUM_VALIDATORS
-        assert len(self.jailed) == NUM_VALIDATORS
-        assert all(0 <= x for x in self.tokens)
-        assert len(self.last_vals) == MAX_VALIDATORS
-
-    def json(self):
-        v = vars(self)
-        del v["m"]
-        v["undelegationQ"] = [asdict(e) for e in self.undelegationQ]
-        v["status"] = [str(e) for e in self.status]
-        return v
 
     def begin_block(self):
         pass
@@ -331,17 +295,6 @@ class CCVProvider:
         # TODO: I should check this
         self.initial_height = 0
 
-    def sanity(self):
-        pass
-
-    def json(self):
-        v = vars(self)
-        del v["m"]
-        v["vsc_id_to_unbonding_op_ids"] = {
-            k: list(v) for k, v in self.vsc_id_to_unbonding_op_ids.items()
-        }
-        return v
-
     def begin_block(self):
         pass
 
@@ -407,14 +360,6 @@ class CCVConsumer:
 
         # Maps val to power
         self.val_power = {i: self.m.staking.tokens[i] for i in self.m.staking.last_vals}
-
-    def sanity(self):
-        pass
-
-    def json(self):
-        v = vars(self)
-        del v["m"]
-        return v
 
     def begin_block(self):
         self.h_to_vsc[self.m.h[C] + 1] = self.h_to_vsc[self.m.h[C]]
@@ -500,37 +445,17 @@ class Model:
         self.ccv_p = CCVProvider(self)
         self.ccv_c = CCVConsumer(self)
 
-        self.verify = Blockchain()
+        self.blocks = Blocks()
 
         # Record a happens-before relationship between genesis blocks
         # provider h0 happens before consumer h0
-        self.verify.partial_order.deliver(C, 0, 0)
+        self.blocks.partial_order.deliver(C, 0, 0)
 
         # simulate the commiting and beginning of a new block
-        self.verify.record_block(P, self)
-        self.verify.record_block(C, self)
+        self.blocks.commit_block(P, self)
+        self.blocks.commit_block(C, self)
         self.increase_seconds(1)
         self.must_begin_block = {P: True, C: True}
-
-    def json(self):
-        return {
-            "T": self.T,
-            "h": self.h,
-            "t": self.t,
-            "staking": self.staking.json(),
-            "ccv_p": self.ccv_p.json(),
-            "ccv_c": self.ccv_c.json(),
-            "outbox_p": self.outbox_p.json(),
-            "outbox_c": self.outbox_c.json(),
-        }
-
-    def sanity(self):
-        assert isinstance(self.T, int)
-        assert isinstance(self.h, dict)
-        assert len(self.h) == 2
-        self.staking.sanity()
-        self.ccv_p.sanity()
-        self.ccv_c.sanity()
 
     def has_undelivered(self, chain):
         if chain == P:
@@ -567,7 +492,7 @@ class Model:
             self.outbox_c.commit()
         # Forces a begin_block as next action
         self.must_begin_block[chain] = True
-        self.verify.record_block(chain, self)
+        self.blocks.commit_block(chain, self)
 
     def increase_seconds(self, seconds):
         self.T += seconds
@@ -576,11 +501,11 @@ class Model:
         self.idempotent_begin_block(chain)
         if chain == P:
             for p in self.outbox_c.consume():
-                self.verify.partial_order.deliver(P, p.send_height, self.h[P])
+                self.blocks.partial_order.deliver(P, p.send_height, self.h[P])
                 self.ccv_p.on_receive(p.data)
         if chain == C:
             for p in self.outbox_p.consume():
-                self.verify.partial_order.deliver(C, p.send_height, self.h[C])
+                self.blocks.partial_order.deliver(C, p.send_height, self.h[C])
                 self.ccv_c.on_receive(p.data)
 
     def provider_slash(self, val, infraction_height, power, factor):

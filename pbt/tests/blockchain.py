@@ -47,13 +47,13 @@ BlockProvider = recordclass("BlockProvider", ["h", "t", "compare", "tokens", "un
 BlockConsumer = recordclass("BlockConsumer", ["h", "t", "power", "maturing_vscs"])
 
 
-class Blockchain:
+class Blocks:
     def __init__(self):
         self.partial_order = PartialOrder()
         # Inner dictionaries map heights to block data
         self.blocks = {P: {}, C: {}}
 
-    def record_block(self, chain, model):
+    def commit_block(self, chain, model):
         def block():
             if chain == P:
                 h = model.h[P]
