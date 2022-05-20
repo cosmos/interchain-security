@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"time"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -29,7 +30,7 @@ import (
 type Keeper struct {
 	storeKey          sdk.StoreKey
 	cdc               codec.BinaryCodec
-	paramSpace        paramtypes.Subspace
+	paramstore        paramtypes.Subspace
 	scopedKeeper      capabilitykeeper.ScopedKeeper
 	channelKeeper     ccv.ChannelKeeper
 	portKeeper        ccv.PortKeeper
@@ -38,7 +39,7 @@ type Keeper struct {
 	slashingKeeper    ccv.SlashingKeeper
 	hooks             ccv.ConsumerHooks
 	bankKeeper        ccv.BankKeeper
-	accountKeeper     ccv.AccountKeeper
+	authKeeper        ccv.AccountKeeper
 	ibcTransferKeeper ccv.IBCTransferKeeper
 	ibcCoreKeeper     ccv.IBCCoreKeeper
 	feeCollectorName  string
@@ -48,23 +49,23 @@ type Keeper struct {
 // NOTE: the feeCollectorName is in reference to the consumer-chain fee
 // collector (and not the provider chain)
 func NewKeeper(
-	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
+	cdc codec.BinaryCodec, key sdk.StoreKey, paramstore paramtypes.Subspace,
 	scopedKeeper capabilitykeeper.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
-	slashingKeeper ccv.SlashingKeeper, bankKeeper ccv.BankKeeper, accountKeeper ccv.AccountKeeper,
+	slashingKeeper ccv.SlashingKeeper, bankKeeper ccv.BankKeeper, authKeeper ccv.AccountKeeper,
 	ibcTransferKeeper ccv.IBCTransferKeeper, ibcCoreKeeper ccv.IBCCoreKeeper,
 	feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
-	if !paramSpace.HasKeyTable() {
-		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
+	if !paramstore.HasKeyTable() {
+		paramstore = paramstore.WithKeyTable(types.ParamKeyTable())
 	}
 
 	return Keeper{
 		storeKey:          key,
 		cdc:               cdc,
-		paramSpace:        paramSpace,
+		paramstore:        paramstore,
 		scopedKeeper:      scopedKeeper,
 		channelKeeper:     channelKeeper,
 		portKeeper:        portKeeper,
@@ -72,7 +73,7 @@ func NewKeeper(
 		clientKeeper:      clientKeeper,
 		slashingKeeper:    slashingKeeper,
 		bankKeeper:        bankKeeper,
-		accountKeeper:     accountKeeper,
+		authKeeper:        authKeeper,
 		ibcTransferKeeper: ibcTransferKeeper,
 		ibcCoreKeeper:     ibcCoreKeeper,
 		feeCollectorName:  feeCollectorName,
@@ -93,6 +94,16 @@ func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
 
 	return k
 }
+
+// TODO: confirm OK to stub
+// Load the last total validator power.
+func (k *Keeper) GetLastTotalPower(ctx sdk.Context) sdk.Int {
+	return sdk.Int{}
+}
+
+// TODO: confirm OK to stub
+// Set the last total validator power.
+func (k *Keeper) SetLastTotalPower(ctx sdk.Context, power sdk.Int) {}
 
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
 // in order to expose it to the ICS20 transfer handler.
@@ -235,6 +246,12 @@ func (k Keeper) IterateUnbondingTime(ctx sdk.Context, cb func(seq, timeNs uint64
 			break
 		}
 	}
+}
+
+// TODO: Confirm this is the correct unbonding time or ensure it's not needed
+// UnbondingTime
+func (k Keeper) UnbondingTime(ctx sdk.Context) (res time.Duration) {
+	return types.UnbondingTime
 }
 
 // SetUnbondingTime sets the unbonding time for a given received packet sequence

@@ -32,7 +32,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		return nil
 	}
 
-	consumerFeePoolAddr := k.accountKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
+	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
 	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 
 	// split the fee pool, send the consumer's fraction to the consumer redistribution address
@@ -62,7 +62,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		return err
 	}
 	// empty out the toSendToProviderTokens address
-	tstProviderAddr := k.accountKeeper.GetModuleAccount(ctx,
+	tstProviderAddr := k.authKeeper.GetModuleAccount(ctx,
 		types.ConsumerToSendToProviderName).GetAddress()
 	tstProviderTokens := k.bankKeeper.GetAllBalances(ctx, tstProviderAddr)
 	ch := k.GetDistributionTransmissionChannel(ctx)
