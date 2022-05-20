@@ -15,7 +15,7 @@ Undelegation = recordclass(
     ],
 )
 
-Vsc = recordclass("Vsc", ["vsc_id", "updates", "slash_acks"])
+Vsc = recordclass("Vsc", ["vsc_id", "changes", "slash_acks"])
 
 VscMatured = recordclass("VscMatured", ["vsc_id"])
 
@@ -82,26 +82,25 @@ class Staking:
         self.unbonding_height = [None] * NUM_VALIDATORS
         # if validator unbonding defines min time to complete unbonding
         self.unbonding_time = [None] * NUM_VALIDATORS
-        # jailed? If yes, will be timestamp of unjailing
+        # jailed? If yes, timestamp of unjailing
         self.jailed = [None] * NUM_VALIDATORS
-        # delegator balance
-        # hardcoded (NewTestChainWithValSet)
+        # delegator balance, hardcoded
         self.delegator_tokens = 10000000000000000000
-        # validators of last block (lastValidators)
-        self.last_vals = self.new_vals()
 
         # used to track unbonding and redelegation entries, as well as
         # map to unbonding validators, in order to track on_hold
         self.unbonding_op_id = 0
-        # is the validator on hold from unbonding?
-        self.on_hold = [False] * NUM_VALIDATORS
         # map ids to val
         self.unbonding_op_id_to_val = {}
+        # is the validator on hold from unbonding?
+        self.on_hold = [False] * NUM_VALIDATORS
 
         # used to compute val set changes
         # maps validators to power
-        self.updates = {}
-        # required for computation of self.updates
+        self.changes = {}
+        # validators of last block (lastValidators)
+        self.last_vals = self.new_vals()
+        # required for computation of self.changes
         self.last_tokens = list(self.tokens)
 
     def begin_block(self):
@@ -161,16 +160,16 @@ class Staking:
         )
         self.undelegationQ = [e for e in self.undelegationQ if e not in expired_undels]
 
-        self.updates = {}
+        self.changes = {}
         for i in new_vals:
             if self.tokens[i] != self.last_tokens[i]:
                 # if validator power changed
-                self.updates[i] = self.tokens[i]
+                self.changes[i] = self.tokens[i]
         for i in set(new_vals) - set(old_vals):
-            self.updates[i] = self.tokens[i]
+            self.changes[i] = self.tokens[i]
         for i in set(old_vals) - set(new_vals):
             # if validator no longer bonded, set '0' power
-            self.updates[i] = 0
+            self.changes[i] = 0
 
         self.last_vals = new_vals
         self.last_tokens = list(self.tokens)
@@ -277,37 +276,35 @@ class Staking:
             if e.op_id == op_id:
                 e.on_hold = False
 
-    def validator_updates(self):
+    def validator_changes(self):
         # Called by CCV, return changed validator powers
-        return self.updates
+        return self.changes
 
 
 class CCVProvider:
     def __init__(self, model):
         self.m = model
 
-        self.vsc_id = 0
-        self.slash_requests = []
-        self.vsc_to_h = {}
-
-        self.vsc_id_to_unbonding_op_ids = defaultdict(set)
-
         # TODO: I should check this
         self.initial_height = 0
+        self.vsc_id = 0
+        self.vsc_id_to_h = {}
+        self.vsc_id_to_unbonding_op_ids = defaultdict(set)
+        self.slash_requests = []
 
     def begin_block(self):
         pass
 
     def end_block(self):
 
-        updates = self.m.staking.validator_updates()
+        changes = self.m.staking.validator_changes()
 
-        if 0 < len(updates) or 0 < len(self.vsc_id_to_unbonding_op_ids[self.vsc_id]):
-            data = Vsc(self.vsc_id, updates, self.slash_requests)
+        if 0 < len(changes) or 0 < len(self.vsc_id_to_unbonding_op_ids[self.vsc_id]):
+            data = Vsc(self.vsc_id, changes, self.slash_requests)
             self.slash_requests = []
             self.m.outbox_p.add(data)
 
-        self.vsc_to_h[self.vsc_id] = self.m.h[P] + 1
+        self.vsc_id_to_h[self.vsc_id] = self.m.h[P] + 1
         self.vsc_id += 1
 
     def on_receive(self, data):
@@ -326,7 +323,7 @@ class CCVProvider:
         if data.vsc_id == 0:
             infraction_height = self.initial_height
         else:
-            infraction_height = self.vsc_to_h[data.vsc_id]
+            infraction_height = self.vsc_id_to_h[data.vsc_id]
 
         # in the spec, these are slashing module calls but they
         # pass straight through to the staking module
@@ -344,25 +341,19 @@ class CCVProvider:
 class CCVConsumer:
     def __init__(self, model):
         self.m = model
-        # Maps height to vsc_id
-        self.h_to_vsc = {}
-        self.h_to_vsc[0] = 0
-        # TODO: is this right???
-        self.h_to_vsc[1] = 0
-        # A list of lists
+        # Maps height to vsc_id, TODO: check
+        self.h_to_vsc_id = {0: 0, 1: 0}
+        # List of dictionaries
         self.pending_changes = []
-
         # Maps vsc_id to unbonding time (timestamp)
         self.maturing_vscs = {}
-        # Is there an outstanding downtime command for a validator?
         # Maps val to bool
         self.outstanding_downtime = {i: False for i in range(NUM_VALIDATORS)}
-
         # Maps val to power
-        self.val_power = {i: self.m.staking.tokens[i] for i in self.m.staking.last_vals}
+        self.power = {i: self.m.staking.tokens[i] for i in self.m.staking.last_vals}
 
     def begin_block(self):
-        self.h_to_vsc[self.m.h[C] + 1] = self.h_to_vsc[self.m.h[C]]
+        self.h_to_vsc_id[self.m.h[C] + 1] = self.h_to_vsc_id[self.m.h[C]]
 
     def end_block(self):
         if len(self.pending_changes) < 1:
@@ -377,19 +368,19 @@ class CCVConsumer:
             self.m.outbox_c.add(data)
             del self.maturing_vscs[vsc_id]
 
-        def aggregate_updates():
+        def aggregate_changes():
             # Flatten the changes
             latest = {}
             for u in self.pending_changes:
                 latest = latest | u
             return latest
 
-        updates = aggregate_updates()
+        changes = aggregate_changes()
 
-        for val, power in updates.items():
-            self.val_power.pop(val, None)
+        for val, power in changes.items():
+            self.power.pop(val, None)
             if 0 < power:
-                self.val_power[val] = power
+                self.power[val] = power
 
         self.pending_changes = []
 
@@ -398,13 +389,13 @@ class CCVConsumer:
             self.on_receive_vsc(data)
 
     def on_receive_vsc(self, data):
-        self.h_to_vsc[self.m.h[C] + 1] = data.vsc_id
+        self.h_to_vsc_id[self.m.h[C] + 1] = data.vsc_id
 
         # pending slash requests would be sent here, but
         # we model an established system, assuming a
         # successfull handshake.
 
-        self.pending_changes.append(data.updates)
+        self.pending_changes.append(data.changes)
 
         self.maturing_vscs[data.vsc_id] = self.m.t[C] + UNBONDING_TIME
 
@@ -416,7 +407,7 @@ class CCVConsumer:
         if is_downtime and self.outstanding_downtime[val]:
             return
 
-        data = Slash(val, power, self.h_to_vsc[infraction_height], is_downtime)
+        data = Slash(val, power, self.h_to_vsc_id[infraction_height], is_downtime)
         self.m.outbox_c.add(data)
         if is_downtime:
             self.outstanding_downtime[val] = True

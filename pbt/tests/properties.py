@@ -6,22 +6,23 @@ def staking_without_slashing(blocks):
     The total number of tokens in the system is constant
     if there is no slashing.
     """
-    blocks = [b for h, b in sorted(blocks.blocks[P].items())]
+    blocks = [b for _, b in sorted(blocks.blocks[P].items())]
+
     if len(blocks) < 2:
         return True
 
     initial = blocks[0]
-    states = blocks[1:]
+    blocks = blocks[1:]
 
-    def value(s):
-        x = s.delegator_tokens
-        x += sum(s.tokens)
-        x += sum(u.balance for u in s.undelegationQ)
+    def value(b):
+        x = b.delegator_tokens
+        x += sum(b.tokens)
+        x += sum(u.balance for u in b.undelegationQ)
         return x
 
     v = value(initial)
-    for s in states:
-        if value(s) != v:
+    for s in blocks:
+        if value(b) != v:
             return False
 
     return True
