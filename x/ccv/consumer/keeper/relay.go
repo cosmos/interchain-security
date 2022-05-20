@@ -18,8 +18,10 @@ import (
 // OnRecvPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
 // and set the unbonding time for the packet so that we can WriteAcknowledgement after unbonding time is over.
 func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) exported.Acknowledgement {
-	// packet is not sent on provider channel, return error acknowledgement and close channel
-	if providerChannel, ok := k.GetProviderChannel(ctx); ok && providerChannel != packet.DestinationChannel {
+	// get the provider channel
+	providerChannel, found := k.GetProviderChannel(ctx)
+	if found && providerChannel != packet.DestinationChannel {
+		// packet is not sent on provider channel, return error acknowledgement and close channel
 		ack := channeltypes.NewErrorAcknowledgement(
 			fmt.Sprintf("packet sent on a channel %s other than the established provider channel %s", packet.DestinationChannel, providerChannel),
 		)
@@ -27,11 +29,11 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 		k.channelKeeper.ChanCloseInit(ctx, packet.DestinationPort, packet.DestinationChannel, chanCap)
 		return &ack
 	}
-	if status := k.GetChannelStatus(ctx, packet.DestinationChannel); status != ccv.VALIDATING {
-		// Set CCV channel status to Validating and set provider channel
-		k.SetChannelStatus(ctx, packet.DestinationChannel, ccv.VALIDATING)
+	if !found {
+		// the first packet from the provider chain
+		// - mark the CCV channel as established
 		k.SetProviderChannel(ctx, packet.DestinationChannel)
-		// Send pending slash requests in states
+		// - send pending slash requests in states
 		k.SendPendingSlashRequests(ctx)
 	}
 	// Set pending changes by accumulating changes from this packet with all prior changes
@@ -196,6 +198,5 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 }
 
 func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) error {
-	k.SetChannelStatus(ctx, packet.DestinationChannel, ccv.INVALID)
 	return nil
 }

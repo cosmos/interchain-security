@@ -266,8 +266,6 @@ func (am AppModule) OnChanOpenTry(
 		}
 	}
 
-	am.keeper.SetChannelStatus(ctx, channelID, ccv.INITIALIZING)
-
 	if err := am.keeper.VerifyConsumerChain(
 		ctx, channelID, connectionHops,
 	); err != nil {

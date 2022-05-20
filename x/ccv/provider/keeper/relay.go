@@ -85,7 +85,6 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 }
 
 func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorSetChangePacketData) error {
-	k.SetChannelStatus(ctx, packet.DestinationChannel, ccv.INVALID)
 	// TODO: Unbonding everything?
 	return nil
 }
