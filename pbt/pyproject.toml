@@ -1,0 +1,61 @@
+[tool.poetry]
+name = "pbt"
+version = "0.1.0"
+description = ""
+authors = ["Daniel Tisdall <daniel@informal.systems>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9.7"
+fire = "^0.4.0"
+recordclass = "^0.16.2"
+infix = "1.2"
+ply = "3.10"
+pathos = "^0.2.8"
+coverage = "^6.3.2"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+black = {version = "^22.3.0", allow-prereleases = true}
+pytest-cov = "^3.0.0"
+pre-commit = "^2.15.0"
+flake8 = "^4.0.1"
+mypy = "^0.931"
+isort = "^5.9.3"
+
+[tool.poetry.scripts]
+foo = "pbt.foo:foo"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  | foo.py           # also separately exclude a file named foo.py in
+                     # the root of the project
+)
+'''
+
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 88

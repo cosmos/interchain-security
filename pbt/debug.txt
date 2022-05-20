@@ -1,0 +1,9 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.9.9, pytest-5.4.3, py-1.11.0, pluggy-0.13.1
+rootdir: /Users/danwt/Documents/work/informal-cosmos-hub-team/pbt
+plugins: cov-3.0.0
+collected 1 item
+
+tests/test_dummy.py .                                                    [100%]
+
+============================== 1 passed in 34.78s ==============================
