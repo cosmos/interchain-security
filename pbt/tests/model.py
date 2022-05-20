@@ -414,11 +414,6 @@ class CCVConsumer:
 
 
 class Model:
-    """
-    Assumptions:
-        MinSelfDelegation = 0
-    """
-
     def __init__(self, blocks):
 
         # global time
@@ -443,7 +438,8 @@ class Model:
         # provider h0 happens before consumer h0
         self.blocks.partial_order.deliver(C, 0, 0)
 
-        # simulate the commiting of the genesis block and beginning of a new block
+        # simulate the committing of the genesis block and beginning of
+        # a new block
         self.blocks.commit_block(P, self)
         self.blocks.commit_block(C, self)
         self.increase_seconds(1)

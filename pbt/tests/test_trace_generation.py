@@ -1,3 +1,4 @@
+import pytest
 import random
 import sys
 import shutil
@@ -201,7 +202,7 @@ class Trace:
             # TODO:
             return {}
 
-        self.consequences.append(copy.deepcopy(consequence()))
+        self.consequences.append(consequence())
 
     def dump(self, fn):
         def to_json():
@@ -224,6 +225,7 @@ def load_debug_actions():
     return obj["actions"]
 
 
+@pytest.mark.skip()
 def test_dummy():
     debug = False
     GOAL_TIME_MINS = 20
@@ -258,8 +260,7 @@ def test_dummy():
                 trace.add_consequence(model)
             assert staking_without_slashing(blocks)
             assert bond_based_consumer_voting_power(blocks)
-            raise IndexError()
-        except Exception as e:
+        except Exception:
             trace.blocks = blocks
             trace.dump("debug.json")
             sys.exit(1)
@@ -271,3 +272,18 @@ def test_dummy():
         elapsed += t_end - t_start
 
     print("Ran {i} runs")
+
+
+class Dog:
+    def __init__(self, x):
+        self.x = x
+
+
+def test_foo():
+    a = Dog(42)
+    b = Dog(a)
+    x = vars(b)
+    x["x"] = 43
+    print(x)
+    print(vars(a))
+    print(vars(b))
