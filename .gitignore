@@ -5,3 +5,4 @@ release/
 docs/tla/states/
 *.out
 vendor/
+.vscode
