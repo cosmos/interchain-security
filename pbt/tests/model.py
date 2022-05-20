@@ -1,7 +1,7 @@
 from .constants import *
 from recordclass import recordclass, asdict
 from collections import defaultdict
-from .verify import *
+from .blockchain import *
 
 
 Undelegation = recordclass(
@@ -57,6 +57,11 @@ class Outbox:
     def commit(self):
         self.fifo_committed.extend(self.fifo)
         self.fifo = []
+
+    def json(self):
+        v = vars(self)
+        del v["m"]
+        return v
 
 
 class Staking:
@@ -483,7 +488,6 @@ class Model:
         # global time
         self.T = 0
         # height on each chain
-        # start on -1 as beginBlock does +1
         self.h = {P: 0, C: 0}
         # time for block self.h[x], none if must BeginBlock
         self.t = {P: 0, C: 0}
@@ -496,7 +500,7 @@ class Model:
         self.ccv_p = CCVProvider(self)
         self.ccv_c = CCVConsumer(self)
 
-        self.verify = Verify()
+        self.verify = Blockchain()
 
         # Record a happens-before relationship between genesis blocks
         # provider h0 happens before consumer h0
@@ -516,6 +520,8 @@ class Model:
             "staking": self.staking.json(),
             "ccv_p": self.ccv_p.json(),
             "ccv_c": self.ccv_c.json(),
+            "outbox_p": self.outbox_p.json(),
+            "outbox_c": self.outbox_c.json(),
         }
 
     def sanity(self):
