@@ -21,16 +21,18 @@ VscMatured = recordclass("VscMatured", ["vsc_id"])
 
 Slash = recordclass("Slash", ["val", "power", "vsc_id", "is_downtime"])
 
-Packet = recordclass(
-    "Packet", ["timeout_height", "timeout_timestamp", "data", "send_height"]
-)
-
 
 class Outbox:
+    Packet = recordclass(
+        "Packet", ["timeout_height", "timeout_timestamp", "data", "send_height"]
+    )
+
     def create_packet(data, send_height):
         zero_timeout_height = ZERO_TIMEOUT_HEIGHT
         ccv_timeout_timestamp = CCV_TIMEOUT_TIMESTAMP
-        return Packet(zero_timeout_height, ccv_timeout_timestamp, data, send_height)
+        return Outbox.Packet(
+            zero_timeout_height, ccv_timeout_timestamp, data, send_height
+        )
 
     def __init__(self, model, chain):
         self.m = model
@@ -263,7 +265,7 @@ class Staking:
         """
         TODO: I deviate from Jehan's code here
         (see issue #104), by not doing 'completeNow'.
-        I should make this match the code...
+        I should make this match the code.
         """
         if op_id in self.unbonding_op_id_to_val:
             val = self.unbonding_op_id_to_val[op_id]

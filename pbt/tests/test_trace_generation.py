@@ -1,4 +1,5 @@
 import random
+import sys
 import shutil
 import os
 import time
@@ -163,32 +164,7 @@ class Shaper:
         a.is_downtime = bool(random.getrandbits(1))
 
 
-class Trace:
-    def __init__(self):
-        self.actions = []
-        self.states = []
-
-    def add_action(self, action):
-        self.actions.append(action)
-
-    def add_consequence(self, model_after_action):
-        self.states.append(copy.deepcopy(model_after_action))
-
-    def json(self):
-        return {
-            "actions": [
-                {"kind": e.__class__.__name__} | asdict(e) for e in self.actions
-            ],
-        }
-
-    def write(self, fn):
-        with open(fn, "w") as fd:
-            obj = self.json()
-            fd.write(json.dumps(obj, indent=2))
-
-
 def do_action(model, a):
-    # self.trace.add_action(a)
     if isinstance(a, Delegate):
         model.delegate(a.val, a.amt)
     if isinstance(a, Undelegate):
@@ -209,7 +185,36 @@ def do_action(model, a):
         model.provider_slash(a.val, a.height, a.power, a.factor)
     if isinstance(a, ConsumerSlash):
         model.consumer_slash(a.val, a.power, a.height, a.is_downtime)
-    # self.trace.add_consequence(model)
+
+
+class Trace:
+    def __init__(self):
+        self.actions = []
+        self.consequences = []
+        self.blocks = None
+
+    def add_action(self, action):
+        self.actions.append(action)
+
+    def add_consequence(self, model):
+        def consequence():
+            # TODO:
+            return {}
+
+        self.consequences.append(copy.deepcopy(consequence()))
+
+    def dump(self, fn):
+        def to_json():
+            return {
+                "actions": [
+                    {"kind": e.__class__.__name__} | asdict(e) for e in self.actions
+                ],
+                "consequences": self.consequences,
+                "blocks": {},
+            }
+
+        with open(fn, "w") as fd:
+            fd.write(json.dumps(to_json(), indent=2, default=vars))
 
 
 def load_debug_actions():
@@ -239,6 +244,7 @@ def test_dummy():
         blocks = Blocks()
         model = Model(blocks)
         shaper = Shaper(model)
+        trace = Trace()
         actions = None
         k = NUM_ACTIONS
         if debug:
@@ -247,14 +253,19 @@ def test_dummy():
         try:
             for i in range(k):
                 a = actions[i] if debug else shaper.action()
+                trace.add_action(a)
                 do_action(model, a)
+                trace.add_consequence(model)
             assert staking_without_slashing(blocks)
             assert bond_based_consumer_voting_power(blocks)
+            raise IndexError()
         except Exception as e:
-            trace.write("debug.json")
-            assert False
-
-        # trace.write(f"traces/trace_{i}.json")
+            trace.blocks = blocks
+            trace.dump("debug.json")
+            sys.exit(1)
+        else:
+            trace.blocks = blocks
+            trace.dump(f"traces/trace_{i}.json")
 
         t_end = time.time()
         elapsed += t_end - t_start
