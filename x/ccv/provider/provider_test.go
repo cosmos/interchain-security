@@ -2,7 +2,6 @@ package provider_test
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 	"time"
 
@@ -23,7 +22,8 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
-	"github.com/cosmos/interchain-security/app"
+	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -35,10 +35,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func init() {
-	ibctesting.DefaultTestingAppInit = simapp.SetupTestingApp
-}
-
 type ProviderTestSuite struct {
 	suite.Suite
 
@@ -46,7 +42,7 @@ type ProviderTestSuite struct {
 
 	// testing chains
 	providerChain *ibctesting.TestChain
-	consumerChain  *ibctesting.TestChain
+	consumerChain *ibctesting.TestChain
 
 	providerClient    *ibctmtypes.ClientState
 	providerConsState *ibctmtypes.ConsensusState
@@ -60,11 +56,9 @@ type ProviderTestSuite struct {
 }
 
 func (suite *ProviderTestSuite) SetupTest() {
-	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 1)
-	suite.providerChain = suite.coordinator.GetChain(ibctesting.GetChainID(1))
-	// create consumer chain with provider chain valset
-	suite.CreateConsumerChain()
-	suite.consumerChain = suite.coordinator.GetChain(ibctesting.GetChainID(2))
+
+	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
+
 	suite.DisableConsumerDistribution()
 
 	tmConfig := ibctesting.NewTendermintConfig()
@@ -92,7 +86,7 @@ func (suite *ProviderTestSuite) SetupTest() {
 		"0.5", // 50%
 	)
 	consumerGenesis := consumertypes.NewInitialGenesisState(suite.providerClient, suite.providerConsState, valUpdates, params)
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), consumerGenesis)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), consumerGenesis)
 
 	suite.ctx = suite.providerChain.GetContext()
 
@@ -103,7 +97,7 @@ func (suite *ProviderTestSuite) SetupTest() {
 	suite.path.EndpointB.ChannelConfig.Version = types.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-	providerClient, ok := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
+	providerClient, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
@@ -116,7 +110,7 @@ func (suite *ProviderTestSuite) SetupTest() {
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	suite.path.EndpointB.CreateClient()
-	suite.providerChain.App.(*app.App).ProviderKeeper.SetConsumerClient(suite.providerChain.GetContext(), suite.consumerChain.ChainID, suite.path.EndpointB.ClientID)
+	suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(suite.providerChain.GetContext(), suite.consumerChain.ChainID, suite.path.EndpointB.ClientID)
 
 	suite.transferPath = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
 	suite.transferPath.EndpointA.ChannelConfig.PortID = transfertypes.PortID
@@ -140,7 +134,7 @@ func (suite *ProviderTestSuite) SetupCCVChannel() {
 	suite.transferPath.EndpointB.ConnectionID = suite.path.EndpointB.ConnectionID
 
 	// INIT step for transfer path has already been called during CCV channel setup
-	suite.transferPath.EndpointA.ChannelID = suite.consumerChain.App.(*app.App).
+	suite.transferPath.EndpointA.ChannelID = suite.consumerChain.App.(*appConsumer.App).
 		ConsumerKeeper.GetDistributionTransmissionChannel(suite.consumerChain.GetContext())
 
 	// Complete TRY, ACK, CONFIRM for transfer path
@@ -155,13 +149,6 @@ func (suite *ProviderTestSuite) SetupCCVChannel() {
 
 	// ensure counterparty is up to date
 	suite.transferPath.EndpointA.UpdateClient()
-}
-
-func (s *ProviderTestSuite) CreateConsumerChain() {
-	provider := s.providerChain
-	chainID := ibctesting.ChainIDPrefix + strconv.Itoa(len(s.coordinator.Chains)+1)
-	consumer := ibctesting.NewTestChainWithValSet(s.T(), s.coordinator, chainID, provider.Vals, provider.Signers)
-	s.coordinator.Chains[consumer.ChainID] = consumer
 }
 
 func TestProviderTestSuite(t *testing.T) {
@@ -190,7 +177,7 @@ func (s *ProviderTestSuite) TestPacketRoundtrip() {
 	s.Require().NoError(err)
 
 	// Save valset update ID to reconstruct packet
-	valUpdateID := s.providerChain.App.(*app.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	valUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// Send CCV packet to consumer
 	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
@@ -223,7 +210,7 @@ func (s *ProviderTestSuite) TestPacketRoundtrip() {
 	// - End consumer unbonding period
 	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
 	// TODO: why doesn't this work: s.consumerChain.App.EndBlock(abci.RequestEndBlock{})
-	err = s.consumerChain.App.(*app.App).ConsumerKeeper.UnbondMaturePackets(consumerCtx)
+	err = s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondMaturePackets(consumerCtx)
 	s.Require().NoError(err)
 
 	// commit consumer chain and update provider chain client
@@ -247,7 +234,7 @@ func (s *ProviderTestSuite) consumerCtx() sdk.Context {
 }
 
 func (s *ProviderTestSuite) providerBondDenom() string {
-	return s.providerChain.App.(*app.App).StakingKeeper.BondDenom(s.providerCtx())
+	return s.providerChain.App.(*appProvider.App).StakingKeeper.BondDenom(s.providerCtx())
 }
 
 // TestSendDowntimePacket tests consumer initiated slashing
@@ -256,9 +243,9 @@ func (s *ProviderTestSuite) TestSendDowntimePacket() {
 	validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
 	providerStakingKeeper := s.providerChain.App.GetStakingKeeper()
-	providerSlashingKeeper := s.providerChain.App.(*app.App).SlashingKeeper
+	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
 
-	consumerKeeper := s.consumerChain.App.(*app.App).ConsumerKeeper
+	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 
 	// get a cross-chain validator address, pubkey and balance
 	tmVals := s.consumerChain.Vals.Validators
@@ -301,12 +288,12 @@ func (s *ProviderTestSuite) TestSendDowntimePacket() {
 	s.Require().NoError(err)
 
 	// Set outstanding slashing flag
-	s.consumerChain.App.(*app.App).ConsumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consAddr)
+	s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consAddr)
 
 	// save next VSC packet info
 	oldBlockTime = s.providerCtx().BlockTime()
 	timeout = uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
-	valsetUpdateID := s.providerChain.App.(*app.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	valsetUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the downtime packet on the provider chain;
 	// RecvPacket() calls the provider endblocker thus sends a VSC packet to the consumer
@@ -365,7 +352,7 @@ func (s *ProviderTestSuite) TestSendDowntimePacket() {
 	s.Require().True(valSignInfo.JailedUntil.After(s.providerCtx().BlockHeader().Time))
 
 	// check that the outstanding slashing flag is reset on the consumer
-	pFlag := s.consumerChain.App.(*app.App).ConsumerKeeper.OutstandingDowntime(s.consumerCtx(), consAddr)
+	pFlag := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OutstandingDowntime(s.consumerCtx(), consAddr)
 	s.Require().False(pFlag)
 
 	// check that slashing packet gets acknowledged
@@ -389,8 +376,8 @@ func (s *ProviderTestSuite) getVal(index int) (validator stakingtypes.Validator,
 func (s *ProviderTestSuite) TestHandleConsumerDowntime() {
 	s.SetupCCVChannel()
 	providerStakingKeeper := s.providerChain.App.GetStakingKeeper()
-	providerSlashingKeeper := s.providerChain.App.(*app.App).SlashingKeeper
-	providerKeeper := s.providerChain.App.(*app.App).ProviderKeeper
+	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
+	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
 
 	// bonded amount
 	bondAmt := sdk.NewInt(1000000)
@@ -498,8 +485,8 @@ func (s *ProviderTestSuite) TestHandleConsumerDowntime() {
 
 func (s *ProviderTestSuite) TestHandleConsumerDowntimeErrors() {
 	providerStakingKeeper := s.providerChain.App.GetStakingKeeper()
-	providerKeeper := s.providerChain.App.(*app.App).ProviderKeeper
-	providerSlashingKeeper := s.providerChain.App.(*app.App).SlashingKeeper
+	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
+	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
 	consumerChainID := s.consumerChain.ChainID
 
 	// expect an error if initial block height isn't set for consumer chain
@@ -540,7 +527,7 @@ func (s *ProviderTestSuite) TestHandleConsumerDowntimeErrors() {
 	s.providerChain.App.GetStakingKeeper().BlockValidatorUpdates(providerCtx)
 
 	// set manually validator status from unbonding to unbonded
-	err = s.providerChain.App.GetStakingKeeper().UnbondingOpCanComplete(providerCtx, uint64(1))
+	err = s.providerChain.App.GetStakingKeeper().UnbondingCanComplete(providerCtx, uint64(1))
 	s.Require().NoError(err)
 
 	// replace validator address
@@ -568,8 +555,8 @@ func (s *ProviderTestSuite) TestHandleConsumerDowntimeErrors() {
 }
 
 func (s *ProviderTestSuite) TestslashingPacketAcknowldgement() {
-	providerKeeper := s.providerChain.App.(*app.App).ProviderKeeper
-	consumerKeeper := s.consumerChain.App.(*app.App).ConsumerKeeper
+	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
+	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 
 	packet := channeltypes.NewPacket([]byte{}, 1, consumertypes.PortID, s.path.EndpointA.ChannelID,
 		providertypes.PortID, "wrongchannel", clienttypes.Height{}, 0)
@@ -626,7 +613,7 @@ func (s *ProviderTestSuite) UpdateConsumerHistInfo(changes []abci.ValidatorUpdat
 
 func (s *ProviderTestSuite) DisableConsumerDistribution() {
 	cChain := s.consumerChain
-	cApp := cChain.App.(*app.App)
+	cApp := cChain.App.(*appConsumer.App)
 	for i, moduleName := range cApp.MM.OrderBeginBlockers {
 		if moduleName == distrtypes.ModuleName {
 			cApp.MM.OrderBeginBlockers = append(cApp.MM.OrderBeginBlockers[:i], cApp.MM.OrderBeginBlockers[i+1:]...)
@@ -637,7 +624,7 @@ func (s *ProviderTestSuite) DisableConsumerDistribution() {
 
 func (s *ProviderTestSuite) DisableProviderDistribution() {
 	pChain := s.providerChain
-	pApp := pChain.App.(*app.App)
+	pApp := pChain.App.(*appProvider.App)
 	for i, moduleName := range pApp.MM.OrderBeginBlockers {
 		if moduleName == distrtypes.ModuleName {
 			s.providerDistrIndex = i
@@ -649,7 +636,7 @@ func (s *ProviderTestSuite) DisableProviderDistribution() {
 
 func (s *ProviderTestSuite) ReenableProviderDistribution() {
 	pChain := s.providerChain
-	pApp := pChain.App.(*app.App)
+	pApp := pChain.App.(*appProvider.App)
 	i := s.providerDistrIndex
 	pApp.MM.OrderBeginBlockers = append(
 		pApp.MM.OrderBeginBlockers[:i+1], pApp.MM.OrderBeginBlockers[i:]...) // make space
@@ -664,7 +651,7 @@ func (s *ProviderTestSuite) TestDistribution() {
 	//      s.transferPath.EndpointB == Provider Chain
 
 	pChain, cChain := s.providerChain, s.consumerChain
-	pApp, cApp := pChain.App.(*app.App), cChain.App.(*app.App)
+	pApp, cApp := pChain.App.(*appProvider.App), cChain.App.(*appConsumer.App)
 	cKeep := cApp.ConsumerKeeper
 
 	// Get the receiving fee pool on the provider chain

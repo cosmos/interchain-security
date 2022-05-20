@@ -2,6 +2,7 @@ package simapp
 
 import (
 	"encoding/json"
+	"testing"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/simapp"
@@ -15,25 +16,9 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/interchain-security/app"
+	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	appProvider "github.com/cosmos/interchain-security/app/provider"
 )
-
-// New creates application instance with in-memory database and disabled logging.
-func New(dir string) cosmoscmd.App {
-	db := tmdb.NewMemDB()
-	logger := log.NewNopLogger()
-
-	encoding := cosmoscmd.MakeEncodingConfig(app.ModuleBasics)
-
-	a := app.New(logger, db, nil, true, map[int64]bool{}, dir, 0, encoding,
-		simapp.EmptyAppOptions{})
-	// InitChain updates deliverState which is required when app.NewContext is called
-	a.InitChain(abci.RequestInitChain{
-		ConsensusParams: defaultConsensusParams,
-		AppStateBytes:   []byte("{}"),
-	})
-	return a
-}
 
 var defaultConsensusParams = &abci.ConsensusParams{
 	Block: &abci.BlockParams{
@@ -52,10 +37,42 @@ var defaultConsensusParams = &abci.ConsensusParams{
 	},
 }
 
-func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
+func SetupTestingappProvider() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	db := tmdb.NewMemDB()
 	// encCdc := app.MakeTestEncodingConfig()
-	encoding := cosmoscmd.MakeEncodingConfig(app.ModuleBasics)
-	testApp := app.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
-	return testApp, app.NewDefaultGenesisState(encoding.Marshaler)
+	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
+	testApp := appProvider.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
+	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
+}
+
+func SetupTestingAppConsumer() (ibctesting.TestingApp, map[string]json.RawMessage) {
+	db := tmdb.NewMemDB()
+	// encCdc := app.MakeTestEncodingConfig()
+	encoding := cosmoscmd.MakeEncodingConfig(appConsumer.ModuleBasics)
+	testApp := appConsumer.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
+	return testApp, appConsumer.NewDefaultGenesisState(encoding.Marshaler)
+}
+
+// NewCoordinator initializes Coordinator with 0 TestChains
+func NewBasicCoordinator(t *testing.T) *ibctesting.Coordinator {
+	chains := make(map[string]*ibctesting.TestChain)
+	coord := &ibctesting.Coordinator{
+		T:           t,
+		CurrentTime: ibctesting.GlobalStartTime,
+	}
+	coord.Chains = chains
+	return coord
+}
+
+// NewCoordinator initializes Coordinator with 0 TestChains
+func NewProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain) {
+	coordinator := NewBasicCoordinator(t)
+	chainID := ibctesting.GetChainID(1)
+	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingappProvider, chainID)
+	providerChain := coordinator.GetChain(chainID)
+	chainID = ibctesting.GetChainID(2)
+	coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(t, coordinator,
+		SetupTestingAppConsumer, chainID, providerChain.Vals, providerChain.Signers)
+	consumerChain := coordinator.GetChain(chainID)
+	return coordinator, providerChain, consumerChain
 }

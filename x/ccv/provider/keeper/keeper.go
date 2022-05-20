@@ -449,7 +449,7 @@ func (k *Keeper) Hooks() StakingHooks {
 }
 
 // This stores a record of each unbonding op from staking, allowing us to track which consumer chains have unbonded
-func (h StakingHooks) AfterUnbondingOpInitiated(ctx sdk.Context, ID uint64) {
+func (h StakingHooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
 	var consumerChainIDS []string
 
 	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
@@ -458,7 +458,7 @@ func (h StakingHooks) AfterUnbondingOpInitiated(ctx sdk.Context, ID uint64) {
 	})
 	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
 	unbondingOp := ccv.UnbondingOp{
-		Id:                   ID,
+		Id:                      ID,
 		UnbondingConsumerChains: consumerChainIDS,
 	}
 
@@ -473,7 +473,7 @@ func (h StakingHooks) AfterUnbondingOpInitiated(ctx sdk.Context, ID uint64) {
 	h.k.SetUnbondingOp(ctx, unbondingOp)
 
 	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
-	h.k.stakingKeeper.PutUnbondingOpOnHold(ctx, ID)
+	h.k.stakingKeeper.PutUnbondingOnHold(ctx, ID)
 }
 
 // SetValsetUpdateBlockHeight sets the block height for a given valset update id
