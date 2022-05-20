@@ -1,8 +1,6 @@
 from recordclass import recordclass
 from collections import defaultdict
 from .constants import *
-from .blockchain import *
-
 
 Undelegation = recordclass(
     "Undelegation",
@@ -428,7 +426,7 @@ class Model:
         MinSelfDelegation = 0
     """
 
-    def __init__(self):
+    def __init__(self, blocks):
 
         # global time
         self.T = 0
@@ -445,13 +443,14 @@ class Model:
         self.ccv_p = CCVProvider(self)
         self.ccv_c = CCVConsumer(self)
 
-        self.blocks = Blocks()
+        # Used to record committed blocks
+        self.blocks = blocks
 
         # Record a happens-before relationship between genesis blocks
         # provider h0 happens before consumer h0
         self.blocks.partial_order.deliver(C, 0, 0)
 
-        # simulate the commiting and beginning of a new block
+        # simulate the commiting of the genesis block and beginning of a new block
         self.blocks.commit_block(P, self)
         self.blocks.commit_block(C, self)
         self.increase_seconds(1)

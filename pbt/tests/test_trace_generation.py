@@ -1,17 +1,15 @@
-import pytest
-import os
+import random
 import shutil
+import os
 import time
 import copy
 import json
 from .model import Model
 from .constants import *
 from .properties import *
-from recordclass import asdict
-
 from .constants import *
-from recordclass import recordclass
-import random
+from .blocks import *
+from recordclass import asdict, recordclass
 
 Delegate = recordclass("Delegate", ["val", "amt"])
 Undelegate = recordclass("Undelegate", ["val", "amt"])
@@ -189,44 +187,36 @@ class Trace:
             fd.write(json.dumps(obj, indent=2))
 
 
-class Driver:
-    def __init__(self, model, trace):
-        self.m = model
-        self.trace = trace
-
-    def action(self):
-        return self.shaper.action()
-
-    def do_action(self, a):
-        self.trace.add_action(a)
-        if isinstance(a, Delegate):
-            self.m.delegate(a.val, a.amt)
-        if isinstance(a, Undelegate):
-            self.m.undelegate(a.val, a.amt)
-        if isinstance(a, JumpNBlocks):
-            for _ in range(a.n):
-                for c in a.chains:
-                    assert c in {P, C}
-                    """
-                    BeginBlock is forced before each action, if
-                    necessary, and is not explicitly called.
-                    """
-                    self.m.end_block(c)
-                self.m.increase_seconds(a.seconds_per_block)
-        if isinstance(a, Deliver):
-            self.m.deliver(a.chain)
-        if isinstance(a, ProviderSlash):
-            self.m.provider_slash(a.val, a.height, a.power, a.factor)
-        if isinstance(a, ConsumerSlash):
-            self.m.consumer_slash(a.val, a.power, a.height, a.is_downtime)
-        self.trace.add_consequence(self.m)
+def do_action(model, a):
+    # self.trace.add_action(a)
+    if isinstance(a, Delegate):
+        model.delegate(a.val, a.amt)
+    if isinstance(a, Undelegate):
+        model.undelegate(a.val, a.amt)
+    if isinstance(a, JumpNBlocks):
+        for _ in range(a.n):
+            for c in a.chains:
+                assert c in {P, C}
+                """
+                BeginBlock is forced before each action, if
+                necessary, and is not explicitly called.
+                """
+                model.end_block(c)
+            model.increase_seconds(a.seconds_per_block)
+    if isinstance(a, Deliver):
+        model.deliver(a.chain)
+    if isinstance(a, ProviderSlash):
+        model.provider_slash(a.val, a.height, a.power, a.factor)
+    if isinstance(a, ConsumerSlash):
+        model.consumer_slash(a.val, a.power, a.height, a.is_downtime)
+    # self.trace.add_consequence(model)
 
 
-def load_actions_for_debugging():
+def load_debug_actions():
     obj = None
     with open("debug.json", "r") as fd:
         obj = json.loads(fd.read())
-    return [action_from_json(a) for a in obj["actions"]]
+    return obj["actions"]
 
 
 def test_dummy():
@@ -237,39 +227,36 @@ def test_dummy():
     shutil.rmtree("traces/")
     os.makedirs("traces/")
 
-    num_runs = 100000
+    num_runs = 1 if debug else 99999999999  # will be adjusted
     elapsed = 0
     i = 0
     while i < num_runs:
         i += 1
         if not debug and 10 < elapsed:
-            avg = elapsed / i
-            num_runs = GOAL_TIME_MINS * 60 / avg
+            num_runs = (GOAL_TIME_MINS * 60) / (elapsed / i)
         t_start = time.time()
 
-        trace = Trace()
-        model = Model()
+        blocks = Blocks()
+        model = Model(blocks)
         shaper = Shaper(model)
-        d = Driver(model, trace)
         actions = None
+        k = NUM_ACTIONS
         if debug:
-            actions = load_actions_for_debugging()
-        for i in range(len(actions) if debug else NUM_ACTIONS):
-            a = actions[i] if debug else d.action()
-            try:
-                d.do_action(a)
-            except Exception as e:
-                trace.write("debug.json")
-                assert False
+            actions = [shaper.action(json=a) for a in load_debug_actions()]
+            k = len(actions)
         try:
-            assert staking_without_slashing(trace)
-            assert bond_based_consumer_voting_power(trace)
+            for i in range(k):
+                a = actions[i] if debug else shaper.action()
+                do_action(model, a)
+            assert staking_without_slashing(blocks)
+            assert bond_based_consumer_voting_power(blocks)
         except Exception as e:
             trace.write("debug.json")
             assert False
 
+        # trace.write(f"traces/trace_{i}.json")
+
         t_end = time.time()
         elapsed += t_end - t_start
 
-        # trace.write(f"traces/trace_{i}.json")
     print("Ran {i} runs")
