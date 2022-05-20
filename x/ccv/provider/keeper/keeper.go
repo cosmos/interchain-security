@@ -500,7 +500,7 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 	store.Delete(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
 }
 
-// SetSlashAcks sets the slashing acks under the given chain ID
+// SetSlashAcks sets the slash acks under the given chain ID
 func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	store := ctx.KVStore(k.storeKey)
 	buf := &bytes.Buffer{}
@@ -511,7 +511,7 @@ func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	store.Set(types.SlashAcksKey(chainID), buf.Bytes())
 }
 
-// GetSlashAcks returns the slashing acks stored under the given chain ID
+// GetSlashAcks returns the slash acks stored under the given chain ID
 func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SlashAcksKey(chainID))
@@ -529,7 +529,7 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	return acks
 }
 
-// EmptySlashAcks empties and returns the slashing acks for a given chain ID
+// EmptySlashAcks empties and returns the slash acks for a given chain ID
 func (k Keeper) EmptySlashAcks(ctx sdk.Context, chainID string) (acks []string) {
 	acks = k.GetSlashAcks(ctx, chainID)
 	if len(acks) < 1 {
@@ -540,7 +540,7 @@ func (k Keeper) EmptySlashAcks(ctx sdk.Context, chainID string) (acks []string) 
 	return
 }
 
-// IterateSlashAcks iterates through the slashing acks set in the store
+// IterateSlashAcks iterates through the slash acks set in the store
 func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) bool) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte(types.SlashAcksPrefix))
@@ -564,8 +564,8 @@ func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks [
 	}
 }
 
-// AppendslashingAck appends the given slashing ack to the given chain ID slashing acks in store
-func (k Keeper) AppendslashingAck(ctx sdk.Context, chainID, ack string) {
+// AppendSlashAck appends the given slash ack to the given chain ID slash acks in store
+func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID, ack string) {
 	acks := k.GetSlashAcks(ctx, chainID)
 	acks = append(acks, ack)
 	k.SetSlashAcks(ctx, chainID, acks)

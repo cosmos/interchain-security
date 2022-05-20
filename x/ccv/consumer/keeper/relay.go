@@ -6,6 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
@@ -102,16 +103,17 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 }
 
 // SendSlashPacket sends a slash packet containing the given validator data and slashing info
-func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, slashFraction, jailedUntil int64) {
+func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, infraction stakingtypes.InfractionType) {
+	consAddr := sdk.ConsAddress(validator.Address)
+	downtime := infraction == stakingtypes.Downtime
 
 	// return if an outstanding downtime request is set for the validator
-	consAddr := sdk.ConsAddress(validator.Address)
-	if k.OutstandingDowntime(ctx, consAddr) { // TODO: add to condition if the slash is for downtime
+	if downtime && k.OutstandingDowntime(ctx, consAddr) {
 		return
 	}
 
 	// construct slash packet data
-	packetData := ccv.NewSlashPacketData(validator, valsetUpdateID, slashFraction, jailedUntil)
+	packetData := ccv.NewSlashPacketData(validator, valsetUpdateID, infraction)
 
 	// check that provider channel is established
 	// if not, append slashing packet to pending slash requests
@@ -119,7 +121,7 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 	if !ok {
 		k.AppendPendingSlashRequests(ctx, types.SlashRequest{
 			Packet:   &packetData,
-			Downtime: true}, // TODO Simon: add double-signing check
+			Downtime: downtime},
 		)
 		return
 	}
@@ -137,8 +139,10 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 		panic(err)
 	}
 
-	// set outstanding downtime flag for the validator
-	k.SetOutstandingDowntime(ctx, consAddr) // TODO: do this only if the slash is for downtime
+	// set outstanding downtime if slash request sent is for downtime
+	if downtime {
+		k.SetOutstandingDowntime(ctx, consAddr)
+	}
 }
 
 // SendPendingSlashRequests iterates over the stored pending slash requests in reverse order
@@ -171,7 +175,7 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 			}
 
 			// set validator outstanding downtime flag to true
-			if slashReq.Downtime { // TODO: add to condition if the slash is for downtime
+			if slashReq.Downtime {
 				k.SetOutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address))
 			}
 		}

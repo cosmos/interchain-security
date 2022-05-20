@@ -4,6 +4,8 @@ package interchain_security.ccv.v1;
 
 option go_package = "github.com/cosmos/interchain-security/x/ccv/types";
 
+import "cosmos/staking/v1beta1/staking.proto";
+
 import "gogoproto/gogo.proto";
 import "tendermint/abci/types.proto";
 
@@ -47,7 +49,8 @@ message UnbondingOp {
 message SlashPacketData {
   tendermint.abci.Validator validator = 1
       [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"validator\""];
-  int64  jail_time        = 2;
-  int64  slash_fraction   = 3;
-  uint64 valset_update_id = 4;
+  // map to the infraction block height on the provider
+  uint64 valset_update_id = 2;
+  // tell if the slashing is for a downtime or a double-signing infraction
+  cosmos.staking.v1beta1.InfractionType infraction = 3;
 }
