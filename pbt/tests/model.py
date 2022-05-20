@@ -64,7 +64,6 @@ class Staking:
 
     def __init__(self, model):
         self.m = model
-
         # the number of shares the delegator has in the validator
         # simply hardcoded to match what driver starts with
         # denominated in shares
@@ -87,7 +86,6 @@ class Staking:
         self.jailed = [None] * NUM_VALIDATORS
         # delegator balance, hardcoded
         self.delegator_tokens = 10000000000000000000
-
         # used to track unbonding and redelegation entries, as well as
         # map to unbonding validators, in order to track on_hold
         self.unbonding_op_id = 0
@@ -95,7 +93,6 @@ class Staking:
         self.unbonding_op_id_to_val = {}
         # is the validator on hold from unbonding?
         self.on_hold = [False] * NUM_VALIDATORS
-
         # used to compute val set changes
         # maps validators to power
         self.changes = {}
