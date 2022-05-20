@@ -80,6 +80,10 @@ func NewKeeper(
 	}
 }
 
+// to work with IBC test framework
+// GetValidators
+// Delegate
+
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
@@ -94,16 +98,6 @@ func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
 
 	return k
 }
-
-// TODO: confirm OK to stub
-// Load the last total validator power.
-func (k *Keeper) GetLastTotalPower(ctx sdk.Context) sdk.Int {
-	return sdk.Int{}
-}
-
-// TODO: confirm OK to stub
-// Set the last total validator power.
-func (k *Keeper) SetLastTotalPower(ctx sdk.Context, power sdk.Int) {}
 
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
 // in order to expose it to the ICS20 transfer handler.
@@ -514,6 +508,13 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 	}
 
 	return validators
+}
+
+// TODO: note: GetAllValidators is used in the slashing simulation because it accesses staking.RandomValidator
+// need to check how simulations work and whether it is necessary to return a set of validators or not
+// get the set of all validators with no limits, used during genesis dump
+func (k Keeper) GetAllValidators(ctx sdk.Context) (validators []stakingtypes.Validator) {
+	return nil
 }
 
 // SetPendingSlashRequests sets the pending slash requests in store
