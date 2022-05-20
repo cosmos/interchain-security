@@ -128,9 +128,11 @@ require (
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
 	// below is until this is merged: https://github.com/sainoe/cosmos-sdk/pull/3
-	github.com/cosmos/cosmos-sdk => github.com/okwme/cosmos-sdk v0.44.4-0.20220520163452-07ce9533a70c
+	github.com/cosmos/cosmos-sdk => github.com/okwme/cosmos-sdk v0.44.4-0.20220520170845-76cd50b0b20c
 	// below is until this is merged: https://github.com/informalsystems/ibc-go/pull/2
-	github.com/cosmos/ibc-go/v3 => github.com/okwme/ibc-go/v3 v3.0.0-20220520161714-cee3e48519e2
+	// github.com/cosmos/ibc-go/v3 => github.com/okwme/ibc-go/v3 v3.0.0-20220520161714-cee3e48519e2
+
+	github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-alpha1.0.20220505161112-1f45da82fc75
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )

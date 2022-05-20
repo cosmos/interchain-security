@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -828,8 +828,8 @@ func (app *App) GetBaseApp() *baseapp.BaseApp {
 }
 
 // GetStakingKeeper implements the TestingApp interface.
-func (app *App) GetStakingKeeper() ibcclienttypes.StakingKeeper {
-	return app.ConsumerKeeper
+func (app *App) GetStakingKeeper() stakingkeeper.Keeper {
+	return stakingkeeper.Keeper{}
 }
 
 // GetIBCKeeper implements the TestingApp interface.

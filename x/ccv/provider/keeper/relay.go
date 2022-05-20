@@ -6,8 +6,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"

@@ -9,8 +9,7 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ibcconsumer "github.com/cosmos/interchain-security/x/ccv/consumer"
 )
 
 // ExportAppStateAndValidators exports the state of the application for a genesis
@@ -36,7 +35,7 @@ func (app *App) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
-	validators, err := staking.WriteValidators(ctx, app.ConsumerKeeper)
+	validators, err := ibcconsumer.WriteValidators(ctx, app.ConsumerKeeper)
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}
@@ -52,12 +51,13 @@ func (app *App) ExportAppStateAndValidators(
 // NOTE zero height genesis is a temporary feature which will be deprecated
 //      in favour of export at a block height
 func (app *App) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []string) {
-	applyAllowedAddrs := false
+	// TODO: decide whether this can be removed permanentely
+	// applyAllowedAddrs := false
 
-	// check if there is a allowed address list
-	if len(jailAllowedAddrs) > 0 {
-		applyAllowedAddrs = true
-	}
+	// // check if there is a allowed address list
+	// if len(jailAllowedAddrs) > 0 {
+	// 	applyAllowedAddrs = true
+	// }
 
 	allowedAddrsMap := make(map[string]bool)
 
@@ -130,51 +130,54 @@ func (app *App) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []str
 
 	/* Handle staking state. */
 
-	// iterate through redelegations, reset creation height
-	app.ConsumerKeeper.IterateRedelegations(ctx, func(_ int64, red stakingtypes.Redelegation) (stop bool) {
-		for i := range red.Entries {
-			red.Entries[i].CreationHeight = 0
-		}
-		app.ConsumerKeeper.SetRedelegation(ctx, red)
-		return false
-	})
+	// TODO: decide whether this can be removed permanentely
+	// // iterate through redelegations, reset creation height
+	// app.ConsumerKeeper.IterateRedelegations(ctx, func(_ int64, red stakingtypes.Redelegation) (stop bool) {
+	// 	for i := range red.Entries {
+	// 		red.Entries[i].CreationHeight = 0
+	// 	}
+	// 	app.ConsumerKeeper.SetRedelegation(ctx, red)
+	// 	return false
+	// })
 
-	// iterate through unbonding delegations, reset creation height
-	app.ConsumerKeeper.IterateUnbondingDelegations(ctx, func(_ int64, ubd stakingtypes.UnbondingDelegation) (stop bool) {
-		for i := range ubd.Entries {
-			ubd.Entries[i].CreationHeight = 0
-		}
-		app.ConsumerKeeper.SetUnbondingDelegation(ctx, ubd)
-		return false
-	})
+	// TODO: decide whether this can be removed permanentely
+	// // iterate through unbonding delegations, reset creation height
+	// app.ConsumerKeeper.IterateUnbondingDelegations(ctx, func(_ int64, ubd stakingtypes.UnbondingDelegation) (stop bool) {
+	// 	for i := range ubd.Entries {
+	// 		ubd.Entries[i].CreationHeight = 0
+	// 	}
+	// 	app.ConsumerKeeper.SetUnbondingDelegation(ctx, ubd)
+	// 	return false
+	// })
 
-	// Iterate through validators by power descending, reset bond heights, and
-	// update bond intra-tx counters.
-	store := ctx.KVStore(app.keys[stakingtypes.StoreKey])
-	iter := sdk.KVStoreReversePrefixIterator(store, stakingtypes.ValidatorsKey)
-	counter := int16(0)
+	// TODO: decide whether this can be removed permanentely
+	// // Iterate through validators by power descending, reset bond heights, and
+	// // update bond intra-tx counters.
+	// store := ctx.KVStore(app.keys[stakingtypes.StoreKey])
+	// iter := sdk.KVStoreReversePrefixIterator(store, stakingtypes.ValidatorsKey)
+	// counter := int16(0)
 
-	for ; iter.Valid(); iter.Next() {
-		addr := sdk.ValAddress(iter.Key()[1:])
-		validator, found := app.ConsumerKeeper.GetValidator(ctx, addr)
-		if !found {
-			panic("expected validator, not found")
-		}
+	// for ; iter.Valid(); iter.Next() {
+	// 	addr := sdk.ValAddress(iter.Key()[1:])
+	// 	validator, found := app.ConsumerKeeper.GetValidator(ctx, addr)
+	// 	if !found {
+	// 		panic("expected validator, not found")
+	// 	}
 
-		validator.UnbondingHeight = 0
-		if applyAllowedAddrs && !allowedAddrsMap[addr.String()] {
-			validator.Jailed = true
-		}
+	// 	validator.UnbondingHeight = 0
+	// 	if applyAllowedAddrs && !allowedAddrsMap[addr.String()] {
+	// 		validator.Jailed = true
+	// 	}
 
-		app.ConsumerKeeper.SetValidator(ctx, validator)
-		counter++
-	}
+	// 	app.ConsumerKeeper.SetValidator(ctx, validator)
+	// 	counter++
+	// }
 
-	iter.Close()
+	// iter.Close()
 
-	if _, err := app.ConsumerKeeper.ApplyAndReturnValidatorSetUpdates(ctx); err != nil {
-		panic(err)
-	}
+	// if _, err := app.ConsumerKeeper.ApplyAndReturnValidatorSetUpdates(ctx); err != nil {
+	// 	panic(err)
+	// }
 
 	/* Handle slashing state. */
 
