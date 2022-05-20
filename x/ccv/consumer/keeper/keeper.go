@@ -80,10 +80,6 @@ func NewKeeper(
 	}
 }
 
-// to work with IBC test framework
-// GetValidators
-// Delegate
-
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
