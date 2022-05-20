@@ -43,41 +43,20 @@ class PartialOrder:
         return self.least_successor[chain][heights[i]]
 
 
-BlockProvider = recordclass("BlockProvider", ["h", "t", "compare", "tokens", "unq"])
-BlockConsumer = recordclass("BlockConsumer", ["h", "t", "power", "maturing_vscs"])
-
-
 class Blocks:
+    class Block:
+        def __init__(self, h, t, snapshot):
+            self.h = h
+            self.t = t
+            self.snapshot = snapshot
+
     def __init__(self):
         self.partial_order = PartialOrder()
         # Inner dictionaries map heights to block data
         self.blocks = {P: {}, C: {}}
 
-    def commit_block(self, chain, model):
-        def block():
-            if chain == P:
-                h = model.h[P]
-                t = model.t[P]
-
-                tokens = {}
-                unq = {}
-                compare = {}
-                for i in range(NUM_VALIDATORS):
-                    tokens[i] = model.staking.tokens[i]
-                    unq[i] = sum(
-                        e.initial_balance
-                        for e in model.staking.undelegationQ
-                        if e.val == i
-                    )
-                    compare[i] = tokens[i] + unq[i]
-
-                return BlockProvider(h, t, compare, tokens, unq)
-            if chain == C:
-                h = model.h[C]
-                t = model.t[C]
-                power = dict(model.ccv_c.val_power)
-                maturing_vscs = dict(model.ccv_c.maturing_vscs)
-                return BlockConsumer(h, t, power, maturing_vscs)
-
-        assert model.h[chain] not in self.blocks[chain].keys()
-        self.blocks[chain][model.h[chain]] = block()
+    def commit_block(self, chain, snapshot):
+        h = snapshot.h[chain]
+        t = snapshot.t[chain]
+        assert h not in self.blocks[chain]
+        self.blocks[chain][h] = Blocks.Block(h, t, snapshot)

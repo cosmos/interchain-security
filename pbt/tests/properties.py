@@ -6,7 +6,7 @@ def staking_without_slashing(blocks):
     The total number of tokens in the system is constant
     if there is no slashing.
     """
-    blocks = [b for _, b in sorted(blocks.blocks[P].items())]
+    blocks = [b.snapshot.staking for _, b in sorted(blocks.blocks[P].items())]
 
     if len(blocks) < 2:
         return True
@@ -21,7 +21,7 @@ def staking_without_slashing(blocks):
         return x
 
     v = value(initial)
-    for s in blocks:
+    for b in blocks:
         if value(b) != v:
             return False
 
@@ -31,6 +31,20 @@ def staking_without_slashing(blocks):
 def bond_based_consumer_voting_power(blocks):
     partial_order = blocks.partial_order
     blocks = blocks.blocks
+
+    def power_provider(block):
+        return {
+            i: block.snapshot.staking.tokens[i]
+            + sum(
+                e.initial_balance
+                for e in block.snapshot.staking.undelegationQ
+                if e.val == i
+            )
+            for i in range(NUM_VALIDATORS)
+        }
+
+    def power_consumer(block):
+        return block.snapshot.ccv_c.power
 
     def inner(hc):
 
@@ -58,8 +72,10 @@ def bond_based_consumer_voting_power(blocks):
             limit = hp_ = 1
         for h in range(hp, limit + 1):
             for i in range(NUM_VALIDATORS):
-                if i in blocks[C][hc].power:
-                    if blocks[P][h].compare[i] < blocks[C][hc].power[i]:
+                power_p = power_provider(blocks[P][h])
+                power_c = power_consumer(blocks[C][hc])
+                if i in power_c:
+                    if power_p[i] < power_c[i]:
                         # property violation!
                         return False
         return True

@@ -197,12 +197,8 @@ class Trace:
     def add_action(self, action):
         self.actions.append(action)
 
-    def add_consequence(self, model):
-        def consequence():
-            # TODO:
-            return {}
-
-        self.consequences.append(consequence())
+    def add_consequence(self, snapshot):
+        self.consequences.append(snapshot)
 
     def dump(self, fn):
         def to_json():
@@ -210,7 +206,8 @@ class Trace:
                 "actions": [
                     {"kind": e.__class__.__name__} | asdict(e) for e in self.actions
                 ],
-                "consequences": self.consequences,
+                # TODO:
+                "consequences": {},
                 "blocks": {},
             }
 
@@ -225,7 +222,6 @@ def load_debug_actions():
     return obj["actions"]
 
 
-@pytest.mark.skip()
 def test_dummy():
     debug = False
     GOAL_TIME_MINS = 20
@@ -257,7 +253,7 @@ def test_dummy():
                 a = actions[i] if debug else shaper.action()
                 trace.add_action(a)
                 do_action(model, a)
-                trace.add_consequence(model)
+                trace.add_consequence(model.snapshot())
             assert staking_without_slashing(blocks)
             assert bond_based_consumer_voting_power(blocks)
         except Exception:
@@ -272,18 +268,3 @@ def test_dummy():
         elapsed += t_end - t_start
 
     print("Ran {i} runs")
-
-
-class Dog:
-    def __init__(self, x):
-        self.x = x
-
-
-def test_foo():
-    a = Dog(42)
-    b = Dog(a)
-    x = vars(b)
-    x["x"] = 43
-    print(x)
-    print(vars(a))
-    print(vars(b))

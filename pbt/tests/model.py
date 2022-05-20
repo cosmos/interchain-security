@@ -1,4 +1,5 @@
 from recordclass import recordclass
+from copy import deepcopy
 from collections import defaultdict
 from .constants import *
 
@@ -440,10 +441,20 @@ class Model:
 
         # simulate the committing of the genesis block and beginning of
         # a new block
-        self.blocks.commit_block(P, self)
-        self.blocks.commit_block(C, self)
+        self.blocks.commit_block(P, self.snapshot())
+        self.blocks.commit_block(C, self.snapshot())
         self.increase_seconds(1)
         self.must_begin_block = {P: True, C: True}
+
+    class Snapshot:
+        def __init__(self, init):
+            for k, v in init.items():
+                setattr(self, k, v)
+
+    def snapshot(self):
+        d = vars(deepcopy(self))
+        del d["blocks"]
+        return Model.Snapshot(deepcopy(d))
 
     def has_undelivered(self, chain):
         if chain == P:
@@ -480,7 +491,7 @@ class Model:
             self.outbox_c.commit()
         # Forces a begin_block as next action
         self.must_begin_block[chain] = True
-        self.blocks.commit_block(chain, self)
+        self.blocks.commit_block(chain, self.snapshot())
 
     def increase_seconds(self, seconds):
         self.T += seconds
