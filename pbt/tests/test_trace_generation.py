@@ -254,7 +254,6 @@ def test_dummy():
                 trace.add_action(a)
                 do_action(model, a)
                 trace.add_consequence(model.snapshot())
-
             assert staking_without_slashing(blocks)
             assert bond_based_consumer_voting_power(blocks)
         except Exception:
