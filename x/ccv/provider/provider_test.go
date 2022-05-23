@@ -6,10 +6,10 @@ import (
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -238,7 +238,7 @@ func (s *ProviderTestSuite) providerBondDenom() string {
 }
 
 // TestSendDowntimePacket tests consumer initiated slashing
-func (s *ProviderTestSuite) TestSendDowntimePacket() {
+func (s *ProviderTestSuite) TestSendSlashPacketDowntime() {
 	s.SetupCCVChannel()
 	validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
@@ -277,8 +277,7 @@ func (s *ProviderTestSuite) TestSendDowntimePacket() {
 
 	oldBlockTime := s.consumerCtx().BlockTime()
 	slashFraction := int64(100)
-	packetData := types.NewSlashPacketData(validator, valsetUpdateId, slashFraction,
-		int64(slashingtypes.DefaultDowntimeJailDuration))
+	packetData := types.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.Downtime)
 	timeout := uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, consumertypes.PortID, s.path.EndpointA.ChannelID,
 		providertypes.PortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
@@ -361,6 +360,119 @@ func (s *ProviderTestSuite) TestSendDowntimePacket() {
 	s.Require().NoError(err)
 }
 
+func (s *ProviderTestSuite) TestSendSlashPacketDoubleSign() {
+	s.SetupCCVChannel()
+	validatorsPerChain := len(s.consumerChain.Vals.Validators)
+
+	providerStakingKeeper := s.providerChain.App.GetStakingKeeper()
+	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
+	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+
+	// get a cross-chain validator address, pubkey and balance
+	tmVals := s.consumerChain.Vals.Validators
+	tmVal := tmVals[0]
+
+	val, err := tmVal.ToProto()
+	s.Require().NoError(err)
+	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
+	s.Require().Nil(err)
+	consAddr := sdk.GetConsAddress(pubkey)
+	valData, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
+	s.Require().True(found)
+	valOldBalance := valData.Tokens
+
+	// create the validator's signing info record to allow jailing
+	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, s.providerCtx().BlockHeight(),
+		s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
+	providerSlashingKeeper.SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
+
+	// get valseUpdateId for current block height
+	valsetUpdateId := consumerKeeper.GetHeightValsetUpdateID(s.consumerCtx(), uint64(s.consumerCtx().BlockHeight()))
+
+	// construct the downtime packet with the validator address and power along
+	// with the slashing and jailing parameters
+	validator := abci.Validator{
+		Address: tmVal.Address,
+		Power:   tmVal.VotingPower,
+	}
+
+	oldBlockTime := s.consumerCtx().BlockTime()
+	packetData := types.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.DoubleSign)
+
+	timeout := uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, consumertypes.PortID, s.path.EndpointA.ChannelID,
+		providertypes.PortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
+
+	// Send the downtime packet through CCV
+	err = s.path.EndpointA.SendPacket(packet)
+	s.Require().NoError(err)
+
+	// save next VSC packet info
+	oldBlockTime = s.providerCtx().BlockTime()
+	timeout = uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	valsetUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
+
+	// receive the downtime packet on the provider chain;
+	// RecvPacket() calls the provider endblocker and thus sends a VSC packet to the consumer
+	err = s.path.EndpointB.RecvPacket(packet)
+	s.Require().NoError(err)
+
+	// check that the validator was removed from the provider validator set
+	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
+	// check that the VSC ID is updated on the consumer chain
+
+	// update consumer client on the VSC packet sent from provider
+	err = s.path.EndpointA.UpdateClient()
+	s.Require().NoError(err)
+
+	// reconstruct VSC packet
+	valUpdates := []abci.ValidatorUpdate{
+		{
+			PubKey: val.GetPubKey(),
+			Power:  int64(0),
+		},
+	}
+	packetData2 := ccv.NewValidatorSetChangePacketData(valUpdates, valsetUpdateID, []string{})
+	packet2 := channeltypes.NewPacket(packetData2.GetBytes(), 1, providertypes.PortID, s.path.EndpointB.ChannelID,
+		consumertypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	// receive VSC packet about jailing on the consumer chain
+	err = s.path.EndpointA.RecvPacket(packet2)
+	s.Require().NoError(err)
+
+	// check that the consumer update its VSC ID for the subsequent block
+	s.Require().Equal(consumerKeeper.GetHeightValsetUpdateID(s.consumerCtx(), uint64(s.consumerCtx().BlockHeight())+1), valsetUpdateID)
+
+	// update consumer chain hist info
+	s.UpdateConsumerHistInfo(packetData2.ValidatorUpdates)
+
+	// check that the validator was removed from the consumer validator set
+	s.Require().Len(s.consumerChain.Vals.Validators, validatorsPerChain-1)
+
+	err = s.path.EndpointB.UpdateClient()
+	s.Require().NoError(err)
+
+	// check that the validator is successfully jailed on provider
+	validatorJailed, ok := s.providerChain.App.GetStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
+	s.Require().True(ok)
+	s.Require().True(validatorJailed.Jailed)
+	s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
+
+	// check that the validator's token was slashed
+	slashedAmout := providerSlashingKeeper.SlashFractionDoubleSign(s.providerCtx()).Mul(valOldBalance.ToDec())
+	resultingTokens := valOldBalance.Sub(slashedAmout.TruncateInt())
+	s.Require().Equal(resultingTokens, validatorJailed.GetTokens())
+
+	// check that the validator's unjailing time is updated
+	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), consAddr)
+	s.Require().True(found)
+	s.Require().True(valSignInfo.JailedUntil.After(s.providerCtx().BlockHeader().Time))
+
+	// check that validator was tombstoned
+	s.Require().True(valSignInfo.Tombstoned)
+	s.Require().True(valSignInfo.JailedUntil.Equal(evidencetypes.DoubleSignJailEndTime))
+}
+
 func (s *ProviderTestSuite) getVal(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {
 	// Choose a validator, and get its address and data structure into the correct types
 	tmValidator := s.providerChain.Vals.Validators[index]
@@ -372,189 +484,7 @@ func (s *ProviderTestSuite) getVal(index int) (validator stakingtypes.Validator,
 	return validator, valAddr
 }
 
-// TestHandleConsumerDowntime tests the slashing distribution
-func (s *ProviderTestSuite) TestHandleConsumerDowntime() {
-	s.SetupCCVChannel()
-	providerStakingKeeper := s.providerChain.App.GetStakingKeeper()
-	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
-	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
-
-	// bonded amount
-	bondAmt := sdk.NewInt(1000000)
-	delAddr := s.providerChain.SenderAccount.GetAddress()
-
-	// choose a validator and get its delegations
-	_, valAddr := s.getVal(0)
-	del, found := providerStakingKeeper.GetDelegation(s.providerCtx(), delAddr, valAddr)
-	s.Require().True(found)
-	validator, found := providerStakingKeeper.GetValidator(s.providerCtx(), valAddr)
-	s.Require().True(found)
-
-	consAdrr, err := validator.GetConsAddr()
-	s.Require().NoError(err)
-
-	ubdAmount := del.Shares.QuoInt64(2)
-	undel := func() stakingtypes.UnbondingDelegation {
-		ubd, found := providerStakingKeeper.GetUnbondingDelegation(s.providerCtx(), delAddr, valAddr)
-		s.Require().True(found)
-		return ubd
-	}
-	// undelegate half of the tokens
-	unboundHalf := func() stakingtypes.UnbondingDelegation {
-		_, err := providerStakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, ubdAmount)
-		s.Require().NoError(err)
-		return undel()
-	}
-
-	// save valset update ID mapping the next block height
-	valseUpdateID1 := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
-
-	// get valset update ID mapping the current block height
-	valseUpdateID0 := valseUpdateID1 - 1
-
-	// create first undelegation entry
-	ubdBalance := ubdAmount.Mul(bondAmt.ToDec()).TruncateInt()
-	ubd := unboundHalf()
-	s.Require().Len(ubd.Entries, 1)
-	s.Require().Equal(ubdBalance, ubd.Entries[0].Balance)
-
-	// check valset update ID height mapping
-	s.coordinator.CommitBlock(s.providerChain)
-	valsetUpdateIDHeight := providerKeeper.GetValsetUpdateBlockHeight(s.providerCtx(), valseUpdateID1)
-
-	s.Require().EqualValues(valsetUpdateIDHeight, ubd.Entries[0].CreationHeight+1)
-
-	// create second undelegation entry
-	ubd = unboundHalf()
-	s.Require().Len(ubd.Entries, 2)
-	s.Require().Equal(ubdBalance, ubd.Entries[1].Balance)
-	valseUpdateID2 := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
-
-	s.coordinator.CommitBlock(s.providerChain)
-	valsetUpdateIDHeight = providerKeeper.GetValsetUpdateBlockHeight(s.providerCtx(), valseUpdateID2)
-
-	s.Require().EqualValues(valsetUpdateIDHeight, ubd.Entries[1].CreationHeight+1)
-
-	// create validator signing info
-	valInfo := slashingtypes.NewValidatorSigningInfo(consAdrr, s.providerCtx().BlockHeight(),
-		s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
-	providerSlashingKeeper.SetValidatorSigningInfo(s.providerCtx(), consAdrr, valInfo)
-
-	// resulting balance after slashing
-	ubdBalanceSlashed := ubdBalance.Sub(ubdBalance.Quo(sdk.NewInt(4)))
-	ubdBalanceSlashed2 := ubdBalanceSlashed.Sub(ubdBalance.Quo(sdk.NewInt(4)))
-
-	// test slashing using the valset update IDs
-	tests := []struct {
-		expBalances    []sdk.Int
-		valsetUpdateID uint64
-	}{{ // both undelegations slashed: valseUpdateID0  maps to 1st undelegation height
-		expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed},
-		valsetUpdateID: valseUpdateID0,
-	}, { // second undelegation is slashed again: valseUpdateID1 maps to 2nd undelegation height
-		expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed2},
-		valsetUpdateID: valseUpdateID1,
-	}, { // no slashing: valseUpdateID2 maps to 2nd undelegation height + 1
-		expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed2},
-		valsetUpdateID: valseUpdateID2,
-	},
-	}
-
-	slashingPkt := ccv.SlashPacketData{Validator: abci.Validator{
-		Address: consAdrr.Bytes(),
-		Power:   int64(1),
-	},
-		SlashFraction: int64(4),
-	}
-
-	for _, t := range tests {
-		// set test case parameters
-		slashingPkt.ValsetUpdateId = t.valsetUpdateID
-
-		// slash
-		err := providerKeeper.HandleConsumerDowntime(s.providerCtx(), s.consumerChain.ChainID, slashingPkt)
-		s.Require().NoError(err)
-
-		// check that second undelegation was slashed
-		ubd = undel()
-
-		s.Require().EqualValues(t.expBalances[0], ubd.Entries[0].Balance)
-		s.Require().EqualValues(t.expBalances[1], ubd.Entries[1].Balance)
-	}
-}
-
-func (s *ProviderTestSuite) TestHandleConsumerDowntimeErrors() {
-	providerStakingKeeper := s.providerChain.App.GetStakingKeeper()
-	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
-	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
-	consumerChainID := s.consumerChain.ChainID
-
-	// expect an error if initial block height isn't set for consumer chain
-	err := providerKeeper.HandleConsumerDowntime(s.providerCtx(), consumerChainID, types.SlashPacketData{})
-	s.Require().Error(err, "did slash unknown validator")
-
-	s.SetupCCVChannel()
-	// save VSC ID
-	vID := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
-
-	// set faulty block height for current VSC ID
-	providerKeeper.SetValsetUpdateBlockHeight(s.providerCtx(), vID, 0)
-
-	// expect an error if block height mapping VSC ID is zero
-	err = providerKeeper.HandleConsumerDowntime(s.providerCtx(), consumerChainID, types.SlashPacketData{ValsetUpdateId: vID})
-	s.Require().Error(err, "did slash unknown validator")
-
-	// construct slashing packet with non existing validator
-	slashingPkt := ccv.NewSlashPacketData(
-		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
-			Power: int64(0)}, uint64(0), int64(1), int64(0),
-	)
-	//expect an error if validator doesn't exist
-	err = providerKeeper.HandleConsumerDowntime(s.providerCtx(), consumerChainID, slashingPkt)
-	s.Require().Error(err, "did slash unknown validator")
-
-	// jail an existing validator
-	val := s.providerChain.Vals.Validators[0]
-	consAddr := sdk.ConsAddress(val.Address)
-	origTime := s.providerCtx().BlockTime()
-	providerStakingKeeper.Jail(s.providerCtx(), consAddr)
-	// commit block to set VSC ID
-	s.coordinator.CommitBlock(s.providerChain)
-	s.Require().NotZero(providerKeeper.GetValsetUpdateBlockHeight(s.providerCtx(), vID))
-
-	// end validator unbonding period
-	providerCtx := s.providerCtx().WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
-	s.providerChain.App.GetStakingKeeper().BlockValidatorUpdates(providerCtx)
-
-	// set manually validator status from unbonding to unbonded
-	err = s.providerChain.App.GetStakingKeeper().UnbondingCanComplete(providerCtx, uint64(1))
-	s.Require().NoError(err)
-
-	// replace validator address
-	slashingPkt.Validator.Address = val.Address
-
-	// expect an error since the validator is already unbonded
-	err = providerKeeper.HandleConsumerDowntime(s.providerCtx(), consumerChainID, slashingPkt)
-	s.Require().Error(err, "did slash unbonded validator")
-
-	// replace validator address
-	val = s.providerChain.Vals.Validators[1]
-	slashingPkt.Validator.Address = val.Address
-
-	// set VSC ID
-	slashingPkt.ValsetUpdateId = vID
-
-	// // set current valset update ID
-	valInfo := slashingtypes.NewValidatorSigningInfo(sdk.ConsAddress(val.Address), s.providerCtx().BlockHeight(),
-		s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
-	providerSlashingKeeper.SetValidatorSigningInfo(s.providerCtx(), sdk.ConsAddress(val.Address), valInfo)
-
-	// expect no error
-	err = providerKeeper.HandleConsumerDowntime(s.providerCtx(), consumerChainID, slashingPkt)
-	s.Require().NoError(err)
-}
-
-func (s *ProviderTestSuite) TestslashingPacketAcknowldgement() {
+func (s *ProviderTestSuite) TestSlashPacketAcknowldgement() {
 	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
 	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 
