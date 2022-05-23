@@ -165,17 +165,6 @@ class Staking:
             (set(self.validatorQ) | set(old_vals)) - (set(expired_vals) | set(new_vals))
         )
 
-        assert all(
-            self.unbonding_time[i] is not None and self.unbonding_height[i] is not None
-            for i in self.validatorQ
-        ), (
-            self.validatorQ,
-            self.unbonding_height,
-            self.unbonding_time,
-            new_vals,
-            old_vals,
-        )
-
         self.undelegationQ = [e for e in self.undelegationQ if e not in expired_undels]
 
         self.changes = {}

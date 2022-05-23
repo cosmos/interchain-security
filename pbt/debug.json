@@ -1,20 +1,16 @@
 {
   "actions": [
     {
+      "kind": "Delegate",
+      "val": 2,
+      "amt": 4
+    },
+    {
       "kind": "JumpNBlocks",
       "chains": [
         "consumer"
       ],
       "n": 4,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "provider",
-        "consumer"
-      ],
-      "n": 1,
       "seconds_per_block": 1
     },
     {
@@ -22,46 +18,7 @@
       "chains": [
         "provider"
       ],
-      "n": 6,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "Delegate",
-      "val": 2,
-      "amt": 2
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "provider",
-        "consumer"
-      ],
-      "n": 6,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "provider",
-        "consumer"
-      ],
-      "n": 4,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "consumer"
-      ],
-      "n": 4,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "consumer"
-      ],
-      "n": 4,
+      "n": 1,
       "seconds_per_block": 1
     },
     {
@@ -73,88 +30,7 @@
       "chains": [
         "provider"
       ],
-      "n": 4,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "provider",
-        "consumer"
-      ],
-      "n": 1,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "Undelegate",
-      "val": 3,
-      "amt": 5
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "provider"
-      ],
       "n": 6,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "provider",
-        "consumer"
-      ],
-      "n": 1,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "consumer"
-      ],
-      "n": 6,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "provider",
-        "consumer"
-      ],
-      "n": 4,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "provider",
-        "consumer"
-      ],
-      "n": 1,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "consumer"
-      ],
-      "n": 4,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "consumer"
-      ],
-      "n": 6,
-      "seconds_per_block": 1
-    },
-    {
-      "kind": "JumpNBlocks",
-      "chains": [
-        "provider"
-      ],
-      "n": 4,
       "seconds_per_block": 1
     }
   ],
