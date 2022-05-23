@@ -7,7 +7,6 @@ import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
 import "interchain_security/ccv/consumer/v1/genesis.proto";
 
-
 service Query {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain whose proposal
   // has been accepted
@@ -21,5 +20,5 @@ message QueryConsumerGenesisRequest {
 }
 
 message QueryConsumerGenesisResponse {
-    interchain_security.ccv.consumer.v1.GenesisState genesis_state = 1 [(gogoproto.nullable) = false];
+  interchain_security.ccv.consumer.v1.GenesisState genesis_state = 1 [(gogoproto.nullable) = false];
 }
