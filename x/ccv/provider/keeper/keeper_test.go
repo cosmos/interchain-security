@@ -165,7 +165,7 @@ func (suite *KeeperTestSuite) TestSlashAcks() {
 	suite.Require().Len(chainsAcks, len(chains))
 }
 
-func (suite *KeeperTestSuite) TestAppendSlashgAck() {
+func (suite *KeeperTestSuite) TestAppendSlashAck() {
 	app := suite.providerChain.App.(*appProvider.App)
 	ctx := suite.ctx
 
@@ -206,151 +206,44 @@ func (suite *KeeperTestSuite) TestInitHeight() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestHandleSlashPacketDistribution() {
-	providerStakingKeeper := suite.providerChain.App.GetStakingKeeper()
-	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
-	ProviderKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
-
-	// bonded amount
-	bondAmt := sdk.NewInt(1000000)
-	delAddr := suite.providerChain.SenderAccount.GetAddress()
-
-	// choose a validator and get its delegations
-	consAddr := sdk.ConsAddress(suite.providerChain.Vals.Validators[0].Address)
-	val, _ := providerStakingKeeper.GetValidatorByConsAddr(suite.providerChain.GetContext(), consAddr)
-	valAddr, _ := sdk.ValAddressFromBech32(val.OperatorAddress)
-	del, found := providerStakingKeeper.GetDelegation(suite.providerChain.GetContext(), delAddr, valAddr)
-	suite.Require().True(found)
-	validator, found := providerStakingKeeper.GetValidator(suite.providerChain.GetContext(), valAddr)
-	suite.Require().True(found)
-
-	consAdrr, err := validator.GetConsAddr()
-	suite.Require().NoError(err)
-
-	ubdAmount := del.Shares.QuoInt64(2)
-	undel := func() stakingtypes.UnbondingDelegation {
-		ubd, found := providerStakingKeeper.GetUnbondingDelegation(suite.providerChain.GetContext(), delAddr, valAddr)
-		suite.Require().True(found)
-		return ubd
-	}
-	// undelegate half of the tokens
-	unboundHalf := func() stakingtypes.UnbondingDelegation {
-		_, err := providerStakingKeeper.Undelegate(suite.providerChain.GetContext(), delAddr, valAddr, ubdAmount)
-		suite.Require().NoError(err)
-		return undel()
-	}
-
-	// save valset update ID mapping the next block height
-	valseUpdateID1 := ProviderKeeper.GetValidatorSetUpdateId(suite.providerChain.GetContext())
-
-	// get valset update ID mapping the current block height
-	valseUpdateID0 := valseUpdateID1 - 1
-
-	// create first undelegation entry
-	ubdBalance := ubdAmount.Mul(bondAmt.ToDec()).TruncateInt()
-	ubd := unboundHalf()
-	suite.Require().Len(ubd.Entries, 1)
-	suite.Require().Equal(ubdBalance, ubd.Entries[0].Balance)
-
-	// check valset update ID height mapping
-	suite.coordinator.CommitBlock(suite.providerChain)
-	// suite context isn't updated in CommitBlock
-	valsetUpdateIDHeight := ProviderKeeper.GetValsetUpdateBlockHeight(suite.providerChain.GetContext(), valseUpdateID1)
-
-	suite.Require().EqualValues(valsetUpdateIDHeight, ubd.Entries[0].CreationHeight+1)
-
-	// create second undelegation entry
-	ubd = unboundHalf()
-	suite.Require().Len(ubd.Entries, 2)
-	suite.Require().Equal(ubdBalance, ubd.Entries[1].Balance)
-	valseUpdateID2 := ProviderKeeper.GetValidatorSetUpdateId(suite.providerChain.GetContext())
-
-	suite.coordinator.CommitBlock(suite.providerChain)
-	valsetUpdateIDHeight = ProviderKeeper.GetValsetUpdateBlockHeight(suite.providerChain.GetContext(), valseUpdateID2)
-
-	suite.Require().EqualValues(valsetUpdateIDHeight, ubd.Entries[1].CreationHeight+1)
-
-	// create validator signing info
-	valInfo := slashingtypes.NewValidatorSigningInfo(consAdrr, suite.ctx.BlockHeight(),
-		suite.ctx.BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
-	providerSlashingKeeper.SetValidatorSigningInfo(suite.providerChain.GetContext(), consAdrr, valInfo)
-
-	// resulting balance after slashing
-	ubdBalanceSlashed := ubdBalance.Sub(ubdBalance.Quo(sdk.NewInt(100)))
-	// ubdBalanceSlashed2 := ubdBalanceSlashed.Sub(ubdBalance.Quo(sdk.NewInt(100)))
-
-	// test slashing using the valset update IDs
-	tests := []struct {
-		expBalances    []sdk.Int
-		valsetUpdateID uint64
-	}{
-		{ // both undelegations slashed: valseUpdateID0  maps to 1st undelegation height
-			expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed},
-			valsetUpdateID: valseUpdateID0,
-		},
-		// TODO Simon: implement this tests using other validators
-		// { // second undelegation is slashed again: valseUpdateID1 maps to 2nd undelegation height
-		// 	expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed2},
-		// 	valsetUpdateID: valseUpdateID1,
-		// },
-		// { // no slashing: valseUpdateID2 maps to 2nd undelegation height + 1
-		// 	expBalances:    []sdk.Int{ubdBalanceSlashed, ubdBalanceSlashed2},
-		// 	valsetUpdateID: valseUpdateID2,
-		// },
-	}
-
-	slashingPkt := ccv.SlashPacketData{Validator: abci.Validator{
-		Address: consAdrr.Bytes(),
-		Power:   int64(1),
-	},
-		Infraction: stakingtypes.Downtime,
-	}
-
-	for _, t := range tests {
-		// set test case parameters
-		slashingPkt.ValsetUpdateId = t.valsetUpdateID
-
-		// slash
-		err := ProviderKeeper.HandleSlashPacket(suite.providerChain.GetContext(), suite.consumerChain.ChainID, slashingPkt)
-		suite.Require().NoError(err)
-
-		// check that second undelegation was slashed
-		ubd = undel()
-
-		suite.Require().EqualValues(t.expBalances[0], ubd.Entries[0].Balance)
-		suite.Require().EqualValues(t.expBalances[1], ubd.Entries[1].Balance)
-	}
-}
-
 func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
 	ProviderKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
+	providerStakingKeeper := suite.providerChain.App.(*appProvider.App).StakingKeeper
 
-	val := suite.providerChain.Vals.Validators
-	consAddr := sdk.ConsAddress(val[0].Address)
+	tmVal := suite.providerChain.Vals.Validators[0]
+	consAddr := sdk.ConsAddress(tmVal.Address)
+
+	// check that validator bonded status
+	validator, found := providerStakingKeeper.GetValidatorByConsAddr(suite.ctx, consAddr)
+	suite.Require().True(found)
+	suite.Require().Equal(stakingtypes.Bonded, validator.GetStatus())
 
 	// set init VSC id for chain0
 	ProviderKeeper.SetInitChainHeight(suite.ctx, suite.consumerChain.ChainID, uint64(suite.ctx.BlockHeight()))
 
-	// set validator signing info
-	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, suite.ctx.BlockHeight(),
-		suite.ctx.BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
-
-	providerSlashingKeeper.SetValidatorSigningInfo(suite.ctx, consAddr, valInfo)
+	// set validator signing-info
+	providerSlashingKeeper.SetValidatorSigningInfo(
+		suite.ctx,
+		consAddr,
+		slashingtypes.ValidatorSigningInfo{Address: consAddr.String()},
+	)
 
 	err := ProviderKeeper.HandleSlashPacket(suite.ctx, suite.consumerChain.ChainID,
 		ccv.NewSlashPacketData(
-			abci.Validator{Address: val[0].Address, Power: 0},
+			abci.Validator{Address: tmVal.Address, Power: 0},
 			uint64(0),
 			stakingtypes.DoubleSign,
 		),
 	)
 	suite.NoError(err)
 
-	valInfo, _ = providerSlashingKeeper.GetValidatorSigningInfo(suite.ctx, consAddr)
+	// verify that validator is jailed in the staking and slashing mdodules' states
+	suite.Require().True(providerStakingKeeper.IsValidatorJailed(suite.ctx, consAddr))
 
-	suite.Require().True(valInfo.JailedUntil.Equal(evidencetypes.DoubleSignJailEndTime))
-	suite.Require().True(valInfo.Tombstoned)
+	signingInfo, _ := providerSlashingKeeper.GetValidatorSigningInfo(suite.ctx, consAddr)
+	suite.Require().True(signingInfo.JailedUntil.Equal(evidencetypes.DoubleSignJailEndTime))
+	suite.Require().True(signingInfo.Tombstoned)
 }
 
 func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
@@ -392,29 +285,27 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
 	// jail an existing validator
 	val := suite.providerChain.Vals.Validators[0]
 	consAddr := sdk.ConsAddress(val.Address)
-	// origTime := suite.ctx.BlockTime()
 	providerStakingKeeper.Jail(suite.ctx, consAddr)
 	// commit block to set VSC ID
 	suite.coordinator.CommitBlock(suite.providerChain)
 	// Update suite.ctx bc CommitBlock updates only providerChain's current header block height
 	suite.ctx = suite.providerChain.GetContext()
-	//suite.Require().NotZero(ProviderKeeper.GetValsetUpdateBlockHeight(suite.ctx, vID))
+	suite.Require().NotZero(ProviderKeeper.GetValsetUpdateBlockHeight(suite.ctx, vID))
 
-	// update validator address and VSC ID
-	slashingPkt.Validator.Address = val.Address
-	slashingPkt.ValsetUpdateId = vID
-	slashingPkt.Infraction = stakingtypes.DoubleSign
-
-	// // set current valset update ID
+	// create validator signing info
 	valInfo := slashingtypes.NewValidatorSigningInfo(sdk.ConsAddress(val.Address), suite.ctx.BlockHeight(),
 		suite.ctx.BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
 	providerSlashingKeeper.SetValidatorSigningInfo(suite.ctx, sdk.ConsAddress(val.Address), valInfo)
 
-	// expect no error
-	err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
-	suite.Require().NoError(err)
+	// update validator address and VSC ID
+	slashingPkt.Validator.Address = val.Address
+	slashingPkt.ValsetUpdateId = vID
 
-	// change validator and infraction type
+	// expect to slash and jail validator
+	err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
+	suite.Require().NoError(err, "did slash jail validator")
+
+	// expect error when infraction type in unspecified
 	tmAddr := suite.providerChain.Vals.Validators[1].Address
 	slashingPkt.Validator.Address = tmAddr
 	slashingPkt.Infraction = stakingtypes.InfractionEmpty
@@ -424,4 +315,114 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
 
 	err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
 	suite.Require().EqualError(err, fmt.Sprintf("invalid infraction type: %v", stakingtypes.InfractionEmpty))
+
+	// expect to slash jail and tombstone validator
+	slashingPkt.Infraction = stakingtypes.DoubleSign
+	err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
+	suite.Require().NoError(err)
+
+	// expect error when validator is tombstoned
+	err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, slashingPkt)
+	suite.Require().Error(err)
+}
+
+// TestHandleSlashPacketDistribution tests the slashing of an undelegation balance
+// by varying the slash packet VSC ID mapping to infraction heights
+// lesser, equal or greater than the undelegation entry creation height
+func (suite *KeeperTestSuite) TestHandleSlashPacketDistribution() {
+	providerStakingKeeper := suite.providerChain.App.GetStakingKeeper()
+	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
+
+	// choose a validator
+	tmValidator := suite.providerChain.Vals.Validators[0]
+	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
+	suite.Require().NoError(err)
+
+	validator, found := providerStakingKeeper.GetValidator(suite.providerChain.GetContext(), valAddr)
+	suite.Require().True(found)
+
+	// unbonding operations parameters
+	delAddr := suite.providerChain.SenderAccount.GetAddress()
+	bondAmt := sdk.NewInt(1000000)
+
+	// new delegator shares used
+	testShares := sdk.Dec{}
+
+	// setup the test with a delegation, a no-op and an undelegation
+	setupOperations := []struct {
+		fn func(suite *KeeperTestSuite) error
+	}{
+		{
+			func(suite *KeeperTestSuite) error {
+				testShares, err = providerStakingKeeper.Delegate(suite.providerChain.GetContext(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+				return err
+			},
+		}, {
+			func(suite *KeeperTestSuite) error {
+				return nil
+			},
+		}, {
+			// undelegate a quarter of the new shares created
+			func(suite *KeeperTestSuite) error {
+				_, err = providerStakingKeeper.Undelegate(suite.providerChain.GetContext(), delAddr, valAddr, testShares.QuoInt64(4))
+				return err
+			},
+		},
+	}
+
+	// execute the setup operations, distributed uniformly in three blocks.
+	// For each of them, save their current VSC Id value which map correspond respectively
+	// to the block heights lesser, equal and greater than the undelegation creation height.
+	vscIDs := make([]uint64, 0, 3)
+	for _, so := range setupOperations {
+		err := so.fn(suite)
+		suite.Require().NoError(err)
+
+		vscIDs = append(vscIDs, providerKeeper.GetValidatorSetUpdateId(suite.providerChain.GetContext()))
+		suite.providerChain.NextBlock()
+	}
+
+	// create validator signing info to test slashing
+	suite.providerChain.App.(*appProvider.App).SlashingKeeper.SetValidatorSigningInfo(
+		suite.providerChain.GetContext(),
+		sdk.ConsAddress(tmValidator.Address),
+		slashingtypes.ValidatorSigningInfo{Address: tmValidator.Address.String()},
+	)
+
+	// the test cases verify that only the unbonding tokens get slashed for the VSC ids
+	// mapping to the block heights before and during the undelegation otherwise not.
+	testCases := []struct {
+		expSlash bool
+		vscID    uint64
+	}{
+		{expSlash: true, vscID: vscIDs[0]},
+		{expSlash: true, vscID: vscIDs[1]},
+		{expSlash: false, vscID: vscIDs[2]},
+	}
+
+	// save unbonding balance before slashing tests
+	ubd, found := providerStakingKeeper.GetUnbondingDelegation(suite.providerChain.GetContext(), delAddr, valAddr)
+	suite.Require().True(found)
+	ubdBalance := ubd.Entries[0].Balance
+
+	for _, tc := range testCases {
+		slashPacket := ccv.NewSlashPacketData(
+			abci.Validator{Address: tmValidator.Address, Power: tmValidator.VotingPower},
+			tc.vscID,
+			stakingtypes.Downtime,
+		)
+
+		// slash
+		err := providerKeeper.HandleSlashPacket(suite.providerChain.GetContext(), suite.consumerChain.ChainID, slashPacket)
+		suite.Require().NoError(err)
+
+		ubd, found := providerStakingKeeper.GetUnbondingDelegation(suite.providerChain.GetContext(), delAddr, valAddr)
+		suite.Require().True(found)
+
+		isUbdSlashed := ubdBalance.GT(ubd.Entries[0].Balance)
+		suite.Require().True(tc.expSlash == isUbdSlashed)
+
+		// update balance
+		ubdBalance = ubd.Entries[0].Balance
+	}
 }

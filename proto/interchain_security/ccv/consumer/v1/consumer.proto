@@ -5,6 +5,7 @@ import "interchain_security/ccv/v1/ccv.proto";
 
 option go_package = "github.com/cosmos/interchain-security/x/ccv/consumer/types";
 
+import "cosmos/staking/v1beta1/staking.proto";
 import "gogoproto/gogo.proto";
 
 // Params defines the parameters for CCV consumer module
@@ -45,6 +46,6 @@ message CrossChainValidator {
 
 // SlashRequest defines a slashing request for CCV consumer module
 message SlashRequest {
-  interchain_security.ccv.v1.SlashPacketData packet   = 1;
-  bool                                       downtime = 2;
+    interchain_security.ccv.v1.SlashPacketData packet = 1;
+    cosmos.staking.v1beta1.InfractionType infraction = 2;
 }

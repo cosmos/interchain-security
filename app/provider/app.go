@@ -476,6 +476,7 @@ func New(
 		app.AccountKeeper,
 		authtypes.FeeCollectorName,
 	)
+
 	providerModule := ibcprovider.NewAppModule(&app.ProviderKeeper)
 	consumerModule := ibcconsumer.NewAppModule(app.ConsumerKeeper)
 

@@ -60,7 +60,11 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 }
 
 // Slash sends a slashing request to the provider chain
-func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, _ sdk.Dec, infractionType stakingtypes.InfractionType) {
+func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, _ sdk.Dec, infraction stakingtypes.InfractionType) {
+	if infraction == stakingtypes.InfractionEmpty {
+		return
+	}
+
 	k.SendSlashPacket(
 		ctx,
 		abci.Validator{
@@ -68,7 +72,7 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 			Power:   power},
 		// get VSC ID for infraction height
 		k.GetHeightValsetUpdateID(ctx, uint64(infractionHeight)),
-		infractionType,
+		infraction,
 	)
 }
 

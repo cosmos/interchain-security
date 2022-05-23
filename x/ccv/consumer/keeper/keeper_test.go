@@ -329,66 +329,76 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	suite.SetupCCVChannel()
 	suite.SendEmptyVSCPacket()
 
-	app, ctx := suite.consumerChain.App.(*appConsumer.App), suite.consumerChain.GetContext()
+	// sync suite context after CCV channel is established
+	suite.ctx = suite.consumerChain.GetContext()
+
+	app := suite.consumerChain.App.(*appConsumer.App)
 	channelID := suite.path.EndpointA.ChannelID
 
 	// pick a cross-chain validator
-	vals := app.ConsumerKeeper.GetAllCCValidator(ctx)
+	vals := app.ConsumerKeeper.GetAllCCValidator(suite.ctx)
 	consAddr := sdk.ConsAddress(vals[0].Address)
 
-	// save sign info before slashing
-	// signInfo, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
-	// suite.Require().True(found)
-
 	// save next sequence before sending a slash packet
-	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
+	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(suite.ctx, types.PortID, channelID)
 	suite.Require().True(ok)
 
-	// Sign 1000 blocks
+	// Sign 100 blocks
 	valPower := int64(1)
-	height := int64(0)
-	for ; height < app.SlashingKeeper.SignedBlocksWindow(ctx); height++ {
-		ctx = ctx.WithBlockHeight(height)
-		app.SlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, true)
+	height, signedBlocksWindow := int64(0), app.SlashingKeeper.SignedBlocksWindow(suite.ctx)
+	for ; height < signedBlocksWindow; height++ {
+		suite.ctx = suite.ctx.WithBlockHeight(height)
+		app.SlashingKeeper.HandleValidatorSignature(suite.ctx, vals[0].Address, valPower, true)
 	}
-	// Miss 500 blocks and expect a slash packet to be sent
-	for ; height < app.SlashingKeeper.SignedBlocksWindow(ctx)+(app.SlashingKeeper.SignedBlocksWindow(ctx)-app.SlashingKeeper.MinSignedPerWindow(ctx))+1; height++ {
-		ctx = ctx.WithBlockHeight(height)
-		app.SlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, false)
+
+	missedBlockThreshold := (2 * signedBlocksWindow) - app.SlashingKeeper.MinSignedPerWindow(suite.ctx)
+
+	// construct slash packet to be sent and get its commit
+	packetData := ccv.NewSlashPacketData(
+		abci.Validator{Address: vals[0].Address, Power: valPower},
+		// get the VSC ID mapping the infraction height
+		app.ConsumerKeeper.GetHeightValsetUpdateID(suite.ctx, uint64(missedBlockThreshold-sdk.ValidatorUpdateDelay-1)),
+		stakingtypes.Downtime,
+	)
+	expCommit := suite.commitSlashPacket(suite.ctx, packetData)
+
+	// Miss 50 blocks and expect a slash packet to be sent
+	for ; height <= missedBlockThreshold; height++ {
+		suite.ctx = suite.ctx.WithBlockHeight(height)
+		app.SlashingKeeper.HandleValidatorSignature(suite.ctx, vals[0].Address, valPower, false)
 	}
 
 	// check validator signing info
-	res, _ := app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+	res, _ := app.SlashingKeeper.GetValidatorSigningInfo(suite.ctx, consAddr)
 	// expect increased jail time
-	suite.Require().True(res.JailedUntil.Equal(ctx.BlockTime().Add(app.SlashingKeeper.DowntimeJailDuration(ctx))), "did not update validator jailed until signing info")
+	suite.Require().True(res.JailedUntil.Equal(suite.ctx.BlockTime().Add(app.SlashingKeeper.DowntimeJailDuration(suite.ctx))), "did not update validator jailed until signing info")
 	// expect missed block counters reseted
 	suite.Require().Zero(res.MissedBlocksCounter, "did not reset validator missed block counter")
 	suite.Require().Zero(res.IndexOffset)
-	app.SlashingKeeper.IterateValidatorMissedBlockBitArray(ctx, consAddr, func(_ int64, missed bool) bool {
+	app.SlashingKeeper.IterateValidatorMissedBlockBitArray(suite.ctx, consAddr, func(_ int64, missed bool) bool {
 		suite.Require().True(missed)
 		return false
 	})
 
 	// verify that the slash packet was sent
-	commit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, types.PortID, channelID, seq)
-	suite.Require().NotNil(commit, "did not found slash packet commitment")
+	gotCommit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(suite.ctx, types.PortID, channelID, seq)
+	suite.Require().NotNil(gotCommit, "did not found slash packet commitment")
+	suite.Require().EqualValues(expCommit, gotCommit, "invalid slash packet commitment")
 
 	// verify that the slash packet was sent
-	suite.Require().True(app.ConsumerKeeper.OutstandingDowntime(ctx, consAddr))
+	suite.Require().True(app.ConsumerKeeper.OutstandingDowntime(suite.ctx, consAddr))
 
-	// check that the outstanding slashing flag prevents
-	// to update the jailed validator's missed block
-	for ; height < app.SlashingKeeper.SignedBlocksWindow(ctx)+
-		(2*(app.SlashingKeeper.SignedBlocksWindow(ctx)-app.SlashingKeeper.MinSignedPerWindow(ctx))+1); height++ {
-		ctx = ctx.WithBlockHeight(height)
-		app.SlashingKeeper.HandleValidatorSignature(ctx, vals[0].Address, valPower, false)
+	// check that the outstanding slashing flag prevents the jailed validator to keep missing block
+	for ; height < missedBlockThreshold+signedBlocksWindow; height++ {
+		suite.ctx = suite.ctx.WithBlockHeight(height)
+		app.SlashingKeeper.HandleValidatorSignature(suite.ctx, vals[0].Address, valPower, false)
 	}
 
-	res, _ = app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+	res, _ = app.SlashingKeeper.GetValidatorSigningInfo(suite.ctx, consAddr)
 
 	suite.Require().Zero(res.MissedBlocksCounter, "did not reset validator missed block counter")
 	suite.Require().Zero(res.IndexOffset)
-	app.SlashingKeeper.IterateValidatorMissedBlockBitArray(ctx, consAddr, func(_ int64, missed bool) bool {
+	app.SlashingKeeper.IterateValidatorMissedBlockBitArray(suite.ctx, consAddr, func(_ int64, missed bool) bool {
 		suite.Require().True(missed, "did not reset validator missed block bit array")
 		return false
 	})
@@ -401,44 +411,56 @@ func (suite *KeeperTestSuite) TestValidatorDoubleSigning() {
 	suite.SetupCCVChannel()
 	suite.SendEmptyVSCPacket()
 
-	app, ctx := suite.consumerChain.App.(*appConsumer.App), suite.consumerChain.GetContext()
+	// sync suite context after CCV channel is established
+	suite.ctx = suite.consumerChain.GetContext()
+
+	app := suite.consumerChain.App.(*appConsumer.App)
 	channelID := suite.path.EndpointA.ChannelID
 
 	// create a validator pubkey and address
-	// note that the validator shouldn't necessarily be in the cross-chain validator states
-
+	// note that the validator wont't necessarily be in valset to due the TM delay
 	pubkey := ed25519.GenPrivKey().PubKey()
 	consAddr := sdk.ConsAddress(pubkey.Address())
 
+	// set an arbitrary infraction height
+	infractionHeight := suite.ctx.BlockHeight() - 1
+	power := int64(100)
+
 	// create evidence
 	e := &evidencetypes.Equivocation{
-		Height:           1,
-		Power:            100,
+		Height:           infractionHeight,
+		Power:            power,
 		Time:             time.Now().UTC(),
 		ConsensusAddress: consAddr.String(),
 	}
 
 	// add validator signing-info to the store
-	signInfo := slashingtypes.ValidatorSigningInfo{
+	app.SlashingKeeper.SetValidatorSigningInfo(suite.ctx, consAddr, slashingtypes.ValidatorSigningInfo{
 		Address:    consAddr.String(),
 		Tombstoned: false,
-	}
-	app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signInfo)
+	})
 
 	// save next sequence before sending a slash packet
-	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
+	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(suite.ctx, types.PortID, channelID)
 	suite.Require().True(ok)
 
-	// handles double-signing evidence
-	app.EvidenceKeeper.HandleEquivocationEvidence(ctx, e)
+	// construct slash packet data and get the expcted commit hash
+	packetData := ccv.NewSlashPacketData(
+		abci.Validator{Address: consAddr.Bytes(), Power: power},
+		// get VSC ID mapping to the infraction height with the TM delay substracted
+		app.ConsumerKeeper.GetHeightValsetUpdateID(suite.ctx, uint64(infractionHeight-sdk.ValidatorUpdateDelay)),
+		stakingtypes.DoubleSign,
+	)
+	expCommit := suite.commitSlashPacket(suite.ctx, packetData)
+
+	// expect to send slash packet when handling double-sign evidence
+	app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, e)
 
 	// check that slash packet is sent
-	commit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, types.PortID, channelID, seq)
-	suite.NotNil(commit)
+	gotCommit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(suite.ctx, types.PortID, channelID, seq)
+	suite.NotNil(gotCommit)
 
-	// check evidence is stored
-	_, found := app.EvidenceKeeper.GetEvidence(ctx, e.Hash())
-	suite.True(found)
+	suite.Require().EqualValues(expCommit, gotCommit)
 }
 
 func (suite *KeeperTestSuite) TestSendSlashPacket() {
@@ -502,7 +524,8 @@ func (suite *KeeperTestSuite) TestSendSlashPacket() {
 	// check that outstanding downtime flags
 	// are all set to true for validators slashed for downtime requests
 	for _, r := range requests {
-		if r.Downtime {
+		downtime := r.Infraction == stakingtypes.Downtime
+		if downtime {
 			consAddr := sdk.ConsAddress(r.Packet.Validator.Address)
 			suite.Require().True(app.ConsumerKeeper.OutstandingDowntime(ctx, consAddr))
 		}
@@ -617,4 +640,16 @@ func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
 
 func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
+}
+
+// commitSlashPacket returns a commit hash for the given slash packet data
+// Note that it must be called before sending the embedding IBC packet.
+func (suite *KeeperTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.SlashPacketData) []byte {
+	oldBlockTime := ctx.BlockTime()
+	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+		providertypes.PortID, suite.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
+
+	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
 }

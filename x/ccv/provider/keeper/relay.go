@@ -160,7 +160,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	}
 
 	// spare jailed and/or tombstoned validator preventing to slash it again
-	if validator.IsJailed() || k.slashingKeeper.IsTombstoned(ctx, consAddr) {
+	if k.slashingKeeper.IsTombstoned(ctx, consAddr) {
 		return fmt.Errorf("should not be slashing jailed and/or tombstoned validator: %s", validator.GetOperator())
 	}
 
@@ -199,7 +199,9 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	)
 
 	// jail validator
-	k.stakingKeeper.Jail(ctx, consAddr)
+	if !validator.IsJailed() {
+		k.stakingKeeper.Jail(ctx, consAddr)
+	}
 	k.slashingKeeper.JailUntil(ctx, consAddr, jailTime)
 
 	return nil

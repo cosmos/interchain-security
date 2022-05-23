@@ -120,8 +120,8 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 	channelID, ok := k.GetProviderChannel(ctx)
 	if !ok {
 		k.AppendPendingSlashRequests(ctx, types.SlashRequest{
-			Packet:   &packetData,
-			Downtime: downtime},
+			Packet:     &packetData,
+			Infraction: infraction},
 		)
 		return
 	}
@@ -160,7 +160,8 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 
 		// send the emebdded slash packet to the CCV channel
 		// if the outstanding downtime flag is false for the validator
-		if !slashReq.Downtime || !k.OutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address)) {
+		downtime := slashReq.Infraction == stakingtypes.Downtime
+		if !downtime || !k.OutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address)) {
 			// send packet over IBC
 			err := utils.SendIBCPacket(
 				ctx,
@@ -168,14 +169,14 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 				k.channelKeeper,
 				channelID,    // source channel id
 				types.PortID, // source port id
-				requests[i].Packet.GetBytes(),
+				slashReq.Packet.GetBytes(),
 			)
 			if err != nil {
 				panic(err)
 			}
 
 			// set validator outstanding downtime flag to true
-			if slashReq.Downtime {
+			if downtime {
 				k.SetOutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address))
 			}
 		}
