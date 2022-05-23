@@ -265,8 +265,6 @@ func (am AppModule) OnChanOpenInit(
 		return err
 	}
 
-	am.keeper.SetChannelStatus(ctx, channelID, ccv.INITIALIZING)
-
 	return am.keeper.VerifyProviderChain(ctx, channelID, connectionHops)
 }
 
