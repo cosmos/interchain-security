@@ -130,7 +130,8 @@ class Staking:
             if i in set(old_vals) - set(new_vals):
                 self.status[i] = Status.UNBONDING
             if i in set(expired_vals) - set(new_vals):
-                self.status[i] = Status.UNBONDED
+                if not self.on_hold[i]:
+                    self.status[i] = Status.UNBONDED
 
         for i in range(NUM_VALIDATORS):
             if i in set(old_vals) - set(new_vals):
@@ -263,11 +264,20 @@ class Staking:
         if op_id in self.unbonding_op_id_to_val:
             val = self.unbonding_op_id_to_val[op_id]
             # TODO: This is a bit strange but copying cosmos-sdk code verbatim for now
+            # I should check if that's the right approach
             if (
                 self.h[P] <= self.unbonding_height[val]
                 or self.t[P] <= self.unbonding_time[val]
             ):
+                # will be matured in this end block or in the future
                 self.on_hold[val] = False
+            else:
+                # has been matured
+                self.status[val] = Status.UNBONDED
+                self.unbonding_height[val] = None
+                self.unbonding_time[val] = None
+                self.on_hold[val] = False
+
             del self.unbonding_op_id_to_val[op_id]
             self.on_hold[val] = False
         for e in self.undelegationQ:
