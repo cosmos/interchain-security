@@ -39,7 +39,7 @@ func (s *ProviderTestSuite) TestStakingHooks2() {
 	origTime := s.ctx.BlockTime()
 
 	// delegate bondAmt and undelegate 1/2 of it
-	initBalance, valsetUpdateID := doUnbonding(s, delAddr, bondAmt, 2)
+	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
 
 	// check that staking unbonding op was created and onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
@@ -109,7 +109,7 @@ func (s *ProviderTestSuite) TestStakingHooks1() {
 	origTime := s.ctx.BlockTime()
 
 	// delegate bondAmt and undelegate 1/2 of it
-	initBalance, valsetUpdateID := doUnbonding(s, delAddr, bondAmt, 2)
+	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
 
 	// check that staking unbonding op was created and onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
@@ -181,7 +181,7 @@ func (s *ProviderTestSuite) TestUnbondingEdgeCase() {
 	origTime := s.ctx.BlockTime()
 
 	// delegate bondAmt and undelegate all of it
-	initBalance, valsetUpdateID := doUnbonding(s, delAddr, bondAmt, 1)
+	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 1)
 
 	// check that staking unbonding op was created and onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
@@ -247,9 +247,9 @@ func getBalance(s *ProviderTestSuite, providerCtx sdk.Context, delAddr sdk.AccAd
 	return s.providerChain.App.(*appProvider.App).BankKeeper.GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
 
-// doUnbonding delegates bondAmt from delAddr to the first validator
+// bondAndUnbond delegates bondAmt from delAddr to the first validator
 // and then immediately undelegates 1/shareDiv of that delegation
-func doUnbonding(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, shareDiv int64) (initBalance sdk.Int, valsetUpdateId uint64) {
+func bondAndUnbond(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, shareDiv int64) (initBalance sdk.Int, valsetUpdateId uint64) {
 	initBalance = getBalance(s, s.providerCtx(), delAddr)
 
 	// Choose a validator, and get its address and data structure into the correct types
