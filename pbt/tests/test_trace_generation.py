@@ -223,7 +223,7 @@ def load_debug_actions():
 
 
 def test_dummy():
-    debug = False
+    debug = True
     GOAL_TIME_MINS = 20
     NUM_ACTIONS = 40
 

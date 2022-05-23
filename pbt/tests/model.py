@@ -271,8 +271,16 @@ class Staking:
         if op_id in self.unbonding_op_id_to_val:
             val = self.unbonding_op_id_to_val[op_id]
             del self.unbonding_op_id_to_val[op_id]
+            assert val not in self.unbonding_op_id_to_val.values()
             # TODO: This is a bit strange but copying cosmos-sdk code verbatim for now
             # I should check if that's the right approach
+            assert isinstance(self.unbonding_height[val], int), (
+                val,
+                self.unbonding_height,
+                self.validatorQ,
+                self.unbonding_op_id_to_val,
+            )
+            assert isinstance(self.unbonding_time[val], int)
             if (
                 self.unbonding_height[val] < self.m.h[P]
                 and self.unbonding_time[val] < self.m.t[P]
