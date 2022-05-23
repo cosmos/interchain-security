@@ -263,28 +263,27 @@ class Staking:
     def unbonding_can_complete(self, op_id):
         if op_id in self.unbonding_op_id_to_val:
             val = self.unbonding_op_id_to_val[op_id]
+            del self.unbonding_op_id_to_val[op_id]
             # TODO: This is a bit strange but copying cosmos-sdk code verbatim for now
             # I should check if that's the right approach
             if (
-                self.h[P] <= self.unbonding_height[val]
-                or self.t[P] <= self.unbonding_time[val]
+                self.unbonding_height[val] < self.m.h[P]
+                and self.unbonding_time[val] < self.m.t[P]
             ):
-                # will be matured in this end block or in the future
-                self.on_hold[val] = False
-            else:
-                # has been matured
                 self.status[val] = Status.UNBONDED
                 self.unbonding_height[val] = None
                 self.unbonding_time[val] = None
-                self.on_hold[val] = False
-
-            del self.unbonding_op_id_to_val[op_id]
+                self.validatorQ = [v for v in self.validatorQ if v != val]
             self.on_hold[val] = False
         for e in self.undelegationQ:
             # In contrast to the code, I store op_id with the entry
             # allowing me to do this loop
             if e.op_id == op_id:
-                e.on_hold = False
+                if self.m.t[P] < e.completion_time:
+                    e.on_hold = False
+                else:
+                    self.delegator_tokens += e.balance
+                    self.undelegationQ = [x for x in self.undelegationQ if x != e]
 
     def validator_changes(self):
         # Called by CCV, return changed validator powers
