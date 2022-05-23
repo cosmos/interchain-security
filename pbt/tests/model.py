@@ -72,12 +72,14 @@ class Staking:
         # 1 token is self delegated by validators
         # denominated in tokens, but use 1-1 exchange rate
         self.tokens = [x + 1 for x in self.delegation]
+        # validator status
+        self.status = [Status.BONDED, Status.BONDED, Status.UNBONDED, Status.UNBONDED]
         # unbonding delegations
         self.undelegationQ = []
         # unbonding validators
         self.validatorQ = []
-        # validator status
-        self.status = [Status.BONDED, Status.BONDED, Status.UNBONDED, Status.UNBONDED]
+        # is the validator on hold from unbonding?
+        self.on_hold = [False] * NUM_VALIDATORS
         # if validator unbonding defines height that begun unbonding
         self.unbonding_height = [None] * NUM_VALIDATORS
         # if validator unbonding defines min time to complete unbonding
@@ -91,8 +93,6 @@ class Staking:
         self.unbonding_op_id = 0
         # map ids to val
         self.unbonding_op_id_to_val = {}
-        # is the validator on hold from unbonding?
-        self.on_hold = [False] * NUM_VALIDATORS
         # used to compute val set changes
         # maps validators to power
         self.changes = {}
@@ -111,7 +111,6 @@ class Staking:
             for i in self.validatorQ
             if self.unbonding_time[i] <= self.m.t[P]
             and self.unbonding_height[i] <= self.m.h[P]
-            and not self.on_hold[i]
         ]
 
         expired_undels = [
@@ -123,6 +122,8 @@ class Staking:
         old_vals = self.last_vals
         new_vals = self.new_vals()
 
+        self.delegator_tokens += sum(e.balance for e in expired_undels)
+
         for i in range(NUM_VALIDATORS):
             if i in new_vals:
                 self.status[i] = Status.BONDED
@@ -131,19 +132,19 @@ class Staking:
             if i in set(expired_vals) - set(new_vals):
                 self.status[i] = Status.UNBONDED
 
-        self.delegator_tokens += sum(e.balance for e in expired_undels)
-
         for i in range(NUM_VALIDATORS):
             if i in set(old_vals) - set(new_vals):
                 self.unbonding_height[i] = self.m.h[P]
             if i in set(expired_vals) | set(new_vals):
-                self.unbonding_height[i] = None
+                if not self.on_hold[i]:
+                    self.unbonding_height[i] = None
 
         for i in range(NUM_VALIDATORS):
             if i in set(old_vals) - set(new_vals):
                 self.unbonding_time[i] = self.m.t[P] + UNBONDING_TIME
             if i in set(expired_vals) | set(new_vals):
-                self.unbonding_time[i] = None
+                if not self.on_hold[i]:
+                    self.unbonding_time[i] = None
 
         for i in range(NUM_VALIDATORS):
             if i in set(old_vals) - set(new_vals):
@@ -259,13 +260,14 @@ class Staking:
         return self.tokens[val] == 0 and 0 < self.shares(val)
 
     def unbonding_can_complete(self, op_id):
-        """
-        TODO: I deviate from Jehan's code here
-        (see issue #104), by not doing 'completeNow'.
-        I should make this match the code.
-        """
         if op_id in self.unbonding_op_id_to_val:
             val = self.unbonding_op_id_to_val[op_id]
+            # TODO: This is a bit strange but copying cosmos-sdk code verbatim for now
+            if (
+                self.h[P] <= self.unbonding_height[val]
+                or self.t[P] <= self.unbonding_time[val]
+            ):
+                self.on_hold[val] = False
             del self.unbonding_op_id_to_val[op_id]
             self.on_hold[val] = False
         for e in self.undelegationQ:
