@@ -18,5 +18,4 @@ message GenesisState {
 message ConsumerState {
   string                            chain_id   = 1;
   string                            channel_id = 2;
-  interchain_security.ccv.v1.Status status     = 3;
 }

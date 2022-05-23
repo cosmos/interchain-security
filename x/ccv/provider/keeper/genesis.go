@@ -26,7 +26,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	for _, cc := range genState.ConsumerStates {
 		k.SetChainToChannel(ctx, cc.ChainId, cc.ChannelId)
 		k.SetChannelToChain(ctx, cc.ChannelId, cc.ChainId)
-		k.SetChannelStatus(ctx, cc.ChannelId, cc.Status)
 	}
 
 	k.SetParams(ctx, genState.Params)
@@ -47,11 +46,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		channelID := string(iterator.Key()[len(providertypes.ChannelToChainKeyPrefix+"/"):])
 		chainID := string(iterator.Value())
 
-		status := k.GetChannelStatus(ctx, channelID)
 		cc := types.ConsumerState{
 			ChainId:   chainID,
 			ChannelId: channelID,
-			Status:    status,
 		}
 		consumerStates = append(consumerStates, cc)
 	}

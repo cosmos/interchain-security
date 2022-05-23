@@ -88,7 +88,6 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 }
 
 func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorSetChangePacketData) error {
-	k.SetChannelStatus(ctx, packet.DestinationChannel, ccv.INVALID)
 	// TODO: Unbonding everything?
 	return nil
 }
@@ -96,10 +95,16 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 // EndBlockCallback is called for each consumer chain in Endblock. It sends latest validator updates to each consumer chain
 // in a packet over the CCV channel.
 func (k Keeper) EndBlockCallback(ctx sdk.Context) {
+	// get current ValidatorSetUpdateId
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
+	// get the validator updates from the staking module
+	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
-		valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
-		if len(valUpdates) != 0 {
+		// check whether there are changes in the validator set;
+		// note that this also entails unbonding operations
+		// w/o changes in the voting power of the validators in the validator set
+		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
+		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			k.SendValidatorSetChangePacket(ctx, chainID, valUpdates, valUpdateID, k.EmptySlashAcks(ctx, chainID))
 		}
 		return false

@@ -212,30 +212,9 @@ func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (consumertyp
 	return data, true
 }
 
-// SetChannelStatus sets the status of a CCV channel with the given status
-func (k Keeper) SetChannelStatus(ctx sdk.Context, channelID string, status ccv.Status) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(ccv.ChannelStatusKey(channelID), []byte{byte(status)})
-}
-
-// GetChannelStatus gets the status of a CCV channel
-func (k Keeper) GetChannelStatus(ctx sdk.Context, channelID string) ccv.Status {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(ccv.ChannelStatusKey(channelID))
-	if bz == nil {
-		return ccv.UNINITIALIZED
-	}
-	return ccv.Status(bz[0])
-}
-
 // VerifyConsumerChain verifies that the chain trying to connect on the channel handshake
 // is the expected consumer chain.
 func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectionHops []string) error {
-	// Verify CCV channel is in Initialized state
-	status := k.GetChannelStatus(ctx, channelID)
-	if status != ccv.INITIALIZING {
-		return sdkerrors.Wrap(ccv.ErrInvalidStatus, "CCV channel status must be in Initializing state")
-	}
 	if len(connectionHops) != 1 {
 		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
 	}
@@ -275,18 +254,16 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	// Verify that there isn't already a CCV channel for the consumer chain
 	// If there is, then close the channel.
 	if prevChannel, ok := k.GetChannelToChain(ctx, chainID); ok {
-		k.SetChannelStatus(ctx, channelID, ccv.INVALID)
 		k.chanCloseInit(ctx, channelID)
 		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, chainID)
 	}
 
-	// set channel mappings
+	// the CCV channel is established:
+	// - set channel mappings
 	k.SetChainToChannel(ctx, tmClient.ChainId, channelID)
 	k.SetChannelToChain(ctx, channelID, tmClient.ChainId)
-	// set current block height for the consumer chain initialization
+	// - set current block height for the consumer chain initialization
 	k.SetInitChainHeight(ctx, tmClient.ChainId, uint64(ctx.BlockHeight()))
-	// Set CCV channel status to Validating
-	k.SetChannelStatus(ctx, channelID, ccv.VALIDATING)
 	return nil
 }
 

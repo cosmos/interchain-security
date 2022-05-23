@@ -234,28 +234,11 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 
 				suite.coordinator.CreateConnections(suite.path)
 
-				// set channel status to INITIALIZING
-				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{suite.path.EndpointA.ConnectionID}
 			},
 			connectionHops: []string{suite.path.EndpointA.ConnectionID},
 			expError:       false,
-		},
-		{
-			name: "not initializing status",
-			setup: func(suite *KeeperTestSuite) {
-				// create consumer client on provider chain
-				suite.path.EndpointB.CreateClient()
-
-				suite.coordinator.CreateConnections(suite.path)
-
-				// set channel status to validating
-				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.VALIDATING)
-				// set connection hops to be connection hop from path endpoint
-				connectionHops = []string{suite.path.EndpointA.ConnectionID}
-			},
-			expError: true,
 		},
 		{
 			name: "connection hops is not length 1",
@@ -265,8 +248,6 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 
 				suite.coordinator.CreateConnections(suite.path)
 
-				// set channel status to INITIALIZING
-				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{suite.path.EndpointA.ConnectionID, "connection-2"}
 			},
@@ -275,8 +256,6 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 		{
 			name: "connection does not exist",
 			setup: func(suite *KeeperTestSuite) {
-				// set channel status to INITIALIZING
-				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{"connection-dne"}
 			},
@@ -293,8 +272,6 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 
 				suite.coordinator.CreateConnections(suite.path)
 
-				// set channel status to INITIALIZING
-				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetChannelStatus(suite.ctx, channelID, ccv.INITIALIZING)
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{suite.path.EndpointA.ConnectionID}
 			},
@@ -607,8 +584,6 @@ func (suite *KeeperTestSuite) TestPendingSlashRequests() {
 // SendEmptyVSCPacket sends a VSC packet without any changes
 // to ensure that the channel gets established
 func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
-
-	consumerKeeper := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 
 	oldBlockTime := suite.providerChain.GetContext().BlockTime()
@@ -632,10 +607,6 @@ func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
 	suite.path.EndpointB.SendPacket(packet)
 	err := suite.path.EndpointA.RecvPacket(packet)
 	suite.Require().NoError(err)
-
-	// check that the channel is established
-	status := consumerKeeper.GetChannelStatus(suite.consumerChain.GetContext(), suite.path.EndpointA.ChannelID)
-	suite.Require().EqualValues(int32(2), status)
 }
 
 func TestKeeperTestSuite(t *testing.T) {
