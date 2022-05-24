@@ -30,24 +30,27 @@ VscMatured = recordclass("VscMatured", ["vsc_id"])
 
 Slash = recordclass("Slash", ["val", "power", "vsc_id", "is_downtime"])
 
+Packet = recordclass(
+    "Packet", ["timeout_height", "timeout_timestamp", "data", "send_height"]
+)
+
 
 class Outbox:
-    Packet = recordclass(
-        "Packet", ["timeout_height", "timeout_timestamp", "data", "send_height"]
-    )
-
     def create_packet(data, send_height):
         zero_timeout_height = ZERO_TIMEOUT_HEIGHT
         ccv_timeout_timestamp = CCV_TIMEOUT_TIMESTAMP
-        return Outbox.Packet(
-            zero_timeout_height, ccv_timeout_timestamp, data, send_height
-        )
+        return Packet(zero_timeout_height, ccv_timeout_timestamp, data, send_height)
 
     def __init__(self, model, chain):
         self.m = model
         self.chain = chain
         self.fifo = []
         self.fifo_committed = []
+
+    def json(self):
+        v = dict(vars(self))
+        del v["m"]
+        return v
 
     def add(self, data):
         # send height is used to establish ordering
@@ -100,6 +103,11 @@ class Staking:
         self.last_vals = self.new_vals()
         # required for computation of self.changes
         self.last_tokens = list(self.tokens)
+
+    def json(self):
+        v = dict(vars(self))
+        del v["m"]
+        return v
 
     def begin_block(self):
         pass
@@ -315,8 +323,13 @@ class CCVProvider:
         self.initial_height = 0
         self.vsc_id = 0
         self.vsc_id_to_h = {}
-        self.vsc_id_to_unbonding_op_ids = defaultdict(set)
+        self.vsc_id_to_unbonding_op_ids = defaultdict(list)
         self.downtime_slash_requests = []
+
+    def json(self):
+        v = dict(vars(self))
+        del v["m"]
+        return v
 
     def begin_block(self):
         pass
@@ -368,7 +381,8 @@ class CCVProvider:
             self.downtime_slash_requests.append(data.val)
 
     def after_unbonding_initiated(self, op_id):
-        self.vsc_id_to_unbonding_op_ids[self.vsc_id].add(op_id)
+        assert op_id not in self.vsc_id_to_unbonding_op_ids[self.vsc_id]
+        self.vsc_id_to_unbonding_op_ids[self.vsc_id].append(op_id)
 
 
 class CCVConsumer:
@@ -384,6 +398,11 @@ class CCVConsumer:
         self.outstanding_downtime = {i: False for i in range(NUM_VALIDATORS)}
         # Maps val to power
         self.power = {i: self.m.staking.tokens[i] for i in self.m.staking.last_vals}
+
+    def json(self):
+        v = dict(vars(self))
+        del v["m"]
+        return v
 
     def begin_block(self):
         self.h_to_vsc_id[self.m.h[C] + 1] = self.h_to_vsc_id[self.m.h[C]]
@@ -490,6 +509,9 @@ class Model:
         def __init__(self, init):
             for k, v in init.items():
                 setattr(self, k, v)
+
+        def json(self):
+            return vars(self)
 
     def snapshot(self):
         d = vars(deepcopy(self))

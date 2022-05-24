@@ -13,7 +13,6 @@ infix = "1.2"
 ply = "3.10"
 pathos = "^0.2.8"
 coverage = "^6.3.2"
-jsonpickle = "^2.2.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

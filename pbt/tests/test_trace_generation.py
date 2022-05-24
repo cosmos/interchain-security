@@ -13,7 +13,6 @@ from .constants import *
 from .blocks import *
 from recordclass import asdict, recordclass
 from .events import *
-import jsonpickle
 
 Delegate = recordclass("Delegate", ["val", "amt"])
 Undelegate = recordclass("Undelegate", ["val", "amt"])
@@ -204,19 +203,26 @@ class Trace:
         self.consequences.append(snapshot)
 
     def dump(self, fn):
+        def default(obj):
+            try:
+                return obj.json()
+            except AttributeError:
+                assert hasattr(obj, "__dict__"), obj
+                return vars(obj)
+
         def to_json():
+
             return {
                 "actions": [
                     {"kind": e.__class__.__name__} | asdict(e) for e in self.actions
                 ],
-                # TODO:
-                "consequences": jsonpickle.encode(self.consequences),
-                "blocks": jsonpickle.encode(self.blocks),
+                "consequences": self.consequences,
+                "blocks": [],
                 "events": self.events,
             }
 
         with open(fn, "w") as fd:
-            fd.write(json.dumps(to_json(), indent=2, default=vars))
+            fd.write(json.dumps(to_json(), indent=2, default=default))
 
 
 def load_debug_actions():
@@ -232,7 +238,6 @@ def test_circ():
     events = Events()
     model = Model(blocks, events)
     s = model.snapshot()
-    print(jsonpickle.encode(s))
 
 
 def test_dummy():

@@ -15,7 +15,7 @@ SLASH_FACTOR_DOWNTIME = 1 / 4
 JAIL_TIME = 10000
 
 
-class Status(Enum):
+class Status(str, Enum):
     BONDED = "bonded"
     UNBONDING = "unbonding"
     UNBONDED = "unbonded"
