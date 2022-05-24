@@ -53,12 +53,12 @@ class Shaper:
             return ctor(**json)
 
         distr = {
-            "Delegate": 0.05,
-            "Undelegate": 0.05,
-            "JumpNBlocks": 0.40,
-            "Deliver": 0.40,
-            "ProviderSlash": 0.05,
-            "ConsumerSlash": 0.05,
+            "Delegate": 0.06,
+            "Undelegate": 0.06,
+            "JumpNBlocks": 0.42,
+            "Deliver": 0.42,
+            "ProviderSlash": 0.02,
+            "ConsumerSlash": 0.02,
         }
 
         templates = []
@@ -239,7 +239,7 @@ def load_debug_actions():
 # @pytest.mark.skip()
 def test_dummy():
     debug = False
-    GOAL_TIME_MINS = 2
+    GOAL_TIME_MINS = 20
     NUM_ACTIONS = 26
 
     shutil.rmtree("traces/")
@@ -272,9 +272,9 @@ def test_dummy():
                 a = actions[j] if debug else shaper.action()
                 trace.add_action(a)
                 do_action(model, a)
-                # trace.add_consequence(model.snapshot())
-            assert staking_without_slashing(blocks)
-            assert bond_based_consumer_voting_power(blocks)
+                trace.add_consequence(model.snapshot())
+            # assert staking_without_slashing(blocks)
+            # assert bond_based_consumer_voting_power(blocks)
         except Exception:
             trace.blocks = blocks
             trace.events = events
@@ -284,8 +284,7 @@ def test_dummy():
             trace.blocks = blocks
             trace.events = events
             all_events.append(events)
-            # trace.dump(f"traces/trace_{i}.json")
-            # Trace().dump(f"traces/trace_{i}.json")
+            trace.dump(f"traces/trace_{i}.json")
 
         t_end = time.time()
         elapsed += t_end - t_start
@@ -299,6 +298,6 @@ def test_dummy():
     stats = {e: cnt[e] for e in Events.Event}
     listed = sorted(list(stats.items()), key=lambda pair: pair[1], reverse=True)
     for e, c in listed:
-        print(e, f"{c},({round(c, 8)})")
+        print(e, f"{c},({round(c/total, 8)})")
 
     print(f"Ran {i} runs")

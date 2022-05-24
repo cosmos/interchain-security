@@ -6,7 +6,7 @@ def staking_without_slashing(blocks):
     The total number of tokens in the system is constant
     if there is no slashing.
     """
-    blocks = [b.snapshot.staking for _, b in sorted(blocks.blocks[P].items())]
+    blocks = [b.snapshot for _, b in sorted(blocks.blocks[P].items())]
 
     if len(blocks) < 2:
         return True
@@ -34,17 +34,13 @@ def bond_based_consumer_voting_power(blocks):
 
     def power_provider(block):
         return {
-            i: block.snapshot.staking.tokens[i]
-            + sum(
-                e.initial_balance
-                for e in block.snapshot.staking.undelegationQ
-                if e.val == i
-            )
+            i: block.snapshot.tokens[i]
+            + sum(e.initial_balance for e in block.snapshot.undelegationQ if e.val == i)
             for i in range(NUM_VALIDATORS)
         }
 
     def power_consumer(block):
-        return block.snapshot.ccv_c.power
+        return block.snapshot.power
 
     def inner(hc):
 

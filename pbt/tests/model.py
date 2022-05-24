@@ -521,7 +521,7 @@ class Model:
                     "undelegationQ": self.staking.undelegationQ,
                     "jailed": self.staking.jailed,
                     "delegator_tokens": self.staking.delegator_tokens,
-                    "ccv_power": self.ccv_c.power,
+                    "power": self.ccv_c.power,
                     "h": self.h,
                     "t": self.t,
                 }
