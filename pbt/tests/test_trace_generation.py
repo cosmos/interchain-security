@@ -53,12 +53,12 @@ class Shaper:
             return ctor(**json)
 
         distr = {
-            "Delegate": 0.04,
-            "Undelegate": 0.04,
-            "JumpNBlocks": 0.42,
-            "Deliver": 0.42,
-            "ProviderSlash": 0.04,
-            "ConsumerSlash": 0.04,
+            "Delegate": 0.05,
+            "Undelegate": 0.05,
+            "JumpNBlocks": 0.40,
+            "Deliver": 0.40,
+            "ProviderSlash": 0.05,
+            "ConsumerSlash": 0.05,
         }
 
         templates = []
@@ -66,8 +66,8 @@ class Shaper:
         templates.extend(self.candidate_Undelegate())
         templates.extend(self.candidate_JumpNBlocks())
         templates.extend(self.candidate_Deliver())
-        # templates.extend(self.candidate_ProviderSlash())
-        # templates.extend(self.candidate_ConsumerSlash())
+        templates.extend(self.candidate_ProviderSlash())
+        templates.extend(self.candidate_ConsumerSlash())
 
         possible = [t.__class__.__name__ for t in templates]
         distr = {k: v for k, v in distr.items() if k in possible}
@@ -239,7 +239,7 @@ def load_debug_actions():
 # @pytest.mark.skip()
 def test_dummy():
     debug = False
-    GOAL_TIME_MINS = 4
+    GOAL_TIME_MINS = 2
     NUM_ACTIONS = 26
 
     shutil.rmtree("traces/")
@@ -272,9 +272,9 @@ def test_dummy():
                 a = actions[j] if debug else shaper.action()
                 trace.add_action(a)
                 do_action(model, a)
-                trace.add_consequence(model.snapshot())
-            # assert staking_without_slashing(blocks)
-            # assert bond_based_consumer_voting_power(blocks)
+                # trace.add_consequence(model.snapshot())
+            assert staking_without_slashing(blocks)
+            assert bond_based_consumer_voting_power(blocks)
         except Exception:
             trace.blocks = blocks
             trace.events = events
@@ -296,9 +296,9 @@ def test_dummy():
             cnt[e] += 1
 
     total = sum(c for _, c in cnt.most_common())
-    stats = {e: cnt[e] / total for e in Events.Event}
+    stats = {e: cnt[e] for e in Events.Event}
     listed = sorted(list(stats.items()), key=lambda pair: pair[1], reverse=True)
     for e, c in listed:
-        print(e, round(c, 5))
+        print(e, f"{c},({round(c, 8)})")
 
     print(f"Ran {i} runs")
