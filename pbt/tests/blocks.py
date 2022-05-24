@@ -50,9 +50,6 @@ class Blocks:
             self.t = t
             self.snapshot = snapshot
 
-        def json(self):
-            return {"h": self.h, "t": self.t, "snapshot": vars(self.snapshot)}
-
     def __init__(self):
         self.partial_order = PartialOrder()
         # Inner dictionaries map heights to block data

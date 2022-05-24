@@ -66,8 +66,8 @@ class Shaper:
         templates.extend(self.candidate_Undelegate())
         templates.extend(self.candidate_JumpNBlocks())
         templates.extend(self.candidate_Deliver())
-        templates.extend(self.candidate_ProviderSlash())
-        templates.extend(self.candidate_ConsumerSlash())
+        # templates.extend(self.candidate_ProviderSlash())
+        # templates.extend(self.candidate_ConsumerSlash())
 
         possible = [t.__class__.__name__ for t in templates]
         distr = {k: v for k, v in distr.items() if k in possible}
@@ -207,8 +207,12 @@ class Trace:
             try:
                 return obj.json()
             except AttributeError:
-                assert hasattr(obj, "__dict__"), obj
-                return vars(obj)
+                pass
+            try:
+                return asdict(obj)
+            except TypeError:
+                pass
+            return vars(obj)
 
         def to_json():
 
@@ -217,7 +221,7 @@ class Trace:
                     {"kind": e.__class__.__name__} | asdict(e) for e in self.actions
                 ],
                 "consequences": self.consequences,
-                "blocks": [],
+                "blocks": self.blocks,
                 "events": self.events,
             }
 
@@ -232,17 +236,10 @@ def load_debug_actions():
     return obj["actions"]
 
 
-@pytest.mark.skip()
-def test_circ():
-    blocks = Blocks()
-    events = Events()
-    model = Model(blocks, events)
-    s = model.snapshot()
-
-
+# @pytest.mark.skip()
 def test_dummy():
     debug = False
-    GOAL_TIME_MINS = 1
+    GOAL_TIME_MINS = 4
     NUM_ACTIONS = 26
 
     shutil.rmtree("traces/")
@@ -287,7 +284,8 @@ def test_dummy():
             trace.blocks = blocks
             trace.events = events
             all_events.append(events)
-            trace.dump(f"traces/trace_{i}.json")
+            # trace.dump(f"traces/trace_{i}.json")
+            # Trace().dump(f"traces/trace_{i}.json")
 
         t_end = time.time()
         elapsed += t_end - t_start
