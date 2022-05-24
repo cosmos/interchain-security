@@ -65,8 +65,8 @@ class Shaper:
         templates.extend(self.candidate_Undelegate())
         templates.extend(self.candidate_JumpNBlocks())
         templates.extend(self.candidate_Deliver())
-        # templates.extend(self.candidate_ProviderSlash())
-        # templates.extend(self.candidate_ConsumerSlash())
+        templates.extend(self.candidate_ProviderSlash())
+        templates.extend(self.candidate_ConsumerSlash())
 
         possible = [t.__class__.__name__ for t in templates]
         distr = {k: v for k, v in distr.items() if k in possible}
@@ -224,7 +224,7 @@ def load_debug_actions():
 
 def test_dummy():
     debug = False
-    GOAL_TIME_MINS = 20
+    GOAL_TIME_MINS = 60
     NUM_ACTIONS = 26
 
     shutil.rmtree("traces/")
@@ -249,13 +249,13 @@ def test_dummy():
             actions = [shaper.action(json=a) for a in load_debug_actions()]
             k = len(actions)
         try:
-            for i in range(k):
-                a = actions[i] if debug else shaper.action()
+            for j in range(k):
+                a = actions[j] if debug else shaper.action()
                 trace.add_action(a)
                 do_action(model, a)
                 trace.add_consequence(model.snapshot())
-            assert staking_without_slashing(blocks)
-            assert bond_based_consumer_voting_power(blocks)
+            # assert staking_without_slashing(blocks)
+            # assert bond_based_consumer_voting_power(blocks)
         except Exception:
             trace.blocks = blocks
             trace.dump("debug.json")

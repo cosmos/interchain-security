@@ -29,6 +29,11 @@ VscMatured = recordclass("VscMatured", ["vsc_id"])
 Slash = recordclass("Slash", ["val", "power", "vsc_id", "is_downtime"])
 
 
+class Events:
+    def __init__(self):
+        pass
+
+
 class Outbox:
     Packet = recordclass(
         "Packet", ["timeout_height", "timeout_timestamp", "data", "send_height"]
@@ -314,7 +319,7 @@ class CCVProvider:
         if 0 < len(changes) or 0 < len(self.vsc_id_to_unbonding_op_ids[self.vsc_id]):
             data = Vsc(self.vsc_id, changes, self.slash_requests)
             self.slash_requests = []
-            self.m.outbox_p.add(data)
+            self.m.outbox[P].add(data)
 
         self.vsc_id_to_h[self.vsc_id] = self.m.h[P] + 1
         self.vsc_id += 1
@@ -377,7 +382,7 @@ class CCVConsumer:
 
         for vsc_id in matured:
             data = VscMatured(vsc_id)
-            self.m.outbox_c.add(data)
+            self.m.outbox[C].add(data)
             del self.maturing_vscs[vsc_id]
 
         def aggregate_changes():
@@ -420,7 +425,7 @@ class CCVConsumer:
             return
 
         data = Slash(val, power, self.h_to_vsc_id[infraction_height], is_downtime)
-        self.m.outbox_c.add(data)
+        self.m.outbox[C].add(data)
         if is_downtime:
             self.outstanding_downtime[val] = True
 
@@ -436,8 +441,7 @@ class Model:
         self.t = {P: 0, C: 0}
 
         # FIFO - front of queue is ix 0
-        self.outbox_p = Outbox(self, P)
-        self.outbox_c = Outbox(self, C)
+        self.outbox = {P: Outbox(self, P), C: Outbox(self, C)}
 
         self.staking = Staking(self)
         self.ccv_p = CCVProvider(self)
@@ -457,6 +461,8 @@ class Model:
         self.increase_seconds(1)
         self.must_begin_block = {P: True, C: True}
 
+        self.events = Events()
+
     class Snapshot:
         def __init__(self, init):
             for k, v in init.items():
@@ -468,10 +474,7 @@ class Model:
         return Model.Snapshot(deepcopy(d))
 
     def has_undelivered(self, chain):
-        if chain == P:
-            return not self.outbox_c.is_empty()
-        if chain == C:
-            return not self.outbox_p.is_empty()
+        return not self.outbox[{P: C, C: P}[chain]].is_empty()
 
     def idempotent_begin_block(self, chain):
         if self.must_begin_block[chain]:
@@ -496,13 +499,11 @@ class Model:
         if chain == P:
             self.staking.end_block()
             self.ccv_p.end_block()
-            self.outbox_p.commit()
         if chain == C:
             self.ccv_c.end_block()
-            self.outbox_c.commit()
-        # Forces a begin_block as next action
-        self.must_begin_block[chain] = True
+        self.outbox[chain].commit()
         self.blocks.commit_block(chain, self.snapshot())
+        self.must_begin_block[chain] = True
 
     def increase_seconds(self, seconds):
         self.T += seconds
@@ -510,11 +511,11 @@ class Model:
     def deliver(self, chain):
         self.idempotent_begin_block(chain)
         if chain == P:
-            for p in self.outbox_c.consume():
+            for p in self.outbox[C].consume():
                 self.blocks.partial_order.deliver(P, p.send_height, self.h[P])
                 self.ccv_p.on_receive(p.data)
         if chain == C:
-            for p in self.outbox_p.consume():
+            for p in self.outbox[P].consume():
                 self.blocks.partial_order.deliver(C, p.send_height, self.h[C])
                 self.ccv_c.on_receive(p.data)
 
