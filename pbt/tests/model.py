@@ -273,37 +273,22 @@ class Staking:
         return self.tokens[val] == 0 and 0 < self.shares(val)
 
     def unbonding_can_complete(self, op_id):
-        if op_id in self.unbonding_op_id_to_val:
-            val = self.unbonding_op_id_to_val[op_id]
-            del self.unbonding_op_id_to_val[op_id]
-            assert val not in self.unbonding_op_id_to_val.values()
-            # TODO: This is a bit strange but copying cosmos-sdk code verbatim for now
-            # I should check if that's the right approach
-            assert isinstance(self.unbonding_height[val], int), (
-                val,
-                self.unbonding_height,
-                self.validatorQ,
-                self.unbonding_op_id_to_val,
-            )
-            assert isinstance(self.unbonding_time[val], int)
-            if (
-                self.unbonding_height[val] < self.m.h[P]
-                and self.unbonding_time[val] < self.m.t[P]
-            ):
-                self.status[val] = Status.UNBONDED
-                self.unbonding_height[val] = None
-                self.unbonding_time[val] = None
-                self.validatorQ = [v for v in self.validatorQ if v != val]
-            self.on_hold[val] = False
-        for e in self.undelegationQ:
-            # In contrast to the code, I store op_id with the entry
-            # allowing me to do this loop
-            if e.op_id == op_id:
-                if self.m.t[P] < e.completion_time:
-                    e.on_hold = False
-                else:
-                    self.delegator_tokens += e.balance
-                    self.undelegationQ = [x for x in self.undelegationQ if x != e]
+        if unval := [e for e in self.validatorQ if e.op_id == op_id]:
+            e = unval[0]
+            if e.unbonding_height < self.m.h[P] and e.unbonding_time < self.m.t[P]:
+                # Complete now
+                self.status[e.val] = Status.UNBONDED
+                self.validatorQ = [x for x in self.validatorQ if e != x]
+            else:
+                e.on_hold = False
+        if undel := [e for e in self.undelegationQ if e.op_id == op_id]:
+            e = undel[0]
+            if e.completion_time <= self.m.t[P]:
+                # Complete now
+                self.delegator_tokens += e.balance
+                self.undelegationQ = [x for x in self.undelegationQ if e != x]
+            else:
+                e.on_hold = False
 
     def validator_changes(self):
         # Called by CCV, return changed validator powers
