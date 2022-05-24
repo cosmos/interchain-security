@@ -1,19 +1,16 @@
 package provider_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
-	exported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
@@ -42,12 +39,12 @@ type PBTTestSuite struct {
 	path *ibctesting.Path
 }
 
-const p = "provider"
-const c = "consumer"
+const P = "provider"
+const C = "consumer"
 
 // TODO: do I need different denoms for each chain?
 const denom = sdk.DefaultBondDenom
-const maxValidators = 3
+const maxValidators = 2
 
 func init() {
 	// Tokens = Power
@@ -89,7 +86,7 @@ func (s *PBTTestSuite) SetupTest() {
 		"0.5", // 50%
 	)
 	consumerGenesis := consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, params)
-	s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(s.ctx(c), consumerGenesis)
+	s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(s.ctx(C), consumerGenesis)
 
 	s.path = ibctesting.NewPath(s.consumerChain, s.providerChain)
 	s.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
@@ -99,7 +96,7 @@ func (s *PBTTestSuite) SetupTest() {
 	s.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	s.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 
-	providerClientId, ok := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(s.ctx(c))
+	providerClientId, ok := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(s.ctx(C))
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
@@ -113,7 +110,7 @@ func (s *PBTTestSuite) SetupTest() {
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	s.path.EndpointB.CreateClient()
-	s.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(s.ctx(p), s.consumerChain.ChainID, s.path.EndpointB.ClientID)
+	s.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(s.ctx(P), s.consumerChain.ChainID, s.path.EndpointB.ClientID)
 
 	// TODO: I added this section, should I remove it or move it?
 	//~~~~~~~~~~
@@ -139,47 +136,50 @@ func (s *PBTTestSuite) DisableConsumerDistribution() {
 }
 
 type Action struct {
-	kind             string
-	valSrc           int64
-	valDst           int64
-	amt              int64
-	succeed          bool
-	chain            string
-	infractionHeight int64
-	power            int64
-	slashPercentage  int64
-	blocks           int64
-	seconds          int64
-	secondsPerBlock  int64
-}
-type DelegateAction struct {
-	val     int64
-	amt     int64
-	succeed bool
-}
-type UndelegateAction struct {
-	val     int64
-	amt     int64
-	succeed bool
-}
-type ProviderSlashAction struct {
-	val              int64
-	infractionHeight int64
-	power            int64
-	slashFactor  int64
-}
-type ConsumerSlashAction struct {
-	val              int64
-	infractionHeight int64
-	power            int64
-	isDowntime  bool
-}
-type JumpNBlocksAction struct {
+	kind            string
+	val             int64
+	amt             int64
+	chains          []string
+	n               int64
+	secondsPerBlock int64
 	chain           string
-	blocks          int64
+	power           int64
+	height          int64
+	factor          int64
+	isDowntime      bool
+}
+type Delegate struct {
+	val int64
+	amt int64
+}
+type Undelegate struct {
+	val int64
+	amt int64
+}
+type JumpNBlocks struct {
+	chains          []string
+	n               int64
 	secondsPerBlock int64
 }
+type Deliver struct {
+	chain string
+}
+type ProviderSlash struct {
+	val    int64
+	power  int64
+	height int64
+	factor int64
+}
+type ConsumerSlash struct {
+	val        int64
+	height     int64
+	power      int64
+	isDowntime bool
+}
 
+func (s *PBTTestSuite) ctx(chain string) sdk.Context {
+	return s.chain(chain).GetContext()
+}
 
 func (s *PBTTestSuite) chain(chain string) *ibctesting.TestChain {
 	chains := make(map[string]*ibctesting.TestChain)
@@ -197,10 +197,6 @@ func (s *PBTTestSuite) endpoint(chain string) *ibctesting.Endpoint {
 	endpoints["provider"] = s.path.EndpointB
 	endpoints["consumer"] = s.path.EndpointA
 	return endpoints[chain]
-}
-
-func (s *PBTTestSuite) ctx(chain string) sdk.Context {
-	return s.chain(chain).GetContext()
 }
 
 func (s *PBTTestSuite) delegator() sdk.AccAddress {
@@ -233,7 +229,7 @@ func (s *PBTTestSuite) validatorStatus(chain string, i int64) stakingtypes.BondS
 func (s *PBTTestSuite) delegatorBalance() int64 {
 	del := s.delegator()
 	app := s.providerChain.App.(*appProvider.App)
-	bal := app.BankKeeper.GetBalance(s.ctx(p), del, denom)
+	bal := app.BankKeeper.GetBalance(s.ctx(P), del, denom)
 	return bal.Amount.Int64()
 }
 
@@ -248,24 +244,24 @@ func (s *PBTTestSuite) validatorTokens(chain string, i int64) int64 {
 
 func (s *PBTTestSuite) delegation(i int64) int64 {
 	addr := s.delegator()
-	del, found := s.providerChain.App.GetStakingKeeper().GetDelegation(s.ctx(p), addr, s.validator(i))
+	del, found := s.providerChain.App.GetStakingKeeper().GetDelegation(s.ctx(P), addr, s.validator(i))
 	if !found {
 		s.T().Fatal("Couldn't GetDelegation")
 	}
 	return del.Shares.TruncateInt64()
 }
 
-func (s *PBTTestSuite) delegate(a DelegateAction) {
+func (s *PBTTestSuite) delegate(a Delegate) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
 	amt := sdk.NewCoin(denom, sdk.NewInt(a.amt))
 	del := s.delegator()
 	val := s.validator(a.val)
 	msg := stakingtypes.NewMsgDelegate(del, val, amt)
-	pskServer.Delegate(sdk.WrapSDKContext(s.ctx(p)), msg)
+	pskServer.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
-func (s *PBTTestSuite) undelegate(a UndelegateAction) {
+func (s *PBTTestSuite) undelegate(a Undelegate) {
 
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
@@ -273,43 +269,58 @@ func (s *PBTTestSuite) undelegate(a UndelegateAction) {
 	del := s.delegator()
 	val := s.validator(a.val)
 	msg := stakingtypes.NewMsgUndelegate(del, val, amt)
-	pskServer.Undelegate(sdk.WrapSDKContext(s.ctx(p)), msg)
+	pskServer.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
-func (s *PBTTestSuite) providerSlash(a ProviderSlashAction) {
-	psk := s.providerChain.App.GetStakingKeeper()
-	val := s.consAddr(a.val)
-	h := int64(a.infractionHeight)
-	power := int64(a.power)
-	factor := sdk.NewDec(int64(a.slashFactor)) // TODO: I think it's a percentage (from 100)?
-	psk.Slash(s.ctx(p), val, h, power, factor)
+func (s *PBTTestSuite) endBlock(chain string) {
+
+}
+func (s *PBTTestSuite) increaseSeconds(seconds int64) {
+	s.coordinator.IncrementTimeBy(time.Second * time.Duration(seconds))
+}
+func (s *PBTTestSuite) deliver(a Deliver) {
+	// TODO:!
 }
 
-func (s *PBTTestSuite) consumerSlash(a ConsumerSlashAction) {
-	cccvk := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
-	val := s.consAddr(a.val)
-	h := int64(a.infractionHeight)
-	power := int64(a.power)
-	factor := sdk.NewDec(int64(a.isDowntime)) // TODO: I think it's a percentage (from 100)?
-	cccvk.Slash(s.ctx(c), val, h, power, factor)
-}
-
-func (s *PBTTestSuite) jumpNBlocks(a JumpNBlocksAction) {
-	for i := int64(0); i < a.blocks; i++ {
-		s.chain(a.chain).NextBlock()
-		s.coordinator.IncrementTimeBy(time.Second * time.Duration(a.secondsPerBlock))
+func (s *PBTTestSuite) jumpNBlocks(a JumpNBlocks) {
+	for i := int64(0); i < a.n; i++ {
+		for _, c := range a.chains {
+			s.endBlock(c)
+		}
+		s.increaseSeconds(a.secondsPerBlock)
 	}
 }
 
+func (s *PBTTestSuite) providerSlash(a ProviderSlash) {
+	psk := s.providerChain.App.GetStakingKeeper()
+	val := s.consAddr(a.val)
+	h := int64(a.height)
+	power := int64(a.power)
+	factor := sdk.NewDec(int64(a.factor))
+	psk.Slash(s.ctx(P), val, h, power, factor, -1) // TODO: check params here!
+}
+
+func (s *PBTTestSuite) consumerSlash(a ConsumerSlash) {
+	cccvk := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	val := s.consAddr(a.val)
+	h := int64(a.height)
+	power := int64(a.power)
+	kind := stakingtypes.Downtime
+	if !a.isDowntime {
+		kind = stakingtypes.DoubleSign
+	}
+	cccvk.Slash(s.ctx(C), val, h, power, sdk.Dec{}, kind) // TODO: check params here!
+}
+
 func adjustParams(s *PBTTestSuite) {
-	params := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(p))
+	params := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(P))
 	params.MaxValidators = maxValidators
-	s.providerChain.App.GetStakingKeeper().SetParams(s.ctx(p), params)
+	s.providerChain.App.GetStakingKeeper().SetParams(s.ctx(P), params)
 }
 
 func equalHeights(s *PBTTestSuite) {
-	ph := s.height(p)
-	ch := s.height(c)
+	ph := s.height(P)
+	ch := s.height(C)
 	if ph != ch {
 		s.T().Fatal("Bad test")
 	}
@@ -319,9 +330,9 @@ func (s *PBTTestSuite) TestAssumptions() {
 
 	adjustParams(s)
 
-	s.jumpNBlocks(JumpNBlocksAction{p, 1, 5})
+	s.jumpNBlocks(JumpNBlocks{P, 1, 5})
 	// TODO: Is it correct to catch the consumer up with the provider here?
-	s.jumpNBlocks(JumpNBlocksAction{c, 2, 5})
+	s.jumpNBlocks(JumpNBlocks{C, 2, 5})
 
 	equalHeights(s)
 
@@ -331,7 +342,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 	*/
 
 	maxValsE := uint32(3)
-	maxVals := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(p)).MaxValidators
+	maxVals := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(P)).MaxValidators
 
 	if maxValsE != maxVals {
 		s.T().Fatal("Bad test")
@@ -349,7 +360,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 	step := int64(1)
 
 	for i := 0; i < 3; i++ {
-		s.delegate(DelegateAction{int64(i), (3 - int64(i)) * step, true})
+		s.delegate(Delegate{int64(i), (3 - int64(i)) * step, true})
 	}
 
 	for i := 0; i < 4; i++ {
@@ -362,7 +373,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 
 	for i := 0; i < maxValidators; i++ {
 		// First ones should be bonded
-		A := s.validatorStatus(p, int64(i))
+		A := s.validatorStatus(P, int64(i))
 		E := stakingtypes.Bonded
 		if E != A {
 			s.T().Fatal("Bad test")
@@ -370,7 +381,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 	}
 
 	for i := maxValidators; i < 4; i++ {
-		A := s.validatorStatus(p, int64(i))
+		A := s.validatorStatus(P, int64(i))
 		// Last one is unbonding
 		E := stakingtypes.Unbonding
 		if E != A {
@@ -381,7 +392,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 	equalHeights(s)
 
 	for i := 0; i < maxValidators; i++ {
-		A := s.validatorTokens(p, int64(i))
+		A := s.validatorTokens(P, int64(i))
 		E := (3-int64(i))*step + int64(1)
 		if E != A {
 			s.T().Fatal("Bad test")
@@ -398,74 +409,77 @@ func executeTrace(s *PBTTestSuite, trace []Action) {
 		// succeed := a.succeed
 		switch a.kind {
 		case "delegate":
-			s.delegate(DelegateAction{
-				a.valDst,
+			s.delegate(Delegate{
+				a.val,
 				a.amt,
-				a.succeed,
 			})
 		case "undelegate":
-			s.undelegate(UndelegateAction{
-				a.valDst,
+			s.undelegate(Undelegate{
+				a.val,
 				a.amt,
-				a.succeed,
-			})
-		case "providerSlash":
-			s.providerSlash(ProviderSlashAction{
-				a.valDst,
-				a.infractionHeight,
-				a.power,
-				a.slashPercentage,
-			})
-		case "consumerSlash":
-			s.consumerSlash(ConsumerSlashAction{
-				a.valDst,
-				a.infractionHeight,
-				a.power,
-				a.slashPercentage,
 			})
 		case "jumpNBlocks":
-			s.jumpNBlocks(JumpNBlocksAction{
-				a.chain,
-				a.blocks,
+			s.jumpNBlocks(JumpNBlocks{
+				a.chains,
+				a.n,
 				a.secondsPerBlock,
 			})
-
+		case "deliver":
+			s.deliver(Deliver{a.chain})
+		case "providerSlash":
+			s.providerSlash(ProviderSlash{
+				a.val,
+				a.power,
+				a.height,
+				a.factor,
+			})
+		case "consumerSlash":
+			s.consumerSlash(ConsumerSlash{
+				a.val,
+				a.height,
+				a.power,
+				a.isDowntime,
+			})
+		}
 	}
 }
 
-func (s *PBTTestSuite) TestTrace() {
+func (s *PBTTestSuite) TestTraceHC() {
 
 	trace := []Action{
 		{
-			kind:    "delegate",
-			valDst:  0,
-			amt:     1,
-			succeed: true,
+			kind: "delegate",
+			val:  0,
+			amt:  1,
 		},
 		{
-			kind:    "undelegate",
-			valDst:  0,
-			amt:     1,
-			succeed: true,
+			kind: "undelegate",
+			val:  0,
+			amt:  1,
 		},
 		{
-			kind:             "providerSlash",
-			valDst:           0,
-			infractionHeight: 22,
-			power:            1,
-			slashfactor:  5,
+			kind:            "jumpNBlocks",
+			chains:          []string{P},
+			n:               8,
+			secondsPerBlock: 5,
 		},
 		{
-			kind:             "consumerSlash",
-			valDst:           0,
-			infractionHeight: 22,
-			power:            0,
-			isDowntime:  true,
+			kind:  "deliver",
+			chain: P,
 		},
 		{
-			kind:   "jumpNBlocks",
-			chain:  "provider",
-			blocks: 1,
+			kind:   "providerSlash",
+			val:    0,
+			power:  22,
+			height: 0,
+			factor: 5,
+		},
+		{
+			kind:       "consumerSlash",
+			val:        0,
+			power:      22,
+			height:     0,
+			isDowntime: true,
 		},
 	}
 
