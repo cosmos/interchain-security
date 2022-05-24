@@ -514,6 +514,21 @@ class Model:
             return vars(self)
 
     def snapshot(self):
+        return Model.Snapshot(
+            deepcopy(
+                {
+                    "tokens": self.staking.tokens,
+                    "undelegationQ": self.staking.undelegationQ,
+                    "jailed": self.staking.jailed,
+                    "delegator_tokens": self.staking.delegator_tokens,
+                    "ccv_power": self.ccv_c.power,
+                    "h": self.h,
+                    "t": self.t,
+                }
+            )
+        )
+
+        # TODO: delete? use below for whole state
         d = vars(deepcopy(self))
         del d["blocks"]
         del d["events"]
