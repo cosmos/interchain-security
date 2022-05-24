@@ -1,6 +1,9 @@
 package pbt_test
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
@@ -428,7 +431,6 @@ TRACE TEST
 func executeTrace(s *PBTTestSuite, trace []Action) {
 
 	for _, a := range trace {
-		// succeed := a.succeed
 		switch a.kind {
 		case "delegate":
 			s.delegate(Delegate{
@@ -466,45 +468,37 @@ func executeTrace(s *PBTTestSuite, trace []Action) {
 	}
 }
 
-func (s *PBTTestSuite) TestTraceHC() {
+type trace = []Action
 
-	trace := []Action{
-		{
-			kind: "delegate",
-			val:  0,
-			amt:  1,
-		},
-		{
-			kind: "undelegate",
-			val:  0,
-			amt:  1,
-		},
-		{
-			kind:            "jumpNBlocks",
-			chains:          []string{P},
-			n:               8,
-			secondsPerBlock: 5,
-		},
-		{
-			kind:  "deliver",
-			chain: P,
-		},
-		{
-			kind:   "providerSlash",
-			val:    0,
-			power:  22,
-			height: 0,
-			factor: 5,
-		},
-		{
-			kind:       "consumerSlash",
-			val:        0,
-			power:      22,
-			height:     0,
-			isDowntime: true,
-		},
+func loadTraces(fn string) []trace {
+
+	fd, err := os.Open(fn)
+
+	if err != nil {
+		panic(err)
 	}
 
-	executeTrace(s, trace)
+	defer fd.Close()
 
+	byteValue, _ := ioutil.ReadAll(fd)
+
+	var ret []trace
+
+	err = json.Unmarshal([]byte(byteValue), &ret)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return ret
+}
+
+func executeTraces(s *PBTTestSuite, traces []trace) {
+	for _, trace := range traces {
+		executeTrace(s, trace)
+	}
+}
+
+func (s *PBTTestSuite) TestTracesHC() {
+	executeTraces(s, loadTraces("trace/hc.json"))
 }

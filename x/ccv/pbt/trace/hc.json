@@ -1,0 +1,4018 @@
+[
+  {
+    "actions": [
+      {
+        "kind": "ProviderSlash",
+        "val": 1,
+        "power": 2,
+        "height": 0,
+        "factor": 0.25
+      },
+      {
+        "kind": "JumpNBlocks",
+        "chains": [
+          "provider",
+          "consumer"
+        ],
+        "n": 4,
+        "seconds_per_block": 1
+      },
+      {
+        "kind": "JumpNBlocks",
+        "chains": [
+          "provider",
+          "consumer"
+        ],
+        "n": 4,
+        "seconds_per_block": 1
+      },
+      {
+        "kind": "JumpNBlocks",
+        "chains": [
+          "consumer"
+        ],
+        "n": 4,
+        "seconds_per_block": 1
+      },
+      {
+        "kind": "ConsumerSlash",
+        "val": 2,
+        "power": 3,
+        "height": 6,
+        "is_downtime": true
+      },
+      {
+        "kind": "Undelegate",
+        "val": 1,
+        "amt": 4
+      },
+      {
+        "kind": "JumpNBlocks",
+        "chains": [
+          "provider",
+          "consumer"
+        ],
+        "n": 7,
+        "seconds_per_block": 1
+      },
+      {
+        "kind": "Deliver",
+        "chain": "provider"
+      },
+      {
+        "kind": "JumpNBlocks",
+        "chains": [
+          "provider"
+        ],
+        "n": 4,
+        "seconds_per_block": 1
+      },
+      {
+        "kind": "JumpNBlocks",
+        "chains": [
+          "consumer"
+        ],
+        "n": 7,
+        "seconds_per_block": 1
+      },
+      {
+        "kind": "ConsumerSlash",
+        "val": 2,
+        "power": 3,
+        "height": 19,
+        "is_downtime": true
+      },
+      {
+        "kind": "JumpNBlocks",
+        "chains": [
+          "consumer"
+        ],
+        "n": 1,
+        "seconds_per_block": 1
+      },
+      {
+        "kind": "Undelegate",
+        "val": 3,
+        "amt": 1
+      },
+      {
+        "kind": "JumpNBlocks",
+        "chains": [
+          "provider",
+          "consumer"
+        ],
+        "n": 7,
+        "seconds_per_block": 1
+      },
+      {
+        "kind": "ConsumerSlash",
+        "val": 2,
+        "power": 3,
+        "height": 0,
+        "is_downtime": true
+      },
+      {
+        "kind": "Deliver",
+        "chain": "consumer"
+      },
+      {
+        "kind": "Undelegate",
+        "val": 3,
+        "amt": 2
+      },
+      {
+        "kind": "JumpNBlocks",
+        "chains": [
+          "consumer"
+        ],
+        "n": 7,
+        "seconds_per_block": 1
+      },
+      {
+        "kind": "Delegate",
+        "val": 1,
+        "amt": 1
+      },
+      {
+        "kind": "JumpNBlocks",
+        "chains": [
+          "consumer"
+        ],
+        "n": 1,
+        "seconds_per_block": 1
+      },
+      {
+        "kind": "Delegate",
+        "val": 3,
+        "amt": 2
+      },
+      {
+        "kind": "Deliver",
+        "chain": "provider"
+      },
+      {
+        "kind": "JumpNBlocks",
+        "chains": [
+          "consumer"
+        ],
+        "n": 7,
+        "seconds_per_block": 1
+      },
+      {
+        "kind": "JumpNBlocks",
+        "chains": [
+          "provider",
+          "consumer"
+        ],
+        "n": 4,
+        "seconds_per_block": 1
+      },
+      {
+        "kind": "Delegate",
+        "val": 1,
+        "amt": 2
+      },
+      {
+        "kind": "ProviderSlash",
+        "val": 1,
+        "power": 6,
+        "height": 23,
+        "factor": 0.25
+      }
+    ],
+    "consequences": [
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          2
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 1,
+          "consumer": 0
+        },
+        "t": {
+          "provider": 1,
+          "consumer": 0
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          2
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 4,
+          "consumer": 4
+        },
+        "t": {
+          "provider": 4,
+          "consumer": 4
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          2
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 8,
+          "consumer": 8
+        },
+        "t": {
+          "provider": 8,
+          "consumer": 8
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          2
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 8,
+          "consumer": 12
+        },
+        "t": {
+          "provider": 8,
+          "consumer": 12
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          2
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 8,
+          "consumer": 13
+        },
+        "t": {
+          "provider": 8,
+          "consumer": 13
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          2
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 9,
+          "consumer": 13
+        },
+        "t": {
+          "provider": 13,
+          "consumer": 13
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          2
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 15,
+          "consumer": 19
+        },
+        "t": {
+          "provider": 19,
+          "consumer": 19
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          2
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 16,
+          "consumer": 19
+        },
+        "t": {
+          "provider": 20,
+          "consumer": 19
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          2
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 19,
+          "consumer": 19
+        },
+        "t": {
+          "provider": 23,
+          "consumer": 19
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          2
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 19,
+          "consumer": 26
+        },
+        "t": {
+          "provider": 23,
+          "consumer": 30
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          2
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 19,
+          "consumer": 27
+        },
+        "t": {
+          "provider": 23,
+          "consumer": 31
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          2
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 19,
+          "consumer": 27
+        },
+        "t": {
+          "provider": 23,
+          "consumer": 31
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          1
+        ],
+        "undelegationQ": [
+          {
+            "val": 3,
+            "creation_height": 20,
+            "completion_time": 37,
+            "balance": 1,
+            "initial_balance": 1,
+            "on_hold": true,
+            "op_id": 0,
+            "expired": false
+          }
+        ],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 20,
+          "consumer": 27
+        },
+        "t": {
+          "provider": 32,
+          "consumer": 31
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          1
+        ],
+        "undelegationQ": [
+          {
+            "val": 3,
+            "creation_height": 20,
+            "completion_time": 37,
+            "balance": 1,
+            "initial_balance": 1,
+            "on_hold": true,
+            "op_id": 0,
+            "expired": true
+          }
+        ],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 26,
+          "consumer": 34
+        },
+        "t": {
+          "provider": 38,
+          "consumer": 38
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          1
+        ],
+        "undelegationQ": [
+          {
+            "val": 3,
+            "creation_height": 20,
+            "completion_time": 37,
+            "balance": 1,
+            "initial_balance": 1,
+            "on_hold": true,
+            "op_id": 0,
+            "expired": true
+          }
+        ],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 26,
+          "consumer": 35
+        },
+        "t": {
+          "provider": 38,
+          "consumer": 39
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          1
+        ],
+        "undelegationQ": [
+          {
+            "val": 3,
+            "creation_height": 20,
+            "completion_time": 37,
+            "balance": 1,
+            "initial_balance": 1,
+            "on_hold": true,
+            "op_id": 0,
+            "expired": true
+          }
+        ],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 26,
+          "consumer": 35
+        },
+        "t": {
+          "provider": 38,
+          "consumer": 39
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          1
+        ],
+        "undelegationQ": [
+          {
+            "val": 3,
+            "creation_height": 20,
+            "completion_time": 37,
+            "balance": 1,
+            "initial_balance": 1,
+            "on_hold": true,
+            "op_id": 0,
+            "expired": true
+          }
+        ],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 27,
+          "consumer": 35
+        },
+        "t": {
+          "provider": 39,
+          "consumer": 39
+        }
+      },
+      {
+        "tokens": [
+          5,
+          4,
+          3,
+          1
+        ],
+        "undelegationQ": [
+          {
+            "val": 3,
+            "creation_height": 20,
+            "completion_time": 37,
+            "balance": 1,
+            "initial_balance": 1,
+            "on_hold": true,
+            "op_id": 0,
+            "expired": true
+          }
+        ],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 10000000000000000000,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 27,
+          "consumer": 41
+        },
+        "t": {
+          "provider": 39,
+          "consumer": 45
+        }
+      },
+      {
+        "tokens": [
+          5,
+          5,
+          3,
+          1
+        ],
+        "undelegationQ": [
+          {
+            "val": 3,
+            "creation_height": 20,
+            "completion_time": 37,
+            "balance": 1,
+            "initial_balance": 1,
+            "on_hold": true,
+            "op_id": 0,
+            "expired": true
+          }
+        ],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 9999999999999999999,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 27,
+          "consumer": 41
+        },
+        "t": {
+          "provider": 39,
+          "consumer": 45
+        }
+      },
+      {
+        "tokens": [
+          5,
+          5,
+          3,
+          1
+        ],
+        "undelegationQ": [
+          {
+            "val": 3,
+            "creation_height": 20,
+            "completion_time": 37,
+            "balance": 1,
+            "initial_balance": 1,
+            "on_hold": true,
+            "op_id": 0,
+            "expired": true
+          }
+        ],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 9999999999999999999,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 27,
+          "consumer": 42
+        },
+        "t": {
+          "provider": 39,
+          "consumer": 46
+        }
+      },
+      {
+        "tokens": [
+          5,
+          5,
+          3,
+          3
+        ],
+        "undelegationQ": [
+          {
+            "val": 3,
+            "creation_height": 20,
+            "completion_time": 37,
+            "balance": 1,
+            "initial_balance": 1,
+            "on_hold": true,
+            "op_id": 0,
+            "expired": true
+          }
+        ],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 9999999999999999997,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 27,
+          "consumer": 42
+        },
+        "t": {
+          "provider": 39,
+          "consumer": 46
+        }
+      },
+      {
+        "tokens": [
+          5,
+          5,
+          3,
+          3
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 9999999999999999998,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 27,
+          "consumer": 42
+        },
+        "t": {
+          "provider": 39,
+          "consumer": 46
+        }
+      },
+      {
+        "tokens": [
+          5,
+          5,
+          3,
+          3
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 9999999999999999998,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 27,
+          "consumer": 49
+        },
+        "t": {
+          "provider": 39,
+          "consumer": 53
+        }
+      },
+      {
+        "tokens": [
+          5,
+          5,
+          3,
+          3
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 9999999999999999998,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 30,
+          "consumer": 53
+        },
+        "t": {
+          "provider": 57,
+          "consumer": 57
+        }
+      },
+      {
+        "tokens": [
+          5,
+          7,
+          3,
+          3
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 9999999999999999996,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 31,
+          "consumer": 53
+        },
+        "t": {
+          "provider": 58,
+          "consumer": 57
+        }
+      },
+      {
+        "tokens": [
+          5,
+          6,
+          3,
+          3
+        ],
+        "undelegationQ": [],
+        "jailed": [
+          null,
+          null,
+          10020,
+          null
+        ],
+        "delegator_tokens": 9999999999999999996,
+        "power": {
+          "0": 5,
+          "1": 4
+        },
+        "h": {
+          "provider": 31,
+          "consumer": 53
+        },
+        "t": {
+          "provider": 58,
+          "consumer": 57
+        }
+      }
+    ],
+    "blocks": {
+      "partial_order": {
+        "greatest_predecessor": {
+          "provider": {
+            "16": 13,
+            "27": 40
+          },
+          "consumer": {
+            "0": 0,
+            "35": 20
+          }
+        },
+        "least_successor": {
+          "provider": {
+            "0": 0,
+            "20": 35
+          },
+          "consumer": {
+            "13": 16,
+            "40": 27
+          }
+        }
+      },
+      "blocks": {
+        "provider": {
+          "0": {
+            "h": 0,
+            "t": 0,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 0,
+                "consumer": 0
+              },
+              "t": {
+                "provider": 0,
+                "consumer": 0
+              }
+            }
+          },
+          "1": {
+            "h": 1,
+            "t": 1,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 1,
+                "consumer": 0
+              },
+              "t": {
+                "provider": 1,
+                "consumer": 0
+              }
+            }
+          },
+          "2": {
+            "h": 2,
+            "t": 2,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 2,
+                "consumer": 1
+              },
+              "t": {
+                "provider": 2,
+                "consumer": 1
+              }
+            }
+          },
+          "3": {
+            "h": 3,
+            "t": 3,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 3,
+                "consumer": 2
+              },
+              "t": {
+                "provider": 3,
+                "consumer": 2
+              }
+            }
+          },
+          "4": {
+            "h": 4,
+            "t": 4,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 4,
+                "consumer": 3
+              },
+              "t": {
+                "provider": 4,
+                "consumer": 3
+              }
+            }
+          },
+          "5": {
+            "h": 5,
+            "t": 5,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 5,
+                "consumer": 4
+              },
+              "t": {
+                "provider": 5,
+                "consumer": 4
+              }
+            }
+          },
+          "6": {
+            "h": 6,
+            "t": 6,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 6,
+                "consumer": 5
+              },
+              "t": {
+                "provider": 6,
+                "consumer": 5
+              }
+            }
+          },
+          "7": {
+            "h": 7,
+            "t": 7,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 7,
+                "consumer": 6
+              },
+              "t": {
+                "provider": 7,
+                "consumer": 6
+              }
+            }
+          },
+          "8": {
+            "h": 8,
+            "t": 8,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 8,
+                "consumer": 7
+              },
+              "t": {
+                "provider": 8,
+                "consumer": 7
+              }
+            }
+          },
+          "9": {
+            "h": 9,
+            "t": 13,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 9,
+                "consumer": 13
+              },
+              "t": {
+                "provider": 13,
+                "consumer": 13
+              }
+            }
+          },
+          "10": {
+            "h": 10,
+            "t": 14,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 10,
+                "consumer": 13
+              },
+              "t": {
+                "provider": 14,
+                "consumer": 13
+              }
+            }
+          },
+          "11": {
+            "h": 11,
+            "t": 15,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 11,
+                "consumer": 14
+              },
+              "t": {
+                "provider": 15,
+                "consumer": 14
+              }
+            }
+          },
+          "12": {
+            "h": 12,
+            "t": 16,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 12,
+                "consumer": 15
+              },
+              "t": {
+                "provider": 16,
+                "consumer": 15
+              }
+            }
+          },
+          "13": {
+            "h": 13,
+            "t": 17,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 13,
+                "consumer": 16
+              },
+              "t": {
+                "provider": 17,
+                "consumer": 16
+              }
+            }
+          },
+          "14": {
+            "h": 14,
+            "t": 18,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 14,
+                "consumer": 17
+              },
+              "t": {
+                "provider": 18,
+                "consumer": 17
+              }
+            }
+          },
+          "15": {
+            "h": 15,
+            "t": 19,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 15,
+                "consumer": 18
+              },
+              "t": {
+                "provider": 19,
+                "consumer": 18
+              }
+            }
+          },
+          "16": {
+            "h": 16,
+            "t": 20,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 16,
+                "consumer": 19
+              },
+              "t": {
+                "provider": 20,
+                "consumer": 19
+              }
+            }
+          },
+          "17": {
+            "h": 17,
+            "t": 21,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 17,
+                "consumer": 19
+              },
+              "t": {
+                "provider": 21,
+                "consumer": 19
+              }
+            }
+          },
+          "18": {
+            "h": 18,
+            "t": 22,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 18,
+                "consumer": 19
+              },
+              "t": {
+                "provider": 22,
+                "consumer": 19
+              }
+            }
+          },
+          "19": {
+            "h": 19,
+            "t": 23,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 19,
+                "consumer": 19
+              },
+              "t": {
+                "provider": 23,
+                "consumer": 19
+              }
+            }
+          },
+          "20": {
+            "h": 20,
+            "t": 32,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": false
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 20,
+                "consumer": 27
+              },
+              "t": {
+                "provider": 32,
+                "consumer": 31
+              }
+            }
+          },
+          "21": {
+            "h": 21,
+            "t": 33,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": false
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 21,
+                "consumer": 28
+              },
+              "t": {
+                "provider": 33,
+                "consumer": 32
+              }
+            }
+          },
+          "22": {
+            "h": 22,
+            "t": 34,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": false
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 22,
+                "consumer": 29
+              },
+              "t": {
+                "provider": 34,
+                "consumer": 33
+              }
+            }
+          },
+          "23": {
+            "h": 23,
+            "t": 35,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": false
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 23,
+                "consumer": 30
+              },
+              "t": {
+                "provider": 35,
+                "consumer": 34
+              }
+            }
+          },
+          "24": {
+            "h": 24,
+            "t": 36,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": false
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 24,
+                "consumer": 31
+              },
+              "t": {
+                "provider": 36,
+                "consumer": 35
+              }
+            }
+          },
+          "25": {
+            "h": 25,
+            "t": 37,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": true
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 25,
+                "consumer": 32
+              },
+              "t": {
+                "provider": 37,
+                "consumer": 36
+              }
+            }
+          },
+          "26": {
+            "h": 26,
+            "t": 38,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": true
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 26,
+                "consumer": 33
+              },
+              "t": {
+                "provider": 38,
+                "consumer": 37
+              }
+            }
+          },
+          "27": {
+            "h": 27,
+            "t": 39,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 49
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 53
+              }
+            }
+          },
+          "28": {
+            "h": 28,
+            "t": 55,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 28,
+                "consumer": 50
+              },
+              "t": {
+                "provider": 55,
+                "consumer": 54
+              }
+            }
+          },
+          "29": {
+            "h": 29,
+            "t": 56,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 29,
+                "consumer": 51
+              },
+              "t": {
+                "provider": 56,
+                "consumer": 55
+              }
+            }
+          },
+          "30": {
+            "h": 30,
+            "t": 57,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 30,
+                "consumer": 52
+              },
+              "t": {
+                "provider": 57,
+                "consumer": 56
+              }
+            }
+          }
+        },
+        "consumer": {
+          "0": {
+            "h": 0,
+            "t": 0,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 0,
+                "consumer": 0
+              },
+              "t": {
+                "provider": 0,
+                "consumer": 0
+              }
+            }
+          },
+          "1": {
+            "h": 1,
+            "t": 1,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 1,
+                "consumer": 1
+              },
+              "t": {
+                "provider": 1,
+                "consumer": 1
+              }
+            }
+          },
+          "2": {
+            "h": 2,
+            "t": 2,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 2,
+                "consumer": 2
+              },
+              "t": {
+                "provider": 2,
+                "consumer": 2
+              }
+            }
+          },
+          "3": {
+            "h": 3,
+            "t": 3,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 3,
+                "consumer": 3
+              },
+              "t": {
+                "provider": 3,
+                "consumer": 3
+              }
+            }
+          },
+          "4": {
+            "h": 4,
+            "t": 4,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 4,
+                "consumer": 4
+              },
+              "t": {
+                "provider": 4,
+                "consumer": 4
+              }
+            }
+          },
+          "5": {
+            "h": 5,
+            "t": 5,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 5,
+                "consumer": 5
+              },
+              "t": {
+                "provider": 5,
+                "consumer": 5
+              }
+            }
+          },
+          "6": {
+            "h": 6,
+            "t": 6,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 6,
+                "consumer": 6
+              },
+              "t": {
+                "provider": 6,
+                "consumer": 6
+              }
+            }
+          },
+          "7": {
+            "h": 7,
+            "t": 7,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 7,
+                "consumer": 7
+              },
+              "t": {
+                "provider": 7,
+                "consumer": 7
+              }
+            }
+          },
+          "8": {
+            "h": 8,
+            "t": 8,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 8,
+                "consumer": 8
+              },
+              "t": {
+                "provider": 8,
+                "consumer": 8
+              }
+            }
+          },
+          "9": {
+            "h": 9,
+            "t": 9,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 8,
+                "consumer": 9
+              },
+              "t": {
+                "provider": 8,
+                "consumer": 9
+              }
+            }
+          },
+          "10": {
+            "h": 10,
+            "t": 10,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 8,
+                "consumer": 10
+              },
+              "t": {
+                "provider": 8,
+                "consumer": 10
+              }
+            }
+          },
+          "11": {
+            "h": 11,
+            "t": 11,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 8,
+                "consumer": 11
+              },
+              "t": {
+                "provider": 8,
+                "consumer": 11
+              }
+            }
+          },
+          "12": {
+            "h": 12,
+            "t": 12,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 8,
+                "consumer": 12
+              },
+              "t": {
+                "provider": 8,
+                "consumer": 12
+              }
+            }
+          },
+          "13": {
+            "h": 13,
+            "t": 13,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 9,
+                "consumer": 13
+              },
+              "t": {
+                "provider": 13,
+                "consumer": 13
+              }
+            }
+          },
+          "14": {
+            "h": 14,
+            "t": 14,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 10,
+                "consumer": 14
+              },
+              "t": {
+                "provider": 14,
+                "consumer": 14
+              }
+            }
+          },
+          "15": {
+            "h": 15,
+            "t": 15,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 11,
+                "consumer": 15
+              },
+              "t": {
+                "provider": 15,
+                "consumer": 15
+              }
+            }
+          },
+          "16": {
+            "h": 16,
+            "t": 16,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 12,
+                "consumer": 16
+              },
+              "t": {
+                "provider": 16,
+                "consumer": 16
+              }
+            }
+          },
+          "17": {
+            "h": 17,
+            "t": 17,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 13,
+                "consumer": 17
+              },
+              "t": {
+                "provider": 17,
+                "consumer": 17
+              }
+            }
+          },
+          "18": {
+            "h": 18,
+            "t": 18,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 14,
+                "consumer": 18
+              },
+              "t": {
+                "provider": 18,
+                "consumer": 18
+              }
+            }
+          },
+          "19": {
+            "h": 19,
+            "t": 19,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                null,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 15,
+                "consumer": 19
+              },
+              "t": {
+                "provider": 19,
+                "consumer": 19
+              }
+            }
+          },
+          "20": {
+            "h": 20,
+            "t": 24,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 19,
+                "consumer": 20
+              },
+              "t": {
+                "provider": 23,
+                "consumer": 24
+              }
+            }
+          },
+          "21": {
+            "h": 21,
+            "t": 25,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 19,
+                "consumer": 21
+              },
+              "t": {
+                "provider": 23,
+                "consumer": 25
+              }
+            }
+          },
+          "22": {
+            "h": 22,
+            "t": 26,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 19,
+                "consumer": 22
+              },
+              "t": {
+                "provider": 23,
+                "consumer": 26
+              }
+            }
+          },
+          "23": {
+            "h": 23,
+            "t": 27,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 19,
+                "consumer": 23
+              },
+              "t": {
+                "provider": 23,
+                "consumer": 27
+              }
+            }
+          },
+          "24": {
+            "h": 24,
+            "t": 28,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 19,
+                "consumer": 24
+              },
+              "t": {
+                "provider": 23,
+                "consumer": 28
+              }
+            }
+          },
+          "25": {
+            "h": 25,
+            "t": 29,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 19,
+                "consumer": 25
+              },
+              "t": {
+                "provider": 23,
+                "consumer": 29
+              }
+            }
+          },
+          "26": {
+            "h": 26,
+            "t": 30,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 19,
+                "consumer": 26
+              },
+              "t": {
+                "provider": 23,
+                "consumer": 30
+              }
+            }
+          },
+          "27": {
+            "h": 27,
+            "t": 31,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                2
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 19,
+                "consumer": 27
+              },
+              "t": {
+                "provider": 23,
+                "consumer": 31
+              }
+            }
+          },
+          "28": {
+            "h": 28,
+            "t": 32,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": false
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 20,
+                "consumer": 28
+              },
+              "t": {
+                "provider": 32,
+                "consumer": 32
+              }
+            }
+          },
+          "29": {
+            "h": 29,
+            "t": 33,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": false
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 21,
+                "consumer": 29
+              },
+              "t": {
+                "provider": 33,
+                "consumer": 33
+              }
+            }
+          },
+          "30": {
+            "h": 30,
+            "t": 34,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": false
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 22,
+                "consumer": 30
+              },
+              "t": {
+                "provider": 34,
+                "consumer": 34
+              }
+            }
+          },
+          "31": {
+            "h": 31,
+            "t": 35,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": false
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 23,
+                "consumer": 31
+              },
+              "t": {
+                "provider": 35,
+                "consumer": 35
+              }
+            }
+          },
+          "32": {
+            "h": 32,
+            "t": 36,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": false
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 24,
+                "consumer": 32
+              },
+              "t": {
+                "provider": 36,
+                "consumer": 36
+              }
+            }
+          },
+          "33": {
+            "h": 33,
+            "t": 37,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": true
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 25,
+                "consumer": 33
+              },
+              "t": {
+                "provider": 37,
+                "consumer": 37
+              }
+            }
+          },
+          "34": {
+            "h": 34,
+            "t": 38,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": true
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 26,
+                "consumer": 34
+              },
+              "t": {
+                "provider": 38,
+                "consumer": 38
+              }
+            }
+          },
+          "35": {
+            "h": 35,
+            "t": 39,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": true
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 35
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 39
+              }
+            }
+          },
+          "36": {
+            "h": 36,
+            "t": 40,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": true
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 36
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 40
+              }
+            }
+          },
+          "37": {
+            "h": 37,
+            "t": 41,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": true
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 37
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 41
+              }
+            }
+          },
+          "38": {
+            "h": 38,
+            "t": 42,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": true
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 38
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 42
+              }
+            }
+          },
+          "39": {
+            "h": 39,
+            "t": 43,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": true
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 39
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 43
+              }
+            }
+          },
+          "40": {
+            "h": 40,
+            "t": 44,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": true
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 40
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 44
+              }
+            }
+          },
+          "41": {
+            "h": 41,
+            "t": 45,
+            "snapshot": {
+              "tokens": [
+                5,
+                4,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": true
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 10000000000000000000,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 41
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 45
+              }
+            }
+          },
+          "42": {
+            "h": 42,
+            "t": 46,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                1
+              ],
+              "undelegationQ": [
+                {
+                  "val": 3,
+                  "creation_height": 20,
+                  "completion_time": 37,
+                  "balance": 1,
+                  "initial_balance": 1,
+                  "on_hold": true,
+                  "op_id": 0,
+                  "expired": true
+                }
+              ],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999999,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 42
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 46
+              }
+            }
+          },
+          "43": {
+            "h": 43,
+            "t": 47,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 43
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 47
+              }
+            }
+          },
+          "44": {
+            "h": 44,
+            "t": 48,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 44
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 48
+              }
+            }
+          },
+          "45": {
+            "h": 45,
+            "t": 49,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 45
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 49
+              }
+            }
+          },
+          "46": {
+            "h": 46,
+            "t": 50,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 46
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 50
+              }
+            }
+          },
+          "47": {
+            "h": 47,
+            "t": 51,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 47
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 51
+              }
+            }
+          },
+          "48": {
+            "h": 48,
+            "t": 52,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 48
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 52
+              }
+            }
+          },
+          "49": {
+            "h": 49,
+            "t": 53,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 49
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 53
+              }
+            }
+          },
+          "50": {
+            "h": 50,
+            "t": 54,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 27,
+                "consumer": 50
+              },
+              "t": {
+                "provider": 39,
+                "consumer": 54
+              }
+            }
+          },
+          "51": {
+            "h": 51,
+            "t": 55,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 28,
+                "consumer": 51
+              },
+              "t": {
+                "provider": 55,
+                "consumer": 55
+              }
+            }
+          },
+          "52": {
+            "h": 52,
+            "t": 56,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 29,
+                "consumer": 52
+              },
+              "t": {
+                "provider": 56,
+                "consumer": 56
+              }
+            }
+          },
+          "53": {
+            "h": 53,
+            "t": 57,
+            "snapshot": {
+              "tokens": [
+                5,
+                5,
+                3,
+                3
+              ],
+              "undelegationQ": [],
+              "jailed": [
+                null,
+                null,
+                10020,
+                null
+              ],
+              "delegator_tokens": 9999999999999999998,
+              "power": {
+                "0": 5,
+                "1": 4
+              },
+              "h": {
+                "provider": 30,
+                "consumer": 53
+              },
+              "t": {
+                "provider": 57,
+                "consumer": 57
+              }
+            }
+          }
+        }
+      }
+    },
+    "events": {
+      "events": [
+        "send_downtime_slash_request",
+        "insufficient_shares",
+        "receive_downtime_slash_request",
+        "jail",
+        "downtime_slash_request_outstanding",
+        "downtime_slash_request_outstanding",
+        "receive_downtime_slash_ack",
+        "insufficient_shares",
+        "complete_undel_now"
+      ]
+    }
+  }
+]
