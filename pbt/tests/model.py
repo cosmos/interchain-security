@@ -569,6 +569,16 @@ class Model:
     def increase_seconds(self, seconds):
         self.T += seconds
 
+    def jump_n_blocks(self, n, chains, seconds_per_block):
+        for _ in range(n):
+            for c in chains:
+                """
+                BeginBlock is forced before each action, if
+                necessary, and is not explicitly called.
+                """
+                self.end_block(c)
+            self.increase_seconds(seconds_per_block)
+
     def deliver(self, chain):
         self.idempotent_begin_block(chain)
         if chain == P:

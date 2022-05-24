@@ -166,29 +166,6 @@ class Shaper:
         a.is_downtime = bool(random.getrandbits(1))
 
 
-def do_action(model, a):
-    if isinstance(a, Delegate):
-        model.delegate(a.val, a.amt)
-    if isinstance(a, Undelegate):
-        model.undelegate(a.val, a.amt)
-    if isinstance(a, JumpNBlocks):
-        for _ in range(a.n):
-            for c in a.chains:
-                assert c in {P, C}
-                """
-                BeginBlock is forced before each action, if
-                necessary, and is not explicitly called.
-                """
-                model.end_block(c)
-            model.increase_seconds(a.seconds_per_block)
-    if isinstance(a, Deliver):
-        model.deliver(a.chain)
-    if isinstance(a, ProviderSlash):
-        model.provider_slash(a.val, a.height, a.power, a.factor)
-    if isinstance(a, ConsumerSlash):
-        model.consumer_slash(a.val, a.power, a.height, a.is_downtime)
-
-
 class Trace:
     def __init__(self):
         self.actions = []
@@ -227,6 +204,21 @@ class Trace:
 
         with open(fn, "w") as fd:
             fd.write(json.dumps(to_json(), indent=2, default=default))
+
+
+def do_action(model, a):
+    if isinstance(a, Delegate):
+        model.delegate(a.val, a.amt)
+    if isinstance(a, Undelegate):
+        model.undelegate(a.val, a.amt)
+    if isinstance(a, JumpNBlocks):
+        model.jump_n_blocks(a.n, a.chains, a.seconds_per_block)
+    if isinstance(a, Deliver):
+        model.deliver(a.chain)
+    if isinstance(a, ProviderSlash):
+        model.provider_slash(a.val, a.height, a.power, a.factor)
+    if isinstance(a, ConsumerSlash):
+        model.consumer_slash(a.val, a.power, a.height, a.is_downtime)
 
 
 def load_debug_actions():

@@ -1,11 +1,10 @@
-package provider_test
+package pbt_test
 
 import (
 	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/stretchr/testify/suite"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -14,6 +13,9 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
@@ -22,9 +24,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/types"
 
 	tmtypes "github.com/tendermint/tendermint/types"
-
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 type PBTTestSuite struct {
@@ -59,7 +58,7 @@ func (s *PBTTestSuite) SetupTest() {
 
 	s.coordinator, s.providerChain, s.consumerChain = simapp.NewProviderConsumerCoordinator(s.T())
 
-	s.DisableConsumerDistribution()
+	// s.DisableConsumerDistribution() TODO: needed??
 
 	tmConfig := ibctesting.NewTendermintConfig()
 
@@ -120,62 +119,13 @@ func (s *PBTTestSuite) SetupTest() {
 	// so transfer channel will be on stage INIT when CreateChannels for ccv path returns.
 	s.coordinator.CreateChannels(s.path)
 	//~~~~~~~~~~
-
 }
 
-// TODO: clear up these hacks after stripping provider/consumer
-func (s *PBTTestSuite) DisableConsumerDistribution() {
-	cChain := s.consumerChain
-	cApp := cChain.App.(*appConsumer.App)
-	for i, moduleName := range cApp.MM.OrderBeginBlockers {
-		if moduleName == distrtypes.ModuleName {
-			cApp.MM.OrderBeginBlockers = append(cApp.MM.OrderBeginBlockers[:i], cApp.MM.OrderBeginBlockers[i+1:]...)
-			return
-		}
-	}
-}
-
-type Action struct {
-	kind            string
-	val             int64
-	amt             int64
-	chains          []string
-	n               int64
-	secondsPerBlock int64
-	chain           string
-	power           int64
-	height          int64
-	factor          int64
-	isDowntime      bool
-}
-type Delegate struct {
-	val int64
-	amt int64
-}
-type Undelegate struct {
-	val int64
-	amt int64
-}
-type JumpNBlocks struct {
-	chains          []string
-	n               int64
-	secondsPerBlock int64
-}
-type Deliver struct {
-	chain string
-}
-type ProviderSlash struct {
-	val    int64
-	power  int64
-	height int64
-	factor int64
-}
-type ConsumerSlash struct {
-	val        int64
-	height     int64
-	power      int64
-	isDowntime bool
-}
+/*
+~~~~~~~~~~~~
+QUERIES
+~~~~~~~~~~~~
+*/
 
 func (s *PBTTestSuite) ctx(chain string) sdk.Context {
 	return s.chain(chain).GetContext()
@@ -251,6 +201,62 @@ func (s *PBTTestSuite) delegation(i int64) int64 {
 	return del.Shares.TruncateInt64()
 }
 
+func equalHeights(s *PBTTestSuite) {
+	ph := s.height(P)
+	ch := s.height(C)
+	if ph != ch {
+		s.T().Fatal("Bad test")
+	}
+}
+
+/*
+~~~~~~~~~~~~
+MODEL
+~~~~~~~~~~~~
+*/
+
+type Action struct {
+	kind            string
+	val             int64
+	amt             int64
+	chains          []string
+	n               int64
+	secondsPerBlock int64
+	chain           string
+	power           int64
+	height          int64
+	factor          int64
+	isDowntime      bool
+}
+type Delegate struct {
+	val int64
+	amt int64
+}
+type Undelegate struct {
+	val int64
+	amt int64
+}
+type JumpNBlocks struct {
+	chains          []string
+	n               int64
+	secondsPerBlock int64
+}
+type Deliver struct {
+	chain string
+}
+type ProviderSlash struct {
+	val    int64
+	power  int64
+	height int64
+	factor int64
+}
+type ConsumerSlash struct {
+	val        int64
+	height     int64
+	power      int64
+	isDowntime bool
+}
+
 func (s *PBTTestSuite) delegate(a Delegate) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
@@ -312,18 +318,28 @@ func (s *PBTTestSuite) consumerSlash(a ConsumerSlash) {
 	cccvk.Slash(s.ctx(C), val, h, power, sdk.Dec{}, kind) // TODO: check params here!
 }
 
+/*
+~~~~~~~~~~~~
+ZERO TEST
+~~~~~~~~~~~~
+*/
+
+// TODO: clear up these hacks after stripping provider/consumer
+func (s *PBTTestSuite) DisableConsumerDistribution() {
+	cChain := s.consumerChain
+	cApp := cChain.App.(*appConsumer.App)
+	for i, moduleName := range cApp.MM.OrderBeginBlockers {
+		if moduleName == distrtypes.ModuleName {
+			cApp.MM.OrderBeginBlockers = append(cApp.MM.OrderBeginBlockers[:i], cApp.MM.OrderBeginBlockers[i+1:]...)
+			return
+		}
+	}
+}
+
 func adjustParams(s *PBTTestSuite) {
 	params := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(P))
 	params.MaxValidators = maxValidators
 	s.providerChain.App.GetStakingKeeper().SetParams(s.ctx(P), params)
-}
-
-func equalHeights(s *PBTTestSuite) {
-	ph := s.height(P)
-	ch := s.height(C)
-	if ph != ch {
-		s.T().Fatal("Bad test")
-	}
 }
 
 func (s *PBTTestSuite) TestAssumptions() {
@@ -402,6 +418,12 @@ func (s *PBTTestSuite) TestAssumptions() {
 	// validator tokens are 4,3,2,1
 
 }
+
+/*
+~~~~~~~~~~~~
+TRACE TEST
+~~~~~~~~~~~~
+*/
 
 func executeTrace(s *PBTTestSuite, trace []Action) {
 
