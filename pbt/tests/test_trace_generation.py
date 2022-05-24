@@ -223,9 +223,9 @@ def load_debug_actions():
 
 
 def test_dummy():
-    debug = True
+    debug = False
     GOAL_TIME_MINS = 20
-    NUM_ACTIONS = 40
+    NUM_ACTIONS = 26
 
     shutil.rmtree("traces/")
     os.makedirs("traces/")

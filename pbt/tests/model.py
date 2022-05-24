@@ -164,13 +164,12 @@ class Staking:
                     False,
                 )
             )
-            self.after_unbonding_initiated(self.unbonding_op_id)
+            self.m.ccv_p.after_unbonding_initiated(self.unbonding_op_id)
             self.unbonding_op_id += 1
             self.status[i] = Status.UNBONDING
 
-        self.validatorQ = [
-            e for e in self.validatorQ if e not in completed_unvals
-        ].extend(new_vals)
+        self.validatorQ = [e for e in self.validatorQ if e not in completed_unvals]
+        self.validatorQ.extend(new_unvals)
 
         self.changes = {}
         for i in new_vals:
@@ -208,8 +207,6 @@ class Staking:
         self.tokens[val] -= issued_tokens
         self.delegation[val] -= shares
 
-        op_id = self.unbonding_op_id
-        self.unbonding_op_id += 1
         und = Undelegation(
             val,
             self.m.h[P],
@@ -217,11 +214,12 @@ class Staking:
             issued_tokens,
             issued_tokens,
             True,
-            op_id,
+            self.unbonding_op_id,
             False,
         )
         self.undelegationQ.append(und)
-        self.m.ccv_p.after_unbonding_initiated(op_id)
+        self.m.ccv_p.after_unbonding_initiated(self.unbonding_op_id)
+        self.unbonding_op_id += 1
 
     def slash(self, val, infraction_height, power, factor):
         # This assumes 1:1 tokens:power
