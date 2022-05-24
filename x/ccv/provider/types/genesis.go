@@ -1,6 +1,8 @@
 package types
 
 import (
+	"strings"
+
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 )
@@ -8,7 +10,7 @@ import (
 func NewGenesisState(consumerStates []ConsumerState, params Params) *GenesisState {
 	return &GenesisState{
 		ConsumerStates: consumerStates,
-		Params:      params,
+		Params:         params,
 	}
 }
 
@@ -31,11 +33,11 @@ func (gs GenesisState) Validate() error {
 }
 
 func (cs ConsumerState) Validate() error {
-	if err := host.ClientIdentifierValidator(cs.ChainId); err != nil {
-		return sdkerrors.Wrap(err, "consumer chain id cannot be blank")
+	if strings.TrimSpace(cs.ChainId) == "" {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidChainID, "consumer chain id cannot be empty string")
 	}
 	if err := host.ChannelIdentifierValidator(cs.ChannelId); err != nil {
-		return sdkerrors.Wrapf(err, "ccv channel id for %s cannot be blank", cs.ChainId)
+		return sdkerrors.Wrapf(err, "ccv channel id for chain %s is not valid", cs.ChainId)
 	}
 	return nil
 }

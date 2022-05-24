@@ -5,46 +5,47 @@ import "interchain_security/ccv/v1/ccv.proto";
 
 option go_package = "github.com/cosmos/interchain-security/x/ccv/consumer/types";
 
+import "cosmos/staking/v1beta1/staking.proto";
 import "gogoproto/gogo.proto";
 
 // Params defines the parameters for CCV consumer module
 message Params {
-    bool Enabled = 1;
+  bool enabled = 1;
 
-    ///////////////////////
-    // Distribution Params
-    // Number of blocks between ibc-token-transfers from the consumer chain to
-    // the provider chain. Note that at this transmission event a fraction of
-    // the accumulated tokens are divided and sent consumer redistribution
-    // address. 
-    int64  BlocksPerDistributionTransmission = 2;  
+  ///////////////////////
+  // Distribution Params
+  // Number of blocks between ibc-token-transfers from the consumer chain to
+  // the provider chain. Note that at this transmission event a fraction of
+  // the accumulated tokens are divided and sent consumer redistribution
+  // address.
+  int64 blocks_per_distribution_transmission = 2;
 
-    // Channel, and provider-chain receiving address to send distribution token
-    // transfers over. These parameters is auto-set during the consumer <->
-    // provider handshake procedure.
-    string DistributionTransmissionChannel = 3; 
-    string ProviderFeePoolAddrStr = 4; 
+  // Channel, and provider-chain receiving address to send distribution token
+  // transfers over. These parameters is auto-set during the consumer <->
+  // provider handshake procedure.
+  string distribution_transmission_channel = 3;
+  string provider_fee_pool_addr_str        = 4;
 
-    // The fraction of tokens allocated to the consumer redistribution address
-    // during distribution events. The fraction is a string representing a
-    // decimal number. For example "0.5" would represent 50%. 
-    string ConsumerRedistributeFrac = 5;  
+  // The fraction of tokens allocated to the consumer redistribution address
+  // during distribution events. The fraction is a string representing a
+  // decimal number. For example "0.5" would represent 50%.
+  string consumer_redistribute_frac = 5;
 }
 
 // LastTransmissionBlockHeight is the last time validator holding
 // pools were transmitted to the provider chain
 message LastTransmissionBlockHeight {
-  int64 Height = 1; 
+  int64 height = 1;
 }
 
 // CrossChainValidator defines the validators for CCV consumer module
 message CrossChainValidator {
-    bytes address = 1;
-    int64 power = 2;
+  bytes address = 1;
+  int64 power   = 2;
 }
 
 // SlashRequest defines a slashing request for CCV consumer module
 message SlashRequest {
     interchain_security.ccv.v1.SlashPacketData packet = 1;
-    bool downtime = 2;
+    cosmos.staking.v1beta1.InfractionType infraction = 2;
 }

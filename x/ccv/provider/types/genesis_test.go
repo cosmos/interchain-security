@@ -33,7 +33,7 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"valid initializing provider genesis with nil updates",
 			types.NewGenesisState(
-				[]types.ConsumerState{{"chainid-1", "channelid", 1}},
+				[]types.ConsumerState{{"chainid-1", "channelid"}},
 				types.DefaultParams(),
 			),
 			true,
@@ -41,7 +41,7 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"valid validating provider genesis with nil updates",
 			types.NewGenesisState(
-				[]types.ConsumerState{{"chainid-1", "channelid", 2}},
+				[]types.ConsumerState{{"chainid-1", "channelid"}},
 				types.DefaultParams(),
 			),
 			true,
@@ -50,10 +50,10 @@ func TestValidateGenesisState(t *testing.T) {
 			"valid multiple provider genesis with multiple consumer chains",
 			types.NewGenesisState(
 				[]types.ConsumerState{
-					{"chainid-1", "channelid", 2},
-					{"chainid-2", "channelid2", 1},
-					{"chainid-3", "channelid3", 0},
-					{"chainid-4", "channelid4", 3},
+					{"chainid-1", "channelid"},
+					{"chainid-2", "channelid2"},
+					{"chainid-3", "channelid3"},
+					{"chainid-4", "channelid4"},
 				},
 				types.DefaultParams(),
 			),
@@ -62,7 +62,7 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"valid provider genesis with custom params",
 			types.NewGenesisState(
-				[]types.ConsumerState{{"chainid-1", "channelid", 1}},
+				[]types.ConsumerState{{"chainid-1", "channelid"}},
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false)),
 			),
@@ -71,7 +71,7 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"invalid params",
 			types.NewGenesisState(
-				[]types.ConsumerState{{"chainid-1", "channelid", 1}},
+				[]types.ConsumerState{{"chainid-1", "channelid"}},
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					0, clienttypes.Height{}, nil, []string{"ibc", "upgradedIBCState"}, true, false)),
 			),
@@ -80,7 +80,7 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"invalid chain id",
 			types.NewGenesisState(
-				[]types.ConsumerState{{"invalidid{}", "channelid", 2}},
+				[]types.ConsumerState{{" ", "channelid"}},
 				types.DefaultParams(),
 			),
 			false,
@@ -88,7 +88,7 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"invalid channel id",
 			types.NewGenesisState(
-				[]types.ConsumerState{{"chainid", "invalidchannel{}", 2}},
+				[]types.ConsumerState{{"chainid", "invalidchannel{}"}},
 				types.DefaultParams(),
 			),
 			false,
