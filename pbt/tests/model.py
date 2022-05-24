@@ -80,9 +80,9 @@ class Staking:
         self.tokens = [x + 1 for x in self.delegation]
         # validator status
         self.status = [Status.BONDED, Status.BONDED, Status.UNBONDED, Status.UNBONDED]
-        # unbonding delegations
+        # unbonding delegations (undels)
         self.undelegationQ = []
-        # unbonding validators
+        # unbonding validators (unvals)
         self.validatorQ = []
         # jailed? If yes, timestamp of unjailing
         self.jailed = [None] * NUM_VALIDATORS
@@ -104,6 +104,10 @@ class Staking:
 
     def end_block(self):
 
+        """
+        Process undelegations
+        """
+
         expired_undels = [
             e
             for e in self.undelegationQ
@@ -115,11 +119,22 @@ class Staking:
 
         completed_undels = [e for e in expired_undels if not e.on_hold]
 
-        self.delegator_tokens += sum(e.balance for e in completed_undels)
-
         self.undelegationQ = [
             e for e in self.undelegationQ if e not in completed_undels
         ]
+
+        self.delegator_tokens += sum(e.balance for e in completed_undels)
+
+        """
+        Process validators
+        """
+
+        old_vals = self.last_vals
+        new_vals = self.new_vals()
+
+        for i in new_vals:
+            self.status[i] = Status.BONDED
+            self.validatorQ = [e for e in self.validatorQ if e.val != i]
 
         expired_unvals = [
             e
@@ -132,44 +147,30 @@ class Staking:
         for e in expired_unvals:
             e.expired = True
 
-        old_vals = self.last_vals
-        new_vals = self.new_vals()
+        completed_unvals = [e for e in expired_unvals if not e.on_hold]
 
-        for i in range(NUM_VALIDATORS):
-            if i in new_vals:
-                self.status[i] = Status.BONDED
-            if i in set(old_vals) - set(new_vals):
-                self.status[i] = Status.UNBONDING
-            if i in set(expired_unvals) - set(new_vals):
-                if not self.on_hold[i]:
-                    self.status[i] = Status.UNBONDED
+        for e in completed_unvals:
+            self.status[e.val] = Status.UNBONDED
 
-        for i in range(NUM_VALIDATORS):
-            if i in set(old_vals) - set(new_vals):
-                self.unbonding_height[i] = self.m.h[P]
-            if i in set(expired_unvals) | set(new_vals):
-                if not self.on_hold[i]:
-                    self.unbonding_height[i] = None
+        new_unvals = []
+        for i in set(old_vals) - set(new_vals):
+            new_unvals.append(
+                Unval(
+                    i,
+                    self.m.h[P],
+                    self.m.t[P] + UNBONDING_TIME,
+                    True,
+                    self.unbonding_op_id,
+                    False,
+                )
+            )
+            self.after_unbonding_initiated(self.unbonding_op_id)
+            self.unbonding_op_id += 1
+            self.status[i] = Status.UNBONDING
 
-        for i in range(NUM_VALIDATORS):
-            if i in set(old_vals) - set(new_vals):
-                self.unbonding_time[i] = self.m.t[P] + UNBONDING_TIME
-            if i in set(expired_unvals) | set(new_vals):
-                if not self.on_hold[i]:
-                    self.unbonding_time[i] = None
-
-        for i in range(NUM_VALIDATORS):
-            if i in set(old_vals) - set(new_vals):
-                op_id = self.unbonding_op_id
-                self.unbonding_op_id += 1
-                self.unbonding_op_id_to_val[op_id] = i
-                self.on_hold[i] = True
-                self.m.ccv_p.after_unbonding_initiated(op_id)
-
-        self.validatorQ = list(
-            (set(self.validatorQ) | set(old_vals))
-            - (set(expired_unvals) | set(new_vals))
-        )
+        self.validatorQ = [
+            e for e in self.validatorQ if e not in completed_unvals
+        ].extend(new_vals)
 
         self.changes = {}
         for i in new_vals:
@@ -215,9 +216,9 @@ class Staking:
             self.m.t[P] + UNBONDING_TIME,
             issued_tokens,
             issued_tokens,
-            # on_hold True (does not match code as code uses hooks)
             True,
             op_id,
+            False,
         )
         self.undelegationQ.append(und)
         self.m.ccv_p.after_unbonding_initiated(op_id)
