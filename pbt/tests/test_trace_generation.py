@@ -1,10 +1,10 @@
 import pytest
+from collections import Counter
 import random
 import sys
 import shutil
 import os
 import time
-import copy
 import json
 from .model import Model
 from .constants import *
@@ -12,6 +12,8 @@ from .properties import *
 from .constants import *
 from .blocks import *
 from recordclass import asdict, recordclass
+from .events import *
+import jsonpickle
 
 Delegate = recordclass("Delegate", ["val", "amt"])
 Undelegate = recordclass("Undelegate", ["val", "amt"])
@@ -52,12 +54,12 @@ class Shaper:
             return ctor(**json)
 
         distr = {
-            "Delegate": 0.05,
-            "Undelegate": 0.05,
-            "JumpNBlocks": 0.4,
-            "Deliver": 0.4,
-            "ProviderSlash": 0.05,
-            "ConsumerSlash": 0.05,
+            "Delegate": 0.04,
+            "Undelegate": 0.04,
+            "JumpNBlocks": 0.42,
+            "Deliver": 0.42,
+            "ProviderSlash": 0.04,
+            "ConsumerSlash": 0.04,
         }
 
         templates = []
@@ -143,7 +145,7 @@ class Shaper:
 
     def select_JumpNBlocks(self, a):
         a.chains = random.choice([[P, C], [P], [C]])
-        a.n = random.choice([1, 4, 6])
+        a.n = random.choice([1, 4, 7])
         a.seconds_per_block = 1
         if P in a.chains:
             self.delegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
@@ -193,6 +195,7 @@ class Trace:
         self.actions = []
         self.consequences = []
         self.blocks = None
+        self.events = None
 
     def add_action(self, action):
         self.actions.append(action)
@@ -207,8 +210,9 @@ class Trace:
                     {"kind": e.__class__.__name__} | asdict(e) for e in self.actions
                 ],
                 # TODO:
-                "consequences": {},
-                "blocks": {},
+                "consequences": jsonpickle.encode(self.consequences),
+                "blocks": jsonpickle.encode(self.blocks),
+                "events": self.events,
             }
 
         with open(fn, "w") as fd:
@@ -222,9 +226,18 @@ def load_debug_actions():
     return obj["actions"]
 
 
+@pytest.mark.skip()
+def test_circ():
+    blocks = Blocks()
+    events = Events()
+    model = Model(blocks, events)
+    s = model.snapshot()
+    print(jsonpickle.encode(s))
+
+
 def test_dummy():
     debug = False
-    GOAL_TIME_MINS = 60
+    GOAL_TIME_MINS = 1
     NUM_ACTIONS = 26
 
     shutil.rmtree("traces/")
@@ -233,6 +246,9 @@ def test_dummy():
     num_runs = 1 if debug else 99999999999  # will be adjusted
     elapsed = 0
     i = 0
+
+    all_events = []
+
     while i < num_runs:
         i += 1
         if not debug and 10 < elapsed:
@@ -240,7 +256,8 @@ def test_dummy():
         t_start = time.time()
 
         blocks = Blocks()
-        model = Model(blocks)
+        events = Events()
+        model = Model(blocks, events)
         shaper = Shaper(model)
         trace = Trace()
         actions = None
@@ -258,13 +275,27 @@ def test_dummy():
             # assert bond_based_consumer_voting_power(blocks)
         except Exception:
             trace.blocks = blocks
+            trace.events = events
             trace.dump("debug.json")
             sys.exit(1)
         else:
             trace.blocks = blocks
+            trace.events = events
+            all_events.append(events)
             trace.dump(f"traces/trace_{i}.json")
 
         t_end = time.time()
         elapsed += t_end - t_start
 
-    print("Ran {i} runs")
+    cnt = Counter()
+    for events in all_events:
+        for e in events.events:
+            cnt[e] += 1
+
+    total = sum(c for _, c in cnt.most_common())
+    stats = {e: cnt[e] / total for e in Events.Event}
+    listed = sorted(list(stats.items()), key=lambda pair: pair[1], reverse=True)
+    for e, c in listed:
+        print(e, round(c, 5))
+
+    print(f"Ran {i} runs")

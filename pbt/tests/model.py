@@ -2,12 +2,7 @@ from recordclass import recordclass
 from copy import deepcopy
 from collections import defaultdict
 from .constants import *
-from events import *
-
-
-class Directions(StrEnum):
-    NORTH = ("north",)  # notice the trailing comma
-    SOUTH = "south"
+from .events import *
 
 
 Undelegation = recordclass(
@@ -362,7 +357,6 @@ class CCVProvider:
         else:
             infraction_height = self.vsc_id_to_h[data.vsc_id]
 
-        self.events.m.receive_slash_req
         # in the spec, these are slashing module calls but they
         # pass straight through to the staking module
         self.m.staking.slash(
@@ -441,28 +435,26 @@ class CCVConsumer:
         self.maturing_vscs[data.vsc_id] = self.m.t[C] + UNBONDING_TIME
 
         for val in data.slash_acks:
-            self.events.m.receive_downtime_slash_ack()
             self.m.events.add(Events.Event.RECEIVE_DOWNTIME_SLASH_ACK)
             self.outstanding_downtime[val] = False
 
     def send_slash_request(self, val, power, infraction_height, is_downtime):
 
         if is_downtime and self.outstanding_downtime[val]:
-            self.m.events.downtime_slash_request_outstanding()
+            self.m.events.add(Events.Event.DOWNTIME_SLASH_REQUEST_OUTSTANDING)
             return
 
         data = Slash(val, power, self.h_to_vsc_id[infraction_height], is_downtime)
         self.m.outbox[C].add(data)
         if is_downtime:
             self.m.events.add(Events.Event.SEND_DOWNTIME_SLASH_REQUEST)
-            self.m.events.send_downtime_slash_request()
             self.outstanding_downtime[val] = True
         else:
             self.m.events.add(Events.Event.SEND_DOUBLE_SIGN_SLASH_REQUEST)
 
 
 class Model:
-    def __init__(self, blocks):
+    def __init__(self, blocks, events):
 
         # global time
         self.T = 0
@@ -480,6 +472,8 @@ class Model:
 
         # Used to record committed blocks
         self.blocks = blocks
+        # Used to record interesting events
+        self.events = events
 
         # Record a happens-before relationship between genesis blocks
         # provider h0 happens before consumer h0
@@ -492,8 +486,6 @@ class Model:
         self.increase_seconds(1)
         self.must_begin_block = {P: True, C: True}
 
-        self.events = Events()
-
     class Snapshot:
         def __init__(self, init):
             for k, v in init.items():
@@ -502,7 +494,8 @@ class Model:
     def snapshot(self):
         d = vars(deepcopy(self))
         del d["blocks"]
-        return Model.Snapshot(deepcopy(d))
+        del d["events"]
+        return Model.Snapshot(d)
 
     def has_undelivered(self, chain):
         return not self.outbox[{P: C, C: P}[chain]].is_empty()

@@ -1,8 +1,8 @@
-from enum import StrEnum
+from enum import Enum
 
 
 class Events:
-    class Event(StrEnum):
+    class Event(str, Enum):
         REBOND_UNVAL = "rebond_unval"
         COMPLETE_UNVAL_IN_ENDBLOCK = "complete_unval_in_endblock"
         COMPLETE_UNVAL_NOW = "complete_unval_now"
@@ -28,4 +28,4 @@ class Events:
 
     def add(self, e):
         assert isinstance(e, Events.Event)
-        self.events.add(e)
+        self.events.append(e)
