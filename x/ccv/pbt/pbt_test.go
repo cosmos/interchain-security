@@ -232,7 +232,7 @@ type Action struct {
 	Val             int      `json:"val,omitempty"`
 }
 
-type Trace []struct {
+type Trace struct {
 	Actions []Action `json:"actions"`
 }
 
@@ -433,40 +433,40 @@ TRACE TEST
 ~~~~~~~~~~~~
 */
 
-func executeTrace(s *PBTTestSuite, trace []Action) {
+func executeTrace(s *PBTTestSuite, trace Trace) {
 
-	for _, a := range trace {
+	for _, a := range trace.Actions {
 		switch a.Kind {
 		case "delegate":
 			s.delegate(Delegate{
-				a.Val,
-				a.Amt,
+				int64(a.Val),
+				int64(a.Amt),
 			})
 		case "undelegate":
 			s.undelegate(Undelegate{
-				a.Val,
-				a.Amt,
+				int64(a.Val),
+				int64(a.Amt),
 			})
 		case "jumpNBlocks":
 			s.jumpNBlocks(JumpNBlocks{
 				a.Chains,
-				a.N,
-				a.SecondsPerBlock,
+				int64(a.N),
+				int64(a.SecondsPerBlock),
 			})
 		case "deliver":
 			s.deliver(Deliver{a.Chain})
 		case "providerSlash":
 			s.providerSlash(ProviderSlash{
-				a.Val,
-				a.Power,
-				a.Height,
-				a.Factor,
+				int64(a.Val),
+				int64(a.Power),
+				int64(a.Height),
+				1, // TODO: unhard code, use factor!
 			})
 		case "consumerSlash":
 			s.consumerSlash(ConsumerSlash{
-				a.Val,
-				a.Height,
-				a.Power,
+				int64(a.Val),
+				int64(a.Height),
+				int64(a.Power),
 				a.IsDowntime,
 			})
 		}
