@@ -2,7 +2,7 @@ import json
 
 
 def transform(o):
-    return [o]
+    return [{"actions": o["actions"]}]
 
 
 def wiz():

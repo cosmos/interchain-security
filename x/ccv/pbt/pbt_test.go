@@ -219,18 +219,23 @@ MODEL
 */
 
 type Action struct {
-	kind            string
-	val             int64
-	amt             int64
-	chains          []string
-	n               int64
-	secondsPerBlock int64
-	chain           string
-	power           int64
-	height          int64
-	factor          int64
-	isDowntime      bool
+	Amt             int      `json:"amt,omitempty"`
+	Chain           string   `json:"chain,omitempty"`
+	Chains          []string `json:"chains,omitempty"`
+	Factor          float64  `json:"factor,omitempty"`
+	Height          int      `json:"height,omitempty"`
+	IsDowntime      bool     `json:"is_downtime,omitempty"`
+	Kind            string   `json:"kind"`
+	N               int      `json:"n,omitempty"`
+	Power           int      `json:"power,omitempty"`
+	SecondsPerBlock int      `json:"seconds_per_block,omitempty"`
+	Val             int      `json:"val,omitempty"`
 }
+
+type Trace []struct {
+	Actions []Action `json:"actions"`
+}
+
 type Delegate struct {
 	val int64
 	amt int64
@@ -349,9 +354,9 @@ func (s *PBTTestSuite) TestAssumptions() {
 
 	adjustParams(s)
 
-	s.jumpNBlocks(JumpNBlocks{P, 1, 5})
+	s.jumpNBlocks(JumpNBlocks{[]string{P}, 1, 5})
 	// TODO: Is it correct to catch the consumer up with the provider here?
-	s.jumpNBlocks(JumpNBlocks{C, 2, 5})
+	s.jumpNBlocks(JumpNBlocks{[]string{C}, 2, 5})
 
 	equalHeights(s)
 
@@ -379,7 +384,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 	step := int64(1)
 
 	for i := 0; i < 3; i++ {
-		s.delegate(Delegate{int64(i), (3 - int64(i)) * step, true})
+		s.delegate(Delegate{int64(i), (3 - int64(i)) * step})
 	}
 
 	for i := 0; i < 4; i++ {
@@ -431,46 +436,44 @@ TRACE TEST
 func executeTrace(s *PBTTestSuite, trace []Action) {
 
 	for _, a := range trace {
-		switch a.kind {
+		switch a.Kind {
 		case "delegate":
 			s.delegate(Delegate{
-				a.val,
-				a.amt,
+				a.Val,
+				a.Amt,
 			})
 		case "undelegate":
 			s.undelegate(Undelegate{
-				a.val,
-				a.amt,
+				a.Val,
+				a.Amt,
 			})
 		case "jumpNBlocks":
 			s.jumpNBlocks(JumpNBlocks{
-				a.chains,
-				a.n,
-				a.secondsPerBlock,
+				a.Chains,
+				a.N,
+				a.SecondsPerBlock,
 			})
 		case "deliver":
-			s.deliver(Deliver{a.chain})
+			s.deliver(Deliver{a.Chain})
 		case "providerSlash":
 			s.providerSlash(ProviderSlash{
-				a.val,
-				a.power,
-				a.height,
-				a.factor,
+				a.Val,
+				a.Power,
+				a.Height,
+				a.Factor,
 			})
 		case "consumerSlash":
 			s.consumerSlash(ConsumerSlash{
-				a.val,
-				a.height,
-				a.power,
-				a.isDowntime,
+				a.Val,
+				a.Height,
+				a.Power,
+				a.IsDowntime,
 			})
 		}
 	}
 }
 
-type trace = []Action
-
-func loadTraces(fn string) []trace {
+func loadTraces(fn string) []Trace {
 
 	fd, err := os.Open(fn)
 
@@ -482,7 +485,7 @@ func loadTraces(fn string) []trace {
 
 	byteValue, _ := ioutil.ReadAll(fd)
 
-	var ret []trace
+	var ret []Trace
 
 	err = json.Unmarshal([]byte(byteValue), &ret)
 
@@ -493,7 +496,7 @@ func loadTraces(fn string) []trace {
 	return ret
 }
 
-func executeTraces(s *PBTTestSuite, traces []trace) {
+func executeTraces(s *PBTTestSuite, traces []Trace) {
 	for _, trace := range traces {
 		executeTrace(s, trace)
 	}
