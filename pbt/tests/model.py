@@ -13,7 +13,13 @@ Undelegation = recordclass(
         "initial_balance",
         "on_hold",
         "op_id",
+        "expired",
     ],
+)
+
+Unval = recordclass(
+    "Unval",
+    ["val", "unbonding_height", "unbonding_time", "on_hold", "op_id", "expired"],
 )
 
 Vsc = recordclass("Vsc", ["vsc_id", "changes", "slash_acks"])
@@ -78,12 +84,6 @@ class Staking:
         self.undelegationQ = []
         # unbonding validators
         self.validatorQ = []
-        # is the validator on hold from unbonding?
-        self.on_hold = [False] * NUM_VALIDATORS
-        # if validator unbonding defines height that begun unbonding
-        self.unbonding_height = [None] * NUM_VALIDATORS
-        # if validator unbonding defines min time to complete unbonding
-        self.unbonding_time = [None] * NUM_VALIDATORS
         # jailed? If yes, timestamp of unjailing
         self.jailed = [None] * NUM_VALIDATORS
         # delegator balance, hardcoded
@@ -91,8 +91,6 @@ class Staking:
         # used to track unbonding and redelegation entries, as well as
         # map to unbonding validators, in order to track on_hold
         self.unbonding_op_id = 0
-        # map ids to val
-        self.unbonding_op_id_to_val = {}
         # used to compute val set changes
         # maps validators to power
         self.changes = {}
@@ -106,50 +104,57 @@ class Staking:
 
     def end_block(self):
 
-        assert all(
-            isinstance(self.unbonding_time[i], int)
-            and isinstance(self.unbonding_height[i], int)
-            for i in self.validatorQ
-        )
-
-        expired_vals = [
-            i
-            for i in self.validatorQ
-            if self.unbonding_time[i] <= self.m.t[P]
-            and self.unbonding_height[i] <= self.m.h[P]
-        ]
-
         expired_undels = [
             e
             for e in self.undelegationQ
-            if e.completion_time <= self.m.t[P] and not e.on_hold
+            if e.completion_time <= self.m.t[P] and not e.expired
         ]
+
+        for e in expired_undels:
+            e.expired = True
+
+        completed_undels = [e for e in expired_undels if not e.on_hold]
+
+        self.delegator_tokens += sum(e.balance for e in completed_undels)
+
+        self.undelegationQ = [
+            e for e in self.undelegationQ if e not in completed_undels
+        ]
+
+        expired_unvals = [
+            e
+            for e in self.validatorQ
+            if e.unbonding_time <= self.m.t[P]
+            and e.unbonding_height <= self.m.h[P]
+            and not e.expired
+        ]
+
+        for e in expired_unvals:
+            e.expired = True
 
         old_vals = self.last_vals
         new_vals = self.new_vals()
-
-        self.delegator_tokens += sum(e.balance for e in expired_undels)
 
         for i in range(NUM_VALIDATORS):
             if i in new_vals:
                 self.status[i] = Status.BONDED
             if i in set(old_vals) - set(new_vals):
                 self.status[i] = Status.UNBONDING
-            if i in set(expired_vals) - set(new_vals):
+            if i in set(expired_unvals) - set(new_vals):
                 if not self.on_hold[i]:
                     self.status[i] = Status.UNBONDED
 
         for i in range(NUM_VALIDATORS):
             if i in set(old_vals) - set(new_vals):
                 self.unbonding_height[i] = self.m.h[P]
-            if i in set(expired_vals) | set(new_vals):
+            if i in set(expired_unvals) | set(new_vals):
                 if not self.on_hold[i]:
                     self.unbonding_height[i] = None
 
         for i in range(NUM_VALIDATORS):
             if i in set(old_vals) - set(new_vals):
                 self.unbonding_time[i] = self.m.t[P] + UNBONDING_TIME
-            if i in set(expired_vals) | set(new_vals):
+            if i in set(expired_unvals) | set(new_vals):
                 if not self.on_hold[i]:
                     self.unbonding_time[i] = None
 
@@ -162,10 +167,9 @@ class Staking:
                 self.m.ccv_p.after_unbonding_initiated(op_id)
 
         self.validatorQ = list(
-            (set(self.validatorQ) | set(old_vals)) - (set(expired_vals) | set(new_vals))
+            (set(self.validatorQ) | set(old_vals))
+            - (set(expired_unvals) | set(new_vals))
         )
-
-        self.undelegationQ = [e for e in self.undelegationQ if e not in expired_undels]
 
         self.changes = {}
         for i in new_vals:
