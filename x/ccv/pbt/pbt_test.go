@@ -41,7 +41,6 @@ const C = "consumer"
 
 // TODO: do I need different denoms for each chain?
 const denom = sdk.DefaultBondDenom
-const maxValidators = 2
 
 func init() {
 	// Tokens = Power
@@ -169,8 +168,8 @@ func (s *PBTTestSuite) ctx(chain string) sdk.Context {
 
 func (s *PBTTestSuite) chain(chain string) *ibctesting.TestChain {
 	chains := make(map[string]*ibctesting.TestChain)
-	chains["provider"] = s.providerChain
-	chains["consumer"] = s.consumerChain
+	chains[P] = s.providerChain
+	chains[C] = s.consumerChain
 	return chains[chain]
 }
 
@@ -180,8 +179,8 @@ func (s *PBTTestSuite) height(chain string) int64 {
 
 func (s *PBTTestSuite) endpoint(chain string) *ibctesting.Endpoint {
 	endpoints := make(map[string]*ibctesting.Endpoint)
-	endpoints["provider"] = s.path.EndpointB
-	endpoints["consumer"] = s.path.EndpointA
+	endpoints[P] = s.path.EndpointB
+	endpoints[C] = s.path.EndpointA
 	return endpoints[chain]
 }
 
@@ -445,9 +444,19 @@ func (s *PBTTestSuite) DisableConsumerDistribution() {
 
 func (s *PBTTestSuite) TestAssumptions() {
 
+	_ = s.ctx(C)
+
+	CX := C
+	s.Require().Equal("consumer", CX)
+
 	s.jumpNBlocks(JumpNBlocks{[]string{P}, 0, 5})
 	// TODO: Is it correct to catch the consumer up with the provider here?
 	s.jumpNBlocks(JumpNBlocks{[]string{C}, 2, 5})
+
+	CX = C
+	s.Require().Equal("consumer", CX)
+	_ = s.ctx(P)
+	_ = s.ctx(C)
 
 	equalHeights(s)
 
@@ -507,6 +516,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 
 	endTime := time.Unix(math.MaxInt64, 0)
 	endHeight := int64(math.MaxInt64) // is this borked?
+	// TODO: these are supposed to be MAX and not MIN right?
 	unbondingValIterator := sk.ValidatorQueueIterator(s.ctx(P), endTime, endHeight)
 	defer unbondingValIterator.Close()
 	for ; unbondingValIterator.Valid(); unbondingValIterator.Next() {
@@ -522,7 +532,8 @@ func (s *PBTTestSuite) TestAssumptions() {
 	for i := 0; i < 4; i++ {
 		ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 		addr := s.validator(int64(i))
-		val, found := ck.GetCCValidator(s.ctx(C), addr)
+		ctx := s.ctx(C)
+		val, found := ck.GetCCValidator(ctx, addr)
 		s.Require().Equal(eFound[i], found)
 		if eFound[i] {
 			if ePower[i] != val.Power {
