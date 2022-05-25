@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
@@ -332,9 +333,25 @@ ZERO TEST
 ~~~~~~~~~~~~
 */
 
-func (s *PBTTestSuite) TestAssumptions() {
+// TODO: clear up these hacks after stripping provider/consumer
+func (s *PBTTestSuite) DisableConsumerDistribution() {
+	cChain := s.consumerChain
+	cApp := cChain.App.(*appConsumer.App)
+	for i, moduleName := range cApp.MM.OrderBeginBlockers {
+		if moduleName == distrtypes.ModuleName {
+			cApp.MM.OrderBeginBlockers = append(cApp.MM.OrderBeginBlockers[:i], cApp.MM.OrderBeginBlockers[i+1:]...)
+			return
+		}
+	}
+}
 
-	adjustParams(s)
+func adjustParams(s *PBTTestSuite) {
+	params := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(P))
+	params.MaxValidators = maxValidators
+	s.providerChain.App.GetStakingKeeper().SetParams(s.ctx(P), params)
+}
+
+func (s *PBTTestSuite) TestAssumptions() {
 
 	s.jumpNBlocks(JumpNBlocks{[]string{P}, 1, 5})
 	// TODO: Is it correct to catch the consumer up with the provider here?
@@ -342,70 +359,45 @@ func (s *PBTTestSuite) TestAssumptions() {
 
 	equalHeights(s)
 
-	/*
-		delegatorBalance() overflows int64 because it is set to a number greater than 2^63 in genesis.
-		It's easiest to assume we have enough funds.
-	*/
+	s.Require().Equal(20, s.height(P))
+	s.Require().Equal(20, s.height(C))
 
-	maxValsE := uint32(3)
+	s.Require().Equal(1000000000000000000, s.delegatorBalance())
+
+	maxValsE := uint32(2)
 	maxVals := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(P)).MaxValidators
 
 	if maxValsE != maxVals {
 		s.T().Fatal("Bad test")
 	}
 
-	for i := 0; i < 4; i++ {
-		// This is the genesis delegation
-		delE := int64(1)
-		del := s.delegation(int64(i))
-		if delE != del {
-			s.T().Fatal("Bad test")
-		}
-	}
-
-	step := int64(1)
-
-	for i := 0; i < 3; i++ {
-		s.delegate(Delegate{int64(i), (3 - int64(i)) * step})
+	initialModelState := zero.InitialModelState{
+		// TODO: multiply by some 1000's
+		Delegation: []int64{4, 3, 2, 1},
+		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded, stakingtypes.Unbonded, stakingtypes.Unbonded},
 	}
 
 	for i := 0; i < 4; i++ {
-		delE := (3-int64(i))*step + int64(1)
-		del := s.delegation(int64(i))
-		if delE != del {
-			s.T().Fatal("Bad test")
-		}
-	}
-
-	for i := 0; i < maxValidators; i++ {
-		// First ones should be bonded
-		A := s.validatorStatus(P, int64(i))
-		E := stakingtypes.Bonded
+		E := initialModelState.Delegation[i]
+		A := s.delegation(int64(i))
 		if E != A {
 			s.T().Fatal("Bad test")
 		}
 	}
-
-	for i := maxValidators; i < 4; i++ {
-		A := s.validatorStatus(P, int64(i))
-		// Last one is unbonding
-		E := stakingtypes.Unbonding
-		if E != A {
-			s.T().Fatal("Bad test")
-		}
-	}
-
-	equalHeights(s)
-
-	for i := 0; i < maxValidators; i++ {
+	for i := 0; i < 4; i++ {
+		E := initialModelState.Delegation[i] + 1
 		A := s.validatorTokens(P, int64(i))
-		E := (3-int64(i))*step + int64(1)
 		if E != A {
 			s.T().Fatal("Bad test")
 		}
 	}
-
-	// validator tokens are 4,3,2,1
+	for i := 0; i < 4; i++ {
+		E := initialModelState.Status[i]
+		A := s.validatorStatus(P, int64(i))
+		if E != A {
+			s.T().Fatal("Bad test")
+		}
+	}
 
 }
 

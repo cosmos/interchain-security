@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/api/tendermint/abci"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
@@ -43,27 +43,9 @@ var PBTDefaultConsensusParams = &abci.ConsensusParams{
 	},
 }
 
-// TODO: clear up these hacks after stripping provider/consumer
-func (s *PBTTestSuite) DisableConsumerDistribution() {
-	cChain := s.consumerChain
-	cApp := cChain.App.(*appConsumer.App)
-	for i, moduleName := range cApp.MM.OrderBeginBlockers {
-		if moduleName == distrtypes.ModuleName {
-			cApp.MM.OrderBeginBlockers = append(cApp.MM.OrderBeginBlockers[:i], cApp.MM.OrderBeginBlockers[i+1:]...)
-			return
-		}
-	}
-}
-
-func adjustParams(app ibctesting.TestingApp) {
-	params := app.GetStakingKeeper().GetParams(s.ctx(P))
-	params.MaxValidators = 2
-	app.GetStakingKeeper().SetParams(s.ctx(P), params)
-}
-
 type InitialModelState struct {
-	delegation []int64
-	status     []stakingtypes.BondStatus
+	Delegation []int64
+	Status     []stakingtypes.BondStatus
 }
 
 func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, balances ...banktypes.Balance) ibctesting.TestingApp {
@@ -77,22 +59,30 @@ func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, val
 	delegations := make([]stakingtypes.Delegation, 0, len(valSet.Validators))
 
 	// tokens = power
-	require.Equal(t, 1, sdk.DefaultPowerReduction)
+	require.Equal(t, sdk.NewInt(1), sdk.DefaultPowerReduction)
+	require.Equal(t, 4, len(valSet.Validators))
 
 	initialModelState := InitialModelState{
 		// TODO: multiply by some 1000's
-		delegation: []int64{4, 3, 2, 1},
-		status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded, stakingtypes.Unbonded, stakingtypes.Unbonded},
+		Delegation: []int64{4, 3, 2, 1},
+		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded, stakingtypes.Unbonded, stakingtypes.Unbonded},
 	}
 
-	totalDelegatedTokens := sdk.NewInt(0)
+	totalBonded := sdk.NewInt(0)
+	totalUnbonded := sdk.NewInt(0)
 
 	for i, val := range valSet.Validators {
-		delegation := initialModelState.delegation[i]
-		status := initialModelState.status[i]
+		delegation := initialModelState.Delegation[i]
+		status := initialModelState.Status[i]
 
 		tokens := sdk.NewInt(delegation + 1)
-		totalDelegatedTokens = totalDelegatedTokens.Add(tokens)
+		if status == stakingtypes.Bonded {
+			totalBonded = totalBonded.Add(tokens)
+		}
+		if status == stakingtypes.Unbonded {
+			totalUnbonded = totalUnbonded.Add(tokens)
+		}
+		delShares := sdk.NewDec(delegation)
 		shares := sdk.NewDec(delegation + 1)
 
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
@@ -113,8 +103,10 @@ func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, val
 			MinSelfDelegation: sdk.ZeroInt(),
 		}
 
-		del := stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), shares)
 		validators = append(validators, validator)
+		del := stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), delShares)
+		delegations = append(delegations, del)
+		del = stakingtypes.NewDelegation(genAccs[1].GetAddress(), val.Address.Bytes(), shares.Sub(delShares))
 		delegations = append(delegations, del)
 	}
 
@@ -127,7 +119,12 @@ func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, val
 	// add bonded amount to bonded pool module account
 	balances = append(balances, banktypes.Balance{
 		Address: authtypes.NewModuleAddress(stakingtypes.BondedPoolName).String(),
-		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, totalDelegatedTokens)},
+		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, totalBonded)},
+	})
+	// add unbonded amount
+	balances = append(balances, banktypes.Balance{
+		Address: authtypes.NewModuleAddress(stakingtypes.NotBondedPoolName).String(),
+		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, totalUnbonded)},
 	})
 
 	// set validators and delegations
