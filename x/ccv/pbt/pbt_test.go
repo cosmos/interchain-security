@@ -98,8 +98,8 @@ func (s *PBTTestSuite) SetupTest() {
 	height := s.providerChain.LastHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
 
-	tmConfig.UnbondingPeriod = 5 * time.Second
-	tmConfig.TrustingPeriod = 4 * time.Second
+	// tmConfig.UnbondingPeriod = 5 * time.Second
+	// tmConfig.TrustingPeriod = 4 * time.Second
 	providerClient := ibctmtypes.NewClientState(
 		s.providerChain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
@@ -455,10 +455,10 @@ func (s *PBTTestSuite) TestAssumptions() {
 
 	equalHeights(s)
 
-	s.Require().Equal(17, s.height(P))
-	s.Require().Equal(17, s.height(C))
+	s.Require().Equal(int64(17), s.height(P))
+	s.Require().Equal(int64(17), s.height(C))
 
-	s.Require().Equal(1000000000000000000, s.delegatorBalance())
+	s.Require().Equal(int64(1000000000000000000), s.delegatorBalance())
 
 	maxValsE := uint32(2)
 	maxVals := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(P)).MaxValidators

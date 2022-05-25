@@ -128,7 +128,7 @@ func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, val
 	})
 
 	// TODO: reintroduce this once rest is working
-	stakingGenesis.Params.UnbondingTime = 5 * time.Second
+	// stakingGenesis.Params.UnbondingTime = 5 * time.Second
 	stakingGenesis.Params.MaxValidators = 2
 
 	// set validators and delegations
@@ -183,7 +183,7 @@ func NewPBTTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, appI
 	for i := 0; i < ibctesting.MaxAccounts; i++ {
 		senderPrivKey := secp256k1.GenPrivKey()
 		acc := authtypes.NewBaseAccount(senderPrivKey.PubKey().Address().Bytes(), senderPrivKey.PubKey(), uint64(i), 0)
-		amount, ok := sdk.NewIntFromString("1000000000000000000")
+		amount, ok := sdk.NewIntFromString("1000000000000000003")
 		require.True(t, ok)
 
 		balance := banktypes.Balance{
