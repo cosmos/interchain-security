@@ -59,6 +59,8 @@ type PBTTestSuite struct {
 	path *ibctesting.Path
 
 	mustBeginBlock map[string]bool
+
+	valAddresses []sdk.ValAddress
 }
 
 func TestPBTTestSuite(t *testing.T) {
@@ -76,11 +78,13 @@ func (s *PBTTestSuite) specialDelegate(x int, del int, val sdk.ValAddress) {
 
 func (s *PBTTestSuite) SetupTest() {
 
-	s.coordinator, s.providerChain, s.consumerChain = zero.NewPBTProviderConsumerCoordinator(s.T())
+	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = zero.NewPBTProviderConsumerCoordinator(s.T())
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
 
 	valC := s.createValidator()
 	valD := s.createValidator()
+	s.valAddresses = append(s.valAddresses, valC)
+	s.valAddresses = append(s.valAddresses, valD)
 	s.specialDelegate(1, 1, valC)
 	s.specialDelegate(2, 0, valC)
 	s.specialDelegate(1, 1, valD)

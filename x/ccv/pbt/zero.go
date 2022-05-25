@@ -238,13 +238,15 @@ func NewPBTTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, appI
 
 // NewTestChain initializes a new test chain with a default of 4 validators
 // Use this function if the tests do not need custom control over the validator set
-func NewPBTTestChain(t *testing.T, coord *ibctesting.Coordinator, appIniter ibctesting.AppIniter, chainID string) *ibctesting.TestChain {
+func NewPBTTestChain(t *testing.T, coord *ibctesting.Coordinator, appIniter ibctesting.AppIniter, chainID string) (*ibctesting.TestChain, []sdk.ValAddress) {
 	// generate validators private/public key
 	var (
 		validatorsPerChain = 2
 		validators         []*tmtypes.Validator
 		signersByAddress   = make(map[string]tmtypes.PrivValidator, validatorsPerChain)
 	)
+
+	addresses := []sdk.ValAddress{}
 
 	for i := 0; i < validatorsPerChain; i++ {
 		privVal := mock.NewPV()
@@ -253,6 +255,10 @@ func NewPBTTestChain(t *testing.T, coord *ibctesting.Coordinator, appIniter ibct
 		// TODO: the power here needs to be computed another way
 		validators = append(validators, tmtypes.NewValidator(pubKey, int64(5-i)))
 		signersByAddress[pubKey.Address().String()] = privVal
+
+		addr, err := sdk.ValAddressFromHex(pubKey.Address().String())
+		require.NoError(t, err)
+		addresses = append(addresses, addr)
 	}
 
 	// construct validator set;
@@ -260,16 +266,17 @@ func NewPBTTestChain(t *testing.T, coord *ibctesting.Coordinator, appIniter ibct
 	// or, if equal, by address lexical order
 	valSet := tmtypes.NewValidatorSet(validators)
 
-	return NewPBTTestChainWithValSet(t, coord, appIniter, chainID, valSet, signersByAddress)
+	return NewPBTTestChainWithValSet(t, coord, appIniter, chainID, valSet, signersByAddress), addresses
 }
 
-func NewPBTProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain) {
+func NewPBTProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain, []sdk.ValAddress) {
 	coordinator := simapp.NewBasicCoordinator(t)
 	chainID := ibctesting.GetChainID(0)
-	coordinator.Chains[chainID] = NewPBTTestChain(t, coordinator, simapp.SetupTestingAppProvider, chainID)
+	var addresses []sdk.ValAddress
+	coordinator.Chains[chainID], addresses = NewPBTTestChain(t, coordinator, simapp.SetupTestingAppProvider, chainID)
 	providerChain := coordinator.GetChain(chainID)
 	chainID = ibctesting.GetChainID(1)
 	coordinator.Chains[chainID] = NewPBTTestChainWithValSet(t, coordinator, simapp.SetupTestingAppConsumer, chainID, providerChain.Vals, providerChain.Signers)
 	consumerChain := coordinator.GetChain(chainID)
-	return coordinator, providerChain, consumerChain
+	return coordinator, providerChain, consumerChain, addresses
 }
