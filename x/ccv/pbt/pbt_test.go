@@ -190,15 +190,12 @@ func (s *PBTTestSuite) delegator() sdk.AccAddress {
 }
 
 func (s *PBTTestSuite) validator(i int64) sdk.ValAddress {
-	tmValidator := s.providerChain.Vals.Validators[i]
-	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
-	s.Require().NoError(err)
-	return valAddr
+	return s.valAddresses[i]
 }
 
 func (s *PBTTestSuite) consAddr(i int64) sdk.ConsAddress {
-	val := s.providerChain.Vals.Validators[i]
-	consAddr := sdk.ConsAddress(val.Address)
+	val := s.validator(i)
+	consAddr := sdk.ConsAddress(val)
 	return consAddr
 }
 
