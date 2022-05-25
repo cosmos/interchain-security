@@ -443,12 +443,6 @@ func (s *PBTTestSuite) DisableConsumerDistribution() {
 	}
 }
 
-func adjustParams(s *PBTTestSuite) {
-	params := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(P))
-	params.MaxValidators = maxValidators
-	s.providerChain.App.GetStakingKeeper().SetParams(s.ctx(P), params)
-}
-
 func (s *PBTTestSuite) TestAssumptions() {
 
 	s.jumpNBlocks(JumpNBlocks{[]string{P}, 0, 5})
