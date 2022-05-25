@@ -8,6 +8,8 @@ import (
 	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 )
 
+var validMsgsCCVDisabled = map[string]struct{}{}
+
 // MsgFilterDecorator defines an AnteHandler decorator that enables message
 // filtering based on certain criteria.
 type MsgFilterDecorator struct {
@@ -39,6 +41,10 @@ func hasValidMsgs(msgs []sdk.Msg) bool {
 		msgType := sdk.MsgTypeURL(msg)
 		// TODO: Perform message filtering that only allows certain IBC messages
 		// using sdk.MsgTypeURL(msg)
+
+		if _, ok := validMsgsCCVDisabled[msgType]; !ok {
+			return false
+		}
 	}
 
 	return true
