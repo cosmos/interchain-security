@@ -60,12 +60,12 @@ func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, val
 
 	// tokens = power
 	require.Equal(t, sdk.NewInt(1), sdk.DefaultPowerReduction)
-	require.Equal(t, 4, len(valSet.Validators))
+	require.Equal(t, 2, len(valSet.Validators))
 
 	initialModelState := InitialModelState{
 		// TODO: multiply by some 1000's
-		Delegation: []int64{4, 3, 2, 1},
-		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded, stakingtypes.Unbonded, stakingtypes.Unbonded},
+		Delegation: []int64{4, 3},
+		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded},
 	}
 
 	totalBonded := sdk.NewInt(0)
@@ -127,6 +127,10 @@ func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, val
 		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, totalUnbonded)},
 	})
 
+	// TODO: reintroduce this once rest is working
+	stakingGenesis.Params.UnbondingTime = 5 * time.Second
+	stakingGenesis.Params.MaxValidators = 2
+
 	// set validators and delegations
 	stakingGenesis = *stakingtypes.NewGenesisState(stakingGenesis.Params, validators, delegations)
 	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&stakingGenesis)
@@ -160,12 +164,6 @@ func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, val
 		ValidatorsHash:     valSet.Hash(),
 		NextValidatorsHash: valSet.Hash(),
 	}
-
-	// TODO: not sure if this is in right place or header is correct
-	params := app.GetStakingKeeper().GetParams(app.GetBaseApp().NewContext(false, header))
-	params.UnbondingTime = 5 * time.Second
-	params.MaxValidators = 1
-	app.GetStakingKeeper().SetParams(app.GetBaseApp().NewContext(false, header), params)
 
 	app.BeginBlock(
 		abci.RequestBeginBlock{
@@ -243,7 +241,7 @@ func NewPBTTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, appI
 func NewPBTTestChain(t *testing.T, coord *ibctesting.Coordinator, appIniter ibctesting.AppIniter, chainID string) *ibctesting.TestChain {
 	// generate validators private/public key
 	var (
-		validatorsPerChain = 4
+		validatorsPerChain = 2
 		validators         []*tmtypes.Validator
 		signersByAddress   = make(map[string]tmtypes.PrivValidator, validatorsPerChain)
 	)
@@ -252,7 +250,8 @@ func NewPBTTestChain(t *testing.T, coord *ibctesting.Coordinator, appIniter ibct
 		privVal := mock.NewPV()
 		pubKey, err := privVal.GetPubKey()
 		require.NoError(t, err)
-		validators = append(validators, tmtypes.NewValidator(pubKey, 1))
+		// TODO: the power here needs to be computed another way
+		validators = append(validators, tmtypes.NewValidator(pubKey, int64(5-i)))
 		signersByAddress[pubKey.Address().String()] = privVal
 	}
 

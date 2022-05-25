@@ -28,6 +28,11 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	zero "github.com/cosmos/interchain-security/x/ccv/pbt"
+	abci "github.com/tendermint/tendermint/abci/types"
+
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	"github.com/cosmos/ibc-go/v3/testing/mock"
 )
 
 const P = "provider"
@@ -52,17 +57,37 @@ type PBTTestSuite struct {
 	consumerChain *ibctesting.TestChain
 
 	path *ibctesting.Path
+
+	mustBeginBlock map[string]bool
 }
 
 func TestPBTTestSuite(t *testing.T) {
 	suite.Run(t, new(PBTTestSuite))
 }
 
+func (s *PBTTestSuite) specialDelegate(x int, del int, val sdk.ValAddress) {
+	psk := s.providerChain.App.GetStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(psk)
+	amt := sdk.NewCoin(denom, sdk.NewInt(int64(x)))
+	d := s.providerChain.SenderAccounts[del].SenderAccount.GetAddress()
+	msg := stakingtypes.NewMsgDelegate(d, val, amt)
+	pskServer.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
+}
+
 func (s *PBTTestSuite) SetupTest() {
 
 	s.coordinator, s.providerChain, s.consumerChain = zero.NewPBTProviderConsumerCoordinator(s.T())
+	s.mustBeginBlock = map[string]bool{P: true, C: true}
 
-	// s.DisableConsumerDistribution() TODO: needed??
+	valC := s.createValidator()
+	valD := s.createValidator()
+	s.specialDelegate(1, 1, valC)
+	s.specialDelegate(2, 0, valC)
+	s.specialDelegate(1, 1, valD)
+	s.specialDelegate(1, 0, valD)
+
+	// TODO: needed?
+	s.DisableConsumerDistribution()
 
 	tmConfig := ibctesting.NewTendermintConfig()
 
@@ -73,6 +98,8 @@ func (s *PBTTestSuite) SetupTest() {
 	height := s.providerChain.LastHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
 
+	tmConfig.UnbondingPeriod = 5 * time.Second
+	tmConfig.TrustingPeriod = 4 * time.Second
 	providerClient := ibctmtypes.NewClientState(
 		s.providerChain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
@@ -266,7 +293,54 @@ type ConsumerSlash struct {
 	isDowntime bool
 }
 
+func (s *PBTTestSuite) beginBlock(chain string) {
+
+	c := s.chain(chain)
+
+	// increment the current header
+	c.CurrentHeader = tmproto.Header{
+		ChainID: c.ChainID,
+		Height:  c.App.LastBlockHeight() + 1,
+		AppHash: c.App.LastCommitID().Hash,
+		// NOTE: the time is increased by the coordinator to maintain time synchrony amongst
+		// chains.
+		Time:               s.coordinator.CurrentTime,
+		ValidatorsHash:     c.Vals.Hash(),
+		NextValidatorsHash: c.NextVals.Hash(),
+	}
+
+	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
+}
+
+func (s *PBTTestSuite) idempotentBeginBlock(chain string) {
+	if s.mustBeginBlock[chain] {
+		s.mustBeginBlock[chain] = false
+		s.beginBlock(chain)
+	}
+}
+
+func (s *PBTTestSuite) createValidator() sdk.ValAddress {
+	privVal := mock.NewPV()
+	pubKey, err := privVal.GetPubKey()
+	s.Require().NoError(err)
+	// TODO: figure if need to do something with signersByAddress
+	// (see NewPBTTestChain)
+	val := tmtypes.NewValidator(pubKey, 0)
+	addr, err := sdk.ValAddressFromHex(val.Address.String())
+	s.Require().NoError(err)
+	PK := privVal.PrivKey.PubKey()
+
+	coin := sdk.NewCoin(denom, sdk.NewInt(0))
+	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{}, stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
+	s.Require().NoError(err)
+	psk := s.providerChain.App.GetStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(psk)
+	pskServer.CreateValidator(sdk.WrapSDKContext(s.ctx(P)), msg)
+	return addr
+}
+
 func (s *PBTTestSuite) delegate(a Delegate) {
+	s.idempotentBeginBlock(P)
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
 	amt := sdk.NewCoin(denom, sdk.NewInt(a.amt))
@@ -277,7 +351,7 @@ func (s *PBTTestSuite) delegate(a Delegate) {
 }
 
 func (s *PBTTestSuite) undelegate(a Undelegate) {
-
+	s.idempotentBeginBlock(P)
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
 	amt := sdk.NewCoin(denom, sdk.NewInt(a.amt))
@@ -289,12 +363,27 @@ func (s *PBTTestSuite) undelegate(a Undelegate) {
 
 func (s *PBTTestSuite) endBlock(chain string) {
 
+	s.idempotentBeginBlock(chain)
+
+	c := s.chain(chain)
+
+	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
+	_ = c.App.Commit()
+
+	// set the last header to the current header
+	// use nil trusted fields
+	c.LastHeader = c.CurrentTMClientHeader()
+
+	// val set changes returned from previous block get applied to the next validators
+	// of this block. See tendermint spec for details.
+	c.Vals = c.NextVals
+	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
+
+	s.mustBeginBlock[chain] = true
 }
+
 func (s *PBTTestSuite) increaseSeconds(seconds int64) {
-	s.coordinator.IncrementTimeBy(time.Second * time.Duration(seconds))
-}
-func (s *PBTTestSuite) deliver(a Deliver) {
-	// TODO:!
+	s.coordinator.CurrentTime = s.coordinator.CurrentTime.Add(time.Second * time.Duration(seconds)).UTC()
 }
 
 func (s *PBTTestSuite) jumpNBlocks(a JumpNBlocks) {
@@ -306,7 +395,13 @@ func (s *PBTTestSuite) jumpNBlocks(a JumpNBlocks) {
 	}
 }
 
+func (s *PBTTestSuite) deliver(a Deliver) {
+	s.idempotentBeginBlock(a.chain)
+	// TODO:!
+}
+
 func (s *PBTTestSuite) providerSlash(a ProviderSlash) {
+	s.idempotentBeginBlock(P)
 	psk := s.providerChain.App.GetStakingKeeper()
 	val := s.consAddr(a.val)
 	h := int64(a.height)
@@ -316,6 +411,7 @@ func (s *PBTTestSuite) providerSlash(a ProviderSlash) {
 }
 
 func (s *PBTTestSuite) consumerSlash(a ConsumerSlash) {
+	s.idempotentBeginBlock(C)
 	cccvk := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	val := s.consAddr(a.val)
 	h := int64(a.height)
@@ -353,14 +449,14 @@ func adjustParams(s *PBTTestSuite) {
 
 func (s *PBTTestSuite) TestAssumptions() {
 
-	s.jumpNBlocks(JumpNBlocks{[]string{P}, 1, 5})
+	s.jumpNBlocks(JumpNBlocks{[]string{P}, 0, 5})
 	// TODO: Is it correct to catch the consumer up with the provider here?
 	s.jumpNBlocks(JumpNBlocks{[]string{C}, 2, 5})
 
 	equalHeights(s)
 
-	s.Require().Equal(20, s.height(P))
-	s.Require().Equal(20, s.height(C))
+	s.Require().Equal(17, s.height(P))
+	s.Require().Equal(17, s.height(C))
 
 	s.Require().Equal(1000000000000000000, s.delegatorBalance())
 
@@ -398,6 +494,9 @@ func (s *PBTTestSuite) TestAssumptions() {
 			s.T().Fatal("Bad test")
 		}
 	}
+	// TODO:
+	// check voting power on consumer
+	// check there are no undels, unbonding validators, or redels
 
 }
 
