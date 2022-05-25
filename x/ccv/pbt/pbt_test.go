@@ -3,6 +3,7 @@ package pbt_test
 import (
 	"encoding/json"
 	"io/ioutil"
+	"math"
 	"os"
 	"testing"
 	"time"
@@ -495,10 +496,33 @@ func (s *PBTTestSuite) TestAssumptions() {
 			s.T().Fatal("Bad test")
 		}
 	}
+
+	sk := s.providerChain.App.GetStakingKeeper()
+
+	sk.IterateUnbondingDelegations(s.ctx(P),
+		func(index int64, ubd stakingtypes.UnbondingDelegation) bool {
+			s.T().Fatal("Bad test")
+			return false // Don't stop
+		})
+
+	sk.IterateRedelegations(s.ctx(P),
+		func(index int64, ubd stakingtypes.Redelegation) bool {
+			s.T().Fatal("Bad test")
+			return false // Don't stop
+		})
+
+	endTime := time.Unix(math.MaxInt64, 0)
+	endHeight := int64(math.MaxInt64) // is this borked?
+	unbondingValIterator := sk.ValidatorQueueIterator(s.ctx(P), endTime, endHeight)
+	defer unbondingValIterator.Close()
+	for ; unbondingValIterator.Valid(); unbondingValIterator.Next() {
+		s.T().Fatal("Bad test")
+	}
+
 	// TODO:
 	// check voting power on consumer
-	// check there are no undels, unbonding validators, or redels
 
+	s.T().Fatal("Good test! (Sanity check)")
 }
 
 /*
