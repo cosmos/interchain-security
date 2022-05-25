@@ -522,6 +522,21 @@ func (s *PBTTestSuite) TestAssumptions() {
 	// TODO:
 	// check voting power on consumer
 
+	eFound := []bool{true, true, false, false}
+	ePower := []int64{5, 4}
+
+	for i := 0; i < 4; i++ {
+		ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+		addr := s.validator(int64(i))
+		val, found := ck.GetCCValidator(s.ctx(C), addr)
+		s.Require().Equal(eFound[i], found)
+		if eFound[i] {
+			if ePower[i] != val.Power {
+				s.T().Fatal("Bad test")
+			}
+		}
+	}
+
 	s.T().Fatal("Good test! (Sanity check)")
 }
 
