@@ -16,30 +16,18 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
-	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	zero "github.com/cosmos/interchain-security/x/ccv/pbt"
 )
-
-type PBTTestSuite struct {
-	suite.Suite
-
-	coordinator *ibctesting.Coordinator
-
-	// testing chains
-	providerChain *ibctesting.TestChain
-	consumerChain *ibctesting.TestChain
-
-	path *ibctesting.Path
-}
 
 const P = "provider"
 const C = "consumer"
@@ -53,13 +41,25 @@ func init() {
 	sdk.DefaultPowerReduction = sdk.NewInt(1)
 }
 
+type PBTTestSuite struct {
+	suite.Suite
+
+	coordinator *ibctesting.Coordinator
+
+	// testing chains
+	providerChain *ibctesting.TestChain
+	consumerChain *ibctesting.TestChain
+
+	path *ibctesting.Path
+}
+
 func TestPBTTestSuite(t *testing.T) {
 	suite.Run(t, new(PBTTestSuite))
 }
 
 func (s *PBTTestSuite) SetupTest() {
 
-	s.coordinator, s.providerChain, s.consumerChain = simapp.NewProviderConsumerCoordinator(s.T())
+	s.coordinator, s.providerChain, s.consumerChain = zero.NewPBTProviderConsumerCoordinator(s.T())
 
 	// s.DisableConsumerDistribution() TODO: needed??
 
@@ -331,24 +331,6 @@ func (s *PBTTestSuite) consumerSlash(a ConsumerSlash) {
 ZERO TEST
 ~~~~~~~~~~~~
 */
-
-// TODO: clear up these hacks after stripping provider/consumer
-func (s *PBTTestSuite) DisableConsumerDistribution() {
-	cChain := s.consumerChain
-	cApp := cChain.App.(*appConsumer.App)
-	for i, moduleName := range cApp.MM.OrderBeginBlockers {
-		if moduleName == distrtypes.ModuleName {
-			cApp.MM.OrderBeginBlockers = append(cApp.MM.OrderBeginBlockers[:i], cApp.MM.OrderBeginBlockers[i+1:]...)
-			return
-		}
-	}
-}
-
-func adjustParams(s *PBTTestSuite) {
-	params := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(P))
-	params.MaxValidators = maxValidators
-	s.providerChain.App.GetStakingKeeper().SetParams(s.ctx(P), params)
-}
 
 func (s *PBTTestSuite) TestAssumptions() {
 
