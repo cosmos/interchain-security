@@ -29,7 +29,7 @@ import (
 
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	zero "github.com/cosmos/interchain-security/x/ccv/pbt"
+	pbt "github.com/cosmos/interchain-security/x/ccv/pbt"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -101,7 +101,7 @@ func (s *PBTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
 
 func (s *PBTTestSuite) SetupTest() {
 
-	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = zero.NewPBTProviderConsumerCoordinator(s.T())
+	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = pbt.NewPBTProviderConsumerCoordinator(s.T())
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
 	s.outbox = map[string][]channeltypes.Packet{P: {}, C: {}}
 
@@ -278,14 +278,6 @@ func (s *PBTTestSuite) delegation(i int64) int64 {
 	return del.Shares.TruncateInt64()
 }
 
-func equalHeights(s *PBTTestSuite) {
-	ph := s.height(P)
-	ch := s.height(C)
-	if ph != ch {
-		s.T().Fatal("Bad test")
-	}
-}
-
 /*
 ~~~~~~~~~~~~
 MODEL
@@ -434,7 +426,7 @@ func (s *PBTTestSuite) deliver(a Deliver) {
 	other := map[string]string{P: C, C: P}[a.chain]
 	for _, p := range s.outbox[other] {
 		// TODO: relay! but don't use usual relay function...
-		s.path.RelayPacket(p)
+		pbt.RelayPacket(s.path, p)
 	}
 	s.outbox[other] = []channeltypes.Packet{}
 }
@@ -501,7 +493,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 		s.T().Fatal("Bad test")
 	}
 
-	initialModelState := zero.InitialModelState{
+	initialModelState := pbt.InitialModelState{
 		// TODO: multiply by some 1000's
 		Delegation: []int64{4, 3, 2, 1},
 		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded, stakingtypes.Unbonded, stakingtypes.Unbonded},

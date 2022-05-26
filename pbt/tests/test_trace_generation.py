@@ -66,8 +66,8 @@ class Shaper:
         templates.extend(self.candidate_Undelegate())
         templates.extend(self.candidate_JumpNBlocks())
         templates.extend(self.candidate_Deliver())
-        templates.extend(self.candidate_ProviderSlash())
-        templates.extend(self.candidate_ConsumerSlash())
+        # templates.extend(self.candidate_ProviderSlash())
+        # templates.extend(self.candidate_ConsumerSlash())
 
         possible = [t.__class__.__name__ for t in templates]
         distr = {k: v for k, v in distr.items() if k in possible}
@@ -232,7 +232,7 @@ def load_debug_actions():
 def test_dummy():
     debug = False
     GOAL_TIME_MINS = 20
-    NUM_ACTIONS = 26
+    NUM_ACTIONS = 40
 
     shutil.rmtree("traces/")
     os.makedirs("traces/")
@@ -265,8 +265,8 @@ def test_dummy():
                 trace.add_action(a)
                 do_action(model, a)
                 trace.add_consequence(model.snapshot())
-            # assert staking_without_slashing(blocks)
-            # assert bond_based_consumer_voting_power(blocks)
+            assert staking_without_slashing(blocks)
+            assert bond_based_consumer_voting_power(blocks)
         except Exception:
             trace.blocks = blocks
             trace.events = events
