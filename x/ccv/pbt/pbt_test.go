@@ -13,6 +13,7 @@ import (
 
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
@@ -61,6 +62,8 @@ type PBTTestSuite struct {
 	mustBeginBlock map[string]bool
 
 	valAddresses []sdk.ValAddress
+
+	outbox map[string][]channeltypes.Packet
 }
 
 func TestPBTTestSuite(t *testing.T) {
@@ -80,6 +83,7 @@ func (s *PBTTestSuite) SetupTest() {
 
 	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = zero.NewPBTProviderConsumerCoordinator(s.T())
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
+	s.outbox = map[string][]channeltypes.Packet{P: {}, C: {}}
 
 	// Add two more validator
 	// Only added two in chain creation
@@ -377,6 +381,14 @@ func (s *PBTTestSuite) endBlock(chain string) {
 	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
 
 	s.mustBeginBlock[chain] = true
+
+	for _, e := range ebRes.Events {
+		if e.Type == channeltypes.EventTypeSendPacket {
+			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
+			s.Require().NoError(err)
+			s.outbox[chain] = append(s.outbox[chain], packet)
+		}
+	}
 }
 
 func (s *PBTTestSuite) increaseSeconds(seconds int64) {
@@ -394,7 +406,10 @@ func (s *PBTTestSuite) jumpNBlocks(a JumpNBlocks) {
 
 func (s *PBTTestSuite) deliver(a Deliver) {
 	s.idempotentBeginBlock(a.chain)
-	// TODO:!
+	other := map[string]string{P: C, C: P}[a.chain]
+	for _, p := range s.outbox[other] {
+		s.path.RelayPacket(p)
+	}
 }
 
 func (s *PBTTestSuite) providerSlash(a ProviderSlash) {
@@ -468,6 +483,9 @@ func (s *PBTTestSuite) TestAssumptions() {
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
 	//~~~~
+
+	s.Require().Empty(s.outbox[P])
+	s.Require().Empty(s.outbox[C])
 
 	maxValsE := uint32(2)
 	maxVals := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(P)).MaxValidators
