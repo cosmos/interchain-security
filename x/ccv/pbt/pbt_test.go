@@ -426,7 +426,10 @@ func (s *PBTTestSuite) deliver(a Deliver) {
 	other := map[string]string{P: C, C: P}[a.chain]
 	for _, p := range s.outbox[other] {
 		// TODO: relay! but don't use usual relay function...
-		pbt.RelayPacket(s.path, p)
+		err := pbt.RelayPacket(s.path, p)
+		if err != nil {
+			s.FailNow("Relay failed")
+		}
 	}
 	s.outbox[other] = []channeltypes.Packet{}
 }
