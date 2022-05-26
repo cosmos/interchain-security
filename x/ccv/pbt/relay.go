@@ -36,12 +36,12 @@ func tryRelayOriginalContent(sender *ibctesting.Endpoint, receiver *ibctesting.E
 	return true, nil
 }
 
-func tryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (succ bool, err error) {
+func tryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, succ bool, err error) {
 
 	pc := sender.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(sender.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 
 	if !bytes.Equal(pc, channeltypes.CommitPacket(sender.Chain.App.AppCodec(), packet)) {
-		return false, nil
+		return []byte{}, false, nil
 	}
 
 	// return tryRelayOriginalContent(sender, receiver, packet)
@@ -71,7 +71,7 @@ func tryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 	}
 
 	if err != nil {
-		return false, err
+		return []byte{}, false, err
 	}
 
 	UCmsg, err := clienttypes.NewMsgUpdateClient(
@@ -92,7 +92,7 @@ func tryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 		true, true, receiver.Chain.SenderPrivKey,
 	)
 	if err != nil {
-		return false, err
+		return []byte{}, false, err
 	}
 
 	// TODO: there used to be 'NextBlock' here...
@@ -118,7 +118,7 @@ func tryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 	)
 
 	if err != nil {
-		return false, err
+		return []byte{}, false, err
 	}
 
 	// TODO: there used to be 'NextBlock' here...
@@ -126,11 +126,13 @@ func tryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 	// increment sequence for successful transaction execution
 	receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 
-	ack, err := ibctesting.ParseAckFromEvents(resWithAck.GetEvents())
+	ack, err = ibctesting.ParseAckFromEvents(resWithAck.GetEvents())
 
 	if err != nil {
-		return false, err
+		return []byte{}, false, err
 	}
+
+	return ack, true, nil
 
 }
 
