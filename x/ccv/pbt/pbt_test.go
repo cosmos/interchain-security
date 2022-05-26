@@ -67,7 +67,7 @@ func TestPBTTestSuite(t *testing.T) {
 	suite.Run(t, new(PBTTestSuite))
 }
 
-func (s *PBTTestSuite) specialDelegate(x int, del int, val sdk.ValAddress) {
+func (s *PBTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
 	amt := sdk.NewCoin(denom, sdk.NewInt(int64(x)))
@@ -81,14 +81,10 @@ func (s *PBTTestSuite) SetupTest() {
 	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = zero.NewPBTProviderConsumerCoordinator(s.T())
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
 
-	valC := s.createValidator()
-	valD := s.createValidator()
-	s.valAddresses = append(s.valAddresses, valC)
-	s.valAddresses = append(s.valAddresses, valD)
-	s.specialDelegate(1, 1, valC)
-	s.specialDelegate(2, 0, valC)
-	s.specialDelegate(1, 1, valD)
-	s.specialDelegate(1, 0, valD)
+	// Add two more validator
+	// Only added two in chain creation
+	s.valAddresses = append(s.valAddresses, s.createValidator())
+	s.valAddresses = append(s.valAddresses, s.createValidator())
 
 	// TODO: needed?
 	s.DisableConsumerDistribution()
@@ -456,7 +452,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 	s.Require().Equal(int64(18), s.height(P))
 	s.Require().Equal(int64(18), s.height(C))
 
-	s.Require().Equal(int64(1000000000000000000), s.delegatorBalance())
+	s.Require().Equal(int64(1000000000000000003), s.delegatorBalance())
 
 	maxValsE := uint32(2)
 	maxVals := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(P)).MaxValidators
@@ -516,17 +512,14 @@ func (s *PBTTestSuite) TestAssumptions() {
 		s.T().Fatal("Bad test")
 	}
 
-	// TODO:
-	// check voting power on consumer
-
 	eFound := []bool{true, true, false, false}
 	ePower := []int64{5, 4}
 
+	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+
 	for i := 0; i < 4; i++ {
-		ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 		addr := s.validator(int64(i))
-		ctx := s.ctx(C)
-		val, found := ck.GetCCValidator(ctx, addr)
+		val, found := ck.GetCCValidator(s.ctx(C), addr)
 		s.Require().Equal(eFound[i], found)
 		if eFound[i] {
 			if ePower[i] != val.Power {
@@ -534,6 +527,20 @@ func (s *PBTTestSuite) TestAssumptions() {
 			}
 		}
 	}
+
+	s.Require().Empty(ck.GetPendingSlashRequests(s.ctx(C)))
+
+	ck.IterateUnbondingPacket(s.ctx(C),
+		func(seq uint64, packet channeltypes.Packet) bool {
+			s.T().Fatal("Bad test")
+			return false // Don't stop
+		})
+
+	ck.IterateUnbondingTime(s.ctx(C),
+		func(seq uint64, timeNs uint64) bool {
+			s.T().Fatal("Bad test")
+			return false // Don't stop
+		})
 
 	s.T().Fatal("Good test! (Sanity check)")
 }
