@@ -48,6 +48,12 @@ func init() {
 	sdk.DefaultPowerReduction = sdk.NewInt(1)
 }
 
+type Ack struct {
+	ack       []byte
+	packet    channeltypes.Packet
+	committed bool
+}
+
 type PBTTestSuite struct {
 	suite.Suite
 
@@ -64,10 +70,15 @@ type PBTTestSuite struct {
 	valAddresses []sdk.ValAddress
 
 	outbox map[string][]channeltypes.Packet
+	acks   map[string][]Ack
 }
 
 func TestPBTTestSuite(t *testing.T) {
 	suite.Run(t, new(PBTTestSuite))
+}
+
+func (s *PBTTestSuite) addAck(chain string, ack []byte, packet channeltypes.Packet) {
+	s.acks[chain] = append(s.acks[chain], Ack{ack, packet, false})
 }
 
 func (s *PBTTestSuite) createValidator() sdk.ValAddress {
