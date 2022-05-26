@@ -66,8 +66,8 @@ class Shaper:
         templates.extend(self.candidate_Undelegate())
         templates.extend(self.candidate_JumpNBlocks())
         templates.extend(self.candidate_Deliver())
-        # templates.extend(self.candidate_ProviderSlash())
-        # templates.extend(self.candidate_ConsumerSlash())
+        templates.extend(self.candidate_ProviderSlash())
+        templates.extend(self.candidate_ConsumerSlash())
 
         possible = [t.__class__.__name__ for t in templates]
         distr = {k: v for k, v in distr.items() if k in possible}
@@ -140,7 +140,7 @@ class Shaper:
 
     def select_Undelegate(self, a):
         self.undelegated_since_block[a.val] = True
-        a.amt = random.randint(1, 5)
+        a.amt = random.randint(1, 4)
 
     def select_JumpNBlocks(self, a):
         a.chains = random.choice([[P, C], [P], [C]])
@@ -210,20 +210,6 @@ class Trace:
                     assert [i == x for i, x in enumerate(keys)]
                     return [bs[i] for i in range(len(keys))]
 
-                def consequence(c):
-                    def power(d):
-                        ret = [None, None, None, None]
-                        for k in d:
-                            i = int(k)
-                            ret[i] = d[k]
-                        return ret
-
-                    try:
-                        c["power"] = power(c["power"])
-                    except Exception:
-                        assert False, c
-                    return c
-
                 return [
                     {
                         "actions": o["actions"],
@@ -232,7 +218,7 @@ class Trace:
                             "provider": blocks(o["blocks"]["blocks"]["provider"]),
                             "consumer": blocks(o["blocks"]["blocks"]["consumer"]),
                         },
-                        "consequences": [consequence(x) for x in o["consequences"]],
+                        "consequences": o["consequences"],
                     }
                 ]
 
@@ -267,7 +253,7 @@ def load_debug_actions():
 # @pytest.mark.skip()
 def test_dummy():
     debug = False
-    GOAL_TIME_MINS = 2
+    GOAL_TIME_MINS = 20
     NUM_ACTIONS = 40
 
     shutil.rmtree("traces/")
@@ -301,8 +287,8 @@ def test_dummy():
                 trace.add_action(a)
                 do_action(model, a)
                 trace.add_consequence(model.snapshot())
-            assert staking_without_slashing(blocks)
-            assert bond_based_consumer_voting_power(blocks)
+            # assert staking_without_slashing(blocks)
+            # assert bond_based_consumer_voting_power(blocks)
         except Exception:
             trace.blocks = blocks
             trace.events = events

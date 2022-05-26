@@ -70,7 +70,7 @@ def bond_based_consumer_voting_power(blocks):
             for i in range(NUM_VALIDATORS):
                 power_p = power_provider(blocks[P][h])
                 power_c = power_consumer(blocks[C][hc])
-                if i in power_c:
+                if power_c[i] is not None:
                     if power_p[i] < power_c[i]:
                         # property violation!
                         return False
