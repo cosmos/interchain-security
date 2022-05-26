@@ -192,15 +192,51 @@ class Trace:
             return vars(obj)
 
         def to_json():
+            def ugly():
+                ret = {
+                    "actions": [
+                        {"kind": e.__class__.__name__} | asdict(e) for e in self.actions
+                    ],
+                    "consequences": self.consequences,
+                    "blocks": self.blocks,
+                    "events": self.events,
+                }
+                return json.loads(json.dumps(ret, indent=2, default=default))
 
-            return {
-                "actions": [
-                    {"kind": e.__class__.__name__} | asdict(e) for e in self.actions
-                ],
-                "consequences": self.consequences,
-                "blocks": self.blocks,
-                "events": self.events,
-            }
+            def pretty(o):
+                def blocks(bs):
+                    bs = {int(k): v for k, v in bs.items()}
+                    keys = sorted(list(bs.keys()))
+                    assert [i == x for i, x in enumerate(keys)]
+                    return [bs[i] for i in range(len(keys))]
+
+                def consequence(c):
+                    def power(d):
+                        ret = [None, None, None, None]
+                        for k in d:
+                            i = int(k)
+                            ret[i] = d[k]
+                        return ret
+
+                    try:
+                        c["power"] = power(c["power"])
+                    except Exception:
+                        assert False, c
+                    return c
+
+                return [
+                    {
+                        "actions": o["actions"],
+                        "events": o["events"]["events"],
+                        "blocks": {
+                            "provider": blocks(o["blocks"]["blocks"]["provider"]),
+                            "consumer": blocks(o["blocks"]["blocks"]["consumer"]),
+                        },
+                        "consequences": [consequence(x) for x in o["consequences"]],
+                    }
+                ]
+
+            return pretty(ugly())
 
         with open(fn, "w") as fd:
             fd.write(json.dumps(to_json(), indent=2, default=default))
@@ -231,7 +267,7 @@ def load_debug_actions():
 # @pytest.mark.skip()
 def test_dummy():
     debug = False
-    GOAL_TIME_MINS = 20
+    GOAL_TIME_MINS = 2
     NUM_ACTIONS = 40
 
     shutil.rmtree("traces/")

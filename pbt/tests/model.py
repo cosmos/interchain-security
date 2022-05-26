@@ -397,7 +397,9 @@ class CCVConsumer:
         # Maps val to bool
         self.outstanding_downtime = {i: False for i in range(NUM_VALIDATORS)}
         # Maps val to power
-        self.power = {i: self.m.staking.tokens[i] for i in self.m.staking.last_vals}
+        self.power = [None] * NUM_VALIDATORS
+        for i in self.m.staking.last_vals:
+            self.power[i] = self.m.staking.tokens[i]
 
     def json(self):
         v = dict(vars(self))
@@ -431,7 +433,7 @@ class CCVConsumer:
         changes = aggregate_changes()
 
         for val, power in changes.items():
-            self.power.pop(val, None)
+            self.power[val] = None
             if 0 < power:
                 self.m.events.add(Events.Event.CONSUMER_UPDATE_POWER)
                 self.power[val] = power

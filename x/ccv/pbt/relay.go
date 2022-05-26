@@ -14,28 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: this is the original workings, delete when done with new version!
-func tryRelayOriginalContent(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (bool, error) {
-
-	receiver.UpdateClient()
-
-	res, err := receiver.RecvPacketWithResult(packet)
-	if err != nil {
-		return false, err
-	}
-
-	ack, err := ibctesting.ParseAckFromEvents(res.GetEvents())
-	if err != nil {
-		return false, err
-	}
-
-	if err := sender.AcknowledgePacket(packet, ack); err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
 func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
 
 	pc := sender.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(sender.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
@@ -43,8 +21,6 @@ func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 	if !bytes.Equal(pc, channeltypes.CommitPacket(sender.Chain.App.AppCodec(), packet)) {
 		return nil, fmt.Errorf("packet committment bytes not equal")
 	}
-
-	// return tryRelayOriginalContent(sender, receiver, packet)
 
 	/*
 		I think things can go like this
