@@ -260,19 +260,21 @@ func (s *PBTTestSuite) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(s.validator(i))
 }
 
+func (s *PBTTestSuite) delegation(i int64) int64 {
+	addr := s.delegator()
+	del, found := s.providerChain.App.GetStakingKeeper().GetDelegation(s.ctx(P), addr, s.validator(i))
+	if !found {
+		s.T().Fatal("Couldn't GetDelegation")
+	}
+	return del.Shares.TruncateInt64()
+}
+
 func (s *PBTTestSuite) validatorStatus(chain string, i int64) stakingtypes.BondStatus {
 	val, found := s.chain(chain).App.GetStakingKeeper().GetValidator(s.ctx(chain), s.validator(i))
 	if !found {
 		s.T().Fatal("Couldn't GetValidator")
 	}
 	return val.GetStatus()
-}
-
-func (s *PBTTestSuite) delegatorBalance() int64 {
-	del := s.delegator()
-	app := s.providerChain.App.(*appProvider.App)
-	bal := app.BankKeeper.GetBalance(s.ctx(P), del, denom)
-	return bal.Amount.Int64()
 }
 
 func (s *PBTTestSuite) validatorTokens(chain string, i int64) int64 {
@@ -284,13 +286,11 @@ func (s *PBTTestSuite) validatorTokens(chain string, i int64) int64 {
 	return val.Tokens.Int64()
 }
 
-func (s *PBTTestSuite) delegation(i int64) int64 {
-	addr := s.delegator()
-	del, found := s.providerChain.App.GetStakingKeeper().GetDelegation(s.ctx(P), addr, s.validator(i))
-	if !found {
-		s.T().Fatal("Couldn't GetDelegation")
-	}
-	return del.Shares.TruncateInt64()
+func (s *PBTTestSuite) delegatorBalance() int64 {
+	del := s.delegator()
+	app := s.providerChain.App.(*appProvider.App)
+	bal := app.BankKeeper.GetBalance(s.ctx(P), del, denom)
+	return bal.Amount.Int64()
 }
 
 /*
@@ -298,24 +298,6 @@ func (s *PBTTestSuite) delegation(i int64) int64 {
 MODEL
 ~~~~~~~~~~~~
 */
-
-type Action struct {
-	Amt             int      `json:"amt,omitempty"`
-	Chain           string   `json:"chain,omitempty"`
-	Chains          []string `json:"chains,omitempty"`
-	Factor          float64  `json:"factor,omitempty"`
-	Height          int      `json:"height,omitempty"`
-	IsDowntime      bool     `json:"is_downtime,omitempty"`
-	Kind            string   `json:"kind"`
-	N               int      `json:"n,omitempty"`
-	Power           int      `json:"power,omitempty"`
-	SecondsPerBlock int      `json:"seconds_per_block,omitempty"`
-	Val             int      `json:"val,omitempty"`
-}
-
-type Trace struct {
-	Actions []Action `json:"actions"`
-}
 
 type Delegate struct {
 	val int64
@@ -649,7 +631,7 @@ TRACE TEST
 ~~~~~~~~~~~~
 */
 
-func executeTrace(s *PBTTestSuite, trace Trace) {
+func executeTrace(s *PBTTestSuite, trace pbt.Trace) {
 
 	for _, a := range trace.Actions {
 		switch a.Kind {
@@ -689,7 +671,7 @@ func executeTrace(s *PBTTestSuite, trace Trace) {
 	}
 }
 
-func loadTraces(fn string) []Trace {
+func loadTraces(fn string) []pbt.Trace {
 
 	fd, err := os.Open(fn)
 
@@ -701,7 +683,7 @@ func loadTraces(fn string) []Trace {
 
 	byteValue, _ := ioutil.ReadAll(fd)
 
-	var ret []Trace
+	var ret []pbt.Trace
 
 	err = json.Unmarshal([]byte(byteValue), &ret)
 
@@ -712,12 +694,12 @@ func loadTraces(fn string) []Trace {
 	return ret
 }
 
-func executeTraces(s *PBTTestSuite, traces []Trace) {
+func executeTraces(s *PBTTestSuite, traces []pbt.Trace) {
 	for _, trace := range traces {
 		executeTrace(s, trace)
 	}
 }
 
-func (s *PBTTestSuite) TestTracesHC() {
-	executeTraces(s, loadTraces("trace/hc.json"))
+func (s *PBTTestSuite) TestTracesCovering() {
+	executeTraces(s, loadTraces("traces_covering.json"))
 }
