@@ -80,8 +80,14 @@ func TestPBTTestSuite(t *testing.T) {
 	suite.Run(t, new(PBTTestSuite))
 }
 
-func (s *PBTTestSuite) addAck(chain string, ack []byte, packet channeltypes.Packet) {
-	s.acks[chain] = append(s.acks[chain], Ack{ack, packet, false})
+func (s *PBTTestSuite) addAck(receiver string, ack []byte, packet channeltypes.Packet) {
+	s.acks[receiver] = append(s.acks[receiver], Ack{ack, packet, false})
+}
+
+func (s *PBTTestSuite) commitAcks(committer string) {
+	for _, ack := range s.acks[s.other(committer)] {
+		ack.committed = true
+	}
 }
 
 func (s *PBTTestSuite) createValidator() sdk.ValAddress {
@@ -118,6 +124,7 @@ func (s *PBTTestSuite) SetupTest() {
 	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = pbt.NewPBTProviderConsumerCoordinator(s.T())
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
 	s.outbox = map[string][]channeltypes.Packet{P: {}, C: {}}
+	s.acks = map[string][]Ack{P: {}, C: {}}
 
 	// Add two more validator
 	// Only added two in chain creation
@@ -218,10 +225,11 @@ func (s *PBTTestSuite) ctx(chain string) sdk.Context {
 }
 
 func (s *PBTTestSuite) chain(chain string) *ibctesting.TestChain {
-	chains := make(map[string]*ibctesting.TestChain)
-	chains[P] = s.providerChain
-	chains[C] = s.consumerChain
-	return chains[chain]
+	return map[string]*ibctesting.TestChain{P: s.providerChain, C: s.consumerChain}[chain]
+}
+
+func (s *PBTTestSuite) other(chain string) string {
+	return map[string]string{P: C, C: P}[chain]
 }
 
 func (s *PBTTestSuite) height(chain string) int64 {
@@ -237,15 +245,11 @@ func (s *PBTTestSuite) globalTime() time.Time {
 }
 
 func (s *PBTTestSuite) endpoint(chain string) *ibctesting.Endpoint {
-	endpoints := make(map[string]*ibctesting.Endpoint)
-	endpoints[P] = s.path.EndpointB
-	endpoints[C] = s.path.EndpointA
-	return endpoints[chain]
+	return map[string]*ibctesting.Endpoint{P: s.path.EndpointB, C: s.path.EndpointA}[chain]
 }
 
 func (s *PBTTestSuite) delegator() sdk.AccAddress {
-	delAddr := s.providerChain.SenderAccount.GetAddress()
-	return delAddr
+	return s.providerChain.SenderAccount.GetAddress()
 }
 
 func (s *PBTTestSuite) validator(i int64) sdk.ValAddress {
@@ -253,14 +257,11 @@ func (s *PBTTestSuite) validator(i int64) sdk.ValAddress {
 }
 
 func (s *PBTTestSuite) consAddr(i int64) sdk.ConsAddress {
-	val := s.validator(i)
-	consAddr := sdk.ConsAddress(val)
-	return consAddr
+	return sdk.ConsAddress(s.validator(i))
 }
 
 func (s *PBTTestSuite) validatorStatus(chain string, i int64) stakingtypes.BondStatus {
-	addr := s.validator(i)
-	val, found := s.chain(chain).App.GetStakingKeeper().GetValidator(s.ctx(chain), addr)
+	val, found := s.chain(chain).App.GetStakingKeeper().GetValidator(s.ctx(chain), s.validator(i))
 	if !found {
 		s.T().Fatal("Couldn't GetValidator")
 	}
@@ -351,11 +352,9 @@ func (s *PBTTestSuite) beginBlock(chain string) {
 
 	// increment the current header
 	c.CurrentHeader = tmproto.Header{
-		ChainID: c.ChainID,
-		Height:  c.App.LastBlockHeight() + 1,
-		AppHash: c.App.LastCommitID().Hash,
-		// NOTE: the time is increased by the coordinator to maintain time synchrony amongst
-		// chains.
+		ChainID:            c.ChainID,
+		Height:             c.App.LastBlockHeight() + 1,
+		AppHash:            c.App.LastCommitID().Hash,
 		Time:               s.coordinator.CurrentTime,
 		ValidatorsHash:     c.Vals.Hash(),
 		NextValidatorsHash: c.NextVals.Hash(),
@@ -371,30 +370,28 @@ func (s *PBTTestSuite) idempotentBeginBlock(chain string) {
 	}
 }
 
-func (s *PBTTestSuite) idempotentDeliverAcks(chain string) error {
-	acks := s.acks[chain]
+func (s *PBTTestSuite) idempotentDeliverAcks(receiver string) error {
+	acks := s.acks[receiver]
 	replacement := []Ack{}
 	for _, ack := range acks {
 		if ack.committed {
-			receiver := s.endpoint(chain)
-			sender := s.endpoint(map[string]string{P: C, C: P}[chain])
 			p := ack.packet
 
 			packetKey := host.PacketAcknowledgementKey(p.GetDestPort(), p.GetDestChannel(), p.GetSequence())
-			proof, proofHeight := sender.QueryProof(packetKey)
+			proof, proofHeight := s.endpoint(s.other(receiver)).QueryProof(packetKey)
 
-			ackMsg := channeltypes.NewMsgAcknowledgement(p, ack.ack, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
+			ackMsg := channeltypes.NewMsgAcknowledgement(p, ack.ack, proof, proofHeight, s.chain(receiver).SenderAccount.GetAddress().String())
 
 			_, _, err := simapp.SignAndDeliver(
-				receiver.Chain.T,
-				receiver.Chain.TxConfig,
-				receiver.Chain.App.GetBaseApp(),
-				receiver.Chain.GetContext().BlockHeader(),
+				s.chain(receiver).T,
+				s.chain(receiver).TxConfig,
+				s.chain(receiver).App.GetBaseApp(),
+				s.chain(receiver).GetContext().BlockHeader(),
 				[]sdk.Msg{ackMsg},
-				receiver.Chain.ChainID,
-				[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
-				[]uint64{receiver.Chain.SenderAccount.GetSequence()},
-				true, true, receiver.Chain.SenderPrivKey,
+				s.chain(receiver).ChainID,
+				[]uint64{s.chain(receiver).SenderAccount.GetAccountNumber()},
+				[]uint64{s.chain(receiver).SenderAccount.GetSequence()},
+				true, true, s.chain(receiver).SenderPrivKey,
 			)
 			if err != nil {
 				return err
@@ -402,12 +399,12 @@ func (s *PBTTestSuite) idempotentDeliverAcks(chain string) error {
 
 			// TODO: there was a receiver.NextBlock here...
 
-			receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
+			s.chain(receiver).SenderAccount.SetSequence(s.chain(receiver).SenderAccount.GetSequence() + 1)
 		} else {
 			replacement = append(replacement, ack)
 		}
 	}
-	s.acks[chain] = replacement
+	s.acks[receiver] = replacement
 
 	return nil
 }
@@ -464,6 +461,8 @@ func (s *PBTTestSuite) endBlock(chain string) {
 			s.outbox[chain] = append(s.outbox[chain], packet)
 		}
 	}
+
+	s.commitAcks(chain)
 }
 
 func (s *PBTTestSuite) increaseSeconds(seconds int64) {
@@ -485,14 +484,13 @@ func (s *PBTTestSuite) deliver(a Deliver) {
 	other := map[string]string{P: C, C: P}[a.chain]
 	for _, p := range s.outbox[other] {
 		// TODO: relay! but don't use usual relay function...
-		err := pbt.RelayPacket(s.path, p)
 		receiver := s.endpoint(a.chain)
 		sender := receiver.Counterparty
 		ack, err := pbt.TryRelay(sender, receiver, p)
 		if err != nil {
 			s.FailNow("Relay failed")
 		}
-		s.addAck()
+		s.addAck(s.other(a.chain), ack, p)
 	}
 	s.outbox[other] = []channeltypes.Packet{}
 }
