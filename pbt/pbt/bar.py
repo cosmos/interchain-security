@@ -1,3 +1,6 @@
+from collections import defaultdict
+import sys
+from collections import Counter
 import os
 import shutil
 import json
@@ -118,8 +121,24 @@ def select_subset(
     return indexes_of_best_sets, loss_value, random_choice_loss
 
 
-def mapper(obj):
-    return set(obj["events"]["events"])
+def greedy_min_cover(vectors):
+    target = 10
+    hit = [0] * len(vectors[0][1])
+
+    def q(v, h):
+        return sum(1 for i, hits in enumerate(v) if hits and h[i] < target)
+
+    ret = []
+    while any(x < target for x in hit):
+        vectors.sort(key=lambda v: q(v[1], hit), reverse=True)
+        v = vectors[0]
+        ret.append(v[0])
+        vectors = vectors[1:]
+        for i, hits in enumerate(v[1]):
+            if hits:
+                hit[i] += 1
+
+    return ret
 
 
 def bar():
@@ -128,18 +147,40 @@ def bar():
     print(files[:5])
 
     mapped = {}
-    event_names = set()
+    event_names = []
+
+    vectors = []
 
     for fn in files:
         fp = join(PATH, fn)
         obj = None
         with open(fp, "r") as fd:
             obj = json.loads(fd.read())
-        mapped[fn] = mapper(obj)
+        mapped[fn] = set(obj[0]["events"])
         for en in mapped[fn]:
-            event_names.add(en)
+            if en not in set(event_names):
+                event_names.append(en)
+        v = [False] * 19
+        reverse = {en: i for i, en in enumerate(event_names)}
+        for en in mapped[fn]:
+            v[reverse[en]] = True
+        vectors.append((fn, v))
 
-    event_names = list(event_names)
+    print("Finished reading traces")
+
+    PATH = "traces_covering/"
+    shutil.rmtree(PATH, ignore_errors=True)
+    os.makedirs(PATH)
+    heuristic_covering = greedy_min_cover(vectors)
+    print(f"len covering: {len(heuristic_covering)}")
+    for fn in heuristic_covering:
+        with open(join("traces/", fn), "r") as fd_r:
+            obj = json.loads(fd_r.read())
+            with open(join(PATH, fn), "w") as fd_w:
+                fd_w.write(json.dumps(obj, indent=2))
+
+    sys.exit(1)
+
     reverse = {en: i for i, en in enumerate(event_names)}
 
     for k in mapped:
@@ -151,12 +192,12 @@ def bar():
     ordered = list(mapped.items())
     print(ordered[:5])
     indexes, loss, random_loss = select_subset(
-        [pair[1] for pair in ordered], target_size=64, iterations=100000
+        [pair[1] for pair in ordered], target_size=128, iterations=10000
     )
     print(indexes, loss, random_loss, round(loss / random_loss, 5))
 
-    PATH = "traces_subset/"
-    shutil.rmtree(PATH)
+    PATH = "traces_diverse/"
+    shutil.rmtree(PATH, ignore_errors=True)
     os.makedirs(PATH)
     for i in indexes:
         fn = ordered[i][0]

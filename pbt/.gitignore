@@ -850,4 +850,5 @@ FodyWeavers.xsd
 interesting/
 traces/
 debug.json
-traces_subset/
+traces_covering/
+traces_diverse/
