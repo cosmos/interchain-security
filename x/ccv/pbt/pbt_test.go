@@ -175,14 +175,19 @@ func (s *PBTTestSuite) SetupTest() {
 	s.coordinator.CreateChannels(s.path)
 	//~~~~~~~~~~
 
+	s.jumpNBlocks(JumpNBlocks{[]string{P}, 1, 5})
+	// TODO: Is it correct to catch the consumer up with the provider here?
+	s.jumpNBlocks(JumpNBlocks{[]string{C}, 2, 5})
+
+	s.idempotentBeginBlock(P)
+	s.idempotentBeginBlock(C)
+
 	s.specialDelegate(1, s.validator(2), 1)
 	s.specialDelegate(1, s.validator(3), 1)
 	s.specialDelegate(0, s.validator(2), 2)
 	s.specialDelegate(0, s.validator(3), 1)
 
-	s.jumpNBlocks(JumpNBlocks{[]string{P}, 1, 5})
-	// TODO: Is it correct to catch the consumer up with the provider here?
-	s.jumpNBlocks(JumpNBlocks{[]string{C}, 2, 5})
+	s.jumpNBlocks(JumpNBlocks{[]string{P, C}, 1, 5})
 
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
@@ -420,6 +425,7 @@ func (s *PBTTestSuite) deliver(a Deliver) {
 	s.idempotentBeginBlock(a.chain)
 	other := map[string]string{P: C, C: P}[a.chain]
 	for _, p := range s.outbox[other] {
+		// TODO: relay! but don't use usual relay function...
 		s.path.RelayPacket(p)
 	}
 	s.outbox[other] = []channeltypes.Packet{}
@@ -468,23 +474,13 @@ func (s *PBTTestSuite) DisableConsumerDistribution() {
 
 func (s *PBTTestSuite) TestAssumptions() {
 
-	equalHeights(s)
+	s.Require().Equal(int64(19), s.height(P))
+	s.Require().Equal(int64(19), s.height(C))
 
-	s.Require().Equal(int64(18), s.height(P))
-	s.Require().Equal(int64(18), s.height(C))
+	s.Require().NotEmpty(s.outbox[P])
+	s.Require().Empty(s.outbox[C])
 
 	s.Require().Equal(int64(1000000000000000000), s.delegatorBalance())
-
-	//~~~~
-	// TODO: spin a bit here
-	s.jumpNBlocks(JumpNBlocks{[]string{P, C}, 10, 5})
-
-	s.idempotentBeginBlock(P)
-	s.idempotentBeginBlock(C)
-	//~~~~
-
-	s.Require().Empty(s.outbox[P])
-	s.Require().Empty(s.outbox[C])
 
 	maxValsE := uint32(2)
 	maxVals := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(P)).MaxValidators
