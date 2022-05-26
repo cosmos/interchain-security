@@ -19,6 +19,8 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
+	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
@@ -35,6 +37,7 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
+	"github.com/cosmos/ibc-go/v3/testing/simapp"
 )
 
 const P = "provider"
@@ -368,8 +371,50 @@ func (s *PBTTestSuite) idempotentBeginBlock(chain string) {
 	}
 }
 
+func (s *PBTTestSuite) idempotentDeliverAcks(chain string) error {
+	acks := s.acks[chain]
+	replacement := []Ack{}
+	for _, ack := range acks {
+		if ack.committed {
+			receiver := s.endpoint(chain)
+			sender := s.endpoint(map[string]string{P: C, C: P}[chain])
+			p := ack.packet
+
+			packetKey := host.PacketAcknowledgementKey(p.GetDestPort(), p.GetDestChannel(), p.GetSequence())
+			proof, proofHeight := sender.QueryProof(packetKey)
+
+			ackMsg := channeltypes.NewMsgAcknowledgement(p, ack.ack, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
+
+			_, _, err := simapp.SignAndDeliver(
+				receiver.Chain.T,
+				receiver.Chain.TxConfig,
+				receiver.Chain.App.GetBaseApp(),
+				receiver.Chain.GetContext().BlockHeader(),
+				[]sdk.Msg{ackMsg},
+				receiver.Chain.ChainID,
+				[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
+				[]uint64{receiver.Chain.SenderAccount.GetSequence()},
+				true, true, receiver.Chain.SenderPrivKey,
+			)
+			if err != nil {
+				return err
+			}
+
+			// TODO: there was a receiver.NextBlock here...
+
+			receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
+		} else {
+			replacement = append(replacement, ack)
+		}
+	}
+	s.acks[chain] = replacement
+
+	return nil
+}
+
 func (s *PBTTestSuite) delegate(a Delegate) {
 	s.idempotentBeginBlock(P)
+	s.idempotentDeliverAcks(P)
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
 	amt := sdk.NewCoin(denom, sdk.NewInt(a.amt))
@@ -381,6 +426,7 @@ func (s *PBTTestSuite) delegate(a Delegate) {
 
 func (s *PBTTestSuite) undelegate(a Undelegate) {
 	s.idempotentBeginBlock(P)
+	s.idempotentDeliverAcks(P)
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
 	amt := sdk.NewCoin(denom, sdk.NewInt(a.amt))
@@ -393,6 +439,7 @@ func (s *PBTTestSuite) undelegate(a Undelegate) {
 func (s *PBTTestSuite) endBlock(chain string) {
 
 	s.idempotentBeginBlock(chain)
+	s.idempotentDeliverAcks(chain)
 
 	c := s.chain(chain)
 
@@ -434,19 +481,25 @@ func (s *PBTTestSuite) jumpNBlocks(a JumpNBlocks) {
 
 func (s *PBTTestSuite) deliver(a Deliver) {
 	s.idempotentBeginBlock(a.chain)
+	s.idempotentDeliverAcks(a.chain)
 	other := map[string]string{P: C, C: P}[a.chain]
 	for _, p := range s.outbox[other] {
 		// TODO: relay! but don't use usual relay function...
 		err := pbt.RelayPacket(s.path, p)
+		receiver := s.endpoint(a.chain)
+		sender := receiver.Counterparty
+		ack, err := pbt.TryRelay(sender, receiver, p)
 		if err != nil {
 			s.FailNow("Relay failed")
 		}
+		s.addAck()
 	}
 	s.outbox[other] = []channeltypes.Packet{}
 }
 
 func (s *PBTTestSuite) providerSlash(a ProviderSlash) {
 	s.idempotentBeginBlock(P)
+	s.idempotentDeliverAcks(P)
 	psk := s.providerChain.App.GetStakingKeeper()
 	val := s.consAddr(a.val)
 	h := int64(a.height)
@@ -457,6 +510,7 @@ func (s *PBTTestSuite) providerSlash(a ProviderSlash) {
 
 func (s *PBTTestSuite) consumerSlash(a ConsumerSlash) {
 	s.idempotentBeginBlock(C)
+	s.idempotentDeliverAcks(C)
 	cccvk := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	val := s.consAddr(a.val)
 	h := int64(a.height)

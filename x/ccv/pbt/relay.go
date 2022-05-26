@@ -36,12 +36,12 @@ func tryRelayOriginalContent(sender *ibctesting.Endpoint, receiver *ibctesting.E
 	return true, nil
 }
 
-func tryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, succ bool, err error) {
+func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
 
 	pc := sender.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(sender.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 
 	if !bytes.Equal(pc, channeltypes.CommitPacket(sender.Chain.App.AppCodec(), packet)) {
-		return []byte{}, false, nil
+		return nil, fmt.Errorf("packet committment bytes not equal")
 	}
 
 	// return tryRelayOriginalContent(sender, receiver, packet)
@@ -71,7 +71,7 @@ func tryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 	}
 
 	if err != nil {
-		return []byte{}, false, err
+		return nil, err
 	}
 
 	UCmsg, err := clienttypes.NewMsgUpdateClient(
@@ -92,7 +92,7 @@ func tryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 		true, true, receiver.Chain.SenderPrivKey,
 	)
 	if err != nil {
-		return []byte{}, false, err
+		return nil, err
 	}
 
 	// TODO: there used to be 'NextBlock' here...
@@ -118,7 +118,7 @@ func tryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 	)
 
 	if err != nil {
-		return []byte{}, false, err
+		return nil, err
 	}
 
 	// TODO: there used to be 'NextBlock' here...
@@ -129,27 +129,9 @@ func tryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 	ack, err = ibctesting.ParseAckFromEvents(resWithAck.GetEvents())
 
 	if err != nil {
-		return []byte{}, false, err
+		return nil, err
 	}
 
-	return ack, true, nil
+	return ack, nil
 
-}
-
-func RelayPacket(path *ibctesting.Path, packet channeltypes.Packet) error {
-	sent, err := tryRelay(path.EndpointA, path.EndpointB, packet)
-	if err != nil {
-		return err
-	}
-	if sent {
-		return nil
-	}
-	sent, err = tryRelay(path.EndpointB, path.EndpointA, packet)
-	if err != nil {
-		return err
-	}
-	if sent {
-		return nil
-	}
-	return fmt.Errorf("packet commitment does not exist on either endpoint for provided packet")
 }
