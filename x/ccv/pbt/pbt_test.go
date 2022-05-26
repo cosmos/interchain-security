@@ -454,6 +454,21 @@ func (s *PBTTestSuite) TestAssumptions() {
 
 	s.Require().Equal(int64(1000000000000000003), s.delegatorBalance())
 
+	s.specialDelegate(1, s.validator(2), 1)
+	s.specialDelegate(1, s.validator(3), 1)
+	s.specialDelegate(0, s.validator(2), 2)
+	s.specialDelegate(0, s.validator(3), 1)
+
+	s.Require().Equal(int64(1000000000000000000), s.delegatorBalance())
+
+	//~~~~
+	// TODO: spin a bit here
+	s.jumpNBlocks(JumpNBlocks{[]string{P, C}, 10, 5})
+
+	s.idempotentBeginBlock(P)
+	s.idempotentBeginBlock(C)
+	//~~~~
+
 	maxValsE := uint32(2)
 	maxVals := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(P)).MaxValidators
 
