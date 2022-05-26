@@ -214,6 +214,14 @@ func (s *PBTTestSuite) height(chain string) int64 {
 	return s.chain(chain).CurrentHeader.GetHeight()
 }
 
+func (s *PBTTestSuite) time(chain string) time.Time {
+	return s.chain(chain).CurrentHeader.Time
+}
+
+func (s *PBTTestSuite) globalTime() time.Time {
+	return s.coordinator.CurrentTime
+}
+
 func (s *PBTTestSuite) endpoint(chain string) *ibctesting.Endpoint {
 	endpoints := make(map[string]*ibctesting.Endpoint)
 	endpoints[P] = s.path.EndpointB
@@ -477,8 +485,12 @@ func (s *PBTTestSuite) TestAssumptions() {
 	s.Require().Equal(int64(19), s.height(P))
 	s.Require().Equal(int64(19), s.height(C))
 
-	s.Require().NotEmpty(s.outbox[P])
+	s.Require().Empty(s.outbox[P])
 	s.Require().Empty(s.outbox[C])
+
+	s.Require().Equal(int64(1577923365), s.time(P).Unix())
+	s.Require().Equal(int64(1577923365), s.time(C).Unix())
+	s.Require().Equal(int64(1577923365), s.globalTime().Unix())
 
 	s.Require().Equal(int64(1000000000000000000), s.delegatorBalance())
 
