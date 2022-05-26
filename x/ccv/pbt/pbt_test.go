@@ -444,24 +444,17 @@ func (s *PBTTestSuite) DisableConsumerDistribution() {
 
 func (s *PBTTestSuite) TestAssumptions() {
 
-	_ = s.ctx(C)
-
-	CX := C
-	s.Require().Equal("consumer", CX)
-
-	s.jumpNBlocks(JumpNBlocks{[]string{P}, 0, 5})
+	s.jumpNBlocks(JumpNBlocks{[]string{P}, 1, 5})
 	// TODO: Is it correct to catch the consumer up with the provider here?
 	s.jumpNBlocks(JumpNBlocks{[]string{C}, 2, 5})
 
-	CX = C
-	s.Require().Equal("consumer", CX)
-	_ = s.ctx(P)
-	_ = s.ctx(C)
+	s.idempotentBeginBlock(P)
+	s.idempotentBeginBlock(C)
 
 	equalHeights(s)
 
-	s.Require().Equal(int64(17), s.height(P))
-	s.Require().Equal(int64(17), s.height(C))
+	s.Require().Equal(int64(18), s.height(P))
+	s.Require().Equal(int64(18), s.height(C))
 
 	s.Require().Equal(int64(1000000000000000000), s.delegatorBalance())
 

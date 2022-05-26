@@ -204,7 +204,6 @@ func NewPBTTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, appI
 
 	app := PBTSetupWithGenesisValSet(t, appIniter, valSet, genAccs, chainID, genBals...)
 
-	// create current header and call begin block
 	header := tmproto.Header{
 		ChainID: chainID,
 		Height:  1,
