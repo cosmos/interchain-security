@@ -70,6 +70,26 @@ func TestPBTTestSuite(t *testing.T) {
 	suite.Run(t, new(PBTTestSuite))
 }
 
+func (s *PBTTestSuite) createValidator() sdk.ValAddress {
+	privVal := mock.NewPV()
+	pubKey, err := privVal.GetPubKey()
+	s.Require().NoError(err)
+	// TODO: figure if need to do something with signersByAddress
+	// (see NewPBTTestChain)
+	val := tmtypes.NewValidator(pubKey, 0)
+	addr, err := sdk.ValAddressFromHex(val.Address.String())
+	s.Require().NoError(err)
+	PK := privVal.PrivKey.PubKey()
+
+	coin := sdk.NewCoin(denom, sdk.NewInt(0))
+	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{}, stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
+	s.Require().NoError(err)
+	psk := s.providerChain.App.GetStakingKeeper()
+	pskServer := stakingkeeper.NewMsgServerImpl(psk)
+	pskServer.CreateValidator(sdk.WrapSDKContext(s.ctx(P)), msg)
+	return addr
+}
+
 func (s *PBTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
@@ -154,6 +174,18 @@ func (s *PBTTestSuite) SetupTest() {
 	// so transfer channel will be on stage INIT when CreateChannels for ccv path returns.
 	s.coordinator.CreateChannels(s.path)
 	//~~~~~~~~~~
+
+	s.specialDelegate(1, s.validator(2), 1)
+	s.specialDelegate(1, s.validator(3), 1)
+	s.specialDelegate(0, s.validator(2), 2)
+	s.specialDelegate(0, s.validator(3), 1)
+
+	s.jumpNBlocks(JumpNBlocks{[]string{P}, 1, 5})
+	// TODO: Is it correct to catch the consumer up with the provider here?
+	s.jumpNBlocks(JumpNBlocks{[]string{C}, 2, 5})
+
+	s.idempotentBeginBlock(P)
+	s.idempotentBeginBlock(C)
 }
 
 /*
@@ -320,26 +352,6 @@ func (s *PBTTestSuite) idempotentBeginBlock(chain string) {
 	}
 }
 
-func (s *PBTTestSuite) createValidator() sdk.ValAddress {
-	privVal := mock.NewPV()
-	pubKey, err := privVal.GetPubKey()
-	s.Require().NoError(err)
-	// TODO: figure if need to do something with signersByAddress
-	// (see NewPBTTestChain)
-	val := tmtypes.NewValidator(pubKey, 0)
-	addr, err := sdk.ValAddressFromHex(val.Address.String())
-	s.Require().NoError(err)
-	PK := privVal.PrivKey.PubKey()
-
-	coin := sdk.NewCoin(denom, sdk.NewInt(0))
-	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{}, stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
-	s.Require().NoError(err)
-	psk := s.providerChain.App.GetStakingKeeper()
-	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-	pskServer.CreateValidator(sdk.WrapSDKContext(s.ctx(P)), msg)
-	return addr
-}
-
 func (s *PBTTestSuite) delegate(a Delegate) {
 	s.idempotentBeginBlock(P)
 	psk := s.providerChain.App.GetStakingKeeper()
@@ -410,6 +422,7 @@ func (s *PBTTestSuite) deliver(a Deliver) {
 	for _, p := range s.outbox[other] {
 		s.path.RelayPacket(p)
 	}
+	s.outbox[other] = []channeltypes.Packet{}
 }
 
 func (s *PBTTestSuite) providerSlash(a ProviderSlash) {
@@ -455,24 +468,10 @@ func (s *PBTTestSuite) DisableConsumerDistribution() {
 
 func (s *PBTTestSuite) TestAssumptions() {
 
-	s.jumpNBlocks(JumpNBlocks{[]string{P}, 1, 5})
-	// TODO: Is it correct to catch the consumer up with the provider here?
-	s.jumpNBlocks(JumpNBlocks{[]string{C}, 2, 5})
-
-	s.idempotentBeginBlock(P)
-	s.idempotentBeginBlock(C)
-
 	equalHeights(s)
 
 	s.Require().Equal(int64(18), s.height(P))
 	s.Require().Equal(int64(18), s.height(C))
-
-	s.Require().Equal(int64(1000000000000000003), s.delegatorBalance())
-
-	s.specialDelegate(1, s.validator(2), 1)
-	s.specialDelegate(1, s.validator(3), 1)
-	s.specialDelegate(0, s.validator(2), 2)
-	s.specialDelegate(0, s.validator(3), 1)
 
 	s.Require().Equal(int64(1000000000000000000), s.delegatorBalance())
 
