@@ -286,7 +286,7 @@ class Staking:
 
     def shares(self, val):
         # Add 1 for minSelfDelegation = 1
-        return self.delegation[val] + 1
+        return self.delegation[val] + 1000
 
     def unbonding_can_complete(self, op_id):
         if unval := [e for e in self.validatorQ if e.op_id == op_id]:

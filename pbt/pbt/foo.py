@@ -21,5 +21,10 @@ def combine(dir, fnout):
 
 
 def foo():
-    combine("traces_covering/", "traces_covering")
-    combine("traces_diverse/", "traces_diverse")
+    # combine("traces_covering/", "traces_covering")
+    # combine("traces_diverse/", "traces_diverse")
+
+    # 5,4,3,2
+    shares = (3000 * 2000) // 4000
+    issued = (shares * 4000) // 3000
+    print(shares, issued)
