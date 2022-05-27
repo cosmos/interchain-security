@@ -91,7 +91,7 @@ func (s *PBTTestSuite) commitAcks(committer string) {
 	}
 }
 
-func (s *PBTTestSuite) createValidator() sdk.ValAddress {
+func (s *PBTTestSuite) createValidator() (tmtypes.PrivValidator, sdk.ValAddress) {
 	privVal := mock.NewPV()
 	pubKey, err := privVal.GetPubKey()
 	s.Require().NoError(err)
@@ -108,7 +108,7 @@ func (s *PBTTestSuite) createValidator() sdk.ValAddress {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
 	pskServer.CreateValidator(sdk.WrapSDKContext(s.ctx(P)), msg)
-	return addr
+	return privVal, addr
 }
 
 func (s *PBTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
@@ -129,8 +129,24 @@ func (s *PBTTestSuite) SetupTest() {
 
 	// Add two more validator
 	// Only added two in chain creation
-	s.valAddresses = append(s.valAddresses, s.createValidator())
-	s.valAddresses = append(s.valAddresses, s.createValidator())
+	// TODO: clean up this horrible mess
+	// see this for reasoning https://github.com/danwt/informal-cosmos-hub-team/issues/13#issuecomment-1139704176
+	// TODO: the hacks here do seem to solve the problem
+	// temporarily!
+	val2, val2addr := s.createValidator()
+	val3, val3addr := s.createValidator()
+	val2pk, err := val2.GetPubKey()
+	s.Require().Nil(err)
+	val3pk, err := val3.GetPubKey()
+	s.Require().Nil(err)
+	s.valAddresses = append(s.valAddresses, val2addr)
+	s.valAddresses = append(s.valAddresses, val3addr)
+	// TODO: if this addr way doesn't work try using same way as in
+	// NewPBTTestChain
+	s.providerChain.Signers[val2pk.Address().String()] = val2
+	s.providerChain.Signers[val3pk.Address().String()] = val3
+	s.consumerChain.Signers[val2pk.Address().String()] = val2
+	s.consumerChain.Signers[val3pk.Address().String()] = val3
 
 	// TODO: needed?
 	s.DisableConsumerDistribution()
@@ -216,11 +232,9 @@ func (s *PBTTestSuite) SetupTest() {
 	I need to find a way around this or I won't be able to compare
 	the state snapshots
 	*/
-	// s.idempotentBeginBlock(P)
-	// s.idempotentBeginBlock(C)
+	s.idempotentBeginBlock(P)
+	s.idempotentBeginBlock(C)
 
-	s.Require().Equal(true, s.mustBeginBlock[P])
-	s.Require().Equal(true, s.mustBeginBlock[C])
 }
 
 /*
@@ -372,8 +386,6 @@ func (s *PBTTestSuite) beginBlock(chain string) {
 	}
 
 	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
-	dummy := s.ctx(chain)
-	s.Require().NotNil(dummy)
 }
 
 func (s *PBTTestSuite) idempotentBeginBlock(chain string) {
@@ -551,6 +563,8 @@ func (s *PBTTestSuite) DisableConsumerDistribution() {
 }
 
 func (s *PBTTestSuite) TestAssumptions() {
+	s.Require().Equal(false, s.mustBeginBlock[P])
+	s.Require().Equal(false, s.mustBeginBlock[C])
 
 	s.Require().Equal(int64(19), s.height(P))
 	s.Require().Equal(int64(19), s.height(C))
@@ -667,6 +681,11 @@ func (s *PBTTestSuite) matchState(chain string, trace pbt.Trace, i int) {
 	c := trace.Consequences[i]
 
 	heightOffset := 18
+	implementationStartTime := time.Unix(1577923365, 0).UTC()
+	modelOffset := time.Second * time.Duration(-5) // TODO: negatives work bro
+	timeOffset := implementationStartTime.Add(modelOffset)
+	// int64(1577923365), s.time(C).Unix()
+
 	if chain == P {
 		s.Require().Equal(int64(c.H.Provider+heightOffset), s.height(P), i)
 		s.Require().Equal(int64(c.DelegatorTokens), s.delegatorBalance())
@@ -680,7 +699,8 @@ func (s *PBTTestSuite) matchState(chain string, trace pbt.Trace, i int) {
 			}
 			s.Require().Equal(isJailed, s.isJailed(int64(j)))
 		}
-		s.Require().Equal(c.T.Provider, s.time(P))
+		t := time.Second * time.Duration(c.T.Provider)
+		s.Require().Equal(timeOffset.Add(t), s.time(P))
 		for j, tokens := range c.Tokens {
 			s.Require().Equal(int64(tokens), s.providerTokens(int64(j)))
 		}
@@ -696,7 +716,8 @@ func (s *PBTTestSuite) matchState(chain string, trace pbt.Trace, i int) {
 				s.Require().Error(err)
 			}
 		}
-		s.Require().Equal(c.T.Consumer, s.time(C))
+		t := time.Second * time.Duration(c.T.Consumer)
+		s.Require().Equal(timeOffset.Add(t), s.time(C))
 	}
 }
 
