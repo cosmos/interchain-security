@@ -218,6 +218,9 @@ func (s *PBTTestSuite) SetupTest() {
 	*/
 	// s.idempotentBeginBlock(P)
 	// s.idempotentBeginBlock(C)
+
+	s.Require().Equal(true, s.mustBeginBlock[P])
+	s.Require().Equal(true, s.mustBeginBlock[C])
 }
 
 /*
@@ -369,6 +372,8 @@ func (s *PBTTestSuite) beginBlock(chain string) {
 	}
 
 	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
+	dummy := s.ctx(chain)
+	s.Require().NotNil(dummy)
 }
 
 func (s *PBTTestSuite) idempotentBeginBlock(chain string) {
@@ -491,7 +496,6 @@ func (s *PBTTestSuite) deliver(a Deliver) {
 	s.idempotentDeliverAcks(a.chain)
 	other := map[string]string{P: C, C: P}[a.chain]
 	for _, p := range s.outbox[other] {
-		// TODO: relay! but don't use usual relay function...
 		receiver := s.endpoint(a.chain)
 		sender := receiver.Counterparty
 		ack, err := pbt.TryRelay(sender, receiver, p)
@@ -657,52 +661,70 @@ TRACE TEST
 ~~~~~~~~~~~~
 */
 
-func (s *PBTTestSuite) matchState(trace pbt.Trace, i int) {
+func (s *PBTTestSuite) matchState(chain string, trace pbt.Trace, i int) {
+	// TODO: some queries require context, others not
+	// TODO: distinguish between these
 	c := trace.Consequences[i]
-	// TODO: unhardcode this and check that it's correct
+
 	heightOffset := 18
-	s.Require().Equal(int64(c.H.Provider+heightOffset), s.height(P), i)
-	s.Require().Equal(int64(c.H.Consumer+heightOffset), s.height(C), i)
-	s.Require().Equal(int64(c.DelegatorTokens), s.delegatorBalance())
-	for i, jailedUntilTimestamp := range c.Jailed {
-		// TODO: tidy up
-		// the type/meaning of jailed is confusing here
-		isJailed := false
-		if jailedUntilTimestamp != nil {
-			isJailed = true
+	if chain == P {
+		s.Require().Equal(int64(c.H.Provider+heightOffset), s.height(P), i)
+		s.Require().Equal(int64(c.DelegatorTokens), s.delegatorBalance())
+		// TODO: unhardcode this and check that it's correct
+		for j, jailedUntilTimestamp := range c.Jailed {
+			// TODO: tidy up
+			// the type/meaning of jailed is confusing here
+			isJailed := false
+			if jailedUntilTimestamp != nil {
+				isJailed = true
+			}
+			s.Require().Equal(isJailed, s.isJailed(int64(j)))
 		}
-		s.Require().Equal(isJailed, s.isJailed(int64(i)))
-	}
-	for i, power := range c.Power {
-		actual, err := s.consumerPower(int64(i))
-		if power != nil {
-			s.Require().Nil(err)
-			s.Require().Equal(int64(*power), actual)
-		} else {
-			s.Require().Error(err)
+		s.Require().Equal(c.T.Provider, s.time(P))
+		for j, tokens := range c.Tokens {
+			s.Require().Equal(int64(tokens), s.providerTokens(int64(j)))
 		}
 	}
-	s.Require().Equal(c.T.Provider, s.time(P))
-	s.Require().Equal(c.T.Consumer, s.time(C))
-	for i, tokens := range c.Tokens {
-		s.Require().Equal(int64(tokens), s.providerTokens(int64(i)))
+	if chain == C {
+		s.Require().Equal(int64(c.H.Consumer+heightOffset), s.height(C), i)
+		for j, power := range c.Power {
+			actual, err := s.consumerPower(int64(j))
+			if power != nil {
+				s.Require().Nil(err)
+				s.Require().Equal(int64(*power), actual)
+			} else {
+				s.Require().Error(err)
+			}
+		}
+		s.Require().Equal(c.T.Consumer, s.time(C))
 	}
 }
 
 func executeTrace(s *PBTTestSuite, trace pbt.Trace) {
 
+	/*
+		TODO: there is a limitation where you can't query using .ctx
+		after a block has been committed. So limit querying to happen
+		only after a block has begun but not been commited. The last
+		step in JumpNBlocks is always a commit so you can't match the
+		state afterwards.
+		TODO: think of this
+	*/
 	for i, a := range trace.Actions {
+		fmt.Println(a.Kind)
 		switch a.Kind {
 		case "Delegate":
 			s.delegate(Delegate{
 				int64(a.Val),
 				int64(a.Amt),
 			})
+			s.matchState(P, trace, i)
 		case "Undelegate":
 			s.undelegate(Undelegate{
 				int64(a.Val),
 				int64(a.Amt),
 			})
+			s.matchState(P, trace, i)
 		case "JumpNBlocks":
 			s.jumpNBlocks(JumpNBlocks{
 				a.Chains,
@@ -711,6 +733,7 @@ func executeTrace(s *PBTTestSuite, trace pbt.Trace) {
 			})
 		case "Deliver":
 			s.deliver(Deliver{a.Chain})
+			s.matchState(a.Chain, trace, i)
 		case "ProviderSlash":
 			s.providerSlash(ProviderSlash{
 				int64(a.Val),
@@ -718,6 +741,7 @@ func executeTrace(s *PBTTestSuite, trace pbt.Trace) {
 				int64(a.Height),
 				1, // TODO: unhard code, use factor!
 			})
+			s.matchState(P, trace, i)
 		case "ConsumerSlash":
 			s.consumerSlash(ConsumerSlash{
 				int64(a.Val),
@@ -725,10 +749,10 @@ func executeTrace(s *PBTTestSuite, trace pbt.Trace) {
 				int64(a.Power),
 				a.IsDowntime,
 			})
+			s.matchState(C, trace, i)
 		default:
 			s.Require().FailNow("Couldn't parse action")
 		}
-		s.matchState(trace, i)
 	}
 }
 
