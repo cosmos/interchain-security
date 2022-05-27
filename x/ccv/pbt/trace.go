@@ -20,7 +20,7 @@ type Trace struct {
 		Consumer []struct {
 			H        int `json:"h"`
 			Snapshot struct {
-				DelegatorTokens float64 `json:"delegator_tokens"`
+				DelegatorTokens int `json:"delegator_tokens"`
 				H               struct {
 					Consumer int `json:"consumer"`
 					Provider int `json:"provider"`
@@ -48,7 +48,7 @@ type Trace struct {
 		Provider []struct {
 			H        int `json:"h"`
 			Snapshot struct {
-				DelegatorTokens float64 `json:"delegator_tokens"`
+				DelegatorTokens int `json:"delegator_tokens"`
 				H               struct {
 					Consumer int `json:"consumer"`
 					Provider int `json:"provider"`
@@ -75,7 +75,7 @@ type Trace struct {
 		} `json:"provider"`
 	} `json:"blocks"`
 	Consequences []struct {
-		DelegatorTokens float64 `json:"delegator_tokens"`
+		DelegatorTokens int `json:"delegator_tokens"`
 		H               struct {
 			Consumer int `json:"consumer"`
 			Provider int `json:"provider"`

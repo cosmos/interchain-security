@@ -2,6 +2,7 @@ package pbt_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math"
 	"os"
@@ -203,15 +204,20 @@ func (s *PBTTestSuite) SetupTest() {
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
 
-	s.specialDelegate(1, s.validator(2), 1)
-	s.specialDelegate(1, s.validator(3), 1)
-	s.specialDelegate(0, s.validator(2), 2)
-	s.specialDelegate(0, s.validator(3), 1)
+	s.specialDelegate(1, s.validator(2), 1000)
+	s.specialDelegate(1, s.validator(3), 1000)
+	s.specialDelegate(0, s.validator(2), 2000)
+	s.specialDelegate(0, s.validator(3), 1000)
 
 	s.jumpNBlocks(JumpNBlocks{[]string{P, C}, 1, 5})
 
-	s.idempotentBeginBlock(P)
-	s.idempotentBeginBlock(C)
+	/* TODO:, you cant query using context unless begin block
+	has fired!!!
+	I need to find a way around this or I won't be able to compare
+	the state snapshots
+	*/
+	// s.idempotentBeginBlock(P)
+	// s.idempotentBeginBlock(C)
 }
 
 /*
@@ -260,6 +266,26 @@ func (s *PBTTestSuite) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(s.validator(i))
 }
 
+func (s *PBTTestSuite) isJailed(i int64) bool {
+	sk := s.chain(P).App.GetStakingKeeper()
+	val, found := sk.GetValidator(s.ctx(P), s.validator(i))
+	if !found {
+		s.T().Fatal("Couldn't GetValidator")
+	}
+	return val.IsJailed()
+}
+
+func (s *PBTTestSuite) consumerPower(i int64) (int64, error) {
+	// TODO: I need to use consumer chain cast to get then
+	// call GetCCValidator.Power
+	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	val, found := ck.GetCCValidator(s.ctx(C), s.validator(i))
+	if !found {
+		return 0, fmt.Errorf("CCValidator not found")
+	}
+	return val.Power, nil
+}
+
 func (s *PBTTestSuite) delegation(i int64) int64 {
 	addr := s.delegator()
 	del, found := s.providerChain.App.GetStakingKeeper().GetDelegation(s.ctx(P), addr, s.validator(i))
@@ -277,9 +303,9 @@ func (s *PBTTestSuite) validatorStatus(chain string, i int64) stakingtypes.BondS
 	return val.GetStatus()
 }
 
-func (s *PBTTestSuite) validatorTokens(chain string, i int64) int64 {
+func (s *PBTTestSuite) providerTokens(i int64) int64 {
 	addr := s.validator(i)
-	val, found := s.chain(chain).App.GetStakingKeeper().GetValidator(s.ctx(chain), addr)
+	val, found := s.chain(P).App.GetStakingKeeper().GetValidator(s.ctx(P), addr)
 	if !found {
 		s.T().Fatal("Couldn't GetValidator")
 	}
@@ -532,7 +558,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 	s.Require().Equal(int64(1577923365), s.time(C).Unix())
 	s.Require().Equal(int64(1577923365), s.globalTime().Unix())
 
-	s.Require().Equal(int64(1000000000000000000), s.delegatorBalance())
+	s.Require().Equal(int64(1000000000000000), s.delegatorBalance())
 
 	maxValsE := uint32(2)
 	maxVals := s.providerChain.App.GetStakingKeeper().GetParams(s.ctx(P)).MaxValidators
@@ -543,7 +569,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 
 	initialModelState := pbt.InitialModelState{
 		// TODO: multiply by some 1000's
-		Delegation: []int64{4, 3, 2, 1},
+		Delegation: []int64{4000, 3000, 2000, 1000},
 		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded, stakingtypes.Unbonded, stakingtypes.Unbonded},
 	}
 
@@ -555,8 +581,8 @@ func (s *PBTTestSuite) TestAssumptions() {
 		}
 	}
 	for i := 0; i < 4; i++ {
-		E := initialModelState.Delegation[i] + 1
-		A := s.validatorTokens(P, int64(i))
+		E := initialModelState.Delegation[i] + 1000
+		A := s.providerTokens(int64(i))
 		if E != A {
 			s.T().Fatal("Bad test")
 		}
@@ -593,7 +619,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 	}
 
 	eFound := []bool{true, true, false, false}
-	ePower := []int64{5, 4}
+	ePower := []int64{5000, 4000}
 
 	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 
@@ -631,43 +657,78 @@ TRACE TEST
 ~~~~~~~~~~~~
 */
 
+func (s *PBTTestSuite) matchState(trace pbt.Trace, i int) {
+	c := trace.Consequences[i]
+	// TODO: unhardcode this and check that it's correct
+	heightOffset := 18
+	s.Require().Equal(int64(c.H.Provider+heightOffset), s.height(P), i)
+	s.Require().Equal(int64(c.H.Consumer+heightOffset), s.height(C), i)
+	s.Require().Equal(int64(c.DelegatorTokens), s.delegatorBalance())
+	for i, jailedUntilTimestamp := range c.Jailed {
+		// TODO: tidy up
+		// the type/meaning of jailed is confusing here
+		isJailed := false
+		if jailedUntilTimestamp != nil {
+			isJailed = true
+		}
+		s.Require().Equal(isJailed, s.isJailed(int64(i)))
+	}
+	for i, power := range c.Power {
+		actual, err := s.consumerPower(int64(i))
+		if power != nil {
+			s.Require().Nil(err)
+			s.Require().Equal(int64(*power), actual)
+		} else {
+			s.Require().Error(err)
+		}
+	}
+	s.Require().Equal(c.T.Provider, s.time(P))
+	s.Require().Equal(c.T.Consumer, s.time(C))
+	for i, tokens := range c.Tokens {
+		s.Require().Equal(int64(tokens), s.providerTokens(int64(i)))
+	}
+}
+
 func executeTrace(s *PBTTestSuite, trace pbt.Trace) {
 
-	for _, a := range trace.Actions {
+	for i, a := range trace.Actions {
 		switch a.Kind {
-		case "delegate":
+		case "Delegate":
 			s.delegate(Delegate{
 				int64(a.Val),
 				int64(a.Amt),
 			})
-		case "undelegate":
+		case "Undelegate":
 			s.undelegate(Undelegate{
 				int64(a.Val),
 				int64(a.Amt),
 			})
-		case "jumpNBlocks":
+		case "JumpNBlocks":
 			s.jumpNBlocks(JumpNBlocks{
 				a.Chains,
 				int64(a.N),
 				int64(a.SecondsPerBlock),
 			})
-		case "deliver":
+		case "Deliver":
 			s.deliver(Deliver{a.Chain})
-		case "providerSlash":
+		case "ProviderSlash":
 			s.providerSlash(ProviderSlash{
 				int64(a.Val),
 				int64(a.Power),
 				int64(a.Height),
 				1, // TODO: unhard code, use factor!
 			})
-		case "consumerSlash":
+		case "ConsumerSlash":
 			s.consumerSlash(ConsumerSlash{
 				int64(a.Val),
 				int64(a.Height),
 				int64(a.Power),
 				a.IsDowntime,
 			})
+		default:
+			s.Require().FailNow("Couldn't parse action")
 		}
+		s.matchState(trace, i)
 	}
 }
 

@@ -179,7 +179,7 @@ def bar():
             with open(join(PATH, fn), "w") as fd_w:
                 fd_w.write(json.dumps(obj, indent=2))
 
-    sys.exit(1)
+    # sys.exit(1)
 
     reverse = {en: i for i, en in enumerate(event_names)}
 

@@ -78,11 +78,11 @@ class Staking:
         # the number of shares the delegator has in the validator
         # simply hardcoded to match what driver starts with
         # denominated in shares
-        self.delegation = [4, 3, 2, 1]
+        self.delegation = [4000, 3000, 2000, 1000]
         # tokens = shares before any slashing or rewards happen
         # 1 token is self delegated by validators
         # denominated in tokens, but use 1-1 exchange rate
-        self.tokens = [x + 1 for x in self.delegation]
+        self.tokens = [x + 1000 for x in self.delegation]
         # validator status
         self.status = [Status.BONDED, Status.BONDED, Status.UNBONDED, Status.UNBONDED]
         # unbonding delegations (undels)
@@ -92,7 +92,7 @@ class Staking:
         # jailed? If yes, timestamp of unjailing
         self.jailed = [None] * NUM_VALIDATORS
         # delegator balance, hardcoded
-        self.delegator_tokens = 10000000000000000000
+        self.delegator_tokens = 1000000000000000
         # used to track unbonding and redelegation entries, as well as
         # map to unbonding validators, in order to track on_hold
         self.unbonding_op_id = 0
@@ -504,7 +504,7 @@ class Model:
         # a new block
         self.blocks.commit_block(P, self.snapshot())
         self.blocks.commit_block(C, self.snapshot())
-        self.increase_seconds(1)
+        self.increase_seconds(5)
         self.must_begin_block = {P: True, C: True}
 
     class Snapshot:

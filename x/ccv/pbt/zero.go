@@ -63,8 +63,7 @@ func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, val
 	require.Equal(t, 2, len(valSet.Validators))
 
 	initialModelState := InitialModelState{
-		// TODO: multiply by some 1000's
-		Delegation: []int64{4, 3},
+		Delegation: []int64{4000, 3000},
 		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded},
 	}
 
@@ -75,7 +74,8 @@ func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, val
 		delegation := initialModelState.Delegation[i]
 		status := initialModelState.Status[i]
 
-		tokens := sdk.NewInt(delegation + 1)
+		add := int64(1000)
+		tokens := sdk.NewInt(delegation + add)
 		if status == stakingtypes.Bonded {
 			totalBonded = totalBonded.Add(tokens)
 		}
@@ -83,7 +83,7 @@ func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, val
 			totalUnbonded = totalUnbonded.Add(tokens)
 		}
 		delShares := sdk.NewDec(delegation)
-		shares := sdk.NewDec(delegation + 1)
+		shares := sdk.NewDec(delegation + add)
 
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
 		require.NoError(t, err)
@@ -183,7 +183,7 @@ func NewPBTTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, appI
 	for i := 0; i < ibctesting.MaxAccounts; i++ {
 		senderPrivKey := secp256k1.GenPrivKey()
 		acc := authtypes.NewBaseAccount(senderPrivKey.PubKey().Address().Bytes(), senderPrivKey.PubKey(), uint64(i), 0)
-		amount, ok := sdk.NewIntFromString("1000000000000000003")
+		amount, ok := sdk.NewIntFromString("1000000000003000")
 		require.True(t, ok)
 
 		balance := banktypes.Balance{
@@ -252,7 +252,7 @@ func NewPBTTestChain(t *testing.T, coord *ibctesting.Coordinator, appIniter ibct
 		pubKey, err := privVal.GetPubKey()
 		require.NoError(t, err)
 		// TODO: the power here needs to be computed another way
-		validators = append(validators, tmtypes.NewValidator(pubKey, int64(5-i)))
+		validators = append(validators, tmtypes.NewValidator(pubKey, int64((5-i)*1000)))
 		signersByAddress[pubKey.Address().String()] = privVal
 
 		addr, err := sdk.ValAddressFromHex(pubKey.Address().String())
