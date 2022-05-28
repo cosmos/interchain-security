@@ -484,6 +484,8 @@ func (s *PBTTestSuite) endBlock(chain string) {
 			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
 			s.outbox[chain] = append(s.outbox[chain], packet)
+			// TODO: try to also get the packet comittment here
+			// https://github.com/danwt/informal-cosmos-hub-team/issues/13#issuecomment-1140192692
 		}
 	}
 
