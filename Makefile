@@ -55,8 +55,9 @@ proto-check-breaking:
 
 TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.5/proto/tendermint
 GOGO_PROTO_URL      = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
-CONFIO_URL          = https://raw.githubusercontent.com/confio/ics23/v0.7.0
-SDK_PROTO_URL 		= https://raw.githubusercontent.com/cosmos/cosmos-sdk/v0.41.0/proto/cosmos
+CONFIO_URL          = https://raw.githubusercontent.com/confio/ics23/v0.7.1
+COSMOS_PROTO_URL    = https://raw.githubusercontent.com/regen-network/cosmos-proto/master
+SDK_PROTO_URL 		= https://raw.githubusercontent.com/cosmos/cosmos-sdk/interchain-security-rebase/proto/cosmos
 
 TM_CRYPTO_TYPES     = third_party/proto/tendermint/crypto
 TM_ABCI_TYPES       = third_party/proto/tendermint/abci
@@ -68,13 +69,15 @@ TM_P2P              = third_party/proto/tendermint/p2p
 SDK_QUERY 			= third_party/proto/cosmos/base/query/v1beta1
 SDK_BASE 			= third_party/proto/cosmos/base/v1beta1
 SDK_UPGRADE			= third_party/proto/cosmos/upgrade/v1beta1
+SDK_STAKING			= third_party/proto/cosmos/staking/v1beta1
 
 GOGO_PROTO_TYPES    = third_party/proto/gogoproto
 CONFIO_TYPES        = third_party/proto/confio
+COSMOS_PROTO_TYPES  = third_party/proto/cosmos_proto
 
 proto-update-deps:
-	@mkdir -p $(GOGO_PROTO_TYPES)
-	@curl -sSL $(GOGO_PROTO_URL)/gogoproto/gogo.proto > $(GOGO_PROTO_TYPES)/gogo.proto
+	@mkdir -p $(COSMOS_PROTO_TYPES)
+	@curl -sSL $(COSMOS_PROTO_URL)/cosmos.proto > $(COSMOS_PROTO_TYPES)/cosmos.proto
 
 	@mkdir -p $(SDK_QUERY)
 	@curl -sSL $(SDK_PROTO_URL)/base/query/v1beta1/pagination.proto > $(SDK_QUERY)/pagination.proto
@@ -84,6 +87,9 @@ proto-update-deps:
 
 	@mkdir -p $(SDK_UPGRADE)
 	@curl -sSL $(SDK_PROTO_URL)/upgrade/v1beta1/upgrade.proto > $(SDK_UPGRADE)/upgrade.proto
+
+	@mkdir -p $(SDK_STAKING)
+	@curl -sSL $(SDK_PROTO_URL)/staking/v1beta1/staking.proto > $(SDK_STAKING)/staking.proto
 
 ## Importing of tendermint protobuf definitions currently requires the
 ## use of `sed` in order to build properly with cosmos-sdk's proto file layout
