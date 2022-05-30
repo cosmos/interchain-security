@@ -6,13 +6,13 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/bytes"
 )
@@ -124,8 +124,6 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			suite.Require().False(ack.Success(), "invalid test case: %s did not return an Error Acknowledgment")
 		} else {
 			suite.Require().Nil(ack, "successful packet must send ack asynchronously. case: %s", tc.name)
-			suite.Require().Equal(ccv.VALIDATING, suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetChannelStatus(suite.ctx, suite.path.EndpointA.ChannelID),
-				"channel status is not valdidating after receive packet for valid test case: %s", tc.name)
 			providerChannel, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.ctx)
 			suite.Require().True(ok)
 			suite.Require().Equal(tc.packet.DestinationChannel, providerChannel,
@@ -246,7 +244,7 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 
 func (suite *KeeperTestSuite) TestOnAcknowledgement() {
 	packetData := types.NewSlashPacketData(
-		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), int64(4), int64(1),
+		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Downtime,
 	)
 
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID,

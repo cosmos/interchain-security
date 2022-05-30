@@ -5,7 +5,6 @@ import (
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 func (suite *KeeperTestSuite) TestGenesis() {
@@ -14,7 +13,6 @@ func (suite *KeeperTestSuite) TestGenesis() {
 	for i := 0; i < 4; i++ {
 		suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetChainToChannel(ctx, fmt.Sprintf("chainid-%d", i), fmt.Sprintf("channelid-%d", i))
 		suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetChannelToChain(ctx, fmt.Sprintf("channelid-%d", i), fmt.Sprintf("chainid-%d", i))
-		suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetChannelStatus(ctx, fmt.Sprintf("channelid-%d", i), types.Status(i))
 	}
 
 	genState := suite.providerChain.App.(*appProvider.App).ProviderKeeper.ExportGenesis(suite.providerChain.GetContext())
@@ -31,8 +29,5 @@ func (suite *KeeperTestSuite) TestGenesis() {
 		suite.Require().True(chainOk)
 		suite.Require().Equal(expectedChainId, chainID, "did not store correct chain id for given channel id")
 		suite.Require().Equal(expectedChannelId, channelID, "did not store correct channel id for given chain id")
-
-		status := suite.consumerChain.App.(*appConsumer.App).ProviderKeeper.GetChannelStatus(ctx, channelID)
-		suite.Require().Equal(types.Status(i), status, "status is unexpected for given channel id: %s", channelID)
 	}
 }
