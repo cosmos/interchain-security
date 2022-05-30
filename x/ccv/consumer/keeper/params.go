@@ -13,7 +13,6 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetBlocksPerDistributionTransmission(ctx),
 		k.GetDistributionTransmissionChannel(ctx),
 		k.GetProviderFeePoolAddrStr(ctx),
-		k.GetConsumerRedistributeFrac(ctx),
 	)
 }
 
@@ -57,14 +56,4 @@ func (k Keeper) GetProviderFeePoolAddrStr(ctx sdk.Context) string {
 
 func (k Keeper) SetProviderFeePoolAddrStr(ctx sdk.Context, addr string) {
 	k.paramSpace.Set(ctx, types.KeyProviderFeePoolAddrStr, addr)
-}
-
-func (k Keeper) GetConsumerRedistributeFrac(ctx sdk.Context) string {
-	var s string
-	k.paramSpace.Get(ctx, types.KeyConsumerRedistributeFrac, &s)
-	return s
-}
-
-func (k Keeper) SetConsumerRedistributeFrac(ctx sdk.Context, fracStr string) {
-	k.paramSpace.Set(ctx, types.KeyConsumerRedistributeFrac, fracStr)
 }
