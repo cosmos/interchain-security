@@ -719,7 +719,7 @@ func (s *ProviderTestSuite) TestDistribution() {
 	s.Require().True(found)
 
 	// ensure the correct amount is being transmitted within the packet
-	expConsRedistrAmt := expFeePoolAtDistr / 2 // because of default 50% redistribute fraction (will truc decimal)
+	expConsRedistrAmt := expFeePoolAtDistr * 3 / 4 // because of default 75% redistribute fraction (will truc decimal)
 	expProviderAmt := expFeePoolAtDistr - expConsRedistrAmt
 	s.Assert().Equal(ftpd.Amount, fmt.Sprintf("%v", expProviderAmt))
 
