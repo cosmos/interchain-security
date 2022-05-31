@@ -1,23 +1,28 @@
-package app
+package ante
 
 import (
 	"fmt"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 )
 
 var validMsgsCCVDisabled = map[string]struct{}{}
 
-// MsgFilterDecorator defines an AnteHandler decorator that enables message
-// filtering based on certain criteria.
-type MsgFilterDecorator struct {
-	ConsumerKeeper ibcconsumerkeeper.Keeper
-}
+type (
+	// ConsumerKeeper defines the interface required by a consumer module keeper.
+	ConsumerKeeper interface {
+		GetProviderChannel(ctx sdk.Context) (string, bool)
+	}
 
-func NewMsgFilterDecorator(k ibcconsumerkeeper.Keeper) MsgFilterDecorator {
+	// MsgFilterDecorator defines an AnteHandler decorator that enables message
+	// filtering based on certain criteria.
+	MsgFilterDecorator struct {
+		ConsumerKeeper ConsumerKeeper
+	}
+)
+
+func NewMsgFilterDecorator(k ConsumerKeeper) MsgFilterDecorator {
 	return MsgFilterDecorator{
 		ConsumerKeeper: k,
 	}
@@ -29,7 +34,7 @@ func (mfd MsgFilterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 	// If the CCV channel has yet been established, then we must only allow certain
 	// message types.
 	if _, ok := mfd.ConsumerKeeper.GetProviderChannel(ctx); !ok {
-		if !hasPreCCVValidMsgs(tx.GetMsgs()) {
+		if !hasValidMsgsPreCCV(tx.GetMsgs()) {
 			return ctx, fmt.Errorf("tx contains unsupported message types at height %d", currHeight)
 		}
 	}
@@ -37,7 +42,7 @@ func (mfd MsgFilterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 	return next(ctx, tx, simulate)
 }
 
-func hasPreCCVValidMsgs(msgs []sdk.Msg) bool {
+func hasValidMsgsPreCCV(msgs []sdk.Msg) bool {
 	for _, msg := range msgs {
 		msgType := sdk.MsgTypeURL(msg)
 
