@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -28,7 +29,7 @@ func (mfd MsgFilterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 	// If the CCV channel has yet been established, then we must only allow certain
 	// message types.
 	if _, ok := mfd.ConsumerKeeper.GetProviderChannel(ctx); !ok {
-		if !hasValidMsgs(tx.GetMsgs()) {
+		if !hasPreCCVValidMsgs(tx.GetMsgs()) {
 			return ctx, fmt.Errorf("tx contains unsupported message types at height %d", currHeight)
 		}
 	}
@@ -36,13 +37,14 @@ func (mfd MsgFilterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 	return next(ctx, tx, simulate)
 }
 
-func hasValidMsgs(msgs []sdk.Msg) bool {
+func hasPreCCVValidMsgs(msgs []sdk.Msg) bool {
 	for _, msg := range msgs {
 		msgType := sdk.MsgTypeURL(msg)
-		// TODO: Perform message filtering that only allows certain IBC messages
-		// using sdk.MsgTypeURL(msg)
 
-		if _, ok := validMsgsCCVDisabled[msgType]; !ok {
+		// Only accept IBC messages prior to the CCV channel being established.
+		// Note, rather than listing out all possible IBC message types, we assume
+		// all IBC message types have a correct and canonical prefix -- /ibc.*
+		if !strings.HasPrefix(msgType, "/ibc.") {
 			return false
 		}
 	}
