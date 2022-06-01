@@ -26,7 +26,7 @@ import (
 type Keeper struct {
 	storeKey          sdk.StoreKey
 	cdc               codec.BinaryCodec
-	paramSpace        paramtypes.Subspace
+	paramStore        paramtypes.Subspace
 	scopedKeeper      capabilitykeeper.ScopedKeeper
 	channelKeeper     ccv.ChannelKeeper
 	portKeeper        ccv.PortKeeper
@@ -35,7 +35,7 @@ type Keeper struct {
 	slashingKeeper    ccv.SlashingKeeper
 	hooks             ccv.ConsumerHooks
 	bankKeeper        ccv.BankKeeper
-	accountKeeper     ccv.AccountKeeper
+	authKeeper        ccv.AccountKeeper
 	ibcTransferKeeper ccv.IBCTransferKeeper
 	ibcCoreKeeper     ccv.IBCCoreKeeper
 	feeCollectorName  string
@@ -61,7 +61,7 @@ func NewKeeper(
 	return Keeper{
 		storeKey:          key,
 		cdc:               cdc,
-		paramSpace:        paramSpace,
+		paramStore:        paramSpace,
 		scopedKeeper:      scopedKeeper,
 		channelKeeper:     channelKeeper,
 		portKeeper:        portKeeper,
@@ -69,7 +69,7 @@ func NewKeeper(
 		clientKeeper:      clientKeeper,
 		slashingKeeper:    slashingKeeper,
 		bankKeeper:        bankKeeper,
-		accountKeeper:     accountKeeper,
+		authKeeper:        accountKeeper,
 		ibcTransferKeeper: ibcTransferKeeper,
 		ibcCoreKeeper:     ibcCoreKeeper,
 		feeCollectorName:  feeCollectorName,
