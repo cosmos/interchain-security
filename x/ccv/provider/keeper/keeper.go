@@ -130,11 +130,11 @@ func (k Keeper) GetChainToChannel(ctx sdk.Context, chainID string) (string, bool
 }
 
 // IterateConsumerChains iterates over all of the consumer chains that the provider module controls.
-// It calls the provided callback function which takes in a chainID and channelID and returns
+// It calls the provided callback function which takes in a chainID and returns
 // a stop boolean which will stop the iteration.
 func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.ChainToChannelKeyPrefix+"/"))
+	iterator := sdk.KVStorePrefixIterator(store, []byte(types.ChainToClientKeyPrefix+"/"))
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -143,7 +143,7 @@ func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, 
 
 	for ; iterator.Valid(); iterator.Next() {
 		// remove prefix + "/" from key to retrieve chainID
-		chainID := string(iterator.Key()[len(types.ChainToChannelKeyPrefix)+1:])
+		chainID := string(iterator.Key()[len(types.ChainToClientKeyPrefix)+1:])
 
 		stop := cb(ctx, chainID)
 		if stop {

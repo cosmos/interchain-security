@@ -119,12 +119,33 @@ func (suite *ProviderTestSuite) SetupTest() {
 }
 
 func (suite *ProviderTestSuite) SetupCCVChannel() {
+	suite.StartSetupCCVChannel()
+	suite.CompleteSetupCCVChannel()
+	suite.SetupTransferChannel()
+}
+
+func (suite *ProviderTestSuite) StartSetupCCVChannel() {
 	suite.coordinator.CreateConnections(suite.path)
 
-	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
-	// so transfer channel will be on stage INIT when CreateChannels for ccv path returns.
-	suite.coordinator.CreateChannels(suite.path)
+	err := suite.path.EndpointA.ChanOpenInit()
+	suite.Require().NoError(err)
 
+	err = suite.path.EndpointB.ChanOpenTry()
+	suite.Require().NoError(err)
+}
+
+func (suite *ProviderTestSuite) CompleteSetupCCVChannel() {
+	err := suite.path.EndpointA.ChanOpenAck()
+	suite.Require().NoError(err)
+
+	err = suite.path.EndpointB.ChanOpenConfirm()
+	suite.Require().NoError(err)
+
+	// ensure counterparty is up to date
+	suite.path.EndpointA.UpdateClient()
+}
+
+func (suite *ProviderTestSuite) SetupTransferChannel() {
 	// transfer path will use the same connection as ccv path
 
 	suite.transferPath.EndpointA.ClientID = suite.path.EndpointA.ClientID
@@ -132,7 +153,8 @@ func (suite *ProviderTestSuite) SetupCCVChannel() {
 	suite.transferPath.EndpointB.ClientID = suite.path.EndpointB.ClientID
 	suite.transferPath.EndpointB.ConnectionID = suite.path.EndpointB.ConnectionID
 
-	// INIT step for transfer path has already been called during CCV channel setup
+	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
+	// so transfer channel will be on stage INIT when CompleteSetupCCVChannel returns.
 	suite.transferPath.EndpointA.ChannelID = suite.consumerChain.App.(*appConsumer.App).
 		ConsumerKeeper.GetDistributionTransmissionChannel(suite.consumerChain.GetContext())
 

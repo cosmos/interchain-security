@@ -1,6 +1,7 @@
 package provider_test
 
 import (
+	"strings"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -30,7 +31,7 @@ import (
 // Advance time so that consumer's unbonding op completes
 // Relay ack to provider
 // Check that unbonding has finally completed in provider staking
-func (s *ProviderTestSuite) TestStakingHooks2() {
+func (s *ProviderTestSuite) TestTimelyUndelegation2() {
 	s.SetupCCVChannel()
 	bondAmt := sdk.NewInt(10000000)
 
@@ -100,7 +101,7 @@ func (s *ProviderTestSuite) TestStakingHooks2() {
 // Check that unbonding on staking is not allowed to complete
 // Advance time so that provider's unbonding op completes
 // Check that unbonding has finally completed in provider staking
-func (s *ProviderTestSuite) TestStakingHooks1() {
+func (s *ProviderTestSuite) TestTimelyUndelegation1() {
 	s.SetupCCVChannel()
 	bondAmt := sdk.NewInt(10000000)
 
@@ -172,7 +173,7 @@ func (s *ProviderTestSuite) TestStakingHooks1() {
 // Relay ack to provider
 // Advance time so that provider's unbonding op completes
 // Check that unbonding has finally completed in provider staking
-func (s *ProviderTestSuite) TestUnbondingEdgeCase() {
+func (s *ProviderTestSuite) TestUndelegationEdgeCase() {
 	s.SetupCCVChannel()
 	bondAmt := sdk.NewInt(10000000)
 
@@ -243,6 +244,91 @@ func (s *ProviderTestSuite) TestUnbondingEdgeCase() {
 	s.Require().True(getBalance(s, newProviderCtx, delAddr).Equal(initBalance))
 }
 
+func (s *ProviderTestSuite) TestUndelegationDuringInit() {
+	// start CCV channel setup
+	s.StartSetupCCVChannel()
+
+	origTime := s.ctx.BlockTime()
+
+	// delegate bondAmt and undelegate all of it
+	bondAmt := sdk.NewInt(10000000)
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 1)
+
+	// check that staking unbonding op was created and onHold is true
+	checkStakingUnbondingOps(s, 1, true, true)
+
+	// check that CCV unbonding op was created
+	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true)
+
+	// END PROVIDER UNBONDING
+	endProviderUnbondingPeriod(s, origTime)
+
+	// check that onHold is true
+	checkStakingUnbondingOps(s, 1, true, true)
+
+	// CHECK THAT UNBONDING IS NOT COMPLETE
+	// Check that unbonding has not yet completed. The initBalance is still lower
+	// by the bond amount, because it has been taken out of the delegator's account
+	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
+
+	// complete CCV channel setup
+	s.CompleteSetupCCVChannel()
+
+	// setup transfer channel
+	s.SetupTransferChannel()
+
+	// channelID := s.path.EndpointB.ChannelID
+
+	// // save next sequence before sending a packet
+	// seq, ok := s.providerChain.App.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(s.providerCtx(), providertypes.PortID, channelID)
+	// s.Require().True(ok)
+
+	// // SEND PACKET
+	// s.providerChain.App.EndBlock(abci.RequestEndBlock{})
+
+	// // verify that the packet was sent
+	// commit := s.providerChain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(s.providerCtx(), providertypes.PortID, channelID, seq)
+	// s.Require().NotNil(commit, "did not find packet commitment")
+
+	// // Get validator update created in Endblock to use in reconstructing packet
+	// valUpdates := s.providerChain.App.GetStakingKeeper().GetValidatorUpdates(s.providerCtx())
+
+	// // Get current blocktime
+	// oldBlockTime := s.providerCtx().BlockTime()
+
+	// // commit block on provider chain and update consumer chain's client
+	// commitProviderBlock(s)
+	// // Relay packet to consumer chain
+	// packet, packetData := sendValUpdatePacket(s, valUpdates, valsetUpdateID, oldBlockTime, 1)
+
+	// // CHECK THAT UNBONDING IS NOT COMPLETE
+	// // Check that unbonding has not yet completed. The initBalance is still lower
+	// // by the bond amount, because it has been taken out of the delegator's account
+	// s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
+
+	// // END CONSUMER UNBONDING
+	// // end consumer's unbonding period by advancing time and calling UnbondMaturePackets
+	// endConsumerUnbondingPeriod(s, origTime)
+
+	// // commit block on consumer and update provider client
+	// commitConsumerBlock(s)
+
+	// // send acknowledgement to provider
+	// sendValUpdateAck(s, s.providerCtx(), packet, packetData)
+
+	// // CHECK THAT UNBONDING IS COMPLETE
+	// // Check that ccv unbonding op has been deleted
+	// checkCCVUnbondingOp(s, newProviderCtx, s.consumerChain.ChainID, valsetUpdateID, false)
+
+	// // Check that staking unbonding op has been deleted
+	// checkStakingUnbondingOps(s, valsetUpdateID, false, false)
+
+	// // Check that unbonding has completed
+	// // Check that half the coins have been returned
+	// s.Require().True(getBalance(s, newProviderCtx, delAddr).Equal(initBalance))
+}
+
 func getBalance(s *ProviderTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
 	return s.providerChain.App.(*appProvider.App).BankKeeper.GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
@@ -301,8 +387,13 @@ func checkStakingUnbondingOps(s *ProviderTestSuite, id uint64, found bool, onHol
 }
 
 func checkCCVUnbondingOp(s *ProviderTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool) {
-	_, wasFound := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
+	entries, wasFound := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
 	s.Require().True(found == wasFound)
+	if found {
+		s.Require().True(len(entries) > 0, "No unbonding ops found")
+		s.Require().True(len(entries[0].UnbondingConsumerChains) > 0, "Unbonding op with no consumer chains")
+		s.Require().True(strings.Compare(entries[0].UnbondingConsumerChains[0], "testchain2") == 0, "Unbonding op with unexpected consumer chain")
+	}
 }
 
 func sendValUpdatePacket(s *ProviderTestSuite, valUpdates []abci.ValidatorUpdate, valUpdateId uint64, blockTime time.Time, packetSequence uint64) (channeltypes.Packet, types.ValidatorSetChangePacketData) {
