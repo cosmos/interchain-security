@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"fmt"
 
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 )
 
@@ -17,14 +16,14 @@ func (suite *KeeperTestSuite) TestGenesis() {
 
 	genState := suite.providerChain.App.(*appProvider.App).ProviderKeeper.ExportGenesis(suite.providerChain.GetContext())
 
-	suite.consumerChain.App.(*appConsumer.App).ProviderKeeper.InitGenesis(suite.consumerChain.GetContext(), genState)
+	suite.consumerChain.App.(*appProvider.App).ProviderKeeper.InitGenesis(suite.consumerChain.GetContext(), genState)
 
 	ctx = suite.consumerChain.GetContext()
 	for i := 0; i < 4; i++ {
 		expectedChainId := fmt.Sprintf("chainid-%d", i)
 		expectedChannelId := fmt.Sprintf("channelid-%d", i)
-		channelID, channelOk := suite.consumerChain.App.(*appConsumer.App).ProviderKeeper.GetChainToChannel(ctx, expectedChainId)
-		chainID, chainOk := suite.consumerChain.App.(*appConsumer.App).ProviderKeeper.GetChannelToChain(ctx, expectedChannelId)
+		channelID, channelOk := suite.consumerChain.App.(*appProvider.App).ProviderKeeper.GetChainToChannel(ctx, expectedChainId)
+		chainID, chainOk := suite.consumerChain.App.(*appProvider.App).ProviderKeeper.GetChannelToChain(ctx, expectedChannelId)
 		suite.Require().True(channelOk)
 		suite.Require().True(chainOk)
 		suite.Require().Equal(expectedChainId, chainID, "did not store correct chain id for given channel id")

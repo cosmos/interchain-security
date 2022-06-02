@@ -104,10 +104,6 @@ import (
 	ibcconsumer "github.com/cosmos/interchain-security/x/ccv/consumer"
 	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	ibcconsumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ibcprovider "github.com/cosmos/interchain-security/x/ccv/provider"
-	ibcproviderclient "github.com/cosmos/interchain-security/x/ccv/provider/client"
-	ibcproviderkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ibcprovidertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvstaking "github.com/cosmos/interchain-security/x/ccv/staking"
 
 	// unnamed import of statik for swagger UI support
@@ -131,7 +127,6 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		distrclient.ProposalHandler,
 		upgradeclient.ProposalHandler,
 		upgradeclient.CancelProposalHandler,
-		ibcproviderclient.ProposalHandler,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
 
@@ -160,7 +155,6 @@ var (
 			upgradeclient.CancelProposalHandler,
 			ibcclientclient.UpdateClientProposalHandler,
 			ibcclientclient.UpgradeProposalHandler,
-			ibcproviderclient.ProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
@@ -175,7 +169,6 @@ var (
 		liquidity.AppModuleBasic{},
 		//router.AppModuleBasic{},
 		ibcconsumer.AppModuleBasic{},
-		ibcprovider.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -240,7 +233,6 @@ type App struct { // nolint: golint
 	AuthzKeeper     authzkeeper.Keeper
 	LiquidityKeeper liquiditykeeper.Keeper
 	ConsumerKeeper  ibcconsumerkeeper.Keeper
-	ProviderKeeper  ibcproviderkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper         capabilitykeeper.ScopedKeeper
@@ -294,7 +286,7 @@ func New(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, liquiditytypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
-		ibcconsumertypes.StoreKey, ibcprovidertypes.StoreKey,
+		ibcconsumertypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, stakingtypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -332,7 +324,6 @@ func New(
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedIBCConsumerKeeper := app.CapabilityKeeper.ScopeToModule(ibcconsumertypes.ModuleName)
-	scopedIBCProviderKeeper := app.CapabilityKeeper.ScopeToModule(ibcprovidertypes.ModuleName)
 	app.CapabilityKeeper.Seal()
 
 	// add keepers
@@ -429,7 +420,6 @@ func New(
 		stakingtypes.NewMultiStakingHooks(
 			app.DistrKeeper.Hooks(),
 			app.SlashingKeeper.Hooks(),
-			app.ProviderKeeper.Hooks(),
 		),
 	)
 
@@ -460,22 +450,6 @@ func New(
 		authtypes.FeeCollectorName,
 	)
 
-	app.ProviderKeeper = ibcproviderkeeper.NewKeeper(
-		appCodec,
-		keys[ibcprovidertypes.StoreKey],
-		app.GetSubspace(ibcprovidertypes.ModuleName),
-		scopedIBCProviderKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
-		app.IBCKeeper.ConnectionKeeper,
-		app.IBCKeeper.ClientKeeper,
-		app.StakingKeeper,
-		app.SlashingKeeper,
-		app.AccountKeeper,
-		authtypes.FeeCollectorName,
-	)
-	providerModule := ibcprovider.NewAppModule(&app.ProviderKeeper)
-
 	// consumer keeper satisfies the staking keeper interface
 	// of the slashing module
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
@@ -497,7 +471,6 @@ func New(
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(ibcprovidertypes.RouterKey, ibcprovider.NewCreateConsumerChainHandler(app.ProviderKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 
 	app.GovKeeper = govkeeper.NewKeeper(
@@ -528,7 +501,6 @@ func New(
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule)
 	ibcRouter.AddRoute(ibcconsumertypes.ModuleName, consumerModule)
-	ibcRouter.AddRoute(ibcprovidertypes.ModuleName, providerModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
@@ -571,7 +543,6 @@ func New(
 		liquidity.NewAppModule(appCodec, app.LiquidityKeeper, app.AccountKeeper, app.BankKeeper, app.DistrKeeper),
 		transferModule,
 		consumerModule,
-		providerModule,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -601,7 +572,6 @@ func New(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibcconsumertypes.ModuleName,
-		ibcprovidertypes.ModuleName,
 	)
 	app.MM.SetOrderEndBlockers(
 		crisistypes.ModuleName,
@@ -624,7 +594,6 @@ func New(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibcconsumertypes.ModuleName,
-		ibcprovidertypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -654,7 +623,6 @@ func New(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibcconsumertypes.ModuleName,
-		ibcprovidertypes.ModuleName,
 	)
 
 	app.MM.RegisterInvariants(&app.CrisisKeeper)
@@ -751,7 +719,6 @@ func New(
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	app.ScopedIBCConsumerKeeper = scopedIBCConsumerKeeper
-	app.ScopedIBCProviderKeeper = scopedIBCProviderKeeper
 
 	return app
 }
@@ -944,7 +911,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(liquiditytypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
-	paramsKeeper.Subspace(ibcprovidertypes.ModuleName)
 	paramsKeeper.Subspace(ibcconsumertypes.ModuleName)
 
 	return paramsKeeper
