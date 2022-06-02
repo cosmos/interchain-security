@@ -19,7 +19,7 @@ const TransferTimeDelay = 1 * 7 * 24 * time.Hour // 1 weeks
 // The fraction of tokens allocated to the consumer redistribution address
 // during distribution events. The fraction is a string representing a
 // decimal number. For example "0.75" would represent 75%.
- const ConsumerRedistributeFrac = "0.75"
+const ConsumerRedistributeFrac = "0.75"
 
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go

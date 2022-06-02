@@ -12,6 +12,7 @@ import (
 
 const (
 	ProposalTypeCreateConsumerChain = "CreateConsumerChain"
+	ProposalTypeStopConsumerChain   = "StopConsumerChain"
 )
 
 var (
@@ -28,7 +29,7 @@ func NewCreateConsumerChainProposal(title, description, chainID string, initialH
 		Title:         title,
 		Description:   description,
 		ChainId:       chainID,
-		InitialHeight: initialHeight,
+		InitialHeight: &initialHeight,
 		GenesisHash:   genesisHash,
 		BinaryHash:    binaryHash,
 		SpawnTime:     spawnTime,
@@ -45,7 +46,9 @@ func (cccp *CreateConsumerChainProposal) GetDescription() string { return cccp.D
 func (cccp *CreateConsumerChainProposal) ProposalRoute() string { return RouterKey }
 
 // ProposalType returns the type of a create consumerchain proposal.
-func (cccp *CreateConsumerChainProposal) ProposalType() string { return ProposalTypeCreateConsumerChain }
+func (cccp *CreateConsumerChainProposal) ProposalType() string {
+	return ProposalTypeCreateConsumerChain
+}
 
 // ValidateBasic runs basic stateless validity checks
 func (cccp *CreateConsumerChainProposal) ValidateBasic() error {
@@ -84,4 +87,36 @@ func (cccp *CreateConsumerChainProposal) String() string {
 	GenesisHash: %s
 	BinaryHash: %s
 	SpawnTime: %s`, cccp.Title, cccp.Description, cccp.ChainId, cccp.InitialHeight, cccp.GenesisHash, cccp.BinaryHash, cccp.SpawnTime)
+}
+
+// NewStopConsumerChainProposal creates a new stop consumer chain proposal.
+func NewStopConsumerChainProposal(title, description, chainID string, stopTime time.Time) (govtypes.Content, error) {
+	return &StopConsumerChainProposal{
+		Title:       title,
+		Description: description,
+		ChainId:     chainID,
+		StopTime:    stopTime,
+	}, nil
+}
+
+// ProposalRoute returns the routing key of a stop consumer chain proposal.
+func (sccp *StopConsumerChainProposal) ProposalRoute() string { return RouterKey }
+
+// ProposalType returns the type of a stop consumer chain proposal.
+func (sccp *StopConsumerChainProposal) ProposalType() string { return ProposalTypeStopConsumerChain }
+
+// ValidateBasic runs basic stateless validity checks
+func (sccp *StopConsumerChainProposal) ValidateBasic() error {
+	if err := govtypes.ValidateAbstract(sccp); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(sccp.ChainId) == "" {
+		return sdkerrors.Wrap(ErrInvalidProposal, "consumer chain id must not be blank")
+	}
+
+	if sccp.StopTime.IsZero() {
+		return sdkerrors.Wrap(ErrInvalidProposal, "spawn time cannot be zero")
+	}
+	return nil
 }

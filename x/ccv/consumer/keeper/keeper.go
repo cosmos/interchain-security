@@ -171,6 +171,12 @@ func (k Keeper) GetProviderChannel(ctx sdk.Context) (string, bool) {
 	return string(channelIdBytes), true
 }
 
+// DeleteProviderChannel deletes the provider channel ID that is validating the chain.
+func (k Keeper) DeleteProviderChannel(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ProviderChannelKey())
+}
+
 // SetPendingChanges sets the pending validator set change packet that haven't been flushed to ABCI
 func (k Keeper) SetPendingChanges(ctx sdk.Context, updates ccv.ValidatorSetChangePacketData) error {
 	store := ctx.KVStore(k.storeKey)

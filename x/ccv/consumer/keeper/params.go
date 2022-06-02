@@ -13,6 +13,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetBlocksPerDistributionTransmission(ctx),
 		k.GetDistributionTransmissionChannel(ctx),
 		k.GetProviderFeePoolAddrStr(ctx),
+		k.GetLockUnbondingOnTimeout(ctx),
 	)
 }
 
@@ -56,4 +57,14 @@ func (k Keeper) GetProviderFeePoolAddrStr(ctx sdk.Context) string {
 
 func (k Keeper) SetProviderFeePoolAddrStr(ctx sdk.Context, addr string) {
 	k.paramSpace.Set(ctx, types.KeyProviderFeePoolAddrStr, addr)
+}
+
+func (k Keeper) GetLockUnbondingOnTimeout(ctx sdk.Context) bool {
+	var lock bool
+	k.paramSpace.Get(ctx, types.KeyLockUnbondingOnTimeout, &lock)
+	return lock
+}
+
+func (k Keeper) SetLockUnbondingOnTimeout(ctx sdk.Context, lock bool) {
+	k.paramSpace.Set(ctx, types.KeyLockUnbondingOnTimeout, lock)
 }

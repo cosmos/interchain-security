@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/binary"
+	"fmt"
 	"strings"
 	"time"
 
@@ -22,10 +23,78 @@ import (
 // as a pending client, and set once spawn time has passed.
 func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateConsumerChainProposal) error {
 	if ctx.BlockTime().After(p.SpawnTime) {
-		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight)
+		return k.CreateConsumerClient(ctx, p.ChainId, *p.InitialHeight)
 	}
 
-	k.SetPendingClientInfo(ctx, p.SpawnTime, p.ChainId, p.InitialHeight)
+	k.SetPendingClientInfo(ctx, p.SpawnTime, p.ChainId, *p.InitialHeight)
+	return nil
+}
+
+// StopConsumerChainProposal stops a consumer chain and released the outstanding unbonding operations.
+// If the stop time hasn't already passed, it stores the proposal as a pending proposal.
+func (k Keeper) StopConsumerChainProposal(ctx sdk.Context, p *types.StopConsumerChainProposal) error {
+	if ctx.BlockTime().After(p.StopTime) {
+		return k.StopConsumerChain(ctx, p.ChainId, false)
+	}
+
+	k.Hooks().k.SetPendingStopProposal(ctx, p.ChainId, p.StopTime)
+	return nil
+}
+
+// StopConsumerChain cleans up the states for the given consumer chain ID and, if the given lockUbd is false,
+// it completes the outstanding unbonding operations lock by the consumer chain.
+func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd bool) (err error) {
+
+	// clean up states
+	k.DeleteConsumerClient(ctx, chainID)
+	k.DeleteLockUnbondingOnTimeout(ctx, chainID)
+
+	// close channel and delete the mappings between chain ID and channel ID
+	if channelID, found := k.GetChainToChannel(ctx, chainID); found {
+		k.chanCloseInit(ctx, channelID)
+		k.DeleteChainToChannel(ctx, chainID)
+		k.DeleteChannelToChain(ctx, channelID)
+	}
+
+	k.DeleteInitChainHeight(ctx, chainID)
+	k.EmptySlashAcks(ctx, chainID)
+
+	// release unbonding operations if they aren't locked
+	if !lockUbd {
+		// iterate over the consumer chain's unbonding operation VSC ids
+		k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ids []uint64) bool {
+			// range over the unbonding operations for the current VSC ID
+			for _, id := range ids {
+				unbondingOp, found := k.GetUnbondingOp(ctx, id)
+				if !found {
+					err = fmt.Errorf("could not find UnbondingOp according to index - id: %d", id)
+					return false
+				}
+				// remove consumer chain ID from unbonding op record
+				unbondingOp.UnbondingConsumerChains, _ = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
+
+				// If unbonding op is completely unbonded from all relevant consumer chains
+				if len(unbondingOp.UnbondingConsumerChains) == 0 {
+					// Attempt to complete unbonding in staking module
+					err = k.stakingKeeper.UnbondingCanComplete(ctx, unbondingOp.Id)
+					if err != nil {
+						return false
+					}
+					// Delete unbonding op
+					k.DeleteUnbondingOp(ctx, unbondingOp.Id)
+				} else {
+					k.SetUnbondingOp(ctx, unbondingOp)
+				}
+			}
+			// clean up index
+			k.DeleteUnbondingOpIndex(ctx, chainID, vscID)
+			return true
+		})
+	}
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -55,6 +124,11 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHei
 	}
 
 	k.SetConsumerGenesis(ctx, chainID, consumerGen)
+
+	// store LockUnbondingOnTimeout flag
+	if consumerGen.GetParams().LockUnbondingOnTimeout {
+		k.SetLockUnbondingOnTimeout(ctx, chainID)
+	}
 	return nil
 }
 
@@ -116,19 +190,25 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 	return gen, nil
 }
 
-// SetConsumerClient sets the clientID for the given chainID
+// SetConsumerClient sets the client ID for the given chain ID
 func (k Keeper) SetConsumerClient(ctx sdk.Context, chainID, clientID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
 }
 
-// GetConsumerClient returns the clientID for the given chainID.
+// GetConsumerClient returns the clientID for the given chain ID
 func (k Keeper) GetConsumerClient(ctx sdk.Context, chainID string) string {
 	store := ctx.KVStore(k.storeKey)
 	return string(store.Get(types.ChainToClientKey(chainID)))
 }
 
-// SetPendingClientInfo sets the initial height for the given timestamp and chainID
+// DeleteConsumerClient deletes the client ID for the given chain ID
+func (k Keeper) DeleteConsumerClient(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ChainToClientKey(chainID))
+}
+
+// SetPendingClientInfo sets the initial height for the given timestamp and chain ID
 func (k Keeper) SetPendingClientInfo(ctx sdk.Context, timestamp time.Time, chainID string, initialHeight clienttypes.Height) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(&initialHeight)
@@ -139,7 +219,7 @@ func (k Keeper) SetPendingClientInfo(ctx sdk.Context, timestamp time.Time, chain
 	return nil
 }
 
-// GetPendingClient gets the initial height for the given timestamp and chainID
+// GetPendingClient gets the initial height for the given timestamp and chain ID
 func (k Keeper) GetPendingClientInfo(ctx sdk.Context, timestamp time.Time, chainID string) clienttypes.Height {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingClientKey(timestamp, chainID))
@@ -178,4 +258,73 @@ func (k Keeper) IteratePendingClientInfo(ctx sdk.Context) {
 			break
 		}
 	}
+}
+
+// SetPendingStopProposal sets the consumer chain ID for the given timestamp
+func (k Keeper) SetPendingStopProposal(ctx sdk.Context, chainID string, timestamp time.Time) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.PendingStopProposalKey(timestamp, chainID), []byte{})
+}
+
+// GetPendingStopProposal returns a boolean if a pending stop proposal exists for the given consumer chain ID and the timestamp
+func (k Keeper) GetPendingStopProposal(ctx sdk.Context, chainID string, timestamp time.Time) bool {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.PendingStopProposalKey(timestamp, chainID))
+
+	return bz != nil
+}
+
+// DeletePendingStopProposal deletes the stop proposal for the given consumer chain ID and given timestamp
+func (k Keeper) DeletePendingStopProposal(ctx sdk.Context, chainID string, timestamp time.Time) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.PendingStopProposalKey(timestamp, chainID))
+}
+
+// IteratePendingStopProposal iterates over the pending stop proposals in order and stop the chain if the stop time has passed,
+// otherwise it will break out of loop and return.
+func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte(types.PendingStopProposalKeyPrefix+"/"))
+	defer iterator.Close()
+
+	if !iterator.Valid() {
+		return
+	}
+
+	for ; iterator.Valid(); iterator.Next() {
+		suffixKey := iterator.Key()
+		// splitKey contains the bigendian time in the first element and the chainID in the second element
+		splitKey := strings.Split(string(suffixKey), "/")
+
+		timeNano := binary.BigEndian.Uint64([]byte(splitKey[0]))
+		stopTime := time.Unix(0, int64(timeNano))
+		chainID := string([]byte(splitKey[1]))
+
+		if ctx.BlockTime().After(stopTime) {
+			k.StopConsumerChain(ctx, chainID, false)
+			k.DeletePendingStopProposal(ctx, chainID, stopTime)
+		} else {
+			break
+		}
+	}
+}
+
+// GetLockUnbondingOnTimeout returns the mapping from the given consumer chain ID to a boolean value indicating whether
+// the unbonding operation funds should be locked on CCV channel timeout
+func (k Keeper) GetLockUnbondingOnTimeout(ctx sdk.Context, chainID string) bool {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.LockUnbondingOnTimeoutKey(chainID))
+	return bz != nil
+}
+
+// SetLockUnbondingOnTimeout locks the unbonding operation funds in case of a CCV channel timeouts for the given consumer chain ID
+func (k Keeper) SetLockUnbondingOnTimeout(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.LockUnbondingOnTimeoutKey(chainID), []byte{})
+}
+
+// DeleteLockUnbondingOnTimeout deletes the unbonding operation lock in case of a CCV channel timeouts for the given consumer chain ID
+func (k Keeper) DeleteLockUnbondingOnTimeout(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.LockUnbondingOnTimeoutKey(chainID))
 }

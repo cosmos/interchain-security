@@ -151,7 +151,18 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock implements the AppModule interface
 // Set the VSC ID for the subsequent block to the same value as the current block
+// Panic if the provider's channel was established and then closed
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+	channelID, found := am.keeper.GetProviderChannel(ctx)
+	if found && am.keeper.IsChannelClosed(ctx, channelID) {
+		// cleanup state
+		am.keeper.DeleteProviderChannel(ctx)
+
+		channelClosedMsg := fmt.Sprintf("CCV channel %q was closed - shutdown consumer chain since it is not secured anymore", channelID)
+		ctx.Logger().Error(channelClosedMsg)
+		panic(channelClosedMsg)
+	}
+
 	blockHeight := uint64(ctx.BlockHeight())
 	vID := am.keeper.GetHeightValsetUpdateID(ctx, blockHeight)
 	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight+1, vID)

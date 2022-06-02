@@ -25,6 +25,11 @@ message Params {
   // provider handshake procedure.
   string distribution_transmission_channel = 3;
   string provider_fee_pool_addr_str        = 4;
+
+  // Indicates whether the outstanding unbonding operations should be released
+  // in case of a channel time-outs. When set to true, a governance proposal
+  // on the provider chain would be necessary to release the locked funds.
+  bool lock_unbonding_on_timeout = 6; 
 }
 
 // LastTransmissionBlockHeight is the last time validator holding

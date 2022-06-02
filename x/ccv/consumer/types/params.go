@@ -11,6 +11,7 @@ var (
 	KeyBlocksPerDistributionTransmission = []byte("BlocksPerDistributionTransmission")
 	KeyDistributionTransmissionChannel   = []byte("DistributionTransmissionChannel")
 	KeyProviderFeePoolAddrStr            = []byte("ProviderFeePoolAddrStr")
+	KeyLockUnbondingOnTimeout            = []byte("LockUnbondingOnTimeout")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -20,12 +21,13 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates new consumer parameters with provided arguments
 func NewParams(enabled bool, blocksPerDistributionTransmission int64,
-	distributionTransmissionChannel, providerFeePoolAddrStr string) Params {
+	distributionTransmissionChannel, providerFeePoolAddrStr string, LockUnbondingOnTimeout bool) Params {
 	return Params{
 		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
 		DistributionTransmissionChannel:   distributionTransmissionChannel,
 		ProviderFeePoolAddrStr:            providerFeePoolAddrStr,
+		LockUnbondingOnTimeout:            LockUnbondingOnTimeout,
 	}
 }
 
@@ -36,6 +38,7 @@ func DefaultParams() Params {
 		1000, // about 2 hr at 7.6 seconds per blocks
 		"",
 		"",
+		false,
 	)
 }
 
@@ -54,6 +57,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.DistributionTransmissionChannel, validateString),
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
 			p.ProviderFeePoolAddrStr, validateString),
+		paramtypes.NewParamSetPair(KeyLockUnbondingOnTimeout,
+			p.LockUnbondingOnTimeout, validateBool),
 	}
 }
 

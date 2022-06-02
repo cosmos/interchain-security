@@ -74,11 +74,11 @@ func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
 		changes:       []abci.ValidatorUpdate{{PubKey: changes[0].PubKey, Power: changes[0].Power + 3}},
 		expTotalPower: changesPower + 3,
 		expValsNum:    len(ccVals) + 1,
-	}, { // unbound a validator
+	}, { // unbond a validator
 		changes:       []abci.ValidatorUpdate{{PubKey: changes[0].PubKey, Power: 0}},
 		expTotalPower: changesPower - changes[0].Power,
 		expValsNum:    len(ccVals),
-	}, { // unbound an unexisting validator
+	}, { // unbond an unexisting validator
 		changes:  []abci.ValidatorUpdate{{PubKey: changes[0].PubKey, Power: 0}},
 		expPanic: true,
 	}, { // update all validators voting power

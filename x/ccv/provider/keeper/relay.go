@@ -87,8 +87,20 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 	return nil
 }
 
-func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorSetChangePacketData) error {
-	// TODO: Unbonding everything?
+// OnTimeoutPacket aborts the transaction if no chain exists for the destination channel,
+// otherwise it stops the chain
+func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) error {
+	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
+	if !found {
+		// abort transaction
+		return sdkerrors.Wrap(
+			channeltypes.ErrInvalidChannelState,
+			packet.DestinationChannel,
+		)
+	}
+	// stop consumer chain and uses the LockUnbondingOnTimeout flag
+	// to decide whether the unbonding operations should be released
+	k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID))
 	return nil
 }
 

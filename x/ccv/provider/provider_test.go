@@ -83,6 +83,7 @@ func (suite *ProviderTestSuite) SetupTest() {
 		1000, // about 2 hr at 7.6 seconds per blocks
 		"",
 		"",
+		false,
 	)
 	consumerGenesis := consumertypes.NewInitialGenesisState(suite.providerClient, suite.providerConsState, valUpdates, params)
 	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), consumerGenesis)
