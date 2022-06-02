@@ -433,26 +433,28 @@ func (h StakingHooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
 		consumerChainIDS = append(consumerChainIDS, chainID)
 		return false
 	})
-	if len(consumerChainIDS) > 0 {
-		valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
-		unbondingOp := ccv.UnbondingOp{
-			Id:                      ID,
-			UnbondingConsumerChains: consumerChainIDS,
-		}
-
-		// Add to indexes
-		for _, consumerChainID := range consumerChainIDS {
-			index, _ := h.k.GetUnbodingOpIndex(ctx, consumerChainID, valsetUpdateID)
-			index = append(index, ID)
-			h.k.SetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID, index)
-		}
-
-		// Set unbondingOp
-		h.k.SetUnbondingOp(ctx, unbondingOp)
-
-		// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
-		h.k.stakingKeeper.PutUnbondingOnHold(ctx, ID)
+	if len(consumerChainIDS) == 0 {
+		// Do not put the unbonding op on hold if there are no consumer chains
+		return
 	}
+	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
+	unbondingOp := ccv.UnbondingOp{
+		Id:                      ID,
+		UnbondingConsumerChains: consumerChainIDS,
+	}
+
+	// Add to indexes
+	for _, consumerChainID := range consumerChainIDS {
+		index, _ := h.k.GetUnbodingOpIndex(ctx, consumerChainID, valsetUpdateID)
+		index = append(index, ID)
+		h.k.SetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID, index)
+	}
+
+	// Set unbondingOp
+	h.k.SetUnbondingOp(ctx, unbondingOp)
+
+	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
+	h.k.stakingKeeper.PutUnbondingOnHold(ctx, ID)
 }
 
 // SetValsetUpdateBlockHeight sets the block height for a given valset update id
