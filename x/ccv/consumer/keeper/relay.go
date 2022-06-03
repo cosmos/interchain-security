@@ -206,7 +206,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 	return nil
 }
 
-// IsChannelClosed returns whether a given channel is in the CLOSED state
+// IsChannelClosed returns a boolean whether a given channel is in the CLOSED state
 func (k Keeper) IsChannelClosed(ctx sdk.Context, channelID string) bool {
 	channel, found := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
 	if !found || channel.State == channeltypes.CLOSED {

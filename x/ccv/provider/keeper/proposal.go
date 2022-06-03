@@ -23,10 +23,10 @@ import (
 // as a pending client, and set once spawn time has passed.
 func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateConsumerChainProposal) error {
 	if ctx.BlockTime().After(p.SpawnTime) {
-		return k.CreateConsumerClient(ctx, p.ChainId, *p.InitialHeight)
+		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight)
 	}
 
-	k.SetPendingClientInfo(ctx, p.SpawnTime, p.ChainId, *p.InitialHeight)
+	k.SetPendingClientInfo(ctx, p.SpawnTime, p.ChainId, p.InitialHeight)
 	return nil
 }
 

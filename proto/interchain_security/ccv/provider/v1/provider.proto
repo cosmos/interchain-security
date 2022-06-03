@@ -25,7 +25,7 @@ message CreateConsumerChainProposal {
     string chain_id = 3 ;
     // the proposed initial height of new consumer chain.
     // For a completely new chain, this will be {0,1}. However, it may be different if this is a chain that is converting to a consumer chain.
-    ibc.core.client.v1.Height initial_height = 4 ;
+    ibc.core.client.v1.Height initial_height = 4 [(gogoproto.nullable) = false];
     // genesis hash with no staking information included.
     bytes genesis_hash = 5 ;
     // binary hash is the hash of the binary that should be used by validators on chain initialization.

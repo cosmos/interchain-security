@@ -53,7 +53,7 @@ func TestValidateBasic(t *testing.T) {
 					Title:         "title",
 					Description:   "description",
 					ChainId:       "chainID",
-					InitialHeight: &clienttypes.Height{},
+					InitialHeight: clienttypes.Height{},
 					GenesisHash:   []byte("gen_hash"),
 					BinaryHash:    []byte("bin_hash"),
 					SpawnTime:     time.Now(),

@@ -339,7 +339,7 @@ func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb 
 		var ids []uint64
 		err := json.Unmarshal(iterator.Value(), &ids)
 		if err != nil {
-			panic("Failed to JSON unmarshal")
+			panic("Failed to unmarshal JSON")
 		}
 
 		if !cb(vscID, ids) {
@@ -348,7 +348,7 @@ func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb 
 	}
 }
 
-// GetUnbondingOpIndex allows retrieving UnbondingDelegationEntries by chainID and valsetUpdateID
+// This index allows retrieving UnbondingDelegationEntries by chainID and valsetUpdateID
 func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) ([]uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 

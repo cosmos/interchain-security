@@ -29,7 +29,7 @@ func NewCreateConsumerChainProposal(title, description, chainID string, initialH
 		Title:         title,
 		Description:   description,
 		ChainId:       chainID,
-		InitialHeight: &initialHeight,
+		InitialHeight: initialHeight,
 		GenesisHash:   genesisHash,
 		BinaryHash:    binaryHash,
 		SpawnTime:     spawnTime,

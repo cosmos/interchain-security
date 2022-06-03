@@ -41,7 +41,7 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 	)
 
 	// populate the provider chain states to setup the test using the following operations:
-	// 	- setup CCV channel; established the CCV channel and set the channelToChain, chainToChannel and initHeight mapping for the consumer chain ID
+	// 	- setup CCV channel; establish CCV channel and set channelToChain, chainToChannel and initHeight mapping for the consumer chain ID
 	// 	- delegate the total bond amount to the chosed validator
 	// 	- undelegate the shares in four consecutive blocks evenly; create UnbondigOp and UnbondingOpIndex entries for the consumer chain ID
 	// 	- set SlashAck and LockUnbondingOnTimeout states for the consumer chain ID
@@ -62,7 +62,7 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 		{
 			func(suite *ProviderTestSuite) error {
 				for i := 0; i < ubdOpsNum; i++ {
-					// undelegate a quarter of the shares
+					// undelegate one quarter of the shares
 					_, err := s.providerChain.App.GetStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, testShares.QuoInt64(int64(ubdOpsNum)))
 					if err != nil {
 						return err
@@ -133,7 +133,7 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 			}, true, false,
 		},
 		{
-			"valid stop consumer chain proposal fails due to invalid unbonding index", func(suite *ProviderTestSuite) {
+			"valid proposal: fail due to an invalid unbonding index", func(suite *ProviderTestSuite) {
 
 				// ctx blocktime is after proposal's stop time
 				ctx = s.providerCtx().WithBlockTime(time.Now().Add(time.Hour))
