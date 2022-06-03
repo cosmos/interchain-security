@@ -433,6 +433,10 @@ func (h StakingHooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
 		consumerChainIDS = append(consumerChainIDS, chainID)
 		return false
 	})
+	if len(consumerChainIDS) == 0 {
+		// Do not put the unbonding op on hold if there are no consumer chains
+		return
+	}
 	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
 	unbondingOp := ccv.UnbondingOp{
 		Id:                      ID,
