@@ -1,6 +1,7 @@
 package pbt
 
 import (
+	"bytes"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,20 +16,15 @@ import (
 
 func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
 
-	/*
-		I think things can go like this
-		ASSUMPTION: processing and UpdateClient Msg will not break anything if you do it
-		as a 'middle' transaction in a block. I need this, because if I try...
+	//~~~~~~~
+	// TODO: I've added these lines here to help me debug
+	// while using the extra BeginBlocker hack
+	pc := sender.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(sender.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 
-		send an updateClient msg to receiver TODO: check what do with sequence numbers
-		query packet proof on sender
-		send a recvPacket msg to receiver and save the ack TODO: check what do with sequence numbers
-
-		put the ack in a pendingAcks place
-		when the receiver commits the next block make these acks 'visible' to the sender
-		on the next opportunity in the sender, deliver any acknowledgements
-
-	*/
+	if !bytes.Equal(pc, channeltypes.CommitPacket(sender.Chain.App.AppCodec(), packet)) {
+		return nil, fmt.Errorf("packet committment bytes not equal")
+	}
+	//~~~~~~~
 
 	var header exported.Header
 
