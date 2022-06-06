@@ -83,7 +83,7 @@ func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 			packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence(),
 			pc,
 		); err != nil {
-			panic("fkadjf")
+			panic("bad test... (TryRelay)")
 		}
 	}
 	//~~~~~
