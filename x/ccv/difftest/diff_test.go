@@ -491,6 +491,16 @@ func (s *PBTTestSuite) endBlock(chain string) {
 	}
 
 	s.commitAcks(chain)
+
+	// TODO: This is a hack!!!
+	/*
+		See https://github.com/cosmos/interchain-security/issues/127
+		In short:
+			1. needed to access .GetContext()
+			2. Dangerous, non idempotent, leads to different contexts
+		Must be removed!
+	*/
+	s.beginBlock(chain)
 }
 
 func (s *PBTTestSuite) increaseSeconds(seconds int64) {
