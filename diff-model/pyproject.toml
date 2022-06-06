@@ -24,8 +24,8 @@ mypy = "^0.931"
 isort = "^5.9.3"
 
 [tool.poetry.scripts]
-bar = "pbt.bar:bar"
-foo = "pbt.foo:foo"
+bar = "diff.bar:bar"
+foo = "diff.foo:foo"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
