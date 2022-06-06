@@ -1,4 +1,3 @@
-import pytest
 from collections import Counter
 import random
 import sys
@@ -250,14 +249,14 @@ def load_debug_actions():
     return obj["actions"]
 
 
-# @pytest.mark.skip()
-def test_dummy():
+def gen():
     debug = False
     GOAL_TIME_MINS = 5
     NUM_ACTIONS = 40
 
     shutil.rmtree("traces/")
     os.makedirs("traces/")
+
 
     num_runs = 1 if debug else 99999999999  # will be adjusted
     elapsed = 0
