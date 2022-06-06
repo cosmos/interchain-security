@@ -458,29 +458,6 @@ func (s *PBTTestSuite) undelegate(a Undelegate) {
 	pskServer.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
-func (s *PBTTestSuite) debugPacket(packet channeltypes.Packet, sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint) {
-	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
-	proof, proofHeight := sender.Chain.QueryProof(packetKey)
-
-	pc := sender.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(sender.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
-
-	ctx := receiver.Chain.GetContext()
-	connKeeper := receiver.Chain.App.GetIBCKeeper().ConnectionKeeper
-	chanKeeper := receiver.Chain.App.GetIBCKeeper().ChannelKeeper
-	channel, f := chanKeeper.GetChannel(ctx, packet.GetDestPort(), packet.GetDestChannel())
-	s.Require().True(f)
-	connectionEnd, f := connKeeper.GetConnection(ctx, channel.ConnectionHops[0])
-	s.Require().True(f)
-	if err := connKeeper.VerifyPacketCommitment(
-		receiver.Chain.GetContext(),
-		connectionEnd, proofHeight, proof,
-		packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence(),
-		pc,
-	); err != nil {
-		s.Require().FailNow("Bad test (debugPacket)")
-	}
-}
-
 func (s *PBTTestSuite) hackBeginBlock(chain string) {
 	c := s.chain(chain)
 
@@ -526,7 +503,6 @@ func (s *PBTTestSuite) endBlock(chain string) {
 			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
 			s.outbox[chain] = append(s.outbox[chain], packet)
-			s.debugPacket(packet, s.endpoint(chain), s.endpoint(chain).Counterparty)
 		}
 	}
 
