@@ -30,7 +30,7 @@ func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 
 	switch receiver.ClientConfig.GetClientType() {
 	case exported.Tendermint:
-		header, err = receiver.Chain.ConstructUpdateTMClientHeader(receiver.Counterparty.Chain, receiver.ClientID)
+		header, err = receiver.Chain.ConstructUpdateTMClientHeader(sender.Chain, receiver.ClientID)
 	default:
 		err = fmt.Errorf("client type %s is not supported", receiver.ClientConfig.GetClientType())
 	}
@@ -60,13 +60,33 @@ func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 		return nil, err
 	}
 
-	// TODO: there used to be 'NextBlock' here...
+	// TODO: there used to be 'receiver.NextBlock' here...
 
 	// increment sequence for successful transaction execution
 	receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 
 	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
+
+	//~~~~~
+	// TODO: del debug
+	debug := false
+	if debug {
+		ctx := receiver.Chain.GetContext()
+		connKeeper := receiver.Chain.App.GetIBCKeeper().ConnectionKeeper
+		chanKeeper := receiver.Chain.App.GetIBCKeeper().ChannelKeeper
+		channel, _ := chanKeeper.GetChannel(ctx, packet.GetDestPort(), packet.GetDestChannel())
+		connectionEnd, _ := connKeeper.GetConnection(ctx, channel.ConnectionHops[0])
+		if err := connKeeper.VerifyPacketCommitment(
+			receiver.Chain.GetContext(),
+			connectionEnd, proofHeight, proof,
+			packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence(),
+			pc,
+		); err != nil {
+			panic("fkadjf")
+		}
+	}
+	//~~~~~
 
 	RPmsg := channeltypes.NewMsgRecvPacket(packet, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
 

@@ -484,9 +484,6 @@ func (s *PBTTestSuite) endBlock(chain string) {
 			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
 			s.outbox[chain] = append(s.outbox[chain], packet)
-
-			// TODO: try to also get the packet comittment here
-			// https://github.com/danwt/informal-cosmos-hub-team/issues/13#issuecomment-1140192692
 		}
 	}
 
@@ -821,4 +818,13 @@ func executeTraces(s *PBTTestSuite, traces []difftest.Trace) {
 
 func (s *PBTTestSuite) TestTracesCovering() {
 	executeTraces(s, loadTraces("traces_covering.json"))
+}
+
+func (s *PBTTestSuite) TestDebug() {
+	// BeginBlock height increase should be idempotent!
+	s.beginBlock(P)
+	h0 := s.height(P)
+	s.beginBlock(P)
+	h1 := s.height(P)
+	s.Require().Equal(h0, h1)
 }
