@@ -227,11 +227,6 @@ func (s *PBTTestSuite) SetupTest() {
 
 	s.jumpNBlocks(JumpNBlocks{[]string{P, C}, 1, 5})
 
-	/* TODO:, you cant query using context unless begin block
-	has fired!!!
-	I need to find a way around this or I won't be able to compare
-	the state snapshots
-	*/
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
 
@@ -461,7 +456,7 @@ func (s *PBTTestSuite) undelegate(a Undelegate) {
 func (s *PBTTestSuite) hackBeginBlock(chain string) {
 	c := s.chain(chain)
 
-	dt := 0
+	dt := 5
 	newT := s.coordinator.CurrentTime.Add(time.Second * time.Duration(dt)).UTC()
 
 	// increment the current header
@@ -474,7 +469,7 @@ func (s *PBTTestSuite) hackBeginBlock(chain string) {
 		NextValidatorsHash: c.NextVals.Hash(),
 	}
 
-	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
+	c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
 }
 
 func (s *PBTTestSuite) endBlock(chain string) {
@@ -485,15 +480,11 @@ func (s *PBTTestSuite) endBlock(chain string) {
 	c := s.chain(chain)
 
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
-	_ = c.App.Commit()
 
-	// set the last header to the current header
-	// use nil trusted fields
+	c.App.Commit()
+
 	c.LastHeader = c.CurrentTMClientHeader()
 
-	// val set changes returned from previous block get applied to the next validators
-	// of this block. See tendermint spec for details.
-	c.Vals = c.NextVals
 	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
 
 	s.mustBeginBlock[chain] = true
@@ -528,6 +519,7 @@ func (s *PBTTestSuite) jumpNBlocks(a JumpNBlocks) {
 	for i := int64(0); i < a.n; i++ {
 		for _, c := range a.chains {
 			s.endBlock(c)
+			fmt.Println("endBlock", c)
 		}
 		s.increaseSeconds(a.secondsPerBlock)
 	}
@@ -538,11 +530,13 @@ func (s *PBTTestSuite) deliver(a Deliver) {
 	s.idempotentDeliverAcks(a.chain)
 	other := map[string]string{P: C, C: P}[a.chain]
 	for _, p := range s.outbox[other] {
+		// TODO: del this, it's for debugging
+		// s.path.RelayPacket(p)
 		receiver := s.endpoint(a.chain)
 		sender := receiver.Counterparty
 		ack, err := difftest.TryRelay(sender, receiver, p)
 		if err != nil {
-			s.FailNow("Relay failed")
+			s.FailNow("Relay failed", err)
 		}
 		s.addAck(s.other(a.chain), ack, p)
 	}
