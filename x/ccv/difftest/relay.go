@@ -61,26 +61,6 @@ func deliverPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p
 	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
 
-	//~~~~~
-	// TODO: del debug
-	debug := false
-	if debug {
-		ctx := receiver.Chain.GetContext()
-		connKeeper := receiver.Chain.App.GetIBCKeeper().ConnectionKeeper
-		chanKeeper := receiver.Chain.App.GetIBCKeeper().ChannelKeeper
-		channel, _ := chanKeeper.GetChannel(ctx, packet.GetDestPort(), packet.GetDestChannel())
-		connectionEnd, _ := connKeeper.GetConnection(ctx, channel.ConnectionHops[0])
-		if err := connKeeper.VerifyPacketCommitment(
-			receiver.Chain.GetContext(),
-			connectionEnd, proofHeight, proof,
-			packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence(),
-			pc,
-		); err != nil {
-			panic("bad test... (TryRelay)")
-		}
-	}
-	//~~~~~
-
 	RPmsg := channeltypes.NewMsgRecvPacket(packet, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
 
 	_, resWithAck, err := simapp.SignAndDeliver(
