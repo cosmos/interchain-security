@@ -458,6 +458,53 @@ func (s *PBTTestSuite) undelegate(a Undelegate) {
 	pskServer.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
+func (s *PBTTestSuite) debugPacket(packet channeltypes.Packet, sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint) {
+	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
+	proof, proofHeight := sender.Chain.QueryProof(packetKey)
+
+	//~~~~~
+	// TODO: del debug
+	debug := true
+	if debug {
+		pc := sender.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(sender.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
+
+		ctx := receiver.Chain.GetContext()
+		connKeeper := receiver.Chain.App.GetIBCKeeper().ConnectionKeeper
+		chanKeeper := receiver.Chain.App.GetIBCKeeper().ChannelKeeper
+		channel, f := chanKeeper.GetChannel(ctx, packet.GetDestPort(), packet.GetDestChannel())
+		s.Require().True(f)
+		connectionEnd, f := connKeeper.GetConnection(ctx, channel.ConnectionHops[0])
+		s.Require().True(f)
+		if err := connKeeper.VerifyPacketCommitment(
+			receiver.Chain.GetContext(),
+			connectionEnd, proofHeight, proof,
+			packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence(),
+			pc,
+		); err != nil {
+			s.Require().FailNow("Bad test")
+		}
+	}
+}
+
+func (s *PBTTestSuite) hackBeginBlock(chain string) {
+	c := s.chain(chain)
+
+	dt := 0
+	newT := s.coordinator.CurrentTime.Add(time.Second * time.Duration(dt)).UTC()
+
+	// increment the current header
+	c.CurrentHeader = tmproto.Header{
+		ChainID:            c.ChainID,
+		Height:             c.App.LastBlockHeight() + 1,
+		AppHash:            c.App.LastCommitID().Hash,
+		Time:               newT,
+		ValidatorsHash:     c.Vals.Hash(),
+		NextValidatorsHash: c.NextVals.Hash(),
+	}
+
+	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
+}
+
 func (s *PBTTestSuite) endBlock(chain string) {
 
 	s.idempotentBeginBlock(chain)
@@ -484,6 +531,7 @@ func (s *PBTTestSuite) endBlock(chain string) {
 			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
 			s.outbox[chain] = append(s.outbox[chain], packet)
+			// s.debugPacket(packet, s.endpoint(chain), s.endpoint(chain).Counterparty)
 		}
 	}
 
@@ -497,7 +545,8 @@ func (s *PBTTestSuite) endBlock(chain string) {
 			2. Dangerous, non idempotent, leads to different contexts
 		Must be removed!
 	*/
-	s.beginBlock(chain)
+	s.hackBeginBlock(chain)
+
 }
 
 func (s *PBTTestSuite) increaseSeconds(seconds int64) {
