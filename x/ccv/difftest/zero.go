@@ -1,4 +1,4 @@
-package pbt
+package difftest
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ import (
 
 // DefaultConsensusParams defines the default Tendermint consensus params used in
 // SimApp testing.
-var PBTDefaultConsensusParams = &abci.ConsensusParams{
+var DTDefaultConsensusParams = &abci.ConsensusParams{
 	Block: &abci.BlockParams{
 		MaxBytes: 200000,
 		MaxGas:   2000000,
@@ -48,7 +48,7 @@ type InitialModelState struct {
 	Status     []stakingtypes.BondStatus
 }
 
-func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, balances ...banktypes.Balance) ibctesting.TestingApp {
+func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, balances ...banktypes.Balance) ibctesting.TestingApp {
 	app, genesisState := appIniter()
 
 	// set genesis accounts
@@ -149,7 +149,7 @@ func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, val
 			Validators: []abci.ValidatorUpdate{},
 			// TODO: I'm not sure if it's OK to change this, the original is
 			// ibc-go/testing/simapp/test_helpers.go::DefaultConsensusParams
-			ConsensusParams: PBTDefaultConsensusParams,
+			ConsensusParams: DTDefaultConsensusParams,
 			AppStateBytes:   stateBytes,
 		},
 	)
@@ -174,7 +174,7 @@ func PBTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, val
 	return app
 }
 
-func NewPBTTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, appIniter ibctesting.AppIniter, chainID string, valSet *tmtypes.ValidatorSet, signers map[string]tmtypes.PrivValidator) *ibctesting.TestChain {
+func NewDTTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, appIniter ibctesting.AppIniter, chainID string, valSet *tmtypes.ValidatorSet, signers map[string]tmtypes.PrivValidator) *ibctesting.TestChain {
 	genAccs := []authtypes.GenesisAccount{}
 	genBals := []banktypes.Balance{}
 	senderAccs := []ibctesting.SenderAccount{}
@@ -202,7 +202,7 @@ func NewPBTTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, appI
 		senderAccs = append(senderAccs, senderAcc)
 	}
 
-	app := PBTSetupWithGenesisValSet(t, appIniter, valSet, genAccs, chainID, genBals...)
+	app := DTSetupWithGenesisValSet(t, appIniter, valSet, genAccs, chainID, genBals...)
 
 	header := tmproto.Header{
 		ChainID: chainID,
@@ -237,7 +237,7 @@ func NewPBTTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, appI
 
 // NewTestChain initializes a new test chain with a default of 4 validators
 // Use this function if the tests do not need custom control over the validator set
-func NewPBTTestChain(t *testing.T, coord *ibctesting.Coordinator, appIniter ibctesting.AppIniter, chainID string) (*ibctesting.TestChain, []sdk.ValAddress) {
+func NewDTTestChain(t *testing.T, coord *ibctesting.Coordinator, appIniter ibctesting.AppIniter, chainID string) (*ibctesting.TestChain, []sdk.ValAddress) {
 	// generate validators private/public key
 	var (
 		validatorsPerChain = 2
@@ -265,17 +265,17 @@ func NewPBTTestChain(t *testing.T, coord *ibctesting.Coordinator, appIniter ibct
 	// or, if equal, by address lexical order
 	valSet := tmtypes.NewValidatorSet(validators)
 
-	return NewPBTTestChainWithValSet(t, coord, appIniter, chainID, valSet, signersByAddress), addresses
+	return NewDTTestChainWithValSet(t, coord, appIniter, chainID, valSet, signersByAddress), addresses
 }
 
-func NewPBTProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain, []sdk.ValAddress) {
+func NewDTProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain, []sdk.ValAddress) {
 	coordinator := simapp.NewBasicCoordinator(t)
 	chainID := ibctesting.GetChainID(0)
 	var addresses []sdk.ValAddress
-	coordinator.Chains[chainID], addresses = NewPBTTestChain(t, coordinator, simapp.SetupTestingAppProvider, chainID)
+	coordinator.Chains[chainID], addresses = NewDTTestChain(t, coordinator, simapp.SetupTestingAppProvider, chainID)
 	providerChain := coordinator.GetChain(chainID)
 	chainID = ibctesting.GetChainID(1)
-	coordinator.Chains[chainID] = NewPBTTestChainWithValSet(t, coordinator, simapp.SetupTestingAppConsumer, chainID, providerChain.Vals, providerChain.Signers)
+	coordinator.Chains[chainID] = NewDTTestChainWithValSet(t, coordinator, simapp.SetupTestingAppConsumer, chainID, providerChain.Vals, providerChain.Signers)
 	consumerChain := coordinator.GetChain(chainID)
 	return coordinator, providerChain, consumerChain, addresses
 }

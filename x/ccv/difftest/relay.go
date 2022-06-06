@@ -1,4 +1,4 @@
-package pbt
+package difftest
 
 import (
 	"bytes"

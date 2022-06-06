@@ -1,4 +1,4 @@
-package pbt_test
+package difftest_test
 
 import (
 	"encoding/json"
@@ -122,7 +122,7 @@ func (s *PBTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
 
 func (s *PBTTestSuite) SetupTest() {
 
-	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = difftest.NewPBTProviderConsumerCoordinator(s.T())
+	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = difftest.NewDTProviderConsumerCoordinator(s.T())
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
 	s.outbox = map[string][]channeltypes.Packet{P: {}, C: {}}
 	s.acks = map[string][]Ack{P: {}, C: {}}

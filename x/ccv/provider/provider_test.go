@@ -660,7 +660,13 @@ func (s *ProviderTestSuite) TestDistribution() {
 
 	// relay the packet
 	err = s.transferPath.RelayPacket(packet)
-	_, err = difftest.TryRelay()
+
+	// ~~~~~~
+	// TODO: using this method confirms the problem is in TryRelay
+	// TODO: DELETE THIS DEBUG CODE
+	// _, err = difftest.TryRelay(s.path.EndpointA, s.path.EndpointB, packet)
+	// ~~~~~~~
+
 	s.Require().NoError(err)
 
 	// check the consumer chain fee pool which should be now emptied (besides

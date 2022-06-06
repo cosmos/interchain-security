@@ -1,4 +1,4 @@
-package pbt
+package difftest
 
 type Action struct {
 	Amt             int      `json:"amt,omitempty"`
