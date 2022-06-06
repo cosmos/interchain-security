@@ -39,7 +39,7 @@ func updateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endp
 	//~~~~
 	// TODO:, why does this change things??
 	// TODO: get rid!
-	debugNextBlock(sender.Chain)
+	// debugNextBlock(sender.Chain)
 	//~~~~
 
 	var header exported.Header

@@ -529,15 +529,15 @@ func (s *PBTTestSuite) deliver(a Deliver) {
 	s.idempotentBeginBlock(a.chain)
 	s.idempotentDeliverAcks(a.chain)
 	other := map[string]string{P: C, C: P}[a.chain]
+	fmt.Println("outbox size ", len(s.outbox[other]))
 	for _, p := range s.outbox[other] {
-		// TODO: del this, it's for debugging
-		// s.path.RelayPacket(p)
 		receiver := s.endpoint(a.chain)
 		sender := receiver.Counterparty
 		ack, err := difftest.TryRelay(sender, receiver, p)
 		if err != nil {
 			s.FailNow("Relay failed", err)
 		}
+		fmt.Println("Done TryRelay without err")
 		s.addAck(s.other(a.chain), ack, p)
 	}
 	s.outbox[other] = []channeltypes.Packet{}
