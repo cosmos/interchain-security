@@ -14,18 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
-
-	//~~~~~~~
-	// TODO: I've added these lines here to help me debug
-	// while using the extra BeginBlocker hack
-	pc := sender.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(sender.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
-
-	if !bytes.Equal(pc, channeltypes.CommitPacket(sender.Chain.App.AppCodec(), packet)) {
-		return nil, fmt.Errorf("packet committment bytes not equal")
-	}
-	//~~~~~~~
-
+func updateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint) (err error) {
 	var header exported.Header
 
 	switch receiver.ClientConfig.GetClientType() {
@@ -36,7 +25,7 @@ func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 	}
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	UCmsg, err := clienttypes.NewMsgUpdateClient(
@@ -57,7 +46,7 @@ func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 		true, true, receiver.Chain.SenderPrivKey,
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// TODO: there used to be 'receiver.NextBlock' here...
@@ -65,6 +54,10 @@ func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 	// increment sequence for successful transaction execution
 	receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 
+	return nil
+}
+
+func deliverPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
 	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
 
@@ -112,6 +105,33 @@ func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 	receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 
 	ack, err = ibctesting.ParseAckFromEvents(resWithAck.GetEvents())
+
+	if err != nil {
+		return nil, err
+	}
+
+	return ack, nil
+}
+
+func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
+
+	//~~~~~~~
+	// TODO: I've added these lines here to help me debug
+	// while using the extra BeginBlocker hack
+	pc := sender.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(sender.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
+
+	if !bytes.Equal(pc, channeltypes.CommitPacket(sender.Chain.App.AppCodec(), packet)) {
+		return nil, fmt.Errorf("packet committment bytes not equal")
+	}
+	//~~~~~~~
+
+	err = updateReceiverClient(sender, receiver)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ack, err = deliverPacket(sender, receiver, packet)
 
 	if err != nil {
 		return nil, err
