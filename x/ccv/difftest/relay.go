@@ -56,7 +56,7 @@ func updateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endp
 	return nil
 }
 
-func deliverPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
+func recvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
 	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
 
@@ -100,7 +100,7 @@ func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 		return nil, err
 	}
 
-	ack, err = deliverPacket(sender, receiver, packet)
+	ack, err = recvPacket(sender, receiver, packet)
 
 	if err != nil {
 		return nil, err
