@@ -32,7 +32,7 @@ import (
 
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	pbt "github.com/cosmos/interchain-security/x/ccv/pbt"
+	difftest "github.com/cosmos/interchain-security/x/ccv/difftest"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -122,7 +122,7 @@ func (s *PBTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
 
 func (s *PBTTestSuite) SetupTest() {
 
-	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = pbt.NewPBTProviderConsumerCoordinator(s.T())
+	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = difftest.NewPBTProviderConsumerCoordinator(s.T())
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
 	s.outbox = map[string][]channeltypes.Packet{P: {}, C: {}}
 	s.acks = map[string][]Ack{P: {}, C: {}}
@@ -484,6 +484,7 @@ func (s *PBTTestSuite) endBlock(chain string) {
 			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
 			s.outbox[chain] = append(s.outbox[chain], packet)
+
 			// TODO: try to also get the packet comittment here
 			// https://github.com/danwt/informal-cosmos-hub-team/issues/13#issuecomment-1140192692
 		}
@@ -512,7 +513,7 @@ func (s *PBTTestSuite) deliver(a Deliver) {
 	for _, p := range s.outbox[other] {
 		receiver := s.endpoint(a.chain)
 		sender := receiver.Counterparty
-		ack, err := pbt.TryRelay(sender, receiver, p)
+		ack, err := difftest.TryRelay(sender, receiver, p)
 		if err != nil {
 			s.FailNow("Relay failed")
 		}
@@ -587,7 +588,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 		s.T().Fatal("Bad test")
 	}
 
-	initialModelState := pbt.InitialModelState{
+	initialModelState := difftest.InitialModelState{
 		// TODO: multiply by some 1000's
 		Delegation: []int64{4000, 3000, 2000, 1000},
 		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded, stakingtypes.Unbonded, stakingtypes.Unbonded},
@@ -677,7 +678,7 @@ TRACE TEST
 ~~~~~~~~~~~~
 */
 
-func (s *PBTTestSuite) matchState(chain string, trace pbt.Trace, i int) {
+func (s *PBTTestSuite) matchState(chain string, trace difftest.Trace, i int) {
 	// TODO: some queries require context, others not
 	// TODO: distinguish between these
 	c := trace.Consequences[i]
@@ -723,7 +724,7 @@ func (s *PBTTestSuite) matchState(chain string, trace pbt.Trace, i int) {
 	}
 }
 
-func executeTrace(s *PBTTestSuite, trace pbt.Trace) {
+func executeTrace(s *PBTTestSuite, trace difftest.Trace) {
 
 	/*
 		TODO: there is a limitation where you can't query using .ctx
@@ -779,7 +780,7 @@ func executeTrace(s *PBTTestSuite, trace pbt.Trace) {
 	}
 }
 
-func loadTraces(fn string) []pbt.Trace {
+func loadTraces(fn string) []difftest.Trace {
 
 	fd, err := os.Open(fn)
 
@@ -791,7 +792,7 @@ func loadTraces(fn string) []pbt.Trace {
 
 	byteValue, _ := ioutil.ReadAll(fd)
 
-	var ret []pbt.Trace
+	var ret []difftest.Trace
 
 	err = json.Unmarshal([]byte(byteValue), &ret)
 
@@ -802,7 +803,7 @@ func loadTraces(fn string) []pbt.Trace {
 	return ret
 }
 
-func executeTraces(s *PBTTestSuite, traces []pbt.Trace) {
+func executeTraces(s *PBTTestSuite, traces []difftest.Trace) {
 	for _, trace := range traces {
 		executeTrace(s, trace)
 	}
