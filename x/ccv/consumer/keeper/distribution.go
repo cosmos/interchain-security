@@ -19,7 +19,7 @@ const TransferTimeDelay = 1 * 7 * 24 * time.Hour // 1 weeks
 // The fraction of tokens allocated to the consumer redistribution address
 // during distribution events. The fraction is a string representing a
 // decimal number. For example "0.75" would represent 75%.
- const ConsumerRedistributeFrac = "0.75"
+const ConsumerRedistributeFrac = "0.75"
 
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
@@ -37,7 +37,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		return nil
 	}
 
-	consumerFeePoolAddr := k.accountKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
+	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
 	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 
 	// split the fee pool, send the consumer's fraction to the consumer redistribution address
@@ -66,12 +66,12 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		return err
 	}
 	// empty out the toSendToProviderTokens address
-	tstProviderAddr := k.accountKeeper.GetModuleAccount(ctx,
+	tstProviderAddr := k.authKeeper.GetModuleAccount(ctx,
 		types.ConsumerToSendToProviderName).GetAddress()
 	tstProviderTokens := k.bankKeeper.GetAllBalances(ctx, tstProviderAddr)
 	ch := k.GetDistributionTransmissionChannel(ctx)
 	providerAddr := k.GetProviderFeePoolAddrStr(ctx)
-	timeoutHeight := clienttypes.Height{0, 0}
+	timeoutHeight := clienttypes.ZeroHeight()
 	timeoutTimestamp := uint64(ctx.BlockTime().Add(TransferTimeDelay).UnixNano())
 	for _, token := range tstProviderTokens {
 		err := k.ibcTransferKeeper.SendTransfer(ctx,
