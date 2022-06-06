@@ -1,7 +1,6 @@
 package difftest
 
 import (
-	"bytes"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -94,16 +93,6 @@ func deliverPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p
 }
 
 func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
-
-	//~~~~~~~
-	// TODO: I've added these lines here to help me debug
-	// while using the extra BeginBlocker hack
-	pc := sender.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(sender.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
-
-	if !bytes.Equal(pc, channeltypes.CommitPacket(sender.Chain.App.AppCodec(), packet)) {
-		return nil, fmt.Errorf("packet committment bytes not equal")
-	}
-	//~~~~~~~
 
 	err = updateReceiverClient(sender, receiver)
 
