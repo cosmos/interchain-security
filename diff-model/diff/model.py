@@ -65,6 +65,12 @@ class Outbox:
         return 0 == len(self.fifo_available)
 
     def consume(self):
+
+        # TODO: refactor the availability
+        # simply increment cnter in commit()
+        # and consume and delete those with 2 <= commits
+        # in consume()
+
         ret = self.fifo_available
         self.fifo_available = []
         return ret

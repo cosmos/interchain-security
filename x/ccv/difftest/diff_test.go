@@ -53,9 +53,9 @@ func init() {
 }
 
 type Ack struct {
-	ack       []byte
-	packet    channeltypes.Packet
-	committed bool
+	ack     []byte
+	packet  channeltypes.Packet
+	commits int
 }
 
 type PBTTestSuite struct {
@@ -82,12 +82,12 @@ func TestPBTTestSuite(t *testing.T) {
 }
 
 func (s *PBTTestSuite) addAck(receiver string, ack []byte, packet channeltypes.Packet) {
-	s.acks[receiver] = append(s.acks[receiver], Ack{ack, packet, false})
+	s.acks[receiver] = append(s.acks[receiver], Ack{ack, packet, 0})
 }
 
 func (s *PBTTestSuite) commitAcks(committer string) {
 	for _, ack := range s.acks[s.other(committer)] {
-		ack.committed = true
+		ack.commits += 1
 	}
 }
 
@@ -394,7 +394,7 @@ func (s *PBTTestSuite) idempotentDeliverAcks(receiver string) error {
 	acks := s.acks[receiver]
 	replacement := []Ack{}
 	for _, ack := range acks {
-		if ack.committed {
+		if 2 <= ack.commits {
 			p := ack.packet
 
 			packetKey := host.PacketAcknowledgementKey(p.GetDestPort(), p.GetDestChannel(), p.GetSequence())
@@ -699,15 +699,12 @@ TRACE TEST
 */
 
 func (s *PBTTestSuite) matchState(chain string, trace difftest.Trace, i int) {
-	// TODO: some queries require context, others not
-	// TODO: distinguish between these
 	c := trace.Consequences[i]
 
 	heightOffset := 18
 	implementationStartTime := time.Unix(1577923365, 0).UTC()
-	modelOffset := time.Second * time.Duration(-5) // TODO: negatives work bro
+	modelOffset := time.Second * time.Duration(-5)
 	timeOffset := implementationStartTime.Add(modelOffset)
-	// int64(1577923365), s.time(C).Unix()
 
 	if chain == P {
 		s.Require().Equal(int64(c.H.Provider+heightOffset), s.height(P), i)
@@ -747,12 +744,10 @@ func (s *PBTTestSuite) matchState(chain string, trace difftest.Trace, i int) {
 func executeTrace(s *PBTTestSuite, trace difftest.Trace) {
 
 	/*
-		TODO: there is a limitation where you can't query using .ctx
-		after a block has been committed. So limit querying to happen
-		only after a block has begun but not been commited. The last
-		step in JumpNBlocks is always a commit so you can't match the
-		state afterwards.
-		TODO: think of this
+		There is a limitation: you can't query using .ctx after a block
+		has been committed. So limit querying to happen only after a block
+		has begun but not been committed. The last step in JumpNBlocks is
+		always a commit so you can't match the state afterwards.
 	*/
 	for i, a := range trace.Actions {
 		fmt.Println(a.Kind)
