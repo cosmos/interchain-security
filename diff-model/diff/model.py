@@ -552,12 +552,6 @@ class Model:
             )
         )
 
-        # TODO: delete? use below for whole state
-        d = vars(deepcopy(self))
-        del d["blocks"]
-        del d["events"]
-        return Model.Snapshot(d)
-
     def has_undelivered(self, chain):
         return not self.outbox[{P: C, C: P}[chain]].is_empty()
 
