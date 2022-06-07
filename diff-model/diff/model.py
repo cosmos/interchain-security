@@ -62,6 +62,9 @@ class Outbox:
         )
 
     def is_empty(self):
+        # TODO: need to solve the problem of expired packets
+        # breaking the
+
         return 0 == len(self.fifo_available)
 
     def consume(self):

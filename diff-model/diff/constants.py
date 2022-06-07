@@ -4,7 +4,6 @@ from enum import Enum
 P = "provider"
 C = "consumer"
 
-TRUSTING_PERIOD = 44
 UNBONDING_SECONDS = 45
 NUM_VALIDATORS = 4
 MAX_VALIDATORS = 2  # allows jailing 2 validators

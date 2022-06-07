@@ -406,8 +406,8 @@ func (s *PBTTestSuite) idempotentDeliverAcks(receiver string) error {
 	replacement := []Ack{}
 	for _, ack := range acks {
 		if 2 <= ack.commits {
-			p := ack.packet
-			difftest.TryRelayAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), p, ack.ack)
+			// p := ack.packet
+			// difftest.TryRelayAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), p, ack.ack)
 		} else {
 			replacement = append(replacement, ack)
 		}

@@ -32,6 +32,7 @@ class Shaper:
         self.delegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
         self.undelegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
         self.jailed = {i: False for i in range(NUM_VALIDATORS)}
+        self.last_update_time = {P: 0, C: 0}
 
     def action(self, json=None):
 
@@ -111,8 +112,12 @@ class Shaper:
     def candidate_Deliver(self):
         ret = []
         for c in {P, C}:
-            if self.m.has_undelivered(c):
-                ret.append(Deliver(c))
+            # TODO: adding this check
+            # means we do not explore timeouts
+            did_timeout = self.last_update_time[c] + UNBONDING_SECONDS <= self.m.t[c]
+            if not did_timeout:
+                if self.m.has_undelivered(c):
+                    ret.append(Deliver(c))
         return ret
 
     def candidate_ProviderSlash(self):
@@ -150,7 +155,8 @@ class Shaper:
             self.undelegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
 
     def select_Deliver(self, a):
-        return
+        other = {P: C, C: P}[a.chain]
+        self.last_update_time[a.chain] = self.m.t[other]
 
     def select_ProviderSlash(self, a):
         self.jailed[a.val] = True
@@ -251,7 +257,7 @@ def load_debug_actions():
 
 def gen():
     debug = False
-    GOAL_TIME_MINS = 10
+    GOAL_TIME_MINS = 4
     NUM_ACTIONS = 40
 
     shutil.rmtree("traces/")
