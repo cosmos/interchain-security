@@ -32,7 +32,6 @@ class Shaper:
         self.delegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
         self.undelegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
         self.jailed = {i: False for i in range(NUM_VALIDATORS)}
-        self.last_update_time = {P: 0, C: 0}
 
     def action(self, json=None):
 
@@ -53,10 +52,10 @@ class Shaper:
             return ctor(**json)
 
         distr = {
-            "Delegate": 0.06,
-            "Undelegate": 0.06,
-            "JumpNBlocks": 0.42,
-            "Deliver": 0.42,
+            "Delegate": 0.03,
+            "Undelegate": 0.03,
+            "JumpNBlocks": 0.45,
+            "Deliver": 0.45,
             "ProviderSlash": 0.02,
             "ConsumerSlash": 0.02,
         }
@@ -112,12 +111,8 @@ class Shaper:
     def candidate_Deliver(self):
         ret = []
         for c in {P, C}:
-            # TODO: adding this check
-            # means we do not explore timeouts
-            did_timeout = self.last_update_time[c] + UNBONDING_SECONDS <= self.m.t[c]
-            if not did_timeout:
-                if self.m.has_undelivered(c):
-                    ret.append(Deliver(c))
+            if self.m.has_undelivered(c):
+                ret.append(Deliver(c))
         return ret
 
     def candidate_ProviderSlash(self):
@@ -149,14 +144,13 @@ class Shaper:
     def select_JumpNBlocks(self, a):
         a.chains = random.choice([[P, C], [P], [C]])
         a.n = random.choice([1, 4, 7])
-        a.seconds_per_block = random.choices(BLOCK_SECONDS, weights=[1])[0]
+        a.seconds_per_block = BLOCK_SECONDS
         if P in a.chains:
             self.delegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
             self.undelegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
 
     def select_Deliver(self, a):
-        other = {P: C, C: P}[a.chain]
-        self.last_update_time[a.chain] = self.m.t[other]
+        return
 
     def select_ProviderSlash(self, a):
         self.jailed[a.val] = True
@@ -257,7 +251,7 @@ def load_debug_actions():
 
 def gen():
     debug = False
-    GOAL_TIME_MINS = 4
+    GOAL_TIME_MINS = 20
     NUM_ACTIONS = 40
 
     shutil.rmtree("traces/")
