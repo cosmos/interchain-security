@@ -499,13 +499,13 @@ func (s *PBTTestSuite) endBlock(chain string) {
 
 	s.commitAcks(chain)
 
-	// TODO: This is a hack!!!
 	/*
+		This is a hack!!!
 		See https://github.com/cosmos/interchain-security/issues/127
 		In short:
 			1. needed to access .GetContext()
 			2. Dangerous, non idempotent, leads to different contexts
-		Must be removed!
+		TODO: Must be removed!
 	*/
 	s.hackBeginBlock(chain)
 
@@ -570,7 +570,7 @@ func (s *PBTTestSuite) consumerSlash(a ConsumerSlash) {
 
 /*
 ~~~~~~~~~~~~
-ZERO TEST
+ASSUMPTIONS TEST
 ~~~~~~~~~~~~
 */
 
@@ -610,7 +610,6 @@ func (s *PBTTestSuite) TestAssumptions() {
 	}
 
 	initialModelState := difftest.InitialModelState{
-		// TODO: multiply by some 1000's
 		Delegation: []int64{4000, 3000, 2000, 1000},
 		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded, stakingtypes.Unbonded, stakingtypes.Unbonded},
 	}
@@ -832,13 +831,4 @@ func executeTraces(s *PBTTestSuite, traces []difftest.Trace) {
 
 func (s *PBTTestSuite) TestTracesCovering() {
 	executeTraces(s, loadTraces("traces_covering.json"))
-}
-
-func (s *PBTTestSuite) TestDebug() {
-	// BeginBlock height increase should be idempotent!
-	s.beginBlock(P)
-	h0 := s.height(P)
-	s.beginBlock(P)
-	h1 := s.height(P)
-	s.Require().Equal(h0, h1)
 }

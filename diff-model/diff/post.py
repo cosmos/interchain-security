@@ -224,3 +224,24 @@ def combine():
 
     do("traces_covering/", "traces_covering")
     do("traces_diverse/", "traces_diverse")
+
+
+def foobar():
+    def do(dir):
+
+        PATH = dir
+        files = [f for f in listdir(PATH) if isfile(join(PATH, f))]
+
+        events = set()
+        for fn in files:
+            fp = join(PATH, fn)
+            obj = None
+            with open(fp, "r") as fd:
+                obj = json.loads(fd.read())
+            events.update(obj[0]["events"])
+
+        print(len(events))
+        for e in events:
+            print(e)
+
+    do("traces_covering/")

@@ -26,6 +26,7 @@ isort = "^5.9.3"
 [tool.poetry.scripts]
 select = "diff.post:select"
 combine = "diff.post:combine"
+foobar = "diff.post:foobar"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

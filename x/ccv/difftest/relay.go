@@ -11,36 +11,9 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	"github.com/cosmos/ibc-go/v3/testing/simapp"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
-func debugNextBlock(chain *ibctesting.TestChain) {
-	ebRes := chain.App.EndBlock(abci.RequestEndBlock{Height: chain.CurrentHeader.Height})
-	chain.App.Commit()
-
-	chain.LastHeader = chain.CurrentTMClientHeader()
-
-	chain.NextVals = ibctesting.ApplyValSetChanges(chain.T, chain.Vals, ebRes.ValidatorUpdates)
-
-	chain.CurrentHeader = tmproto.Header{
-		ChainID:            chain.ChainID,
-		Height:             chain.App.LastBlockHeight() + 1,
-		AppHash:            chain.App.LastCommitID().Hash,
-		ValidatorsHash:     chain.Vals.Hash(),
-		NextValidatorsHash: chain.NextVals.Hash(),
-	}
-
-	chain.App.BeginBlock(abci.RequestBeginBlock{Header: chain.CurrentHeader})
-}
-
 func updateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint) (err error) {
-
-	//~~~~
-	// TODO:, why does this change things??
-	// TODO: get rid!
-	// debugNextBlock(sender.Chain)
-	//~~~~
 
 	var header exported.Header
 
