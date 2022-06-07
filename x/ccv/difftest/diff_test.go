@@ -45,7 +45,7 @@ const P = "provider"
 const C = "consumer"
 
 // TODO: do I need different denoms for each chain?
-const denom = sdk.DefaultBondDenom
+const DENOM = sdk.DefaultBondDenom
 
 func init() {
 	// Tokens = Power
@@ -102,7 +102,7 @@ func (s *PBTTestSuite) createValidator() (tmtypes.PrivValidator, sdk.ValAddress)
 	s.Require().NoError(err)
 	PK := privVal.PrivKey.PubKey()
 
-	coin := sdk.NewCoin(denom, sdk.NewInt(0))
+	coin := sdk.NewCoin(DENOM, sdk.NewInt(0))
 	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{}, stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
 	s.Require().NoError(err)
 	psk := s.providerChain.App.GetStakingKeeper()
@@ -114,7 +114,7 @@ func (s *PBTTestSuite) createValidator() (tmtypes.PrivValidator, sdk.ValAddress)
 func (s *PBTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-	amt := sdk.NewCoin(denom, sdk.NewInt(int64(x)))
+	amt := sdk.NewCoin(DENOM, sdk.NewInt(int64(x)))
 	d := s.providerChain.SenderAccounts[del].SenderAccount.GetAddress()
 	msg := stakingtypes.NewMsgDelegate(d, val, amt)
 	pskServer.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
@@ -148,7 +148,7 @@ func (s *PBTTestSuite) SetupTest() {
 	s.consumerChain.Signers[val2pk.Address().String()] = val2
 	s.consumerChain.Signers[val3pk.Address().String()] = val3
 
-	// TODO: needed?
+	// TODO: delete this once it is no longer needed
 	s.DisableConsumerDistribution()
 
 	tmConfig := ibctesting.NewTendermintConfig()
@@ -160,9 +160,8 @@ func (s *PBTTestSuite) SetupTest() {
 	height := s.providerChain.LastHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
 
-	tmConfig.UnbondingPeriod = 5 * time.Second
-	tmConfig.TrustingPeriod = 4*time.Second + 999*time.Millisecond
-	// tmConfig.TrustingPeriod = 5 * time.Second
+	tmConfig.UnbondingPeriod = difftest.UNBONDING
+	tmConfig.TrustingPeriod = difftest.TRUSTING
 	providerClient := ibctmtypes.NewClientState(
 		s.providerChain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
@@ -201,8 +200,7 @@ func (s *PBTTestSuite) SetupTest() {
 	s.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
 	s.path.EndpointA.Chain.SenderAccount.SetAccountNumber(6)
 
-	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
-	s.path.EndpointB.CreateClient()
+	difftest.CreateConsumerClientOnProvider(s.path.EndpointB)
 	s.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(s.ctx(P), s.consumerChain.ChainID, s.path.EndpointB.ClientID)
 
 	// TODO: I added this section, should I remove it or move it?
@@ -328,7 +326,7 @@ func (s *PBTTestSuite) providerTokens(i int64) int64 {
 func (s *PBTTestSuite) delegatorBalance() int64 {
 	del := s.delegator()
 	app := s.providerChain.App.(*appProvider.App)
-	bal := app.BankKeeper.GetBalance(s.ctx(P), del, denom)
+	bal := app.BankKeeper.GetBalance(s.ctx(P), del, DENOM)
 	return bal.Amount.Int64()
 }
 
@@ -435,7 +433,7 @@ func (s *PBTTestSuite) delegate(a Delegate) {
 	s.idempotentDeliverAcks(P)
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-	amt := sdk.NewCoin(denom, sdk.NewInt(a.amt))
+	amt := sdk.NewCoin(DENOM, sdk.NewInt(a.amt))
 	del := s.delegator()
 	val := s.validator(a.val)
 	msg := stakingtypes.NewMsgDelegate(del, val, amt)
@@ -447,7 +445,7 @@ func (s *PBTTestSuite) undelegate(a Undelegate) {
 	s.idempotentDeliverAcks(P)
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
-	amt := sdk.NewCoin(denom, sdk.NewInt(a.amt))
+	amt := sdk.NewCoin(DENOM, sdk.NewInt(a.amt))
 	del := s.delegator()
 	val := s.validator(a.val)
 	msg := stakingtypes.NewMsgUndelegate(del, val, amt)

@@ -21,11 +21,20 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	simapp "github.com/cosmos/interchain-security/testutil/simapp"
+
+	"fmt"
+
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
+	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 )
 
-// DefaultConsensusParams defines the default Tendermint consensus params used in
-// SimApp testing.
+// TODO: move somewhere sensible with the other constants
+const UNBONDING = time.Second * 500
+const TRUSTING = UNBONDING - time.Millisecond
+
 var DTDefaultConsensusParams = &abci.ConsensusParams{
 	Block: &abci.BlockParams{
 		MaxBytes: 200000,
@@ -128,8 +137,7 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 	})
 
 	stakingGenesis.Params.MaxValidators = 2
-	// TODO: reintroduce this once rest is working
-	stakingGenesis.Params.UnbondingTime = time.Second * 5
+	stakingGenesis.Params.UnbondingTime = UNBONDING
 
 	// set validators and delegations
 	stakingGenesis = *stakingtypes.NewGenesisState(stakingGenesis.Params, validators, delegations)
@@ -278,4 +286,54 @@ func NewDTProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *i
 	coordinator.Chains[chainID] = NewDTTestChainWithValSet(t, coordinator, simapp.SetupTestingAppConsumer, chainID, providerChain.Vals, providerChain.Signers)
 	consumerChain := coordinator.GetChain(chainID)
 	return coordinator, providerChain, consumerChain, addresses
+}
+
+func CreateConsumerClientOnProvider(endpoint *ibctesting.Endpoint) (err error) {
+	// ensure counterparty has committed state
+	endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
+
+	var (
+		clientState    exported.ClientState
+		consensusState exported.ConsensusState
+	)
+
+	switch endpoint.ClientConfig.GetClientType() {
+	case exported.Tendermint:
+		tmConfig, ok := endpoint.ClientConfig.(*ibctesting.TendermintConfig)
+		require.True(endpoint.Chain.T, ok)
+
+		height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
+		clientState = ibctmtypes.NewClientState(
+			endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
+			height, commitmenttypes.GetSDKSpecs(), ibctesting.UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
+		)
+		consensusState = endpoint.Counterparty.Chain.LastHeader.ConsensusState()
+	case exported.Solomachine:
+		// TODO
+		//		solo := NewSolomachine(endpoint.Chain.T, endpoint.Chain.Codec, clientID, "", 1)
+		//		clientState = solo.ClientState()
+		//		consensusState = solo.ConsensusState()
+
+	default:
+		err = fmt.Errorf("client type %s is not supported", endpoint.ClientConfig.GetClientType())
+	}
+
+	if err != nil {
+		return err
+	}
+
+	msg, err := clienttypes.NewMsgCreateClient(
+		clientState, consensusState, endpoint.Chain.SenderAccount.GetAddress().String(),
+	)
+	require.NoError(endpoint.Chain.T, err)
+
+	res, err := endpoint.Chain.SendMsgs(msg)
+	if err != nil {
+		return err
+	}
+
+	endpoint.ClientID, err = ibctesting.ParseClientIDFromEvents(res.GetEvents())
+	require.NoError(endpoint.Chain.T, err)
+
+	return nil
 }
