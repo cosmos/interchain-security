@@ -567,3 +567,47 @@ func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) uint64 {
 
 	return binary.BigEndian.Uint64(bz)
 }
+
+// SetPendingVSCs sets in store the list of pending ValidatorSetChange packets under chain ID
+func (k Keeper) SetPendingVSCs(ctx sdk.Context, chainID string, packets []ccv.ValidatorSetChangePacketData) {
+	store := ctx.KVStore(k.storeKey)
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(&packets)
+	if err != nil {
+		panic("failed to encode json")
+	}
+	store.Set(types.PendingVSCsKey(chainID), buf.Bytes())
+}
+
+// GetPendingVSCs returns the list of pending ValidatorSetChange packets stored under chain ID
+func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) []ccv.ValidatorSetChangePacketData {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.PendingVSCsKey(chainID))
+	if bz == nil {
+		return nil
+	}
+	var packets []ccv.ValidatorSetChangePacketData
+	buf := bytes.NewBuffer(bz)
+
+	json.NewDecoder(buf).Decode(&packets)
+	return packets
+}
+
+// AppendPendingVSC adds the given ValidatorSetChange packet to the list
+// of pending ValidatorSetChange packets stored under chain ID
+func (k Keeper) AppendPendingVSC(ctx sdk.Context, chainID string, packet ccv.ValidatorSetChangePacketData) {
+	packets := k.GetPendingVSCs(ctx, chainID)
+	packets = append(packets, packet)
+	k.SetPendingVSCs(ctx, chainID, packets)
+}
+
+// EmptyPendingVSC empties and returns the list of pending ValidatorSetChange packets for chain ID
+func (k Keeper) EmptyPendingVSC(ctx sdk.Context, chainID string) (packets []ccv.ValidatorSetChangePacketData) {
+	packets = k.GetPendingVSCs(ctx, chainID)
+	if len(packets) < 1 {
+		return
+	}
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.PendingVSCsKey(chainID))
+	return
+}
