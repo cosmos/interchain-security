@@ -705,7 +705,7 @@ func (s *PBTTestSuite) matchState(chain string, trace difftest.Trace, i int) {
 	c := trace.Consequences[i]
 
 	heightOffset := 18
-	implementationStartTime := time.Unix(1577923365, 0).UTC()
+	implementationStartTime := time.Unix(1577923353, 0).UTC()
 	modelOffset := time.Second * time.Duration(-5)
 	timeOffset := implementationStartTime.Add(modelOffset)
 
