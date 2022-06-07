@@ -44,8 +44,10 @@ class Outbox:
     def __init__(self, model, chain):
         self.m = model
         self.chain = chain
-        self.fifo = []
-        self.fifo_committed = []
+        # list of (packet, num commits) pairs
+        self.fifo_unavailable = []
+        # list of packet
+        self.fifo_available = []
 
     def json(self):
         v = dict(vars(self))
@@ -55,19 +57,33 @@ class Outbox:
     def add(self, data):
         # send height is used to establish ordering
         # between blocks on different chains
-        self.fifo.append(Outbox.create_packet(data, self.m.h[self.chain]))
+        self.fifo_unavailable.append(
+            (Outbox.create_packet(data, self.m.h[self.chain]), 0)
+        )
 
     def is_empty(self):
-        return 0 == len(self.fifo_committed)
+        return 0 == len(self.fifo_available)
 
     def consume(self):
-        ret = self.fifo_committed
-        self.fifo_committed = []
+        ret = self.fifo_available
+        self.fifo_available = []
         return ret
 
     def commit(self):
-        self.fifo_committed.extend(self.fifo)
-        self.fifo = []
+        def incr(pair):
+            return (pair[0], pair[1] + 1)
+
+        committed_once_or_less = []
+        committed_twice = []
+        for p in self.fifo_unavailable:
+            p = incr(p)
+            if 2 <= p[1]:
+                committed_twice.append(p[0])
+            else:
+                committed_once_or_less.append(p)
+
+        self.fifo_unavailable = committed_once_or_less
+        self.fifo_available.extend(committed_twice)
 
 
 class Staking:

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "pbt"
+name = "diff"
 version = "0.1.0"
 description = ""
 authors = ["Daniel Tisdall <daniel@informal.systems>"]
@@ -24,8 +24,8 @@ mypy = "^0.931"
 isort = "^5.9.3"
 
 [tool.poetry.scripts]
-foo = "diff.post:foo"
-bar = "diff.post:bar"
+select = "diff.post:select"
+combine = "diff.post:combine"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

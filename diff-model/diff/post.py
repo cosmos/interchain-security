@@ -7,28 +7,6 @@ from os import listdir
 from os.path import isfile, join
 
 
-def combine(dir, fnout):
-
-    PATH = dir
-    files = [f for f in listdir(PATH) if isfile(join(PATH, f))]
-
-    ret = []
-    for fn in files:
-        fp = join(PATH, fn)
-        obj = None
-        with open(fp, "r") as fd:
-            obj = json.loads(fd.read())
-        ret.extend(obj)
-
-    with open(f"{fnout}.json", "w") as fd:
-        fd.write(json.dumps(ret, indent=2))
-
-
-def foo():
-    combine("traces_covering/", "traces_covering")
-    combine("traces_diverse/", "traces_diverse")
-
-
 """
 Dirty prototype of trace selection algorithm
 
@@ -161,7 +139,7 @@ def greedy_min_cover(vectors):
     return ret
 
 
-def bar():
+def select():
     PATH = "traces/"
     files = [f for f in listdir(PATH) if isfile(join(PATH, f))]
     print(files[:5])
@@ -225,3 +203,24 @@ def bar():
             obj = json.loads(fd_r.read())
             with open(join(PATH, fn), "w") as fd_w:
                 fd_w.write(json.dumps(obj, indent=2))
+
+
+def combine():
+    def do(dir, fnout):
+
+        PATH = dir
+        files = [f for f in listdir(PATH) if isfile(join(PATH, f))]
+
+        ret = []
+        for fn in files:
+            fp = join(PATH, fn)
+            obj = None
+            with open(fp, "r") as fd:
+                obj = json.loads(fd.read())
+            ret.extend(obj)
+
+        with open(f"{fnout}.json", "w") as fd:
+            fd.write(json.dumps(ret, indent=2))
+
+    do("traces_covering/", "traces_covering")
+    do("traces_diverse/", "traces_diverse")
