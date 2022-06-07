@@ -44,7 +44,6 @@
 | 1.05.03 | Enable `OnChanOpenAck` logic on every registered consumer chain. | [Unit Testing](https://github.com/cosmos/interchain-security/blob/579db08d6bb34ea2f5ad793841f66f464935f6bb/x/ccv/consumer/module_test.go#L246) | `Implemented` | v1 |
 | 1.05.04 | Enable `OnChanOpenConfirm` logic on the provider chain for every registered consumer chain. | `None` | `Implemented` | v1 |
 
-
 ### 2 - Core 
 
 | ID  | Description | Verification | Status | Release |
@@ -119,6 +118,7 @@ For more details of the following features, see the System Properties section of
 | 7.02 | Bond-Based Consumer Voting Power | `None` | `Implemented` | v1 |
 | 7.03 | Slashable Consumer Misbehavior | `None` | `Implemented` | v1 |
 | 7.04 | Consumer Rewards Distribution | `None` | `Implemented` | v1 |
+| 7.05 | A consumer chain must disable all transactions, except the ones containing IBC messages, until the CCV channel is established. | `None` | `WIP` | v1 |
 
 # External interface requirements
 
