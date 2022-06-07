@@ -200,7 +200,11 @@ func (s *PBTTestSuite) SetupTest() {
 	s.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
 	s.path.EndpointA.Chain.SenderAccount.SetAccountNumber(6)
 
-	difftest.CreateConsumerClientOnProvider(s.path.EndpointB)
+	cfg := s.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
+	cfg.UnbondingPeriod = difftest.UNBONDING
+	cfg.TrustingPeriod = difftest.TRUSTING
+	s.path.EndpointB.CreateClient()
+
 	s.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(s.ctx(P), s.consumerChain.ChainID, s.path.EndpointB.ClientID)
 
 	// TODO: I added this section, should I remove it or move it?
