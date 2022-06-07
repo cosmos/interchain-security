@@ -1,13 +1,33 @@
-from collections import defaultdict
-import sys
-from collections import Counter
-import os
-import shutil
-import json
-import random
 import functools
+import json
+import os
+import random
+import shutil
 from os import listdir
 from os.path import isfile, join
+
+
+def combine(dir, fnout):
+
+    PATH = dir
+    files = [f for f in listdir(PATH) if isfile(join(PATH, f))]
+
+    ret = []
+    for fn in files:
+        fp = join(PATH, fn)
+        obj = None
+        with open(fp, "r") as fd:
+            obj = json.loads(fd.read())
+        ret.extend(obj)
+
+    with open(f"{fnout}.json", "w") as fd:
+        fd.write(json.dumps(ret, indent=2))
+
+
+def foo():
+    combine("traces_covering/", "traces_covering")
+    combine("traces_diverse/", "traces_diverse")
+
 
 """
 Dirty prototype of trace selection algorithm
