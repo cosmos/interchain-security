@@ -160,8 +160,9 @@ func (s *PBTTestSuite) SetupTest() {
 	height := s.providerChain.LastHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
 
-	// tmConfig.UnbondingPeriod = 5 * time.Second
-	// tmConfig.TrustingPeriod = 4 * time.Second
+	tmConfig.UnbondingPeriod = 5 * time.Second
+	tmConfig.TrustingPeriod = 4*time.Second + 999*time.Millisecond
+	// tmConfig.TrustingPeriod = 5 * time.Second
 	providerClient := ibctmtypes.NewClientState(
 		s.providerChain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
@@ -213,9 +214,9 @@ func (s *PBTTestSuite) SetupTest() {
 	s.coordinator.CreateChannels(s.path)
 	//~~~~~~~~~~
 
-	s.jumpNBlocks(JumpNBlocks{[]string{P}, 1, 5})
+	s.jumpNBlocks(JumpNBlocks{[]string{P}, 1, 1})
 	// TODO: Is it correct to catch the consumer up with the provider here?
-	s.jumpNBlocks(JumpNBlocks{[]string{C}, 2, 5})
+	s.jumpNBlocks(JumpNBlocks{[]string{C}, 2, 1})
 
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)

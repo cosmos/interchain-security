@@ -257,7 +257,6 @@ def gen():
     shutil.rmtree("traces/")
     os.makedirs("traces/")
 
-
     num_runs = 1 if debug else 99999999999  # will be adjusted
     elapsed = 0
     i = 0

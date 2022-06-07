@@ -127,9 +127,9 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, totalUnbonded)},
 	})
 
-	// TODO: reintroduce this once rest is working
-	// stakingGenesis.Params.UnbondingTime = 5 * time.Second
 	stakingGenesis.Params.MaxValidators = 2
+	// TODO: reintroduce this once rest is working
+	stakingGenesis.Params.UnbondingTime = time.Second * 5
 
 	// set validators and delegations
 	stakingGenesis = *stakingtypes.NewGenesisState(stakingGenesis.Params, validators, delegations)
