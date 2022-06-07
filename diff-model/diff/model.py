@@ -531,7 +531,7 @@ class Model:
         # a new block
         self.blocks.commit_block(P, self.snapshot())
         self.blocks.commit_block(C, self.snapshot())
-        self.increase_seconds(5)
+        self.increase_seconds(BLOCK_SECONDS[0])
         self.must_begin_block = {P: True, C: True}
 
     class Snapshot:

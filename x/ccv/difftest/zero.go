@@ -184,6 +184,9 @@ func NewDTTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, appIn
 	for i := 0; i < ibctesting.MaxAccounts; i++ {
 		senderPrivKey := secp256k1.GenPrivKey()
 		acc := authtypes.NewBaseAccount(senderPrivKey.PubKey().Address().Bytes(), senderPrivKey.PubKey(), uint64(i), 0)
+		// TODO: this weird number is a relic from having
+		// extra validators who aren't created in the genesis
+		// but are added later
 		amount, ok := sdk.NewIntFromString("1000000000003000")
 		require.True(t, ok)
 

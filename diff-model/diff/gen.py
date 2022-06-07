@@ -306,6 +306,7 @@ def gen():
         for e in events.events:
             cnt[e] += 1
 
+    print()
     total = sum(c for _, c in cnt.most_common())
     stats = {e: cnt[e] for e in Events.Event}
     listed = sorted(list(stats.items()), key=lambda pair: pair[1], reverse=True)
