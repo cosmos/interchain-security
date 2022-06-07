@@ -251,7 +251,7 @@ def load_debug_actions():
 
 def gen():
     debug = False
-    GOAL_TIME_MINS = 5
+    GOAL_TIME_MINS = 2
     NUM_ACTIONS = 40
 
     shutil.rmtree("traces/")

@@ -24,6 +24,7 @@ mypy = "^0.931"
 isort = "^5.9.3"
 
 [tool.poetry.scripts]
+gen = "diff.gen:gen"
 select = "diff.post:select"
 combine = "diff.post:combine"
 foobar = "diff.post:foobar"
