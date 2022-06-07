@@ -31,7 +31,7 @@ func NewMsgFilterDecorator(k ConsumerKeeper) MsgFilterDecorator {
 func (mfd MsgFilterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
 	currHeight := ctx.BlockHeight()
 
-	// If the CCV channel has yet been established, then we must only allow certain
+	// If the CCV channel has not yet been established, then we must only allow certain
 	// message types.
 	if _, ok := mfd.ConsumerKeeper.GetProviderChannel(ctx); !ok {
 		if !hasValidMsgsPreCCV(tx.GetMsgs()) {
