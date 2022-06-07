@@ -399,9 +399,7 @@ class CCVProvider:
 
         # in the spec, these are slashing module calls but they
         # pass straight through to the staking module
-        self.m.staking.slash(
-            data.val, infraction_height, data.power, SLASH_FACTOR_DOWNTIME
-        )
+        self.m.staking.slash(data.val, infraction_height, data.power, SLASH_DOWNTIME)
         self.m.staking.jail_until(data.val, self.m.t[P] + JAIL_SECONDS)
 
         if data.is_downtime:

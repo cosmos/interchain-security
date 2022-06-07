@@ -22,6 +22,7 @@ import (
 
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
@@ -46,6 +47,9 @@ const C = "consumer"
 
 // TODO: do I need different denoms for each chain?
 const DENOM = sdk.DefaultBondDenom
+
+var SLASH_DOUBLESIGN = slashingtypes.DefaultSlashFractionDoubleSign // = sdk.NewDec(1).Quo(sdk.NewDec(20))
+var SLASH_DOWNTIME = slashingtypes.DefaultSlashFractionDowntime     // = sdk.NewDec(1).Quo(sdk.NewDec(100))
 
 func init() {
 	// Tokens = Power
@@ -590,6 +594,9 @@ func (s *PBTTestSuite) DisableConsumerDistribution() {
 }
 
 func (s *PBTTestSuite) TestAssumptions() {
+	s.Require().Equal(SLASH_DOWNTIME, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDowntime(s.ctx(P)))
+	s.Require().Equal(SLASH_DOUBLESIGN, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDoubleSign(s.ctx(P)))
+
 	s.Require().Equal(false, s.mustBeginBlock[P])
 	s.Require().Equal(false, s.mustBeginBlock[C])
 
