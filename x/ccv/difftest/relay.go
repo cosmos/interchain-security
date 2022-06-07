@@ -94,7 +94,7 @@ func recvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, pack
 	return ack, nil
 }
 
-func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
+func TryRelayPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
 
 	err = updateReceiverClient(sender, receiver)
 
@@ -109,5 +109,52 @@ func TryRelay(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet
 	}
 
 	return ack, nil
+
+}
+
+func recvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p channeltypes.Packet, ack []byte) (err error) {
+	packetKey := host.PacketAcknowledgementKey(p.GetDestPort(), p.GetDestChannel(), p.GetSequence())
+	proof, proofHeight := sender.Chain.QueryProof(packetKey)
+
+	ackMsg := channeltypes.NewMsgAcknowledgement(p, ack, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
+
+	_, _, err = simapp.SignAndDeliver(
+		receiver.Chain.T,
+		receiver.Chain.TxConfig,
+		receiver.Chain.App.GetBaseApp(),
+		receiver.Chain.GetContext().BlockHeader(),
+		[]sdk.Msg{ackMsg},
+		receiver.Chain.ChainID,
+		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
+		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
+		true, true, receiver.Chain.SenderPrivKey,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	// TODO: there was a receiver.NextBlock here...
+
+	receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
+
+	return nil
+}
+
+func TryRelayAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet, ack []byte) (err error) {
+
+	err = updateReceiverClient(sender, receiver)
+
+	if err != nil {
+		return err
+	}
+
+	err = recvAck(sender, receiver, packet, ack)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 
 }

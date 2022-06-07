@@ -27,6 +27,7 @@ import (
 // TODO: move somewhere sensible with the other constants
 const UNBONDING = time.Second * 45
 const TRUSTING = UNBONDING - time.Millisecond
+const TOKEN_SCALAR = 10000
 
 var DTDefaultConsensusParams = &abci.ConsensusParams{
 	Block: &abci.BlockParams{
@@ -65,7 +66,7 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 	require.Equal(t, 2, len(valSet.Validators))
 
 	initialModelState := InitialModelState{
-		Delegation: []int64{4000, 3000},
+		Delegation: []int64{4 * TOKEN_SCALAR, 3 * TOKEN_SCALAR},
 		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded},
 	}
 
@@ -76,7 +77,7 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 		delegation := initialModelState.Delegation[i]
 		status := initialModelState.Status[i]
 
-		add := int64(1000)
+		add := int64(1 * TOKEN_SCALAR)
 		tokens := sdk.NewInt(delegation + add)
 		if status == stakingtypes.Bonded {
 			totalBonded = totalBonded.Add(tokens)
@@ -187,7 +188,7 @@ func NewDTTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, appIn
 		// TODO: this weird number is a relic from having
 		// extra validators who aren't created in the genesis
 		// but are added later
-		amount, ok := sdk.NewIntFromString("1000000000003000")
+		amount, ok := sdk.NewIntFromString("1000000000030000")
 		require.True(t, ok)
 
 		balance := banktypes.Balance{
@@ -256,7 +257,7 @@ func NewDTTestChain(t *testing.T, coord *ibctesting.Coordinator, appIniter ibcte
 		pubKey, err := privVal.GetPubKey()
 		require.NoError(t, err)
 		// TODO: the power here needs to be computed another way
-		validators = append(validators, tmtypes.NewValidator(pubKey, int64((5-i)*1000)))
+		validators = append(validators, tmtypes.NewValidator(pubKey, int64((5-i)*TOKEN_SCALAR)))
 		signersByAddress[pubKey.Address().String()] = privVal
 
 		addr, err := sdk.ValAddressFromHex(pubKey.Address().String())

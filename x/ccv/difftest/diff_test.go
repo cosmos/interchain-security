@@ -229,10 +229,10 @@ func (s *PBTTestSuite) SetupTest() {
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
 
-	s.specialDelegate(1, s.validator(2), 1000)
-	s.specialDelegate(1, s.validator(3), 1000)
-	s.specialDelegate(0, s.validator(2), 2000)
-	s.specialDelegate(0, s.validator(3), 1000)
+	s.specialDelegate(1, s.validator(2), 1*difftest.TOKEN_SCALAR)
+	s.specialDelegate(1, s.validator(3), 1*difftest.TOKEN_SCALAR)
+	s.specialDelegate(0, s.validator(2), 2*difftest.TOKEN_SCALAR)
+	s.specialDelegate(0, s.validator(3), 1*difftest.TOKEN_SCALAR)
 
 	sparams := s.providerChain.App.(*appProvider.App).SlashingKeeper.GetParams(s.ctx(P))
 	sparams.SlashFractionDoubleSign = SLASH_DOUBLESIGN
@@ -547,7 +547,7 @@ func (s *PBTTestSuite) deliver(a Deliver) {
 	for _, p := range s.outbox[other] {
 		receiver := s.endpoint(a.chain)
 		sender := receiver.Counterparty
-		ack, err := difftest.TryRelay(sender, receiver, p)
+		ack, err := difftest.TryRelayPacket(sender, receiver, p)
 		if err != nil {
 			s.FailNow("Relay failed", err)
 		}
@@ -627,7 +627,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 	}
 
 	initialModelState := difftest.InitialModelState{
-		Delegation: []int64{4000, 3000, 2000, 1000},
+		Delegation: []int64{4 * difftest.TOKEN_SCALAR, 3 * difftest.TOKEN_SCALAR, 2 * difftest.TOKEN_SCALAR, 1 * difftest.TOKEN_SCALAR},
 		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded, stakingtypes.Unbonded, stakingtypes.Unbonded},
 	}
 
@@ -639,7 +639,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 		}
 	}
 	for i := 0; i < 4; i++ {
-		E := initialModelState.Delegation[i] + 1000
+		E := initialModelState.Delegation[i] + difftest.TOKEN_SCALAR
 		A := s.providerTokens(int64(i))
 		if E != A {
 			s.T().Fatal("Bad test")
@@ -677,7 +677,7 @@ func (s *PBTTestSuite) TestAssumptions() {
 	}
 
 	eFound := []bool{true, true, false, false}
-	ePower := []int64{5000, 4000}
+	ePower := []int64{5 * difftest.TOKEN_SCALAR, 4 * difftest.TOKEN_SCALAR}
 
 	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 
