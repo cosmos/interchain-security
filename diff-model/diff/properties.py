@@ -51,7 +51,7 @@ def bond_based_consumer_voting_power(blocks):
         def get_hc_(ts_hc):
             heights = sorted(blocks[C].keys())
             for hc_ in heights:
-                if ts_hc + UNBONDING_TIME <= blocks[C][hc_].t:
+                if ts_hc + UNBONDING_SECONDS <= blocks[C][hc_].t:
                     return hc_
             return None
 

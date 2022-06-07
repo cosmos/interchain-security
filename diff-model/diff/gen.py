@@ -135,16 +135,16 @@ class Shaper:
 
     def select_Delegate(self, a):
         self.delegated_since_block[a.val] = True
-        a.amt = random.randint(1, 5) * 1000
+        a.amt = random.randint(1, 5) * TOKEN_SCALAR
 
     def select_Undelegate(self, a):
         self.undelegated_since_block[a.val] = True
-        a.amt = random.randint(1, 4) * 1000
+        a.amt = random.randint(1, 4) * TOKEN_SCALAR
 
     def select_JumpNBlocks(self, a):
         a.chains = random.choice([[P, C], [P], [C]])
         a.n = random.choice([1, 4, 7])
-        a.seconds_per_block = 1
+        a.seconds_per_block = random.choices(BLOCK_SECONDS, weights=[0.8, 0.2])[0]
         if P in a.chains:
             self.delegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
             self.undelegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
@@ -154,13 +154,13 @@ class Shaper:
 
     def select_ProviderSlash(self, a):
         self.jailed[a.val] = True
-        a.power = random.randint(1, 6) * 1000
+        a.power = random.randint(1, 6) * TOKEN_SCALAR
         a.height = int((random.randint(0, 4) / 4) * self.m.h[P])
         a.factor = SLASH_FACTOR_DOWNTIME
 
     def select_ConsumerSlash(self, a):
         self.jailed[a.val] = True
-        a.power = random.randint(1, 6) * 1000
+        a.power = random.randint(1, 6) * TOKEN_SCALAR
         a.height = int((random.randint(0, 4) / 4) * self.m.h[C])
         a.is_downtime = bool(random.getrandbits(1))
 

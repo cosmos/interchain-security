@@ -100,11 +100,16 @@ class Staking:
         # the number of shares the delegator has in the validator
         # simply hardcoded to match what driver starts with
         # denominated in shares
-        self.delegation = [4000, 3000, 2000, 1000]
+        self.delegation = [
+            4 * TOKEN_SCALAR,
+            3 * TOKEN_SCALAR,
+            2 * TOKEN_SCALAR,
+            1 * TOKEN_SCALAR,
+        ]
         # tokens = shares before any slashing or rewards happen
         # 1 token is self delegated by validators
         # denominated in tokens, but use 1-1 exchange rate
-        self.tokens = [x + 1000 for x in self.delegation]
+        self.tokens = [x + 1 * TOKEN_SCALAR for x in self.delegation]
         # validator status
         self.status = [Status.BONDED, Status.BONDED, Status.UNBONDED, Status.UNBONDED]
         # unbonding delegations (undels)
@@ -114,7 +119,7 @@ class Staking:
         # jailed? If yes, timestamp of unjailing
         self.jailed = [None] * NUM_VALIDATORS
         # delegator balance, hardcoded
-        self.delegator_tokens = 1000000000000000
+        self.delegator_tokens = INITIAL_DELEGATOR_TOKENS
         # used to track unbonding and redelegation entries, as well as
         # map to unbonding validators, in order to track on_hold
         self.unbonding_op_id = 0
@@ -197,7 +202,7 @@ class Staking:
                 Unval(
                     i,
                     self.m.h[P],
-                    self.m.t[P] + UNBONDING_TIME,
+                    self.m.t[P] + UNBONDING_SECONDS,
                     True,
                     self.unbonding_op_id,
                     False,
@@ -251,7 +256,7 @@ class Staking:
         und = Undelegation(
             val,
             self.m.h[P],
-            self.m.t[P] + UNBONDING_TIME,
+            self.m.t[P] + UNBONDING_SECONDS,
             issued_tokens,
             issued_tokens,
             True,
@@ -308,7 +313,7 @@ class Staking:
 
     def shares(self, val):
         # Add 1 for minSelfDelegation = 1
-        return self.delegation[val] + 1000
+        return self.delegation[val] + TOKEN_SCALAR
 
     def unbonding_can_complete(self, op_id):
         if unval := [e for e in self.validatorQ if e.op_id == op_id]:
@@ -397,7 +402,7 @@ class CCVProvider:
         self.m.staking.slash(
             data.val, infraction_height, data.power, SLASH_FACTOR_DOWNTIME
         )
-        self.m.staking.jail_until(data.val, self.m.t[P] + JAIL_TIME)
+        self.m.staking.jail_until(data.val, self.m.t[P] + JAIL_SECONDS)
 
         if data.is_downtime:
             self.downtime_slash_requests.append(data.val)
@@ -475,7 +480,7 @@ class CCVConsumer:
 
         self.pending_changes.append(data.changes)
 
-        self.maturing_vscs[data.vsc_id] = self.m.t[C] + UNBONDING_TIME
+        self.maturing_vscs[data.vsc_id] = self.m.t[C] + UNBONDING_SECONDS
 
         for val in data.slash_acks:
             self.m.events.add(Events.Event.RECEIVE_DOWNTIME_SLASH_ACK)
