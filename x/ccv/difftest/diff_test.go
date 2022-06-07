@@ -599,9 +599,9 @@ func (s *PBTTestSuite) TestAssumptions() {
 	s.Require().Empty(s.outbox[P])
 	s.Require().Empty(s.outbox[C])
 
-	s.Require().Equal(int64(1577923365), s.time(P).Unix())
-	s.Require().Equal(int64(1577923365), s.time(C).Unix())
-	s.Require().Equal(int64(1577923365), s.globalTime().Unix())
+	s.Require().Equal(int64(1577923353), s.time(P).Unix())
+	s.Require().Equal(int64(1577923353), s.time(C).Unix())
+	s.Require().Equal(int64(1577923353), s.globalTime().Unix())
 
 	s.Require().Equal(int64(1000000000000000), s.delegatorBalance())
 

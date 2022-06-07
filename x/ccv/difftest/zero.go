@@ -25,7 +25,7 @@ import (
 )
 
 // TODO: move somewhere sensible with the other constants
-const UNBONDING = time.Second * 5
+const UNBONDING = time.Second * 45
 const TRUSTING = UNBONDING - time.Millisecond
 
 var DTDefaultConsensusParams = &abci.ConsensusParams{
