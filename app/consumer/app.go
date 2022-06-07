@@ -238,7 +238,6 @@ type App struct { // nolint: golint
 	ScopedIBCKeeper         capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper    capabilitykeeper.ScopedKeeper
 	ScopedIBCConsumerKeeper capabilitykeeper.ScopedKeeper
-	ScopedIBCProviderKeeper capabilitykeeper.ScopedKeeper
 
 	// the module manager
 	MM *module.Manager
@@ -432,7 +431,7 @@ func New(
 		scopedIBCKeeper,
 	)
 
-	// Create CCV consumer and provider keepers and modules
+	// Create CCV consumer and modules
 	app.ConsumerKeeper = ibcconsumerkeeper.NewKeeper(
 		appCodec,
 		keys[ibcconsumertypes.StoreKey],
