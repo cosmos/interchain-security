@@ -144,7 +144,7 @@ class Shaper:
     def select_JumpNBlocks(self, a):
         a.chains = random.choice([[P, C], [P], [C]])
         a.n = random.choice([1, 4, 7])
-        a.seconds_per_block = random.choices(BLOCK_SECONDS, weights=[0.8, 0.2])[0]
+        a.seconds_per_block = random.choices(BLOCK_SECONDS, weights=[1])[0]
         if P in a.chains:
             self.delegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
             self.undelegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
@@ -156,7 +156,7 @@ class Shaper:
         self.jailed[a.val] = True
         a.power = random.randint(1, 6) * TOKEN_SCALAR
         a.height = int((random.randint(0, 4) / 4) * self.m.h[P])
-        a.factor = SLASH_FACTOR_DOWNTIME
+        a.factor = random.choice([SLASH_DOUBLESIGN, SLASH_DOWNTIME])
 
     def select_ConsumerSlash(self, a):
         self.jailed[a.val] = True
@@ -251,7 +251,7 @@ def load_debug_actions():
 
 def gen():
     debug = False
-    GOAL_TIME_MINS = 5
+    GOAL_TIME_MINS = 10
     NUM_ACTIONS = 40
 
     shutil.rmtree("traces/")

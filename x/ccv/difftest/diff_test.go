@@ -48,12 +48,14 @@ const C = "consumer"
 // TODO: do I need different denoms for each chain?
 const DENOM = sdk.DefaultBondDenom
 
-var SLASH_DOUBLESIGN = slashingtypes.DefaultSlashFractionDoubleSign // = sdk.NewDec(1).Quo(sdk.NewDec(20))
-var SLASH_DOWNTIME = slashingtypes.DefaultSlashFractionDowntime     // = sdk.NewDec(1).Quo(sdk.NewDec(100))
+var SLASH_DOUBLESIGN = slashingtypes.DefaultSlashFractionDoubleSign
+var SLASH_DOWNTIME = slashingtypes.DefaultSlashFractionDowntime
 
 func init() {
 	// Tokens = Power
 	sdk.DefaultPowerReduction = sdk.NewInt(1)
+	SLASH_DOUBLESIGN = sdk.NewDec(1).Quo(sdk.NewDec(2))
+	SLASH_DOWNTIME = sdk.NewDec(1).Quo(sdk.NewDec(4))
 }
 
 type Ack struct {
@@ -231,6 +233,11 @@ func (s *PBTTestSuite) SetupTest() {
 	s.specialDelegate(1, s.validator(3), 1000)
 	s.specialDelegate(0, s.validator(2), 2000)
 	s.specialDelegate(0, s.validator(3), 1000)
+
+	sparams := s.providerChain.App.(*appProvider.App).SlashingKeeper.GetParams(s.ctx(P))
+	sparams.SlashFractionDoubleSign = SLASH_DOUBLESIGN
+	sparams.SlashFractionDowntime = SLASH_DOWNTIME
+	s.providerChain.App.(*appProvider.App).SlashingKeeper.SetParams(s.ctx(P), sparams)
 
 	s.jumpNBlocks(JumpNBlocks{[]string{P, C}, 1, 5})
 
