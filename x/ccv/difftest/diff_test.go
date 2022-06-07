@@ -20,8 +20,6 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -39,7 +37,6 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
-	"github.com/cosmos/ibc-go/v3/testing/simapp"
 )
 
 const P = "provider"
@@ -410,30 +407,7 @@ func (s *PBTTestSuite) idempotentDeliverAcks(receiver string) error {
 	for _, ack := range acks {
 		if 2 <= ack.commits {
 			p := ack.packet
-
-			packetKey := host.PacketAcknowledgementKey(p.GetDestPort(), p.GetDestChannel(), p.GetSequence())
-			proof, proofHeight := s.endpoint(s.other(receiver)).QueryProof(packetKey)
-
-			ackMsg := channeltypes.NewMsgAcknowledgement(p, ack.ack, proof, proofHeight, s.chain(receiver).SenderAccount.GetAddress().String())
-
-			_, _, err := simapp.SignAndDeliver(
-				s.chain(receiver).T,
-				s.chain(receiver).TxConfig,
-				s.chain(receiver).App.GetBaseApp(),
-				s.chain(receiver).GetContext().BlockHeader(),
-				[]sdk.Msg{ackMsg},
-				s.chain(receiver).ChainID,
-				[]uint64{s.chain(receiver).SenderAccount.GetAccountNumber()},
-				[]uint64{s.chain(receiver).SenderAccount.GetSequence()},
-				true, true, s.chain(receiver).SenderPrivKey,
-			)
-			if err != nil {
-				return err
-			}
-
-			// TODO: there was a receiver.NextBlock here...
-
-			s.chain(receiver).SenderAccount.SetSequence(s.chain(receiver).SenderAccount.GetSequence() + 1)
+			difftest.TryRelayAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), p, ack.ack)
 		} else {
 			replacement = append(replacement, ack)
 		}
