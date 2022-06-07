@@ -37,7 +37,7 @@ message CreateConsumerChainProposal {
   }
  
 // StopConsumerProposal is a governance proposal on the provider chain to stop a consumer chain.
-// If it passes, all the consumer chain's states are removed from the provider chain. The outstanding unbonding
+// If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
 // operation funds are released if the LockUnbondingOnTimeout parameter is set to false for the consumer chain ID.
  message StopConsumerChainProposal {
     // the title of the proposal
