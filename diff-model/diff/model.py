@@ -8,7 +8,6 @@ from .events import *
 Matches https://github.com/cosmos/ibc/commit/76f25771b42f5c54415b310632751d58501f9584
 """
 
-
 Undelegation = recordclass(
     "Undelegation",
     [
@@ -49,54 +48,33 @@ class Outbox:
         self.m = model
         self.chain = chain
         # list of (packet, num commits) pairs
-        self.fifo_unavailable = []
-        # list of packet
-        self.fifo_available = []
-
-    def json(self):
-        v = dict(vars(self))
-        del v["m"]
-        return v
+        self.fifo = []
 
     def add(self, data):
         # send height is used to establish ordering
         # between blocks on different chains
-        self.fifo_unavailable.append(
-            (Outbox.create_packet(data, self.m.h[self.chain]), 0)
-        )
+        self.fifo.append((Outbox.create_packet(data, self.m.h[self.chain]), 0))
 
     def is_empty(self):
-        # TODO: need to solve the problem of expired packets
-        # breaking the
-
-        return 0 == len(self.fifo_available)
+        return 0 == len([p for p in self.fifo if 2 <= p[1]])
 
     def consume(self):
 
-        # TODO: refactor the availability
-        # simply increment cnter in commit()
-        # and consume and delete those with 2 <= commits
-        # in consume()
-
-        ret = self.fifo_available
-        self.fifo_available = []
+        ret = []
+        fifo = []
+        for p in self.fifo:
+            if 2 <= p[1]:
+                ret.append(p[0])
+            else:
+                fifo.append(p)
+        self.fifo = fifo
         return ret
 
     def commit(self):
         def incr(pair):
             return (pair[0], pair[1] + 1)
 
-        committed_once_or_less = []
-        committed_twice = []
-        for p in self.fifo_unavailable:
-            p = incr(p)
-            if 2 <= p[1]:
-                committed_twice.append(p[0])
-            else:
-                committed_once_or_less.append(p)
-
-        self.fifo_unavailable = committed_once_or_less
-        self.fifo_available.extend(committed_twice)
+        self.fifo = [incr(pair) for pair in self.fifo]
 
 
 class Staking:
@@ -137,11 +115,6 @@ class Staking:
         self.last_vals = self.new_vals()
         # required for computation of self.changes
         self.last_tokens = list(self.tokens)
-
-    def json(self):
-        v = dict(vars(self))
-        del v["m"]
-        return v
 
     def begin_block(self):
         pass
@@ -360,11 +333,6 @@ class CCVProvider:
         self.vsc_id_to_unbonding_op_ids = defaultdict(list)
         self.downtime_slash_requests = []
 
-    def json(self):
-        v = dict(vars(self))
-        del v["m"]
-        return v
-
     def begin_block(self):
         pass
 
@@ -433,11 +401,6 @@ class CCVConsumer:
         self.power = [None] * NUM_VALIDATORS
         for i in self.m.staking.last_vals:
             self.power[i] = self.m.staking.tokens[i]
-
-    def json(self):
-        v = dict(vars(self))
-        del v["m"]
-        return v
 
     def begin_block(self):
         self.h_to_vsc_id[self.m.h[C] + 1] = self.h_to_vsc_id[self.m.h[C]]

@@ -46,7 +46,7 @@ const P = "provider"
 const C = "consumer"
 
 // Height is offset from model to due to bootstrapping
-const MODEL_HEIGHT_OFFSET = int64(18)
+const MODEL_HEIGHT_OFFSET = int64(20)
 
 // TODO: do I need different denoms for each chain?
 const DENOM = sdk.DefaultBondDenom
@@ -88,7 +88,7 @@ type DTTestSuite struct {
 	heightLastClientUpdate map[string]int64
 }
 
-func TestPBTTestSuite(t *testing.T) {
+func TestDTTestSuite(t *testing.T) {
 	suite.Run(t, new(DTTestSuite))
 }
 
@@ -106,13 +106,10 @@ func (s *DTTestSuite) createValidator() (tmtypes.PrivValidator, sdk.ValAddress) 
 	privVal := mock.NewPV()
 	pubKey, err := privVal.GetPubKey()
 	s.Require().NoError(err)
-	// TODO: figure if need to do something with signersByAddress
-	// (see NewPBTTestChain)
 	val := tmtypes.NewValidator(pubKey, 0)
 	addr, err := sdk.ValAddressFromHex(val.Address.String())
 	s.Require().NoError(err)
 	PK := privVal.PrivKey.PubKey()
-
 	coin := sdk.NewCoin(DENOM, sdk.NewInt(0))
 	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{}, stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
 	s.Require().NoError(err)
@@ -191,7 +188,6 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 
 	s.idempotentUpdateClient(C)
 
-	// _, err = difftest.TryRecvPacket(s.endpoint(P), s.endpoint(C), packet)
 	err = s.specialRecvPacket(s.endpoint(P), s.endpoint(C), packet)
 
 	if err != nil {
@@ -207,12 +203,13 @@ func (s *DTTestSuite) SetupTest() {
 	s.acks = map[string][]Ack{P: {}, C: {}}
 	s.heightLastClientUpdate = map[string]int64{P: 0, C: 0}
 
-	// Add two more validator
-	// Only added two in chain creation
-	// TODO: clean up this horrible mess
-	// see this for reasoning https://github.com/danwt/informal-cosmos-hub-team/issues/13#issuecomment-1139704176
-	// TODO: the hacks here do seem to solve the problem
-	// temporarily!
+	/*
+		Add two more validator
+		Only added two in chain creation
+		see this for reasoning https://github.com/danwt/informal-cosmos-hub-team/issues/13#issuecomment-1139704176
+		temporarily!
+		TODO: clean up this horrible mess
+	*/
 	val2, val2addr := s.createValidator()
 	val3, val3addr := s.createValidator()
 	val2pk, err := val2.GetPubKey()
@@ -221,8 +218,6 @@ func (s *DTTestSuite) SetupTest() {
 	s.Require().Nil(err)
 	s.valAddresses = append(s.valAddresses, val2addr)
 	s.valAddresses = append(s.valAddresses, val3addr)
-	// TODO: if this addr way doesn't work try using same way as in
-	// NewPBTTestChain
 	s.providerChain.Signers[val2pk.Address().String()] = val2
 	s.providerChain.Signers[val3pk.Address().String()] = val3
 	s.consumerChain.Signers[val2pk.Address().String()] = val2
@@ -272,10 +267,9 @@ func (s *DTTestSuite) SetupTest() {
 		panic("must already have provider client on consumer chain")
 	}
 
-	// set consumer endpoint's clientID
 	s.path.EndpointA.ClientID = providerClientId
 
-	// TODO: No idea why or how this works, but it seems that it needs to be done.
+	// TODO: No one knows why these lines are needed.
 	s.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
 	s.path.EndpointA.Chain.SenderAccount.SetAccountNumber(6)
 
@@ -286,21 +280,12 @@ func (s *DTTestSuite) SetupTest() {
 
 	s.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(s.ctx(P), s.consumerChain.ChainID, s.path.EndpointB.ClientID)
 
-	// TODO: I added this section, should I remove it or move it?
-	//~~~~~~~~~~
 	s.coordinator.CreateConnections(s.path)
-
-	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
-	// so transfer channel will be on stage INIT when CreateChannels for ccv path returns.
 	s.coordinator.CreateChannels(s.path)
-
 	s.sendEmptyVSCPacket()
 
-	//~~~~~~~~~~
-
 	s.jumpNBlocks(JumpNBlocks{[]string{P}, 1, 1})
-	// TODO: Is it correct to catch the consumer up with the provider here?
-	s.jumpNBlocks(JumpNBlocks{[]string{C}, 2, 1})
+	s.jumpNBlocks(JumpNBlocks{[]string{C}, 4, 1})
 
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
@@ -691,9 +676,9 @@ func (s *DTTestSuite) TestAssumptions() {
 	s.Require().Empty(s.outbox[P])
 	s.Require().Empty(s.outbox[C])
 
-	s.Require().Equal(int64(1577923353), s.time(P).Unix())
-	s.Require().Equal(int64(1577923353), s.time(C).Unix())
-	s.Require().Equal(int64(1577923353), s.globalTime().Unix())
+	s.Require().Equal(int64(1577923357), s.time(P).Unix())
+	s.Require().Equal(int64(1577923357), s.time(C).Unix())
+	s.Require().Equal(int64(1577923357), s.globalTime().Unix())
 
 	s.Require().Equal(int64(1000000000000000), s.delegatorBalance())
 
@@ -772,15 +757,25 @@ func (s *DTTestSuite) TestAssumptions() {
 
 	s.Require().Empty(ck.GetPendingSlashRequests(s.ctx(C)))
 
+	var numUnbondingPackets = 0
 	ck.IterateUnbondingPacket(s.ctx(C),
 		func(seq uint64, packet channeltypes.Packet) bool {
-			s.T().Fatal("Bad test")
+			numUnbondingPackets += 1
+			if 1 < numUnbondingPackets {
+				// There should be exactly 1 unbonding packet, created by the empty VSC
+				// which is sent to init the channel
+				s.T().Fatal("Bad test")
+			}
 			return false // Don't stop
 		})
 
+	var numUnbondingTimes = 0
 	ck.IterateUnbondingTime(s.ctx(C),
 		func(seq uint64, timeNs uint64) bool {
-			s.T().Fatal("Bad test")
+			numUnbondingTimes += 1
+			if 1 < numUnbondingTimes {
+				s.T().Fatal("Bad test")
+			}
 			return false // Don't stop
 		})
 
@@ -796,7 +791,7 @@ TRACE TEST
 func (s *DTTestSuite) matchState(chain string, trace difftest.Trace, i int) {
 	c := trace.Consequences[i]
 
-	implementationStartTime := time.Unix(1577923353, 0).UTC()
+	implementationStartTime := time.Unix(1577923357, 0).UTC()
 	modelOffset := time.Second * time.Duration(-5)
 	timeOffset := implementationStartTime.Add(modelOffset)
 
