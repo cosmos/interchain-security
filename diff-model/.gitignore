@@ -852,3 +852,5 @@ traces/
 debug.json
 traces_covering/
 traces_diverse/
+traces_covering*
+traces_diverse*

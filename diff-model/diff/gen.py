@@ -32,6 +32,7 @@ class Shaper:
         self.delegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
         self.undelegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
         self.jailed = {i: False for i in range(NUM_VALIDATORS)}
+        self.last_jumped = []
 
     def action(self, json=None):
 
@@ -142,7 +143,14 @@ class Shaper:
         a.amt = random.randint(1, 4) * TOKEN_SCALAR
 
     def select_JumpNBlocks(self, a):
-        a.chains = random.choice([[P, C], [P], [C]])
+        choices = {
+            (): [[P, C], [P], [C]],
+            (P, C): [[P, C], [P], [C]],
+            (P,): [[P, C], [C]],
+            (C,): [[P, C], [P]],
+        }[tuple(self.last_jumped)]
+        a.chains = random.choice(choices)
+        self.last_jumped = a.chains
         a.n = random.choice([1, 4, 7])
         a.seconds_per_block = BLOCK_SECONDS
         if P in a.chains:
