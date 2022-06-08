@@ -130,30 +130,33 @@ func (s *DTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
 	pskServer.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
-func (suite *DTTestSuite) SendEmptyVSCPacket() {
-	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
+func (s *DTTestSuite) sendEmptyVSCPacket() {
+	vscID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerChain.GetContext())
 
-	oldBlockTime := suite.providerChain.GetContext().BlockTime()
-	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
-
-	valUpdateID := providerKeeper.GetValidatorSetUpdateId(suite.providerChain.GetContext())
+	timeout := uint64(ccv.GetTimeoutTimestamp(s.time(P)).UnixNano())
 
 	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{},
-		valUpdateID,
+		vscID,
 		nil,
 	)
 
-	seq, ok := suite.providerChain.App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
-		suite.providerChain.GetContext(), providertypes.PortID, suite.path.EndpointB.ChannelID)
-	suite.Require().True(ok)
+	seq, ok := s.providerChain.App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
+		s.ctx(P), providertypes.PortID, s.path.EndpointB.ChannelID)
 
-	packet := channeltypes.NewPacket(pd.GetBytes(), seq, providertypes.PortID, suite.path.EndpointB.ChannelID,
-		consumertypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+	if !ok {
+		s.Require().FailNow("Could not get seq num to send empty VSC packet")
+	}
 
-	suite.path.EndpointB.SendPacket(packet)
-	err := suite.path.EndpointA.RecvPacket(packet)
-	suite.Require().NoError(err)
+	packet := channeltypes.NewPacket(pd.GetBytes(), seq, providertypes.PortID, s.endpoint(P).ChannelID,
+		consumertypes.PortID, s.endpoint(C).ChannelID, clienttypes.Height{}, timeout)
+
+	s.endpoint(P).SendPacket(packet)
+	err := s.endpoint(C).RecvPacket(packet)
+
+	if err != nil {
+		s.Require().FailNow("Could not send empty VSC packet")
+	}
 }
 
 func (s *DTTestSuite) SetupTest() {
@@ -250,6 +253,9 @@ func (s *DTTestSuite) SetupTest() {
 	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
 	// so transfer channel will be on stage INIT when CreateChannels for ccv path returns.
 	s.coordinator.CreateChannels(s.path)
+
+	s.sendEmptyVSCPacket()
+
 	//~~~~~~~~~~
 
 	s.jumpNBlocks(JumpNBlocks{[]string{P}, 1, 1})
@@ -273,8 +279,6 @@ func (s *DTTestSuite) SetupTest() {
 
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
-
-	suite.SendEmptyVSCPacket()
 
 }
 
