@@ -151,11 +151,22 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 	packet := channeltypes.NewPacket(pd.GetBytes(), seq, providertypes.PortID, s.endpoint(P).ChannelID,
 		consumertypes.PortID, s.endpoint(C).ChannelID, clienttypes.Height{}, timeout)
 
-	s.endpoint(P).SendPacket(packet)
-	err := s.endpoint(C).RecvPacket(packet)
+	channelCap := s.endpoint(P).Chain.GetChannelCapability(packet.GetSourcePort(), packet.GetSourceChannel())
+
+	err := s.endpoint(P).Chain.App.GetIBCKeeper().ChannelKeeper.SendPacket(s.ctx(P), channelCap, packet)
 
 	if err != nil {
-		s.Require().FailNow("Could not send empty VSC packet")
+		s.Require().FailNow("Could not send empty VSC packet ", err)
+	}
+
+	s.jumpNBlocks(JumpNBlocks{[]string{P}, 2, 1})
+
+	s.idempotentUpdateClient(C)
+
+	_, err = difftest.TryRecvPacket(s.endpoint(P), s.endpoint(C), packet)
+
+	if err != nil {
+		s.Require().FailNow("Could not send empty VSC packet ", err)
 	}
 }
 
@@ -461,7 +472,7 @@ func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
 
 func (s DTTestSuite) idempotentUpdateClient(chain string) {
 	otherHeight := s.height(s.other(chain))
-	if otherHeight < int64(s.heightLastClientUpdate[chain]) {
+	if int64(s.heightLastClientUpdate[chain]) < otherHeight {
 		err := difftest.UpdateReceiverClient(s.endpoint(s.other(chain)), s.endpoint(chain))
 		if err != nil {
 			s.FailNow("Bad test")
