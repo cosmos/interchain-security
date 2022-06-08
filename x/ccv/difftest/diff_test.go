@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -41,6 +42,9 @@ import (
 
 const P = "provider"
 const C = "consumer"
+
+// Height is offset from model to due to bootstrappingG
+const MODEL_HEIGHT_OFFSET = int64(18)
 
 // TODO: do I need different denoms for each chain?
 const DENOM = sdk.DefaultBondDenom
@@ -371,7 +375,7 @@ type ProviderSlash struct {
 	val    int64
 	power  int64
 	height int64
-	factor int64
+	factor sdk.Dec
 }
 type ConsumerSlash struct {
 	val        int64
@@ -556,8 +560,9 @@ func (s *PBTTestSuite) providerSlash(a ProviderSlash) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	val := s.consAddr(a.val)
 	h := int64(a.height)
+	h += MODEL_HEIGHT_OFFSET
 	power := int64(a.power)
-	factor := sdk.NewDec(int64(a.factor))
+	factor := a.factor
 	psk.Slash(s.ctx(P), val, h, power, factor, -1) // TODO: check params here!
 }
 
@@ -567,6 +572,7 @@ func (s *PBTTestSuite) consumerSlash(a ConsumerSlash) {
 	cccvk := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	val := s.consAddr(a.val)
 	h := int64(a.height)
+	h += MODEL_HEIGHT_OFFSET
 	power := int64(a.power)
 	kind := stakingtypes.Downtime
 	if !a.isDowntime {
@@ -600,8 +606,13 @@ func (s *PBTTestSuite) TestAssumptions() {
 	s.Require().Equal(false, s.mustBeginBlock[P])
 	s.Require().Equal(false, s.mustBeginBlock[C])
 
-	s.Require().Equal(int64(19), s.height(P))
-	s.Require().Equal(int64(19), s.height(C))
+	/*
+		Adding a 1 is needed here because the first step of any model execution
+		is to increase the height by 1.
+		Here this step is missing, so we account for it.
+	*/
+	s.Require().Equal(0+1+MODEL_HEIGHT_OFFSET, s.height(P))
+	s.Require().Equal(0+1+MODEL_HEIGHT_OFFSET, s.height(C))
 
 	s.Require().Empty(s.outbox[P])
 	s.Require().Empty(s.outbox[C])
@@ -711,13 +722,12 @@ TRACE TEST
 func (s *PBTTestSuite) matchState(chain string, trace difftest.Trace, i int) {
 	c := trace.Consequences[i]
 
-	heightOffset := 18
 	implementationStartTime := time.Unix(1577923353, 0).UTC()
 	modelOffset := time.Second * time.Duration(-5)
 	timeOffset := implementationStartTime.Add(modelOffset)
 
 	if chain == P {
-		s.Require().Equal(int64(c.H.Provider+heightOffset), s.height(P), i)
+		s.Require().Equal(int64(c.H.Provider+int(MODEL_HEIGHT_OFFSET)), s.height(P), i)
 		s.Require().Equal(int64(c.DelegatorTokens), s.delegatorBalance())
 		// TODO: unhardcode this and check that it's correct
 		for j, jailedUntilTimestamp := range c.Jailed {
@@ -736,7 +746,7 @@ func (s *PBTTestSuite) matchState(chain string, trace difftest.Trace, i int) {
 		}
 	}
 	if chain == C {
-		s.Require().Equal(int64(c.H.Consumer+heightOffset), s.height(C), i)
+		s.Require().Equal(int64(c.H.Consumer+int(MODEL_HEIGHT_OFFSET)), s.height(C), i)
 		for j, power := range c.Power {
 			actual, err := s.consumerPower(int64(j))
 			if power != nil {
@@ -784,11 +794,12 @@ func executeTrace(s *PBTTestSuite, trace difftest.Trace) {
 			s.deliver(Deliver{a.Chain})
 			s.matchState(a.Chain, trace, i)
 		case "ProviderSlash":
+			factor := strconv.FormatFloat(a.Factor, 'f', 3, 64)
 			s.providerSlash(ProviderSlash{
 				int64(a.Val),
 				int64(a.Power),
 				int64(a.Height),
-				int64(a.Factor),
+				sdk.MustNewDecFromStr(factor),
 			})
 			s.matchState(P, trace, i)
 		case "ConsumerSlash":
