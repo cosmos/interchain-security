@@ -45,20 +45,17 @@ func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endp
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
 		true, true, receiver.Chain.SenderPrivKey,
 	)
+
 	if err != nil {
 		return err
 	}
 
-	// TODO: there used to be 'receiver.NextBlock' here...
-
-	// increment sequence for successful transaction execution
 	receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 
 	return nil
 }
 
-func recvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
-
+func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
 	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
 
@@ -80,9 +77,6 @@ func recvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, pack
 		return nil, err
 	}
 
-	// TODO: there used to be 'NextBlock' here...
-
-	// increment sequence for successful transaction execution
 	receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 
 	ack, err = ibctesting.ParseAckFromEvents(resWithAck.GetEvents())
@@ -94,11 +88,8 @@ func recvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, pack
 	return ack, nil
 }
 
-func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
-	return recvPacket(sender, receiver, packet)
-}
-
-func recvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p channeltypes.Packet, ack []byte) (err error) {
+func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet, ack []byte) (err error) {
+	p := packet
 	packetKey := host.PacketAcknowledgementKey(p.GetDestPort(), p.GetDestChannel(), p.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
 
@@ -120,13 +111,7 @@ func recvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p chann
 		return err
 	}
 
-	// TODO: there was a receiver.NextBlock here...
-
 	receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
 
 	return nil
-}
-
-func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet, ack []byte) (err error) {
-	return recvAck(sender, receiver, packet, ack)
 }
