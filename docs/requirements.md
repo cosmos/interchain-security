@@ -66,7 +66,7 @@
 | ID  | Description | Verification | Status | Release |
 | --- | ----------- | ------------ | ------ | ------- |
 | 3.01 | A provider chain has the ability to export its Interchain Security state. | `None` | `Implemented` (see [#121](https://github.com/cosmos/interchain-security/issues/121)) | v1 |
-| 3.02 | A provider chain has the ability to restart from a previously exported genesis state. | `Unit Testing` (see [TestGenesis](../x/ccv/provider/keeper/genesis_test.go)) | `Implemented` | v1 |
+| 3.02 | A provider chain has the ability to restart from a previously exported genesis state. | `None` | `Implemented` | v1 |
 | 3.03 | A consumer chain has the ability to export its Interchain Security state. | `None` | `Implemented` (see [#121](https://github.com/cosmos/interchain-security/issues/121)) | v1 |
 | 3.04 | A consumer chain has the ability to restart from a previously exported genesis state with an existing channel to a provider chain. (Notice this feature is different from 1.04.) | `Unit Testing` (see [TestGenesis](../x/ccv/consumer/keeper/genesis_test.go)) | `Implemented` | v1 |
 
@@ -86,6 +86,7 @@
 | ID  | Description | Verification | Status | Release |
 | --- | ----------- | ------------ | ------ | ------- |
 | 5.01 | Enable **_once_** opting out from Interchain Security: The provider chain validators have the ability to decide (before joining the validator set on the provider chain) whether they want to participate in Interchain Security, i.e., validate also on the consumer chains. | `None` | `Not Implemented` | TBA |
+| 5.02 | A provider chain validator participating in Interchain Security has the ability to choose a different consensus key for every registered consumer chain. | `None` | `Not Implemented` | v1 |
 
 ### 6 - Consumer Chain
 
