@@ -5,7 +5,7 @@ from .constants import *
 from .events import *
 
 """
-Matches https://github.com/cosmos/ibc/commit/b7611ae10daef336c839516b8c59480a65147f36
+Matches https://github.com/cosmos/ibc/commit/fe3c111a64cb9db7a126c2e209f8cd84e48c28e3
 """
 
 
