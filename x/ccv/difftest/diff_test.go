@@ -503,7 +503,9 @@ func (s *PBTTestSuite) endBlock(chain string) {
 		if e.Type == channeltypes.EventTypeSendPacket {
 			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
+
 			s.outbox[chain] = append(s.outbox[chain], packet)
+			fmt.Println("Outbox ", chain, ", len: ", len(s.outbox[chain]))
 		}
 	}
 
@@ -539,7 +541,7 @@ func (s *PBTTestSuite) deliver(a Deliver) {
 	s.idempotentBeginBlock(a.chain)
 	s.idempotentDeliverAcks(a.chain)
 	other := map[string]string{P: C, C: P}[a.chain]
-	fmt.Println("outbox size ", len(s.outbox[other]))
+	fmt.Println("outbox size before deliver: ", len(s.outbox[other]))
 	for _, p := range s.outbox[other] {
 		receiver := s.endpoint(a.chain)
 		sender := receiver.Counterparty
