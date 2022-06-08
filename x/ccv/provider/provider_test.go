@@ -659,7 +659,6 @@ func (s *ProviderTestSuite) TestDistribution() {
 
 	// relay the packet
 	err = s.transferPath.RelayPacket(packet)
-
 	s.Require().NoError(err)
 
 	// check the consumer chain fee pool which should be now emptied (besides
