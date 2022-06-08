@@ -1,17 +1,18 @@
-from collections import Counter
-import random
-import sys
-import shutil
-import os
-import time
 import json
-from .model import Model
-from .constants import *
-from .properties import *
-from .constants import *
-from .blocks import *
+import os
+import random
+import shutil
+import sys
+import time
+from collections import Counter
+
 from recordclass import asdict, recordclass
+
+from .blocks import *
+from .constants import *
 from .events import *
+from .model import Model
+from .properties import *
 
 Delegate = recordclass("Delegate", ["val", "amt"])
 Undelegate = recordclass("Undelegate", ["val", "amt"])

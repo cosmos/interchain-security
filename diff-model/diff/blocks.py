@@ -1,6 +1,6 @@
 import bisect
+
 from .constants import *
-from recordclass import recordclass
 
 
 class PartialOrder:

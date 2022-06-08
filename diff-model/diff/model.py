@@ -1,6 +1,8 @@
-from recordclass import recordclass
-from copy import deepcopy
 from collections import defaultdict
+from copy import deepcopy
+
+from recordclass import recordclass
+
 from .constants import *
 from .events import *
 
