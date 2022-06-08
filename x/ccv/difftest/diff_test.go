@@ -38,6 +38,7 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 const P = "provider"
@@ -65,7 +66,7 @@ type Ack struct {
 	commits int
 }
 
-type PBTTestSuite struct {
+type DTTestSuite struct {
 	suite.Suite
 
 	coordinator *ibctesting.Coordinator
@@ -87,20 +88,20 @@ type PBTTestSuite struct {
 }
 
 func TestPBTTestSuite(t *testing.T) {
-	suite.Run(t, new(PBTTestSuite))
+	suite.Run(t, new(DTTestSuite))
 }
 
-func (s *PBTTestSuite) addAck(receiver string, ack []byte, packet channeltypes.Packet) {
+func (s *DTTestSuite) addAck(receiver string, ack []byte, packet channeltypes.Packet) {
 	s.acks[receiver] = append(s.acks[receiver], Ack{ack, packet, 0})
 }
 
-func (s *PBTTestSuite) commitAcks(committer string) {
+func (s *DTTestSuite) commitAcks(committer string) {
 	for _, ack := range s.acks[s.other(committer)] {
 		ack.commits += 1
 	}
 }
 
-func (s *PBTTestSuite) createValidator() (tmtypes.PrivValidator, sdk.ValAddress) {
+func (s *DTTestSuite) createValidator() (tmtypes.PrivValidator, sdk.ValAddress) {
 	privVal := mock.NewPV()
 	pubKey, err := privVal.GetPubKey()
 	s.Require().NoError(err)
@@ -120,7 +121,7 @@ func (s *PBTTestSuite) createValidator() (tmtypes.PrivValidator, sdk.ValAddress)
 	return privVal, addr
 }
 
-func (s *PBTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
+func (s *DTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
 	amt := sdk.NewCoin(DENOM, sdk.NewInt(int64(x)))
@@ -129,7 +130,33 @@ func (s *PBTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
 	pskServer.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
-func (s *PBTTestSuite) SetupTest() {
+func (suite *DTTestSuite) SendEmptyVSCPacket() {
+	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
+
+	oldBlockTime := suite.providerChain.GetContext().BlockTime()
+	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+
+	valUpdateID := providerKeeper.GetValidatorSetUpdateId(suite.providerChain.GetContext())
+
+	pd := ccv.NewValidatorSetChangePacketData(
+		[]abci.ValidatorUpdate{},
+		valUpdateID,
+		nil,
+	)
+
+	seq, ok := suite.providerChain.App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
+		suite.providerChain.GetContext(), providertypes.PortID, suite.path.EndpointB.ChannelID)
+	suite.Require().True(ok)
+
+	packet := channeltypes.NewPacket(pd.GetBytes(), seq, providertypes.PortID, suite.path.EndpointB.ChannelID,
+		consumertypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	suite.path.EndpointB.SendPacket(packet)
+	err := suite.path.EndpointA.RecvPacket(packet)
+	suite.Require().NoError(err)
+}
+
+func (s *DTTestSuite) SetupTest() {
 
 	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = difftest.NewDTProviderConsumerCoordinator(s.T())
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
@@ -247,6 +274,8 @@ func (s *PBTTestSuite) SetupTest() {
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
 
+	suite.SendEmptyVSCPacket()
+
 }
 
 /*
@@ -255,47 +284,47 @@ QUERIES
 ~~~~~~~~~~~~
 */
 
-func (s *PBTTestSuite) ctx(chain string) sdk.Context {
+func (s *DTTestSuite) ctx(chain string) sdk.Context {
 	return s.chain(chain).GetContext()
 }
 
-func (s *PBTTestSuite) chain(chain string) *ibctesting.TestChain {
+func (s *DTTestSuite) chain(chain string) *ibctesting.TestChain {
 	return map[string]*ibctesting.TestChain{P: s.providerChain, C: s.consumerChain}[chain]
 }
 
-func (s *PBTTestSuite) other(chain string) string {
+func (s *DTTestSuite) other(chain string) string {
 	return map[string]string{P: C, C: P}[chain]
 }
 
-func (s *PBTTestSuite) height(chain string) int64 {
+func (s *DTTestSuite) height(chain string) int64 {
 	return s.chain(chain).CurrentHeader.GetHeight()
 }
 
-func (s *PBTTestSuite) time(chain string) time.Time {
+func (s *DTTestSuite) time(chain string) time.Time {
 	return s.chain(chain).CurrentHeader.Time
 }
 
-func (s *PBTTestSuite) globalTime() time.Time {
+func (s *DTTestSuite) globalTime() time.Time {
 	return s.coordinator.CurrentTime
 }
 
-func (s *PBTTestSuite) endpoint(chain string) *ibctesting.Endpoint {
+func (s *DTTestSuite) endpoint(chain string) *ibctesting.Endpoint {
 	return map[string]*ibctesting.Endpoint{P: s.path.EndpointB, C: s.path.EndpointA}[chain]
 }
 
-func (s *PBTTestSuite) delegator() sdk.AccAddress {
+func (s *DTTestSuite) delegator() sdk.AccAddress {
 	return s.providerChain.SenderAccount.GetAddress()
 }
 
-func (s *PBTTestSuite) validator(i int64) sdk.ValAddress {
+func (s *DTTestSuite) validator(i int64) sdk.ValAddress {
 	return s.valAddresses[i]
 }
 
-func (s *PBTTestSuite) consAddr(i int64) sdk.ConsAddress {
+func (s *DTTestSuite) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(s.validator(i))
 }
 
-func (s *PBTTestSuite) isJailed(i int64) bool {
+func (s *DTTestSuite) isJailed(i int64) bool {
 	sk := s.chain(P).App.GetStakingKeeper()
 	val, found := sk.GetValidator(s.ctx(P), s.validator(i))
 	if !found {
@@ -304,7 +333,7 @@ func (s *PBTTestSuite) isJailed(i int64) bool {
 	return val.IsJailed()
 }
 
-func (s *PBTTestSuite) consumerPower(i int64) (int64, error) {
+func (s *DTTestSuite) consumerPower(i int64) (int64, error) {
 	// TODO: I need to use consumer chain cast to get then
 	// call GetCCValidator.Power
 	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
@@ -315,7 +344,7 @@ func (s *PBTTestSuite) consumerPower(i int64) (int64, error) {
 	return val.Power, nil
 }
 
-func (s *PBTTestSuite) delegation(i int64) int64 {
+func (s *DTTestSuite) delegation(i int64) int64 {
 	addr := s.delegator()
 	del, found := s.providerChain.App.GetStakingKeeper().GetDelegation(s.ctx(P), addr, s.validator(i))
 	if !found {
@@ -324,7 +353,7 @@ func (s *PBTTestSuite) delegation(i int64) int64 {
 	return del.Shares.TruncateInt64()
 }
 
-func (s *PBTTestSuite) validatorStatus(chain string, i int64) stakingtypes.BondStatus {
+func (s *DTTestSuite) validatorStatus(chain string, i int64) stakingtypes.BondStatus {
 	val, found := s.chain(chain).App.GetStakingKeeper().GetValidator(s.ctx(chain), s.validator(i))
 	if !found {
 		s.T().Fatal("Couldn't GetValidator")
@@ -332,7 +361,7 @@ func (s *PBTTestSuite) validatorStatus(chain string, i int64) stakingtypes.BondS
 	return val.GetStatus()
 }
 
-func (s *PBTTestSuite) providerTokens(i int64) int64 {
+func (s *DTTestSuite) providerTokens(i int64) int64 {
 	addr := s.validator(i)
 	val, found := s.chain(P).App.GetStakingKeeper().GetValidator(s.ctx(P), addr)
 	if !found {
@@ -341,7 +370,7 @@ func (s *PBTTestSuite) providerTokens(i int64) int64 {
 	return val.Tokens.Int64()
 }
 
-func (s *PBTTestSuite) delegatorBalance() int64 {
+func (s *DTTestSuite) delegatorBalance() int64 {
 	del := s.delegator()
 	app := s.providerChain.App.(*appProvider.App)
 	bal := app.BankKeeper.GetBalance(s.ctx(P), del, DENOM)
@@ -383,7 +412,7 @@ type ConsumerSlash struct {
 	isDowntime bool
 }
 
-func (s *PBTTestSuite) beginBlock(chain string) {
+func (s *DTTestSuite) beginBlock(chain string) {
 
 	c := s.chain(chain)
 
@@ -401,7 +430,7 @@ func (s *PBTTestSuite) beginBlock(chain string) {
 
 }
 
-func (s *PBTTestSuite) idempotentBeginBlock(chain string) {
+func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 	if s.mustBeginBlock[chain] {
 		s.mustBeginBlock[chain] = false
 		s.beginBlock(chain)
@@ -409,7 +438,7 @@ func (s *PBTTestSuite) idempotentBeginBlock(chain string) {
 	}
 }
 
-func (s *PBTTestSuite) idempotentDeliverAcks(receiver string) error {
+func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
 	acks := s.acks[receiver]
 	replacement := []Ack{}
 	for _, ack := range acks {
@@ -426,7 +455,7 @@ func (s *PBTTestSuite) idempotentDeliverAcks(receiver string) error {
 	return nil
 }
 
-func (s PBTTestSuite) idempotentUpdateClient(chain string) {
+func (s DTTestSuite) idempotentUpdateClient(chain string) {
 	otherHeight := s.height(s.other(chain))
 	if otherHeight < int64(s.heightLastClientUpdate[chain]) {
 		err := difftest.UpdateReceiverClient(s.endpoint(s.other(chain)), s.endpoint(chain))
@@ -438,7 +467,7 @@ func (s PBTTestSuite) idempotentUpdateClient(chain string) {
 
 }
 
-func (s *PBTTestSuite) delegate(a Delegate) {
+func (s *DTTestSuite) delegate(a Delegate) {
 	s.idempotentBeginBlock(P)
 	s.idempotentDeliverAcks(P)
 	psk := s.providerChain.App.GetStakingKeeper()
@@ -450,7 +479,7 @@ func (s *PBTTestSuite) delegate(a Delegate) {
 	pskServer.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
-func (s *PBTTestSuite) undelegate(a Undelegate) {
+func (s *DTTestSuite) undelegate(a Undelegate) {
 	s.idempotentBeginBlock(P)
 	s.idempotentDeliverAcks(P)
 	psk := s.providerChain.App.GetStakingKeeper()
@@ -462,7 +491,7 @@ func (s *PBTTestSuite) undelegate(a Undelegate) {
 	pskServer.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
-func (s *PBTTestSuite) hackBeginBlock(chain string) {
+func (s *DTTestSuite) hackBeginBlock(chain string) {
 	c := s.chain(chain)
 
 	dt := 5
@@ -481,7 +510,7 @@ func (s *PBTTestSuite) hackBeginBlock(chain string) {
 	c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
 }
 
-func (s *PBTTestSuite) endBlock(chain string) {
+func (s *DTTestSuite) endBlock(chain string) {
 
 	s.idempotentBeginBlock(chain)
 	s.idempotentDeliverAcks(chain)
@@ -522,11 +551,11 @@ func (s *PBTTestSuite) endBlock(chain string) {
 
 }
 
-func (s *PBTTestSuite) increaseSeconds(seconds int64) {
+func (s *DTTestSuite) increaseSeconds(seconds int64) {
 	s.coordinator.CurrentTime = s.coordinator.CurrentTime.Add(time.Second * time.Duration(seconds)).UTC()
 }
 
-func (s *PBTTestSuite) jumpNBlocks(a JumpNBlocks) {
+func (s *DTTestSuite) jumpNBlocks(a JumpNBlocks) {
 	for i := int64(0); i < a.n; i++ {
 		for _, c := range a.chains {
 			s.endBlock(c)
@@ -536,7 +565,7 @@ func (s *PBTTestSuite) jumpNBlocks(a JumpNBlocks) {
 	}
 }
 
-func (s *PBTTestSuite) deliver(a Deliver) {
+func (s *DTTestSuite) deliver(a Deliver) {
 	s.idempotentBeginBlock(a.chain)
 	s.idempotentDeliverAcks(a.chain)
 	other := map[string]string{P: C, C: P}[a.chain]
@@ -555,7 +584,7 @@ func (s *PBTTestSuite) deliver(a Deliver) {
 	s.outbox[other] = []channeltypes.Packet{}
 }
 
-func (s *PBTTestSuite) providerSlash(a ProviderSlash) {
+func (s *DTTestSuite) providerSlash(a ProviderSlash) {
 	s.idempotentBeginBlock(P)
 	s.idempotentDeliverAcks(P)
 	psk := s.providerChain.App.GetStakingKeeper()
@@ -567,7 +596,7 @@ func (s *PBTTestSuite) providerSlash(a ProviderSlash) {
 	psk.Slash(s.ctx(P), val, h, power, factor, -1) // TODO: check params here!
 }
 
-func (s *PBTTestSuite) consumerSlash(a ConsumerSlash) {
+func (s *DTTestSuite) consumerSlash(a ConsumerSlash) {
 	s.idempotentBeginBlock(C)
 	s.idempotentDeliverAcks(C)
 	cccvk := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
@@ -589,7 +618,7 @@ ASSUMPTIONS TEST
 */
 
 // TODO: clear up these hacks after stripping provider/consumer
-func (s *PBTTestSuite) DisableConsumerDistribution() {
+func (s *DTTestSuite) DisableConsumerDistribution() {
 	cChain := s.consumerChain
 	cApp := cChain.App.(*appConsumer.App)
 	for i, moduleName := range cApp.MM.OrderBeginBlockers {
@@ -600,7 +629,7 @@ func (s *PBTTestSuite) DisableConsumerDistribution() {
 	}
 }
 
-func (s *PBTTestSuite) TestAssumptions() {
+func (s *DTTestSuite) TestAssumptions() {
 	s.Require().Equal(SLASH_DOWNTIME, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDowntime(s.ctx(P)))
 	s.Require().Equal(SLASH_DOUBLESIGN, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDoubleSign(s.ctx(P)))
 
@@ -720,7 +749,7 @@ TRACE TEST
 ~~~~~~~~~~~~
 */
 
-func (s *PBTTestSuite) matchState(chain string, trace difftest.Trace, i int) {
+func (s *DTTestSuite) matchState(chain string, trace difftest.Trace, i int) {
 	c := trace.Consequences[i]
 
 	implementationStartTime := time.Unix(1577923353, 0).UTC()
@@ -762,7 +791,7 @@ func (s *PBTTestSuite) matchState(chain string, trace difftest.Trace, i int) {
 	}
 }
 
-func executeTrace(s *PBTTestSuite, trace difftest.Trace) {
+func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 
 	/*
 		There is a limitation: you can't query using .ctx after a block
@@ -840,13 +869,13 @@ func loadTraces(fn string) []difftest.Trace {
 	return ret
 }
 
-func executeTraces(s *PBTTestSuite, traces []difftest.Trace) {
+func executeTraces(s *DTTestSuite, traces []difftest.Trace) {
 	for i, trace := range traces {
 		fmt.Println("Executing trace ", i)
 		executeTrace(s, trace)
 	}
 }
 
-func (s *PBTTestSuite) TestTracesCovering() {
+func (s *DTTestSuite) TestTracesCovering() {
 	executeTraces(s, loadTraces("traces_covering.json"))
 }
