@@ -1,13 +1,10 @@
 package difftest
 
 import (
-	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	"github.com/cosmos/ibc-go/v3/testing/simapp"
 	"github.com/stretchr/testify/require"
@@ -15,14 +12,7 @@ import (
 
 func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint) (err error) {
 
-	var header exported.Header
-
-	switch receiver.ClientConfig.GetClientType() {
-	case exported.Tendermint:
-		header, err = receiver.Chain.ConstructUpdateTMClientHeader(sender.Chain, receiver.ClientID)
-	default:
-		err = fmt.Errorf("client type %s is not supported", receiver.ClientConfig.GetClientType())
-	}
+	header, err := receiver.Chain.ConstructUpdateTMClientHeader(sender.Chain, receiver.ClientID)
 
 	if err != nil {
 		return err
@@ -32,6 +22,7 @@ func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endp
 		receiver.ClientID, header,
 		receiver.Chain.SenderAccount.GetAddress().String(),
 	)
+
 	require.NoError(receiver.Chain.T, err)
 
 	_, _, err = simapp.SignAndDeliver(
