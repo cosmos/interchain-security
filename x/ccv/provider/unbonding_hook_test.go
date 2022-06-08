@@ -243,6 +243,36 @@ func (s *ProviderTestSuite) TestUnbondingEdgeCase() {
 	s.Require().True(getBalance(s, newProviderCtx, delAddr).Equal(initBalance))
 }
 
+// Bond some tokens on provider
+// Unbond them to create unbonding op
+// Check unbonding ops on both sides
+// Advance time so that provider's unbonding op completes
+// Check that unbonding has completed in provider staking
+func (s *ProviderTestSuite) TestUnbondingNoConsumer() {
+	origTime := s.ctx.BlockTime()
+
+	bondAmt := sdk.NewInt(10000000)
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	// delegate bondAmt and undelegate 1/2 of it
+	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
+
+	// check that staking unbonding op was created and onHold is false
+	checkStakingUnbondingOps(s, 1, true, false)
+
+	// check that CCV unbonding op was not created
+	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
+
+	// END PROVIDER UNBONDING
+	newProviderCtx := endProviderUnbondingPeriod(s, origTime)
+
+	// CHECK THAT UNBONDING IS COMPLETE
+	// Check that staking unbonding op has been deleted
+	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
+
+	// Check that half the coins have been returned
+	s.Require().True(getBalance(s, newProviderCtx, delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
+}
+
 func getBalance(s *ProviderTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
 	return s.providerChain.App.(*appProvider.App).BankKeeper.GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }

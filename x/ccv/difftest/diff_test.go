@@ -185,7 +185,6 @@ func (s *PBTTestSuite) SetupTest() {
 		1000, // about 2 hr at 7.6 seconds per blocks
 		"",
 		"",
-		"0.5", // 50%
 	)
 	consumerGenesis := consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, params)
 	s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(s.ctx(C), consumerGenesis)
