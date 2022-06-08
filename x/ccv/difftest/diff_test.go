@@ -44,7 +44,7 @@ import (
 const P = "provider"
 const C = "consumer"
 
-// Height is offset from model to due to bootstrappingG
+// Height is offset from model to due to bootstrapping
 const MODEL_HEIGHT_OFFSET = int64(18)
 
 // TODO: do I need different denoms for each chain?
@@ -572,7 +572,7 @@ func (s *DTTestSuite) increaseSeconds(seconds int64) {
 
 func (s *DTTestSuite) jumpNBlocks(a JumpNBlocks) {
 	for i := int64(0); i < a.n; i++ {
-		for _, c := range a.chains {
+		for _, c := range a.chains { // [P], [P,C], [C]
 			s.endBlock(c)
 			fmt.Println("endBlock", c)
 		}
