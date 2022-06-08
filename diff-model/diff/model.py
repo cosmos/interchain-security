@@ -4,6 +4,10 @@ from collections import defaultdict
 from .constants import *
 from .events import *
 
+"""
+Matches https://github.com/cosmos/ibc/commit/b7611ae10daef336c839516b8c59480a65147f36
+"""
+
 
 Undelegation = recordclass(
     "Undelegation",
