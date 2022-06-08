@@ -6,6 +6,7 @@ import shutil
 from os import listdir
 from os.path import isfile, join
 import sys
+from collections import Counter
 
 
 """
@@ -147,6 +148,7 @@ def select():
 
     mapped = {}
     event_names = []
+    event_cnt = Counter()
 
     vectors = []
 
@@ -159,6 +161,7 @@ def select():
         for en in mapped[fn]:
             if en not in set(event_names):
                 event_names.append(en)
+            event_cnt[en] += 1
         v = [False] * 19
         reverse = {en: i for i, en in enumerate(event_names)}
         for en in mapped[fn]:
@@ -166,6 +169,11 @@ def select():
         vectors.append((fn, v))
 
     print("Finished reading traces")
+
+    print("Num events: ", len(event_cnt))
+    for e, c in event_cnt.most_common():
+        print(e, c)
+    print()
 
     PATH = "traces_covering/"
     shutil.rmtree(PATH, ignore_errors=True)
@@ -224,7 +232,7 @@ def combine():
             fd.write(json.dumps(ret, indent=2))
 
     do("traces_covering/", "traces_covering")
-    do("traces_diverse/", "traces_diverse")
+    # do("traces_diverse/", "traces_diverse")
 
 
 def foobar():
