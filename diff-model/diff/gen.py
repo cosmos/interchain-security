@@ -152,7 +152,7 @@ class Shaper:
         }[tuple(self.last_jumped)]
         a.chains = random.choice(choices)
         self.last_jumped = a.chains
-        a.n = random.choice([1, 4, 7])
+        a.n = random.choice([1, 6])
         a.seconds_per_block = BLOCK_SECONDS
         if P in a.chains:
             self.delegated_since_block = {i: False for i in range(NUM_VALIDATORS)}
@@ -263,8 +263,9 @@ def gen():
     GOAL_TIME_MINS = 20
     NUM_ACTIONS = 40
 
-    shutil.rmtree("traces/")
-    os.makedirs("traces/")
+    DIR = "traces/"
+    shutil.rmtree(DIR)
+    os.makedirs(DIR)
 
     num_runs = 1 if debug else 99999999999  # will be adjusted
     elapsed = 0
@@ -305,7 +306,7 @@ def gen():
             trace.blocks = blocks
             trace.events = events
             all_events.append(events)
-            trace.dump(f"traces/trace_{i}.json")
+            trace.dump(f"{DIR}trace_{i}.json")
 
         t_end = time.time()
         elapsed += t_end - t_start

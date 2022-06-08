@@ -138,6 +138,9 @@ class Staking:
 
         completed_undels = [e for e in expired_undels if not e.on_hold]
 
+        if len(completed_undels) < len(expired_undels):
+            self.m.events.add(Events.Event.SOME_UNDELS_EXPIRED_BUT_NOT_COMPLETED)
+
         self.undelegationQ = [
             e for e in self.undelegationQ if e not in completed_undels
         ]
@@ -173,6 +176,9 @@ class Staking:
             e.expired = True
 
         completed_unvals = [e for e in expired_unvals if not e.on_hold]
+
+        if len(completed_unvals) < len(expired_unvals):
+            self.m.events.add(Events.Event.SOME_UNVALS_EXPIRED_BUT_NOT_COMPLETED)
 
         for e in completed_unvals:
             self.status[e.val] = Status.UNBONDED
@@ -263,13 +269,15 @@ class Staking:
         remaining = amt
         if infraction_height < self.m.h[P]:
             for e in ubds:
-                self.m.events.add(Events.Event.SLASH)
+                self.m.events.add(Events.Event.SLASH_UNDEL)
                 slashed = int(factor * e.initial_balance)
                 remaining -= slashed
                 e.balance = max(0, e.balance - slashed)
 
         to_burn = min(max(remaining, 0), self.tokens[val])
         self.tokens[val] -= to_burn
+        if 0 < to_burn:
+            self.m.events.add(Events.Event.SLASH_VAL)
 
     def jail_until(self, val, timestamp):
         self.jailed[val] = timestamp
@@ -343,6 +351,14 @@ class CCVProvider:
         changes = self.m.staking.validator_changes()
 
         if 0 < len(changes) or 0 < len(self.vsc_id_to_unbonding_op_ids[self.vsc_id]):
+            if 0 == len(changes) and 0 < len(
+                self.vsc_id_to_unbonding_op_ids[self.vsc_id]
+            ):
+                self.m.events.add(Events.Event.SEND_VSC_NOT_BECAUSE_CHANGE)
+            if 0 < len(self.downtime_slash_requests):
+                self.m.events.add(Events.Event.SEND_VSC_WITH_DOWNTIME_ACK)
+            else:
+                self.m.events.add(Events.Event.SEND_VSC_WITHOUT_DOWNTIME_ACK)
             data = Vsc(self.vsc_id, changes, self.downtime_slash_requests)
             self.downtime_slash_requests = []
             self.m.outbox[P].add(data)
@@ -413,12 +429,17 @@ class CCVConsumer:
             vsc_id for vsc_id, time in self.maturing_vscs.items() if time <= self.m.t[C]
         ]
 
+        if len(matured) < len(self.maturing_vscs.items()):
+            self.m.events.add(Events.Event.CONSUMER_NOT_ALL_MATURED)
+
         for vsc_id in matured:
             data = VscMatured(vsc_id)
+            self.m.events.add(Events.Event.CONSUMER_SEND_MATURATION)
             self.m.outbox[C].add(data)
             del self.maturing_vscs[vsc_id]
 
         if len(self.pending_changes) < 1:
+            self.m.events.add(Events.Event.CONSUMER_NO_PENDING_CHANGES)
             return
 
         def aggregate_changes():
@@ -433,8 +454,10 @@ class CCVConsumer:
         for val, power in changes.items():
             self.power[val] = None
             if 0 < power:
-                self.m.events.add(Events.Event.CONSUMER_UPDATE_POWER)
+                self.m.events.add(Events.Event.CONSUMER_UPDATE_POWER_POSITIVE)
                 self.power[val] = power
+            else:
+                self.m.events.add(Events.Event.CONSUMER_UPDATE_POWER_ZERO)
 
         self.pending_changes = []
 

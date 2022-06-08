@@ -5,6 +5,7 @@ import sys
 from collections import Counter
 from os import listdir
 from os.path import isfile, join
+from .events import Events
 
 
 def greedy_min_cover(vectors):
@@ -48,7 +49,7 @@ def select():
             if en not in set(event_names):
                 event_names.append(en)
             event_cnt[en] += 1
-        v = [False] * 19
+        v = [False] * len(list(Events.Event))
         reverse = {en: i for i, en in enumerate(event_names)}
         for en in mapped[fn]:
             v[reverse[en]] = True
