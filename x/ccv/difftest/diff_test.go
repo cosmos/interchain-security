@@ -38,7 +38,6 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 const P = "provider"
@@ -133,9 +132,9 @@ func (s *DTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
 func (s *DTTestSuite) sendEmptyVSCPacket() {
 	vscID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerChain.GetContext())
 
-	timeout := uint64(ccv.GetTimeoutTimestamp(s.time(P)).UnixNano())
+	timeout := uint64(types.GetTimeoutTimestamp(s.time(P)).UnixNano())
 
-	pd := ccv.NewValidatorSetChangePacketData(
+	pd := types.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{},
 		vscID,
 		nil,
