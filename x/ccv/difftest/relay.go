@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func updateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint) (err error) {
+func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint) (err error) {
 
 	var header exported.Header
 
@@ -94,22 +94,8 @@ func recvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, pack
 	return ack, nil
 }
 
-func TryRelayPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
-
-	err = updateReceiverClient(sender, receiver)
-
-	if err != nil {
-		return nil, err
-	}
-
-	ack, err = recvPacket(sender, receiver, packet)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return ack, nil
-
+func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
+	return recvPacket(sender, receiver, packet)
 }
 
 func recvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p channeltypes.Packet, ack []byte) (err error) {
@@ -141,20 +127,6 @@ func recvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p chann
 	return nil
 }
 
-func TryRelayAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet, ack []byte) (err error) {
-
-	err = updateReceiverClient(sender, receiver)
-
-	if err != nil {
-		return err
-	}
-
-	err = recvAck(sender, receiver, packet, ack)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-
+func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet, ack []byte) (err error) {
+	return recvAck(sender, receiver, packet, ack)
 }

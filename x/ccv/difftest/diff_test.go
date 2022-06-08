@@ -78,6 +78,8 @@ type PBTTestSuite struct {
 
 	outbox map[string][]channeltypes.Packet
 	acks   map[string][]Ack
+
+	heightLastClientUpdate map[string]int64
 }
 
 func TestPBTTestSuite(t *testing.T) {
@@ -129,6 +131,7 @@ func (s *PBTTestSuite) SetupTest() {
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
 	s.outbox = map[string][]channeltypes.Packet{P: {}, C: {}}
 	s.acks = map[string][]Ack{P: {}, C: {}}
+	s.heightLastClientUpdate = map[string]int64{P: 0, C: 0}
 
 	// Add two more validator
 	// Only added two in chain creation
@@ -392,12 +395,14 @@ func (s *PBTTestSuite) beginBlock(chain string) {
 	}
 
 	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
+
 }
 
 func (s *PBTTestSuite) idempotentBeginBlock(chain string) {
 	if s.mustBeginBlock[chain] {
 		s.mustBeginBlock[chain] = false
 		s.beginBlock(chain)
+		s.idempotentUpdateClient(chain)
 	}
 }
 
@@ -406,6 +411,7 @@ func (s *PBTTestSuite) idempotentDeliverAcks(receiver string) error {
 	replacement := []Ack{}
 	for _, ack := range acks {
 		if 2 <= ack.commits {
+			// s.idempotentUpdateClient(receiver)
 			// p := ack.packet
 			// difftest.TryRelayAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), p, ack.ack)
 		} else {
@@ -415,6 +421,18 @@ func (s *PBTTestSuite) idempotentDeliverAcks(receiver string) error {
 	s.acks[receiver] = replacement
 
 	return nil
+}
+
+func (s PBTTestSuite) idempotentUpdateClient(chain string) {
+	otherHeight := s.height(s.other(chain))
+	if otherHeight < int64(s.heightLastClientUpdate[chain]) {
+		err := difftest.UpdateReceiverClient(s.endpoint(s.other(chain)), s.endpoint(chain))
+		if err != nil {
+			s.FailNow("Bad test")
+		}
+		s.heightLastClientUpdate[chain] = otherHeight
+	}
+
 }
 
 func (s *PBTTestSuite) delegate(a Delegate) {
@@ -521,7 +539,8 @@ func (s *PBTTestSuite) deliver(a Deliver) {
 	for _, p := range s.outbox[other] {
 		receiver := s.endpoint(a.chain)
 		sender := receiver.Counterparty
-		ack, err := difftest.TryRelayPacket(sender, receiver, p)
+		s.idempotentUpdateClient(a.chain)
+		ack, err := difftest.TryRecvPacket(sender, receiver, p)
 		if err != nil {
 			s.FailNow("Relay failed", err)
 		}
@@ -741,7 +760,7 @@ func executeTrace(s *PBTTestSuite, trace difftest.Trace) {
 		always a commit so you can't match the state afterwards.
 	*/
 	for i, a := range trace.Actions {
-		fmt.Println(a.Kind)
+		fmt.Println("Action ", i, ", kind: ", a.Kind)
 		switch a.Kind {
 		case "Delegate":
 			s.delegate(Delegate{
@@ -769,7 +788,7 @@ func executeTrace(s *PBTTestSuite, trace difftest.Trace) {
 				int64(a.Val),
 				int64(a.Power),
 				int64(a.Height),
-				1, // TODO: unhard code, use factor!
+				int64(a.Factor),
 			})
 			s.matchState(P, trace, i)
 		case "ConsumerSlash":
@@ -810,7 +829,8 @@ func loadTraces(fn string) []difftest.Trace {
 }
 
 func executeTraces(s *PBTTestSuite, traces []difftest.Trace) {
-	for _, trace := range traces {
+	for i, trace := range traces {
+		fmt.Println("Executing trace ", i)
 		executeTrace(s, trace)
 	}
 }
