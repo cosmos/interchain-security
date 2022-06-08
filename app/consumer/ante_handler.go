@@ -6,6 +6,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	ibcante "github.com/cosmos/ibc-go/v3/modules/core/ante"
+	consumerante "github.com/cosmos/interchain-security/app/consumer/ante"
+	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 )
 
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
@@ -14,6 +16,7 @@ type HandlerOptions struct {
 	ante.HandlerOptions
 
 	IBCChannelkeeper channelkeeper.Keeper
+	ConsumerKeeper   ibcconsumerkeeper.Keeper
 }
 
 func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
@@ -35,6 +38,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	anteDecorators := []sdk.AnteDecorator{
 		ante.NewSetUpContextDecorator(),
 		ante.NewRejectExtensionOptionsDecorator(),
+		consumerante.NewMsgFilterDecorator(options.ConsumerKeeper),
 		ante.NewMempoolFeeDecorator(),
 		ante.NewValidateBasicDecorator(),
 		ante.NewTxTimeoutHeightDecorator(),
