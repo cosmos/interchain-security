@@ -59,7 +59,7 @@ def select():
 
     print("Num events: ", len(event_cnt))
     for e, c in event_cnt.most_common():
-        print(e, c)
+        print(e, c, c / len(files))
     print()
 
     PATH = "traces_covering/"

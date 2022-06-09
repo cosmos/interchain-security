@@ -598,7 +598,7 @@ func (s *DTTestSuite) deliver(a Deliver) {
 	s.idempotentBeginBlock(a.chain)
 	s.idempotentDeliverAcks(a.chain)
 	other := map[string]string{P: C, C: P}[a.chain]
-	fmt.Println("outbox size before deliver: ", len(s.outbox[other]))
+	fmt.Println("outbox size before deliver(", a.chain, "): ", len(s.outbox[other]))
 	for _, p := range s.outbox[other] {
 		receiver := s.endpoint(a.chain)
 		sender := receiver.Counterparty
@@ -637,7 +637,9 @@ func (s *DTTestSuite) consumerSlash(a ConsumerSlash) {
 	if !a.isDowntime {
 		kind = stakingtypes.DoubleSign
 	}
-	cccvk.Slash(s.ctx(C), val, h, power, sdk.Dec{}, kind) // TODO: check params here!
+	// TODO: check the length of ctx.Events() before and after
+	// if greater after, take the event and get a packet from it
+	cccvk.Slash(s.ctx(C), val, h, power, sdk.Dec{}, kind)
 }
 
 /*
