@@ -142,8 +142,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			suite.Require().Equal(tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
 
 			expectedTime := uint64(suite.ctx.BlockTime().Add(consumertypes.UnbondingTime).UnixNano())
-			unbondingTime := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, tc.packet.Sequence)
-			suite.Require().Equal(expectedTime, unbondingTime, "unbonding time has unexpected value for case: %s", tc.name)
+			maturityTime := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, tc.packet.Sequence)
+			suite.Require().Equal(expectedTime, maturityTime, "packet maturity time has unexpected value for case: %s", tc.name)
 			unbondingPacket, err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingPacket(suite.ctx, tc.packet.Sequence)
 			suite.Require().NoError(err)
 			suite.Require().Equal(&tc.packet, unbondingPacket, "packet is not added to unbonding queue after successful receive. case: %s", tc.name)
@@ -207,10 +207,10 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 
 	// ensure first two packets are unbonded and acknowledgement is written
 	// unbonded time is deleted
-	time1 := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 1)
-	time2 := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 2)
-	suite.Require().Equal(uint64(0), time1, "unbonding time not deleted for mature packet 1")
-	suite.Require().Equal(uint64(0), time2, "unbonding time not deleted for mature packet 2")
+	time1 := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 1)
+	time2 := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 2)
+	suite.Require().Equal(uint64(0), time1, "maturity time not deleted for mature packet 1")
+	suite.Require().Equal(uint64(0), time2, "maturity time not deleted for mature packet 2")
 
 	// unbonded packets are deleted
 	_, err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingPacket(suite.ctx, 1)
@@ -223,14 +223,14 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	// successful acknowledgements are written
 	ackBytes1, ok := suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.GetPacketAcknowledgement(suite.ctx, consumertypes.PortID, suite.path.EndpointA.ChannelID, 1)
 	suite.Require().True(ok)
-	suite.Require().Equal(expectedWriteAckBytes, ackBytes1, "did not write successful ack for matue packet 1")
+	suite.Require().Equal(expectedWriteAckBytes, ackBytes1, "did not write successful ack for mature packet 1")
 	ackBytes2, ok := suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.GetPacketAcknowledgement(suite.ctx, consumertypes.PortID, suite.path.EndpointA.ChannelID, 2)
 	suite.Require().True(ok)
-	suite.Require().Equal(expectedWriteAckBytes, ackBytes2, "did not write successful ack for matue packet 1")
+	suite.Require().Equal(expectedWriteAckBytes, ackBytes2, "did not write successful ack for mature packet 1")
 
 	// ensure that third packet did not get ack written and is still in store
-	time3 := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 3)
-	suite.Require().True(time3 > uint64(suite.ctx.BlockTime().UnixNano()), "Unbonding time for packet 3 is not after current time")
+	time3 := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 3)
+	suite.Require().True(time3 > uint64(suite.ctx.BlockTime().UnixNano()), "maturity time for packet 3 is not after current time")
 	packet3, err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingPacket(suite.ctx, 3)
 	suite.Require().NoError(err, "retrieving unbonding packet 3 returned error")
 	suite.Require().Equal(&packet, packet3, "unbonding packet 3 has unexpected value")
@@ -239,7 +239,6 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	ackBytes3, ok := suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.GetPacketAcknowledgement(suite.ctx, consumertypes.PortID, suite.path.EndpointA.ChannelID, 3)
 	suite.Require().False(ok)
 	suite.Require().Nil(ackBytes3, "acknowledgement written for unbonding packet 3")
-
 }
 
 func (suite *KeeperTestSuite) TestOnAcknowledgement() {

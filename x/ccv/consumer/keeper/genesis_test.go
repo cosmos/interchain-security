@@ -74,8 +74,8 @@ func (suite *KeeperTestSuite) TestGenesis() {
 	// ensure reset genesis is set correctly
 	providerChannel := suite.path.EndpointA.ChannelID
 	suite.Require().Equal(providerChannel, restartGenesis.ProviderChannelId)
-	unbondingTime := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingTime(suite.consumerChain.GetContext(), 1)
-	suite.Require().Equal(uint64(origTime.Add(consumertypes.UnbondingTime).UnixNano()), unbondingTime, "unbonding time is not set correctly in genesis")
+	maturityTime := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 1)
+	suite.Require().Equal(uint64(origTime.Add(consumertypes.UnbondingTime).UnixNano()), maturityTime, "maturity time is not set correctly in genesis")
 	unbondingPacket, err := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingPacket(suite.consumerChain.GetContext(), 1)
 	suite.Require().NoError(err)
 	suite.Require().Equal(&packet, unbondingPacket, "unbonding packet is not set correctly in genesis")

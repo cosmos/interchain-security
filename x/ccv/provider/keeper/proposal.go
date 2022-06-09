@@ -12,6 +12,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -32,7 +33,9 @@ func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateCons
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right consumer chain.
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height) error {
-	unbondingTime := k.stakingKeeper.UnbondingTime(ctx)
+	// Use the unbonding period on the provider to
+	// compute the unbonding period on the consumer
+	unbondingTime := utils.ComputeConsumerUnbondingPeriod(k.stakingKeeper.UnbondingTime(ctx))
 
 	// create clientstate by getting template client from parameters and filling in zeroed fields from proposal.
 	clientState := k.GetTemplateClient(ctx)

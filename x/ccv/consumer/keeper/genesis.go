@@ -75,7 +75,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		k.SetProviderChannel(ctx, state.ProviderChannelId)
 		// set all unbonding sequences
 		for _, us := range state.UnbondingSequences {
-			k.SetUnbondingTime(ctx, us.Sequence, us.UnbondingTime)
+			k.SetPacketMaturityTime(ctx, us.Sequence, us.UnbondingTime)
 			k.SetUnbondingPacket(ctx, us.Sequence, us.UnbondingPacket)
 		}
 	}
@@ -103,7 +103,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 		unbondingSequences := []types.UnbondingSequence{}
 		cb := func(seq uint64, packet channeltypes.Packet) bool {
-			timeNs := k.GetUnbondingTime(ctx, seq)
+			timeNs := k.GetPacketMaturityTime(ctx, seq)
 			us := types.UnbondingSequence{
 				Sequence:        seq,
 				UnbondingTime:   timeNs,
