@@ -669,6 +669,7 @@ func New(
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
 			IBCChannelkeeper: app.IBCKeeper.ChannelKeeper,
+			ConsumerKeeper:   app.ConsumerKeeper,
 		},
 	)
 	if err != nil {
