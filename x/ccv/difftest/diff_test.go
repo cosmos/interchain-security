@@ -637,9 +637,21 @@ func (s *DTTestSuite) consumerSlash(a ConsumerSlash) {
 	if !a.isDowntime {
 		kind = stakingtypes.DoubleSign
 	}
-	// TODO: check the length of ctx.Events() before and after
-	// if greater after, take the event and get a packet from it
-	cccvk.Slash(s.ctx(C), val, h, power, sdk.Dec{}, kind)
+
+	ctx := s.ctx(C)
+	before := len(ctx.EventManager().Events())
+	cccvk.Slash(ctx, val, h, power, sdk.Dec{}, kind)
+	evts := ctx.EventManager().ABCIEvents()
+	for _, e := range evts[before:] {
+		if e.Type == channeltypes.EventTypeSendPacket {
+			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
+			s.Require().NoError(err)
+
+			s.outbox[C] = append(s.outbox[C], packet)
+			fmt.Println("Outbox ", C, ", len: ", len(s.outbox[C]))
+		}
+	}
+
 }
 
 /*

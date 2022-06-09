@@ -64,7 +64,6 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 	if infraction == stakingtypes.InfractionEmpty {
 		return
 	}
-
 	k.SendSlashPacket(
 		ctx,
 		abci.Validator{
