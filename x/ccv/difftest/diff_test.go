@@ -119,6 +119,20 @@ func (s *DTTestSuite) createValidator() (tmtypes.PrivValidator, sdk.ValAddress) 
 	return privVal, addr
 }
 
+func (s *DTTestSuite) setSigningInfos() {
+	for i := 0; i < 4; i++ {
+		info := slashingtypes.NewValidatorSigningInfo(
+			s.consAddr(int64(i)),
+			s.height(P),
+			0,
+			time.Unix(0, 0),
+			false,
+			0,
+		)
+		s.providerChain.App.(*appProvider.App).SlashingKeeper.SetValidatorSigningInfo(s.ctx(P), s.consAddr(int64(i)), info)
+	}
+}
+
 func (s *DTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
 	psk := s.providerChain.App.GetStakingKeeper()
 	pskServer := stakingkeeper.NewMsgServerImpl(psk)
@@ -223,6 +237,8 @@ func (s *DTTestSuite) SetupTest() {
 	s.consumerChain.Signers[val2pk.Address().String()] = val2
 	s.consumerChain.Signers[val3pk.Address().String()] = val3
 
+	s.setSigningInfos()
+
 	// TODO: delete this once it is no longer needed
 	s.DisableConsumerDistribution()
 
@@ -237,6 +253,7 @@ func (s *DTTestSuite) SetupTest() {
 
 	tmConfig.UnbondingPeriod = difftest.UNBONDING
 	tmConfig.TrustingPeriod = difftest.TRUSTING
+	tmConfig.MaxClockDrift = difftest.MAX_CLOCK_DRIFT
 	providerClient := ibctmtypes.NewClientState(
 		s.providerChain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
@@ -276,6 +293,7 @@ func (s *DTTestSuite) SetupTest() {
 	cfg := s.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
 	cfg.UnbondingPeriod = difftest.UNBONDING
 	cfg.TrustingPeriod = difftest.TRUSTING
+	cfg.MaxClockDrift = difftest.MAX_CLOCK_DRIFT
 	s.path.EndpointB.CreateClient()
 
 	s.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClient(s.ctx(P), s.consumerChain.ChainID, s.path.EndpointB.ClientID)
@@ -598,7 +616,7 @@ func (s *DTTestSuite) deliver(a Deliver) {
 	s.idempotentBeginBlock(a.chain)
 	s.idempotentDeliverAcks(a.chain)
 	other := map[string]string{P: C, C: P}[a.chain]
-	fmt.Println("outbox size before deliver(", a.chain, "): ", len(s.outbox[other]))
+	fmt.Println("outbox size before deliver(", a.chain, "):", len(s.outbox[other]))
 	for _, p := range s.outbox[other] {
 		receiver := s.endpoint(a.chain)
 		sender := receiver.Counterparty
@@ -637,7 +655,6 @@ func (s *DTTestSuite) consumerSlash(a ConsumerSlash) {
 	if !a.isDowntime {
 		kind = stakingtypes.DoubleSign
 	}
-
 	ctx := s.ctx(C)
 	before := len(ctx.EventManager().Events())
 	cccvk.Slash(ctx, val, h, power, sdk.Dec{}, kind)
@@ -646,9 +663,7 @@ func (s *DTTestSuite) consumerSlash(a ConsumerSlash) {
 		if e.Type == channeltypes.EventTypeSendPacket {
 			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
-
 			s.outbox[C] = append(s.outbox[C], packet)
-			fmt.Println("Outbox ", C, ", len: ", len(s.outbox[C]))
 		}
 	}
 
@@ -673,6 +688,14 @@ func (s *DTTestSuite) DisableConsumerDistribution() {
 }
 
 func (s *DTTestSuite) TestAssumptions() {
+
+	for i := 0; i < 4; i++ {
+		_, found := s.providerChain.App.(*appProvider.App).SlashingKeeper.GetValidatorSigningInfo(s.ctx(P), s.consAddr(int64(i)))
+		if !found {
+			s.Require().FailNow("Bad test , i=", i)
+		}
+	}
+
 	s.Require().Equal(SLASH_DOWNTIME, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDowntime(s.ctx(P)))
 	s.Require().Equal(SLASH_DOUBLESIGN, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDoubleSign(s.ctx(P)))
 

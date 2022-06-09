@@ -27,6 +27,7 @@ import (
 // TODO: move somewhere sensible with the other constants
 const UNBONDING = time.Second * 45
 const TRUSTING = UNBONDING - time.Millisecond
+const MAX_CLOCK_DRIFT = time.Second * 10000
 const TOKEN_SCALAR = 10000
 
 var DTDefaultConsensusParams = &abci.ConsensusParams{
