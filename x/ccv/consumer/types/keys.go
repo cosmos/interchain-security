@@ -2,7 +2,6 @@ package types
 
 import (
 	"encoding/binary"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
@@ -24,6 +23,9 @@ const (
 	// QuerierRoute is the querier route for IBC consumer
 	QuerierRoute = ModuleName
 
+	// UnbondingTimeKeyString is the key for storing the unbonding period
+	UnbondingTimeKeyString = "unbondingtime"
+
 	// ProviderClientKeyString is the key for storing the clientID of the provider client
 	ProviderClientKeyString = "providerclient"
 
@@ -37,11 +39,8 @@ const (
 	// UnbondingPacketPrefix is the key prefix that will store the unbonding packet at the given sequence
 	UnbondingPacketPrefix = "unbondingpacket"
 
-	// UnbondingTimePrefix is the key prefix that will store unbonding time for each recently received packet.
-	UnbondingTimePrefix = "unbondingtime"
-
-	// UnbondingTime is set to 4 weeks
-	UnbondingTime = 4 * 7 * 24 * time.Hour
+	// PacketMaturityTimePrefix is the key prefix that will store maturity time for each received VSC packet
+	PacketMaturityTimePrefix = "packetmaturitytime"
 
 	// HeightValsetUpdateIDPrefix is the key prefix that will store the mapping from block height to valset update ID
 	HeightValsetUpdateIDPrefix = "heightvalsetupdateid"
@@ -69,6 +68,11 @@ var (
 	LastDistributionTransmissionKey = []byte{0x02}
 )
 
+// UnbondingTimeKey returns the key for storing the unbonding period
+func UnbondingTimeKey() []byte {
+	return []byte(UnbondingTimeKeyString)
+}
+
 // ProviderChannelKey returns the key for storing channelID of the provider chain.
 func ProviderChannelKey() []byte {
 	return []byte(ProviderChannelKeyString)
@@ -91,15 +95,15 @@ func UnbondingPacketKey(sequence uint64) []byte {
 	return append([]byte(UnbondingPacketPrefix), seqBytes...)
 }
 
-// UnbondingTimeKey returns the key for storing unbonding time for a given received packet sequence
-func UnbondingTimeKey(sequence uint64) []byte {
+// PacketMaturityTimeKey returns the key for storing maturity time for a given received VSC packet sequence
+func PacketMaturityTimeKey(sequence uint64) []byte {
 	seqBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(seqBytes, sequence)
-	return append([]byte(UnbondingTimePrefix), seqBytes...)
+	return append([]byte(PacketMaturityTimePrefix), seqBytes...)
 }
 
-func GetSequenceFromUnbondingTimeKey(key []byte) uint64 {
-	return binary.BigEndian.Uint64(key[len(UnbondingTimePrefix):])
+func GetSequenceFromPacketMaturityTimeKey(key []byte) uint64 {
+	return binary.BigEndian.Uint64(key[len(PacketMaturityTimePrefix):])
 }
 
 func HeightValsetUpdateIDKey(height uint64) []byte {

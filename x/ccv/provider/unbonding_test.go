@@ -395,16 +395,20 @@ func bondAndUnbond(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int
 
 func endProviderUnbondingPeriod(s *ProviderTestSuite, origTime time.Time) sdk.Context {
 	// - End provider unbonding period
-	providerCtx := s.providerCtx().WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
+	sk := s.providerChain.App.GetStakingKeeper()
+	unbondingPeriod := sk.UnbondingTime(s.providerCtx())
+	providerCtx := s.providerCtx().WithBlockTime(origTime.Add(unbondingPeriod).Add(3 * time.Hour))
 	// s.providerChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
-	s.providerChain.App.GetStakingKeeper().BlockValidatorUpdates(providerCtx)
+	sk.BlockValidatorUpdates(providerCtx)
 
 	return providerCtx
 }
 
 func endConsumerUnbondingPeriod(s *ProviderTestSuite, origTime time.Time) {
 	// - End consumer unbonding period
-	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
+	unbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
+	s.Require().True(found)
+	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(unbondingPeriod).Add(3 * time.Hour))
 	// s.consumerChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
 	err := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondMaturePackets(consumerCtx)
 	s.Require().NoError(err)

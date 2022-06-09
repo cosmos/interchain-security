@@ -100,6 +100,19 @@ func (suite *KeeperTestSuite) SetupCCVChannel() {
 	suite.coordinator.CreateChannels(suite.path)
 }
 
+func (suite *KeeperTestSuite) TestUnbondingTime() {
+	// The unbonding time on the consumer was already set during InitGenesis()
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeleteUnbondingTime(suite.ctx)
+	_, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
+	suite.Require().False(ok)
+	unbondingPeriod := time.Hour * 24 * 7 * 3
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, unbondingPeriod)
+	storedUnbondingPeriod, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
+	suite.Require().True(ok)
+	suite.Require().True(storedUnbondingPeriod == unbondingPeriod)
+
+}
+
 func (suite *KeeperTestSuite) TestProviderClient() {
 	providerClient, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.ctx)
 	suite.Require().True(ok)
@@ -148,24 +161,24 @@ func (suite *KeeperTestSuite) TestPendingChanges() {
 	suite.Require().Nil(gotPd, "got non-nil pending changes after Delete")
 }
 
-func (suite *KeeperTestSuite) TestUnbondingTime() {
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, 1, 10)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, 2, 25)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, 5, 15)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, 6, 40)
+func (suite *KeeperTestSuite) TestPacketMaturityTime() {
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPacketMaturityTime(suite.ctx, 1, 10)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPacketMaturityTime(suite.ctx, 2, 25)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPacketMaturityTime(suite.ctx, 5, 15)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPacketMaturityTime(suite.ctx, 6, 40)
 
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeleteUnbondingTime(suite.ctx, 6)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeletePacketMaturityTime(suite.ctx, 6)
 
-	suite.Require().Equal(uint64(10), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 1))
-	suite.Require().Equal(uint64(25), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 2))
-	suite.Require().Equal(uint64(15), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 5))
-	suite.Require().Equal(uint64(0), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 3))
-	suite.Require().Equal(uint64(0), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx, 6))
+	suite.Require().Equal(uint64(10), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 1))
+	suite.Require().Equal(uint64(25), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 2))
+	suite.Require().Equal(uint64(15), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 5))
+	suite.Require().Equal(uint64(0), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 3))
+	suite.Require().Equal(uint64(0), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 6))
 
 	orderedTimes := [][]uint64{{1, 10}, {2, 25}, {5, 15}}
 	i := 0
 
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IterateUnbondingTime(suite.ctx, func(seq, time uint64) bool {
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IteratePacketMaturityTime(suite.ctx, func(seq, time uint64) bool {
 		// require that we iterate through unbonding time in order of sequence
 		suite.Require().Equal(orderedTimes[i][0], seq)
 		suite.Require().Equal(orderedTimes[i][1], time)

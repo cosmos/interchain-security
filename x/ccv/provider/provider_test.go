@@ -225,11 +225,13 @@ func (s *ProviderTestSuite) TestPacketRoundtrip() {
 	s.UpdateConsumerHistInfo(packetData.ValidatorUpdates)
 
 	// - End provider unbonding period
-	providerCtx = providerCtx.WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
+	providerCtx = providerCtx.WithBlockTime(origTime.Add(providerStakingKeeper.UnbondingTime(s.providerCtx())).Add(3 * time.Hour))
 	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
 
 	// - End consumer unbonding period
-	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
+	unbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
+	s.Require().True(found)
+	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(unbondingPeriod).Add(3 * time.Hour))
 	// TODO: why doesn't this work: s.consumerChain.App.EndBlock(abci.RequestEndBlock{})
 	err = s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondMaturePackets(consumerCtx)
 	s.Require().NoError(err)

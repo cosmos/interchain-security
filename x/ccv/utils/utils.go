@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"time"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -77,4 +79,24 @@ func SendIBCPacket(
 		return nil
 	}
 	return nil
+}
+
+// ComputeConsumerUnbondingPeriod computes the unbonding period on the consumer
+// from the unbonding period on the provider (providerUnbondingPeriod)
+func ComputeConsumerUnbondingPeriod(providerUnbondingPeriod time.Duration) time.Duration {
+	if providerUnbondingPeriod > 7*24*time.Hour {
+		// In general, the unbonding period on the consumer
+		// is one day less than the unbonding period on the provider
+		return providerUnbondingPeriod - 24*time.Hour // one day less
+	} else if providerUnbondingPeriod >= 24*time.Hour {
+		// If the unbonding period on the provider is
+		// between one day and one week, then the unbonding period
+		// on the consumer is one hour less
+		return providerUnbondingPeriod - time.Hour // one hour less
+	} else {
+		// If the unbonding period on the provider is
+		// less than one day, then the unbonding period
+		// on the consumer is the same as on the provider
+		return providerUnbondingPeriod
+	}
 }
