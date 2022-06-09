@@ -2,7 +2,6 @@ package types
 
 import (
 	"encoding/binary"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
@@ -24,6 +23,9 @@ const (
 	// QuerierRoute is the querier route for IBC consumer
 	QuerierRoute = ModuleName
 
+	// UnbondingTimeKeyString is the key for storing the unbonding period
+	UnbondingTimeKeyString = "unbondingtime"
+
 	// ProviderClientKeyString is the key for storing the clientID of the provider client
 	ProviderClientKeyString = "providerclient"
 
@@ -39,9 +41,6 @@ const (
 
 	// PacketMaturityTimePrefix is the key prefix that will store maturity time for each received VSC packet
 	PacketMaturityTimePrefix = "packetmaturitytime"
-
-	// UnbondingTime is set to 4 weeks
-	UnbondingTime = 4 * 7 * 24 * time.Hour
 
 	// HeightValsetUpdateIDPrefix is the key prefix that will store the mapping from block height to valset update ID
 	HeightValsetUpdateIDPrefix = "heightvalsetupdateid"
@@ -68,6 +67,11 @@ var (
 	PortKey                         = []byte{0x01}
 	LastDistributionTransmissionKey = []byte{0x02}
 )
+
+// UnbondingTimeKey returns the key for storing the unbonding period
+func UnbondingTimeKey() []byte {
+	return []byte(UnbondingTimeKeyString)
+}
 
 // ProviderChannelKey returns the key for storing channelID of the provider chain.
 func ProviderChannelKey() []byte {

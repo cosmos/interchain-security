@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -136,6 +137,30 @@ func (k Keeper) AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Cap
 // passes to it
 func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error {
 	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
+}
+
+// SetPacketMaturityTime sets the unbonding period of the consumer chain
+func (k Keeper) SetUnbondingTime(ctx sdk.Context, unbondingTime time.Duration) {
+	store := ctx.KVStore(k.storeKey)
+	timeBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(timeBytes, uint64(unbondingTime.Nanoseconds()))
+	store.Set(types.UnbondingTimeKey(), timeBytes)
+}
+
+// GetUnbondingTime gets the unbonding period of the consumer chain
+func (k Keeper) GetUnbondingTime(ctx sdk.Context) (time.Duration, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.UnbondingTimeKey())
+	if bz == nil {
+		return 0, false
+	}
+	return time.Duration(binary.BigEndian.Uint64(bz)) * time.Nanosecond, true
+}
+
+// DeleteUnbondingTime deletes the unbonding period of the consumer chain
+func (k Keeper) DeleteUnbondingTime(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.UnbondingTimeKey())
 }
 
 // SetProviderClient sets the provider clientID that is validating the chain.

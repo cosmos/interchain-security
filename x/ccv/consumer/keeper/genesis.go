@@ -8,6 +8,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -41,6 +42,10 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 			panic(err)
 		}
 
+		// Set the unbonding period: use the unbonding period on the provider to
+		// compute the unbonding period on the consumer
+		unbondingTime := utils.ComputeConsumerUnbondingPeriod(state.ProviderClientState.UnbondingPeriod)
+		k.SetUnbondingTime(ctx, unbondingTime)
 		// Set default value for valset update ID
 		k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()), uint64(0))
 		// set provider client id.
@@ -68,6 +73,19 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		if !bytes.Equal(tmConsState.NextValidatorsHash, valSet.Hash()) {
 			panic("initial validator set does not match last consensus state of the provider client")
 		}
+
+		// Set the unbonding period: use the unbonding period on the provider to
+		// compute the unbonding period on the consumer
+		clientState, ok := k.clientKeeper.GetClientState(ctx, state.ProviderClientId)
+		if !ok {
+			panic("client state for provider client not found. MUST run IBC genesis before CCV consumer genesis")
+		}
+		tmClientState, ok := clientState.(*ibctmtypes.ClientState)
+		if !ok {
+			panic(fmt.Sprintf("client state has wrong type. expected: %T, got: %T", &ibctmtypes.ClientState{}, clientState))
+		}
+		unbondingTime := utils.ComputeConsumerUnbondingPeriod(tmClientState.UnbondingPeriod)
+		k.SetUnbondingTime(ctx, unbondingTime)
 
 		// set provider client id
 		k.SetProviderClient(ctx, state.ProviderClientId)

@@ -50,7 +50,11 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 	})
 
 	// Save maturity time and packet
-	maturityTime := ctx.BlockTime().Add(types.UnbondingTime)
+	unbondingPeriod, found := k.GetUnbondingTime(ctx)
+	if !found {
+		panic("the unbonding period is not set on the consumer chain")
+	}
+	maturityTime := ctx.BlockTime().Add(unbondingPeriod)
 	k.SetPacketMaturityTime(ctx, packet.Sequence, uint64(maturityTime.UnixNano()))
 	k.SetUnbondingPacket(ctx, packet.Sequence, packet)
 

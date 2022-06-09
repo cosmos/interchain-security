@@ -141,7 +141,9 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			})
 			suite.Require().Equal(tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
 
-			expectedTime := uint64(suite.ctx.BlockTime().Add(consumertypes.UnbondingTime).UnixNano())
+			unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
+			suite.Require().True(found)
+			expectedTime := uint64(suite.ctx.BlockTime().Add(unbondingPeriod).UnixNano())
 			maturityTime := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, tc.packet.Sequence)
 			suite.Require().Equal(expectedTime, maturityTime, "packet maturity time has unexpected value for case: %s", tc.name)
 			unbondingPacket, err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingPacket(suite.ctx, tc.packet.Sequence)
@@ -201,7 +203,9 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	suite.Require().Nil(ack)
 
 	// move ctx time forward such that first two packets are unbonded but third is not.
-	suite.ctx = suite.ctx.WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
+	unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
+	suite.Require().True(found)
+	suite.ctx = suite.ctx.WithBlockTime(origTime.Add(unbondingPeriod).Add(3 * time.Hour))
 
 	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondMaturePackets(suite.ctx)
 

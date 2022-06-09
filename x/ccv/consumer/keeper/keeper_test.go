@@ -100,6 +100,19 @@ func (suite *KeeperTestSuite) SetupCCVChannel() {
 	suite.coordinator.CreateChannels(suite.path)
 }
 
+func (suite *KeeperTestSuite) TestUnbondingTime() {
+	// The unbonding time on the consumer was already set during InitGenesis()
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeleteUnbondingTime(suite.ctx)
+	_, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
+	suite.Require().False(ok)
+	unbondingPeriod := time.Hour * 24 * 7 * 3
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, unbondingPeriod)
+	storedUnbondingPeriod, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
+	suite.Require().True(ok)
+	suite.Require().True(storedUnbondingPeriod == unbondingPeriod)
+
+}
+
 func (suite *KeeperTestSuite) TestProviderClient() {
 	providerClient, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.ctx)
 	suite.Require().True(ok)
