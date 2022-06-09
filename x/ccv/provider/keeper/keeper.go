@@ -575,8 +575,16 @@ func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) uint64 {
 // SetPendingVSCs sets in store the list of pending ValidatorSetChange packets under chain ID
 func (k Keeper) SetPendingVSCs(ctx sdk.Context, chainID string, packets []ccv.ValidatorSetChangePacketData) {
 	store := ctx.KVStore(k.storeKey)
+	var data [][]byte
+	for _, p := range packets {
+		pdata, err := p.Marshal()
+		if err != nil {
+			panic("failed to marshal ValidatorSetChange packet data")
+		}
+		data = append(data, pdata)
+	}
 	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(&packets)
+	err := json.NewEncoder(buf).Encode(data)
 	if err != nil {
 		panic("failed to encode json")
 	}
@@ -590,10 +598,21 @@ func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) []ccv.ValidatorS
 	if bz == nil {
 		return nil
 	}
-	var packets []ccv.ValidatorSetChangePacketData
 	buf := bytes.NewBuffer(bz)
 
-	json.NewDecoder(buf).Decode(&packets)
+	var data [][]byte
+	json.NewDecoder(buf).Decode(&data)
+
+	var packets []ccv.ValidatorSetChangePacketData
+	for _, pdata := range data {
+		var p ccv.ValidatorSetChangePacketData
+		err := p.Unmarshal(pdata)
+		if err != nil {
+			panic("failed to unmarshal ValidatorSetChange packet data")
+		}
+		packets = append(packets, p)
+	}
+
 	return packets
 }
 

@@ -7,6 +7,7 @@ import (
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -17,6 +18,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
@@ -26,6 +28,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/stretchr/testify/suite"
@@ -182,6 +185,58 @@ func (suite *KeeperTestSuite) TestAppendSlashAck() {
 	acks = app.ProviderKeeper.GetSlashAcks(ctx, chains[1])
 	suite.Require().NotNil(acks)
 	suite.Require().Len(acks, 1)
+}
+
+func (suite *KeeperTestSuite) TestPendingVSCs() {
+	app := suite.providerChain.App.(*appProvider.App)
+	ctx := suite.ctx
+
+	chainID := "consumer"
+
+	packets := app.ProviderKeeper.GetPendingVSCs(ctx, chainID)
+	suite.Require().Nil(packets)
+
+	pks := ibcsimapp.CreateTestPubKeys(4)
+	var ppks [4]tmprotocrypto.PublicKey
+	for i, pk := range pks {
+		ppks[i], _ = cryptocodec.ToTmProtoPublicKey(pk)
+	}
+
+	packetList := []ccv.ValidatorSetChangePacketData{
+		{
+			ValidatorUpdates: []abci.ValidatorUpdate{
+				{PubKey: ppks[0], Power: 1},
+				{PubKey: ppks[1], Power: 2},
+			},
+			ValsetUpdateId: 1,
+		},
+		{
+			ValidatorUpdates: []abci.ValidatorUpdate{
+				{PubKey: ppks[2], Power: 3},
+			},
+			ValsetUpdateId: 2,
+		},
+	}
+	app.ProviderKeeper.SetPendingVSCs(ctx, chainID, packetList)
+
+	packets = app.ProviderKeeper.GetPendingVSCs(ctx, chainID)
+	suite.Require().NotNil(packets)
+	suite.Require().Len(packets, 2)
+
+	newPacket := ccv.ValidatorSetChangePacketData{
+		ValidatorUpdates: []abci.ValidatorUpdate{
+			{PubKey: ppks[3], Power: 4},
+		},
+		ValsetUpdateId: 3,
+	}
+	app.ProviderKeeper.AppendPendingVSC(ctx, chainID, newPacket)
+	emptied := app.ProviderKeeper.EmptyPendingVSC(ctx, chainID)
+	suite.Require().Len(emptied, 3)
+	suite.Require().True(emptied[len(emptied)-1].ValsetUpdateId == 3)
+	suite.Require().True(emptied[len(emptied)-1].GetValidatorUpdates()[0].PubKey.String() == ppks[3].String())
+
+	packets = app.ProviderKeeper.GetPendingVSCs(ctx, chainID)
+	suite.Require().Nil(packets)
 }
 
 func (suite *KeeperTestSuite) TestInitHeight() {
