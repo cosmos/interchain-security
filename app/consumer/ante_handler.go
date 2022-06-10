@@ -5,7 +5,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	ibcante "github.com/cosmos/ibc-go/v3/modules/core/ante"
-	"github.com/cosmos/ibc-go/v3/modules/core/keeper"
+	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	consumerante "github.com/cosmos/interchain-security/app/consumer/ante"
 	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 )
@@ -15,7 +15,7 @@ import (
 type HandlerOptions struct {
 	ante.HandlerOptions
 
-	IBCChannelKeeper *keeper.Keeper
+	IBCChannelKeeper *ibckeeper.Keeper
 	ConsumerKeeper   ibcconsumerkeeper.Keeper
 }
 
