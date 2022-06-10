@@ -99,8 +99,10 @@ def combine():
 def foobar():
     def do(dir):
 
-        PATH = dir
-        files = [f for f in listdir(PATH) if isfile(join(PATH, f))]
+        # PATH = dir
+        # files = [f for f in listdir(PATH) if isfile(join(PATH, f))]
+        PATH = ""
+        files = ["traces_covering.json"]
 
         events = set()
         for fn in files:
