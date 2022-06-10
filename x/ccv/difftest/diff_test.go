@@ -950,5 +950,5 @@ func executeTraces(s *DTTestSuite, traces []difftest.Trace) {
 }
 
 func (s *DTTestSuite) TestTracesCovering() {
-	executeTraces(s, loadTraces("traces_covering.json"))
+	executeTraces(s, loadTraces("traces_covering_compact.json"))
 }
