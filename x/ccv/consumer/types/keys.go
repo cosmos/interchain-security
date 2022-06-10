@@ -43,6 +43,9 @@ const (
 	// UnbondingTime is set to 4 weeks
 	UnbondingTime = 4 * 7 * 24 * time.Hour
 
+	// HistoricalEntries is set to 10000.
+	HistoricalEntries uint32 = 10000
+
 	// HeightValsetUpdateIDPrefix is the key prefix that will store the mapping from block height to valset update ID
 	HeightValsetUpdateIDPrefix = "heightvalsetupdateid"
 
@@ -61,6 +64,9 @@ const (
 	// PendingSlashRequestsPrefix is the prefix that will store a list of slash request that must be sent
 	// to the provider chain once the CCV channel is established
 	PendingSlashRequestsPrefix = "pendingslashrequests"
+
+	// HistoricalInfoKey is the key prefix that will store the historical info for a given height
+	HistoricalInfoKey = "historicalinfokey"
 )
 
 var (
@@ -114,4 +120,10 @@ func OutstandingDowntimeKey(v sdk.ConsAddress) []byte {
 
 func GetCrossChainValidatorKey(addr []byte) []byte {
 	return append([]byte(CrossChainValidatorPrefix), addr...)
+}
+
+func GetHistoricalInfoKey(height int64) []byte {
+	hBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(hBytes, uint64(height))
+	return append([]byte(HistoricalInfoKey), hBytes...)
 }
