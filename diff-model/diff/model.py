@@ -303,7 +303,7 @@ class Staking:
 
     def shares(self, val):
         # Add 1 for minSelfDelegation = 1
-        return self.delegation[val] + TOKEN_SCALAR
+        return self.delegation[val] + 1 * TOKEN_SCALAR
 
     def unbonding_can_complete(self, op_id):
         if unval := [e for e in self.validatorQ if e.op_id == op_id]:
@@ -314,6 +314,7 @@ class Staking:
                 self.validatorQ = [x for x in self.validatorQ if e != x]
                 self.m.events.add(Events.Event.COMPLETE_UNVAL_NOW)
             else:
+                # Set on hold false to complete later
                 e.on_hold = False
                 self.m.events.add(Events.Event.SET_UNVAL_HOLD_FALSE)
         if undel := [e for e in self.undelegationQ if e.op_id == op_id]:
@@ -324,6 +325,7 @@ class Staking:
                 self.undelegationQ = [x for x in self.undelegationQ if e != x]
                 self.m.events.add(Events.Event.COMPLETE_UNDEL_NOW)
             else:
+                # Set on hold false to complete later
                 e.on_hold = False
                 self.m.events.add(Events.Event.SET_UNDEL_HOLD_FALSE)
 
