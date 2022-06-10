@@ -65,7 +65,6 @@ func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
 		changes       []abci.ValidatorUpdate
 		expTotalPower int64
 		expValsNum    int
-		expPanic      bool
 	}{{ // add new bonded validator
 		changes:       changes[len(changes)-1:],
 		expTotalPower: changesPower,
@@ -74,32 +73,24 @@ func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
 		changes:       []abci.ValidatorUpdate{{PubKey: changes[0].PubKey, Power: changes[0].Power + 3}},
 		expTotalPower: changesPower + 3,
 		expValsNum:    len(ccVals) + 1,
-	}, { // unbound a validator
+	}, { // unbond a validator
 		changes:       []abci.ValidatorUpdate{{PubKey: changes[0].PubKey, Power: 0}},
 		expTotalPower: changesPower - changes[0].Power,
 		expValsNum:    len(ccVals),
-	}, { // unbound an unexisting validator
-		changes:  []abci.ValidatorUpdate{{PubKey: changes[0].PubKey, Power: 0}},
-		expPanic: true,
-	}, { // update all validators voting power
-		changes: []abci.ValidatorUpdate{
-			{PubKey: changes[0].PubKey, Power: changes[0].Power + 1},
-			{PubKey: changes[1].PubKey, Power: changes[1].Power + 2},
-			{PubKey: changes[2].PubKey, Power: changes[1].Power + 3},
-			{PubKey: changes[3].PubKey, Power: changes[1].Power + 4},
-		},
-		expTotalPower: changesPower + 10,
-		expValsNum:    len(ccVals) + 1,
 	},
+		{ // update all validators voting power
+			changes: []abci.ValidatorUpdate{
+				{PubKey: changes[0].PubKey, Power: changes[0].Power + 1},
+				{PubKey: changes[1].PubKey, Power: changes[1].Power + 2},
+				{PubKey: changes[2].PubKey, Power: changes[1].Power + 3},
+				{PubKey: changes[3].PubKey, Power: changes[1].Power + 4},
+			},
+			expTotalPower: changesPower + 10,
+			expValsNum:    len(ccVals) + 1,
+		},
 	}
 
 	for _, t := range testCases {
-		if t.expPanic {
-			k.Require().Panics(func() {
-				consumerKeeper.ApplyCCValidatorChanges(ctx, t.changes)
-			})
-			continue
-		}
 
 		consumerKeeper.ApplyCCValidatorChanges(ctx, t.changes)
 		gotVals := getCCVals()
