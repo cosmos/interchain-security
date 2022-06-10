@@ -278,7 +278,7 @@ func NewDTProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *i
 	coordinator := simapp.NewBasicCoordinator(t)
 	chainID := ibctesting.GetChainID(0)
 	var addresses []sdk.ValAddress
-	coordinator.Chains[chainID], addresses = NewDTTestChain(t, coordinator, simapp.SetupTestingAppProvider, chainID)
+	coordinator.Chains[chainID], addresses = NewDTTestChain(t, coordinator, simapp.SetupTestingappProvider, chainID)
 	providerChain := coordinator.GetChain(chainID)
 	chainID = ibctesting.GetChainID(1)
 	coordinator.Chains[chainID] = NewDTTestChainWithValSet(t, coordinator, simapp.SetupTestingAppConsumer, chainID, providerChain.Vals, providerChain.Signers)

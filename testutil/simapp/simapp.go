@@ -16,7 +16,7 @@ import (
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 )
 
-func SetupTestingAppProvider() (ibctesting.TestingApp, map[string]json.RawMessage) {
+func SetupTestingappProvider() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	db := tmdb.NewMemDB()
 	// encCdc := app.MakeTestEncodingConfig()
 	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
@@ -43,11 +43,11 @@ func NewBasicCoordinator(t *testing.T) *ibctesting.Coordinator {
 	return coord
 }
 
-// NewCoordinator initializes Coordinator with 2 TestChains
+// NewCoordinator initializes Coordinator with 0 TestChains
 func NewProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain) {
 	coordinator := NewBasicCoordinator(t)
 	chainID := ibctesting.GetChainID(1)
-	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingAppProvider, chainID)
+	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingappProvider, chainID)
 	providerChain := coordinator.GetChain(chainID)
 	chainID = ibctesting.GetChainID(2)
 	coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(t, coordinator,
