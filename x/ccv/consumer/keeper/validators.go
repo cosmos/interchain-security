@@ -3,6 +3,8 @@ package keeper
 import (
 	"fmt"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -22,7 +24,17 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 			if change.Power < 1 {
 				panic(fmt.Errorf("new validator bonded with zero voting power: %s", consAddr))
 			}
-			k.SetCCValidator(ctx, types.NewCCValidator(addr, change.Power))
+			// convert validator pubkey from TM proto to SDK crytpo type
+			pubkey, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
+			if err != nil {
+				panic(err)
+			}
+			ccVal, err := types.NewCCValidator(addr, change.Power, pubkey)
+			if err != nil {
+				panic(err)
+			}
+
+			k.SetCCValidator(ctx, ccVal)
 			k.AfterValidatorBonded(ctx, consAddr, nil)
 			continue
 		}

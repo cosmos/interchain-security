@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -19,7 +20,12 @@ func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
 
 	setCCVals := func(vals []*tmtypes.Validator) {
 		for _, v := range vals {
-			consumerKeeper.SetCCValidator(ctx, types.NewCCValidator(v.Address, v.VotingPower))
+			pubkey, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
+			k.Require().NoError(err)
+
+			ccv, err := types.NewCCValidator(v.Address, v.VotingPower, pubkey)
+			k.Require().NoError(err)
+			consumerKeeper.SetCCValidator(ctx, ccv)
 		}
 	}
 

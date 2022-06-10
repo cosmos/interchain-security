@@ -41,7 +41,7 @@ message CrossChainValidator {
   bytes address = 1;
   int64 power   = 2;
   // consensus_pubkey is the consensus public key of the validator, as a Protobuf Any.
-  google.protobuf.Any consensus_pubkey = 3
+  google.protobuf.Any pubkey = 3
       [(cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey", (gogoproto.moretags) = "yaml:\"consensus_pubkey\""];
 }
 
