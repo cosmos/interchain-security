@@ -290,7 +290,8 @@ func (am AppModule) OnChanOpenAck(
 	ctx sdk.Context,
 	portID,
 	channelID string,
-	counterpartyMetadata string,
+	counterpartyChannelID string,
+	counterpartyVersion string,
 ) error {
 	// ensure provider channel has already been created
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok {

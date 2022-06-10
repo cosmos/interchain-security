@@ -4,8 +4,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	ibcante "github.com/cosmos/ibc-go/v3/modules/core/ante"
+	"github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	consumerante "github.com/cosmos/interchain-security/app/consumer/ante"
 	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 )
@@ -15,7 +15,7 @@ import (
 type HandlerOptions struct {
 	ante.HandlerOptions
 
-	IBCChannelkeeper channelkeeper.Keeper
+	IBCChannelKeeper *keeper.Keeper
 	ConsumerKeeper   ibcconsumerkeeper.Keeper
 }
 
@@ -51,7 +51,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewSigGasConsumeDecorator(options.AccountKeeper, sigGasConsumer),
 		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
-		ibcante.NewAnteDecorator(options.IBCChannelkeeper),
+		ibcante.NewAnteDecorator(options.IBCChannelKeeper),
 	}
 
 	return sdk.ChainAnteDecorators(anteDecorators...), nil
