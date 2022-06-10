@@ -247,6 +247,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenTry() {
 
 func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 	channelID := "channel-1"
+	counterChannelID := "channel-2"
 	testCases := []struct {
 		name     string
 		setup    func(suite *ConsumerTestSuite)
@@ -304,14 +305,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 
 			consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
 
-			md := providertypes.HandshakeMetadata{
-				ProviderFeePoolAddr: "", // dummy address used
-				Version:             suite.path.EndpointB.ChannelConfig.Version,
-			}
-			mdBz, err := (&md).Marshal()
-			suite.Require().NoError(err)
-
-			err = consumerModule.OnChanOpenAck(suite.ctx, consumertypes.PortID, channelID, string(mdBz))
+			err := consumerModule.OnChanOpenAck(suite.ctx, consumertypes.PortID, channelID, counterChannelID, suite.path.EndpointB.ChannelConfig.Version)
 			if tc.expError {
 				suite.Require().Error(err)
 			} else {

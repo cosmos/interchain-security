@@ -659,7 +659,7 @@ func New(
 				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
-			IBCChannelKeeper: app.IBCKeeper.ChannelKeeper,
+			IBCChannelKeeper: app.IBCKeeper,
 		},
 	)
 	if err != nil {
