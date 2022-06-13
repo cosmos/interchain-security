@@ -89,7 +89,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	// set sender account to first test chains' validator
 	suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(3)
+	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	suite.path.EndpointB.CreateClient()

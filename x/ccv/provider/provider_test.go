@@ -103,7 +103,7 @@ func (suite *ProviderTestSuite) SetupTest() {
 
 	// set sender account to first test chains' validator
 	suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(3)
+	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	suite.path.EndpointB.CreateClient()
@@ -155,7 +155,7 @@ func TestProviderTestSuite(t *testing.T) {
 func (s *ProviderTestSuite) TestPacketRoundtrip() {
 	s.SetupCCVChannel()
 	providerCtx := s.providerChain.GetContext()
-	providerStakingKeeper := s.providerChain.App.GetStakingKeeper()
+	providerStakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
 
 	origTime := s.ctx.BlockTime()
 	bondAmt := sdk.NewInt(1000000)
@@ -197,9 +197,6 @@ func (s *ProviderTestSuite) TestPacketRoundtrip() {
 	err = s.path.EndpointA.RecvPacket(packet)
 	s.Require().NoError(err)
 
-	// Update chilchain hist info for the current block
-	s.UpdateConsumerHistInfo(packetData.ValidatorUpdates)
-
 	// - End provider unbonding period
 	providerCtx = providerCtx.WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
 	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
@@ -239,7 +236,7 @@ func (s *ProviderTestSuite) TestSendSlashPacketDowntime() {
 	s.SetupCCVChannel()
 	validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
-	providerStakingKeeper := s.providerChain.App.GetStakingKeeper()
+	providerStakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
 	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
 
 	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
@@ -322,9 +319,6 @@ func (s *ProviderTestSuite) TestSendSlashPacketDowntime() {
 	// check that the consumer update its VSC ID for the subsequent block
 	s.Require().Equal(consumerKeeper.GetHeightValsetUpdateID(s.consumerCtx(), uint64(s.consumerCtx().BlockHeight())+1), valsetUpdateID)
 
-	// update consumer chain hist info
-	s.UpdateConsumerHistInfo(packetData2.ValidatorUpdates)
-
 	// check that the validator was removed from the consumer validator set
 	s.Require().Len(s.consumerChain.Vals.Validators, validatorsPerChain-1)
 
@@ -332,7 +326,8 @@ func (s *ProviderTestSuite) TestSendSlashPacketDowntime() {
 	s.Require().NoError(err)
 
 	// check that the validator is successfully jailed on provider
-	validatorJailed, ok := s.providerChain.App.GetStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
+
+	validatorJailed, ok := s.providerChain.App.(*appProvider.App).StakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
 	s.Require().True(ok)
 	s.Require().True(validatorJailed.Jailed)
 	s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
@@ -361,7 +356,7 @@ func (s *ProviderTestSuite) TestSendSlashPacketDoubleSign() {
 	s.SetupCCVChannel()
 	validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
-	providerStakingKeeper := s.providerChain.App.GetStakingKeeper()
+	providerStakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
 	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
 	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 
@@ -440,9 +435,6 @@ func (s *ProviderTestSuite) TestSendSlashPacketDoubleSign() {
 	// check that the consumer update its VSC ID for the subsequent block
 	s.Require().Equal(consumerKeeper.GetHeightValsetUpdateID(s.consumerCtx(), uint64(s.consumerCtx().BlockHeight())+1), valsetUpdateID)
 
-	// update consumer chain hist info
-	s.UpdateConsumerHistInfo(packetData2.ValidatorUpdates)
-
 	// check that the validator was removed from the consumer validator set
 	s.Require().Len(s.consumerChain.Vals.Validators, validatorsPerChain-1)
 
@@ -450,7 +442,7 @@ func (s *ProviderTestSuite) TestSendSlashPacketDoubleSign() {
 	s.Require().NoError(err)
 
 	// check that the validator is successfully jailed on provider
-	validatorJailed, ok := s.providerChain.App.GetStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
+	validatorJailed, ok := s.providerChain.App.(*appProvider.App).StakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
 	s.Require().True(ok)
 	s.Require().True(validatorJailed.Jailed)
 	s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
@@ -475,7 +467,7 @@ func (s *ProviderTestSuite) getVal(index int) (validator stakingtypes.Validator,
 	tmValidator := s.providerChain.Vals.Validators[index]
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
 	s.Require().NoError(err)
-	validator, found := s.providerChain.App.GetStakingKeeper().GetValidator(s.providerCtx(), valAddr)
+	validator, found := s.providerChain.App.(*appProvider.App).StakingKeeper.GetValidator(s.providerCtx(), valAddr)
 	s.Require().True(found)
 
 	return validator, valAddr
@@ -496,49 +488,6 @@ func (s *ProviderTestSuite) TestSlashPacketAcknowldgement() {
 
 	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, ccv.SlashPacketData{}, channeltypes.NewErrorAcknowledgement("another error"))
 	s.Require().Error(err)
-}
-
-// UpdateConsumerHistInfo updates consumer chains historical info manually since
-// the staking keeper is disabled. Provider chains need this to update their client trusted validators
-// in IBC-GO testing (see ConstructUpdateTMClientHeaderWithTrustedHeight in chain.go)
-func (s *ProviderTestSuite) UpdateConsumerHistInfo(changes []abci.ValidatorUpdate) {
-	// map changes per pubkey
-	changesPower := make(map[string]int64)
-	for _, c := range changes {
-		pk, err := cryptocodec.FromTmProtoPublicKey(c.PubKey)
-		s.Require().NoError(err)
-		changesPower[pk.String()] = c.Power
-	}
-
-	// update validators power
-	var validators stakingtypes.Validators
-
-	for _, v := range s.consumerChain.Vals.Validators {
-		pk, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
-		s.Require().NoError(err)
-		val, err := stakingtypes.NewValidator(nil, pk, stakingtypes.Description{})
-		s.Require().NoError(err)
-
-		if p, ok := changesPower[pk.String()]; ok {
-			val.Tokens = sdk.TokensFromConsensusPower(p, sdk.DefaultPowerReduction)
-		} else {
-			val.Tokens = sdk.TokensFromConsensusPower(v.VotingPower, sdk.DefaultPowerReduction)
-		}
-
-		if val.Tokens.IsZero() {
-			val.Status = stakingtypes.Unbonding
-			val.Jailed = true
-		} else {
-			val.Status = stakingtypes.Bonded
-		}
-
-		validators = append(validators, val)
-	}
-
-	// update chain historical info
-	hi := stakingtypes.NewHistoricalInfo(s.ctx.BlockHeader(), validators, sdk.DefaultPowerReduction)
-	s.consumerChain.App.GetStakingKeeper().SetHistoricalInfo(s.consumerCtx(), s.consumerCtx().BlockHeight(), &hi)
-
 }
 
 func (s *ProviderTestSuite) DisableConsumerDistribution() {

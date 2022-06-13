@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
@@ -51,9 +52,8 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 	}
 }
 
-// IterateValidators - unimplemented on CCV keeper
+// IterateValidators - unimplemented on CCV keeper but perform a no-op in order to pass the slashing module InitGenesis
 func (k Keeper) IterateValidators(sdk.Context, func(index int64, validator stakingtypes.ValidatorI) (stop bool)) {
-	panic("unimplemented on CCV keeper")
 }
 
 // Validator - unimplemented on CCV keeper
@@ -102,6 +102,11 @@ func (k Keeper) Delegation(sdk.Context, sdk.AccAddress, sdk.ValAddress) stakingt
 // MaxValidators - unimplemented on CCV keeper
 func (k Keeper) MaxValidators(sdk.Context) uint32 {
 	panic("unimplemented on CCV keeper")
+}
+
+// UnbondingTime return consumer unbonding time
+func (k Keeper) UnbondingTime(_ sdk.Context) time.Duration {
+	return types.UnbondingTime
 }
 
 // GetHistoricalInfo gets the historical info at a given height
