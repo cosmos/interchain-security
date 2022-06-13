@@ -88,7 +88,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	// TODO: No idea why or how this works, but it seems that it needs to be done.
 	suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(4)
+	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(3)
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	suite.path.EndpointB.CreateClient()
