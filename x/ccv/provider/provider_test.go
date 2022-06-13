@@ -514,6 +514,7 @@ func (s *ProviderTestSuite) UpdateConsumerHistInfo(changes []abci.ValidatorUpdat
 
 	// update validators power
 	var validators stakingtypes.Validators
+
 	for _, v := range s.consumerChain.Vals.Validators {
 		pk, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
 		s.Require().NoError(err)
@@ -532,12 +533,14 @@ func (s *ProviderTestSuite) UpdateConsumerHistInfo(changes []abci.ValidatorUpdat
 		} else {
 			val.Status = stakingtypes.Bonded
 		}
+
 		validators = append(validators, val)
 	}
 
 	// update chain historical info
 	hi := stakingtypes.NewHistoricalInfo(s.ctx.BlockHeader(), validators, sdk.DefaultPowerReduction)
 	s.consumerChain.App.GetStakingKeeper().SetHistoricalInfo(s.consumerCtx(), s.consumerCtx().BlockHeight(), &hi)
+
 }
 
 func (s *ProviderTestSuite) DisableConsumerDistribution() {

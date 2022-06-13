@@ -137,6 +137,7 @@ func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
 // TrackHistoricalInfo saves the latest historical-info and deletes the oldest
 // heights that are below pruning height
 func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
+
 	entryNum := types.HistoricalEntries
 
 	// Prune store to ensure we only have parameter-defined historical entries.
@@ -165,18 +166,21 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	for _, v := range k.GetAllCCValidator(ctx) {
 		pk, err := v.ConsPubKey()
 		if err != nil {
-			panic("invalid validator key")
+			panic(err)
 		}
 		val, err := stakingtypes.NewValidator(nil, pk, stakingtypes.Description{})
 		if err != nil {
-			panic("invalid validator key")
+			panic(err)
 		}
-		// Is it required ?
+
+		// Set validator to bonded status
 		val.Status = stakingtypes.Bonded
+		// Compute tokens from voting power
 		val.Tokens = sdk.TokensFromConsensusPower(v.Power, sdk.DefaultPowerReduction)
 		lastVals = append(lastVals, val)
 	}
 
+	// Create historical info entry which sorts the validator set by voting power
 	historicalEntry := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), lastVals, sdk.DefaultPowerReduction)
 
 	// Set latest HistoricalInfo at current height
