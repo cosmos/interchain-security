@@ -83,10 +83,11 @@ func (suite *ConsumerTestSuite) SetupTest() {
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
+
 	// set consumer endpoint's clientID
 	path.EndpointA.ClientID = providerClient
 
-	// TODO: No idea why or how this works, but it seems that it needs to be done.
+	// set sender account to first test chains' validator
 	path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
 	path.EndpointA.Chain.SenderAccount.SetAccountNumber(3)
 
