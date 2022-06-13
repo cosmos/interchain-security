@@ -41,7 +41,7 @@ const (
 	UnbondingTimePrefix = "unbondingtime"
 
 	// UnbondingTime is set to 4 weeks
-	UnbondingTime = 4 * 7 * 24 * time.Hour
+	UnbondingTime = 3 * 7 * 24 * time.Hour
 
 	// HistoricalEntries is set to 10000 like the staking module parameter DefaultHistoricalEntries
 	HistoricalEntries uint32 = 10000
