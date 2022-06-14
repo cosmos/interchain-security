@@ -290,7 +290,7 @@ func (s System) startConsumerChain(
 	action StartConsumerChainAction,
 	verbose bool,
 ) {
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.consumerChain].binaryName,
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.providerChain].binaryName,
 
 		"query", "provider", "consumer-genesis",
 		s.chainConfigs[action.consumerChain].chainId,
