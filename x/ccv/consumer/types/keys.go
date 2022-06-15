@@ -37,11 +37,11 @@ const (
 	// UnbondingPacketPrefix is the key prefix that will store the unbonding packet at the given sequence
 	UnbondingPacketPrefix = "unbondingpacket"
 
-	// UnbondingTimePrefix is the key prefix that will store unbonding time for each recently received packet.
+	// UnbondingTimePrefix is the key prefix that will store unbonding time fqor each recently received packet.
 	UnbondingTimePrefix = "unbondingtime"
 
 	// UnbondingTime is set to 3 weeks
-	// TODO: must be the same than the provider chain at the moment; fix tests to not use NewDefaultEndpoint for both chains
+	// TODO: must be the same than the provider chain at the moment; update test setup to solve this
 	UnbondingTime = 3 * 7 * 24 * time.Hour
 
 	// HistoricalEntries is set to 10000 like the staking module parameter DefaultHistoricalEntries
