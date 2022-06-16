@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -23,10 +25,10 @@ import (
 // as a pending client, and set once spawn time has passed.
 func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateConsumerChainProposal) error {
 	if ctx.BlockTime().After(p.SpawnTime) {
-		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight)
+		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, p.LockUnbondingOnTimeout)
 	}
 
-	k.SetPendingClientInfo(ctx, p.SpawnTime, p.ChainId, p.InitialHeight)
+	k.SetPendingClientInfo(ctx, p)
 	return nil
 }
 
@@ -34,16 +36,16 @@ func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateCons
 // If the stop time hasn't already passed, it stores the proposal as a pending proposal.
 func (k Keeper) StopConsumerChainProposal(ctx sdk.Context, p *types.StopConsumerChainProposal) error {
 	if ctx.BlockTime().After(p.StopTime) {
-		return k.StopConsumerChain(ctx, p.ChainId, false)
+		return k.StopConsumerChain(ctx, p.ChainId, false, true)
 	}
 
-	k.Hooks().k.SetPendingStopProposal(ctx, p.ChainId, p.StopTime)
+	k.SetPendingStopProposal(ctx, p.ChainId, p.StopTime)
 	return nil
 }
 
 // StopConsumerChain cleans up the states for the given consumer chain ID and, if the given lockUbd is false,
 // it completes the outstanding unbonding operations lock by the consumer chain.
-func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd bool) (err error) {
+func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, closeChan bool) (err error) {
 
 	// clean up states
 	k.DeleteConsumerClient(ctx, chainID)
@@ -51,12 +53,15 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd bool)
 
 	// close channel and delete the mappings between chain ID and channel ID
 	if channelID, found := k.GetChainToChannel(ctx, chainID); found {
+		if closeChan {
+			k.CloseChannel(ctx, channelID)
+		}
 		k.chanCloseInit(ctx, channelID)
 		k.DeleteChainToChannel(ctx, chainID)
 		k.DeleteChannelToChain(ctx, channelID)
 	}
 
-        // TODO remove pending VSC packets once https://github.com/cosmos/interchain-security/issues/27 is fixed
+	// TODO remove pending VSC packets once https://github.com/cosmos/interchain-security/issues/27 is fixed
 	k.DeleteInitChainHeight(ctx, chainID)
 	k.EmptySlashAcks(ctx, chainID)
 
@@ -101,7 +106,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd bool)
 
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right consumer chain.
-func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height) error {
+func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
 	unbondingTime := k.stakingKeeper.UnbondingTime(ctx)
 
 	// create clientstate by getting template client from parameters and filling in zeroed fields from proposal.
@@ -127,7 +132,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHei
 	k.SetConsumerGenesis(ctx, chainID, consumerGen)
 
 	// store LockUnbondingOnTimeout flag
-	if consumerGen.GetParams().LockUnbondingOnTimeout {
+	if lockUbdOnTimeout {
 		k.SetLockUnbondingOnTimeout(ctx, chainID)
 	}
 	return nil
@@ -191,45 +196,28 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 	return gen, nil
 }
 
-// SetConsumerClient sets the client ID for the given chain ID
-func (k Keeper) SetConsumerClient(ctx sdk.Context, chainID, clientID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
-}
-
-// GetConsumerClient returns the clientID for the given chain ID
-func (k Keeper) GetConsumerClient(ctx sdk.Context, chainID string) string {
-	store := ctx.KVStore(k.storeKey)
-	return string(store.Get(types.ChainToClientKey(chainID)))
-}
-
-// DeleteConsumerClient deletes the client ID for the given chain ID
-func (k Keeper) DeleteConsumerClient(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ChainToClientKey(chainID))
-}
-
 // SetPendingClientInfo sets the initial height for the given timestamp and chain ID
-func (k Keeper) SetPendingClientInfo(ctx sdk.Context, timestamp time.Time, chainID string, initialHeight clienttypes.Height) error {
+func (k Keeper) SetPendingClientInfo(ctx sdk.Context, clientInfo *types.CreateConsumerChainProposal) error {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := k.cdc.Marshal(&initialHeight)
+	bz, err := k.cdc.Marshal(clientInfo)
 	if err != nil {
 		return err
 	}
-	store.Set(types.PendingClientKey(timestamp, chainID), bz)
+	store.Set(types.PendingClientKey(clientInfo.SpawnTime, clientInfo.ChainId), bz)
 	return nil
 }
 
-// GetPendingClient gets the initial height for the given timestamp and chain ID
-func (k Keeper) GetPendingClientInfo(ctx sdk.Context, timestamp time.Time, chainID string) clienttypes.Height {
+// GetPendingClient gets the client pending info for the given timestamp and chain ID
+func (k Keeper) GetPendingClientInfo(ctx sdk.Context, timestamp time.Time, chainID string) types.CreateConsumerChainProposal {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingClientKey(timestamp, chainID))
 	if len(bz) == 0 {
-		return clienttypes.Height{}
+		return types.CreateConsumerChainProposal{}
 	}
-	var initialHeight clienttypes.Height
-	k.cdc.MustUnmarshal(bz, &initialHeight)
-	return initialHeight
+	var clientInfo types.CreateConsumerChainProposal
+
+	k.cdc.MustUnmarshal(bz, &clientInfo)
+	return clientInfo
 }
 
 // IteratePendingClientInfo iterates over the pending client info in order and creates the consumer client if the spawn time has passed,
@@ -250,11 +238,12 @@ func (k Keeper) IteratePendingClientInfo(ctx sdk.Context) {
 
 		timeNano := binary.BigEndian.Uint64([]byte(splitKey[0]))
 		spawnTime := time.Unix(0, int64(timeNano))
-		var initialHeight clienttypes.Height
-		k.cdc.MustUnmarshal(iterator.Value(), &initialHeight)
+
+		var clientInfo types.CreateConsumerChainProposal
+		k.cdc.MustUnmarshal(iterator.Value(), &clientInfo)
 
 		if ctx.BlockTime().After(spawnTime) {
-			k.CreateConsumerClient(ctx, splitKey[1], initialHeight)
+			k.CreateConsumerClient(ctx, splitKey[1], clientInfo.InitialHeight, clientInfo.LockUnbondingOnTimeout)
 		} else {
 			break
 		}
@@ -302,7 +291,7 @@ func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
 		chainID := string([]byte(splitKey[1]))
 
 		if ctx.BlockTime().After(stopTime) {
-			k.StopConsumerChain(ctx, chainID, false)
+			k.StopConsumerChain(ctx, chainID, false, true)
 			k.DeletePendingStopProposal(ctx, chainID, stopTime)
 		} else {
 			break
@@ -310,22 +299,11 @@ func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
 	}
 }
 
-// GetLockUnbondingOnTimeout returns the mapping from the given consumer chain ID to a boolean value indicating whether
-// the unbonding operation funds should be locked on CCV channel timeout
-func (k Keeper) GetLockUnbondingOnTimeout(ctx sdk.Context, chainID string) bool {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.LockUnbondingOnTimeoutKey(chainID))
-	return bz != nil
-}
-
-// SetLockUnbondingOnTimeout locks the unbonding operation funds in case of a CCV channel timeouts for the given consumer chain ID
-func (k Keeper) SetLockUnbondingOnTimeout(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.LockUnbondingOnTimeoutKey(chainID), []byte{})
-}
-
-// DeleteLockUnbondingOnTimeout deletes the unbonding operation lock in case of a CCV channel timeouts for the given consumer chain ID
-func (k Keeper) DeleteLockUnbondingOnTimeout(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.LockUnbondingOnTimeoutKey(chainID))
+// CloseChannel closes the channel for the given channel ID on the condition
+// that the channel exists and isn't already in the CLOSED state
+func (k Keeper) CloseChannel(ctx sdk.Context, channelID string) {
+	channel, found := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
+	if found && channel.State != channeltypes.CLOSED {
+		k.chanCloseInit(ctx, channelID)
+	}
 }

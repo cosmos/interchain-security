@@ -1,10 +1,13 @@
 package types
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"time"
+
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 type Status int
@@ -131,7 +134,7 @@ func PendingStopProposalKey(timestamp time.Time, chainID string) []byte {
 }
 
 func UnbondingOpIndexKey(chainID string, valsetUpdateID uint64) []byte {
-	return AppendMany(HashString(UnbondingOpIndexPrefix), HashString(chainID), Uint64ToBytes(valsetUpdateID))
+	return AppendMany(HashString(UnbondingOpIndexPrefix), HashString(chainID), HashString("/"), Uint64ToBytes(valsetUpdateID))
 }
 
 func UnbondingOpKey(id uint64) []byte {
@@ -163,4 +166,15 @@ func InitChainHeightKey(chainID string) []byte {
 
 func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return []byte(fmt.Sprintf("%s/%s", LockUnbondingOnTimeoutPrefix, chainID))
+}
+
+func ParseUnbondingOpIndexKey(key []byte) (vscID []byte, err error) {
+	keySplit := bytes.Split(key, HashString("/"))
+	if len(keySplit) != 2 {
+		return nil, sdkerrors.Wrapf(
+			sdkerrors.ErrLogic, "key provided is incorrect: the key split has incorrect length, expected %d, got %d", 2, len(keySplit),
+		)
+	}
+
+	return keySplit[1], nil
 }

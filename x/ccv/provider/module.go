@@ -417,7 +417,6 @@ func (am AppModule) OnTimeoutPacket(
 	_ sdk.AccAddress,
 ) error {
 
-	// refund tokens
 	if err := am.keeper.OnTimeoutPacket(ctx, packet); err != nil {
 		return err
 	}

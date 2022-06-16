@@ -48,10 +48,11 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 	setupOperations := []struct {
 		fn func(suite *ProviderTestSuite) error
 	}{
-		{func(suite *ProviderTestSuite) error {
-			suite.SetupCCVChannel()
-			return nil
-		},
+		{
+			func(suite *ProviderTestSuite) error {
+				suite.SetupCCVChannel()
+				return nil
+			},
 		},
 		{
 			func(suite *ProviderTestSuite) error {
@@ -88,7 +89,7 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 	}
 
 	// stop the consumer chain
-	err = s.providerChain.App.(*appProvider.App).ProviderKeeper.StopConsumerChain(s.providerCtx(), consumerChainID, false)
+	err = s.providerChain.App.(*appProvider.App).ProviderKeeper.StopConsumerChain(s.providerCtx(), consumerChainID, false, true)
 	s.Require().NoError(err)
 
 	// check all states are removed and the unbonding operation released
@@ -200,7 +201,7 @@ func (s *ProviderTestSuite) TestStopConsumerOnChannelClosed() {
 	s.SendEmptyVSCPacket()
 
 	// stop the consumer chain
-	err := s.providerChain.App.(*appProvider.App).ProviderKeeper.StopConsumerChain(s.providerCtx(), s.consumerChain.ChainID, true)
+	err := s.providerChain.App.(*appProvider.App).ProviderKeeper.StopConsumerChain(s.providerCtx(), s.consumerChain.ChainID, true, true)
 	s.Require().NoError(err)
 
 	err = s.path.EndpointA.UpdateClient()

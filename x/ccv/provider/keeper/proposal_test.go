@@ -51,6 +51,7 @@ func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {
 
 	chainID := "chainID"
 	initialHeight := clienttypes.NewHeight(2, 3)
+	lockUbdOnTimeout := false
 
 	testCases := []struct {
 		name         string
@@ -102,8 +103,9 @@ func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {
 					suite.Require().Equal(expectedGenesis, consumerGenesis)
 					suite.Require().NotEqual("", clientId, "consumer client was not created after spawn time reached")
 				} else {
-					gotHeight := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingClientInfo(ctx, proposal.SpawnTime, chainID)
-					suite.Require().Equal(initialHeight, gotHeight, "pending client not equal to clientstate in proposal")
+					gotClient := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingClientInfo(ctx, proposal.SpawnTime, chainID)
+					suite.Require().Equal(initialHeight, gotClient.InitialHeight, "pending client not equal to clientstate in proposal")
+					suite.Require().Equal(lockUbdOnTimeout, gotClient.LockUnbondingOnTimeout, "pending client not equal to clientstate in proposal")
 				}
 			} else {
 				suite.Require().Error(err, "did not return error on invalid case")

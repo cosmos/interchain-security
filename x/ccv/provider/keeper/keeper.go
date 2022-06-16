@@ -328,16 +328,14 @@ func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb 
 	for ; iterator.Valid(); iterator.Next() {
 		// parse key to get the current VSC ID
 		var vscID uint64
-		vscBytes := iterator.Key()[64:]
-		if vscBytes == nil {
-			vscID = 0
-		} else {
-			// Unmarshal
-			vscID = binary.BigEndian.Uint64(vscBytes)
+		vscBytes, err := types.ParseUnbondingOpIndexKey(iterator.Key())
+		if err != nil {
+			panic(err)
 		}
+		vscID = binary.BigEndian.Uint64(vscBytes)
 
 		var ids []uint64
-		err := json.Unmarshal(iterator.Value(), &ids)
+		err = json.Unmarshal(iterator.Value(), &ids)
 		if err != nil {
 			panic("Failed to unmarshal JSON")
 		}
@@ -615,4 +613,42 @@ func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) uint64 {
 func (k Keeper) DeleteInitChainHeight(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.InitChainHeightKey(chainID))
+}
+
+// GetLockUnbondingOnTimeout returns the mapping from the given consumer chain ID to a boolean value indicating whether
+// the unbonding operation funds should be locked on CCV channel timeout
+func (k Keeper) GetLockUnbondingOnTimeout(ctx sdk.Context, chainID string) bool {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.LockUnbondingOnTimeoutKey(chainID))
+	return bz != nil
+}
+
+// SetLockUnbondingOnTimeout locks the unbonding operation funds in case of a CCV channel timeouts for the given consumer chain ID
+func (k Keeper) SetLockUnbondingOnTimeout(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.LockUnbondingOnTimeoutKey(chainID), []byte{})
+}
+
+// DeleteLockUnbondingOnTimeout deletes the unbonding operation lock in case of a CCV channel timeouts for the given consumer chain ID
+func (k Keeper) DeleteLockUnbondingOnTimeout(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.LockUnbondingOnTimeoutKey(chainID))
+}
+
+// SetConsumerClient sets the client ID for the given chain ID
+func (k Keeper) SetConsumerClient(ctx sdk.Context, chainID, clientID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
+}
+
+// GetConsumerClient returns the clientID for the given chain ID
+func (k Keeper) GetConsumerClient(ctx sdk.Context, chainID string) string {
+	store := ctx.KVStore(k.storeKey)
+	return string(store.Get(types.ChainToClientKey(chainID)))
+}
+
+// DeleteConsumerClient deletes the client ID for the given chain ID
+func (k Keeper) DeleteConsumerClient(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ChainToClientKey(chainID))
 }

@@ -100,7 +100,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 	}
 	// stop consumer chain and uses the LockUnbondingOnTimeout flag
 	// to decide whether the unbonding operations should be released
-	k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID))
+	k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID), false)
 	return nil
 }
 
