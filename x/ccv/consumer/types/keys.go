@@ -41,7 +41,7 @@ const (
 	UnbondingTimePrefix = "unbondingtime"
 
 	// UnbondingTime is set to 3 weeks
-	// TODO: must be the same than the provider chain at the moment; update test setup to solve this
+	// TODO: must match default IBC-GO default value see #153
 	UnbondingTime = 3 * 7 * 24 * time.Hour
 
 	// HistoricalEntries is set to 10000 like the staking module parameter DefaultHistoricalEntries
