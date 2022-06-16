@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -18,12 +16,11 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 
 		// set new validator bonded
 		if !found {
-			consAddr := sdk.ConsAddress(addr)
-			if change.Power < 1 {
-				panic(fmt.Errorf("new validator bonded with zero voting power: %s", consAddr))
+			if 0 < change.Power {
+				consAddr := sdk.ConsAddress(addr)
+				k.SetCCValidator(ctx, types.NewCCValidator(addr, change.Power))
+				k.AfterValidatorBonded(ctx, consAddr, nil)
 			}
-			k.SetCCValidator(ctx, types.NewCCValidator(addr, change.Power))
-			k.AfterValidatorBonded(ctx, consAddr, nil)
 			continue
 		}
 
