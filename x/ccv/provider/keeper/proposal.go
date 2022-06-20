@@ -24,7 +24,7 @@ import (
 // If the spawn time has already passed, then set the consumer chain. Otherwise store the client
 // as a pending client, and set once spawn time has passed.
 func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateConsumerChainProposal) error {
-	if ctx.BlockTime().After(p.SpawnTime) {
+	if !ctx.BlockTime().Before(p.SpawnTime) {
 		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, p.LockUnbondingOnTimeout)
 	}
 
@@ -35,7 +35,8 @@ func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateCons
 // StopConsumerChainProposal stops a consumer chain and released the outstanding unbonding operations.
 // If the stop time hasn't already passed, it stores the proposal as a pending proposal.
 func (k Keeper) StopConsumerChainProposal(ctx sdk.Context, p *types.StopConsumerChainProposal) error {
-	if ctx.BlockTime().After(p.StopTime) {
+
+	if !ctx.BlockTime().Before(p.StopTime) {
 		return k.StopConsumerChain(ctx, p.ChainId, false, true)
 	}
 
@@ -203,6 +204,7 @@ func (k Keeper) SetPendingClientInfo(ctx sdk.Context, clientInfo *types.CreateCo
 	if err != nil {
 		return err
 	}
+
 	store.Set(types.PendingClientKey(clientInfo.SpawnTime, clientInfo.ChainId), bz)
 	return nil
 }
@@ -215,8 +217,8 @@ func (k Keeper) GetPendingClientInfo(ctx sdk.Context, timestamp time.Time, chain
 		return types.CreateConsumerChainProposal{}
 	}
 	var clientInfo types.CreateConsumerChainProposal
-
 	k.cdc.MustUnmarshal(bz, &clientInfo)
+
 	return clientInfo
 }
 
@@ -230,23 +232,40 @@ func (k Keeper) IteratePendingClientInfo(ctx sdk.Context) {
 	if !iterator.Valid() {
 		return
 	}
+	// store the executed proposals in order
+	execProposals := []types.CreateConsumerChainProposal{}
 
 	for ; iterator.Valid(); iterator.Next() {
 		suffixKey := iterator.Key()
-		// splitKey contains the bigendian time in the first element and the chainID in the second element/
+		// splitKey contains the bigendian time in the second element and the chainID in the third element
 		splitKey := strings.Split(string(suffixKey), "/")
 
-		timeNano := binary.BigEndian.Uint64([]byte(splitKey[0]))
+		timeNano := binary.BigEndian.Uint64([]byte(splitKey[1]))
 		spawnTime := time.Unix(0, int64(timeNano))
+		chainID := string([]byte(splitKey[2]))
 
 		var clientInfo types.CreateConsumerChainProposal
 		k.cdc.MustUnmarshal(iterator.Value(), &clientInfo)
 
-		if ctx.BlockTime().After(spawnTime) {
-			k.CreateConsumerClient(ctx, splitKey[1], clientInfo.InitialHeight, clientInfo.LockUnbondingOnTimeout)
+		if !ctx.BlockTime().Before(spawnTime) {
+			k.CreateConsumerClient(ctx, chainID, clientInfo.InitialHeight, clientInfo.LockUnbondingOnTimeout)
+			execProposals = append(execProposals,
+				types.CreateConsumerChainProposal{ChainId: chainID, SpawnTime: spawnTime})
 		} else {
 			break
 		}
+	}
+
+	// delete the proposals executed
+	k.DeletePendingClientInfo(ctx, execProposals...)
+}
+
+// DeletePendingClientInfo deletes the given create consumer proposals
+func (k Keeper) DeletePendingClientInfo(ctx sdk.Context, proposals ...types.CreateConsumerChainProposal) {
+	store := ctx.KVStore(k.storeKey)
+
+	for _, p := range proposals {
+		store.Delete(types.PendingClientKey(p.SpawnTime, p.ChainId))
 	}
 }
 
@@ -264,10 +283,13 @@ func (k Keeper) GetPendingStopProposal(ctx sdk.Context, chainID string, timestam
 	return bz != nil
 }
 
-// DeletePendingStopProposal deletes the stop proposal for the given consumer chain ID and given timestamp
-func (k Keeper) DeletePendingStopProposal(ctx sdk.Context, chainID string, timestamp time.Time) {
+// DeletePendingStopProposals deletes the given stop proposals
+func (k Keeper) DeletePendingStopProposals(ctx sdk.Context, proposals ...types.StopConsumerChainProposal) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.PendingStopProposalKey(timestamp, chainID))
+
+	for _, p := range proposals {
+		store.Delete(types.PendingStopProposalKey(p.StopTime, p.ChainId))
+	}
 }
 
 // IteratePendingStopProposal iterates over the pending stop proposals in order and stop the chain if the stop time has passed,
@@ -281,22 +303,29 @@ func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
 		return
 	}
 
+	// store the executed proposals in order
+	execProposals := []types.StopConsumerChainProposal{}
+
 	for ; iterator.Valid(); iterator.Next() {
 		suffixKey := iterator.Key()
-		// splitKey contains the bigendian time in the first element and the chainID in the second element
+		// splitKey contains the bigendian time in the second element and the chainID in the third element
 		splitKey := strings.Split(string(suffixKey), "/")
 
-		timeNano := binary.BigEndian.Uint64([]byte(splitKey[0]))
+		timeNano := binary.BigEndian.Uint64([]byte(splitKey[1]))
 		stopTime := time.Unix(0, int64(timeNano))
-		chainID := string([]byte(splitKey[1]))
+		chainID := string([]byte(splitKey[2]))
 
-		if ctx.BlockTime().After(stopTime) {
+		if !ctx.BlockTime().Before(stopTime) {
 			k.StopConsumerChain(ctx, chainID, false, true)
-			k.DeletePendingStopProposal(ctx, chainID, stopTime)
+			execProposals = append(execProposals,
+				types.StopConsumerChainProposal{ChainId: chainID, StopTime: stopTime})
 		} else {
 			break
 		}
 	}
+
+	// delete the proposals executed
+	k.DeletePendingStopProposals(ctx, execProposals...)
 }
 
 // CloseChannel closes the channel for the given channel ID on the condition

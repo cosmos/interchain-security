@@ -113,3 +113,72 @@ func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {
 		})
 	}
 }
+
+func (suite *KeeperTestSuite) TestIteratePendingStopProposal() {
+
+	chainID := suite.consumerChain.ChainID
+
+	testCases := []struct {
+		types.StopConsumerChainProposal
+		ExpDeleted bool
+	}{
+		{
+			StopConsumerChainProposal: types.StopConsumerChainProposal{ChainId: chainID, StopTime: time.Now().UTC()},
+			ExpDeleted:                true,
+		},
+		{
+			StopConsumerChainProposal: types.StopConsumerChainProposal{ChainId: chainID, StopTime: time.Now().UTC().Add(time.Hour)},
+			ExpDeleted:                false,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetPendingStopProposal(
+			suite.providerChain.GetContext(), tc.ChainId, tc.StopTime)
+	}
+
+	ctx := suite.providerChain.GetContext().WithBlockTime(testCases[0].StopTime)
+	suite.providerChain.App.(*appProvider.App).ProviderKeeper.IteratePendingStopProposal(ctx)
+
+	for _, tc := range testCases {
+		found := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingStopProposal(ctx, tc.ChainId, tc.StopTime)
+		suite.Require().NotEqual(tc.ExpDeleted, found, "stop proposal was not deleted %s %v", tc.ChainId, tc.StopTime)
+	}
+}
+
+func (suite *KeeperTestSuite) TestIteratePendingClientInfo() {
+
+	chainID := suite.consumerChain.ChainID
+
+	testCases := []struct {
+		types.CreateConsumerChainProposal
+		ExpDeleted bool
+	}{
+		{
+			CreateConsumerChainProposal: types.CreateConsumerChainProposal{ChainId: chainID, SpawnTime: time.Now().UTC()},
+			ExpDeleted:                  true,
+		},
+		{
+			CreateConsumerChainProposal: types.CreateConsumerChainProposal{ChainId: chainID, SpawnTime: time.Now().UTC().Add(time.Hour)},
+			ExpDeleted:                  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetPendingClientInfo(
+			suite.providerChain.GetContext(), &tc.CreateConsumerChainProposal)
+	}
+
+	ctx := suite.providerChain.GetContext().WithBlockTime(testCases[0].SpawnTime)
+
+	suite.providerChain.App.(*appProvider.App).ProviderKeeper.IteratePendingClientInfo(ctx)
+
+	for _, tc := range testCases {
+		res := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingClientInfo(ctx, tc.SpawnTime, tc.ChainId)
+		if !tc.ExpDeleted {
+			suite.Require().NotEmpty(res, "stop proposal was not deleted: %s %s", tc.ChainId, tc.SpawnTime.String())
+			continue
+		}
+		suite.Require().Empty(res, "stop proposal was not deleted %s %s", tc.ChainId, tc.SpawnTime.String())
+	}
+}
