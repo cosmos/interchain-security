@@ -102,9 +102,6 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
-	ibcconsumer "github.com/cosmos/interchain-security/x/ccv/consumer"
-	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	ibcconsumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ibcprovider "github.com/cosmos/interchain-security/x/ccv/provider"
 	ibcproviderclient "github.com/cosmos/interchain-security/x/ccv/provider/client"
 	ibcproviderkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
@@ -176,22 +173,19 @@ var (
 		vesting.AppModuleBasic{},
 		liquidity.AppModuleBasic{},
 		//router.AppModuleBasic{},
-		ibcconsumer.AppModuleBasic{},
 		ibcprovider.AppModuleBasic{},
 	)
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:                    nil,
-		ibcconsumertypes.ConsumerRedistributeName:     nil,
-		ibcconsumertypes.ConsumerToSendToProviderName: nil,
-		distrtypes.ModuleName:                         nil,
-		minttypes.ModuleName:                          {authtypes.Minter},
-		stakingtypes.BondedPoolName:                   {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName:                {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:                           {authtypes.Burner},
-		liquiditytypes.ModuleName:                     {authtypes.Minter, authtypes.Burner},
-		ibctransfertypes.ModuleName:                   {authtypes.Minter, authtypes.Burner},
+		authtypes.FeeCollectorName:     nil,
+		distrtypes.ModuleName:          nil,
+		minttypes.ModuleName:           {authtypes.Minter},
+		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:            {authtypes.Burner},
+		liquiditytypes.ModuleName:      {authtypes.Minter, authtypes.Burner},
+		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -241,13 +235,11 @@ type App struct { // nolint: golint
 	FeeGrantKeeper  feegrantkeeper.Keeper
 	AuthzKeeper     authzkeeper.Keeper
 	LiquidityKeeper liquiditykeeper.Keeper
-	ConsumerKeeper  ibcconsumerkeeper.Keeper
 	ProviderKeeper  ibcproviderkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper         capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper    capabilitykeeper.ScopedKeeper
-	ScopedIBCConsumerKeeper capabilitykeeper.ScopedKeeper
 	ScopedIBCProviderKeeper capabilitykeeper.ScopedKeeper
 
 	// the module manager
@@ -296,7 +288,7 @@ func New(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, liquiditytypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
-		ibcconsumertypes.StoreKey, ibcprovidertypes.StoreKey,
+		ibcprovidertypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, stakingtypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -333,7 +325,6 @@ func New(
 	)
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
-	scopedIBCConsumerKeeper := app.CapabilityKeeper.ScopeToModule(ibcconsumertypes.ModuleName)
 	scopedIBCProviderKeeper := app.CapabilityKeeper.ScopeToModule(ibcprovidertypes.ModuleName)
 	app.CapabilityKeeper.Seal()
 
@@ -444,24 +435,6 @@ func New(
 		scopedIBCKeeper,
 	)
 
-	// Create CCV consumer and provider keepers and modules
-	app.ConsumerKeeper = ibcconsumerkeeper.NewKeeper(
-		appCodec,
-		keys[ibcconsumertypes.StoreKey],
-		app.GetSubspace(ibcconsumertypes.ModuleName),
-		scopedIBCConsumerKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
-		app.IBCKeeper.ConnectionKeeper,
-		app.IBCKeeper.ClientKeeper,
-		app.SlashingKeeper,
-		app.BankKeeper,
-		app.AccountKeeper,
-		&app.TransferKeeper,
-		app.IBCKeeper,
-		authtypes.FeeCollectorName,
-	)
-
 	app.ProviderKeeper = ibcproviderkeeper.NewKeeper(
 		appCodec,
 		keys[ibcprovidertypes.StoreKey],
@@ -478,7 +451,6 @@ func New(
 	)
 
 	providerModule := ibcprovider.NewAppModule(&app.ProviderKeeper)
-	consumerModule := ibcconsumer.NewAppModule(app.ConsumerKeeper)
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
@@ -518,7 +490,6 @@ func New(
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule)
-	ibcRouter.AddRoute(ibcconsumertypes.ModuleName, consumerModule)
 	ibcRouter.AddRoute(ibcprovidertypes.ModuleName, providerModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -526,7 +497,7 @@ func New(
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec,
 		keys[evidencetypes.StoreKey],
-		app.ConsumerKeeper,
+		app.StakingKeeper,
 		app.SlashingKeeper,
 	)
 
@@ -561,7 +532,6 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		liquidity.NewAppModule(appCodec, app.LiquidityKeeper, app.AccountKeeper, app.BankKeeper, app.DistrKeeper),
 		transferModule,
-		consumerModule,
 		providerModule,
 	)
 
@@ -591,7 +561,6 @@ func New(
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
-		ibcconsumertypes.ModuleName,
 		ibcprovidertypes.ModuleName,
 	)
 	app.MM.SetOrderEndBlockers(
@@ -614,7 +583,6 @@ func New(
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
-		ibcconsumertypes.ModuleName,
 		ibcprovidertypes.ModuleName,
 	)
 
@@ -644,7 +612,6 @@ func New(
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
-		ibcconsumertypes.ModuleName,
 		ibcprovidertypes.ModuleName,
 	)
 
@@ -741,7 +708,6 @@ func New(
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
-	app.ScopedIBCConsumerKeeper = scopedIBCConsumerKeeper
 	app.ScopedIBCProviderKeeper = scopedIBCProviderKeeper
 
 	return app
@@ -937,7 +903,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(ibcprovidertypes.ModuleName)
-	paramsKeeper.Subspace(ibcconsumertypes.ModuleName)
 
 	return paramsKeeper
 }

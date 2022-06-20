@@ -181,6 +181,8 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		panic(err)
 	}
 
+	am.keeper.UnbondMaturePackets(ctx)
+
 	data, ok := am.keeper.GetPendingChanges(ctx)
 	if !ok {
 		return []abci.ValidatorUpdate{}
@@ -188,7 +190,6 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	// apply changes to cross-chain validator set
 	am.keeper.ApplyCCValidatorChanges(ctx, data.ValidatorUpdates)
 	am.keeper.DeletePendingChanges(ctx)
-	am.keeper.UnbondMaturePackets(ctx)
 
 	return data.ValidatorUpdates
 }
