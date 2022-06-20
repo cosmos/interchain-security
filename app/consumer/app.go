@@ -529,8 +529,8 @@ func New(
 				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
-			IBCChannelKeeper: app.IBCKeeper,
-			ConsumerKeeper:   app.ConsumerKeeper,
+			IBCKeeper:      app.IBCKeeper,
+			ConsumerKeeper: app.ConsumerKeeper,
 		},
 	)
 	if err != nil {
