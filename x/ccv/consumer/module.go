@@ -155,6 +155,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	blockHeight := uint64(ctx.BlockHeight())
 	vID := am.keeper.GetHeightValsetUpdateID(ctx, blockHeight)
 	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight+1, vID)
+
+	am.keeper.TrackHistoricalInfo(ctx)
 }
 
 // EndBlock implements the AppModule interface
@@ -167,6 +169,8 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		panic(err)
 	}
 
+	am.keeper.UnbondMaturePackets(ctx)
+
 	data, ok := am.keeper.GetPendingChanges(ctx)
 	if !ok {
 		return []abci.ValidatorUpdate{}
@@ -174,7 +178,6 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	// apply changes to cross-chain validator set
 	am.keeper.ApplyCCValidatorChanges(ctx, data.ValidatorUpdates)
 	am.keeper.DeletePendingChanges(ctx)
-	am.keeper.UnbondMaturePackets(ctx)
 
 	return data.ValidatorUpdates
 }

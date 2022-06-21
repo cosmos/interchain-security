@@ -544,19 +544,36 @@ func (suite *KeeperTestSuite) TestCrossChainValidator() {
 	// get a validator from consumer chain
 	val := suite.providerChain.Vals.Validators[0]
 
+	// convert validator publick key
+	pubkey, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
+	suite.Require().NoError(err)
+
 	// set cross chain validator
-	ccVal = types.NewCCValidator(val.Address, 1000)
+	ccVal, err = types.NewCCValidator(val.Address, 1000, pubkey)
+	suite.Require().NoError(err)
 
 	app.ConsumerKeeper.SetCCValidator(ctx, ccVal)
 
 	// should return true
-	ccVal, foud = app.ConsumerKeeper.GetCCValidator(ctx, ccVal.Address)
-	suite.Require().True(foud)
+	gotCCVal, found := app.ConsumerKeeper.GetCCValidator(ctx, ccVal.Address)
+	suite.Require().True(found)
 
+	// verify the returned validator values
+	suite.Require().EqualValues(ccVal, gotCCVal)
+
+	// expect to return the same consensus pubkey
+	pk, err := gotCCVal.ConsPubKey()
+	suite.Require().NoError(err)
+	gotPK, err := gotCCVal.ConsPubKey()
+	suite.Require().NoError(err)
+
+	suite.Require().True(pk.Equals(gotPK))
+
+	// delete validator
 	app.ConsumerKeeper.DeleteCCValidator(ctx, ccVal.Address)
 
 	// should return false
-	ccVal, foud = app.ConsumerKeeper.GetCCValidator(ctx, ccVal.Address)
+	_, foud = app.ConsumerKeeper.GetCCValidator(ctx, ccVal.Address)
 	suite.Require().False(foud)
 }
 
