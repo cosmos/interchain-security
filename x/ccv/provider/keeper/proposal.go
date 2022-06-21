@@ -57,7 +57,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 		if closeChan {
 			k.CloseChannel(ctx, channelID)
 		}
-		k.chanCloseInit(ctx, channelID)
 		k.DeleteChainToChannel(ctx, chainID)
 		k.DeleteChannelToChain(ctx, channelID)
 	}
