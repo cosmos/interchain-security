@@ -12,7 +12,7 @@ This document endeavors to inform the wider Cosmos community about plans and pri
   - https://github.com/cosmos/interchain-security/issues/39
 - Create a minimum viable consumer chain (MVCC) that enables testing core ICS features.
   - https://github.com/cosmos/interchain-security/issues/139
-- Create in-memory test drive based on the ibc-go testing framework.
+- Create in-memory test driver based on the ibc-go testing framework.
   - https://github.com/cosmos/interchain-security/pull/126
 - Finalize ICS spec
   - https://github.com/cosmos/ibc/issues/670
