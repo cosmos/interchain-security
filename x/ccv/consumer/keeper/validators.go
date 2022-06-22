@@ -51,7 +51,9 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 	}
 }
 
-// IterateValidators - unimplemented on CCV keeper but perform a no-op in order to pass the slashing module InitGenesis
+// IterateValidators - unimplemented on CCV keeper but perform a no-op in order to pass the slashing module InitGenesis.
+// It is allowed since the condition verifying validator public keys in HandleValidatorSignature (x/slashing/keeper/infractions.go) is removed
+// therefore it isn't required to store any validator public keys to the slashing states during genesis.
 func (k Keeper) IterateValidators(sdk.Context, func(index int64, validator stakingtypes.ValidatorI) (stop bool)) {
 }
 
@@ -103,7 +105,7 @@ func (k Keeper) MaxValidators(sdk.Context) uint32 {
 	panic("unimplemented on CCV keeper")
 }
 
-// UnbondingTime return consumer unbonding time
+// UnbondingTime returns consumer unbonding time
 func (k Keeper) UnbondingTime(_ sdk.Context) time.Duration {
 	return types.UnbondingTime
 }

@@ -35,7 +35,7 @@ func (app *App) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
-	validators, err := app.WriteValidators(ctx)
+	validators, err := app.GetValidatorSet(ctx)
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}
@@ -183,7 +183,8 @@ func (app *App) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []str
 	)
 }
 
-func (app *App) WriteValidators(ctx sdk.Context) ([]tmtypes.GenesisValidator, error) {
+// GetValidatorSet returns a slice of bonded validators.
+func (app *App) GetValidatorSet(ctx sdk.Context) ([]tmtypes.GenesisValidator, error) {
 	cVals := app.ConsumerKeeper.GetAllCCValidator(ctx)
 	if len(cVals) == 0 {
 		return nil, fmt.Errorf("empty validator set")

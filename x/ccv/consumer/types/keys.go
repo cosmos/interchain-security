@@ -37,7 +37,7 @@ const (
 	// UnbondingPacketPrefix is the key prefix that will store the unbonding packet at the given sequence
 	UnbondingPacketPrefix = "unbondingpacket"
 
-	// UnbondingTimePrefix is the key prefix that will store unbonding time fqor each recently received packet.
+	// UnbondingTimePrefix is the key prefix that will store unbonding time for each recently received packet.
 	UnbondingTimePrefix = "unbondingtime"
 
 	// UnbondingTime is set to 3 weeks
