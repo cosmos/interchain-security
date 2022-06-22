@@ -92,7 +92,8 @@ func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {
 			if tc.expPass {
 				suite.Require().NoError(err, "error returned on valid case")
 				if tc.spawnReached {
-					clientId := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClient(ctx, chainID)
+					clientId, found := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClient(ctx, chainID)
+					suite.Require().True(found, "consumer client not found")
 					consumerGenesis, ok := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerGenesis(ctx, chainID)
 					suite.Require().True(ok)
 

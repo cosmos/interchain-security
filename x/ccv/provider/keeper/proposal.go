@@ -126,9 +126,13 @@ func (k Keeper) SetConsumerClient(ctx sdk.Context, chainID, clientID string) {
 }
 
 // GetConsumerClient returns the clientID for the given chainID.
-func (k Keeper) GetConsumerClient(ctx sdk.Context, chainID string) string {
+func (k Keeper) GetConsumerClient(ctx sdk.Context, chainID string) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	return string(store.Get(types.ChainToClientKey(chainID)))
+	clientIdBytes := store.Get(types.ChainToClientKey(chainID))
+	if clientIdBytes == nil {
+		return "", false
+	}
+	return string(clientIdBytes), true
 }
 
 // SetPendingClientInfo sets the initial height for the given timestamp and chainID
