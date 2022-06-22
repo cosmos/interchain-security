@@ -40,8 +40,9 @@ const (
 	// UnbondingTimePrefix is the key prefix that will store unbonding time for each recently received packet.
 	UnbondingTimePrefix = "unbondingtime"
 
-	// UnbondingTime is set to 4 weeks
-	UnbondingTime = 4 * 7 * 24 * time.Hour
+	// UnbondingTime is set to 3 weeks
+	// TODO: must match default IBC-GO default value see #153
+	UnbondingTime = 3 * 7 * 24 * time.Hour
 
 	// HistoricalEntries is set to 10000 like the staking module parameter DefaultHistoricalEntries
 	HistoricalEntries uint32 = 10000

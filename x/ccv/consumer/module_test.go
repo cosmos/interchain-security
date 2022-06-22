@@ -90,7 +90,7 @@ func (suite *ConsumerTestSuite) SetupTest() {
 	// set chains sender account number
 	// TODO: to be fixed in #151
 	path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	path.EndpointA.Chain.SenderAccount.SetAccountNumber(3)
+	path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	path.EndpointB.CreateClient()

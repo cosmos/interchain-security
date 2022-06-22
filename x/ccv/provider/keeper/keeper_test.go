@@ -93,7 +93,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	// set chains sender account number
 	// TODO: to be fixed in #151
 	suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(3)
+	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	suite.path.EndpointB.CreateClient()
@@ -249,7 +249,7 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
 }
 
 func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
-	providerStakingKeeper := suite.providerChain.App.GetStakingKeeper()
+	providerStakingKeeper := suite.providerChain.App.(*appProvider.App).StakingKeeper
 	ProviderKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
 	consumerChainID := suite.consumerChain.ChainID
@@ -332,7 +332,7 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
 // by varying the slash packet VSC ID mapping to infraction heights
 // lesser, equal or greater than the undelegation entry creation height
 func (suite *KeeperTestSuite) TestHandleSlashPacketDistribution() {
-	providerStakingKeeper := suite.providerChain.App.GetStakingKeeper()
+	providerStakingKeeper := suite.providerChain.App.(*appProvider.App).StakingKeeper
 	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 
 	// choose a validator
