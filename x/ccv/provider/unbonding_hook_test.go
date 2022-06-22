@@ -36,7 +36,7 @@ func (s *ProviderTestSuite) TestStakingHooks2() {
 
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 
-	origTime := s.ctx.BlockTime()
+	origTime := s.providerCtx().BlockTime()
 
 	// delegate bondAmt and undelegate 1/2 of it
 	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
@@ -106,7 +106,7 @@ func (s *ProviderTestSuite) TestStakingHooks1() {
 
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 
-	origTime := s.ctx.BlockTime()
+	origTime := s.providerCtx().BlockTime()
 
 	// delegate bondAmt and undelegate 1/2 of it
 	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
@@ -178,7 +178,7 @@ func (s *ProviderTestSuite) TestUnbondingEdgeCase() {
 
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 
-	origTime := s.ctx.BlockTime()
+	origTime := s.providerCtx().BlockTime()
 
 	// delegate bondAmt and undelegate all of it
 	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 1)
@@ -249,7 +249,7 @@ func (s *ProviderTestSuite) TestUnbondingEdgeCase() {
 // Advance time so that provider's unbonding op completes
 // Check that unbonding has completed in provider staking
 func (s *ProviderTestSuite) TestUnbondingNoConsumer() {
-	origTime := s.ctx.BlockTime()
+	origTime := s.providerCtx().BlockTime()
 
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
