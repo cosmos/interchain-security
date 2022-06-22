@@ -83,12 +83,14 @@ func (suite *ConsumerTestSuite) SetupTest() {
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
+
 	// set consumer endpoint's clientID
 	path.EndpointA.ClientID = providerClient
 
-	// TODO: No idea why or how this works, but it seems that it needs to be done.
+	// set chains sender account number
+	// TODO: to be fixed in #151
 	path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	path.EndpointA.Chain.SenderAccount.SetAccountNumber(6)
+	path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	path.EndpointB.CreateClient()
