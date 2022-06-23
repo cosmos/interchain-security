@@ -228,7 +228,7 @@ func (s *ProviderTestSuite) TestTimelyUndelegation2() {
 	origTime := s.providerCtx().BlockTime()
 
 	// delegate bondAmt and undelegate 1/2 of it
-	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
+	initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, 2)
 
 	// check that staking unbonding op was created and onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
@@ -298,7 +298,7 @@ func (s *ProviderTestSuite) TestTimelyUndelegation1() {
 	origTime := s.providerCtx().BlockTime()
 
 	// delegate bondAmt and undelegate 1/2 of it
-	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
+	initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, 2)
 
 	// check that staking unbonding op was created and onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
@@ -370,7 +370,7 @@ func (s *ProviderTestSuite) TestUndelegationEdgeCase() {
 	origTime := s.providerCtx().BlockTime()
 
 	// delegate bondAmt and undelegate all of it
-	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 1)
+	initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, 1)
 
 	// check that staking unbonding op was created and onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
@@ -431,6 +431,9 @@ func (s *ProviderTestSuite) TestUndelegationEdgeCase() {
 	s.Require().True(getBalance(s, newProviderCtx, delAddr).Equal(initBalance))
 }
 
+// TestUndelegationDuringInit checks that before the CCV channel is established
+// 	- no undelegations can complete, even if the provider unbonding period elapses
+// 	- all the VSC packets are stored in state as pending
 func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	// start CCV channel setup
 	s.StartSetupCCVChannel()
@@ -438,7 +441,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
-	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
+	initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, 2)
 	// - check that staking unbonding op was created and onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
 	// - check that CCV unbonding op was created
@@ -451,6 +454,16 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	pendingVSCs := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().True(len(pendingVSCs) == 1, "no pending VSC packet found")
 
+	// delegate again to create another VSC packet
+	delegate(s, delAddr, bondAmt)
+
+	// call NextBlock on the provider (which increments the height)
+	s.providerChain.NextBlock()
+
+	// check that the VSC packet is stored in state as pending
+	pendingVSCs = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+	s.Require().True(len(pendingVSCs) == 2, "only one pending VSC packet found")
+
 	// increment time so that the unbonding period ends on the provider
 	incrementTimeByProviderUnbondingPeriod(s)
 	// - check that the unbonding op is still there and onHold is true
@@ -458,7 +471,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	// - check that unbonding has not yet completed, i.e., the initBalance
 	// is still lower by the bond amount, because it has been taken out of
 	// the delegator's account
-	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
+	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt).Sub(bondAmt)))
 
 	// complete CCV channel setup; cannot use CompleteSetupCCVChannel()
 	// since we need the timeoutTimestamp of the VSC packet that is sent once
@@ -475,7 +488,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 		providertypes.PortID,
 		s.path.EndpointB.ChannelID,
 	)
-	s.Require().True(len(commitments) == 1, "did not find packet commitment")
+	s.Require().True(len(commitments) == 2, "did not find packet commitment")
 
 	// relay VSC packet
 	// - create packet
@@ -515,28 +528,29 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
 	// - check that staking unbonding op has been deleted
 	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
-	// - check that half the coins have been returned
-	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
+	// - check that one quarter the delegated coins have been returned
+	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt).Sub(bondAmt.Quo(sdk.NewInt(2)))))
 }
 
 func getBalance(s *ProviderTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
 	return s.providerChain.App.(*appProvider.App).BankKeeper.GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
 
-// bondAndUnbond delegates bondAmt from delAddr to the first validator
+// delegateAndUndelegate delegates bondAmt from delAddr to the first validator
 // and then immediately undelegates 1/shareDiv of that delegation
-func bondAndUnbond(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, shareDiv int64) (initBalance sdk.Int, valsetUpdateId uint64) {
-	initBalance = getBalance(s, s.providerCtx(), delAddr)
+func delegateAndUndelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, shareDiv int64) (initBalance sdk.Int, valsetUpdateId uint64) {
+	// delegate
+	initBalance, shares, valAddr := delegate(s, delAddr, bondAmt)
 
-	// Choose a validator, and get its address and data structure into the correct types
-	validator, valAddr := s.getVal(0)
+	// check that the correct number of tokens were taken out of the delegator's account
+	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
 	// INITIAL BOND
 	// Bond some tokens on provider to change validator powers
 	shares, err := s.providerChain.App.GetStakingKeeper().Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
 	s.Require().NoError(err)
 
-	// Check that the correct number of tokens were taken out of the delegator's account
+	// check that the tokens have not been returned yet
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
 	// UNDELEGATE
@@ -544,13 +558,35 @@ func bondAndUnbond(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int
 	_, err = s.providerChain.App.GetStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, shares.QuoInt64(shareDiv))
 	s.Require().NoError(err)
 
-	// Check that the tokens have not been returned yet
+// delegate delegates bondAmt to the first validator
+func delegate(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBalance sdk.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
+	initBalance = getBalance(s, s.providerCtx(), delAddr)
+	// choose a validator
+	validator, valAddr := s.getVal(0)
+	// delegate bondAmt tokens on provider to change validator powers
+	shares, err := s.providerChain.App.(*appProvider.App).StakingKeeper.Delegate(
+		s.providerCtx(),
+		delAddr,
+		bondAmt,
+		stakingtypes.Unbonded,
+		stakingtypes.Validator(validator),
+		true,
+	)
+	s.Require().NoError(err)
+	// check that the correct number of tokens were taken out of the delegator's account
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
+	return initBalance, shares, valAddr
+}
+
+// undelegate unbonds an amount of delegator shares from a given validator
+func undelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (valsetUpdateId uint64) {
+	_, err := s.providerChain.App.(*appProvider.App).StakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, sharesAmount)
+	s.Require().NoError(err)
 
 	// save the current valset update ID
 	valsetUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
-	return initBalance, valsetUpdateID
+	return valsetUpdateID
 }
 
 // incrementTimeByProviderUnbondingPeriod increments the overall time by
