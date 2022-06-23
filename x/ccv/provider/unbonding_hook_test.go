@@ -36,7 +36,7 @@ func (s *ProviderTestSuite) TestStakingHooks2() {
 
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 
-	origTime := s.ctx.BlockTime()
+	origTime := s.providerCtx().BlockTime()
 
 	// delegate bondAmt and undelegate 1/2 of it
 	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
@@ -106,7 +106,7 @@ func (s *ProviderTestSuite) TestStakingHooks1() {
 
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 
-	origTime := s.ctx.BlockTime()
+	origTime := s.providerCtx().BlockTime()
 
 	// delegate bondAmt and undelegate 1/2 of it
 	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
@@ -178,7 +178,7 @@ func (s *ProviderTestSuite) TestUnbondingEdgeCase() {
 
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 
-	origTime := s.ctx.BlockTime()
+	origTime := s.providerCtx().BlockTime()
 
 	// delegate bondAmt and undelegate all of it
 	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 1)
@@ -249,7 +249,7 @@ func (s *ProviderTestSuite) TestUnbondingEdgeCase() {
 // Advance time so that provider's unbonding op completes
 // Check that unbonding has completed in provider staking
 func (s *ProviderTestSuite) TestUnbondingNoConsumer() {
-	origTime := s.ctx.BlockTime()
+	origTime := s.providerCtx().BlockTime()
 
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
@@ -309,16 +309,20 @@ func bondAndUnbond(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int
 
 func endProviderUnbondingPeriod(s *ProviderTestSuite, origTime time.Time) sdk.Context {
 	// - End provider unbonding period
-	providerCtx := s.providerCtx().WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
+	sk := s.providerChain.App.(*appProvider.App).StakingKeeper
+	unbondingPeriod := sk.UnbondingTime(s.providerCtx())
+	providerCtx := s.providerCtx().WithBlockTime(origTime.Add(unbondingPeriod).Add(3 * time.Hour))
 	// s.providerChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
-	s.providerChain.App.(*appProvider.App).StakingKeeper.BlockValidatorUpdates(providerCtx)
+	sk.BlockValidatorUpdates(providerCtx)
 
 	return providerCtx
 }
 
 func endConsumerUnbondingPeriod(s *ProviderTestSuite, origTime time.Time) {
 	// - End consumer unbonding period
-	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
+	unbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
+	s.Require().True(found)
+	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(unbondingPeriod).Add(3 * time.Hour))
 	// s.consumerChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
 	err := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondMaturePackets(consumerCtx)
 	s.Require().NoError(err)
