@@ -86,7 +86,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	// update CCV path with correct info
 	// - set provider endpoint's clientID
-	consumerClient, found := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClient(
+	consumerClient, found := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClientId(
 		suite.providerChain.GetContext(),
 		suite.consumerChain.ChainID,
 	)

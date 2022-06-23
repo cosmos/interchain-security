@@ -51,7 +51,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHei
 		return err
 	}
 
-	k.SetConsumerClient(ctx, chainID, clientID)
+	k.SetConsumerClientId(ctx, chainID, clientID)
 	consumerGen, err := k.MakeConsumerGenesis(ctx)
 	if err != nil {
 		return err
@@ -119,14 +119,14 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 	return gen, nil
 }
 
-// SetConsumerClient sets the clientID for the given chainID
-func (k Keeper) SetConsumerClient(ctx sdk.Context, chainID, clientID string) {
+// SetConsumerClientId sets the clientID for the given chainID
+func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
 }
 
-// GetConsumerClient returns the clientID for the given chainID.
-func (k Keeper) GetConsumerClient(ctx sdk.Context, chainID string) (string, bool) {
+// GetConsumerClientId returns the clientID for the given chainID.
+func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
 	clientIdBytes := store.Get(types.ChainToClientKey(chainID))
 	if clientIdBytes == nil {
