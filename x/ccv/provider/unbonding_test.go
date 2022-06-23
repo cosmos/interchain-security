@@ -524,9 +524,6 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 
 	fmt.Printf("\nAFTER   RELAY PACKET\n")
 
-	// update consumer chain hist info
-	s.UpdateConsumerHistInfo(pendingVSCs[0].ValidatorUpdates)
-
 	// call NextBlock on the provider (which increments the height)
 	s.consumerChain.NextBlock()
 
