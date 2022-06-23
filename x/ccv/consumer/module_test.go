@@ -83,12 +83,14 @@ func (suite *ConsumerTestSuite) SetupTest() {
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
+
 	// set consumer endpoint's clientID
 	path.EndpointA.ClientID = providerClient
 
-	// TODO: No idea why or how this works, but it seems that it needs to be done.
+	// set chains sender account number
+	// TODO: to be fixed in #151
 	path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	path.EndpointA.Chain.SenderAccount.SetAccountNumber(6)
+	path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	path.EndpointB.CreateClient()
@@ -245,6 +247,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenTry() {
 
 func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 	channelID := "channel-1"
+	counterChannelID := "channel-2"
 	testCases := []struct {
 		name     string
 		setup    func(suite *ConsumerTestSuite)
@@ -309,7 +312,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 			mdBz, err := (&md).Marshal()
 			suite.Require().NoError(err)
 
-			err = consumerModule.OnChanOpenAck(suite.ctx, consumertypes.PortID, channelID, string(mdBz))
+			err = consumerModule.OnChanOpenAck(suite.ctx, consumertypes.PortID, channelID, counterChannelID, string(mdBz))
 			if tc.expError {
 				suite.Require().Error(err)
 			} else {
