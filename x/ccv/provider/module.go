@@ -242,7 +242,6 @@ func (am AppModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (metadata string, err error) {
-
 	if err := ValidateProviderChannelParams(
 		ctx, am.keeper, order, portID, channelID,
 	); err != nil {

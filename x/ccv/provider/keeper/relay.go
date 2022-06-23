@@ -15,8 +15,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
-
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 )
 
 func (k Keeper) SendValidatorSetChangePacket(
@@ -87,7 +85,6 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 	// get current ValidatorSetUpdateId
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
-	fmt.Printf("EndBlockCallback vscID=%d\n", valUpdateID)
 	// get the validator updates from the staking module
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
@@ -97,7 +94,6 @@ func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 			pendingPackets := k.EmptyPendingVSC(ctx, chainID)
 			for _, data := range pendingPackets {
 				k.SendValidatorSetChangePacket(ctx, channelID, data)
-				fmt.Printf("send pending VSC #%d, TS=%s\n", data.ValsetUpdateId, ctx.BlockTime().String())
 			}
 		}
 
@@ -113,16 +109,8 @@ func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 			if channelID, found := k.GetChainToChannel(ctx, chainID); found {
 				// send this validator set change packet data to the consumer chain
 				k.SendValidatorSetChangePacket(ctx, channelID, packetData)
-				fmt.Printf("send VSC #%d, TS=%s\n", packetData.ValsetUpdateId, ctx.BlockTime().String())
 			} else {
 				// store the packet data to be sent once the CCV channel is established
-				fmt.Printf("store pending VSC #%d w/ %d updates and %d unbonding ops\n",
-					packetData.ValsetUpdateId, len(valUpdates), len(unbondingOps))
-				for i, update := range valUpdates {
-					valPubKey, _ := cryptocodec.FromTmProtoPublicKey(update.PubKey)
-					consAddr := sdk.ConsAddress(valPubKey.Address())
-					fmt.Printf(" - [%d] val %s w/ power %d\n", i, consAddr, update.Power)
-				}
 				k.AppendPendingVSC(ctx, chainID, packetData)
 			}
 		}

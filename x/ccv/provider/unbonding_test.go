@@ -248,26 +248,15 @@ func (s *ProviderTestSuite) TestUndelegationEdgeCase() {
 
 func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	// start CCV channel setup
-	fmt.Printf("BEFORE StartSetupCCVChannel\n")
 	s.StartSetupCCVChannel()
-	fmt.Printf("!!!!!!! AFTER  StartSetupCCVChannel\n\n")
-
-	for i := 0; i < len(s.providerChain.Vals.Validators); i++ {
-		validator, _ := s.getVal(i)
-		consAddr, _ := validator.GetConsAddr()
-		fmt.Printf("  >  val#%d [%s] w/ tokens %d\n", i, consAddr, validator.GetTokens().Int64())
-	}
 
 	// delegate bondAmt and undelegate half of it
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
-	fmt.Printf("bondAndUnbond vscID=%d\n", valsetUpdateID)
-
-	// check that staking unbonding op was created and onHold is true
+	// - check that staking unbonding op was created and onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
-
-	// check that CCV unbonding op was created
+	// - check that CCV unbonding op was created
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true)
 
 	// call NextBlock on the provider (which increments the height)
@@ -277,49 +266,33 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	pendingVSCs := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().True(len(pendingVSCs) == 1, "no pending VSC packet found")
 
-	fmt.Printf(">>> AFTER  NextBlock\n")
-
 	// increment time so that the unbonding period ends on the provider
 	incrementTimeByProviderUnbondingPeriod(s)
-
-	fmt.Printf(">>> AFTER  END PROVIDER UNBONDING\n")
-
-	for i := 0; i < len(s.providerChain.Vals.Validators); i++ {
-		validator, _ := s.getVal(i)
-		consAddr, _ := validator.GetConsAddr()
-		fmt.Printf("  >  val#%d [%s] w/ tokens %d\n", i, consAddr, validator.GetTokens().Int64())
-	}
-
-	// check that the unbonding op is still there and onHold is true
+	// - check that the unbonding op is still there and onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
-
-	// Check that unbonding has not yet completed. The initBalance is still lower
-	// by the bond amount, because it has been taken out of the delegator's account
+	// - check that unbonding has not yet completed, i.e., the initBalance
+	// is still lower by the bond amount, because it has been taken out of
+	// the delegator's account
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
-	// complete CCV channel setup
-	// fmt.Printf("\nBEFORE CompleteSetupCCVChannel\n")
-	// s.CompleteSetupCCVChannel()
-	// fmt.Printf("!!!!!!! AFTER  CompleteSetupCCVChannel\n\n")
-
-	fmt.Printf("$$$ BEFORE ChanOpenAck\n")
+	// complete CCV channel setup; cannot use CompleteSetupCCVChannel()
+	// since we need the timeoutTimestamp of the VSC packet that is sent once
+	// the CCV channel is established on the provider side
 	err := s.path.EndpointA.ChanOpenAck()
 	s.Require().NoError(err)
-	fmt.Printf("$$$ AFTER ChanOpenAck\n")
-	fmt.Printf("$$$ BEFORE ChanOpenConfirm\n")
 	err = s.path.EndpointB.ChanOpenConfirm()
 	s.Require().NoError(err)
-	fmt.Printf("$$$ AFTER ChanOpenConfirm\n")
 	timeoutBlockTime := s.providerCtx().BlockTime().Add(-ibctesting.TimeIncrement).UTC()
-	fmt.Printf("timeoutBlockTime=%s\n\n", timeoutBlockTime.String())
 	s.path.EndpointA.UpdateClient()
-
-	// check that the VSC packets were committed in the provider's state
-	channelID := s.path.EndpointB.ChannelID
-	commitments := s.providerChain.App.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(s.providerCtx(), providertypes.PortID, channelID)
+	// - check that the VSC packet is committed in the provider's state
+	commitments := s.providerChain.App.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
+		s.providerCtx(),
+		providertypes.PortID,
+		s.path.EndpointB.ChannelID,
+	)
 	s.Require().True(len(commitments) == 1, "did not find packet commitment")
 
-	// RELAY PACKET
+	// relay VSC packet
 	// - create packet
 	commitment := commitments[0]
 	packet := channeltypes.NewPacket(
@@ -333,30 +306,32 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 		uint64(ccv.GetTimeoutTimestamp(timeoutBlockTime).UnixNano()),
 	)
 	// - relay the packet
-	fmt.Printf("BEFORE   RELAY PACKET\n")
 	err = s.RelayPacketWithoutAck(packet)
 	s.Require().NoError(err)
 
-	fmt.Printf("\nAFTER   RELAY PACKET\n")
-
-	// call NextBlock on the provider (which increments the height)
-	s.consumerChain.NextBlock()
-
-	// END CONSUMER UNBONDING
-	// - increment time so that the unbonding period ends on the consumer
+	// increment time so that the unbonding period ends on the consumer
 	incrementTimeByConsumerUnbondingPeriod(s)
-	// // - send acknowledgement to provider
-	// ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	// err := s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
-	// s.Require().NoError(err)
 
-	// CHECK THAT UNBONDING IS COMPLETE
+	// send VSC packet acknowledgement to provider
+	ackBytes, found := s.consumerChain.App.GetIBCKeeper().ChannelKeeper.GetPacketAcknowledgement(
+		s.consumerCtx(),
+		consumertypes.PortID,
+		s.path.EndpointA.ChannelID,
+		commitment.Sequence,
+	)
+	s.Require().True(found, "packet ack not found")
+	expectedAck := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	s.Require().Equal(channeltypes.CommitAcknowledgement(expectedAck.Acknowledgement()), ackBytes, "unexpected packet ack")
+	err = s.path.EndpointB.AcknowledgePacket(packet, expectedAck.Acknowledgement())
+	s.Require().NoError(err)
+
+	// check that the unbonding operation completed
 	// - check that ccv unbonding op has been deleted
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
 	// - check that staking unbonding op has been deleted
 	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
-	// - check that the coins have been returned
-	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance))
+	// - check that half the coins have been returned
+	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
 }
 
 // TODO FIX, the consumer is added during SetupTest()
@@ -460,11 +435,8 @@ func incrementTimeByConsumerUnbondingPeriod(s *ProviderTestSuite) {
 	for i := 0; i < 4; i++ {
 		s.coordinator.IncrementTimeBy(jumpPeriod)
 		// Update the provider client on the consumer
-		fmt.Println("< Update provider client >")
 		s.path.EndpointA.UpdateClient()
 		// Update the consumer client on the provider
-		trustedHeight := s.providerChain.GetClientState(s.path.EndpointB.ClientID).GetLatestHeight().(clienttypes.Height)
-		fmt.Printf("< Update consumer client > trustedHeight: %d, H: %d\n", trustedHeight.RevisionHeight, s.consumerCtx().BlockHeight())
 		s.path.EndpointB.UpdateClient()
 	}
 }
@@ -564,9 +536,13 @@ func GetStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper,
 // if EndpointA does not contain a packet commitment for that packet. An error is returned
 // if a relay step fails or the packet commitment does not exist on either endpoint.
 func (s *ProviderTestSuite) RelayPacketWithoutAck(packet channeltypes.Packet) error {
-	pc := s.path.EndpointA.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(s.path.EndpointA.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
+	pc := s.path.EndpointA.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(
+		s.path.EndpointA.Chain.GetContext(),
+		packet.GetSourcePort(),
+		packet.GetSourceChannel(),
+		packet.GetSequence(),
+	)
 	if bytes.Equal(pc, channeltypes.CommitPacket(s.path.EndpointA.Chain.App.AppCodec(), packet)) {
-
 		// packet found, relay from A to B
 		s.path.EndpointB.UpdateClient()
 
@@ -578,9 +554,13 @@ func (s *ProviderTestSuite) RelayPacketWithoutAck(packet channeltypes.Packet) er
 		return nil
 	}
 
-	pc = s.path.EndpointB.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(s.path.EndpointB.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
+	pc = s.path.EndpointB.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(
+		s.path.EndpointB.Chain.GetContext(),
+		packet.GetSourcePort(),
+		packet.GetSourceChannel(),
+		packet.GetSequence(),
+	)
 	if bytes.Equal(pc, channeltypes.CommitPacket(s.path.EndpointB.Chain.App.AppCodec(), packet)) {
-
 		// packet found, relay B to A
 		s.path.EndpointA.UpdateClient()
 
