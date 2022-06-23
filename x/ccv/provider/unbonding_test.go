@@ -435,7 +435,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	// start CCV channel setup
 	s.StartSetupCCVChannel()
 
-	// delegate bondAmt and undelegate half of it
+	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
