@@ -14,8 +14,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
-
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 )
 
 func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
@@ -123,7 +121,6 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 	// get current ValidatorSetUpdateId
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
-	fmt.Printf("EndBlockCallback vscID=%d\n", valUpdateID)
 	// get the validator updates from the staking module
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
