@@ -106,8 +106,12 @@ func (k Keeper) MaxValidators(sdk.Context) uint32 {
 }
 
 // UnbondingTime returns consumer unbonding time
-func (k Keeper) UnbondingTime(_ sdk.Context) time.Duration {
-	return types.UnbondingTime
+func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
+	unbondingTime, found := k.GetUnbondingTime(ctx)
+	if !found {
+		panic("the consumer unbonding period is not set")
+	}
+	return unbondingTime
 }
 
 // GetHistoricalInfo gets the historical info at a given height

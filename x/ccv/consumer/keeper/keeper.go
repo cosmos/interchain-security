@@ -139,7 +139,7 @@ func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability
 	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
 }
 
-// SetPacketMaturityTime sets the unbonding period of the consumer chain
+// SetUnbondingTime sets the unbonding period of the consumer chain
 func (k Keeper) SetUnbondingTime(ctx sdk.Context, unbondingTime time.Duration) {
 	store := ctx.KVStore(k.storeKey)
 	timeBytes := make([]byte, 8)
