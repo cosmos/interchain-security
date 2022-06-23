@@ -41,7 +41,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHei
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = chainID
 	clientState.LatestHeight = initialHeight
-	clientState.TrustingPeriod = unbondingTime / 2
+	clientState.TrustingPeriod = unbondingTime / utils.TrustingPeriodFraction
 	clientState.UnbondingPeriod = unbondingTime
 
 	// TODO: Allow for current validators to set different keys
@@ -51,7 +51,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHei
 		return err
 	}
 
-	k.SetConsumerClient(ctx, chainID, clientID)
+	k.SetConsumerClientId(ctx, chainID, clientID)
 	consumerGen, err := k.MakeConsumerGenesis(ctx)
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = ctx.ChainID()
 	clientState.LatestHeight = height //(+-1???)
-	clientState.TrustingPeriod = unbondingTime / 2
+	clientState.TrustingPeriod = unbondingTime / utils.TrustingPeriodFraction
 	clientState.UnbondingPeriod = unbondingTime
 
 	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
@@ -119,14 +119,14 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 	return gen, nil
 }
 
-// SetConsumerClient sets the clientID for the given chainID
-func (k Keeper) SetConsumerClient(ctx sdk.Context, chainID, clientID string) {
+// SetConsumerClientId sets the clientID for the given chainID
+func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
 }
 
-// GetConsumerClient returns the clientID for the given chainID.
-func (k Keeper) GetConsumerClient(ctx sdk.Context, chainID string) (string, bool) {
+// GetConsumerClientId returns the clientID for the given chainID.
+func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
 	clientIdBytes := store.Get(types.ChainToClientKey(chainID))
 	if clientIdBytes == nil {
@@ -135,8 +135,8 @@ func (k Keeper) GetConsumerClient(ctx sdk.Context, chainID string) (string, bool
 	return string(clientIdBytes), true
 }
 
-// DeleteConsumerClient removes from the store the clientID for the given chainID.
-func (k Keeper) DeleteConsumerClient(ctx sdk.Context, chainID string) {
+// DeleteConsumerClientId removes from the store the clientID for the given chainID.
+func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ChainToClientKey(chainID))
 }

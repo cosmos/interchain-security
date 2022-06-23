@@ -90,7 +90,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	// update CCV path with correct info
 	// - set provider endpoint's clientID
-	consumerClient, found := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClient(
+	consumerClient, found := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClientId(
 		suite.providerChain.GetContext(),
 		suite.consumerChain.ChainID,
 	)
@@ -103,10 +103,10 @@ func (suite *KeeperTestSuite) SetupTest() {
 	// - client config
 	providerUnbondingPeriod := suite.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(suite.providerChain.GetContext())
 	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = providerUnbondingPeriod
-	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / 2
+	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / utils.TrustingPeriodFraction
 	consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
-	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / 2
+	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
 	suite.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
@@ -350,7 +350,7 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 // using the given unbonding period.
 // It will update the clientID for the endpoint if the message
 // is successfully executed.
-func (suite *KeeperTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) (err error) {
+func (suite *KeeperTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) {
 	// ensure counterparty has committed state
 	endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
 
@@ -359,7 +359,7 @@ func (suite *KeeperTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, 
 	tmConfig, ok := endpoint.ClientConfig.(*ibctesting.TendermintConfig)
 	require.True(endpoint.Chain.T, ok)
 	tmConfig.UnbondingPeriod = unbondingPeriod
-	tmConfig.TrustingPeriod = unbondingPeriod / 2
+	tmConfig.TrustingPeriod = unbondingPeriod / utils.TrustingPeriodFraction
 
 	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
@@ -375,14 +375,10 @@ func (suite *KeeperTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, 
 	require.NoError(endpoint.Chain.T, err)
 
 	res, err := endpoint.Chain.SendMsgs(msg)
-	if err != nil {
-		return err
-	}
+	require.NoError(endpoint.Chain.T, err)
 
 	endpoint.ClientID, err = ibctesting.ParseClientIDFromEvents(res.GetEvents())
 	require.NoError(endpoint.Chain.T, err)
-
-	return nil
 }
 
 // TestValidatorDowntime tests if a slash packet is sent

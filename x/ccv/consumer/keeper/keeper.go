@@ -154,7 +154,7 @@ func (k Keeper) GetUnbondingTime(ctx sdk.Context) (time.Duration, bool) {
 	if bz == nil {
 		return 0, false
 	}
-	return time.Duration(binary.BigEndian.Uint64(bz)) * time.Nanosecond, true
+	return time.Duration(binary.BigEndian.Uint64(bz)), true
 }
 
 // DeleteUnbondingTime deletes the unbonding period of the consumer chain

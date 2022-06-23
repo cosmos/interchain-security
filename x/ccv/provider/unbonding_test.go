@@ -355,7 +355,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 // Check that unbonding has completed in provider staking
 func (s *ProviderTestSuite) TestUnbondingNoConsumer() {
 	// remove the consumer chain, which was already registered during setup
-	s.providerChain.App.(*appProvider.App).ProviderKeeper.DeleteConsumerClient(s.providerCtx(), s.consumerChain.ChainID)
+	s.providerChain.App.(*appProvider.App).ProviderKeeper.DeleteConsumerClientId(s.providerCtx(), s.consumerChain.ChainID)
 
 	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
