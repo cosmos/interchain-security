@@ -350,7 +350,7 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 // using the given unbonding period.
 // It will update the clientID for the endpoint if the message
 // is successfully executed.
-func (suite *KeeperTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) (err error) {
+func (suite *KeeperTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) {
 	// ensure counterparty has committed state
 	endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
 
@@ -375,14 +375,10 @@ func (suite *KeeperTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, 
 	require.NoError(endpoint.Chain.T, err)
 
 	res, err := endpoint.Chain.SendMsgs(msg)
-	if err != nil {
-		return err
-	}
+	require.NoError(endpoint.Chain.T, err)
 
 	endpoint.ClientID, err = ibctesting.ParseClientIDFromEvents(res.GetEvents())
 	require.NoError(endpoint.Chain.T, err)
-
-	return nil
 }
 
 // TestValidatorDowntime tests if a slash packet is sent
