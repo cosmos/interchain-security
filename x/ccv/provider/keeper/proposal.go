@@ -135,6 +135,12 @@ func (k Keeper) GetConsumerClient(ctx sdk.Context, chainID string) (string, bool
 	return string(clientIdBytes), true
 }
 
+// DeleteConsumerClient removes from the store the clientID for the given chainID.
+func (k Keeper) DeleteConsumerClient(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ChainToClientKey(chainID))
+}
+
 // SetPendingClientInfo sets the initial height for the given timestamp and chainID
 func (k Keeper) SetPendingClientInfo(ctx sdk.Context, timestamp time.Time, chainID string, initialHeight clienttypes.Height) error {
 	store := ctx.KVStore(k.storeKey)

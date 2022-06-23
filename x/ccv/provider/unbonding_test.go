@@ -250,7 +250,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	// start CCV channel setup
 	s.StartSetupCCVChannel()
 
-	// delegate bondAmt and undelegate half of it
+	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
@@ -341,28 +341,32 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 // Advance time so that provider's unbonding op completes
 // Check that unbonding has completed in provider staking
 func (s *ProviderTestSuite) TestUnbondingNoConsumer() {
-	origTime := s.providerCtx().BlockTime()
+	// remove the consumer chain, which was already registered during setup
+	s.providerChain.App.(*appProvider.App).ProviderKeeper.DeleteConsumerClient(s.providerCtx(), s.consumerChain.ChainID)
 
+	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
-	// delegate bondAmt and undelegate 1/2 of it
 	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
-
-	// check that staking unbonding op was created and onHold is false
+	// - check that staking unbonding op was created and onHold is FALSE
 	checkStakingUnbondingOps(s, 1, true, false)
-
-	// check that CCV unbonding op was not created
+	// - check that CCV unbonding op was NOT created
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
 
-	// END PROVIDER UNBONDING
-	newProviderCtx := endProviderUnbondingPeriod(s, origTime)
+	// increment time so that the unbonding period ends on the provider;
+	// cannot use incrementTimeByProviderUnbondingPeriod() since it tries
+	// to also update the provider's client on the consumer
+	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
+	s.coordinator.IncrementTimeBy(providerUnbondingPeriod + time.Hour)
 
-	// CHECK THAT UNBONDING IS COMPLETE
-	// Check that staking unbonding op has been deleted
+	// call NextBlock on the provider (which increments the height)
+	s.providerChain.NextBlock()
+
+	// check that the unbonding operation completed
+	// - check that staking unbonding op has been deleted
 	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
-
-	// Check that half the coins have been returned
-	s.Require().True(getBalance(s, newProviderCtx, delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
+	// - check that half the coins have been returned
+	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
 }
 
 func getBalance(s *ProviderTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
