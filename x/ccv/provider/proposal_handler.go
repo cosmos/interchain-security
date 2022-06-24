@@ -8,12 +8,14 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
-// NewCreateConsumerChainHandler defines the CCV provider proposal handler
-func NewCreateConsumerChainHandler(k keeper.Keeper) govtypes.Handler {
+// NewConsumerChainProposalHandler defines the CCV provider proposal handler
+func NewConsumerChainProposalHandler(k keeper.Keeper) govtypes.Handler {
 	return func(ctx sdk.Context, content govtypes.Content) error {
 		switch c := content.(type) {
 		case *types.CreateConsumerChainProposal:
 			return k.CreateConsumerChainProposal(ctx, c)
+		case *types.StopConsumerChainProposal:
+			return k.StopConsumerChainProposal(ctx, c)
 		default:
 			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized ccv proposal content type: %T", c)
 		}

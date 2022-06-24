@@ -1,10 +1,13 @@
 package types
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"time"
+
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 type Status int
@@ -39,6 +42,11 @@ const (
 	// PendingClientKeyPrefix is the key prefix for storing the pending identified consumer chain client before the spawn time occurs.
 	// The key includes the BigEndian timestamp to allow for efficient chronological iteration
 	PendingClientKeyPrefix = "pendingclient"
+
+	//PendingStopProposalKeyPrefix is the key prefix for storing the pending identified consumer chain before the stop time occurs.
+	// The key includes the BigEndian timestamp to allow for efficient chronological iteration
+	PendingStopProposalKeyPrefix = "pendingstopproposal"
+
 	// UnbondingOpPrefix is the key prefix that stores a record of all the ids of consumer chains that
 	// need to unbond before a given delegation can unbond on this chain.
 	UnbondingOpPrefix = "unbondingops"
@@ -62,6 +70,9 @@ const (
 	// InitChainHeightPrefix is the key prefix that will store the mapping from a chain id to the corresponding block height on the provider
 	// this consumer chain was initialized
 	InitChainHeightPrefix = "initchainheight"
+
+	// LockUnbondingOnTimeout is the key prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
+	LockUnbondingOnTimeoutPrefix = "LockUnbondingOnTimeout"
 )
 
 var (
@@ -106,15 +117,24 @@ func ChainToClientKey(chainID string) []byte {
 	return []byte(fmt.Sprintf("%s/%s", ChainToClientKeyPrefix, chainID))
 }
 
-// PendingClientKey returns the key under which a pending identified client is store
+// PendingClientKey returns the key under which a pending identified client is stored
 func PendingClientKey(timestamp time.Time, chainID string) []byte {
 	timeBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(timeBytes, uint64(timestamp.UnixNano()))
+
 	return []byte(fmt.Sprintf("%s/%s/%s", PendingClientKeyPrefix, timeBytes, chainID))
 }
 
+// PendingStopProposalKey returns the key under which pending consumer chain stop proposals are stored
+func PendingStopProposalKey(timestamp time.Time, chainID string) []byte {
+	timeBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(timeBytes, uint64(timestamp.UnixNano()))
+
+	return []byte(fmt.Sprintf("%s/%s/%s", PendingStopProposalKeyPrefix, timeBytes, chainID))
+}
+
 func UnbondingOpIndexKey(chainID string, valsetUpdateID uint64) []byte {
-	return AppendMany(HashString(UnbondingOpIndexPrefix), HashString(chainID), Uint64ToBytes(valsetUpdateID))
+	return AppendMany(HashString(UnbondingOpIndexPrefix), HashString(chainID), HashString("/"), Uint64ToBytes(valsetUpdateID))
 }
 
 func UnbondingOpKey(id uint64) []byte {
@@ -142,4 +162,19 @@ func SlashAcksKey(chainID string) []byte {
 // InitChainHeightKey returns the key under which the block height for a given chain ID is stored
 func InitChainHeightKey(chainID string) []byte {
 	return []byte(fmt.Sprintf("%s/%s", InitChainHeightPrefix, chainID))
+}
+
+func LockUnbondingOnTimeoutKey(chainID string) []byte {
+	return []byte(fmt.Sprintf("%s/%s", LockUnbondingOnTimeoutPrefix, chainID))
+}
+
+func ParseUnbondingOpIndexKey(key []byte) (vscID []byte, err error) {
+	keySplit := bytes.Split(key, HashString("/"))
+	if len(keySplit) != 2 {
+		return nil, sdkerrors.Wrapf(
+			sdkerrors.ErrLogic, "key provided is incorrect: the key split has incorrect length, expected %d, got %d", 2, len(keySplit),
+		)
+	}
+
+	return keySplit[1], nil
 }

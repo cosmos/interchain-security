@@ -67,6 +67,7 @@ func (suite *ConsumerTestSuite) SetupTest() {
 		suite.providerChain.GetContext(),
 		suite.consumerChain.ChainID,
 		suite.consumerChain.LastHeader.GetHeight().(clienttypes.Height),
+		false,
 	)
 	// move provider to next block to commit the state
 	suite.providerChain.NextBlock()
