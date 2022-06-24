@@ -742,7 +742,7 @@ func sendValUpdateAck(s *ProviderTestSuite, providerCtx sdk.Context, packet chan
 	// err := s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
 	// s.Require().NoError(err)
 
-	err := s.providerChain.App.(*appProvider.App).ProviderKeeper.OnAcknowledgementPacket(providerCtx, packet, packetData, ack)
+	err := s.providerChain.App.(*appProvider.App).ProviderKeeper.OnAcknowledgementPacket(providerCtx, packet, ack)
 	s.Require().NoError(err)
 }
 
