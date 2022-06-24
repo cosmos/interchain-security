@@ -35,6 +35,13 @@ func (suite *ProviderTestSuite) TestCreateConsumerChainProposalHandler() {
 			}, true,
 		},
 		{
+			"valid stop consumerchain proposal", func(suite *ProviderTestSuite) {
+				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
+				content, err = types.NewStopConsumerChainProposal("title", "description", "chainID", time.Now())
+				suite.Require().NoError(err)
+			}, true,
+		},
+		{
 			"nil proposal", func(suite *ProviderTestSuite) {
 				ctx = suite.providerChain.GetContext()
 				content = nil
@@ -56,7 +63,7 @@ func (suite *ProviderTestSuite) TestCreateConsumerChainProposalHandler() {
 
 			tc.malleate(suite)
 
-			proposalHandler := provider.NewCreateConsumerChainHandler(suite.providerChain.App.(*appProvider.App).ProviderKeeper)
+			proposalHandler := provider.NewConsumerChainProposalHandler(suite.providerChain.App.(*appProvider.App).ProviderKeeper)
 
 			err = proposalHandler(ctx, content)
 

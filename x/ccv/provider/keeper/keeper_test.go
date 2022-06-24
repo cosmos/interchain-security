@@ -72,6 +72,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 		suite.providerChain.GetContext(),
 		suite.consumerChain.ChainID,
 		suite.consumerChain.LastHeader.GetHeight().(clienttypes.Height),
+		false,
 	)
 	// move provider to next block to commit the state
 	suite.providerChain.NextBlock()
@@ -501,4 +502,27 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketDistribution() {
 		// update balance
 		ubdBalance = ubd.Entries[0].Balance
 	}
+}
+
+func (suite *KeeperTestSuite) TestIterateOverUnbondingOpIndex() {
+	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
+	chainID := suite.consumerChain.ChainID
+
+	// mock an unbonding index
+	unbondingOpIndex := []uint64{0, 1, 2, 3, 4, 5, 6}
+
+	// set ubd ops by varying vsc ids and index slices
+	for i := 1; i < len(unbondingOpIndex); i++ {
+		providerKeeper.SetUnbondingOpIndex(suite.providerChain.GetContext(), chainID, uint64(i), unbondingOpIndex[:i])
+	}
+
+	// check iterator returns expected entries
+	i := 1
+	providerKeeper.IterateOverUnbondingOpIndex(suite.providerChain.GetContext(), chainID, func(vscID uint64, ubdIndex []uint64) bool {
+		suite.Require().Equal(uint64(i), vscID)
+		suite.Require().EqualValues(unbondingOpIndex[:i], ubdIndex)
+		i++
+		return true
+	})
+	suite.Require().Equal(len(unbondingOpIndex), i)
 }
