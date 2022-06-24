@@ -79,9 +79,6 @@ func (suite *KeeperTestSuite) TestGenesis() {
 	unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
 	suite.Require().True(found)
 	suite.Require().Equal(uint64(origTime.Add(unbondingPeriod).UnixNano()), maturityTime, "maturity time is not set correctly in genesis")
-	unbondingPacket, err := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingPacket(suite.consumerChain.GetContext(), 1)
-	suite.Require().NoError(err)
-	suite.Require().Equal(&packet, unbondingPacket, "unbonding packet is not set correctly in genesis")
 
 	suite.Require().NotPanics(func() {
 		suite.consumerChain.App.(*app.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), restartGenesis)

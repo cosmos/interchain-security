@@ -341,14 +341,19 @@ func (am AppModule) OnRecvPacket(
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
 	var (
-		ack  ibcexported.Acknowledgement
-		data ccv.SlashPacketData
+		ack            ibcexported.Acknowledgement
+		vscMaturedData ccv.VSCMaturedPacketData
+		slashData      ccv.SlashPacketData
 	)
-	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
+	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &vscMaturedData); err == nil {
+		// handle VSCMaturedPacket
+		ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, vscMaturedData)
+	} else if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &slashData); err == nil {
+		// handle SlashPacket
+		ack = am.keeper.OnRecvSlashPacket(ctx, packet, slashData)
+	} else {
 		errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("cannot unmarshal CCV packet data: %s", err.Error()))
 		ack = &errAck
-	} else {
-		ack = am.keeper.OnRecvPacket(ctx, packet, data)
 	}
 
 	ctx.EventManager().EmitEvent(
@@ -373,12 +378,8 @@ func (am AppModule) OnAcknowledgementPacket(
 	if err := ccv.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal provider packet acknowledgement: %v", err)
 	}
-	var data ccv.ValidatorSetChangePacketData
-	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal provider packet data: %s", err.Error())
-	}
 
-	if err := am.keeper.OnAcknowledgementPacket(ctx, packet, data, ack); err != nil {
+	if err := am.keeper.OnAcknowledgementPacket(ctx, packet, ack); err != nil {
 		return err
 	}
 

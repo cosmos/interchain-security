@@ -55,8 +55,7 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 		panic("the unbonding period is not set on the consumer chain")
 	}
 	maturityTime := ctx.BlockTime().Add(unbondingPeriod)
-	k.SetPacketMaturityTime(ctx, packet.Sequence, uint64(maturityTime.UnixNano()))
-	k.SetUnbondingPacket(ctx, packet.Sequence, packet)
+	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, uint64(maturityTime.UnixNano()))
 
 	// set height to VSC id mapping
 	k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())+1, newChanges.ValsetUpdateId)
@@ -66,8 +65,8 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 		k.ClearOutstandingDowntime(ctx, addr)
 	}
 
-	// ack will be sent asynchronously
-	return nil
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	return ack
 }
 
 // UnbondMaturePackets will iterate over the unbonding packets in order and write acknowledgements for all
@@ -83,23 +82,26 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 	if !ok {
 		return sdkerrors.Wrap(channeltypes.ErrChannelNotFound, "provider channel not set")
 	}
-	channelCap, ok := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(types.PortID, channelID))
-	if !ok {
-		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
-	}
 
 	for maturityIterator.Valid() {
-		sequence := types.GetSequenceFromPacketMaturityTimeKey(maturityIterator.Key())
+		vscId := types.GetIdFromPacketMaturityTimeKey(maturityIterator.Key())
 		if currentTime > binary.BigEndian.Uint64(maturityIterator.Value()) {
-			// write successful ack and delete unbonding information
-			packet, err := k.GetUnbondingPacket(ctx, sequence)
+			// send VSCMatured packet
+			// - construct validator set change packet data
+			packetData := ccv.NewVSCMaturedPacketData(vscId)
+			// - send packet over IBC
+			err := utils.SendIBCPacket(
+				ctx,
+				k.scopedKeeper,
+				k.channelKeeper,
+				channelID,    // source channel id
+				types.PortID, // source port id
+				packetData.GetBytes(),
+			)
 			if err != nil {
 				return err
 			}
-			ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-			k.channelKeeper.WriteAcknowledgement(ctx, channelCap, packet, ack)
-			k.DeletePacketMaturityTime(ctx, sequence)
-			k.DeleteUnbondingPacket(ctx, sequence)
+			k.DeletePacketMaturityTime(ctx, vscId)
 		} else {
 			break
 		}
@@ -192,9 +194,9 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 	k.ClearPendingSlashRequests(ctx)
 }
 
-func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData, ack channeltypes.Acknowledgement) error {
+func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
-		// slashing packet was sent to a nonestablished channel
+		// packet was sent to a non-established channel
 		if err != sdkerrors.Wrap(
 			channeltypes.ErrInvalidChannelState,
 			packet.DestinationChannel,

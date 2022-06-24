@@ -515,13 +515,13 @@ func (s *ProviderTestSuite) TestSlashPacketAcknowldgement() {
 	packet := channeltypes.NewPacket([]byte{}, 1, consumertypes.PortID, s.path.EndpointA.ChannelID,
 		providertypes.PortID, "wrongchannel", clienttypes.Height{}, 0)
 
-	ack := providerKeeper.OnRecvPacket(s.providerCtx(), packet, ccv.SlashPacketData{})
+	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, ccv.SlashPacketData{})
 	s.Require().NotNil(ack)
 
-	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, ccv.SlashPacketData{}, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))
+	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))
 	s.Require().NoError(err)
 
-	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, ccv.SlashPacketData{}, channeltypes.NewErrorAcknowledgement("another error"))
+	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewErrorAcknowledgement("another error"))
 	s.Require().Error(err)
 }
 

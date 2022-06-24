@@ -43,12 +43,25 @@ func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemo
 	return newSlice, len(slice) - len(newSlice)
 }
 
-func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.ValidatorSetChangePacketData, ack channeltypes.Acknowledgement) error {
+// OnRecvVSCMaturedPacket handles a VSCMatured packet
+func (k Keeper) OnRecvVSCMaturedPacket(
+	ctx sdk.Context,
+	packet channeltypes.Packet,
+	data ccv.VSCMaturedPacketData,
+) exported.Acknowledgement {
+	// get the ID of the consumer chain mapped to this channel ID
 	chainID, ok := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !ok {
-		return sdkerrors.Wrapf(ccv.ErrInvalidConsumerChain, "chain ID doesn't exist for channel ID: %s", packet.DestinationChannel)
+		nack := channeltypes.NewErrorAcknowledgement(
+			sdkerrors.Wrapf(
+				ccv.ErrInvalidConsumerChain,
+				"chain ID doesn't exist for channel ID: %s", packet.DestinationChannel,
+			).Error(),
+		)
+		return &nack
 	}
 
+	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
 	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
 
 	for _, unbondingOp := range unbondingOps {
@@ -60,7 +73,8 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			// Attempt to complete unbonding in staking module
 			err := k.stakingKeeper.UnbondingCanComplete(ctx, unbondingOp.Id)
 			if err != nil {
-				return err
+				nack := channeltypes.NewErrorAcknowledgement(err.Error())
+				return &nack
 			}
 			// Delete unbonding op
 			k.DeleteUnbondingOp(ctx, unbondingOp.Id)
@@ -71,6 +85,21 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 
 	// clean up index
 	k.DeleteUnbondingOpIndex(ctx, chainID, data.ValsetUpdateId)
+
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	return ack
+}
+
+func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
+	if err := ack.GetError(); err != "" {
+		// packet was sent to a non-established channel
+		if err != sdkerrors.Wrap(
+			channeltypes.ErrInvalidChannelState,
+			packet.DestinationChannel,
+		).Error() {
+			return fmt.Errorf(err)
+		}
+	}
 
 	return nil
 }
@@ -132,8 +161,8 @@ func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 	k.IncrementValidatorSetUpdateId(ctx)
 }
 
-// OnRecvPacket slashes and jails the given validator in the packet data
-func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
+// OnRecvSlashPacket slashes and jails the given validator in the packet data
+func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
 	// check that the channel is established
 	chainID, ok := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !ok {

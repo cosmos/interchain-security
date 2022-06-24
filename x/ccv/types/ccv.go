@@ -19,12 +19,34 @@ func (vsc ValidatorSetChangePacketData) ValidateBasic() error {
 	if len(vsc.ValidatorUpdates) == 0 {
 		return sdkerrors.Wrap(ErrInvalidPacketData, "validator updates cannot be empty")
 	}
+	if vsc.ValsetUpdateId == 0 {
+		return sdkerrors.Wrap(ErrInvalidPacketData, "valset update id cannot be equal to zero")
+	}
 	return nil
 }
 
 func (vsc ValidatorSetChangePacketData) GetBytes() []byte {
 	valUpdateBytes := ModuleCdc.MustMarshalJSON(&vsc)
 	return valUpdateBytes
+}
+
+func NewVSCMaturedPacketData(valUpdateID uint64) VSCMaturedPacketData {
+	return VSCMaturedPacketData{
+		ValsetUpdateId: valUpdateID,
+	}
+}
+
+// ValidateBasic is used for validating the VSCMatured packet data.
+func (mat VSCMaturedPacketData) ValidateBasic() error {
+	if mat.ValsetUpdateId == 0 {
+		return sdkerrors.Wrap(ErrInvalidPacketData, "vscId cannot be equal to zero")
+	}
+	return nil
+}
+
+func (mat VSCMaturedPacketData) GetBytes() []byte {
+	bytes := ModuleCdc.MustMarshalJSON(&mat)
+	return bytes
 }
 
 func NewSlashPacketData(validator abci.Validator, valUpdateId uint64, infractionType stakingtypes.InfractionType) SlashPacketData {
