@@ -36,7 +36,7 @@ func (s *ProviderTestSuite) TestStakingHooks2() {
 
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 
-	origTime := s.ctx.BlockTime()
+	origTime := s.providerCtx().BlockTime()
 
 	// delegate bondAmt and undelegate 1/2 of it
 	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
@@ -51,7 +51,7 @@ func (s *ProviderTestSuite) TestStakingHooks2() {
 	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
 
 	// Get validator update created in Endblock to use in reconstructing packet
-	valUpdates := s.providerChain.App.GetStakingKeeper().GetValidatorUpdates(s.providerCtx())
+	valUpdates := s.providerChain.App.(*appProvider.App).StakingKeeper.GetValidatorUpdates(s.providerCtx())
 
 	// Get current blocktime
 	oldBlockTime := s.providerCtx().BlockTime()
@@ -106,7 +106,7 @@ func (s *ProviderTestSuite) TestStakingHooks1() {
 
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 
-	origTime := s.ctx.BlockTime()
+	origTime := s.providerCtx().BlockTime()
 
 	// delegate bondAmt and undelegate 1/2 of it
 	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 2)
@@ -121,7 +121,7 @@ func (s *ProviderTestSuite) TestStakingHooks1() {
 	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
 
 	// Get validator update created in Endblock to use in reconstructing packet
-	valUpdates := s.providerChain.App.GetStakingKeeper().GetValidatorUpdates(s.providerCtx())
+	valUpdates := s.providerChain.App.(*appProvider.App).StakingKeeper.GetValidatorUpdates(s.providerCtx())
 
 	// Get current blocktime
 	oldBlockTime := s.providerCtx().BlockTime()
@@ -178,7 +178,7 @@ func (s *ProviderTestSuite) TestUnbondingEdgeCase() {
 
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 
-	origTime := s.ctx.BlockTime()
+	origTime := s.providerCtx().BlockTime()
 
 	// delegate bondAmt and undelegate all of it
 	initBalance, valsetUpdateID := bondAndUnbond(s, delAddr, bondAmt, 1)
@@ -203,7 +203,7 @@ func (s *ProviderTestSuite) TestUnbondingEdgeCase() {
 	s.Require().NotNil(commit, "did not find packet commitment")
 
 	// Get validator update created in Endblock to use in reconstructing packet
-	valUpdates := s.providerChain.App.GetStakingKeeper().GetValidatorUpdates(s.providerCtx())
+	valUpdates := s.providerChain.App.(*appProvider.App).StakingKeeper.GetValidatorUpdates(s.providerCtx())
 
 	// Get current blocktime
 	oldBlockTime := s.providerCtx().BlockTime()
@@ -249,7 +249,7 @@ func (s *ProviderTestSuite) TestUnbondingEdgeCase() {
 // Advance time so that provider's unbonding op completes
 // Check that unbonding has completed in provider staking
 func (s *ProviderTestSuite) TestUnbondingNoConsumer() {
-	origTime := s.ctx.BlockTime()
+	origTime := s.providerCtx().BlockTime()
 
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
@@ -287,7 +287,7 @@ func bondAndUnbond(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int
 
 	// INITIAL BOND
 	// Bond some tokens on provider to change validator powers
-	shares, err := s.providerChain.App.GetStakingKeeper().Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+	shares, err := s.providerChain.App.(*appProvider.App).StakingKeeper.Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
 	s.Require().NoError(err)
 
 	// Check that the correct number of tokens were taken out of the delegator's account
@@ -295,7 +295,7 @@ func bondAndUnbond(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int
 
 	// UNDELEGATE
 	// Undelegate half
-	_, err = s.providerChain.App.GetStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, shares.QuoInt64(shareDiv))
+	_, err = s.providerChain.App.(*appProvider.App).StakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, shares.QuoInt64(shareDiv))
 	s.Require().NoError(err)
 
 	// Check that the tokens have not been returned yet
@@ -309,23 +309,27 @@ func bondAndUnbond(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int
 
 func endProviderUnbondingPeriod(s *ProviderTestSuite, origTime time.Time) sdk.Context {
 	// - End provider unbonding period
-	providerCtx := s.providerCtx().WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
+	sk := s.providerChain.App.(*appProvider.App).StakingKeeper
+	unbondingPeriod := sk.UnbondingTime(s.providerCtx())
+	providerCtx := s.providerCtx().WithBlockTime(origTime.Add(unbondingPeriod).Add(3 * time.Hour))
 	// s.providerChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
-	s.providerChain.App.GetStakingKeeper().BlockValidatorUpdates(providerCtx)
+	sk.BlockValidatorUpdates(providerCtx)
 
 	return providerCtx
 }
 
 func endConsumerUnbondingPeriod(s *ProviderTestSuite, origTime time.Time) {
 	// - End consumer unbonding period
-	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(consumertypes.UnbondingTime).Add(3 * time.Hour))
+	unbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
+	s.Require().True(found)
+	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(unbondingPeriod).Add(3 * time.Hour))
 	// s.consumerChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
 	err := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondMaturePackets(consumerCtx)
 	s.Require().NoError(err)
 }
 
 func checkStakingUnbondingOps(s *ProviderTestSuite, id uint64, found bool, onHold bool) {
-	stakingUnbondingOp, wasFound := GetStakingUnbondingDelegationEntry(s.providerCtx(), s.providerChain.App.GetStakingKeeper(), id)
+	stakingUnbondingOp, wasFound := GetStakingUnbondingDelegationEntry(s.providerCtx(), s.providerChain.App.(*appProvider.App).StakingKeeper, id)
 	s.Require().True(found == wasFound)
 	s.Require().True(onHold == stakingUnbondingOp.UnbondingOnHold)
 }
@@ -344,9 +348,6 @@ func sendValUpdatePacket(s *ProviderTestSuite, valUpdates []abci.ValidatorUpdate
 	// Receive CCV packet on consumer chain
 	err := s.path.EndpointA.RecvPacket(packet)
 	s.Require().NoError(err)
-
-	// update consumer chain hist info
-	s.UpdateConsumerHistInfo(valUpdates)
 
 	return packet, packetData
 }

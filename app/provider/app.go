@@ -659,7 +659,7 @@ func New(
 				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
-			IBCChannelkeeper: app.IBCKeeper.ChannelKeeper,
+			IBCKeeper: app.IBCKeeper,
 		},
 	)
 	if err != nil {
@@ -816,7 +816,7 @@ func (app *App) GetBaseApp() *baseapp.BaseApp {
 }
 
 // GetStakingKeeper implements the TestingApp interface.
-func (app *App) GetStakingKeeper() stakingkeeper.Keeper {
+func (app *App) GetStakingKeeper() ibcclienttypes.StakingKeeper {
 	return app.StakingKeeper
 }
 

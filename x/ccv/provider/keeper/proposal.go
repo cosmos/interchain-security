@@ -15,6 +15,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -107,13 +108,15 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right consumer chain.
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
-	unbondingTime := k.stakingKeeper.UnbondingTime(ctx)
+	// Use the unbonding period on the provider to
+	// compute the unbonding period on the consumer
+	unbondingTime := utils.ComputeConsumerUnbondingPeriod(k.stakingKeeper.UnbondingTime(ctx))
 
 	// create clientstate by getting template client from parameters and filling in zeroed fields from proposal.
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = chainID
 	clientState.LatestHeight = initialHeight
-	clientState.TrustingPeriod = unbondingTime / 2
+	clientState.TrustingPeriod = unbondingTime / utils.TrustingPeriodFraction
 	clientState.UnbondingPeriod = unbondingTime
 
 	// TODO: Allow for current validators to set different keys
@@ -123,7 +126,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHei
 		return err
 	}
 
-	k.SetConsumerClient(ctx, chainID, clientID)
+	k.SetConsumerClientId(ctx, chainID, clientID)
 	consumerGen, err := k.MakeConsumerGenesis(ctx)
 	if err != nil {
 		return err
@@ -145,7 +148,7 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = ctx.ChainID()
 	clientState.LatestHeight = height //(+-1???)
-	clientState.TrustingPeriod = unbondingTime / 2
+	clientState.TrustingPeriod = unbondingTime / utils.TrustingPeriodFraction
 	clientState.UnbondingPeriod = unbondingTime
 
 	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
@@ -194,6 +197,22 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 	gen.InitialValSet = updates
 
 	return gen, nil
+}
+
+// SetConsumerClientId sets the client ID for the given chain ID
+func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
+}
+
+// GetConsumerClientId returns the client ID for the given chain ID.
+func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool) {
+	store := ctx.KVStore(k.storeKey)
+	clientIdBytes := store.Get(types.ChainToClientKey(chainID))
+	if clientIdBytes == nil {
+		return "", false
+	}
+	return string(clientIdBytes), true
 }
 
 // SetPendingClientInfo sets the initial height for the given timestamp and chain ID

@@ -49,9 +49,13 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 		ValidatorUpdates: pendingChanges,
 	})
 
-	// Save unbonding time and packet
-	unbondingTime := ctx.BlockTime().Add(types.UnbondingTime)
-	k.SetUnbondingTime(ctx, packet.Sequence, uint64(unbondingTime.UnixNano()))
+	// Save maturity time and packet
+	unbondingPeriod, found := k.GetUnbondingTime(ctx)
+	if !found {
+		panic("the unbonding period is not set on the consumer chain")
+	}
+	maturityTime := ctx.BlockTime().Add(unbondingPeriod)
+	k.SetPacketMaturityTime(ctx, packet.Sequence, uint64(maturityTime.UnixNano()))
 	k.SetUnbondingPacket(ctx, packet.Sequence, packet)
 
 	// set height to VSC id mapping
@@ -70,8 +74,8 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 // packets that have finished unbonding.
 func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 	store := ctx.KVStore(k.storeKey)
-	unbondingIterator := sdk.KVStorePrefixIterator(store, []byte(types.UnbondingTimePrefix))
-	defer unbondingIterator.Close()
+	maturityIterator := sdk.KVStorePrefixIterator(store, []byte(types.PacketMaturityTimePrefix))
+	defer maturityIterator.Close()
 
 	currentTime := uint64(ctx.BlockTime().UnixNano())
 
@@ -84,9 +88,9 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
 	}
 
-	for unbondingIterator.Valid() {
-		sequence := types.GetSequenceFromUnbondingTimeKey(unbondingIterator.Key())
-		if currentTime > binary.BigEndian.Uint64(unbondingIterator.Value()) {
+	for maturityIterator.Valid() {
+		sequence := types.GetSequenceFromPacketMaturityTimeKey(maturityIterator.Key())
+		if currentTime > binary.BigEndian.Uint64(maturityIterator.Value()) {
 			// write successful ack and delete unbonding information
 			packet, err := k.GetUnbondingPacket(ctx, sequence)
 			if err != nil {
@@ -94,12 +98,12 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 			}
 			ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 			k.channelKeeper.WriteAcknowledgement(ctx, channelCap, packet, ack)
-			k.DeleteUnbondingTime(ctx, sequence)
+			k.DeletePacketMaturityTime(ctx, sequence)
 			k.DeleteUnbondingPacket(ctx, sequence)
 		} else {
 			break
 		}
-		unbondingIterator.Next()
+		maturityIterator.Next()
 	}
 	return nil
 }

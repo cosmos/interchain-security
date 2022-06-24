@@ -169,6 +169,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	blockHeight := uint64(ctx.BlockHeight())
 	vID := am.keeper.GetHeightValsetUpdateID(ctx, blockHeight)
 	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight+1, vID)
+
+	am.keeper.TrackHistoricalInfo(ctx)
 }
 
 // EndBlock implements the AppModule interface
@@ -302,6 +304,7 @@ func (am AppModule) OnChanOpenAck(
 	ctx sdk.Context,
 	portID,
 	channelID string,
+	counterpartyChannelID string,
 	counterpartyMetadata string,
 ) error {
 	// ensure provider channel has already been created

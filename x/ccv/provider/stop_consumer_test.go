@@ -24,7 +24,7 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
 	s.Require().NoError(err)
 
-	validator, found := s.providerChain.App.GetStakingKeeper().GetValidator(s.providerCtx(), valAddr)
+	validator, found := s.providerChain.App.(*appProvider.App).StakingKeeper.GetValidator(s.providerCtx(), valAddr)
 	s.Require().True(found)
 
 	// get delegator address
@@ -56,7 +56,7 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 		},
 		{
 			func(suite *ProviderTestSuite) error {
-				testShares, err = s.providerChain.App.GetStakingKeeper().Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+				testShares, err = s.providerChain.App.(*appProvider.App).StakingKeeper.Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
 				return err
 			},
 		},
@@ -64,7 +64,7 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 			func(suite *ProviderTestSuite) error {
 				for i := 0; i < ubdOpsNum; i++ {
 					// undelegate one quarter of the shares
-					_, err := s.providerChain.App.GetStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, testShares.QuoInt64(int64(ubdOpsNum)))
+					_, err := s.providerChain.App.(*appProvider.App).StakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, testShares.QuoInt64(int64(ubdOpsNum)))
 					if err != nil {
 						return err
 					}
@@ -240,7 +240,7 @@ func (s *ProviderTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd 
 				for _, ubdID := range ubdIndex {
 					_, found = providerKeeper.GetUnbondingOp(s.providerCtx(), ubdIndex[ubdID])
 					s.Require().False(found)
-					ubd, _ := s.providerChain.App.GetStakingKeeper().GetUnbondingDelegationByUnbondingId(s.providerCtx(), ubdIndex[ubdID])
+					ubd, _ := s.providerChain.App.(*appProvider.App).StakingKeeper.GetUnbondingDelegationByUnbondingId(s.providerCtx(), ubdIndex[ubdID])
 					s.Require().False(ubd.Entries[ubdID].UnbondingOnHold)
 				}
 				return true
