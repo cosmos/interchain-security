@@ -23,4 +23,5 @@ var (
 	ErrInvalidHandshakeMetadata = sdkerrors.Register(ModuleName, 16, "invalid provider handshake metadata")
 	ErrChannelNotFound          = sdkerrors.Register(ModuleName, 17, "channel not found")
 	ErrClientNotFound           = sdkerrors.Register(ModuleName, 18, "client not found")
+	ErrInvalidHistoricalInfo    = sdkerrors.Register(ModuleName, 19, "invalid historical info")
 )
