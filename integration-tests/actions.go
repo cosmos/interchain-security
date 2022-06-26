@@ -26,7 +26,7 @@ func (s System) sendTokens(
 	verbose bool,
 ) {
 	binaryName := s.chainConfigs[action.chain].binaryName
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, binaryName,
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, binaryName,
 
 		"tx", "bank", "send",
 		s.validatorConfigs[action.from].delAddress,
@@ -39,7 +39,11 @@ func (s System) sendTokens(
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
-	).CombinedOutput()
+	)
+	if verbose {
+		fmt.Println("sendTokens cmd:", cmd.String())
+	}
+	bz, err := cmd.CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
@@ -444,17 +448,19 @@ func (s System) addIbcChannel(
 	action AddIbcChannelAction,
 	verbose bool,
 ) {
-	// // hermes create channel ibc-1 ibc-2 --port-a transfer --port-b transfer -o unordered
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
 		"create", "channel",
-		s.chainConfigs[action.chainA].chainId,
+		"--order", action.order,
+		"--channel-version", s.containerConfig.ccvVersion,
+		"--connection-a", "connection-"+fmt.Sprint(action.connectionA),
 		"--port-a", action.portA,
 		"--port-b", action.portB,
-		"-o", action.order,
-		"--channel-version", s.containerConfig.ccvVersion,
-		// "--connection-a",
-		"connection-"+fmt.Sprint(action.connectionA),
+		s.chainConfigs[action.chainA].chainId,
 	)
+
+	if verbose {
+		fmt.Println("addIbcChannel cmd:", cmd.String())
+	}
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -493,9 +499,13 @@ func (s System) relayPackets(
 	verbose bool,
 ) {
 	// hermes clear packets ibc0 transfer channel-13
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes", "clear", "packets",
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes", "clear", "packets",
 		s.chainConfigs[action.chain].chainId, action.port, "channel-"+fmt.Sprint(action.channel),
-	).CombinedOutput()
+	)
+	if verbose {
+		log.Println("relayPackets cmd:", cmd.String())
+	}
+	bz, err := cmd.CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
