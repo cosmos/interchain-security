@@ -290,14 +290,20 @@ func (s System) startConsumerChain(
 	action StartConsumerChainAction,
 	verbose bool,
 ) {
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.consumerChain].binaryName,
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.providerChain].binaryName,
 
 		"query", "provider", "consumer-genesis",
 		s.chainConfigs[action.consumerChain].chainId,
 
 		`--node`, s.getValidatorNode(action.providerChain, s.getValidatorNum(action.providerChain)),
 		`-o`, `json`,
-	).CombinedOutput()
+	)
+
+	if verbose {
+		log.Println("startConsumerChain cmd: ", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))

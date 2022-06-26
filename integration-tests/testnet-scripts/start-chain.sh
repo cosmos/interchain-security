@@ -103,17 +103,19 @@ do
     fi
 
     # Make a gentx (this command also sets up validator state on disk even if we are not going to use the gentx for anything)
-    STAKE_AMOUNT=$(echo "$VALIDATORS" | jq -r ".[$i].stake")
-    $BIN gentx validator$VAL_ID "$STAKE_AMOUNT" \
-        --home /$CHAIN_ID/validator$VAL_ID \
-        --keyring-backend test \
-        --moniker validator$VAL_ID \
-        --chain-id=$CHAIN_ID
-    
-    # Copy gentxs to the first validator for possible future collection. 
-    # Obviously we don't need to copy the first validator's gentx to itself
-    if [ $VAL_ID != $FIRST_VAL_ID ]; then
-        cp /$CHAIN_ID/validator$VAL_ID/config/gentx/* /$CHAIN_ID/validator$FIRST_VAL_ID/config/gentx/
+    if [ "$SKIP_GENTX" = "false" ] ; then 
+        STAKE_AMOUNT=$(echo "$VALIDATORS" | jq -r ".[$i].stake")
+        $BIN gentx validator$VAL_ID "$STAKE_AMOUNT" \
+            --home /$CHAIN_ID/validator$VAL_ID \
+            --keyring-backend test \
+            --moniker validator$VAL_ID \
+            --chain-id=$CHAIN_ID
+
+        # Copy gentxs to the first validator for possible future collection. 
+        # Obviously we don't need to copy the first validator's gentx to itself
+        if [ $VAL_ID != $FIRST_VAL_ID ]; then
+            cp /$CHAIN_ID/validator$VAL_ID/config/gentx/* /$CHAIN_ID/validator$FIRST_VAL_ID/config/gentx/
+        fi
     fi
 
     # Modify tendermint configs of validator
