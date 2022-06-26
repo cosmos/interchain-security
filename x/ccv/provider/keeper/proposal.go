@@ -15,7 +15,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccverrors "github.com/cosmos/interchain-security/x/ccv/types/errors"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -219,8 +219,7 @@ func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bo
 // SetPendingClientInfo sets the initial height for the given timestamp and chain ID
 func (k Keeper) SetPendingClientInfo(ctx sdk.Context, clientInfo *types.CreateConsumerChainProposal) error {
 	if clientInfo == nil {
-		return sdkerrors.Wrap(ccverrors.ErrInvalidProposal, "clientInfo must not be nil")
-
+		return sdkerrors.Wrap(ccvtypes.ErrInvalidProposal, "clientInfo must not be nil")
 	}
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(clientInfo)
