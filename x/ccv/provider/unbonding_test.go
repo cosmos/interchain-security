@@ -266,7 +266,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	s.providerChain.NextBlock()
 
 	// check that the VSC packet is stored in state as pending
-	pendingVSCs := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+	pendingVSCs, _ := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().True(len(pendingVSCs) == 1, "no pending VSC packet found")
 
 	// delegate again to create another VSC packet
@@ -276,7 +276,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	s.providerChain.NextBlock()
 
 	// check that the VSC packet is stored in state as pending
-	pendingVSCs = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+	pendingVSCs, _ = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().True(len(pendingVSCs) == 2, "only one pending VSC packet found")
 
 	// increment time so that the unbonding period ends on the provider

@@ -215,8 +215,8 @@ func (suite *KeeperTestSuite) TestPendingVSCs() {
 
 	chainID := "consumer"
 
-	packets := app.ProviderKeeper.GetPendingVSCs(ctx, chainID)
-	suite.Require().Nil(packets)
+	_, found := app.ProviderKeeper.GetPendingVSCs(ctx, chainID)
+	suite.Require().False(found)
 
 	pks := ibcsimapp.CreateTestPubKeys(4)
 	var ppks [4]tmprotocrypto.PublicKey
@@ -241,8 +241,8 @@ func (suite *KeeperTestSuite) TestPendingVSCs() {
 	}
 	app.ProviderKeeper.SetPendingVSCs(ctx, chainID, packetList)
 
-	packets = app.ProviderKeeper.GetPendingVSCs(ctx, chainID)
-	suite.Require().NotNil(packets)
+	packets, found := app.ProviderKeeper.GetPendingVSCs(ctx, chainID)
+	suite.Require().True(found)
 	suite.Require().Len(packets, 2)
 
 	newPacket := ccv.ValidatorSetChangePacketData{
@@ -257,8 +257,8 @@ func (suite *KeeperTestSuite) TestPendingVSCs() {
 	suite.Require().True(emptied[len(emptied)-1].ValsetUpdateId == 3)
 	suite.Require().True(emptied[len(emptied)-1].GetValidatorUpdates()[0].PubKey.String() == ppks[3].String())
 
-	packets = app.ProviderKeeper.GetPendingVSCs(ctx, chainID)
-	suite.Require().Nil(packets)
+	_, found = app.ProviderKeeper.GetPendingVSCs(ctx, chainID)
+	suite.Require().False(found)
 }
 
 func (suite *KeeperTestSuite) TestInitHeight() {

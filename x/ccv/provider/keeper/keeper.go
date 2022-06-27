@@ -641,18 +641,17 @@ func (k Keeper) SetPendingVSCs(ctx sdk.Context, chainID string, packets []ccv.Va
 }
 
 // GetPendingVSCs returns the list of pending ValidatorSetChange packets stored under chain ID
-func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) []ccv.ValidatorSetChangePacketData {
+func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) (packets []ccv.ValidatorSetChangePacketData, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingVSCsKey(chainID))
 	if bz == nil {
-		return nil
+		return nil, false
 	}
 	buf := bytes.NewBuffer(bz)
 
 	var data [][]byte
 	json.NewDecoder(buf).Decode(&data)
 
-	var packets []ccv.ValidatorSetChangePacketData
 	for _, pdata := range data {
 		var p ccv.ValidatorSetChangePacketData
 		err := p.Unmarshal(pdata)
@@ -662,26 +661,28 @@ func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) []ccv.ValidatorS
 		packets = append(packets, p)
 	}
 
-	return packets
+	return packets, true
 }
 
 // AppendPendingVSC adds the given ValidatorSetChange packet to the list
 // of pending ValidatorSetChange packets stored under chain ID
 func (k Keeper) AppendPendingVSC(ctx sdk.Context, chainID string, packet ccv.ValidatorSetChangePacketData) {
-	packets := k.GetPendingVSCs(ctx, chainID)
+	packets, _ := k.GetPendingVSCs(ctx, chainID)
+	// append works also on a nil list
 	packets = append(packets, packet)
 	k.SetPendingVSCs(ctx, chainID, packets)
 }
 
-// EmptyPendingVSC empties and returns the list of pending ValidatorSetChange packets for chain ID
+// EmptyPendingVSC empties and returns the list of pending ValidatorSetChange packets for chain ID (if it exists)
 func (k Keeper) EmptyPendingVSC(ctx sdk.Context, chainID string) (packets []ccv.ValidatorSetChangePacketData) {
-	packets = k.GetPendingVSCs(ctx, chainID)
-	if len(packets) < 1 {
-		return
+	packets, found := k.GetPendingVSCs(ctx, chainID)
+	if !found {
+		// there is no list of pending ValidatorSetChange packets
+		return nil
 	}
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.PendingVSCsKey(chainID))
-	return
+	return packets
 }
 
 // GetLockUnbondingOnTimeout returns the mapping from the given consumer chain ID to a boolean value indicating whether
