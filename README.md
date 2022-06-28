@@ -10,7 +10,7 @@ NOTE: At the moment the testing app may not be functional, please rely on the IB
 
 ## Contributing
 
-Git [pre-commit](https://pre-commit.com/index.html#usage) hooks are used scan and format the code on commit. See [the tools used](./scripts/install_tools.sh) and [how to run them or modify the hooks](./.pre-commit-config.yaml)
+Git [pre-commit](https://pre-commit.com/index.html#usage) hooks are used scan and format the code on commit. See [the tools used](./scripts/install_tools.sh) and [how to run them or modify the hooks](./.pre-commit-config.yaml). Skip the hooks with `git commit --no-verify` ([stackoverflow](https://stackoverflow.com/a/7230886/8346628)), if really necessary.
 
 ## Get started
 
