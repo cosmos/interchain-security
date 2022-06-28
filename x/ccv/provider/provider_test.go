@@ -187,71 +187,23 @@ func TestProviderTestSuite(t *testing.T) {
 
 func (s *ProviderTestSuite) TestPacketRoundtrip() {
 	s.SetupCCVChannel()
-	providerCtx := s.providerChain.GetContext()
-	providerStakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
-
-	origTime := s.providerCtx().BlockTime()
-	bondAmt := sdk.NewInt(1000000)
-
-	delAddr := s.providerChain.SenderAccount.GetAddress()
-
-	// Choose a validator, and get its address and data structure into the correct types
-	tmValidator := s.providerChain.Vals.Validators[0]
-	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
-	s.Require().NoError(err)
-	validator, found := providerStakingKeeper.GetValidator(s.providerCtx(), valAddr)
-	s.Require().True(found)
 
 	// Bond some tokens on provider to change validator powers
-	_, err = providerStakingKeeper.Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
-	s.Require().NoError(err)
-
-	// Save valset update ID to reconstruct packet
-	valUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	bondAmt := sdk.NewInt(1000000)
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	delegate(s, delAddr, bondAmt)
 
 	// Send CCV packet to consumer
-	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
+	s.providerChain.NextBlock()
 
-	// Get validator update created in Endblock to use in reconstructing packet
-	valUpdates := providerStakingKeeper.GetValidatorUpdates(s.providerCtx())
+	// Relay 1 VSC packet from provider to consumer
+	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
 
-	// commit block on provider chain and update consumer chain's client
-	oldBlockTime := s.providerCtx().BlockTime()
-	s.coordinator.CommitBlock(s.providerChain)
-	s.path.EndpointA.UpdateClient()
+	// Increment time so that the unbonding period ends on the provider
+	incrementTimeByUnbondingPeriod(s, true)
 
-	// Reconstruct packet
-	packetData := types.NewValidatorSetChangePacketData(valUpdates, valUpdateID, nil)
-	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, providertypes.PortID, s.path.EndpointB.ChannelID,
-		consumertypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
-
-	// Receive CCV packet on consumer chain
-	err = s.path.EndpointA.RecvPacket(packet)
-	s.Require().NoError(err)
-
-	// - End provider unbonding period
-	providerCtx = providerCtx.WithBlockTime(origTime.Add(providerStakingKeeper.UnbondingTime(s.providerCtx())).Add(3 * time.Hour))
-	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
-
-	// - End consumer unbonding period
-	unbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
-	s.Require().True(found)
-	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(unbondingPeriod).Add(3 * time.Hour))
-	// TODO: why doesn't this work: s.consumerChain.App.EndBlock(abci.RequestEndBlock{})
-	err = s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondMaturePackets(consumerCtx)
-	s.Require().NoError(err)
-
-	// commit consumer chain and update provider chain client
-	s.coordinator.CommitBlock(s.consumerChain)
-
-	err = s.path.EndpointB.UpdateClient()
-	s.Require().NoError(err)
-
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-
-	err = s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
-	s.Require().NoError(err)
+	// Relay 1 VSCMatured packet from consumer to provider
+	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 1)
 }
 
 func (s *ProviderTestSuite) providerCtx() sdk.Context {
