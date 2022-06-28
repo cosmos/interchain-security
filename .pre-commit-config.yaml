@@ -6,15 +6,25 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.3.0
     hooks:
-      - check-merge-conflict
+      - id: check-merge-conflict
+      - id: check-added-large-files
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
+  - repo: local
+    hooks:
+      - id: install-tools
+        name: "install tools"
+        entry: "./scripts/install_tools.sh"
+        language: script
+        require_serial: true
+        description: "Installs tools needed for go static analysis hooks"
   - repo: https://github.com/dnephin/pre-commit-golang
     rev: master
     hooks:
       - id: go-fmt
       - id: go-vet
+        args: [./...]
       - id: go-imports
       - id: go-cyclo
         args: [-over=15]
