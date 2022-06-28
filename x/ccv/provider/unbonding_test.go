@@ -1,8 +1,6 @@
 package provider_test
 
 import (
-	"bytes"
-	"fmt"
 	"strings"
 	"time"
 
@@ -11,18 +9,12 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
-	"github.com/cosmos/interchain-security/x/ccv/types"
-
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // TestUndelegationProviderFirst checks that an unbonding operation completes
@@ -356,29 +348,8 @@ func relayAllCommittedPackets(
 	}
 }
 
-func endProviderUnbondingPeriod(s *ProviderTestSuite, origTime time.Time) sdk.Context {
-	// - End provider unbonding period
-	sk := s.providerChain.App.(*appProvider.App).StakingKeeper
-	unbondingPeriod := sk.UnbondingTime(s.providerCtx())
-	providerCtx := s.providerCtx().WithBlockTime(origTime.Add(unbondingPeriod).Add(3 * time.Hour))
-	// s.providerChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
-	sk.BlockValidatorUpdates(providerCtx)
-
-	return providerCtx
-}
-
-func endConsumerUnbondingPeriod(s *ProviderTestSuite, origTime time.Time) {
-	// - End consumer unbonding period
-	unbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
-	s.Require().True(found)
-	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(unbondingPeriod).Add(3 * time.Hour))
-	// s.consumerChain.App.EndBlock(abci.RequestEndBlock{}) // <- this doesn't work because we can't modify the ctx
-	err := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondMaturePackets(consumerCtx)
-	s.Require().NoError(err)
-}
-
 func checkStakingUnbondingOps(s *ProviderTestSuite, id uint64, found bool, onHold bool) {
-	stakingUnbondingOp, wasFound := GetStakingUnbondingDelegationEntry(s.providerCtx(), s.providerChain.App.(*appProvider.App).StakingKeeper, id)
+	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerChain.App.(*appProvider.App).StakingKeeper, id)
 	s.Require().True(found == wasFound)
 	s.Require().True(onHold == stakingUnbondingOp.UnbondingOnHold)
 }
@@ -393,47 +364,7 @@ func checkCCVUnbondingOp(s *ProviderTestSuite, providerCtx sdk.Context, chainID 
 	}
 }
 
-func sendValUpdatePacket(s *ProviderTestSuite, valUpdates []abci.ValidatorUpdate, valUpdateId uint64, blockTime time.Time, packetSequence uint64) (channeltypes.Packet, types.ValidatorSetChangePacketData) {
-	packetData := types.NewValidatorSetChangePacketData(valUpdates, valUpdateId, nil)
-	timeout := uint64(ccv.GetTimeoutTimestamp(blockTime).UnixNano())
-	packet := channeltypes.NewPacket(packetData.GetBytes(), packetSequence, providertypes.PortID, s.path.EndpointB.ChannelID,
-		consumertypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
-
-	// Receive CCV packet on consumer chain
-	err := s.path.EndpointA.RecvPacket(packet)
-	s.Require().NoError(err)
-
-	return packet, packetData
-}
-
-func commitProviderBlock(s *ProviderTestSuite) {
-	s.coordinator.CommitBlock(s.providerChain)
-	err := s.path.EndpointA.UpdateClient()
-	s.Require().NoError(err)
-}
-
-func commitConsumerBlock(s *ProviderTestSuite) {
-	// commit consumer chain and update provider chain client
-	s.coordinator.CommitBlock(s.consumerChain)
-	err := s.path.EndpointB.UpdateClient()
-	s.Require().NoError(err)
-}
-
-func sendValUpdateAck(s *ProviderTestSuite, providerCtx sdk.Context, packet channeltypes.Packet, packetData types.ValidatorSetChangePacketData) {
-	// TODO: I have commented out the below code because i do not know how to
-	// get s.path.EndpointB.AcknowledgePacket to see the correct time. Instead, I am calling the
-	// CCV module's keeper function directly. This is not as complete of a test.
-	// If we have a more robust time system at some point, use s.path.EndpointB.AcknowledgePacket again.
-
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	// err := s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
-	// s.Require().NoError(err)
-
-	err := s.providerChain.App.(*appProvider.App).ProviderKeeper.OnAcknowledgementPacket(providerCtx, packet, ack)
-	s.Require().NoError(err)
-}
-
-func GetStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
+func getStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
 	stakingUbd, found := k.GetUnbondingDelegationByUnbondingId(ctx, id)
 
 	for _, entry := range stakingUbd.Entries {
@@ -445,47 +376,4 @@ func GetStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper,
 	}
 
 	return stakingUnbondingOp, found
-}
-
-// RelayPacket attempts to relay the packet first on EndpointA and then on EndpointB
-// if EndpointA does not contain a packet commitment for that packet. An error is returned
-// if a relay step fails or the packet commitment does not exist on either endpoint.
-func (s *ProviderTestSuite) RelayPacketWithoutAck(packet channeltypes.Packet) error {
-	pc := s.path.EndpointA.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(
-		s.path.EndpointA.Chain.GetContext(),
-		packet.GetSourcePort(),
-		packet.GetSourceChannel(),
-		packet.GetSequence(),
-	)
-	if bytes.Equal(pc, channeltypes.CommitPacket(s.path.EndpointA.Chain.App.AppCodec(), packet)) {
-		// packet found, relay from A to B
-		s.path.EndpointB.UpdateClient()
-
-		err := s.path.EndpointB.RecvPacket(packet)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	pc = s.path.EndpointB.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(
-		s.path.EndpointB.Chain.GetContext(),
-		packet.GetSourcePort(),
-		packet.GetSourceChannel(),
-		packet.GetSequence(),
-	)
-	if bytes.Equal(pc, channeltypes.CommitPacket(s.path.EndpointB.Chain.App.AppCodec(), packet)) {
-		// packet found, relay B to A
-		s.path.EndpointA.UpdateClient()
-
-		err := s.path.EndpointA.RecvPacket(packet)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	return fmt.Errorf("packet commitment does not exist on either endpoint for provided packet")
 }
