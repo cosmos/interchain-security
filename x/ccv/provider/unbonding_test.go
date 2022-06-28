@@ -1,8 +1,6 @@
 package provider_test
 
 import (
-	"bytes"
-	"fmt"
 	"strings"
 	"time"
 
@@ -11,18 +9,12 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
-	"github.com/cosmos/interchain-security/x/ccv/types"
-
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // TestUndelegationProviderFirst checks that an unbonding operation completes
@@ -675,47 +667,4 @@ func GetStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper,
 	}
 
 	return stakingUnbondingOp, found
-}
-
-// RelayPacket attempts to relay the packet first on EndpointA and then on EndpointB
-// if EndpointA does not contain a packet commitment for that packet. An error is returned
-// if a relay step fails or the packet commitment does not exist on either endpoint.
-func (s *ProviderTestSuite) RelayPacketWithoutAck(packet channeltypes.Packet) error {
-	pc := s.path.EndpointA.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(
-		s.path.EndpointA.Chain.GetContext(),
-		packet.GetSourcePort(),
-		packet.GetSourceChannel(),
-		packet.GetSequence(),
-	)
-	if bytes.Equal(pc, channeltypes.CommitPacket(s.path.EndpointA.Chain.App.AppCodec(), packet)) {
-		// packet found, relay from A to B
-		s.path.EndpointB.UpdateClient()
-
-		err := s.path.EndpointB.RecvPacket(packet)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	pc = s.path.EndpointB.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(
-		s.path.EndpointB.Chain.GetContext(),
-		packet.GetSourcePort(),
-		packet.GetSourceChannel(),
-		packet.GetSequence(),
-	)
-	if bytes.Equal(pc, channeltypes.CommitPacket(s.path.EndpointB.Chain.App.AppCodec(), packet)) {
-		// packet found, relay B to A
-		s.path.EndpointA.UpdateClient()
-
-		err := s.path.EndpointA.RecvPacket(packet)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	return fmt.Errorf("packet commitment does not exist on either endpoint for provided packet")
 }
