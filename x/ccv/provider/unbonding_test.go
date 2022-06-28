@@ -12,6 +12,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/utils"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -435,9 +436,6 @@ func (s *ProviderTestSuite) TestUndelegationEdgeCase() {
 // 	- no undelegations can complete, even if the provider unbonding period elapses
 // 	- all the VSC packets are stored in state as pending
 func (s *ProviderTestSuite) TestUndelegationDuringInit() {
-	// start CCV channel setup
-	s.StartSetupCCVChannel()
-
 	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
@@ -465,7 +463,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	s.Require().True(len(pendingVSCs) == 2, "only one pending VSC packet found")
 
 	// increment time so that the unbonding period ends on the provider
-	incrementTimeByProviderUnbondingPeriod(s)
+	incrementTimeByUnbondingPeriod(s, true)
 	// - check that the unbonding op is still there and onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
 	// - check that unbonding has not yet completed, i.e., the initBalance
@@ -473,55 +471,17 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	// the delegator's account
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt).Sub(bondAmt)))
 
-	// complete CCV channel setup; cannot use CompleteSetupCCVChannel()
-	// since we need the timeoutTimestamp of the VSC packet that is sent once
-	// the CCV channel is established on the provider side
-	err := s.path.EndpointA.ChanOpenAck()
-	s.Require().NoError(err)
-	err = s.path.EndpointB.ChanOpenConfirm()
-	s.Require().NoError(err)
-	timeoutBlockTime := s.providerCtx().BlockTime().Add(-ibctesting.TimeIncrement).UTC()
-	s.path.EndpointA.UpdateClient()
-	// - check that the VSC packet is committed in the provider's state
-	commitments := s.providerChain.App.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
-		s.providerCtx(),
-		providertypes.PortID,
-		s.path.EndpointB.ChannelID,
-	)
-	s.Require().True(len(commitments) == 2, "did not find packet commitment")
+	// complete CCV channel setup
+	s.SetupCCVChannel()
 
-	// relay VSC packet
-	// - create packet
-	commitment := commitments[0]
-	packet := channeltypes.NewPacket(
-		pendingVSCs[0].GetBytes(),
-		commitment.Sequence,
-		providertypes.PortID,
-		s.path.EndpointB.ChannelID,
-		consumertypes.PortID,
-		s.path.EndpointA.ChannelID,
-		clienttypes.Height{},
-		uint64(ccv.GetTimeoutTimestamp(timeoutBlockTime).UnixNano()),
-	)
-	// - relay the packet
-	err = s.RelayPacketWithoutAck(packet)
-	s.Require().NoError(err)
+	// relay VSC packets from provider to consumer
+	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 2)
 
 	// increment time so that the unbonding period ends on the consumer
-	incrementTimeByConsumerUnbondingPeriod(s)
+	incrementTimeByUnbondingPeriod(s, false)
 
-	// send VSC packet acknowledgement to provider
-	ackBytes, found := s.consumerChain.App.GetIBCKeeper().ChannelKeeper.GetPacketAcknowledgement(
-		s.consumerCtx(),
-		consumertypes.PortID,
-		s.path.EndpointA.ChannelID,
-		commitment.Sequence,
-	)
-	s.Require().True(found, "packet ack not found")
-	expectedAck := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	s.Require().Equal(channeltypes.CommitAcknowledgement(expectedAck.Acknowledgement()), ackBytes, "unexpected packet ack")
-	err = s.path.EndpointB.AcknowledgePacket(packet, expectedAck.Acknowledgement())
-	s.Require().NoError(err)
+	// relay VSCMatured packets from consumer to provider
+	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 2)
 
 	// check that the unbonding operation completed
 	// - check that ccv unbonding op has been deleted
@@ -589,17 +549,27 @@ func undelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAdd
 	return valsetUpdateID
 }
 
-// incrementTimeByProviderUnbondingPeriod increments the overall time by
-// the unbonding period on the provider; note that it is expected for this
-// period to be larger than the unbonding period on the consumer
-func incrementTimeByProviderUnbondingPeriod(s *ProviderTestSuite) {
+// incrementTimeByUnbondingPeriod increments the overall time by
+// 	- if provider == true, the unbonding period on the provider;
+//	- otherwise, the unbonding period on the consumer.
+// Note that it is expected for the provider unbonding period
+// to be one day larger than the consumer unbonding period.
+func incrementTimeByUnbondingPeriod(s *ProviderTestSuite, provider bool) {
 	// Get unboding period from staking keeper
 	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
 	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
 	s.Require().True(found)
-	s.Require().True(consumerUnbondingPeriod == providerUnbondingPeriod-24*time.Hour)
+	expectedUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
+	s.Require().True(expectedUnbondingPeriod == providerUnbondingPeriod-24*time.Hour)
+	s.Require().True(consumerUnbondingPeriod == expectedUnbondingPeriod)
+	var jumpPeriod time.Duration
+	if provider {
+		jumpPeriod = providerUnbondingPeriod
+	} else {
+		jumpPeriod = consumerUnbondingPeriod
+	}
 	// Make sure the clients do not expire
-	jumpPeriod := providerUnbondingPeriod/4 + time.Hour
+	jumpPeriod = jumpPeriod/4 + time.Hour
 	for i := 0; i < 4; i++ {
 		s.coordinator.IncrementTimeBy(jumpPeriod)
 		// Update the provider client on the consumer
@@ -609,25 +579,31 @@ func incrementTimeByProviderUnbondingPeriod(s *ProviderTestSuite) {
 	}
 }
 
-// incrementTimeByConsumerUnbondingPeriod increments the overall time by
-// the unbonding period on the consumer; note that it is expected for this
-// period to be one day shorter than the unbonding period on the provider
-func incrementTimeByConsumerUnbondingPeriod(s *ProviderTestSuite) {
-	// Get unboding period from consumer keeper
-	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
-	s.Require().True(found)
-	// Check that the unboding period is ideed one day less than
-	// the unbonding period on the provider
-	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
-	s.Require().True(consumerUnbondingPeriod == providerUnbondingPeriod-24*time.Hour)
-	// Make sure the clients do not expire
-	jumpPeriod := consumerUnbondingPeriod/4 + time.Hour
-	for i := 0; i < 4; i++ {
-		s.coordinator.IncrementTimeBy(jumpPeriod)
-		// Update the provider client on the consumer
-		s.path.EndpointA.UpdateClient()
-		// Update the consumer client on the provider
-		s.path.EndpointB.UpdateClient()
+// relayAllCommittedPackets relays all committed packets from `srcChain` on `path`
+func relayAllCommittedPackets(
+	s *ProviderTestSuite,
+	srcChain *ibctesting.TestChain,
+	path *ibctesting.Path,
+	portID string,
+	channelID string,
+	expectedPackets int,
+) {
+	// check that the packets are committed in  state
+	commitments := srcChain.App.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
+		srcChain.GetContext(),
+		portID,
+		channelID,
+	)
+	s.Require().True(len(commitments) == expectedPackets, "did not find packet commitments")
+
+	// relay all packets from srcChain to counterparty
+	for _, commitment := range commitments {
+		// - get packets
+		packet, found := srcChain.GetSentPacket(commitment.Sequence)
+		s.Require().True(found, "did not find sent packet")
+		// - relay the packet
+		err := path.RelayPacket(packet)
+		s.Require().NoError(err)
 	}
 }
 
