@@ -1,0 +1,24 @@
+# install pre-commit `brew install pre-commit`
+# install hooks to git `pre-commit install`
+# update the hooks `pre-commit autoupdate`
+# to run the hooks `pre-commit run --all-files`
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - check-merge-conflict
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: master
+    hooks:
+      - id: go-fmt
+      - id: go-vet
+      - id: go-imports
+      - id: go-cyclo
+        args: [-over=15]
+      - id: validate-toml
+      - id: go-critic
+      - id: go-build
+      - id: go-mod-tidy
