@@ -136,11 +136,12 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 }
 
 // IterateConsumerChains iterates over all of the consumer chains that the provider module controls.
-// It calls the provided callback function which takes in a chainID and channelID and returns
+// It calls the provided callback function which takes in a chainID and returns
 // a stop boolean which will stop the iteration.
 func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.ChainToChannelKeyPrefix+"/"))
+	keyPrefix := types.ChainToClientKeyPrefix + "/"
+	iterator := sdk.KVStorePrefixIterator(store, []byte(keyPrefix))
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -148,8 +149,8 @@ func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, 
 	}
 
 	for ; iterator.Valid(); iterator.Next() {
-		// remove prefix + "/" from key to retrieve chainID
-		chainID := string(iterator.Key()[len(types.ChainToChannelKeyPrefix)+1:])
+		// remove prefix from key to retrieve chainID
+		chainID := string(iterator.Key()[len(keyPrefix):])
 
 		stop := cb(ctx, chainID)
 		if stop {
@@ -621,6 +622,66 @@ func (k Keeper) DeleteInitChainHeight(ctx sdk.Context, chainID string) {
 	store.Delete(types.InitChainHeightKey(chainID))
 }
 
+// GetPendingVSCs returns the list of pending ValidatorSetChange packets stored under chain ID
+func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) (packets []ccv.ValidatorSetChangePacketData, found bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.PendingVSCsKey(chainID))
+	if bz == nil {
+		return nil, false
+	}
+	buf := bytes.NewBuffer(bz)
+
+	var data [][]byte
+	json.NewDecoder(buf).Decode(&data)
+
+	for _, pdata := range data {
+		var p ccv.ValidatorSetChangePacketData
+		err := p.Unmarshal(pdata)
+		if err != nil {
+			panic("failed to unmarshal ValidatorSetChange packet data")
+		}
+		packets = append(packets, p)
+	}
+
+	return packets, true
+}
+
+// AppendPendingVSC adds the given ValidatorSetChange packet to the list
+// of pending ValidatorSetChange packets stored under chain ID
+func (k Keeper) AppendPendingVSC(ctx sdk.Context, chainID string, packet ccv.ValidatorSetChangePacketData) {
+	packets, _ := k.GetPendingVSCs(ctx, chainID)
+	// append works also on a nil list
+	packets = append(packets, packet)
+
+	store := ctx.KVStore(k.storeKey)
+	var data [][]byte
+	for _, p := range packets {
+		pdata, err := p.Marshal()
+		if err != nil {
+			panic("failed to marshal ValidatorSetChange packet data")
+		}
+		data = append(data, pdata)
+	}
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(data)
+	if err != nil {
+		panic("failed to encode json")
+	}
+	store.Set(types.PendingVSCsKey(chainID), buf.Bytes())
+}
+
+// EmptyPendingVSC empties and returns the list of pending ValidatorSetChange packets for chain ID (if it exists)
+func (k Keeper) EmptyPendingVSC(ctx sdk.Context, chainID string) (packets []ccv.ValidatorSetChangePacketData) {
+	packets, found := k.GetPendingVSCs(ctx, chainID)
+	if !found {
+		// there is no list of pending ValidatorSetChange packets
+		return nil
+	}
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.PendingVSCsKey(chainID))
+	return packets
+}
+
 // GetLockUnbondingOnTimeout returns the mapping from the given consumer chain ID to a boolean value indicating whether
 // the unbonding operation funds should be locked on CCV channel timeout
 func (k Keeper) GetLockUnbondingOnTimeout(ctx sdk.Context, chainID string) bool {
@@ -641,20 +702,24 @@ func (k Keeper) DeleteLockUnbondingOnTimeout(ctx sdk.Context, chainID string) {
 	store.Delete(types.LockUnbondingOnTimeoutKey(chainID))
 }
 
-// SetConsumerClient sets the client ID for the given chain ID
-func (k Keeper) SetConsumerClient(ctx sdk.Context, chainID, clientID string) {
+// SetConsumerClientId sets the client ID for the given chain ID
+func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
 }
 
-// GetConsumerClient returns the clientID for the given chain ID
-func (k Keeper) GetConsumerClient(ctx sdk.Context, chainID string) string {
+// GetConsumerClientId returns the client ID for the given chain ID.
+func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	return string(store.Get(types.ChainToClientKey(chainID)))
+	clientIdBytes := store.Get(types.ChainToClientKey(chainID))
+	if clientIdBytes == nil {
+		return "", false
+	}
+	return string(clientIdBytes), true
 }
 
-// DeleteConsumerClient deletes the client ID for the given chain ID
-func (k Keeper) DeleteConsumerClient(ctx sdk.Context, chainID string) {
+// DeleteConsumerClientId removes from the store the clientID for the given chainID.
+func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ChainToClientKey(chainID))
 }

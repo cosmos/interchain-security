@@ -50,7 +50,7 @@ func (k Keeper) StopConsumerChainProposal(ctx sdk.Context, p *types.StopConsumer
 func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, closeChan bool) (err error) {
 
 	// clean up states
-	k.DeleteConsumerClient(ctx, chainID)
+	k.DeleteConsumerClientId(ctx, chainID)
 	k.DeleteLockUnbondingOnTimeout(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
@@ -197,22 +197,6 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 	gen.InitialValSet = updates
 
 	return gen, nil
-}
-
-// SetConsumerClientId sets the client ID for the given chain ID
-func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
-}
-
-// GetConsumerClientId returns the client ID for the given chain ID.
-func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
-	clientIdBytes := store.Get(types.ChainToClientKey(chainID))
-	if clientIdBytes == nil {
-		return "", false
-	}
-	return string(clientIdBytes), true
 }
 
 // SetPendingClientInfo sets the initial height for the given timestamp and chain ID

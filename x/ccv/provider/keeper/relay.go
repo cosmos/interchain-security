@@ -15,25 +15,13 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 func (k Keeper) SendValidatorSetChangePacket(
 	ctx sdk.Context,
-	chainID string,
-	valUpdates []abci.ValidatorUpdate,
-	valUpdateID uint64,
-	SlashAcks []string,
+	channelID string,
+	packetData ccv.ValidatorSetChangePacketData,
 ) error {
-	// construct validator set change packet data
-	packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, SlashAcks)
-
-	// get the id of the CCV channel to the chain with chainID
-	channelID, ok := k.GetChainToChannel(ctx, chainID)
-	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for chain ID: %s", chainID)
-	}
-
 	// send packet over IBC
 	return utils.SendIBCPacket(
 		ctx,
@@ -112,14 +100,33 @@ func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 	// get the validator updates from the staking module
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
+		// check whether there is an established CCV channel to this consumer chain
+		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
+			// send all the pending ValidatorSetChangePackets to the consumer chain
+			pendingPackets := k.EmptyPendingVSC(ctx, chainID)
+			for _, data := range pendingPackets {
+				k.SendValidatorSetChangePacket(ctx, channelID, data)
+			}
+		}
+
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations
 		// w/o changes in the voting power of the validators in the validator set
 		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
-			k.SendValidatorSetChangePacket(ctx, chainID, valUpdates, valUpdateID, k.EmptySlashAcks(ctx, chainID))
+			// construct validator set change packet data
+			packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.EmptySlashAcks(ctx, chainID))
+
+			// check whether there is an established CCV channel to this consumer chain
+			if channelID, found := k.GetChainToChannel(ctx, chainID); found {
+				// send this validator set change packet data to the consumer chain
+				k.SendValidatorSetChangePacket(ctx, channelID, packetData)
+			} else {
+				// store the packet data to be sent once the CCV channel is established
+				k.AppendPendingVSC(ctx, chainID, packetData)
+			}
 		}
-		return false
+		return false // do not stop the iteration
 	})
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
 	k.IncrementValidatorSetUpdateId(ctx)

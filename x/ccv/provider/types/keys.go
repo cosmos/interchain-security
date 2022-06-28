@@ -71,6 +71,9 @@ const (
 	// this consumer chain was initialized
 	InitChainHeightPrefix = "initchainheight"
 
+	// PendingVSCsPrefix is the key prefix that will store pending ValidatorSetChangePacket data
+	PendingVSCsPrefix = "pendingvscs"
+
 	// LockUnbondingOnTimeout is the key prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
 	LockUnbondingOnTimeoutPrefix = "LockUnbondingOnTimeout"
 )
@@ -162,6 +165,12 @@ func SlashAcksKey(chainID string) []byte {
 // InitChainHeightKey returns the key under which the block height for a given chain ID is stored
 func InitChainHeightKey(chainID string) []byte {
 	return []byte(fmt.Sprintf("%s/%s", InitChainHeightPrefix, chainID))
+}
+
+// PendingVSCsKey returns the key under which
+// pending ValidatorSetChangePacket data is stored for a given chain ID
+func PendingVSCsKey(chainID string) []byte {
+	return []byte(fmt.Sprintf("%s/%s", PendingVSCsPrefix, chainID))
 }
 
 func LockUnbondingOnTimeoutKey(chainID string) []byte {
