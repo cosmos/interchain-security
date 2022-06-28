@@ -239,7 +239,9 @@ func (suite *KeeperTestSuite) TestPendingVSCs() {
 			ValsetUpdateId: 2,
 		},
 	}
-	app.ProviderKeeper.SetPendingVSCs(ctx, chainID, packetList)
+	for _, packet := range packetList {
+		app.ProviderKeeper.AppendPendingVSC(ctx, chainID, packet)
+	}
 
 	packets, found := app.ProviderKeeper.GetPendingVSCs(ctx, chainID)
 	suite.Require().True(found)
