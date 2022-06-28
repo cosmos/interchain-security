@@ -79,10 +79,7 @@ func SendIBCPacket(
 		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
 		clienttypes.Height{}, uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
 	)
-	if err := channelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
-		return nil
-	}
-	return nil
+	return channelKeeper.SendPacket(ctx, channelCap, packet)
 }
 
 // ComputeConsumerUnbondingPeriod computes the unbonding period on the consumer

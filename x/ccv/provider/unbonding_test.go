@@ -301,8 +301,8 @@ func incrementTimeByUnbondingPeriod(s *ProviderTestSuite, provider bool) {
 	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
 	s.Require().True(found)
 	expectedUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
-	s.Require().True(expectedUnbondingPeriod == providerUnbondingPeriod-24*time.Hour)
-	s.Require().True(consumerUnbondingPeriod == expectedUnbondingPeriod)
+	s.Require().Equal(expectedUnbondingPeriod+24*time.Hour, providerUnbondingPeriod, "unexpected provider unbonding period")
+	s.Require().Equal(expectedUnbondingPeriod, consumerUnbondingPeriod, "unexpected consumer unbonding period")
 	var jumpPeriod time.Duration
 	if provider {
 		jumpPeriod = providerUnbondingPeriod
@@ -314,9 +314,11 @@ func incrementTimeByUnbondingPeriod(s *ProviderTestSuite, provider bool) {
 	for i := 0; i < 4; i++ {
 		s.coordinator.IncrementTimeBy(jumpPeriod)
 		// Update the provider client on the consumer
-		s.path.EndpointA.UpdateClient()
+		err := s.path.EndpointA.UpdateClient()
+		s.Require().NoError(err)
 		// Update the consumer client on the provider
-		s.path.EndpointB.UpdateClient()
+		err = s.path.EndpointB.UpdateClient()
+		s.Require().NoError(err)
 	}
 }
 
@@ -335,7 +337,7 @@ func relayAllCommittedPackets(
 		portID,
 		channelID,
 	)
-	s.Require().True(len(commitments) == expectedPackets, "did not find packet commitments")
+	s.Require().Equal(expectedPackets, len(commitments), "did not find packet commitments")
 
 	// relay all packets from srcChain to counterparty
 	for _, commitment := range commitments {
