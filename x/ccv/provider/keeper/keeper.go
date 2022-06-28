@@ -140,7 +140,8 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 // a stop boolean which will stop the iteration.
 func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.ChainToClientKeyPrefix+"/"))
+	keyPrefix := types.ChainToClientKeyPrefix + "/"
+	iterator := sdk.KVStorePrefixIterator(store, []byte(keyPrefix))
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -148,8 +149,8 @@ func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, 
 	}
 
 	for ; iterator.Valid(); iterator.Next() {
-		// remove prefix + "/" from key to retrieve chainID
-		chainID := string(iterator.Key()[len(types.ChainToClientKeyPrefix)+1:])
+		// remove prefix from key to retrieve chainID
+		chainID := string(iterator.Key()[len(keyPrefix):])
 
 		stop := cb(ctx, chainID)
 		if stop {
@@ -621,8 +622,37 @@ func (k Keeper) DeleteInitChainHeight(ctx sdk.Context, chainID string) {
 	store.Delete(types.InitChainHeightKey(chainID))
 }
 
-// SetPendingVSCs sets in store the list of pending ValidatorSetChange packets under chain ID
-func (k Keeper) SetPendingVSCs(ctx sdk.Context, chainID string, packets []ccv.ValidatorSetChangePacketData) {
+// GetPendingVSCs returns the list of pending ValidatorSetChange packets stored under chain ID
+func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) (packets []ccv.ValidatorSetChangePacketData, found bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.PendingVSCsKey(chainID))
+	if bz == nil {
+		return nil, false
+	}
+	buf := bytes.NewBuffer(bz)
+
+	var data [][]byte
+	json.NewDecoder(buf).Decode(&data)
+
+	for _, pdata := range data {
+		var p ccv.ValidatorSetChangePacketData
+		err := p.Unmarshal(pdata)
+		if err != nil {
+			panic("failed to unmarshal ValidatorSetChange packet data")
+		}
+		packets = append(packets, p)
+	}
+
+	return packets, true
+}
+
+// AppendPendingVSC adds the given ValidatorSetChange packet to the list
+// of pending ValidatorSetChange packets stored under chain ID
+func (k Keeper) AppendPendingVSC(ctx sdk.Context, chainID string, packet ccv.ValidatorSetChangePacketData) {
+	packets, _ := k.GetPendingVSCs(ctx, chainID)
+	// append works also on a nil list
+	packets = append(packets, packet)
+
 	store := ctx.KVStore(k.storeKey)
 	var data [][]byte
 	for _, p := range packets {
@@ -640,48 +670,16 @@ func (k Keeper) SetPendingVSCs(ctx sdk.Context, chainID string, packets []ccv.Va
 	store.Set(types.PendingVSCsKey(chainID), buf.Bytes())
 }
 
-// GetPendingVSCs returns the list of pending ValidatorSetChange packets stored under chain ID
-func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) []ccv.ValidatorSetChangePacketData {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingVSCsKey(chainID))
-	if bz == nil {
-		return nil
-	}
-	buf := bytes.NewBuffer(bz)
-
-	var data [][]byte
-	json.NewDecoder(buf).Decode(&data)
-
-	var packets []ccv.ValidatorSetChangePacketData
-	for _, pdata := range data {
-		var p ccv.ValidatorSetChangePacketData
-		err := p.Unmarshal(pdata)
-		if err != nil {
-			panic("failed to unmarshal ValidatorSetChange packet data")
-		}
-		packets = append(packets, p)
-	}
-
-	return packets
-}
-
-// AppendPendingVSC adds the given ValidatorSetChange packet to the list
-// of pending ValidatorSetChange packets stored under chain ID
-func (k Keeper) AppendPendingVSC(ctx sdk.Context, chainID string, packet ccv.ValidatorSetChangePacketData) {
-	packets := k.GetPendingVSCs(ctx, chainID)
-	packets = append(packets, packet)
-	k.SetPendingVSCs(ctx, chainID, packets)
-}
-
-// EmptyPendingVSC empties and returns the list of pending ValidatorSetChange packets for chain ID
+// EmptyPendingVSC empties and returns the list of pending ValidatorSetChange packets for chain ID (if it exists)
 func (k Keeper) EmptyPendingVSC(ctx sdk.Context, chainID string) (packets []ccv.ValidatorSetChangePacketData) {
-	packets = k.GetPendingVSCs(ctx, chainID)
-	if len(packets) < 1 {
-		return
+	packets, found := k.GetPendingVSCs(ctx, chainID)
+	if !found {
+		// there is no list of pending ValidatorSetChange packets
+		return nil
 	}
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.PendingVSCsKey(chainID))
-	return
+	return packets
 }
 
 // GetLockUnbondingOnTimeout returns the mapping from the given consumer chain ID to a boolean value indicating whether
