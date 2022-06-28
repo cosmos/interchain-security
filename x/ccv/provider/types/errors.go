@@ -6,6 +6,6 @@ import (
 
 // Provider sentinel errors
 var (
-	ErrInvalidProposal      = sdkerrors.Register(ModuleName, 1, "invalid create consumer chain proposal")
+	ErrInvalidProposal   = sdkerrors.Register(ModuleName, 1, "invalid create consumer chain proposal")
 	ErrUnknownConsumerChain = sdkerrors.Register(ModuleName, 2, "no consumer chain with this chain id")
 )

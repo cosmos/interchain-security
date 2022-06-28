@@ -4,8 +4,8 @@ _Lastest update: June 20th, 2022_
 
 This document endeavors to inform the wider Cosmos community about plans and priorities for the work on Interchain Security (ICS). This roadmap should be read as a high-level guide, rather than a commitment to schedules and deliverables. The degree of specificity is inversely proportional to the timeline. We will update this document periodically to reflect the status and plans.
 
-For more details, take a look at the [ICS project board](https://github.com/orgs/cosmos/projects/25).
-
+For more details, take a look at the [ICS project board](https://github.com/orgs/cosmos/projects/25). 
+ 
 ## Q2 - 2022
 
 - Finalize core ICS features that enable a provider chain to provide security to multiple consumer chains.
@@ -33,13 +33,13 @@ For more details, take a look at the [ICS project board](https://github.com/orgs
   - https://github.com/cosmos/interchain-security/issues/67
 - Integrate with Cosmos Hub (Gaia)
   - https://github.com/cosmos/interchain-security/issues/131
-- Incentivized testnet
+- Incentivized testnet 
 - External audit
-- Integration test
+- Integration test 
 
 ---
 
-- Create a governance-enabled consumer chain that enables a native token to be staked for governance.
+- Create a governance-enabled consumer chain that enables a native token to be staked for governance. 
   - https://github.com/cosmos/interchain-security/issues/141
   - https://github.com/cosmos/interchain-security/issues/82
 - Create a CosmWasm-enabled consumer chain.
@@ -54,3 +54,4 @@ For more details, take a look at the [ICS project board](https://github.com/orgs
 
 - Fix remaining issues
   - https://github.com/cosmos/interchain-security/issues
+

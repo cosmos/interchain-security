@@ -69,7 +69,7 @@ func (s System) runStep(step Step, verbose bool) {
 var startDockerScript = `#!/bin/bash
 # If -e is not set then if the build fails, it will use the old container, resulting in a very confusing debugging situation
 # Setting -e makes it error out if the build fails
-set -eux
+set -eux 
 
 CONTAINER_NAME=%s
 INSTANCE_NAME=%s

@@ -2,7 +2,7 @@
 
 EXTENDS Integers, Sequences, FiniteSets
 
-VARIABLES
+VARIABLES 
     staking_ubdes,
     staking_ubdeIdCounter,
     ccv_ubdes,
@@ -43,7 +43,7 @@ TypeOK ==
 \* - All consumer chains should eventually finish unbonding all valset updates
 \* - No ubdes should be left with unbonded = false
 \* - No ubde should have unbonded = true before its valset has been unbonded on all consumers
-\* - If all acks have been receieved,
+\* - If all acks have been receieved, 
 
 NoUnbondedProviderBeforeConsumer ==
     \E ubde \in { u \in staking_ubdes: u.unbonded }:
@@ -58,7 +58,7 @@ Consumer_ReceiveValsetChangePacket(consumer, valsetUpdateId) ==
 Staking_CompleteStoppedUnbonding(ubdeId) ==
     \* find the staking_ubde with this ubdeId. If it is `onHold`, complete unbonding by setting
     \* `unbonded` to true. This represents giving the user's coins back etc.
-    staking_ubdes' = {
+    staking_ubdes' = { 
         IF ubde.onHold THEN
             [ ubde EXCEPT !.unbonded = TRUE ]
         ELSE
@@ -70,14 +70,14 @@ CCV_BeforeUBDECompleteHook(id) ==
     Cardinality({ ubde \in ccv_ubdes: ubde.ubdeId = id }) > 0
 
 CCV_UBDECreatedHook(id) ==
-    /\ ccv_ubdes' = ccv_ubdes \union {[
-            ubdeId |-> id,
-            valsetUpdateId |-> ccv_valsetIdCounter,
-            unbondingConsumerChains |-> ConsumerChains
+    /\ ccv_ubdes' = ccv_ubdes \union {[ 
+            ubdeId |-> id, 
+            valsetUpdateId |-> ccv_valsetIdCounter, 
+            unbondingConsumerChains |-> ConsumerChains 
         ]}
 
 CCV_ReceiveValsetChangeAck(consumer, unbondedValsetId) ==
-    \* each ccv_ubde which has this `unbondedValsetId` as its `valsetId` has `consumer` removed from its
+    \* each ccv_ubde which has this `unbondedValsetId` as its `valsetId` has `consumer` removed from its 
     \* `unbondingConsumerChains` list
     LET new_ccv_ubdes == {
         IF ubde.valsetUpdateId = unbondedValsetId THEN
@@ -156,7 +156,7 @@ Staking_SendValsetChangePacket ==
         \* Send packet to all consumer chains
         \E c \in ConsumerChains:
             Consumer_ReceiveValsetChangePacket(c, ccv_valsetIdCounter)
-
+        
         \* increment valset id counter
         /\ ccv_valsetIdCounter' = ccv_valsetIdCounter + 1
         /\ UNCHANGED  <<

@@ -2,13 +2,13 @@
 
 
 
-export default {
-
+export default { 
+  
 }
 
 
 function load(mod, fullns) {
-    return function init(store) {
+    return function init(store) {        
         if (store.hasModule([fullns])) {
             throw new Error('Duplicate module name detected: '+ fullns)
         }else{

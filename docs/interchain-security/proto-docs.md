@@ -8,40 +8,40 @@
     - [SlashPacketData](#interchain_security.ccv.v1.SlashPacketData)
     - [UnbondingOp](#interchain_security.ccv.v1.UnbondingOp)
     - [ValidatorSetChangePacketData](#interchain_security.ccv.v1.ValidatorSetChangePacketData)
-
+  
     - [Status](#interchain_security.ccv.v1.Status)
-
+  
 - [interchain_security/ccv/consumer/v1/consumer.proto](#interchain_security/ccv/consumer/v1/consumer.proto)
     - [CrossChainValidator](#interchain_security.ccv.consumer.v1.CrossChainValidator)
     - [LastTransmissionBlockHeight](#interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight)
     - [Params](#interchain_security.ccv.consumer.v1.Params)
     - [SlashRequest](#interchain_security.ccv.consumer.v1.SlashRequest)
-
+  
 - [interchain_security/ccv/consumer/v1/genesis.proto](#interchain_security/ccv/consumer/v1/genesis.proto)
     - [GenesisState](#interchain_security.ccv.consumer.v1.GenesisState)
     - [UnbondingSequence](#interchain_security.ccv.consumer.v1.UnbondingSequence)
-
+  
 - [interchain_security/ccv/provider/v1/provider.proto](#interchain_security/ccv/provider/v1/provider.proto)
     - [CreateConsumerChainProposal](#interchain_security.ccv.provider.v1.CreateConsumerChainProposal)
     - [HandshakeMetadata](#interchain_security.ccv.provider.v1.HandshakeMetadata)
     - [Params](#interchain_security.ccv.provider.v1.Params)
-
+  
 - [interchain_security/ccv/provider/v1/genesis.proto](#interchain_security/ccv/provider/v1/genesis.proto)
     - [ConsumerState](#interchain_security.ccv.provider.v1.ConsumerState)
     - [GenesisState](#interchain_security.ccv.provider.v1.GenesisState)
-
+  
 - [interchain_security/ccv/provider/v1/query.proto](#interchain_security/ccv/provider/v1/query.proto)
     - [QueryConsumerGenesisRequest](#interchain_security.ccv.provider.v1.QueryConsumerGenesisRequest)
     - [QueryConsumerGenesisResponse](#interchain_security.ccv.provider.v1.QueryConsumerGenesisResponse)
-
+  
     - [Query](#interchain_security.ccv.provider.v1.Query)
-
+  
 - [interchain_security/ccv/v1/query.proto](#interchain_security/ccv/v1/query.proto)
     - [Query](#interchain_security.ccv.v1.Query)
-
+  
 - [interchain_security/ccv/v1/tx.proto](#interchain_security/ccv/v1/tx.proto)
     - [Msg](#interchain_security.ccv.v1.Msg)
-
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -57,7 +57,7 @@
 
 ### SlashPacketData
 This packet is sent from the consumer chain to the provider chain.
-The acknowledgement will be sent asynchrounously when the jailing
+The acknowledgement will be sent asynchrounously when the jailing 
 will be started on the provider chain.
 
 
@@ -515,3 +515,4 @@ Msg defines the Msg service.
 | <a name="bool" /> bool |  | bool | boolean | boolean | bool | bool | boolean | TrueClass/FalseClass |
 | <a name="string" /> string | A string must always contain UTF-8 encoded or 7-bit ASCII text. | string | String | str/unicode | string | string | string | String (UTF-8) |
 | <a name="bytes" /> bytes | May contain any arbitrary sequence of bytes. | string | ByteString | str | []byte | ByteString | string | String (ASCII-8BIT) |
+
