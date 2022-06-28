@@ -4,7 +4,7 @@
 # to run the hooks `pre-commit run --all-files`
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+    rev: v4.3.0
     hooks:
       - id: check-merge-conflict
       - id: check-added-large-files
@@ -25,7 +25,7 @@ repos:
         description: "Installs tools needed for go static analysis hooks"
 
   - repo: https://github.com/dnephin/pre-commit-golang
-    rev: master
+    rev: v0.5.0
     hooks:
       - id: go-fmt
       - id: go-imports

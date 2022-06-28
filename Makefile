@@ -7,7 +7,7 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-pd
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cd
 
-test: 
+test:
 	go test ./...
 
 BUILD_TARGETS := build
@@ -121,4 +121,3 @@ proto-update-deps:
 	@perl -i -l -p -e 'print "option go_package = \"github.com/confio/ics23/go\";" if $$. == 4' $(CONFIO_TYPES)/proofs.proto
 
 .PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
-

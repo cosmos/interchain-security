@@ -15,7 +15,7 @@ import "ibc/lightclients/tendermint/v1/tendermint.proto";
 message CreateConsumerChainProposal {
     option (gogoproto.goproto_getters)  = false;
     option (gogoproto.goproto_stringer) = false;
-  
+
     // the title of the proposal
     string title = 1;
     // the description of the proposal
@@ -37,9 +37,9 @@ message CreateConsumerChainProposal {
     // Indicates whether the outstanding unbonding operations should be released
     // in case of a channel time-outs. When set to true, a governance proposal
     // on the provider chain would be necessary to release the locked funds.
-    bool lock_unbonding_on_timeout = 8;   
+    bool lock_unbonding_on_timeout = 8;
   }
- 
+
 // StopConsumerProposal is a governance proposal on the provider chain to stop a consumer chain.
 // If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
 // operation funds are released if the LockUnbondingOnTimeout parameter is set to false for the consumer chain ID.
@@ -53,7 +53,7 @@ message CreateConsumerChainProposal {
     // the time on the provider chain at which all validators are responsible to stop their consumer chain validator node
     google.protobuf.Timestamp stop_time = 4
     [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
- } 
+ }
 
 // Params defines the parameters for CCV Provider module
 message Params {

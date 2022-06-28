@@ -64,11 +64,11 @@ do
         --home /$CHAIN_ID/validator$VAL_ID \
         --keyring-backend test \
         --recover > /dev/null
-    
+
     # Give validators their initial token allocations
     # move the genesis in
     mv /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$VAL_ID/config/genesis.json
-    
+
     # give this validator some money
     ALLOCATION=$(echo "$VALIDATORS" | jq -r ".[$i].allocation")
     $BIN add-genesis-account validator$VAL_ID $ALLOCATION \
@@ -109,15 +109,15 @@ do
         --keyring-backend test \
         --moniker validator$VAL_ID \
         --chain-id=$CHAIN_ID
-    
-    # Copy gentxs to the first validator for possible future collection. 
+
+    # Copy gentxs to the first validator for possible future collection.
     # Obviously we don't need to copy the first validator's gentx to itself
     if [ $VAL_ID != $FIRST_VAL_ID ]; then
         cp /$CHAIN_ID/validator$VAL_ID/config/gentx/* /$CHAIN_ID/validator$FIRST_VAL_ID/config/gentx/
     fi
 
     # Modify tendermint configs of validator
-    if [ "$TENDERMINT_CONFIG_TRANSFORM" != "" ] ; then 
+    if [ "$TENDERMINT_CONFIG_TRANSFORM" != "" ] ; then
         #'s/foo/bar/;s/abc/def/'
         sed -i "$TENDERMINT_CONFIG_TRANSFORM" $CHAIN_ID/validator$VAL_ID/config/config.toml
     fi
@@ -128,11 +128,11 @@ done
 
 # COLLECT GENTXS IF WE ARE STARTING A NEW CHAIN
 
-if [ "$SKIP_GENTX" = "false" ] ; then 
+if [ "$SKIP_GENTX" = "false" ] ; then
     # make the final genesis.json
     $BIN collect-gentxs --home /$CHAIN_ID/validator$FIRST_VAL_ID
 
-    # and copy it to the root 
+    # and copy it to the root
     cp /$CHAIN_ID/validator$FIRST_VAL_ID/config/genesis.json /$CHAIN_ID/genesis.json
 
     # put the now final genesis.json into the correct folders

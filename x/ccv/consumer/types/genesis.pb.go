@@ -5,14 +5,15 @@ package types
 
 import (
 	fmt "fmt"
+	io "io"
+	math "math"
+	math_bits "math/bits"
+
 	types2 "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	types "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types1 "github.com/tendermint/tendermint/abci/types"
-	io "io"
-	math "math"
-	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

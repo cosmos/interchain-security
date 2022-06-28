@@ -19,4 +19,3 @@ jobs:
 
       - name: Integration tests
         run: go run ./integration-tests/...
-
