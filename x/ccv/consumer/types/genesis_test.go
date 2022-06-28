@@ -176,18 +176,9 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		{
 			"valid restart consumer genesis state: maturing packets",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
-				types.MaturingVSCPacket{
-					1,
-					uint64(time.Now().UnixNano()),
-				},
-				types.MaturingVSCPacket{
-					3,
-					uint64(time.Now().UnixNano()),
-				},
-				types.MaturingVSCPacket{
-					5,
-					uint64(time.Now().UnixNano()),
-				},
+				{1, uint64(time.Now().UnixNano())},
+				{3, uint64(time.Now().UnixNano())},
+				{5, uint64(time.Now().UnixNano())},
 			}, valUpdates, params),
 			false,
 		},
@@ -204,20 +195,14 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		{
 			"invalid restart consumer genesis state: maturing packet vscId is invalid",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
-				types.MaturingVSCPacket{
-					0,
-					uint64(time.Now().UnixNano()),
-				},
+				{0, uint64(time.Now().UnixNano())},
 			}, valUpdates, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: maturing packet time is invalid",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
-				types.MaturingVSCPacket{
-					1,
-					0,
-				},
+				{1, 0},
 			}, valUpdates, params),
 			true,
 		},
