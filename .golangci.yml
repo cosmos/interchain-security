@@ -1,0 +1,6 @@
+# See https://raw.githubusercontent.com/golangci/golangci-lint/master/.golangci.reference.yml
+
+run:
+  # Timeout for analysis, e.g. 30s, 5m.
+  # Default: 1m
+  timeout: 12m
