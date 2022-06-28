@@ -118,12 +118,12 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 
 	for _, tc := range testCases {
 		ack := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvPacket(suite.ctx, tc.packet, tc.newChanges)
+		suite.Require().NotNil(ack, "invalid test case: %s did not return ack", tc.name)
 
 		if tc.expErrorAck {
-			suite.Require().NotNil(ack, "invalid test case: %s did not return ack", tc.name)
 			suite.Require().False(ack.Success(), "invalid test case: %s did not return an Error Acknowledgment")
 		} else {
-			suite.Require().Nil(ack, "successful packet must send ack asynchronously. case: %s", tc.name)
+			suite.Require().True(ack.Success(), "invalid test case: %s did not return an Success Acknowledgment")
 			providerChannel, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.ctx)
 			suite.Require().True(ok)
 			suite.Require().Equal(tc.packet.DestinationChannel, providerChannel,
