@@ -341,7 +341,7 @@ func (s *ProviderTestSuite) TestUndelegationNoValsetChange() {
 	// Get current blocktime
 	oldBlockTime := s.providerCtx().BlockTime()
 
-	// relay VSC packets from provider to consumer
+	// relay 1 VSC packet from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
 
 	// check that the unbonding is not complete
@@ -350,7 +350,7 @@ func (s *ProviderTestSuite) TestUndelegationNoValsetChange() {
 	// increment time so that the unbonding period ends on the consumer
 	incrementTimeByUnbondingPeriod(s, false)
 
-	// relay VSCMatured packets from consumer to provider
+	// relay 1 VSCMatured packet from consumer to provider
 	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 1)
 
 	// increment time so that the unbonding period ends on the provider
