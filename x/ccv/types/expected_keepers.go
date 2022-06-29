@@ -6,10 +6,10 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -25,11 +25,11 @@ type StakingKeeper interface {
 	GetValidatorUpdates(ctx sdk.Context) []abci.ValidatorUpdate
 	UnbondingCanComplete(ctx sdk.Context, id uint64) error
 	UnbondingTime(ctx sdk.Context) time.Duration
-	GetValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) (validator types.Validator, found bool)
+	GetValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) (validator stakingtypes.Validator, found bool)
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
 	Jail(sdk.Context, sdk.ConsAddress) // jail a validator
-	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec, types.InfractionType)
-	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator types.Validator, found bool)
+	Slash(sdk.Context, sdk.ConsAddress, int64, int64, sdk.Dec, stakingtypes.InfractionType)
+	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
 	PowerReduction(ctx sdk.Context) sdk.Int
 	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
