@@ -60,8 +60,6 @@ func (suite *ProviderTestSuite) SetupTest() {
 		suite.Require().True(bytes.Compare(addr1, addr2) == 0, "validator mismatch")
 	}
 
-	// suite.DisableConsumerDistribution()
-
 	// move both chains to the next block
 	suite.providerChain.NextBlock()
 	suite.consumerChain.NextBlock()
@@ -523,29 +521,6 @@ func (s *ProviderTestSuite) TestSlashPacketAcknowldgement() {
 
 	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, ccv.SlashPacketData{}, channeltypes.NewErrorAcknowledgement("another error"))
 	s.Require().Error(err)
-}
-
-func (s *ProviderTestSuite) DisableConsumerDistribution() {
-	cChain := s.consumerChain
-	cApp := cChain.App.(*appConsumer.App)
-	for i, moduleName := range cApp.MM.OrderBeginBlockers {
-		if moduleName == distrtypes.ModuleName {
-			cApp.MM.OrderBeginBlockers = append(cApp.MM.OrderBeginBlockers[:i], cApp.MM.OrderBeginBlockers[i+1:]...)
-			return
-		}
-	}
-}
-
-func (s *ProviderTestSuite) DisableProviderDistribution() {
-	pChain := s.providerChain
-	pApp := pChain.App.(*appProvider.App)
-	for i, moduleName := range pApp.MM.OrderBeginBlockers {
-		if moduleName == distrtypes.ModuleName {
-			s.providerDistrIndex = i
-			pApp.MM.OrderBeginBlockers = append(pApp.MM.OrderBeginBlockers[:i], pApp.MM.OrderBeginBlockers[i+1:]...)
-			return
-		}
-	}
 }
 
 func (s *ProviderTestSuite) ReenableProviderDistribution() {
