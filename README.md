@@ -1,6 +1,7 @@
 # Interchain Security
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/cosmos/interchain-security)](https://goreportcard.com/report/github.com/cosmos/interchain-security)
+[![Sonar Cloud Status](https://sonarcloud.io/api/project_badges/measure?project=cosmos_interchain-security&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=cosmos_interchain-security)
 
 **interchain-security** houses the code for implementing Interchain Security: https://blog.cosmos.network/interchain-security-is-coming-to-the-cosmos-hub-f144c45fb035. The repo is currently a WIP and targetting v1 of Interchain Security.
 
