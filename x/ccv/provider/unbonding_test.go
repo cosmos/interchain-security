@@ -41,7 +41,7 @@ func (s *ProviderTestSuite) TestUndelegationProviderFirst() {
 	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
 
 	// increment time so that the unbonding period ends on the provider
-	incrementTimeByUnbondingPeriod(s, true)
+	incrementTimeByUnbondingPeriod(s, Provider)
 
 	// check that onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
@@ -49,7 +49,7 @@ func (s *ProviderTestSuite) TestUndelegationProviderFirst() {
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
 	// increment time so that the unbonding period ends on the consumer
-	incrementTimeByUnbondingPeriod(s, false)
+	incrementTimeByUnbondingPeriod(s, Consumer)
 
 	// relay 1 VSCMatured packet from consumer to provider
 	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 1)
@@ -95,7 +95,7 @@ func (s *ProviderTestSuite) TestUndelegationConsumerFirst() {
 	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
 
 	// increment time so that the unbonding period ends on the consumer
-	incrementTimeByUnbondingPeriod(s, false)
+	incrementTimeByUnbondingPeriod(s, Consumer)
 
 	// relay 1 VSCMatured packet from consumer to provider
 	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 1)
@@ -104,7 +104,7 @@ func (s *ProviderTestSuite) TestUndelegationConsumerFirst() {
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
 	// increment time so that the unbonding period ends on the provider
-	incrementTimeByUnbondingPeriod(s, true)
+	incrementTimeByUnbondingPeriod(s, Provider)
 
 	// check that the unbonding operation completed
 	// - check that ccv unbonding op has been deleted
@@ -155,13 +155,13 @@ func (s *ProviderTestSuite) TestUndelegationNoValsetChange() {
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
 	// increment time so that the unbonding period ends on the consumer
-	incrementTimeByUnbondingPeriod(s, false)
+	incrementTimeByUnbondingPeriod(s, Consumer)
 
 	// relay 1 VSCMatured packet from consumer to provider
 	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 1)
 
 	// increment time so that the unbonding period ends on the provider
-	incrementTimeByUnbondingPeriod(s, true)
+	incrementTimeByUnbondingPeriod(s, Provider)
 
 	// check that the unbonding operation completed
 	// - check that ccv unbonding op has been deleted
@@ -203,7 +203,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	s.Require().True(len(pendingVSCs) == 2, "only one pending VSC packet found")
 
 	// increment time so that the unbonding period ends on the provider
-	incrementTimeByUnbondingPeriod(s, true)
+	incrementTimeByUnbondingPeriod(s, Provider)
 	// - check that the unbonding op is still there and onHold is true
 	checkStakingUnbondingOps(s, 1, true, true)
 	// - check that unbonding has not yet completed, i.e., the initBalance
@@ -218,7 +218,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 2)
 
 	// increment time so that the unbonding period ends on the consumer
-	incrementTimeByUnbondingPeriod(s, false)
+	incrementTimeByUnbondingPeriod(s, Consumer)
 
 	// relay VSCMatured packets from consumer to provider
 	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 2)
@@ -289,12 +289,20 @@ func undelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAdd
 	return valsetUpdateID
 }
 
+// ChainType defines the type of chain (either provider or consumer)
+type ChainType int
+
+const (
+	Provider ChainType = iota
+	Consumer
+)
+
 // incrementTimeByUnbondingPeriod increments the overall time by
 // 	- if provider == true, the unbonding period on the provider;
 //	- otherwise, the unbonding period on the consumer.
 // Note that it is expected for the provider unbonding period
 // to be one day larger than the consumer unbonding period.
-func incrementTimeByUnbondingPeriod(s *ProviderTestSuite, provider bool) {
+func incrementTimeByUnbondingPeriod(s *ProviderTestSuite, chainType ChainType) {
 	// Get unboding period from staking keeper
 	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
 	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
@@ -303,7 +311,7 @@ func incrementTimeByUnbondingPeriod(s *ProviderTestSuite, provider bool) {
 	s.Require().Equal(expectedUnbondingPeriod+24*time.Hour, providerUnbondingPeriod, "unexpected provider unbonding period")
 	s.Require().Equal(expectedUnbondingPeriod, consumerUnbondingPeriod, "unexpected consumer unbonding period")
 	var jumpPeriod time.Duration
-	if provider {
+	if chainType == Provider {
 		jumpPeriod = providerUnbondingPeriod
 	} else {
 		jumpPeriod = consumerUnbondingPeriod
