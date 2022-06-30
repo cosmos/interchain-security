@@ -50,7 +50,7 @@ func (s System) runStep(step Step, verbose bool) {
 	case DelegateTokensAction:
 		s.delegateTokens(action, verbose)
 	default:
-		log.Fatal(fmt.Sprintf(`unknown action: %#v`, action))
+		log.Fatalf(fmt.Sprintf(`unknown action: %#v`, action))
 	}
 
 	modelState := step.state
