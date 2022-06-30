@@ -190,7 +190,6 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 }
 
 // OnAcknowledgementPacket handles acknowledgments for sent VSCMatured and Slash packets
-// TODO fix this
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
 		// Reasons for ErrorAcknowledgment
