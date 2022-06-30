@@ -18,7 +18,7 @@ import (
 	"github.com/tendermint/tendermint/libs/bytes"
 )
 
-func (suite *KeeperTestSuite) TestOnRecvPacket() {
+func (suite *KeeperTestSuite) TestOnRecvVSCPacket() {
 	// setup CCV channel
 	suite.SetupCCVChannel()
 
@@ -118,7 +118,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 	}
 
 	for _, tc := range testCases {
-		ack := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvPacket(suite.ctx, tc.packet, tc.newChanges)
+		ack := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.ctx, tc.packet, tc.newChanges)
 		suite.Require().NotNil(ack, "invalid test case: %s did not return ack", tc.name)
 
 		if tc.expErrorAck {
@@ -183,9 +183,9 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	// send first packet
 	packet := channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
-	ack := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvPacket(suite.consumerChain.GetContext(), packet, pd)
-	suite.Require().NotNil(ack, "OnRecvPacket did not return ack")
-	suite.Require().True(ack.Success(), "OnRecvPacket did not return a Success Acknowledgment")
+	ack := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
+	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
+	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
 	// increase time
 	incrementTimeBy(suite, time.Hour)
@@ -195,9 +195,9 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	pd.ValsetUpdateId = 2
 	packet.Data = pd.GetBytes()
 	packet.Sequence = 2
-	ack = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvPacket(suite.consumerChain.GetContext(), packet, pd)
-	suite.Require().NotNil(ack, "OnRecvPacket did not return ack")
-	suite.Require().True(ack.Success(), "OnRecvPacket did not return a Success Acknowledgment")
+	ack = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
+	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
+	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
 	// increase time
 	incrementTimeBy(suite, 24*time.Hour)
@@ -207,9 +207,9 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	pd.ValsetUpdateId = 3
 	packet.Data = pd.GetBytes()
 	packet.Sequence = 3
-	ack = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvPacket(suite.consumerChain.GetContext(), packet, pd)
-	suite.Require().NotNil(ack, "OnRecvPacket did not return ack")
-	suite.Require().True(ack.Success(), "OnRecvPacket did not return a Success Acknowledgment")
+	ack = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
+	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
+	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
 	// increase time such that first two packets are unbonded but third is not.
 	unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.consumerChain.GetContext())

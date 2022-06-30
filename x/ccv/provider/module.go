@@ -163,9 +163,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 
 // EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	// For each consumer chain, call the endblock method which gets relevant validator set changes and
-	// sends them to the consumer chain
-	am.keeper.EndBlockCallback(ctx)
+	// send validator updates to consumer chains
+	am.keeper.SendValidatorUpdates(ctx)
 	return []abci.ValidatorUpdate{}
 }
 

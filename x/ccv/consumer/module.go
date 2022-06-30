@@ -389,7 +389,7 @@ func (am AppModule) OnChanCloseConfirm(
 }
 
 // OnRecvPacket implements the IBCModule interface. A successful acknowledgement
-// is returned if the packet data is succesfully decoded and the receive application
+// is returned if the packet data is successfully decoded and the receive application
 // logic returns without error.
 func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,
@@ -404,7 +404,7 @@ func (am AppModule) OnRecvPacket(
 		errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("cannot unmarshal CCV packet data: %s", err.Error()))
 		ack = &errAck
 	} else {
-		ack = am.keeper.OnRecvPacket(ctx, packet, data)
+		ack = am.keeper.OnRecvVSCPacket(ctx, packet, data)
 	}
 
 	ctx.EventManager().EmitEvent(
@@ -415,8 +415,6 @@ func (am AppModule) OnRecvPacket(
 		),
 	)
 
-	// NOTE: In successful case, acknowledgement will be written asynchronously
-	// after unbonding period has elapsed.
 	return ack
 }
 

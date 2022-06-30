@@ -8,7 +8,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -16,19 +15,15 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// OnRecvPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
-// and set the unbonding time for the packet so that we can WriteAcknowledgement after unbonding time is over.
-func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) exported.Acknowledgement {
+// OnRecvVSCPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
+// and set the maturity time for the packet. Once the maturity time elapses, a VSCMatured packet is
+// sent back to the provider chain.
+func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) exported.Acknowledgement {
 	// get the provider channel
 	providerChannel, found := k.GetProviderChannel(ctx)
 	if found && providerChannel != packet.DestinationChannel {
-		// packet is not sent on provider channel, return error acknowledgement and close channel
-		ack := channeltypes.NewErrorAcknowledgement(
-			fmt.Sprintf("packet sent on a channel %s other than the established provider channel %s", packet.DestinationChannel, providerChannel),
-		)
-		chanCap, _ := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(packet.DestinationPort, packet.DestinationChannel))
-		k.channelKeeper.ChanCloseInit(ctx, packet.DestinationPort, packet.DestinationChannel, chanCap)
-		return &ack
+		// VSC packet was sent on a channel different than the provider channel
+		return utils.OnRecvPacketOnUnknownChannel(ctx, k.scopedKeeper, k.channelKeeper, packet)
 	}
 	if !found {
 		// the first packet from the provider chain
@@ -85,7 +80,7 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 
 	for maturityIterator.Valid() {
 		vscId := types.GetIdFromPacketMaturityTimeKey(maturityIterator.Key())
-		if currentTime > binary.BigEndian.Uint64(maturityIterator.Value()) {
+		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
 			// send VSCMatured packet
 			// - construct validator set change packet data
 			packetData := ccv.NewVSCMaturedPacketData(vscId)
@@ -194,8 +189,20 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 	k.ClearPendingSlashRequests(ctx)
 }
 
+// OnAcknowledgementPacket handles acknowledgments for sent VSCMatured and Slash packets
+// TODO fix this
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
+		// - packet data could not be successfully decoded -> shut down chain
+		// slash:
+		// - packet sent on a non-established channel
+		// - handling SlashPacket
+		//		- cannot retrieve infraction height -> shut down chain
+		// 		- invalid infraction type -> shut down chain
+		// vscmatures
+		//	- packet sent on a non-established channel
+		//	- cannot complete unbonding (staking module error)
+
 		// packet was sent to a non-established channel
 		if err != sdkerrors.Wrap(
 			channeltypes.ErrInvalidChannelState,

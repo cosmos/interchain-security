@@ -63,7 +63,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 	)
 	packet := channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.OnRecvPacket(suite.consumerChain.GetContext(), packet, pd)
+	suite.consumerChain.App.(*app.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 
 	// mocking the fact that consumer chain validators should be provider chain validators
 	// TODO: Fix testing suite so we can initialize both chains with the same validator set

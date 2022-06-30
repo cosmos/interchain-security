@@ -200,7 +200,7 @@ func (s *ProviderTestSuite) TestPacketRoundtrip() {
 	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
 
 	// Increment time so that the unbonding period ends on the provider
-	incrementTimeByUnbondingPeriod(s, true)
+	incrementTimeByUnbondingPeriod(s, Provider)
 
 	// Relay 1 VSCMatured packet from consumer to provider
 	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 1)
