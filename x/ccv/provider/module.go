@@ -163,6 +163,9 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 
 // EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+	// notify the staking module to complete all matured unbonding ops
+	am.keeper.CompleteMaturedUnbondingOps(ctx)
+
 	// send validator updates to consumer chains
 	am.keeper.SendValidatorUpdates(ctx)
 	return []abci.ValidatorUpdate{}

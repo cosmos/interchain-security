@@ -193,25 +193,25 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 // TODO fix this
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
-		// - packet data could not be successfully decoded -> shut down chain
-		// slash:
-		// - packet sent on a non-established channel
-		// - handling SlashPacket
-		//		- cannot retrieve infraction height -> shut down chain
-		// 		- invalid infraction type -> shut down chain
-		// vscmatures
+		// Reasons for ErrorAcknowledgment
+		//  - packet data could not be successfully decoded
 		//	- packet sent on a non-established channel
-		//	- cannot complete unbonding (staking module error)
-
-		// packet was sent to a non-established channel
-		if err != sdkerrors.Wrap(
-			channeltypes.ErrInvalidChannelState,
-			packet.DestinationChannel,
-		).Error() {
-			return fmt.Errorf(err)
+		//  - the Slash packet was ill-formed (errors while handling it)
+		// None of these should ever happen.
+		err := k.ChanCloseInit(ctx, packet.SourcePort, packet.SourceChannel)
+		if err != nil {
+			return fmt.Errorf("ChanCloseInit(%s) failed: %s", packet.SourceChannel, err.Error())
+		}
+		// check if there is an established CCV channel
+		channelID, found := k.GetProviderChannel(ctx)
+		if !found {
+			return sdkerrors.Wrapf(types.ErrNoProposerChannelId, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)
+		}
+		if channelID != packet.SourceChannel {
+			// Close the established CCV channel as well
+			return k.ChanCloseInit(ctx, types.PortID, channelID)
 		}
 	}
-
 	return nil
 }
 

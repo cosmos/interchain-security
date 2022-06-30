@@ -70,7 +70,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	if !lockUbd {
 		// iterate over the consumer chain's unbonding operation VSC ids
 		k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ids []uint64) bool {
-			// range over the unbonding operations for the current VSC ID
+			// iterate over the unbonding operations for the current VSC ID
+			var maturedIds []uint64
 			for _, id := range ids {
 				unbondingOp, found := k.GetUnbondingOp(ctx, id)
 				if !found {
@@ -82,17 +83,15 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 
 				// If unbonding op is completely unbonded from all relevant consumer chains
 				if len(unbondingOp.UnbondingConsumerChains) == 0 {
-					// Attempt to complete unbonding in staking module
-					err = k.stakingKeeper.UnbondingCanComplete(ctx, unbondingOp.Id)
-					if err != nil {
-						return false
-					}
+					// Store id of matured unbonding op for later completion of unbonding in staking module
+					maturedIds = append(maturedIds, unbondingOp.Id)
 					// Delete unbonding op
 					k.DeleteUnbondingOp(ctx, unbondingOp.Id)
 				} else {
 					k.SetUnbondingOp(ctx, unbondingOp)
 				}
 			}
+			k.AppendeMaturedUnbondingOps(ctx, maturedIds)
 			// clean up index
 			k.DeleteUnbondingOpIndex(ctx, chainID, vscID)
 			return true

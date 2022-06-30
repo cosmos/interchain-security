@@ -8,5 +8,5 @@ import (
 var (
 	ErrInvalidProposal          = sdkerrors.Register(ModuleName, 1, "invalid create consumer chain proposal")
 	ErrUnknownConsumerChainId   = sdkerrors.Register(ModuleName, 2, "no consumer chain with this chain id")
-	ErrUnknownConsumerChannelId = sdkerrors.Register(ModuleName, 2, "no consumer chain with this channel id")
+	ErrUnknownConsumerChannelId = sdkerrors.Register(ModuleName, 3, "no consumer chain with this channel id")
 )
