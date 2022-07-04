@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
@@ -122,18 +123,72 @@ func ChainToClientKey(chainID string) []byte {
 
 // PendingClientKey returns the key under which a pending identified client is stored
 func PendingClientKey(timestamp time.Time, chainID string) []byte {
-	timeBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(timeBytes, uint64(timestamp.UnixNano()))
+	timeBz := sdk.FormatTimeBytes(timestamp)
+	timeBzL := len(timeBz)
+	prefixL := len(PendingClientKeyPrefix)
 
-	return []byte(fmt.Sprintf("%s/%s/%s", PendingClientKeyPrefix, timeBytes, chainID))
+	bz := make([]byte, prefixL+8+timeBzL+len(chainID))
+	// copy the prefix
+	copy(bz[:prefixL], PendingClientKeyPrefix)
+	// copy the time length
+	copy(bz[prefixL:prefixL+8], sdk.Uint64ToBigEndian(uint64(timeBzL)))
+	// copy the time bytes
+	copy(bz[prefixL+8:prefixL+8+timeBzL], timeBz)
+	// copy the chainId
+	copy(bz[prefixL+8+timeBzL:], chainID)
+	return bz
+}
+
+// ParsePendingClientKey returns the time and chainID for a pending client key or an error if unparseable
+func ParsePendingClientKey(bz []byte) (time.Time, string, error) {
+	prefixL := len(PendingClientKeyPrefix)
+	if prefix := bz[:prefixL]; string(prefix) != PendingClientKeyPrefix {
+		return time.Time{}, "", fmt.Errorf("invalid prefix; expected: %X, got: %X", PendingClientKeyPrefix, prefix)
+	}
+
+	timeBzL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	timestamp, err := sdk.ParseTimeBytes(bz[prefixL+8 : prefixL+8+int(timeBzL)])
+	if err != nil {
+		return time.Time{}, "", err
+	}
+
+	chainID := string(bz[prefixL+8+int(timeBzL):])
+	return timestamp, chainID, nil
 }
 
 // PendingStopProposalKey returns the key under which pending consumer chain stop proposals are stored
 func PendingStopProposalKey(timestamp time.Time, chainID string) []byte {
-	timeBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(timeBytes, uint64(timestamp.UnixNano()))
+	timeBz := sdk.FormatTimeBytes(timestamp)
+	timeBzL := len(timeBz)
+	prefixL := len([]byte(PendingStopProposalKeyPrefix))
 
-	return []byte(fmt.Sprintf("%s/%s/%s", PendingStopProposalKeyPrefix, timeBytes, chainID))
+	bz := make([]byte, prefixL+8+timeBzL+len(chainID))
+	// copy the prefix
+	copy(bz[:prefixL], []byte(PendingStopProposalKeyPrefix))
+	// copy the time length
+	copy(bz[prefixL:prefixL+8], sdk.Uint64ToBigEndian(uint64(timeBzL)))
+	// copy the time bytes
+	copy(bz[prefixL+8:prefixL+8+timeBzL], timeBz)
+	// copy the chainId
+	copy(bz[prefixL+8+timeBzL:], chainID)
+	return bz
+}
+
+// ParsePendingStopProposalKey returns the time and chainID for a pending client key or an error if unparseable
+func ParsePendingStopProposalKey(bz []byte) (time.Time, string, error) {
+	prefixL := len(PendingStopProposalKeyPrefix)
+	if prefix := bz[:prefixL]; string(prefix) != PendingStopProposalKeyPrefix {
+		return time.Time{}, "", fmt.Errorf("invalid prefix; expected: %X, got: %X", PendingStopProposalKeyPrefix, prefix)
+	}
+
+	timeBzL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	timestamp, err := sdk.ParseTimeBytes(bz[prefixL+8 : prefixL+8+int(timeBzL)])
+	if err != nil {
+		return time.Time{}, "", err
+	}
+
+	chainID := string(bz[prefixL+8+int(timeBzL):])
+	return timestamp, chainID, nil
 }
 
 func UnbondingOpIndexKey(chainID string, valsetUpdateID uint64) []byte {
