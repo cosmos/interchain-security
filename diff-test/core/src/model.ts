@@ -363,7 +363,7 @@ class Staking {
       }
     }
   };
-  validatorChanges = () => {
+  valUpdates = () => {
     return _.clone(this.changes);
   };
 }
@@ -375,33 +375,33 @@ class CCVProvider {
   vscID = 0;
   vscIDtoH = {};
   vscIDtoOpIDs = new Map();
-  downtimeSlashAcks = [];
+  downtimeSlashReqs = [];
   constructor(model) {
     this.m = model;
   }
   endBlock = () => {
-    const changes = this.m.staking.validatorChanges();
+    this.vscIDtoH[this.vscID] = this.m.h[P] + 1;
+    const valUpdates = this.m.staking.valUpdates();
     const hasOps =
       this.vscIDtoOpIDs.has(this.vscID) &&
       0 < this.vscIDtoOpIDs.get(this.vscID).length;
-    if (0 < _.keys(changes).length || hasOps) {
-      if (0 === _.keys(changes).length) {
+    if (0 < _.keys(valUpdates).length || hasOps) {
+      if (0 === _.keys(valUpdates).length) {
         this.m.events.push(Event.SEND_VSC_NOT_BECAUSE_CHANGE);
       }
-      if (0 < this.downtimeSlashAcks.length) {
+      if (0 < this.downtimeSlashReqs.length) {
         this.m.events.push(Event.SEND_VSC_WITH_DOWNTIME_ACK);
       } else {
         this.m.events.push(Event.SEND_VSC_WITHOUT_DOWNTIME_ACK);
       }
       const data: Vsc = {
         vscID: this.vscID,
-        changes: changes,
-        slashAcks: this.downtimeSlashAcks,
+        changes: valUpdates,
+        slashAcks: this.downtimeSlashReqs,
       };
-      this.downtimeSlashAcks = [];
+      this.downtimeSlashReqs = [];
       this.m.outbox[P].add(data);
     }
-    this.vscIDtoH[this.vscID] = this.m.h[P] + 1;
     this.vscID += 1;
   };
   onReceive = (data) => {
@@ -434,7 +434,7 @@ class CCVProvider {
     this.m.staking.slash(data.val, infractionHeight, data.power, factor);
     this.m.staking.jailUntil(data.val, this.m.t[P] + JAIL_SECONDS);
     if (data.isDowntime) {
-      this.downtimeSlashAcks.push(data.val);
+      this.downtimeSlashReqs.push(data.val);
     }
   };
   afterUnbondingInitiated = (opID) => {
@@ -463,6 +463,7 @@ class CCVConsumer {
     this.hToVscID[this.m.h[C] + 1] = this.hToVscID[this.m.h[C]];
   };
   endBlock = () => {
+    // unbond matured
     const matured = (() => {
       const ret = [];
       this.maturingVscs.forEach((time, vscID) => {
@@ -481,6 +482,7 @@ class CCVConsumer {
       this.m.outbox[C].add(data);
       this.maturingVscs.delete(vscID);
     });
+    // gather and apply any changes
     if (this.pendingChanges.length < 1) {
       this.m.events.push(Event.CONSUMER_NO_PENDING_CHANGES);
       return;
