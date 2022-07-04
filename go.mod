@@ -1,6 +1,6 @@
 module github.com/cosmos/interchain-security
 
-go 1.17
+go 1.18
 
 require (
 	github.com/cosmos/cosmos-sdk v0.45.2-0.20220613134718-c783aea68fbd
