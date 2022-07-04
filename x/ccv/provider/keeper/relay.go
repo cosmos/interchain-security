@@ -56,7 +56,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 			k.SetUnbondingOp(ctx, unbondingOp)
 		}
 	}
-	k.AppendeMaturedUnbondingOps(ctx, maturedIds)
+	k.AppendMaturedUnbondingOps(ctx, maturedIds)
 
 	// clean up index
 	k.DeleteUnbondingOpIndex(ctx, chainID, data.ValsetUpdateId)

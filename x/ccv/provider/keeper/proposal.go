@@ -91,7 +91,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 					k.SetUnbondingOp(ctx, unbondingOp)
 				}
 			}
-			k.AppendeMaturedUnbondingOps(ctx, maturedIds)
+			k.AppendMaturedUnbondingOps(ctx, maturedIds)
 			// clean up index
 			k.DeleteUnbondingOpIndex(ctx, chainID, vscID)
 			return true

@@ -406,8 +406,8 @@ func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64, err error
 	return ids, nil
 }
 
-// AppendeMaturedUnbondingOps adds a list of ids to the list of matured unbonding operation ids
-func (k Keeper) AppendeMaturedUnbondingOps(ctx sdk.Context, ids []uint64) error {
+// AppendMaturedUnbondingOps adds a list of ids to the list of matured unbonding operation ids
+func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) error {
 	if len(ids) == 0 {
 		return nil
 	}

@@ -538,7 +538,7 @@ func (suite *KeeperTestSuite) TestMaturedUnbondingOps() {
 	suite.Require().Nil(ids)
 
 	unbondingOpIds := []uint64{0, 1, 2, 3, 4, 5, 6}
-	err = providerKeeper.AppendeMaturedUnbondingOps(suite.providerChain.GetContext(), unbondingOpIds)
+	err = providerKeeper.AppendMaturedUnbondingOps(suite.providerChain.GetContext(), unbondingOpIds)
 	suite.Require().NoError(err)
 
 	ids, err = providerKeeper.EmptyMaturedUnbondingOps(suite.providerChain.GetContext())
