@@ -1,5 +1,5 @@
 /*
-Matches https://github.com/cosmos/ibc/commit/76f25771b42f5c54415b310632751d58501f9584
+Matches https://github.com/cosmos/ibc/tree/5ea902172b20d53e209f8c1fda9b11d005d9c110
 */
 
 import _ from 'underscore';
@@ -52,7 +52,7 @@ export interface Unval {
 
 interface Vsc {
   vscID;
-  changes;
+  updates;
   slashAcks;
 }
 
@@ -396,7 +396,7 @@ class CCVProvider {
       }
       const data: Vsc = {
         vscID: this.vscID,
-        changes: valUpdates,
+        updates: valUpdates,
         slashAcks: this.downtimeSlashReqs,
       };
       this.downtimeSlashReqs = [];
@@ -409,10 +409,10 @@ class CCVProvider {
     if ('isDowntime' in data) {
       this.onReceiveSlash(data);
     } else {
-      this.onReceiveVScMatured(data);
+      this.onReceiveVSCMatured(data);
     }
   };
-  onReceiveVScMatured = (data: VscMatured) => {
+  onReceiveVSCMatured = (data: VscMatured) => {
     if (this.vscIDtoOpIDs.has(data.vscID)) {
       this.vscIDtoOpIDs.get(data.vscID).forEach((opID) => {
         this.m.staking.unbondingCanComplete(opID);
@@ -487,6 +487,7 @@ class CCVConsumer {
       this.m.events.push(Event.CONSUMER_NO_PENDING_CHANGES);
       return;
     }
+
     const changes = (() => {
       const ret = new Map();
       this.pendingChanges.forEach((updates) => {
@@ -497,6 +498,8 @@ class CCVConsumer {
       return ret;
     })();
 
+    this.pendingChanges = [];
+
     changes.forEach((power, val) => {
       this.power[val] = undefined;
       if (0 < power) {
@@ -506,15 +509,13 @@ class CCVConsumer {
         this.m.events.push(Event.CONSUMER_UPDATE_POWER_ZERO);
       }
     });
-
-    this.pendingChanges = [];
   };
   onReceive = (data) => {
     this.onReceiveVSC(data);
   };
   onReceiveVSC = (data: Vsc) => {
     this.hToVscID[this.m.h[C] + 1] = data.vscID;
-    this.pendingChanges.push(data.changes);
+    this.pendingChanges.push(data.updates);
     this.maturingVscs.set(data.vscID, this.m.t[C] + UNBONDING_SECONDS);
     data.slashAcks.forEach((val) => {
       this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_ACK);
