@@ -2,6 +2,7 @@ package difftest
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
@@ -10,15 +11,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint) (err error) {
+func UpdateReceiverClient(histInfo map[int64]stakingtypes.HistoricalInfo, sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint) (err error) {
 
 	header, err := receiver.Chain.ConstructUpdateTMClientHeader(sender.Chain, receiver.ClientID)
+	// header, err := Header(histInfo, receiver.Chain, sender.Chain, receiver.ClientID)
 
 	if err != nil {
 		return err
 	}
 
-	UCmsg, err := clienttypes.NewMsgUpdateClient(
+	msg, err := clienttypes.NewMsgUpdateClient(
 		receiver.ClientID, header,
 		receiver.Chain.SenderAccount.GetAddress().String(),
 	)
@@ -30,7 +32,7 @@ func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endp
 		receiver.Chain.TxConfig,
 		receiver.Chain.App.GetBaseApp(),
 		receiver.Chain.GetContext().BlockHeader(),
-		[]sdk.Msg{UCmsg},
+		[]sdk.Msg{msg},
 		receiver.Chain.ChainID,
 		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
 		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
