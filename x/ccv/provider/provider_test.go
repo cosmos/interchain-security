@@ -7,7 +7,6 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -523,15 +522,6 @@ func (s *ProviderTestSuite) TestSlashPacketAcknowldgement() {
 	s.Require().Error(err)
 }
 
-func (s *ProviderTestSuite) ReenableProviderDistribution() {
-	pChain := s.providerChain
-	pApp := pChain.App.(*appProvider.App)
-	i := s.providerDistrIndex
-	pApp.MM.OrderBeginBlockers = append(
-		pApp.MM.OrderBeginBlockers[:i+1], pApp.MM.OrderBeginBlockers[i:]...) // make space
-	pApp.MM.OrderBeginBlockers[i] = distrtypes.ModuleName // set value
-}
-
 // TestDistribution tests that tokens are distributed to the
 // provider chain from the consumer chain appropriately
 // func (s *ProviderTestSuite) TestDistribution() {
@@ -643,7 +633,6 @@ func (s *ProviderTestSuite) ReenableProviderDistribution() {
 // 	// the testing framework (where validators do not actually sign votes and
 // 	// therefor do not produce abci.VoteInfo) the expected behaviour of
 // 	// allocation is to send all rewards to the community pool
-// 	s.ReenableProviderDistribution()
 // 	s.coordinator.CommitNBlocks(pChain, 1)
 // 	balance = pApp.BankKeeper.GetBalance(pChain.GetContext(), providerFeePoolAddr,
 // 		"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9")
