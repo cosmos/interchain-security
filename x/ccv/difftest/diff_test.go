@@ -283,7 +283,7 @@ func (s *DTTestSuite) SetupTest() {
 
 	// TODO: No one knows why these lines are needed.
 	s.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	s.path.EndpointA.Chain.SenderAccount.SetAccountNumber(6)
+	s.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
 
 	cfg := s.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
 	cfg.UnbondingPeriod = difftest.UNBONDING
