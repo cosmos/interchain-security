@@ -44,15 +44,24 @@ import (
 const P = "provider"
 const C = "consumer"
 
-// Height is offset from model to due to bootstrapping
+/*
+In the model, height begins at 0 for both chains because init
+is not modelled.
+*/
 const MODEL_HEIGHT_OFFSET = int64(20)
 
-// TODO: do I need different denoms for each chain?
+/*
+TODO: do I need a particular denom here or different denoms for each
+chain?
+*/
 const DENOM = sdk.DefaultBondDenom
 
 var SLASH_DOUBLESIGN = slashingtypes.DefaultSlashFractionDoubleSign
 var SLASH_DOWNTIME = slashingtypes.DefaultSlashFractionDowntime
 
+/*
+Match constants to model constants
+*/
 func init() {
 	// Tokens = Power
 	sdk.DefaultPowerReduction = sdk.NewInt(1)
@@ -796,9 +805,7 @@ TRACE TEST
 ~~~~~~~~~~~~
 */
 
-func (s *DTTestSuite) matchState(chain string, trace difftest.Trace, i int) {
-	c := trace.Consequences[i]
-
+func (s *DTTestSuite) matchState(chain string, c difftest.Consequence, i int) {
 	implementationStartTime := time.Unix(1577923357, 0).UTC()
 	modelOffset := time.Second * time.Duration(-5)
 	timeOffset := implementationStartTime.Add(modelOffset)
@@ -838,12 +845,14 @@ func (s *DTTestSuite) matchState(chain string, trace difftest.Trace, i int) {
 func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 
 	/*
-		There is a limitation: you can't query using .ctx after a block
-		has been committed. So limit querying to happen only after a block
+		There is a limitation: .ctx is invalid after a block
+		has been committed. So we limit querying to happen only after a block
 		has begun but not been committed. The last step in JumpNBlocks is
 		always a commit so you can't match the state afterwards.
 	*/
-	for i, a := range trace.Actions {
+	for i, transition := range trace.Transitions {
+		a := transition.Action
+		c := transition.Consequence
 		fmt.Println("Action ", i, ", kind: ", a.Kind)
 		switch a.Kind {
 		case "Delegate":
@@ -851,13 +860,13 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 				int64(a.Val),
 				int64(a.Amt),
 			})
-			s.matchState(P, trace, i)
+			s.matchState(P, c, i)
 		case "Undelegate":
 			s.undelegate(Undelegate{
 				int64(a.Val),
 				int64(a.Amt),
 			})
-			s.matchState(P, trace, i)
+			s.matchState(P, c, i)
 		case "JumpNBlocks":
 			s.jumpNBlocks(JumpNBlocks{
 				a.Chains,
@@ -866,24 +875,24 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 			})
 		case "Deliver":
 			s.deliver(Deliver{a.Chain})
-			s.matchState(a.Chain, trace, i)
+			s.matchState(a.Chain, c, i)
 		case "ProviderSlash":
 			factor := strconv.FormatFloat(a.Factor, 'f', 3, 64)
 			s.providerSlash(ProviderSlash{
 				int64(a.Val),
 				int64(a.Power),
-				int64(a.Height),
+				int64(a.InfractionHeight),
 				sdk.MustNewDecFromStr(factor),
 			})
-			s.matchState(P, trace, i)
+			s.matchState(P, c, i)
 		case "ConsumerSlash":
 			s.consumerSlash(ConsumerSlash{
 				int64(a.Val),
-				int64(a.Height),
+				int64(a.InfractionHeight),
 				int64(a.Power),
 				a.IsDowntime,
 			})
-			s.matchState(C, trace, i)
+			s.matchState(C, c, i)
 		default:
 			s.Require().FailNow("Couldn't parse action")
 		}
@@ -921,5 +930,5 @@ func executeTraces(s *DTTestSuite, traces []difftest.Trace) {
 }
 
 func (s *DTTestSuite) TestTracesCovering() {
-	executeTraces(s, loadTraces("traces_covering_compact.json"))
+	executeTraces(s, loadTraces("covering.json"))
 }
