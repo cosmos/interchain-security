@@ -198,7 +198,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		//  - the Slash packet was ill-formed (errors while handling it)
 		// None of these should ever happen.
 		k.Logger(ctx).Error(
-			"recv ErrorAcknowledgementchannel",
+			"recv ErrorAcknowledgement",
 			"channel", packet.SourceChannel,
 			"error", err,
 		)
