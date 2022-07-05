@@ -11,15 +11,13 @@ import {
   SLASH_DOUBLESIGN,
   SLASH_DOWNTIME,
 } from './constants.js';
-import _, { max } from 'underscore';
+import _ from 'underscore';
 import { Model, Status } from './model.js';
 import { Event } from './events.js';
 import {
   stakingWithoutSlashing,
   bondBasedConsumerVotingPower,
 } from './properties.js';
-import { STATUS_CODES } from 'http';
-import { getHeapStatistics } from 'v8';
 
 function forceMakeEmptyDir(dir) {
   if (!fs.existsSync(dir)) {
@@ -185,19 +183,21 @@ class ActionGenerator {
       factor: _.sample([SLASH_DOUBLESIGN, SLASH_DOWNTIME]),
     };
   };
-
   candidateConsumerSlash = (): Action[] => {
-    return _.range(NUM_VALIDATORS)
-      .filter((i) => this.model.ccvC.power[i] !== undefined)
-      .filter((i) => {
-        const cntWouldBeNotJailed = this.jailed.filter(
-          (j) => j !== i && !this.jailed[j],
-        ).length;
-        return MAX_VALIDATORS <= cntWouldBeNotJailed;
-      })
-      .map((i) => {
-        return { kind: 'ConsumerSlash', val: i };
-      });
+    return (
+      _.range(NUM_VALIDATORS)
+        // TODO: can I remove this filter?
+        .filter((i) => this.model.ccvC.power[i] !== undefined)
+        .filter((i) => {
+          const cntWouldBeNotJailed = this.jailed.filter(
+            (j) => j !== i && !this.jailed[j],
+          ).length;
+          return MAX_VALIDATORS <= cntWouldBeNotJailed;
+        })
+        .map((i) => {
+          return { kind: 'ConsumerSlash', val: i };
+        })
+    );
   };
   selectConsumerSlash = (a): ConsumerSlash => {
     this.jailed[a.val] = true;
