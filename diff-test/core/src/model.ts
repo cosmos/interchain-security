@@ -484,10 +484,8 @@ class CCVConsumer {
     });
     // gather and apply any changes
     if (this.pendingChanges.length < 1) {
-      this.m.events.push(Event.CONSUMER_NO_PENDING_CHANGES);
       return;
     }
-
     const changes = (() => {
       const ret = new Map();
       this.pendingChanges.forEach((updates) => {
