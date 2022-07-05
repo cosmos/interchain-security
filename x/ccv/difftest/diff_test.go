@@ -212,9 +212,7 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 	seq, ok := s.providerChain.App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
 		s.ctx(P), providertypes.PortID, s.path.EndpointB.ChannelID)
 
-	if !ok {
-		s.Require().FailNow("Could not get seq num to send empty VSC packet")
-	}
+	s.Require().True(ok)
 
 	packet := channeltypes.NewPacket(pd.GetBytes(), seq, providertypes.PortID, s.endpoint(P).ChannelID,
 		consumertypes.PortID, s.endpoint(C).ChannelID, clienttypes.Height{}, timeout)
@@ -223,9 +221,7 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 
 	err := s.endpoint(P).Chain.App.GetIBCKeeper().ChannelKeeper.SendPacket(s.ctx(P), channelCap, packet)
 
-	if err != nil {
-		s.Require().FailNow("Could not send empty VSC packet ", err)
-	}
+	s.Require().NoError(err)
 
 	s.jumpNBlocks([]string{P}, 2, 1)
 
@@ -233,9 +229,7 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 
 	_, err = difftest.TryRecvPacket(s.endpoint(P), s.endpoint(C), packet)
 
-	if err != nil {
-		s.Require().FailNow("Could not send empty VSC packet ", err)
-	}
+	s.Require().NoError(err)
 }
 
 func (s *DTTestSuite) SetupTest() {
