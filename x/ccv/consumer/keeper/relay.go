@@ -197,6 +197,11 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		//  - packet sent on a non-established channel
 		//  - the Slash packet was ill-formed (errors while handling it)
 		// None of these should ever happen.
+		k.Logger(ctx).Error(
+			"recv ErrorAcknowledgementchannel",
+			"channel", packet.SourceChannel,
+			"error", err,
+		)
 		err := k.ChanCloseInit(ctx, packet.SourcePort, packet.SourceChannel)
 		if err != nil {
 			return fmt.Errorf("ChanCloseInit(%s) failed: %s", packet.SourceChannel, err.Error())
