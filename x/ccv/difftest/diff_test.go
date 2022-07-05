@@ -389,6 +389,17 @@ func (s *DTTestSuite) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(s.validator(i))
 }
 
+func (s *DTTestSuite) whichValidator(val tmtypes.Validator) (int64, error) {
+	addr, err := sdk.ValAddressFromHex(val.Address.String())
+	s.Require().NoError(err)
+	for i, a := range s.valAddresses {
+		if a.Equals(addr) {
+			return int64(i), nil
+		}
+	}
+	return 0, fmt.Errorf("whichVal fail")
+}
+
 func (s *DTTestSuite) stakingKeeperP() stakingkeeper.Keeper {
 	return s.providerChain.App.(*appProvider.App).StakingKeeper
 }
@@ -546,6 +557,22 @@ func (s *DTTestSuite) endBlock(chain string) {
 
 	c.LastHeader = c.CurrentTMClientHeader()
 
+	// debug stuff~~~~
+	updates, err := tmtypes.PB2TM.ValidatorUpdates(ebRes.ValidatorUpdates)
+	s.Require().NoError(err)
+	fmt.Println("EB ", chain)
+
+	for _, v := range updates {
+		i, e := s.whichValidator(*v)
+		if e != nil {
+			fmt.Println(e)
+		} else {
+			fmt.Println("VAL: ", i, v.VotingPower)
+		}
+	}
+	//~~~~~~~~~~~~~~~~~
+
+	c.Vals = c.NextVals
 	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
 
 	for _, e := range ebRes.Events {
