@@ -17,7 +17,6 @@ import (
 	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
@@ -38,7 +37,6 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
-	"github.com/cosmos/ibc-go/v3/testing/simapp"
 )
 
 const P = "provider"
@@ -200,33 +198,6 @@ func (s *DTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
 	pskServer.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
-func (s *DTTestSuite) specialRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (err error) {
-	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
-	proof, proofHeight := sender.Chain.QueryProof(packetKey)
-
-	RPmsg := channeltypes.NewMsgRecvPacket(packet, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
-
-	_, _, err = simapp.SignAndDeliver(
-		receiver.Chain.T,
-		receiver.Chain.TxConfig,
-		receiver.Chain.App.GetBaseApp(),
-		receiver.Chain.GetContext().BlockHeader(),
-		[]sdk.Msg{RPmsg},
-		receiver.Chain.ChainID,
-		[]uint64{receiver.Chain.SenderAccount.GetAccountNumber()},
-		[]uint64{receiver.Chain.SenderAccount.GetSequence()},
-		true, true, receiver.Chain.SenderPrivKey,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
-
-	return nil
-}
-
 func (s *DTTestSuite) sendEmptyVSCPacket() {
 	vscID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerChain.GetContext())
 
@@ -260,7 +231,7 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 
 	s.idempotentUpdateClient(C)
 
-	err = s.specialRecvPacket(s.endpoint(P), s.endpoint(C), packet)
+	_, err = difftest.TryRecvPacket(s.endpoint(P), s.endpoint(C), packet)
 
 	if err != nil {
 		s.Require().FailNow("Could not send empty VSC packet ", err)
