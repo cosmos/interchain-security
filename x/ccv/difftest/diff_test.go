@@ -153,8 +153,6 @@ type DTTestSuite struct {
 	network Network
 
 	heightLastClientUpdate map[string]int64
-
-	histInfo map[string]map[int64]stakingtypes.HistoricalInfo
 }
 
 func TestDTTestSuite(t *testing.T) {
@@ -234,23 +232,12 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 	s.Require().NoError(err)
 }
 
-func (s *DTTestSuite) CacheHistInfo(chain string) {
-	info, ok := s.chain(chain).App.GetStakingKeeper().GetHistoricalInfo(s.ctx(chain), s.height(chain))
-	s.Require().True(ok)
-	s.histInfo[chain][s.height(chain)] = info
-}
-
 func (s *DTTestSuite) SetupTest() {
 
 	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = difftest.NewDTProviderConsumerCoordinator(s.T())
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
 	s.network = makeNetwork()
 	s.heightLastClientUpdate = map[string]int64{P: 0, C: 0}
-	s.histInfo = map[string]map[int64]stakingtypes.HistoricalInfo{}
-	s.histInfo[P] = map[int64]stakingtypes.HistoricalInfo{}
-	s.histInfo[C] = map[int64]stakingtypes.HistoricalInfo{}
-	s.CacheHistInfo(P)
-	s.CacheHistInfo(C)
 
 	/*
 		Add two more validator
@@ -489,11 +476,8 @@ func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 
 		_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
 
-		fmt.Println("idemUCbb0")
-
 		s.idempotentUpdateClient(chain)
 	}
-	fmt.Println("idemUCbb1")
 }
 
 func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
@@ -510,7 +494,7 @@ func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
 func (s DTTestSuite) idempotentUpdateClient(chain string) {
 	otherHeight := s.height(s.other(chain))
 	if s.heightLastClientUpdate[chain] < otherHeight {
-		err := difftest.UpdateReceiverClient(s.histInfo[s.other(chain)], s.endpoint(s.other(chain)), s.endpoint(chain))
+		err := difftest.UpdateReceiverClient(s.endpoint(s.other(chain)), s.endpoint(chain))
 		if err != nil {
 			s.FailNow("Bad test")
 		}
@@ -563,14 +547,11 @@ func (s *DTTestSuite) hackBeginBlock(chain string) {
 func (s *DTTestSuite) endBlock(chain string) {
 
 	s.idempotentBeginBlock(chain)
-	fmt.Println("after idem begin")
 	s.idempotentDeliverAcks(chain)
 
 	c := s.chain(chain)
 
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
-
-	s.CacheHistInfo(chain)
 
 	c.App.Commit()
 

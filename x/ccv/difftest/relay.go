@@ -2,7 +2,6 @@ package difftest
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
@@ -11,10 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func UpdateReceiverClient(histInfo map[int64]stakingtypes.HistoricalInfo, sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint) (err error) {
+func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint) (err error) {
 
 	header, err := receiver.Chain.ConstructUpdateTMClientHeader(sender.Chain, receiver.ClientID)
-	// header, err := Header(histInfo, receiver.Chain, sender.Chain, receiver.ClientID)
 
 	if err != nil {
 		return err
