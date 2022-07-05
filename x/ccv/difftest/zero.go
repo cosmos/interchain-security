@@ -115,10 +115,17 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 	}
 
 	// set validators and delegations
-	var stakingGenesis stakingtypes.GenesisState
-	app.AppCodec().MustUnmarshalJSON(genesisState[stakingtypes.ModuleName], &stakingGenesis)
+	var (
+		stakingGenesis stakingtypes.GenesisState
+		bondDenom      string
+	)
 
-	bondDenom := stakingGenesis.Params.BondDenom
+	if genesisState[stakingtypes.ModuleName] != nil {
+		app.AppCodec().MustUnmarshalJSON(genesisState[stakingtypes.ModuleName], &stakingGenesis)
+		bondDenom = stakingGenesis.Params.BondDenom
+	} else {
+		bondDenom = sdk.DefaultBondDenom
+	}
 
 	// add bonded amount to bonded pool module account
 	balances = append(balances, banktypes.Balance{
