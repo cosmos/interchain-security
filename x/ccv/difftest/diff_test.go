@@ -205,7 +205,7 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 		s.Require().FailNow("Could not send empty VSC packet ", err)
 	}
 
-	s.jumpNBlocks(JumpNBlocks{[]string{P}, 2, 1})
+	s.jumpNBlocks([]string{P}, 2, 1)
 
 	s.idempotentUpdateClient(C)
 
@@ -306,8 +306,8 @@ func (s *DTTestSuite) SetupTest() {
 	s.coordinator.CreateChannels(s.path)
 	s.sendEmptyVSCPacket()
 
-	s.jumpNBlocks(JumpNBlocks{[]string{P}, 1, 1})
-	s.jumpNBlocks(JumpNBlocks{[]string{C}, 4, 1})
+	s.jumpNBlocks([]string{P}, 1, 1)
+	s.jumpNBlocks([]string{C}, 4, 1)
 
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
@@ -322,7 +322,7 @@ func (s *DTTestSuite) SetupTest() {
 	sparams.SlashFractionDowntime = SLASH_DOWNTIME
 	s.providerChain.App.(*appProvider.App).SlashingKeeper.SetParams(s.ctx(P), sparams)
 
-	s.jumpNBlocks(JumpNBlocks{[]string{P, C}, 1, 5})
+	s.jumpNBlocks([]string{P, C}, 1, 5)
 
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
@@ -388,8 +388,6 @@ func (s *DTTestSuite) isJailed(i int64) bool {
 }
 
 func (s *DTTestSuite) consumerPower(i int64) (int64, error) {
-	// TODO: I need to use consumer chain cast to get then
-	// call GetCCValidator.Power
 	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	val, found := ck.GetCCValidator(s.ctx(C), s.validator(i))
 	if !found {
@@ -437,35 +435,6 @@ MODEL
 ~~~~~~~~~~~~
 */
 
-type Delegate struct {
-	val int64
-	amt int64
-}
-type Undelegate struct {
-	val int64
-	amt int64
-}
-type JumpNBlocks struct {
-	chains          []string
-	n               int64
-	secondsPerBlock int64
-}
-type Deliver struct {
-	chain string
-}
-type ProviderSlash struct {
-	val    int64
-	power  int64
-	height int64
-	factor sdk.Dec
-}
-type ConsumerSlash struct {
-	val        int64
-	height     int64
-	power      int64
-	isDowntime bool
-}
-
 func (s *DTTestSuite) beginBlock(chain string) {
 
 	c := s.chain(chain)
@@ -497,6 +466,7 @@ func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
 	replacement := []Ack{}
 	for _, ack := range acks {
 		if 2 <= ack.commits {
+			// TODO: reintroduce?
 			// s.idempotentUpdateClient(receiver)
 			// p := ack.packet
 			// difftest.TryRelayAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), p, ack.ack)
@@ -521,25 +491,25 @@ func (s DTTestSuite) idempotentUpdateClient(chain string) {
 
 }
 
-func (s *DTTestSuite) delegate(a Delegate) {
+func (s *DTTestSuite) delegate(val int64, amt int64) {
 	s.idempotentBeginBlock(P)
 	s.idempotentDeliverAcks(P)
 	server := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
-	amt := sdk.NewCoin(DENOM, sdk.NewInt(a.amt))
-	del := s.delegator()
-	val := s.validator(a.val)
-	msg := stakingtypes.NewMsgDelegate(del, val, amt)
+	coin := sdk.NewCoin(DENOM, sdk.NewInt(amt))
+	d := s.delegator()
+	v := s.validator(val)
+	msg := stakingtypes.NewMsgDelegate(d, v, coin)
 	server.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
-func (s *DTTestSuite) undelegate(a Undelegate) {
+func (s *DTTestSuite) undelegate(val int64, amt int64) {
 	s.idempotentBeginBlock(P)
 	s.idempotentDeliverAcks(P)
 	server := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
-	amt := sdk.NewCoin(DENOM, sdk.NewInt(a.amt))
-	del := s.delegator()
-	val := s.validator(a.val)
-	msg := stakingtypes.NewMsgUndelegate(del, val, amt)
+	coin := sdk.NewCoin(DENOM, sdk.NewInt(amt))
+	d := s.delegator()
+	v := s.validator(val)
+	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
 	server.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
@@ -598,70 +568,61 @@ func (s *DTTestSuite) endBlock(chain string) {
 			1. needed to access .GetContext()
 			2. Dangerous, non idempotent, leads to different contexts
 		TODO: Must be removed!
+		TODO: why did I add this??
 	*/
 	s.hackBeginBlock(chain)
 
 }
 
-func (s *DTTestSuite) increaseSeconds(seconds int64) {
-	s.coordinator.CurrentTime = s.coordinator.CurrentTime.Add(time.Second * time.Duration(seconds)).UTC()
-}
-
-func (s *DTTestSuite) jumpNBlocks(a JumpNBlocks) {
-	for i := int64(0); i < a.n; i++ {
-		for _, c := range a.chains { // [P], [P,C], [C]
+func (s *DTTestSuite) jumpNBlocks(chains []string, n int64, secondsPerBlock int64) {
+	for i := int64(0); i < n; i++ {
+		for _, c := range chains { // [P] or [P, C] or [C]
 			s.endBlock(c)
 			fmt.Println("endBlock", c)
 		}
-		s.increaseSeconds(a.secondsPerBlock)
+		s.coordinator.CurrentTime = s.coordinator.CurrentTime.Add(time.Second * time.Duration(secondsPerBlock)).UTC()
 	}
 }
 
-func (s *DTTestSuite) deliver(a Deliver) {
-	s.idempotentBeginBlock(a.chain)
-	s.idempotentDeliverAcks(a.chain)
-	other := map[string]string{P: C, C: P}[a.chain]
-	fmt.Println("outbox size before deliver(", a.chain, "):", len(s.outbox[other]))
+func (s *DTTestSuite) deliver(chain string) {
+	s.idempotentBeginBlock(chain)
+	s.idempotentDeliverAcks(chain)
+	s.idempotentUpdateClient(chain)
+	other := s.other(chain)
+	fmt.Println("outbox size before deliver(", chain, "):", len(s.outbox[other]))
 	for _, p := range s.outbox[other] {
-		receiver := s.endpoint(a.chain)
+		receiver := s.endpoint(chain)
 		sender := receiver.Counterparty
-		s.idempotentUpdateClient(a.chain)
 		ack, err := difftest.TryRecvPacket(sender, receiver, p)
 		if err != nil {
 			s.FailNow("Relay failed", err)
 		}
 		fmt.Println("Done TryRelay without err")
-		s.addAck(s.other(a.chain), ack, p)
+		s.addAck(s.other(chain), ack, p)
 	}
 	s.outbox[other] = []channeltypes.Packet{}
 }
 
-func (s *DTTestSuite) providerSlash(a ProviderSlash) {
+func (s *DTTestSuite) providerSlash(
+	val sdk.ConsAddress, h int64, power int64, factor sdk.Dec,
+) {
 	s.idempotentBeginBlock(P)
 	s.idempotentDeliverAcks(P)
-	val := s.consAddr(a.val)
-	h := int64(a.height)
-	h += MODEL_HEIGHT_OFFSET
-	power := int64(a.power)
-	factor := a.factor
-	s.stakingKeeperP().Slash(s.ctx(P), val, h, power, factor, -1) // TODO: check params here!
+	s.stakingKeeperP().Slash(s.ctx(P), val, h, power, factor, -1)
 }
 
-func (s *DTTestSuite) consumerSlash(a ConsumerSlash) {
+func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64,
+	power int64, isDowntime bool) {
 	s.idempotentBeginBlock(C)
 	s.idempotentDeliverAcks(C)
-	cccvk := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
-	val := s.consAddr(a.val)
-	h := int64(a.height)
-	h += MODEL_HEIGHT_OFFSET
-	power := int64(a.power)
 	kind := stakingtypes.Downtime
-	if !a.isDowntime {
+	if isDowntime {
 		kind = stakingtypes.DoubleSign
 	}
 	ctx := s.ctx(C)
 	before := len(ctx.EventManager().Events())
-	cccvk.Slash(ctx, val, h, power, sdk.Dec{}, kind)
+	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	ck.Slash(ctx, val, h, power, sdk.Dec{}, kind)
 	evts := ctx.EventManager().ABCIEvents()
 	for _, e := range evts[before:] {
 		if e.Type == channeltypes.EventTypeSendPacket {
@@ -695,9 +656,8 @@ func (s *DTTestSuite) TestAssumptions() {
 	s.Require().Equal(false, s.mustBeginBlock[C])
 
 	/*
-		Adding a 1 is needed here because the first step of any model execution
-		is to increase the height by 1.
-		Here this step is missing, so we account for it.
+		Adding a 1 is needed here because the model always increases
+		the height by one immediately before the first action.
 	*/
 	s.Require().Equal(0+1+MODEL_HEIGHT_OFFSET, s.height(P))
 	s.Require().Equal(0+1+MODEL_HEIGHT_OFFSET, s.height(C))
@@ -705,11 +665,13 @@ func (s *DTTestSuite) TestAssumptions() {
 	s.Require().Empty(s.outbox[P])
 	s.Require().Empty(s.outbox[C])
 
-	s.Require().Equal(int64(1577923357), s.time(P).Unix())
-	s.Require().Equal(int64(1577923357), s.time(C).Unix())
-	s.Require().Equal(int64(1577923357), s.globalTime().Unix())
+	const TIME_AFTER_SUT_INIT = 1577923357
+	s.Require().Equal(int64(TIME_AFTER_SUT_INIT), s.time(P).Unix())
+	s.Require().Equal(int64(TIME_AFTER_SUT_INIT), s.time(C).Unix())
+	s.Require().Equal(int64(TIME_AFTER_SUT_INIT), s.globalTime().Unix())
 
-	s.Require().Equal(int64(1000000000000000), s.delegatorBalance())
+	const DELEGATOR_INITIAL_BALANCE = 1000000000000000
+	s.Require().Equal(int64(DELEGATOR_INITIAL_BALANCE), s.delegatorBalance())
 
 	maxValsE := uint32(2)
 	maxVals := s.stakingKeeperP().GetParams(s.ctx(P)).MaxValidators
@@ -806,9 +768,9 @@ TRACE TEST
 */
 
 func (s *DTTestSuite) matchState(chain string, c difftest.Consequence, i int) {
-	implementationStartTime := time.Unix(1577923357, 0).UTC()
+	SUTStartTime := time.Unix(1577923357, 0).UTC()
 	modelOffset := time.Second * time.Duration(-5)
-	timeOffset := implementationStartTime.Add(modelOffset)
+	timeOffset := SUTStartTime.Add(modelOffset)
 
 	if chain == P {
 		s.Require().Equal(int64(c.H.Provider+int(MODEL_HEIGHT_OFFSET)), s.height(P), i)
@@ -846,7 +808,7 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 
 	/*
 		There is a limitation: .ctx is invalid after a block
-		has been committed. So we limit querying to happen only after a block
+		has been committed. So we limit queries to only happen after a block
 		has begun but not been committed. The last step in JumpNBlocks is
 		always a commit so you can't match the state afterwards.
 	*/
@@ -856,42 +818,42 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 		fmt.Println("Action ", i, ", kind: ", a.Kind)
 		switch a.Kind {
 		case "Delegate":
-			s.delegate(Delegate{
+			s.delegate(
 				int64(a.Val),
 				int64(a.Amt),
-			})
+			)
 			s.matchState(P, c, i)
 		case "Undelegate":
-			s.undelegate(Undelegate{
+			s.undelegate(
 				int64(a.Val),
 				int64(a.Amt),
-			})
+			)
 			s.matchState(P, c, i)
 		case "JumpNBlocks":
-			s.jumpNBlocks(JumpNBlocks{
+			s.jumpNBlocks(
 				a.Chains,
 				int64(a.N),
 				int64(a.SecondsPerBlock),
-			})
+			)
 		case "Deliver":
-			s.deliver(Deliver{a.Chain})
+			s.deliver(a.Chain)
 			s.matchState(a.Chain, c, i)
 		case "ProviderSlash":
 			factor := strconv.FormatFloat(a.Factor, 'f', 3, 64)
-			s.providerSlash(ProviderSlash{
-				int64(a.Val),
+			s.providerSlash(
+				s.consAddr(int64(a.Val)),
 				int64(a.Power),
-				int64(a.InfractionHeight),
+				int64(a.InfractionHeight)+MODEL_HEIGHT_OFFSET,
 				sdk.MustNewDecFromStr(factor),
-			})
+			)
 			s.matchState(P, c, i)
 		case "ConsumerSlash":
-			s.consumerSlash(ConsumerSlash{
-				int64(a.Val),
-				int64(a.InfractionHeight),
+			s.consumerSlash(
+				s.consAddr(int64(a.Val)),
+				int64(a.InfractionHeight)+MODEL_HEIGHT_OFFSET,
 				int64(a.Power),
 				a.IsDowntime,
-			})
+			)
 			s.matchState(C, c, i)
 		default:
 			s.Require().FailNow("Couldn't parse action")
