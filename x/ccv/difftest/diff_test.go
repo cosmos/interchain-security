@@ -720,13 +720,13 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 				int64(a.Val),
 				int64(a.Amt),
 			)
-			s.matchState(P, c, i)
+			s.matchState(P, c)
 		case "Undelegate":
 			s.undelegate(
 				int64(a.Val),
 				int64(a.Amt),
 			)
-			s.matchState(P, c, i)
+			s.matchState(P, c)
 		case "JumpNBlocks":
 			s.jumpNBlocks(
 				a.Chains,
@@ -735,7 +735,7 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 			)
 		case "Deliver":
 			s.deliver(a.Chain)
-			s.matchState(a.Chain, c, i)
+			s.matchState(a.Chain, c)
 		case "ProviderSlash":
 			factor := strconv.FormatFloat(a.Factor, 'f', 3, 64)
 			s.providerSlash(
@@ -744,7 +744,7 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 				int64(a.InfractionHeight)+MODEL_HEIGHT_OFFSET,
 				sdk.MustNewDecFromStr(factor),
 			)
-			s.matchState(P, c, i)
+			s.matchState(P, c)
 		case "ConsumerSlash":
 			s.consumerSlash(
 				s.consAddr(int64(a.Val)),
@@ -752,9 +752,9 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 				int64(a.Power),
 				a.IsDowntime,
 			)
-			s.matchState(C, c, i)
+			s.matchState(C, c)
 		default:
-			s.Require().FailNow("Couldn't parse action")
+			s.Require().FailNow("Failed to parse action")
 		}
 	}
 }
