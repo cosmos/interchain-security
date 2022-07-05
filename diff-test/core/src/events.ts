@@ -16,7 +16,6 @@ enum Event {
   RECEIVE_DOWNTIME_SLASH_REQUEST = 'receive_downtime_slash_request',
   RECEIVE_DOWNTIME_SLASH_ACK = 'receive_downtime_slash_ack',
   SEND_DOUBLE_SIGN_SLASH_REQUEST = 'send_double_sign_slash_request',
-  CONSUMER_NO_PENDING_CHANGES = 'consumer_no_pending_changes',
   CONSUMER_SEND_MATURATION = 'consumer_send_maturation',
   CONSUMER_NOT_ALL_MATURED = 'consumer_not_all_matured',
   SEND_VSC_NOT_BECAUSE_CHANGE = 'send_vsc_not_because_change',

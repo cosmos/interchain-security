@@ -19,6 +19,7 @@ import {
   bondBasedConsumerVotingPower,
 } from './properties.js';
 import { STATUS_CODES } from 'http';
+import { getHeapStatistics } from 'v8';
 
 function forceMakeEmptyDir(dir) {
   if (!fs.existsSync(dir)) {
@@ -258,11 +259,9 @@ class Trace {
         .pairs()
         .sortBy((pair) => pair[0]),
     );
-    const json = JSON.stringify(
-      { transitions, blocks, events: this.events },
-      null,
-      4,
-    );
+    // const toDump = { transitions, blocks, events: this.events }
+    const toDump = { transitions, events: this.events };
+    const json = JSON.stringify(toDump, null, 4);
     fs.writeFileSync(fn, json);
   };
 }
@@ -312,9 +311,9 @@ function writeEventData(allEvents, fn) {
 
 function gen() {
   const outerEnd = timeSpan();
-  const GOAL_TIME_MINS = 5;
+  const GOAL_TIME_MINS = 1;
   const goalTimeMillis = GOAL_TIME_MINS * 60 * 1000;
-  const NUM_ACTIONS = 40;
+  const NUM_ACTIONS = 60;
   const DIR = 'traces/';
   forceMakeEmptyDir(DIR);
   let numRuns = 1000000000000;
@@ -347,17 +346,18 @@ function gen() {
     if (!ok) {
       throw 'stakingWithoutSlashing';
     }
+    trace.events = events;
     trace.dump(`${DIR}trace_${i}.json`);
     allEvents.push(...events);
     ////////////////////////
     elapsedMillis += end.rounded();
-    if (i % 4000 === 0) {
+    if (i % 2000 === 0) {
       console.log(
         `done ${i}, traces per second ${i / (elapsedMillis / 1000)}`,
       );
     }
   }
-  console.log(`ran ${Math.floor(outerEnd.seconds() / 60)} mins`);
+  console.log(`ran for ${Math.floor(outerEnd.seconds() / 60)} mins`);
   writeEventData(allEvents, 'Gen');
 }
 
@@ -376,8 +376,72 @@ function replayFile(fn: string) {
   replay(trace.transitions.map((t) => t.action));
 }
 
+function createSmallSubsetOfCoveringTraces() {
+  const DIR = 'traces/';
+  let fns = [];
+  fs.readdirSync(DIR).forEach((file) => {
+    fns.push(`${DIR}${file}`);
+  });
+  const cnt = [];
+  const ix = {};
+  for (const evt in Event) {
+    ix[Event[evt]] = cnt.length;
+    cnt.push(0);
+  }
+  const hits = [];
+  fns.forEach((fn) => {
+    const trace = JSON.parse(fs.readFileSync(fn, 'utf8'));
+    const hit = [fn, _.clone(cnt)];
+    trace.events.forEach((evtName) => {
+      hit[1][ix[evtName]] += 1;
+    });
+    hits.push(hit);
+  });
+  console.log(`finished reading files and cnting`);
+  const TARGET = 100;
+  function score(v): number {
+    let x = 0;
+    for (let i = 0; i < v.length; i++) {
+      const need = Math.max(TARGET - cnt[i], 0);
+      const get = v[i];
+      x += Math.min(need, get);
+    }
+    return x;
+  }
+  fns = [];
+  while (_.some(cnt, (x) => x < TARGET)) {
+    hits.sort((a, b) => score(b[1]) - score(a[1]));
+    const [fn, v] = hits.shift();
+    fns.push(fn);
+    for (let i = 0; i < v.length; i++) {
+      cnt[i] += v[i];
+    }
+  }
+  for (const evt in Event) {
+    console.log(Event[evt], cnt[ix[Event[evt]]]);
+  }
+  console.log(`num traces: `, fns.length);
+  const allTraces = [];
+  fns.forEach((fn) => {
+    allTraces.push(JSON.parse(fs.readFileSync(fn, 'utf8')));
+  });
+  fs.writeFileSync(`covering.json`, JSON.stringify(allTraces));
+}
+
+function quick() {
+  console.log(`hello`);
+}
+
 console.log(`running  main`);
-gen();
+if (process.argv.length < 3 || process.argv[2] === 'gen') {
+  console.log(`running gen`);
+  gen();
+} else if (process.argv[2] === 'subset') {
+  console.log(`running createSmallSubsetOfCoveringTraces`);
+  createSmallSubsetOfCoveringTraces();
+} else if (process.argv[2] === 'q') {
+  quick();
+}
 // replayFile('trace_bad.json');
 console.log(`finished running main`);
 
