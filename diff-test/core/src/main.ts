@@ -372,8 +372,8 @@ function replay(actions: Action[]) {
 }
 
 function replayFile(fn: string) {
-  const trace = JSON.parse(fs.readFileSync(fn, 'utf8'));
-  replay(trace.transitions.map((t) => t.action));
+  const traces = JSON.parse(fs.readFileSync(fn, 'utf8'));
+  replay(traces[0].transitions.map((t) => t.action));
 }
 
 function createSmallSubsetOfCoveringTraces() {
@@ -441,6 +441,11 @@ if (process.argv.length < 3 || process.argv[2] === 'gen') {
   createSmallSubsetOfCoveringTraces();
 } else if (process.argv[2] === 'q') {
   quick();
+} else if (process.argv[2] === 'replay') {
+  const fn =
+    '/Users/danwt/Documents/work/interchain-security/x/ccv/difftest/covering.json';
+  // replayFile(process.argv[3]);
+  replayFile(fn);
 }
 // replayFile('trace_bad.json');
 console.log(`finished running main`);
