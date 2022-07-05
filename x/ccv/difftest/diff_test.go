@@ -389,43 +389,41 @@ func (s *DTTestSuite) isJailed(i int64) bool {
 
 func (s *DTTestSuite) consumerPower(i int64) (int64, error) {
 	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
-	val, found := ck.GetCCValidator(s.ctx(C), s.validator(i))
+	v, found := ck.GetCCValidator(s.ctx(C), s.validator(i))
 	if !found {
 		return 0, fmt.Errorf("CCValidator not found")
 	}
-	return val.Power, nil
+	return v.Power, nil
 }
 
 func (s *DTTestSuite) delegation(i int64) int64 {
-	addr := s.delegator()
-	del, found := s.stakingKeeperP().GetDelegation(s.ctx(P), addr, s.validator(i))
+	d, found := s.stakingKeeperP().GetDelegation(s.ctx(P), s.delegator(), s.validator(i))
 	if !found {
 		s.T().Fatal("Couldn't GetDelegation")
 	}
-	return del.Shares.TruncateInt64()
+	return d.Shares.TruncateInt64()
 }
 
 func (s *DTTestSuite) validatorStatus(i int64) stakingtypes.BondStatus {
-	val, found := s.stakingKeeperP().GetValidator(s.ctx(P), s.validator(i))
+	v, found := s.stakingKeeperP().GetValidator(s.ctx(P), s.validator(i))
 	if !found {
 		s.T().Fatal("Couldn't GetValidator")
 	}
-	return val.GetStatus()
+	return v.GetStatus()
 }
 
 func (s *DTTestSuite) providerTokens(i int64) int64 {
-	addr := s.validator(i)
-	val, found := s.stakingKeeperP().GetValidator(s.ctx(P), addr)
+	v, found := s.stakingKeeperP().GetValidator(s.ctx(P), s.validator(i))
 	if !found {
 		s.T().Fatal("Couldn't GetValidator")
 	}
-	return val.Tokens.Int64()
+	return v.Tokens.Int64()
 }
 
 func (s *DTTestSuite) delegatorBalance() int64 {
-	del := s.delegator()
+	d := s.delegator()
 	app := s.providerChain.App.(*appProvider.App)
-	bal := app.BankKeeper.GetBalance(s.ctx(P), del, DENOM)
+	bal := app.BankKeeper.GetBalance(s.ctx(P), d, DENOM)
 	return bal.Amount.Int64()
 }
 
@@ -435,28 +433,24 @@ MODEL
 ~~~~~~~~~~~~
 */
 
-func (s *DTTestSuite) beginBlock(chain string) {
-
-	c := s.chain(chain)
-
-	// increment the current header
-	c.CurrentHeader = tmproto.Header{
-		ChainID:            c.ChainID,
-		Height:             c.App.LastBlockHeight() + 1,
-		AppHash:            c.App.LastCommitID().Hash,
-		Time:               s.coordinator.CurrentTime,
-		ValidatorsHash:     c.Vals.Hash(),
-		NextValidatorsHash: c.NextVals.Hash(),
-	}
-
-	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
-
-}
-
 func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 	if s.mustBeginBlock[chain] {
 		s.mustBeginBlock[chain] = false
-		s.beginBlock(chain)
+
+		c := s.chain(chain)
+
+		// increment the current header
+		c.CurrentHeader = tmproto.Header{
+			ChainID:            c.ChainID,
+			Height:             c.App.LastBlockHeight() + 1,
+			AppHash:            c.App.LastCommitID().Hash,
+			Time:               s.coordinator.CurrentTime,
+			ValidatorsHash:     c.Vals.Hash(),
+			NextValidatorsHash: c.NextVals.Hash(),
+		}
+
+		_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
+
 		s.idempotentUpdateClient(chain)
 	}
 }
