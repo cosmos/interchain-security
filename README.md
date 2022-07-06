@@ -53,6 +53,8 @@ make test
 go test ./...
 # run all unit tests with verbose output
 go test -v ./..
+# run all unit tests with coverage stats
+go test -cover ./..
 # run a single unit test
 go test -run <test-suite-name>/<test-name> ./...
 # example: run a single unit test
