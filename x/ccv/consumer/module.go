@@ -155,9 +155,9 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	channelID, found := am.keeper.GetProviderChannel(ctx)
 	if found && am.keeper.IsChannelClosed(ctx, channelID) {
-	        // the CCV channel was established, but it was then closed; 
-                // the consumer chain is no longer safe
-                
+		// the CCV channel was established, but it was then closed;
+		// the consumer chain is no longer safe
+
 		// cleanup state
 		am.keeper.DeleteProviderChannel(ctx)
 
