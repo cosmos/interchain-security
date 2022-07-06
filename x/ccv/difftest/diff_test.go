@@ -460,6 +460,8 @@ MODEL
 
 func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 	if s.mustBeginBlock[chain] {
+		fmt.Println("beginBlock ", chain)
+
 		s.mustBeginBlock[chain] = false
 
 		c := s.chain(chain)
@@ -494,6 +496,8 @@ func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
 func (s DTTestSuite) idempotentUpdateClient(chain string) {
 	otherHeight := s.height(s.other(chain))
 	if s.heightLastClientUpdate[chain] < otherHeight {
+		fmt.Println("update client ", chain)
+
 		err := difftest.UpdateReceiverClient(s.endpoint(s.other(chain)), s.endpoint(chain))
 		if err != nil {
 			s.FailNow("Bad test")
@@ -542,6 +546,7 @@ func (s *DTTestSuite) hackBeginBlock(chain string) {
 	}
 
 	c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
+
 }
 
 func (s *DTTestSuite) endBlock(chain string) {
@@ -555,6 +560,7 @@ func (s *DTTestSuite) endBlock(chain string) {
 
 	c.App.Commit()
 
+	// TODO: Maybe this line can be moved to line ʘ‿ʘ below
 	c.LastHeader = c.CurrentTMClientHeader()
 
 	// debug stuff~~~~
@@ -573,6 +579,8 @@ func (s *DTTestSuite) endBlock(chain string) {
 
 	c.Vals = c.NextVals
 	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
+
+	// ʘ‿ʘ
 
 	for _, e := range ebRes.Events {
 		if e.Type == channeltypes.EventTypeSendPacket {
