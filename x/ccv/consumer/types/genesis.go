@@ -17,11 +17,11 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 	initValSet []abci.ValidatorUpdate, params Params) *GenesisState {
 
 	return &GenesisState{
-		Params:               params,
-		NewChain:             true,
+		Params:                 params,
+		NewChain:               true,
 		ProviderClientState:    cs,
 		ProviderConsensusState: consState,
-		InitialValSet:        initValSet,
+		InitialValSet:          initValSet,
 	}
 }
 
@@ -32,8 +32,8 @@ func NewRestartGenesisState(clientID, channelID string,
 
 	return &GenesisState{
 		Params:             params,
-		ProviderClientId:     clientID,
-		ProviderChannelId:    channelID,
+		ProviderClientId:   clientID,
+		ProviderChannelId:  channelID,
 		UnbondingSequences: unbondingSequences,
 		NewChain:           false,
 		InitialValSet:      initValSet,
