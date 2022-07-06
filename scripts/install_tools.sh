@@ -2,11 +2,6 @@
 
 set -e -o pipefail
 
-if ! command -v tomlv &> /dev/null ; then
-    echo "tomlv not installed or available in the PATH, installing" >&2
-    go install github.com/BurntSushi/toml/cmd/tomlv@latest;
-fi
-
 if ! command -v gocyclo &> /dev/null ; then
     echo "gocyclo not installed or available in the PATH, installing" >&2
     go install github.com/fzipp/gocyclo/cmd/gocyclo@latest;
