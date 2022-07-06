@@ -6,3 +6,5 @@ docs/tla/states/
 *.out
 vendor/
 .vscode
+x/ccv/difftest/covering.json
+x/ccv/difftest/debug.js
