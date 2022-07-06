@@ -14,10 +14,7 @@ import {
 import _ from 'underscore';
 import { Model, Status } from './model.js';
 import { Event } from './events.js';
-import {
-  stakingWithoutSlashing,
-  bondBasedConsumerVotingPower,
-} from './properties.js';
+import { createSmallSubsetOfCoveringTraces } from './subset.js';
 
 function forceMakeEmptyDir(dir) {
   if (!fs.existsSync(dir)) {
@@ -371,83 +368,33 @@ function replay(actions: Action[]) {
   }
 }
 
-function replayFile(fn: string) {
+function replayFile(fn: string, ix: number | undefined) {
   const traces = JSON.parse(fs.readFileSync(fn, 'utf8'));
-  replay(traces[0].transitions.map((t) => t.action));
-}
-
-function createSmallSubsetOfCoveringTraces() {
-  const DIR = 'traces/';
-  let fns = [];
-  fs.readdirSync(DIR).forEach((file) => {
-    fns.push(`${DIR}${file}`);
-  });
-  const cnt = [];
-  const ix = {};
-  for (const evt in Event) {
-    ix[Event[evt]] = cnt.length;
-    cnt.push(0);
-  }
-  const hits = [];
-  fns.forEach((fn) => {
-    const trace = JSON.parse(fs.readFileSync(fn, 'utf8'));
-    const hit = [fn, _.clone(cnt)];
-    trace.events.forEach((evtName) => {
-      hit[1][ix[evtName]] += 1;
-    });
-    hits.push(hit);
-  });
-  console.log(`finished reading files and cnting`);
-  const TARGET = 100;
-  function score(v): number {
-    let x = 0;
-    for (let i = 0; i < v.length; i++) {
-      const need = Math.max(TARGET - cnt[i], 0);
-      const get = v[i];
-      x += Math.min(need, get);
-    }
-    return x;
-  }
-  fns = [];
-  while (_.some(cnt, (x) => x < TARGET)) {
-    hits.sort((a, b) => score(b[1]) - score(a[1]));
-    const [fn, v] = hits.shift();
-    fns.push(fn);
-    for (let i = 0; i < v.length; i++) {
-      cnt[i] += v[i];
-    }
-  }
-  for (const evt in Event) {
-    console.log(Event[evt], cnt[ix[Event[evt]]]);
-  }
-  console.log(`num traces: `, fns.length);
-  const allTraces = [];
-  fns.forEach((fn) => {
-    allTraces.push(JSON.parse(fs.readFileSync(fn, 'utf8')));
-  });
-  fs.writeFileSync(`covering.json`, JSON.stringify(allTraces));
+  const toReplay = ix !== undefined ? [traces[ix]] : traces;
+  replay(toReplay.transitions.map((t) => t.action));
 }
 
 function quick() {
   console.log(`hello`);
 }
 
-console.log(`running  main`);
+console.log(`running main`);
+
 if (process.argv.length < 3 || process.argv[2] === 'gen') {
-  console.log(`running gen`);
+  console.log(`gen`);
   gen();
 } else if (process.argv[2] === 'subset') {
-  console.log(`running createSmallSubsetOfCoveringTraces`);
+  console.log(`createSmallSubsetOfCoveringTraces`);
   createSmallSubsetOfCoveringTraces();
-} else if (process.argv[2] === 'q') {
-  quick();
 } else if (process.argv[2] === 'replay') {
+  console.log(`replay`);
   const fn =
     '/Users/danwt/Documents/work/interchain-security/x/ccv/difftest/covering.json';
-  // replayFile(process.argv[3]);
-  replayFile(fn);
+  replayFile(fn, 0);
+  // replayFile(process.argv[3], parseInt(process.argv[4]));
+} else if (process.argv[2] === 'q') {
+  quick();
 }
-// replayFile('trace_bad.json');
 console.log(`finished running main`);
 
 export { gen };
