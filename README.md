@@ -14,6 +14,76 @@ The code for CCV is housed under [x/ccv](./x/ccv). The `types` folder contains t
 
 NOTE: At the moment the testing app may not be functional, please rely on the IBC testing suite to write unit tests for the moment.
 
+## Instructions
+
+**Prerequisites**
+
+```bash
+## For OSX or Linux
+
+# go 1.18 (https://formulae.brew.sh/formula/go)
+brew install go@1.18
+# jq (optional, for testnet) (https://formulae.brew.sh/formula/jq)
+brew install jq
+# docker (optional, for integration tests, testnet) (https://docs.docker.com/get-docker/)
+
+```
+
+**Installing and running binaries**
+
+```bash
+# install interchain-security-pd and interchain-security-cd binaries
+make install
+# run provider
+interchain-security-pd
+# run consumer
+interchain-security-cd
+# (if the above fail, ensure ~/go/bin on $PATH)
+export PATH=$PATH:$(go env GOPATH)/bin
+```
+
+Inspect the [Makefile](./Makefile) if curious.
+
+**Running tests**
+
+```bash
+# run all unit tests using make
+make test
+# run all unit tests using go
+go test ./...
+# run all unit tests with verbose output
+go test -v ./..
+# run all unit tests with coverage stats
+go test -cover ./..
+# run a single unit test
+go test -run <test-suite-name>/<test-name> ./...
+# example: run a single unit test
+go test -run TestProviderTestSuite/TestPacketRoundtrip ./...
+# run the integration tests
+go run ./integration-tests/...
+# run golang native fuzz tests (https://go.dev/doc/tutorial/fuzz)
+go test -fuzz=<regex-to-match-test-name>
+```
+
+**Linters and static analysis**
+
+Several analyzers are used on the code including [CodeQL](https://codeql.github.com/), [SonarCloud](https://sonarcloud.io/), [golangci-lint](https://golangci-lint.run/) and [gosec](https://github.com/securego/gosec). Some of these are run on github when committing to PRs ect, but some tools are also applicable locally, and are built into golang.
+
+```bash
+# gofmt to format and simplify code (https://pkg.go.dev/cmd/gofmt)
+gofmt -w -s -e .
+# go vet to search for suspicious code (https://pkg.go.dev/cmd/vet)
+go vet ./...
+```
+
+**Debugging**
+
+If using VSCode, see [vscode-go/wiki/debugging](https://github.com/golang/vscode-go/wiki/debugging) to debug unit tests or go binaries.
+
+**More**
+
+More instructions will be added soon, in time for the testnet.
+
 ## Learn more
 
 - [IBC Docs](https://docs.cosmos.network/master/ibc/)
