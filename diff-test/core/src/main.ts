@@ -227,7 +227,7 @@ class ActionGenerator {
 
   candidateDeliver = (): Action[] => {
     return [P, C]
-      .filter((c) => this.model.hasUndelivered(c))
+      .filter((c) => this.model.outbox[c == P ? C : P].hasAvailable())
       .map((c) => {
         return { kind: 'Deliver', chain: c };
       });
@@ -308,7 +308,7 @@ function writeEventData(allEvents, fn) {
 
 function gen() {
   const outerEnd = timeSpan();
-  const GOAL_TIME_MINS = 1;
+  const GOAL_TIME_MINS = 4;
   const goalTimeMillis = GOAL_TIME_MINS * 60 * 1000;
   const NUM_ACTIONS = 60;
   const DIR = 'traces/';
