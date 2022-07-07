@@ -232,7 +232,7 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 }
 
 // IteratePacketMaturityTime iterates through the VSC packet maturity times set in the store
-func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(seq, timeNs uint64) bool) {
+func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte(types.PacketMaturityTimePrefix))
 
@@ -249,83 +249,28 @@ func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(seq, timeNs u
 	}
 }
 
-// SetPacketMaturityTime sets the maturity time for a given received VSC packet sequence
-func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, sequence, maturityTime uint64) {
+// SetPacketMaturityTime sets the maturity time for a given received VSC packet id
+func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscId, maturityTime uint64) {
 	store := ctx.KVStore(k.storeKey)
 	timeBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(timeBytes, maturityTime)
-	store.Set(types.PacketMaturityTimeKey(sequence), timeBytes)
+	store.Set(types.PacketMaturityTimeKey(vscId), timeBytes)
 }
 
-// GetPacketMaturityTime gets the maturity time for a given received VSC packet sequence
-func (k Keeper) GetPacketMaturityTime(ctx sdk.Context, sequence uint64) uint64 {
+// GetPacketMaturityTime gets the maturity time for a given received VSC packet id
+func (k Keeper) GetPacketMaturityTime(ctx sdk.Context, vscId uint64) uint64 {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PacketMaturityTimeKey(sequence))
+	bz := store.Get(types.PacketMaturityTimeKey(vscId))
 	if bz == nil {
 		return 0
 	}
 	return binary.BigEndian.Uint64(bz)
 }
 
-// DeletePacketMaturityTime deletes the the maturity time for a given received VSC packet sequence
-func (k Keeper) DeletePacketMaturityTime(ctx sdk.Context, sequence uint64) {
+// DeletePacketMaturityTime deletes the the maturity time for a given received VSC packet id
+func (k Keeper) DeletePacketMaturityTime(ctx sdk.Context, vscId uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.PacketMaturityTimeKey(sequence))
-}
-
-// IterateUnbondingPacket iterates through the unbonding packets set in the store
-func (k Keeper) IterateUnbondingPacket(ctx sdk.Context, cb func(seq uint64, packet channeltypes.Packet) bool) error {
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.UnbondingPacketPrefix))
-
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		seqBytes := iterator.Key()[len([]byte(types.UnbondingPacketPrefix)):]
-		seq := binary.BigEndian.Uint64(seqBytes)
-
-		var packet channeltypes.Packet
-		err := packet.Unmarshal(iterator.Value())
-		if err != nil {
-			return err
-		}
-
-		if cb(seq, packet) {
-			break
-		}
-	}
-	return nil
-}
-
-// SetUnbondingPacket sets the unbonding packet for a given received packet sequence
-func (k Keeper) SetUnbondingPacket(ctx sdk.Context, sequence uint64, packet channeltypes.Packet) error {
-	store := ctx.KVStore(k.storeKey)
-	bz, err := packet.Marshal()
-	if err != nil {
-		return err
-	}
-	store.Set(types.UnbondingPacketKey(sequence), bz)
-	return nil
-}
-
-// GetUnbondingPacket gets the unbonding packet for a given received packet sequence
-func (k Keeper) GetUnbondingPacket(ctx sdk.Context, sequence uint64) (*channeltypes.Packet, error) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.UnbondingPacketKey(sequence))
-	if bz == nil {
-		return nil, sdkerrors.Wrapf(channeltypes.ErrInvalidPacket, "packet does not exist at sequence: %d", sequence)
-	}
-	var packet channeltypes.Packet
-	err := packet.Unmarshal(bz)
-	if err != nil {
-		return nil, err
-	}
-	return &packet, nil
-}
-
-// DeleteUnbondingPacket deletes the unbonding packet
-func (k Keeper) DeleteUnbondingPacket(ctx sdk.Context, sequence uint64) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.UnbondingPacketKey(sequence))
+	store.Delete(types.PacketMaturityTimeKey(vscId))
 }
 
 // VerifyProviderChain verifies that the chain trying to connect on the channel handshake

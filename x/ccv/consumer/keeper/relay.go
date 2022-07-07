@@ -8,7 +8,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -16,19 +15,15 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// OnRecvPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
-// and set the unbonding time for the packet so that we can WriteAcknowledgement after unbonding time is over.
-func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) exported.Acknowledgement {
+// OnRecvVSCPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
+// and set the maturity time for the packet. Once the maturity time elapses, a VSCMatured packet is
+// sent back to the provider chain.
+func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) exported.Acknowledgement {
 	// get the provider channel
 	providerChannel, found := k.GetProviderChannel(ctx)
 	if found && providerChannel != packet.DestinationChannel {
-		// packet is not sent on provider channel, return error acknowledgement and close channel
-		ack := channeltypes.NewErrorAcknowledgement(
-			fmt.Sprintf("packet sent on a channel %s other than the established provider channel %s", packet.DestinationChannel, providerChannel),
-		)
-		chanCap, _ := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(packet.DestinationPort, packet.DestinationChannel))
-		k.channelKeeper.ChanCloseInit(ctx, packet.DestinationPort, packet.DestinationChannel, chanCap)
-		return &ack
+		// VSC packet was sent on a channel different than the provider channel
+		return utils.OnRecvPacketOnUnknownChannel(ctx, k.scopedKeeper, k.channelKeeper, packet)
 	}
 	if !found {
 		// the first packet from the provider chain
@@ -55,8 +50,7 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 		panic("the unbonding period is not set on the consumer chain")
 	}
 	maturityTime := ctx.BlockTime().Add(unbondingPeriod)
-	k.SetPacketMaturityTime(ctx, packet.Sequence, uint64(maturityTime.UnixNano()))
-	k.SetUnbondingPacket(ctx, packet.Sequence, packet)
+	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, uint64(maturityTime.UnixNano()))
 
 	// set height to VSC id mapping
 	k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())+1, newChanges.ValsetUpdateId)
@@ -66,8 +60,8 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 		k.ClearOutstandingDowntime(ctx, addr)
 	}
 
-	// ack will be sent asynchronously
-	return nil
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	return ack
 }
 
 // UnbondMaturePackets will iterate over the unbonding packets in order and write acknowledgements for all
@@ -83,23 +77,26 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 	if !ok {
 		return sdkerrors.Wrap(channeltypes.ErrChannelNotFound, "provider channel not set")
 	}
-	channelCap, ok := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(types.PortID, channelID))
-	if !ok {
-		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
-	}
 
 	for maturityIterator.Valid() {
-		sequence := types.GetSequenceFromPacketMaturityTimeKey(maturityIterator.Key())
-		if currentTime > binary.BigEndian.Uint64(maturityIterator.Value()) {
-			// write successful ack and delete unbonding information
-			packet, err := k.GetUnbondingPacket(ctx, sequence)
+		vscId := types.GetIdFromPacketMaturityTimeKey(maturityIterator.Key())
+		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
+			// send VSCMatured packet
+			// - construct validator set change packet data
+			packetData := ccv.NewVSCMaturedPacketData(vscId)
+			// - send packet over IBC
+			err := utils.SendIBCPacket(
+				ctx,
+				k.scopedKeeper,
+				k.channelKeeper,
+				channelID,    // source channel id
+				types.PortID, // source port id
+				packetData.GetBytes(),
+			)
 			if err != nil {
 				return err
 			}
-			ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-			k.channelKeeper.WriteAcknowledgement(ctx, channelCap, packet, ack)
-			k.DeletePacketMaturityTime(ctx, sequence)
-			k.DeleteUnbondingPacket(ctx, sequence)
+			k.DeletePacketMaturityTime(ctx, vscId)
 		} else {
 			break
 		}
@@ -192,17 +189,33 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 	k.ClearPendingSlashRequests(ctx)
 }
 
-func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData, ack channeltypes.Acknowledgement) error {
+// OnAcknowledgementPacket handles acknowledgments for sent VSCMatured and Slash packets
+func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
-		// slashing packet was sent to a nonestablished channel
-		if err != sdkerrors.Wrap(
-			channeltypes.ErrInvalidChannelState,
-			packet.DestinationChannel,
-		).Error() {
-			return fmt.Errorf(err)
+		// Reasons for ErrorAcknowledgment
+		//  - packet data could not be successfully decoded
+		//  - packet sent on a non-established channel
+		//  - the Slash packet was ill-formed (errors while handling it)
+		// None of these should ever happen.
+		k.Logger(ctx).Error(
+			"recv ErrorAcknowledgement",
+			"channel", packet.SourceChannel,
+			"error", err,
+		)
+		err := k.ChanCloseInit(ctx, packet.SourcePort, packet.SourceChannel)
+		if err != nil {
+			return fmt.Errorf("ChanCloseInit(%s) failed: %s", packet.SourceChannel, err.Error())
+		}
+		// check if there is an established CCV channel
+		channelID, found := k.GetProviderChannel(ctx)
+		if !found {
+			return sdkerrors.Wrapf(types.ErrNoProposerChannelId, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)
+		}
+		if channelID != packet.SourceChannel {
+			// Close the established CCV channel as well
+			return k.ChanCloseInit(ctx, types.PortID, channelID)
 		}
 	}
-
 	return nil
 }
 

@@ -36,9 +36,6 @@ const (
 	// received over CCV channel but not yet flushed over ABCI
 	PendingChangesKeyString = "pendingchanges"
 
-	// UnbondingPacketPrefix is the key prefix that will store the unbonding packet at the given sequence
-	UnbondingPacketPrefix = "unbondingpacket"
-
 	// PacketMaturityTimePrefix is the key prefix that will store maturity time for each received VSC packet
 	PacketMaturityTimePrefix = "packetmaturitytime"
 
@@ -94,21 +91,14 @@ func PendingChangesKey() []byte {
 	return []byte(PendingChangesKeyString)
 }
 
-// UnbondingPacketKey returns the key for storing unbonding packet for a given received packet sequence
-func UnbondingPacketKey(sequence uint64) []byte {
+// PacketMaturityTimeKey returns the key for storing maturity time for a given received VSC packet id
+func PacketMaturityTimeKey(id uint64) []byte {
 	seqBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(seqBytes, sequence)
-	return append([]byte(UnbondingPacketPrefix), seqBytes...)
-}
-
-// PacketMaturityTimeKey returns the key for storing maturity time for a given received VSC packet sequence
-func PacketMaturityTimeKey(sequence uint64) []byte {
-	seqBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(seqBytes, sequence)
+	binary.BigEndian.PutUint64(seqBytes, id)
 	return append([]byte(PacketMaturityTimePrefix), seqBytes...)
 }
 
-func GetSequenceFromPacketMaturityTimeKey(key []byte) uint64 {
+func GetIdFromPacketMaturityTimeKey(key []byte) uint64 {
 	return binary.BigEndian.Uint64(key[len(PacketMaturityTimePrefix):])
 }
 

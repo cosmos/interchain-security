@@ -389,7 +389,7 @@ func (am AppModule) OnChanCloseConfirm(
 }
 
 // OnRecvPacket implements the IBCModule interface. A successful acknowledgement
-// is returned if the packet data is succesfully decoded and the receive application
+// is returned if the packet data is successfully decoded and the receive application
 // logic returns without error.
 func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,
@@ -404,7 +404,7 @@ func (am AppModule) OnRecvPacket(
 		errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("cannot unmarshal CCV packet data: %s", err.Error()))
 		ack = &errAck
 	} else {
-		ack = am.keeper.OnRecvPacket(ctx, packet, data)
+		ack = am.keeper.OnRecvVSCPacket(ctx, packet, data)
 	}
 
 	ctx.EventManager().EmitEvent(
@@ -415,8 +415,6 @@ func (am AppModule) OnRecvPacket(
 		),
 	)
 
-	// NOTE: In successful case, acknowledgement will be written asynchronously
-	// after unbonding period has elapsed.
 	return ack
 }
 
@@ -431,12 +429,8 @@ func (am AppModule) OnAcknowledgementPacket(
 	if err := ccv.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal consumer packet acknowledgement: %v", err)
 	}
-	var data ccv.SlashPacketData
-	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal consumer packet data: %s", err.Error())
-	}
 
-	if err := am.keeper.OnAcknowledgementPacket(ctx, packet, data, ack); err != nil {
+	if err := am.keeper.OnAcknowledgementPacket(ctx, packet, ack); err != nil {
 		return err
 	}
 

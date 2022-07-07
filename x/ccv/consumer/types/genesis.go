@@ -27,16 +27,16 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 
 // NewRestartGenesisState returns a consumer GenesisState that has already been established.
 func NewRestartGenesisState(clientID, channelID string,
-	unbondingSequences []UnbondingSequence,
+	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate, params Params) *GenesisState {
 
 	return &GenesisState{
-		Params:             params,
-		ProviderClientId:   clientID,
-		ProviderChannelId:  channelID,
-		UnbondingSequences: unbondingSequences,
-		NewChain:           false,
-		InitialValSet:      initValSet,
+		Params:            params,
+		ProviderClientId:  clientID,
+		ProviderChannelId: channelID,
+		MaturingPackets:   maturingPackets,
+		NewChain:          false,
+		InitialValSet:     initValSet,
 	}
 }
 
@@ -76,8 +76,8 @@ func (gs GenesisState) Validate() error {
 		if gs.ProviderChannelId != "" {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider channel id cannot be set for new chain. It must be established on handshake")
 		}
-		if len(gs.UnbondingSequences) != 0 {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "unbonding sequences must be empty for new chain")
+		if len(gs.MaturingPackets) != 0 {
+			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "maturing packets must be empty for new chain")
 		}
 
 		// ensure that initial validator set is same as initial consensus state on provider client.
@@ -101,8 +101,8 @@ func (gs GenesisState) Validate() error {
 		if gs.ProviderClientState != nil || gs.ProviderConsensusState != nil {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client state and consensus states must be nil for a restarting genesis state")
 		}
-		for _, us := range gs.UnbondingSequences {
-			if err := us.Validate(); err != nil {
+		for _, mat := range gs.MaturingPackets {
+			if err := mat.Validate(); err != nil {
 				return sdkerrors.Wrap(err, "invalid unbonding sequences")
 			}
 		}
@@ -110,15 +110,12 @@ func (gs GenesisState) Validate() error {
 	return nil
 }
 
-func (us UnbondingSequence) Validate() error {
-	if us.UnbondingTime == 0 {
-		return sdkerrors.Wrap(ccv.ErrInvalidUnbondingTime, "cannot have 0 unbonding time")
+func (mat MaturingVSCPacket) Validate() error {
+	if mat.MaturityTime == 0 {
+		return sdkerrors.Wrap(ccv.ErrInvalidVSCMaturedTime, "cannot have 0 maturity time")
 	}
-	if err := us.UnbondingPacket.ValidateBasic(); err != nil {
-		return sdkerrors.Wrap(err, "invalid unbonding packet")
-	}
-	if us.UnbondingPacket.Sequence != us.Sequence {
-		return sdkerrors.Wrapf(ccv.ErrInvalidUnbondingSequence, "unbonding sequence %d must match packet sequence %d", us.Sequence, us.UnbondingPacket.Sequence)
+	if mat.VscId == 0 {
+		return sdkerrors.Wrap(ccv.ErrInvalidVSCMaturedId, "cannot have 0 maturity time")
 	}
 	return nil
 }
