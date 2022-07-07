@@ -63,7 +63,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 	)
 	packet := channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.OnRecvPacket(suite.consumerChain.GetContext(), packet, pd)
+	suite.consumerChain.App.(*app.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 
 	// mocking the fact that consumer chain validators should be provider chain validators
 	// TODO: Fix testing suite so we can initialize both chains with the same validator set
@@ -79,9 +79,6 @@ func (suite *KeeperTestSuite) TestGenesis() {
 	unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
 	suite.Require().True(found)
 	suite.Require().Equal(uint64(origTime.Add(unbondingPeriod).UnixNano()), maturityTime, "maturity time is not set correctly in genesis")
-	unbondingPacket, err := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingPacket(suite.consumerChain.GetContext(), 1)
-	suite.Require().NoError(err)
-	suite.Require().Equal(&packet, unbondingPacket, "unbonding packet is not set correctly in genesis")
 
 	suite.Require().NotPanics(func() {
 		suite.consumerChain.App.(*app.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), restartGenesis)

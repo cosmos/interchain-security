@@ -216,49 +216,6 @@ func (suite *KeeperTestSuite) TestPacketMaturityTime() {
 	})
 }
 
-func (suite *KeeperTestSuite) TestUnbondingPacket() {
-	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	suite.Require().NoError(err)
-	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	suite.Require().NoError(err)
-
-	for i := 0; i < 5; i++ {
-		pd := ccv.NewValidatorSetChangePacketData(
-			[]abci.ValidatorUpdate{
-				{
-					PubKey: pk1,
-					Power:  int64(i),
-				},
-				{
-					PubKey: pk2,
-					Power:  int64(i + 5),
-				},
-			},
-			1,
-			nil,
-		)
-		packet := channeltypes.NewPacket(pd.GetBytes(), uint64(i), "provider", "channel-1", "consumer", "channel-1",
-			clienttypes.NewHeight(1, 0), 0)
-		suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingPacket(suite.ctx, uint64(i), packet)
-	}
-
-	// ensure that packets are iterated by sequence
-	i := 0
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IterateUnbondingPacket(suite.ctx, func(seq uint64, packet channeltypes.Packet) bool {
-		suite.Require().Equal(uint64(i), seq)
-		gotPacket, err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingPacket(suite.ctx, seq)
-		suite.Require().NoError(err)
-		suite.Require().Equal(&packet, gotPacket, "packet from get and iteration do not match")
-		i++
-		return false
-	})
-
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeleteUnbondingPacket(suite.ctx, 0)
-	gotPacket, err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingPacket(suite.ctx, 0)
-	suite.Require().Error(err)
-	suite.Require().Nil(gotPacket, "packet is not nil after delete")
-}
-
 func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 	var connectionHops []string
 	channelID := "channel-0"

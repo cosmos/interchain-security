@@ -392,6 +392,52 @@ func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valset
 	return entries, true
 }
 
+// GetMaturedUnbondingOps returns the list of matured unbonding operation ids
+func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64, err error) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.MaturedUnbondingOpsKey())
+	if bz == nil {
+		return nil, nil
+	}
+	err = json.Unmarshal(bz, &ids)
+	if err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
+// AppendMaturedUnbondingOps adds a list of ids to the list of matured unbonding operation ids
+func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	existingIds, err := k.GetMaturedUnbondingOps(ctx)
+	if err != nil {
+		return err
+	}
+	// append works also on a nil list
+	existingIds = append(existingIds, ids...)
+
+	store := ctx.KVStore(k.storeKey)
+	bz, err := json.Marshal(existingIds)
+	if err != nil {
+		return err
+	}
+	store.Set(types.MaturedUnbondingOpsKey(), bz)
+	return nil
+}
+
+// EmptyMaturedUnbondingOps empties and returns list of matured unbonding operation ids (if it exists)
+func (k Keeper) EmptyMaturedUnbondingOps(ctx sdk.Context) ([]uint64, error) {
+	ids, err := k.GetMaturedUnbondingOps(ctx)
+	if err != nil {
+		return nil, err
+	}
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.MaturedUnbondingOpsKey())
+	return ids, nil
+}
+
 func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (string, *ibctmtypes.ClientState, error) {
 	// Retrieve the underlying client state.
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
