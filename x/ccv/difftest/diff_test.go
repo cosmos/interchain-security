@@ -127,11 +127,11 @@ func (n Network) consumeAcks(sender string) []Ack {
 }
 
 func (n Network) commit(sender string) {
-	for _, p := range n.outboxPackets[sender] {
-		p.commits += 1
+	for i := range n.outboxPackets[sender] {
+		n.outboxPackets[sender][i].commits += 1
 	}
-	for _, a := range n.outboxAcks[sender] {
-		a.commits += 1
+	for i := range n.outboxAcks[sender] {
+		n.outboxAcks[sender][i].commits += 1
 	}
 }
 
@@ -153,6 +153,8 @@ type DTTestSuite struct {
 	network Network
 
 	heightLastClientUpdate map[string]int64
+
+	diagnostic string
 }
 
 func TestDTTestSuite(t *testing.T) {
@@ -591,13 +593,13 @@ func (s *DTTestSuite) deliver(chain string) {
 	s.idempotentDeliverAcks(chain)
 	s.idempotentUpdateClient(chain)
 	packets := s.network.consumePackets(s.other(chain))
-	s.Require().NotEmpty(packets, "deliver has not packets but it always should")
+	s.Require().NotEmpty(packets, s.diagnostic+"deliver has not packets but it always should")
 	for _, p := range packets {
 		receiver := s.endpoint(chain)
 		sender := receiver.Counterparty
 		ack, err := difftest.TryRecvPacket(sender, receiver, p.packet)
 		if err != nil {
-			s.FailNow("Relay failed", err)
+			s.FailNow(s.diagnostic+"relay failed", err)
 		}
 		s.network.addAck(chain, ack, p.packet)
 	}
@@ -640,36 +642,36 @@ TRACE TEST
 ~~~~~~~~~~~~
 */
 
-func (s *DTTestSuite) matchState(sharedDiagnostic string, chain string, c difftest.Consequence) {
+func (s *DTTestSuite) matchState(chain string, c difftest.Consequence) {
 	SUTStartTime := time.Unix(SUT_TIME_OFFSET, 0).UTC()
 	modelOffset := time.Second * time.Duration(-5)
 	timeOffset := SUTStartTime.Add(modelOffset)
 
 	if chain == P {
-		s.Require().Equalf(int64(c.H.Provider+int(MODEL_HEIGHT_OFFSET)), s.height(P), "%sP height mismatch", sharedDiagnostic)
-		s.Require().Equalf(int64(c.DelegatorTokens), s.delegatorBalance(), "%sdel balance mismatch", sharedDiagnostic)
+		s.Require().Equalf(int64(c.H.Provider+int(MODEL_HEIGHT_OFFSET)), s.height(P), s.diagnostic+"P height mismatch")
+		s.Require().Equalf(int64(c.DelegatorTokens), s.delegatorBalance(), s.diagnostic+"del balance mismatch")
 		for j, jailedUntilTimestamp := range c.Jailed {
-			s.Require().Equalf(jailedUntilTimestamp != nil, s.isJailed(int64(j)), "%sjail status mismatch for val %d", sharedDiagnostic, j)
+			s.Require().Equalf(jailedUntilTimestamp != nil, s.isJailed(int64(j)), s.diagnostic+"jail status mismatch for val %d", j)
 		}
 		t := time.Second * time.Duration(c.T.Provider)
-		s.Require().Equalf(timeOffset.Add(t), s.time(P), "%sP time mismatch", sharedDiagnostic)
+		s.Require().Equalf(timeOffset.Add(t), s.time(P), s.diagnostic+"P time mismatch")
 		for j, tokens := range c.Tokens {
-			s.Require().Equalf(int64(tokens), s.providerTokens(int64(j)), "%sP tokens mismatch for val %d", sharedDiagnostic, j)
+			s.Require().Equalf(int64(tokens), s.providerTokens(int64(j)), s.diagnostic+"P tokens mismatch for val %d", j)
 		}
 	}
 	if chain == C {
-		s.Require().Equalf(int64(c.H.Consumer+int(MODEL_HEIGHT_OFFSET)), s.height(C), "%sC height mismatch", sharedDiagnostic)
+		s.Require().Equalf(int64(c.H.Consumer+int(MODEL_HEIGHT_OFFSET)), s.height(C), s.diagnostic+"C height mismatch")
 		for j, power := range c.Power {
 			actual, err := s.consumerPower(int64(j))
 			if power != nil {
 				s.Require().Nil(err)
-				s.Require().Equalf(int64(*power), actual, "%sC power mismatch for val %d", sharedDiagnostic, j)
+				s.Require().Equalf(int64(*power), actual, s.diagnostic+"C power mismatch for val %d", j)
 			} else {
-				s.Require().Errorf(err, "%sC power mismatch for val %d, expect 0 (nil), got %d", sharedDiagnostic, j, actual)
+				s.Require().Errorf(err, s.diagnostic+"C power mismatch for val %d, expect 0 (nil), got %d", j, actual)
 			}
 		}
 		t := time.Second * time.Duration(c.T.Consumer)
-		s.Require().Equalf(timeOffset.Add(t), s.time(C), "%sC time mismatch", sharedDiagnostic)
+		s.Require().Equalf(timeOffset.Add(t), s.time(C), s.diagnostic+"C time mismatch")
 	}
 }
 
@@ -684,9 +686,10 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.Trace) {
 	for i, transition := range trace.Transitions {
 		a := transition.Action
 		c := transition.Consequence
-		diagnostic := fmt.Sprintf("[trace %d, action %d, kind: %s] ", traceNum, i, a.Kind)
-
-		fmt.Println(diagnostic)
+		location := fmt.Sprintf("[trace %d, action %d, kind: %s] ", traceNum, i, a.Kind)
+		fmt.Println(location)
+		diagnostic := "[action fail]" + location
+		s.diagnostic = diagnostic
 
 		switch a.Kind {
 		case "Delegate":
@@ -694,13 +697,13 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.Trace) {
 				int64(a.Val),
 				int64(a.Amt),
 			)
-			s.matchState(diagnostic, P, c)
+			s.matchState(P, c)
 		case "Undelegate":
 			s.undelegate(
 				int64(a.Val),
 				int64(a.Amt),
 			)
-			s.matchState(diagnostic, P, c)
+			s.matchState(P, c)
 		case "JumpNBlocks":
 			s.jumpNBlocks(
 				a.Chains,
@@ -709,7 +712,7 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.Trace) {
 			)
 		case "Deliver":
 			s.deliver(a.Chain)
-			s.matchState(diagnostic, a.Chain, c)
+			s.matchState(a.Chain, c)
 		case "ProviderSlash":
 			factor := strconv.FormatFloat(a.Factor, 'f', 3, 64)
 			s.providerSlash(
@@ -718,7 +721,7 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.Trace) {
 				int64(a.Power),
 				sdk.MustNewDecFromStr(factor),
 			)
-			s.matchState(diagnostic, P, c)
+			s.matchState(P, c)
 		case "ConsumerSlash":
 			s.consumerSlash(
 				s.consAddr(int64(a.Val)),
@@ -726,7 +729,7 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.Trace) {
 				int64(a.Power),
 				a.IsDowntime,
 			)
-			s.matchState(diagnostic, C, c)
+			s.matchState(C, c)
 		default:
 			s.Require().FailNow("Failed to parse action")
 		}
@@ -735,9 +738,13 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.Trace) {
 
 func (s *DTTestSuite) TestTracesCovering() {
 	traces := loadTraces("covering.json")
-	const start = 10
-	const end = 11
-	traces = traces[start:end]
+	const start = 191
+	const end = 192
+	if 300 < end {
+		traces = traces[start:]
+	} else {
+		traces = traces[start:end]
+	}
 	for i, trace := range traces {
 		s.Run(fmt.Sprintf("Trace%d", i+start), func() {
 			s.SetupTest()
