@@ -61,8 +61,6 @@ func (suite *KeeperTestSuite) SetupTest() {
 		suite.Require().True(bytes.Compare(addr1, addr2) == 0, "validator mismatch")
 	}
 
-	// suite.DisableConsumerDistribution()
-
 	// move both chains to the next block
 	suite.providerChain.NextBlock()
 	suite.consumerChain.NextBlock()
