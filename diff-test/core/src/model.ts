@@ -99,8 +99,8 @@ class Outbox {
       0,
     ]);
   };
-  isEmpty = () => {
-    return 0 === this.fifo.filter((e) => 1 < e[1]).length;
+  hasAvailable = (): boolean => {
+    return 0 < this.fifo.filter((e) => 1 < e[1]).length;
   };
   consume = (): Packet[] => {
     const [available, unavailable] = _.partition(
@@ -593,9 +593,6 @@ class Model {
       h: this.h,
       t: this.t,
     });
-  };
-  hasUndelivered = (chain): boolean => {
-    return !this.outbox[chain === P ? C : P].isEmpty();
   };
   updateClient = (chain) => {
     if (this.lastUpdateClient[chain] + TRUSTING_SECONDS < this.t[chain]) {
