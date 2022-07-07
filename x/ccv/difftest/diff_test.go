@@ -638,40 +638,40 @@ TRACE TEST
 ~~~~~~~~~~~~
 */
 
-func (s *DTTestSuite) matchState(chain string, c difftest.Consequence) {
+func (s *DTTestSuite) matchState(sharedDiagnostic string, chain string, c difftest.Consequence) {
 	SUTStartTime := time.Unix(SUT_TIME_OFFSET, 0).UTC()
 	modelOffset := time.Second * time.Duration(-5)
 	timeOffset := SUTStartTime.Add(modelOffset)
 
 	if chain == P {
-		s.Require().Equal(int64(c.H.Provider+int(MODEL_HEIGHT_OFFSET)), s.height(P), "P height mismatch")
-		s.Require().Equal(int64(c.DelegatorTokens), s.delegatorBalance(), "del balance mismatch")
+		s.Require().Equalf(int64(c.H.Provider+int(MODEL_HEIGHT_OFFSET)), s.height(P), "%sP height mismatch", sharedDiagnostic)
+		s.Require().Equalf(int64(c.DelegatorTokens), s.delegatorBalance(), "%sdel balance mismatch", sharedDiagnostic)
 		for j, jailedUntilTimestamp := range c.Jailed {
-			s.Require().Equalf(jailedUntilTimestamp != nil, s.isJailed(int64(j)), "jail status mismatch for val ", j)
+			s.Require().Equalf(jailedUntilTimestamp != nil, s.isJailed(int64(j)), "%sjail status mismatch for val %d", sharedDiagnostic, j)
 		}
 		t := time.Second * time.Duration(c.T.Provider)
-		s.Require().Equal(timeOffset.Add(t), s.time(P), "P time mismatch")
+		s.Require().Equalf(timeOffset.Add(t), s.time(P), "%sP time mismatch", sharedDiagnostic)
 		for j, tokens := range c.Tokens {
-			s.Require().Equalf(int64(tokens), s.providerTokens(int64(j)), "P tokens mismatch for val ", j)
+			s.Require().Equalf(int64(tokens), s.providerTokens(int64(j)), "%sP tokens mismatch for val %d", sharedDiagnostic, j)
 		}
 	}
 	if chain == C {
-		s.Require().Equal(int64(c.H.Consumer+int(MODEL_HEIGHT_OFFSET)), s.height(C), "C height mismatch")
+		s.Require().Equalf(int64(c.H.Consumer+int(MODEL_HEIGHT_OFFSET)), s.height(C), "%sC height mismatch", sharedDiagnostic)
 		for j, power := range c.Power {
 			actual, err := s.consumerPower(int64(j))
 			if power != nil {
 				s.Require().Nil(err)
-				s.Require().Equal(int64(*power), actual, "C power mismatch for val ", j)
+				s.Require().Equalf(int64(*power), actual, "%sC power mismatch for val %d", sharedDiagnostic, j)
 			} else {
-				s.Require().Errorf(err, "C power mismatch for val %d, expect 0 (nil), got %d", j, actual)
+				s.Require().Errorf(err, "%sC power mismatch for val %d, expect 0 (nil), got %d", sharedDiagnostic, j, actual)
 			}
 		}
 		t := time.Second * time.Duration(c.T.Consumer)
-		s.Require().Equal(timeOffset.Add(t), s.time(C), "C time mismatch")
+		s.Require().Equalf(timeOffset.Add(t), s.time(C), "%sC time mismatch", sharedDiagnostic)
 	}
 }
 
-func executeTrace(s *DTTestSuite, trace difftest.Trace) {
+func executeTrace(s *DTTestSuite, traceNum int, trace difftest.Trace) {
 
 	/*
 		There is a limitation: .ctx is invalid after a block
@@ -682,20 +682,21 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 	for i, transition := range trace.Transitions {
 		a := transition.Action
 		c := transition.Consequence
-		fmt.Println("Action ", i, ", kind: ", a.Kind)
+		diagnostic := fmt.Sprintf("[trace %d, action %d, kind: %s] ", traceNum, i, a.Kind)
+
 		switch a.Kind {
 		case "Delegate":
 			s.delegate(
 				int64(a.Val),
 				int64(a.Amt),
 			)
-			s.matchState(P, c)
+			s.matchState(diagnostic, P, c)
 		case "Undelegate":
 			s.undelegate(
 				int64(a.Val),
 				int64(a.Amt),
 			)
-			s.matchState(P, c)
+			s.matchState(diagnostic, P, c)
 		case "JumpNBlocks":
 			s.jumpNBlocks(
 				a.Chains,
@@ -704,7 +705,7 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 			)
 		case "Deliver":
 			s.deliver(a.Chain)
-			s.matchState(a.Chain, c)
+			s.matchState(diagnostic, a.Chain, c)
 		case "ProviderSlash":
 			factor := strconv.FormatFloat(a.Factor, 'f', 3, 64)
 			s.providerSlash(
@@ -713,7 +714,7 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 				int64(a.Power),
 				sdk.MustNewDecFromStr(factor),
 			)
-			s.matchState(P, c)
+			s.matchState(diagnostic, P, c)
 		case "ConsumerSlash":
 			s.consumerSlash(
 				s.consAddr(int64(a.Val)),
@@ -721,26 +722,24 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 				int64(a.Power),
 				a.IsDowntime,
 			)
-			s.matchState(C, c)
+			s.matchState(diagnostic, C, c)
 		default:
 			s.Require().FailNow("Failed to parse action")
 		}
 	}
 }
 
-func executeTraces(s *DTTestSuite, traces []difftest.Trace) {
-	const offset = 1
-	traces = traces[offset:]
-	for i, trace := range traces[1:] {
-		s.Run(fmt.Sprintf("Trace%d", i+offset), func() {
+func (s *DTTestSuite) TestTracesCovering() {
+	traces := loadTraces("covering.json")
+	const start = 10
+	const end = 11
+	traces = traces[start:end]
+	for i, trace := range traces {
+		s.Run(fmt.Sprintf("Trace%d", i+start), func() {
 			s.SetupTest()
-			executeTrace(s, trace)
+			executeTrace(s, i, trace)
 		})
 	}
-}
-
-func (s *DTTestSuite) TestTracesCovering() {
-	executeTraces(s, loadTraces("covering.json"))
 }
 
 func loadTraces(fn string) []difftest.Trace {
