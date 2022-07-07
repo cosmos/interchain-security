@@ -24,7 +24,7 @@ function createSmallSubsetOfCoveringTraces() {
     hits.push(hit);
   });
   console.log(`finished reading files and cnting`);
-  const TARGET = 100;
+  const TARGET = 2;
   function score(v): number {
     let x = 0;
     for (let i = 0; i < v.length; i++) {

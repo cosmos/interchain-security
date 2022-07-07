@@ -1,7 +1,7 @@
 const P = 'provider';
 const C = 'consumer';
-const UNBONDING_SECONDS = 45;
-const TRUSTING_SECONDS = 44;
+const UNBONDING_SECONDS = 47;
+const TRUSTING_SECONDS = 46;
 const NUM_VALIDATORS = 4;
 const MAX_VALIDATORS = 2; // allows jailing 2 validators
 const ZERO_TIMEOUT_HEIGHT = 100000;

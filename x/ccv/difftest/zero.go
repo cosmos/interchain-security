@@ -25,8 +25,8 @@ import (
 )
 
 // TODO: move somewhere sensible with the other constants
-const UNBONDING = time.Second * 45
-const TRUSTING = time.Second * 44
+const UNBONDING = time.Second * 47
+const TRUSTING = time.Second * 46
 const MAX_CLOCK_DRIFT = time.Second * 10000
 const TOKEN_SCALAR = 10000
 
