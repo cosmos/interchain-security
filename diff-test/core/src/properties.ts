@@ -1,6 +1,11 @@
 import { strict as assert } from 'node:assert';
 import _ from 'underscore';
-import { P, C, UNBONDING_SECONDS, NUM_VALIDATORS } from './constants.js';
+import {
+  P,
+  C,
+  UNBONDING_SECONDS_C,
+  NUM_VALIDATORS,
+} from './constants.js';
 
 class PartialOrder {
   greatestPred = _.object([
@@ -152,7 +157,7 @@ function bondBasedConsumerVotingPower(blockz: Blocks): boolean {
       const heights = Array.from(blocks[C].keys()).sort((a, b) => a - b);
       for (let i = 0; i < heights.length; i++) {
         const hc_ = heights[i];
-        if (tsHC + UNBONDING_SECONDS <= blocks[C].get(hc_).t) {
+        if (tsHC + UNBONDING_SECONDS_C <= blocks[C].get(hc_).t) {
           return hc_;
         }
       }
