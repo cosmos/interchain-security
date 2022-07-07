@@ -35,15 +35,22 @@ The verification of Interchain Security is split across the following concerns:
 
 Interchain Security is an IBC application and, thus, it relies on IBC to establish a separate channel between the provider chain and every consumer chain. Interchain Security relies on the IBC v3.0 golang [implementation](https://github.com/cosmos/ibc-go/tree/v3.0.0).
 
+IBC packets:
+- ValidatorSetChangePacket
+- MaturedVSCPacket
+- SlashPacketData
+
 | Concern | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | Create IBC clients | `TODO` (ibc-go team) | `Done` | `??` | `TODO` | `NA` |
 | Getting consumer `UnbondingPeriod` from IBC client | `TODO` (ibc-go team) | `??` | `??` | `TODO` | `NA` |
 | Create CCV channel (handshake) | `TODO` (ibc-go team) | `Done` | `??` | `TODO` | `TODO` |
-| Sending IBC packets | `TODO` (ibc-go team) | `Done` | `??` | `TODO` | `NA` |
+| Sending IBC packets <br /> - see `x/ccv/utils/utils.go:SendIBCPacket()` | `TODO` (ibc-go team) | `Done` | `??` | `TODO` | `NA` |
 | Handling acknowledgments | `TODO` (ibc-go team) | `Low coverage` | `??` | `TODO` | `NA` |
 | Handling timeouts | `TODO` (ibc-go team) | `Low coverage` | `??` | `TODO` | `NA` |
 | Handling IBC client expiration | `TODO` (ibc-go team) | `??` | `??` | `TODO` | `NA` |
+| ICS-20 channel creation | `TODO` (ibc-go team) | `??` | `??` | `TODO` | `NA` |
+| ICS-20 transfer | `TODO` (ibc-go team) | `??` | `??` | `TODO` | `NA` |
 
 > @AdityaSripal Is there something else that we should check for? 
 
