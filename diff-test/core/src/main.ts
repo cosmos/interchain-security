@@ -176,7 +176,7 @@ class ActionGenerator {
     return {
       ...a,
       power: _.random(1, 6) * TOKEN_SCALAR,
-      infractionHeight: Math.floor(Math.random() * this.model.h[C]),
+      infractionHeight: Math.floor(Math.random() * this.model.h[P]),
       factor: _.sample([SLASH_DOUBLESIGN, SLASH_DOWNTIME]),
     };
   };
