@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-      - danwt/sonar-coverage
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
