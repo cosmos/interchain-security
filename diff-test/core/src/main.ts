@@ -15,7 +15,10 @@ import {
 import _ from 'underscore';
 import { Model, Status } from './model.js';
 import { Event } from './events.js';
-import { createSmallSubsetOfCoveringTraces } from './subset.js';
+import {
+  createSmallSubsetOfCoveringTraces,
+  justUseAllTheTraces,
+} from './subset.js';
 
 function forceMakeEmptyDir(dir) {
   if (!fs.existsSync(dir)) {
@@ -104,8 +107,8 @@ class ActionGenerator {
       {
         Delegate: 0.03,
         Undelegate: 0.03,
-        JumpNBlocks: 0.45,
-        Deliver: 0.45,
+        JumpNBlocks: 0.35,
+        Deliver: 0.55,
         ProviderSlash: 0.02,
         ConsumerSlash: 0.02,
       },
@@ -313,7 +316,7 @@ function writeEventData(allEvents, fn) {
 
 function gen() {
   const outerEnd = timeSpan();
-  const GOAL_TIME_MINS = 1;
+  const GOAL_TIME_MINS = 2;
   const goalTimeMillis = GOAL_TIME_MINS * 60 * 1000;
   const NUM_ACTIONS = 60;
   const DIR = 'traces/';
@@ -338,12 +341,8 @@ function gen() {
       try {
         doAction(model, a);
       } catch (e) {
-        if (j < 100) {
-          trace.dump('DEBUG.json');
-          throw 'another';
-        } else {
-          break;
-        }
+        trace.dump('DEBUG_CLIENT_EXPIRY.json');
+        throw 'CLIENT EXPIRED';
       }
       trace.consequences.push(model.snapshot());
     }
@@ -400,6 +399,9 @@ if (process.argv.length < 3 || process.argv[2] === 'gen') {
 } else if (process.argv[2] === 'subset') {
   console.log(`createSmallSubsetOfCoveringTraces`);
   createSmallSubsetOfCoveringTraces();
+} else if (process.argv[2] === 'allset') {
+  console.log(`justUseAllTheTraces`);
+  justUseAllTheTraces();
 } else if (process.argv[2] === 'replay') {
   console.log(`replay`);
   const fn =
