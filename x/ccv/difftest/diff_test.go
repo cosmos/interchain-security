@@ -590,7 +590,9 @@ func (s *DTTestSuite) deliver(chain string) {
 	s.idempotentBeginBlock(chain)
 	s.idempotentDeliverAcks(chain)
 	s.idempotentUpdateClient(chain)
-	for _, p := range s.network.consumePackets(s.other(chain)) {
+	packets := s.network.consumePackets(s.other(chain))
+	s.Require().NotEmpty(packets, "deliver has not packets but it always should")
+	for _, p := range packets {
 		receiver := s.endpoint(chain)
 		sender := receiver.Counterparty
 		ack, err := difftest.TryRecvPacket(sender, receiver, p.packet)
@@ -683,6 +685,8 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.Trace) {
 		a := transition.Action
 		c := transition.Consequence
 		diagnostic := fmt.Sprintf("[trace %d, action %d, kind: %s] ", traceNum, i, a.Kind)
+
+		fmt.Println(diagnostic)
 
 		switch a.Kind {
 		case "Delegate":
