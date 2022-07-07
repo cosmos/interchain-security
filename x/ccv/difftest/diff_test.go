@@ -475,16 +475,15 @@ func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 }
 
 func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
-	for _, ack := range s.network.consumeAcks(s.other(receiver)) {
-		s.idempotentUpdateClient(receiver)
-		fmt.Println("tryRecvAck")
-
-		err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.packet, ack.ack)
-		if err != nil {
-			return err
-		}
-		fmt.Println("recvAck successfully")
-	}
+	// for _, ack := range s.network.consumeAcks(s.other(receiver)) {
+	// 	s.idempotentUpdateClient(receiver)
+	// 	fmt.Println("tryRecvAck")
+	// 	err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.packet, ack.ack)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	fmt.Println("recvAck successfully")
+	// }
 	return nil
 }
 
