@@ -10,6 +10,7 @@ import {
   BLOCK_SECONDS,
   SLASH_DOUBLESIGN,
   SLASH_DOWNTIME,
+  MAX_JUMPS,
 } from './constants.js';
 import _ from 'underscore';
 import { Model, Status } from './model.js';
@@ -208,9 +209,15 @@ class ActionGenerator {
   candidateJumpNBlocks = (): Action[] => [{ kind: 'JumpNBlocks' }];
   selectJumpNBlocks = (a): JumpNBlocks => {
     const chainCandidates = [];
-    if (this.model.t[P] === this.model.t[C]) {
+    if (
+      this.model.lastCommitTimestamp[P] ===
+      this.model.lastCommitTimestamp[C]
+    ) {
       chainCandidates.push([P, C]);
-    } else if (this.model.t[P] < this.model.t[C]) {
+    } else if (
+      this.model.lastCommitTimestamp[P] <
+      this.model.lastCommitTimestamp[C]
+    ) {
       chainCandidates.push([P]);
     } else {
       chainCandidates.push([C]);
@@ -218,7 +225,7 @@ class ActionGenerator {
     a = {
       ...a,
       chains: _.sample(chainCandidates),
-      n: _.sample([1, 3]),
+      n: _.sample([1, MAX_JUMPS]),
       secondsPerBlock: BLOCK_SECONDS,
     };
     return a;
@@ -306,7 +313,7 @@ function writeEventData(allEvents, fn) {
 
 function gen() {
   const outerEnd = timeSpan();
-  const GOAL_TIME_MINS = 20;
+  const GOAL_TIME_MINS = 1;
   const goalTimeMillis = GOAL_TIME_MINS * 60 * 1000;
   const NUM_ACTIONS = 60;
   const DIR = 'traces/';
@@ -331,8 +338,12 @@ function gen() {
       try {
         doAction(model, a);
       } catch (e) {
-        trace.dump('DEBUG.json');
-        throw 'another';
+        if (j < 100) {
+          trace.dump('DEBUG.json');
+          throw 'another';
+        } else {
+          break;
+        }
       }
       trace.consequences.push(model.snapshot());
     }
