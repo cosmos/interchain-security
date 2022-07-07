@@ -4,19 +4,13 @@ import (
 	"testing"
 	"time"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/ibc-go/v3/testing/mock"
 
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
-	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/stretchr/testify/require"
@@ -121,7 +115,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				true,
 				cs,
 				consensusState,
-				[]types.UnbondingSequence{{}},
+				[]types.MaturingVSCPacket{{}},
 				valUpdates,
 			},
 			true,
@@ -165,44 +159,6 @@ func TestValidateRestartGenesisState(t *testing.T) {
 
 	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath, false, false)
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash[:])
-	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	require.NoError(t, err)
-	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	require.NoError(t, err)
-
-	pd1 := ccv.NewValidatorSetChangePacketData(
-		[]abci.ValidatorUpdate{
-			{
-				PubKey: pk1,
-				Power:  30,
-			},
-			{
-				PubKey: pk2,
-				Power:  20,
-			},
-		},
-		1,
-		nil,
-	)
-	pdBytes1, err := pd1.Marshal()
-	require.NoError(t, err, "cannot marshal packet data")
-
-	pd2 := ccv.NewValidatorSetChangePacketData(
-		[]abci.ValidatorUpdate{
-			{
-				PubKey: pk1,
-				Power:  40,
-			},
-			{
-				PubKey: pk2,
-				Power:  80,
-			},
-		},
-		2,
-		nil,
-	)
-	pdBytes2, err := pd2.Marshal()
-	require.NoError(t, err, "cannot marshal packet data")
 
 	params := types.DefaultParams()
 	params.Enabled = true
@@ -213,43 +169,16 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		expError bool
 	}{
 		{
-			"valid restart consumer genesis state: empty unbonding sequences",
+			"valid restart consumer genesis state: empty maturing packets",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, valUpdates, params),
 			false,
 		},
 		{
-			"valid restart consumer genesis state: unbonding sequences",
-			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.UnbondingSequence{
-				{
-					1,
-					uint64(time.Now().UnixNano()),
-					channeltypes.Packet{
-						1, "consumer", "ccvchannel1",
-						"provider", "ccvchannel1",
-						pdBytes1,
-						clienttypes.NewHeight(0, 100), 0,
-					},
-				},
-				{
-					3,
-					uint64(time.Now().UnixNano()),
-					channeltypes.Packet{
-						3, "consumer", "ccvchannel1",
-						"provider", "ccvchannel1",
-						pdBytes2,
-						clienttypes.NewHeight(1, 200), 0,
-					},
-				},
-				{
-					5,
-					uint64(time.Now().UnixNano()),
-					channeltypes.Packet{
-						5, "consumer", "ccvchannel2",
-						"provider", "ccvchannel2",
-						pdBytes1,
-						clienttypes.NewHeight(9, 432), 0,
-					},
-				},
+			"valid restart consumer genesis state: maturing packets",
+			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
+				{1, uint64(time.Now().UnixNano())},
+				{3, uint64(time.Now().UnixNano())},
+				{5, uint64(time.Now().UnixNano())},
 			}, valUpdates, params),
 			false,
 		},
@@ -264,50 +193,16 @@ func TestValidateRestartGenesisState(t *testing.T) {
 			true,
 		},
 		{
-			"invalid restart consumer genesis state: unbonding sequence packet is invalid",
-			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.UnbondingSequence{
-				{
-					1,
-					uint64(time.Now().UnixNano()),
-					channeltypes.Packet{
-						1, "", "ccvchannel1",
-						"provider", "ccvchannel1",
-						pdBytes1,
-						clienttypes.NewHeight(0, 100), 0,
-					},
-				},
+			"invalid restart consumer genesis state: maturing packet vscId is invalid",
+			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
+				{0, uint64(time.Now().UnixNano())},
 			}, valUpdates, params),
 			true,
 		},
 		{
-			"invalid restart consumer genesis state: unbonding sequence time is invalid",
-			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.UnbondingSequence{
-				{
-					1,
-					0,
-					channeltypes.Packet{
-						1, "consumer", "ccvchannel1",
-						"provider", "ccvchannel1",
-						pdBytes1,
-						clienttypes.NewHeight(0, 100), 0,
-					},
-				},
-			}, valUpdates, params),
-			true,
-		},
-		{
-			"invalid restart consumer genesis state: unbonding sequence is invalid",
-			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.UnbondingSequence{
-				{
-					8,
-					uint64(time.Now().UnixNano()),
-					channeltypes.Packet{
-						1, "", "ccvchannel1",
-						"provider", "ccvchannel1",
-						pdBytes1,
-						clienttypes.NewHeight(0, 100), 0,
-					},
-				},
+			"invalid restart consumer genesis state: maturing packet time is invalid",
+			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
+				{1, 0},
 			}, valUpdates, params),
 			true,
 		},

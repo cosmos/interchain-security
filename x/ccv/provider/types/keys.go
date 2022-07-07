@@ -51,6 +51,11 @@ const (
 	// need to unbond before a given delegation can unbond on this chain.
 	UnbondingOpPrefix = "unbondingops"
 
+	// MaturedUnbondingOpPrefix is the key prefix that stores the list of all unbonding operations ids
+	// that have matured from a consumer chain perspective,
+	// i.e., no longer waiting on the unbonding period to elapse on any consumer chain
+	MaturedUnbondingOpsPrefix = "maturedunbondingops"
+
 	// ValidatorSetUpdateIdPrefix is the key prefix that stores the current validator set update id
 	ValidatorSetUpdateIdPrefix = "valsetupdateid"
 
@@ -145,6 +150,11 @@ func UnbondingOpKey(id uint64) []byte {
 	binary.BigEndian.PutUint64(bz, id)
 
 	return append([]byte(UnbondingOpPrefix), bz...)
+}
+
+// MaturedUnbondingOpsKey returns the key for storing the list of matured unbonding operations.
+func MaturedUnbondingOpsKey() []byte {
+	return []byte(MaturedUnbondingOpsPrefix)
 }
 
 func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
