@@ -29,8 +29,6 @@ The verification of Interchain Security is split across the following concerns:
 | Accessing state (setters, getters, iterators) | `TODO` | `??` | `Low coverage` |
 | Serialization / deserialization | `TODO` | `??` | `??` |
 
-> @danwt @sainoe Is there something else that we should check for? 
-
 ## Integration with IBC
 
 Interchain Security is an IBC application and, thus, it relies on IBC to establish a separate channel between the provider chain and every consumer chain. Interchain Security relies on the IBC v3.0 golang [implementation](https://github.com/cosmos/ibc-go/tree/v3.0.0).
@@ -52,8 +50,6 @@ IBC packets:
 | ICS-20 channel creation | `TODO` (ibc-go team) | `??` | `??` | `TODO` | `NA` |
 | ICS-20 transfer | `TODO` (ibc-go team) | `??` | `??` | `TODO` | `NA` |
 
-> @AdityaSripal Is there something else that we should check for? 
-
 ## Integration with Cosmos SDK
 
 A prerequisite of the code review is to open a PR with all the [SDK changes](https://github.com/cosmos/cosmos-sdk/tree/interchain-security-rebase) needed by Interchain Security.
@@ -63,8 +59,6 @@ A prerequisite of the code review is to open a PR with all the [SDK changes](htt
 | Changes to staking module | `TODO` (sdk team) | `Low coverage` | `??` | `TODO` | `NA` |
 | Changes to slashing module | `TODO` (sdk team) | `??` | `??` | `TODO` | `NA` |
 | Changes to evidence module | `TODO` (sdk team) | `??` | `??` | `TODO` | `NA` |
-
-> @sainoe Is there something else that we should check for? 
 
 ## Provider Chain Correctness
 
