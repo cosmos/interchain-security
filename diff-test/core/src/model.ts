@@ -10,7 +10,8 @@ import cloneDeep from 'clone-deep';
 import {
   P,
   C,
-  UNBONDING_SECONDS,
+  UNBONDING_SECONDS_P,
+  UNBONDING_SECONDS_C,
   NUM_VALIDATORS,
   MAX_VALIDATORS,
   ZERO_TIMEOUT_HEIGHT,
@@ -223,7 +224,7 @@ class Staking {
         const unval: Unval = {
           val: i,
           unbondingHeight: this.m.h[P],
-          unbondingTime: this.m.t[P] + UNBONDING_SECONDS,
+          unbondingTime: this.m.t[P] + UNBONDING_SECONDS_P,
           onHold: true,
           opID: this.opID,
           expired: false,
@@ -292,7 +293,7 @@ class Staking {
     const und: Undelegation = {
       val: val,
       creationHeight: this.m.h[P],
-      completionTime: this.m.t[P] + UNBONDING_SECONDS,
+      completionTime: this.m.t[P] + UNBONDING_SECONDS_P,
       balance: issuedTokens,
       initialBalance: issuedTokens,
       onHold: true,
@@ -514,7 +515,7 @@ class CCVConsumer {
   onReceiveVSC = (data: Vsc) => {
     this.hToVscID[this.m.h[C] + 1] = data.vscID;
     this.pendingChanges.push(data.updates);
-    this.maturingVscs.set(data.vscID, this.m.t[C] + UNBONDING_SECONDS);
+    this.maturingVscs.set(data.vscID, this.m.t[C] + UNBONDING_SECONDS_C);
     data.slashAcks.forEach((val) => {
       this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_ACK);
       this.outstandingDowntime[val] = false;
@@ -548,6 +549,10 @@ class Model {
     [C, 0],
   ]) as { provider: number; consumer: number };
   t = _.object([
+    [P, 0],
+    [C, 0],
+  ]);
+  lastCommitTimestamp = _.object([
     [P, 0],
     [C, 0],
   ]);
@@ -601,7 +606,8 @@ class Model {
     ) {
       throw 'EXPIRED! - not supposed to happen. Bad model.';
     }
-    this.timestampLastTrustedHeader[chain] = this.t[chain == P ? C : P];
+    this.timestampLastTrustedHeader[chain] =
+      this.lastCommitTimestamp[chain == P ? C : P];
   };
   idempotentBeginBlock = (chain) => {
     if (this.mustBeginBlock[chain]) {
@@ -636,6 +642,7 @@ class Model {
     }
     this.outbox[chain].commit();
     this.blocks.commitBlock(chain, this.snapshot());
+    this.lastCommitTimestamp[chain] = this.t[chain];
     this.mustBeginBlock[chain] = true;
   };
   increaseSeconds = (seconds) => {
