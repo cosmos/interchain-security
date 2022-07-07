@@ -270,19 +270,8 @@ func (s *ProviderTestSuite) TestUndelegationConsumerFirst() {
 	// - check that CCV unbonding op was created
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true)
 
-	// SEND PACKET
-	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
-
-	// Get validator update created in Endblock to use in reconstructing packet
-	valUpdates := s.providerChain.App.GetStakingKeeper().GetValidatorUpdates(s.providerCtx())
-
-	// Get current blocktime
-	oldBlockTime := s.providerCtx().BlockTime()
-
-	// commit block on provider chain and update consumer chain's client
-	commitProviderBlock(s)
-	// Relay packet to consumer chain
-	packet, packetData := sendValUpdatePacket(s, valUpdates, valsetUpdateID, oldBlockTime, 1)
+	// call NextBlock on the provider (which increments the height)
+	s.providerChain.NextBlock()
 
 	// relay 1 VSC packet from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
@@ -322,24 +311,8 @@ func (s *ProviderTestSuite) TestUndelegationNoValsetChange() {
 	// - check that CCV unbonding op was created
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true)
 
-	channelID := s.path.EndpointB.ChannelID
-
-	// save next sequence before sending a packet
-	seq, ok := s.providerChain.App.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(s.providerCtx(), providertypes.PortID, channelID)
-	s.Require().True(ok)
-
-	// SEND PACKET
-	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
-
-	// verify that the packet was sent
-	commit := s.providerChain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(s.providerCtx(), providertypes.PortID, channelID, seq)
-	s.Require().NotNil(commit, "did not find packet commitment")
-
-	// Get validator update created in Endblock to use in reconstructing packet
-	valUpdates := s.providerChain.App.GetStakingKeeper().GetValidatorUpdates(s.providerCtx())
-
-	// Get current blocktime
-	oldBlockTime := s.providerCtx().BlockTime()
+	// call NextBlock on the provider (which increments the height)
+	s.providerChain.NextBlock()
 
 	// relay 1 VSC packet from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
@@ -425,6 +398,41 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt).Sub(bondAmt.Quo(sdk.NewInt(2)))))
 }
 
+// TODO FIX, the consumer is added during SetupTest()
+// Bond some tokens on provider
+// Unbond them to create unbonding op
+// Check unbonding ops on both sides
+// Advance time so that provider's unbonding op completes
+// Check that unbonding has completed in provider staking
+func (s *ProviderTestSuite) TestUnbondingNoConsumer() {
+	// remove the consumer chain, which was already registered during setup
+	s.providerChain.App.(*appProvider.App).ProviderKeeper.DeleteConsumerClientId(s.providerCtx(), s.consumerChain.ChainID)
+
+	// delegate bondAmt and undelegate 1/2 of it
+	bondAmt := sdk.NewInt(10000000)
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, 2)
+	// - check that staking unbonding op was created and onHold is FALSE
+	checkStakingUnbondingOps(s, 1, true, false)
+	// - check that CCV unbonding op was NOT created
+	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
+
+	// increment time so that the unbonding period ends on the provider;
+	// cannot use incrementTimeByProviderUnbondingPeriod() since it tries
+	// to also update the provider's client on the consumer
+	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
+	s.coordinator.IncrementTimeBy(providerUnbondingPeriod + time.Hour)
+
+	// call NextBlock on the provider (which increments the height)
+	s.providerChain.NextBlock()
+
+	// check that the unbonding operation completed
+	// - check that staking unbonding op has been deleted
+	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
+	// - check that half the coins have been returned
+	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
+}
+
 func getBalance(s *ProviderTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
 	return s.providerChain.App.(*appProvider.App).BankKeeper.GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
@@ -438,18 +446,14 @@ func delegateAndUndelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt
 	// check that the correct number of tokens were taken out of the delegator's account
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
-	// INITIAL BOND
-	// Bond some tokens on provider to change validator powers
-	shares, err := s.providerChain.App.GetStakingKeeper().Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
-	s.Require().NoError(err)
+	// undelegate 1/shareDiv
+	valsetUpdateId = undelegate(s, delAddr, valAddr, shares.QuoInt64(shareDiv))
 
 	// check that the tokens have not been returned yet
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
 
-	// UNDELEGATE
-	// Undelegate half
-	_, err = s.providerChain.App.GetStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, shares.QuoInt64(shareDiv))
-	s.Require().NoError(err)
+	return initBalance, valsetUpdateId
+}
 
 // delegate delegates bondAmt to the first validator
 func delegate(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBalance sdk.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
@@ -607,7 +611,7 @@ func endConsumerUnbondingPeriod(s *ProviderTestSuite, origTime time.Time) {
 }
 
 func checkStakingUnbondingOps(s *ProviderTestSuite, id uint64, found bool, onHold bool) {
-	stakingUnbondingOp, wasFound := GetStakingUnbondingDelegationEntry(s.providerCtx(), s.providerChain.App.GetStakingKeeper(), id)
+	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerChain.App.(*appProvider.App).StakingKeeper, id)
 	s.Require().True(found == wasFound)
 	s.Require().True(onHold == (0 < stakingUnbondingOp.UnbondingOnHoldRefCount))
 }
@@ -622,50 +626,7 @@ func checkCCVUnbondingOp(s *ProviderTestSuite, providerCtx sdk.Context, chainID 
 	}
 }
 
-func sendValUpdatePacket(s *ProviderTestSuite, valUpdates []abci.ValidatorUpdate, valUpdateId uint64, blockTime time.Time, packetSequence uint64) (channeltypes.Packet, types.ValidatorSetChangePacketData) {
-	packetData := types.NewValidatorSetChangePacketData(valUpdates, valUpdateId, nil)
-	timeout := uint64(ccv.GetTimeoutTimestamp(blockTime).UnixNano())
-	packet := channeltypes.NewPacket(packetData.GetBytes(), packetSequence, providertypes.PortID, s.path.EndpointB.ChannelID,
-		consumertypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
-
-	// Receive CCV packet on consumer chain
-	err := s.path.EndpointA.RecvPacket(packet)
-	s.Require().NoError(err)
-
-	// update consumer chain hist info
-	s.UpdateConsumerHistInfo(valUpdates)
-
-	return packet, packetData
-}
-
-func commitProviderBlock(s *ProviderTestSuite) {
-	s.coordinator.CommitBlock(s.providerChain)
-	err := s.path.EndpointA.UpdateClient()
-	s.Require().NoError(err)
-}
-
-func commitConsumerBlock(s *ProviderTestSuite) {
-	// commit consumer chain and update provider chain client
-	s.coordinator.CommitBlock(s.consumerChain)
-	err := s.path.EndpointB.UpdateClient()
-	s.Require().NoError(err)
-}
-
-func sendValUpdateAck(s *ProviderTestSuite, providerCtx sdk.Context, packet channeltypes.Packet, packetData types.ValidatorSetChangePacketData) {
-	// TODO: I have commented out the below code because i do not know how to
-	// get s.path.EndpointB.AcknowledgePacket to see the correct time. Instead, I am calling the
-	// CCV module's keeper function directly. This is not as complete of a test.
-	// If we have a more robust time system at some point, use s.path.EndpointB.AcknowledgePacket again.
-
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	// err := s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
-	// s.Require().NoError(err)
-
-	err := s.providerChain.App.(*appProvider.App).ProviderKeeper.OnAcknowledgementPacket(providerCtx, packet, ack)
-	s.Require().NoError(err)
-}
-
-func GetStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
+func getStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
 	stakingUbd, found := k.GetUnbondingDelegationByUnbondingId(ctx, id)
 
 	for _, entry := range stakingUbd.Entries {
