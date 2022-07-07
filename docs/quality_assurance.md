@@ -62,24 +62,23 @@ A prerequisite of the code review is to open a PR with all the [SDK changes](htt
 
 ## Provider Chain Correctness
 
-The main concern addressed in this section is the correctness of the provider chain (e.g., the Cosmos Hub). In other words, when Interchain Security is enabled (i.e., the provider CCV module is enabled), the safety and liveness properties still hold. This _**MUST**_ be the case regardless of the number of consumer chains (i.e., none, one, or multiple consumer chains).
+The main concern addressed in this section is the correctness of the provider chain (e.g., the Cosmos Hub). In other words, when Interchain Security is enabled (i.e., the provider CCV module is enabled), the safety and liveness properties still hold. This _**MUST**_ be the case regardless of the number of consumer chains, i.e., 
+- no consumer chain;
+- one single consumer chain;
+- multiple consumer chains.
 
 | Concern | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| Liveness of undelegations (eventual completion) | `TODO` | `Done` | `??` | `TODO` | `TODO` |
-| Liveness of redelegations | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
-| Liveness of validator unbondings | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
+| Liveness of undelegations <br /> - unbonding delegation entries are eventually removed from `UnbondingDelegation` | `TODO` | `Done` | `??` | `TODO` | `TODO` |
+| Liveness of redelegations <br /> - redelegations entries are eventually removed from `Redelegations` | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
+| Liveness of validator unbondings <br /> - unbonding validators with no delegations are eventually removed from `Validators` | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
 | A validator cannot get slashed more than once for double signing, regardless of how many times it double signs on different chains (consumers or provider) | `TODO` | `??` | `??` | `TODO` | `TODO` |
 | A validator cannot get slashed multiple times for downtime on the same chain without requesting to `Unjail` itself in between | `TODO` | `??` | `??` | `TODO` | `TODO` |
 | A validator can be slashed multiple times for downtime on different chains | `TODO` | `??` | `??` | `TODO` | `TODO` |
-
-> TODO create clear concerns re. these other actions that may affect the provider chain:
-> - Handling proposals
->   - `SpawnConsumerChainProposal`
->   - `StopConsumerChainProposal`
-> - Create consumer chains
-> - Remove consumer chains
-> - Restart provider chain with IS enabled
+| The provider chain can easily be restarted with IS enabled <br /> - `ExportGenesis` & `InitGenesis` | `TODO` | `??` | `??` | `TODO` | `NA` |
+| The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `TODO` | `??` | `??` | `TODO` | `NA` |
+| The provider chain can graciously handle a `StopConsumerChainProposal` <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `TODO` | `??` | `??` | `TODO` | `NA` |
+| The provider chain can graciously handle a `SpawnConsumerChainProposal` <br /> (expected outcome) a consumer chain is added and a client is created | `TODO` | `??` | `??` | `TODO` | `NA` |
 
 ## Interchain Security Protocol Correctness
 
