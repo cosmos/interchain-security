@@ -1,10 +1,10 @@
 const P = 'provider';
 const C = 'consumer';
-const MAX_JUMPS = 4;
+const MAX_JUMPS = 9;
 const BLOCK_SECONDS = 5;
 const TRUSTING_SECONDS = MAX_JUMPS * BLOCK_SECONDS - 1;
-const UNBONDING_SECONDS_P = TRUSTING_SECONDS + 10;
 const UNBONDING_SECONDS_C = TRUSTING_SECONDS + 1;
+const UNBONDING_SECONDS_P = UNBONDING_SECONDS_C + 5 * BLOCK_SECONDS;
 const NUM_VALIDATORS = 4;
 const MAX_VALIDATORS = 2; // allows jailing 2 validators
 const ZERO_TIMEOUT_HEIGHT = 100000;

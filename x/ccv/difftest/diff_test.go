@@ -749,9 +749,9 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.Trace) {
 
 func (s *DTTestSuite) TestTracesCovering() {
 	traces := loadTraces("covering.json")
-	const start = 0
-	const end = 300
-	if 299 < end {
+	const start = 12
+	const end = 9999999999999
+	if 9999999 < end {
 		traces = traces[start:]
 	} else {
 		traces = traces[start:end]
@@ -759,7 +759,8 @@ func (s *DTTestSuite) TestTracesCovering() {
 	for i, trace := range traces {
 		s.Run(fmt.Sprintf("Trace%d", i+start), func() {
 			s.SetupTest()
-			executeTrace(s, i, trace)
+			defer func() { recover() }()
+			executeTrace(s, i+start, trace)
 		})
 	}
 }
@@ -828,6 +829,7 @@ func (s *DTTestSuite) TestAssumptions() {
 
 	maxValsE := uint32(2)
 	maxVals := s.stakingKeeperP().GetParams(s.ctx(P)).MaxValidators
+	// TODO: check min self delegation
 
 	if maxValsE != maxVals {
 		s.T().Fatal(FAIL_MESSAGE)
