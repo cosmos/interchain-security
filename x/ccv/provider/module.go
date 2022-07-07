@@ -157,6 +157,8 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	// Check if there are any consumer chains that are due to be started
 	am.keeper.IteratePendingClientInfo(ctx)
+	// Check if there are any consumer chains that are due to be stopped
+	am.keeper.IteratePendingStopProposal(ctx)
 }
 
 // EndBlock implements the AppModule interface
@@ -242,7 +244,6 @@ func (am AppModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (metadata string, err error) {
-
 	if err := ValidateProviderChannelParams(
 		ctx, am.keeper, order, portID, channelID,
 	); err != nil {
@@ -293,6 +294,7 @@ func (am AppModule) OnChanOpenAck(
 	ctx sdk.Context,
 	portID,
 	channelID string,
+	counterpartyChannelID string,
 	counterpartyVersion string,
 ) error {
 	return sdkerrors.Wrap(ccv.ErrInvalidChannelFlow, "channel handshake must be initiated by consumer chain")
@@ -414,12 +416,8 @@ func (am AppModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {
-	var data ccv.ValidatorSetChangePacketData
-	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal provider packet data: %s", err.Error())
-	}
-	// refund tokens
-	if err := am.keeper.OnTimeoutPacket(ctx, packet, data); err != nil {
+
+	if err := am.keeper.OnTimeoutPacket(ctx, packet); err != nil {
 		return err
 	}
 

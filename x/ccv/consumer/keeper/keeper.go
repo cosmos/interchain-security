@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -138,6 +139,30 @@ func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability
 	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
 }
 
+// SetUnbondingTime sets the unbonding period of the consumer chain
+func (k Keeper) SetUnbondingTime(ctx sdk.Context, unbondingTime time.Duration) {
+	store := ctx.KVStore(k.storeKey)
+	timeBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(timeBytes, uint64(unbondingTime.Nanoseconds()))
+	store.Set(types.UnbondingTimeKey(), timeBytes)
+}
+
+// GetUnbondingTime gets the unbonding period of the consumer chain
+func (k Keeper) GetUnbondingTime(ctx sdk.Context) (time.Duration, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.UnbondingTimeKey())
+	if bz == nil {
+		return 0, false
+	}
+	return time.Duration(binary.BigEndian.Uint64(bz)), true
+}
+
+// DeleteUnbondingTime deletes the unbonding period of the consumer chain
+func (k Keeper) DeleteUnbondingTime(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.UnbondingTimeKey())
+}
+
 // SetProviderClient sets the provider clientID that is validating the chain.
 // Set in InitGenesis
 func (k Keeper) SetProviderClient(ctx sdk.Context, clientID string) {
@@ -171,6 +196,12 @@ func (k Keeper) GetProviderChannel(ctx sdk.Context) (string, bool) {
 	return string(channelIdBytes), true
 }
 
+// DeleteProviderChannel deletes the provider channel ID that is validating the chain.
+func (k Keeper) DeleteProviderChannel(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ProviderChannelKey())
+}
+
 // SetPendingChanges sets the pending validator set change packet that haven't been flushed to ABCI
 func (k Keeper) SetPendingChanges(ctx sdk.Context, updates ccv.ValidatorSetChangePacketData) error {
 	store := ctx.KVStore(k.storeKey)
@@ -200,14 +231,14 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
-// IterateUnbondingTime iterates through the unbonding times set in the store
-func (k Keeper) IterateUnbondingTime(ctx sdk.Context, cb func(seq, timeNs uint64) bool) {
+// IteratePacketMaturityTime iterates through the VSC packet maturity times set in the store
+func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(seq, timeNs uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.UnbondingTimePrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte(types.PacketMaturityTimePrefix))
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		seqBytes := iterator.Key()[len([]byte(types.UnbondingTimePrefix)):]
+		seqBytes := iterator.Key()[len([]byte(types.PacketMaturityTimePrefix)):]
 		seq := binary.BigEndian.Uint64(seqBytes)
 
 		timeNs := binary.BigEndian.Uint64(iterator.Value())
@@ -218,28 +249,28 @@ func (k Keeper) IterateUnbondingTime(ctx sdk.Context, cb func(seq, timeNs uint64
 	}
 }
 
-// SetUnbondingTime sets the unbonding time for a given received packet sequence
-func (k Keeper) SetUnbondingTime(ctx sdk.Context, sequence, unbondingTime uint64) {
+// SetPacketMaturityTime sets the maturity time for a given received VSC packet sequence
+func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, sequence, maturityTime uint64) {
 	store := ctx.KVStore(k.storeKey)
 	timeBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(timeBytes, unbondingTime)
-	store.Set(types.UnbondingTimeKey(sequence), timeBytes)
+	binary.BigEndian.PutUint64(timeBytes, maturityTime)
+	store.Set(types.PacketMaturityTimeKey(sequence), timeBytes)
 }
 
-// GetUnbondingTime gets the unbonding time for a given received packet sequence
-func (k Keeper) GetUnbondingTime(ctx sdk.Context, sequence uint64) uint64 {
+// GetPacketMaturityTime gets the maturity time for a given received VSC packet sequence
+func (k Keeper) GetPacketMaturityTime(ctx sdk.Context, sequence uint64) uint64 {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.UnbondingTimeKey(sequence))
+	bz := store.Get(types.PacketMaturityTimeKey(sequence))
 	if bz == nil {
 		return 0
 	}
 	return binary.BigEndian.Uint64(bz)
 }
 
-// DeleteUnbondingTime deletes the unbonding time
-func (k Keeper) DeleteUnbondingTime(ctx sdk.Context, sequence uint64) {
+// DeletePacketMaturityTime deletes the the maturity time for a given received VSC packet sequence
+func (k Keeper) DeletePacketMaturityTime(ctx sdk.Context, sequence uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.UnbondingTimeKey(sequence))
+	store.Delete(types.PacketMaturityTimeKey(sequence))
 }
 
 // IterateUnbondingPacket iterates through the unbonding packets set in the store

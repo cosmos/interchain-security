@@ -220,7 +220,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		{
 			"valid restart consumer genesis state: unbonding sequences",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.UnbondingSequence{
-				types.UnbondingSequence{
+				{
 					1,
 					uint64(time.Now().UnixNano()),
 					channeltypes.Packet{
@@ -230,7 +230,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 						clienttypes.NewHeight(0, 100), 0,
 					},
 				},
-				types.UnbondingSequence{
+				{
 					3,
 					uint64(time.Now().UnixNano()),
 					channeltypes.Packet{
@@ -240,7 +240,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 						clienttypes.NewHeight(1, 200), 0,
 					},
 				},
-				types.UnbondingSequence{
+				{
 					5,
 					uint64(time.Now().UnixNano()),
 					channeltypes.Packet{
@@ -266,7 +266,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		{
 			"invalid restart consumer genesis state: unbonding sequence packet is invalid",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.UnbondingSequence{
-				types.UnbondingSequence{
+				{
 					1,
 					uint64(time.Now().UnixNano()),
 					channeltypes.Packet{
@@ -282,7 +282,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		{
 			"invalid restart consumer genesis state: unbonding sequence time is invalid",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.UnbondingSequence{
-				types.UnbondingSequence{
+				{
 					1,
 					0,
 					channeltypes.Packet{
@@ -298,7 +298,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		{
 			"invalid restart consumer genesis state: unbonding sequence is invalid",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.UnbondingSequence{
-				types.UnbondingSequence{
+				{
 					8,
 					uint64(time.Now().UnixNano()),
 					channeltypes.Packet{

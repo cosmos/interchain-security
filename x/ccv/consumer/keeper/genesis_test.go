@@ -8,6 +8,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
 	app "github.com/cosmos/interchain-security/app/consumer"
+	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
@@ -74,8 +75,10 @@ func (suite *KeeperTestSuite) TestGenesis() {
 	// ensure reset genesis is set correctly
 	providerChannel := suite.path.EndpointA.ChannelID
 	suite.Require().Equal(providerChannel, restartGenesis.ProviderChannelId)
-	unbondingTime := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingTime(suite.consumerChain.GetContext(), 1)
-	suite.Require().Equal(uint64(origTime.Add(consumertypes.UnbondingTime).UnixNano()), unbondingTime, "unbonding time is not set correctly in genesis")
+	maturityTime := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 1)
+	unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
+	suite.Require().True(found)
+	suite.Require().Equal(uint64(origTime.Add(unbondingPeriod).UnixNano()), maturityTime, "maturity time is not set correctly in genesis")
 	unbondingPacket, err := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingPacket(suite.consumerChain.GetContext(), 1)
 	suite.Require().NoError(err)
 	suite.Require().Equal(&packet, unbondingPacket, "unbonding packet is not set correctly in genesis")
