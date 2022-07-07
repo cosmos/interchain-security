@@ -560,9 +560,6 @@ func (s *DTTestSuite) endBlock(chain string) {
 
 	c.App.Commit()
 
-	// TODO: Maybe this line can be moved to line ʘ‿ʘ below
-	c.LastHeader = c.CurrentTMClientHeader()
-
 	// debug stuff~~~~
 	updates, err := tmtypes.PB2TM.ValidatorUpdates(ebRes.ValidatorUpdates)
 	s.Require().NoError(err)
@@ -580,7 +577,7 @@ func (s *DTTestSuite) endBlock(chain string) {
 	c.Vals = c.NextVals
 	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
 
-	// ʘ‿ʘ
+	c.LastHeader = c.CurrentTMClientHeader()
 
 	for _, e := range ebRes.Events {
 		if e.Type == channeltypes.EventTypeSendPacket {
