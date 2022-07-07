@@ -559,7 +559,7 @@ class Model {
   events = undefined;
   mustBeginBlock = {};
 
-  lastUpdateClient = _.object([
+  timestampLastTrustedHeader = _.object([
     [P, 0],
     [C, 0],
   ]) as { provider: number; consumer: number };
@@ -595,10 +595,13 @@ class Model {
     });
   };
   updateClient = (chain) => {
-    if (this.lastUpdateClient[chain] + TRUSTING_SECONDS < this.t[chain]) {
+    if (
+      this.timestampLastTrustedHeader[chain] + TRUSTING_SECONDS <=
+      this.t[chain]
+    ) {
       throw 'EXPIRED! - not supposed to happen. Bad model.';
     }
-    this.lastUpdateClient[chain] = this.t[chain];
+    this.timestampLastTrustedHeader[chain] = this.t[chain == P ? C : P];
   };
   idempotentBeginBlock = (chain) => {
     if (this.mustBeginBlock[chain]) {

@@ -205,7 +205,6 @@ class ActionGenerator {
       isDowntime: _.sample([true, false]),
     };
   };
-
   candidateJumpNBlocks = (): Action[] => [{ kind: 'JumpNBlocks' }];
   selectJumpNBlocks = (a): JumpNBlocks => {
     const chainCandidates = [];
@@ -219,12 +218,11 @@ class ActionGenerator {
     a = {
       ...a,
       chains: _.sample(chainCandidates),
-      n: _.sample([1, 6]),
+      n: _.sample([1, 3]),
       secondsPerBlock: BLOCK_SECONDS,
     };
     return a;
   };
-
   candidateDeliver = (): Action[] => {
     return [P, C]
       .filter((c) => this.model.outbox[c == P ? C : P].hasAvailable())
@@ -308,7 +306,7 @@ function writeEventData(allEvents, fn) {
 
 function gen() {
   const outerEnd = timeSpan();
-  const GOAL_TIME_MINS = 4;
+  const GOAL_TIME_MINS = 20;
   const goalTimeMillis = GOAL_TIME_MINS * 60 * 1000;
   const NUM_ACTIONS = 60;
   const DIR = 'traces/';
@@ -330,7 +328,12 @@ function gen() {
     for (let j = 0; j < NUM_ACTIONS; j++) {
       const a = actionGenerator.get();
       trace.actions.push(a);
-      doAction(model, a);
+      try {
+        doAction(model, a);
+      } catch (e) {
+        trace.dump('DEBUG.json');
+        throw 'another';
+      }
       trace.consequences.push(model.snapshot());
     }
     let ok = true;

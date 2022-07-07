@@ -101,7 +101,7 @@ func (n Network) addAck(sender string, ack []byte, packet channeltypes.Packet) {
 }
 
 func (n Network) consumePackets(sender string) []Packet {
-	var ret = make([]Packet, 0)
+	ret := []Packet{}
 	for _, p := range n.outboxPackets[sender] {
 		if 1 < p.commits {
 			ret = append(ret, p)
@@ -114,7 +114,7 @@ func (n Network) consumePackets(sender string) []Packet {
 }
 
 func (n Network) consumeAcks(sender string) []Ack {
-	var ret = make([]Ack, 0)
+	ret := []Ack{}
 	for _, a := range n.outboxAcks[sender] {
 		if 1 < a.commits {
 			ret = append(ret, a)
@@ -153,6 +153,7 @@ type DTTestSuite struct {
 	network Network
 
 	heightLastClientUpdate map[string]int64
+	timeLastClientUpdate   map[string]int64
 
 	diagnostic string
 }
@@ -240,6 +241,7 @@ func (s *DTTestSuite) SetupTest() {
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
 	s.network = makeNetwork()
 	s.heightLastClientUpdate = map[string]int64{P: 0, C: 0}
+	s.timeLastClientUpdate = map[string]int64{P: 0, C: 0}
 
 	/*
 		Add two more validator
@@ -475,10 +477,13 @@ func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
 	for _, ack := range s.network.consumeAcks(s.other(receiver)) {
 		s.idempotentUpdateClient(receiver)
+		fmt.Println("tryRecvAck")
+
 		err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.packet, ack.ack)
 		if err != nil {
 			return err
 		}
+		fmt.Println("recvAck successfully")
 	}
 	return nil
 }
@@ -486,12 +491,19 @@ func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
 func (s DTTestSuite) idempotentUpdateClient(chain string) {
 	otherHeight := s.height(s.other(chain))
 	if s.heightLastClientUpdate[chain] < otherHeight {
-
+		then := s.timeLastClientUpdate[chain]
+		now := s.time(chain).Unix()
+		trusting := int64(difftest.TRUSTING / time.Second)
+		expired := then+trusting <= now
+		if then != 0 && expired {
+			s.Require().False(expired, s.diagnostic+"expired")
+		}
 		err := difftest.UpdateReceiverClient(s.endpoint(s.other(chain)), s.endpoint(chain))
 		if err != nil {
 			s.FailNow("Bad test")
 		}
 		s.heightLastClientUpdate[chain] = otherHeight
+		s.timeLastClientUpdate[chain] = s.time(s.other(chain)).Unix()
 	}
 
 }
@@ -738,9 +750,9 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.Trace) {
 
 func (s *DTTestSuite) TestTracesCovering() {
 	traces := loadTraces("covering.json")
-	const start = 191
-	const end = 192
-	if 300 < end {
+	const start = 0
+	const end = 300
+	if 299 < end {
 		traces = traces[start:]
 	} else {
 		traces = traces[start:end]
