@@ -460,7 +460,6 @@ MODEL
 
 func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 	if s.mustBeginBlock[chain] {
-		fmt.Println("beginBlock ", chain)
 
 		s.mustBeginBlock[chain] = false
 
@@ -496,7 +495,6 @@ func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
 func (s DTTestSuite) idempotentUpdateClient(chain string) {
 	otherHeight := s.height(s.other(chain))
 	if s.heightLastClientUpdate[chain] < otherHeight {
-		fmt.Println("update client ", chain)
 
 		err := difftest.UpdateReceiverClient(s.endpoint(s.other(chain)), s.endpoint(chain))
 		if err != nil {
@@ -607,7 +605,6 @@ func (s *DTTestSuite) endBlock(chain string) {
 func (s *DTTestSuite) jumpNBlocks(chains []string, n int64, secondsPerBlock int64) {
 	for i := int64(0); i < n; i++ {
 		for _, c := range chains { // [P] or [P, C] or [C]
-			fmt.Println("endblock ", c)
 			s.endBlock(c)
 		}
 		s.coordinator.CurrentTime = s.coordinator.CurrentTime.Add(time.Second * time.Duration(secondsPerBlock)).UTC()
@@ -672,30 +669,30 @@ func (s *DTTestSuite) matchState(chain string, c difftest.Consequence) {
 	timeOffset := SUTStartTime.Add(modelOffset)
 
 	if chain == P {
-		s.Require().Equal(int64(c.H.Provider+int(MODEL_HEIGHT_OFFSET)), s.height(P))
-		s.Require().Equal(int64(c.DelegatorTokens), s.delegatorBalance())
+		s.Require().Equal(int64(c.H.Provider+int(MODEL_HEIGHT_OFFSET)), s.height(P), "P height mismatch")
+		s.Require().Equal(int64(c.DelegatorTokens), s.delegatorBalance(), "del balance mismatch")
 		for j, jailedUntilTimestamp := range c.Jailed {
-			s.Require().Equal(jailedUntilTimestamp != nil, s.isJailed(int64(j)))
+			s.Require().Equalf(jailedUntilTimestamp != nil, s.isJailed(int64(j)), "jail status mismatch for val ", j)
 		}
 		t := time.Second * time.Duration(c.T.Provider)
-		s.Require().Equal(timeOffset.Add(t), s.time(P))
+		s.Require().Equal(timeOffset.Add(t), s.time(P), "P time mismatch")
 		for j, tokens := range c.Tokens {
-			s.Require().Equal(int64(tokens), s.providerTokens(int64(j)))
+			s.Require().Equalf(int64(tokens), s.providerTokens(int64(j)), "P tokens mismatch for val ", j)
 		}
 	}
 	if chain == C {
-		s.Require().Equal(int64(c.H.Consumer+int(MODEL_HEIGHT_OFFSET)), s.height(C))
+		s.Require().Equal(int64(c.H.Consumer+int(MODEL_HEIGHT_OFFSET)), s.height(C), "C height mismatch")
 		for j, power := range c.Power {
 			actual, err := s.consumerPower(int64(j))
 			if power != nil {
 				s.Require().Nil(err)
-				s.Require().Equal(int64(*power), actual)
+				s.Require().Equal(int64(*power), actual, "C power mismatch for val ", j)
 			} else {
-				s.Require().Error(err)
+				s.Require().Errorf(err, "C power mismatch for val %d, expect 0 (nil), got %d", j, actual)
 			}
 		}
 		t := time.Second * time.Duration(c.T.Consumer)
-		s.Require().Equal(timeOffset.Add(t), s.time(C))
+		s.Require().Equal(timeOffset.Add(t), s.time(C), "C time mismatch")
 	}
 }
 
@@ -737,8 +734,8 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 			factor := strconv.FormatFloat(a.Factor, 'f', 3, 64)
 			s.providerSlash(
 				s.consAddr(int64(a.Val)),
-				int64(a.Power),
 				int64(a.InfractionHeight)+MODEL_HEIGHT_OFFSET,
+				int64(a.Power),
 				sdk.MustNewDecFromStr(factor),
 			)
 			s.matchState(P, c)
@@ -754,6 +751,21 @@ func executeTrace(s *DTTestSuite, trace difftest.Trace) {
 			s.Require().FailNow("Failed to parse action")
 		}
 	}
+}
+
+func executeTraces(s *DTTestSuite, traces []difftest.Trace) {
+	const offset = 1
+	traces = traces[offset:]
+	for i, trace := range traces[1:] {
+		s.Run(fmt.Sprintf("Trace%d", i+offset), func() {
+			s.SetupTest()
+			executeTrace(s, trace)
+		})
+	}
+}
+
+func (s *DTTestSuite) TestTracesCovering() {
+	executeTraces(s, loadTraces("covering.json"))
 }
 
 func loadTraces(fn string) []difftest.Trace {
@@ -777,17 +789,6 @@ func loadTraces(fn string) []difftest.Trace {
 	}
 
 	return ret
-}
-
-func executeTraces(s *DTTestSuite, traces []difftest.Trace) {
-	for i, trace := range traces {
-		fmt.Println("Executing trace ", i)
-		executeTrace(s, trace)
-	}
-}
-
-func (s *DTTestSuite) TestTracesCovering() {
-	executeTraces(s, loadTraces("covering.json"))
 }
 
 /*
