@@ -20,13 +20,12 @@ message GenesisState {
   ibc.lightclients.tendermint.v1.ClientState provider_client_state = 5;
   // ProviderConsensusState filled in on new chain, nil on restart.
   ibc.lightclients.tendermint.v1.ConsensusState provider_consensus_state = 6;
-  repeated UnbondingSequence                    unbonding_sequences      = 7 [(gogoproto.nullable) = false];
+  repeated MaturingVSCPacket                    maturing_packets         = 7 [(gogoproto.nullable) = false];
   repeated .tendermint.abci.ValidatorUpdate     initial_val_set          = 8 [(gogoproto.nullable) = false];
 }
 
 // UnbondingSequence defines the genesis information for each unbonding packet sequence.
-message UnbondingSequence {
-  uint64                     sequence         = 1;
-  uint64                     unbonding_time   = 2;
-  ibc.core.channel.v1.Packet unbonding_packet = 3 [(gogoproto.nullable) = false];
+message MaturingVSCPacket {
+  uint64                     vscId          = 1;
+  uint64                     maturity_time = 2;
 }
