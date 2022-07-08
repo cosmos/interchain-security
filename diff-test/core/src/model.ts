@@ -474,9 +474,6 @@ class CCVConsumer {
       });
       return ret;
     })();
-    if (matured.length < this.maturingVscs.size) {
-      this.m.events.push(Event.CONSUMER_NOT_ALL_MATURED);
-    }
     matured.forEach((vscID) => {
       const data: VscMatured = { vscID };
       this.m.events.push(Event.CONSUMER_SEND_MATURATION);
@@ -552,10 +549,6 @@ class Model {
     [P, 0],
     [C, 0],
   ]);
-  lastCommitTimestamp = _.object([
-    [P, 0],
-    [C, 0],
-  ]);
   outbox = {};
   staking = undefined;
   ccvP = undefined;
@@ -563,11 +556,16 @@ class Model {
   blocks = undefined;
   events = undefined;
   mustBeginBlock = {};
-
-  timestampLastTrustedHeader = _.object([
+  // the timestamp contained in the latest trusted header
+  tLastTrustedHeader = _.object([
     [P, 0],
     [C, 0],
   ]) as { provider: number; consumer: number };
+  // the timestamp of the last committed block
+  tLastCommit = _.object([
+    [P, 0],
+    [C, 0],
+  ]);
 
   constructor(blocks: Blocks, events: Event[]) {
     this.outbox[P] = new Outbox(this, P);
@@ -601,13 +599,12 @@ class Model {
   };
   updateClient = (chain) => {
     if (
-      this.timestampLastTrustedHeader[chain] + TRUSTING_SECONDS <=
+      this.tLastTrustedHeader[chain] + TRUSTING_SECONDS <=
       this.t[chain]
     ) {
       throw 'EXPIRED! - not supposed to happen. Bad model.';
     }
-    this.timestampLastTrustedHeader[chain] =
-      this.lastCommitTimestamp[chain == P ? C : P];
+    this.tLastTrustedHeader[chain] = this.tLastCommit[chain == P ? C : P];
   };
   idempotentBeginBlock = (chain) => {
     if (this.mustBeginBlock[chain]) {
@@ -642,7 +639,7 @@ class Model {
     }
     this.outbox[chain].commit();
     this.blocks.commitBlock(chain, this.snapshot());
-    this.lastCommitTimestamp[chain] = this.t[chain];
+    this.tLastCommit[chain] = this.t[chain];
     this.mustBeginBlock[chain] = true;
   };
   increaseSeconds = (seconds) => {
