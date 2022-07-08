@@ -285,7 +285,10 @@ function dumpTrace(fn: string, events, actions, blocks) {
     events,
     actions,
     blocks: _.mapObject(blocks, (mapHtoSnapshot) =>
-      _.sortBy(Array.from(mapHtoSnapshot.entries()), (pair) => pair[0]),
+      _.sortBy(
+        Array.from(mapHtoSnapshot.entries()),
+        (pair) => pair[0],
+      ).map((pair) => pair[1]),
     ),
   };
   const json = JSON.stringify(toDump, null, 4);
