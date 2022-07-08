@@ -5,6 +5,7 @@ Matches https://github.com/cosmos/ibc/tree/5ea902172b20d53e209f8c1fda9b11d005d9c
 import _ from 'underscore';
 import { Event } from './events.js';
 import { Blocks } from './properties.js';
+import { Sanity } from './sanity.js';
 import cloneDeep from 'clone-deep';
 
 import {
@@ -157,16 +158,19 @@ class Staking {
     let vals = _.range(NUM_VALIDATORS);
     vals = _.sortBy(vals, (i) => -this.tokens[i]);
     vals = vals.filter(valid);
-    return vals.slice(0, MAX_VALIDATORS);
+    vals = vals.slice(0, MAX_VALIDATORS);
+    this.m.sanity.newValSet(vals);
+    return vals;
   };
 
   // validators of last block (lastValidators)
-  lastVals = this.newVals();
+  lastVals;
   // required for computation of changes;
   lastTokens = _.clone(this.tokens);
 
   constructor(model) {
     this.m = model;
+    this.lastVals = this.newVals();
   }
 
   endBlock = () => {
@@ -556,18 +560,10 @@ class Model {
   blocks = undefined;
   events = undefined;
   mustBeginBlock = {};
-  // the timestamp contained in the latest trusted header
-  tLastTrustedHeader = _.object([
-    [P, 0],
-    [C, 0],
-  ]) as { provider: number; consumer: number };
-  // the timestamp of the last committed block
-  tLastCommit = _.object([
-    [P, 0],
-    [C, 0],
-  ]);
+  sanity: Sanity;
 
-  constructor(blocks: Blocks, events: Event[]) {
+  constructor(sanity: Sanity, blocks: Blocks, events: Event[]) {
+    this.sanity = sanity;
     this.outbox[P] = new Outbox(this, P);
     this.outbox[C] = new Outbox(this, C);
     this.staking = new Staking(this);
@@ -597,21 +593,13 @@ class Model {
       t: this.t,
     });
   };
-  updateClient = (chain) => {
-    if (
-      this.tLastTrustedHeader[chain] + TRUSTING_SECONDS <=
-      this.t[chain]
-    ) {
-      throw 'EXPIRED! - not supposed to happen. Bad model.';
-    }
-    this.tLastTrustedHeader[chain] = this.tLastCommit[chain == P ? C : P];
-  };
+
   idempotentBeginBlock = (chain) => {
     if (this.mustBeginBlock[chain]) {
       this.mustBeginBlock[chain] = false;
       this.h[chain] += 1;
       this.t[chain] = this.T;
-      this.updateClient(chain);
+      this.sanity.updateClient(chain, this.t[chain]);
       if (chain === P) {
         // No op
       }
@@ -638,8 +626,8 @@ class Model {
       this.ccvC.endBlock();
     }
     this.outbox[chain].commit();
+    this.sanity.commitBlock(chain, this.t[chain]);
     this.blocks.commitBlock(chain, this.snapshot());
-    this.tLastCommit[chain] = this.t[chain];
     this.mustBeginBlock[chain] = true;
   };
   increaseSeconds = (seconds) => {
@@ -657,7 +645,7 @@ class Model {
   };
   deliver = (chain: string) => {
     this.idempotentBeginBlock(chain);
-    this.updateClient(chain);
+    this.sanity.updateClient(chain, this.t[chain]);
     if (chain === P) {
       this.outbox[C].consume().forEach((p) => {
         this.blocks.partialOrder.deliver(P, p.sendHeight, this.h[P]);

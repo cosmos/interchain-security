@@ -1,7 +1,13 @@
 import * as fs from 'fs';
 import * as childProcess from 'child_process';
 import timeSpan from 'time-span';
-import { Blocks, Block } from './properties.js';
+import {
+  Blocks,
+  Block,
+  bondBasedConsumerVotingPower,
+  stakingWithoutSlashing,
+} from './properties.js';
+import { Sanity } from './sanity.js';
 import {
   P,
   C,
@@ -24,6 +30,11 @@ import _ from 'underscore';
 import { Model, Status } from './model.js';
 import { Event } from './events.js';
 import { createSmallSubsetOfCoveringTraces } from './subset.js';
+
+const meta = {
+  commit: childProcess.execSync('git rev-parse HEAD').toString().trim(),
+  diff: childProcess.execSync('git diff').toString().trim(),
+};
 
 function forceMakeEmptyDir(dir) {
   if (!fs.existsSync(dir)) {
@@ -217,9 +228,15 @@ class ActionGenerator {
   candidateJumpNBlocks = (): Action[] => [{ kind: 'JumpNBlocks' }];
   selectJumpNBlocks = (a): JumpNBlocks => {
     const chainCandidates = [];
-    if (this.model.tLastCommit[P] === this.model.tLastCommit[C]) {
+    // TODO: need to decide where this tLastCommit ect data lives
+    if (
+      this.model.sanity.tLastCommit[P] ===
+      this.model.sanity.tLastCommit[C]
+    ) {
       chainCandidates.push([P, C]);
-    } else if (this.model.tLastCommit[P] < this.model.tLastCommit[C]) {
+    } else if (
+      this.model.sanity.tLastCommit[P] < this.model.sanity.tLastCommit[C]
+    ) {
       chainCandidates.push([P]);
     } else {
       chainCandidates.push([C]);
@@ -258,18 +275,12 @@ class Trace {
         return { action: a, consequence: c };
       },
     );
-    const blocks = _.mapObject(this.blocks, (map) =>
-      _.chain(Array.from(map.entries()))
-        .pairs()
-        .sortBy((pair) => pair[0]),
-    );
-    const meta = {
-      commit: childProcess
-        .execSync('git rev-parse HEAD')
-        .toString()
-        .trim(),
-      diff: childProcess.execSync('git diff').toString().trim(),
-    };
+    // const blocks = _.mapObject(this.blocks, (map) =>
+    //   _.chain(Array.from(map.entries()))
+    //     .pairs()
+    //     .sortBy((pair) => pair[0]),
+    // );
+
     const constants = {
       P,
       C,
@@ -290,12 +301,11 @@ class Trace {
     };
     const toDump = {
       transitions,
-      blocks,
+      // blocks,
       events: this.events,
       meta,
       constants,
     };
-    // const toDump = { transitions, events: this.events };
     const json = JSON.stringify(toDump, null, 4);
     fs.writeFileSync(fn, json);
   };
@@ -359,9 +369,10 @@ function gen(minutes) {
     numRuns = Math.round(goalTimeMillis / (elapsedMillis / i) + 0.5);
     const end = timeSpan();
     ////////////////////////
+    const sanity = new Sanity();
     const blocks = new Blocks();
     const events = [];
-    const model = new Model(blocks, events);
+    const model = new Model(sanity, blocks, events);
     const actionGenerator = new ActionGenerator(model);
     const trace = new Trace();
     for (let j = 0; j < NUM_ACTIONS; j++) {
@@ -402,9 +413,10 @@ function gen(minutes) {
 }
 
 function replay(actions: Action[]) {
+  const sanity = new Sanity();
   const blocks = new Blocks();
   const events = [];
-  const model = new Model(blocks, events);
+  const model = new Model(sanity, blocks, events);
   for (let i = 0; i < actions.length; i++) {
     const a = actions[i];
     doAction(model, a);
