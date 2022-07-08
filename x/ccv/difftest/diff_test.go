@@ -274,7 +274,7 @@ func (s *DTTestSuite) SetupTest() {
 	height := s.providerChain.LastHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
 
-	tmConfig.UnbondingPeriod = difftest.UNBONDING
+	tmConfig.UnbondingPeriod = difftest.UNBONDING_P
 	tmConfig.TrustingPeriod = difftest.TRUSTING
 	tmConfig.MaxClockDrift = difftest.MAX_CLOCK_DRIFT
 	providerClient := ibctmtypes.NewClientState(
@@ -292,7 +292,8 @@ func (s *DTTestSuite) SetupTest() {
 		"",
 	)
 	consumerGenesis := consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, params)
-	s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(s.ctx(C), consumerGenesis)
+	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	ck.InitGenesis(s.ctx(C), consumerGenesis)
 
 	s.path = ibctesting.NewPath(s.consumerChain, s.providerChain)
 	s.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
@@ -313,7 +314,7 @@ func (s *DTTestSuite) SetupTest() {
 	s.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
 
 	cfg := s.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
-	cfg.UnbondingPeriod = difftest.UNBONDING
+	cfg.UnbondingPeriod = difftest.UNBONDING_P
 	cfg.TrustingPeriod = difftest.TRUSTING
 	cfg.MaxClockDrift = difftest.MAX_CLOCK_DRIFT
 	s.path.EndpointB.CreateClient()
@@ -322,6 +323,7 @@ func (s *DTTestSuite) SetupTest() {
 
 	s.coordinator.CreateConnections(s.path)
 	s.coordinator.CreateChannels(s.path)
+	ck.SetUnbondingTime(s.ctx(C), difftest.UNBONDING_C)
 	s.sendEmptyVSCPacket()
 
 	s.jumpNBlocks([]string{P}, 1, 1)
@@ -530,6 +532,12 @@ func (s *DTTestSuite) undelegate(val int64, amt int64) {
 }
 
 func (s *DTTestSuite) hackBeginBlock(chain string) {
+	/*
+		This function is used to begin the next block after committing a block.
+		I tried hard to get rid of it but it seems that the testing framework
+		relies in many places on having a ctx() available. E.g. for UpdateClient
+	*/
+
 	c := s.chain(chain)
 
 	dt := 5
@@ -577,15 +585,6 @@ func (s *DTTestSuite) endBlock(chain string) {
 
 	s.mustBeginBlock[chain] = true
 
-	/*
-		This is a hack!!!
-		See https://github.com/cosmos/interchain-security/issues/127
-		In short:
-			1. needed to access .GetContext()
-			2. Dangerous, non idempotent, leads to different contexts
-		TODO: Must be removed!
-		TODO: why did I add this?? (to make UpdateClient work)
-	*/
 	s.hackBeginBlock(chain)
 
 }
@@ -749,7 +748,7 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.Trace) {
 
 func (s *DTTestSuite) TestTracesCovering() {
 	traces := loadTraces("covering.json")
-	const start = 12
+	const start = 0
 	const end = 9999999999999
 	if 9999999 < end {
 		traces = traces[start:]
@@ -759,7 +758,11 @@ func (s *DTTestSuite) TestTracesCovering() {
 	for i, trace := range traces {
 		s.Run(fmt.Sprintf("Trace%d", i+start), func() {
 			s.SetupTest()
-			defer func() { recover() }()
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Println(r)
+				}
+			}()
 			executeTrace(s, i+start, trace)
 		})
 	}
@@ -807,6 +810,16 @@ func (s *DTTestSuite) TestAssumptions() {
 
 	s.Require().Equal(SLASH_DOWNTIME, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDowntime(s.ctx(P)))
 	s.Require().Equal(SLASH_DOUBLESIGN, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDoubleSign(s.ctx(P)))
+
+	// Need to check
+	//
+	sparams := s.providerChain.App.(*appProvider.App).StakingKeeper.GetParams(s.ctx(P))
+	s.Require().Equal(sparams.UnbondingTime, difftest.UNBONDING_P)
+	s.Require().Equal(
+		s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondingTime(s.ctx(C)),
+		difftest.UNBONDING_C)
+	//providerkeeper.GetUnbondingTime
+	//consumerkeeper.GetUnbondingTime
 
 	s.Require().Equal(false, s.mustBeginBlock[P])
 	s.Require().Equal(false, s.mustBeginBlock[C])
