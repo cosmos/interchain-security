@@ -116,16 +116,21 @@ In addition, the implementation MUST guarantee the following [system properties]
 | A power increase of a validator `val` on a consumer chain can be only due to <br /> - a `Delegate()` / `Redelegate()` to `val` on provider <br /> - `val` joining the provider validator set (another validator leaving the set) | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
 | A power decrease of a validator `val` on a consumer chain can be only due to  <br /> - an `Undelegate()` / `Redelegate()` from `val` on provider <br /> - `val` gets slash on the provider chain <br /> - another validator joining the provider validator set (`val` leaving the set) | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
 | In the case of a power decrease of a validator `val` on a consumer chain at time `t` due to either <br /> - an `Undelegate()` / `Redelegate()` from `val` on provider <br /> - or `val` leaving the set <br /> the corresponding tokens remain locked on the provider chain until at least `t + UnbondingPeriod` | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
+| TBA ...
 
 ---
 
 | Concern re. *Slashable Consumer Misbehavior* | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
+| Multiple downtime infractions committed by the same validator `val` on the same consumer chain without `val` requesting to `Unjail` itself result in a single `SlashPacket` | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
+| TBA ...
 
 ---
 
 | Concern re. *Consumer Rewards Distribution* | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
+| Validators on the provider chain receive rewards for participating in IS | `TODO` | `TODO` | `??` | `TODO` | `NA` |
+| The rewards sent to the provider chain are escrowed on the consumer chains (no double spend) | `TODO` | `TODO` | `NA` | `TODO` | `NA` |
 
 ---
 
@@ -144,6 +149,7 @@ The main concern addressed in this section is the correctness of the consumer ch
 | A chain has the ability to restart as a consumer chain with no more than 24 hours downtime | `TODO` | `NA` | `??` | `TODO` | `NA` |
 | Governance on `gov-cc` | `TODO` | `??` | `??` | `TODO` | `NA` |
 | CosmWasm on `wasm-cc` | `TODO` | `??` | `??` | `TODO` | `NA` |
+| TBA ...
 
 > TODO Scenarios to consider for restarting chains, client expiration
 >   - A consumer chain restarts as a normal chain (after shutting down, either controlled or due to timing out)
