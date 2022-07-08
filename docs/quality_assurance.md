@@ -72,6 +72,7 @@ The main concern addressed in this section is the correctness of the provider ch
 | Liveness of undelegations <br /> - unbonding delegation entries are eventually removed from `UnbondingDelegation` | `TODO` | `Done` | `??` | `TODO` | `TODO` |
 | Liveness of redelegations <br /> - redelegations entries are eventually removed from `Redelegations` | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
 | Liveness of validator unbondings <br /> - unbonding validators with no delegations are eventually removed from `Validators` | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
+| Unbonding operations (undelegations, redelegations, validator unbondings) should eventually complete even if the CCV channel is never established (due to error) | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
 | A validator cannot get slashed more than once for double signing, regardless of how many times it double signs on different chains (consumers or provider) | `TODO` | `??` | `??` | `TODO` | `TODO` |
 | A validator cannot get slashed multiple times for downtime on the same chain without requesting to `Unjail` itself in between | `TODO` | `??` | `??` | `TODO` | `TODO` |
 | A validator can be slashed multiple times for downtime on different chains | `TODO` | `??` | `??` | `TODO` | `TODO` |
@@ -84,16 +85,49 @@ The main concern addressed in this section is the correctness of the provider ch
 
 The main concern addressed in this section is the correctness of the Interchain Security protocol. In other words, the implementation should be aligned with the Interchain Security [specification](https://github.com/cosmos/ibc/blob/master/spec/appics-028-cross-chain-validation/README.md). 
 
-This requires the implementation to guarantee the following system properties (see the specification for details):
-- Bond-Based Consumer Voting Power
-- Slashable Consumer Misbehavior
-- Consumer Rewards Distribution
+The implementation MUST guarantee the *Channel Uniqueness* property, i.e., the channel between the provider chain and a consumer chain MUST be unique.
 
-> TODO create clear concerns from the above properties
+In addition, the implementation MUST guarantee the following [system properties](https://github.com/cosmos/ibc/blob/master/spec/appics-028-cross-chain-validation/system_model_and_properties.md#system-properties):
+- *Validator Set Replication*
+- *Bond-Based Consumer Voting Power*
+- *Slashable Consumer Misbehavior*
+- *Consumer Rewards Distribution*
 
-| Concern | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+---
+
+| Concern re. *Channel Uniqueness* | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+| ------- | ----------- | ------------ | ------------- | ------- | ----- |
+| `SpawnConsumerChainProposal(chainId)` should fail if a consumer with `chainId` already exists | `TODO` | `??` | `??` | `TODO` | `TODO` |
+| The channel handshake for a consumer with `chainId` should fail if there is already an established CCV channel for `chainId`  | `TODO` | `??` | `??` | `TODO` | `TODO` |
+| *Channel Uniqueness* should hold even if a consumer chain restarts | `TODO` | `??` | `??` | `TODO` | `TODO` |
+| *Channel Uniqueness* should hold even when a client expires | `TODO` | `??` | `??` | `TODO` | `TODO` |
+
+---
+
+| Concern re. *Validator Set Replication* | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+| ------- | ----------- | ------------ | ------------- | ------- | ----- |
+| Every validator set on any consumer chain MUST either be or have been a validator set on the provider chain. | `TODO` | `NA` | `??` | `TODO` | `TODO` |
+| Every consumer chain receives the same sequence of `ValidatorSetChangePacket`s in the same order. | `TODO` | `NA` | `??` | `TODO` | `TODO` |
+
+---
+
+| Concern re. *Bond-Based Consumer Voting Power* | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+| ------- | ----------- | ------------ | ------------- | ------- | ----- |
+| A power increase of a validator `val` on a consumer chain can be only due to <br /> - a `Delegate()` / `Redelegate()` to `val` on provider <br /> - `val` joining the provider validator set (another validator leaving the set) | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
+| A power decrease of a validator `val` on a consumer chain can be only due to  <br /> - an `Undelegate()` / `Redelegate()` from `val` on provider <br /> - `val` gets slash on the provider chain <br /> - another validator joining the provider validator set (`val` leaving the set) | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
+| In the case of a power decrease of a validator `val` on a consumer chain at time `t` due to either <br /> - an `Undelegate()` / `Redelegate()` from `val` on provider <br /> - or `val` leaving the set <br /> the corresponding tokens remain locked on the provider chain until at least `t + UnbondingPeriod` | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
+
+---
+
+| Concern re. *Slashable Consumer Misbehavior* | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 
+---
+
+| Concern re. *Consumer Rewards Distribution* | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+| ------- | ----------- | ------------ | ------------- | ------- | ----- |
+
+---
 
 ## Consumer Chain Correctness
 
@@ -107,7 +141,6 @@ The main concern addressed in this section is the correctness of the consumer ch
 | Concern | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | Consumer chain liveness (blocks are being produced) | `TODO` | `NA` | `??` | `TODO` | `NA` |
-| Every validator set on any consumer chain MUST either be or have been a validator set on the provider chain. | `TODO` | `NA` | `??` | `TODO` | `TODO` |
 | A chain has the ability to restart as a consumer chain with no more than 24 hours downtime | `TODO` | `NA` | `??` | `TODO` | `NA` |
 | Governance on `gov-cc` | `TODO` | `??` | `??` | `TODO` | `NA` |
 | CosmWasm on `wasm-cc` | `TODO` | `??` | `??` | `TODO` | `NA` |
