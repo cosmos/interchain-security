@@ -27,7 +27,7 @@ function createSmallSubsetOfCoveringTraces() {
     });
     hits.push(hit);
   });
-  const target = possible.map((x) => (x === 0 ? 0 : 1000));
+  const target = possible.map((x) => Math.min(x, 100));
   console.log(`finished reading files and cnting`);
   function score(v): number {
     let x = 0;
@@ -58,17 +58,4 @@ function createSmallSubsetOfCoveringTraces() {
   fs.writeFileSync(`covering.json`, JSON.stringify(allTraces));
 }
 
-function justUseAllTheTraces() {
-  const DIR = 'traces/';
-  const fns = [];
-  fs.readdirSync(DIR).forEach((file) => {
-    fns.push(`${DIR}${file}`);
-  });
-  const allTraces = [];
-  fns.forEach((fn) => {
-    allTraces.push(JSON.parse(fs.readFileSync(fn, 'utf8')));
-  });
-  fs.writeFileSync(`all.json`, JSON.stringify(allTraces));
-}
-
-export { createSmallSubsetOfCoveringTraces, justUseAllTheTraces };
+export { createSmallSubsetOfCoveringTraces };

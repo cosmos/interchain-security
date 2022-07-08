@@ -1,24 +1,29 @@
 import * as fs from 'fs';
+import * as childProcess from 'child_process';
 import timeSpan from 'time-span';
 import { Blocks, Block } from './properties.js';
 import {
-  NUM_VALIDATORS,
   P,
   C,
+  UNBONDING_SECONDS_P,
+  UNBONDING_SECONDS_C,
+  TRUSTING_SECONDS,
+  NUM_VALIDATORS,
   MAX_VALIDATORS,
-  TOKEN_SCALAR,
-  BLOCK_SECONDS,
+  ZERO_TIMEOUT_HEIGHT,
+  CCV_TIMEOUT_TIMESTAMP,
   SLASH_DOUBLESIGN,
   SLASH_DOWNTIME,
+  JAIL_SECONDS,
+  BLOCK_SECONDS,
+  TOKEN_SCALAR,
+  INITIAL_DELEGATOR_TOKENS,
   MAX_JUMPS,
 } from './constants.js';
 import _ from 'underscore';
 import { Model, Status } from './model.js';
 import { Event } from './events.js';
-import {
-  createSmallSubsetOfCoveringTraces,
-  justUseAllTheTraces,
-} from './subset.js';
+import { createSmallSubsetOfCoveringTraces } from './subset.js';
 
 function forceMakeEmptyDir(dir) {
   if (!fs.existsSync(dir)) {
@@ -212,15 +217,9 @@ class ActionGenerator {
   candidateJumpNBlocks = (): Action[] => [{ kind: 'JumpNBlocks' }];
   selectJumpNBlocks = (a): JumpNBlocks => {
     const chainCandidates = [];
-    if (
-      this.model.lastCommitTimestamp[P] ===
-      this.model.lastCommitTimestamp[C]
-    ) {
+    if (this.model.tLastCommit[P] === this.model.tLastCommit[C]) {
       chainCandidates.push([P, C]);
-    } else if (
-      this.model.lastCommitTimestamp[P] <
-      this.model.lastCommitTimestamp[C]
-    ) {
+    } else if (this.model.tLastCommit[P] < this.model.tLastCommit[C]) {
       chainCandidates.push([P]);
     } else {
       chainCandidates.push([C]);
@@ -264,8 +263,39 @@ class Trace {
         .pairs()
         .sortBy((pair) => pair[0]),
     );
-    // const toDump = { transitions, blocks, events: this.events }
-    const toDump = { transitions, events: this.events };
+    const meta = {
+      commit: childProcess
+        .execSync('git rev-parse HEAD')
+        .toString()
+        .trim(),
+      diff: childProcess.execSync('git diff').toString().trim(),
+    };
+    const constants = {
+      P,
+      C,
+      UNBONDING_SECONDS_P,
+      UNBONDING_SECONDS_C,
+      TRUSTING_SECONDS,
+      NUM_VALIDATORS,
+      MAX_VALIDATORS,
+      ZERO_TIMEOUT_HEIGHT,
+      CCV_TIMEOUT_TIMESTAMP,
+      SLASH_DOUBLESIGN,
+      SLASH_DOWNTIME,
+      JAIL_SECONDS,
+      BLOCK_SECONDS,
+      TOKEN_SCALAR,
+      INITIAL_DELEGATOR_TOKENS,
+      MAX_JUMPS,
+    };
+    const toDump = {
+      transitions,
+      blocks,
+      events: this.events,
+      meta,
+      constants,
+    };
+    // const toDump = { transitions, events: this.events };
     const json = JSON.stringify(toDump, null, 4);
     fs.writeFileSync(fn, json);
   };
@@ -314,10 +344,9 @@ function writeEventData(allEvents, fn) {
   fs.writeFileSync(`cnts${fn}.json`, JSON.stringify(cnts));
 }
 
-function gen() {
+function gen(minutes) {
   const outerEnd = timeSpan();
-  const GOAL_TIME_MINS = 2;
-  const goalTimeMillis = GOAL_TIME_MINS * 60 * 1000;
+  const goalTimeMillis = minutes * 60 * 1000;
   const NUM_ACTIONS = 60;
   const DIR = 'traces/';
   forceMakeEmptyDir(DIR);
@@ -356,6 +385,7 @@ function gen() {
     if (!ok) {
       throw 'stakingWithoutSlashing';
     }
+    trace.blocks = blocks.blocks;
     trace.events = events;
     trace.dump(`${DIR}trace_${i}.json`);
     allEvents.push(...events);
@@ -387,30 +417,22 @@ function replayFile(fn: string, ix: number | undefined) {
   replay(toReplay.transitions.map((t) => t.action));
 }
 
-function quick() {
-  console.log(`hello`);
-}
-
 console.log(`running main`);
 
-if (process.argv.length < 3 || process.argv[2] === 'gen') {
+if (process.argv[2] === 'gen') {
   console.log(`gen`);
-  gen();
+  const minutes = parseInt(process.argv[3]);
+  gen(minutes);
 } else if (process.argv[2] === 'subset') {
   console.log(`createSmallSubsetOfCoveringTraces`);
   createSmallSubsetOfCoveringTraces();
-} else if (process.argv[2] === 'allset') {
-  console.log(`justUseAllTheTraces`);
-  justUseAllTheTraces();
 } else if (process.argv[2] === 'replay') {
   console.log(`replay`);
-  const fn =
-    '/Users/danwt/Documents/work/interchain-security/x/ccv/difftest/covering.json';
-  replayFile(fn, 0);
-  // replayFile(process.argv[3], parseInt(process.argv[4]));
-} else if (process.argv[2] === 'q') {
-  quick();
+  replayFile(process.argv[3], parseInt(process.argv[4]));
+} else if (process.argv[2] === 'q' || process.argv[2] == 'quick') {
+  console.log(`quick`);
 }
+
 console.log(`finished running main`);
 
 export { gen };
