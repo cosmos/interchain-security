@@ -23,7 +23,6 @@ import {
   BLOCK_SECONDS,
   TOKEN_SCALAR,
   INITIAL_DELEGATOR_TOKENS,
-  TRUSTING_SECONDS,
 } from './constants.js';
 
 enum Status {
