@@ -748,8 +748,8 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.Trace) {
 
 func (s *DTTestSuite) TestTracesCovering() {
 	traces := loadTraces("covering.json")
-	const start = 0
-	const end = 9999999999999
+	const start = 88
+	const end = 89
 	if 9999999 < end {
 		traces = traces[start:]
 	} else {
