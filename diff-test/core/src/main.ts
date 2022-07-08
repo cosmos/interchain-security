@@ -275,11 +275,11 @@ class Trace {
         return { action: a, consequence: c };
       },
     );
-    // const blocks = _.mapObject(this.blocks, (map) =>
-    //   _.chain(Array.from(map.entries()))
-    //     .pairs()
-    //     .sortBy((pair) => pair[0]),
-    // );
+    const blocks = _.mapObject(this.blocks, (map) =>
+      _.chain(Array.from(map.entries()))
+        .pairs()
+        .sortBy((pair) => pair[0]),
+    );
 
     const constants = {
       P,
@@ -301,13 +301,17 @@ class Trace {
     };
     const toDump = {
       transitions,
-      // blocks,
+      blocks,
       events: this.events,
       meta,
       constants,
     };
     const json = JSON.stringify(toDump, null, 4);
-    fs.writeFileSync(fn, json);
+    // weirdly, sync seems faster
+    // fs.writeFileSync(fn, json);
+    fs.writeFile(fn, json, (err) => {
+      if (err) throw err;
+    });
   };
 }
 
