@@ -25,7 +25,8 @@ import (
 )
 
 // TODO: move somewhere sensible with the other constants
-const UNBONDING = time.Second * 45
+const UNBONDING_P = time.Second * 70
+const UNBONDING_C = time.Second * 45
 const TRUSTING = time.Second * 44
 const MAX_CLOCK_DRIFT = time.Second * 10000
 const TOKEN_SCALAR = 10000
@@ -139,7 +140,7 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 	})
 
 	stakingGenesis.Params.MaxValidators = 2
-	stakingGenesis.Params.UnbondingTime = UNBONDING
+	stakingGenesis.Params.UnbondingTime = UNBONDING_P
 
 	// set validators and delegations
 	stakingGenesis = *stakingtypes.NewGenesisState(stakingGenesis.Params, validators, delegations)
