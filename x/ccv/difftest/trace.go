@@ -14,7 +14,7 @@ type Action struct {
 	Val              int      `json:"val,omitempty"`
 }
 
-type Consequence struct {
+type Snapshot struct {
 	DelegatorTokens int `json:"delegatorTokens"`
 	H               struct {
 		Consumer int `json:"consumer"`
@@ -52,10 +52,49 @@ type Consequence struct {
 	} `json:"validatorQ"`
 }
 
-type Trace struct {
-	Events      []string `json:"events"`
-	Transitions []struct {
-		Action      `json:"action"`
-		Consequence `json:"consequence"`
-	} `json:"transitions"`
+type Block struct {
+	H        int      `json:"h"`
+	T        int      `json:"t"`
+	Snapshot Snapshot `json:"snapshot"`
+}
+
+type Blocks struct {
+	Consumer []Block `json:"consumer"`
+	Provider []Block `json:"provider"`
+}
+
+type HLastCommit struct {
+	Consumer int `json:"consumer"`
+	Provider int `json:"provider"`
+}
+
+type TraceData struct {
+	Actions []struct {
+		Action      Action      `json:"action"`
+		HLastCommit HLastCommit `json:"hLastCommit"`
+	} `json:"actions"`
+	Blocks    Blocks `json:"blocks"`
+	Constants struct {
+		BlockSeconds           int     `json:"BLOCK_SECONDS"`
+		C                      string  `json:"C"`
+		CcvTimeoutTimestamp    int     `json:"CCV_TIMEOUT_TIMESTAMP"`
+		InitialDelegatorTokens int     `json:"INITIAL_DELEGATOR_TOKENS"`
+		JailSeconds            int     `json:"JAIL_SECONDS"`
+		MaxJumps               int     `json:"MAX_JUMPS"`
+		MaxValidators          int     `json:"MAX_VALIDATORS"`
+		NumValidators          int     `json:"NUM_VALIDATORS"`
+		P                      string  `json:"P"`
+		SlashDoublesign        float64 `json:"SLASH_DOUBLESIGN"`
+		SlashDowntime          float64 `json:"SLASH_DOWNTIME"`
+		TokenScalar            int     `json:"TOKEN_SCALAR"`
+		TrustingSeconds        int     `json:"TRUSTING_SECONDS"`
+		UnbondingSecondsC      int     `json:"UNBONDING_SECONDS_C"`
+		UnbondingSecondsP      int     `json:"UNBONDING_SECONDS_P"`
+		ZeroTimeoutHeight      int     `json:"ZERO_TIMEOUT_HEIGHT"`
+	} `json:"constants"`
+	Events []string `json:"events"`
+	Meta   struct {
+		Commit string `json:"commit"`
+		Diff   string `json:"diff"`
+	} `json:"meta"`
 }
