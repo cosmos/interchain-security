@@ -3,7 +3,6 @@ import * as childProcess from 'child_process';
 import timeSpan from 'time-span';
 import {
   Blocks,
-  Block,
   bondBasedConsumerVotingPower,
   stakingWithoutSlashing,
 } from './properties.js';
@@ -30,6 +29,7 @@ import _ from 'underscore';
 import { Model, Status } from './model.js';
 import { Event } from './events.js';
 import { createSmallSubsetOfCoveringTraces } from './subset.js';
+import cloneDeep from 'clone-deep';
 
 const meta = {
   commit: childProcess.execSync('git rev-parse HEAD').toString().trim(),
@@ -261,27 +261,10 @@ class ActionGenerator {
   };
 }
 
-class Trace {
-  actions = [];
-  consequences = [];
-  blocks = _.object([
-    [P, new Map()],
-    [C, new Map()],
-  ]) as { provider: Map<number, Block>; consumer: Map<number, Block> };
-  events = [];
-  dump = (fn: string) => {
-    const transitions = _.zip(this.actions, this.consequences).map(
-      ([a, c]) => {
-        return { action: a, consequence: c };
-      },
-    );
-    const blocks = _.mapObject(this.blocks, (map) =>
-      _.chain(Array.from(map.entries()))
-        .pairs()
-        .sortBy((pair) => pair[0]),
-    );
-
-    const constants = {
+function dumpTrace(fn: string, events, actions, blocks) {
+  const toDump = {
+    meta,
+    constants: {
       P,
       C,
       UNBONDING_SECONDS_P,
@@ -298,21 +281,15 @@ class Trace {
       TOKEN_SCALAR,
       INITIAL_DELEGATOR_TOKENS,
       MAX_JUMPS,
-    };
-    const toDump = {
-      transitions,
-      blocks,
-      events: this.events,
-      meta,
-      constants,
-    };
-    const json = JSON.stringify(toDump, null, 4);
-    // weirdly, sync seems faster
-    // fs.writeFileSync(fn, json);
-    fs.writeFile(fn, json, (err) => {
-      if (err) throw err;
-    });
+    },
+    events,
+    actions,
+    blocks: _.mapObject(blocks, (mapHtoSnapshot) =>
+      _.sortBy(Array.from(mapHtoSnapshot.entries()), (pair) => pair[0]),
+    ),
   };
+  const json = JSON.stringify(toDump, null, 4);
+  fs.writeFileSync(fn, json);
 }
 
 function doAction(model, action: Action) {
@@ -343,34 +320,16 @@ function doAction(model, action: Action) {
   }
 }
 
-function writeEventData(allEvents, fn) {
-  const eventCnt = _.countBy(allEvents, _.identity);
-  for (const evt in Event) {
-    const evtName = Event[evt];
-    if (!_.has(eventCnt, evtName)) {
-      eventCnt[evtName] = 0;
-    }
-  }
-  const cnts = _.chain(eventCnt)
-    .pairs()
-    .sortBy((pair) => -pair[1]);
-
-  fs.writeFileSync(`cnts${fn}.json`, JSON.stringify(cnts));
-}
-
 function gen(minutes) {
-  const outerEnd = timeSpan();
   const goalTimeMillis = minutes * 60 * 1000;
+  let elapsedMillis = 0;
   const NUM_ACTIONS = 60;
   const DIR = 'traces/';
   forceMakeEmptyDir(DIR);
-  let numRuns = 1000000000000;
-  let elapsedMillis = 0;
   let i = 0;
   const allEvents = [];
-  while (i < numRuns) {
+  while (elapsedMillis < goalTimeMillis) {
     i += 1;
-    numRuns = Math.round(goalTimeMillis / (elapsedMillis / i) + 0.5);
     const end = timeSpan();
     ////////////////////////
     const sanity = new Sanity();
@@ -378,17 +337,14 @@ function gen(minutes) {
     const events = [];
     const model = new Model(sanity, blocks, events);
     const actionGenerator = new ActionGenerator(model);
-    const trace = new Trace();
+    const actions = [];
     for (let j = 0; j < NUM_ACTIONS; j++) {
       const a = actionGenerator.get();
-      trace.actions.push(a);
-      try {
-        doAction(model, a);
-      } catch (e) {
-        trace.dump('DEBUG_CLIENT_EXPIRY.json');
-        throw 'CLIENT EXPIRED';
-      }
-      trace.consequences.push(model.snapshot());
+      doAction(model, a);
+      actions.push({
+        action: a,
+        hLastCommit: cloneDeep(blocks.hLastCommit),
+      });
     }
     let ok = true;
     ok = true;
@@ -400,9 +356,7 @@ function gen(minutes) {
     if (!ok) {
       throw 'stakingWithoutSlashing';
     }
-    trace.blocks = blocks.blocks;
-    trace.events = events;
-    trace.dump(`${DIR}trace_${i}.json`);
+    dumpTrace(`${DIR}trace_${i}.json`, events, actions, blocks.blocks);
     allEvents.push(...events);
     ////////////////////////
     elapsedMillis += end.rounded();
@@ -412,8 +366,22 @@ function gen(minutes) {
       );
     }
   }
-  console.log(`ran for ${Math.floor(outerEnd.seconds() / 60)} mins`);
-  writeEventData(allEvents, 'Gen');
+  logEventData(allEvents);
+}
+
+function logEventData(allEvents) {
+  const eventCnt = _.countBy(allEvents, _.identity);
+  for (const evt in Event) {
+    const evtName = Event[evt];
+    if (!_.has(eventCnt, evtName)) {
+      eventCnt[evtName] = 0;
+    }
+  }
+  const cnts = _.chain(eventCnt)
+    .pairs()
+    .sortBy((pair) => -pair[1]);
+
+  console.log(cnts);
 }
 
 function replay(actions: Action[]) {

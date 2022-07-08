@@ -83,6 +83,10 @@ class Blocks {
     [P, new Map()],
     [C, new Map()],
   ]) as { provider: Map<number, Block>; consumer: Map<number, Block> };
+  hLastCommit = _.object([
+    [P, 0],
+    [C, 0],
+  ]) as { provider: number; consumer: number };
   commitBlock = (chain, snapshot) => {
     const h = snapshot.h[chain];
     const t = snapshot.t[chain];
@@ -92,6 +96,7 @@ class Blocks {
       snapshot,
     };
     this.blocks[chain].set(h, b);
+    this.hLastCommit[chain] = h;
   };
 }
 
