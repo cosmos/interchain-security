@@ -115,8 +115,8 @@ class ActionGenerator {
       this.candidateUndelegate(),
       this.candidateJumpNBlocks(),
       this.candidateDeliver(),
-      this.candidateProviderSlash(),
-      this.candidateConsumerSlash(),
+      // this.candidateProviderSlash(),
+      // this.candidateConsumerSlash(),
     ]);
     const possible = _.uniq(templates.map((a) => a.kind));
     const distr = _.pick(

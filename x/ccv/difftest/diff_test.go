@@ -159,10 +159,17 @@ type DTTestSuite struct {
 }
 
 type Trace struct {
-	diagnostic  string
+	// index of trace in json
+	ix          int
+	actionIx    int
 	blocks      difftest.Blocks
 	hLastCommit map[string]int64
 	started     bool
+}
+
+func (t *Trace) diagnostic() string {
+	return fmt.Sprintf("[diagnostic][trace %d, action %d, hLastCommit {P:%d,C:%d}]", t.ix, t.actionIx, t.hLastCommit[P], t.hLastCommit[C])
+
 }
 
 func TestDTTestSuite(t *testing.T) {
@@ -505,7 +512,7 @@ func (s DTTestSuite) idempotentUpdateClient(chain string) {
 		trusting := int64(difftest.TRUSTING / time.Second)
 		expired := then+trusting <= now
 		if then != 0 && expired {
-			s.Require().False(expired, s.trace.diagnostic+"expired")
+			s.Require().False(expired, s.trace.diagnostic()+" expired")
 		}
 		err := difftest.UpdateReceiverClient(s.endpoint(s.other(chain)), s.endpoint(chain))
 		if err != nil {
@@ -574,6 +581,7 @@ func (s *DTTestSuite) endBlock(chain string) {
 
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
 
+	// commit and compare model state *before* committing in SUT as need sdk.Context
 	if s.trace.started {
 		s.trace.hLastCommit[chain] += 1
 		s.matchState(chain)
@@ -616,13 +624,13 @@ func (s *DTTestSuite) deliver(chain string) {
 	s.idempotentDeliverAcks(chain)
 	s.idempotentUpdateClient(chain)
 	packets := s.network.consumePackets(s.other(chain))
-	s.Require().NotEmpty(packets, s.trace.diagnostic+"deliver has not packets but it always should")
+	s.Require().NotEmpty(packets, s.trace.diagnostic()+"deliver has not packets but it always should")
 	for _, p := range packets {
 		receiver := s.endpoint(chain)
 		sender := receiver.Counterparty
 		ack, err := difftest.TryRecvPacket(sender, receiver, p.packet)
 		if err != nil {
-			s.FailNow(s.trace.diagnostic+"relay failed", err)
+			s.FailNow(s.trace.diagnostic()+"relay failed", err)
 		}
 		s.network.addAck(chain, ack, p.packet)
 	}
@@ -672,33 +680,35 @@ func (s *DTTestSuite) matchState(chain string) {
 
 	t := s.trace
 
+	diagnostic := t.diagnostic()
+
 	if chain == P {
 		ss := t.blocks.Provider[s.trace.hLastCommit[P]].Snapshot
-		s.Require().Equalf(int64(ss.H.Provider+int(MODEL_HEIGHT_OFFSET)), s.height(P), t.diagnostic+"P height mismatch")
-		s.Require().Equalf(int64(ss.DelegatorTokens), s.delegatorBalance(), t.diagnostic+"del balance mismatch")
+		s.Require().Equalf(int64(ss.H.Provider+int(MODEL_HEIGHT_OFFSET)), s.height(P), diagnostic+"P height mismatch")
+		s.Require().Equalf(int64(ss.DelegatorTokens), s.delegatorBalance(), diagnostic+"del balance mismatch")
 		for j, jailedUntilTimestamp := range ss.Jailed {
-			s.Require().Equalf(jailedUntilTimestamp != nil, s.isJailed(int64(j)), t.diagnostic+"jail status mismatch for val %d", j)
+			s.Require().Equalf(jailedUntilTimestamp != nil, s.isJailed(int64(j)), diagnostic+"jail status mismatch for val %d", j)
 		}
 		offset := time.Second * time.Duration(ss.T.Provider)
-		s.Require().Equalf(timeOffset.Add(offset), s.time(P), t.diagnostic+"P time mismatch")
+		s.Require().Equalf(timeOffset.Add(offset), s.time(P), diagnostic+"P time mismatch")
 		for j, tokens := range ss.Tokens {
-			s.Require().Equalf(int64(tokens), s.providerTokens(int64(j)), t.diagnostic+"P tokens mismatch for val %d", j)
+			s.Require().Equalf(int64(tokens), s.providerTokens(int64(j)), diagnostic+"P tokens mismatch for val %d", j)
 		}
 	}
 	if chain == C {
 		ss := t.blocks.Consumer[s.trace.hLastCommit[C]].Snapshot
-		s.Require().Equalf(int64(ss.H.Consumer+int(MODEL_HEIGHT_OFFSET)), s.height(C), t.diagnostic+"C height mismatch")
+		s.Require().Equalf(int64(ss.H.Consumer+int(MODEL_HEIGHT_OFFSET)), s.height(C), diagnostic+"C height mismatch")
 		for j, power := range ss.Power {
 			actual, err := s.consumerPower(int64(j))
 			if power != nil {
 				s.Require().Nil(err)
-				s.Require().Equalf(int64(*power), actual, t.diagnostic+"C power mismatch for val %d", j)
+				s.Require().Equalf(int64(*power), actual, diagnostic+"C power mismatch for val %d", j)
 			} else {
-				s.Require().Errorf(err, t.diagnostic+"C power mismatch for val %d, expect 0 (nil), got %d", j, actual)
+				s.Require().Errorf(err, diagnostic+"C power mismatch for val %d, expect 0 (nil), got %d", j, actual)
 			}
 		}
 		offset := time.Second * time.Duration(ss.T.Consumer)
-		s.Require().Equalf(timeOffset.Add(offset), s.time(C), t.diagnostic+"C time mismatch")
+		s.Require().Equalf(timeOffset.Add(offset), s.time(C), diagnostic+"C time mismatch")
 	}
 }
 
@@ -706,10 +716,7 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 
 	for i, action := range trace.Actions {
 		a := action.Action
-		location := fmt.Sprintf("[trace %d, action %d, kind: %s] ", traceNum, i, a.Kind)
-		fmt.Println(location)
-		diagnostic := "[action fail]" + location
-		s.trace.diagnostic = diagnostic
+		s.trace.actionIx = i
 
 		switch a.Kind {
 		case "Delegate":
@@ -752,10 +759,10 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 }
 
 func (s *DTTestSuite) TestTracesCovering() {
-	traces := loadTraces("covering.json")
-	const start = 0
-	const end = 999999999999999
-	if 9999999 < end {
+	traces := loadTraces("noslash.json")
+	const start = 139
+	const end = 140
+	if len(traces) <= end {
 		traces = traces[start:]
 	} else {
 		traces = traces[start:end]
@@ -769,7 +776,8 @@ func (s *DTTestSuite) TestTracesCovering() {
 				}
 			}()
 			s.trace = Trace{
-				"",
+				i + start,
+				0,
 				trace.Blocks,
 				map[string]int64{P: 0, C: 0},
 				true,
