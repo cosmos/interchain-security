@@ -8,7 +8,7 @@ The verification of Interchain Security is done using the following approaches:
 - unit testing
 - differential testing
 - incentivized testnet
-- audit (with the Apalache team from Informal Systems)
+- protocol audit (with the Apalache team from Informal Systems)
 
 The verification of Interchain Security is split across the following concerns:
 - Correct software engineering practices (e.g., error handling, serialization, deserialization).
@@ -18,7 +18,7 @@ The verification of Interchain Security is split across the following concerns:
 - The correctness of the Interchain Security protocol, i.e., the protocol follows the [specification](https://github.com/cosmos/ibc/blob/master/spec/appics-028-cross-chain-validation/README.md).
 - The correctness of the consumer chain, i.e., both liveness or safety hold.
 
-> TODO decide what should be covered by the audit and the priority
+> TODO decide what should be covered by the protocol audit and the priority
 
 ## Software Engineering
 
@@ -38,7 +38,7 @@ IBC packets:
 - MaturedVSCPacket
 - SlashPacketData
 
-| Concern | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+| Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | Create IBC clients | `TODO` (ibc-go team) | `Done` | `??` | `TODO` | `NA` |
 | Getting consumer `UnbondingPeriod` from IBC client | `TODO` (ibc-go team) | `??` | `??` | `TODO` | `NA` |
@@ -54,7 +54,7 @@ IBC packets:
 
 A prerequisite of the code review is to open a PR with all the [SDK changes](https://github.com/cosmos/cosmos-sdk/tree/interchain-security-rebase) needed by Interchain Security.
 
-| Concern | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+| Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | Changes to staking module | `TODO` (sdk team) | `Low coverage` | `??` | `TODO` | `NA` |
 | Changes to slashing module | `TODO` (sdk team) | `??` | `??` | `TODO` | `NA` |
@@ -67,7 +67,7 @@ The main concern addressed in this section is the correctness of the provider ch
 - one single consumer chain;
 - multiple consumer chains.
 
-| Concern | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+| Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | Liveness of undelegations <br /> - unbonding delegation entries are eventually removed from `UnbondingDelegation` | `TODO` | `Done` | `??` | `TODO` | `TODO` |
 | Liveness of redelegations <br /> - redelegations entries are eventually removed from `Redelegations` | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
@@ -95,7 +95,7 @@ In addition, the implementation MUST guarantee the following [system properties]
 
 ---
 
-| Concern re. *Channel Uniqueness* | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+| Concern re. *Channel Uniqueness* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | `SpawnConsumerChainProposal(chainId)` should fail if a consumer with `chainId` already exists | `TODO` | `??` | `??` | `TODO` | `TODO` |
 | The channel handshake for a consumer with `chainId` should fail if there is already an established CCV channel for `chainId`  | `TODO` | `??` | `??` | `TODO` | `TODO` |
@@ -104,14 +104,14 @@ In addition, the implementation MUST guarantee the following [system properties]
 
 ---
 
-| Concern re. *Validator Set Replication* | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+| Concern re. *Validator Set Replication* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | Every validator set on any consumer chain MUST either be or have been a validator set on the provider chain. | `TODO` | `NA` | `??` | `TODO` | `TODO` |
 | Every consumer chain receives the same sequence of `ValidatorSetChangePacket`s in the same order. | `TODO` | `NA` | `??` | `TODO` | `TODO` |
 
 ---
 
-| Concern re. *Bond-Based Consumer Voting Power* | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+| Concern re. *Bond-Based Consumer Voting Power* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | A power increase of a validator `val` on a consumer chain can be only due to <br /> - a `Delegate()` / `Redelegate()` to `val` on provider <br /> - `val` joining the provider validator set (another validator leaving the set) | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
 | A power decrease of a validator `val` on a consumer chain can be only due to  <br /> - an `Undelegate()` / `Redelegate()` from `val` on provider <br /> - `val` gets slash on the provider chain <br /> - another validator joining the provider validator set (`val` leaving the set) | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
@@ -120,14 +120,14 @@ In addition, the implementation MUST guarantee the following [system properties]
 
 ---
 
-| Concern re. *Slashable Consumer Misbehavior* | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+| Concern re. *Slashable Consumer Misbehavior* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | Multiple downtime infractions committed by the same validator `val` on the same consumer chain without `val` requesting to `Unjail` itself result in a single `SlashPacket` | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
 | TBA ...
 
 ---
 
-| Concern re. *Consumer Rewards Distribution* | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+| Concern re. *Consumer Rewards Distribution* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | Validators on the provider chain receive rewards for participating in IS | `TODO` | `TODO` | `??` | `TODO` | `NA` |
 | The rewards sent to the provider chain are escrowed on the consumer chains (no double spend) | `TODO` | `TODO` | `NA` | `TODO` | `NA` |
@@ -143,7 +143,7 @@ The main concern addressed in this section is the correctness of the consumer ch
 
 > TODO create clear concerns for `gov-cc` and `wasm-cc` once the implementations are done
 
-| Concern | Code Review | Unit Testing | Diff. testing | Testnet | Audit |
+| Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | Consumer chain liveness (blocks are being produced) | `TODO` | `NA` | `??` | `TODO` | `NA` |
 | A chain has the ability to restart as a consumer chain with no more than 24 hours downtime | `TODO` | `NA` | `??` | `TODO` | `NA` |
