@@ -15,7 +15,6 @@ The code for CCV is housed under [x/ccv](./x/ccv). The `types` folder contains t
 
 NOTE: At the moment the testing app may not be functional, please rely on the IBC testing suite to write unit tests for the moment.
 
-=======
 ## Instructions
 
 **Prerequisites**
