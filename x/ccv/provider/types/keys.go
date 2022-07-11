@@ -174,7 +174,7 @@ func PendingStopProposalKey(timestamp time.Time, chainID string) []byte {
 	return bz
 }
 
-// ParsePendingStopProposalKey returns the time and chainID for a pending client key or an error if unparseable
+// ParsePendingStopProposalKey returns the time and chain ID for a pending consumer chain stop proposal key or an error if unparseable
 func ParsePendingStopProposalKey(bz []byte) (time.Time, string, error) {
 	prefixL := len(PendingStopProposalKeyPrefix)
 	if prefix := bz[:prefixL]; string(prefix) != PendingStopProposalKeyPrefix {
