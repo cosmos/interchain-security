@@ -1,9 +1,7 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
-	"strings"
 	"time"
 
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -223,11 +221,16 @@ func (k Keeper) GetPendingClientInfo(ctx sdk.Context, timestamp time.Time, chain
 	return clientInfo
 }
 
+func (k Keeper) PendingClientIterator(ctx sdk.Context) sdk.Iterator {
+	store := ctx.KVStore(k.storeKey)
+	return sdk.KVStorePrefixIterator(store, []byte(types.PendingClientKeyPrefix))
+}
+
 // IteratePendingClientInfo iterates over the pending client info in order and creates the consumer client if the spawn time has passed,
 // otherwise it will break out of loop and return.
 func (k Keeper) IteratePendingClientInfo(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.PendingClientKeyPrefix+"/"))
+
+	iterator := k.PendingClientIterator(ctx)
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -237,13 +240,11 @@ func (k Keeper) IteratePendingClientInfo(ctx sdk.Context) {
 	execProposals := []types.CreateConsumerChainProposal{}
 
 	for ; iterator.Valid(); iterator.Next() {
-		suffixKey := iterator.Key()
-		// splitKey contains the bigendian time in the second element and the chainID in the third element
-		splitKey := strings.Split(string(suffixKey), "/")
-
-		timeNano := binary.BigEndian.Uint64([]byte(splitKey[1]))
-		spawnTime := time.Unix(0, int64(timeNano))
-		chainID := string([]byte(splitKey[2]))
+		key := iterator.Key()
+		spawnTime, chainID, err := types.ParsePendingClientKey(key)
+		if err != nil {
+			panic(fmt.Errorf("failed to parse pending client key: %w", err))
+		}
 
 		var clientInfo types.CreateConsumerChainProposal
 		k.cdc.MustUnmarshal(iterator.Value(), &clientInfo)
@@ -293,11 +294,15 @@ func (k Keeper) DeletePendingStopProposals(ctx sdk.Context, proposals ...types.S
 	}
 }
 
+func (k Keeper) PendingStopProposalIterator(ctx sdk.Context) sdk.Iterator {
+	store := ctx.KVStore(k.storeKey)
+	return sdk.KVStorePrefixIterator(store, []byte(types.PendingStopProposalKeyPrefix))
+}
+
 // IteratePendingStopProposal iterates over the pending stop proposals in order and stop the chain if the stop time has passed,
 // otherwise it will break out of loop and return.
 func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.PendingStopProposalKeyPrefix+"/"))
+	iterator := k.PendingStopProposalIterator(ctx)
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -308,13 +313,11 @@ func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
 	execProposals := []types.StopConsumerChainProposal{}
 
 	for ; iterator.Valid(); iterator.Next() {
-		suffixKey := iterator.Key()
-		// splitKey contains the bigendian time in the second element and the chainID in the third element
-		splitKey := strings.Split(string(suffixKey), "/")
-
-		timeNano := binary.BigEndian.Uint64([]byte(splitKey[1]))
-		stopTime := time.Unix(0, int64(timeNano))
-		chainID := string([]byte(splitKey[2]))
+		key := iterator.Key()
+		stopTime, chainID, err := types.ParsePendingStopProposalKey(key)
+		if err != nil {
+			panic(fmt.Errorf("failed to parse pending stop proposal key: %w", err))
+		}
 
 		if !ctx.BlockTime().Before(stopTime) {
 			k.StopConsumerChain(ctx, chainID, false, true)
