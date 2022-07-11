@@ -51,6 +51,11 @@ const (
 	// need to unbond before a given delegation can unbond on this chain.
 	UnbondingOpPrefix = "unbondingops"
 
+	// MaturedUnbondingOpPrefix is the key prefix that stores the list of all unbonding operations ids
+	// that have matured from a consumer chain perspective,
+	// i.e., no longer waiting on the unbonding period to elapse on any consumer chain
+	MaturedUnbondingOpsPrefix = "maturedunbondingops"
+
 	// ValidatorSetUpdateIdPrefix is the key prefix that stores the current validator set update id
 	ValidatorSetUpdateIdPrefix = "valsetupdateid"
 
@@ -70,6 +75,9 @@ const (
 	// InitChainHeightPrefix is the key prefix that will store the mapping from a chain id to the corresponding block height on the provider
 	// this consumer chain was initialized
 	InitChainHeightPrefix = "initchainheight"
+
+	// PendingVSCsPrefix is the key prefix that will store pending ValidatorSetChangePacket data
+	PendingVSCsPrefix = "pendingvscs"
 
 	// LockUnbondingOnTimeout is the key prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
 	LockUnbondingOnTimeoutPrefix = "LockUnbondingOnTimeout"
@@ -144,6 +152,11 @@ func UnbondingOpKey(id uint64) []byte {
 	return append([]byte(UnbondingOpPrefix), bz...)
 }
 
+// MaturedUnbondingOpsKey returns the key for storing the list of matured unbonding operations.
+func MaturedUnbondingOpsKey() []byte {
+	return []byte(MaturedUnbondingOpsPrefix)
+}
+
 func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
 	vuidBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(vuidBytes, valsetUpdateId)
@@ -162,6 +175,12 @@ func SlashAcksKey(chainID string) []byte {
 // InitChainHeightKey returns the key under which the block height for a given chain ID is stored
 func InitChainHeightKey(chainID string) []byte {
 	return []byte(fmt.Sprintf("%s/%s", InitChainHeightPrefix, chainID))
+}
+
+// PendingVSCsKey returns the key under which
+// pending ValidatorSetChangePacket data is stored for a given chain ID
+func PendingVSCsKey(chainID string) []byte {
+	return []byte(fmt.Sprintf("%s/%s", PendingVSCsPrefix, chainID))
 }
 
 func LockUnbondingOnTimeoutKey(chainID string) []byte {

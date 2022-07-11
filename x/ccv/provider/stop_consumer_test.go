@@ -175,7 +175,8 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 					s.Require().True(found, "pending stop consumer was not found for chain ID %s", chainID)
 
 					// check that the consumer chain client exists
-					s.Require().NotZero(s.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClient(s.providerCtx(), chainID))
+					_, found = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClientId(s.providerCtx(), chainID)
+					s.Require().True(found)
 
 					// check that the chainToChannel and channelToChain exist for the consumer chain ID
 					_, found = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetChainToChannel(s.providerCtx(), chainID)
@@ -251,9 +252,10 @@ func (s *ProviderTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd 
 
 	// verify consumer chain's states are removed
 	s.Require().False(providerKeeper.GetLockUnbondingOnTimeout(s.providerCtx(), chainID))
-	s.Require().Zero(providerKeeper.GetConsumerClient(s.providerCtx(), chainID))
+	_, found := providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
+	s.Require().False(found)
 
-	_, found := providerKeeper.GetChainToChannel(s.providerCtx(), chainID)
+	_, found = providerKeeper.GetChainToChannel(s.providerCtx(), chainID)
 	s.Require().False(found)
 
 	_, found = providerKeeper.GetChannelToChain(s.providerCtx(), channelID)

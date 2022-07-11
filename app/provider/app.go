@@ -105,7 +105,7 @@ import (
 	ibcprovider "github.com/cosmos/interchain-security/x/ccv/provider"
 	ibcproviderclient "github.com/cosmos/interchain-security/x/ccv/provider/client"
 	ibcproviderkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ibcprovidertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
 	"github.com/tendermint/spm/cosmoscmd"
 
@@ -288,7 +288,7 @@ func New(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, liquiditytypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
-		ibcprovidertypes.StoreKey,
+		providertypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, stakingtypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -325,7 +325,7 @@ func New(
 	)
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
-	scopedIBCProviderKeeper := app.CapabilityKeeper.ScopeToModule(ibcprovidertypes.ModuleName)
+	scopedIBCProviderKeeper := app.CapabilityKeeper.ScopeToModule(providertypes.ModuleName)
 	app.CapabilityKeeper.Seal()
 
 	// add keepers
@@ -437,8 +437,8 @@ func New(
 
 	app.ProviderKeeper = ibcproviderkeeper.NewKeeper(
 		appCodec,
-		keys[ibcprovidertypes.StoreKey],
-		app.GetSubspace(ibcprovidertypes.ModuleName),
+		keys[providertypes.StoreKey],
+		app.GetSubspace(providertypes.ModuleName),
 		scopedIBCProviderKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		&app.IBCKeeper.PortKeeper,
@@ -460,7 +460,7 @@ func New(
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(ibcprovidertypes.RouterKey, ibcprovider.NewConsumerChainProposalHandler(app.ProviderKeeper)).
+		AddRoute(providertypes.RouterKey, ibcprovider.NewConsumerChainProposalHandler(app.ProviderKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper))
 
 	app.GovKeeper = govkeeper.NewKeeper(
@@ -490,7 +490,7 @@ func New(
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule)
-	ibcRouter.AddRoute(ibcprovidertypes.ModuleName, providerModule)
+	ibcRouter.AddRoute(providertypes.ModuleName, providerModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
@@ -561,8 +561,14 @@ func New(
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
-		ibcprovidertypes.ModuleName,
+		providertypes.ModuleName,
 	)
+	// Interchain Security requirements
+	// 	- provider.EndBlock gets validator updates from the staking module;
+	// 	thus, staking.EndBlock must be executed before provider.EndBlock;
+	//	- creating a new consumer chain requires the following order,
+	//	CreateChildClient(), staking.EndBlock, provider.EndBlock;
+	//	thus, gov.EndBlock must be executed before staking.EndBlock
 	app.MM.SetOrderEndBlockers(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
@@ -583,7 +589,7 @@ func New(
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
-		ibcprovidertypes.ModuleName,
+		providertypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -612,7 +618,7 @@ func New(
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
-		ibcprovidertypes.ModuleName,
+		providertypes.ModuleName,
 	)
 
 	app.MM.RegisterInvariants(&app.CrisisKeeper)
@@ -902,7 +908,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(liquiditytypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
-	paramsKeeper.Subspace(ibcprovidertypes.ModuleName)
+	paramsKeeper.Subspace(providertypes.ModuleName)
 
 	return paramsKeeper
 }

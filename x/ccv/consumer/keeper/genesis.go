@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
@@ -92,9 +91,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		// set provider channel id.
 		k.SetProviderChannel(ctx, state.ProviderChannelId)
 		// set all unbonding sequences
-		for _, us := range state.UnbondingSequences {
-			k.SetPacketMaturityTime(ctx, us.Sequence, us.UnbondingTime)
-			k.SetUnbondingPacket(ctx, us.Sequence, us.UnbondingPacket)
+		for _, mp := range state.MaturingPackets {
+			k.SetPacketMaturityTime(ctx, mp.VscId, mp.MaturityTime)
 		}
 	}
 
@@ -119,20 +117,18 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		// ValUpdates must be filled in off-line
 		gs := types.NewRestartGenesisState(clientID, channelID, nil, nil, params)
 
-		unbondingSequences := []types.UnbondingSequence{}
-		cb := func(seq uint64, packet channeltypes.Packet) bool {
-			timeNs := k.GetPacketMaturityTime(ctx, seq)
-			us := types.UnbondingSequence{
-				Sequence:        seq,
-				UnbondingTime:   timeNs,
-				UnbondingPacket: packet,
+		maturingPackets := []types.MaturingVSCPacket{}
+		cb := func(vscId, timeNs uint64) bool {
+			mat := types.MaturingVSCPacket{
+				VscId:        vscId,
+				MaturityTime: timeNs,
 			}
-			unbondingSequences = append(unbondingSequences, us)
+			maturingPackets = append(maturingPackets, mat)
 			return false
 		}
-		k.IterateUnbondingPacket(ctx, cb)
+		k.IteratePacketMaturityTime(ctx, cb)
 
-		gs.UnbondingSequences = unbondingSequences
+		gs.MaturingPackets = maturingPackets
 		return gs
 	}
 	clientID, ok := k.GetProviderClient(ctx)

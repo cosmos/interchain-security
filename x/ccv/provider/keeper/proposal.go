@@ -50,7 +50,7 @@ func (k Keeper) StopConsumerChainProposal(ctx sdk.Context, p *types.StopConsumer
 func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, closeChan bool) (err error) {
 
 	// clean up states
-	k.DeleteConsumerClient(ctx, chainID)
+	k.DeleteConsumerClientId(ctx, chainID)
 	k.DeleteLockUnbondingOnTimeout(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
@@ -70,7 +70,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	if !lockUbd {
 		// iterate over the consumer chain's unbonding operation VSC ids
 		k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ids []uint64) bool {
-			// range over the unbonding operations for the current VSC ID
+			// iterate over the unbonding operations for the current VSC ID
+			var maturedIds []uint64
 			for _, id := range ids {
 				unbondingOp, found := k.GetUnbondingOp(ctx, id)
 				if !found {
@@ -82,17 +83,15 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 
 				// If unbonding op is completely unbonded from all relevant consumer chains
 				if len(unbondingOp.UnbondingConsumerChains) == 0 {
-					// Attempt to complete unbonding in staking module
-					err = k.stakingKeeper.UnbondingCanComplete(ctx, unbondingOp.Id)
-					if err != nil {
-						return false
-					}
+					// Store id of matured unbonding op for later completion of unbonding in staking module
+					maturedIds = append(maturedIds, unbondingOp.Id)
 					// Delete unbonding op
 					k.DeleteUnbondingOp(ctx, unbondingOp.Id)
 				} else {
 					k.SetUnbondingOp(ctx, unbondingOp)
 				}
 			}
+			k.AppendMaturedUnbondingOps(ctx, maturedIds)
 			// clean up index
 			k.DeleteUnbondingOpIndex(ctx, chainID, vscID)
 			return true
@@ -197,22 +196,6 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 	gen.InitialValSet = updates
 
 	return gen, nil
-}
-
-// SetConsumerClientId sets the client ID for the given chain ID
-func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
-}
-
-// GetConsumerClientId returns the client ID for the given chain ID.
-func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
-	clientIdBytes := store.Get(types.ChainToClientKey(chainID))
-	if clientIdBytes == nil {
-		return "", false
-	}
-	return string(clientIdBytes), true
 }
 
 // SetPendingClientInfo sets the initial height for the given timestamp and chain ID

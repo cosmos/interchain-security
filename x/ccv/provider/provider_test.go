@@ -7,7 +7,6 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -59,8 +58,6 @@ func (suite *ProviderTestSuite) SetupTest() {
 		addr2 := utils.GetChangePubKeyAddress(consumerValUpdates[i])
 		suite.Require().True(bytes.Compare(addr1, addr2) == 0, "validator mismatch")
 	}
-
-	// suite.DisableConsumerDistribution()
 
 	// move both chains to the next block
 	suite.providerChain.NextBlock()
@@ -128,12 +125,33 @@ func (suite *ProviderTestSuite) SetupTest() {
 }
 
 func (suite *ProviderTestSuite) SetupCCVChannel() {
+	suite.StartSetupCCVChannel()
+	suite.CompleteSetupCCVChannel()
+	suite.SetupTransferChannel()
+}
+
+func (suite *ProviderTestSuite) StartSetupCCVChannel() {
 	suite.coordinator.CreateConnections(suite.path)
 
-	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
-	// so transfer channel will be on stage INIT when CreateChannels for ccv path returns.
-	suite.coordinator.CreateChannels(suite.path)
+	err := suite.path.EndpointA.ChanOpenInit()
+	suite.Require().NoError(err)
 
+	err = suite.path.EndpointB.ChanOpenTry()
+	suite.Require().NoError(err)
+}
+
+func (suite *ProviderTestSuite) CompleteSetupCCVChannel() {
+	err := suite.path.EndpointA.ChanOpenAck()
+	suite.Require().NoError(err)
+
+	err = suite.path.EndpointB.ChanOpenConfirm()
+	suite.Require().NoError(err)
+
+	// ensure counterparty is up to date
+	suite.path.EndpointA.UpdateClient()
+}
+
+func (suite *ProviderTestSuite) SetupTransferChannel() {
 	// transfer path will use the same connection as ccv path
 
 	suite.transferPath.EndpointA.ClientID = suite.path.EndpointA.ClientID
@@ -141,7 +159,8 @@ func (suite *ProviderTestSuite) SetupCCVChannel() {
 	suite.transferPath.EndpointB.ClientID = suite.path.EndpointB.ClientID
 	suite.transferPath.EndpointB.ConnectionID = suite.path.EndpointB.ConnectionID
 
-	// INIT step for transfer path has already been called during CCV channel setup
+	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
+	// so transfer channel will be on stage INIT when CompleteSetupCCVChannel returns.
 	suite.transferPath.EndpointA.ChannelID = suite.consumerChain.App.(*appConsumer.App).
 		ConsumerKeeper.GetDistributionTransmissionChannel(suite.consumerChain.GetContext())
 
@@ -165,71 +184,23 @@ func TestProviderTestSuite(t *testing.T) {
 
 func (s *ProviderTestSuite) TestPacketRoundtrip() {
 	s.SetupCCVChannel()
-	providerCtx := s.providerChain.GetContext()
-	providerStakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
-
-	origTime := s.providerCtx().BlockTime()
-	bondAmt := sdk.NewInt(1000000)
-
-	delAddr := s.providerChain.SenderAccount.GetAddress()
-
-	// Choose a validator, and get its address and data structure into the correct types
-	tmValidator := s.providerChain.Vals.Validators[0]
-	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
-	s.Require().NoError(err)
-	validator, found := providerStakingKeeper.GetValidator(s.providerCtx(), valAddr)
-	s.Require().True(found)
 
 	// Bond some tokens on provider to change validator powers
-	_, err = providerStakingKeeper.Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
-	s.Require().NoError(err)
-
-	// Save valset update ID to reconstruct packet
-	valUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	bondAmt := sdk.NewInt(1000000)
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	delegate(s, delAddr, bondAmt)
 
 	// Send CCV packet to consumer
-	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
+	s.providerChain.NextBlock()
 
-	// Get validator update created in Endblock to use in reconstructing packet
-	valUpdates := providerStakingKeeper.GetValidatorUpdates(s.providerCtx())
+	// Relay 1 VSC packet from provider to consumer
+	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
 
-	// commit block on provider chain and update consumer chain's client
-	oldBlockTime := s.providerCtx().BlockTime()
-	s.coordinator.CommitBlock(s.providerChain)
-	s.path.EndpointA.UpdateClient()
+	// Increment time so that the unbonding period ends on the provider
+	incrementTimeByUnbondingPeriod(s, Provider)
 
-	// Reconstruct packet
-	packetData := types.NewValidatorSetChangePacketData(valUpdates, valUpdateID, nil)
-	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, providertypes.PortID, s.path.EndpointB.ChannelID,
-		consumertypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
-
-	// Receive CCV packet on consumer chain
-	err = s.path.EndpointA.RecvPacket(packet)
-	s.Require().NoError(err)
-
-	// - End provider unbonding period
-	providerCtx = providerCtx.WithBlockTime(origTime.Add(providerStakingKeeper.UnbondingTime(s.providerCtx())).Add(3 * time.Hour))
-	s.providerChain.App.EndBlock(abci.RequestEndBlock{})
-
-	// - End consumer unbonding period
-	unbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
-	s.Require().True(found)
-	consumerCtx := s.consumerCtx().WithBlockTime(origTime.Add(unbondingPeriod).Add(3 * time.Hour))
-	// TODO: why doesn't this work: s.consumerChain.App.EndBlock(abci.RequestEndBlock{})
-	err = s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondMaturePackets(consumerCtx)
-	s.Require().NoError(err)
-
-	// commit consumer chain and update provider chain client
-	s.coordinator.CommitBlock(s.consumerChain)
-
-	err = s.path.EndpointB.UpdateClient()
-	s.Require().NoError(err)
-
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-
-	err = s.path.EndpointB.AcknowledgePacket(packet, ack.Acknowledgement())
-	s.Require().NoError(err)
+	// Relay 1 VSCMatured packet from consumer to provider
+	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 1)
 }
 
 func (s *ProviderTestSuite) providerCtx() sdk.Context {
@@ -493,46 +464,14 @@ func (s *ProviderTestSuite) TestSlashPacketAcknowldgement() {
 	packet := channeltypes.NewPacket([]byte{}, 1, consumertypes.PortID, s.path.EndpointA.ChannelID,
 		providertypes.PortID, "wrongchannel", clienttypes.Height{}, 0)
 
-	ack := providerKeeper.OnRecvPacket(s.providerCtx(), packet, ccv.SlashPacketData{})
+	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, ccv.SlashPacketData{})
 	s.Require().NotNil(ack)
 
-	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, ccv.SlashPacketData{}, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))
+	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))
 	s.Require().NoError(err)
 
-	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, ccv.SlashPacketData{}, channeltypes.NewErrorAcknowledgement("another error"))
+	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewErrorAcknowledgement("another error"))
 	s.Require().Error(err)
-}
-
-func (s *ProviderTestSuite) DisableConsumerDistribution() {
-	cChain := s.consumerChain
-	cApp := cChain.App.(*appConsumer.App)
-	for i, moduleName := range cApp.MM.OrderBeginBlockers {
-		if moduleName == distrtypes.ModuleName {
-			cApp.MM.OrderBeginBlockers = append(cApp.MM.OrderBeginBlockers[:i], cApp.MM.OrderBeginBlockers[i+1:]...)
-			return
-		}
-	}
-}
-
-func (s *ProviderTestSuite) DisableProviderDistribution() {
-	pChain := s.providerChain
-	pApp := pChain.App.(*appProvider.App)
-	for i, moduleName := range pApp.MM.OrderBeginBlockers {
-		if moduleName == distrtypes.ModuleName {
-			s.providerDistrIndex = i
-			pApp.MM.OrderBeginBlockers = append(pApp.MM.OrderBeginBlockers[:i], pApp.MM.OrderBeginBlockers[i+1:]...)
-			return
-		}
-	}
-}
-
-func (s *ProviderTestSuite) ReenableProviderDistribution() {
-	pChain := s.providerChain
-	pApp := pChain.App.(*appProvider.App)
-	i := s.providerDistrIndex
-	pApp.MM.OrderBeginBlockers = append(
-		pApp.MM.OrderBeginBlockers[:i+1], pApp.MM.OrderBeginBlockers[i:]...) // make space
-	pApp.MM.OrderBeginBlockers[i] = distrtypes.ModuleName // set value
 }
 
 // TestDistribution tests that tokens are distributed to the
@@ -646,7 +585,6 @@ func (s *ProviderTestSuite) ReenableProviderDistribution() {
 // 	// the testing framework (where validators do not actually sign votes and
 // 	// therefor do not produce abci.VoteInfo) the expected behaviour of
 // 	// allocation is to send all rewards to the community pool
-// 	s.ReenableProviderDistribution()
 // 	s.coordinator.CommitNBlocks(pChain, 1)
 // 	balance = pApp.BankKeeper.GetBalance(pChain.GetContext(), providerFeePoolAddr,
 // 		"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9")

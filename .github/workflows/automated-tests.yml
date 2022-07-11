@@ -1,7 +1,7 @@
-name: Tests
+name: Automated Tests
 on: [push]
 jobs:
-  Tests:
+  Automated_Tests:
     runs-on: ubuntu-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -9,7 +9,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.16.0' # The Go version to download (if necessary) and use.
+          go-version: "1.18.0" # The Go version to download (if necessary) and use.
 
       - name: Figure out where we are
         run: ls
@@ -19,4 +19,3 @@ jobs:
 
       - name: Integration tests
         run: go run ./integration-tests/...
-
