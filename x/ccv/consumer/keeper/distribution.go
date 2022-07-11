@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -29,17 +30,11 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	if err != nil {
 		return err
 	}
-	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
-	curHeight := ctx.BlockHeight()
-
-	if (curHeight - ltbh.Height) < bpdt {
-		// not enough blocks have passed for  a transmission to occur
-		return nil
-	}
 
 	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
 	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
-
+	fmt.Println("fpTokens", fpTokens)
+	fmt.Println("as collected in the feeCollectorName Account:", k.feeCollectorName)
 	// split the fee pool, send the consumer's fraction to the consumer redistribution address
 	frac, err := sdk.NewDecFromStr(ConsumerRedistributeFrac)
 	if err != nil {
@@ -48,9 +43,11 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	decFPTokens := sdk.NewDecCoinsFromCoins(fpTokens...)
 	// NOTE the truncated decimal remainder will be sent to the provider fee pool
 	consRedistrTokens, _ := decFPTokens.MulDec(frac).TruncateDecimal()
+	fmt.Println("consRedistrTokens", consRedistrTokens)
 	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
 		types.ConsumerRedistributeName, consRedistrTokens)
 	if err != nil {
+		fmt.Println("error sending to ConsumerRedistributeName", err)
 		return err
 	}
 
@@ -65,6 +62,16 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	if err != nil {
 		return err
 	}
+
+	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
+	curHeight := ctx.BlockHeight()
+
+	if (curHeight - ltbh.Height) < bpdt {
+		// not enough blocks have passed for  a transmission to occur
+		return nil
+	}
+	fmt.Println("CREATING OUTGOING PROVIDER CHAIN REWARD IBC TRANSFER")
+
 	// empty out the toSendToProviderTokens address
 	tstProviderAddr := k.authKeeper.GetModuleAccount(ctx,
 		types.ConsumerToSendToProviderName).GetAddress()
