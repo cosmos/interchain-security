@@ -139,7 +139,7 @@ func PendingClientKey(timestamp time.Time, chainID string) []byte {
 	return bz
 }
 
-// ParsePendingClientKey returns the time and chainID for a pending client key or an error if unparseable
+// ParsePendingClientKey returns the time and chain ID for a pending client key or an error if unparseable
 func ParsePendingClientKey(bz []byte) (time.Time, string, error) {
 	prefixL := len(PendingClientKeyPrefix)
 	if prefix := bz[:prefixL]; string(prefix) != PendingClientKeyPrefix {
