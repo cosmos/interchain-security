@@ -123,6 +123,7 @@ In addition, the implementation MUST guarantee the following [system properties]
 | Concern re. *Slashable Consumer Misbehavior* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | Multiple downtime infractions committed by the same validator `val` on the same consumer chain without `val` requesting to `Unjail` itself result in a single `SlashPacket` | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
+| If evidence of misbehavior is submitted on a consumer chain within the unbonding period targeting an amount `x` of staked tokens, the amount `x` cannot be unlocked on the provider before the corresponding `SlashPacket` is received <br /> - `SlashPacket` will not arrive after the corresponding `MaturedVSCPacket`s | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
 | TBA ...
 
 ---
