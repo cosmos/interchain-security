@@ -1,0 +1,36 @@
+# install pre-commit `brew install pre-commit`
+# install hooks to git `pre-commit install`
+# update the hooks `pre-commit autoupdate`
+# to run the hooks `pre-commit run --all-files`
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: local
+    hooks:
+      - id: install-tools
+        name: "install tools"
+        entry: "./scripts/install_tools.sh"
+        language: script
+        description: "Installs tools needed for go static analysis hooks"
+      - id: go-vet
+        name: "go vet"
+        entry: "./scripts/go_vet.sh"
+        language: script
+        description: "Installs tools needed for go static analysis hooks"
+
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: master
+    hooks:
+      - id: go-fmt
+      - id: go-imports
+      - id: go-cyclo
+        args: [-over=15]
+      - id: go-mod-tidy
+      - id: go-build
+      - id: go-critic

@@ -77,6 +77,25 @@ gofmt -w -s -e .
 go vet ./...
 ```
 
+Some useful tools are included in the repository using [pre-commit](https://pre-commit.com/hooks.html). pre-commit lets you run developer tools either on every git commit, or manually with `pre-commit run --all-files`. See the [config](./.pre-commit-config.yaml) for details. In this repo the hooks are not installed to git, as that can be cumbersome, but it is still possible to benefit from them.
+
+```bash
+## Prerequisites
+
+# pre-commit
+brew install pre-commit
+# goimports (https://pkg.go.dev/golang.org/x/tools/cmd/goimports)
+go install golang.org/x/tools/cmd/goimports@latest
+# gocyclo (https://github.com/fzipp/gocyclo)
+go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+# go-critic https://github.com/go-critic/go-critic
+go install github.com/go-critic/go-critic/cmd/gocritic@latest
+
+## Run the tools
+
+pre-commit run --all-files
+```
+
 **Debugging**
 
 If using VSCode, see [vscode-go/wiki/debugging](https://github.com/golang/vscode-go/wiki/debugging) to debug unit tests or go binaries.
