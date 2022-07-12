@@ -53,10 +53,14 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 			// Delete unbonding op
 			k.DeleteUnbondingOp(ctx, unbondingOp.Id)
 		} else {
-			k.SetUnbondingOp(ctx, unbondingOp)
+			if err := k.SetUnbondingOp(ctx, unbondingOp); err != nil {
+				panic(fmt.Errorf("unbonding op could not be persisted: %w", err))
+			}
 		}
 	}
-	k.AppendMaturedUnbondingOps(ctx, maturedIds)
+	if err := k.AppendMaturedUnbondingOps(ctx, maturedIds); err != nil {
+		panic(fmt.Errorf("mature unbonding ops could not be appended: %w", err))
+	}
 
 	// clean up index
 	k.DeleteUnbondingOpIndex(ctx, chainID, data.ValsetUpdateId)
@@ -126,7 +130,7 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 			pendingPackets := k.EmptyPendingVSC(ctx, chainID)
 			for _, data := range pendingPackets {
 				// send packet over IBC
-				utils.SendIBCPacket(
+				err := utils.SendIBCPacket(
 					ctx,
 					k.scopedKeeper,
 					k.channelKeeper,
@@ -134,6 +138,9 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 					types.PortID, // source port id
 					data.GetBytes(),
 				)
+				if err != nil {
+					panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
+				}
 			}
 		}
 
@@ -148,7 +155,7 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 			// check whether there is an established CCV channel to this consumer chain
 			if channelID, found := k.GetChainToChannel(ctx, chainID); found {
 				// send this validator set change packet data to the consumer chain
-				utils.SendIBCPacket(
+				err := utils.SendIBCPacket(
 					ctx,
 					k.scopedKeeper,
 					k.channelKeeper,
@@ -156,6 +163,9 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 					types.PortID, // source port id
 					packetData.GetBytes(),
 				)
+				if err != nil {
+					panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
+				}
 			} else {
 				// store the packet data to be sent once the CCV channel is established
 				k.AppendPendingVSC(ctx, chainID, packetData)

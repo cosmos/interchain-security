@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"path/filepath"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -114,7 +116,7 @@ type CreateConsumerChainProposalReq struct {
 func ParseCreateConsumerChainProposalJSON(proposalFile string) (CreateConsumerChainProposalJSON, error) {
 	proposal := CreateConsumerChainProposalJSON{}
 
-	contents, err := ioutil.ReadFile(proposalFile)
+	contents, err := ioutil.ReadFile(filepath.Clean(proposalFile))
 	if err != nil {
 		return proposal, err
 	}

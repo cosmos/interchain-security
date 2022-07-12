@@ -182,7 +182,10 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		panic(err)
 	}
 
-	am.keeper.UnbondMaturePackets(ctx)
+	err = am.keeper.UnbondMaturePackets(ctx)
+	if err != nil {
+		panic(err)
+	}
 
 	data, ok := am.keeper.GetPendingChanges(ctx)
 	if !ok {
