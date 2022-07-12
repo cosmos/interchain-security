@@ -26,6 +26,7 @@ func (s System) sendTokens(
 	verbose bool,
 ) {
 	binaryName := s.chainConfigs[action.chain].binaryName
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, binaryName,
 
 		"tx", "bank", "send",
@@ -101,6 +102,7 @@ func (s System) startChain(
 		genesisChanges = chainConfig.genesisChanges
 	}
 
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
 		chainConfig.chainId, chainConfig.ipPrefix, genesisChanges,
@@ -154,6 +156,7 @@ func (s System) submitTextProposal(
 	action SubmitTextProposalAction,
 	verbose bool,
 ) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
 
 		"tx", "gov", "submit-proposal",
@@ -218,12 +221,14 @@ func (s System) submitConsumerProposal(
 		log.Fatal(err)
 	}
 
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, "/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, string(bz), "/temp-proposal.json")).CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
 
 		"tx", "gov", "submit-proposal", "create-consumer-chain",
@@ -260,6 +265,7 @@ func (s System) voteGovProposal(
 		vote := action.vote[i]
 		go func(val uint, vote string) {
 			defer wg.Done()
+			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 			bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
 
 				"tx", "gov", "vote",
@@ -294,6 +300,7 @@ func (s System) startConsumerChain(
 	action StartConsumerChainAction,
 	verbose bool,
 ) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.providerChain].binaryName,
 
 		"query", "provider", "consumer-genesis",
@@ -372,6 +379,7 @@ func (s System) addChainToRelayer(
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")
 
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c",
 		bashCommand,
 	).CombinedOutput()
@@ -379,6 +387,7 @@ func (s System) addChainToRelayer(
 		log.Fatal(err, "\n", string(bz))
 	}
 
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
 		"keys", "restore",
 		"--mnemonic", s.validatorConfigs[action.validator].mnemonic,
@@ -402,6 +411,7 @@ func (s System) addIbcConnection(
 	action AddIbcConnectionAction,
 	verbose bool,
 ) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
 		"create", "connection",
 		s.chainConfigs[action.chainA].chainId,
@@ -448,6 +458,7 @@ func (s System) addIbcChannel(
 	action AddIbcChannelAction,
 	verbose bool,
 ) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
 		"create", "channel",
 		"--order", action.order,
@@ -499,6 +510,7 @@ func (s System) relayPackets(
 	verbose bool,
 ) {
 	// hermes clear packets ibc0 transfer channel-13
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes", "clear", "packets",
 		s.chainConfigs[action.chain].chainId, action.port, "channel-"+fmt.Sprint(action.channel),
 	)
@@ -523,6 +535,7 @@ func (s System) delegateTokens(
 	action DelegateTokensAction,
 	verbose bool,
 ) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
 
 		"tx", "staking", "delegate",
@@ -547,6 +560,7 @@ var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
 
 func (s System) getValidatorNum(chain uint) uint {
 	// Get first subdirectory of the directory of this chain, which will be the home directory of one of the validators
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c", `cd /`+s.chainConfigs[chain].chainId+`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
 
 	if err != nil {
