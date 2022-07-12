@@ -26,7 +26,7 @@ The verification of Interchain Security is split across the following concerns:
 | ------- | ----------- | --------------- | ------------ |
 | Unexpected panics | `Scheduled` | `??` | `??` |
 | Handling errors | `Scheduled` | `gosec` | `??` |
-| Accessing store (setters, getters, iterators) | `Scheduled` | `??` | `Low coverage` |
+| Accessing store (setters, getters, iterators) | `Scheduled` | `??` | `Partial coverage` |
 | Serialization / deserialization | `Scheduled` | `??` | `??` |
 | Storage leaks | `Scheduled` | `NA` | `??` |
 
@@ -45,12 +45,12 @@ IBC packets:
 | Getting consumer `UnbondingPeriod` from IBC client | `Scheduled` (ibc-go team) | `??` | `NA` | `NA` | `NA` |
 | Create CCV channel (handshake) | `Scheduled` (ibc-go team) | `Done` | `Future work` | `Scheduled` | `Scheduled` |
 | Sending IBC packets <br /> - see `x/ccv/utils/utils.go:SendIBCPacket()` | `Scheduled` (ibc-go team) | `Done` | `Done` | `Scheduled` | `NA` |
-| Handling acknowledgments | `Scheduled` (ibc-go team) | `Low coverage` | `Scheduled` | `Scheduled` | `NA` |
-| Handling timeouts | `Scheduled` (ibc-go team) | `Low coverage` | `Future work` | `Scheduled` | `NA` |
+| Handling acknowledgments | `Scheduled` (ibc-go team) | `Partial coverage` | `Scheduled` | `Scheduled` | `NA` |
+| Handling timeouts | `Scheduled` (ibc-go team) | `Partial coverage` | `Future work` | `Scheduled` | `NA` |
 | Handling IBC client expiration | `Scheduled` (ibc-go team) | `??` | `Future work` | `Scheduled` | `NA` |
 | ICS-20 channel creation | `Scheduled` (ibc-go team) | `??` | `Future work` | `Scheduled` | `NA` |
 | ICS-20 transfer | `Scheduled` (ibc-go team) | `??` | `NA` | `Scheduled` | `NA` |
-| Changes in IBC-GO testing suite | `Scheduled` (ibc-go team) | `NA` | `WIP` | `NA` | `NA` |
+| Changes in IBC-GO testing suite | `Scheduled` (ibc-go team) | `NA` | `Partial coverage` | `NA` | `NA` |
 
 ## Integration with Cosmos SDK
 
@@ -58,7 +58,7 @@ A prerequisite of the code review is to open a PR with all the [SDK changes](htt
 
 | Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| Changes to staking module | `Scheduled` (sdk team) | `Low coverage` | `WIP` | `Scheduled` | `NA` |
+| Changes to staking module | `Scheduled` (sdk team) | `Partial coverage` | `Partial coverage` | `Scheduled` | `NA` |
 | Changes to slashing module | `Scheduled` (sdk team) | `??` | `NA` | `Scheduled` | `NA` |
 | Changes to evidence module | `Scheduled` (sdk team) | `??` | `NA` | `Scheduled` | `NA` |
 
@@ -76,7 +76,7 @@ The main concern addressed in this section is the correctness of the provider ch
 | Liveness of validator unbondings <br /> - unbonding validators with no delegations are eventually removed from `Validators` | `Scheduled` | `??` | `Done` | `Scheduled` | `??` |
 | Unbonding operations (undelegations, redelegations, validator unbondings) should eventually complete even if the CCV channel is never established (due to error) | `Scheduled` | `??` | `Future work` | `Scheduled` | `??` |
 | A validator cannot get slashed more than once for double signing, regardless of how many times it double signs on different chains (consumers or provider) | `Scheduled` | `??` | `Done` | `Scheduled` | `NA` |
-| A validator cannot get slashed multiple times for downtime on the same chain without requesting to `Unjail` itself in between | `Scheduled` | `??` | `WIP` | `Scheduled` | `NA` |
+| A validator cannot get slashed multiple times for downtime on the same chain without requesting to `Unjail` itself in between | `Scheduled` | `??` | `Partial coverage` | `Scheduled` | `NA` |
 | A validator can be slashed multiple times for downtime on different chains | `Scheduled` | `??` | `NA` | `Scheduled` | `NA` |
 | The provider chain can easily be restarted with IS enabled <br /> - `ExportGenesis` & `InitGenesis` | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
 | The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
