@@ -24,11 +24,11 @@ The verification of Interchain Security is split across the following concerns:
 
 | Concern | Code Review | Automatic Tools | Unit Testing |
 | ------- | ----------- | --------------- | ------------ |
-| Unexpected panics | `TODO` | `??` | `??` |
-| Handling errors | `TODO` | `gosec` | `??` |
-| Accessing store (setters, getters, iterators) | `TODO` | `??` | `Low coverage` |
-| Serialization / deserialization | `TODO` | `??` | `??` |
-| Storage leaks | `TODO` | `NA` | `??` |
+| Unexpected panics | `Scheduled` | `??` | `??` |
+| Handling errors | `Scheduled` | `gosec` | `??` |
+| Accessing store (setters, getters, iterators) | `Scheduled` | `??` | `Low coverage` |
+| Serialization / deserialization | `Scheduled` | `??` | `??` |
+| Storage leaks | `Scheduled` | `NA` | `??` |
 
 ## Integration with IBC
 
@@ -41,16 +41,16 @@ IBC packets:
 
 | Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| Create IBC clients | `TODO` (ibc-go team) | `Done` | `In future` | `TODO` | `NA` |
-| Getting consumer `UnbondingPeriod` from IBC client | `TODO` (ibc-go team) | `??` | `Not planned` | `TODO` | `NA` |
-| Create CCV channel (handshake) | `TODO` (ibc-go team) | `Done` | `In future` | `TODO` | `TODO` |
-| Sending IBC packets <br /> - see `x/ccv/utils/utils.go:SendIBCPacket()` | `TODO` (ibc-go team) | `Done` | `Done` | `TODO` | `NA` |
-| Handling acknowledgments | `TODO` (ibc-go team) | `Low coverage` | `Scheduled` | `TODO` | `NA` |
-| Handling timeouts | `TODO` (ibc-go team) | `Low coverage` | `In future` | `TODO` | `NA` |
-| Handling IBC client expiration | `TODO` (ibc-go team) | `??` | `In future` | `TODO` | `NA` |
-| ICS-20 channel creation | `TODO` (ibc-go team) | `??` | `In future` | `TODO` | `NA` |
-| ICS-20 transfer | `TODO` (ibc-go team) | `??` | `Not planned` | `TODO` | `NA` |
-| Changes in IBC-GO testing suite | `TODO` (ibc-go team) | `??` | `Partially done` | `TODO` | `NA` |
+| Create IBC clients | `Scheduled` (ibc-go team) | `Done` | `Future work` | `Scheduled` | `NA` |
+| Getting consumer `UnbondingPeriod` from IBC client | `Scheduled` (ibc-go team) | `??` | `NA` | `NA` | `NA` |
+| Create CCV channel (handshake) | `Scheduled` (ibc-go team) | `Done` | `Future work` | `Scheduled` | `Scheduled` |
+| Sending IBC packets <br /> - see `x/ccv/utils/utils.go:SendIBCPacket()` | `Scheduled` (ibc-go team) | `Done` | `Done` | `Scheduled` | `NA` |
+| Handling acknowledgments | `Scheduled` (ibc-go team) | `Low coverage` | `Scheduled` | `Scheduled` | `NA` |
+| Handling timeouts | `Scheduled` (ibc-go team) | `Low coverage` | `Future work` | `Scheduled` | `NA` |
+| Handling IBC client expiration | `Scheduled` (ibc-go team) | `??` | `Future work` | `Scheduled` | `NA` |
+| ICS-20 channel creation | `Scheduled` (ibc-go team) | `??` | `Future work` | `Scheduled` | `NA` |
+| ICS-20 transfer | `Scheduled` (ibc-go team) | `??` | `NA` | `Scheduled` | `NA` |
+| Changes in IBC-GO testing suite | `Scheduled` (ibc-go team) | `NA` | `WIP` | `NA` | `NA` |
 
 ## Integration with Cosmos SDK
 
@@ -58,9 +58,9 @@ A prerequisite of the code review is to open a PR with all the [SDK changes](htt
 
 | Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| Changes to staking module | `TODO` (sdk team) | `Low coverage` | `Partially done` | `TODO` | `NA` |
-| Changes to slashing module | `TODO` (sdk team) | `??` | `Not planned` | `TODO` | `NA` |
-| Changes to evidence module | `TODO` (sdk team) | `??` | `Not planned` | `TODO` | `NA` |
+| Changes to staking module | `Scheduled` (sdk team) | `Low coverage` | `WIP` | `Scheduled` | `NA` |
+| Changes to slashing module | `Scheduled` (sdk team) | `??` | `NA` | `Scheduled` | `NA` |
+| Changes to evidence module | `Scheduled` (sdk team) | `??` | `NA` | `Scheduled` | `NA` |
 
 ## Provider Chain Correctness
 
@@ -71,17 +71,17 @@ The main concern addressed in this section is the correctness of the provider ch
 
 | Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| Liveness of undelegations <br /> - unbonding delegation entries are eventually removed from `UnbondingDelegation` | `TODO` | `Done` | `Done` | `TODO` | `TODO` |
-| Liveness of redelegations <br /> - redelegations entries are eventually removed from `Redelegations` | `TODO` | `TODO` | `Scheduled` | `TODO` | `TODO` |
-| Liveness of validator unbondings <br /> - unbonding validators with no delegations are eventually removed from `Validators` | `TODO` | `TODO` | `Done` | `TODO` | `TODO` |
-| Unbonding operations (undelegations, redelegations, validator unbondings) should eventually complete even if the CCV channel is never established (due to error) | `TODO` | `TODO` | `In future` | `TODO` | `TODO` |
-| A validator cannot get slashed more than once for double signing, regardless of how many times it double signs on different chains (consumers or provider) | `TODO` | `??` | `Done` | `TODO` | `TODO` |
-| A validator cannot get slashed multiple times for downtime on the same chain without requesting to `Unjail` itself in between | `TODO` | `??` | `Partially done` | `TODO` | `TODO` |
-| A validator can be slashed multiple times for downtime on different chains | `TODO` | `??` | `Not planned` | `TODO` | `TODO` |
-| The provider chain can easily be restarted with IS enabled <br /> - `ExportGenesis` & `InitGenesis` | `TODO` | `??` | `In future` | `TODO` | `NA` |
-| The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `TODO` | `??` | `In future` | `TODO` | `NA` |
-| The provider chain can graciously handle a `StopConsumerChainProposal` <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `TODO` | `??` | `In future` | `TODO` | `NA` |
-| The provider chain can graciously handle a `SpawnConsumerChainProposal` <br /> (expected outcome) a consumer chain is added and a client is created | `TODO` | `??` | `In future` | `TODO` | `NA` |
+| Liveness of undelegations <br /> - unbonding delegation entries are eventually removed from `UnbondingDelegation` | `Scheduled` | `Done` | `Done` | `Scheduled` | `Scheduled` |
+| Liveness of redelegations <br /> - redelegations entries are eventually removed from `Redelegations` | `Scheduled` | `??` | `Scheduled` | `Scheduled` | `??` |
+| Liveness of validator unbondings <br /> - unbonding validators with no delegations are eventually removed from `Validators` | `Scheduled` | `??` | `Done` | `Scheduled` | `??` |
+| Unbonding operations (undelegations, redelegations, validator unbondings) should eventually complete even if the CCV channel is never established (due to error) | `Scheduled` | `??` | `Future work` | `Scheduled` | `??` |
+| A validator cannot get slashed more than once for double signing, regardless of how many times it double signs on different chains (consumers or provider) | `Scheduled` | `??` | `Done` | `Scheduled` | `NA` |
+| A validator cannot get slashed multiple times for downtime on the same chain without requesting to `Unjail` itself in between | `Scheduled` | `??` | `WIP` | `Scheduled` | `NA` |
+| A validator can be slashed multiple times for downtime on different chains | `Scheduled` | `??` | `NA` | `Scheduled` | `NA` |
+| The provider chain can easily be restarted with IS enabled <br /> - `ExportGenesis` & `InitGenesis` | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
+| The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
+| The provider chain can graciously handle a `StopConsumerChainProposal` <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
+| The provider chain can graciously handle a `SpawnConsumerChainProposal` <br /> (expected outcome) a consumer chain is added and a client is created | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
 
 ## Interchain Security Protocol Correctness
 
@@ -99,41 +99,41 @@ In addition, the implementation MUST guarantee the following [system properties]
 
 | Concern re. *Channel Uniqueness* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| `SpawnConsumerChainProposal(chainId)` should fail if a consumer with `chainId` already exists | `TODO` | `??` | `Not planned` | `TODO` | `TODO` |
-| The channel handshake for a consumer with `chainId` should fail if there is already an established CCV channel for `chainId`  | `TODO` | `??` | `Not planned` | `TODO` | `TODO` |
-| *Channel Uniqueness* should hold even if a consumer chain restarts | `TODO` | `??` | `Not planned` | `TODO` | `TODO` |
-| *Channel Uniqueness* should hold even when a client expires | `TODO` | `??` | `Not planned` | `TODO` | `TODO` |
+| `SpawnConsumerChainProposal(chainId)` should fail if a consumer with `chainId` already exists | `Scheduled` | `??` | `NA` | `Scheduled` | `Scheduled` |
+| The channel handshake for a consumer with `chainId` should fail if there is already an established CCV channel for `chainId`  | `Scheduled` | `??` | `NA` | `Scheduled` | `NA` |
+| *Channel Uniqueness* should hold even if a consumer chain restarts | `Scheduled` | `??` | `NA` | `Scheduled` | `NA` |
+| *Channel Uniqueness* should hold even when a client expires | `Scheduled` | `??` | `NA` | `Scheduled` | `NA` |
 
 ---
 
 | Concern re. *Validator Set Replication* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| Every validator set on any consumer chain MUST either be or have been a validator set on the provider chain. | `TODO` | `NA` | `Done` | `TODO` | `TODO` |
-| Any update in the power of a validator `val` on the provider, as a result of <br /> - (increase) `Delegate()` / `Redelegate()` to `val` <br /> - (increase) `val` joining the provider validator set <br /> - (decrease) `Undelegate()` / `Redelegate()` from `val` <br /> - (decrease) `Slash(val)` <br /> - (decrease) `val` leaving the provider validator set <br /> MUST be present in a `ValidatorSetChangePacket` that is sent to all consumer chains | `TODO` | `NA` | `Done` | `TODO` | `TODO` |
-| Every consumer chain receives the same sequence of `ValidatorSetChangePacket`s in the same order. | `TODO` | `NA` | `Not planned` | `TODO` | `TODO` |
+| Every validator set on any consumer chain MUST either be or have been a validator set on the provider chain. | `Scheduled` | `NA` | `Done` | `Scheduled` | `??` |
+| Any update in the power of a validator `val` on the provider, as a result of <br /> - (increase) `Delegate()` / `Redelegate()` to `val` <br /> - (increase) `val` joining the provider validator set <br /> - (decrease) `Undelegate()` / `Redelegate()` from `val` <br /> - (decrease) `Slash(val)` <br /> - (decrease) `val` leaving the provider validator set <br /> MUST be present in a `ValidatorSetChangePacket` that is sent to all consumer chains | `Scheduled` | `NA` | `Done` | `Scheduled` | `??` |
+| Every consumer chain receives the same sequence of `ValidatorSetChangePacket`s in the same order. | `Scheduled` | `NA` | `NA` | `Scheduled` | `Scheduled` |
 
 ---
 
 | Concern re. *Bond-Based Consumer Voting Power* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| For every `ValidatorSetChangePacket` received by a consumer chain at time `t`, a `MaturedVSCPacket` is sent back to the provider in the first block with a timestamp `>= t + UnbondingPeriod` | `TODO` | `TODO` | `Done` | `TODO` | `TODO` |
-| If an unbonding operation resulted in a `ValidatorSetChangePacket` sent to all registered consumer chains, then it cannot complete before receiving matching `MaturedVSCPacket`s from these consumer chains (unless some of these consumer chains are removed) | `TODO` | `TODO` | `Done` | `TODO` | `TODO` |
+| For every `ValidatorSetChangePacket` received by a consumer chain at time `t`, a `MaturedVSCPacket` is sent back to the provider in the first block with a timestamp `>= t + UnbondingPeriod` | `Scheduled` | `Scheduled` | `Done` | `Scheduled` | `??` |
+| If an unbonding operation resulted in a `ValidatorSetChangePacket` sent to all registered consumer chains, then it cannot complete before receiving matching `MaturedVSCPacket`s from these consumer chains (unless some of these consumer chains are removed) | `Scheduled` | `Scheduled` | `Done` | `Scheduled` | `??` |
 | TBA ...
 
 ---
 
 | Concern re. *Slashable Consumer Misbehavior* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| Multiple downtime infractions committed by the same validator `val` on the same consumer chain without `val` requesting to `Unjail` itself result in a single `SlashPacket` | `TODO` | `TODO` | `Done` | `TODO` | `TODO` |
-| If evidence of misbehavior is submitted on a consumer chain within the unbonding period targeting an amount `x` of staked tokens, the amount `x` cannot be unlocked on the provider before the corresponding `SlashPacket` is received <br /> - `SlashPacket` will not arrive after the corresponding `MaturedVSCPacket`s | `TODO` | `TODO` | `Done` | `TODO` | `TODO` |
+| Multiple downtime infractions committed by the same validator `val` on the same consumer chain without `val` requesting to `Unjail` itself result in a single `SlashPacket` | `Scheduled` | `??` | `Done` | `Scheduled` | `??` |
+| If evidence of misbehavior is submitted on a consumer chain within the unbonding period targeting an amount `x` of staked tokens, the amount `x` cannot be unlocked on the provider before the corresponding `SlashPacket` is received <br /> - `SlashPacket` will not arrive after the corresponding `MaturedVSCPacket`s | `Scheduled` | `??` | `Done` | `Scheduled` | `??` |
 | TBA ...
 
 ---
 
 | Concern re. *Consumer Rewards Distribution* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| Validators on the provider chain receive rewards for participating in IS | `TODO` | `TODO` | `Not planned` | `TODO` | `NA` |
-| The rewards sent to the provider chain are escrowed on the consumer chains (no double spend) | `TODO` | `TODO` | `Not planned` | `TODO` | `NA` |
+| Validators on the provider chain receive rewards for participating in IS | `Scheduled` | `Scheduled` | `NA` | `Scheduled` | `NA` |
+| The rewards sent to the provider chain are escrowed on the consumer chains (no double spend) | `Scheduled` | `Scheduled` | `NA` | `Scheduled` | `NA` |
 
 ---
 
@@ -148,10 +148,10 @@ The main concern addressed in this section is the correctness of the consumer ch
 
 | Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| Consumer chain liveness (blocks are being produced) | `TODO` | `NA` | `??` | `TODO` | `NA` |
-| A chain has the ability to restart as a consumer chain with no more than 24 hours downtime | `TODO` | `NA` | `??` | `TODO` | `NA` |
-| Governance on `gov-cc` | `TODO` | `??` | `??` | `TODO` | `NA` |
-| CosmWasm on `wasm-cc` | `TODO` | `??` | `??` | `TODO` | `NA` |
+| Consumer chain liveness (blocks are being produced) | `Scheduled` | `NA` | `??` | `Scheduled` | `NA` |
+| A chain has the ability to restart as a consumer chain with no more than 24 hours downtime | `Scheduled` | `NA` | `??` | `Scheduled` | `NA` |
+| Governance on `gov-cc` | `Scheduled` | `??` | `??` | `Scheduled` | `NA` |
+| CosmWasm on `wasm-cc` | `Scheduled` | `??` | `??` | `Scheduled` | `NA` |
 | TBA ...
 
 > TODO Scenarios to consider for restarting chains, client expiration
