@@ -107,15 +107,15 @@ In addition, the implementation MUST guarantee the following [system properties]
 | Concern re. *Validator Set Replication* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | Every validator set on any consumer chain MUST either be or have been a validator set on the provider chain. | `TODO` | `NA` | `??` | `TODO` | `TODO` |
+| Any update in the power of a validator `val` on the provider, as a result of <br /> - (increase) `Delegate()` / `Redelegate()` to `val` <br /> - (increase) `val` joining the provider validator set <br /> - (decrease) `Undelegate()` / `Redelegate()` from `val` <br /> - (decrease) `Slash(val)` <br /> - (decrease) `val` leaving the provider validator set <br /> MUST be present in a `ValidatorSetChangePacket` that is sent to all consumer chains | `TODO` | `NA` | `??` | `TODO` | `TODO` |
 | Every consumer chain receives the same sequence of `ValidatorSetChangePacket`s in the same order. | `TODO` | `NA` | `??` | `TODO` | `TODO` |
 
 ---
 
 | Concern re. *Bond-Based Consumer Voting Power* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| A power increase of a validator `val` on a consumer chain can be only due to <br /> - a `Delegate()` / `Redelegate()` to `val` on provider <br /> - `val` joining the provider validator set (another validator leaving the set) | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
-| A power decrease of a validator `val` on a consumer chain can be only due to  <br /> - an `Undelegate()` / `Redelegate()` from `val` on provider <br /> - `val` gets slash on the provider chain <br /> - another validator joining the provider validator set (`val` leaving the set) | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
-| In the case of a power decrease of a validator `val` on a consumer chain at time `t` due to either <br /> - an `Undelegate()` / `Redelegate()` from `val` on provider <br /> - or `val` leaving the set <br /> the corresponding tokens remain locked on the provider chain until at least `t + UnbondingPeriod` | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
+| For every `ValidatorSetChangePacket` received by a consumer chain at time `t`, a `MaturedVSCPacket` is sent back to the provider in the first block with a timestamp `>= t + UnbondingPeriod` | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
+| If an unbonding operation resulted in a `ValidatorSetChangePacket` sent to all registered consumer chains, then it cannot complete before receiving matching `MaturedVSCPacket`s from these consumer chains (unless some of these consumer chains are removed) | `TODO` | `TODO` | `??` | `TODO` | `TODO` |
 | TBA ...
 
 ---
