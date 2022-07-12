@@ -58,7 +58,7 @@ A prerequisite of the code review is to open a PR with all the [SDK changes](htt
 
 | Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| Changes to staking module | `Scheduled` (sdk team) | `Partial coverage` | `Partial coverage` | `Scheduled` | `NA` |
+| Changes to staking module | `Scheduled` (sdk team) | `Partial coverage` <br /> see [unbonding_test.go](../x/ccv/provider/unbonding_test.go) <br />  redelegation and validator unbonding missing | `Partial coverage` | `Scheduled` | `NA` |
 | Changes to slashing module | `Scheduled` (sdk team) | `??` | `NA` | `Scheduled` | `NA` |
 | Changes to evidence module | `Scheduled` (sdk team) | `??` | `NA` | `Scheduled` | `NA` |
 
@@ -71,9 +71,9 @@ The main concern addressed in this section is the correctness of the provider ch
 
 | Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| Liveness of undelegations <br /> - unbonding delegation entries are eventually removed from `UnbondingDelegation` | `Scheduled` | `Done` | `Done` | `Scheduled` | `Scheduled` |
-| Liveness of redelegations <br /> - redelegations entries are eventually removed from `Redelegations` | `Scheduled` | `??` | `Scheduled` | `Scheduled` | `??` |
-| Liveness of validator unbondings <br /> - unbonding validators with no delegations are eventually removed from `Validators` | `Scheduled` | `??` | `Done` | `Scheduled` | `??` |
+| Liveness of undelegations <br /> - unbonding delegation entries are eventually removed from `UnbondingDelegation` | `Scheduled` | `Done` <br /> see [unbonding_test.go](../x/ccv/provider/unbonding_test.go) | `Done` | `Scheduled` | `Scheduled` |
+| Liveness of redelegations <br /> - redelegations entries are eventually removed from `Redelegations` | `Scheduled` | `Scheduled` | `Scheduled` | `Scheduled` | `??` |
+| Liveness of validator unbondings <br /> - unbonding validators with no delegations are eventually removed from `Validators` | `Scheduled` | `Scheduled` | `Done` | `Scheduled` | `??` |
 | Unbonding operations (undelegations, redelegations, validator unbondings) should eventually complete even if the CCV channel is never established (due to error) | `Scheduled` | `??` | `Future work` | `Scheduled` | `??` |
 | A validator cannot get slashed more than once for double signing, regardless of how many times it double signs on different chains (consumers or provider) | `Scheduled` | `??` | `Done` | `Scheduled` | `NA` |
 | A validator cannot get slashed multiple times for downtime on the same chain without requesting to `Unjail` itself in between | `Scheduled` | `??` | `Partial coverage` | `Scheduled` | `NA` |
