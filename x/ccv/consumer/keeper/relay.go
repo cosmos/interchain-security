@@ -3,7 +3,6 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -36,6 +35,8 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, newCha
 		k.SetProviderChannel(ctx, packet.DestinationChannel)
 		// - send pending slash requests in states
 		k.SendPendingSlashRequests(ctx)
+		// - send pending provider pool weights
+		k.SendPendingProviderPoolWeights(ctx)
 	}
 	// Set pending changes by accumulating changes from this packet with all prior changes
 	var pendingChanges []abci.ValidatorUpdate
@@ -192,7 +193,31 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 	k.ClearPendingSlashRequests(ctx)
 }
 
-func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData, ack channeltypes.Acknowledgement) error {
+func (k Keeper) SendPendingProviderPoolWeights(ctx sdk.Context) {
+	channelID, ok := k.GetProviderChannel(ctx)
+	if !ok {
+		panic(fmt.Errorf("%s: CCV channel not set", channeltypes.ErrChannelNotFound))
+	}
+	// iterate over pending provider pool weights
+	for _, ppw := range k.GetPendingProviderPoolWeights(ctx) {
+		providerPoolWeightsBytes := k.cdc.MustMarshal(&ppw)
+		// send packet over IBC
+		err := utils.SendIBCPacket(
+			ctx,
+			k.scopedKeeper,
+			k.channelKeeper,
+			channelID,    // source channel id
+			types.PortID, // source port id
+			providerPoolWeightsBytes,
+		)
+		if err != nil {
+			panic(err)
+		}
+	}
+	k.ClearPendingProviderPoolWeights(ctx)
+}
+
+func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
 		// slashing packet was sent to a nonestablished channel
 		if err != sdkerrors.Wrap(

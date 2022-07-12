@@ -1,8 +1,10 @@
 package types
 
 import (
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/gogo/protobuf/proto"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -51,6 +53,29 @@ func (vdt SlashPacketData) ValidateBasic() error {
 }
 
 func (vdt SlashPacketData) GetBytes() []byte {
-	valDowntimeBytes := ModuleCdc.MustMarshalJSON(&vdt)
-	return valDowntimeBytes
+	//valDowntimeBytes := ModuleCdc.MustMarshalJSON(&vdt)
+	//return valDowntimeBytes
+	any, err := codectypes.NewAnyWithValue(&vdt)
+	if err != nil {
+		panic(err)
+	}
+	packetBytes := ModuleCdc.MustMarshal(&ConsumerPacket{
+		PacketData: any,
+	})
+	return packetBytes
+}
+
+func (m ProviderPoolWeights) GetBytes() []byte {
+	any, err := codectypes.NewAnyWithValue(&m)
+	if err != nil {
+		panic(err)
+	}
+	packetBytes := ModuleCdc.MustMarshal(&ConsumerPacket{
+		PacketData: any,
+	})
+	return packetBytes
+}
+
+type ConsumerPacketData interface {
+	proto.Message
 }

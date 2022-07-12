@@ -479,3 +479,43 @@ func (k Keeper) ClearPendingSlashRequests(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete([]byte(types.PendingSlashRequestsPrefix))
 }
+
+// SetPendingProviderPoolWeights sets the pending provider pool weights in store
+func (k Keeper) SetPendingProviderPoolWeights(ctx sdk.Context, providerPoolWeights []ccv.ProviderPoolWeights) {
+	store := ctx.KVStore(k.storeKey)
+	buf := &bytes.Buffer{}
+	err := json.NewEncoder(buf).Encode(&providerPoolWeights)
+	if err != nil {
+		panic("failed to encode json")
+	}
+	store.Set([]byte(types.PendingProviderPoolWeightsPrefix), buf.Bytes())
+}
+
+// GetPendingProviderPoolWeights returns the pending provider pool weights in store
+func (k Keeper) GetPendingProviderPoolWeights(ctx sdk.Context) (ppw []ccv.ProviderPoolWeights) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get([]byte(types.PendingProviderPoolWeightsPrefix))
+	if bz == nil {
+		return
+	}
+	buf := bytes.NewBuffer(bz)
+	json.NewDecoder(buf).Decode(&ppw)
+	if len(ppw) == 0 {
+		panic("failed to decode json")
+	}
+
+	return
+}
+
+// AppendPendingProviderPoolWeights appends the given ProviderPoolWeights to the pending ProviderPoolWeights in store
+func (k Keeper) AppendPendingProviderPoolWeights(ctx sdk.Context, ppw ccv.ProviderPoolWeights) {
+	providerPoolWeights := k.GetPendingProviderPoolWeights(ctx)
+	providerPoolWeights = append(providerPoolWeights, ppw)
+	k.SetPendingProviderPoolWeights(ctx, providerPoolWeights)
+}
+
+// ClearPendingProviderPoolWeights clears the pending provider pool weights in store
+func (k Keeper) ClearPendingProviderPoolWeights(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete([]byte(types.PendingProviderPoolWeightsPrefix))
+}

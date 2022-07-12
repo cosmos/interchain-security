@@ -37,7 +37,10 @@ func (suite *KeeperTestSuite) TestMakeConsumerGenesis() {
 	actualGenesis.ProviderConsensusState.Root.Hash = []byte{}
 	expectedGenesis.ProviderConsensusState.Root.Hash = []byte{}
 
-	suite.Require().Equal(actualGenesis, expectedGenesis, "consumer chain genesis created incorrectly")
+	expectedGenesis.Params.BaseProposerReward = sdk.NewDecWithPrec(1, 2)
+	expectedGenesis.Params.BonusProposerReward = sdk.NewDecWithPrec(4, 2)
+
+	suite.Require().Equal(expectedGenesis, actualGenesis, "consumer chain genesis created incorrectly")
 }
 
 func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {

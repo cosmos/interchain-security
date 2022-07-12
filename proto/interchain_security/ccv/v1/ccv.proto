@@ -6,8 +6,10 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/types";
 
 import "cosmos/staking/v1beta1/staking.proto";
 
+import "google/protobuf/any.proto";
 import "gogoproto/gogo.proto";
 import "tendermint/abci/types.proto";
+import "cosmos/base/v1beta1/coin.proto";
 
 // This packet is sent from provider chain to consumer chain if the validator set for consumer chain
 // changes (due to new bonding/unbonding messages or slashing events)
@@ -38,4 +40,23 @@ message SlashPacketData {
   uint64 valset_update_id = 2;
   // tell if the slashing is for a downtime or a double-signing infraction
   cosmos.staking.v1beta1.InfractionType infraction = 3;
+}
+
+message ProviderPoolWeights {
+  repeated bytes addresses = 1;
+  repeated string weights = 2 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int", (gogoproto.nullable) = false];
+  string total_weight = 3 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int", (gogoproto.nullable) = false];
+  repeated cosmos.base.v1beta1.Coin tokens = 4 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (gogoproto.moretags)     = "yaml:\"tokens\""
+  ];
+}
+
+message PendingPPWs {
+  repeated ProviderPoolWeights poolWeights = 1;
+}
+
+message ConsumerPacket {
+  google.protobuf.Any packet_data = 1;
 }

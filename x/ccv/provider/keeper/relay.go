@@ -9,12 +9,14 @@ import (
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
+
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
+	"github.com/cosmos/interchain-security/x/ccv/utils"
+
+	"github.com/gogo/protobuf/proto"
 )
 
 func (k Keeper) SendValidatorSetChangePacket(
@@ -133,7 +135,7 @@ func (k Keeper) EndBlockCallback(ctx sdk.Context) {
 }
 
 // OnRecvPacket slashes and jails the given validator in the packet data
-func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
+func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet) exported.Acknowledgement {
 	// check that the channel is established
 	chainID, ok := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !ok {
@@ -148,10 +150,28 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data c
 		return &ack
 	}
 
-	// apply slashing
-	if err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
-		ack := channeltypes.NewErrorAcknowledgement(err.Error())
-		return &ack
+	var cp ccv.ConsumerPacket
+	ccv.ModuleCdc.MustUnmarshal(packet.GetData(), &cp)
+	var cpd ccv.ConsumerPacketData
+	if err := ccv.ModuleCdc.UnpackAny(cp.GetPacketData(), &cpd); err != nil {
+		errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("cannot unmarshal CCV packet data: %s", err.Error()))
+		return errAck
+	}
+	switch packetData := cpd.(type) {
+	case *ccv.ProviderPoolWeights:
+		if err := k.HandleProviderPoolWeights(ctx, *packetData); err != nil {
+			ack := channeltypes.NewErrorAcknowledgement(err.Error())
+			return &ack
+		}
+	case *ccv.SlashPacketData:
+		// apply slashing
+		if err := k.HandleSlashPacket(ctx, chainID, *packetData); err != nil {
+			ack := channeltypes.NewErrorAcknowledgement(err.Error())
+			return &ack
+		}
+	default:
+		errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("unknown packet data type: %s", proto.MessageName(cpd)))
+		return errAck
 	}
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})

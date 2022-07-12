@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
@@ -11,6 +12,8 @@ var (
 	KeyBlocksPerDistributionTransmission = []byte("BlocksPerDistributionTransmission")
 	KeyDistributionTransmissionChannel   = []byte("DistributionTransmissionChannel")
 	KeyProviderFeePoolAddrStr            = []byte("ProviderFeePoolAddrStr")
+	KeyParamStoreKeyBaseProposerReward   = []byte("BaseProposerReward")
+	KeyParamStoreKeyBonusProposerReward  = []byte("BonusProposerReward")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -20,12 +23,15 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates new consumer parameters with provided arguments
 func NewParams(enabled bool, blocksPerDistributionTransmission int64,
-	distributionTransmissionChannel, providerFeePoolAddrStr string) Params {
+	distributionTransmissionChannel, providerFeePoolAddrStr string,
+	baseProposerReward, bonusProposerReward sdk.Dec) Params {
 	return Params{
 		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
 		DistributionTransmissionChannel:   distributionTransmissionChannel,
 		ProviderFeePoolAddrStr:            providerFeePoolAddrStr,
+		BaseProposerReward:                baseProposerReward,
+		BonusProposerReward:               bonusProposerReward,
 	}
 }
 
@@ -36,6 +42,8 @@ func DefaultParams() Params {
 		1000, // about 2 hr at 7.6 seconds per blocks
 		"",
 		"",
+		sdk.NewDecWithPrec(1, 2), // 1%
+		sdk.NewDecWithPrec(4, 2), // 4%
 	)
 }
 
@@ -54,6 +62,10 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.DistributionTransmissionChannel, validateString),
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
 			p.ProviderFeePoolAddrStr, validateString),
+		paramtypes.NewParamSetPair(KeyParamStoreKeyBaseProposerReward,
+			p.BaseProposerReward, validateBaseProposerReward),
+		paramtypes.NewParamSetPair(KeyParamStoreKeyBonusProposerReward,
+			p.BonusProposerReward, validateBonusProposerReward),
 	}
 }
 
@@ -75,5 +87,43 @@ func validateString(i interface{}) error {
 	if _, ok := i.(string); !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
+	return nil
+}
+
+func validateBaseProposerReward(i interface{}) error {
+	v, ok := i.(sdk.Dec)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	if v.IsNil() {
+		return fmt.Errorf("base proposer reward must be not nil")
+	}
+	if v.IsNegative() {
+		return fmt.Errorf("base proposer reward must be positive: %s", v)
+	}
+	if v.GT(sdk.OneDec()) {
+		return fmt.Errorf("base proposer reward too large: %s", v)
+	}
+
+	return nil
+}
+
+func validateBonusProposerReward(i interface{}) error {
+	v, ok := i.(sdk.Dec)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	if v.IsNil() {
+		return fmt.Errorf("bonus proposer reward must be not nil")
+	}
+	if v.IsNegative() {
+		return fmt.Errorf("bonus proposer reward must be positive: %s", v)
+	}
+	if v.GT(sdk.OneDec()) {
+		return fmt.Errorf("bonus proposer reward too large: %s", v)
+	}
+
 	return nil
 }

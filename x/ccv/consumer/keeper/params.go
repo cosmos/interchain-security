@@ -13,6 +13,8 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetBlocksPerDistributionTransmission(ctx),
 		k.GetDistributionTransmissionChannel(ctx),
 		k.GetProviderFeePoolAddrStr(ctx),
+		k.GetBaseProposerReward(ctx),
+		k.GetBonusProposerReward(ctx),
 	)
 }
 
@@ -56,4 +58,17 @@ func (k Keeper) GetProviderFeePoolAddrStr(ctx sdk.Context) string {
 
 func (k Keeper) SetProviderFeePoolAddrStr(ctx sdk.Context, addr string) {
 	k.paramStore.Set(ctx, types.KeyProviderFeePoolAddrStr, addr)
+}
+
+// GetBaseProposerReward returns the current distribution base proposer rate.
+func (k Keeper) GetBaseProposerReward(ctx sdk.Context) (percent sdk.Dec) {
+	k.paramStore.Get(ctx, types.KeyParamStoreKeyBaseProposerReward, &percent)
+	return percent
+}
+
+// GetBonusProposerReward returns the current distribution bonus proposer reward
+// rate.
+func (k Keeper) GetBonusProposerReward(ctx sdk.Context) (percent sdk.Dec) {
+	k.paramStore.Get(ctx, types.KeyParamStoreKeyBonusProposerReward, &percent)
+	return percent
 }

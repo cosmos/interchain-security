@@ -57,6 +57,9 @@ const (
 	// ConsumerRedistributeName the root string for the consumer-redistribution account address
 	ConsumerRedistributeName = "cons_redistribute"
 
+	// ProviderRewardStagingName is the address for staging reward to provider validators for each round
+	ProviderRewardStagingName = "providerrewardstaging"
+
 	// ConsumerToSendToProviderName is a "buffer" address for outgoing fees to be transferred to the provider chain.
 	ConsumerToSendToProviderName = "cons_to_send_to_provider"
 
@@ -66,12 +69,18 @@ const (
 
 	// HistoricalInfoKey is the key prefix that will store the historical info for a given height
 	HistoricalInfoKey = "historicalinfokey"
+
+	// ValidatorHoldingPoolPrefix is the prefix that will store validator holding pool by consensus address
+	ValidatorHoldingPoolPrefix = "validatorholdingpool"
+
+	PendingProviderPoolWeightsPrefix = "pendingproviderpoolweights"
 )
 
 var (
 	// PortKey defines the key to store the port ID in store
 	PortKey                         = []byte{0x01}
 	LastDistributionTransmissionKey = []byte{0x02}
+	ProposerKey                     = []byte{0x03} // key for the proposer address
 )
 
 // UnbondingTimeKey returns the key for storing the unbonding period
@@ -130,4 +139,8 @@ func GetHistoricalInfoKey(height int64) []byte {
 	hBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(hBytes, uint64(height))
 	return append([]byte(HistoricalInfoKey), hBytes...)
+}
+
+func GetValidatorHoldingPoolKey(addr []byte) []byte {
+	return append([]byte(ValidatorHoldingPoolPrefix), addr...)
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
@@ -23,6 +24,7 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
+
 	"github.com/cosmos/interchain-security/x/ccv/provider/client/cli"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -163,6 +165,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 
 // EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+	am.keeper.Distribute(ctx)
+
 	// For each consumer chain, call the endblock method which gets relevant validator set changes and
 	// sends them to the consumer chain
 	am.keeper.EndBlockCallback(ctx)
@@ -278,7 +282,7 @@ func (am AppModule) OnChanOpenTry(
 		// the consumer chain must be excluded from the blocked addresses
 		// blacklist or all all ibc-transfers from the consumer chain to the
 		// provider chain will fail
-		ProviderFeePoolAddr: am.keeper.GetFeeCollectorAddressStr(ctx),
+		ProviderFeePoolAddr: am.keeper.GetProviderDistributionAddressStr(ctx),
 		Version:             ccv.Version,
 	}
 	mdBz, err := (&md).Marshal()
@@ -340,16 +344,8 @@ func (am AppModule) OnRecvPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	var (
-		ack  ibcexported.Acknowledgement
-		data ccv.SlashPacketData
-	)
-	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("cannot unmarshal CCV packet data: %s", err.Error()))
-		ack = &errAck
-	} else {
-		ack = am.keeper.OnRecvPacket(ctx, packet, data)
-	}
+
+	ack := am.keeper.OnRecvPacket(ctx, packet)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(

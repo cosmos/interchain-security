@@ -122,6 +122,7 @@ var (
 		authtypes.FeeCollectorName:                    nil,
 		ibcconsumertypes.ConsumerRedistributeName:     nil,
 		ibcconsumertypes.ConsumerToSendToProviderName: nil,
+		ibcconsumertypes.ProviderRewardStagingName:    nil,
 		ibctransfertypes.ModuleName:                   {authtypes.Minter, authtypes.Burner},
 	}
 )

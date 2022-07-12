@@ -255,12 +255,12 @@ func (suite *KeeperTestSuite) TestOnAcknowledgement() {
 	ack := channeltypes.NewResultAcknowledgement([]byte{1})
 
 	// expect no error
-	err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnAcknowledgementPacket(suite.ctx, packet, packetData, ack)
+	err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnAcknowledgementPacket(suite.ctx, packet, ack)
 	suite.Nil(err)
 
 	// expect an error
 	ack = channeltypes.NewErrorAcknowledgement("error")
 
-	err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnAcknowledgementPacket(suite.ctx, packet, packetData, ack)
+	err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnAcknowledgementPacket(suite.ctx, packet, ack)
 	suite.NotNil(err)
 }

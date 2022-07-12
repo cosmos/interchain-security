@@ -46,6 +46,10 @@ type SlashingKeeper interface {
 	IsTombstoned(sdk.Context, sdk.ConsAddress) bool
 }
 
+type DistributionKeeper interface {
+	AllocateTokensToValidator(ctx sdk.Context, val stakingtypes.ValidatorI, tokens sdk.DecCoins)
+}
+
 // ChannelKeeper defines the expected IBC channel keeper
 type ChannelKeeper interface {
 	GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool)

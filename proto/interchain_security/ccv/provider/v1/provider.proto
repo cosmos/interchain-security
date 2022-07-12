@@ -8,6 +8,7 @@ import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 import "ibc/core/client/v1/client.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
+import "cosmos/base/v1beta1/coin.proto";
 
 // CreateConsumerChainProposal is a governance proposal on the provider chain to spawn a new consumer chain.
 // If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
@@ -63,4 +64,12 @@ message Params {
 message HandshakeMetadata {
   string provider_fee_pool_addr = 1;
   string version                = 2;
+}
+
+message DistributionExcessPool {
+  repeated cosmos.base.v1beta1.Coin excess = 1 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (gogoproto.moretags)     = "yaml:\"excess\""
+  ];
 }

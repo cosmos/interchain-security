@@ -28,6 +28,9 @@ const (
 	// QuerierRoute is the querier route for IBC transfer
 	QuerierRoute = ModuleName
 
+	// DistributionAccount is the account for receiving distribution tokens from consumers
+	DistributionAccount = "providerdistribution"
+
 	// ChainToChannelKeyPrefix is the key prefix for storing mapping
 	// from chainID to the channel ID that is used to send over validator set changes.
 	ChainToChannelKeyPrefix = "chaintochannel"
@@ -80,7 +83,9 @@ const (
 
 var (
 	// PortKey defines the key to store the port ID in store
-	PortKey = []byte{0x01}
+	PortKey                       = []byte{0x01}
+	DistributionExcessKey         = []byte{0x02}
+	PendingProviderPoolWeightsKey = []byte{0x03}
 )
 
 // Ouputs a fixed length 32 byte hash for any string

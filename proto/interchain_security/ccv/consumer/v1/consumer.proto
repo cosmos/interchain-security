@@ -9,6 +9,7 @@ import "google/protobuf/any.proto";
 import "cosmos/staking/v1beta1/staking.proto";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
 
 
 // Params defines the parameters for CCV consumer module
@@ -28,6 +29,17 @@ message Params {
   // provider handshake procedure.
   string distribution_transmission_channel = 3;
   string provider_fee_pool_addr_str        = 4;
+
+  string base_proposer_reward = 5 [
+    (gogoproto.moretags)   = "yaml:\"base_proposer_reward\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  string bonus_proposer_reward = 6 [
+    (gogoproto.moretags)   = "yaml:\"bonus_proposer_reward\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
 }
 
 // LastTransmissionBlockHeight is the last time validator holding
@@ -49,4 +61,8 @@ message CrossChainValidator {
 message SlashRequest {
     interchain_security.ccv.v1.SlashPacketData packet = 1;
     cosmos.staking.v1beta1.InfractionType infraction = 2;
+}
+
+message ValidatorHoldingPool {
+  string weight = 1 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int", (gogoproto.nullable) = false];
 }
