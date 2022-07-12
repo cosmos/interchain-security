@@ -155,6 +155,9 @@ class Staking {
     const valid = (i): boolean =>
       1 <= this.tokens[i] && this.jailed[i] === undefined;
     let vals = _.range(NUM_VALIDATORS);
+
+    // stable sort => breaks ties based on validator
+    // address numerical value. This mimics staking module.
     vals = _.sortBy(vals, (i) => -this.tokens[i]);
     vals = vals.filter(valid);
     vals = vals.slice(0, MAX_VALIDATORS);

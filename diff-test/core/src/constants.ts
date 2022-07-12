@@ -1,6 +1,6 @@
 const P = 'provider';
 const C = 'consumer';
-const MAX_JUMPS = 9;
+const MAX_JUMPS = 3;
 const BLOCK_SECONDS = 5;
 const TRUSTING_SECONDS = MAX_JUMPS * BLOCK_SECONDS - 1;
 const UNBONDING_SECONDS_C = TRUSTING_SECONDS + 1;
