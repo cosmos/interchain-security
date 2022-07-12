@@ -59,8 +59,8 @@ A prerequisite of the code review is to open a PR with all the [SDK changes](htt
 | Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | Changes to staking module | `TODO` (sdk team) | `Low coverage` | `Partially done` | `TODO` | `NA` |
-| Changes to slashing module | `TODO` (sdk team) | `??` | `??` | `TODO` | `NA` |
-| Changes to evidence module | `TODO` (sdk team) | `??` | `??` | `TODO` | `NA` |
+| Changes to slashing module | `TODO` (sdk team) | `??` | `Not planned` | `TODO` | `NA` |
+| Changes to evidence module | `TODO` (sdk team) | `??` | `Not planned` | `TODO` | `NA` |
 
 ## Provider Chain Correctness
 
@@ -79,7 +79,7 @@ The main concern addressed in this section is the correctness of the provider ch
 | A validator cannot get slashed multiple times for downtime on the same chain without requesting to `Unjail` itself in between | `TODO` | `??` | `Partially done` | `TODO` | `TODO` |
 | A validator can be slashed multiple times for downtime on different chains | `TODO` | `??` | `Not planned` | `TODO` | `TODO` |
 | The provider chain can easily be restarted with IS enabled <br /> - `ExportGenesis` & `InitGenesis` | `TODO` | `??` | `In future` | `TODO` | `NA` |
-| The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `TODO` | `??` | `In future | `TODO` | `NA` |
+| The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `TODO` | `??` | `In future` | `TODO` | `NA` |
 | The provider chain can graciously handle a `StopConsumerChainProposal` <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `TODO` | `??` | `In future` | `TODO` | `NA` |
 | The provider chain can graciously handle a `SpawnConsumerChainProposal` <br /> (expected outcome) a consumer chain is added and a client is created | `TODO` | `??` | `In future` | `TODO` | `NA` |
 
