@@ -1,4 +1,4 @@
-package difftest
+package difftest_test
 
 import (
 	"bytes"
@@ -28,6 +28,14 @@ func getStakingKey(pv mock.PV) []byte {
 	return key
 }
 
+// func TestWombo(t *testing.T) {
+// 	alpha := "abcdefghijklmnopqrstuvwxyz"
+// 	for _, c := range []byte(alpha) {
+// 		fmt.Println(int(c - 'a'))
+// 	}
+// 	t.Error()
+// }
+
 func FuzzPrivateKeys(f *testing.F) {
 	testcases := []string{}
 	for _, tc := range testcases {
@@ -37,6 +45,9 @@ func FuzzPrivateKeys(f *testing.F) {
 		k := cryptoEd25519.SeedSize
 		if len(bz) < 4*k {
 			t.Skip()
+		}
+		for i, char := range bz {
+			bz[i] = byte(int(char)%26 + int('a'))
 		}
 		var keys [][]byte
 		for i := 0; i < 4; i++ {
@@ -51,8 +62,8 @@ func FuzzPrivateKeys(f *testing.F) {
 		}
 		if good {
 			strings := make([]string, 4)
-			for i, key := range keys {
-				strings[i] = string(key)
+			for i := 0; i < 4; i++ {
+				strings[i] = string(bz[i*k : i*k+k])
 			}
 			t.Errorf("%s,%s,%s,%s", strings[0], strings[1], strings[2], strings[3])
 		}
