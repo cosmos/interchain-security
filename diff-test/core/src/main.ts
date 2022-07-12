@@ -400,8 +400,9 @@ function replay(actions: Action[]) {
 
 function replayFile(fn: string, ix: number | undefined) {
   const traces = JSON.parse(fs.readFileSync(fn, 'utf8'));
-  const toReplay = ix !== undefined ? [traces[ix]] : traces;
-  replay(toReplay.transitions.map((t) => t.action));
+  const trace = ix !== undefined ? traces[ix] : traces[0];
+  const actions = trace.actions.map((a) => a.action);
+  replay(actions);
 }
 
 console.log(`running main`);
@@ -418,6 +419,8 @@ if (process.argv[2] === 'gen') {
   replayFile(process.argv[3], parseInt(process.argv[4]));
 } else if (process.argv[2] === 'q' || process.argv[2] == 'quick') {
   console.log(`quick`);
+} else {
+  console.log(`did not execute any function`);
 }
 
 console.log(`finished running main`);

@@ -39,7 +39,9 @@ import (
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
+	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
 )
 
 const P = "provider"
@@ -190,8 +192,7 @@ func (s *DTTestSuite) createValidator() (tmtypes.PrivValidator, sdk.ValAddress) 
 	coin := sdk.NewCoin(DENOM, sdk.NewInt(0))
 	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{}, stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
 	s.Require().NoError(err)
-	psk := s.providerChain.App.(*appProvider.App).StakingKeeper
-	pskServer := stakingkeeper.NewMsgServerImpl(psk)
+	pskServer := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
 	pskServer.CreateValidator(sdk.WrapSDKContext(s.ctx(P)), msg)
 	return privVal, addr
 }
@@ -252,6 +253,22 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 	s.Require().NoError(err)
 }
 
+func (s *DTTestSuite) ensureValidatorLexicographicOrderingMatchesModel(lesser sdk.ValAddress, greater sdk.ValAddress) {
+	/*
+		Ties in validator power are broken based on comparing PowerIndexKey. The model tie-break needs
+		to match the code tie-break at all times. This function ensures the tie break function in the model
+		is correct.
+	*/
+	// lesserV, _ := s.stakingKeeperP().GetValidator(s.ctx(P), lesser)
+	greaterV, _ := s.stakingKeeperP().GetValidator(s.ctx(P), greater)
+	// lesserKey := stakingtypes.GetValidatorsByPowerIndexKey(lesserV, sdk.DefaultPowerReduction)
+	greaterKey := stakingtypes.GetValidatorsByPowerIndexKey(greaterV, sdk.DefaultPowerReduction)
+	// The result will be 0 if a==b, -1 if a < b, and +1 if a > b.
+	res := bytes.Compare(lesserKey, greaterKey)
+	// Confirm that validator precedence is the same in code as in model
+	s.Require().Equal(-1, res)
+}
+
 func (s *DTTestSuite) SetupTest() {
 
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
@@ -291,6 +308,34 @@ func (s *DTTestSuite) SetupTest() {
 	s.providerChain.Signers[val3pk.Address().String()] = val3
 	s.consumerChain.Signers[val2pk.Address().String()] = val2
 	s.consumerChain.Signers[val3pk.Address().String()] = val3
+
+	fmt.Println("check first 2 vals")
+
+	s.ensureValidatorLexicographicOrderingMatchesModel(s.valAddresses[1], s.valAddresses[0])
+	fmt.Println("check all vals")
+
+	for i := range s.valAddresses[:len(s.valAddresses)-1] {
+		// validators are chosen sorted descending in the staking module
+		greater := s.valAddresses[i]
+		lesser := s.valAddresses[i+1]
+		s.ensureValidatorLexicographicOrderingMatchesModel(lesser, greater)
+	}
+
+	fmt.Println("provider validators (.Bytes())")
+	for i, addr := range s.valAddresses {
+		fmt.Println(i, " ", addr.Bytes())
+		if i < 2 {
+			pubKey := s.providerChain.Vals.Validators[i].PubKey
+			// returns tendermint.proto.tendermint.crypto.PublicKey
+			pk, _ := cryptoenc.PubKeyToProto(pubKey)
+			// return sdk.crypto.PubKey
+			temp, _ := cryptocodec.FromTmProtoPublicKey(pk)
+			ccSees := temp.Address().Bytes()
+			btes := addr.Bytes()
+			s.Require().True(bytes.Equal(ccSees, btes))
+		}
+
+	}
 
 	s.setSigningInfos()
 
@@ -438,6 +483,8 @@ func (s *DTTestSuite) isJailed(i int64) bool {
 
 func (s *DTTestSuite) consumerPower(i int64) (int64, error) {
 	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	fmt.Println("QUERY ", s.validator(i).Bytes())
+
 	v, found := ck.GetCCValidator(s.ctx(C), s.validator(i))
 	if !found {
 		return 0, fmt.Errorf("GetCCValidator() -> !found")
@@ -776,12 +823,8 @@ func (s *DTTestSuite) TestTracesCovering() {
 	// traces := loadTraces("slashless.json")
 	traces := loadTraces("/Users/danwt/Documents/work/interchain-security/diff-test/core/replay.json")
 
-	for i, val := range s.valAddresses {
-		fmt.Println(i, " ", val.String())
-	}
-
 	const start = 0
-	const end = 10
+	const end = 1
 	if len(traces) <= end {
 		traces = traces[start:]
 	} else {
@@ -789,7 +832,9 @@ func (s *DTTestSuite) TestTracesCovering() {
 	}
 	for i, trace := range traces {
 		s.Run(fmt.Sprintf("Trace%d", i+start), func() {
+			fmt.Println("start trace")
 			s.SetupTest()
+
 			defer func() {
 				if r := recover(); r != nil {
 					fmt.Println(r)
@@ -850,7 +895,7 @@ func (s *DTTestSuite) TestAssumptions() {
 	s.Require().Equal(SLASH_DOWNTIME, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDowntime(s.ctx(P)))
 	s.Require().Equal(SLASH_DOUBLESIGN, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDoubleSign(s.ctx(P)))
 
-	stakeParams := s.providerChain.App.(*appProvider.App).StakingKeeper.GetParams(s.ctx(P))
+	stakeParams := s.stakingKeeperP().GetParams(s.ctx(P))
 	s.Require().Equal(stakeParams.UnbondingTime, difftest.UNBONDING_P)
 	s.Require().Equal(
 		s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondingTime(s.ctx(C)),
@@ -942,6 +987,7 @@ func (s *DTTestSuite) TestAssumptions() {
 		val, found := ck.GetCCValidator(s.ctx(C), addr)
 		s.Require().Equal(eFound[i], found)
 		if eFound[i] {
+			fmt.Println("found ", addr.Bytes())
 			if ePower[i] != val.Power {
 				s.T().Fatal(FAIL_MESSAGE)
 			}
