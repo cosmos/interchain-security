@@ -1,6 +1,7 @@
 package difftest_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -37,6 +38,8 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
+
+	"github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
 const P = "provider"
@@ -251,12 +254,23 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 
 func (s *DTTestSuite) SetupTest() {
 
-	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = difftest.NewDTProviderConsumerCoordinator(s.T())
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
 	s.network = makeNetwork()
 	s.heightLastClientUpdate = map[string]int64{P: 0, C: 0}
 	s.timeLastClientUpdate = map[string]int64{P: 0, C: 0}
 	s.trace = Trace{}
+
+	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = difftest.NewDTProviderConsumerCoordinator(s.T())
+
+	// valsets must match
+	providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(s.providerChain.Vals)
+	consumerValUpdates := tmtypes.TM2PB.ValidatorUpdates(s.consumerChain.Vals)
+	s.Require().True(len(providerValUpdates) == len(consumerValUpdates), "initial valset not matching")
+	for i := 0; i < len(providerValUpdates); i++ {
+		addr1 := utils.GetChangePubKeyAddress(providerValUpdates[i])
+		addr2 := utils.GetChangePubKeyAddress(consumerValUpdates[i])
+		s.Require().True(bytes.Equal(addr1, addr2), "validator mismatch")
+	}
 
 	/*
 		Add two more validator
@@ -701,7 +715,7 @@ func (s *DTTestSuite) matchState(chain string) {
 		for j, power := range ss.Power {
 			actual, err := s.consumerPower(int64(j))
 			if power != nil {
-				s.Require().Nil(err)
+				s.Require().Nilf(err, diagnostic+"CC validator not found")
 				s.Require().Equalf(int64(*power), actual, diagnostic+"C power mismatch for val %d", j)
 			} else {
 				s.Require().Errorf(err, diagnostic+"C power mismatch for val %d, expect 0 (nil), got %d", j, actual)
@@ -759,9 +773,15 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 }
 
 func (s *DTTestSuite) TestTracesCovering() {
-	traces := loadTraces("noslash.json")
+	// traces := loadTraces("slashless.json")
+	traces := loadTraces("/Users/danwt/Documents/work/interchain-security/diff-test/core/replay.json")
+
+	for i, val := range s.valAddresses {
+		fmt.Println(i, " ", val.String())
+	}
+
 	const start = 0
-	const end = 99999999
+	const end = 10
 	if len(traces) <= end {
 		traces = traces[start:]
 	} else {
