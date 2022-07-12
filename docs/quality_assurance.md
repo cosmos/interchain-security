@@ -49,7 +49,7 @@ IBC packets:
 | Handling IBC client expiration | `TODO` (ibc-go team) | `??` | `??` | `TODO` | `NA` |
 | ICS-20 channel creation | `TODO` (ibc-go team) | `??` | `??` | `TODO` | `NA` |
 | ICS-20 transfer | `TODO` (ibc-go team) | `??` | `??` | `TODO` | `NA` |
-
+| Changes in IBC-GO testing suite | `TODO` (ibc-go team) | `??` | `??` | `TODO` | `NA` |
 ## Integration with Cosmos SDK
 
 A prerequisite of the code review is to open a PR with all the [SDK changes](https://github.com/cosmos/cosmos-sdk/tree/interchain-security-rebase) needed by Interchain Security.
