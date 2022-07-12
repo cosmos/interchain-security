@@ -41,14 +41,14 @@ IBC packets:
 
 | Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
 | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| Create IBC clients | `TODO` (ibc-go team) | `Done` | `Future work` | `TODO` | `NA` |
+| Create IBC clients | `TODO` (ibc-go team) | `Done` | `In future` | `TODO` | `NA` |
 | Getting consumer `UnbondingPeriod` from IBC client | `TODO` (ibc-go team) | `??` | `Not planned` | `TODO` | `NA` |
-| Create CCV channel (handshake) | `TODO` (ibc-go team) | `Done` | `Future work` | `TODO` | `TODO` |
+| Create CCV channel (handshake) | `TODO` (ibc-go team) | `Done` | `In future` | `TODO` | `TODO` |
 | Sending IBC packets <br /> - see `x/ccv/utils/utils.go:SendIBCPacket()` | `TODO` (ibc-go team) | `Done` | `Done` | `TODO` | `NA` |
 | Handling acknowledgments | `TODO` (ibc-go team) | `Low coverage` | `Scheduled` | `TODO` | `NA` |
-| Handling timeouts | `TODO` (ibc-go team) | `Low coverage` | `Future work` | `TODO` | `NA` |
-| Handling IBC client expiration | `TODO` (ibc-go team) | `??` | `Future work` | `TODO` | `NA` |
-| ICS-20 channel creation | `TODO` (ibc-go team) | `??` | `Future work` | `TODO` | `NA` |
+| Handling timeouts | `TODO` (ibc-go team) | `Low coverage` | `In future` | `TODO` | `NA` |
+| Handling IBC client expiration | `TODO` (ibc-go team) | `??` | `In future` | `TODO` | `NA` |
+| ICS-20 channel creation | `TODO` (ibc-go team) | `??` | `In future` | `TODO` | `NA` |
 | ICS-20 transfer | `TODO` (ibc-go team) | `??` | `Not planned` | `TODO` | `NA` |
 
 ## Integration with Cosmos SDK
@@ -73,14 +73,14 @@ The main concern addressed in this section is the correctness of the provider ch
 | Liveness of undelegations <br /> - unbonding delegation entries are eventually removed from `UnbondingDelegation` | `TODO` | `Done` | `Done` | `TODO` | `TODO` |
 | Liveness of redelegations <br /> - redelegations entries are eventually removed from `Redelegations` | `TODO` | `TODO` | `Scheduled` | `TODO` | `TODO` |
 | Liveness of validator unbondings <br /> - unbonding validators with no delegations are eventually removed from `Validators` | `TODO` | `TODO` | `Done` | `TODO` | `TODO` |
-| Unbonding operations (undelegations, redelegations, validator unbondings) should eventually complete even if the CCV channel is never established (due to error) | `TODO` | `TODO` | `Future work` | `TODO` | `TODO` |
+| Unbonding operations (undelegations, redelegations, validator unbondings) should eventually complete even if the CCV channel is never established (due to error) | `TODO` | `TODO` | `In future` | `TODO` | `TODO` |
 | A validator cannot get slashed more than once for double signing, regardless of how many times it double signs on different chains (consumers or provider) | `TODO` | `??` | `Done` | `TODO` | `TODO` |
 | A validator cannot get slashed multiple times for downtime on the same chain without requesting to `Unjail` itself in between | `TODO` | `??` | `Partially done` | `TODO` | `TODO` |
 | A validator can be slashed multiple times for downtime on different chains | `TODO` | `??` | `Not planned` | `TODO` | `TODO` |
-| The provider chain can easily be restarted with IS enabled <br /> - `ExportGenesis` & `InitGenesis` | `TODO` | `??` | `Future work` | `TODO` | `NA` |
-| The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `TODO` | `??` | `Future work | `TODO` | `NA` |
-| The provider chain can graciously handle a `StopConsumerChainProposal` <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `TODO` | `??` | `Future work` | `TODO` | `NA` |
-| The provider chain can graciously handle a `SpawnConsumerChainProposal` <br /> (expected outcome) a consumer chain is added and a client is created | `TODO` | `??` | `Future work` | `TODO` | `NA` |
+| The provider chain can easily be restarted with IS enabled <br /> - `ExportGenesis` & `InitGenesis` | `TODO` | `??` | `In future` | `TODO` | `NA` |
+| The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `TODO` | `??` | `In future | `TODO` | `NA` |
+| The provider chain can graciously handle a `StopConsumerChainProposal` <br /> (expected outcome) consumer chain shuts down and its state in provider CCV module is removed | `TODO` | `??` | `In future` | `TODO` | `NA` |
+| The provider chain can graciously handle a `SpawnConsumerChainProposal` <br /> (expected outcome) a consumer chain is added and a client is created | `TODO` | `??` | `In future` | `TODO` | `NA` |
 
 ## Interchain Security Protocol Correctness
 
