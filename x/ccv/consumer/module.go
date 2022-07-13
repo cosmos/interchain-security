@@ -189,10 +189,10 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		return []abci.ValidatorUpdate{}
 	}
 	// apply changes to cross-chain validator set
-	am.keeper.ApplyCCValidatorChanges(ctx, data.ValidatorUpdates)
+	tendermintUpdates := am.keeper.ApplyCCValidatorChanges(ctx, data.ValidatorUpdates)
 	am.keeper.DeletePendingChanges(ctx)
 
-	return data.ValidatorUpdates
+	return tendermintUpdates
 }
 
 // AppModuleSimulation functions
