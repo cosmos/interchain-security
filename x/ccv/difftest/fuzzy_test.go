@@ -28,19 +28,7 @@ func getStakingKey(pv mock.PV) []byte {
 	return key
 }
 
-// func TestWombo(t *testing.T) {
-// 	alpha := "abcdefghijklmnopqrstuvwxyz"
-// 	for _, c := range []byte(alpha) {
-// 		fmt.Println(int(c - 'a'))
-// 	}
-// 	t.Error()
-// }
-
 func FuzzPrivateKeys(f *testing.F) {
-	testcases := []string{}
-	for _, tc := range testcases {
-		f.Add(tc) // Use f.Add to provide a seed corpus
-	}
 	f.Fuzz(func(t *testing.T, bz []byte) {
 		k := cryptoEd25519.SeedSize
 		if len(bz) < 4*k {
