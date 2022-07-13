@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -346,8 +345,6 @@ func (k Keeper) ClearOutstandingDowntime(ctx sdk.Context, address string) {
 
 // SetCCValidator sets a cross-chain validator under its validator address
 func (k Keeper) SetCCValidator(ctx sdk.Context, v types.CrossChainValidator) {
-	fmt.Println("SET ", v.Address)
-
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&v)
 
@@ -370,7 +367,6 @@ func (k Keeper) GetCCValidator(ctx sdk.Context, addr []byte) (validator types.Cr
 
 // DeleteCCValidator deletes a cross-chain validator for a given address
 func (k Keeper) DeleteCCValidator(ctx sdk.Context, addr []byte) {
-	fmt.Println("DEL ", addr)
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.GetCrossChainValidatorKey(addr))
 }
