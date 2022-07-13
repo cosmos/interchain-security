@@ -199,6 +199,9 @@ class Staking {
     const oldVals = this.lastVals;
     const newVals = this.newVals();
     newVals.forEach((i) => {
+      if (this.status[i] !== Status.BONDED) {
+        console.log(`${i} : ${this.status[i]}->${Status.BONDED}`);
+      }
       this.status[i] = Status.BONDED;
       const before = this.validatorQ.length;
       this.validatorQ = this.validatorQ.filter((e) => e.val != i);
@@ -220,6 +223,11 @@ class Staking {
       this.m.events.push(Event.SOME_UNVALS_EXPIRED_BUT_NOT_COMPLETED);
     }
     completedUnvals.forEach((e: Unval) => {
+      if (this.status[e.val] !== Status.UNBONDED) {
+        console.log(
+          `${e.val} : ${this.status[e.val]}->${Status.UNBONDED}`,
+        );
+      }
       this.status[e.val] = Status.UNBONDED;
       this.m.events.push(Event.COMPLETE_UNVAL_IN_ENDBLOCK);
     });
@@ -238,6 +246,9 @@ class Staking {
         newUnvals.push(unval);
         this.m.ccvP.afterUnbondingInitiated(this.opID);
         this.opID += 1;
+        if (this.status[i] !== Status.UNBONDING) {
+          console.log(`${i} : ${this.status[i]}->${Status.UNBONDING}`);
+        }
         this.status[i] = Status.UNBONDING;
       });
     this.validatorQ = this.validatorQ.filter(
@@ -341,6 +352,7 @@ class Staking {
     return this.delegation[val] + 1 * TOKEN_SCALAR;
   };
   unbondingCanComplete = (opID) => {
+    console.log(`can complete ${opID}`);
     {
       const e = _.find(this.validatorQ, (e) => e.opID === opID);
       if (e) {
@@ -420,6 +432,7 @@ class CCVProvider {
     }
   };
   onReceiveVSCMatured = (data: VscMatured) => {
+    console.log(`recv maturity ${data.vscID}`);
     if (this.vscIDtoOpIDs.has(data.vscID)) {
       this.vscIDtoOpIDs.get(data.vscID).forEach((opID) => {
         this.m.staking.unbondingCanComplete(opID);
@@ -482,6 +495,7 @@ class CCVConsumer {
     })();
     matured.forEach((vscID) => {
       const data: VscMatured = { vscID };
+      console.log(`send maturity ${vscID} at time ${this.m.t[C]}`);
       this.m.events.push(Event.CONSUMER_SEND_MATURATION);
       this.m.outbox[C].add(data);
       this.maturingVscs.delete(vscID);
@@ -518,6 +532,14 @@ class CCVConsumer {
   onReceiveVSC = (data: Vsc) => {
     this.hToVscID[this.m.h[C] + 1] = data.vscID;
     this.pendingChanges.push(data.updates);
+    console.log(
+      `recv vsc `,
+      data.vscID,
+      'period ',
+      UNBONDING_SECONDS_C,
+      'receive time ',
+      this.m.t[C],
+    );
     this.maturingVscs.set(data.vscID, this.m.t[C] + UNBONDING_SECONDS_C);
     data.slashAcks.forEach((val) => {
       this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_ACK);
