@@ -126,22 +126,8 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
 		// check whether there is an established CCV channel to this consumer chain
 		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
-			// send all the pending ValidatorSetChangePackets to the consumer chain
-			pendingPackets := k.EmptyPendingVSC(ctx, chainID)
-			for _, data := range pendingPackets {
-				// send packet over IBC
-				err := utils.SendIBCPacket(
-					ctx,
-					k.scopedKeeper,
-					k.channelKeeper,
-					channelID,    // source channel id
-					types.PortID, // source port id
-					data.GetBytes(),
-				)
-				if err != nil {
-					panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
-				}
-			}
+			// Send pending VSC packets to consumer chain
+			k.SendPendingVSCPackets(ctx, chainID, channelID)
 		}
 
 		// check whether there are changes in the validator set;
@@ -175,6 +161,25 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 	})
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
 	k.IncrementValidatorSetUpdateId(ctx)
+}
+
+// Sends all pending ValidatorSetChangePackets to the specified chain
+func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string) {
+	pendingPackets := k.EmptyPendingVSC(ctx, chainID)
+	for _, data := range pendingPackets {
+		// send packet over IBC
+		err := utils.SendIBCPacket(
+			ctx,
+			k.scopedKeeper,
+			k.channelKeeper,
+			channelID,    // source channel id
+			types.PortID, // source port id
+			data.GetBytes(),
+		)
+		if err != nil {
+			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
+		}
+	}
 }
 
 // OnRecvSlashPacket slashes and jails the given validator in the packet data
