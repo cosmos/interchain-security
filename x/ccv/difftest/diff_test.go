@@ -36,9 +36,6 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
 )
 
 const P = "provider"
@@ -303,22 +300,6 @@ func (s *DTTestSuite) SetupTest() {
 		s.ensureValidatorLexicographicOrderingMatchesModel(lesser, greater)
 	}
 
-	fmt.Println("provider validators (.Bytes())")
-	for i, addr := range s.valAddresses {
-		fmt.Println(i, " ", addr.Bytes())
-		if i < 2 {
-			pubKey := s.providerChain.Vals.Validators[i].PubKey
-			// returns tendermint.proto.tendermint.crypto.PublicKey
-			pk, _ := cryptoenc.PubKeyToProto(pubKey)
-			// return sdk.crypto.PubKey
-			temp, _ := cryptocodec.FromTmProtoPublicKey(pk)
-			ccSees := temp.Address().Bytes()
-			btes := addr.Bytes()
-			s.Require().True(bytes.Equal(ccSees, btes))
-		}
-
-	}
-
 	s.setSigningInfos()
 
 	tmConfig := ibctesting.NewTendermintConfig()
@@ -535,15 +516,18 @@ func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 }
 
 func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
-	// for _, ack := range s.network.consumeAcks(s.other(receiver)) {
-	// 	s.idempotentUpdateClient(receiver)
-	// 	fmt.Println("tryRecvAck")
-	// 	err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.packet, ack.ack)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	fmt.Println("recvAck successfully")
-	// }
+	_ = func() error {
+		for _, ack := range s.network.consumeAcks(s.other(receiver)) {
+			s.idempotentUpdateClient(receiver)
+			fmt.Println("tryRecvAck")
+			err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.packet, ack.ack)
+			if err != nil {
+				return err
+			}
+			fmt.Println("recvAck successfully")
+		}
+		return nil
+	}
 	return nil
 }
 
@@ -803,8 +787,6 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 
 func (s *DTTestSuite) TestTracesCovering() {
 	traces := loadTraces("slashless.json")
-	// traces := loadTraces("/Users/danwt/Documents/work/interchain-security/diff-test/core/replay.json")
-
 	const start = 0
 	const end = 99999999999
 	if len(traces) <= end {
@@ -969,7 +951,6 @@ func (s *DTTestSuite) TestAssumptions() {
 		val, found := ck.GetCCValidator(s.ctx(C), addr)
 		s.Require().Equal(eFound[i], found)
 		if eFound[i] {
-			fmt.Println("found ", addr.Bytes())
 			if ePower[i] != val.Power {
 				s.T().Fatal(FAIL_MESSAGE)
 			}
@@ -988,6 +969,5 @@ func (s *DTTestSuite) TestAssumptions() {
 			return false // Don't stop
 		})
 
-	// TODO: replace this
-	s.T().Fatal("Good test! (Sanity check)")
+	s.T().Fatal("Good test! (Sanity check)") // TODO: remove
 }
