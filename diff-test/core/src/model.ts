@@ -95,6 +95,7 @@ class Outbox {
     };
   }
   add = (data) => {
+    // console.log(`network add packet with sender ${this.chain}`);
     this.fifo.push([
       Outbox.createPacket(data, this.model.h[this.chain]),
       0,
@@ -104,6 +105,7 @@ class Outbox {
     return 0 < this.fifo.filter((e) => 1 < e[1]).length;
   };
   consume = (): Packet[] => {
+    // console.log(`network consume sender ${this.chain}`);
     const [available, unavailable] = _.partition(
       this.fifo,
       (e) => 1 < e[1],
@@ -112,6 +114,7 @@ class Outbox {
     return available.map((e) => e[0]);
   };
   commit = () => {
+    // console.log(`network commit sender ${this.chain}`);
     this.fifo = this.fifo.map((e) => [e[0], e[1] + 1]);
   };
 }
@@ -191,10 +194,14 @@ class Staking {
     if (0 < completedUndels.length) {
       this.m.events.push(Event.COMPLETE_UNDEL_IN_ENDBLOCK);
     }
-    this.delegatorTokens += completedUndels.reduce(
-      (x, e) => x + e.balance,
-      0,
-    );
+    const refund = completedUndels.reduce((x, e) => x + e.balance, 0);
+    this.delegatorTokens += refund;
+    if (0 < refund) {
+      console.log(`completedUndels: `, completedUndels);
+      console.log(
+        `[${this.delegatorTokens}](+${refund})(staking endblock)`,
+      );
+    }
     // Validators
     const oldVals = this.lastVals;
     const newVals = this.newVals();
@@ -276,6 +283,7 @@ class Staking {
       (this.shares(val) * amt) / this.tokens[val],
     );
     this.delegatorTokens -= amt;
+    console.log(`[${this.delegatorTokens}](-${amt})(delegate)`);
     this.tokens[val] += amt;
     this.delegation[val] += issuedShares;
   };
@@ -362,6 +370,9 @@ class Staking {
     if (e) {
       if (e.completionTime <= this.m.t[P]) {
         this.delegatorTokens += e.balance;
+        console.log(
+          `[${this.delegatorTokens}](+${e.balance})(canComplete undelQ now)`,
+        );
         this.undelegationQ = this.undelegationQ.filter((x) => x !== e);
         this.m.events.push(Event.COMPLETE_UNDEL_NOW);
       } else {
@@ -518,6 +529,7 @@ class CCVConsumer {
   onReceiveVSC = (data: Vsc) => {
     this.hToVscID[this.m.h[C] + 1] = data.vscID;
     this.pendingChanges.push(data.updates);
+    // console.log(`set maturity seconds `, UNBONDING_SECONDS_C);
     this.maturingVscs.set(data.vscID, this.m.t[C] + UNBONDING_SECONDS_C);
     data.slashAcks.forEach((val) => {
       this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_ACK);
