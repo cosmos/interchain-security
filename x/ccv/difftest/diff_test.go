@@ -93,6 +93,7 @@ func makeNetwork() Network {
 
 func (n Network) addPacket(sender string, packet channeltypes.Packet) {
 	n.outboxPackets[sender] = append(n.outboxPackets[sender], Packet{packet, 0})
+
 }
 
 func (n Network) addAck(sender string, ack []byte, packet channeltypes.Packet) {
@@ -100,6 +101,7 @@ func (n Network) addAck(sender string, ack []byte, packet channeltypes.Packet) {
 }
 
 func (n Network) consumePackets(sender string) []Packet {
+
 	ret := []Packet{}
 	for _, p := range n.outboxPackets[sender] {
 		if 1 < p.commits {
@@ -126,6 +128,7 @@ func (n Network) consumeAcks(sender string) []Ack {
 }
 
 func (n Network) commit(sender string) {
+
 	for i := range n.outboxPackets[sender] {
 		n.outboxPackets[sender][i].commits += 1
 	}
@@ -446,7 +449,6 @@ func (s *DTTestSuite) isJailed(i int64) bool {
 
 func (s *DTTestSuite) consumerPower(i int64) (int64, error) {
 	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
-	fmt.Println("QUERY ", s.validator(i).Bytes())
 
 	v, found := ck.GetCCValidator(s.ctx(C), s.validator(i))
 	if !found {
@@ -651,7 +653,7 @@ func (s *DTTestSuite) deliver(chain string) {
 	s.idempotentDeliverAcks(chain)
 	s.idempotentUpdateClient(chain)
 	packets := s.network.consumePackets(s.other(chain))
-	s.Require().NotEmpty(packets, s.trace.diagnostic()+"deliver has not packets but it always should")
+	s.Require().NotEmpty(packets, s.trace.diagnostic()+"[deliver has no packets]")
 	for _, p := range packets {
 		receiver := s.endpoint(chain)
 		sender := receiver.Counterparty
@@ -786,9 +788,10 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 }
 
 func (s *DTTestSuite) TestTracesCovering() {
-	traces := loadTraces("slashless.json")
-	const start = 0
-	const end = 99999999999
+	traces := loadTraces("short.json")
+	// traces := loadTraces("/Users/danwt/Documents/work/interchain-security/diff-test/core/replay.json")
+	const start = 375
+	const end = 376
 	if len(traces) <= end {
 		traces = traces[start:]
 	} else {
@@ -796,9 +799,8 @@ func (s *DTTestSuite) TestTracesCovering() {
 	}
 	for i, trace := range traces {
 		s.Run(fmt.Sprintf("Trace%d", i+start), func() {
-			fmt.Println("start trace")
+			fmt.Printf("[start trace %d]\n", i)
 			s.SetupTest()
-
 			defer func() {
 				if r := recover(); r != nil {
 					fmt.Println(r)
@@ -811,6 +813,7 @@ func (s *DTTestSuite) TestTracesCovering() {
 				map[string]int64{P: 0, C: 0},
 				true,
 			}
+			fmt.Printf("[finish setup, start actions]\n")
 			executeTrace(s, i+start, trace)
 		})
 	}
