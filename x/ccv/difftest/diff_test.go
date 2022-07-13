@@ -37,10 +37,7 @@ import (
 
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/ibc-go/v3/testing/mock"
-
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
 	cryptoenc "github.com/tendermint/tendermint/crypto/encoding"
 )
 
@@ -181,8 +178,8 @@ func TestDTTestSuite(t *testing.T) {
 	suite.Run(t, new(DTTestSuite))
 }
 
-func (s *DTTestSuite) createValidator() (tmtypes.PrivValidator, sdk.ValAddress) {
-	privVal := mock.NewPV()
+func (s *DTTestSuite) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.ValAddress) {
+	privVal := difftest.GetPV(seedIx)
 	pubKey, err := privVal.GetPubKey()
 	s.Require().NoError(err)
 	val := tmtypes.NewValidator(pubKey, 0)
@@ -279,25 +276,15 @@ func (s *DTTestSuite) SetupTest() {
 
 	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = difftest.NewDTProviderConsumerCoordinator(s.T())
 
-	// valsets must match
-	providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(s.providerChain.Vals)
-	consumerValUpdates := tmtypes.TM2PB.ValidatorUpdates(s.consumerChain.Vals)
-	s.Require().True(len(providerValUpdates) == len(consumerValUpdates), "initial valset not matching")
-	for i := 0; i < len(providerValUpdates); i++ {
-		addr1 := utils.GetChangePubKeyAddress(providerValUpdates[i])
-		addr2 := utils.GetChangePubKeyAddress(consumerValUpdates[i])
-		s.Require().True(bytes.Equal(addr1, addr2), "validator mismatch")
-	}
-
 	/*
 		Add two more validator
 		Only added two in chain creation
 		see this for reasoning https://github.com/danwt/informal-cosmos-hub-team/issues/13#issuecomment-1139704176
 		temporarily!
-		TODO: clean up this horrible mess
+		TODO: clean up this
 	*/
-	val2, val2addr := s.createValidator()
-	val3, val3addr := s.createValidator()
+	val2, val2addr := s.createValidator(2)
+	val3, val3addr := s.createValidator(3)
 	val2pk, err := val2.GetPubKey()
 	s.Require().Nil(err)
 	val3pk, err := val3.GetPubKey()
@@ -308,11 +295,6 @@ func (s *DTTestSuite) SetupTest() {
 	s.providerChain.Signers[val3pk.Address().String()] = val3
 	s.consumerChain.Signers[val2pk.Address().String()] = val2
 	s.consumerChain.Signers[val3pk.Address().String()] = val3
-
-	fmt.Println("check first 2 vals")
-
-	s.ensureValidatorLexicographicOrderingMatchesModel(s.valAddresses[1], s.valAddresses[0])
-	fmt.Println("check all vals")
 
 	for i := range s.valAddresses[:len(s.valAddresses)-1] {
 		// validators are chosen sorted descending in the staking module
@@ -820,11 +802,11 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 }
 
 func (s *DTTestSuite) TestTracesCovering() {
-	// traces := loadTraces("slashless.json")
-	traces := loadTraces("/Users/danwt/Documents/work/interchain-security/diff-test/core/replay.json")
+	traces := loadTraces("slashless.json")
+	// traces := loadTraces("/Users/danwt/Documents/work/interchain-security/diff-test/core/replay.json")
 
 	const start = 0
-	const end = 1
+	const end = 99999999999
 	if len(traces) <= end {
 		traces = traces[start:]
 	} else {

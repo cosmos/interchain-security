@@ -22,6 +22,10 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	simapp "github.com/cosmos/interchain-security/testutil/simapp"
+
+	cryptoEd25519 "crypto/ed25519"
+
+	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 )
 
 // TODO: move somewhere sensible with the other constants
@@ -30,6 +34,13 @@ const UNBONDING_C = time.Second * 45
 const TRUSTING = time.Second * 44
 const MAX_CLOCK_DRIFT = time.Second * 10000
 const TOKEN_SCALAR = 10000
+
+var PKSeeds = []string{
+	"bbaaaababaabbaabababbaabbbbbbaaa",
+	"abbbababbbabaaaaabaaabbbbababaab",
+	"bbabaabaabbbbbabbbaababbbbabbbbb",
+	"aabbbabaaaaababbbabaabaabbbbbbba",
+}
 
 var DTDefaultConsensusParams = &abci.ConsensusParams{
 	Block: &abci.BlockParams{
@@ -46,6 +57,11 @@ var DTDefaultConsensusParams = &abci.ConsensusParams{
 			tmtypes.ABCIPubKeyTypeEd25519,
 		},
 	},
+}
+
+func GetPV(seedIx int) mock.PV {
+	seed := []byte(PKSeeds[seedIx])
+	return mock.PV{&cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 }
 
 type InitialModelState struct {
@@ -262,7 +278,7 @@ func NewDTTestChain(t *testing.T, coord *ibctesting.Coordinator, appIniter ibcte
 	addresses := []sdk.ValAddress{}
 
 	for i := 0; i < validatorsPerChain; i++ {
-		privVal := mock.NewPV()
+		privVal := GetPV(i)
 		pubKey, err := privVal.GetPubKey()
 		require.NoError(t, err)
 		// TODO: the power here needs to be computed another way
