@@ -53,6 +53,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	if !found {
 		panic("the unbonding period is not set on the consumer chain")
 	}
+
 	maturityTime := ctx.BlockTime().Add(unbondingPeriod)
 	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, uint64(maturityTime.UnixNano()))
 

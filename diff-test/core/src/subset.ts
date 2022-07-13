@@ -27,7 +27,7 @@ function createSmallSubsetOfCoveringTraces() {
     });
     hits.push(hit);
   });
-  const target = possible.map((x) => Math.min(x, 1000));
+  const target = possible.map((x) => Math.min(x, 1500));
   console.log(`finished reading files and cnting`);
   function score(v): number {
     let x = 0;
