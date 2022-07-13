@@ -394,6 +394,7 @@ function replay(actions: Action[]) {
   const model = new Model(sanity, blocks, events);
   for (let i = 0; i < actions.length; i++) {
     const a = actions[i];
+    console.log(`action ${i}, kind : ${a.kind}`);
     doAction(model, a);
   }
 }
