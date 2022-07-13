@@ -748,6 +748,8 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 		a := action.Action
 		s.trace.actionIx = i
 
+		fmt.Println(s.trace.diagnostic())
+
 		switch a.Kind {
 		case "Delegate":
 			s.delegate(
@@ -789,10 +791,10 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 }
 
 func (s *DTTestSuite) TestTracesCovering() {
-	traces := loadTraces("noslash.json")
-	// traces := loadTraces("/Users/danwt/Documents/work/interchain-security/diff-test/core/replay.json")
+	// traces := loadTraces("noslash.json")
+	traces := loadTraces("/Users/danwt/Documents/work/interchain-security/diff-test/core/replay.json")
 	const start = 0
-	const end = 9999999999
+	const end = 1
 	if len(traces) <= end {
 		traces = traces[start:]
 	} else {
@@ -802,9 +804,18 @@ func (s *DTTestSuite) TestTracesCovering() {
 		s.Run(fmt.Sprintf("Trace%d", i+start), func() {
 			fmt.Printf("[start trace %d]\n", i)
 			s.SetupTest()
+			for i := 0; i < 4; i++ {
+				val, found := s.stakingKeeperP().GetValidator(s.ctx(P), s.validator(int64(i)))
+				if !found {
+					s.T().Fatal("GetValidator() -> !found")
+				}
+				fmt.Println(i, val.OperatorAddress)
+			}
 			defer func() {
 				if r := recover(); r != nil {
+					fmt.Println(s.trace.diagnostic())
 					fmt.Println(r)
+					s.Require().FailNow("Hit the panic")
 				}
 			}()
 			s.trace = Trace{
