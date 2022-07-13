@@ -619,6 +619,7 @@ func (s *DTTestSuite) endBlock(chain string) {
 	c.App.Commit()
 
 	c.Vals = c.NextVals
+
 	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
 
 	c.LastHeader = c.CurrentTMClientHeader()
@@ -788,10 +789,10 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 }
 
 func (s *DTTestSuite) TestTracesCovering() {
-	traces := loadTraces("short.json")
+	traces := loadTraces("noslash.json")
 	// traces := loadTraces("/Users/danwt/Documents/work/interchain-security/diff-test/core/replay.json")
-	const start = 375
-	const end = 376
+	const start = 0
+	const end = 9999999999
 	if len(traces) <= end {
 		traces = traces[start:]
 	} else {
