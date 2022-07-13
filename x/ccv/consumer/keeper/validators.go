@@ -13,42 +13,42 @@ import (
 )
 
 // ApplyCCValidatorChanges applies the given changes to the cross-chain validators states
-func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) {
+func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) []abci.ValidatorUpdate {
+	ret := []abci.ValidatorUpdate{}
 	for _, change := range changes {
 		addr := utils.GetChangePubKeyAddress(change)
 		val, found := k.GetCCValidator(ctx, addr)
 
-		// set new validator bonded
-		if !found {
-			if 0 < change.Power {
-				consAddr := sdk.ConsAddress(addr)
-
-				// convert validator pubkey from TM proto to SDK crytpo type
-				pubkey, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
-				if err != nil {
-					panic(err)
-				}
-				ccVal, err := types.NewCCValidator(addr, change.Power, pubkey)
-				if err != nil {
-					panic(err)
-				}
-
-				k.SetCCValidator(ctx, ccVal)
-				k.AfterValidatorBonded(ctx, consAddr, nil)
+		if found {
+			if change.Power < 1 {
+				k.DeleteCCValidator(ctx, addr)
+			} else {
+				val.Power = change.Power
+				k.SetCCValidator(ctx, val)
 			}
-			continue
-		}
 
-		// remove unbonding existing-validators
-		if change.Power < 1 {
-			k.DeleteCCValidator(ctx, addr)
-			continue
-		}
+			ret = append(ret, change)
 
-		// update existing validators power
-		val.Power = change.Power
-		k.SetCCValidator(ctx, val)
+		} else if 0 < change.Power {
+			// create new validator
+			consAddr := sdk.ConsAddress(addr)
+
+			pubkey, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
+			if err != nil {
+				panic(err)
+			}
+			ccVal, err := types.NewCCValidator(addr, change.Power, pubkey)
+			if err != nil {
+				panic(err)
+			}
+
+			k.SetCCValidator(ctx, ccVal)
+			k.AfterValidatorBonded(ctx, consAddr, nil)
+
+			ret = append(ret, change)
+		}
 	}
+	return ret
 }
 
 // IterateValidators - unimplemented on CCV keeper but perform a no-op in order to pass the slashing module InitGenesis.
