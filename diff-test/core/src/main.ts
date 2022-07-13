@@ -402,7 +402,7 @@ function replayFile(fn: string, ix: number | undefined) {
   const traces = JSON.parse(fs.readFileSync(fn, 'utf8'));
   const trace = ix !== undefined ? traces[ix] : traces[0];
   const actions = trace.actions.map((a) => a.action);
-  replay(actions.slice(0, 15));
+  replay(actions);
 }
 
 console.log(`running main`);
