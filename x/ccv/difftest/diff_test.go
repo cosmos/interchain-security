@@ -259,9 +259,9 @@ func (s *DTTestSuite) ensureValidatorLexicographicOrderingMatchesModel(lesser sd
 		to match the code tie-break at all times. This function ensures the tie break function in the model
 		is correct.
 	*/
-	// lesserV, _ := s.stakingKeeperP().GetValidator(s.ctx(P), lesser)
+	lesserV, _ := s.stakingKeeperP().GetValidator(s.ctx(P), lesser)
 	greaterV, _ := s.stakingKeeperP().GetValidator(s.ctx(P), greater)
-	// lesserKey := stakingtypes.GetValidatorsByPowerIndexKey(lesserV, sdk.DefaultPowerReduction)
+	lesserKey := stakingtypes.GetValidatorsByPowerIndexKey(lesserV, sdk.DefaultPowerReduction)
 	greaterKey := stakingtypes.GetValidatorsByPowerIndexKey(greaterV, sdk.DefaultPowerReduction)
 	// The result will be 0 if a==b, -1 if a < b, and +1 if a > b.
 	res := bytes.Compare(lesserKey, greaterKey)
