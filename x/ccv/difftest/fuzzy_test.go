@@ -47,7 +47,7 @@ func FuzzPrivateKeys(f *testing.F) {
 			t.Skip()
 		}
 		for i, char := range bz {
-			bz[i] = byte(int(char)%26 + int('a'))
+			bz[i] = byte(int(char)%2 + int('a'))
 		}
 		var keys [][]byte
 		for i := 0; i < 4; i++ {
@@ -65,7 +65,15 @@ func FuzzPrivateKeys(f *testing.F) {
 			for i := 0; i < 4; i++ {
 				strings[i] = string(bz[i*k : i*k+k])
 			}
-			t.Errorf("%s,%s,%s,%s", strings[0], strings[1], strings[2], strings[3])
+			t.Errorf("[%s,\n%s,\n%s,\n%s]", strings[0], strings[1], strings[2], strings[3])
 		}
 	})
+	/*
+		[
+		bbaaaababaabbaabababbaabbbbbbaaa,
+		abbbababbbabaaaaabaaabbbbababaab,
+		bbabaabaabbbbbabbbaababbbbabbbbb,
+		aabbbabaaaaababbbabaabaabbbbbbba
+		]
+	*/
 }
