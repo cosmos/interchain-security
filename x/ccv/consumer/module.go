@@ -466,7 +466,6 @@ func (am AppModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {
-	fmt.Println("OnTimeoutPacket called")
 
 	var data ccv.SlashPacketData
 	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
