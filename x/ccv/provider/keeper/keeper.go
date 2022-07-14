@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -221,7 +222,9 @@ func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (consumertyp
 	}
 
 	var data consumertypes.GenesisState
-	data.Unmarshal(bz)
+	if err := data.Unmarshal(bz); err != nil {
+		panic(fmt.Errorf("consumer genesis could not be unmarshaled: %w", err))
+	}
 	return data, true
 }
 
@@ -270,7 +273,9 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	// Verify that there isn't already a CCV channel for the consumer chain
 	// If there is, then close the channel.
 	if prevChannel, ok := k.GetChannelToChain(ctx, chainID); ok {
-		k.chanCloseInit(ctx, channelID)
+		if err := k.chanCloseInit(ctx, channelID); err != nil {
+			return err
+		}
 		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, chainID)
 	}
 
@@ -541,10 +546,14 @@ func (h StakingHooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
 	}
 
 	// Set unbondingOp
-	h.k.SetUnbondingOp(ctx, unbondingOp)
+	if err := h.k.SetUnbondingOp(ctx, unbondingOp); err != nil {
+		panic(fmt.Errorf("unbonding op could not be persisted: %w", err))
+	}
 
 	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
-	h.k.stakingKeeper.PutUnbondingOnHold(ctx, ID)
+	if err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, ID); err != nil {
+		panic(fmt.Errorf("unbonding could not be put on hold: %w", err))
+	}
 }
 
 // SetValsetUpdateBlockHeight sets the block height for a given valset update id
@@ -592,9 +601,9 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	var acks []string
 	buf := bytes.NewBuffer(bz)
 
-	json.NewDecoder(buf).Decode(&acks)
-	if len(acks) == 0 {
-		panic("failed to decode json")
+	err := json.NewDecoder(buf).Decode(&acks)
+	if err != nil {
+		panic(fmt.Errorf("failed to decode json: %w", err))
 	}
 
 	return acks
@@ -624,9 +633,9 @@ func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks [
 		var data []string
 		buf := bytes.NewBuffer(iterator.Value())
 
-		json.NewDecoder(buf).Decode(&data)
-		if len(data) == 0 {
-			panic("failed to decode json")
+		err := json.NewDecoder(buf).Decode(&data)
+		if err != nil {
+			panic(fmt.Errorf("failed to decode json: %w", err))
 		}
 
 		if !cb(id, data) {
@@ -678,7 +687,9 @@ func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) (packets []ccv.V
 	buf := bytes.NewBuffer(bz)
 
 	var data [][]byte
-	json.NewDecoder(buf).Decode(&data)
+	if err := json.NewDecoder(buf).Decode(&data); err != nil {
+		panic(fmt.Errorf("pending validator set changes could not be decoded: %w", err))
+	}
 
 	for _, pdata := range data {
 		var p ccv.ValidatorSetChangePacketData

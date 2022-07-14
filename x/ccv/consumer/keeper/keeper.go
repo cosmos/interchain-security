@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -221,7 +222,9 @@ func (k Keeper) GetPendingChanges(ctx sdk.Context) (*ccv.ValidatorSetChangePacke
 		return nil, false
 	}
 	var data ccv.ValidatorSetChangePacketData
-	data.Unmarshal(bz)
+	if err := data.Unmarshal(bz); err != nil {
+		panic(fmt.Errorf("pending changes could not be unmarshaled: %w", err))
+	}
 	return &data, true
 }
 
@@ -391,7 +394,7 @@ func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests []types.SlashR
 	buf := &bytes.Buffer{}
 	err := json.NewEncoder(buf).Encode(&requests)
 	if err != nil {
-		panic("failed to encode json")
+		panic(fmt.Errorf("failed to encode slash request json: %w", err))
 	}
 	store.Set([]byte(types.PendingSlashRequestsPrefix), buf.Bytes())
 }
@@ -404,9 +407,9 @@ func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) (requests []types.Slash
 		return
 	}
 	buf := bytes.NewBuffer(bz)
-	json.NewDecoder(buf).Decode(&requests)
-	if len(requests) == 0 {
-		panic("failed to decode json")
+	err := json.NewDecoder(buf).Decode(&requests)
+	if err != nil {
+		panic(fmt.Errorf("failed to decode slash request json: %w", err))
 	}
 
 	return

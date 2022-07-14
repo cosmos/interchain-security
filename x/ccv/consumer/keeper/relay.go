@@ -40,9 +40,13 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	} else {
 		pendingChanges = utils.AccumulateChanges(currentChanges.ValidatorUpdates, newChanges.ValidatorUpdates)
 	}
-	k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{
+
+	err := k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{
 		ValidatorUpdates: pendingChanges,
 	})
+	if err != nil {
+		panic(fmt.Errorf("pending validator set change could not be persisted: %w", err))
+	}
 
 	// Save maturity time and packet
 	unbondingPeriod, found := k.GetUnbondingTime(ctx)
@@ -67,6 +71,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // UnbondMaturePackets will iterate over the unbonding packets in order and write acknowledgements for all
 // packets that have finished unbonding.
 func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
+
 	store := ctx.KVStore(k.storeKey)
 	maturityIterator := sdk.KVStorePrefixIterator(store, []byte(types.PacketMaturityTimePrefix))
 	defer maturityIterator.Close()

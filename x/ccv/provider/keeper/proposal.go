@@ -27,7 +27,11 @@ func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateCons
 		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, p.LockUnbondingOnTimeout)
 	}
 
-	k.SetPendingClientInfo(ctx, p)
+	err := k.SetPendingClientInfo(ctx, p)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -86,10 +90,14 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 					// Delete unbonding op
 					k.DeleteUnbondingOp(ctx, unbondingOp.Id)
 				} else {
-					k.SetUnbondingOp(ctx, unbondingOp)
+					if err := k.SetUnbondingOp(ctx, unbondingOp); err != nil {
+						panic(fmt.Errorf("unbonding op could not be persisted: %w", err))
+					}
 				}
 			}
-			k.AppendMaturedUnbondingOps(ctx, maturedIds)
+			if err := k.AppendMaturedUnbondingOps(ctx, maturedIds); err != nil {
+				panic(fmt.Errorf("mature unbonding ops could not be appended: %w", err))
+			}
 			// clean up index
 			k.DeleteUnbondingOpIndex(ctx, chainID, vscID)
 			return true
@@ -129,7 +137,10 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHei
 		return err
 	}
 
-	k.SetConsumerGenesis(ctx, chainID, consumerGen)
+	err = k.SetConsumerGenesis(ctx, chainID, consumerGen)
+	if err != nil {
+		return err
+	}
 
 	// store LockUnbondingOnTimeout flag
 	if lockUbdOnTimeout {
@@ -250,7 +261,10 @@ func (k Keeper) IteratePendingClientInfo(ctx sdk.Context) {
 		k.cdc.MustUnmarshal(iterator.Value(), &clientInfo)
 
 		if !ctx.BlockTime().Before(spawnTime) {
-			k.CreateConsumerClient(ctx, chainID, clientInfo.InitialHeight, clientInfo.LockUnbondingOnTimeout)
+			err := k.CreateConsumerClient(ctx, chainID, clientInfo.InitialHeight, clientInfo.LockUnbondingOnTimeout)
+			if err != nil {
+				panic(fmt.Errorf("consumer client could not be created: %w", err))
+			}
 			execProposals = append(execProposals,
 				types.CreateConsumerChainProposal{ChainId: chainID, SpawnTime: spawnTime})
 		} else {
@@ -320,7 +334,10 @@ func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
 		}
 
 		if !ctx.BlockTime().Before(stopTime) {
-			k.StopConsumerChain(ctx, chainID, false, true)
+			err = k.StopConsumerChain(ctx, chainID, false, true)
+			if err != nil {
+				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+			}
 			execProposals = append(execProposals,
 				types.StopConsumerChainProposal{ChainId: chainID, StopTime: stopTime})
 		} else {
@@ -337,6 +354,9 @@ func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
 func (k Keeper) CloseChannel(ctx sdk.Context, channelID string) {
 	channel, found := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
 	if found && channel.State != channeltypes.CLOSED {
-		k.chanCloseInit(ctx, channelID)
+		err := k.chanCloseInit(ctx, channelID)
+		if err != nil {
+			panic(fmt.Errorf("channel (id: %s) could not be closed: %w", channelID, err))
+		}
 	}
 }

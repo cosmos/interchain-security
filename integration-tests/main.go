@@ -87,6 +87,7 @@ docker run --name "$INSTANCE_NAME" --cap-add=NET_ADMIN "$CONTAINER_NAME" /bin/ba
 `
 
 func (s System) startDocker() {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf(startDockerScript, s.containerConfig.containerName, s.containerConfig.instanceName))
 
 	cmdReader, err := cmd.StdoutPipe()
