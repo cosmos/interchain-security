@@ -1,5 +1,9 @@
 /*
-Matches https://github.com/cosmos/ibc/tree/5ea902172b20d53e209f8c1fda9b11d005d9c110
+
+interchain-sec core logic is consistent with https://github.com/cosmos/ibc/tree/5ea902172b20d53e209f8c1fda9b11d005d9c110.
+interchain-sec slash logic is consistent with spec, however spec and SUT may need to be updated (https://github.com/cosmos/interchain-security/issues/220)
+cosmos-sdk logic is partially consistent with the sdk, however, the SDK changes are a moving target and need fixes
+
 */
 
 import _ from 'underscore';
