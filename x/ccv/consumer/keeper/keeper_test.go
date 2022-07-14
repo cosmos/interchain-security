@@ -59,7 +59,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	for i := 0; i < len(providerValUpdates); i++ {
 		addr1 := utils.GetChangePubKeyAddress(providerValUpdates[i])
 		addr2 := utils.GetChangePubKeyAddress(consumerValUpdates[i])
-		suite.Require().True(bytes.Compare(addr1, addr2) == 0, "validator mismatch")
+		suite.Require().True(bytes.Equal(addr1, addr2), "validator mismatch")
 	}
 
 	// move both chains to the next block
@@ -67,12 +67,13 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.consumerChain.NextBlock()
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
-	suite.providerChain.App.(*appProvider.App).ProviderKeeper.CreateConsumerClient(
+	err := suite.providerChain.App.(*appProvider.App).ProviderKeeper.CreateConsumerClient(
 		suite.providerChain.GetContext(),
 		suite.consumerChain.ChainID,
 		suite.consumerChain.LastHeader.GetHeight().(clienttypes.Height),
 		false,
 	)
+	suite.Require().Nil(err)
 	// move provider to next block to commit the state
 	suite.providerChain.NextBlock()
 
@@ -118,8 +119,10 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	// set chains sender account number
 	// TODO: to be fixed in #151
-	suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
+	err = suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
+	suite.Require().Nil(err)
+	err = suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
+	suite.Require().Nil(err)
 
 	suite.ctx = suite.consumerChain.GetContext()
 }
@@ -146,7 +149,7 @@ func (suite *KeeperTestSuite) TestProviderClient() {
 	providerClient, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.ctx)
 	suite.Require().True(ok)
 
-	clientState, ok := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClient)
+	clientState, _ := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClient)
 	suite.Require().Equal(suite.providerClient, clientState, "stored client state does not match genesis provider client")
 }
 
@@ -180,7 +183,8 @@ func (suite *KeeperTestSuite) TestPendingChanges() {
 		nil,
 	)
 
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingChanges(suite.ctx, pd)
+	err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingChanges(suite.ctx, pd)
+	suite.Require().NoError(err)
 	gotPd, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPendingChanges(suite.ctx)
 	suite.Require().True(ok)
 	suite.Require().Equal(&pd, gotPd, "packet data in store does not equal packet data set")
@@ -232,7 +236,8 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 				providerUnbondingPeriod := suite.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(suite.providerChain.GetContext())
 				consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
 				suite.CreateCustomClient(suite.path.EndpointB, consumerUnbondingPeriod)
-				suite.path.EndpointB.CreateClient()
+				err := suite.path.EndpointB.CreateClient()
+				suite.Require().NoError(err)
 
 				suite.coordinator.CreateConnections(suite.path)
 
@@ -566,7 +571,7 @@ func (suite *KeeperTestSuite) TestCrossChainValidator() {
 	ctx := suite.consumerChain.GetContext()
 
 	// should return false
-	ccVal, foud := app.ConsumerKeeper.GetCCValidator(ctx, ed25519.GenPrivKey().PubKey().Address())
+	_, foud := app.ConsumerKeeper.GetCCValidator(ctx, ed25519.GenPrivKey().PubKey().Address())
 	suite.Require().False(foud)
 
 	// get a validator from consumer chain
@@ -577,7 +582,7 @@ func (suite *KeeperTestSuite) TestCrossChainValidator() {
 	suite.Require().NoError(err)
 
 	// set cross chain validator
-	ccVal, err = types.NewCCValidator(val.Address, 1000, pubkey)
+	ccVal, err := types.NewCCValidator(val.Address, 1000, pubkey)
 	suite.Require().NoError(err)
 
 	app.ConsumerKeeper.SetCCValidator(ctx, ccVal)
@@ -662,8 +667,9 @@ func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
 	packet := channeltypes.NewPacket(pd.GetBytes(), seq, providertypes.PortID, suite.path.EndpointB.ChannelID,
 		consumertypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
-	suite.path.EndpointB.SendPacket(packet)
-	err := suite.path.EndpointA.RecvPacket(packet)
+	err := suite.path.EndpointB.SendPacket(packet)
+	suite.Require().NoError(err)
+	err = suite.path.EndpointA.RecvPacket(packet)
 	suite.Require().NoError(err)
 }
 

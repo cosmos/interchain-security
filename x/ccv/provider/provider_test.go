@@ -42,8 +42,6 @@ type ProviderTestSuite struct {
 
 	path         *ibctesting.Path
 	transferPath *ibctesting.Path
-
-	providerDistrIndex int
 }
 
 func (suite *ProviderTestSuite) SetupTest() {
@@ -56,7 +54,7 @@ func (suite *ProviderTestSuite) SetupTest() {
 	for i := 0; i < len(providerValUpdates); i++ {
 		addr1 := utils.GetChangePubKeyAddress(providerValUpdates[i])
 		addr2 := utils.GetChangePubKeyAddress(consumerValUpdates[i])
-		suite.Require().True(bytes.Compare(addr1, addr2) == 0, "validator mismatch")
+		suite.Require().True(bytes.Equal(addr1, addr2), "validator mismatch")
 	}
 
 	// move both chains to the next block
@@ -64,12 +62,13 @@ func (suite *ProviderTestSuite) SetupTest() {
 	suite.consumerChain.NextBlock()
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
-	suite.providerChain.App.(*appProvider.App).ProviderKeeper.CreateConsumerClient(
+	err := suite.providerChain.App.(*appProvider.App).ProviderKeeper.CreateConsumerClient(
 		suite.providerCtx(),
 		suite.consumerChain.ChainID,
 		suite.consumerChain.LastHeader.GetHeight().(clienttypes.Height),
 		false,
 	)
+	suite.Require().Nil(err)
 	// move provider to next block to commit the state
 	suite.providerChain.NextBlock()
 
@@ -113,8 +112,10 @@ func (suite *ProviderTestSuite) SetupTest() {
 
 	// set chains sender account number
 	// TODO: to be fixed in #151
-	suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
+	err = suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
+	suite.Require().Nil(err)
+	err = suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
+	suite.Require().Nil(err)
 
 	// create path for the transfer channel
 	suite.transferPath = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
@@ -148,7 +149,8 @@ func (suite *ProviderTestSuite) CompleteSetupCCVChannel() {
 	suite.Require().NoError(err)
 
 	// ensure counterparty is up to date
-	suite.path.EndpointA.UpdateClient()
+	err = suite.path.EndpointA.UpdateClient()
+	suite.Require().NoError(err)
 }
 
 func (suite *ProviderTestSuite) SetupTransferChannel() {
@@ -175,7 +177,8 @@ func (suite *ProviderTestSuite) SetupTransferChannel() {
 	suite.Require().NoError(err)
 
 	// ensure counterparty is up to date
-	suite.transferPath.EndpointA.UpdateClient()
+	err = suite.transferPath.EndpointA.UpdateClient()
+	suite.Require().NoError(err)
 }
 
 func TestProviderTestSuite(t *testing.T) {

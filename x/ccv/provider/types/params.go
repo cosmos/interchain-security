@@ -58,8 +58,7 @@ func validateTemplateClient(i interface{}) error {
 	}
 
 	// copy clientstate to prevent changing original pointer
-	var copiedClient ibctmtypes.ClientState
-	copiedClient = cs
+	copiedClient := cs
 
 	// populate zeroed fields with valid fields
 	copiedClient.ChainId = "chainid"

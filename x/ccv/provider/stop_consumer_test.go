@@ -291,7 +291,8 @@ func (s *ProviderTestSuite) SendEmptyVSCPacket() {
 	packet := channeltypes.NewPacket(pd.GetBytes(), seq, providertypes.PortID, s.path.EndpointB.ChannelID,
 		consumertypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
-	s.path.EndpointB.SendPacket(packet)
-	err := s.path.EndpointA.RecvPacket(packet)
+	err := s.path.EndpointB.SendPacket(packet)
+	s.Require().NoError(err)
+	err = s.path.EndpointA.RecvPacket(packet)
 	s.Require().NoError(err)
 }
