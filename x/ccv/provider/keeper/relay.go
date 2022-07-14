@@ -32,6 +32,8 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	packet channeltypes.Packet,
 	data ccv.VSCMaturedPacketData,
 ) exported.Acknowledgement {
+	fmt.Println("recv maturity ", data.ValsetUpdateId)
+
 	// check that the channel is established
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {
