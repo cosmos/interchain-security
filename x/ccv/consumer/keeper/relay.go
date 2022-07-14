@@ -55,6 +55,8 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	}
 
 	maturityTime := ctx.BlockTime().Add(unbondingPeriod)
+	fmt.Println("recv vsc ", newChanges.ValsetUpdateId, "period ", unbondingPeriod, "at recv time ", ctx.BlockHeader().Time)
+
 	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, uint64(maturityTime.UnixNano()))
 
 	// set height to VSC id mapping
@@ -88,6 +90,8 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 	for maturityIterator.Valid() {
 		vscId := types.IdFromPacketMaturityTimeKey(maturityIterator.Key())
 		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
+			fmt.Println("send maturity", vscId, " at time ", ctx.BlockHeader().Time)
+
 			// send VSCMatured packet
 			// - construct validator set change packet data
 			packetData := ccv.NewVSCMaturedPacketData(vscId)
