@@ -68,7 +68,7 @@ func (suite *ProviderTestSuite) SetupTest() {
 		suite.consumerChain.LastHeader.GetHeight().(clienttypes.Height),
 		false,
 	)
-	suite.Require().Nil(err)
+	suite.Require().NoError(err)
 	// move provider to next block to commit the state
 	suite.providerChain.NextBlock()
 
@@ -113,9 +113,9 @@ func (suite *ProviderTestSuite) SetupTest() {
 	// set chains sender account number
 	// TODO: to be fixed in #151
 	err = suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	suite.Require().Nil(err)
+	suite.Require().NoError(err)
 	err = suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
-	suite.Require().Nil(err)
+	suite.Require().NoError(err)
 
 	// create path for the transfer channel
 	suite.transferPath = ibctesting.NewPath(suite.consumerChain, suite.providerChain)

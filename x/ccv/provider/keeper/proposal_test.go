@@ -167,7 +167,7 @@ func (suite *KeeperTestSuite) TestIteratePendingClientInfo() {
 	for _, tc := range testCases {
 		err := suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetPendingClientInfo(
 			suite.providerChain.GetContext(), &tc.CreateConsumerChainProposal)
-		suite.Require().Nil(err)
+		suite.Require().NoError(err)
 	}
 
 	ctx := suite.providerChain.GetContext().WithBlockTime(testCases[0].SpawnTime)
