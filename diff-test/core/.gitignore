@@ -31,3 +31,4 @@ build/
 traces/
 **/trace*.json
 debug.json
+replay.json
