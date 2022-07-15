@@ -1,9 +1,8 @@
 /*
 
-interchain-sec core logic is consistent with https://github.com/cosmos/ibc/tree/5ea902172b20d53e209f8c1fda9b11d005d9c110.
-interchain-sec slash logic is consistent with spec, however spec and SUT may need to be updated (https://github.com/cosmos/interchain-security/issues/220)
-cosmos-sdk logic is partially consistent with the sdk, however, the SDK changes are a moving target and need fixes
-
+core logic is mostly consistent with the spec at https://github.com/cosmos/ibc/tree/5ea902172b20d53e209f8c1fda9b11d005d9c110.
+slashing logic is mostly consistent with the existing sdk slashing module code, and the HandleSlashPacket implementation in the SUT. This is because slashing behavior is still not fully specced (see https://github.com/cosmos/interchain-security/issues/234)
+cosmos-sdk logic is partially consistent with the sdk, however, the SDK changes are a moving target and need fixes. There are some open PRs.
 */
 
 import _ from 'underscore';
@@ -398,7 +397,8 @@ class CCVProvider {
   vscID = 0;
   vscIDtoH = {};
   vscIDtoOpIDs = new Map();
-  downtimeSlashReqs = [];
+  downtimeSlashAcks = [];
+  tombstoned = new Array(NUM_VALIDATORS).fill(false);
   constructor(model) {
     this.m = model;
   }
@@ -412,7 +412,7 @@ class CCVProvider {
       if (0 === _.keys(valUpdates).length) {
         this.m.events.push(Event.SEND_VSC_NOT_BECAUSE_CHANGE);
       }
-      if (0 < this.downtimeSlashReqs.length) {
+      if (0 < this.downtimeSlashAcks.length) {
         this.m.events.push(Event.SEND_VSC_WITH_DOWNTIME_ACK);
       } else {
         this.m.events.push(Event.SEND_VSC_WITHOUT_DOWNTIME_ACK);
@@ -420,9 +420,9 @@ class CCVProvider {
       const data: Vsc = {
         vscID: this.vscID,
         updates: valUpdates,
-        slashAcks: this.downtimeSlashReqs,
+        slashAcks: this.downtimeSlashAcks,
       };
-      this.downtimeSlashReqs = [];
+      this.downtimeSlashAcks = [];
       this.m.outbox[P].add(data);
     }
     this.vscID += 1;
@@ -445,20 +445,34 @@ class CCVProvider {
     }
   };
   onReceiveSlash = (data: Slash) => {
-    if (data.isDowntime) {
-      this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_REQUEST);
+    let infractionHeight = undefined;
+
+    if (data.vscID === 0) {
+      infractionHeight = this.initialHeight;
     } else {
-      this.m.events.push(Event.RECEIVE_DOUBLE_SIGN_SLASH_REQUEST);
+      infractionHeight = this.vscIDtoH[data.vscID];
     }
 
-    const infractionHeight =
-      data.vscID === 0 ? this.initialHeight : this.vscIDtoH[data.vscID];
-    const factor = data.isDowntime ? SLASH_DOWNTIME : SLASH_DOUBLESIGN;
+    let factor = undefined;
+
+    if (data.isDowntime) {
+      this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_REQUEST);
+      factor = SLASH_DOWNTIME;
+    } else {
+      this.m.events.push(Event.RECEIVE_DOUBLE_SIGN_SLASH_REQUEST);
+      factor = SLASH_DOUBLESIGN;
+    }
+
+    if (this.tombstoned[data.val]) {
+      return;
+    }
 
     this.m.staking.slash(data.val, infractionHeight, data.power, factor);
     this.m.staking.jailUntil(data.val, this.m.t[P] + JAIL_SECONDS);
     if (data.isDowntime) {
-      this.downtimeSlashReqs.push(data.val);
+      this.downtimeSlashAcks.push(data.val);
+    } else {
+      this.tombstoned[data.val] = true;
     }
   };
   afterUnbondingInitiated = (opID) => {
