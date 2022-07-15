@@ -48,7 +48,6 @@ function forceMakeEmptyDir(dir) {
 interface Action {
   kind: string;
 }
-
 type Delegate = {
   kind: string;
   val: number;
@@ -115,8 +114,8 @@ class ActionGenerator {
       this.candidateUndelegate(),
       this.candidateJumpNBlocks(),
       this.candidateDeliver(),
-      // this.candidateProviderSlash(),
-      // this.candidateConsumerSlash(),
+      this.candidateProviderSlash(),
+      this.candidateConsumerSlash(),
     ]);
     const possible = _.uniq(templates.map((a) => a.kind));
     const distr = _.pick(
@@ -200,6 +199,7 @@ class ActionGenerator {
       factor: _.sample([SLASH_DOUBLESIGN, SLASH_DOWNTIME]),
     };
   };
+
   candidateConsumerSlash = (): Action[] => {
     return (
       _.range(NUM_VALIDATORS)
@@ -225,6 +225,7 @@ class ActionGenerator {
       isDowntime: _.sample([true, false]),
     };
   };
+
   candidateJumpNBlocks = (): Action[] => [{ kind: 'JumpNBlocks' }];
   selectJumpNBlocks = (a): JumpNBlocks => {
     const chainCandidates = [];
@@ -249,6 +250,7 @@ class ActionGenerator {
     };
     return a;
   };
+
   candidateDeliver = (): Action[] => {
     return [P, C]
       .filter((c) => this.model.outbox[c == P ? C : P].hasAvailable())
@@ -408,18 +410,19 @@ function replayFile(fn: string, ix: number | undefined) {
 
 console.log(`running main`);
 
+// yarn start gen <minutes>
 if (process.argv[2] === 'gen') {
   console.log(`gen`);
   const minutes = parseInt(process.argv[3]);
   gen(minutes);
-} else if (process.argv[2] === 'subset') {
+} // yarn start subset
+else if (process.argv[2] === 'subset') {
   console.log(`createSmallSubsetOfCoveringTraces`);
   createSmallSubsetOfCoveringTraces();
-} else if (process.argv[2] === 'replay') {
+} // yarn start replay <filename> <list index>
+else if (process.argv[2] === 'replay') {
   console.log(`replay`);
   replayFile(process.argv[3], parseInt(process.argv[4]));
-} else if (process.argv[2] === 'q' || process.argv[2] == 'quick') {
-  console.log(`quick`);
 } else {
   console.log(`did not execute any function`);
 }
