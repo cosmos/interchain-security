@@ -1,8 +1,8 @@
 package difftest_test
 
 import (
+	"fmt"
 	"math/rand"
-	"strconv"
 	"testing"
 	"time"
 
@@ -137,9 +137,9 @@ func (h *helperx) blocks(numBlocks int, secondsPerBlock int) {
 }
 
 func Adversarial(t *testing.T) {
-	rand.Seed(time.Now().UnixNano())
 	// sdk.DefaultPowerReduction = sdk.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))
 	sdk.DefaultPowerReduction = sdk.NewInt(1)
+	secondsPerBlock := 5
 
 	ix := make(map[string]int)
 	ix[v0] = 0
@@ -152,7 +152,7 @@ func Adversarial(t *testing.T) {
 	validators, delegators := valAddrs[:1], delAddrs
 
 	params := app.StakingKeeper.GetParams(ctx)
-	params.UnbondingTime = 20 * time.Second
+	params.UnbondingTime = time.Duration(((rand.Intn(10) + 1) * secondsPerBlock)) * time.Second
 	params.MaxValidators = 1
 	app.StakingKeeper.SetParams(ctx, params)
 
@@ -177,43 +177,70 @@ func Adversarial(t *testing.T) {
 	require.Equal(h.t, h.balance(delegators[ix[d1]]), int64(100000))
 	require.Equal(h.t, h.balance(delegators[ix[d2]]), int64(100000))
 
-	randomDelegator := func(i int) string {
-		if rand.Float64() < 0.5 && 100 < i {
+	randomDelegator := func(enableBoth bool) string {
+		if rand.Float64() < 0.5 && enableBoth {
 			return d1
 		}
 		return d2
 	}
 
-	for i := 0; i < 100000000; i++ {
-		j := rand.Intn(4)
-		if j == 0 {
-			h.blocks(rand.Intn(20), 5)
-		}
-		if j == 1 {
-			delegator := randomDelegator(i)
-			tokens := rand.Int63n(initTokens.Int64() + 10)
+	/*
+			The execution that causes weirdness
+			Slash         val0 15 30000 0.250000000000000000
+			Slash         val0 15 30000 0.500000000000000000
+			Undelegate    val2 del1 20000stake
+		      issued:     20000
+			Undelegate    val0 del1 10000stake
+		      issued:     10000
+			Slash         val0 115 50000 0.500000000000000000
+			Slash         val1 15 40000 0.500000000000000000
+			Delegate      val0 del1 20000stake
+			Undelegate    val0 del1 10000stake
+	*/
+
+	doneSlash := false
+	for i := 0; i < 10; i++ {
+		j := rand.Intn(100)
+		if j < 40 {
+			h.blocks(rand.Intn(20), secondsPerBlock)
+		} else if j < 60 {
+			delegator := randomDelegator(doneSlash)
+			// tokens := rand.Int63n(initTokens.Int64() + 10)
+			tokens := rand.Int63n(h.balance(delegators[ix[delegator]]))
 			h.delegate(delegators[ix[delegator]], validators[ix[v0]], tokens)
-		}
-		if j == 2 {
-			delegator := randomDelegator(i)
+		} else if j < 80 {
+			delegator := randomDelegator(doneSlash)
 			tokens := rand.Int63n(initTokens.Int64() + 10)
 			h.undelegate(delegators[ix[delegator]], validators[ix[v0]], tokens)
-		}
-		if j == 3 {
-			tokens := rand.Int63n(100)
+		} else if !doneSlash {
+			tokens := rand.Int63n(initTokens.Int64())
 			power := sdk.TokensToConsensusPower(sdk.NewInt(tokens), sdk.DefaultPowerReduction)
 			height := rand.Int63n(h.ctx.BlockHeight() + 1)
-			factor := sdk.MustNewDecFromStr("0." + strconv.Itoa(rand.Intn(1000)))
-			h.slash(validators[ix[v0]], height, power, factor)
+			// factor := sdk.MustNewDecFromStr("0." + strconv.Itoa(rand.Intn(1000)))
+			v, e := h.k.GetValidator(h.ctx, validators[ix[v0]])
+			require.True(t, e)
+			fmt.Println("pre slash tokens ", v.Tokens)
+			h.slash(validators[ix[v0]], height, power, sdk.NewDec(1))
+			fmt.Println("post slash tokens ", v.Tokens)
+			doneSlash = true
 		}
+		fmt.Println(h.balance(delegators[ix[d1]]), initTokens.Int64())
+		fmt.Println(h.balance(delegators[ix[d2]]), initTokens.Int64())
+		v, e := h.k.GetValidator(h.ctx, validators[ix[v0]])
+		require.True(t, e)
+		fmt.Println("shares ", v.GetDelegatorShares())
 		require.LessOrEqual(h.t, h.balance(delegators[ix[d1]]), initTokens.Int64())
+		require.LessOrEqual(h.t, h.balance(delegators[ix[d2]]), initTokens.Int64())
 		h.matchValidatorStatus(validators[ix[v0]], types.Bonded)
-		if 1000 < i {
-			break
-		}
 	}
+
 }
 
 func TestAdversarial(t *testing.T) {
-	Adversarial(t)
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i < 100000; i++ {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			Adversarial(t)
+		})
+	}
 }
