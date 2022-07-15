@@ -342,8 +342,6 @@ func (am AppModule) OnRecvPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	fmt.Println("CALL OnRecvPacket")
-
 	var (
 		ack            ibcexported.Acknowledgement
 		vscMaturedData ccv.VSCMaturedPacketData
@@ -354,8 +352,6 @@ func (am AppModule) OnRecvPacket(
 		ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, vscMaturedData)
 	} else if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &slashData); err == nil {
 		// handle SlashPacket
-		fmt.Println("CALL OnRecvSlashPacket")
-
 		ack = am.keeper.OnRecvSlashPacket(ctx, packet, slashData)
 	} else {
 		errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("cannot unmarshal CCV packet data: %s", err.Error()))
