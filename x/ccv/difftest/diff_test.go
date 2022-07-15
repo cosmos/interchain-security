@@ -305,10 +305,10 @@ func (s *DTTestSuite) SetupTest() {
 		s.ensureValidatorLexicographicOrderingMatchesModel(lesser, greater)
 
 	}
-	for i := 0; i < 4; i++ {
 
-		fmt.Println(i, " ", s.valAddresses[i].Bytes(), s.consAddr(int64(i)))
-	}
+	// for i := 0; i < 4; i++ {
+	// fmt.Println(i, " ", s.valAddresses[i].Bytes(), s.consAddr(int64(i)))
+	// }
 
 	s.setSigningInfos()
 
@@ -389,12 +389,14 @@ func (s *DTTestSuite) SetupTest() {
 	sparams.SlashFractionDowntime = SLASH_DOWNTIME
 	s.providerChain.App.(*appProvider.App).SlashingKeeper.SetParams(s.ctx(P), sparams)
 
-	s.jumpNBlocks([]string{P, C}, 80, 5)
+	s.jumpNBlocks([]string{P, C}, 40, 5)
+	s.deliver(P, 1)
+	s.jumpNBlocks([]string{P, C}, 40, 5)
 
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
 
-	s.network = makeNetwork()
+	// s.network = makeNetwork()
 
 }
 
@@ -695,8 +697,6 @@ func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64,
 	before := len(ctx.EventManager().Events())
 	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	ck.Slash(ctx, val, h, power, sdk.Dec{}, kind)
-	fmt.Println("driver slash address bytes", val.Bytes())
-
 	evts := ctx.EventManager().ABCIEvents()
 	for _, e := range evts[before:] {
 		if e.Type == channeltypes.EventTypeSendPacket {
@@ -801,7 +801,7 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 
 func (s *DTTestSuite) TestTracesCovering() {
 	traces := loadTraces("covering.json")
-	const fix = 116
+	const fix = 345
 	if 0 < fix {
 		traces = traces[fix : fix+1]
 	}

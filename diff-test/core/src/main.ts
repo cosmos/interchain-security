@@ -333,10 +333,10 @@ function replay(actions: Action[]) {
   }
 }
 
-function replayFile(fn: string, ix: number | undefined) {
+function replayFile(fn: string, ix: number, numActions: number) {
   const traces = JSON.parse(fs.readFileSync(fn, 'utf8'));
   const trace = ix !== undefined ? traces[ix] : traces[0];
-  const actions = trace.actions.map((a) => a.action);
+  const actions = trace.actions.map((a) => a.action).slice(0, numActions);
   replay(actions);
 }
 
@@ -351,10 +351,11 @@ if (process.argv[2] === 'gen') {
 else if (process.argv[2] === 'subset') {
   console.log(`createSmallSubsetOfCoveringTraces`);
   createSmallSubsetOfCoveringTraces();
-} // yarn start replay <filename> <list index>
+} // yarn start replay <filename> <list index> <num actions>
 else if (process.argv[2] === 'replay') {
   console.log(`replay`);
-  replayFile(process.argv[3], parseInt(process.argv[4]));
+  const [fn, traceNum, numActions] = process.argv.slice(3, 6);
+  replayFile(fn, parseInt(traceNum), parseInt(numActions));
 } else {
   console.log(`did not execute any function`);
 }
