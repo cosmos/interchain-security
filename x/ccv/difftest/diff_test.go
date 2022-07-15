@@ -100,10 +100,10 @@ func (n Network) addAck(sender string, ack []byte, packet channeltypes.Packet) {
 	n.outboxAcks[sender] = append(n.outboxAcks[sender], Ack{ack, packet, 0})
 }
 
-func (n Network) consumePackets(sender string) []Packet {
+func (n Network) consumePackets(sender string, num int64) []Packet {
 
 	ret := []Packet{}
-	for _, p := range n.outboxPackets[sender] {
+	for _, p := range n.outboxPackets[sender][:num] {
 		if 1 < p.commits {
 			ret = append(ret, p)
 		} else {
@@ -649,11 +649,11 @@ func (s *DTTestSuite) jumpNBlocks(chains []string, n int64, secondsPerBlock int6
 	}
 }
 
-func (s *DTTestSuite) deliver(chain string) {
+func (s *DTTestSuite) deliver(chain string, numPackets int64) {
 	s.idempotentBeginBlock(chain)
 	s.idempotentDeliverAcks(chain)
 	s.idempotentUpdateClient(chain)
-	packets := s.network.consumePackets(s.other(chain))
+	packets := s.network.consumePackets(s.other(chain), numPackets)
 	s.Require().NotEmpty(packets, s.trace.diagnostic()+"[deliver has no packets]")
 	for _, p := range packets {
 		receiver := s.endpoint(chain)
@@ -766,7 +766,8 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 				int64(a.SecondsPerBlock),
 			)
 		case "Deliver":
-			s.deliver(a.Chain)
+			fmt.Println("DELIVER n: ", a.NumPackets)
+			s.deliver(a.Chain, int64(a.NumPackets))
 		case "ProviderSlash":
 			factor := strconv.FormatFloat(a.Factor, 'f', 3, 64)
 			s.providerSlash(
@@ -789,16 +790,15 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 }
 
 func (s *DTTestSuite) TestTracesCovering() {
-	traces := loadTraces("noslash.json")
-	// traces := loadTraces("/Users/danwt/Documents/work/interchain-security/diff-test/core/replay.json")
-	const fix = 0
-	if fix != 0 {
+	traces := loadTraces("covering.json")
+	const fix = 116
+	if 0 < fix {
 		traces = traces[fix : fix+1]
 	}
 	for i, trace := range traces {
 		traceNum := i + fix
 		s.Run(fmt.Sprintf("Trace%d", traceNum), func() {
-			fmt.Printf("[start trace %d]\n", i)
+			fmt.Printf("\n[start trace %d]\n", i)
 			s.SetupTest()
 			defer func() {
 				if r := recover(); r != nil {
@@ -814,8 +814,9 @@ func (s *DTTestSuite) TestTracesCovering() {
 				map[string]int64{P: 0, C: 0},
 				true,
 			}
-			fmt.Printf("[finish setup, start actions]\n")
+			fmt.Printf("[finish setup, start actions]")
 			executeTrace(s, traceNum, trace)
+			fmt.Printf("[finish actions]\n")
 		})
 	}
 }
