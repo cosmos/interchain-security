@@ -1,12 +1,13 @@
 import * as fs from 'fs';
 import * as childProcess from 'child_process';
+import _ from 'underscore';
 import timeSpan from 'time-span';
-import {
-  Blocks,
-  bondBasedConsumerVotingPower,
-  stakingWithoutSlashing,
-} from './properties.js';
+import cloneDeep from 'clone-deep';
+import { Blocks } from './properties.js';
 import { Sanity } from './sanity.js';
+import { Model, Status } from './model.js';
+import { Event } from './events.js';
+import { createSmallSubsetOfCoveringTraces } from './subset.js';
 import {
   P,
   C,
@@ -25,11 +26,6 @@ import {
   INITIAL_DELEGATOR_TOKENS,
   MAX_JUMPS,
 } from './constants.js';
-import _ from 'underscore';
-import { Model, Status } from './model.js';
-import { Event } from './events.js';
-import { createSmallSubsetOfCoveringTraces } from './subset.js';
-import cloneDeep from 'clone-deep';
 
 const meta = {
   commit: childProcess.execSync('git rev-parse HEAD').toString().trim(),
@@ -361,16 +357,6 @@ function gen(minutes) {
         action: a,
         hLastCommit: cloneDeep(blocks.hLastCommit),
       });
-    }
-    let ok = true;
-    ok = true;
-    ok = bondBasedConsumerVotingPower(blocks);
-    if (!ok) {
-      throw 'bondBasedConsumerVotingPower';
-    }
-    ok = stakingWithoutSlashing(blocks);
-    if (!ok) {
-      throw 'stakingWithoutSlashing';
     }
     dumpTrace(`${DIR}trace_${i}.json`, events, actions, blocks.blocks);
     allEvents.push(...events);
