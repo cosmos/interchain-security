@@ -12,6 +12,7 @@ type Action struct {
 	Power            int      `json:"power,omitempty"`
 	SecondsPerBlock  int      `json:"secondsPerBlock,omitempty"`
 	Val              int      `json:"val,omitempty"`
+	NumPackets       int      `json:"numPackets,omitempty"`
 }
 
 type Snapshot struct {

@@ -249,6 +249,8 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		jailTime = ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
 		k.AppendSlashAck(ctx, chainID, consAddr.String())
 	case stakingtypes.DoubleSign:
+		fmt.Println("slash doublesign")
+
 		// set double-signing slash fraction and infinite jail duration
 		// then tombstone the validator
 		slashFraction = k.slashingKeeper.SlashFractionDoubleSign(ctx)

@@ -1,45 +1,27 @@
 import * as fs from 'fs';
-import * as childProcess from 'child_process';
 import _ from 'underscore';
 import timeSpan from 'time-span';
 import cloneDeep from 'clone-deep';
 import { Blocks } from './properties.js';
 import { Sanity } from './sanity.js';
 import { Model, Status } from './model.js';
-import { Event } from './events.js';
-import { createSmallSubsetOfCoveringTraces } from './subset.js';
+import {
+  createSmallSubsetOfCoveringTraces,
+  dumpTrace,
+  forceMakeEmptyDir,
+  logEventData,
+} from './util.js';
 import {
   P,
   C,
-  UNBONDING_SECONDS_P,
-  UNBONDING_SECONDS_C,
-  TRUSTING_SECONDS,
   NUM_VALIDATORS,
   MAX_VALIDATORS,
-  ZERO_TIMEOUT_HEIGHT,
-  CCV_TIMEOUT_TIMESTAMP,
   SLASH_DOUBLESIGN,
   SLASH_DOWNTIME,
-  JAIL_SECONDS,
   BLOCK_SECONDS,
   TOKEN_SCALAR,
-  INITIAL_DELEGATOR_TOKENS,
   MAX_JUMPS,
 } from './constants.js';
-
-const meta = {
-  commit: childProcess.execSync('git rev-parse HEAD').toString().trim(),
-  diff: childProcess.execSync('git diff').toString().trim(),
-};
-
-function forceMakeEmptyDir(dir) {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir);
-    return;
-  }
-  fs.rmSync(dir, { recursive: true });
-  forceMakeEmptyDir(dir);
-}
 
 interface Action {
   kind: string;
@@ -270,40 +252,6 @@ class ActionGenerator {
   };
 }
 
-function dumpTrace(fn: string, events, actions, blocks) {
-  const toDump = {
-    meta,
-    constants: {
-      P,
-      C,
-      UNBONDING_SECONDS_P,
-      UNBONDING_SECONDS_C,
-      TRUSTING_SECONDS,
-      NUM_VALIDATORS,
-      MAX_VALIDATORS,
-      ZERO_TIMEOUT_HEIGHT,
-      CCV_TIMEOUT_TIMESTAMP,
-      SLASH_DOUBLESIGN,
-      SLASH_DOWNTIME,
-      JAIL_SECONDS,
-      BLOCK_SECONDS,
-      TOKEN_SCALAR,
-      INITIAL_DELEGATOR_TOKENS,
-      MAX_JUMPS,
-    },
-    events,
-    actions,
-    blocks: _.mapObject(blocks, (mapHtoSnapshot) =>
-      _.sortBy(
-        Array.from(mapHtoSnapshot.entries()),
-        (pair) => pair[0],
-      ).map((pair) => pair[1]),
-    ),
-  };
-  const json = JSON.stringify(toDump, null, 4);
-  fs.writeFileSync(fn, json);
-}
-
 function doAction(model, action: Action) {
   const kind = action.kind;
   if (kind === 'Delegate') {
@@ -371,21 +319,6 @@ function gen(minutes) {
     }
   }
   logEventData(allEvents);
-}
-
-function logEventData(allEvents) {
-  const eventCnt = _.countBy(allEvents, _.identity);
-  for (const evt in Event) {
-    const evtName = Event[evt];
-    if (!_.has(eventCnt, evtName)) {
-      eventCnt[evtName] = 0;
-    }
-  }
-  const cnts = _.chain(eventCnt)
-    .pairs()
-    .sortBy((pair) => -pair[1]);
-
-  console.log(cnts);
 }
 
 function replay(actions: Action[]) {
