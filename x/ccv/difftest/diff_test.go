@@ -44,9 +44,11 @@ const C = "consumer"
 /*
 In the model, height begins at 0 for both chains because init
 is not modelled.
+With this offset, the SUT height is at 100 on both chains
+when the trace actions start.
 */
-const MODEL_HEIGHT_OFFSET = int64(20)
-const SUT_TIME_OFFSET = 1577923357
+const MODEL_HEIGHT_OFFSET = int64(99)
+const SUT_TIME_OFFSET = 1577923752
 const DELEGATOR_INITIAL_BALANCE = 1000000000000000
 
 /*
@@ -301,6 +303,11 @@ func (s *DTTestSuite) SetupTest() {
 		greater := s.valAddresses[i]
 		lesser := s.valAddresses[i+1]
 		s.ensureValidatorLexicographicOrderingMatchesModel(lesser, greater)
+
+	}
+	for i := 0; i < 4; i++ {
+
+		fmt.Println(i, " ", s.valAddresses[i].Bytes(), s.consAddr(int64(i)))
 	}
 
 	s.setSigningInfos()
@@ -382,10 +389,12 @@ func (s *DTTestSuite) SetupTest() {
 	sparams.SlashFractionDowntime = SLASH_DOWNTIME
 	s.providerChain.App.(*appProvider.App).SlashingKeeper.SetParams(s.ctx(P), sparams)
 
-	s.jumpNBlocks([]string{P, C}, 1, 5)
+	s.jumpNBlocks([]string{P, C}, 80, 5)
 
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
+
+	s.network = makeNetwork()
 
 }
 
@@ -686,6 +695,8 @@ func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64,
 	before := len(ctx.EventManager().Events())
 	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	ck.Slash(ctx, val, h, power, sdk.Dec{}, kind)
+	fmt.Println("driver slash address bytes", val.Bytes())
+
 	evts := ctx.EventManager().ABCIEvents()
 	for _, e := range evts[before:] {
 		if e.Type == channeltypes.EventTypeSendPacket {
@@ -766,7 +777,6 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 				int64(a.SecondsPerBlock),
 			)
 		case "Deliver":
-			fmt.Println("DELIVER n: ", a.NumPackets)
 			s.deliver(a.Chain, int64(a.NumPackets))
 		case "ProviderSlash":
 			factor := strconv.FormatFloat(a.Factor, 'f', 3, 64)

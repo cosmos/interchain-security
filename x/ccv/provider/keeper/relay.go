@@ -204,6 +204,8 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
+	fmt.Println("handle slash")
+
 	// map VSC ID to infraction height for the given chain ID
 	var infractionHeight uint64
 	if data.ValsetUpdateId == 0 {
@@ -249,10 +251,10 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		jailTime = ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
 		k.AppendSlashAck(ctx, chainID, consAddr.String())
 	case stakingtypes.DoubleSign:
-		fmt.Println("slash doublesign")
-
 		// set double-signing slash fraction and infinite jail duration
 		// then tombstone the validator
+		fmt.Println("slash doublesign")
+
 		slashFraction = k.slashingKeeper.SlashFractionDoubleSign(ctx)
 		jailTime = evidencetypes.DoubleSignJailEndTime
 		k.slashingKeeper.Tombstone(ctx, consAddr)
