@@ -67,6 +67,7 @@ type JumpNBlocks = {
 type Deliver = {
   kind: string;
   chain: string;
+  numPackets: string;
 };
 type ProviderSlash = {
   kind: string;
@@ -114,8 +115,8 @@ class ActionGenerator {
       this.candidateUndelegate(),
       this.candidateJumpNBlocks(),
       this.candidateDeliver(),
-      this.candidateProviderSlash(),
-      this.candidateConsumerSlash(),
+      // this.candidateProviderSlash(),
+      // this.candidateConsumerSlash(),
     ]);
     const possible = _.uniq(templates.map((a) => a.kind));
     const distr = _.pick(
@@ -253,12 +254,22 @@ class ActionGenerator {
 
   candidateDeliver = (): Action[] => {
     return [P, C]
-      .filter((c) => this.model.outbox[c == P ? C : P].hasAvailable())
+      .filter((c) => 0 < this.model.outbox[c == P ? C : P].numAvailable())
       .map((c) => {
-        return { kind: 'Deliver', chain: c };
+        return {
+          kind: 'Deliver',
+          chain: c,
+        };
       });
   };
   selectDeliver = (a): Deliver => {
+    a = {
+      ...a,
+      numPackets: _.random(
+        1,
+        this.model.outbox[a.chain == P ? C : P].numAvailable(),
+      ),
+    };
     return a;
   };
 }
@@ -313,7 +324,7 @@ function doAction(model, action: Action) {
   }
   if (kind === 'Deliver') {
     const a = action as Deliver;
-    model.deliver(a.chain);
+    model.deliver(a.chain, a.numPackets);
   }
   if (kind === 'ProviderSlash') {
     const a = action as ProviderSlash;
@@ -353,11 +364,11 @@ function gen(minutes) {
     }
     let ok = true;
     ok = true;
-    // ok = bondBasedConsumerVotingPower(blocks);
+    ok = bondBasedConsumerVotingPower(blocks);
     if (!ok) {
       throw 'bondBasedConsumerVotingPower';
     }
-    // ok = stakingWithoutSlashing(blocks);
+    ok = stakingWithoutSlashing(blocks);
     if (!ok) {
       throw 'stakingWithoutSlashing';
     }
@@ -367,7 +378,9 @@ function gen(minutes) {
     elapsedMillis += end.rounded();
     if (i % 2000 === 0) {
       console.log(
-        `done ${i}, traces per second ${i / (elapsedMillis / 1000)}`,
+        `done ${i}, actions per second ${
+          (i * NUM_ACTIONS) / (elapsedMillis / 1000)
+        }`,
       );
     }
   }

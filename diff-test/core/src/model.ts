@@ -103,16 +103,17 @@ class Outbox {
       0,
     ]);
   };
-  hasAvailable = (): boolean => {
-    return 0 < this.fifo.filter((e) => 1 < e[1]).length;
+  numAvailable = (): number => {
+    return this.fifo.filter((e) => 1 < e[1]).length;
   };
-  consume = (): Packet[] => {
+  consume = (num: number): Packet[] => {
     const [available, unavailable] = _.partition(
       this.fifo,
       (e) => 1 < e[1],
     );
-    this.fifo = unavailable;
-    return available.map((e) => e[0]);
+    const take = available.slice(0, num);
+    this.fifo = available.slice(num).concat(unavailable);
+    return take.map((e) => e[0]);
   };
   commit = () => {
     this.fifo = this.fifo.map((e) => [e[0], e[1] + 1]);
@@ -662,17 +663,17 @@ class Model {
       this.increaseSeconds(secondsPerBlock);
     }
   };
-  deliver = (chain: string) => {
+  deliver = (chain: string, num: number) => {
     this.idempotentBeginBlock(chain);
     this.sanity.updateClient(chain, this.t[chain]);
     if (chain === P) {
-      this.outbox[C].consume().forEach((p) => {
+      this.outbox[C].consume(num).forEach((p) => {
         this.blocks.partialOrder.deliver(P, p.sendHeight, this.h[P]);
         this.ccvP.onReceive(p.data);
       });
     }
     if (chain === C) {
-      this.outbox[P].consume().forEach((p) => {
+      this.outbox[P].consume(num).forEach((p) => {
         this.blocks.partialOrder.deliver(C, p.sendHeight, this.h[C]);
         this.ccvC.onReceive(p.data);
       });
