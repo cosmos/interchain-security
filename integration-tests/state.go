@@ -43,9 +43,6 @@ type ConsumerProposal struct {
 
 func (p ConsumerProposal) isProposal() {}
 
-type ConsumerGenesis struct {
-}
-
 func (s System) getState(modelState State) State {
 	systemState := State{}
 	for k, modelState := range modelState {

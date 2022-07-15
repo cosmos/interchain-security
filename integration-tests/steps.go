@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 )
 
@@ -10,8 +8,6 @@ type Step struct {
 	action interface{}
 	state  State
 }
-
-var now = time.Now().UTC()
 
 var happyPathSteps = []Step{
 	{
@@ -55,7 +51,7 @@ var happyPathSteps = []Step{
 			deposit:       10000001,
 			consumerChain: 1,
 			spawnTime:     0,
-			initialHeight: clienttypes.Height{0, 1},
+			initialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 		},
 		state: State{
 			0: ChainState{
@@ -68,7 +64,7 @@ var happyPathSteps = []Step{
 						Deposit:       10000001,
 						Chain:         1,
 						SpawnTime:     0,
-						InitialHeight: clienttypes.Height{0, 1},
+						InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 						Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
 					},
 				},
@@ -89,7 +85,7 @@ var happyPathSteps = []Step{
 						Deposit:       10000001,
 						Chain:         1,
 						SpawnTime:     0,
-						InitialHeight: clienttypes.Height{0, 1},
+						InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 						Status:        "PROPOSAL_STATUS_PASSED",
 					},
 				},
