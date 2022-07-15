@@ -8,7 +8,6 @@ function createSmallSubsetOfCoveringTraces() {
   fs.readdirSync(DIR).forEach((file) => {
     fns.push(`${DIR}${file}`);
   });
-  // fns = fns.slice(0, 1000);
   const possible = [];
   const cnt = [];
   const ix = {};
