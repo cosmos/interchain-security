@@ -287,17 +287,21 @@ class Staking {
       this.m.events.push(Event.INSUFFICIENT_TOKENS);
       return;
     }
-    const shares = Math.floor(
-      (this.shares(val) * amt) / this.tokens[val],
-    );
+    const shares = (this.shares(val) * amt) / this.tokens[val];
+    console.log(`shares `, shares);
     if (this.delegation[val] < shares) {
       this.m.events.push(Event.INSUFFICIENT_SHARES);
       return;
     }
+    console.log(`val total shares`, this.shares(val));
+    console.log(`delshares `, shares, ', t val ', this.tokens[val]);
     const issuedTokens = Math.floor(
       (shares * this.tokens[val]) / this.shares(val),
     );
+    console.log(`issued `, issuedTokens);
+    console.log(`undel x `, issuedTokens);
     this.tokens[val] -= issuedTokens;
+    console.log(`undel after -x `, this.tokens);
     this.delegation[val] -= shares;
     const und: Undelegation = {
       val: val,
@@ -661,6 +665,7 @@ class Model {
     for (let i = 0; i < n; i++) {
       chains.forEach(this.endBlock);
       this.increaseSeconds(secondsPerBlock);
+      console.log(this.staking.tokens);
     }
   };
   deliver = (chain: string, num: number) => {
