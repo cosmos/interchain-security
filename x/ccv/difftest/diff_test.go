@@ -172,7 +172,7 @@ type Trace struct {
 }
 
 func (t *Trace) diagnostic() string {
-	return fmt.Sprintf("[diagnostic][trace %d, action %d, hLastCommit {P:%d,C:%d}]", t.ix, t.actionIx, t.hLastCommit[P], t.hLastCommit[C])
+	return fmt.Sprintf("\n[diagnostic][trace %d, action %d, hLastCommit {P:%d,C:%d}]", t.ix, t.actionIx, t.hLastCommit[P], t.hLastCommit[C])
 
 }
 
@@ -532,12 +532,10 @@ func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
 	_ = func() error {
 		for _, ack := range s.network.consumeAcks(s.other(receiver)) {
 			s.idempotentUpdateClient(receiver)
-			fmt.Println("tryRecvAck")
 			err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.packet, ack.ack)
 			if err != nil {
 				return err
 			}
-			fmt.Println("recvAck successfully")
 		}
 		return nil
 	}
@@ -612,6 +610,13 @@ func (s *DTTestSuite) hackBeginBlock(chain string) {
 
 }
 
+func (s *DTTestSuite) ApplyValSetChangesDebug(t *testing.T, valSet *tmtypes.ValidatorSet, valUpdates []abci.ValidatorUpdate) (*tmtypes.ValidatorSet, error) {
+	updates, _ := tmtypes.PB2TM.ValidatorUpdates(valUpdates)
+	newVals := valSet.Copy()
+	err := newVals.UpdateWithChangeSet(updates)
+	return newVals, err
+}
+
 func (s *DTTestSuite) endBlock(chain string) {
 
 	s.idempotentBeginBlock(chain)
@@ -631,7 +636,12 @@ func (s *DTTestSuite) endBlock(chain string) {
 
 	c.Vals = c.NextVals
 
-	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
+	// c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
+	vals, err := s.ApplyValSetChangesDebug(c.T, c.Vals, ebRes.ValidatorUpdates)
+	if err != nil {
+		fmt.Println(s.trace.diagnostic(), chain, err)
+	}
+	c.NextVals = vals
 
 	c.LastHeader = c.CurrentTMClientHeader()
 
@@ -801,14 +811,14 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 
 func (s *DTTestSuite) TestTracesCovering() {
 	traces := loadTraces("covering.json")
-	const fix = 345
+	const fix = 0
 	if 0 < fix {
 		traces = traces[fix : fix+1]
 	}
 	for i, trace := range traces {
 		traceNum := i + fix
 		s.Run(fmt.Sprintf("Trace%d", traceNum), func() {
-			fmt.Printf("\n[start trace %d]\n", i)
+			fmt.Printf("\n[start trace %d]\n", traceNum)
 			s.SetupTest()
 			defer func() {
 				if r := recover(); r != nil {

@@ -77,11 +77,7 @@ function weightedRandomKey(distr) {
 
 class ActionGenerator {
   model;
-  jailed = new Array(NUM_VALIDATORS).fill(false);
-  slashed = _.object([
-    [P, new Map()],
-    [C, new Map()],
-  ]);
+  didSlash = new Array(NUM_VALIDATORS).fill(false);
 
   constructor(model) {
     this.model = model;
@@ -160,17 +156,17 @@ class ActionGenerator {
     return _.range(NUM_VALIDATORS)
       .filter((i) => this.model.staking.status[i] !== Status.UNBONDED)
       .filter((i) => {
-        const cntWouldBeNotJailed = this.jailed.filter(
-          (j) => j !== i && !this.jailed[j],
+        const cntWouldBeNotJailed = this.didSlash.filter(
+          (slashed, j) => !slashed && j !== i,
         ).length;
-        return MAX_VALIDATORS <= cntWouldBeNotJailed;
+        return 1 <= cntWouldBeNotJailed;
       })
       .map((i) => {
         return { kind: 'ProviderSlash', val: i };
       });
   };
   selectProviderSlash = (a): ProviderSlash => {
-    this.jailed[a.val] = true;
+    this.didSlash[a.val] = true;
     return {
       ...a,
       power: _.random(1, 6) * TOKEN_SCALAR,
@@ -185,10 +181,10 @@ class ActionGenerator {
         // TODO: can I remove this filter?
         .filter((i) => this.model.ccvC.power[i] !== undefined)
         .filter((i) => {
-          const cntWouldBeNotJailed = this.jailed.filter(
-            (j) => j !== i && !this.jailed[j],
+          const cntWouldBeNotJailed = this.didSlash.filter(
+            (slashed, j) => !slashed && j !== i,
           ).length;
-          return MAX_VALIDATORS <= cntWouldBeNotJailed;
+          return 1 <= cntWouldBeNotJailed;
         })
         .map((i) => {
           return { kind: 'ConsumerSlash', val: i };
@@ -196,7 +192,7 @@ class ActionGenerator {
     );
   };
   selectConsumerSlash = (a): ConsumerSlash => {
-    this.jailed[a.val] = true;
+    this.didSlash[a.val] = true;
     return {
       ...a,
       power: _.random(1, 6) * TOKEN_SCALAR,

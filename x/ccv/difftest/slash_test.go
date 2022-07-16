@@ -2,6 +2,7 @@ package difftest_test
 
 import (
 	"fmt"
+	"math/big"
 	"math/rand"
 	"testing"
 	"time"
@@ -137,8 +138,8 @@ func (h *helperx) blocks(numBlocks int, secondsPerBlock int) {
 }
 
 func Adversarial(t *testing.T) {
-	// sdk.DefaultPowerReduction = sdk.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))
-	sdk.DefaultPowerReduction = sdk.NewInt(1)
+	sdk.DefaultPowerReduction = sdk.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(9), nil))
+	// sdk.DefaultPowerReduction = sdk.NewInt(1)
 	secondsPerBlock := 5
 
 	ix := make(map[string]int)
@@ -213,22 +214,27 @@ func Adversarial(t *testing.T) {
 			tokens := rand.Int63n(initTokens.Int64() + 10)
 			h.undelegate(delegators[ix[delegator]], validators[ix[v0]], tokens)
 		} else if !doneSlash {
-			tokens := rand.Int63n(initTokens.Int64())
-			power := sdk.TokensToConsensusPower(sdk.NewInt(tokens), sdk.DefaultPowerReduction)
-			height := rand.Int63n(h.ctx.BlockHeight() + 1)
+			doneSlash = true
+			// tokens := rand.Int63n(initTokens.Int64())
+			// power := sdk.TokensToConsensusPower(sdk.NewInt(tokens), sdk.DefaultPowerReduction)
+			// height := rand.Int63n(h.ctx.BlockHeight() + 1)
 			// factor := sdk.MustNewDecFromStr("0." + strconv.Itoa(rand.Intn(1000)))
+			// h.slash(validators[ix[v0]], height, power, sdk.NewDec(1))
+
 			v, e := h.k.GetValidator(h.ctx, validators[ix[v0]])
 			require.True(t, e)
-			fmt.Println("pre slash tokens ", v.Tokens)
-			h.slash(validators[ix[v0]], height, power, sdk.NewDec(1))
-			fmt.Println("post slash tokens ", v.Tokens)
-			doneSlash = true
+			fl := v.Tokens.ToDec().MustFloat64() * (rand.Float64()*0.8 + 0.1)
+			flint := int64(fl)
+			// fmt.Println("pre slash tokens ", v.Tokens)
+			v.Tokens = sdk.NewInt(flint)
+			// fmt.Println("post slash tokens ", v.Tokens)
+			h.k.SetValidator(h.ctx, v)
 		}
-		fmt.Println(h.balance(delegators[ix[d1]]), initTokens.Int64())
-		fmt.Println(h.balance(delegators[ix[d2]]), initTokens.Int64())
-		v, e := h.k.GetValidator(h.ctx, validators[ix[v0]])
-		require.True(t, e)
-		fmt.Println("shares ", v.GetDelegatorShares())
+		// fmt.Println(h.balance(delegators[ix[d1]]), initTokens.Int64())
+		// fmt.Println(h.balance(delegators[ix[d2]]), initTokens.Int64())
+		// v, e := h.k.GetValidator(h.ctx, validators[ix[v0]])
+		// require.True(t, e)
+		// fmt.Println("shares ", v.GetDelegatorShares())
 		require.LessOrEqual(h.t, h.balance(delegators[ix[d1]]), initTokens.Int64())
 		require.LessOrEqual(h.t, h.balance(delegators[ix[d2]]), initTokens.Int64())
 		h.matchValidatorStatus(validators[ix[v0]], types.Bonded)
@@ -238,7 +244,7 @@ func Adversarial(t *testing.T) {
 
 func TestAdversarial(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < 100000; i++ {
+	for i := 0; i < 1000000; i++ {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			Adversarial(t)
 		})
