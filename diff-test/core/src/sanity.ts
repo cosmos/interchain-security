@@ -31,7 +31,7 @@ class Sanity {
     this.tLastCommit[chain] = t;
   };
   newValSet = (vals) => {
-    if (vals.len < 1) {
+    if (vals.length < 1) {
       throw 'EMPTY VAL SET! - not supposed to happen. There is a mistake in how the model or generator is written.';
     }
   };
