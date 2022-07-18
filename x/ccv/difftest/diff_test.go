@@ -103,7 +103,6 @@ func (n Network) addAck(sender string, ack []byte, packet channeltypes.Packet) {
 }
 
 func (n Network) consumePackets(sender string, num int64) []Packet {
-
 	ret := []Packet{}
 	for _, p := range n.outboxPackets[sender][:num] {
 		if 1 < p.commits {
@@ -247,7 +246,9 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 
 	s.idempotentUpdateClient(C)
 
-	_, err = difftest.TryRecvPacket(s.endpoint(P), s.endpoint(C), packet)
+	ack, err := difftest.TryRecvPacket(s.endpoint(P), s.endpoint(C), packet)
+
+	s.network.addAck(P, ack, packet)
 
 	s.Require().NoError(err)
 }
@@ -305,10 +306,6 @@ func (s *DTTestSuite) SetupTest() {
 		s.ensureValidatorLexicographicOrderingMatchesModel(lesser, greater)
 
 	}
-
-	// for i := 0; i < 4; i++ {
-	// fmt.Println(i, " ", s.valAddresses[i].Bytes(), s.consAddr(int64(i)))
-	// }
 
 	s.setSigningInfos()
 
@@ -395,8 +392,6 @@ func (s *DTTestSuite) SetupTest() {
 
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
-
-	// s.network = makeNetwork()
 
 }
 
@@ -529,15 +524,12 @@ func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 }
 
 func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
-	_ = func() error {
-		for _, ack := range s.network.consumeAcks(s.other(receiver)) {
-			s.idempotentUpdateClient(receiver)
-			err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.packet, ack.ack)
-			if err != nil {
-				return err
-			}
+	for _, ack := range s.network.consumeAcks(s.other(receiver)) {
+		s.idempotentUpdateClient(receiver)
+		err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.packet, ack.ack)
+		if err != nil {
+			return err
 		}
-		return nil
 	}
 	return nil
 }
