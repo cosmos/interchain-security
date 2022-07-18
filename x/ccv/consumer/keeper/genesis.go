@@ -96,6 +96,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		}
 	}
 
+	// populate Cross-Chain validators statest with initial valset
 	k.ApplyCCValidatorChanges(ctx, state.InitialValSet)
 
 	return state.InitialValSet
@@ -110,6 +111,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	if channelID, ok := k.GetProviderChannel(ctx); ok {
+		fmt.Println("RESTART-CHAIN")
 		clientID, ok := k.GetProviderClient(ctx)
 		if !ok {
 			panic("provider client does not exist")
@@ -131,6 +133,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		gs.MaturingPackets = maturingPackets
 		return gs
 	}
+	fmt.Println("NEW-CHAIN")
+
 	clientID, ok := k.GetProviderClient(ctx)
 	// if provider clientID and channelID don't exist on the consumer chain, then CCV protocol is disabled for this chain
 	// return a disabled genesis state

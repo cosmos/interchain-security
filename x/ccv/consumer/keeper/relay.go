@@ -195,7 +195,7 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 	k.ClearPendingSlashRequests(ctx)
 }
 
-// OnAcknowledgementPacket handles acknowledgments for sent VSCMatured and Slash packets
+// OnAcknowledgementPacket handles acknowledgments for sent VSCMatured and Slash packetsc
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
 		// Reasons for ErrorAcknowledgment

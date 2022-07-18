@@ -12,7 +12,6 @@ import (
 )
 
 // NewInitialGenesisState returns a consumer GenesisState for a completely new consumer chain.
-// TODO: Include chain status
 func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
 	initValSet []abci.ValidatorUpdate, params Params) *GenesisState {
 

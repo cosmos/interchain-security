@@ -1,18 +1,15 @@
 package keeper_test
 
 import (
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"fmt"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-
 	app "github.com/cosmos/interchain-security/app/consumer"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
-
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -23,11 +20,14 @@ func (suite *KeeperTestSuite) TestGenesis() {
 	suite.Require().Equal(suite.providerClient, genesis.ProviderClientState)
 	suite.Require().Equal(suite.providerConsState, genesis.ProviderConsensusState)
 
+	fmt.Printf("%#v\n", genesis)
+
 	suite.Require().NotPanics(func() {
 		suite.consumerChain.App.(*app.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), genesis)
-		// reset suite to reset provider client
-		suite.SetupTest()
 	})
+
+	// reset suite to reset provider client
+	suite.SetupTest()
 
 	ctx := suite.consumerChain.GetContext()
 	portId := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPort(ctx)
@@ -40,47 +40,64 @@ func (suite *KeeperTestSuite) TestGenesis() {
 	suite.Require().Equal(genesis.ProviderClientState, clientState, "client state not set correctly after InitGenesis")
 
 	suite.SetupCCVChannel()
+	// update context
+	ctx = suite.consumerChain.GetContext()
 
-	origTime := suite.consumerChain.GetContext().BlockTime()
+	origTime := ctx.BlockTime()
 
-	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	suite.Require().NoError(err)
-	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	suite.Require().NoError(err)
-	pd := types.NewValidatorSetChangePacketData(
-		[]abci.ValidatorUpdate{
-			{
-				PubKey: pk1,
-				Power:  30,
-			},
-			{
-				PubKey: pk2,
-				Power:  20,
-			},
-		},
-		1,
-		nil,
-	)
+	// complete CCV channel handshake by sending a first VSC packet
+	pd := types.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{}, 1, nil)
 	packet := channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 
-	// mocking the fact that consumer chain validators should be provider chain validators
-	// TODO: Fix testing suite so we can initialize both chains with the same validator set
-	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
+	suite.consumerChain.App.(*app.App).ConsumerKeeper.OnRecvVSCPacket(ctx, packet, pd)
 
-	restartGenesis := suite.consumerChain.App.(*app.App).ConsumerKeeper.ExportGenesis(suite.consumerChain.GetContext())
-	restartGenesis.InitialValSet = valUpdates
+	// ensure provider channel is set
+	_, ok = suite.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderChannel(ctx)
+	suite.Require().True(ok)
+
+	// export already established
+	restartGenesis := suite.consumerChain.App.(*app.App).ConsumerKeeper.ExportGenesis(ctx)
+
+	// set ValUpdates using the provider valset
+	restartGenesis.InitialValSet = tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
+
+	fmt.Printf("%#v\n", restartGenesis)
 
 	// ensure reset genesis is set correctly
 	providerChannel := suite.path.EndpointA.ChannelID
 	suite.Require().Equal(providerChannel, restartGenesis.ProviderChannelId)
-	maturityTime := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 1)
-	unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
+	maturityTime := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPacketMaturityTime(ctx, 1)
+	unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(ctx)
 	suite.Require().True(found)
 	suite.Require().Equal(uint64(origTime.Add(unbondingPeriod).UnixNano()), maturityTime, "maturity time is not set correctly in genesis")
 
 	suite.Require().NotPanics(func() {
-		suite.consumerChain.App.(*app.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), restartGenesis)
+		suite.consumerChain.App.(*app.App).ConsumerKeeper.InitGenesis(ctx, restartGenesis)
 	})
+
+	// check maturity time is exported - Set during Restart-Genesis
+	maturityTime = suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPacketMaturityTime(ctx, 1)
+	suite.Require().NotZero(maturityTime)
+
+	// check provider channel is exported - IBC InitGenesis
+	_, ok = suite.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderChannel(ctx)
+	suite.Require().True(ok)
+
+	// complete CCV channel handshake by sending a first VSC packet
+	pd = types.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{}, 1, nil)
+	packet = channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+		clienttypes.NewHeight(1, 0), 0)
+	suite.consumerChain.App.(*app.App).ConsumerKeeper.OnRecvVSCPacket(ctx, packet, pd)
+
+	// check UnbondingTime is retrieved - retrieved using TmClientState
+	ubdT, ok := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetUnbondingTime(ctx)
+	fmt.Println(ubdT, ok)
+
+	// check HeightToVSCID is retrieved - should be stored during export
+
+	// check outstanding downtime is is retrieved - should be stored during export
+
+	// check CCValidator is retrieved
+	// Not need since populated in genesis using initial valset
 }
