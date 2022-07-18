@@ -95,7 +95,7 @@ function createSmallSubsetOfCoveringTraces() {
     hits.push(hit);
   });
   const target = possible.map((x) => Math.min(x, 250));
-  console.log(`finished reading files and cnting`);
+  console.log(`finished reading traces and counting events`);
   function score(v): number {
     let x = 0;
     for (let i = 0; i < v.length; i++) {
