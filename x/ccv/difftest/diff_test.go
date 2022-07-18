@@ -50,11 +50,6 @@ when the trace actions start.
 const MODEL_HEIGHT_OFFSET = int64(99)
 const SUT_TIME_OFFSET = 1577923752
 const DELEGATOR_INITIAL_BALANCE = 1000000000000000
-
-/*
-TODO: do I need a particular denom here or different denoms for each
-chain?
-*/
 const DENOM = sdk.DefaultBondDenom
 
 var SLASH_DOUBLESIGN = slashingtypes.DefaultSlashFractionDoubleSign
@@ -666,7 +661,6 @@ func (s *DTTestSuite) deliver(chain string, numPackets int64) {
 	s.idempotentDeliverAcks(chain)
 	s.idempotentUpdateClient(chain)
 	packets := s.network.consumePackets(s.other(chain), numPackets)
-	s.Require().NotEmpty(packets, s.trace.diagnostic()+"[deliver has no packets]")
 	for _, p := range packets {
 		receiver := s.endpoint(chain)
 		sender := receiver.Counterparty
@@ -780,6 +774,15 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 		case "Deliver":
 			s.deliver(a.Chain, int64(a.NumPackets))
 		case "ProviderSlash":
+			if !s.trace.doMatchState {
+				// TODO: remove
+				// This is a temporary hack to allow over approximated slash testing
+
+				v, found := s.stakingKeeperP().GetValidator(s.ctx(P), s.validator(int64(a.Val)))
+				if !found || v.GetStatus() == stakingtypes.Unbonded {
+					continue
+				}
+			}
 			factor := strconv.FormatFloat(a.Factor, 'f', 3, 64)
 			s.providerSlash(
 				s.consAddr(int64(a.Val)),
@@ -788,6 +791,15 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 				sdk.MustNewDecFromStr(factor),
 			)
 		case "ConsumerSlash":
+			// TODO: remove
+			// This is a temporary hack to allow over approximated slash testing
+
+			if !s.trace.doMatchState {
+				power, _ := s.consumerPower(int64(a.Val))
+				if power == 0 {
+					continue
+				}
+			}
 			s.consumerSlash(
 				s.consAddr(int64(a.Val)),
 				int64(a.InfractionHeight)+MODEL_HEIGHT_OFFSET,
@@ -801,7 +813,7 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 }
 
 func (s *DTTestSuite) TestTracesWithSlashing() {
-	for i := 1; i <= 11745; i++ {
+	for i := 1; i <= 108581; i++ {
 		fn := fmt.Sprintf("/Users/danwt/Documents/work/interchain-security/diff-test/core/tracesWithSlashing/trace_%d.json", i)
 		traces := loadTraces(fn)
 		fmt.Println("Trace file: ", fn)
@@ -926,7 +938,6 @@ func (s *DTTestSuite) TestAssumptions() {
 
 	maxValsE := uint32(2)
 	maxVals := s.stakingKeeperP().GetParams(s.ctx(P)).MaxValidators
-	// TODO: check min self delegation
 
 	if maxValsE != maxVals {
 		s.T().Fatal(FAIL_MESSAGE)
