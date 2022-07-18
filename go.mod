@@ -129,7 +129,7 @@ require (
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
 	github.com/cosmos/ibc-go/v3 => /Users/danwt/Documents/work/informal-ibc-go
-	github.com/cosmos/cosmos-sdk => /Users/danwt/Documents/work/danwt-cosmos-sdk
+	github.com/cosmos/cosmos-sdk => /Users/danwt/Documents/work/cosmos-sdk
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 	github.com/tendermint/tendermint => /Users/danwt/Documents/work/tendermint

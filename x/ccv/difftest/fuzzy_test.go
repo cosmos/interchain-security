@@ -80,10 +80,30 @@ func FuzzConfirm(f *testing.F) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		issued := v.TokensFromShares(delShares).TruncateInt()
-		// issued := (delShares.MulInt(v.Tokens)).Quo(v.DelegatorShares).TruncateInt()
+		// issued := v.TokensFromShares(delShares).TruncateInt()
+		issued := (delShares.MulInt(v.Tokens)).Quo(v.DelegatorShares).TruncateInt()
 		if !(sdk.NewInt(9999).Equal(issued)) {
 			t.Fatal(issued)
 		}
 	})
+}
+
+func TestDec(t *testing.T) {
+	// staking/types/validator.go::RemoveDelShares
+	var v stakingtypes.Validator
+	v.Tokens = sdk.NewInt(27500)
+	valShares, err := sdk.NewDecFromStr("50000.000000000000000000")
+	if err != nil {
+		t.Fatal(err)
+	}
+	v.DelegatorShares = valShares
+	delShares, err := sdk.NewDecFromStr("18181.818181818181818181")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// issued := v.TokensFromShares(delShares).TruncateInt()
+	issued := (delShares.MulInt(v.Tokens)).Quo(v.DelegatorShares).TruncateInt()
+	if !(sdk.NewInt(9999).Equal(issued)) {
+		t.Fatal(issued)
+	}
 }
