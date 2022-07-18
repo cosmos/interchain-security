@@ -610,13 +610,6 @@ func (s *DTTestSuite) hackBeginBlock(chain string) {
 
 }
 
-func (s *DTTestSuite) ApplyValSetChangesDebug(t *testing.T, valSet *tmtypes.ValidatorSet, valUpdates []abci.ValidatorUpdate) (*tmtypes.ValidatorSet, error) {
-	updates, _ := tmtypes.PB2TM.ValidatorUpdates(valUpdates)
-	newVals := valSet.Copy()
-	err := newVals.UpdateWithChangeSet(updates)
-	return newVals, err
-}
-
 func (s *DTTestSuite) endBlock(chain string) {
 
 	s.idempotentBeginBlock(chain)
@@ -636,12 +629,7 @@ func (s *DTTestSuite) endBlock(chain string) {
 
 	c.Vals = c.NextVals
 
-	// c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
-	vals, err := s.ApplyValSetChangesDebug(c.T, c.Vals, ebRes.ValidatorUpdates)
-	if err != nil {
-		fmt.Println(s.trace.diagnostic(), chain, err)
-	}
-	c.NextVals = vals
+	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
 
 	c.LastHeader = c.CurrentTMClientHeader()
 
@@ -824,7 +812,6 @@ func (s *DTTestSuite) TestTracesCovering() {
 				if r := recover(); r != nil {
 					fmt.Println(s.trace.diagnostic())
 					fmt.Println(r)
-					// s.Require().FailNow("Hit a panic!")
 				}
 			}()
 			s.trace = Trace{
@@ -834,9 +821,9 @@ func (s *DTTestSuite) TestTracesCovering() {
 				map[string]int64{P: 0, C: 0},
 				true,
 			}
-			fmt.Printf("[finish setup, start actions]")
+			fmt.Println("[finish setup, start actions]")
 			executeTrace(s, traceNum, trace)
-			fmt.Printf("[finish actions]\n")
+			fmt.Println("[finish actions]")
 		})
 	}
 }
