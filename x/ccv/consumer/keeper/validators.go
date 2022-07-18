@@ -13,6 +13,7 @@ import (
 )
 
 // ApplyCCValidatorChanges applies the given changes to the cross-chain validators states
+// and returns updates to forward to tendermint.
 func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) []abci.ValidatorUpdate {
 	ret := []abci.ValidatorUpdate{}
 	for _, change := range changes {
@@ -20,6 +21,7 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 		val, found := k.GetCCValidator(ctx, addr)
 
 		if found {
+			// update or delete an existing validator
 			if change.Power < 1 {
 				k.DeleteCCValidator(ctx, addr)
 			} else {
@@ -27,10 +29,8 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 				k.SetCCValidator(ctx, val)
 			}
 
-			ret = append(ret, change)
-
 		} else if 0 < change.Power {
-			// create new validator
+			// create a new validator
 			consAddr := sdk.ConsAddress(addr)
 
 			pubkey, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
@@ -45,8 +45,14 @@ func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.Validato
 			k.SetCCValidator(ctx, ccVal)
 			k.AfterValidatorBonded(ctx, consAddr, nil)
 
-			ret = append(ret, change)
+		} else {
+			// edge case: we received an update for 0 power
+			// but the validator is already deleted. Do not forward
+			// to tendermint.
+			continue
 		}
+
+		ret = append(ret, change)
 	}
 	return ret
 }
