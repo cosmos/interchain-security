@@ -15,7 +15,6 @@ import {
   P,
   C,
   NUM_VALIDATORS,
-  MAX_VALIDATORS,
   SLASH_DOUBLESIGN,
   SLASH_DOWNTIME,
   BLOCK_SECONDS,
@@ -89,8 +88,8 @@ class ActionGenerator {
       this.candidateUndelegate(),
       this.candidateJumpNBlocks(),
       this.candidateDeliver(),
-      // this.candidateProviderSlash(),
-      // this.candidateConsumerSlash(),
+      this.candidateProviderSlash(),
+      this.candidateConsumerSlash(),
     ]);
     const possible = _.uniq(templates.map((a) => a.kind));
     const distr = _.pick(
@@ -280,7 +279,7 @@ function gen(minutes) {
   const goalTimeMillis = minutes * 60 * 1000;
   let elapsedMillis = 0;
   const NUM_ACTIONS = 120;
-  const DIR = 'traces/';
+  const DIR = 'tracesWithSlashing/';
   forceMakeEmptyDir(DIR);
   let i = 0;
   const allEvents = [];

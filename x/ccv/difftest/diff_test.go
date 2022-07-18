@@ -163,11 +163,11 @@ type DTTestSuite struct {
 
 type Trace struct {
 	// index of trace in json
-	ix          int
-	actionIx    int
-	blocks      difftest.Blocks
-	hLastCommit map[string]int64
-	started     bool
+	ix           int
+	actionIx     int
+	blocks       difftest.Blocks
+	hLastCommit  map[string]int64
+	doMatchState bool
 }
 
 func (t *Trace) diagnostic() string {
@@ -246,9 +246,9 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 
 	s.idempotentUpdateClient(C)
 
-	ack, err := difftest.TryRecvPacket(s.endpoint(P), s.endpoint(C), packet)
+	_, err = difftest.TryRecvPacket(s.endpoint(P), s.endpoint(C), packet)
 
-	s.network.addAck(P, ack, packet)
+	// s.network.addAck(P, ack, packet)
 
 	s.Require().NoError(err)
 }
@@ -524,13 +524,20 @@ func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 }
 
 func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
-	for _, ack := range s.network.consumeAcks(s.other(receiver)) {
-		s.idempotentUpdateClient(receiver)
-		err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.packet, ack.ack)
-		if err != nil {
-			return err
-		}
-	}
+	/*
+		TODO: fix
+		There is a problem with acks https://github.com/cosmos/interchain-security/issues/240
+		Relaying the first ack to the provider (for the empty VSC sent first to consumer) fails,
+		thus sending subsequent acks is impossible as the sequence num will be out of order.
+	*/
+
+	// for _, ack := range s.network.consumeAcks(s.other(receiver)) {
+	// 	s.idempotentUpdateClient(receiver)
+	// 	err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.packet, ack.ack)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
 
@@ -612,7 +619,7 @@ func (s *DTTestSuite) endBlock(chain string) {
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
 
 	// commit and compare model state *before* committing in SUT as need sdk.Context
-	if s.trace.started {
+	if s.trace.doMatchState {
 		s.trace.hLastCommit[chain] += 1
 		s.matchState(chain)
 	}
@@ -789,32 +796,57 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 	}
 }
 
-func (s *DTTestSuite) TestTracesCovering() {
-	traces := loadTraces("covering.json")
-	const fix = 45
-	if 0 < fix {
-		traces = traces[fix : fix+1]
-	}
-	for i, trace := range traces {
-		traceNum := i + fix
-		s.Run(fmt.Sprintf("Trace%d", traceNum), func() {
-			fmt.Printf("\n[start trace %d]\n", traceNum)
+func (s *DTTestSuite) TestTracesWithSlashing() {
+	for i := 1; i <= 11745; i++ {
+		fn := fmt.Sprintf("/Users/danwt/Documents/work/interchain-security/diff-test/core/tracesWithSlashing/trace_%d.json", i)
+		traces := loadTraces(fn)
+		fmt.Println("Trace file: ", fn)
+		s.Run(fmt.Sprintf("Trace file num: %d", i), func() {
 			s.SetupTest()
 			defer func() {
 				if r := recover(); r != nil {
 					fmt.Println(s.trace.diagnostic())
 					fmt.Println(r)
+					panic("Hit panic!")
 				}
 			}()
 			s.trace = Trace{
-				traceNum,
+				i,
 				0,
-				trace.Blocks,
+				traces[0].Blocks,
+				map[string]int64{P: 0, C: 0},
+				false,
+			}
+			fmt.Println("[finish setup, start actions]")
+			executeTrace(s, i, traces[0])
+			fmt.Println("[finish actions]")
+		})
+	}
+}
+
+func (s *DTTestSuite) TestTracesWithoutSlashing() {
+	for i := 1; i <= 24722; i++ {
+		fn := fmt.Sprintf("/Users/danwt/Documents/work/interchain-security/diff-test/core/traces/trace_%d.json", i)
+		traces := loadTraces(fn)
+		fmt.Println("Trace file: ", fn)
+		s.Run(fmt.Sprintf("Trace file num: %d", i), func() {
+			s.SetupTest()
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Println(s.trace.diagnostic())
+					fmt.Println(r)
+					panic("Hit panic!")
+				}
+			}()
+			s.trace = Trace{
+				i,
+				0,
+				traces[0].Blocks,
 				map[string]int64{P: 0, C: 0},
 				true,
 			}
 			fmt.Println("[finish setup, start actions]")
-			executeTrace(s, traceNum, trace)
+			executeTrace(s, i, traces[0])
 			fmt.Println("[finish actions]")
 		})
 	}

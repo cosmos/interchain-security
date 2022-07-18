@@ -66,7 +66,7 @@ function dumpTrace(fn: string, events, actions, blocks) {
       ).map((pair) => pair[1]),
     ),
   };
-  const json = JSON.stringify(toDump, null, 4);
+  const json = JSON.stringify([toDump], null, 4);
   fs.writeFileSync(fn, json);
 }
 
@@ -86,7 +86,7 @@ function createSmallSubsetOfCoveringTraces() {
   }
   const hits = [];
   fns.forEach((fn) => {
-    const trace = JSON.parse(fs.readFileSync(fn, 'utf8'));
+    const trace = JSON.parse(fs.readFileSync(fn, 'utf8'))[0];
     const hit = [fn, _.clone(cnt)];
     trace.events.forEach((evtName) => {
       hit[1][ix[evtName]] += 1;
