@@ -89,8 +89,8 @@ class ActionGenerator {
       this.candidateUndelegate(),
       this.candidateJumpNBlocks(),
       this.candidateDeliver(),
-      this.candidateProviderSlash(),
-      this.candidateConsumerSlash(),
+      // this.candidateProviderSlash(),
+      // this.candidateConsumerSlash(),
     ]);
     const possible = _.uniq(templates.map((a) => a.kind));
     const distr = _.pick(
@@ -279,7 +279,7 @@ function doAction(model, action: Action) {
 function gen(minutes) {
   const goalTimeMillis = minutes * 60 * 1000;
   let elapsedMillis = 0;
-  const NUM_ACTIONS = 60;
+  const NUM_ACTIONS = 120;
   const DIR = 'traces/';
   forceMakeEmptyDir(DIR);
   let i = 0;
@@ -324,7 +324,6 @@ function replay(actions: Action[]) {
   const model = new Model(sanity, blocks, events);
   for (let i = 0; i < actions.length; i++) {
     const a = actions[i];
-    console.log(`action ${i}, kind : ${a.kind}`);
     doAction(model, a);
   }
 }

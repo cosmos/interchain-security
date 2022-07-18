@@ -169,7 +169,6 @@ class Staking {
     vals = _.sortBy(vals, (i) => -this.tokens[i]);
     vals = vals.filter(valid);
     vals = vals.slice(0, MAX_VALIDATORS);
-    // console.log(vals, this.tokens, this.jailed);
     this.m.sanity.newValSet(vals);
     return vals;
   };
