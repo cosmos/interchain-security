@@ -4,7 +4,7 @@ import timeSpan from 'time-span';
 import cloneDeep from 'clone-deep';
 import { Blocks } from './properties.js';
 import { Sanity } from './sanity.js';
-import { Model, Status } from './model.js';
+import { Model } from './model.js';
 import {
   createSmallSubsetOfCoveringTraces,
   dumpTrace,
@@ -15,13 +15,10 @@ import {
   P,
   C,
   NUM_VALIDATORS,
-  SLASH_DOUBLESIGN,
-  SLASH_DOWNTIME,
   BLOCK_SECONDS,
   TOKEN_SCALAR,
   MAX_JUMPS,
 } from './constants.js';
-
 interface Action {
   kind: string;
 }
@@ -46,17 +43,9 @@ type Deliver = {
   chain: string;
   numPackets: string;
 };
-type ProviderSlash = {
-  kind: string;
-  val: number;
-  power: number;
-  infractionHeight: number;
-  factor: number;
-};
 type ConsumerSlash = {
   kind: string;
   val: number;
-  power: number;
   infractionHeight: number;
   isDowntime: number;
 };
@@ -88,7 +77,6 @@ class ActionGenerator {
       this.candidateUndelegate(),
       this.candidateJumpNBlocks(),
       this.candidateDeliver(),
-      this.candidateProviderSlash(),
       this.candidateConsumerSlash(),
     ]);
     const possible = _.uniq(templates.map((a) => a.kind));
@@ -96,9 +84,8 @@ class ActionGenerator {
       {
         Delegate: 0.03,
         Undelegate: 0.03,
-        JumpNBlocks: 0.35,
+        JumpNBlocks: 0.37,
         Deliver: 0.55,
-        ProviderSlash: 0.02,
         ConsumerSlash: 0.02,
       },
       ...possible,
@@ -117,9 +104,6 @@ class ActionGenerator {
     }
     if (kind === 'Deliver') {
       return this.selectDeliver(a);
-    }
-    if (kind === 'ProviderSlash') {
-      return this.selectProviderSlash(a);
     }
     if (kind === 'ConsumerSlash') {
       return this.selectConsumerSlash(a);
@@ -151,9 +135,9 @@ class ActionGenerator {
     return { ...a, amt: _.random(1, 4) * TOKEN_SCALAR };
   };
 
-  candidateProviderSlash = (): Action[] => {
+  candidateConsumerSlash = (): Action[] => {
     return _.range(NUM_VALIDATORS)
-      .filter((i) => this.model.staking.status[i] !== Status.UNBONDED)
+      .filter((i) => this.model.ccvC.power[i] !== undefined)
       .filter((i) => {
         const cntWouldBeNotJailed = this.didSlash.filter(
           (slashed, j) => !slashed && j !== i,
@@ -161,40 +145,13 @@ class ActionGenerator {
         return 1 <= cntWouldBeNotJailed;
       })
       .map((i) => {
-        return { kind: 'ProviderSlash', val: i };
+        return { kind: 'ConsumerSlash', val: i };
       });
-  };
-  selectProviderSlash = (a): ProviderSlash => {
-    this.didSlash[a.val] = true;
-    return {
-      ...a,
-      power: _.random(1, 6) * TOKEN_SCALAR,
-      infractionHeight: Math.floor(Math.random() * this.model.h[P]),
-      factor: _.sample([SLASH_DOUBLESIGN, SLASH_DOWNTIME]),
-    };
-  };
-
-  candidateConsumerSlash = (): Action[] => {
-    return (
-      _.range(NUM_VALIDATORS)
-        // TODO: can I remove this filter?
-        .filter((i) => this.model.ccvC.power[i] !== undefined)
-        .filter((i) => {
-          const cntWouldBeNotJailed = this.didSlash.filter(
-            (slashed, j) => !slashed && j !== i,
-          ).length;
-          return 1 <= cntWouldBeNotJailed;
-        })
-        .map((i) => {
-          return { kind: 'ConsumerSlash', val: i };
-        })
-    );
   };
   selectConsumerSlash = (a): ConsumerSlash => {
     this.didSlash[a.val] = true;
     return {
       ...a,
-      power: _.random(1, 6) * TOKEN_SCALAR,
       infractionHeight: Math.floor(Math.random() * this.model.h[C]),
       isDowntime: _.sample([true, false]),
     };
@@ -265,13 +222,9 @@ function doAction(model, action: Action) {
     const a = action as Deliver;
     model.deliver(a.chain, a.numPackets);
   }
-  if (kind === 'ProviderSlash') {
-    const a = action as ProviderSlash;
-    model.providerSlash(a.val, a.infractionHeight, a.power, a.factor);
-  }
   if (kind === 'ConsumerSlash') {
     const a = action as ConsumerSlash;
-    model.consumerSlash(a.val, a.power, a.infractionHeight, a.isDowntime);
+    model.consumerSlash(a.val, a.infractionHeight, a.isDowntime);
   }
 }
 
@@ -279,7 +232,7 @@ function gen(minutes) {
   const goalTimeMillis = minutes * 60 * 1000;
   let elapsedMillis = 0;
   const NUM_ACTIONS = 20;
-  const DIR = 'tracesWithSlashing/';
+  const DIR = 'traces/';
   forceMakeEmptyDir(DIR);
   let i = 0;
   const allEvents = [];
