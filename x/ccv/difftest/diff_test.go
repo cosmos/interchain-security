@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
-	"strconv"
 	"testing"
 	"time"
 
@@ -61,8 +60,6 @@ Match constants to model constants
 func init() {
 	// Tokens = Power
 	sdk.DefaultPowerReduction = sdk.NewInt(1)
-	// SLASH_DOUBLESIGN = sdk.NewDec(1).Quo(sdk.NewDec(2))
-	// SLASH_DOWNTIME = sdk.NewDec(1).Quo(sdk.NewDec(4))
 	SLASH_DOUBLESIGN = sdk.NewDec(0)
 	SLASH_DOWNTIME = sdk.NewDec(0)
 }
@@ -164,11 +161,10 @@ type DTTestSuite struct {
 
 type Trace struct {
 	// index of trace in json
-	ix           int
-	actionIx     int
-	blocks       difftest.Blocks
-	hLastCommit  map[string]int64
-	doMatchState bool
+	ix          int
+	actionIx    int
+	blocks      difftest.Blocks
+	hLastCommit map[string]int64
 }
 
 func (t *Trace) diagnostic() string {
@@ -249,8 +245,6 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 
 	_, err = difftest.TryRecvPacket(s.endpoint(P), s.endpoint(C), packet)
 
-	// s.network.addAck(P, ack, packet)
-
 	s.Require().NoError(err)
 }
 
@@ -280,13 +274,6 @@ func (s *DTTestSuite) SetupTest() {
 
 	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = difftest.NewDTProviderConsumerCoordinator(s.T())
 
-	/*
-		Add two more validator
-		Only added two in chain creation
-		see this for reasoning https://github.com/danwt/informal-cosmos-hub-team/issues/13#issuecomment-1139704176
-		temporarily!
-		TODO: clean up this
-	*/
 	val2, val2addr := s.createValidator(2)
 	val3, val3addr := s.createValidator(3)
 	val2pk, err := val2.GetPubKey()
@@ -620,10 +607,8 @@ func (s *DTTestSuite) endBlock(chain string) {
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
 
 	// commit and compare model state *before* committing in SUT as need sdk.Context
-	if s.trace.doMatchState {
-		s.trace.hLastCommit[chain] += 1
-		s.matchState(chain)
-	}
+	s.trace.hLastCommit[chain] += 1
+	s.matchState(chain)
 
 	c.App.Commit()
 
@@ -679,7 +664,7 @@ func (s *DTTestSuite) providerSlash(
 ) {
 	s.idempotentBeginBlock(P)
 	s.idempotentDeliverAcks(P)
-	// s.stakingKeeperP().Slash(s.ctx(P), val, h, power, factor, -1)
+	s.stakingKeeperP().Slash(s.ctx(P), val, h, power, factor, -1)
 }
 
 func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64,
@@ -734,6 +719,7 @@ func (s *DTTestSuite) matchState(chain string) {
 		}
 	}
 	if chain == C {
+		// TODO: check slash data structures?
 		ss := t.blocks.Consumer[s.trace.hLastCommit[C]].Snapshot
 		s.Require().Equalf(int64(ss.H.Consumer+int(MODEL_HEIGHT_OFFSET)), s.height(C), diagnostic+"C height mismatch")
 		for j, power := range ss.Power {
@@ -775,33 +761,7 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 			)
 		case "Deliver":
 			s.deliver(a.Chain, int64(a.NumPackets))
-		case "ProviderSlash":
-			if !s.trace.doMatchState {
-				// TODO: remove
-				// This is a temporary hack to allow over approximated slash testing
-
-				v, found := s.stakingKeeperP().GetValidator(s.ctx(P), s.validator(int64(a.Val)))
-				if !found || v.GetStatus() == stakingtypes.Unbonded {
-					continue
-				}
-			}
-			factor := strconv.FormatFloat(a.Factor, 'f', 3, 64)
-			s.providerSlash(
-				s.consAddr(int64(a.Val)),
-				int64(a.InfractionHeight)+MODEL_HEIGHT_OFFSET,
-				int64(a.Power),
-				sdk.MustNewDecFromStr(factor),
-			)
 		case "ConsumerSlash":
-			// TODO: remove
-			// This is a temporary hack to allow over approximated slash testing
-
-			if !s.trace.doMatchState {
-				power, _ := s.consumerPower(int64(a.Val))
-				if power == 0 {
-					continue
-				}
-			}
 			s.consumerSlash(
 				s.consAddr(int64(a.Val)),
 				int64(a.InfractionHeight)+MODEL_HEIGHT_OFFSET,
@@ -833,7 +793,6 @@ func (s *DTTestSuite) TestTracesWithSlashing() {
 				0,
 				traces[0].Blocks,
 				map[string]int64{P: 0, C: 0},
-				false,
 			}
 			fmt.Println("[finish setup, start actions]")
 			executeTrace(s, i, traces[0])
@@ -861,7 +820,6 @@ func (s *DTTestSuite) TestTracesWithoutSlashing() {
 				0,
 				traces[0].Blocks,
 				map[string]int64{P: 0, C: 0},
-				true,
 			}
 			fmt.Println("[finish setup, start actions]")
 			executeTrace(s, i, traces[0])

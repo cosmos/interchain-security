@@ -20,8 +20,6 @@ import {
   MAX_VALIDATORS,
   ZERO_TIMEOUT_HEIGHT,
   CCV_TIMEOUT_TIMESTAMP,
-  SLASH_DOUBLESIGN,
-  SLASH_DOWNTIME,
   JAIL_SECONDS,
   BLOCK_SECONDS,
   TOKEN_SCALAR,
@@ -66,7 +64,6 @@ interface VscMatured {
 
 interface Slash {
   val;
-  power;
   vscID;
   isDowntime;
 }
@@ -271,10 +268,6 @@ class Staking {
   };
 
   delegate = (val, amt) => {
-    if (this.tokens[val] === 0 && 0 < this.shares(val)) {
-      this.m.events.push(Event.INVALID_EX_RATE);
-      return;
-    }
     const issuedShares = Math.floor(
       (this.shares(val) * amt) / this.tokens[val],
     );
@@ -283,15 +276,14 @@ class Staking {
     this.delegation[val] += issuedShares;
   };
   undelegate = (val, amt) => {
-    if (this.tokens[val] < 1) {
-      this.m.events.push(Event.INSUFFICIENT_TOKENS);
-      return;
-    }
     // (TODO:) WARNING: the SDK code DOES NOT round here
     // I haven't decided on a solution yet.
     const shares = Math.floor(
       (this.shares(val) * amt) / this.tokens[val],
     );
+    if (shares != amt) {
+      console.log(`crazy!`);
+    }
     if (this.delegation[val] < shares) {
       this.m.events.push(Event.INSUFFICIENT_SHARES);
       return;
@@ -299,6 +291,9 @@ class Staking {
     const issuedTokens = Math.floor(
       (shares * this.tokens[val]) / this.shares(val),
     );
+    if (issuedTokens != amt) {
+      console.log(`crazy2!`);
+    }
     this.tokens[val] -= issuedTokens;
     this.delegation[val] -= shares;
     const und: Undelegation = {
@@ -315,27 +310,16 @@ class Staking {
     this.m.ccvP.afterUnbondingInitiated(this.opID);
     this.opID += 1;
   };
-  slash = (val, infractionHeight, power, factor) => {
+  slash = (val, infractionHeight) => {
     const valid = (e): boolean =>
       e.val === val &&
       infractionHeight <= e.creationHeight &&
       (this.m.t[P] < e.completionTime || e.onHold);
     const ubds: Undelegation[] = this.undelegationQ.filter(valid);
-    // TODO: check rounding
-    const amt = Math.floor(power * factor);
-    let remaining = amt;
     if (infractionHeight < this.m.h[P]) {
-      ubds.forEach((e) => {
+      ubds.forEach(() => {
         this.m.events.push(Event.SLASH_UNDEL);
-        const slashed = Math.floor(factor * e.initialBalance);
-        remaining -= slashed;
-        e.balance = Math.max(0, e.balance - slashed);
       });
-    }
-    const toBurn = Math.min(Math.max(remaining, 0), this.tokens[val]);
-    this.tokens[val] -= toBurn;
-    if (0 < toBurn) {
-      this.m.events.push(Event.SLASH_VAL);
     }
   };
   jailUntil = (val, timestamp) => {
@@ -382,7 +366,7 @@ class Staking {
 
 class CCVProvider {
   m;
-  // TODO: I should check this
+  // can be arbitrary because driver offsets to compensate
   initialHeight = 0;
   vscID = 0;
   vscIDtoH = {};
@@ -442,21 +426,17 @@ class CCVProvider {
       infractionHeight = this.vscIDtoH[data.vscID];
     }
 
-    let factor = undefined;
-
     if (data.isDowntime) {
       this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_REQUEST);
-      factor = SLASH_DOWNTIME;
     } else {
       this.m.events.push(Event.RECEIVE_DOUBLE_SIGN_SLASH_REQUEST);
-      factor = SLASH_DOUBLESIGN;
     }
 
     if (this.tombstoned[data.val]) {
       return;
     }
 
-    this.m.staking.slash(data.val, infractionHeight, data.power, factor);
+    this.m.staking.slash(data.val, infractionHeight);
     this.m.staking.jailUntil(data.val, this.m.t[P] + JAIL_SECONDS);
     if (data.isDowntime) {
       this.downtimeSlashAcks.push(data.val);
@@ -544,14 +524,13 @@ class CCVConsumer {
       this.outstandingDowntime[val] = false;
     });
   };
-  sendSlashRequest = (val, power, infractionHeight, isDowntime) => {
+  sendSlashRequest = (val, infractionHeight, isDowntime) => {
     if (isDowntime && this.outstandingDowntime[val]) {
       this.m.events.push(Event.DOWNTIME_SLASH_REQUEST_OUTSTANDING);
       return;
     }
     const data: Slash = {
       val,
-      power,
       vscID: this.hToVscID[infractionHeight],
       isDowntime,
     };
@@ -681,23 +660,13 @@ class Model {
       });
     }
   };
-  providerSlash = (
-    val: number,
-    infractionHeight: number,
-    power: number,
-    factor: number,
-  ) => {
-    this.idempotentBeginBlock(P);
-    this.staking.slash(val, infractionHeight, power, factor);
-  };
   consumerSlash = (
     val: number,
-    power: number,
     infractionHeight: number,
     isDowntime: boolean,
   ) => {
     this.idempotentBeginBlock(C);
-    this.ccvC.sendSlashRequest(val, power, infractionHeight, isDowntime);
+    this.ccvC.sendSlashRequest(val, infractionHeight, isDowntime);
   };
 }
 
