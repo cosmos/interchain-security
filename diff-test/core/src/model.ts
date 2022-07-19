@@ -160,7 +160,6 @@ class Staking {
     const valid = (i): boolean =>
       1 <= this.tokens[i] && this.jailed[i] === undefined;
     let vals = _.range(NUM_VALIDATORS);
-
     // stable sort => breaks ties based on validator
     // address numerical value. This mimics staking module.
     vals = _.sortBy(vals, (i) => -this.tokens[i]);
@@ -268,40 +267,23 @@ class Staking {
   };
 
   delegate = (val, amt) => {
-    const issuedShares = Math.floor(
-      (this.shares(val) * amt) / this.tokens[val],
-    );
     this.delegatorTokens -= amt;
     this.tokens[val] += amt;
-    this.delegation[val] += issuedShares;
+    this.delegation[val] += amt;
   };
   undelegate = (val, amt) => {
-    // (TODO:) WARNING: the SDK code DOES NOT round here
-    // I haven't decided on a solution yet.
-    const shares = Math.floor(
-      (this.shares(val) * amt) / this.tokens[val],
-    );
-    if (shares != amt) {
-      console.log(`crazy!`);
-    }
-    if (this.delegation[val] < shares) {
+    if (this.delegation[val] < amt) {
       this.m.events.push(Event.INSUFFICIENT_SHARES);
       return;
     }
-    const issuedTokens = Math.floor(
-      (shares * this.tokens[val]) / this.shares(val),
-    );
-    if (issuedTokens != amt) {
-      console.log(`crazy2!`);
-    }
-    this.tokens[val] -= issuedTokens;
-    this.delegation[val] -= shares;
+    this.tokens[val] -= amt;
+    this.delegation[val] -= amt;
     const und: Undelegation = {
       val: val,
       creationHeight: this.m.h[P],
       completionTime: this.m.t[P] + UNBONDING_SECONDS_P,
-      balance: issuedTokens,
-      initialBalance: issuedTokens,
+      balance: amt,
+      initialBalance: amt,
       onHold: true,
       opID: this.opID,
       expired: false,
