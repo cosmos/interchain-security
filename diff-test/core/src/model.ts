@@ -1,10 +1,3 @@
-/*
-
-core logic is mostly consistent with the spec at https://github.com/cosmos/ibc/tree/5ea902172b20d53e209f8c1fda9b11d005d9c110.
-slashing logic is mostly consistent with the existing sdk slashing module code, and the HandleSlashPacket implementation in the SUT. This is because slashing behavior is still not fully specced (see https://github.com/cosmos/interchain-security/issues/234)
-cosmos-sdk logic is partially consistent with the sdk, however, the SDK changes are a moving target and need fixes. There are some open PRs.
-*/
-
 import _ from 'underscore';
 import { Event } from './events.js';
 import { Blocks } from './properties.js';

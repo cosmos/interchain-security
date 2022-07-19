@@ -231,7 +231,7 @@ function doAction(model, action: Action) {
 function gen(minutes) {
   const goalTimeMillis = minutes * 60 * 1000;
   let elapsedMillis = 0;
-  const NUM_ACTIONS = 20;
+  const NUM_ACTIONS = 200;
   const DIR = 'traces/';
   forceMakeEmptyDir(DIR);
   let i = 0;
