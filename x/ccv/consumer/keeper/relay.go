@@ -73,7 +73,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 
 	store := ctx.KVStore(k.storeKey)
-	maturityIterator := sdk.KVStorePrefixIterator(store, []byte(types.PacketMaturityTimePrefix))
+	maturityIterator := sdk.KVStorePrefixIterator(store, types.PacketMaturityTimePrefix())
 	defer maturityIterator.Close()
 
 	currentTime := uint64(ctx.BlockTime().UnixNano())
@@ -84,7 +84,7 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 	}
 
 	for maturityIterator.Valid() {
-		vscId := types.GetIdFromPacketMaturityTimeKey(maturityIterator.Key())
+		vscId := types.IdFromPacketMaturityTimeKey(maturityIterator.Key())
 		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
 			// send VSCMatured packet
 			// - construct validator set change packet data
