@@ -165,6 +165,7 @@ type Trace struct {
 	actionIx    int
 	blocks      difftest.Blocks
 	hLastCommit map[string]int64
+	started     bool
 }
 
 func (t *Trace) diagnostic() string {
@@ -292,7 +293,6 @@ func (s *DTTestSuite) SetupTest() {
 		greater := s.valAddresses[i]
 		lesser := s.valAddresses[i+1]
 		s.ensureValidatorLexicographicOrderingMatchesModel(lesser, greater)
-
 	}
 
 	s.setSigningInfos()
@@ -577,7 +577,6 @@ func (s *DTTestSuite) hackBeginBlock(chain string) {
 		I tried hard to get rid of it but it seems that the testing framework
 		relies in many places on having a ctx() available. E.g. for UpdateClient
 	*/
-
 	c := s.chain(chain)
 
 	dt := 5
@@ -606,9 +605,11 @@ func (s *DTTestSuite) endBlock(chain string) {
 
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
 
-	// commit and compare model state *before* committing in SUT as need sdk.Context
-	s.trace.hLastCommit[chain] += 1
-	s.matchState(chain)
+	if s.trace.started {
+		// commit and compare model state *before* committing in SUT as need sdk.Context
+		s.trace.hLastCommit[chain] += 1
+		s.matchState(chain)
+	}
 
 	c.App.Commit()
 
@@ -659,16 +660,7 @@ func (s *DTTestSuite) deliver(chain string, numPackets int64) {
 	}
 }
 
-func (s *DTTestSuite) providerSlash(
-	val sdk.ConsAddress, h int64, power int64, factor sdk.Dec,
-) {
-	s.idempotentBeginBlock(P)
-	s.idempotentDeliverAcks(P)
-	s.stakingKeeperP().Slash(s.ctx(P), val, h, power, factor, -1)
-}
-
-func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64,
-	power int64, isDowntime bool) {
+func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
 	s.idempotentBeginBlock(C)
 	s.idempotentDeliverAcks(C)
 	kind := stakingtypes.DoubleSign
@@ -678,7 +670,7 @@ func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64,
 	ctx := s.ctx(C)
 	before := len(ctx.EventManager().Events())
 	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
-	ck.Slash(ctx, val, h, power, sdk.Dec{}, kind)
+	ck.Slash(ctx, val, h, 0, sdk.Dec{}, kind)
 	evts := ctx.EventManager().ABCIEvents()
 	for _, e := range evts[before:] {
 		if e.Type == channeltypes.EventTypeSendPacket {
@@ -706,7 +698,7 @@ func (s *DTTestSuite) matchState(chain string) {
 	diagnostic := t.diagnostic()
 
 	if chain == P {
-		ss := t.blocks.Provider[s.trace.hLastCommit[P]].Snapshot
+		ss := t.blocks.Provider[t.hLastCommit[P]].Snapshot
 		s.Require().Equalf(int64(ss.H.Provider+int(MODEL_HEIGHT_OFFSET)), s.height(P), diagnostic+"P height mismatch")
 		s.Require().Equalf(int64(ss.DelegatorTokens), s.delegatorBalance(), diagnostic+"del balance mismatch")
 		for j, jailedUntilTimestamp := range ss.Jailed {
@@ -720,7 +712,7 @@ func (s *DTTestSuite) matchState(chain string) {
 	}
 	if chain == C {
 		// TODO: check slash data structures?
-		ss := t.blocks.Consumer[s.trace.hLastCommit[C]].Snapshot
+		ss := t.blocks.Consumer[t.hLastCommit[C]].Snapshot
 		s.Require().Equalf(int64(ss.H.Consumer+int(MODEL_HEIGHT_OFFSET)), s.height(C), diagnostic+"C height mismatch")
 		for j, power := range ss.Power {
 			actual, err := s.consumerPower(int64(j))
@@ -737,11 +729,9 @@ func (s *DTTestSuite) matchState(chain string) {
 }
 
 func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
-
 	for i, action := range trace.Actions {
 		a := action.Action
 		s.trace.actionIx = i
-
 		switch a.Kind {
 		case "Delegate":
 			s.delegate(
@@ -765,7 +755,6 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 			s.consumerSlash(
 				s.consAddr(int64(a.Val)),
 				int64(a.InfractionHeight)+MODEL_HEIGHT_OFFSET,
-				int64(a.Power),
 				a.IsDowntime,
 			)
 		default:
@@ -774,52 +763,24 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 	}
 }
 
-func (s *DTTestSuite) TestTracesWithSlashing() {
-	for i := 1; i <= 250; i++ {
-		fn := fmt.Sprintf("/Users/danwt/Documents/work/interchain-security/diff-test/core/tracesWithSlashing/trace_%d.json", i)
-		traces := loadTraces(fn)
-		fmt.Println("Trace file: ", fn)
+func (s *DTTestSuite) TestTraces() {
+	traces := loadTraces("covering.json")
+	for i, trace := range traces {
 		s.Run(fmt.Sprintf("Trace file num: %d", i), func() {
 			s.SetupTest()
 			defer func() {
 				if r := recover(); r != nil {
 					fmt.Println(s.trace.diagnostic())
 					fmt.Println(r)
-					panic("Hit panic!")
+					panic("HIT A PANIC")
 				}
 			}()
 			s.trace = Trace{
 				i,
 				0,
-				traces[0].Blocks,
+				trace.Blocks,
 				map[string]int64{P: 0, C: 0},
-			}
-			fmt.Println("[finish setup, start actions]")
-			executeTrace(s, i, traces[0])
-			fmt.Println("[finish actions]")
-		})
-	}
-}
-
-func (s *DTTestSuite) TestTracesWithoutSlashing() {
-	for i := 1; i <= 24722; i++ {
-		fn := fmt.Sprintf("/Users/danwt/Documents/work/interchain-security/diff-test/core/traces/trace_%d.json", i)
-		traces := loadTraces(fn)
-		fmt.Println("Trace file: ", fn)
-		s.Run(fmt.Sprintf("Trace file num: %d", i), func() {
-			s.SetupTest()
-			defer func() {
-				if r := recover(); r != nil {
-					fmt.Println(s.trace.diagnostic())
-					fmt.Println(r)
-					panic("Hit panic!")
-				}
-			}()
-			s.trace = Trace{
-				i,
-				0,
-				traces[0].Blocks,
-				map[string]int64{P: 0, C: 0},
+				true,
 			}
 			fmt.Println("[finish setup, start actions]")
 			executeTrace(s, i, traces[0])
