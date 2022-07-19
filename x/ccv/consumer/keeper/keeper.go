@@ -324,6 +324,24 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 	store.Delete(types.HeightValsetUpdateIDKey(height))
 }
 
+// IterateHeightToValsetUpdateID iterates over the block height to valset update ID mapping in store
+func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte(types.HeightValsetUpdateIDPrefix))
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		heightBytes := iterator.Key()[len([]byte(types.HeightValsetUpdateIDPrefix)):]
+		height := binary.BigEndian.Uint64(heightBytes)
+
+		vscID := binary.BigEndian.Uint64(iterator.Value())
+
+		if cb(height, vscID) {
+			break
+		}
+	}
+}
+
 // OutstandingDowntime returns the outstanding downtime flag for a given validator
 func (k Keeper) OutstandingDowntime(ctx sdk.Context, address sdk.ConsAddress) bool {
 	store := ctx.KVStore(k.storeKey)
@@ -345,6 +363,21 @@ func (k Keeper) ClearOutstandingDowntime(ctx sdk.Context, address string) {
 	}
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.OutstandingDowntimeKey(consAddr))
+}
+
+// IterateOutstandingDowntime iterates over the validator addresses of outstanding downtime flags
+func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address string) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte(types.OutstandingDowntimePrefix))
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		addrBytes := iterator.Key()[len([]byte(types.OutstandingDowntimePrefix)):]
+		addr := sdk.ConsAddress(addrBytes).String()
+		if cb(addr) {
+			break
+		}
+	}
 }
 
 // SetCCValidator sets a cross-chain validator under its validator address

@@ -25,10 +25,11 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// This packet is sent from provider chain to consumer chain if the validator set for consumer chain
-// changes (due to new bonding/unbonding messages or slashing events)
-// A VSCMatured packet from consumer chain will be sent asynchronously once unbonding period is over,
-// and this will function as `UnbondingOver` message for this packet.
+// This packet is sent from provider chain to consumer chain if the validator
+// set for consumer chain changes (due to new bonding/unbonding messages or
+// slashing events) A VSCMatured packet from consumer chain will be sent
+// asynchronously once unbonding period is over, and this will function as
+// `UnbondingOver` message for this packet.
 type ValidatorSetChangePacketData struct {
 	ValidatorUpdates []types.ValidatorUpdate `protobuf:"bytes,1,rep,name=validator_updates,json=validatorUpdates,proto3" json:"validator_updates" yaml:"validator_updates"`
 	ValsetUpdateId   uint64                  `protobuf:"varint,2,opt,name=valset_update_id,json=valsetUpdateId,proto3" json:"valset_update_id,omitempty"`

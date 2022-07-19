@@ -29,26 +29,31 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// CreateConsumerChainProposal is a governance proposal on the provider chain to spawn a new consumer chain.
-// If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
-// or get slashed. It is recommended that spawn time occurs after the proposal end time.
+// CreateConsumerChainProposal is a governance proposal on the provider chain to
+// spawn a new consumer chain. If it passes, then all validators on the provider
+// chain are expected to validate the consumer chain at spawn time or get
+// slashed. It is recommended that spawn time occurs after the proposal end
+// time.
 type CreateConsumerChainProposal struct {
 	// the title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	// the description of the proposal
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	// the proposed chain-id of the new consumer chain, must be different from all other consumer chain ids of the executing
-	// provider chain.
+	// the proposed chain-id of the new consumer chain, must be different from all
+	// other consumer chain ids of the executing provider chain.
 	ChainId string `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	// the proposed initial height of new consumer chain.
-	// For a completely new chain, this will be {0,1}. However, it may be different if this is a chain that is converting to a consumer chain.
+	// For a completely new chain, this will be {0,1}. However, it may be
+	// different if this is a chain that is converting to a consumer chain.
 	InitialHeight types.Height `protobuf:"bytes,4,opt,name=initial_height,json=initialHeight,proto3" json:"initial_height"`
 	// genesis hash with no staking information included.
 	GenesisHash []byte `protobuf:"bytes,5,opt,name=genesis_hash,json=genesisHash,proto3" json:"genesis_hash,omitempty"`
-	// binary hash is the hash of the binary that should be used by validators on chain initialization.
+	// binary hash is the hash of the binary that should be used by validators on
+	// chain initialization.
 	BinaryHash []byte `protobuf:"bytes,6,opt,name=binary_hash,json=binaryHash,proto3" json:"binary_hash,omitempty"`
-	// spawn time is the time on the provider chain at which the consumer chain genesis is finalized and all validators
-	// will be responsible for starting their consumer chain validator node.
+	// spawn time is the time on the provider chain at which the consumer chain
+	// genesis is finalized and all validators will be responsible for starting
+	// their consumer chain validator node.
 	SpawnTime time.Time `protobuf:"bytes,7,opt,name=spawn_time,json=spawnTime,proto3,stdtime" json:"spawn_time"`
 	// Indicates whether the outstanding unbonding operations should be released
 	// in case of a channel time-outs. When set to true, a governance proposal
@@ -88,9 +93,11 @@ func (m *CreateConsumerChainProposal) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CreateConsumerChainProposal proto.InternalMessageInfo
 
-// StopConsumerProposal is a governance proposal on the provider chain to stop a consumer chain.
-// If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
-// operation funds are released if the LockUnbondingOnTimeout parameter is set to false for the consumer chain ID.
+// StopConsumerProposal is a governance proposal on the provider chain to stop a
+// consumer chain. If it passes, all the consumer chain's state is removed from
+// the provider chain. The outstanding unbonding operation funds are released if
+// the LockUnbondingOnTimeout parameter is set to false for the consumer chain
+// ID.
 type StopConsumerChainProposal struct {
 	// the title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
@@ -98,7 +105,8 @@ type StopConsumerChainProposal struct {
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	// the chain-id of the consumer chain to be stopped
 	ChainId string `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	// the time on the provider chain at which all validators are responsible to stop their consumer chain validator node
+	// the time on the provider chain at which all validators are responsible to
+	// stop their consumer chain validator node
 	StopTime time.Time `protobuf:"bytes,4,opt,name=stop_time,json=stopTime,proto3,stdtime" json:"stop_time"`
 }
 

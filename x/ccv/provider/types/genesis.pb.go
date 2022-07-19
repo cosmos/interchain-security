@@ -77,7 +77,8 @@ func (m *GenesisState) GetParams() Params {
 	return Params{}
 }
 
-// ConsumerState defines the state that the provider chain stores for each consumer chain
+// ConsumerState defines the state that the provider chain stores for each
+// consumer chain
 type ConsumerState struct {
 	ChainId   string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	ChannelId string `protobuf:"bytes,2,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`

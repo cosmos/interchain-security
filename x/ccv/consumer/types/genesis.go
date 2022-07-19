@@ -13,7 +13,7 @@ import (
 
 // NewInitialGenesisState returns a consumer GenesisState for a completely new consumer chain.
 func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
-	initValSet []abci.ValidatorUpdate, params Params) *GenesisState {
+	initValSet []abci.ValidatorUpdate, slashRequests []SlashRequest, params Params) *GenesisState {
 
 	return &GenesisState{
 		Params:                 params,
@@ -21,6 +21,7 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 		ProviderClientState:    cs,
 		ProviderConsensusState: consState,
 		InitialValSet:          initValSet,
+		PendingSlashRequests:   slashRequests,
 	}
 }
 
