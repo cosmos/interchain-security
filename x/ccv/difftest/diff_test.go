@@ -61,8 +61,10 @@ Match constants to model constants
 func init() {
 	// Tokens = Power
 	sdk.DefaultPowerReduction = sdk.NewInt(1)
-	SLASH_DOUBLESIGN = sdk.NewDec(1).Quo(sdk.NewDec(2))
-	SLASH_DOWNTIME = sdk.NewDec(1).Quo(sdk.NewDec(4))
+	// SLASH_DOUBLESIGN = sdk.NewDec(1).Quo(sdk.NewDec(2))
+	// SLASH_DOWNTIME = sdk.NewDec(1).Quo(sdk.NewDec(4))
+	SLASH_DOUBLESIGN = sdk.NewDec(0)
+	SLASH_DOWNTIME = sdk.NewDec(0)
 }
 
 type Ack struct {
@@ -677,7 +679,7 @@ func (s *DTTestSuite) providerSlash(
 ) {
 	s.idempotentBeginBlock(P)
 	s.idempotentDeliverAcks(P)
-	s.stakingKeeperP().Slash(s.ctx(P), val, h, power, factor, -1)
+	// s.stakingKeeperP().Slash(s.ctx(P), val, h, power, factor, -1)
 }
 
 func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64,
@@ -813,7 +815,7 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 }
 
 func (s *DTTestSuite) TestTracesWithSlashing() {
-	for i := 1; i <= 108581; i++ {
+	for i := 1; i <= 250; i++ {
 		fn := fmt.Sprintf("/Users/danwt/Documents/work/interchain-security/diff-test/core/tracesWithSlashing/trace_%d.json", i)
 		traces := loadTraces(fn)
 		fmt.Println("Trace file: ", fn)
