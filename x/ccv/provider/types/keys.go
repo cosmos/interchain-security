@@ -101,58 +101,80 @@ func MaturedUnbondingOpsKey() []byte {
 	return []byte{MaturedUnbondingOpsByteKey}
 }
 
+// ValidatorSetUpdateIdKey is the key that stores the current validator set update id
 func ValidatorSetUpdateIdKey() []byte {
 	return []byte{ValidatorSetUpdateIdByteKey}
 }
 
+// ChainToChannelPrefix is the key prefix for storing mapping
+// from chainID to the channel ID that is used to send over validator set changes.
 func ChainToChannelPrefix() []byte {
 	return []byte{ChainToChannelBytePrefix}
 }
 
+// ChannelToChainPrefix is the key prefix for storing mapping
+// from the CCV channel ID to the consumer chain ID.
 func ChannelToChainPrefix() []byte {
 	return []byte{ChannelToChainBytePrefix}
 }
 
+// ChainToClientPrefix is the key prefix for storing the consumer chainID for a given consumer clientid.
 func ChainToClientPrefix() []byte {
 	return []byte{ChainToClientBytePrefix}
 }
 
+// PendingClientPrefix is the key prefix for storing the pending identified consumer chain client before the spawn time occurs.
+// The key includes the BigEndian timestamp to allow for efficient chronological iteration
 func PendingClientPrefix() []byte {
 	return []byte{PendingClientBytePrefix}
 }
 
+// PendingStopProposalPrefix is the key prefix for storing the pending identified consumer chain before the stop time occurs.
+// The key includes the BigEndian timestamp to allow for efficient chronological iteration
 func PendingStopProposalPrefix() []byte {
 	return []byte{PendingStopProposalBytePrefix}
 }
 
+// UnbondingOpPrefix is the key prefix that stores a record of all the ids of consumer chains that
+// need to unbond before a given delegation can unbond on this chain.
 func UnbondingOpPrefix() []byte {
 	return []byte{UnbondingOpBytePrefix}
 }
 
+// UnbondingOpIndexPrefix is key prefix of the index for looking up which unbonding
+// delegation entries are waiting for a given consumer chain to unbond
 func UnbondingOpIndexPrefix() []byte {
 	return []byte{UnbondingOpIndexBytePrefix}
 }
 
+// ValsetUpdateBlockHeightPrefix is the key prefix that will store the mapping from valset update ID to block height
 func ValsetUpdateBlockHeightPrefix() []byte {
 	return []byte{ValsetUpdateBlockHeightBytePrefix}
 }
 
+// ConsumerGenesisPrefix is the key corresponding to consumer genesis state material
+// (consensus state and client state) indexed by consumer chain id
 func ConsumerGenesisPrefix() []byte {
 	return []byte{ConsumerGenesisBytePrefix}
 }
 
+// SlashAcksPrefix is the key prefix that will store consensus address of consumer chain validators successfully slashed on the provider chain
 func SlashAcksPrefix() []byte {
 	return []byte{SlashAcksBytePrefix}
 }
 
+// InitChainHeightPrefix is the key prefix that will store the mapping from a chain id to the corresponding block height on the provider
+// this consumer chain was initialized
 func InitChainHeightPrefix() []byte {
 	return []byte{InitChainHeightBytePrefix}
 }
 
+// PendingVSCsPrefix is the key prefix that will store pending ValidatorSetChangePacket data
 func PendingVSCsPrefix() []byte {
 	return []byte{PendingVSCsBytePrefix}
 }
 
+// LockUnbondingOnTimeoutPrefix is the key prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
 func LockUnbondingOnTimeoutPrefix() []byte {
 	return []byte{LockUnbondingOnTimeoutBytePrefix}
 }
@@ -248,6 +270,7 @@ func UnbondingOpIndexKey(chainID string, valsetUpdateID uint64) []byte {
 		sdk.Uint64ToBigEndian(valsetUpdateID))
 }
 
+// Parses an unbonding op index key for VSC ID
 func ParseUnbondingOpIndexKey(key []byte) (vscID []byte, err error) {
 	keySplit := bytes.Split(key, []byte("/"))
 	if len(keySplit) != 2 {
@@ -258,20 +281,25 @@ func ParseUnbondingOpIndexKey(key []byte) (vscID []byte, err error) {
 	return keySplit[1], nil
 }
 
+// Returns the key that stores a record of all the ids of consumer chains that
+// need to unbond before a given delegation can unbond on this chain
 func UnbondingOpKey(id uint64) []byte {
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, id)
 	return append(UnbondingOpPrefix(), bz...)
 }
 
+// Returns the key that storing the mapping from valset update ID to block height
 func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
 	vuidBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(vuidBytes, valsetUpdateId)
 	return append(ValsetUpdateBlockHeightPrefix(), vuidBytes...)
 }
 
+// Returns the key corresponding to consumer genesis state material
+// (consensus state and client state) indexed by consumer chain id
 func ConsumerGenesisKey(chainID string) []byte {
-	return append(ConsumerGenesisPrefix(), []byte("/"+chainID)...)
+	return append(ConsumerGenesisPrefix(), []byte(chainID)...)
 }
 
 // SlashAcksKey returns the key under which slashing acks are stored for a given chain ID
@@ -290,6 +318,8 @@ func PendingVSCsKey(chainID string) []byte {
 	return append(PendingVSCsPrefix(), []byte("/"+chainID)...)
 }
 
+// Returns the key that will store the consumer chain id which unbonding operations are locked
+// on CCV channel timeout
 func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return append(LockUnbondingOnTimeoutPrefix(), []byte("/"+chainID)...)
 }
