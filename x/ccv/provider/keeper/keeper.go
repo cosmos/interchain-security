@@ -333,7 +333,7 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 // IterateOverUnbondingOpIndex iterates over the unbonding indexes for a given chain id.
 func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb func(vscID uint64, ubdIndex []uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
-	prefix := append(types.UnbondingOpIndexPrefix(), []byte(chainID)...)
+	prefix := append(types.UnbondingOpIndexPrefix(), types.HashString(chainID)...)
 	iterator := sdk.KVStorePrefixIterator(store, prefix)
 
 	defer iterator.Close()

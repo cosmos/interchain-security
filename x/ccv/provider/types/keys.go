@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"time"
@@ -241,8 +242,9 @@ func ParsePendingStopProposalKey(bz []byte) (time.Time, string, error) {
 	return timestamp, chainID, nil
 }
 
+// chainId is hashed to a fixed length sequence of bytes here to prevent injection attack between chainIDs.
 func UnbondingOpIndexKey(chainID string, valsetUpdateID uint64) []byte {
-	return AppendMany(UnbondingOpIndexPrefix(), []byte(chainID), []byte("/"),
+	return AppendMany(UnbondingOpIndexPrefix(), HashString(chainID), []byte("/"),
 		sdk.Uint64ToBigEndian(valsetUpdateID))
 }
 
@@ -298,4 +300,10 @@ func AppendMany(byteses ...[]byte) (out []byte) {
 		out = append(out, bytes...)
 	}
 	return out
+}
+
+// Outputs a fixed length 32 byte hash for any string
+func HashString(x string) []byte {
+	hash := sha256.Sum256([]byte(x))
+	return hash[:]
 }
