@@ -18,7 +18,6 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -37,15 +36,23 @@ type ProviderTestSuite struct {
 	coordinator *ibctesting.Coordinator
 
 	// testing chains
-	providerChain *ibctesting.TestChain
-	consumerChain *ibctesting.TestChain
+	providerChain     *ibctesting.TestChain
+	consumerChain     *ibctesting.TestChain
+	consumerChainType simapp.ConsumerChainType
 
 	path         *ibctesting.Path
 	transferPath *ibctesting.Path
 }
 
+func (suite *ProviderTestSuite) RunForAllConsumerChains(testFn func()) {
+	for _, consumerChainType := range simapp.GetAllConsumerChainTypes() {
+		suite.consumerChainType = consumerChainType
+		testFn()
+	}
+}
+
 func (suite *ProviderTestSuite) SetupTest() {
-	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
+	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T(), suite.consumerChainType)
 
 	// valsets must match
 	providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
@@ -78,7 +85,7 @@ func (suite *ProviderTestSuite) SetupTest() {
 		suite.consumerChain.ChainID,
 	)
 	suite.Require().True(found, "consumer genesis not found")
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
+	simapp.GetConsumerKeeper(suite.consumerChain.App).InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
 
 	// create path for the CCV channel
 	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
@@ -92,7 +99,7 @@ func (suite *ProviderTestSuite) SetupTest() {
 	suite.Require().True(found, "consumer client not found")
 	suite.path.EndpointB.ClientID = consumerClient
 	// - set consumer endpoint's clientID
-	providerClient, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
+	providerClient, found := simapp.GetConsumerKeeper(suite.consumerChain.App).GetProviderClient(suite.consumerChain.GetContext())
 	suite.Require().True(found, "provider client not found")
 	suite.path.EndpointA.ClientID = providerClient
 	// - client config
@@ -163,8 +170,8 @@ func (suite *ProviderTestSuite) SetupTransferChannel() {
 
 	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
 	// so transfer channel will be on stage INIT when CompleteSetupCCVChannel returns.
-	suite.transferPath.EndpointA.ChannelID = suite.consumerChain.App.(*appConsumer.App).
-		ConsumerKeeper.GetDistributionTransmissionChannel(suite.consumerChain.GetContext())
+	suite.transferPath.EndpointA.ChannelID = simapp.GetConsumerKeeper(suite.consumerChain.App).
+		GetDistributionTransmissionChannel(suite.consumerChain.GetContext())
 
 	// Complete TRY, ACK, CONFIRM for transfer path
 	err := suite.transferPath.EndpointB.ChanOpenTry()
@@ -182,7 +189,10 @@ func (suite *ProviderTestSuite) SetupTransferChannel() {
 }
 
 func TestProviderTestSuite(t *testing.T) {
-	suite.Run(t, new(ProviderTestSuite))
+	providerSuite := new(ProviderTestSuite)
+	providerSuite.RunForAllConsumerChains(func() {
+		suite.Run(t, providerSuite)
+	})
 }
 
 func (s *ProviderTestSuite) TestPacketRoundtrip() {
@@ -226,7 +236,7 @@ func (s *ProviderTestSuite) TestSendSlashPacketDowntime() {
 	providerStakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
 	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
 
-	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	consumerKeeper := simapp.GetConsumerKeeper(s.consumerChain.App)
 
 	// get a cross-chain validator address, pubkey and balance
 	tmVals := s.consumerChain.Vals.Validators
@@ -268,7 +278,7 @@ func (s *ProviderTestSuite) TestSendSlashPacketDowntime() {
 	s.Require().NoError(err)
 
 	// Set outstanding slashing flag
-	s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consAddr)
+	simapp.GetConsumerKeeper(s.consumerChain.App).SetOutstandingDowntime(s.consumerCtx(), consAddr)
 
 	// save next VSC packet info
 	oldBlockTime = s.providerCtx().BlockTime()
@@ -330,7 +340,7 @@ func (s *ProviderTestSuite) TestSendSlashPacketDowntime() {
 	s.Require().True(valSignInfo.JailedUntil.After(s.providerCtx().BlockHeader().Time))
 
 	// check that the outstanding slashing flag is reset on the consumer
-	pFlag := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OutstandingDowntime(s.consumerCtx(), consAddr)
+	pFlag := simapp.GetConsumerKeeper(s.consumerChain.App).OutstandingDowntime(s.consumerCtx(), consAddr)
 	s.Require().False(pFlag)
 
 	// check that slashing packet gets acknowledged
@@ -345,7 +355,7 @@ func (s *ProviderTestSuite) TestSendSlashPacketDoubleSign() {
 
 	providerStakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
 	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
-	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	consumerKeeper := simapp.GetConsumerKeeper(s.consumerChain.App)
 
 	// get a cross-chain validator address, pubkey and balance
 	tmVals := s.consumerChain.Vals.Validators
@@ -462,7 +472,7 @@ func (s *ProviderTestSuite) getVal(index int) (validator stakingtypes.Validator,
 
 func (s *ProviderTestSuite) TestSlashPacketAcknowldgement() {
 	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
-	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	consumerKeeper := simapp.GetConsumerKeeper(s.consumerChain.App)
 
 	packet := channeltypes.NewPacket([]byte{}, 1, consumertypes.PortID, s.path.EndpointA.ChannelID,
 		providertypes.PortID, "wrongchannel", clienttypes.Height{}, 0)

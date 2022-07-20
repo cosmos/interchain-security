@@ -18,7 +18,6 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -38,8 +37,9 @@ type KeeperTestSuite struct {
 	coordinator *ibctesting.Coordinator
 
 	// testing chains
-	providerChain *ibctesting.TestChain
-	consumerChain *ibctesting.TestChain
+	providerChain     *ibctesting.TestChain
+	consumerChain     *ibctesting.TestChain
+	consumerChainType simapp.ConsumerChainType
 
 	providerClient    *ibctmtypes.ClientState
 	providerConsState *ibctmtypes.ConsensusState
@@ -49,8 +49,15 @@ type KeeperTestSuite struct {
 	ctx sdk.Context
 }
 
+func (suite *KeeperTestSuite) RunForAllConsumerChains(testFn func()) {
+	for _, consumerChainType := range simapp.GetAllConsumerChainTypes() {
+		suite.consumerChainType = consumerChainType
+		testFn()
+	}
+}
+
 func (suite *KeeperTestSuite) SetupTest() {
-	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
+	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T(), suite.consumerChainType)
 
 	// valsets must match
 	providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
@@ -83,7 +90,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 		suite.consumerChain.ChainID,
 	)
 	suite.Require().True(found, "consumer genesis not found")
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
+	simapp.GetConsumerKeeper(suite.consumerChain.App).InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
 	suite.providerClient = consumerGenesis.ProviderClientState
 	suite.providerConsState = consumerGenesis.ProviderConsensusState
 
@@ -99,7 +106,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.Require().True(found, "consumer client not found")
 	suite.path.EndpointB.ClientID = consumerClient
 	// - set consumer endpoint's clientID
-	providerClient, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
+	providerClient, found := simapp.GetConsumerKeeper(suite.consumerChain.App).GetProviderClient(suite.consumerChain.GetContext())
 	suite.Require().True(found, "provider client not found")
 	suite.path.EndpointA.ClientID = providerClient
 	// - client config
@@ -134,19 +141,18 @@ func (suite *KeeperTestSuite) SetupCCVChannel() {
 
 func (suite *KeeperTestSuite) TestUnbondingTime() {
 	// The unbonding time on the consumer was already set during InitGenesis()
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeleteUnbondingTime(suite.ctx)
-	_, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
+	simapp.GetConsumerKeeper(suite.consumerChain.App).DeleteUnbondingTime(suite.ctx)
+	_, ok := simapp.GetConsumerKeeper(suite.consumerChain.App).GetUnbondingTime(suite.ctx)
 	suite.Require().False(ok)
 	unbondingPeriod := time.Hour * 24 * 7 * 3
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, unbondingPeriod)
-	storedUnbondingPeriod, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
+	simapp.GetConsumerKeeper(suite.consumerChain.App).SetUnbondingTime(suite.ctx, unbondingPeriod)
+	storedUnbondingPeriod, ok := simapp.GetConsumerKeeper(suite.consumerChain.App).GetUnbondingTime(suite.ctx)
 	suite.Require().True(ok)
 	suite.Require().True(storedUnbondingPeriod == unbondingPeriod)
-
 }
 
 func (suite *KeeperTestSuite) TestProviderClient() {
-	providerClient, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.ctx)
+	providerClient, ok := simapp.GetConsumerKeeper(suite.consumerChain.App).GetProviderClient(suite.ctx)
 	suite.Require().True(ok)
 
 	clientState, _ := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClient)
@@ -154,10 +160,10 @@ func (suite *KeeperTestSuite) TestProviderClient() {
 }
 
 func (suite *KeeperTestSuite) TestProviderChannel() {
-	_, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.ctx)
+	_, ok := simapp.GetConsumerKeeper(suite.consumerChain.App).GetProviderChannel(suite.ctx)
 	suite.Require().False(ok)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetProviderChannel(suite.ctx, "channelID")
-	channelID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.ctx)
+	simapp.GetConsumerKeeper(suite.consumerChain.App).SetProviderChannel(suite.ctx, "channelID")
+	channelID, ok := simapp.GetConsumerKeeper(suite.consumerChain.App).GetProviderChannel(suite.ctx)
 	suite.Require().True(ok)
 	suite.Require().Equal("channelID", channelID)
 }
@@ -183,35 +189,35 @@ func (suite *KeeperTestSuite) TestPendingChanges() {
 		nil,
 	)
 
-	err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingChanges(suite.ctx, pd)
+	err = simapp.GetConsumerKeeper(suite.consumerChain.App).SetPendingChanges(suite.ctx, pd)
 	suite.Require().NoError(err)
-	gotPd, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPendingChanges(suite.ctx)
+	gotPd, ok := simapp.GetConsumerKeeper(suite.consumerChain.App).GetPendingChanges(suite.ctx)
 	suite.Require().True(ok)
 	suite.Require().Equal(&pd, gotPd, "packet data in store does not equal packet data set")
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeletePendingChanges(suite.ctx)
-	gotPd, ok = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPendingChanges(suite.ctx)
+	simapp.GetConsumerKeeper(suite.consumerChain.App).DeletePendingChanges(suite.ctx)
+	gotPd, ok = simapp.GetConsumerKeeper(suite.consumerChain.App).GetPendingChanges(suite.ctx)
 	suite.Require().False(ok)
 	suite.Require().Nil(gotPd, "got non-nil pending changes after Delete")
 }
 
 func (suite *KeeperTestSuite) TestPacketMaturityTime() {
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPacketMaturityTime(suite.ctx, 1, 10)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPacketMaturityTime(suite.ctx, 2, 25)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPacketMaturityTime(suite.ctx, 5, 15)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPacketMaturityTime(suite.ctx, 6, 40)
+	simapp.GetConsumerKeeper(suite.consumerChain.App).SetPacketMaturityTime(suite.ctx, 1, 10)
+	simapp.GetConsumerKeeper(suite.consumerChain.App).SetPacketMaturityTime(suite.ctx, 2, 25)
+	simapp.GetConsumerKeeper(suite.consumerChain.App).SetPacketMaturityTime(suite.ctx, 5, 15)
+	simapp.GetConsumerKeeper(suite.consumerChain.App).SetPacketMaturityTime(suite.ctx, 6, 40)
 
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeletePacketMaturityTime(suite.ctx, 6)
+	simapp.GetConsumerKeeper(suite.consumerChain.App).DeletePacketMaturityTime(suite.ctx, 6)
 
-	suite.Require().Equal(uint64(10), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 1))
-	suite.Require().Equal(uint64(25), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 2))
-	suite.Require().Equal(uint64(15), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 5))
-	suite.Require().Equal(uint64(0), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 3))
-	suite.Require().Equal(uint64(0), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 6))
+	suite.Require().Equal(uint64(10), simapp.GetConsumerKeeper(suite.consumerChain.App).GetPacketMaturityTime(suite.ctx, 1))
+	suite.Require().Equal(uint64(25), simapp.GetConsumerKeeper(suite.consumerChain.App).GetPacketMaturityTime(suite.ctx, 2))
+	suite.Require().Equal(uint64(15), simapp.GetConsumerKeeper(suite.consumerChain.App).GetPacketMaturityTime(suite.ctx, 5))
+	suite.Require().Equal(uint64(0), simapp.GetConsumerKeeper(suite.consumerChain.App).GetPacketMaturityTime(suite.ctx, 3))
+	suite.Require().Equal(uint64(0), simapp.GetConsumerKeeper(suite.consumerChain.App).GetPacketMaturityTime(suite.ctx, 6))
 
 	orderedTimes := [][]uint64{{1, 10}, {2, 25}, {5, 15}}
 	i := 0
 
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IteratePacketMaturityTime(suite.ctx, func(seq, time uint64) bool {
+	simapp.GetConsumerKeeper(suite.consumerChain.App).IteratePacketMaturityTime(suite.ctx, func(seq, time uint64) bool {
 		// require that we iterate through unbonding time in order of sequence
 		suite.Require().Equal(orderedTimes[i][0], seq)
 		suite.Require().Equal(orderedTimes[i][1], time)
@@ -298,7 +304,7 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 			tc.setup(suite)
 
 			// Verify ProviderChain on consumer chain using path returned by setup
-			err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.VerifyProviderChain(suite.ctx, channelID, connectionHops)
+			err := simapp.GetConsumerKeeper(suite.consumerChain.App).VerifyProviderChain(suite.ctx, channelID, connectionHops)
 
 			if tc.expError {
 				suite.Require().Error(err, "invalid case did not return error")
@@ -355,11 +361,14 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	// sync suite context after CCV channel is established
 	suite.ctx = suite.consumerChain.GetContext()
 
-	app := suite.consumerChain.App.(*appConsumer.App)
+	app := suite.consumerChain.App
+	consumerKeeper := simapp.GetConsumerKeeper(app)
+	slashingKeeper := simapp.GetSlashingKeeper(app)
+
 	channelID := suite.path.EndpointA.ChannelID
 
 	// pick a cross-chain validator
-	vals := app.ConsumerKeeper.GetAllCCValidator(suite.ctx)
+	vals := consumerKeeper.GetAllCCValidator(suite.ctx)
 	consAddr := sdk.ConsAddress(vals[0].Address)
 
 	// save next sequence before sending a slash packet
@@ -368,19 +377,19 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 
 	// Sign 100 blocks
 	valPower := int64(1)
-	height, signedBlocksWindow := int64(0), app.SlashingKeeper.SignedBlocksWindow(suite.ctx)
+	height, signedBlocksWindow := int64(0), slashingKeeper.SignedBlocksWindow(suite.ctx)
 	for ; height < signedBlocksWindow; height++ {
 		suite.ctx = suite.ctx.WithBlockHeight(height)
-		app.SlashingKeeper.HandleValidatorSignature(suite.ctx, vals[0].Address, valPower, true)
+		slashingKeeper.HandleValidatorSignature(suite.ctx, vals[0].Address, valPower, true)
 	}
 
-	missedBlockThreshold := (2 * signedBlocksWindow) - app.SlashingKeeper.MinSignedPerWindow(suite.ctx)
+	missedBlockThreshold := (2 * signedBlocksWindow) - slashingKeeper.MinSignedPerWindow(suite.ctx)
 
 	// construct slash packet to be sent and get its commit
 	packetData := ccv.NewSlashPacketData(
 		abci.Validator{Address: vals[0].Address, Power: valPower},
 		// get the VSC ID mapping the infraction height
-		app.ConsumerKeeper.GetHeightValsetUpdateID(suite.ctx, uint64(missedBlockThreshold-sdk.ValidatorUpdateDelay-1)),
+		consumerKeeper.GetHeightValsetUpdateID(suite.ctx, uint64(missedBlockThreshold-sdk.ValidatorUpdateDelay-1)),
 		stakingtypes.Downtime,
 	)
 	expCommit := suite.commitSlashPacket(suite.ctx, packetData)
@@ -388,40 +397,40 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	// Miss 50 blocks and expect a slash packet to be sent
 	for ; height <= missedBlockThreshold; height++ {
 		suite.ctx = suite.ctx.WithBlockHeight(height)
-		app.SlashingKeeper.HandleValidatorSignature(suite.ctx, vals[0].Address, valPower, false)
+		slashingKeeper.HandleValidatorSignature(suite.ctx, vals[0].Address, valPower, false)
 	}
 
 	// check validator signing info
-	res, _ := app.SlashingKeeper.GetValidatorSigningInfo(suite.ctx, consAddr)
+	res, _ := slashingKeeper.GetValidatorSigningInfo(suite.ctx, consAddr)
 	// expect increased jail time
-	suite.Require().True(res.JailedUntil.Equal(suite.ctx.BlockTime().Add(app.SlashingKeeper.DowntimeJailDuration(suite.ctx))), "did not update validator jailed until signing info")
+	suite.Require().True(res.JailedUntil.Equal(suite.ctx.BlockTime().Add(slashingKeeper.DowntimeJailDuration(suite.ctx))), "did not update validator jailed until signing info")
 	// expect missed block counters reseted
 	suite.Require().Zero(res.MissedBlocksCounter, "did not reset validator missed block counter")
 	suite.Require().Zero(res.IndexOffset)
-	app.SlashingKeeper.IterateValidatorMissedBlockBitArray(suite.ctx, consAddr, func(_ int64, missed bool) bool {
+	slashingKeeper.IterateValidatorMissedBlockBitArray(suite.ctx, consAddr, func(_ int64, missed bool) bool {
 		suite.Require().True(missed)
 		return false
 	})
 
 	// verify that the slash packet was sent
-	gotCommit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(suite.ctx, types.PortID, channelID, seq)
+	gotCommit := app.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(suite.ctx, types.PortID, channelID, seq)
 	suite.Require().NotNil(gotCommit, "did not found slash packet commitment")
 	suite.Require().EqualValues(expCommit, gotCommit, "invalid slash packet commitment")
 
 	// verify that the slash packet was sent
-	suite.Require().True(app.ConsumerKeeper.OutstandingDowntime(suite.ctx, consAddr))
+	suite.Require().True(consumerKeeper.OutstandingDowntime(suite.ctx, consAddr))
 
 	// check that the outstanding slashing flag prevents the jailed validator to keep missing block
 	for ; height < missedBlockThreshold+signedBlocksWindow; height++ {
 		suite.ctx = suite.ctx.WithBlockHeight(height)
-		app.SlashingKeeper.HandleValidatorSignature(suite.ctx, vals[0].Address, valPower, false)
+		slashingKeeper.HandleValidatorSignature(suite.ctx, vals[0].Address, valPower, false)
 	}
 
-	res, _ = app.SlashingKeeper.GetValidatorSigningInfo(suite.ctx, consAddr)
+	res, _ = slashingKeeper.GetValidatorSigningInfo(suite.ctx, consAddr)
 
 	suite.Require().Zero(res.MissedBlocksCounter, "did not reset validator missed block counter")
 	suite.Require().Zero(res.IndexOffset)
-	app.SlashingKeeper.IterateValidatorMissedBlockBitArray(suite.ctx, consAddr, func(_ int64, missed bool) bool {
+	slashingKeeper.IterateValidatorMissedBlockBitArray(suite.ctx, consAddr, func(_ int64, missed bool) bool {
 		suite.Require().True(missed, "did not reset validator missed block bit array")
 		return false
 	})
@@ -437,8 +446,12 @@ func (suite *KeeperTestSuite) TestValidatorDoubleSigning() {
 	// sync suite context after CCV channel is established
 	suite.ctx = suite.consumerChain.GetContext()
 
-	app := suite.consumerChain.App.(*appConsumer.App)
+	app := suite.consumerChain.App
 	channelID := suite.path.EndpointA.ChannelID
+
+	consumerKeeper := simapp.GetConsumerKeeper(app)
+	slashingKeeper := simapp.GetSlashingKeeper(app)
+	evidenceKeeper := simapp.GetEvidenceKeeper(app)
 
 	// create a validator pubkey and address
 	// note that the validator wont't necessarily be in valset to due the TM delay
@@ -458,7 +471,7 @@ func (suite *KeeperTestSuite) TestValidatorDoubleSigning() {
 	}
 
 	// add validator signing-info to the store
-	app.SlashingKeeper.SetValidatorSigningInfo(suite.ctx, consAddr, slashingtypes.ValidatorSigningInfo{
+	slashingKeeper.SetValidatorSigningInfo(suite.ctx, consAddr, slashingtypes.ValidatorSigningInfo{
 		Address:    consAddr.String(),
 		Tombstoned: false,
 	})
@@ -471,16 +484,16 @@ func (suite *KeeperTestSuite) TestValidatorDoubleSigning() {
 	packetData := ccv.NewSlashPacketData(
 		abci.Validator{Address: consAddr.Bytes(), Power: power},
 		// get VSC ID mapping to the infraction height with the TM delay substracted
-		app.ConsumerKeeper.GetHeightValsetUpdateID(suite.ctx, uint64(infractionHeight-sdk.ValidatorUpdateDelay)),
+		consumerKeeper.GetHeightValsetUpdateID(suite.ctx, uint64(infractionHeight-sdk.ValidatorUpdateDelay)),
 		stakingtypes.DoubleSign,
 	)
 	expCommit := suite.commitSlashPacket(suite.ctx, packetData)
 
 	// expect to send slash packet when handling double-sign evidence
-	app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, e)
+	evidenceKeeper.HandleEquivocationEvidence(suite.ctx, e)
 
 	// check that slash packet is sent
-	gotCommit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(suite.ctx, types.PortID, channelID, seq)
+	gotCommit := app.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(suite.ctx, types.PortID, channelID, seq)
 	suite.NotNil(gotCommit)
 
 	suite.Require().EqualValues(expCommit, gotCommit)
@@ -489,12 +502,13 @@ func (suite *KeeperTestSuite) TestValidatorDoubleSigning() {
 func (suite *KeeperTestSuite) TestSendSlashPacket() {
 	suite.SetupCCVChannel()
 
-	app := suite.consumerChain.App.(*appConsumer.App)
+	app := suite.consumerChain.App
 	ctx := suite.consumerChain.GetContext()
 	channelID := suite.path.EndpointA.ChannelID
 
+	consumerKeeper := simapp.GetConsumerKeeper(app)
 	// check that CCV channel isn't established
-	_, ok := app.ConsumerKeeper.GetProviderChannel(ctx)
+	_, ok := consumerKeeper.GetProviderChannel(ctx)
 	suite.Require().False(ok)
 
 	// expect to store 4 slash requests for downtime
@@ -511,7 +525,7 @@ func (suite *KeeperTestSuite) TestSendSlashPacket() {
 			addr := ed25519.GenPrivKey().PubKey().Address()
 			val := abci.Validator{
 				Address: addr}
-			app.ConsumerKeeper.SendSlashPacket(ctx, val, 0, infraction)
+			consumerKeeper.SendSlashPacket(ctx, val, 0, infraction)
 			slashedVals = append(slashedVals, slashedVal{validator: val, infraction: infraction})
 		}
 		infraction = stakingtypes.DoubleSign
@@ -520,11 +534,11 @@ func (suite *KeeperTestSuite) TestSendSlashPacket() {
 	// expect to store a duplicate for each slash request
 	// in order to test the outstanding downtime logic
 	for _, sv := range slashedVals {
-		app.ConsumerKeeper.SendSlashPacket(ctx, sv.validator, 0, sv.infraction)
+		consumerKeeper.SendSlashPacket(ctx, sv.validator, 0, sv.infraction)
 	}
 
 	// verify that all requests are stored
-	requests := app.ConsumerKeeper.GetPendingSlashRequests(ctx)
+	requests := consumerKeeper.GetPendingSlashRequests(ctx)
 	suite.Require().Len(requests, 16)
 
 	// save consumer next sequence
@@ -536,7 +550,7 @@ func (suite *KeeperTestSuite) TestSendSlashPacket() {
 	// check that each pending slash requests is sent once
 	// and that the downtime slash request duplicates are skipped (due to the outstanding downtime flag)
 	for i := 0; i < 16; i++ {
-		commit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, types.PortID, channelID, seq+uint64(i))
+		commit := app.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(ctx, types.PortID, channelID, seq+uint64(i))
 		if i > 11 {
 			suite.Require().Nil(commit)
 			continue
@@ -550,28 +564,28 @@ func (suite *KeeperTestSuite) TestSendSlashPacket() {
 		downtime := r.Infraction == stakingtypes.Downtime
 		if downtime {
 			consAddr := sdk.ConsAddress(r.Packet.Validator.Address)
-			suite.Require().True(app.ConsumerKeeper.OutstandingDowntime(ctx, consAddr))
+			suite.Require().True(consumerKeeper.OutstandingDowntime(ctx, consAddr))
 		}
 	}
 
 	// check that pending slash requests get cleared after being sent
-	requests = app.ConsumerKeeper.GetPendingSlashRequests(ctx)
+	requests = consumerKeeper.GetPendingSlashRequests(ctx)
 	suite.Require().Len(requests, 0)
 
 	// check that slash requests aren't stored when channel is established
-	app.ConsumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.Downtime)
-	app.ConsumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.DoubleSign)
+	consumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.Downtime)
+	consumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.DoubleSign)
 
-	requests = app.ConsumerKeeper.GetPendingSlashRequests(ctx)
+	requests = consumerKeeper.GetPendingSlashRequests(ctx)
 	suite.Require().Len(requests, 0)
 }
 
 func (suite *KeeperTestSuite) TestCrossChainValidator() {
-	app := suite.consumerChain.App.(*appConsumer.App)
 	ctx := suite.consumerChain.GetContext()
+	consumerKeeper := simapp.GetConsumerKeeper(suite.consumerChain.App)
 
 	// should return false
-	_, foud := app.ConsumerKeeper.GetCCValidator(ctx, ed25519.GenPrivKey().PubKey().Address())
+	_, foud := consumerKeeper.GetCCValidator(ctx, ed25519.GenPrivKey().PubKey().Address())
 	suite.Require().False(foud)
 
 	// get a validator from consumer chain
@@ -585,10 +599,10 @@ func (suite *KeeperTestSuite) TestCrossChainValidator() {
 	ccVal, err := types.NewCCValidator(val.Address, 1000, pubkey)
 	suite.Require().NoError(err)
 
-	app.ConsumerKeeper.SetCCValidator(ctx, ccVal)
+	consumerKeeper.SetCCValidator(ctx, ccVal)
 
 	// should return true
-	gotCCVal, found := app.ConsumerKeeper.GetCCValidator(ctx, ccVal.Address)
+	gotCCVal, found := consumerKeeper.GetCCValidator(ctx, ccVal.Address)
 	suite.Require().True(found)
 
 	// verify the returned validator values
@@ -603,15 +617,15 @@ func (suite *KeeperTestSuite) TestCrossChainValidator() {
 	suite.Require().True(pk.Equals(gotPK))
 
 	// delete validator
-	app.ConsumerKeeper.DeleteCCValidator(ctx, ccVal.Address)
+	consumerKeeper.DeleteCCValidator(ctx, ccVal.Address)
 
 	// should return false
-	_, foud = app.ConsumerKeeper.GetCCValidator(ctx, ccVal.Address)
+	_, foud = consumerKeeper.GetCCValidator(ctx, ccVal.Address)
 	suite.Require().False(foud)
 }
 
 func (suite *KeeperTestSuite) TestPendingSlashRequests() {
-	consumerKeeper := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	consumerKeeper := simapp.GetConsumerKeeper(suite.consumerChain.App)
 	ctx := suite.consumerChain.GetContext()
 
 	// prepare test setup by storing 10 pending slash requests
@@ -674,7 +688,10 @@ func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
 }
 
 func TestKeeperTestSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
+	keeperSuite := new(KeeperTestSuite)
+	keeperSuite.RunForAllConsumerChains(func() {
+		suite.Run(t, keeperSuite)
+	})
 }
 
 // commitSlashPacket returns a commit hash for the given slash packet data

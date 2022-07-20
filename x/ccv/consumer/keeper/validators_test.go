@@ -5,7 +5,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
@@ -14,7 +14,7 @@ import (
 )
 
 func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
-	consumerKeeper := k.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	consumerKeeper := simapp.GetConsumerKeeper(k.consumerChain.App)
 	ctx := k.ctx
 
 	// utility functions
@@ -112,7 +112,7 @@ func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
 }
 
 func (k KeeperTestSuite) TestHistoricalInfo() {
-	consumerKeeper := k.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	consumerKeeper := simapp.GetConsumerKeeper(k.consumerChain.App)
 	cCtx := k.consumerChain.GetContext
 
 	// get consumer validators
@@ -148,7 +148,7 @@ func (k KeeperTestSuite) TestHistoricalInfo() {
 }
 
 func (k KeeperTestSuite) TestTrackHistoricalInfo() {
-	consumerKeeper := k.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	consumerKeeper := simapp.GetConsumerKeeper(k.consumerChain.App)
 	cCtx := k.consumerChain.GetContext
 
 	// save init consumer valset length
@@ -184,7 +184,7 @@ func (k KeeperTestSuite) TestTrackHistoricalInfo() {
 				Height:  newHeight,
 			}
 			ctx := k.consumerChain.GetContext().WithBlockHeader(header)
-			k.consumerChain.App.(*appConsumer.App).ConsumerKeeper.TrackHistoricalInfo(ctx)
+			simapp.GetConsumerKeeper(k.consumerChain.App).TrackHistoricalInfo(ctx)
 		},
 	}
 

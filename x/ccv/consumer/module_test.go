@@ -16,7 +16,6 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/consumer"
@@ -37,16 +36,24 @@ type ConsumerTestSuite struct {
 	coordinator *ibctesting.Coordinator
 
 	// testing chains
-	providerChain *ibctesting.TestChain
-	consumerChain *ibctesting.TestChain
+	providerChain     *ibctesting.TestChain
+	consumerChain     *ibctesting.TestChain
+	consumerChainType simapp.ConsumerChainType
 
 	path *ibctesting.Path
 
 	ctx sdk.Context
 }
 
+func (suite *ConsumerTestSuite) RunForAllConsumerChains(testFn func()) {
+	for _, consumerChainType := range simapp.GetAllConsumerChainTypes() {
+		suite.consumerChainType = consumerChainType
+		testFn()
+	}
+}
+
 func (suite *ConsumerTestSuite) SetupTest() {
-	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
+	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T(), suite.consumerChainType)
 
 	// valsets must match
 	providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
@@ -79,7 +86,7 @@ func (suite *ConsumerTestSuite) SetupTest() {
 		suite.consumerChain.ChainID,
 	)
 	suite.Require().True(found, "consumer genesis not found")
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
+	simapp.GetConsumerKeeper(suite.consumerChain.App).InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
 
 	// create path for the CCV channel
 	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
@@ -93,7 +100,7 @@ func (suite *ConsumerTestSuite) SetupTest() {
 	suite.Require().True(found, "consumer client not found")
 	suite.path.EndpointB.ClientID = consumerClient
 	// - set consumer endpoint's clientID
-	providerClient, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
+	providerClient, found := simapp.GetConsumerKeeper(suite.consumerChain.App).GetProviderClient(suite.consumerChain.GetContext())
 	suite.Require().True(found, "provider client not found")
 	suite.path.EndpointA.ClientID = providerClient
 	// - client config
@@ -146,7 +153,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 		{
 			name: "invalid: provider channel already established",
 			setup: func(suite *ConsumerTestSuite) {
-				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetProviderChannel(suite.ctx, "channel-2")
+				simapp.GetConsumerKeeper(suite.consumerChain.App).SetProviderChannel(suite.ctx, "channel-2")
 				// Set INIT channel on consumer chain
 				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, channelID,
 					channeltypes.NewChannel(
@@ -249,7 +256,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 			suite.SetupTest() // reset suite
 			tc.setup(suite)
 
-			consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
+			consumerModule := consumer.NewAppModule(simapp.GetConsumerKeeper(suite.consumerChain.App))
 			chanCap, err := suite.consumerChain.App.GetScopedIBCKeeper().NewCapability(suite.ctx, host.ChannelCapabilityPath(consumertypes.PortID, suite.path.EndpointA.ChannelID))
 			suite.Require().NoError(err)
 
@@ -306,7 +313,7 @@ func (suite *ConsumerTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint
 
 func (suite *ConsumerTestSuite) TestOnChanOpenTry() {
 	// OnOpenTry must error even with correct arguments
-	consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
+	consumerModule := consumer.NewAppModule(simapp.GetConsumerKeeper(suite.consumerChain.App))
 	chanCap, err := suite.consumerChain.App.GetScopedIBCKeeper().NewCapability(suite.ctx, host.ChannelCapabilityPath(consumertypes.PortID, suite.path.EndpointA.ChannelID))
 	suite.Require().NoError(err)
 
@@ -338,7 +345,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 		{
 			name: "invalid: provider channel already established",
 			setup: func(suite *ConsumerTestSuite) {
-				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetProviderChannel(suite.ctx, "channel-2")
+				simapp.GetConsumerKeeper(suite.consumerChain.App).SetProviderChannel(suite.ctx, "channel-2")
 				// Set INIT channel on consumer chain
 				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, channelID,
 					channeltypes.NewChannel(
@@ -372,7 +379,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 			suite.SetupTest() // reset suite
 			tc.setup(suite)
 
-			consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
+			consumerModule := consumer.NewAppModule(simapp.GetConsumerKeeper(suite.consumerChain.App))
 
 			md := providertypes.HandshakeMetadata{
 				ProviderFeePoolAddr: "", // dummy address used
@@ -398,7 +405,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenConfirm() {
 			[]string{"connection-1"}, ccv.Version,
 		))
 
-	consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
+	consumerModule := consumer.NewAppModule(simapp.GetConsumerKeeper(suite.consumerChain.App))
 
 	err := consumerModule.OnChanOpenConfirm(suite.ctx, consumertypes.PortID, "channel-1")
 	suite.Require().Error(err, "OnChanOpenConfirm must always fail")
@@ -421,7 +428,7 @@ func (suite *ConsumerTestSuite) TestOnChanCloseInit() {
 						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
 				)
 				suite.path.EndpointA.ChannelID = channelID
-				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetProviderChannel(suite.ctx, "different-channel")
+				simapp.GetConsumerKeeper(suite.consumerChain.App).SetProviderChannel(suite.ctx, "different-channel")
 			},
 			expError: false,
 		},
@@ -430,7 +437,7 @@ func (suite *ConsumerTestSuite) TestOnChanCloseInit() {
 			setup: func(suite *ConsumerTestSuite) {
 				// create open channel
 				suite.coordinator.CreateChannels(suite.path)
-				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetProviderChannel(suite.ctx, "different-channel")
+				simapp.GetConsumerKeeper(suite.consumerChain.App).SetProviderChannel(suite.ctx, "different-channel")
 			},
 			expError: false,
 		},
@@ -452,7 +459,7 @@ func (suite *ConsumerTestSuite) TestOnChanCloseInit() {
 			setup: func(suite *ConsumerTestSuite) {
 				// create open channel
 				suite.coordinator.CreateChannels(suite.path)
-				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetProviderChannel(suite.ctx, suite.path.EndpointA.ChannelID)
+				simapp.GetConsumerKeeper(suite.consumerChain.App).SetProviderChannel(suite.ctx, suite.path.EndpointA.ChannelID)
 			},
 			expError: true,
 		},
@@ -464,7 +471,7 @@ func (suite *ConsumerTestSuite) TestOnChanCloseInit() {
 			suite.SetupTest() // reset suite
 			tc.setup(suite)
 
-			consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
+			consumerModule := consumer.NewAppModule(simapp.GetConsumerKeeper(suite.consumerChain.App))
 
 			err := consumerModule.OnChanCloseInit(suite.ctx, consumertypes.PortID, suite.path.EndpointA.ChannelID)
 
@@ -478,5 +485,8 @@ func (suite *ConsumerTestSuite) TestOnChanCloseInit() {
 }
 
 func TestConsumerTestSuite(t *testing.T) {
-	suite.Run(t, new(ConsumerTestSuite))
+	consumerSuite := new(ConsumerTestSuite)
+	consumerSuite.RunForAllConsumerChains(func() {
+		suite.Run(t, consumerSuite)
+	})
 }

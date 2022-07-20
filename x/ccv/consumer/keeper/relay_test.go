@@ -9,7 +9,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
@@ -118,20 +118,20 @@ func (suite *KeeperTestSuite) TestOnRecvVSCPacket() {
 	}
 
 	for _, tc := range testCases {
-		ack := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.ctx, tc.packet, tc.newChanges)
+		ack := simapp.GetConsumerKeeper(suite.consumerChain.App).OnRecvVSCPacket(suite.ctx, tc.packet, tc.newChanges)
 		suite.Require().NotNil(ack, "invalid test case: %s did not return ack", tc.name)
 
 		if tc.expErrorAck {
 			suite.Require().False(ack.Success(), "invalid test case: %s did not return an Error Acknowledgment", tc.name)
 		} else {
 			suite.Require().True(ack.Success(), "invalid test case: %s did not return a Success Acknowledgment", tc.name)
-			providerChannel, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.ctx)
+			providerChannel, ok := simapp.GetConsumerKeeper(suite.consumerChain.App).GetProviderChannel(suite.ctx)
 			suite.Require().True(ok)
 			suite.Require().Equal(tc.packet.DestinationChannel, providerChannel,
 				"provider channel is not destination channel on successful receive for valid test case: %s", tc.name)
 
 			// Check that pending changes are accumulated and stored correctly
-			actualPendingChanges, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPendingChanges(suite.ctx)
+			actualPendingChanges, ok := simapp.GetConsumerKeeper(suite.consumerChain.App).GetPendingChanges(suite.ctx)
 			suite.Require().True(ok)
 			// Sort to avoid dumb inequalities
 			sort.SliceStable(actualPendingChanges.ValidatorUpdates, func(i, j int) bool {
@@ -142,10 +142,10 @@ func (suite *KeeperTestSuite) TestOnRecvVSCPacket() {
 			})
 			suite.Require().Equal(tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
 
-			unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
+			unbondingPeriod, found := simapp.GetConsumerKeeper(suite.consumerChain.App).GetUnbondingTime(suite.ctx)
 			suite.Require().True(found)
 			expectedTime := uint64(suite.ctx.BlockTime().Add(unbondingPeriod).UnixNano())
-			maturityTime := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, tc.newChanges.ValsetUpdateId)
+			maturityTime := simapp.GetConsumerKeeper(suite.consumerChain.App).GetPacketMaturityTime(suite.ctx, tc.newChanges.ValsetUpdateId)
 			suite.Require().Equal(expectedTime, maturityTime, "packet maturity time has unexpected value for case: %s", tc.name)
 		}
 	}
@@ -183,7 +183,7 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	// send first packet
 	packet := channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
-	ack := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
+	ack := simapp.GetConsumerKeeper(suite.consumerChain.App).OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
 	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
@@ -195,7 +195,7 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	pd.ValsetUpdateId = 2
 	packet.Data = pd.GetBytes()
 	packet.Sequence = 2
-	ack = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
+	ack = simapp.GetConsumerKeeper(suite.consumerChain.App).OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
 	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
@@ -207,27 +207,27 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	pd.ValsetUpdateId = 3
 	packet.Data = pd.GetBytes()
 	packet.Sequence = 3
-	ack = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
+	ack = simapp.GetConsumerKeeper(suite.consumerChain.App).OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
 	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
 	// increase time such that first two packets are unbonded but third is not.
-	unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.consumerChain.GetContext())
+	unbondingPeriod, found := simapp.GetConsumerKeeper(suite.consumerChain.App).GetUnbondingTime(suite.consumerChain.GetContext())
 	suite.Require().True(found)
 	// increase time
 	incrementTimeBy(suite, unbondingPeriod-time.Hour)
 
-	err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondMaturePackets(suite.consumerChain.GetContext())
+	err = simapp.GetConsumerKeeper(suite.consumerChain.App).UnbondMaturePackets(suite.consumerChain.GetContext())
 	suite.Require().NoError(err)
 
 	// ensure first two packets are unbonded and VSCMatured packets are sent
 	// unbonded time is deleted
-	time1 := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 1)
-	time2 := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 2)
+	time1 := simapp.GetConsumerKeeper(suite.consumerChain.App).GetPacketMaturityTime(suite.consumerChain.GetContext(), 1)
+	time2 := simapp.GetConsumerKeeper(suite.consumerChain.App).GetPacketMaturityTime(suite.consumerChain.GetContext(), 2)
 	suite.Require().Equal(uint64(0), time1, "maturity time not deleted for mature packet 1")
 	suite.Require().Equal(uint64(0), time2, "maturity time not deleted for mature packet 2")
 	// ensure that third packet did not get unbonded and is still in store
-	time3 := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 3)
+	time3 := simapp.GetConsumerKeeper(suite.consumerChain.App).GetPacketMaturityTime(suite.consumerChain.GetContext(), 3)
 	suite.Require().True(time3 > uint64(suite.consumerChain.GetContext().BlockTime().UnixNano()), "maturity time for packet 3 is not after current time")
 
 	// check that the packets are committed in state
@@ -244,7 +244,7 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 // incrementTimeByUnbondingPeriod increments the overall time by jumpPeriod
 func incrementTimeBy(s *KeeperTestSuite, jumpPeriod time.Duration) {
 	// Get unboding period from staking keeper
-	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerChain.GetContext())
+	consumerUnbondingPeriod, found := simapp.GetConsumerKeeper(s.consumerChain.App).GetUnbondingTime(s.consumerChain.GetContext())
 	s.Require().True(found)
 	split := 1
 	if jumpPeriod > consumerUnbondingPeriod/utils.TrustingPeriodFraction {
@@ -273,12 +273,12 @@ func (suite *KeeperTestSuite) TestOnAcknowledgement() {
 	ack := channeltypes.NewResultAcknowledgement([]byte{1})
 
 	// expect no error
-	err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnAcknowledgementPacket(suite.ctx, packet, ack)
+	err := simapp.GetConsumerKeeper(suite.consumerChain.App).OnAcknowledgementPacket(suite.ctx, packet, ack)
 	suite.Nil(err)
 
 	// expect an error
 	ack = channeltypes.NewErrorAcknowledgement("error")
 
-	err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnAcknowledgementPacket(suite.ctx, packet, ack)
+	err = simapp.GetConsumerKeeper(suite.consumerChain.App).OnAcknowledgementPacket(suite.ctx, packet, ack)
 	suite.NotNil(err)
 }

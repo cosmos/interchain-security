@@ -19,7 +19,6 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
 
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -40,16 +39,24 @@ type KeeperTestSuite struct {
 	coordinator *ibctesting.Coordinator
 
 	// testing chains
-	providerChain *ibctesting.TestChain
-	consumerChain *ibctesting.TestChain
+	providerChain     *ibctesting.TestChain
+	consumerChain     *ibctesting.TestChain
+	consumerChainType simapp.ConsumerChainType
 
 	path *ibctesting.Path
 
 	ctx sdk.Context
 }
 
+func (suite *KeeperTestSuite) RunForAllConsumerChains(testFn func()) {
+	for _, consumerChainType := range simapp.GetAllConsumerChainTypes() {
+		suite.consumerChainType = consumerChainType
+		testFn()
+	}
+}
+
 func (suite *KeeperTestSuite) SetupTest() {
-	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
+	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T(), suite.consumerChainType)
 
 	// valsets must match
 	providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
@@ -82,7 +89,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 		suite.consumerChain.ChainID,
 	)
 	suite.Require().True(found, "consumer genesis not found")
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
+	simapp.GetConsumerKeeper(suite.consumerChain.App).InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
 
 	// create path for the CCV channel
 	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
@@ -96,7 +103,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.Require().True(found, "consumer client not found")
 	suite.path.EndpointB.ClientID = consumerClient
 	// - set consumer endpoint's clientID
-	providerClient, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
+	providerClient, found := simapp.GetConsumerKeeper(suite.consumerChain.App).GetProviderClient(suite.consumerChain.GetContext())
 	suite.Require().True(found, "provider client not found")
 	suite.path.EndpointA.ClientID = providerClient
 	// - client config
@@ -125,7 +132,10 @@ func (suite *KeeperTestSuite) SetupTest() {
 }
 
 func TestKeeperTestSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
+	keeperSuite := new(KeeperTestSuite)
+	keeperSuite.RunForAllConsumerChains(func() {
+		suite.Run(t, keeperSuite)
+	})
 }
 
 func (suite *KeeperTestSuite) TestValsetUpdateBlockHeight() {

@@ -1,7 +1,7 @@
 package keeper_test
 
 import (
-	app "github.com/cosmos/interchain-security/app/consumer"
+	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 )
 
@@ -9,29 +9,29 @@ func (suite *KeeperTestSuite) TestParams() {
 	// suite setup initializes genesis
 	expParams := types.NewParams(true, 1000, "", "") // these are the default params
 
-	params := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetParams(suite.consumerChain.GetContext())
+	params := simapp.GetConsumerKeeper(suite.consumerChain.App).GetParams(suite.consumerChain.GetContext())
 	suite.Require().Equal(expParams, params)
 
 	newParams := types.NewParams(false, 1000, "abc", "def")
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.SetParams(suite.consumerChain.GetContext(), newParams)
-	params = suite.consumerChain.App.(*app.App).ConsumerKeeper.GetParams(suite.consumerChain.GetContext())
+	simapp.GetConsumerKeeper(suite.consumerChain.App).SetParams(suite.consumerChain.GetContext(), newParams)
+	params = simapp.GetConsumerKeeper(suite.consumerChain.App).GetParams(suite.consumerChain.GetContext())
 	suite.Require().Equal(newParams, params)
 
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.
+	simapp.GetConsumerKeeper(suite.consumerChain.App).
 		SetBlocksPerDistributionTransmission(suite.consumerChain.GetContext(), 10)
-	gotBPDT := suite.consumerChain.App.(*app.App).ConsumerKeeper.
+	gotBPDT := simapp.GetConsumerKeeper(suite.consumerChain.App).
 		GetBlocksPerDistributionTransmission(suite.consumerChain.GetContext())
 	suite.Require().Equal(gotBPDT, int64(10))
 
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.
+	simapp.GetConsumerKeeper(suite.consumerChain.App).
 		SetDistributionTransmissionChannel(suite.consumerChain.GetContext(), "foobarbaz")
-	gotChan := suite.consumerChain.App.(*app.App).ConsumerKeeper.
+	gotChan := simapp.GetConsumerKeeper(suite.consumerChain.App).
 		GetDistributionTransmissionChannel(suite.consumerChain.GetContext())
 	suite.Require().Equal(gotChan, "foobarbaz")
 
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.
+	simapp.GetConsumerKeeper(suite.consumerChain.App).
 		SetProviderFeePoolAddrStr(suite.consumerChain.GetContext(), "foobar")
-	gotAddr := suite.consumerChain.App.(*app.App).ConsumerKeeper.
+	gotAddr := simapp.GetConsumerKeeper(suite.consumerChain.App).
 		GetProviderFeePoolAddrStr(suite.consumerChain.GetContext())
 	suite.Require().Equal(gotAddr, "foobar")
 }
