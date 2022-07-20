@@ -98,10 +98,6 @@ func (n Network) addAck(sender string, ack []byte, packet channeltypes.Packet) {
 
 func (n Network) consumePackets(sender string, num int64) []Packet {
 	ret := []Packet{}
-	// TODO: this is for random slash testing, delete and clean
-	if len(n.outboxPackets[sender]) < int(num) {
-		num = int64(len(n.outboxPackets[sender]))
-	}
 	for _, p := range n.outboxPackets[sender][:num] {
 		if 1 < p.commits {
 			ret = append(ret, p)
@@ -766,7 +762,7 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 func (s *DTTestSuite) TestTraces() {
 	traces := loadTraces("covering.json")
 	for i, trace := range traces {
-		s.Run(fmt.Sprintf("Trace file num: %d", i), func() {
+		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			s.SetupTest()
 			defer func() {
 				if r := recover(); r != nil {
@@ -783,7 +779,7 @@ func (s *DTTestSuite) TestTraces() {
 				true,
 			}
 			fmt.Println("[finish setup, start actions]")
-			executeTrace(s, i, traces[0])
+			executeTrace(s, i, trace)
 			fmt.Println("[finish actions]")
 		})
 	}

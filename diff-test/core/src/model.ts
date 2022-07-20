@@ -301,9 +301,6 @@ class Staking {
     this.jailed[val] = timestamp;
     this.m.events.push(Event.JAIL);
   };
-  shares = (val) => {
-    return this.delegation[val] + 1 * TOKEN_SCALAR;
-  };
   unbondingCanComplete = (opID) => {
     {
       const e = _.find(this.validatorQ, (e) => e.opID === opID);
