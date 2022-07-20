@@ -94,13 +94,13 @@ func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
 // GetPort returns the portID for the transfer module. Used in ExportGenesis
 func (k Keeper) GetPort(ctx sdk.Context) string {
 	store := ctx.KVStore(k.storeKey)
-	return string(store.Get(types.PortKey))
+	return string(store.Get(types.PortKey()))
 }
 
 // SetPort sets the portID for the transfer module. Used in InitGenesis
 func (k Keeper) SetPort(ctx sdk.Context, portID string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.PortKey, []byte(portID))
+	store.Set(types.PortKey(), []byte(portID))
 }
 
 // AuthenticateCapability wraps the scopedKeeper's AuthenticateCapability function
@@ -141,7 +141,7 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 // a stop boolean which will stop the iteration.
 func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	keyPrefix := types.ChainToClientKeyPrefix + "/"
+	keyPrefix := string(types.ChainToClientPrefix()) + "/"
 	iterator := sdk.KVStorePrefixIterator(store, []byte(keyPrefix))
 	defer iterator.Close()
 
@@ -186,7 +186,8 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 // or the callback returns stop=true
 func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, channelID, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.ChannelToChainKeyPrefix+"/"))
+	keyPrefix := string(types.ChannelToChainPrefix()) + "/"
+	iterator := sdk.KVStorePrefixIterator(store, []byte(keyPrefix))
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -194,7 +195,9 @@ func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, 
 	}
 
 	for ; iterator.Valid(); iterator.Next() {
-		channelID := string(iterator.Key())
+		// remove prefix from key to retrieve channelID
+		channelID := string(iterator.Key()[len(keyPrefix):])
+
 		chainID := string(iterator.Value())
 
 		if cb(ctx, channelID, chainID) {
@@ -330,7 +333,7 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 // IterateOverUnbondingOpIndex iterates over the unbonding indexes for a given chain id.
 func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb func(vscID uint64, ubdIndex []uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
-	prefix := append(types.HashString(types.UnbondingOpIndexPrefix), types.HashString(chainID)...)
+	prefix := append(types.UnbondingOpIndexPrefix(), []byte(chainID)...)
 	iterator := sdk.KVStorePrefixIterator(store, prefix)
 
 	defer iterator.Close()
@@ -481,7 +484,7 @@ func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, validatorSetUpdateId)
 
-	store.Set([]byte(types.ValidatorSetUpdateIdPrefix), bz)
+	store.Set(types.ValidatorSetUpdateIdKey(), bz)
 }
 
 func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
@@ -491,12 +494,12 @@ func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, valUpdateID)
 
-	store.Set([]byte(types.ValidatorSetUpdateIdPrefix), bz)
+	store.Set(types.ValidatorSetUpdateIdKey(), bz)
 }
 
 func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId uint64) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get([]byte(types.ValidatorSetUpdateIdPrefix))
+	bz := store.Get(types.ValidatorSetUpdateIdKey())
 
 	if bz == nil {
 		validatorSetUpdateId = 0
@@ -623,12 +626,12 @@ func (k Keeper) EmptySlashAcks(ctx sdk.Context, chainID string) (acks []string) 
 // IterateSlashAcks iterates through the slash acks set in the store
 func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) bool) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.SlashAcksPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, types.SlashAcksPrefix())
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 
-		id := string(iterator.Key()[len(types.SlashAcksPrefix)+1:])
+		chainID := string(iterator.Key()[len(types.SlashAcksPrefix())+1:])
 
 		var data []string
 		buf := bytes.NewBuffer(iterator.Value())
@@ -638,7 +641,7 @@ func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks [
 			panic(fmt.Errorf("failed to decode json: %w", err))
 		}
 
-		if !cb(id, data) {
+		if !cb(chainID, data) {
 			return
 		}
 	}
