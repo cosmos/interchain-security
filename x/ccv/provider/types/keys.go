@@ -292,12 +292,6 @@ func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return append(LockUnbondingOnTimeoutPrefix(), []byte("/"+chainID)...)
 }
 
-// // Outputs a fixed length 32 byte hash for any string
-// func HashString(x string) []byte {
-// 	hash := sha256.Sum256([]byte(x))
-// 	return hash[:]
-// }
-
 // Appends a variable number of byte slices together
 func AppendMany(byteses ...[]byte) (out []byte) {
 	for _, bytes := range byteses {
