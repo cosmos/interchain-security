@@ -22,7 +22,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	// get the provider channel
 
 	k.Logger(ctx).Info(
-		"OnRecvVSCPacket [logger]",
+		"[HACKATOM] OnRecvVSCPacket",
 	)
 
 	providerChannel, found := k.GetProviderChannel(ctx)
