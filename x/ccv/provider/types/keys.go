@@ -299,7 +299,7 @@ func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
 // Returns the key corresponding to consumer genesis state material
 // (consensus state and client state) indexed by consumer chain id
 func ConsumerGenesisKey(chainID string) []byte {
-	return append(ConsumerGenesisPrefix(), []byte(chainID)...)
+	return append(ConsumerGenesisPrefix(), []byte("/"+chainID)...)
 }
 
 // SlashAcksKey returns the key under which slashing acks are stored for a given chain ID
