@@ -2,7 +2,9 @@ package types
 
 import (
 	"testing"
+	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -53,4 +55,74 @@ func getSingleByteKeys() [][]byte {
 	keys[i] = LockUnbondingOnTimeoutPrefix()
 
 	return keys
+}
+
+func TestPendingClientKeyAndParse(t *testing.T) {
+	tests := []struct {
+		timestamp time.Time
+		chainID   string
+	}{
+		{timestamp: time.Now(), chainID: "1"},
+		{timestamp: time.Date(
+			2003, 11, 17, 20, 34, 58, 651387237, time.UTC), chainID: "some other ID"},
+		{timestamp: time.Now().Add(5000 * time.Hour), chainID: "some other other chain ID"},
+	}
+
+	for _, test := range tests {
+		key := PendingClientKey(test.timestamp, test.chainID)
+		require.NotEmpty(t, key)
+		minBytes := 39
+		require.GreaterOrEqual(t, len(key), minBytes)
+		parsedTime, parsedID, err := ParsePendingClientKey(key)
+		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
+		require.Equal(t, test.chainID, parsedID)
+		require.NoError(t, err)
+	}
+}
+
+func TestPendingStopProposalKeyAndParse(t *testing.T) {
+	tests := []struct {
+		timestamp time.Time
+		chainID   string
+	}{
+		{timestamp: time.Now(), chainID: "5"},
+		{timestamp: time.Date(
+			2003, 11, 17, 20, 34, 58, 651387237, time.UTC), chainID: "some other ID"},
+		{timestamp: time.Now().Add(5000 * time.Hour), chainID: "some other other chain ID"},
+	}
+
+	for _, test := range tests {
+		key := PendingStopProposalKey(test.timestamp, test.chainID)
+		require.NotEmpty(t, key)
+		minBytes := 39
+		require.GreaterOrEqual(t, len(key), minBytes)
+		parsedTime, parsedID, err := ParsePendingStopProposalKey(key)
+		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
+		require.Equal(t, test.chainID, parsedID)
+		require.NoError(t, err)
+	}
+}
+
+func TestUnbondingOpIndexKeyAndParse(t *testing.T) {
+	tests := []struct {
+		chainID        string
+		valsetUpdateID uint64
+	}{
+		{chainID: " some chain id", valsetUpdateID: 45},
+		{chainID: " some chain id that is longer", valsetUpdateID: 54038},
+		{chainID: " some chain id that is longer-er     ", valsetUpdateID: 9999999999999999999},
+		{chainID: "2", valsetUpdateID: 0},
+	}
+
+	for _, test := range tests {
+		key := UnbondingOpIndexKey(test.chainID, test.valsetUpdateID)
+		require.NotEmpty(t, key)
+		// This key should be of set length: prefix + hashed chain ID + separator + uint64
+		require.Equal(t, 1+32+1+8, len(key))
+		parsedVSCID, err := ParseUnbondingOpIndexKey(key)
+		require.NotEmpty(t, parsedVSCID)
+		asUint64 := sdk.BigEndianToUint64(parsedVSCID)
+		require.Equal(t, test.valsetUpdateID, asUint64)
+		require.NoError(t, err)
+	}
 }
