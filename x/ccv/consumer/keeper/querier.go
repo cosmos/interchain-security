@@ -45,7 +45,6 @@ func queryValidators(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQue
 	}
 
 	validators := k.GetAllCCValidator(ctx)
-	// validators := k.GetAllValidators(ctx)
 	filteredVals := make(types.Validators, 0, len(validators))
 
 	for _, val := range validators {
