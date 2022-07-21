@@ -20,6 +20,11 @@ import (
 // sent back to the provider chain.
 func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) exported.Acknowledgement {
 	// get the provider channel
+
+	k.Logger(ctx).Info(
+		"OnRecvVSCPacket [logger]",
+	)
+
 	providerChannel, found := k.GetProviderChannel(ctx)
 	if found && providerChannel != packet.DestinationChannel {
 		// VSC packet was sent on a channel different than the provider channel
