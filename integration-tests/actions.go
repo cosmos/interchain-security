@@ -501,10 +501,13 @@ func (s System) addIbcChannel(
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
-		"create", "channel",
+		"create",
+		"channel",
+		s.chainConfigs[action.chainA].chainId,
 		"--order", action.order,
 		"--channel-version", s.containerConfig.ccvVersion,
-		"--connection-a", "connection-"+fmt.Sprint(action.connectionA),
+		// "--connection-a",
+		"connection-"+fmt.Sprint(action.connectionA),
 		"--port-a", action.portA,
 		"--port-b", action.portB,
 		s.chainConfigs[action.chainA].chainId,

@@ -122,22 +122,6 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: SendTokensAction{
-			chain:  1,
-			from:   0,
-			to:     1,
-			amount: 1,
-		},
-		state: State{
-			1: ChainState{
-				ValBalances: &map[uint]uint{
-					0: 9999999999,
-					1: 10000000001,
-				},
-			},
-		},
-	},
-	{
 		action: AddIbcConnectionAction{
 			chainA:  1,
 			chainB:  0,
