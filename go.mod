@@ -127,19 +127,19 @@ require (
 )
 
 // Dev
-replace (
-	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
-	github.com/cosmos/cosmos-sdk => /Users/danwt/Documents/work/cosmos-sdk
-	github.com/cosmos/ibc-go/v3 => /Users/danwt/Documents/work/informal-ibc-go
-	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	github.com/tendermint/tendermint => /Users/danwt/Documents/work/tendermint
-	google.golang.org/grpc => google.golang.org/grpc v1.33.2
-)
+// replace (
+// 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
+// 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+// 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
+// 	github.com/cosmos/cosmos-sdk => /Users/danwt/Documents/work/cosmos-sdk
+// 	github.com/cosmos/ibc-go/v3 => /Users/danwt/Documents/work/informal-ibc-go
+// 	github.com/tendermint/tendermint => /Users/danwt/Documents/work/tendermint
+// )
 
 // Prod
-// replace (
-// github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
-// github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-beta1.0.20220628105017-c48f8e2dadb8
-// github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-// google.golang.org/grpc => google.golang.org/grpc v1.33.2
-// )
+replace (
+	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
+	github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-beta1.0.20220628105017-c48f8e2dadb8
+	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+	google.golang.org/grpc => google.golang.org/grpc v1.33.2
+)
