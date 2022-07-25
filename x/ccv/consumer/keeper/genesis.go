@@ -116,8 +116,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		if !ok {
 			panic("provider client does not exist")
 		}
-		// ValUpdates must be filled in off-line
-		gs := types.NewRestartGenesisState(clientID, channelID, nil, nil, params)
 
 		maturingPackets := []types.MaturingVSCPacket{}
 		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) bool {
@@ -148,9 +146,16 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			return false
 		})
 
-		gs.MaturingPackets = maturingPackets
-		gs.HeightToValsetUpdateId = heightToVCIDs
-		gs.OutstandingDowntimeSlashing = outstandingDowntimes
+		// ValUpdates must be filled in off-line
+		gs := types.NewRestartGenesisState(
+			clientID,
+			channelID,
+			maturingPackets,
+			nil,
+			heightToVCIDs,
+			outstandingDowntimes,
+			params,
+		)
 		return gs
 	}
 	fmt.Println("NEW-CHAIN")
@@ -178,8 +183,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic("provider consensus state is not tendermint consensus state")
 	}
 
-	slashRequests := k.GetPendingSlashRequests(ctx)
-
 	// ValUpdates must be filled in off-line
-	return types.NewInitialGenesisState(tmCs, tmConsState, nil, slashRequests, params)
+	return types.NewInitialGenesisState(tmCs, tmConsState, nil, k.GetPendingSlashRequests(ctx), params)
 }
