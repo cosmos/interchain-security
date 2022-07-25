@@ -74,12 +74,12 @@ const (
 	CrossChainValidatorBytePrefix
 )
 
-// Returns the key to the port ID in the store
+// PortKey returns the key to the port ID in the store
 func PortKey() []byte {
 	return []byte{PortByteKey}
 }
 
-// Returns the key to the last distribution transmission in the store
+// LastDistributionTransmissionKey returns the key to the last distribution transmission in the store
 func LastDistributionTransmissionKey() []byte {
 	return []byte{LastDistributionTransmissionByteKey}
 }
@@ -104,33 +104,33 @@ func PendingChangesKey() []byte {
 	return []byte{PendingChangesByteKey}
 }
 
-// Returns the historical info key prefix for historical info on each height
+// HistoricalInfoPrefix returns the historical info key prefix for historical info on each height
 func HistoricalInfoPrefix() []byte {
 	return []byte{HistoricalInfoBytePrefix}
 }
 
-// Returns the key prefix of maturity times stored for each received VSC packet
+// PacketMaturityTimePrefix returns the key prefix of maturity times stored for each received VSC packet
 func PacketMaturityTimePrefix() []byte {
 	return []byte{PacketMaturityTimeBytePrefix}
 }
 
-// Returns the key prefix for the mapping from block height to valset update ID
+// HeightValsetUpdateIDPrefix returns the key prefix for the mapping from block height to valset update ID
 func HeightValsetUpdateIDPrefix() []byte {
 	return []byte{HeightValsetUpdateIDBytePrefix}
 }
 
-// Returns the key prefix for validators' outstanding downtime by consensus address
+// OutstandingDowntimePrefix returns the key prefix for validators' outstanding downtime by consensus address
 func OutstandingDowntimePrefix() []byte {
 	return []byte{OutstandingDowntimeBytePrefix}
 }
 
-// Returns the key prefix for a list of slash request that must be sent
+// PendingSlashRequestsPrefix returns the key prefix for a list of slash request that must be sent
 // to the provider chain once the CCV channel is established
 func PendingSlashRequestsPrefix() []byte {
 	return []byte{PendingSlashRequestsBytePrefix}
 }
 
-// Returns the key prefix for cross-chain validators by consensus address
+// CrossChainValidatorPrefix returns the key prefix for cross-chain validators by consensus address
 func CrossChainValidatorPrefix() []byte {
 	return []byte{CrossChainValidatorBytePrefix}
 }
@@ -142,29 +142,29 @@ func PacketMaturityTimeKey(id uint64) []byte {
 	return append(PacketMaturityTimePrefix(), seqBytes...)
 }
 
-// Returns the packet id corresponding to a maturity time full key (including prefix)
+// IdFromPacketMaturityTimeKey returns the packet id corresponding to a maturity time full key (including prefix)
 func IdFromPacketMaturityTimeKey(key []byte) uint64 {
 	return binary.BigEndian.Uint64(key[len(PacketMaturityTimePrefix()):])
 }
 
-// Returns the key to a valset update ID for a given block height
+// HeightValsetUpdateIDKey returns the key to a valset update ID for a given block height
 func HeightValsetUpdateIDKey(height uint64) []byte {
 	hBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(hBytes, height)
 	return append(HeightValsetUpdateIDPrefix(), hBytes...)
 }
 
-// Returns the key to a validators' outstanding downtime by consensus address
+// OutstandingDowntimeKey returns the key to a validators' outstanding downtime by consensus address
 func OutstandingDowntimeKey(v sdk.ConsAddress) []byte {
 	return append(OutstandingDowntimePrefix(), address.MustLengthPrefix(v.Bytes())...)
 }
 
-// Returns the key to a cross chain validator by consensus address
+// CrossChainValidatorKey returns the key to a cross chain validator by consensus address
 func CrossChainValidatorKey(addr []byte) []byte {
 	return append(CrossChainValidatorPrefix(), addr...)
 }
 
-// Returns the key to historical info to a given block height
+// HistoricalInfoKey returns the key to historical info to a given block height
 func HistoricalInfoKey(height int64) []byte {
 	hBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(hBytes, uint64(height))

@@ -91,7 +91,7 @@ const (
 	LockUnbondingOnTimeoutBytePrefix
 )
 
-// Returns the key to the port ID in the store
+// PortKey returns the key to the port ID in the store
 func PortKey() []byte {
 	return []byte{PortByteKey}
 }
@@ -264,13 +264,15 @@ func ParsePendingStopProposalKey(bz []byte) (time.Time, string, error) {
 	return timestamp, chainID, nil
 }
 
-// chainId is hashed to a fixed length sequence of bytes here to prevent injection attack between chainIDs.
+// UnbondingOpIndexKey returns an unbonding op index key
+// Note: chainId is hashed to a fixed length sequence of bytes here to prevent
+// injection attack between chainIDs.
 func UnbondingOpIndexKey(chainID string, valsetUpdateID uint64) []byte {
 	return AppendMany(UnbondingOpIndexPrefix(), HashString(chainID), []byte("/"),
 		sdk.Uint64ToBigEndian(valsetUpdateID))
 }
 
-// Parses an unbonding op index key for VSC ID
+// ParseUnbondingOpIndexKey parses an unbonding op index key for VSC ID
 func ParseUnbondingOpIndexKey(key []byte) (vscID []byte, err error) {
 	keySplit := bytes.Split(key, []byte("/"))
 	if len(keySplit) != 2 {
@@ -281,7 +283,7 @@ func ParseUnbondingOpIndexKey(key []byte) (vscID []byte, err error) {
 	return keySplit[1], nil
 }
 
-// Returns the key that stores a record of all the ids of consumer chains that
+// UnbondingOpKey returns the key that stores a record of all the ids of consumer chains that
 // need to unbond before a given delegation can unbond on this chain
 func UnbondingOpKey(id uint64) []byte {
 	bz := make([]byte, 8)
@@ -289,14 +291,14 @@ func UnbondingOpKey(id uint64) []byte {
 	return append(UnbondingOpPrefix(), bz...)
 }
 
-// Returns the key that storing the mapping from valset update ID to block height
+// ValsetUpdateBlockHeightKey returns the key that storing the mapping from valset update ID to block height
 func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
 	vuidBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(vuidBytes, valsetUpdateId)
 	return append(ValsetUpdateBlockHeightPrefix(), vuidBytes...)
 }
 
-// Returns the key corresponding to consumer genesis state material
+// ConsumerGenesisKey returns the key corresponding to consumer genesis state material
 // (consensus state and client state) indexed by consumer chain id
 func ConsumerGenesisKey(chainID string) []byte {
 	return append(ConsumerGenesisPrefix(), []byte("/"+chainID)...)
@@ -318,13 +320,13 @@ func PendingVSCsKey(chainID string) []byte {
 	return append(PendingVSCsPrefix(), []byte("/"+chainID)...)
 }
 
-// Returns the key that will store the consumer chain id which unbonding operations are locked
+// LockUnbondingOnTimeoutKey returns the key that will store the consumer chain id which unbonding operations are locked
 // on CCV channel timeout
 func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return append(LockUnbondingOnTimeoutPrefix(), []byte("/"+chainID)...)
 }
 
-// Appends a variable number of byte slices together
+// AppendMany appends a variable number of byte slices together
 func AppendMany(byteses ...[]byte) (out []byte) {
 	for _, bytes := range byteses {
 		out = append(out, bytes...)
@@ -332,7 +334,7 @@ func AppendMany(byteses ...[]byte) (out []byte) {
 	return out
 }
 
-// Outputs a fixed length 32 byte hash for any string
+// HashString outputs a fixed length 32 byte hash for any string
 func HashString(x string) []byte {
 	hash := sha256.Sum256([]byte(x))
 	return hash[:]
