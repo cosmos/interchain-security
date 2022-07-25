@@ -66,6 +66,11 @@ go run ./integration-tests/...
 go test -fuzz=<regex-to-match-test-name>
 ```
 
+**How to get started**
+
+A tutorial explaining how to setup a Interchain-Security testnet is available [here](/docs/testnet/start-testnet-tutorial.md). It will guide you through the process of creating and starting a consumer chain secured by a provider chain.
+
+
 **Linters and static analysis**
 
 Several analyzers are used on the code including [CodeQL](https://codeql.github.com/), [SonarCloud](https://sonarcloud.io/), [golangci-lint](https://golangci-lint.run/) and [gosec](https://github.com/securego/gosec). Some of these are run on github when committing to PRs ect, but some tools are also applicable locally, and are built into golang.
