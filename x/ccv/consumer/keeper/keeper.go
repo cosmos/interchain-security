@@ -374,7 +374,7 @@ func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address stri
 	for ; iterator.Valid(); iterator.Next() {
 		addrBytes := iterator.Key()[len([]byte(types.OutstandingDowntimePrefix)):]
 		addr := sdk.ConsAddress(addrBytes).String()
-		if cb(addr) {
+		if !cb(addr) {
 			break
 		}
 	}
