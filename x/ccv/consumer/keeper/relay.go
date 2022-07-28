@@ -72,16 +72,17 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // packets that have finished unbonding.
 func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 
+	// This method is a no-op if no established channel to the provider.
+	channelID, ok := k.GetProviderChannel(ctx)
+	if !ok {
+		return nil
+	}
+
 	store := ctx.KVStore(k.storeKey)
 	maturityIterator := sdk.KVStorePrefixIterator(store, []byte(types.PacketMaturityTimePrefix))
 	defer maturityIterator.Close()
 
 	currentTime := uint64(ctx.BlockTime().UnixNano())
-
-	channelID, ok := k.GetProviderChannel(ctx)
-	if !ok {
-		return sdkerrors.Wrap(channeltypes.ErrChannelNotFound, "provider channel not set")
-	}
 
 	for maturityIterator.Valid() {
 		vscId := types.GetIdFromPacketMaturityTimeKey(maturityIterator.Key())
