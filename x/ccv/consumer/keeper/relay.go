@@ -72,7 +72,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // packets that have finished unbonding.
 func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 
-	// This method is a no-op if no established channel to the provider.
+	// This method is a no-op if there is no established channel to the provider.
 	channelID, ok := k.GetProviderChannel(ctx)
 	if !ok {
 		return nil
