@@ -119,8 +119,8 @@ func TestUnbondingOpIndexKeyAndParse(t *testing.T) {
 	for _, test := range tests {
 		key := UnbondingOpIndexKey(test.chainID, test.valsetUpdateID)
 		require.NotEmpty(t, key)
-		// This key should be of set length: prefix + hashed chain ID + separator + uint64
-		require.Equal(t, 1+32+1+8, len(key))
+		// This key should be of set length: prefix + hashed chain ID + uint64
+		require.Equal(t, 1+32+8, len(key))
 		parsedVSCID, err := ParseUnbondingOpIndexKey(key)
 		require.NotEmpty(t, parsedVSCID)
 		asUint64 := sdk.BigEndianToUint64(parsedVSCID)
@@ -129,8 +129,8 @@ func TestUnbondingOpIndexKeyAndParse(t *testing.T) {
 	}
 }
 
-// Test key packing functions with the format <prefix><separator><stringID>
-func TestKeysWithSeparator(t *testing.T) {
+// Test key packing functions with the format <prefix><stringID>
+func TestKeysWithPrefixAndId(t *testing.T) {
 
 	funcs := []func(string) []byte{
 		ChainToChannelKey,
@@ -166,8 +166,7 @@ func TestKeysWithSeparator(t *testing.T) {
 		for funcIdx, function := range funcs {
 			key := function(test.stringID)
 			require.Equal(t, expectedPrefixes[funcIdx], key[0])
-			require.Equal(t, byte('/'), key[1])
-			require.Equal(t, []byte(test.stringID), key[2:])
+			require.Equal(t, []byte(test.stringID), key[1:])
 		}
 	}
 }

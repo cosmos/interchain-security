@@ -141,7 +141,7 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 // a stop boolean which will stop the iteration.
 func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	keyPrefix := string(types.ChainToClientPrefix()) + "/"
+	keyPrefix := string(types.ChainToClientPrefix())
 	iterator := sdk.KVStorePrefixIterator(store, []byte(keyPrefix))
 	defer iterator.Close()
 
@@ -186,7 +186,7 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 // or the callback returns stop=true
 func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, channelID, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	keyPrefix := string(types.ChannelToChainPrefix()) + "/"
+	keyPrefix := string(types.ChannelToChainPrefix())
 	iterator := sdk.KVStorePrefixIterator(store, []byte(keyPrefix))
 	defer iterator.Close()
 

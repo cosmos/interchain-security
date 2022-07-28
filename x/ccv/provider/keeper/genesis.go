@@ -33,7 +33,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	store := ctx.KVStore(k.storeKey)
-	keyPrefix := string(types.ChannelToChainPrefix()) + "/"
+	keyPrefix := string(types.ChannelToChainPrefix())
 	iterator := sdk.KVStorePrefixIterator(store, []byte(keyPrefix))
 	defer iterator.Close()
 

@@ -181,17 +181,17 @@ func LockUnbondingOnTimeoutPrefix() []byte {
 
 // ChainToChannelKey returns the key under which the CCV channel ID will be stored for the given consumer chain.
 func ChainToChannelKey(chainID string) []byte {
-	return append(ChainToChannelPrefix(), []byte("/"+chainID)...)
+	return append(ChainToChannelPrefix(), []byte(chainID)...)
 }
 
 // ChannelToChainKey returns the key under which the consumer chain ID will be stored for the given channelID.
 func ChannelToChainKey(channelID string) []byte {
-	return append(ChannelToChainPrefix(), []byte("/"+channelID)...)
+	return append(ChannelToChainPrefix(), []byte(channelID)...)
 }
 
 // ChainToClientKey returns the key under which the clientID for the given chainID is stored.
 func ChainToClientKey(chainID string) []byte {
-	return append(ChainToClientPrefix(), []byte("/"+chainID)...)
+	return append(ChainToClientPrefix(), []byte(chainID)...)
 }
 
 // PendingClientKey returns the key under which a pending identified client is stored
@@ -268,19 +268,20 @@ func ParsePendingStopProposalKey(bz []byte) (time.Time, string, error) {
 // Note: chainId is hashed to a fixed length sequence of bytes here to prevent
 // injection attack between chainIDs.
 func UnbondingOpIndexKey(chainID string, valsetUpdateID uint64) []byte {
-	return AppendMany(UnbondingOpIndexPrefix(), HashString(chainID), []byte("/"),
+	return AppendMany(UnbondingOpIndexPrefix(), HashString(chainID),
 		sdk.Uint64ToBigEndian(valsetUpdateID))
 }
 
 // ParseUnbondingOpIndexKey parses an unbonding op index key for VSC ID
 func ParseUnbondingOpIndexKey(key []byte) (vscID []byte, err error) {
-	keySplit := bytes.Split(key, []byte("/"))
-	if len(keySplit) != 2 {
+	// This key should be of set length: prefix + hashed chain ID + uint64
+	expectedBytes := 1 + 32 + 8
+	if len(key) != expectedBytes {
 		return nil, sdkerrors.Wrapf(
-			sdkerrors.ErrLogic, "key provided is incorrect: the key split has incorrect length, expected %d, got %d", 2, len(keySplit),
+			sdkerrors.ErrLogic, "key provided is incorrect: the key has incorrect length, expected %d, got %d", expectedBytes, len(key),
 		)
 	}
-	return keySplit[1], nil
+	return key[1+32:], nil
 }
 
 // UnbondingOpKey returns the key that stores a record of all the ids of consumer chains that
@@ -301,29 +302,29 @@ func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
 // ConsumerGenesisKey returns the key corresponding to consumer genesis state material
 // (consensus state and client state) indexed by consumer chain id
 func ConsumerGenesisKey(chainID string) []byte {
-	return append(ConsumerGenesisPrefix(), []byte("/"+chainID)...)
+	return append(ConsumerGenesisPrefix(), []byte(chainID)...)
 }
 
 // SlashAcksKey returns the key under which slashing acks are stored for a given chain ID
 func SlashAcksKey(chainID string) []byte {
-	return append(SlashAcksPrefix(), []byte("/"+chainID)...)
+	return append(SlashAcksPrefix(), []byte(chainID)...)
 }
 
 // InitChainHeightKey returns the key under which the block height for a given chain ID is stored
 func InitChainHeightKey(chainID string) []byte {
-	return append(InitChainHeightPrefix(), []byte("/"+chainID)...)
+	return append(InitChainHeightPrefix(), []byte(chainID)...)
 }
 
 // PendingVSCsKey returns the key under which
 // pending ValidatorSetChangePacket data is stored for a given chain ID
 func PendingVSCsKey(chainID string) []byte {
-	return append(PendingVSCsPrefix(), []byte("/"+chainID)...)
+	return append(PendingVSCsPrefix(), []byte(chainID)...)
 }
 
 // LockUnbondingOnTimeoutKey returns the key that will store the consumer chain id which unbonding operations are locked
 // on CCV channel timeout
 func LockUnbondingOnTimeoutKey(chainID string) []byte {
-	return append(LockUnbondingOnTimeoutPrefix(), []byte("/"+chainID)...)
+	return append(LockUnbondingOnTimeoutPrefix(), []byte(chainID)...)
 }
 
 // AppendMany appends a variable number of byte slices together
