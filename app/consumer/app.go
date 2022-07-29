@@ -84,6 +84,10 @@ import (
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+
+	hellomodule "github.com/cosmos/interchain-security/x/hello"
+	hellomodulekeeper "github.com/cosmos/interchain-security/x/hello/keeper"
+	hellomoduletypes "github.com/cosmos/interchain-security/x/hello/types"
 )
 
 const (
@@ -115,6 +119,7 @@ var (
 		vesting.AppModuleBasic{},
 		//router.AppModuleBasic{},
 		ibcconsumer.AppModuleBasic{},
+		hellomodule.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -174,6 +179,8 @@ type App struct { // nolint: golint
 	ScopedTransferKeeper    capabilitykeeper.ScopedKeeper
 	ScopedIBCConsumerKeeper capabilitykeeper.ScopedKeeper
 
+	HelloKeeper hellomodulekeeper.Keeper
+
 	// the module manager
 	MM *module.Manager
 
@@ -220,6 +227,7 @@ func New(
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
 		ibcconsumertypes.StoreKey,
+		hellomoduletypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -381,6 +389,14 @@ func New(
 
 	app.EvidenceKeeper = *evidenceKeeper
 
+	app.HelloKeeper = *hellomodulekeeper.NewKeeper(
+		appCodec,
+		keys[hellomoduletypes.StoreKey],
+		keys[hellomoduletypes.MemStoreKey],
+		app.GetSubspace(hellomoduletypes.ModuleName),
+	)
+	helloModule := hellomodule.NewAppModule(appCodec, app.HelloKeeper, app.AccountKeeper, app.BankKeeper)
+
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
 	// NOTE: Any module instantiated in the module manager that is later modified
@@ -400,6 +416,7 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 		consumerModule,
+		helloModule,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -423,6 +440,7 @@ func New(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibcconsumertypes.ModuleName,
+		hellomoduletypes.ModuleName,
 	)
 	app.MM.SetOrderEndBlockers(
 		crisistypes.ModuleName,
@@ -439,6 +457,7 @@ func New(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibcconsumertypes.ModuleName,
+		hellomoduletypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -463,6 +482,7 @@ func New(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		ibcconsumertypes.ModuleName,
+		hellomoduletypes.ModuleName,
 	)
 
 	app.MM.RegisterInvariants(&app.CrisisKeeper)
@@ -484,6 +504,7 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper), ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
+		helloModule,
 	)
 
 	app.sm.RegisterStoreDecoders()
@@ -741,6 +762,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(ibcconsumertypes.ModuleName)
+	paramsKeeper.Subspace(hellomoduletypes.ModuleName)
 
 	return paramsKeeper
 }
