@@ -2,10 +2,12 @@ package keeper
 
 import (
 	"fmt"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
@@ -32,29 +34,87 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 }
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
-	defer iterator.Close()
-
-	if !iterator.Valid() {
-		return types.DefaultGenesisState()
-	}
-
 	var consumerStates []types.ConsumerState
 
-	for ; iterator.Valid(); iterator.Next() {
-		// channelID is extracted from bytes in key following the single byte prefix
-		channelID := string(iterator.Key()[1:])
-		chainID := string(iterator.Value())
-
-		cc := types.ConsumerState{
-			ChainId:   chainID,
-			ChannelId: channelID,
+	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) bool {
+		gen, found := k.GetConsumerGenesis(ctx, chainID)
+		if !found {
+			panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chainID, clientID))
 		}
-		consumerStates = append(consumerStates, cc)
-	}
+
+		cs := types.ConsumerState{
+			ChainId:                chainID,
+			ClientId:               clientID,
+			ConsumerGenesis:        gen,
+			LockUnbondingOnTimeout: k.GetLockUnbondingOnTimeout(ctx, chainID),
+		}
+
+		// try to find channel id for the current consumer chain
+		channelId, found := k.GetChainToChannel(ctx, chainID)
+		if found {
+			cs.ChannelId = channelId
+			cs.InitialHeight = k.GetInitChainHeight(ctx, chainID)
+			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chainID)
+			ubdOpIndexes := []types.UnbondingOpIndex{}
+			k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) bool {
+				id := types.UnbondingOpIndexKey(chainID, vscID)
+				ubdOpIndexes = append(ubdOpIndexes, types.UnbondingOpIndex{Id: id, UnbondingOpIndex: ubdIndex})
+				return true
+			})
+			cs.UnbondingOpsIndex = ubdOpIndexes
+		} else {
+			if pendingVSC, found := k.GetPendingVSCs(ctx, chainID); found {
+				cs.PendingValsetChanges = pendingVSC
+			}
+		}
+
+		consumerStates = append(consumerStates, cs)
+		return true
+	})
+
+	// export provider states
+	vscID := k.GetValidatorSetUpdateId(ctx)
+	vscIDToHeights := []types.ValsetUpdateIdToHeight{}
+	k.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) bool {
+		vscIDToHeights = append(vscIDToHeights, types.ValsetUpdateIdToHeight{ValsetUpdateId: vscID, Height: height})
+		return true
+	})
+
+	ubdOps := []ccv.UnbondingOp{}
+	k.IterateOverUnbondingOps(ctx, func(id uint64, ubdOp ccv.UnbondingOp) bool {
+		ubdOps = append(ubdOps, ubdOp)
+		return true
+	})
+
+	k.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) bool {
+		vscIDToHeights = append(vscIDToHeights, types.ValsetUpdateIdToHeight{ValsetUpdateId: vscID, Height: height})
+		return true
+	})
+	stopChainProposals := []types.StopConsumerChainProposal{}
+	k.IteratePendingStopProposal(ctx, func(chainID string, stopTime time.Time) bool {
+		stopChainProposals = append(stopChainProposals,
+			types.StopConsumerChainProposal{
+				ChainId:  chainID,
+				StopTime: stopTime,
+			},
+		)
+		return true
+	})
+	createConsumerChainProposals := []types.CreateConsumerChainProposal{}
+	k.IteratePendingCreateProposal(ctx, func(clientInfo types.CreateConsumerChainProposal) bool {
+		createConsumerChainProposals = append(createConsumerChainProposals, clientInfo)
+		return true
+	})
 
 	params := k.GetParams(ctx)
 
-	return types.NewGenesisState(consumerStates, params)
+	return types.NewGenesisState(
+		vscID,
+		vscIDToHeights,
+		consumerStates,
+		ubdOps,
+		createConsumerChainProposals,
+		stopChainProposals,
+		params,
+	)
 }

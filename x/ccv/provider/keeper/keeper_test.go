@@ -124,6 +124,11 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.ctx = suite.providerChain.GetContext()
 }
 
+func (suite *KeeperTestSuite) SetupCCVChannel() {
+	suite.coordinator.CreateConnections(suite.path)
+	suite.coordinator.CreateChannels(suite.path)
+}
+
 func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }

@@ -5,7 +5,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	app "github.com/cosmos/interchain-security/app/consumer"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -35,7 +34,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 		{
 			name: "restart a new chain",
 			malleate: func(s *KeeperTestSuite) {
-				s.consumerChain.App.(*app.App).ConsumerKeeper.SetPendingSlashRequests(
+				s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingSlashRequests(
 					s.consumerChain.GetContext(),
 					slashRequests,
 				)
@@ -49,7 +48,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 			assertInitGenesis: func(s *KeeperTestSuite, genesis *consumertypes.GenesisState) {
 				ctx := suite.consumerChain.GetContext()
 
-				portId := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPort(ctx)
+				portId := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPort(ctx)
 				s.Require().Equal(consumertypes.PortID, portId)
 
 				_, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(ctx)
@@ -57,7 +56,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 				height := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()+1))
 				s.Require().Zero(height)
 
-				clientId, ok := s.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderClient(ctx)
+				clientId, ok := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(ctx)
 				s.Require().True(ok)
 				clientState, ok := s.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientId)
 				s.Require().True(ok)
@@ -80,11 +79,11 @@ func (suite *KeeperTestSuite) TestGenesis() {
 					consumertypes.PortID, s.path.EndpointA.ChannelID,
 					clienttypes.NewHeight(1, 0), 0)
 
-				s.consumerChain.App.(*app.App).ConsumerKeeper.OnRecvVSCPacket(ctx, packet, pd)
+				s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(ctx, packet, pd)
 
-				vals := s.consumerChain.App.(*app.App).ConsumerKeeper.GetAllCCValidator(ctx)
+				vals := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetAllCCValidator(ctx)
 				consAddr = sdk.ConsAddress(vals[0].Address)
-				s.consumerChain.App.(*app.App).ConsumerKeeper.SetOutstandingDowntime(ctx, consAddr)
+				s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetOutstandingDowntime(ctx, consAddr)
 
 			},
 			assertExportGenesis: func(s *KeeperTestSuite, restartGenesis *consumertypes.GenesisState) {
@@ -116,7 +115,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 				unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(ctx)
 				suite.Require().True(found)
 
-				maturityTime := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPacketMaturityTime(ctx, vscID)
+				maturityTime := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(ctx, vscID)
 				s.Require().NotZero(maturityTime)
 
 				suite.Require().Equal(uint64(ctx.BlockTime().Add(unbondingPeriod).UnixNano()), maturityTime, "maturity time is not set correctly in genesis")
@@ -129,14 +128,14 @@ func (suite *KeeperTestSuite) TestGenesis() {
 		suite.Run(tc.name, func() {
 			tc.malleate(suite)
 
-			genesis := suite.consumerChain.App.(*app.App).ConsumerKeeper.ExportGenesis(suite.consumerChain.GetContext())
+			genesis := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.ExportGenesis(suite.consumerChain.GetContext())
 			tc.assertExportGenesis(suite, genesis)
 
 			// manually fill in validator set
 			genesis.InitialValSet = tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
 
 			suite.Require().NotPanics(func() {
-				suite.consumerChain.App.(*app.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), genesis)
+				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), genesis)
 			})
 
 			tc.assertInitGenesis(suite, genesis)
