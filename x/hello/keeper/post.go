@@ -2,7 +2,8 @@ package keeper
 
 import (
 	"encoding/binary"
-	"hello/x/hello/types"
+
+	"github.com/cosmos/interchain-security/x/hello/types"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"

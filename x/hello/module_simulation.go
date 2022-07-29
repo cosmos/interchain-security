@@ -3,15 +3,17 @@ package hello
 import (
 	"math/rand"
 
+	"github.com/cosmos/interchain-security/testutil/sample"
+
+	hellosimulation "github.com/cosmos/interchain-security/x/hello/simulation"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"hello/testutil/sample"
-	hellosimulation "hello/x/hello/simulation"
-	"hello/x/hello/types"
+	"github.com/cosmos/interchain-security/x/hello/types"
 )
 
 // avoid unused import issue

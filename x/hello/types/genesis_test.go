@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"hello/x/hello/types"
+	// "github.com/cosmos/interchain-security/x/hello/types"
+	"github.com/cosmos/interchain-security/x/hello/types"
 )
 
 func TestGenesisState_Validate(t *testing.T) {

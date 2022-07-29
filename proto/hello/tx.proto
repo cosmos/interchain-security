@@ -3,12 +3,12 @@ package hello.hello;
 
 // this line is used by starport scaffolding # proto/tx/import
 
-option go_package = "hello/x/hello/types";
+option go_package = "github.com/cosmos/interchain-security/x/hello/types";
 
 // Msg defines the Msg service.
 service Msg {
-      rpc CreatePost(MsgCreatePost) returns (MsgCreatePostResponse);
-// this line is used by starport scaffolding # proto/tx/rpc
+  rpc CreatePost(MsgCreatePost) returns (MsgCreatePostResponse);
+  // this line is used by starport scaffolding # proto/tx/rpc
 }
 
 message MsgCreatePost {
@@ -17,8 +17,6 @@ message MsgCreatePost {
   string body = 3;
 }
 
-message MsgCreatePostResponse {
-  uint64 id = 1;
-}
+message MsgCreatePostResponse { uint64 id = 1; }
 
 // this line is used by starport scaffolding # proto/tx/message

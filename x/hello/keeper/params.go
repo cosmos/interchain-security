@@ -2,7 +2,7 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"hello/x/hello/types"
+	"github.com/cosmos/interchain-security/x/hello/types"
 )
 
 // GetParams get all parameters as types.Params

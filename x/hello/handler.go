@@ -3,8 +3,9 @@ package hello
 import (
 	"fmt"
 
-	"hello/x/hello/keeper"
-	"hello/x/hello/types"
+	"github.com/cosmos/interchain-security/x/hello/keeper"
+
+	"github.com/cosmos/interchain-security/x/hello/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"

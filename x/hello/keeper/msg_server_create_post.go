@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	"hello/x/hello/types"
+	"github.com/cosmos/interchain-security/x/hello/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

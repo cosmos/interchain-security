@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"hello/x/hello/types"
+	"github.com/cosmos/interchain-security/x/hello/types"
 )
 
 type msgServer struct {

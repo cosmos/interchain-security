@@ -8,7 +8,7 @@ import "hello/params.proto";
 import "hello/post.proto";
 // this line is used by starport scaffolding # 1
 
-option go_package = "hello/x/hello/types";
+option go_package = "github.com/cosmos/interchain-security/x/hello/types";
 
 // Query defines the gRPC querier service.
 service Query {

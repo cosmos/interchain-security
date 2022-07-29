@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
+	keepertest "github.com/cosmos/interchain-security/testutil/keeper"
+	"github.com/cosmos/interchain-security/x/hello/keeper"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	keepertest "hello/testutil/keeper"
-	"hello/x/hello/keeper"
-	"hello/x/hello/types"
+	"github.com/cosmos/interchain-security/x/hello/types"
 )
 
 func setupMsgServer(t testing.TB) (types.MsgServer, context.Context) {

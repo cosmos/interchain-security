@@ -3,10 +3,12 @@ package keeper_test
 import (
 	"testing"
 
+	// testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/interchain-security/x/hello/types"
 	"github.com/stretchr/testify/require"
-	testkeeper "hello/testutil/keeper"
-	"hello/x/hello/types"
 )
 
 func TestParamsQuery(t *testing.T) {

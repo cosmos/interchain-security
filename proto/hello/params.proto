@@ -3,10 +3,7 @@ package hello.hello;
 
 import "gogoproto/gogo.proto";
 
-option go_package = "hello/x/hello/types";
+option go_package = "github.com/cosmos/interchain-security/x/hello/types";
 
 // Params defines the parameters for the module.
-message Params {
-  option (gogoproto.goproto_stringer) = false;
-  
-}
+message Params { option (gogoproto.goproto_stringer) = false; }

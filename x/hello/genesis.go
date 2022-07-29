@@ -1,9 +1,10 @@
 package hello
 
 import (
+	"github.com/cosmos/interchain-security/x/hello/keeper"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"hello/x/hello/keeper"
-	"hello/x/hello/types"
+	"github.com/cosmos/interchain-security/x/hello/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

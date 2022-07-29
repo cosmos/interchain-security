@@ -3,11 +3,12 @@ package simulation
 import (
 	"math/rand"
 
+	"github.com/cosmos/interchain-security/x/hello/keeper"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"hello/x/hello/keeper"
-	"hello/x/hello/types"
+	"github.com/cosmos/interchain-security/x/hello/types"
 )
 
 func SimulateMsgCreatePost(

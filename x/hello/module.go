@@ -12,9 +12,10 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"hello/x/hello/client/cli"
-	"hello/x/hello/keeper"
-	"hello/x/hello/types"
+	"github.com/cosmos/interchain-security/x/hello/client/cli"
+	"github.com/cosmos/interchain-security/x/hello/keeper"
+
+	"github.com/cosmos/interchain-security/x/hello/types"
 
 	"context"
 

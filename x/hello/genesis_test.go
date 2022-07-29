@@ -3,11 +3,13 @@ package hello_test
 import (
 	"testing"
 
+	keepertest "github.com/cosmos/interchain-security/testutil/keeper"
+	"github.com/cosmos/interchain-security/testutil/nullify"
+
+	"github.com/cosmos/interchain-security/x/hello"
+
+	"github.com/cosmos/interchain-security/x/hello/types"
 	"github.com/stretchr/testify/require"
-	keepertest "hello/testutil/keeper"
-	"hello/testutil/nullify"
-	"hello/x/hello"
-	"hello/x/hello/types"
 )
 
 func TestGenesis(t *testing.T) {
