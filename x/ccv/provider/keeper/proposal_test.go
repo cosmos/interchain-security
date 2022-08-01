@@ -103,7 +103,7 @@ func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {
 					suite.Require().Equal(expectedGenesis, consumerGenesis)
 					suite.Require().NotEqual("", clientId, "consumer client was not created after spawn time reached")
 				} else {
-					gotClient := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingClientInfo(ctx, proposal.SpawnTime, chainID)
+					gotClient := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingCreateProposalInfo(ctx, proposal.SpawnTime, chainID)
 					suite.Require().Equal(initialHeight, gotClient.InitialHeight, "pending client not equal to clientstate in proposal")
 					suite.Require().Equal(lockUbdOnTimeout, gotClient.LockUnbondingOnTimeout, "pending client not equal to clientstate in proposal")
 				}
@@ -165,17 +165,17 @@ func (suite *KeeperTestSuite) TestIteratePendingClientInfo() {
 	}
 
 	for _, tc := range testCases {
-		err := suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetPendingClientInfo(
+		err := suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetPendingCreateProposalInfo(
 			suite.providerChain.GetContext(), &tc.CreateConsumerChainProposal)
 		suite.Require().NoError(err)
 	}
 
 	ctx := suite.providerChain.GetContext().WithBlockTime(testCases[0].SpawnTime)
 
-	suite.providerChain.App.(*appProvider.App).ProviderKeeper.IteratePendingClientInfo(ctx)
+	suite.providerChain.App.(*appProvider.App).ProviderKeeper.IteratePendingCreateProposalInfo(ctx)
 
 	for _, tc := range testCases {
-		res := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingClientInfo(ctx, tc.SpawnTime, tc.ChainId)
+		res := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingCreateProposalInfo(ctx, tc.SpawnTime, tc.ChainId)
 		if !tc.ExpDeleted {
 			suite.Require().NotEmpty(res, "stop proposal was not deleted: %s %s", tc.ChainId, tc.SpawnTime.String())
 			continue

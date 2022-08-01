@@ -43,7 +43,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = ChainToChannelPrefix(), i+1
 	keys[i], i = ChannelToChainPrefix(), i+1
 	keys[i], i = ChainToClientPrefix(), i+1
-	keys[i], i = PendingClientPrefix(), i+1
+	keys[i], i = PendingCreateProposalPrefix(), i+1
 	keys[i], i = PendingStopProposalPrefix(), i+1
 	keys[i], i = UnbondingOpPrefix(), i+1
 	keys[i], i = UnbondingOpIndexPrefix(), i+1
@@ -69,12 +69,12 @@ func TestPendingClientKeyAndParse(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		key := PendingClientKey(test.timestamp, test.chainID)
+		key := PendingCreateProposalKey(test.timestamp, test.chainID)
 		require.NotEmpty(t, key)
 		// Expected bytes = prefix + time length + time bytes + length of chainID
 		expectedBytes := 1 + 8 + len(sdk.FormatTimeBytes(time.Time{})) + len(test.chainID)
 		require.Equal(t, expectedBytes, len(key))
-		parsedTime, parsedID, err := ParsePendingClientKey(key)
+		parsedTime, parsedID, err := ParsePendingCreateProposalKey(key)
 		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
 		require.Equal(t, test.chainID, parsedID)
 		require.NoError(t, err)
