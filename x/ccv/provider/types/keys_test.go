@@ -31,7 +31,7 @@ func TestNoDuplicates(t *testing.T) {
 }
 
 // Returns all singular keys, or prefixes to fully resolved keys,
-// any of which should be a single byte.
+// any of which should be a single, unique byte.
 func getSingleByteKeys() [][]byte {
 
 	keys := make([][]byte, 16)
@@ -40,19 +40,19 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = PortKey(), i+1
 	keys[i], i = MaturedUnbondingOpsKey(), i+1
 	keys[i], i = ValidatorSetUpdateIdKey(), i+1
-	keys[i], i = ChainToChannelPrefix(), i+1
-	keys[i], i = ChannelToChainPrefix(), i+1
-	keys[i], i = ChainToClientPrefix(), i+1
-	keys[i], i = PendingCreateProposalPrefix(), i+1
-	keys[i], i = PendingStopProposalPrefix(), i+1
-	keys[i], i = UnbondingOpPrefix(), i+1
-	keys[i], i = UnbondingOpIndexPrefix(), i+1
-	keys[i], i = ValsetUpdateBlockHeightPrefix(), i+1
-	keys[i], i = ConsumerGenesisPrefix(), i+1
-	keys[i], i = SlashAcksPrefix(), i+1
-	keys[i], i = InitChainHeightPrefix(), i+1
-	keys[i], i = PendingVSCsPrefix(), i+1
-	keys[i] = LockUnbondingOnTimeoutPrefix()
+	keys[i], i = []byte{ChainToChannelBytePrefix}, i+1
+	keys[i], i = []byte{ChannelToChainBytePrefix}, i+1
+	keys[i], i = []byte{ChainToClientBytePrefix}, i+1
+	keys[i], i = []byte{PendingCreateProposalBytePrefix}, i+1
+	keys[i], i = []byte{PendingStopProposalBytePrefix}, i+1
+	keys[i], i = []byte{UnbondingOpBytePrefix}, i+1
+	keys[i], i = []byte{UnbondingOpIndexBytePrefix}, i+1
+	keys[i], i = []byte{ValsetUpdateBlockHeightBytePrefix}, i+1
+	keys[i], i = []byte{ConsumerGenesisBytePrefix}, i+1
+	keys[i], i = []byte{SlashAcksBytePrefix}, i+1
+	keys[i], i = []byte{InitChainHeightBytePrefix}, i+1
+	keys[i], i = []byte{PendingVSCsBytePrefix}, i+1
+	keys[i] = []byte{LockUnbondingOnTimeoutBytePrefix}
 
 	return keys
 }
@@ -143,7 +143,7 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 		LockUnbondingOnTimeoutKey,
 	}
 
-	expectedPrefixes := []byte{
+	expectedBytePrefixes := []byte{
 		ChainToChannelBytePrefix,
 		ChannelToChainBytePrefix,
 		ChainToClientBytePrefix,
@@ -165,7 +165,7 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 	for _, test := range tests {
 		for funcIdx, function := range funcs {
 			key := function(test.stringID)
-			require.Equal(t, expectedPrefixes[funcIdx], key[0])
+			require.Equal(t, expectedBytePrefixes[funcIdx], key[0])
 			require.Equal(t, []byte(test.stringID), key[1:])
 		}
 	}
@@ -178,7 +178,7 @@ func TestKeysWithUint64Payload(t *testing.T) {
 		ValsetUpdateBlockHeightKey,
 	}
 
-	expectedPrefixes := []byte{
+	expectedBytePrefixes := []byte{
 		UnbondingOpBytePrefix,
 		ValsetUpdateBlockHeightBytePrefix,
 	}
@@ -195,7 +195,7 @@ func TestKeysWithUint64Payload(t *testing.T) {
 	for _, test := range tests {
 		for funcIdx, function := range funcs {
 			key := function(test.integer)
-			require.Equal(t, expectedPrefixes[funcIdx], key[0])
+			require.Equal(t, expectedBytePrefixes[funcIdx], key[0])
 			require.Equal(t, sdk.Uint64ToBigEndian(test.integer), key[1:])
 		}
 	}

@@ -104,69 +104,39 @@ func PendingChangesKey() []byte {
 	return []byte{PendingChangesByteKey}
 }
 
-// HistoricalInfoPrefix returns the historical info key prefix for historical info on each height
-func HistoricalInfoPrefix() []byte {
-	return []byte{HistoricalInfoBytePrefix}
-}
-
-// PacketMaturityTimePrefix returns the key prefix of maturity times stored for each received VSC packet
-func PacketMaturityTimePrefix() []byte {
-	return []byte{PacketMaturityTimeBytePrefix}
-}
-
-// HeightValsetUpdateIDPrefix returns the key prefix for the mapping from block height to valset update ID
-func HeightValsetUpdateIDPrefix() []byte {
-	return []byte{HeightValsetUpdateIDBytePrefix}
-}
-
-// OutstandingDowntimePrefix returns the key prefix for validators' outstanding downtime by consensus address
-func OutstandingDowntimePrefix() []byte {
-	return []byte{OutstandingDowntimeBytePrefix}
-}
-
-// PendingSlashRequestsPrefix returns the key prefix for a list of slash request that must be sent
-// to the provider chain once the CCV channel is established
-func PendingSlashRequestsPrefix() []byte {
-	return []byte{PendingSlashRequestsBytePrefix}
-}
-
-// CrossChainValidatorPrefix returns the key prefix for cross-chain validators by consensus address
-func CrossChainValidatorPrefix() []byte {
-	return []byte{CrossChainValidatorBytePrefix}
-}
-
 // PacketMaturityTimeKey returns the key for storing maturity time for a given received VSC packet id
 func PacketMaturityTimeKey(id uint64) []byte {
 	seqBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(seqBytes, id)
-	return append(PacketMaturityTimePrefix(), seqBytes...)
+	return append([]byte{PacketMaturityTimeBytePrefix}, seqBytes...)
 }
 
 // IdFromPacketMaturityTimeKey returns the packet id corresponding to a maturity time full key (including prefix)
 func IdFromPacketMaturityTimeKey(key []byte) uint64 {
-	return binary.BigEndian.Uint64(key[len(PacketMaturityTimePrefix()):])
+	// Bytes after single byte prefix are converted to uin64
+	return binary.BigEndian.Uint64(key[1:])
 }
 
 // HeightValsetUpdateIDKey returns the key to a valset update ID for a given block height
 func HeightValsetUpdateIDKey(height uint64) []byte {
 	hBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(hBytes, height)
-	return append(HeightValsetUpdateIDPrefix(), hBytes...)
+	return append([]byte{HeightValsetUpdateIDBytePrefix}, hBytes...)
 }
 
 // OutstandingDowntimeKey returns the key to a validators' outstanding downtime by consensus address
 func OutstandingDowntimeKey(v sdk.ConsAddress) []byte {
-	return append(OutstandingDowntimePrefix(), address.MustLengthPrefix(v.Bytes())...)
+	return append([]byte{OutstandingDowntimeBytePrefix}, address.MustLengthPrefix(v.Bytes())...)
 }
 
 // CrossChainValidatorKey returns the key to a cross chain validator by consensus address
 func CrossChainValidatorKey(addr []byte) []byte {
-	return append(CrossChainValidatorPrefix(), addr...)
+	return append([]byte{CrossChainValidatorBytePrefix}, addr...)
 }
 
 // HistoricalInfoKey returns the key to historical info to a given block height
 func HistoricalInfoKey(height int64) []byte {
 	hBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(hBytes, uint64(height))
-	return append(HistoricalInfoPrefix(), hBytes...)
+	return append([]byte{HistoricalInfoBytePrefix}, hBytes...)
 }

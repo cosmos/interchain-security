@@ -237,11 +237,12 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 // IteratePacketMaturityTime iterates through the VSC packet maturity times set in the store
 func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.PacketMaturityTimePrefix())
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		seqBytes := iterator.Key()[len(types.PacketMaturityTimePrefix()):]
+		// Extract bytes following the 1 byte prefix
+		seqBytes := iterator.Key()[1:]
 		seq := binary.BigEndian.Uint64(seqBytes)
 
 		timeNs := binary.BigEndian.Uint64(iterator.Value())
@@ -376,7 +377,7 @@ func (k Keeper) DeleteCCValidator(ctx sdk.Context, addr []byte) {
 // GetAllCCValidator returns all cross-chain validators
 func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChainValidator) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.CrossChainValidatorPrefix())
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.CrossChainValidatorBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -396,13 +397,13 @@ func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests []types.SlashR
 	if err != nil {
 		panic(fmt.Errorf("failed to encode slash request json: %w", err))
 	}
-	store.Set(types.PendingSlashRequestsPrefix(), buf.Bytes())
+	store.Set([]byte{types.PendingSlashRequestsBytePrefix}, buf.Bytes())
 }
 
 // GetPendingSlashRequest returns the pending slash requests in store
 func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) (requests []types.SlashRequest) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingSlashRequestsPrefix())
+	bz := store.Get([]byte{types.PendingSlashRequestsBytePrefix})
 	if bz == nil {
 		return
 	}
@@ -425,5 +426,5 @@ func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashReque
 // ClearPendingSlashRequests clears the pending slash requests in store
 func (k Keeper) ClearPendingSlashRequests(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.PendingSlashRequestsPrefix())
+	store.Delete([]byte{types.PendingSlashRequestsBytePrefix})
 }

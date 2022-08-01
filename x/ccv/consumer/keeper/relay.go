@@ -73,7 +73,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 
 	store := ctx.KVStore(k.storeKey)
-	maturityIterator := sdk.KVStorePrefixIterator(store, types.PacketMaturityTimePrefix())
+	maturityIterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 	defer maturityIterator.Close()
 
 	currentTime := uint64(ctx.BlockTime().UnixNano())

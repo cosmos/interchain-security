@@ -141,7 +141,7 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 // a stop boolean which will stop the iteration.
 func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.ChainToClientPrefix())
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -149,8 +149,8 @@ func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, 
 	}
 
 	for ; iterator.Valid(); iterator.Next() {
-		// remove prefix from key to retrieve chainID
-		chainID := string(iterator.Key()[len(types.ChainToClientPrefix()):])
+		// remove 1 byte prefix from key to retrieve chainID
+		chainID := string(iterator.Key()[1:])
 
 		stop := cb(ctx, chainID)
 		if stop {
@@ -185,7 +185,7 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 // or the callback returns stop=true
 func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, channelID, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.ChannelToChainPrefix())
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -194,7 +194,7 @@ func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, 
 
 	for ; iterator.Valid(); iterator.Next() {
 		// remove prefix from key to retrieve channelID
-		channelID := string(iterator.Key()[len(types.ChannelToChainPrefix()):])
+		channelID := string(iterator.Key()[1:])
 
 		chainID := string(iterator.Value())
 
@@ -331,7 +331,7 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 // IterateOverUnbondingOpIndex iterates over the unbonding indexes for a given chain id.
 func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb func(vscID uint64, ubdIndex []uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
-	iterationPrefix := append(types.UnbondingOpIndexPrefix(), types.HashString(chainID)...)
+	iterationPrefix := append([]byte{types.UnbondingOpIndexBytePrefix}, types.HashString(chainID)...)
 	iterator := sdk.KVStorePrefixIterator(store, iterationPrefix)
 
 	defer iterator.Close()
@@ -624,12 +624,12 @@ func (k Keeper) EmptySlashAcks(ctx sdk.Context, chainID string) (acks []string) 
 // IterateSlashAcks iterates through the slash acks set in the store
 func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) bool) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.SlashAcksPrefix())
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.SlashAcksBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 
-		chainID := string(iterator.Key()[len(types.SlashAcksPrefix())+1:])
+		chainID := string(iterator.Key()[1:])
 
 		var data []string
 		buf := bytes.NewBuffer(iterator.Value())

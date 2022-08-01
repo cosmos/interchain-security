@@ -234,7 +234,7 @@ func (k Keeper) GetPendingCreateProposal(ctx sdk.Context, timestamp time.Time, c
 
 func (k Keeper) PendingCreateProposalIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
-	return sdk.KVStorePrefixIterator(store, types.PendingCreateProposalPrefix())
+	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCreateProposalBytePrefix})
 }
 
 // IteratePendingCreateProposal iterates over the pending proposals to create consumer chain clients in order
@@ -310,7 +310,7 @@ func (k Keeper) DeletePendingStopProposals(ctx sdk.Context, proposals ...types.S
 
 func (k Keeper) PendingStopProposalIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
-	return sdk.KVStorePrefixIterator(store, types.PendingStopProposalPrefix())
+	return sdk.KVStorePrefixIterator(store, []byte{types.PendingStopProposalBytePrefix})
 }
 
 // IteratePendingStopProposal iterates over the pending stop proposals in order and stop the chain if the stop time has passed,
