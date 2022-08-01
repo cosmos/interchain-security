@@ -141,8 +141,7 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 // a stop boolean which will stop the iteration.
 func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	keyPrefix := string(types.ChainToClientPrefix())
-	iterator := sdk.KVStorePrefixIterator(store, []byte(keyPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainToClientPrefix())
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -151,7 +150,7 @@ func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, 
 
 	for ; iterator.Valid(); iterator.Next() {
 		// remove prefix from key to retrieve chainID
-		chainID := string(iterator.Key()[len(keyPrefix):])
+		chainID := string(iterator.Key()[len(types.ChainToClientPrefix()):])
 
 		stop := cb(ctx, chainID)
 		if stop {
@@ -186,8 +185,7 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 // or the callback returns stop=true
 func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, channelID, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	keyPrefix := string(types.ChannelToChainPrefix())
-	iterator := sdk.KVStorePrefixIterator(store, []byte(keyPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, types.ChannelToChainPrefix())
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -196,7 +194,7 @@ func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, 
 
 	for ; iterator.Valid(); iterator.Next() {
 		// remove prefix from key to retrieve channelID
-		channelID := string(iterator.Key()[len(keyPrefix):])
+		channelID := string(iterator.Key()[len(types.ChannelToChainPrefix()):])
 
 		chainID := string(iterator.Value())
 
@@ -333,8 +331,8 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 // IterateOverUnbondingOpIndex iterates over the unbonding indexes for a given chain id.
 func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb func(vscID uint64, ubdIndex []uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
-	prefix := append(types.UnbondingOpIndexPrefix(), types.HashString(chainID)...)
-	iterator := sdk.KVStorePrefixIterator(store, prefix)
+	iterationPrefix := append(types.UnbondingOpIndexPrefix(), types.HashString(chainID)...)
+	iterator := sdk.KVStorePrefixIterator(store, iterationPrefix)
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
