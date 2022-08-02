@@ -17,6 +17,7 @@ func (s *KeeperTestSuite) TestGenesis() {
 	// vars
 	var channelID string
 	var pd ccv.ValidatorSetChangePacketData
+	var ts time.Time
 	consumerChainID := s.consumerChain.ChainID
 	vscID := uint64(1)
 	ubdOp := ccv.UnbondingOp{Id: vscID, UnbondingConsumerChains: []string{consumerChainID}}
@@ -57,12 +58,17 @@ func (s *KeeperTestSuite) TestGenesis() {
 					genesis.ConsumerStates[0].PendingValsetChanges[0],
 				)
 			},
-			assertInitGenesis: func(s *KeeperTestSuite, genesis *types.GenesisState) {},
+			assertInitGenesis: func(s *KeeperTestSuite, genesis *types.GenesisState) {
+				ctx := s.providerChain.GetContext()
+
+				gotPd, found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(ctx, consumerChainID)
+				s.Require().True(found)
+				s.Require().Equal(pd, gotPd[0])
+			},
 		},
 		{
 			name: "restart provider chain with  consumer chain channel established",
 			malleate: func(s *KeeperTestSuite) {
-				s.SetupTest()
 				s.SetupCCVChannel()
 
 				ctx := s.providerChain.GetContext()
@@ -72,7 +78,7 @@ func (s *KeeperTestSuite) TestGenesis() {
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetUnbondingOp(ctx, ubdOp)
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetUnbondingOpIndex(ctx, consumerChainID, vscID, ubdIndex)
 
-				ts := time.Now().UTC()
+				ts = time.Now().UTC().Add(time.Hour)
 
 				cccp := &types.CreateConsumerChainProposal{
 					ChainId:   consumerChainID,
@@ -105,7 +111,25 @@ func (s *KeeperTestSuite) TestGenesis() {
 				s.Require().Equal(InitialHeight, genesis.ConsumerStates[0].InitialHeight)
 				s.Require().Equal(acks, genesis.ConsumerStates[0].SlashDowntimeAck)
 			},
-			assertInitGenesis: func(s *KeeperTestSuite, genesis *types.GenesisState) {},
+			assertInitGenesis: func(s *KeeperTestSuite, genesis *types.GenesisState) {
+				ctx := s.providerChain.GetContext()
+				initHeight := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetInitChainHeight(ctx, consumerChainID)
+				s.Require().NotZero(initHeight)
+				channelID, found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetChainToChannel(ctx, consumerChainID)
+				s.Require().True(found)
+				_, found = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetChannelToChain(ctx, channelID)
+				s.Require().True(found)
+				_, found = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClientId(ctx, consumerChainID)
+				s.Require().True(found)
+				vscID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(ctx)
+				s.Require().NotZero(vscID)
+				height := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValsetUpdateBlockHeight(ctx, vscID)
+				s.Require().NotZero(height)
+				cccp := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingClientInfo(ctx, ts, consumerChainID)
+				s.Require().NotZero(cccp)
+				sccp := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingStopProposal(ctx, consumerChainID, ts)
+				s.Require().NotZero(sccp)
+			},
 		},
 	}
 
@@ -115,6 +139,9 @@ func (s *KeeperTestSuite) TestGenesis() {
 			genesis := s.providerChain.App.(*appProvider.App).ProviderKeeper.ExportGenesis(s.providerChain.GetContext())
 
 			tc.assertExportGenesis(s, genesis)
+
+			s.SetupTest()
+
 			s.Require().NotPanics(func() {
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.InitGenesis(s.providerChain.GetContext(), genesis)
 			})
@@ -123,41 +150,4 @@ func (s *KeeperTestSuite) TestGenesis() {
 		})
 	}
 
-	// malleate
-
-	// assertions
-
-	// s.Require().Equal(ubdOp, genesis.UnbondingOps)
-	// s.Require().Equal(ubdOp, genesis.UnbondingOpsIndex)
-	// valsetToHeight
-	// vscID
-
-	// do this for several consumer chains
-
-	// s.Require().NotZero(genesis.GetCreateConsumerChainProposals())
-	// s.Require().Equal(cccp, genesis.GetCreateConsumerChainProposals()[0])
-
-	// s.Require().NotZero(cccp, genesis.GetStopConsumerChainProposals())
-
-	// s.Require().Equal(types.StopConsumerChainProposal{ChainId: consumerChainID, StopTime: ts}, genesis.GetStopConsumerChainProposals()[0])
-
-	// // channel not established
-	// pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	// s.Require().NoError(err)
-	// pd := ccv.NewValidatorSetChangePacketData(
-	// 	[]abci.ValidatorUpdate{
-	// 		{
-	// 			PubKey: pk1,
-	// 			Power:  30,
-	// 		},
-	// 	},
-	// 	1,
-	// 	nil,
-	// )
-	// s.providerChain.App.(*appProvider.App).ProviderKeeper.AppendPendingVSC(ctx, consumerChainID, pd)
-
-	// s.Require().NotZero(genesis.ConsumerStates[0].PendingValsetChanges)
-	// s.Require().Equal(ccv.ValidatorSetChangePacketData{ValidatorUpdates: pd.ValidatorUpdates, ValsetUpdateId: vscID},
-	// 	genesis.ConsumerStates[0].PendingValsetChanges[0],
-	// )
 }

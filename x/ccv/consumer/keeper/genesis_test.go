@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -21,8 +23,10 @@ func (suite *KeeperTestSuite) TestGenesis() {
 			{Infraction: stakingtypes.Downtime},
 			{Infraction: stakingtypes.Downtime},
 		}
-		consAddr sdk.ConsAddress
-		vscID    uint64 = 1
+		consAddr      sdk.ConsAddress
+		vscID         uint64 = 1
+		restartHeight uint64
+		restartTime   time.Time
 	)
 
 	testCases := []struct {
@@ -53,8 +57,6 @@ func (suite *KeeperTestSuite) TestGenesis() {
 
 				_, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(ctx)
 				s.Require().True(found)
-				height := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()+1))
-				s.Require().Zero(height)
 
 				clientId, ok := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(ctx)
 				s.Require().True(ok)
@@ -72,6 +74,8 @@ func (suite *KeeperTestSuite) TestGenesis() {
 
 				// update context
 				ctx := s.consumerChain.GetContext()
+				restartHeight = uint64(ctx.BlockHeight())
+				restartTime = ctx.BlockTime()
 
 				// complete CCV channel handshake by sending a first VSC packet
 				pd := types.NewValidatorSetChangePacketData([]abci.ValidatorUpdate{}, vscID, nil)
@@ -84,7 +88,6 @@ func (suite *KeeperTestSuite) TestGenesis() {
 				vals := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetAllCCValidator(ctx)
 				consAddr = sdk.ConsAddress(vals[0].Address)
 				s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetOutstandingDowntime(ctx, consAddr)
-
 			},
 			assertExportGenesis: func(s *KeeperTestSuite, restartGenesis *consumertypes.GenesisState) {
 
@@ -109,7 +112,11 @@ func (suite *KeeperTestSuite) TestGenesis() {
 
 				_, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(ctx)
 				s.Require().True(found)
-				gotVSCID := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()+1))
+
+				s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IterateHeightToValsetUpdateID(ctx, func(h, v uint64) bool {
+					return true
+				})
+				gotVSCID := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetHeightValsetUpdateID(ctx, uint64(restartHeight+1))
 				s.Require().Equal(vscID, gotVSCID)
 
 				unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(ctx)
@@ -118,8 +125,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 				maturityTime := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(ctx, vscID)
 				s.Require().NotZero(maturityTime)
 
-				suite.Require().Equal(uint64(ctx.BlockTime().Add(unbondingPeriod).UnixNano()), maturityTime, "maturity time is not set correctly in genesis")
-
+				suite.Require().Equal(uint64(restartTime.Add(unbondingPeriod).UnixNano()), maturityTime, "maturity time is not set correctly in genesis")
 			},
 		},
 	}
@@ -131,9 +137,13 @@ func (suite *KeeperTestSuite) TestGenesis() {
 			genesis := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.ExportGenesis(suite.consumerChain.GetContext())
 			tc.assertExportGenesis(suite, genesis)
 
+			// reset context
+			suite.SetupTest()
+
 			// manually fill in validator set
 			genesis.InitialValSet = tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
 
+			// init genesis
 			suite.Require().NotPanics(func() {
 				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), genesis)
 			})

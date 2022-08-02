@@ -86,10 +86,9 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		unbondingTime := utils.ComputeConsumerUnbondingPeriod(tmClientState.UnbondingPeriod)
 		k.SetUnbondingTime(ctx, unbondingTime)
 
-		k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) bool {
-			k.SetHeightValsetUpdateID(ctx, height, vscID)
-			return true
-		})
+		for _, h2v := range state.HeightToValsetUpdateId {
+			k.SetHeightValsetUpdateID(ctx, h2v.Height, h2v.ValsetUpdateId)
+		}
 
 		// set provider client id
 		k.SetProviderClient(ctx, state.ProviderClientId)
@@ -140,12 +139,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 				ValsetUpdateId: vscID,
 			}
 			heightToVCIDs = append(heightToVCIDs, hv)
-			return false
+			return true
 		})
 
 		outstandingDowntimes := []types.OutstandingDowntime{}
 		k.IterateOutstandingDowntime(ctx, func(addr string) bool {
-			fmt.Println("Iterate", addr)
 			od := types.OutstandingDowntime{
 				ValidatorConsensusAddress: addr,
 			}

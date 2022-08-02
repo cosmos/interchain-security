@@ -60,7 +60,7 @@ message ConsumerState {
 // UnbondingOpIndex defines the genesis information for each unbonding operations index 
 // indexed by chain id and valset udpate id
 message UnbondingOpIndex {
-  bytes id = 1;
+  uint64 valset_update_id = 1;
   repeated uint64 unbonding_op_index = 2;
 }
 

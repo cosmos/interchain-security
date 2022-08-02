@@ -336,7 +336,7 @@ func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, v
 
 		vscID := binary.BigEndian.Uint64(iterator.Value())
 
-		if cb(height, vscID) {
+		if !cb(height, vscID) {
 			break
 		}
 	}

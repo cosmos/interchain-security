@@ -24,10 +24,44 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 	}
 
+	k.SetValidatorSetUpdateId(ctx, genState.ValsetUpdateId)
+	for _, vh := range genState.ValsetUpdateIdToHeight {
+		k.SetValsetUpdateBlockHeight(ctx, vh.Height, vh.ValsetUpdateId)
+	}
+
+	for _, cccp := range genState.CreateConsumerChainProposals {
+		k.SetPendingClientInfo(ctx, &cccp)
+	}
+	for _, sccp := range genState.StopConsumerChainProposals {
+		k.SetPendingStopProposal(ctx, sccp.ChainId, sccp.StopTime)
+	}
+	for _, ubdOp := range genState.UnbondingOps {
+		k.SetUnbondingOp(ctx, ubdOp)
+	}
+
 	// Set initial state for each consumer chain
-	for _, cc := range genState.ConsumerStates {
-		k.SetChainToChannel(ctx, cc.ChainId, cc.ChannelId)
-		k.SetChannelToChain(ctx, cc.ChannelId, cc.ChainId)
+	for _, cs := range genState.ConsumerStates {
+		chainID := cs.ChainId
+		k.SetConsumerClientId(ctx, chainID, cs.ClientId)
+		k.SetConsumerGenesis(ctx, chainID, cs.ConsumerGenesis)
+		if cs.LockUnbondingOnTimeout {
+			k.SetLockUnbondingOnTimeout(ctx, chainID)
+		}
+
+		if cs.ChannelId == "" {
+			for _, vsc := range cs.PendingValsetChanges {
+				k.AppendPendingVSC(ctx, chainID, vsc)
+			}
+		} else {
+			k.SetChannelToChain(ctx, cs.ChannelId, chainID)
+			k.SetChainToChannel(ctx, chainID, cs.ChannelId)
+			k.SetInitChainHeight(ctx, chainID, cs.InitialHeight)
+
+			k.SetSlashAcks(ctx, cs.ChainId, cs.SlashDowntimeAck)
+			for _, ubdOpIndex := range cs.UnbondingOpsIndex {
+				k.SetUnbondingOpIndex(ctx, chainID, ubdOpIndex.ValsetUpdateId, ubdOpIndex.UnbondingOpIndex)
+			}
+		}
 	}
 
 	k.SetParams(ctx, genState.Params)
@@ -57,8 +91,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chainID)
 			ubdOpIndexes := []types.UnbondingOpIndex{}
 			k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) bool {
-				id := types.UnbondingOpIndexKey(chainID, vscID)
-				ubdOpIndexes = append(ubdOpIndexes, types.UnbondingOpIndex{Id: id, UnbondingOpIndex: ubdIndex})
+				ubdOpIndexes = append(ubdOpIndexes, types.UnbondingOpIndex{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex})
 				return true
 			})
 			cs.UnbondingOpsIndex = ubdOpIndexes
