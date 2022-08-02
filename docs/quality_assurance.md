@@ -45,7 +45,7 @@ IBC packets:
 | 2.04 | Sending IBC packets <br /> - see `x/ccv/utils/utils.go:SendIBCPacket()` | `Scheduled` (ibc-go team) | `Done` | `Done` | `Scheduled` |
 | 2.05 | Handling acknowledgments | `Scheduled` (ibc-go team) | `Partial coverage` | `Scheduled` | `Scheduled` |
 | 2.06 | Handling timeouts | `Scheduled` (ibc-go team) | `Partial coverage` | `Future work` | `Scheduled` |
-| 2.07 | Handling IBC client expiration | `Scheduled` (ibc-go team) | `??` | `Future work` | `Scheduled` |
+| 2.07 | **Handling IBC client expiration** | `Scheduled` (ibc-go team) <br /> high priority | `??` | `Future work` | `Scheduled` |
 | 2.08 | ICS-20 channel creation | `Scheduled` (ibc-go team) | `??` | `Future work` | `Scheduled` | 
 | 2.09 | ICS-20 transfer | `Scheduled` (ibc-go team) | `??` | `NA` | `Scheduled` | 
 | 2.10 | Changes in IBC-GO testing suite | `Scheduled` (ibc-go team) | `NA` | `Partial coverage` | `NA` | 
@@ -78,9 +78,10 @@ The main concern addressed in this section is the correctness of the provider ch
 | 4.07 | A validator cannot get slashed multiple times for downtime on the same chain without requesting to `Unjail` itself in between | `Scheduled` | `??` | `Partial coverage` | `Scheduled` | `NA` |
 | 4.08 | A validator can be slashed multiple times for downtime on different chains | `Scheduled` | `??` | `NA` | `Scheduled` | `NA` |
 | 4.09 | The provider chain can easily be restarted with IS enabled <br /> - `ExportGenesis` & `InitGenesis` | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
-| 4.10 | The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
-| 4.11 | The provider chain can graciously handle a `StopConsumerChainProposal` <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
-| 4.12 | The provider chain can graciously handle a `SpawnConsumerChainProposal` <br /> - expected outcome: a consumer chain is registered and a client is created | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
+| 4.10 | The provider chain's correctness is not affected by a consumer chain shutting down | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
+| 4.11 | The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
+| 4.12 | The provider chain can graciously handle a `StopConsumerChainProposal` <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
+| 4.13 | The provider chain can graciously handle a `SpawnConsumerChainProposal` <br /> - expected outcome: a consumer chain is registered and a client is created | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
 
 ## Interchain Security Protocol Correctness
 
@@ -145,12 +146,10 @@ The main concern addressed in this section is the correctness of the consumer ch
 | -- | ------- | ----------- | ------------ | ------------- | ------- | ----- |
 | 10.01 | Consumer chain liveness (blocks are being produced) | `Scheduled` | `NA` | `??` | `Scheduled` | `NA` |
 | 10.02 | A chain has the ability to restart as a consumer chain with no more than 24 hours downtime | `Scheduled` | `NA` | `??` | `Scheduled` | `NA` |
-| 10.03 | Governance on `gov-cc` | `Scheduled` | `??` | `??` | `Scheduled` | `NA` |
-| 10.04 | CosmWasm on `wasm-cc` | `Scheduled` | `??` | `??` | `Scheduled` | `NA` |
+| 10.03 | A consumer chain has the ability to restart as a normal chain after shutting down, either controlled (via `StopConsumerChainProposal`) or due to timing out | `Scheduled` | `??` | `??` | `Scheduled` | `NA` |
+| 10.04 | A consumer chain has the ability to restart as a consumer chain with the same `chainId` after shutting down, either controlled (via `StopConsumerChainProposal`) or due to timing out | `Scheduled` | `??` | `??` | `Scheduled` | `NA` |
+| 10.05 | Governance on `gov-cc` | `Scheduled` | `??` | `??` | `Scheduled` | `NA` |
+| 10.06 | CosmWasm on `wasm-cc` | `Scheduled` | `??` | `??` | `Scheduled` | `NA` |
 | TBA ...
 
 > TODO create clear concerns for `gov-cc` and `wasm-cc` once the implementations are done
-
-> TODO Scenarios to consider for restarting chains, client expiration
->   - A consumer chain restarts as a normal chain (after shutting down, either controlled or due to timing out)
->   - A consumer chain restarts as a consumer chain (after shutting down, either controlled or due to timing out)
