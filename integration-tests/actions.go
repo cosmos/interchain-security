@@ -463,10 +463,10 @@ func (s System) addIbcChannel(
 		"create", "channel",
 		"--order", action.order,
 		"--channel-version", s.containerConfig.ccvVersion,
-		"--connection-a", "connection-"+fmt.Sprint(action.connectionA),
 		"--port-a", action.portA,
 		"--port-b", action.portB,
 		s.chainConfigs[action.chainA].chainId,
+		"connection-"+fmt.Sprint(action.connectionA),
 	)
 
 	if verbose {
