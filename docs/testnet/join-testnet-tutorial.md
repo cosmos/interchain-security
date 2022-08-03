@@ -206,7 +206,7 @@ interchain-security-cd start --home $CONS-NODE-DIR \
 <br/><br/>
 
 
-__8. Bond the validator__
+__8. Bond the validator__  
 Now that both consumer and provider nodes are running, we can bond it to be a validator on boths chain, by submitting the following transaction to the provider chain.
 
 ```
