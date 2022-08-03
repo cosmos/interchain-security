@@ -8,7 +8,7 @@ This guide contains the instructions to setup a Interchain-Security Testnet. For
 - Go 1.18+ <sub><sup>([installation notes](https://go.dev/doc/install))<sub><sup>
 - Interchain Security binaries <sub><sup>([installation notes](#install-the-interchain-security-binary))<sub><sup>
 - Rust 1.60+ <sub><sup>([installation notes](https://www.rust-lang.org/tools/install))<sub><sup>
-- Hermes v1.0.0-rc.0 <sub><sup>([installation notes](https://hermes.informal.systems/getting_started.html))<sub><sup>
+- Hermes v1.0.0-rc.1 <sub><sup>([installation notes](https://hermes.informal.systems/getting_started.html))<sub><sup>
 - jq  <sub><sup>([installation notes](https://stedolan.github.io/jq/download/))<sub><sup>
 
 ---
@@ -30,7 +30,7 @@ Follow the instruction to install the IBC-Relayer Rust implementation [here](htt
 ### Provider chain setup
 The following steps explain how to setup a provider chain running a single validator node. Along this guide we will describe the command arguments and save them using environment variables. 
 
-__0. Remove any existing node directory__
+__0. Remove any existing node directory__  
 Start by choosing a directory name, like `~/provider` to store the provider chain node files.
 
 ```
@@ -38,10 +38,10 @@ PROV-NODE-DIR="~/provider"
 rm -rf $PROV-NODE-DIR` <br/><br/>
 ```
 
+<br/><br/>
+    
+    
 __1. Create an initial genesis__  
-
-
-
 The command below initializes the node's configuration files along with a initial genesis file (`${PROV-NODE-DIR}/config/genesis.json`). The `$PROV-NODE-MONIKER` argument is a public moniker that will identify your validator, i.e. `provider-coordinator`). Additionally, in this guide the provider and consumer chains id are self-titled but can be changed arbitrarly.
 
 ```
@@ -51,8 +51,10 @@ PROV-CHAIN-ID=provider
 interchain-security-pd init $PROV-NODE-MONIKER --chain-id $PROV-CHAIN-ID --home $PROV-NODE-DIR
 ```  
 
-*If you want to make any updates to the genesis, it is a good opportunity to make these updates now.*<br/><br/>
+* *If you want to make any updates to the genesis, it is a good opportunity to make these updates now.*<br/><br/>
 
+<br/><br/>
+   
 __2. Reduce proposal voting period__  
 This command will shorten the voting period to 3 minutes in order to make pass a consumer chain proposal.
 
@@ -62,6 +64,7 @@ jq ".app_state.gov.voting_params.voting_period = \"180s\"" \
 
 mv ${PROV-NODE-DIR}/edited_genesis.json ${PROV-NODE-DIR}/config/genesis.json
 ```  
+
 <br/><br/>
 
 __3. Create an account keypair__  
@@ -159,7 +162,7 @@ tee consumer-proposal.json<<EOF
 EOF
 ``` 
 
-* *Note that each consumer chain project is expected to have its own binary and genesis file. Therefore the proposal's `genesis_hash` and `binary_hash` fields used in the context of this tutorial are irrelevant*
+* *Note that each consumer chain project is expected to have its own binary and genesis file. Therefore this proposal's `genesis_hash` and `binary_hash` fields are irrelevant in the context of this tutorial*
 
 <br/><br/>
 
@@ -405,6 +408,6 @@ This commands below will print the updated validator consensus info.
 # Query provider chain valset
 interchain-security-pd q tendermint-validator-set --home $PROV-NODE-DIR
     
-# Query provider chain valset    
-interchain-security-pd q tendermint-validator-set --home $CONS-NODE-DIR
+# Query consumer chain valset    
+interchain-security-cd q tendermint-validator-set --home $CONS-NODE-DIR
 ```
