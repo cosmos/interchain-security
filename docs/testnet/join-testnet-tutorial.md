@@ -177,7 +177,7 @@ cp ${PROV-NODE-DIR}/config/priv_validator_key.json ${CONS-NODE-DIR}/config/priv_
 <br/><br/>
 
 __6. Setup client RPC endpoint__  
-This command updates the consumer node RPC client config and allow to query the chain states as explained in the [section above](#6-setup-client-rpc-endpoint).  
+This command updates the consumer node RPC client config and allow to query the chain states as explained in the above.  
   
 `sed -i -r "/node =/ s/= .*/= \"tcp:\/\/localhost:26648\"/" ${CONS-NODE-DIR}/config/client.toml`
 <br/><br/>
