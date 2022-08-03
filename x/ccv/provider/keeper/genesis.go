@@ -25,12 +25,12 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 
 	k.SetValidatorSetUpdateId(ctx, genState.ValsetUpdateId)
-	for _, vh := range genState.ValsetUpdateIdToHeight {
-		k.SetValsetUpdateBlockHeight(ctx, vh.Height, vh.ValsetUpdateId)
+	for _, v2h := range genState.ValsetUpdateIdToHeight {
+		k.SetValsetUpdateBlockHeight(ctx, v2h.Height, v2h.ValsetUpdateId)
 	}
 
 	for _, cccp := range genState.CreateConsumerChainProposals {
-		k.SetPendingClientInfo(ctx, &cccp)
+		k.SetPendingCreateProposal(ctx, &cccp)
 	}
 	for _, sccp := range genState.StopConsumerChainProposals {
 		k.SetPendingStopProposal(ctx, sccp.ChainId, sccp.StopTime)
@@ -69,7 +69,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	var consumerStates []types.ConsumerState
-
+	// export states for each consumer chains
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) bool {
 		gen, found := k.GetConsumerGenesis(ctx, chainID)
 		if !found {
@@ -105,7 +105,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return true
 	})
 
-	// export provider states
+	// export provider chain states
 	vscID := k.GetValidatorSetUpdateId(ctx)
 	vscIDToHeights := []types.ValsetUpdateIdToHeight{}
 	k.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) bool {
@@ -119,10 +119,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return true
 	})
 
-	k.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) bool {
-		vscIDToHeights = append(vscIDToHeights, types.ValsetUpdateIdToHeight{ValsetUpdateId: vscID, Height: height})
-		return true
-	})
 	stopChainProposals := []types.StopConsumerChainProposal{}
 	k.IteratePendingStopProposal(ctx, func(chainID string, stopTime time.Time) bool {
 		stopChainProposals = append(stopChainProposals,

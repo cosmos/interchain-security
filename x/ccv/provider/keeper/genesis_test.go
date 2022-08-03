@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -14,17 +15,20 @@ import (
 
 func (s *KeeperTestSuite) TestGenesis() {
 
-	// vars
-	var channelID string
-	var pd ccv.ValidatorSetChangePacketData
-	var ts time.Time
-	consumerChainID := s.consumerChain.ChainID
-	vscID := uint64(1)
-	ubdOp := ccv.UnbondingOp{Id: vscID, UnbondingConsumerChains: []string{consumerChainID}}
-	ubdIndex := []uint64{0, 1, 2}
-	var found bool
-
-	acks := []string{sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Address()).String()}
+	var (
+		channelID       string
+		consumerChainID string = s.consumerChain.ChainID
+		restartHeight   uint64
+		expVSCID        uint64
+		expTimestamp    time.Time
+		expPendingVSC   ccv.ValidatorSetChangePacketData
+		expUbdOp        ccv.UnbondingOp
+		expCreateProp   *types.CreateConsumerChainProposal
+		expUbdIndex     []uint64 = []uint64{0, 1, 2}
+		expSlashAcks             = []string{
+			sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Address()).String(),
+		}
+	)
 
 	testCases := []struct {
 		name                string
@@ -32,84 +36,77 @@ func (s *KeeperTestSuite) TestGenesis() {
 		assertExportGenesis func(*KeeperTestSuite, *types.GenesisState)
 		assertInitGenesis   func(*KeeperTestSuite, *types.GenesisState)
 	}{
-		{
-			name: "restart provider chain with consumer chain channel not established",
-			malleate: func(s *KeeperTestSuite) {
-				// channel not established
-				ctx := s.providerChain.GetContext()
-				pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-				s.Require().NoError(err)
-				pd = ccv.NewValidatorSetChangePacketData(
-					[]abci.ValidatorUpdate{
-						{
-							PubKey: pk1,
-							Power:  30,
-						},
-					},
-					1,
-					nil,
-				)
-				s.providerChain.App.(*appProvider.App).ProviderKeeper.AppendPendingVSC(ctx, consumerChainID, pd)
 
-			},
-			assertExportGenesis: func(s *KeeperTestSuite, genesis *types.GenesisState) {
-				s.Require().NotZero(genesis.ConsumerStates[0].PendingValsetChanges)
-				s.Require().Equal(ccv.ValidatorSetChangePacketData{ValidatorUpdates: pd.ValidatorUpdates, ValsetUpdateId: vscID},
-					genesis.ConsumerStates[0].PendingValsetChanges[0],
-				)
-			},
-			assertInitGenesis: func(s *KeeperTestSuite, genesis *types.GenesisState) {
-				ctx := s.providerChain.GetContext()
-
-				gotPd, found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(ctx, consumerChainID)
-				s.Require().True(found)
-				s.Require().Equal(pd, gotPd[0])
-			},
-		},
 		{
-			name: "restart provider chain with  consumer chain channel established",
+			name: "restart provider chain with consumer chain channel established",
 			malleate: func(s *KeeperTestSuite) {
 				s.SetupCCVChannel()
-
 				ctx := s.providerChain.GetContext()
-				channelID, found = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetChainToChannel(ctx, consumerChainID)
-				s.Require().True(found)
 
-				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetUnbondingOp(ctx, ubdOp)
-				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetUnbondingOpIndex(ctx, consumerChainID, vscID, ubdIndex)
-
-				ts = time.Now().UTC().Add(time.Hour)
-
-				cccp := &types.CreateConsumerChainProposal{
+				// set the provider states to export in genesis
+				restartHeight = uint64(ctx.BlockHeight())
+				expVSCID = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(ctx)
+				expTimestamp = time.Now().Add(time.Hour)
+				expCreateProp = &types.CreateConsumerChainProposal{
 					ChainId:   consumerChainID,
-					SpawnTime: ts,
+					SpawnTime: expTimestamp,
 				}
-				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetPendingCreateProposal(ctx, cccp)
-				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetPendingStopProposal(ctx, consumerChainID, ts)
-				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetSlashAcks(ctx, consumerChainID, acks)
+				expUbdOp = ccv.UnbondingOp{
+					Id:                      expVSCID,
+					UnbondingConsumerChains: []string{consumerChainID},
+				}
+
+				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetUnbondingOp(ctx, expUbdOp)
+				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetUnbondingOpIndex(ctx, consumerChainID, expVSCID, expUbdIndex)
+
+				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetLockUnbondingOnTimeout(ctx, consumerChainID)
+				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetPendingCreateProposal(ctx, expCreateProp)
+				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetPendingStopProposal(ctx, consumerChainID, expTimestamp)
+				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetSlashAcks(ctx, consumerChainID, expSlashAcks)
 			},
 			assertExportGenesis: func(s *KeeperTestSuite, genesis *types.GenesisState) {
 				ctx := s.providerChain.GetContext()
+
 				// check provider states
+				s.Require().Equal(expVSCID, genesis.ValsetUpdateId)
+
+				s.Require().Equal(restartHeight, genesis.ValsetUpdateIdToHeight[len(genesis.ValsetUpdateIdToHeight)-1].Height)
+				s.Require().Equal(expVSCID-1, genesis.ValsetUpdateIdToHeight[len(genesis.ValsetUpdateIdToHeight)-1].ValsetUpdateId)
+				s.Require().NotZero(genesis.UnbondingOps[0])
+				s.Require().Equal(expUbdOp, genesis.UnbondingOps[0])
+				fmt.Println(expUbdOp)
+				s.Require().NotZero(genesis.StopConsumerChainProposals[0])
+				s.Require().True(expTimestamp.UTC().Equal(genesis.StopConsumerChainProposals[0].StopTime))
+				s.Require().Equal(consumerChainID, genesis.StopConsumerChainProposals[0].ChainId)
+
+				s.Require().NotZero(genesis.CreateConsumerChainProposals[0])
+				s.Require().True(expTimestamp.UTC().Equal(genesis.CreateConsumerChainProposals[0].SpawnTime))
+				s.Require().Equal(consumerChainID, genesis.CreateConsumerChainProposals[0].ChainId)
+				s.Require().Equal(s.providerChain.App.(*appProvider.App).ProviderKeeper.GetParams(ctx), genesis.Params)
 
 				// check consumer states
 				s.Require().NotZero(genesis.ConsumerStates)
-				s.Require().Equal(consumerChainID, genesis.ConsumerStates[0].ChainId)
-				s.Require().Equal(channelID, genesis.ConsumerStates[0].ChannelId)
+				cs := genesis.ConsumerStates[0]
+				var found bool
+				channelID, found = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetChainToChannel(ctx, consumerChainID)
+				s.Require().True(found)
+				s.Require().Equal(channelID, cs.ChannelId)
+
+				s.Require().Equal(consumerChainID, cs.ChainId)
 
 				clientID, found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClientId(ctx, consumerChainID)
 				s.Require().True(found)
-				s.Require().Equal(clientID, genesis.ConsumerStates[0].ClientId)
+				s.Require().Equal(clientID, cs.ClientId)
 				cGen, found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerGenesis(ctx, consumerChainID)
 				s.Require().True(found)
-				s.Require().Equal(cGen, genesis.ConsumerStates[0].ConsumerGenesis)
+				s.Require().Equal(cGen, cs.ConsumerGenesis)
 
 				lockUbd := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetLockUnbondingOnTimeout(ctx, consumerChainID)
-				s.Require().Equal(lockUbd, genesis.ConsumerStates[0].LockUnbondingOnTimeout)
+				s.Require().Equal(lockUbd, cs.LockUnbondingOnTimeout)
 
 				InitialHeight := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetInitChainHeight(ctx, consumerChainID)
-				s.Require().Equal(InitialHeight, genesis.ConsumerStates[0].InitialHeight)
-				s.Require().Equal(acks, genesis.ConsumerStates[0].SlashDowntimeAck)
+				s.Require().Equal(InitialHeight, cs.InitialHeight)
+				s.Require().Equal(expSlashAcks, cs.SlashDowntimeAck)
 			},
 			assertInitGenesis: func(s *KeeperTestSuite, genesis *types.GenesisState) {
 				ctx := s.providerChain.GetContext()
@@ -121,14 +118,50 @@ func (s *KeeperTestSuite) TestGenesis() {
 				s.Require().True(found)
 				_, found = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClientId(ctx, consumerChainID)
 				s.Require().True(found)
-				vscID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(ctx)
-				s.Require().NotZero(vscID)
-				height := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValsetUpdateBlockHeight(ctx, vscID)
+				gotVSCID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(ctx)
+				s.Require().Equal(expVSCID, gotVSCID)
+				height := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValsetUpdateBlockHeight(ctx, expVSCID)
 				s.Require().NotZero(height)
-				cccp := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingClientInfo(ctx, ts, consumerChainID)
-				s.Require().NotZero(cccp)
-				sccp := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingStopProposal(ctx, consumerChainID, ts)
+				expCreateProp := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingCreateProposal(ctx, expTimestamp, consumerChainID)
+				s.Require().NotZero(expCreateProp)
+				sccp := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingStopProposal(ctx, consumerChainID, expTimestamp)
 				s.Require().NotZero(sccp)
+				s.Require().Equal(genesis.Params, s.providerChain.App.(*appProvider.App).ProviderKeeper.GetParams(ctx))
+
+			},
+		},
+		{
+			name: "restart provider chain with consumer chain channel established",
+			malleate: func(s *KeeperTestSuite) {
+				s.SetupTest()
+				// channel not established
+				ctx := s.providerChain.GetContext()
+				pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
+				s.Require().NoError(err)
+				expPendingVSC = ccv.NewValidatorSetChangePacketData(
+					[]abci.ValidatorUpdate{
+						{
+							PubKey: pk1,
+							Power:  30,
+						},
+					},
+					1,
+					nil,
+				)
+				s.providerChain.App.(*appProvider.App).ProviderKeeper.AppendPendingVSC(ctx, consumerChainID, expPendingVSC)
+			},
+			assertExportGenesis: func(s *KeeperTestSuite, genesis *types.GenesisState) {
+				s.Require().NotZero(genesis.ConsumerStates)
+				cs := genesis.ConsumerStates[0]
+				s.Require().NotZero(cs.PendingValsetChanges)
+				s.Require().Equal(expPendingVSC, cs.PendingValsetChanges[0])
+			},
+			assertInitGenesis: func(s *KeeperTestSuite, genesis *types.GenesisState) {
+				ctx := s.providerChain.GetContext()
+
+				gotPendingVSC, found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(ctx, consumerChainID)
+				s.Require().True(found)
+				s.Require().Equal(expPendingVSC, gotPendingVSC[0])
 			},
 		},
 	}
@@ -140,6 +173,7 @@ func (s *KeeperTestSuite) TestGenesis() {
 
 			tc.assertExportGenesis(s, genesis)
 
+			// reset context
 			s.SetupTest()
 
 			s.Require().NotPanics(func() {

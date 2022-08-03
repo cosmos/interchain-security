@@ -23,7 +23,7 @@ message GenesisState {
   // MaturingPackets nil on new chain, filled on restart.
   repeated MaturingVSCPacket maturing_packets = 7
       [ (gogoproto.nullable) = false ];
-  // InitialValset filled in on new chain, mannually filled in on restart.
+  // InitialValset filled in on new chain, manually filled in on restart.
   repeated .tendermint.abci.ValidatorUpdate initial_val_set = 8
       [ (gogoproto.nullable) = false ];
   // HeightToValsetUpdateId nil on new chain, filled on restart.

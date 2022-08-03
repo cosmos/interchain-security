@@ -86,6 +86,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		unbondingTime := utils.ComputeConsumerUnbondingPeriod(tmClientState.UnbondingPeriod)
 		k.SetUnbondingTime(ctx, unbondingTime)
 
+		// set height to valset update id mapping
 		for _, h2v := range state.HeightToValsetUpdateId {
 			k.SetHeightValsetUpdateID(ctx, h2v.Height, h2v.ValsetUpdateId)
 		}

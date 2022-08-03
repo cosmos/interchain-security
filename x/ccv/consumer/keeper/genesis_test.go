@@ -16,17 +16,16 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestGenesis() {
-
 	var (
+		vscID         uint64 = 1
+		restartHeight uint64
+		restartTime   time.Time
 		slashRequests []consumertypes.SlashRequest = []consumertypes.SlashRequest{
 			{Infraction: stakingtypes.Downtime},
 			{Infraction: stakingtypes.Downtime},
 			{Infraction: stakingtypes.Downtime},
 		}
-		consAddr      sdk.ConsAddress
-		vscID         uint64 = 1
-		restartHeight uint64
-		restartTime   time.Time
+		consAddr sdk.ConsAddress
 	)
 
 	testCases := []struct {
@@ -90,6 +89,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 				s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetOutstandingDowntime(ctx, consAddr)
 			},
 			assertExportGenesis: func(s *KeeperTestSuite, restartGenesis *consumertypes.GenesisState) {
+				ctx := s.consumerChain.GetContext()
 
 				// check that the CCV states are exported
 				providerChannel := suite.path.EndpointA.ChannelID
@@ -106,8 +106,9 @@ func (suite *KeeperTestSuite) TestGenesis() {
 
 				suite.Require().NotNil(restartGenesis.OutstandingDowntimeSlashing)
 				suite.Require().Equal(consAddr.String(), restartGenesis.OutstandingDowntimeSlashing[0].GetValidatorConsensusAddress())
+				s.Require().Equal(s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetParams(ctx), restartGenesis.Params)
 			},
-			assertInitGenesis: func(s *KeeperTestSuite, _ *consumertypes.GenesisState) {
+			assertInitGenesis: func(s *KeeperTestSuite, genesis *consumertypes.GenesisState) {
 				ctx := s.consumerChain.GetContext()
 
 				_, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(ctx)
@@ -126,6 +127,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 				s.Require().NotZero(maturityTime)
 
 				suite.Require().Equal(uint64(restartTime.Add(unbondingPeriod).UnixNano()), maturityTime, "maturity time is not set correctly in genesis")
+				s.Require().Equal(genesis.Params, s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetParams(ctx))
 			},
 		},
 	}
