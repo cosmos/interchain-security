@@ -42,10 +42,10 @@ __1. Create an initial genesis__
 
 
 
-The command below initializes the node's configuration files along with a initial genesis file (`${PROV-NODE-DIR}/config/genesis.json`). The `$PROV-NODE-MONIKER` argument is a public moniker that will identify your validator, i.e. `provider-validator`). Additionally, in this guide the provider and consumer chains id are self-titled but can be changed arbitrarly.
+The command below initializes the node's configuration files along with a initial genesis file (`${PROV-NODE-DIR}/config/genesis.json`). The `$PROV-NODE-MONIKER` argument is a public moniker that will identify your validator, i.e. `provider-coordinator`). Additionally, in this guide the provider and consumer chains id are self-titled but can be changed arbitrarly.
 
 ```
-PROV-NODE-MONIKER=provider-node-moniker
+PROV-NODE-MONIKER=provider-coordinator
 PROV-CHAIN-ID=provider
 
 interchain-security-pd init $PROV-NODE-MONIKER --chain-id $PROV-CHAIN-ID --home $PROV-NODE-DIR
@@ -201,7 +201,7 @@ __1. Create an initial genesis__
 Create the initial genesis file (`${CONS-NODE-DIR}/config/genesis.json`) with the following command:
   
 ```
-CONS-NODE-MONIKER=consumer-node-moniker
+CONS-NODE-MONIKER=consumer-coordinator
 CONS-CHAIN-ID=consumer
 interchain-security-cd init $CONS-NODE-MONIKER --chain-id $CONS-CHAIN-ID --home $CONS-NODE-DIR
 ```  
