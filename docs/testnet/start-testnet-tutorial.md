@@ -162,7 +162,7 @@ tee consumer-proposal.json<<EOF
 EOF
 ``` 
 
-* *Note that each consumer chain project is expected to have its own binary and genesis file. Therefore this proposal's `genesis_hash` and `binary_hash` fields are irrelevant in the context of this tutorial*
+* *Note that each consumer chain project is expected to have its a different binary and genesis file. Therefore this proposal's `genesis_hash` and `binary_hash` fields are irrelevant in the context of this tutorial. Note that the "spawn_time" should be in the past in order to be able to start the consumer chain immediately.*
 
 <br/><br/>
 
