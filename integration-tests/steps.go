@@ -192,7 +192,7 @@ var happyPathSteps = []Step{
 		},
 		state: State{
 			1: ChainState{
-				// Tx should not go through, ICS channel is not setup until token delegation has been relayed to consumer
+				// Tx should not go through, ICS channel is not setup until first VSC packet has been relayed to consumer
 				ValBalances: &map[uint]uint{
 					0: 10000000000,
 					1: 10000000000,
