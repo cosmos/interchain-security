@@ -556,6 +556,38 @@ func (s System) delegateTokens(
 	}
 }
 
+type UnbondTokensAction struct {
+	chain      uint
+	sender     uint
+	unbondFrom uint
+	amount     uint
+}
+
+func (s System) unbondTokens(
+	action UnbondTokensAction,
+	verbose bool,
+) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
+
+		"tx", "staking", "unbond",
+		s.validatorConfigs[action.unbondFrom].valoperAddress,
+		fmt.Sprint(action.amount)+`stake`,
+
+		`--from`, `validator`+fmt.Sprint(action.sender),
+		`--chain-id`, s.chainConfigs[action.chain].chainId,
+		`--home`, s.getValidatorHome(action.chain, action.sender),
+		`--node`, s.getValidatorNode(action.chain, action.sender),
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
 var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
 
 func (s System) getValidatorNum(chain uint) uint {
