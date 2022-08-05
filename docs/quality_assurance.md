@@ -18,7 +18,11 @@ The verification of Interchain Security is split across the following concerns:
 - The correctness of the Interchain Security protocol, i.e., the protocol follows the [specification](https://github.com/cosmos/ibc/blob/master/spec/appics-028-cross-chain-validation/README.md).
 - The correctness of the consumer chain, i.e., both liveness or safety hold.
 
-## Software Engineering
+For an overview of the Interchain Security workflow, have a look at [the diagrams](#interchain-security-workflow) at the end of this document.
+
+## Quality Assurance Concerns
+
+### Software Engineering
 
 | ID | Concern | Code Review | Automatic Tools | Unit Testing |
 | -- | ------- | ----------- | --------------- | ------------ |
@@ -28,7 +32,7 @@ The verification of Interchain Security is split across the following concerns:
 | 1.04 | Serialization / deserialization | `Scheduled` | `??` | `??` |
 | 1.05 | Storage leaks | `Scheduled` | `NA` | `??` |
 
-## Integration with IBC
+### Integration with IBC
 
 Interchain Security is an IBC application and, thus, it relies on IBC to establish a separate channel between the provider chain and every consumer chain. Interchain Security relies on the IBC v3.0 golang [implementation](https://github.com/cosmos/ibc-go/tree/v3.0.0).
 
@@ -50,7 +54,7 @@ IBC packets:
 | 2.09 | ICS-20 transfer | `Scheduled` (ibc-go team) | `??` | `NA` | `Scheduled` | 
 | 2.10 | Changes in IBC-GO testing suite | `Scheduled` (ibc-go team) | `NA` | `Partial coverage` | `NA` | 
 
-## Integration with Cosmos SDK
+### Integration with Cosmos SDK
 
 A prerequisite of the code review is to open a PR with all the [SDK changes](https://github.com/cosmos/cosmos-sdk/tree/interchain-security-rebase) needed by Interchain Security.
 
@@ -60,7 +64,7 @@ A prerequisite of the code review is to open a PR with all the [SDK changes](htt
 | 3.02 | Changes to slashing module | `Scheduled` (sdk team) | `Done` <br /> see [TestValidatorDowntime](../x/ccv/consumer/keeper/keeper_test.go#L345) <br />  | `NA` | `Scheduled` | 
 | 3.03 | Changes to evidence module | `Scheduled` (sdk team) | `Done` <br /> see [TestValidatorDoubleSigning](../x/ccv/consumer/keeper/keeper_test.go#L427) <br />  | `NA` | `Scheduled` | 
 
-## Provider Chain Correctness
+### Provider Chain Correctness
 
 The main concern addressed in this section is the correctness of the provider chain (e.g., the Cosmos Hub). In other words, when Interchain Security is enabled (i.e., the provider CCV module is enabled), the safety and liveness properties still hold. This _**MUST**_ be the case regardless of the number of consumer chains, i.e., 
 - no consumer chain;
@@ -83,7 +87,7 @@ The main concern addressed in this section is the correctness of the provider ch
 | 4.12 | The provider chain can graciously handle a `StopConsumerChainProposal` <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
 | 4.13 | The provider chain can graciously handle a `SpawnConsumerChainProposal` <br /> - expected outcome: a consumer chain is registered and a client is created | `Scheduled` | `??` | `Future work` | `Scheduled` | `NA` |
 
-## Interchain Security Protocol Correctness
+### Interchain Security Protocol Correctness
 
 The main concern addressed in this section is the correctness of the Interchain Security protocol. In other words, the implementation should be aligned with the Interchain Security [specification](https://github.com/cosmos/ibc/blob/master/spec/appics-028-cross-chain-validation/README.md). 
 
@@ -135,7 +139,7 @@ In addition, the implementation MUST guarantee the following [system properties]
 
 ---
 
-## Consumer Chain Correctness
+### Consumer Chain Correctness
 
 The main concern addressed in this section is the correctness of the consumer chains. In other words, when Interchain Security is enabled (i.e., the consumer CCV module is enabled), the safety and liveness properties still hold. This also covers various flavor of consumer chains:
 - minimum viable consumer chain ([mvcc](https://github.com/cosmos/interchain-security/issues/139))
@@ -153,3 +157,13 @@ The main concern addressed in this section is the correctness of the consumer ch
 | TBA ...
 
 > TODO create clear concerns for `gov-cc` and `wasm-cc` once the implementations are done
+
+## Interchain Security Workflow
+
+The following diagrams show (in orange) the events that influence the operation of Interchain Security -- during creating consumer chains, normal operation, and removing consumer chains. These events are the result of actions that can be performed by the existing actors, i.e., users (token holders), validators, and relayers.
+
+![Creating Consumer Chains](./figures/is_init_overview.png?raw=true)
+
+![Normal Operation](./figures/is_normalop_overview.png?raw=true)
+
+![Remove Consumer Chains](./figures/is_remove_overview.png?raw=true)
