@@ -233,4 +233,37 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
+	{
+		action: CensorValidatorAction{
+			chain:     1,
+			validator: 1,
+		},
+		state: State{
+			0: ChainState{
+				ValPowers: &map[uint]uint{
+					0: 511,
+					// downtime on consumer should take away voting power on provider, But not yet!!
+					1: 500,
+					2: 500,
+				},
+			},
+		},
+	},
+	{
+		action: RelayPacketsAction{
+			chain:   0,
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			0: ChainState{
+				ValPowers: &map[uint]uint{
+					0: 511,
+					// Voting power now gone. Is a sleep needed here ?
+					1: 0,
+					2: 500,
+				},
+			},
+		},
+	},
 }

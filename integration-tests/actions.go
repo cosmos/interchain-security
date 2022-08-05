@@ -556,6 +556,29 @@ func (s System) delegateTokens(
 	}
 }
 
+type CensorValidatorAction struct {
+	chain     uint
+	validator uint
+}
+
+func (s System) CensorValidator(action CensorValidatorAction, verbose bool) {
+	nodeIp := s.getValidatorIp(action.chain, action.validator)
+
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "iptables",
+		"-A", "INPUT",
+		"-s", nodeIp,
+		"-j", "DROP",
+	)
+	if verbose {
+		fmt.Println("censor cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
 var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
 
 func (s System) getValidatorNum(chain uint) uint {
@@ -576,7 +599,11 @@ func (s System) getValidatorNum(chain uint) uint {
 }
 
 func (s System) getValidatorNode(chain uint, validator uint) string {
-	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator) + ":26658"
+	return "tcp://" + s.getValidatorIp(chain, validator) + ":26658"
+}
+
+func (s System) getValidatorIp(chain uint, validator uint) string {
+	return s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator)
 }
 
 func (s System) getValidatorHome(chain uint, validator uint) string {
