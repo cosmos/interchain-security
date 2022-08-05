@@ -548,7 +548,7 @@ func (s System) delegateTokens(
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
 
 		"tx", "staking", "delegate",
 		s.validatorConfigs[action.to].valoperAddress,
@@ -561,8 +561,12 @@ func (s System) delegateTokens(
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
-	).CombinedOutput()
+	)
+	if verbose {
+		fmt.Println("delegate cmd:", cmd.String())
+	}
 
+	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
@@ -580,7 +584,7 @@ func (s System) unbondTokens(
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
 
 		"tx", "staking", "unbond",
 		s.validatorConfigs[action.unbondFrom].valoperAddress,
@@ -593,8 +597,12 @@ func (s System) unbondTokens(
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
-	).CombinedOutput()
+	)
+	if verbose {
+		fmt.Println("unbond cmd:", cmd.String())
+	}
 
+	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
