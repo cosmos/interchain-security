@@ -107,7 +107,7 @@ func (s System) startChain(
 		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
 		chainConfig.chainId, chainConfig.ipPrefix, genesisChanges,
 		fmt.Sprint(action.skipGentx),
-		`s/timeout_commit = "5s"/timeout_commit = "500ms"/;`+
+		`s/timeout_commit = "5s"/timeout_commit = "1s"/;`+
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 		// `s/flush_throttle_timeout = "100ms"/flush_throttle_timeout = "10ms"/`,
 	)
