@@ -122,6 +122,23 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
+		action: SendTokensAction{
+			chain:  1,
+			from:   0,
+			to:     1,
+			amount: 1,
+		},
+		state: State{
+			1: ChainState{
+				// Tx on consumer chain should not go through before ICS channel is setup
+				ValBalances: &map[uint]uint{
+					0: 10000000000,
+					1: 10000000000,
+				},
+			},
+		},
+	},
+	{
 		action: AddIbcConnectionAction{
 			chainA:  1,
 			chainB:  0,
@@ -139,14 +156,6 @@ var happyPathSteps = []Step{
 			portA:       "consumer",
 			portB:       "provider",
 			order:       "ordered",
-		},
-		state: State{},
-	},
-	{
-		action: RelayPacketsAction{
-			chain:   0,
-			port:    "provider",
-			channel: 0,
 		},
 		state: State{},
 	},
@@ -175,6 +184,23 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
+		action: SendTokensAction{
+			chain:  1,
+			from:   0,
+			to:     1,
+			amount: 1,
+		},
+		state: State{
+			1: ChainState{
+				// Tx should not go through, ICS channel is not setup until first VSC packet has been relayed to consumer
+				ValBalances: &map[uint]uint{
+					0: 10000000000,
+					1: 10000000000,
+				},
+			},
+		},
+	},
+	{
 		action: RelayPacketsAction{
 			chain:   0,
 			port:    "provider",
@@ -186,6 +212,23 @@ var happyPathSteps = []Step{
 					0: 511,
 					1: 500,
 					2: 500,
+				},
+			},
+		},
+	},
+	{
+		action: SendTokensAction{
+			chain:  1,
+			from:   0,
+			to:     1,
+			amount: 1,
+		},
+		state: State{
+			1: ChainState{
+				// Now tx should execute
+				ValBalances: &map[uint]uint{
+					0: 9999999999,
+					1: 10000000001,
 				},
 			},
 		},
