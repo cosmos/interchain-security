@@ -258,7 +258,6 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
-	// This final relay action seems to be failing non-deterministically :/
 	{
 		action: RelayPacketsAction{
 			chain:   0,
