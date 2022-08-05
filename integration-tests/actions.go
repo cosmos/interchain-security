@@ -338,7 +338,7 @@ const hermesChainConfigTemplate = `
 [[chains]]
 account_prefix = "cosmos"
 clock_drift = "5s"
-gas_adjustment = 0.1
+gas_multiplier = 1.1
 grpc_addr = "%s"
 id = "%s"
 key_name = "%s"
@@ -387,11 +387,21 @@ func (s System) addChainToRelayer(
 		log.Fatal(err, "\n", string(bz))
 	}
 
+	// Save mnemonic to file within container
+	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, s.validatorConfigs[action.validator].mnemonic, "/root/.hermes/mnemonic.txt")
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c",
+		saveMnemonicCommand,
+	).CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
-		"keys", "restore",
-		"--mnemonic", s.validatorConfigs[action.validator].mnemonic,
-		s.chainConfigs[action.chain].chainId,
+		"keys", "add",
+		"--chain", s.chainConfigs[action.chain].chainId,
+		"--mnemonic-file", "/root/.hermes/mnemonic.txt",
 	).CombinedOutput()
 
 	if err != nil {
@@ -414,9 +424,9 @@ func (s System) addIbcConnection(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
 		"create", "connection",
-		s.chainConfigs[action.chainA].chainId,
-		"--client-a", "07-tendermint-"+fmt.Sprint(action.clientA),
-		"--client-b", "07-tendermint-"+fmt.Sprint(action.clientB),
+		"--a-chain", s.chainConfigs[action.chainA].chainId,
+		"--a-client", "07-tendermint-"+fmt.Sprint(action.clientA),
+		"--b-client", "07-tendermint-"+fmt.Sprint(action.clientB),
 	)
 
 	cmdReader, err := cmd.StdoutPipe()
@@ -461,12 +471,12 @@ func (s System) addIbcChannel(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
 		"create", "channel",
-		"--order", action.order,
+		"--a-chain", s.chainConfigs[action.chainA].chainId,
+		"--a-connection", "connection-"+fmt.Sprint(action.connectionA),
+		"--a-port", action.portA,
+		"--b-port", action.portB,
 		"--channel-version", s.containerConfig.ccvVersion,
-		"--port-a", action.portA,
-		"--port-b", action.portB,
-		s.chainConfigs[action.chainA].chainId,
-		"connection-"+fmt.Sprint(action.connectionA),
+		"--order", action.order,
 	)
 
 	if verbose {
@@ -512,7 +522,9 @@ func (s System) relayPackets(
 	// hermes clear packets ibc0 transfer channel-13
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes", "clear", "packets",
-		s.chainConfigs[action.chain].chainId, action.port, "channel-"+fmt.Sprint(action.channel),
+		"--chain", s.chainConfigs[action.chain].chainId,
+		"--port", action.port,
+		"--channel", "channel-"+fmt.Sprint(action.channel),
 	)
 	if verbose {
 		log.Println("relayPackets cmd:", cmd.String())
