@@ -321,10 +321,13 @@ func (s System) startConsumerChain(
 	}
 
 	s.startChain(StartChainAction{
-		chain:          1,
-		validators:     action.validators,
-		genesisChanges: ".app_state.ccvconsumer = " + string(bz),
-		skipGentx:      true,
+		chain:      1,
+		validators: action.validators,
+		genesisChanges: ".app_state.ccvconsumer = " + string(bz) + " | " +
+			// Custom slashing parameters for testing validator downtime functionality
+			".app_state.slashing.params.signed_blocks_window = " + "\"3\"" + " | " +
+			".app_state.slashing.params.min_signed_per_window = " + "\"1.0\"",
+		skipGentx: true,
 	}, verbose)
 }
 
@@ -556,14 +559,14 @@ func (s System) delegateTokens(
 	}
 }
 
-type CensorValidatorAction struct {
+type ValidatorDowntimeAction struct {
 	chain     uint
 	validator uint
 }
 
-func (s System) CensorValidator(action CensorValidatorAction, verbose bool) {
+func (s System) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose bool) {
+	// Censor the validator's IP address
 	nodeIp := s.getValidatorIp(action.chain, action.validator)
-
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "iptables",
 		"-A", "INPUT",
 		"-s", nodeIp,
@@ -577,6 +580,10 @@ func (s System) CensorValidator(action CensorValidatorAction, verbose bool) {
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+	// Wait appropriate amount of blocks
+	time.Sleep(30 * time.Second)
+	// TODO: make poll-based helper to see how many blocks have passed by
+
 }
 
 var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
