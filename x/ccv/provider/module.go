@@ -77,7 +77,10 @@ func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Rout
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-provider module.
 // TODO
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	if err != nil {
+		panic(err)
+	}
 }
 
 // GetTxCmd implements AppModuleBasic interface
@@ -156,7 +159,7 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	// Check if there are any consumer chains that are due to be started
-	am.keeper.IteratePendingClientInfo(ctx)
+	am.keeper.IteratePendingCreateProposal(ctx)
 	// Check if there are any consumer chains that are due to be stopped
 	am.keeper.IteratePendingStopProposal(ctx)
 }

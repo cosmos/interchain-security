@@ -12,18 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	chainID                      = "gaia"
-	trustingPeriod time.Duration = time.Hour * 24 * 7 * 2
-	ubdPeriod      time.Duration = time.Hour * 24 * 7 * 3
-	maxClockDrift  time.Duration = time.Second * 10
-)
-
-var (
-	height      = clienttypes.NewHeight(0, 4)
-	upgradePath = []string{"upgrade", "upgradedIBCState"}
-)
-
 func TestValidateGenesisState(t *testing.T) {
 	testCases := []struct {
 		name     string
