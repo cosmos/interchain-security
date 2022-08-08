@@ -35,8 +35,24 @@ func (suite *ProviderTestSuite) TestCreateConsumerChainProposalHandler() {
 			}, true,
 		},
 		{
-			"valid stop consumerchain proposal", func(suite *ProviderTestSuite) {
+			"invalid stop consumerchain proposal (no existing chainID)", func(suite *ProviderTestSuite) {
 				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
+				content, err = types.NewStopConsumerChainProposal("title", "description", "chainID", time.Now())
+				suite.Require().NoError(err)
+			}, false,
+		},
+		{
+			"valid stop consumerchain proposal", func(suite *ProviderTestSuite) {
+				// add chainID to be able to remove afterwards
+				initialHeight := clienttypes.NewHeight(2, 3)
+				// ctx blocktime is after proposal's spawn time
+				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
+				content, err = types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
+				suite.Require().NoError(err)
+				proposalHandler := provider.NewConsumerChainProposalHandler(suite.providerChain.App.(*appProvider.App).ProviderKeeper)
+				err = proposalHandler(ctx, content)
+				suite.Require().NoError(err)
+
 				content, err = types.NewStopConsumerChainProposal("title", "description", "chainID", time.Now())
 				suite.Require().NoError(err)
 			}, true,
