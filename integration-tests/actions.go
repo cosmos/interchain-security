@@ -567,6 +567,7 @@ type ValidatorDowntimeAction struct {
 func (s System) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose bool) {
 	// Censor the validator's IP address
 	nodeIp := s.getValidatorIp(action.chain, action.validator)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "iptables",
 		"-A", "INPUT",
 		"-s", nodeIp,
