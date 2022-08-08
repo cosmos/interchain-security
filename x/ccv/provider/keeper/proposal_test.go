@@ -148,18 +148,16 @@ func (suite *KeeperTestSuite) TestIteratePendingStopProposal() {
 
 func (suite *KeeperTestSuite) TestIteratePendingClientInfo() {
 
-	chainID := suite.consumerChain.ChainID
-
 	testCases := []struct {
 		types.CreateConsumerChainProposal
 		ExpDeleted bool
 	}{
 		{
-			CreateConsumerChainProposal: types.CreateConsumerChainProposal{ChainId: chainID, SpawnTime: time.Now().UTC()},
+			CreateConsumerChainProposal: types.CreateConsumerChainProposal{ChainId: "0", SpawnTime: time.Now().UTC()},
 			ExpDeleted:                  true,
 		},
 		{
-			CreateConsumerChainProposal: types.CreateConsumerChainProposal{ChainId: chainID, SpawnTime: time.Now().UTC().Add(time.Hour)},
+			CreateConsumerChainProposal: types.CreateConsumerChainProposal{ChainId: "1", SpawnTime: time.Now().UTC().Add(time.Hour)},
 			ExpDeleted:                  false,
 		},
 	}
