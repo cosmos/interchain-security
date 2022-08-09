@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -93,13 +94,13 @@ func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
 // GetPort returns the portID for the transfer module. Used in ExportGenesis
 func (k Keeper) GetPort(ctx sdk.Context) string {
 	store := ctx.KVStore(k.storeKey)
-	return string(store.Get(types.PortKey))
+	return string(store.Get(types.PortKey()))
 }
 
 // SetPort sets the portID for the transfer module. Used in InitGenesis
 func (k Keeper) SetPort(ctx sdk.Context, portID string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.PortKey, []byte(portID))
+	store.Set(types.PortKey(), []byte(portID))
 }
 
 // AuthenticateCapability wraps the scopedKeeper's AuthenticateCapability function
@@ -140,8 +141,7 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 // a stop boolean which will stop the iteration.
 func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	keyPrefix := types.ChainToClientKeyPrefix + "/"
-	iterator := sdk.KVStorePrefixIterator(store, []byte(keyPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -149,8 +149,8 @@ func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, 
 	}
 
 	for ; iterator.Valid(); iterator.Next() {
-		// remove prefix from key to retrieve chainID
-		chainID := string(iterator.Key()[len(keyPrefix):])
+		// remove 1 byte prefix from key to retrieve chainID
+		chainID := string(iterator.Key()[1:])
 
 		stop := cb(ctx, chainID)
 		if stop {
@@ -185,7 +185,7 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 // or the callback returns stop=true
 func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, channelID, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.ChannelToChainKeyPrefix+"/"))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -193,7 +193,9 @@ func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, 
 	}
 
 	for ; iterator.Valid(); iterator.Next() {
-		channelID := string(iterator.Key())
+		// remove prefix from key to retrieve channelID
+		channelID := string(iterator.Key()[1:])
+
 		chainID := string(iterator.Value())
 
 		if cb(ctx, channelID, chainID) {
@@ -221,7 +223,9 @@ func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (consumertyp
 	}
 
 	var data consumertypes.GenesisState
-	data.Unmarshal(bz)
+	if err := data.Unmarshal(bz); err != nil {
+		panic(fmt.Errorf("consumer genesis could not be unmarshaled: %w", err))
+	}
 	return data, true
 }
 
@@ -270,7 +274,9 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	// Verify that there isn't already a CCV channel for the consumer chain
 	// If there is, then close the channel.
 	if prevChannel, ok := k.GetChannelToChain(ctx, chainID); ok {
-		k.chanCloseInit(ctx, channelID)
+		if err := k.chanCloseInit(ctx, channelID); err != nil {
+			return err
+		}
 		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, chainID)
 	}
 
@@ -325,8 +331,8 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 // IterateOverUnbondingOpIndex iterates over the unbonding indexes for a given chain id.
 func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb func(vscID uint64, ubdIndex []uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
-	prefix := append(types.HashString(types.UnbondingOpIndexPrefix), types.HashString(chainID)...)
-	iterator := sdk.KVStorePrefixIterator(store, prefix)
+	iterationPrefix := append([]byte{types.UnbondingOpIndexBytePrefix}, types.HashString(chainID)...)
+	iterator := sdk.KVStorePrefixIterator(store, iterationPrefix)
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -476,7 +482,7 @@ func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, validatorSetUpdateId)
 
-	store.Set([]byte(types.ValidatorSetUpdateIdPrefix), bz)
+	store.Set(types.ValidatorSetUpdateIdKey(), bz)
 }
 
 func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
@@ -486,12 +492,12 @@ func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, valUpdateID)
 
-	store.Set([]byte(types.ValidatorSetUpdateIdPrefix), bz)
+	store.Set(types.ValidatorSetUpdateIdKey(), bz)
 }
 
 func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId uint64) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get([]byte(types.ValidatorSetUpdateIdPrefix))
+	bz := store.Get(types.ValidatorSetUpdateIdKey())
 
 	if bz == nil {
 		validatorSetUpdateId = 0
@@ -541,10 +547,14 @@ func (h StakingHooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
 	}
 
 	// Set unbondingOp
-	h.k.SetUnbondingOp(ctx, unbondingOp)
+	if err := h.k.SetUnbondingOp(ctx, unbondingOp); err != nil {
+		panic(fmt.Errorf("unbonding op could not be persisted: %w", err))
+	}
 
 	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
-	h.k.stakingKeeper.PutUnbondingOnHold(ctx, ID)
+	if err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, ID); err != nil {
+		panic(fmt.Errorf("unbonding could not be put on hold: %w", err))
+	}
 }
 
 // SetValsetUpdateBlockHeight sets the block height for a given valset update id
@@ -592,9 +602,9 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	var acks []string
 	buf := bytes.NewBuffer(bz)
 
-	json.NewDecoder(buf).Decode(&acks)
-	if len(acks) == 0 {
-		panic("failed to decode json")
+	err := json.NewDecoder(buf).Decode(&acks)
+	if err != nil {
+		panic(fmt.Errorf("failed to decode json: %w", err))
 	}
 
 	return acks
@@ -614,22 +624,22 @@ func (k Keeper) EmptySlashAcks(ctx sdk.Context, chainID string) (acks []string) 
 // IterateSlashAcks iterates through the slash acks set in the store
 func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) bool) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.SlashAcksPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.SlashAcksBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 
-		id := string(iterator.Key()[len(types.SlashAcksPrefix)+1:])
+		chainID := string(iterator.Key()[1:])
 
 		var data []string
 		buf := bytes.NewBuffer(iterator.Value())
 
-		json.NewDecoder(buf).Decode(&data)
-		if len(data) == 0 {
-			panic("failed to decode json")
+		err := json.NewDecoder(buf).Decode(&data)
+		if err != nil {
+			panic(fmt.Errorf("failed to decode json: %w", err))
 		}
 
-		if !cb(id, data) {
+		if !cb(chainID, data) {
 			return
 		}
 	}
@@ -678,7 +688,9 @@ func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) (packets []ccv.V
 	buf := bytes.NewBuffer(bz)
 
 	var data [][]byte
-	json.NewDecoder(buf).Decode(&data)
+	if err := json.NewDecoder(buf).Decode(&data); err != nil {
+		panic(fmt.Errorf("pending validator set changes could not be decoded: %w", err))
+	}
 
 	for _, pdata := range data {
 		var p ccv.ValidatorSetChangePacketData

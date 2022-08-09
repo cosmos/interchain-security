@@ -98,7 +98,7 @@ func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) (
 	*types.LastTransmissionBlockHeight, error) {
 
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.LastDistributionTransmissionKey)
+	bz := store.Get(types.LastDistributionTransmissionKey())
 	ltbh := &types.LastTransmissionBlockHeight{}
 	if bz != nil {
 		err := ltbh.Unmarshal(bz)
@@ -117,7 +117,7 @@ func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context,
 	if err != nil {
 		return err
 	}
-	store.Set(types.LastDistributionTransmissionKey, bz)
+	store.Set(types.LastDistributionTransmissionKey(), bz)
 	return nil
 }
 

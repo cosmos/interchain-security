@@ -13,42 +13,48 @@ import (
 )
 
 // ApplyCCValidatorChanges applies the given changes to the cross-chain validators states
-func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) {
+// and returns updates to forward to tendermint.
+func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) []abci.ValidatorUpdate {
+	ret := []abci.ValidatorUpdate{}
 	for _, change := range changes {
 		addr := utils.GetChangePubKeyAddress(change)
 		val, found := k.GetCCValidator(ctx, addr)
 
-		// set new validator bonded
-		if !found {
-			if 0 < change.Power {
-				consAddr := sdk.ConsAddress(addr)
-
-				// convert validator pubkey from TM proto to SDK crytpo type
-				pubkey, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
-				if err != nil {
-					panic(err)
-				}
-				ccVal, err := types.NewCCValidator(addr, change.Power, pubkey)
-				if err != nil {
-					panic(err)
-				}
-
-				k.SetCCValidator(ctx, ccVal)
-				k.AfterValidatorBonded(ctx, consAddr, nil)
+		if found {
+			// update or delete an existing validator
+			if change.Power < 1 {
+				k.DeleteCCValidator(ctx, addr)
+			} else {
+				val.Power = change.Power
+				k.SetCCValidator(ctx, val)
 			}
+
+		} else if 0 < change.Power {
+			// create a new validator
+			consAddr := sdk.ConsAddress(addr)
+
+			pubkey, err := cryptocodec.FromTmProtoPublicKey(change.GetPubKey())
+			if err != nil {
+				panic(err)
+			}
+			ccVal, err := types.NewCCValidator(addr, change.Power, pubkey)
+			if err != nil {
+				panic(err)
+			}
+
+			k.SetCCValidator(ctx, ccVal)
+			k.AfterValidatorBonded(ctx, consAddr, nil)
+
+		} else {
+			// edge case: we received an update for 0 power
+			// but the validator is already deleted. Do not forward
+			// to tendermint.
 			continue
 		}
 
-		// remove unbonding existing-validators
-		if change.Power < 1 {
-			k.DeleteCCValidator(ctx, addr)
-			continue
-		}
-
-		// update existing validators power
-		val.Power = change.Power
-		k.SetCCValidator(ctx, val)
+		ret = append(ret, change)
 	}
+	return ret
 }
 
 // IterateValidators - unimplemented on CCV keeper but perform a no-op in order to pass the slashing module InitGenesis.
@@ -117,7 +123,7 @@ func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
 // GetHistoricalInfo gets the historical info at a given height
 func (k Keeper) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.GetHistoricalInfoKey(height)
+	key := types.HistoricalInfoKey(height)
 
 	value := store.Get(key)
 	if value == nil {
@@ -130,7 +136,7 @@ func (k Keeper) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.H
 // SetHistoricalInfo sets the historical info at a given height
 func (k Keeper) SetHistoricalInfo(ctx sdk.Context, height int64, hi *stakingtypes.HistoricalInfo) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.GetHistoricalInfoKey(height)
+	key := types.HistoricalInfoKey(height)
 	value := k.cdc.MustMarshal(hi)
 
 	store.Set(key, value)
@@ -139,7 +145,7 @@ func (k Keeper) SetHistoricalInfo(ctx sdk.Context, height int64, hi *stakingtype
 // DeleteHistoricalInfo deletes the historical info at a given height
 func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.GetHistoricalInfoKey(height)
+	key := types.HistoricalInfoKey(height)
 
 	store.Delete(key)
 }

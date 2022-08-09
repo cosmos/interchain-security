@@ -33,7 +33,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(providertypes.ChannelToChainKeyPrefix+"/"))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -43,7 +43,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	var consumerStates []types.ConsumerState
 
 	for ; iterator.Valid(); iterator.Next() {
-		channelID := string(iterator.Key()[len(providertypes.ChannelToChainKeyPrefix+"/"):])
+		// channelID is extracted from bytes in key following the single byte prefix
+		channelID := string(iterator.Key()[1:])
 		chainID := string(iterator.Value())
 
 		cc := types.ConsumerState{

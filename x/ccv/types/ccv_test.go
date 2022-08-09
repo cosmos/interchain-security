@@ -86,7 +86,7 @@ func TestMarshalPacketData(t *testing.T) {
 	require.NoError(t, err, "marshalling packet data returned error")
 
 	recovered := types.ValidatorSetChangePacketData{}
-	recovered.Unmarshal(bz)
-
+	err = recovered.Unmarshal(bz)
+	require.Nil(t, err)
 	require.Equal(t, vpd, recovered, "unmarshaled packet data does not equal original value")
 }

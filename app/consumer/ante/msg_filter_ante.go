@@ -7,8 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-var validMsgsCCVDisabled = map[string]struct{}{}
-
 type (
 	// ConsumerKeeper defines the interface required by a consumer module keeper.
 	ConsumerKeeper interface {
