@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -119,13 +120,13 @@ func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
 // GetPort returns the portID for the transfer module. Used in ExportGenesis
 func (k Keeper) GetPort(ctx sdk.Context) string {
 	store := ctx.KVStore(k.storeKey)
-	return string(store.Get(types.PortKey))
+	return string(store.Get(types.PortKey()))
 }
 
 // SetPort sets the portID for the transfer module. Used in InitGenesis
 func (k Keeper) SetPort(ctx sdk.Context, portID string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.PortKey, []byte(portID))
+	store.Set(types.PortKey(), []byte(portID))
 }
 
 // AuthenticateCapability wraps the scopedKeeper's AuthenticateCapability function
@@ -221,7 +222,9 @@ func (k Keeper) GetPendingChanges(ctx sdk.Context) (*ccv.ValidatorSetChangePacke
 		return nil, false
 	}
 	var data ccv.ValidatorSetChangePacketData
-	data.Unmarshal(bz)
+	if err := data.Unmarshal(bz); err != nil {
+		panic(fmt.Errorf("pending changes could not be unmarshaled: %w", err))
+	}
 	return &data, true
 }
 
@@ -234,11 +237,12 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 // IteratePacketMaturityTime iterates through the VSC packet maturity times set in the store
 func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.PacketMaturityTimePrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		seqBytes := iterator.Key()[len([]byte(types.PacketMaturityTimePrefix)):]
+		// Extract bytes following the 1 byte prefix
+		seqBytes := iterator.Key()[1:]
 		seq := binary.BigEndian.Uint64(seqBytes)
 
 		timeNs := binary.BigEndian.Uint64(iterator.Value())
@@ -348,13 +352,13 @@ func (k Keeper) SetCCValidator(ctx sdk.Context, v types.CrossChainValidator) {
 	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&v)
 
-	store.Set(types.GetCrossChainValidatorKey(v.Address), bz)
+	store.Set(types.CrossChainValidatorKey(v.Address), bz)
 }
 
 // GetCCValidator returns a cross-chain validator for a given address
 func (k Keeper) GetCCValidator(ctx sdk.Context, addr []byte) (validator types.CrossChainValidator, found bool) {
 	store := ctx.KVStore(k.storeKey)
-	v := store.Get(types.GetCrossChainValidatorKey(addr))
+	v := store.Get(types.CrossChainValidatorKey(addr))
 	if v == nil {
 		return
 	}
@@ -367,13 +371,13 @@ func (k Keeper) GetCCValidator(ctx sdk.Context, addr []byte) (validator types.Cr
 // DeleteCCValidator deletes a cross-chain validator for a given address
 func (k Keeper) DeleteCCValidator(ctx sdk.Context, addr []byte) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.GetCrossChainValidatorKey(addr))
+	store.Delete(types.CrossChainValidatorKey(addr))
 }
 
 // GetAllCCValidator returns all cross-chain validators
 func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChainValidator) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte(types.CrossChainValidatorPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.CrossChainValidatorBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -391,22 +395,22 @@ func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests []types.SlashR
 	buf := &bytes.Buffer{}
 	err := json.NewEncoder(buf).Encode(&requests)
 	if err != nil {
-		panic("failed to encode json")
+		panic(fmt.Errorf("failed to encode slash request json: %w", err))
 	}
-	store.Set([]byte(types.PendingSlashRequestsPrefix), buf.Bytes())
+	store.Set([]byte{types.PendingSlashRequestsBytePrefix}, buf.Bytes())
 }
 
 // GetPendingSlashRequest returns the pending slash requests in store
 func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) (requests []types.SlashRequest) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get([]byte(types.PendingSlashRequestsPrefix))
+	bz := store.Get([]byte{types.PendingSlashRequestsBytePrefix})
 	if bz == nil {
 		return
 	}
 	buf := bytes.NewBuffer(bz)
-	json.NewDecoder(buf).Decode(&requests)
-	if len(requests) == 0 {
-		panic("failed to decode json")
+	err := json.NewDecoder(buf).Decode(&requests)
+	if err != nil {
+		panic(fmt.Errorf("failed to decode slash request json: %w", err))
 	}
 
 	return
@@ -422,5 +426,5 @@ func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashReque
 // ClearPendingSlashRequests clears the pending slash requests in store
 func (k Keeper) ClearPendingSlashRequests(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete([]byte(types.PendingSlashRequestsPrefix))
+	store.Delete([]byte{types.PendingSlashRequestsBytePrefix})
 }

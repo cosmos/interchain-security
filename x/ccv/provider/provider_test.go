@@ -42,8 +42,6 @@ type ProviderTestSuite struct {
 
 	path         *ibctesting.Path
 	transferPath *ibctesting.Path
-
-	providerDistrIndex int
 }
 
 func (suite *ProviderTestSuite) SetupTest() {
@@ -56,7 +54,7 @@ func (suite *ProviderTestSuite) SetupTest() {
 	for i := 0; i < len(providerValUpdates); i++ {
 		addr1 := utils.GetChangePubKeyAddress(providerValUpdates[i])
 		addr2 := utils.GetChangePubKeyAddress(consumerValUpdates[i])
-		suite.Require().True(bytes.Compare(addr1, addr2) == 0, "validator mismatch")
+		suite.Require().True(bytes.Equal(addr1, addr2), "validator mismatch")
 	}
 
 	// move both chains to the next block
@@ -64,12 +62,13 @@ func (suite *ProviderTestSuite) SetupTest() {
 	suite.consumerChain.NextBlock()
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
-	suite.providerChain.App.(*appProvider.App).ProviderKeeper.CreateConsumerClient(
+	err := suite.providerChain.App.(*appProvider.App).ProviderKeeper.CreateConsumerClient(
 		suite.providerCtx(),
 		suite.consumerChain.ChainID,
 		suite.consumerChain.LastHeader.GetHeight().(clienttypes.Height),
 		false,
 	)
+	suite.Require().NoError(err)
 	// move provider to next block to commit the state
 	suite.providerChain.NextBlock()
 
@@ -113,8 +112,10 @@ func (suite *ProviderTestSuite) SetupTest() {
 
 	// set chains sender account number
 	// TODO: to be fixed in #151
-	suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
+	err = suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
+	suite.Require().NoError(err)
+	err = suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
+	suite.Require().NoError(err)
 
 	// create path for the transfer channel
 	suite.transferPath = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
@@ -148,7 +149,8 @@ func (suite *ProviderTestSuite) CompleteSetupCCVChannel() {
 	suite.Require().NoError(err)
 
 	// ensure counterparty is up to date
-	suite.path.EndpointA.UpdateClient()
+	err = suite.path.EndpointA.UpdateClient()
+	suite.Require().NoError(err)
 }
 
 func (suite *ProviderTestSuite) SetupTransferChannel() {
@@ -175,7 +177,8 @@ func (suite *ProviderTestSuite) SetupTransferChannel() {
 	suite.Require().NoError(err)
 
 	// ensure counterparty is up to date
-	suite.transferPath.EndpointA.UpdateClient()
+	err = suite.transferPath.EndpointA.UpdateClient()
+	suite.Require().NoError(err)
 }
 
 func TestProviderTestSuite(t *testing.T) {
@@ -473,124 +476,3 @@ func (s *ProviderTestSuite) TestSlashPacketAcknowldgement() {
 	err = consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewErrorAcknowledgement("another error"))
 	s.Require().Error(err)
 }
-
-// TestDistribution tests that tokens are distributed to the
-// provider chain from the consumer chain appropriately
-// func (s *ProviderTestSuite) TestDistribution() {
-// 	s.SetupCCVChannel() // also sets up transfer channels
-// 	// NOTE s.transferPath.EndpointA == Consumer Chain
-// 	//      s.transferPath.EndpointB == Provider Chain
-
-// 	pChain, cChain := s.providerChain, s.consumerChain
-// 	pApp, cApp := pChain.App.(*appProvider.App), cChain.App.(*appConsumer.App)
-// 	cKeep := cApp.ConsumerKeeper
-
-// 	// Get the receiving fee pool on the provider chain
-// 	fcAddr := pApp.ProviderKeeper.GetFeeCollectorAddressStr(pChain.GetContext())
-
-// 	// Ensure that the provider fee pool address stored on the consumer chain
-// 	// is the correct address
-// 	fcAddr2 := cApp.ConsumerKeeper.GetProviderFeePoolAddrStr(cChain.GetContext())
-// 	s.Require().Equal(fcAddr, fcAddr2)
-
-// 	// make sure we're starting at consumer height 21 (some blocks commited during setup)
-// 	s.Require().Equal(int64(21), cChain.GetContext().BlockHeight())
-
-// 	// get last consumer transmission
-// 	ltbh, err := cKeep.GetLastTransmissionBlockHeight(cChain.GetContext())
-// 	s.Require().NoError(err)
-// 	s.Require().Equal(int64(0), ltbh.Height)
-
-// 	bpdt := cKeep.GetBlocksPerDistributionTransmission(cChain.GetContext())
-// 	s.Require().Equal(int64(1000), bpdt)
-
-// 	// check the consumer chain fee pool
-// 	consumerFeePoolAddr := cApp.AccountKeeper.GetModuleAccount(
-// 		cChain.GetContext(), authtypes.FeeCollectorName).GetAddress()
-// 	providerFeePoolAddr := pApp.AccountKeeper.GetModuleAccount(
-// 		pChain.GetContext(), authtypes.FeeCollectorName).GetAddress()
-// 	balance := cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-// 	s.Assert().Equal(balance.Amount.Int64(), int64(140062235461521))
-
-// 	// Commit some new blocks (commit blocks less than the distribution event blocks)
-// 	s.coordinator.CommitNBlocks(cChain, (1000-1)-21)
-// 	err = s.path.EndpointB.UpdateClient()
-// 	s.Require().Equal(int64(1000), cChain.GetContext().BlockHeight())
-
-// 	// check the consumer chain fee pool (should have increased
-// 	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-// 	expFeePoolAtDistr := int64(4175822659438993)
-// 	s.Assert().Equal(balance.Amount.Int64(), expFeePoolAtDistr)
-
-// 	// Verify that the destinationChannel exists
-// 	// if this doesn't exist then the transfer logic will fail when
-// 	// a the distribution transfer is invoked in the next block.
-// 	ctx := cChain.GetContext()
-// 	sourcePort := transfertypes.PortID
-// 	sourceChannel := cKeep.GetDistributionTransmissionChannel(ctx)
-// 	sourceChannelEnd, found := cApp.IBCKeeper.ChannelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
-// 	s.Require().True(found)
-// 	destinationChannel := sourceChannelEnd.GetCounterparty().GetChannelID()
-// 	s.Require().True(len(destinationChannel) > 0)
-
-// 	// commit 1 more block (which should invoke a distribution event)
-// 	rspEB, _, _ := s.coordinator.CommitBlockGetResponses(cChain)
-
-// 	// get the packet from the endblock events
-// 	var packet channeltypes.Packet
-// 	var ftpd transfertypes.FungibleTokenPacketData
-// 	found = false
-// 	for _, evnt := range rspEB.Events {
-// 		if evnt.Type == channeltypes.EventTypeSendPacket {
-// 			found = true
-// 			packet, err = channelkeeper.ReconstructPacketFromEvent(evnt)
-// 			s.Require().NoError(err)
-// 			cApp.AppCodec().MustUnmarshalJSON(packet.GetData(), &ftpd)
-// 		}
-// 	}
-// 	s.Require().True(found)
-
-// 	// ensure the correct amount is being transmitted within the packet
-// 	expConsRedistrAmt := expFeePoolAtDistr * 3 / 4 // because of default 75% redistribute fraction (will truc decimal)
-// 	expProviderAmt := expFeePoolAtDistr - expConsRedistrAmt
-// 	s.Assert().Equal(ftpd.Amount, fmt.Sprintf("%v", expProviderAmt))
-
-// 	// halt provider distribution (for testing purposes to be able to review the
-// 	// provider fee pool)
-// 	s.DisableProviderDistribution()
-
-// 	// relay the packet
-// 	err = s.transferPath.RelayPacket(packet)
-// 	s.Require().NoError(err)
-
-// 	// check the consumer chain fee pool which should be now emptied (besides
-// 	// new minted tokens since the transfer)
-// 	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerFeePoolAddr, "stake")
-// 	s.Assert().Equal(balance.Amount.Int64(), int64(26786189989304)) // this is "small"
-
-// 	// check the provider chain fee pool which should now have
-// 	// the consumer chain tokens
-// 	balance = pApp.BankKeeper.GetBalance(pChain.GetContext(), providerFeePoolAddr,
-// 		"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9")
-// 	s.Assert().Equal(balance.Amount.Int64(), expProviderAmt)
-
-// 	// check the consumer redistribution amount arrives in the module account
-// 	consumerRedistrAddr := cApp.AccountKeeper.GetModuleAccount(ctx,
-// 		consumertypes.ConsumerRedistributeName).GetAddress()
-// 	balance = cApp.BankKeeper.GetBalance(cChain.GetContext(), consumerRedistrAddr, "stake")
-// 	s.Assert().Equal(balance.Amount.Int64(), expConsRedistrAmt)
-
-// 	// Ensure provider pool emptied and that allocation was called normally
-// 	// allocation would result in validator rewards, but due to limitations in
-// 	// the testing framework (where validators do not actually sign votes and
-// 	// therefor do not produce abci.VoteInfo) the expected behaviour of
-// 	// allocation is to send all rewards to the community pool
-// 	s.coordinator.CommitNBlocks(pChain, 1)
-// 	balance = pApp.BankKeeper.GetBalance(pChain.GetContext(), providerFeePoolAddr,
-// 		"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9")
-// 	s.Assert().Equal(balance.Amount.Int64(), int64(0))
-// 	communityPool := pApp.DistrKeeper.GetFeePool(pChain.GetContext()).CommunityPool
-// 	balanceI64 := communityPool.AmountOf(
-// 		"ibc/3C3D7B3BE4ECC85A0E5B52A3AEC3B7DFC2AA9CA47C37821E57020D6807043BE9").RoundInt64()
-// 	s.Assert().Equal(balanceI64, expProviderAmt)
-// }

@@ -40,9 +40,13 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	} else {
 		pendingChanges = utils.AccumulateChanges(currentChanges.ValidatorUpdates, newChanges.ValidatorUpdates)
 	}
-	k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{
+
+	err := k.SetPendingChanges(ctx, ccv.ValidatorSetChangePacketData{
 		ValidatorUpdates: pendingChanges,
 	})
+	if err != nil {
+		panic(fmt.Errorf("pending validator set change could not be persisted: %w", err))
+	}
 
 	// Save maturity time and packet
 	unbondingPeriod, found := k.GetUnbondingTime(ctx)
@@ -67,19 +71,21 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // UnbondMaturePackets will iterate over the unbonding packets in order and write acknowledgements for all
 // packets that have finished unbonding.
 func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
+
+	// This method is a no-op if there is no established channel to the provider.
+	channelID, ok := k.GetProviderChannel(ctx)
+	if !ok {
+		return nil
+	}
+
 	store := ctx.KVStore(k.storeKey)
-	maturityIterator := sdk.KVStorePrefixIterator(store, []byte(types.PacketMaturityTimePrefix))
+	maturityIterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 	defer maturityIterator.Close()
 
 	currentTime := uint64(ctx.BlockTime().UnixNano())
 
-	channelID, ok := k.GetProviderChannel(ctx)
-	if !ok {
-		return sdkerrors.Wrap(channeltypes.ErrChannelNotFound, "provider channel not set")
-	}
-
 	for maturityIterator.Valid() {
-		vscId := types.GetIdFromPacketMaturityTimeKey(maturityIterator.Key())
+		vscId := types.IdFromPacketMaturityTimeKey(maturityIterator.Key())
 		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
 			// send VSCMatured packet
 			// - construct validator set change packet data
