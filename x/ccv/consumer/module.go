@@ -182,13 +182,9 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		panic(err)
 	}
 
-	// Unbond mature packets only if provider channel has been set
-	_, ok := am.keeper.GetProviderChannel(ctx)
-	if ok {
-		err = am.keeper.UnbondMaturePackets(ctx)
-		if err != nil {
-			panic(err)
-		}
+	err = am.keeper.UnbondMaturePackets(ctx)
+	if err != nil {
+		panic(err)
 	}
 
 	data, ok := am.keeper.GetPendingChanges(ctx)

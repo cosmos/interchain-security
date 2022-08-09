@@ -57,22 +57,22 @@ func (cccp *CreateConsumerChainProposal) ValidateBasic() error {
 	}
 
 	if strings.TrimSpace(cccp.ChainId) == "" {
-		return sdkerrors.Wrap(ErrInvalidProposal, "consumer chain id must not be blank")
+		return sdkerrors.Wrap(ErrInvalidCreateProposal, "consumer chain id must not be blank")
 	}
 
 	if cccp.InitialHeight.IsZero() {
-		return sdkerrors.Wrap(ErrInvalidProposal, "initial height cannot be zero")
+		return sdkerrors.Wrap(ErrInvalidCreateProposal, "initial height cannot be zero")
 	}
 
 	if len(cccp.GenesisHash) == 0 {
-		return sdkerrors.Wrap(ErrInvalidProposal, "genesis hash cannot be empty")
+		return sdkerrors.Wrap(ErrInvalidCreateProposal, "genesis hash cannot be empty")
 	}
 	if len(cccp.BinaryHash) == 0 {
-		return sdkerrors.Wrap(ErrInvalidProposal, "binary hash cannot be empty")
+		return sdkerrors.Wrap(ErrInvalidCreateProposal, "binary hash cannot be empty")
 	}
 
 	if cccp.SpawnTime.IsZero() {
-		return sdkerrors.Wrap(ErrInvalidProposal, "spawn time cannot be zero")
+		return sdkerrors.Wrap(ErrInvalidCreateProposal, "spawn time cannot be zero")
 	}
 	return nil
 }
@@ -112,11 +112,11 @@ func (sccp *StopConsumerChainProposal) ValidateBasic() error {
 	}
 
 	if strings.TrimSpace(sccp.ChainId) == "" {
-		return sdkerrors.Wrap(ErrInvalidProposal, "consumer chain id must not be blank")
+		return sdkerrors.Wrap(ErrInvalidStopProposal, "consumer chain id must not be blank")
 	}
 
 	if sccp.StopTime.IsZero() {
-		return sdkerrors.Wrap(ErrInvalidProposal, "spawn time cannot be zero")
+		return sdkerrors.Wrap(ErrInvalidStopProposal, "spawn time cannot be zero")
 	}
 	return nil
 }

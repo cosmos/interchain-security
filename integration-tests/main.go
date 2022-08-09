@@ -49,6 +49,8 @@ func (s System) runStep(step Step, verbose bool) {
 		s.relayPackets(action, verbose)
 	case DelegateTokensAction:
 		s.delegateTokens(action, verbose)
+	case UnbondTokensAction:
+		s.unbondTokens(action, verbose)
 	default:
 		log.Fatalf(fmt.Sprintf(`unknown action: %#v`, action))
 	}

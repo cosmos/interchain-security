@@ -123,7 +123,7 @@ func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
 // GetHistoricalInfo gets the historical info at a given height
 func (k Keeper) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.GetHistoricalInfoKey(height)
+	key := types.HistoricalInfoKey(height)
 
 	value := store.Get(key)
 	if value == nil {
@@ -136,7 +136,7 @@ func (k Keeper) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.H
 // SetHistoricalInfo sets the historical info at a given height
 func (k Keeper) SetHistoricalInfo(ctx sdk.Context, height int64, hi *stakingtypes.HistoricalInfo) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.GetHistoricalInfoKey(height)
+	key := types.HistoricalInfoKey(height)
 	value := k.cdc.MustMarshal(hi)
 
 	store.Set(key, value)
@@ -145,7 +145,7 @@ func (k Keeper) SetHistoricalInfo(ctx sdk.Context, height int64, hi *stakingtype
 // DeleteHistoricalInfo deletes the historical info at a given height
 func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
 	store := ctx.KVStore(k.storeKey)
-	key := types.GetHistoricalInfoKey(height)
+	key := types.HistoricalInfoKey(height)
 
 	store.Delete(key)
 }

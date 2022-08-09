@@ -27,7 +27,7 @@ func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateCons
 		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, p.LockUnbondingOnTimeout)
 	}
 
-	err := k.SetPendingClientInfo(ctx, p)
+	err := k.SetPendingCreateProposal(ctx, p)
 	if err != nil {
 		return err
 	}
@@ -50,6 +50,11 @@ func (k Keeper) StopConsumerChainProposal(ctx sdk.Context, p *types.StopConsumer
 // StopConsumerChain cleans up the states for the given consumer chain ID and, if the given lockUbd is false,
 // it completes the outstanding unbonding operations lock by the consumer chain.
 func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, closeChan bool) (err error) {
+	// check that a client for chainID exists
+	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
+		// drop the proposal
+		return nil
+	}
 
 	// clean up states
 	k.DeleteConsumerClientId(ctx, chainID)
@@ -113,6 +118,12 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right consumer chain.
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
+	// check that a client for this chain does not exist
+	if _, found := k.GetConsumerClientId(ctx, chainID); found {
+		// drop the proposal
+		return nil
+	}
+
 	// Use the unbonding period on the provider to
 	// compute the unbonding period on the consumer
 	unbondingTime := utils.ComputeConsumerUnbondingPeriod(k.stakingKeeper.UnbondingTime(ctx))
@@ -207,22 +218,22 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 	return gen, nil
 }
 
-// SetPendingClientInfo sets the initial height for the given timestamp and chain ID
-func (k Keeper) SetPendingClientInfo(ctx sdk.Context, clientInfo *types.CreateConsumerChainProposal) error {
+// SetPendingCreateProposal stores a pending proposal to create a consumer chain client
+func (k Keeper) SetPendingCreateProposal(ctx sdk.Context, clientInfo *types.CreateConsumerChainProposal) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(clientInfo)
 	if err != nil {
 		return err
 	}
 
-	store.Set(types.PendingClientKey(clientInfo.SpawnTime, clientInfo.ChainId), bz)
+	store.Set(types.PendingCreateProposalKey(clientInfo.SpawnTime, clientInfo.ChainId), bz)
 	return nil
 }
 
-// GetPendingClient gets the client pending info for the given timestamp and chain ID
-func (k Keeper) GetPendingClientInfo(ctx sdk.Context, timestamp time.Time, chainID string) types.CreateConsumerChainProposal {
+// GetPendingCreateProposal retrieves a pending proposal to create a consumer chain client (by spawn time and chain id)
+func (k Keeper) GetPendingCreateProposal(ctx sdk.Context, timestamp time.Time, chainID string) types.CreateConsumerChainProposal {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingClientKey(timestamp, chainID))
+	bz := store.Get(types.PendingCreateProposalKey(timestamp, chainID))
 	if len(bz) == 0 {
 		return types.CreateConsumerChainProposal{}
 	}
@@ -232,16 +243,16 @@ func (k Keeper) GetPendingClientInfo(ctx sdk.Context, timestamp time.Time, chain
 	return clientInfo
 }
 
-func (k Keeper) PendingClientIterator(ctx sdk.Context) sdk.Iterator {
+func (k Keeper) PendingCreateProposalIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
-	return sdk.KVStorePrefixIterator(store, []byte(types.PendingClientKeyPrefix))
+	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCreateProposalBytePrefix})
 }
 
-// IteratePendingClientInfo iterates over the pending client info in order and creates the consumer client if the spawn time has passed,
-// otherwise it will break out of loop and return.
-func (k Keeper) IteratePendingClientInfo(ctx sdk.Context) {
+// IteratePendingCreateProposal iterates over the pending proposals to create consumer chain clients in order
+// and creates the consumer client if the spawn time has passed, otherwise it will break out of loop and return.
+func (k Keeper) IteratePendingCreateProposal(ctx sdk.Context) {
 
-	iterator := k.PendingClientIterator(ctx)
+	iterator := k.PendingCreateProposalIterator(ctx)
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -252,7 +263,7 @@ func (k Keeper) IteratePendingClientInfo(ctx sdk.Context) {
 
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()
-		spawnTime, chainID, err := types.ParsePendingClientKey(key)
+		spawnTime, chainID, err := types.ParsePendingCreateProposalKey(key)
 		if err != nil {
 			panic(fmt.Errorf("failed to parse pending client key: %w", err))
 		}
@@ -273,15 +284,15 @@ func (k Keeper) IteratePendingClientInfo(ctx sdk.Context) {
 	}
 
 	// delete the proposals executed
-	k.DeletePendingClientInfo(ctx, execProposals...)
+	k.DeletePendingCreateProposal(ctx, execProposals...)
 }
 
-// DeletePendingClientInfo deletes the given create consumer proposals
-func (k Keeper) DeletePendingClientInfo(ctx sdk.Context, proposals ...types.CreateConsumerChainProposal) {
+// DeletePendingCreateProposal deletes the given create consumer proposals
+func (k Keeper) DeletePendingCreateProposal(ctx sdk.Context, proposals ...types.CreateConsumerChainProposal) {
 	store := ctx.KVStore(k.storeKey)
 
 	for _, p := range proposals {
-		store.Delete(types.PendingClientKey(p.SpawnTime, p.ChainId))
+		store.Delete(types.PendingCreateProposalKey(p.SpawnTime, p.ChainId))
 	}
 }
 
@@ -310,7 +321,7 @@ func (k Keeper) DeletePendingStopProposals(ctx sdk.Context, proposals ...types.S
 
 func (k Keeper) PendingStopProposalIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
-	return sdk.KVStorePrefixIterator(store, []byte(types.PendingStopProposalKeyPrefix))
+	return sdk.KVStorePrefixIterator(store, []byte{types.PendingStopProposalBytePrefix})
 }
 
 // IteratePendingStopProposal iterates over the pending stop proposals in order and stop the chain if the stop time has passed,
