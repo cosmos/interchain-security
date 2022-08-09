@@ -50,6 +50,11 @@ func (k Keeper) StopConsumerChainProposal(ctx sdk.Context, p *types.StopConsumer
 // StopConsumerChain cleans up the states for the given consumer chain ID and, if the given lockUbd is false,
 // it completes the outstanding unbonding operations lock by the consumer chain.
 func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, closeChan bool) (err error) {
+	// check that a client for chainID exists
+	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
+		// drop the proposal
+		return nil
+	}
 
 	// clean up states
 	k.DeleteConsumerClientId(ctx, chainID)
@@ -113,6 +118,12 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right consumer chain.
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
+	// check that a client for this chain does not exist
+	if _, found := k.GetConsumerClientId(ctx, chainID); found {
+		// drop the proposal
+		return nil
+	}
+
 	// Use the unbonding period on the provider to
 	// compute the unbonding period on the consumer
 	unbondingTime := utils.ComputeConsumerUnbondingPeriod(k.stakingKeeper.UnbondingTime(ctx))
