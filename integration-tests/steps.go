@@ -164,7 +164,7 @@ var happyPathSteps = []Step{
 			chain:  0,
 			from:   0,
 			to:     0,
-			amount: 11111111,
+			amount: 11000000,
 		},
 		state: State{
 			0: ChainState{
@@ -233,4 +233,46 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
+	{
+		action: UnbondTokensAction{
+			chain:      0,
+			unbondFrom: 0,
+			sender:     0,
+			amount:     11000000,
+		},
+		state: State{
+			0: ChainState{
+				ValPowers: &map[uint]uint{
+					0: 500,
+					1: 500,
+					2: 500,
+				},
+			},
+			1: ChainState{
+				ValPowers: &map[uint]uint{
+					// Voting power on consumer should not be affected yet
+					0: 511,
+					1: 500,
+					2: 500,
+				},
+			},
+		},
+	},
+	{
+		action: RelayPacketsAction{
+			chain:   0,
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			1: ChainState{
+				ValPowers: &map[uint]uint{
+					0: 500,
+					1: 500,
+					2: 500,
+				},
+			},
+		},
+	},
+	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.
 }
