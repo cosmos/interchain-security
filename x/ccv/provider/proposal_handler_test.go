@@ -13,7 +13,9 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
-func (suite *ProviderTestSuite) TestCreateConsumerChainProposalHandler() {
+// TestConsumerChainProposalHandler tests the handler for consumer chain proposals
+// for both CreateConsumerChainProposal and StopConsumerChainProposal
+func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
 	var (
 		ctx     sdk.Context
 		content govtypes.Content
