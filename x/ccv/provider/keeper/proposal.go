@@ -52,7 +52,8 @@ func (k Keeper) StopConsumerChainProposal(ctx sdk.Context, p *types.StopConsumer
 func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, closeChan bool) (err error) {
 	// check that a client for chainID exists
 	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
-		return sdkerrors.Wrapf(types.ErrInvalidStopProposal, "cannot find consumer chain with chainId %s", chainID)
+		// drop the proposal
+		return nil
 	}
 
 	// clean up states
@@ -119,7 +120,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
 	// check that a client for this chain does not exist
 	if _, found := k.GetConsumerClientId(ctx, chainID); found {
-		return sdkerrors.Wrapf(types.ErrInvalidCreateProposal, "consumer chain with chainId %s already registered", chainID)
+		// drop the proposal
+		return nil
 	}
 
 	// Use the unbonding period on the provider to
