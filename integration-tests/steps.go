@@ -164,7 +164,7 @@ var happyPathSteps = []Step{
 			chain:  0,
 			from:   0,
 			to:     0,
-			amount: 11111111,
+			amount: 11000000,
 		},
 		state: State{
 			0: ChainState{
@@ -238,7 +238,7 @@ var happyPathSteps = []Step{
 			chain:      0,
 			unbondFrom: 0,
 			sender:     0,
-			amount:     11111111,
+			amount:     11000000,
 		},
 		state: State{
 			0: ChainState{
