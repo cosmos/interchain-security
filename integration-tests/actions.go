@@ -608,6 +608,40 @@ func (s System) unbondTokens(
 	}
 }
 
+type RedelegateTokensAction struct {
+	chain           uint
+	sourceValidator uint
+	destValidator   uint
+	sender          uint
+	amount          uint
+}
+
+func (s System) redelegateTokens(action RedelegateTokensAction, verbose bool) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
+
+		"tx", "staking", "redelegate",
+		s.validatorConfigs[action.sourceValidator].valoperAddress,
+		s.validatorConfigs[action.destValidator].valoperAddress,
+		fmt.Sprint(action.amount)+`stake`,
+		`--from`, `validator`+fmt.Sprint(action.sender),
+		`--chain-id`, s.chainConfigs[action.chain].chainId,
+		`--home`, s.getValidatorHome(action.chain, action.sender),
+		`--node`, s.getValidatorNode(action.chain, action.sender),
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	)
+	if verbose {
+		fmt.Println("redelegate cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
 var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
 
 func (s System) getValidatorNum(chain uint) uint {

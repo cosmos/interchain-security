@@ -236,6 +236,24 @@ func (s *ProviderTestSuite) TestUnbondingNoConsumer() {
 	// - check that half the coins have been returned
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
 }
+func (s *ProviderTestSuite) TestRedelegationNoConsumer() {
+	// remove the consumer chain, which was already registered during setup
+	s.providerChain.App.(*appProvider.App).ProviderKeeper.DeleteConsumerClientId(s.providerCtx(), s.consumerChain.ChainID)
+
+	bondAmt := sdk.NewInt(1000000000)
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	// Delegate to first validator
+	_, shares, validatorAddr, _ := delegate(s, delAddr, bondAmt)
+
+	// TODO: deal with denoms
+	s.Require().Equal(shares.Mul(sdk.NewDec(1000000)), bondAmt.ToDec())
+
+	// Pick new validator for redelegation
+	_, newValidatorAddr := s.getVal(1)
+
+	// redelegate shares to new validator
+	redelegate(s, delAddr, validatorAddr, newValidatorAddr, shares)
+}
 
 func getBalance(s *ProviderTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
 	return s.providerChain.App.(*appProvider.App).BankKeeper.GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
@@ -288,6 +306,21 @@ func undelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAdd
 	valsetUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	return valsetUpdateID
+}
+
+func redelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
+	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec) {
+	// delegate bondAmt tokens on provider to change validator powers
+	completionTime, err := s.providerChain.App.(*appProvider.App).StakingKeeper.BeginRedelegation(
+		s.providerCtx(),
+		delAddr,
+		valSrcAddr,
+		ValDstAddr,
+		sharesAmount,
+	)
+	s.Require().NoError(err)
+	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
+	s.Require().Equal(s.providerCtx().BlockHeader().Time.Add(providerUnbondingPeriod), completionTime)
 }
 
 // ChainType defines the type of chain (either provider or consumer)

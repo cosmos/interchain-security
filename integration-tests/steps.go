@@ -267,6 +267,7 @@ var happyPathSteps = []Step{
 		state: State{
 			consumer: ChainState{
 				ValPowers: &map[uint]uint{
+					// Voting power changes are seen after VSC packet is relayed
 					0: 500,
 					1: 500,
 					2: 500,
@@ -275,4 +276,30 @@ var happyPathSteps = []Step{
 		},
 	},
 	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.
+	{
+		action: RedelegateTokensAction{
+			chain:           provider,
+			sourceValidator: 1,
+			destValidator:   2,
+			sender:          1,
+			amount:          11000000,
+		},
+		state: State{
+			provider: ChainState{
+				ValPowers: &map[uint]uint{
+					0: 500,
+					1: 490,
+					2: 510,
+				},
+			},
+			consumer: ChainState{
+				ValPowers: &map[uint]uint{
+					// Voting power changes not seen by consumer yet
+					0: 500,
+					1: 500,
+					2: 500,
+				},
+			},
+		},
+	},
 }
