@@ -243,7 +243,7 @@ func (s *ProviderTestSuite) TestRedelegationNoConsumer() {
 	bondAmt := sdk.NewInt(1000000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	// Delegate to first validator
-	_, shares, validatorAddr, _ := delegate(s, delAddr, bondAmt)
+	_, shares, validatorAddr := delegate(s, delAddr, bondAmt)
 
 	// TODO: deal with denoms
 	s.Require().Equal(shares.Mul(sdk.NewDec(1000000)), bondAmt.ToDec())
