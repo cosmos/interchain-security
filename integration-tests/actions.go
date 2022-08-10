@@ -107,7 +107,8 @@ func (s System) startChain(
 		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
 		chainConfig.chainId, chainConfig.ipPrefix, genesisChanges,
 		fmt.Sprint(action.skipGentx),
-		`s/timeout_commit = "5s"/timeout_commit = "500ms"/;`+
+		// might be worth consolidating with other place we edit genesis
+		`s/timeout_commit = "5s"/timeout_commit = "1s"/;`+
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 		// `s/flush_throttle_timeout = "100ms"/flush_throttle_timeout = "10ms"/`,
 	)
@@ -325,8 +326,9 @@ func (s System) startConsumerChain(
 		validators: action.validators,
 		genesisChanges: ".app_state.ccvconsumer = " + string(bz) + " | " +
 			// Custom slashing parameters for testing validator downtime functionality
-			".app_state.slashing.params.signed_blocks_window = " + "\"3\"" + " | " +
-			".app_state.slashing.params.min_signed_per_window = " + "\"1.0\"",
+			// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+			".app_state.slashing.params.signed_blocks_window = " + "\"2\"" + " | " +
+			".app_state.slashing.params.min_signed_per_window = " + "\"0.500000000000000000\"",
 		skipGentx: true,
 	}, verbose)
 }
@@ -565,14 +567,9 @@ type ValidatorDowntimeAction struct {
 }
 
 func (s System) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose bool) {
-	// Censor the validator's IP address
-	nodeIp := s.getValidatorIp(action.chain, action.validator)
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "iptables",
-		"-A", "INPUT",
-		"-s", nodeIp,
-		"-j", "DROP",
-	)
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "mv",
+		"/consumer/validator1/", "//")
+
 	if verbose {
 		fmt.Println("censor cmd:", cmd.String())
 	}
@@ -581,10 +578,27 @@ func (s System) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
-	// Wait appropriate amount of blocks
-	time.Sleep(30 * time.Second)
-	// TODO: make poll-based helper to see how many blocks have passed by
+	// Censor the validator's IP address
+	// nodeIp := s.getValidatorIp(action.chain, action.validator)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "iptables",
+	// 	"-A", "INPUT",`
+	// 	"-p", "tcp",
+	// 	"--dport", "26656",
+	// 	// "-s", nodeIp,
+	// 	"-j", "DROP",
+	// )
+	// if verbose {
+	// 	fmt.Println("censor cmd:", cmd.String())
+	// }
 
+	// bz, err := cmd.CombinedOutput()
+	// if err != nil {
+	// 	log.Fatal(err, "\n", string(bz))
+	// }
+
+	// Wait appropriate amount of blocks
+	s.waitBlocks(action.chain, 5)
 }
 
 var queryValidatorRegex = regexp.MustCompile(`(\d+)`)

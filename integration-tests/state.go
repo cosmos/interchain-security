@@ -279,7 +279,7 @@ func (s System) getValPower(chain uint, validator uint) uint {
 		}
 	}
 
-	log.Fatalf("Validator %v not in tendermint validator set", validator)
-
+	// Validator not in set, it's validator power is zero.
+	// TODO: Change this functionality if a zero val power is different than exclusion from val set.
 	return 0
 }

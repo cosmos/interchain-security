@@ -233,16 +233,17 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
+	// TODO: Might be worth making a specific validator for queries if a node is taken down here.
 	{
 		action: ValidatorDowntimeAction{
 			chain:     1,
 			validator: 1,
 		},
 		state: State{
-			0: ChainState{
+			1: ChainState{
 				ValPowers: &map[uint]uint{
 					0: 511,
-					// downtime on consumer should not yet take away voting power on provider
+					// No val set power changes on consumer yet
 					1: 500,
 					2: 500,
 				},
@@ -259,11 +260,12 @@ var happyPathSteps = []Step{
 			0: ChainState{
 				ValPowers: &map[uint]uint{
 					0: 511,
-					// Once packets are relayed, voting power is now gone on provider
+					// validator that is offline should be slashed, and lose it's voting power
 					1: 0,
 					2: 500,
 				},
 			},
+			// then a packet is relayed back to consumer ?
 		},
 	},
 }
