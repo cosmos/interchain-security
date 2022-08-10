@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+const (
+	providerChainId = "provider"
+	consumerChainId = "consumer"
+)
+
 // Attributes that are unique to a validator. Allows us to map (part of) the set of uints to
 // a set of viable validators
 type ValidatorConfig struct {
@@ -39,8 +44,8 @@ type ContainerConfig struct {
 type System struct {
 	containerConfig  ContainerConfig
 	validatorConfigs []ValidatorConfig
-	chainConfigs     []ChainConfig
 	localSdkPath     string
+	chainConfigs     map[string]ChainConfig
 }
 
 func DefaultSystemConfig() System {
@@ -77,16 +82,16 @@ func DefaultSystemConfig() System {
 				nodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"WLTcHEjbwB24Wp3z5oBSYTvtGQonz/7IQabOFw85BN0UkkyY5HDf38o8oHlFxVI26f+DFVeICuLbe9aXKGnUeg=="}}`,
 			},
 		},
-		chainConfigs: []ChainConfig{
-			{
-				chainId:        "provider",
+		chainConfigs: map[string]ChainConfig{
+			providerChainId: {
+				chainId:        providerChainId,
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 5,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\"",
 			},
-			{
-				chainId:        "consumer",
+			consumerChainId: {
+				chainId:        consumerChainId,
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 10,
