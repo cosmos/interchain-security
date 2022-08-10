@@ -20,7 +20,7 @@ var happyPathSteps = []Step{
 			},
 		},
 		state: State{
-			0: ChainState{
+			provider: ChainState{
 				ValBalances: &map[uint]uint{
 					0: 9500000000,
 					1: 9500000000,
@@ -36,7 +36,7 @@ var happyPathSteps = []Step{
 			amount: 2,
 		},
 		state: State{
-			0: ChainState{
+			provider: ChainState{
 				ValBalances: &map[uint]uint{
 					0: 9499999998,
 					1: 9500000002,
@@ -54,7 +54,7 @@ var happyPathSteps = []Step{
 			initialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 		},
 		state: State{
-			0: ChainState{
+			provider: ChainState{
 				ValBalances: &map[uint]uint{
 					0: 9489999997,
 					1: 9500000002,
@@ -79,7 +79,7 @@ var happyPathSteps = []Step{
 			propNumber: 1,
 		},
 		state: State{
-			0: ChainState{
+			provider: ChainState{
 				Proposals: &map[uint]Proposal{
 					1: ConsumerProposal{
 						Deposit:       10000001,
@@ -107,7 +107,7 @@ var happyPathSteps = []Step{
 			},
 		},
 		state: State{
-			0: ChainState{
+			provider: ChainState{
 				ValBalances: &map[uint]uint{
 					0: 9499999998,
 					1: 9500000002,
@@ -129,7 +129,7 @@ var happyPathSteps = []Step{
 			amount: 1,
 		},
 		state: State{
-			1: ChainState{
+			consumer: ChainState{
 				// Tx on consumer chain should not go through before ICS channel is setup
 				ValBalances: &map[uint]uint{
 					0: 10000000000,
@@ -167,14 +167,14 @@ var happyPathSteps = []Step{
 			amount: 11000000,
 		},
 		state: State{
-			0: ChainState{
+			provider: ChainState{
 				ValPowers: &map[uint]uint{
 					0: 511,
 					1: 500,
 					2: 500,
 				},
 			},
-			1: ChainState{
+			consumer: ChainState{
 				ValPowers: &map[uint]uint{
 					0: 500,
 					1: 500,
@@ -191,7 +191,7 @@ var happyPathSteps = []Step{
 			amount: 1,
 		},
 		state: State{
-			1: ChainState{
+			consumer: ChainState{
 				// Tx should not go through, ICS channel is not setup until first VSC packet has been relayed to consumer
 				ValBalances: &map[uint]uint{
 					0: 10000000000,
@@ -207,7 +207,7 @@ var happyPathSteps = []Step{
 			channel: 0,
 		},
 		state: State{
-			1: ChainState{
+			consumer: ChainState{
 				ValPowers: &map[uint]uint{
 					0: 511,
 					1: 500,
@@ -224,7 +224,7 @@ var happyPathSteps = []Step{
 			amount: 1,
 		},
 		state: State{
-			1: ChainState{
+			consumer: ChainState{
 				// Now tx should execute
 				ValBalances: &map[uint]uint{
 					0: 9999999999,
@@ -241,14 +241,14 @@ var happyPathSteps = []Step{
 			amount:     11000000,
 		},
 		state: State{
-			0: ChainState{
+			provider: ChainState{
 				ValPowers: &map[uint]uint{
 					0: 500,
 					1: 500,
 					2: 500,
 				},
 			},
-			1: ChainState{
+			consumer: ChainState{
 				ValPowers: &map[uint]uint{
 					// Voting power on consumer should not be affected yet
 					0: 511,
@@ -265,7 +265,7 @@ var happyPathSteps = []Step{
 			channel: 0,
 		},
 		state: State{
-			1: ChainState{
+			consumer: ChainState{
 				ValPowers: &map[uint]uint{
 					0: 500,
 					1: 500,

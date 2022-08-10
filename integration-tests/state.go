@@ -15,6 +15,11 @@ import (
 
 type State map[uint]ChainState
 
+const (
+	provider = iota
+	consumer
+)
+
 type ChainState struct {
 	ValBalances *map[uint]uint
 	Proposals   *map[uint]Proposal
