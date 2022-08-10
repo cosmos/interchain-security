@@ -257,7 +257,7 @@ var happyPathSteps = []Step{
 				},
 			},
 		},
-	},	
+	},
 	{
 		action: RelayPacketsAction{
 			chain:   0,
@@ -265,29 +265,6 @@ var happyPathSteps = []Step{
 			channel: 0,
 		},
 		state: State{
-			0: ChainState{
-				ValPowers: &map[uint]uint{
-					0: 511,
-					// validator that is offline should be slashed, and lose it's voting power
-					1: 0,
-					2: 500,
-				},
-			},
-			// then a packet is relayed back to consumer ?
-		},
-	},
-
-	// TODO: Might be worth making a specific validator for queries if a node is taken down here.
-	{
-		action: ValidatorDowntimeAction{
-			chain:     1,
-			validator: 1,
-		},
-		state: State{
-			1: ChainState{
-				ValPowers: &map[uint]uint{
-					0: 511,
-					// No val set power changes on consumer yet
 			1: ChainState{
 				ValPowers: &map[uint]uint{
 					0: 500,
