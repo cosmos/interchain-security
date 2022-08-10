@@ -15,7 +15,7 @@ import (
 )
 
 type SendTokensAction struct {
-	chain  uint
+	chain  string
 	from   uint
 	to     uint
 	amount uint
@@ -52,7 +52,7 @@ func (s System) sendTokens(
 }
 
 type StartChainAction struct {
-	chain          uint
+	chain          string
 	validators     []StartChainValidator
 	genesisChanges string
 	skipGentx      bool
@@ -144,7 +144,7 @@ func (s System) startChain(
 }
 
 type SubmitTextProposalAction struct {
-	chain       uint
+	chain       string
 	from        uint
 	deposit     uint
 	propType    string
@@ -180,10 +180,10 @@ func (s System) submitTextProposal(
 }
 
 type SubmitConsumerProposalAction struct {
-	chain         uint
+	chain         string
 	from          uint
 	deposit       uint
-	consumerChain uint
+	consumerChain string
 	spawnTime     uint
 	initialHeight clienttypes.Height
 }
@@ -249,7 +249,7 @@ func (s System) submitConsumerProposal(
 }
 
 type VoteGovProposalAction struct {
-	chain      uint
+	chain      string
 	from       []uint
 	vote       []string
 	propNumber uint
@@ -291,8 +291,8 @@ func (s System) voteGovProposal(
 }
 
 type StartConsumerChainAction struct {
-	consumerChain uint
-	providerChain uint
+	consumerChain string
+	providerChain string
 	validators    []StartChainValidator
 }
 
@@ -321,7 +321,7 @@ func (s System) startConsumerChain(
 	}
 
 	s.startChain(StartChainAction{
-		chain:          1,
+		chain:          consumerChainId,
 		validators:     action.validators,
 		genesisChanges: ".app_state.ccvconsumer = " + string(bz),
 		skipGentx:      true,
@@ -329,7 +329,7 @@ func (s System) startConsumerChain(
 }
 
 type AddChainToRelayerAction struct {
-	chain     uint
+	chain     string
 	validator uint
 }
 
@@ -410,8 +410,8 @@ func (s System) addChainToRelayer(
 }
 
 type AddIbcConnectionAction struct {
-	chainA  uint
-	chainB  uint
+	chainA  string
+	chainB  string
 	clientA uint
 	clientB uint
 	order   string
@@ -456,8 +456,8 @@ func (s System) addIbcConnection(
 }
 
 type AddIbcChannelAction struct {
-	chainA      uint
-	chainB      uint
+	chainA      string
+	chainB      string
 	connectionA uint
 	portA       string
 	portB       string
@@ -510,7 +510,7 @@ func (s System) addIbcChannel(
 }
 
 type RelayPacketsAction struct {
-	chain   uint
+	chain   string
 	port    string
 	channel uint
 }
@@ -537,7 +537,7 @@ func (s System) relayPackets(
 }
 
 type DelegateTokensAction struct {
-	chain  uint
+	chain  string
 	from   uint
 	to     uint
 	amount uint
@@ -573,7 +573,7 @@ func (s System) delegateTokens(
 }
 
 type UnbondTokensAction struct {
-	chain      uint
+	chain      string
 	sender     uint
 	unbondFrom uint
 	amount     uint
@@ -610,7 +610,7 @@ func (s System) unbondTokens(
 
 var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
 
-func (s System) getValidatorNum(chain uint) uint {
+func (s System) getValidatorNum(chain string) uint {
 	// Get first subdirectory of the directory of this chain, which will be the home directory of one of the validators
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c", `cd /`+s.chainConfigs[chain].chainId+`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
@@ -627,10 +627,10 @@ func (s System) getValidatorNum(chain uint) uint {
 	return uint(validator)
 }
 
-func (s System) getValidatorNode(chain uint, validator uint) string {
+func (s System) getValidatorNode(chain string, validator uint) string {
 	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator) + ":26658"
 }
 
-func (s System) getValidatorHome(chain uint, validator uint) string {
+func (s System) getValidatorHome(chain string, validator uint) string {
 	return `/` + s.chainConfigs[chain].chainId + `/validator` + fmt.Sprint(validator)
 }
