@@ -59,18 +59,15 @@ func (s System) getChainState(chain string, modelState ChainState) ChainState {
 		valBalances := s.getBalances(chain, *modelState.ValBalances)
 		chainState.ValBalances = &valBalances
 	}
-
 	if modelState.Proposals != nil {
 		proposals := s.getProposals(chain, *modelState.Proposals)
 		chainState.Proposals = &proposals
 	}
-
 	if modelState.ValPowers != nil {
-		s.waitBlocks(chain, 1)
+		s.waitBlocks(chain, 1, 10*time.Second)
 		powers := s.getValPowers(chain, *modelState.ValPowers)
 		chainState.ValPowers = &powers
 	}
-
 	return chainState
 }
 
@@ -97,12 +94,13 @@ func (s System) getBlockHeight(chain string) uint {
 	return uint(blockHeight)
 }
 
-func (s System) waitBlocks(chain string, blocks uint) {
+func (s System) waitBlocks(chain string, blocks uint, timeout time.Duration) {
 	startBlock := s.getBlockHeight(chain)
 
+	start := time.Now()
 	for {
 		thisBlock := s.getBlockHeight(chain)
-		if thisBlock >= startBlock+blocks {
+		if thisBlock >= startBlock+blocks || time.Since(start) > timeout {
 			return
 		}
 		time.Sleep(100 * time.Millisecond)

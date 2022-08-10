@@ -618,9 +618,11 @@ type ValidatorDowntimeAction struct {
 	validator uint
 }
 
+// Simulates validator downtime by moving the home folder of the node, making it's binary panic
+// TODO: If future integration tests require an offline validator to come back online, downtime needs to be implemented differently
 func (s System) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose bool) {
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "mv",
-		"/consumer/validator1/", "//")
+		"/"+action.chain+"/validator"+fmt.Sprint(action.validator)+"/", "//")
 
 	if verbose {
 		fmt.Println("censor cmd:", cmd.String())
@@ -630,6 +632,7 @@ func (s System) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
 	// Censor the validator's IP address
 	// nodeIp := s.getValidatorIp(action.chain, action.validator)
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -650,14 +653,15 @@ func (s System) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose 
 	// }
 
 	// Wait appropriate amount of blocks
-	s.waitBlocks(action.chain, 5)
+	s.waitBlocks(action.chain, 3, 20*time.Second)
 }
 
 var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
 
 func (s System) getValidatorNum(chain string) uint {
+
 	// Get first subdirectory of the directory of this chain, which will be the home directory of one of the validators
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	// #nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c", `cd /`+s.chainConfigs[chain].chainId+`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
 
 	if err != nil {

@@ -233,24 +233,67 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
+	// {
+	// 	action: UnbondTokensAction{
+	// 		chain:      providerChainId,
+	// 		unbondFrom: 0,
+	// 		sender:     0,
+	// 		amount:     5000000,
+	// 	},
+	// 	state: State{
+	// 		providerChainId: ChainState{
+	// 			ValPowers: &map[uint]uint{
+	// 				0: 506,
+	// 				1: 500,
+	// 				2: 500,
+	// 			},
+	// 		},
+	// 		consumerChainId: ChainState{
+	// 			ValPowers: &map[uint]uint{
+	// 				// Voting power on consumer should not be affected yet
+	// 				0: 511,
+	// 				1: 500,
+	// 				2: 500,
+	// 			},
+	// 		},
+	// 	},
+	// },
+
+	// {
+	// 	action: RelayPacketsAction{
+	// 		chain:   providerChainId,
+	// 		port:    "provider",
+	// 		channel: 0,
+	// 	},
+	// 	state: State{
+	// 		consumerChainId: ChainState{
+	// 			ValPowers: &map[uint]uint{
+	// 				0: 506,
+	// 				1: 500,
+	// 				2: 500,
+	// 			},
+	// 		},
+	// 	},
+	// },
+	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.
+
+	// TODO: might be worth making a validator for queries, make issue for this
+	// Causing a lot of bugs
 	{
-		action: UnbondTokensAction{
-			chain:      providerChainId,
-			unbondFrom: 0,
-			sender:     0,
-			amount:     11000000,
+		action: ValidatorDowntimeAction{
+			chain:     consumerChainId,
+			validator: 1,
 		},
 		state: State{
 			providerChainId: ChainState{
 				ValPowers: &map[uint]uint{
-					0: 500,
+					0: 511,
 					1: 500,
 					2: 500,
 				},
 			},
 			consumerChainId: ChainState{
 				ValPowers: &map[uint]uint{
-					// Voting power on consumer should not be affected yet
 					0: 511,
 					1: 500,
 					2: 500,
@@ -265,14 +308,21 @@ var happyPathSteps = []Step{
 			channel: 0,
 		},
 		state: State{
+			providerChainId: ChainState{
+				ValPowers: &map[uint]uint{
+					0: 511,
+					1: 0,
+					2: 500,
+				},
+			},
 			consumerChainId: ChainState{
 				ValPowers: &map[uint]uint{
-					0: 500,
+					0: 511,
 					1: 500,
 					2: 500,
 				},
 			},
 		},
 	},
-	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.
+	// TODO: also test downtime on provider
 }
