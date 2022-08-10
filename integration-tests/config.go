@@ -38,6 +38,12 @@ type System struct {
 	chainConfigs     []ChainConfig
 }
 
+// Readable indexes for chain configs defined below
+const (
+	provider = iota
+	consumer
+)
+
 func DefaultSystemConfig() System {
 	return System{
 		containerConfig: ContainerConfig{
