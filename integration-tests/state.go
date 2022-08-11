@@ -103,7 +103,11 @@ func (s System) waitBlocks(chain string, blocks uint, timeout time.Duration) {
 	start := time.Now()
 	for {
 		thisBlock := s.getBlockHeight(chain)
-		if thisBlock >= startBlock+blocks || time.Since(start) > timeout {
+		if thisBlock >= startBlock+blocks {
+			return
+		}
+		if time.Since(start) > timeout {
+			fmt.Printf("waitBlocks method has timed out after: %s", timeout)
 			return
 		}
 		time.Sleep(100 * time.Millisecond)
