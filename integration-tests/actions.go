@@ -107,7 +107,6 @@ func (s System) startChain(
 		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
 		chainConfig.chainId, chainConfig.ipPrefix, genesisChanges,
 		fmt.Sprint(action.skipGentx),
-		// might be worth consolidating with other place we edit genesis
 		`s/timeout_commit = "5s"/timeout_commit = "1s"/;`+
 			`s/peer_gossip_sleep_duration = "100ms"/peer_gossip_sleep_duration = "50ms"/;`,
 		// `s/flush_throttle_timeout = "100ms"/flush_throttle_timeout = "10ms"/`,
@@ -619,7 +618,7 @@ type ValidatorDowntimeAction struct {
 }
 
 // Simulates validator downtime by moving the home folder of the node, making it's binary panic
-// TODO: If future integration tests require an offline validator to come back online, downtime needs to be implemented differently
+// TODO: Downtime needs to be implemented more elegantly to allow validators to come back online
 func (s System) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose bool) {
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "mv",
 		"/"+action.chain+"/validator"+fmt.Sprint(action.validator)+"/", "//")
@@ -632,25 +631,6 @@ func (s System) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
-
-	// Censor the validator's IP address
-	// nodeIp := s.getValidatorIp(action.chain, action.validator)
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	// cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "iptables",
-	// 	"-A", "INPUT",`
-	// 	"-p", "tcp",
-	// 	"--dport", "26656",
-	// 	// "-s", nodeIp,
-	// 	"-j", "DROP",
-	// )
-	// if verbose {
-	// 	fmt.Println("censor cmd:", cmd.String())
-	// }
-
-	// bz, err := cmd.CombinedOutput()
-	// if err != nil {
-	// 	log.Fatal(err, "\n", string(bz))
-	// }
 
 	// Wait appropriate amount of blocks
 	s.waitBlocks(action.chain, 3, 20*time.Second)

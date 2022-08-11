@@ -277,8 +277,6 @@ var happyPathSteps = []Step{
 	},
 	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.
 
-	// TODO: might be worth making a validator for queries, make issue for this
-	// Causing a lot of bugs
 	{
 		action: ValidatorDowntimeAction{
 			chain:     consumerChainId,
@@ -324,5 +322,21 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
-	// TODO: also test downtime on provider
+	{
+		action: RelayPacketsAction{
+			chain:   providerChainId,
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			consumerChainId: ChainState{
+				ValPowers: &map[uint]uint{
+					0: 510,
+					// VSC packet now relayed back to consumer
+					1: 0,
+					2: 500,
+				},
+			},
+		},
+	},
 }
