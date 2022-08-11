@@ -258,7 +258,6 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
-
 	{
 		action: RelayPacketsAction{
 			chain:   providerChainId,
@@ -276,13 +275,13 @@ var happyPathSteps = []Step{
 		},
 	},
 	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.
-
 	{
 		action: ValidatorDowntimeAction{
 			chain:     consumerChainId,
 			validator: 1,
 		},
 		state: State{
+			// validator powers not affected on either chain yet
 			providerChainId: ChainState{
 				ValPowers: &map[uint]uint{
 					0: 510,
@@ -309,6 +308,7 @@ var happyPathSteps = []Step{
 			providerChainId: ChainState{
 				ValPowers: &map[uint]uint{
 					0: 510,
+					// VSC now seen on provider
 					1: 0,
 					2: 500,
 				},

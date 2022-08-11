@@ -59,15 +59,18 @@ func (s System) getChainState(chain string, modelState ChainState) ChainState {
 		valBalances := s.getBalances(chain, *modelState.ValBalances)
 		chainState.ValBalances = &valBalances
 	}
+
 	if modelState.Proposals != nil {
 		proposals := s.getProposals(chain, *modelState.Proposals)
 		chainState.Proposals = &proposals
 	}
+
 	if modelState.ValPowers != nil {
 		s.waitBlocks(chain, 1, 10*time.Second)
 		powers := s.getValPowers(chain, *modelState.ValPowers)
 		chainState.ValPowers = &powers
 	}
+
 	return chainState
 }
 
@@ -278,6 +281,5 @@ func (s System) getValPower(chain string, validator uint) uint {
 	}
 
 	// Validator not in set, it's validator power is zero.
-	// TODO: Change this functionality if a zero val power is different than exclusion from val set.
 	return 0
 }

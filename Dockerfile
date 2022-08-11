@@ -3,7 +3,7 @@ ENV GOPATH=/go
 ENV PATH=$PATH:/go/bin
 RUN echo fuk
 RUN dnf update -y
-RUN dnf install -y golang git make gcc gcc-c++ which iproute iputils iptables procps-ng vim-minimal tmux net-tools htop tar jq npm openssl-devel perl rust cargo golang 
+RUN dnf install -y golang git make gcc gcc-c++ which iproute iputils procps-ng vim-minimal tmux net-tools htop tar jq npm openssl-devel perl rust cargo golang
 
 RUN PATH="$HOME/.cargo/bin:$PATH" && cargo install ibc-relayer-cli@1.0.0-rc.1 --bin hermes --locked
 

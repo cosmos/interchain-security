@@ -639,9 +639,8 @@ func (s System) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose 
 var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
 
 func (s System) getValidatorNum(chain string) uint {
-
 	// Get first subdirectory of the directory of this chain, which will be the home directory of one of the validators
-	// #nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c", `cd /`+s.chainConfigs[chain].chainId+`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
 
 	if err != nil {
