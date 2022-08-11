@@ -76,14 +76,14 @@ func DefaultSystemConfig() System {
 			{
 				chainId:        "0",
 				binaryName:     "interchain-security-pd",
-				ipPrefix:       "10.0.0",
+				ipPrefix:       "7.7.7",
 				votingWaitTime: 5,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\"",
 			},
 			{
 				chainId:        "1",
 				binaryName:     "interchain-security-cd",
-				ipPrefix:       "10.0.1",
+				ipPrefix:       "7.7.8",
 				votingWaitTime: 10,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\"",
 			},
