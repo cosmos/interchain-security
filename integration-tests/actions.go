@@ -321,10 +321,14 @@ func (s System) startConsumerChain(
 	}
 
 	s.startChain(StartChainAction{
-		chain:          consumerChainId,
-		validators:     action.validators,
-		genesisChanges: ".app_state.ccvconsumer = " + string(bz),
-		skipGentx:      true,
+		chain:      consumerChainId,
+		validators: action.validators,
+		genesisChanges: ".app_state.ccvconsumer = " + string(bz) + " | " +
+			// Custom slashing parameters for testing validator downtime functionality
+			// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+			".app_state.slashing.params.signed_blocks_window = " + "\"2\"" + " | " +
+			".app_state.slashing.params.min_signed_per_window = " + "\"0.500000000000000000\"",
+		skipGentx: true,
 	}, verbose)
 }
 
@@ -608,6 +612,30 @@ func (s System) unbondTokens(
 	}
 }
 
+type ValidatorDowntimeAction struct {
+	chain     string
+	validator uint
+}
+
+// Simulates validator downtime by moving the home folder of the node, making it's binary panic
+// TODO: Downtime needs to be implemented more elegantly to allow validators to come back online
+func (s System) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose bool) {
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "mv",
+		"/"+action.chain+"/validator"+fmt.Sprint(action.validator)+"/", "//")
+
+	if verbose {
+		fmt.Println("censor cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// Wait appropriate amount of blocks
+	s.waitBlocks(action.chain, 3, 20*time.Second)
+}
+
 var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
 
 func (s System) getValidatorNum(chain string) uint {
@@ -628,7 +656,11 @@ func (s System) getValidatorNum(chain string) uint {
 }
 
 func (s System) getValidatorNode(chain string, validator uint) string {
-	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator) + ":26658"
+	return "tcp://" + s.getValidatorIp(chain, validator) + ":26658"
+}
+
+func (s System) getValidatorIp(chain string, validator uint) string {
+	return s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator)
 }
 
 func (s System) getValidatorHome(chain string, validator uint) string {

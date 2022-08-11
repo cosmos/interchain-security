@@ -238,12 +238,12 @@ var happyPathSteps = []Step{
 			chain:      providerChainId,
 			unbondFrom: 0,
 			sender:     0,
-			amount:     11000000,
+			amount:     1000000,
 		},
 		state: State{
 			providerChainId: ChainState{
 				ValPowers: &map[uint]uint{
-					0: 500,
+					0: 510,
 					1: 500,
 					2: 500,
 				},
@@ -267,7 +267,7 @@ var happyPathSteps = []Step{
 		state: State{
 			consumerChainId: ChainState{
 				ValPowers: &map[uint]uint{
-					0: 500,
+					0: 510,
 					1: 500,
 					2: 500,
 				},
@@ -275,4 +275,68 @@ var happyPathSteps = []Step{
 		},
 	},
 	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.
+	{
+		action: ValidatorDowntimeAction{
+			chain:     consumerChainId,
+			validator: 1,
+		},
+		state: State{
+			// validator powers not affected on either chain yet
+			providerChainId: ChainState{
+				ValPowers: &map[uint]uint{
+					0: 510,
+					1: 500,
+					2: 500,
+				},
+			},
+			consumerChainId: ChainState{
+				ValPowers: &map[uint]uint{
+					0: 510,
+					1: 500,
+					2: 500,
+				},
+			},
+		},
+	},
+	{
+		action: RelayPacketsAction{
+			chain:   providerChainId,
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			providerChainId: ChainState{
+				ValPowers: &map[uint]uint{
+					0: 510,
+					// VSC now seen on provider
+					1: 0,
+					2: 500,
+				},
+			},
+			consumerChainId: ChainState{
+				ValPowers: &map[uint]uint{
+					0: 510,
+					1: 500,
+					2: 500,
+				},
+			},
+		},
+	},
+	{
+		action: RelayPacketsAction{
+			chain:   providerChainId,
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			consumerChainId: ChainState{
+				ValPowers: &map[uint]uint{
+					0: 510,
+					// VSC packet now relayed back to consumer
+					1: 0,
+					2: 500,
+				},
+			},
+		},
+	},
 }
