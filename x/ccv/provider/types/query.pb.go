@@ -166,8 +166,8 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	// ConsumerGenesis queries the genesis state needed to start a consumer chain whose proposal
-	// has been accepted
+	// ConsumerGenesis queries the genesis state needed to start a consumer chain
+	// whose proposal has been accepted
 	ConsumerGenesis(ctx context.Context, in *QueryConsumerGenesisRequest, opts ...grpc.CallOption) (*QueryConsumerGenesisResponse, error)
 }
 
@@ -190,8 +190,8 @@ func (c *queryClient) ConsumerGenesis(ctx context.Context, in *QueryConsumerGene
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	// ConsumerGenesis queries the genesis state needed to start a consumer chain whose proposal
-	// has been accepted
+	// ConsumerGenesis queries the genesis state needed to start a consumer chain
+	// whose proposal has been accepted
 	ConsumerGenesis(context.Context, *QueryConsumerGenesisRequest) (*QueryConsumerGenesisResponse, error)
 }
 

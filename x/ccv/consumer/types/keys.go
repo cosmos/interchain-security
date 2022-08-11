@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/address"
 )
 
 const (
@@ -126,7 +125,7 @@ func HeightValsetUpdateIDKey(height uint64) []byte {
 
 // OutstandingDowntimeKey returns the key to a validators' outstanding downtime by consensus address
 func OutstandingDowntimeKey(v sdk.ConsAddress) []byte {
-	return append([]byte{OutstandingDowntimeBytePrefix}, address.MustLengthPrefix(v.Bytes())...)
+	return append([]byte{OutstandingDowntimeBytePrefix}, v.Bytes()...)
 }
 
 // CrossChainValidatorKey returns the key to a cross chain validator by consensus address

@@ -140,16 +140,15 @@ func (suite *KeeperTestSuite) TestIteratePendingStopProposal() {
 	}
 
 	ctx := suite.providerChain.GetContext().WithBlockTime(testCases[0].StopTime)
-	suite.providerChain.App.(*appProvider.App).ProviderKeeper.IteratePendingStopProposal(ctx)
+	suite.providerChain.App.(*appProvider.App).ProviderKeeper.FlushPendingStopProposals(ctx)
 
 	for _, tc := range testCases {
 		found := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingStopProposal(ctx, tc.ChainId, tc.StopTime)
-		suite.Require().NotEqual(tc.ExpDeleted, found, "stop proposal was not deleted %s %v", tc.ChainId, tc.StopTime)
+		suite.Require().NotEqual(tc.ExpDeleted, found)
 	}
 }
 
 func (suite *KeeperTestSuite) TestIteratePendingClientInfo() {
-
 	testCases := []struct {
 		types.CreateConsumerChainProposal
 		ExpDeleted bool
@@ -172,12 +171,12 @@ func (suite *KeeperTestSuite) TestIteratePendingClientInfo() {
 
 	ctx := suite.providerChain.GetContext().WithBlockTime(testCases[0].SpawnTime)
 
-	suite.providerChain.App.(*appProvider.App).ProviderKeeper.IteratePendingCreateProposal(ctx)
+	suite.providerChain.App.(*appProvider.App).ProviderKeeper.FlushClientInfo(ctx)
 
 	for _, tc := range testCases {
 		res := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingCreateProposal(ctx, tc.SpawnTime, tc.ChainId)
 		if !tc.ExpDeleted {
-			suite.Require().NotEmpty(res, "stop proposal was not deleted: %s %s", tc.ChainId, tc.SpawnTime.String())
+			suite.Require().NotEmpty(res, "create consuner chain proposal was deleted: %s %s", tc.ChainId, tc.SpawnTime.String())
 			continue
 		}
 		suite.Require().Empty(res, "stop proposal was not deleted %s %s", tc.ChainId, tc.SpawnTime.String())

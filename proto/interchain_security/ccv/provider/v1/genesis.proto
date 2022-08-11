@@ -7,15 +7,70 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types"
 import "gogoproto/gogo.proto";
 import "interchain_security/ccv/v1/ccv.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
+import "interchain_security/ccv/consumer/v1/consumer.proto";
+import "interchain_security/ccv/consumer/v1/genesis.proto";
+
 
 // GenesisState defines the CCV provider chain genesis state
 message GenesisState {
-  repeated ConsumerState consumer_states = 1 [(gogoproto.nullable) = false, (gogoproto.moretags) = "yaml:\"consumer_states\""];
-  Params                 params          = 2 [(gogoproto.nullable) = false];
+  // empty for a completely new chain
+  uint64 valset_update_id = 1; 
+  // empty for a completely new chain
+  repeated ConsumerState consumer_states = 2 [ 
+    (gogoproto.nullable) = false,
+    (gogoproto.moretags) = "yaml:\"consumer_states\""
+  ];
+  // UnbondingOps defines the consumer chains that are still unbonding
+  // empty for a completely new chain
+  repeated interchain_security.ccv.v1.UnbondingOp unbonding_ops = 3
+  [ (gogoproto.nullable) = false ];
+  // empty for a completely new chain
+    repeated ValsetUpdateIdToHeight valset_update_id_to_height = 4
+  [ (gogoproto.nullable) = false ];
+  // empty for a completely new chain
+  repeated CreateConsumerChainProposal create_consumer_chain_proposals = 5
+  [ (gogoproto.nullable) = false ];  
+  // empty for a completely new chain
+  repeated StopConsumerChainProposal stop_consumer_chain_proposals = 6
+  [ (gogoproto.nullable) = false ];
+  Params params = 7
+  [ (gogoproto.nullable) = false ];
 }
 
 // ConsumerState defines the state that the provider chain stores for each consumer chain
 message ConsumerState {
-  string                            chain_id   = 1;
-  string                            channel_id = 2;
+  // ChannelID defines the chain ID for the consumer chain
+  string chain_id = 1;
+  // ChannelID defines the IBC channel ID for the consumer chain
+  string channel_id = 2;
+  // ClientID defines the IBC client ID for the consumer chain
+  string client_id = 3;
+  uint64 initial_height = 4;
+  // LockUnbondingOnTimeout defines whether the unbonding funds should be released for this
+  // chain in case of a IBC channel timeout
+  bool lock_unbonding_on_timeout = 5;
+  // ConsumerGenesis defines the initial consumer chain genesis states
+  interchain_security.ccv.consumer.v1.GenesisState consumer_genesis = 6
+  [ (gogoproto.nullable) = false ];
+  // PendingValsetChanges defines the pending validator set changes for the consumer chain 
+  repeated interchain_security.ccv.v1.ValidatorSetChangePacketData pending_valset_changes = 7
+  [ (gogoproto.nullable) = false ];
+  repeated string slash_downtime_ack = 8;
+  // UnbondingOpsIndex defines the unbonding operations on the consumer chain
+  repeated UnbondingOpIndex unbonding_ops_index = 9
+  [ (gogoproto.nullable) = false ];
+}
+
+// UnbondingOpIndex defines the genesis information for each unbonding operations index 
+// referenced by chain id and valset udpate id
+message UnbondingOpIndex {
+  uint64 valset_update_id = 1;
+  repeated uint64 unbonding_op_index = 2;
+}
+
+// ValsetUpdateIdToHeight defines the genesis information for the mapping 
+// of each valset udpate id to a block height
+message ValsetUpdateIdToHeight {
+    uint64 valset_update_id = 1;
+    uint64 height = 2;
 }

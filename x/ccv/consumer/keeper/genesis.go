@@ -86,6 +86,11 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		unbondingTime := utils.ComputeConsumerUnbondingPeriod(tmClientState.UnbondingPeriod)
 		k.SetUnbondingTime(ctx, unbondingTime)
 
+		// set height to valset update id mapping
+		for _, h2v := range state.HeightToValsetUpdateId {
+			k.SetHeightValsetUpdateID(ctx, h2v.Height, h2v.ValsetUpdateId)
+		}
+
 		// set provider client id
 		k.SetProviderClient(ctx, state.ProviderClientId)
 		// set provider channel id.
@@ -96,6 +101,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		}
 	}
 
+	// populate cross chain validators states with initial valset
 	k.ApplyCCValidatorChanges(ctx, state.InitialValSet)
 
 	return state.InitialValSet
@@ -108,29 +114,59 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	if !params.Enabled {
 		return types.DefaultGenesisState()
 	}
-
+	// when the channel is already established the CCV module states are exported
+	// the client and consensus states are exported independenlty by the IBC module
 	if channelID, ok := k.GetProviderChannel(ctx); ok {
 		clientID, ok := k.GetProviderClient(ctx)
 		if !ok {
 			panic("provider client does not exist")
 		}
-		// ValUpdates must be filled in off-line
-		gs := types.NewRestartGenesisState(clientID, channelID, nil, nil, params)
 
 		maturingPackets := []types.MaturingVSCPacket{}
-		cb := func(vscId, timeNs uint64) bool {
+		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) bool {
 			mat := types.MaturingVSCPacket{
 				VscId:        vscId,
 				MaturityTime: timeNs,
 			}
 			maturingPackets = append(maturingPackets, mat)
 			return false
-		}
-		k.IteratePacketMaturityTime(ctx, cb)
+		})
 
-		gs.MaturingPackets = maturingPackets
+		heightToVCIDs := []types.HeightToValsetUpdateID{}
+		k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) bool {
+			hv := types.HeightToValsetUpdateID{
+				Height:         height,
+				ValsetUpdateId: vscID,
+			}
+			heightToVCIDs = append(heightToVCIDs, hv)
+			return true
+		})
+
+		outstandingDowntimes := []types.OutstandingDowntime{}
+		k.IterateOutstandingDowntime(ctx, func(addr string) bool {
+			od := types.OutstandingDowntime{
+				ValidatorConsensusAddress: addr,
+			}
+			outstandingDowntimes = append(outstandingDowntimes, od)
+			return false
+		})
+
+		// ValUpdates must be filled in off-line
+		gs := types.NewRestartGenesisState(
+			clientID,
+			channelID,
+			maturingPackets,
+			nil,
+			heightToVCIDs,
+			outstandingDowntimes,
+			params,
+		)
 		return gs
 	}
+
+	// if the channel isn't established, the client, consensus states
+	// and the pending slashing requests are exported
+
 	clientID, ok := k.GetProviderClient(ctx)
 	// if provider clientID and channelID don't exist on the consumer chain, then CCV protocol is disabled for this chain
 	// return a disabled genesis state
@@ -153,6 +189,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	if !ok {
 		panic("provider consensus state is not tendermint consensus state")
 	}
+
 	// ValUpdates must be filled in off-line
-	return types.NewInitialGenesisState(tmCs, tmConsState, nil, params)
+	return types.NewInitialGenesisState(tmCs, tmConsState, nil, k.GetPendingSlashRequests(ctx), params)
 }

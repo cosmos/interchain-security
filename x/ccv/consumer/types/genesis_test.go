@@ -53,29 +53,29 @@ func TestValidateInitialGenesisState(t *testing.T) {
 	}{
 		{
 			"valid new consumer genesis state",
-			types.NewInitialGenesisState(cs, consensusState, valUpdates, params),
+			types.NewInitialGenesisState(cs, consensusState, valUpdates, nil, params),
 			false,
 		},
 		{
 			"invalid new consumer genesis state: nil client state",
-			types.NewInitialGenesisState(nil, consensusState, valUpdates, params),
+			types.NewInitialGenesisState(nil, consensusState, valUpdates, nil, params),
 			true,
 		},
 		{
 			"invalid new consumer genesis state: invalid client state",
 			types.NewInitialGenesisState(&ibctmtypes.ClientState{ChainId: "badClientState"},
-				consensusState, valUpdates, params),
+				consensusState, valUpdates, nil, params),
 			true,
 		},
 		{
 			"invalid new consumer genesis state: nil consensus state",
-			types.NewInitialGenesisState(cs, nil, valUpdates, params),
+			types.NewInitialGenesisState(cs, nil, valUpdates, nil, params),
 			true,
 		},
 		{
 			"invalid new consumer genesis state: invalid consensus state",
 			types.NewInitialGenesisState(cs, &ibctmtypes.ConsensusState{Timestamp: time.Now()},
-				valUpdates, params),
+				valUpdates, nil, params),
 			true,
 		},
 		{
@@ -89,6 +89,9 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				consensusState,
 				nil,
 				valUpdates,
+				nil,
+				nil,
+				nil,
 			},
 			true,
 		},
@@ -103,6 +106,9 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				consensusState,
 				nil,
 				valUpdates,
+				nil,
+				nil,
+				nil,
 			},
 			true,
 		},
@@ -117,12 +123,15 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				consensusState,
 				[]types.MaturingVSCPacket{{}},
 				valUpdates,
+				nil,
+				nil,
+				nil,
 			},
 			true,
 		},
 		{
 			"invalid new consumer genesis state: nil initial validator set",
-			types.NewInitialGenesisState(cs, consensusState, nil, params),
+			types.NewInitialGenesisState(cs, consensusState, nil, nil, params),
 			true,
 		},
 		{
@@ -130,7 +139,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 			types.NewInitialGenesisState(
 				cs, ibctmtypes.NewConsensusState(
 					time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), []byte("wrong_hash")),
-				valUpdates, params),
+				valUpdates, nil, params),
 			true,
 		},
 	}
@@ -170,7 +179,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 	}{
 		{
 			"valid restart consumer genesis state: empty maturing packets",
-			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, valUpdates, params),
+			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, valUpdates, nil, nil, params),
 			false,
 		},
 		{
@@ -179,31 +188,31 @@ func TestValidateRestartGenesisState(t *testing.T) {
 				{1, uint64(time.Now().UnixNano())},
 				{3, uint64(time.Now().UnixNano())},
 				{5, uint64(time.Now().UnixNano())},
-			}, valUpdates, params),
+			}, valUpdates, nil, nil, params),
 			false,
 		},
 		{
 			"invalid restart consumer genesis state: channel id is empty",
-			types.NewRestartGenesisState("", "ccvchannel", nil, valUpdates, params),
+			types.NewRestartGenesisState("", "ccvchannel", nil, valUpdates, nil, nil, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: channel id is empty",
-			types.NewRestartGenesisState("ccvclient", "", nil, valUpdates, params),
+			types.NewRestartGenesisState("ccvclient", "", nil, valUpdates, nil, nil, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: maturing packet vscId is invalid",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
 				{0, uint64(time.Now().UnixNano())},
-			}, valUpdates, params),
+			}, valUpdates, nil, nil, params),
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: maturing packet time is invalid",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
 				{1, 0},
-			}, valUpdates, params),
+			}, valUpdates, nil, nil, params),
 			true,
 		},
 		{
@@ -217,6 +226,9 @@ func TestValidateRestartGenesisState(t *testing.T) {
 				nil,
 				nil,
 				valUpdates,
+				nil,
+				nil,
+				nil,
 			},
 			true,
 		},
@@ -231,12 +243,15 @@ func TestValidateRestartGenesisState(t *testing.T) {
 				consensusState,
 				nil,
 				valUpdates,
+				nil,
+				nil,
+				nil,
 			},
 			true,
 		},
 		{
 			"invalid restart consumer genesis state: nil initial validator set",
-			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, nil, params),
+			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, nil, nil, nil, params),
 			true,
 		},
 	}
