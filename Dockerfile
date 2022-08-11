@@ -21,10 +21,10 @@ FROM informalsystems/hermes:1.0.0-rc.1 AS hermes-builder
 
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y
-RUN dnf install -y golang git make gcc gcc-c++ which iproute iputils procps-ng vim-minimal tmux net-tools htop tar jq npm openssl-devel perl
+RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools htop jq 
 USER root
 
-# Copy hermes and is binaries to final image
+# Copy Hermes and IS binaries to final image
 COPY --chown=0:0 --from=hermes-builder /usr/lib/x86_64-linux-gnu/libssl.so.1.1 /usr/lib/x86_64-linux-gnu/libssl.so.1.1
 COPY --chown=0:0 --from=hermes-builder /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
 
