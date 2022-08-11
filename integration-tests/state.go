@@ -13,7 +13,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type State map[uint]ChainState
+type State map[string]ChainState
 
 type ChainState struct {
 	ValBalances *map[uint]uint
@@ -35,7 +35,7 @@ func (p TextProposal) isProposal() {}
 
 type ConsumerProposal struct {
 	Deposit       uint
-	Chain         uint
+	Chain         string
 	SpawnTime     int
 	InitialHeight clienttypes.Height
 	Status        string
@@ -52,7 +52,7 @@ func (s System) getState(modelState State) State {
 	return systemState
 }
 
-func (s System) getChainState(chain uint, modelState ChainState) ChainState {
+func (s System) getChainState(chain string, modelState ChainState) ChainState {
 	chainState := ChainState{}
 
 	if modelState.ValBalances != nil {
@@ -76,7 +76,7 @@ func (s System) getChainState(chain uint, modelState ChainState) ChainState {
 
 var blockHeightRegex = regexp.MustCompile(`block_height: "(\d+)"`)
 
-func (s System) getBlockHeight(chain uint) uint {
+func (s System) getBlockHeight(chain string) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
@@ -97,7 +97,7 @@ func (s System) getBlockHeight(chain uint) uint {
 	return uint(blockHeight)
 }
 
-func (s System) waitBlocks(chain uint, blocks uint) {
+func (s System) waitBlocks(chain string, blocks uint) {
 	startBlock := s.getBlockHeight(chain)
 
 	for {
@@ -109,7 +109,7 @@ func (s System) waitBlocks(chain uint, blocks uint) {
 	}
 }
 
-func (s System) getBalances(chain uint, modelState map[uint]uint) map[uint]uint {
+func (s System) getBalances(chain string, modelState map[uint]uint) map[uint]uint {
 	systemState := map[uint]uint{}
 	for k := range modelState {
 		systemState[k] = s.getBalance(chain, k)
@@ -118,7 +118,7 @@ func (s System) getBalances(chain uint, modelState map[uint]uint) map[uint]uint 
 	return systemState
 }
 
-func (s System) getProposals(chain uint, modelState map[uint]Proposal) map[uint]Proposal {
+func (s System) getProposals(chain string, modelState map[uint]Proposal) map[uint]Proposal {
 	systemState := map[uint]Proposal{}
 	for k := range modelState {
 		systemState[k] = s.getProposal(chain, k)
@@ -127,7 +127,7 @@ func (s System) getProposals(chain uint, modelState map[uint]Proposal) map[uint]
 	return systemState
 }
 
-func (s System) getValPowers(chain uint, modelState map[uint]uint) map[uint]uint {
+func (s System) getValPowers(chain string, modelState map[uint]uint) map[uint]uint {
 	systemState := map[uint]uint{}
 	for k := range modelState {
 		systemState[k] = s.getValPower(chain, k)
@@ -136,7 +136,7 @@ func (s System) getValPowers(chain uint, modelState map[uint]uint) map[uint]uint
 	return systemState
 }
 
-func (s System) getBalance(chain uint, validator uint) uint {
+func (s System) getBalance(chain string, validator uint) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
@@ -159,7 +159,7 @@ func (s System) getBalance(chain uint, validator uint) uint {
 var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
 
 // interchain-securityd query gov proposals
-func (s System) getProposal(chain uint, proposal uint) Proposal {
+func (s System) getProposal(chain string, proposal uint) Proposal {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
@@ -199,10 +199,10 @@ func (s System) getProposal(chain uint, proposal uint) Proposal {
 		chainId := gjson.Get(string(bz), `content.chain_id`).String()
 		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time().Sub(s.containerConfig.now)
 
-		var chain uint
+		var chain string
 		for i, conf := range s.chainConfigs {
 			if conf.chainId == chainId {
-				chain = uint(i)
+				chain = i
 				break
 			}
 		}
@@ -238,7 +238,7 @@ type ValPubKey struct {
 	Value string `yaml:"value"`
 }
 
-func (s System) getValPower(chain uint, validator uint) uint {
+func (s System) getValPower(chain string, validator uint) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
