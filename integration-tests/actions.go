@@ -86,7 +86,7 @@ func (s System) startChain(
 			PrivValidatorKey: s.validatorConfigs[val.id].privValidatorKey,
 			Allocation:       fmt.Sprint(val.allocation) + "stake",
 			Stake:            fmt.Sprint(val.stake) + "stake",
-			Number:           fmt.Sprint(val.id),
+			Number:           fmt.Sprint(val.id + 2),
 		})
 	}
 

@@ -85,7 +85,7 @@ set -e
 docker build -t "$CONTAINER_NAME" .
 
 # Run new test container instance
-docker run --name "$INSTANCE_NAME" --cap-add=NET_ADMIN "$CONTAINER_NAME" /bin/bash /testnet-scripts/beacon.sh
+docker run --name "$INSTANCE_NAME" --cap-add=NET_ADMIN --privileged "$CONTAINER_NAME" /bin/bash /testnet-scripts/beacon.sh
 `
 
 func (s System) startDocker() {
