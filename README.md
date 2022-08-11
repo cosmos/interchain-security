@@ -104,6 +104,11 @@ If using VSCode, see [vscode-go/wiki/debugging](https://github.com/golang/vscode
 
 More instructions will be added soon, in time for the testnet.
 
+## Tests
+All end-to-end tests are located in the ```e2e-tests``` folder. These in-memory tests utilize the [IBC Testing Package](https://github.com/cosmos/ibc-go/tree/main/testing), and test functionality that is wider in scope than anything which can be tested via golang's standard testing package. Pure unit tests should be defined in files formatted as ```<file being tested>_test.go```, following standard conventions. 
+
+Integration tests (located in ```integration-tests```) spawn up true node processes within a docker container and are relevant to the highest level of functionality. 
+
 ## Learn more
 
 - [IBC Docs](https://docs.cosmos.network/master/ibc/)
