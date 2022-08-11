@@ -620,6 +620,7 @@ type ValidatorDowntimeAction struct {
 // Simulates validator downtime by moving the home folder of the node, making it's binary panic
 // TODO: Downtime needs to be implemented more elegantly to allow validators to come back online
 func (s System) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose bool) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "mv",
 		"/"+action.chain+"/validator"+fmt.Sprint(action.validator)+"/", "//")
 
