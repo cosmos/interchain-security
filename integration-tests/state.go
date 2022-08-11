@@ -107,7 +107,7 @@ func (s System) waitBlocks(chain string, blocks uint, timeout time.Duration) {
 			return
 		}
 		if time.Since(start) > timeout {
-			fmt.Printf("waitBlocks method has timed out after: %s", timeout)
+			fmt.Printf("\nwaitBlocks method has timed out after: %s\n", timeout)
 			return
 		}
 		time.Sleep(100 * time.Millisecond)
