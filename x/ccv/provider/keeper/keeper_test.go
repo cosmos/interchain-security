@@ -21,6 +21,7 @@ import (
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -533,7 +534,7 @@ func (suite *KeeperTestSuite) TestIterateOverUnbondingOpIndex() {
 }
 
 func TestMaturedUnbondingOps(t *testing.T) {
-	keeper, ctx := getKeeperAndCtx(t)
+	keeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
 	ids, err := keeper.GetMaturedUnbondingOps(ctx)
 	require.NoError(t, err)

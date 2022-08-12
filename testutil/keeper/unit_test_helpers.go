@@ -1,4 +1,4 @@
-package keeper_test
+package keeper
 
 import (
 	"testing"
@@ -18,7 +18,7 @@ import (
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -28,11 +28,11 @@ import (
 )
 
 // Constructs a keeper and context object for unit tests, backed by an in-memory db.
-func getKeeperAndCtx(t testing.TB) (keeper.Keeper, sdk.Context) {
+func GetProviderKeeperAndCtx(t testing.TB) (providerkeeper.Keeper, sdk.Context) {
 
-	cdc, storeKey, paramsSubspace, stateStore := setupInMemKeeper(t)
+	cdc, storeKey, paramsSubspace, ctx := SetupInMemKeeper(t)
 
-	k := keeper.NewKeeper(
+	k := providerkeeper.NewKeeper(
 		cdc,
 		storeKey,
 		paramsSubspace,
@@ -46,13 +46,16 @@ func getKeeperAndCtx(t testing.TB) (keeper.Keeper, sdk.Context) {
 		DummyAccountKeeper{},
 		"",
 	)
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 	return k, ctx
 }
 
-// Constructs a keeper and context object for unit tests, backed by an in-memory db, with ability to pass mocked keepers.
+// Constructs a keeper for unit tests, backed by an in-memory db, with ability to pass mocked or otherwise manipulated parameters.
 // Note: Use the dummy types defined in this file for keepers you don't wish to mock.
-func getKeeperAndCtxWithMocks(t testing.TB,
+func GetProviderKeeperWithMocks(t testing.TB,
+	cdc *codec.ProtoCodec,
+	storeKey *storetypes.KVStoreKey,
+	paramsSubspace paramstypes.Subspace,
+	ctx sdk.Context,
 	capabilityKeeper capabilitykeeper.ScopedKeeper,
 	channelKeeper types.ChannelKeeper,
 	portKeeper types.PortKeeper,
@@ -61,11 +64,9 @@ func getKeeperAndCtxWithMocks(t testing.TB,
 	stakingKeeper types.StakingKeeper,
 	slashingKeeper types.SlashingKeeper,
 	accountKeeper types.AccountKeeper,
-) (keeper.Keeper, sdk.Context) {
+) providerkeeper.Keeper {
 
-	cdc, storeKey, paramsSubspace, stateStore := setupInMemKeeper(t)
-
-	k := keeper.NewKeeper(
+	k := providerkeeper.NewKeeper(
 		cdc,
 		storeKey,
 		paramsSubspace,
@@ -79,11 +80,10 @@ func getKeeperAndCtxWithMocks(t testing.TB,
 		accountKeeper,
 		"",
 	)
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
-	return k, ctx
+	return k
 }
 
-func setupInMemKeeper(t testing.TB) (*codec.ProtoCodec, *storetypes.KVStoreKey, paramstypes.Subspace, storetypes.CommitMultiStore) {
+func SetupInMemKeeper(t testing.TB) (*codec.ProtoCodec, *storetypes.KVStoreKey, paramstypes.Subspace, sdk.Context) {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
@@ -102,7 +102,8 @@ func setupInMemKeeper(t testing.TB) (*codec.ProtoCodec, *storetypes.KVStoreKey, 
 		memStoreKey,
 		paramstypes.ModuleName,
 	)
-	return cdc, storeKey, paramsSubspace, stateStore
+	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
+	return cdc, storeKey, paramsSubspace, ctx
 }
 
 type DummyChannelKeeper struct{}
