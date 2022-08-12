@@ -31,6 +31,7 @@ import (
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
 
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -531,21 +532,21 @@ func (suite *KeeperTestSuite) TestIterateOverUnbondingOpIndex() {
 	suite.Require().Equal(len(unbondingOpIndex), i)
 }
 
-func (suite *KeeperTestSuite) TestMaturedUnbondingOps() {
-	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
+func TestMaturedUnbondingOps(t *testing.T) {
+	keeper, ctx := getKeeperAndCtx(t)
 
-	ids, err := providerKeeper.GetMaturedUnbondingOps(suite.providerChain.GetContext())
-	suite.Require().NoError(err)
-	suite.Require().Nil(ids)
+	ids, err := keeper.GetMaturedUnbondingOps(ctx)
+	require.NoError(t, err)
+	require.Nil(t, ids)
 
 	unbondingOpIds := []uint64{0, 1, 2, 3, 4, 5, 6}
-	err = providerKeeper.AppendMaturedUnbondingOps(suite.providerChain.GetContext(), unbondingOpIds)
-	suite.Require().NoError(err)
+	err = keeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
+	require.NoError(t, err)
 
-	ids, err = providerKeeper.EmptyMaturedUnbondingOps(suite.providerChain.GetContext())
-	suite.Require().NoError(err)
-	suite.Require().Equal(len(unbondingOpIds), len(ids))
+	ids, err = keeper.EmptyMaturedUnbondingOps(ctx)
+	require.NoError(t, err)
+	require.Equal(t, len(unbondingOpIds), len(ids))
 	for i := 0; i < len(unbondingOpIds); i++ {
-		suite.Require().Equal(unbondingOpIds[i], ids[i])
+		require.Equal(t, unbondingOpIds[i], ids[i])
 	}
 }

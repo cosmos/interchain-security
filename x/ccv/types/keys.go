@@ -9,4 +9,10 @@ const (
 	Version = "1"
 
 	RouterKey = ModuleName
+
+	// StoreKey defines the primary module store key
+	StoreKey = ModuleName
+
+	// MemStoreKey defines the in-memory store key
+	MemStoreKey = "mem_ccv"
 )
