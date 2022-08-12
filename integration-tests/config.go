@@ -47,6 +47,7 @@ func DefaultSystemConfig() System {
 			now:           time.Now(),
 		},
 		validatorConfigs: []ValidatorConfig{
+			// TODO: turn this into a map with keys that are two characters long. Write a comment about how the keys have to be two characters long.
 			{
 				mnemonic:         "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
 				delAddress:       "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
@@ -54,6 +55,7 @@ func DefaultSystemConfig() System {
 				valconsAddress:   "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
 				privValidatorKey: `{"address":"06C0F3E47CC5C748269088DC2F36411D3AAA27C6","pub_key":{"type":"tendermint/PubKeyEd25519","value":"RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uX+ZpDMg89a6gtqs/+MQpCTSqlkZ0nJQJOhLlCJvwvdGtyVDP1siGQjL+B8vjzmDc9gx6IiS7ip6jj3nvztfXQ=="}}`,
 				nodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"fjw4/DAhyRPnwKgXns5SV7QfswRSXMWJpHS7TyULDmJ8ofUc5poQP8dgr8bZRbCV5RV8cPqDq3FPdqwpmUbmdA=="}}`,
+				// ipSuffix: 1 // TODO: add ipSuffix field which is used to create a validators ip on a given chain by combining with the ipPrefix of the chain in question. This must be a number greater than 0 and less than 254.
 			},
 			{
 				mnemonic:         "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
@@ -73,6 +75,7 @@ func DefaultSystemConfig() System {
 			},
 		},
 		chainConfigs: []ChainConfig{
+			// TODO: turn this into a map with keys that are two characters long. Write a comment about how the keys have to be two characters long.
 			{
 				chainId:        "0",
 				binaryName:     "interchain-security-pd",

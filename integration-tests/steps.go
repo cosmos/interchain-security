@@ -16,7 +16,7 @@ var happyPathSteps = []Step{
 			validators: []StartChainValidator{
 				{id: 1, stake: 500000000, allocation: 10000000000},
 				{id: 0, stake: 500000000, allocation: 10000000000},
-				{id: 2, stake: 500000000, allocation: 10000000000},
+				{id: 2, stake: 400000000, allocation: 10000000000},
 			},
 		},
 		state: State{

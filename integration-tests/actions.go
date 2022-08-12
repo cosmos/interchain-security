@@ -86,7 +86,7 @@ func (s System) startChain(
 			PrivValidatorKey: s.validatorConfigs[val.id].privValidatorKey,
 			Allocation:       fmt.Sprint(val.allocation) + "stake",
 			Stake:            fmt.Sprint(val.stake) + "stake",
-			Number:           fmt.Sprint(val.id),
+			Number:           fmt.Sprint(val.id), // TODO: this goes away, is replaced by ValId and IpSuffix
 		})
 	}
 
@@ -628,9 +628,9 @@ func (s System) getValidatorNum(chain uint) uint {
 }
 
 func (s System) getValidatorNode(chain uint, validator uint) string {
-	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator) + ":26658"
+	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator) + ":26658" //TODO: ip suffix
 }
 
 func (s System) getValidatorHome(chain uint, validator uint) string {
-	return `/` + s.chainConfigs[chain].chainId + `/validator` + fmt.Sprint(validator)
+	return `/` + s.chainConfigs[chain].chainId + `/validator` + fmt.Sprint(validator) //TODO: val id
 }

@@ -9,7 +9,8 @@ BIN=$1
 #     mnemonic: "crackle snap pop ... etc",
 #     allocation: "10000000000stake,10000000000footoken",
 #     stake: "5000000000stake",
-#     number: "0",
+#     val_id: "ml", TODO: we have replaced the former "number" field with these two fields. Everywhere that "number" was used in an IP, use ip_suffix. Everywhere that "number" was used in the filesystem, use "val_id".
+#     ip_suffix: "1",
 #     priv_validator_key: "{\"address\": \"3566F464673B2F069758DAE86FC25D04017BB147\",\"pub_key\": {\"type\": \"tendermint/PubKeyEd25519\",\"value\": \"XrLjKdc4mB2gfqplvnoySjSJq2E90RynUwaO3WhJutk=\"},\"priv_key\": {\"type\": \"tendermint/PrivKeyEd25519\",\"value\": \"czGSLs/Ocau8aJ5J5zQHMxf3d7NR0xjMECN6YGTIWqtesuMp1ziYHaB+qmW+ejJKNImrYT3RHKdTBo7daEm62Q==\"}}"
 #     node_key: "{\"priv_key\":{\"type\":\"tendermint/PrivKeyEd25519\",\"value\":\"alIHj6hXnzpLAadgb7+E2eeecwxoNdzuZrfhMX36EaD5/LgzL0ZUoVp7AK3np0K5T35JWLLv0jJKmeRIhG0GjA==\"}}"
 # }, ... ]
