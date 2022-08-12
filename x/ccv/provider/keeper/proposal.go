@@ -251,7 +251,7 @@ func (k Keeper) PendingCreateProposalIterator(ctx sdk.Context) sdk.Iterator {
 // IteratePendingCreateProposal iterates over the pending proposals to create consumer chain clients in order
 // and creates the consumer client if the spawn time has passed, otherwise it will break out of loop and return.
 func (k Keeper) IteratePendingCreateProposal(ctx sdk.Context) {
-	propsToExecute := k.ClientsFromProposals(ctx)
+	propsToExecute := k.ClientsFromCreateProposals(ctx)
 
 	for _, prop := range propsToExecute {
 		err := k.CreateConsumerClient(ctx, prop.ChainId, prop.InitialHeight, prop.LockUnbondingOnTimeout)
@@ -261,12 +261,12 @@ func (k Keeper) IteratePendingCreateProposal(ctx sdk.Context) {
 	}
 }
 
-// ClientsFromProposals iterates over the pending proposals in order and returns consumer clients to be created.
+// ClientsFromCreateProposals iterates over the pending proposals in order and returns a list of consumer clients to be created.
 // A client is included in the returned list (and its proposal is deleted) if its proposed spawn time has passed,
 // otherwise the method will break out of loop and return.
 //
-// Note: this method is separated from IteratePendingCreateProposal to be easily unit tested.
-func (k Keeper) ClientsFromProposals(ctx sdk.Context) []types.CreateConsumerChainProposal {
+// Note: this method is split out from IteratePendingCreateProposal to be easily unit tested.
+func (k Keeper) ClientsFromCreateProposals(ctx sdk.Context) []types.CreateConsumerChainProposal {
 
 	iterator := k.PendingCreateProposalIterator(ctx)
 	defer iterator.Close()
@@ -275,7 +275,7 @@ func (k Keeper) ClientsFromProposals(ctx sdk.Context) []types.CreateConsumerChai
 	propsToExecute := []types.CreateConsumerChainProposal{}
 
 	if !iterator.Valid() {
-		return propsToExecute // TODO: panic instead?
+		return propsToExecute
 	}
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -342,17 +342,35 @@ func (k Keeper) PendingStopProposalIterator(ctx sdk.Context) sdk.Iterator {
 // IteratePendingStopProposal iterates over the pending stop proposals in order and stop the chain if the stop time has passed,
 // otherwise it will break out of loop and return.
 func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
+	propsToExecute := k.ClientsFromStopProposals(ctx)
+
+	for _, prop := range propsToExecute {
+		err := k.StopConsumerChain(ctx, prop.ChainId, false, true)
+		if err != nil {
+			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+		}
+	}
+}
+
+// ClientsFromStopProposals iterates over the pending stop proposals in order and returns a list of consumer chains to stop.
+// A client is included in the returned list (and its stop proposal is deleted) if its proposed stop time has passed,
+// otherwise the method will break out of loop and return.
+//
+// Note: this method is split out from IteratePendingStopProposal to be easily unit tested.
+func (k Keeper) ClientsFromStopProposals(ctx sdk.Context) []types.StopConsumerChainProposal {
+
 	iterator := k.PendingStopProposalIterator(ctx)
 	defer iterator.Close()
 
+	// store the (to be) executed stop proposals in order
+	propsToExecute := []types.StopConsumerChainProposal{}
+
 	if !iterator.Valid() {
-		return
+		return propsToExecute
 	}
 
-	// store the executed proposals in order
-	execProposals := []types.StopConsumerChainProposal{}
-
 	for ; iterator.Valid(); iterator.Next() {
+
 		key := iterator.Key()
 		stopTime, chainID, err := types.ParsePendingStopProposalKey(key)
 		if err != nil {
@@ -360,19 +378,17 @@ func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
 		}
 
 		if !ctx.BlockTime().Before(stopTime) {
-			err = k.StopConsumerChain(ctx, chainID, false, true)
-			if err != nil {
-				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
-			}
-			execProposals = append(execProposals,
+			propsToExecute = append(propsToExecute,
 				types.StopConsumerChainProposal{ChainId: chainID, StopTime: stopTime})
 		} else {
 			break
 		}
 	}
 
-	// delete the proposals executed
-	k.DeletePendingStopProposals(ctx, execProposals...)
+	// delete the proposals to be executed
+	k.DeletePendingStopProposals(ctx, propsToExecute...)
+
+	return propsToExecute
 }
 
 // CloseChannel closes the channel for the given channel ID on the condition

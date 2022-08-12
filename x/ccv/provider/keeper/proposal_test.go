@@ -121,35 +121,41 @@ func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestIteratePendingStopProposal() {
-
-	chainID := suite.consumerChain.ChainID
+func TestIteratePendingStopProposals(t *testing.T) {
 
 	testCases := []struct {
 		types.StopConsumerChainProposal
 		ExpDeleted bool
 	}{
 		{
-			StopConsumerChainProposal: types.StopConsumerChainProposal{ChainId: chainID, StopTime: time.Now().UTC()},
+			StopConsumerChainProposal: types.StopConsumerChainProposal{ChainId: "8", StopTime: time.Now().UTC()},
 			ExpDeleted:                true,
 		},
 		{
-			StopConsumerChainProposal: types.StopConsumerChainProposal{ChainId: chainID, StopTime: time.Now().UTC().Add(time.Hour)},
+			StopConsumerChainProposal: types.StopConsumerChainProposal{ChainId: "9", StopTime: time.Now().UTC().Add(time.Hour)},
 			ExpDeleted:                false,
 		},
 	}
+	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
 	for _, tc := range testCases {
-		suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetPendingStopProposal(
-			suite.providerChain.GetContext(), tc.ChainId, tc.StopTime)
+		providerKeeper.SetPendingStopProposal(ctx, tc.ChainId, tc.StopTime)
 	}
 
-	ctx := suite.providerChain.GetContext().WithBlockTime(testCases[0].StopTime)
-	suite.providerChain.App.(*appProvider.App).ProviderKeeper.IteratePendingStopProposal(ctx)
+	ctx = ctx.WithBlockTime(time.Now().UTC())
 
+	propsToExecute := providerKeeper.ClientsFromStopProposals(ctx)
+	numExecuted := 0
 	for _, tc := range testCases {
-		found := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingStopProposal(ctx, tc.ChainId, tc.StopTime)
-		suite.Require().NotEqual(tc.ExpDeleted, found, "stop proposal was not deleted %s %v", tc.ChainId, tc.StopTime)
+		res := providerKeeper.GetPendingStopProposal(ctx, tc.ChainId, tc.StopTime)
+		if !tc.ExpDeleted {
+			require.NotEmpty(t, res, "stop proposal was deleted: %s %s", tc.ChainId, tc.StopTime.String())
+			continue
+		}
+		// In this case, stop proposal would now be executed
+		require.Empty(t, res, "stop proposal was not deleted %s %s", tc.ChainId, tc.StopTime.String())
+		require.Equal(t, propsToExecute[numExecuted].ChainId, tc.ChainId)
+		numExecuted += 1
 	}
 }
 
@@ -175,18 +181,18 @@ func TestIteratePendingCreateProposals(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	ctx = ctx.WithBlockTime(testCases[0].SpawnTime)
+	ctx = ctx.WithBlockTime(time.Now().UTC())
 
-	propsToExecute := providerKeeper.ClientsFromProposals(ctx)
+	propsToExecute := providerKeeper.ClientsFromCreateProposals(ctx)
 	numExecuted := 0
 	for _, tc := range testCases {
 		res := providerKeeper.GetPendingCreateProposal(ctx, tc.SpawnTime, tc.ChainId)
 		if !tc.ExpDeleted {
-			require.NotEmpty(t, res, "stop proposal was deleted: %s %s", tc.ChainId, tc.SpawnTime.String())
+			require.NotEmpty(t, res, "create proposal was deleted: %s %s", tc.ChainId, tc.SpawnTime.String())
 			continue
 		}
 		// In this case, proposal would now be executed
-		require.Empty(t, res, "stop proposal was not deleted %s %s", tc.ChainId, tc.SpawnTime.String())
+		require.Empty(t, res, "create proposal was not deleted %s %s", tc.ChainId, tc.SpawnTime.String())
 		require.Equal(t, propsToExecute[numExecuted].ChainId, tc.ChainId)
 		numExecuted += 1
 	}
