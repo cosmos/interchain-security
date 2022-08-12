@@ -105,11 +105,6 @@ func setupInMemKeeper(t testing.TB) (*codec.ProtoCodec, *storetypes.KVStoreKey, 
 	return cdc, storeKey, paramsSubspace, stateStore
 }
 
-// TODO: add this to readme, not here.
-// These are Dummy and not mock structs being we're not injecting any functionality,
-// just satisfying constructors. if one wishes to mock functionality, it's still possible
-// to replace one of the keepers with a mocked one
-
 type DummyChannelKeeper struct{}
 
 func (DummyChannelKeeper) GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool) {
