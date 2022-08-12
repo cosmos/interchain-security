@@ -398,7 +398,7 @@ func (s System) addChainToRelayer(
 	}
 
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
+	bz, err = exec.Command("docker", "exec", s.containerConfig.instanceName, "hermes",
 		"keys", "add",
 		"--chain", s.chainConfigs[action.chain].chainId,
 		"--mnemonic-file", "/root/.hermes/mnemonic.txt",
@@ -422,7 +422,7 @@ func (s System) addIbcConnection(
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "hermes",
 		"create", "connection",
 		"--a-chain", s.chainConfigs[action.chainA].chainId,
 		"--a-client", "07-tendermint-"+fmt.Sprint(action.clientA),
@@ -469,7 +469,7 @@ func (s System) addIbcChannel(
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes",
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "hermes",
 		"create", "channel",
 		"--a-chain", s.chainConfigs[action.chainA].chainId,
 		"--a-connection", "connection-"+fmt.Sprint(action.connectionA),
@@ -521,7 +521,7 @@ func (s System) relayPackets(
 ) {
 	// hermes clear packets ibc0 transfer channel-13
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "/root/.cargo/bin/hermes", "clear", "packets",
+	cmd := exec.Command("docker", "exec", s.containerConfig.instanceName, "hermes", "clear", "packets",
 		"--chain", s.chainConfigs[action.chain].chainId,
 		"--port", action.port,
 		"--channel", "channel-"+fmt.Sprint(action.channel),
