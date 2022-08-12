@@ -688,3 +688,32 @@ func (suite *KeeperTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.
 
 	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
 }
+
+func (suite *KeeperTestSuite) TestProviderChannelClosed() {
+	suite.SetupCCVChannel()
+	suite.SendEmptyVSCPacket()
+	channelID, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
+	suite.Require().True(found)
+
+	err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.ChanCloseInit(suite.consumerChain.GetContext(), types.PortID, channelID)
+	suite.Require().NoError(err)
+
+	suite.Require().True(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IsChannelClosed(suite.consumerChain.GetContext(), channelID))
+	shutdown := false
+
+	// check that begin block panics when a channel is closed
+	defer func() {
+		if r := recover(); r != nil {
+			shutdown = true
+		}
+	}()
+	suite.consumerChain.App.BeginBlock(abci.RequestBeginBlock{})
+	suite.Require().False(shutdown)
+
+	// check that that the provider states are cleaned up
+	_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
+	suite.Require().False(found)
+	_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
+	suite.Require().False(found)
+
+}

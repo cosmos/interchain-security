@@ -181,6 +181,12 @@ func (k Keeper) GetProviderClient(ctx sdk.Context) (string, bool) {
 	return string(clientIdBytes), true
 }
 
+// DeleteProviderClient deletes the provider clientID that is validating the chain.
+func (k Keeper) DeleteProviderClient(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ProviderClientKey())
+}
+
 // SetProviderChannel sets the provider channelID that is validating the chain.
 func (k Keeper) SetProviderChannel(ctx sdk.Context, channelID string) {
 	store := ctx.KVStore(k.storeKey)

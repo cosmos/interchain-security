@@ -5,18 +5,17 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
 func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
-	k.SetPort(ctx, providertypes.PortID)
+	k.SetPort(ctx, types.PortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
 	// port capability from capability InitGenesis
-	if !k.IsBound(ctx, providertypes.PortID) {
+	if !k.IsBound(ctx, types.PortID) {
 		// transfer module binds to the transfer port on InitChain
 		// and claims the returned capability
-		err := k.BindPort(ctx, providertypes.PortID)
+		err := k.BindPort(ctx, types.PortID)
 		if err != nil {
 			panic(fmt.Sprintf("could not claim port capability: %v", err))
 		}

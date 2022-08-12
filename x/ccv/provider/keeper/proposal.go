@@ -69,9 +69,9 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 		k.DeleteChannelToChain(ctx, channelID)
 	}
 
-	// TODO remove pending VSC packets once https://github.com/cosmos/interchain-security/issues/27 is fixed
 	k.DeleteInitChainHeight(ctx, chainID)
 	k.EmptySlashAcks(ctx, chainID)
+	k.EmptyPendingVSC(ctx, chainID)
 
 	// release unbonding operations if they aren't locked
 	if !lockUbd {
