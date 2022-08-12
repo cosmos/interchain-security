@@ -49,8 +49,10 @@ func GetProviderKeeperAndCtx(t testing.TB) (providerkeeper.Keeper, sdk.Context) 
 	return k, ctx
 }
 
-// Constructs a keeper for unit tests, backed by an in-memory db, with ability to pass mocked or otherwise manipulated parameters.
-// Note: Use the dummy types defined in this file for keepers you don't wish to mock.
+// Constructs a keeper for unit tests, backed by an in-memory db,
+// with ability to pass mocked or otherwise manipulated parameters.
+// Note: Use the dummy types defined in this file for keepers you don't wish to mock,
+// and SetupInMemKeeper() for other parameters you don't wish to manipulate.
 func GetProviderKeeperWithMocks(t testing.TB,
 	cdc *codec.ProtoCodec,
 	storeKey *storetypes.KVStoreKey,

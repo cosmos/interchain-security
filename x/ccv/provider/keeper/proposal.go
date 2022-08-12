@@ -251,15 +251,32 @@ func (k Keeper) PendingCreateProposalIterator(ctx sdk.Context) sdk.Iterator {
 // IteratePendingCreateProposal iterates over the pending proposals to create consumer chain clients in order
 // and creates the consumer client if the spawn time has passed, otherwise it will break out of loop and return.
 func (k Keeper) IteratePendingCreateProposal(ctx sdk.Context) {
+	propsToExecute := k.ClientsFromProposals(ctx)
+
+	for _, prop := range propsToExecute {
+		err := k.CreateConsumerClient(ctx, prop.ChainId, prop.InitialHeight, prop.LockUnbondingOnTimeout)
+		if err != nil {
+			panic(fmt.Errorf("consumer client could not be created: %w", err))
+		}
+	}
+}
+
+// ClientsFromProposals iterates over the pending proposals in order and returns consumer clients to be created.
+// A client is included in the returned list (and its proposal is deleted) if its proposed spawn time has passed,
+// otherwise the method will break out of loop and return.
+//
+// Note: this method is separated from IteratePendingCreateProposal to be easily unit tested.
+func (k Keeper) ClientsFromProposals(ctx sdk.Context) []types.CreateConsumerChainProposal {
 
 	iterator := k.PendingCreateProposalIterator(ctx)
 	defer iterator.Close()
 
+	// store the (to be) executed proposals in order
+	propsToExecute := []types.CreateConsumerChainProposal{}
+
 	if !iterator.Valid() {
-		return
+		return propsToExecute // TODO: panic instead?
 	}
-	// store the executed proposals in order
-	execProposals := []types.CreateConsumerChainProposal{}
 
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()
@@ -268,23 +285,21 @@ func (k Keeper) IteratePendingCreateProposal(ctx sdk.Context) {
 			panic(fmt.Errorf("failed to parse pending client key: %w", err))
 		}
 
-		var clientInfo types.CreateConsumerChainProposal
-		k.cdc.MustUnmarshal(iterator.Value(), &clientInfo)
+		var prop types.CreateConsumerChainProposal
+		k.cdc.MustUnmarshal(iterator.Value(), &prop)
+		prop.ChainId = chainID
+		prop.SpawnTime = spawnTime
 
 		if !ctx.BlockTime().Before(spawnTime) {
-			err := k.CreateConsumerClient(ctx, chainID, clientInfo.InitialHeight, clientInfo.LockUnbondingOnTimeout)
-			if err != nil {
-				panic(fmt.Errorf("consumer client could not be created: %w", err))
-			}
-			execProposals = append(execProposals,
-				types.CreateConsumerChainProposal{ChainId: chainID, SpawnTime: spawnTime})
+			propsToExecute = append(propsToExecute, prop)
 		} else {
 			break
 		}
 	}
 
-	// delete the proposals executed
-	k.DeletePendingCreateProposal(ctx, execProposals...)
+	// delete the proposals to be executed
+	k.DeletePendingCreateProposal(ctx, propsToExecute...)
+	return propsToExecute
 }
 
 // DeletePendingCreateProposal deletes the given create consumer proposals

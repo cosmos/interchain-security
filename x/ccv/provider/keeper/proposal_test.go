@@ -2,18 +2,22 @@ package keeper_test
 
 import (
 	"encoding/json"
+	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
+// TODO: This is an e2e test to be moved.
 func (suite *KeeperTestSuite) TestMakeConsumerGenesis() {
 	suite.SetupTest()
 
@@ -41,6 +45,7 @@ func (suite *KeeperTestSuite) TestMakeConsumerGenesis() {
 	suite.Require().Equal(actualGenesis, expectedGenesis, "consumer chain genesis created incorrectly")
 }
 
+// TODO: This is an e2e test to be moved.
 func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {
 	var (
 		ctx      sdk.Context
@@ -148,7 +153,7 @@ func (suite *KeeperTestSuite) TestIteratePendingStopProposal() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestIteratePendingClientInfo() {
+func TestIteratePendingCreateProposals(t *testing.T) {
 
 	testCases := []struct {
 		types.CreateConsumerChainProposal
@@ -163,23 +168,26 @@ func (suite *KeeperTestSuite) TestIteratePendingClientInfo() {
 			ExpDeleted:                  false,
 		},
 	}
+	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
 	for _, tc := range testCases {
-		err := suite.providerChain.App.(*appProvider.App).ProviderKeeper.SetPendingCreateProposal(
-			suite.providerChain.GetContext(), &tc.CreateConsumerChainProposal)
-		suite.Require().NoError(err)
+		err := providerKeeper.SetPendingCreateProposal(ctx, &tc.CreateConsumerChainProposal)
+		require.NoError(t, err)
 	}
 
-	ctx := suite.providerChain.GetContext().WithBlockTime(testCases[0].SpawnTime)
+	ctx = ctx.WithBlockTime(testCases[0].SpawnTime)
 
-	suite.providerChain.App.(*appProvider.App).ProviderKeeper.IteratePendingCreateProposal(ctx)
-
+	propsToExecute := providerKeeper.ClientsFromProposals(ctx)
+	numExecuted := 0
 	for _, tc := range testCases {
-		res := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingCreateProposal(ctx, tc.SpawnTime, tc.ChainId)
+		res := providerKeeper.GetPendingCreateProposal(ctx, tc.SpawnTime, tc.ChainId)
 		if !tc.ExpDeleted {
-			suite.Require().NotEmpty(res, "stop proposal was not deleted: %s %s", tc.ChainId, tc.SpawnTime.String())
+			require.NotEmpty(t, res, "stop proposal was deleted: %s %s", tc.ChainId, tc.SpawnTime.String())
 			continue
 		}
-		suite.Require().Empty(res, "stop proposal was not deleted %s %s", tc.ChainId, tc.SpawnTime.String())
+		// In this case, proposal would now be executed
+		require.Empty(t, res, "stop proposal was not deleted %s %s", tc.ChainId, tc.SpawnTime.String())
+		require.Equal(t, propsToExecute[numExecuted].ChainId, tc.ChainId)
+		numExecuted += 1
 	}
 }
