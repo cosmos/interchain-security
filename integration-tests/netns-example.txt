@@ -1,5 +1,58 @@
 https://adil.medium.com/container-networking-under-the-hood-network-namespaces-6b2b8fe8dc2a
 
+docker run --name test-inst --cap-add=NET_ADMIN --privileged interchain-security-container /bin/bash /testnet-scripts/beacon.sh
+
+BASE CASE
+=========
+
+ip netns add one
+ip netns add two
+ip netns add three
+
+ip link add veth-one-in   type veth peer name veth-one-out
+ip link add veth-two-in   type veth peer name veth-two-out
+ip link add veth-three-in type veth peer name veth-three-out
+
+ip link set veth-one-in   netns one
+ip link set veth-two-in   netns two
+ip link set veth-three-in netns three
+
+ip netns exec one   ip addr add 10.0.0.10/24 dev veth-one-in
+ip netns exec two   ip addr add 10.0.0.20/24 dev veth-two-in
+ip netns exec three ip addr add 10.0.0.30/24 dev veth-three-in
+
+ip link add name virtual-bridge type bridge
+
+ip link set veth-one-out   master virtual-bridge
+ip link set veth-two-out   master virtual-bridge
+ip link set veth-three-out master virtual-bridge
+
+ip link set virtual-bridge up
+
+ip link set veth-one-out   up
+ip link set veth-two-out   up
+ip link set veth-three-out up
+
+ip netns exec one ip link   set dev veth-one-in   up
+ip netns exec two ip link   set dev veth-two-in   up
+ip netns exec three ip link set dev veth-three-in up
+
+ip netns exec one ip link   set dev lo up
+ip netns exec two ip link   set dev lo up
+ip netns exec three ip link set dev lo up
+
+# SEE THAT IT WORKS
+ip netns exec one ping 10.0.0.20
+ip link set veth-two-out down
+ip netns exec one ping 10.0.0.20
+ip link set veth-two-out up
+ip netns exec one ping 10.0.0.20
+
+
+
+WITH 7.7.7.0
+============
+
 ip netns add one
 ip netns add two
 ip netns add three
@@ -14,6 +67,60 @@ ip link set veth-three-in netns three
 
 ip netns exec one   ip addr add 7.7.7.0/24 dev veth-one-in
 ip netns exec two   ip addr add 7.7.7.1/24 dev veth-two-in
+ip netns exec three ip addr add 7.7.7.2/24 dev veth-three-in
+
+ip link add name virtual-bridge type bridge
+
+ip link set veth-one-out   master virtual-bridge
+ip link set veth-two-out   master virtual-bridge
+ip link set veth-three-out master virtual-bridge
+
+ip link set virtual-bridge up
+
+ip link set veth-one-out   up
+ip link set veth-two-out   up
+ip link set veth-three-out up
+
+ip netns exec one ip link   set dev veth-one-in   up
+ip netns exec two ip link   set dev veth-two-in   up
+ip netns exec three ip link set dev veth-three-in up
+
+ip netns exec one ip link   set dev lo up
+ip netns exec two ip link   set dev lo up
+ip netns exec three ip link set dev lo up
+
+
+
+
+# SEE THAT IT WORKS
+ip netns exec one ping 7.7.7.1
+ip link set veth-two-out down
+ip netns exec one ping 7.7.7.1
+ip link set veth-two-out up
+ip netns exec one ping 7.7.7.1
+
+
+
+
+
+
+WITH 7.7.7.1
+============
+
+ip netns add one
+ip netns add two
+ip netns add three
+
+ip link add veth-one-in   type veth peer name veth-one-out
+ip link add veth-two-in   type veth peer name veth-two-out
+ip link add veth-three-in type veth peer name veth-three-out
+
+ip link set veth-one-in   netns one
+ip link set veth-two-in   netns two
+ip link set veth-three-in netns three
+
+ip netns exec one   ip addr add 7.7.7.1/24 dev veth-one-in
+ip netns exec two   ip addr add 7.7.7.2/24 dev veth-two-in
 ip netns exec three ip addr add 7.7.7.3/24 dev veth-three-in
 
 ip link add name virtual-bridge type bridge
@@ -35,3 +142,14 @@ ip netns exec three ip link set dev veth-three-in up
 ip netns exec one ip link   set dev lo up
 ip netns exec two ip link   set dev lo up
 ip netns exec three ip link set dev lo up
+
+
+
+
+# SEE THAT IT WORKS
+ip netns exec one ping 7.7.7.2
+ip link set veth-two-out down
+ip netns exec one ping 7.7.7.2
+ip link set veth-two-out up
+ip netns exec one ping 7.7.7.2
+

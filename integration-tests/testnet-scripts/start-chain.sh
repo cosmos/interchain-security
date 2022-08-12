@@ -32,12 +32,50 @@ SKIP_GENTX=$6
 # A sed string modifying the tendermint config
 TENDERMINT_CONFIG_TRANSFORM=$7
 
-
-
-# CREATE GENESIS FILE
-
 # Get number of nodes from length of validators array
 NODES=$(echo "$VALIDATORS" | jq '. | length')
+
+
+
+
+# SETUP NETWORK NAMESPACES
+
+for i in $(seq 0 $(($NODES - 1)));
+do
+    VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].number")
+
+    ip netns add $CHAIN_ID-$VAL_ID
+    ip link add veth-$CHAIN_ID-$VAL_ID-in type veth peer name veth-$CHAIN_ID-$VAL_ID-out
+    ip link set veth-$CHAIN_ID-$VAL_ID-in netns $CHAIN_ID-$VAL_ID
+    ip netns exec $CHAIN_ID-$VAL_ID ip addr add $CHAIN_IP_PREFIX.$((VAL_ID+1))/24 dev veth-$CHAIN_ID-$VAL_ID-in
+done
+
+ip link add name virtual-bridge type bridge || true
+
+for i in $(seq 0 $(($NODES - 1)));
+do
+    VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].number")
+
+    ip link set veth-$CHAIN_ID-$VAL_ID-out master virtual-bridge
+done
+
+ip link set virtual-bridge up
+
+for i in $(seq 0 $(($NODES - 1)));
+do
+    VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].number")
+
+    ip link set veth-$CHAIN_ID-$VAL_ID-out up
+    ip netns exec $CHAIN_ID-$VAL_ID ip link set dev veth-$CHAIN_ID-$VAL_ID-in up
+    ip netns exec $CHAIN_ID-$VAL_ID ip link set dev lo up
+done
+
+ip addr add $CHAIN_IP_PREFIX.254/24 dev virtual-bridge
+
+
+
+
+# TRANSFORM GENESIS FILE
 
 # first we start a genesis.json with the first validator
 # the first validator will also collect the gentx's once gnerated
@@ -145,41 +183,22 @@ if [ "$SKIP_GENTX" = "false" ] ; then
     done
 fi
 
-# CREATE VIRTUAL BRIDGE TO CONNECT VALIDATORS
 
-ip link add name virtual-bridge type bridge
-ip link set virtual-bridge up
-ip addr add 10.0.0.1/24 dev virtual-bridge
+
 
 # START VALIDATOR NODES
 
 for i in $(seq 0 $(($NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].number")
-
-    # create network namespace
-    ip netns add $CHAIN_ID-$VAL_ID
-    # add veth (virtual ethernet cable) for this namespace
-    ip link add veth-$CHAIN_ID-$VAL_ID-in type veth peer name veth-$CHAIN_ID-$VAL_ID-out
-    # plug the veth into the network namespace
-    ip link set veth-$CHAIN_ID-$VAL_ID-in netns $CHAIN_ID-$VAL_ID
-    # add the IP address in the network namespace
-    ip netns exec $CHAIN_ID-$VAL_ID ip addr add $CHAIN_IP_PREFIX.$VAL_ID/32 dev veth-$CHAIN_ID-$VAL_ID-in
-    # connect the veth to the bridge so it can connect to the other namespaces
-    ip link set veth-$CHAIN_ID-$VAL_ID-out master virtual-bridge
-
-    # bring the outside end of the veth up
-    ip link set veth-$CHAIN_ID-$VAL_ID-out up
-    # bring the inside end of the veth up
-    ip netns exec $CHAIN_ID-$VAL_ID ip link set dev veth-$CHAIN_ID-$VAL_ID-in up
-    # bring the loopback in the namespace up
-    ip netns exec $CHAIN_ID-$VAL_ID ip link set dev lo up
+    # add this ip for loopback dialing
+    # ip addr add $CHAIN_IP_PREFIX.$VAL_ID/32 dev eth0 || true # allowed to fail
 
     GAIA_HOME="--home /$CHAIN_ID/validator$VAL_ID"
-    RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$VAL_ID:26658"
-    GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$VAL_ID:9091"
-    LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$VAL_ID:26655"
-    P2P_ADDRESS="--p2p.laddr tcp://$CHAIN_IP_PREFIX.$VAL_ID:26656"
+    RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$((VAL_ID+1)):26658"
+    GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$((VAL_ID+1)):9091"
+    LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$((VAL_ID+1)):26655"
+    P2P_ADDRESS="--p2p.laddr tcp://$CHAIN_IP_PREFIX.$((VAL_ID+1)):26656"
     LOG_LEVEL="--log_level info"
     ENABLE_WEBGRPC="--grpc-web.enable=false"
 
@@ -190,7 +209,7 @@ do
         if [ $i -ne $j ]; then
             PEER_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$j].number")
             NODE_ID=$($BIN tendermint show-node-id --home /$CHAIN_ID/validator$PEER_VAL_ID)
-            ADDRESS="$NODE_ID@$CHAIN_IP_PREFIX.$PEER_VAL_ID:26656"
+            ADDRESS="$NODE_ID@$CHAIN_IP_PREFIX.$((PEER_VAL_ID+1)):26656"
             # (jq -r '.body.memo' /$CHAIN_ID/validator$j/config/gentx/*) # Getting the address from the gentx should also work
             PERSISTENT_PEERS="$PERSISTENT_PEERS,$ADDRESS"
         fi
@@ -200,14 +219,15 @@ do
     PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
 
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
-
-    # start the validator in the network namespace
     ip netns exec $CHAIN_ID-$VAL_ID $BIN $ARGS start &> /$CHAIN_ID/validator$VAL_ID/logs &
 done
 
+
+
+
 # poll for chain start
 set +e
-until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$FIRST_VAL_ID:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
+until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$((FIRST_VAL_ID+1)):26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
 set -e
 
 echo "done!!!!!!!!"
