@@ -252,8 +252,10 @@ func (s *ProviderTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd 
 	}
 
 	// verify consumer chain's states are removed
+	_, found := providerKeeper.GetConsumerGenesis(s.providerCtx(), chainID)
+	s.Require().False(found)
 	s.Require().False(providerKeeper.GetLockUnbondingOnTimeout(s.providerCtx(), chainID))
-	_, found := providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
+	_, found = providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
 	s.Require().False(found)
 
 	_, found = providerKeeper.GetChainToChannel(s.providerCtx(), chainID)
