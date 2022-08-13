@@ -38,16 +38,13 @@ import (
 
 type KeeperTestSuite struct {
 	suite.Suite
-
 	coordinator *ibctesting.Coordinator
 
 	// testing chains
 	providerChain *ibctesting.TestChain
 	consumerChain *ibctesting.TestChain
-
-	path *ibctesting.Path
-
-	ctx sdk.Context
+	path          *ibctesting.Path
+	ctx           sdk.Context
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
@@ -130,35 +127,33 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 
-func (suite *KeeperTestSuite) TestValsetUpdateBlockHeight() {
-	app := suite.providerChain.App.(*appProvider.App)
-	ctx := suite.ctx
+func TestValsetUpdateBlockHeight(t *testing.T) {
+	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
-	blockHeight := app.ProviderKeeper.GetValsetUpdateBlockHeight(ctx, uint64(0))
-	suite.Require().Zero(blockHeight)
+	blockHeight := providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(0))
+	require.Zero(t, blockHeight)
 
-	app.ProviderKeeper.SetValsetUpdateBlockHeight(ctx, uint64(1), uint64(2))
-	blockHeight = app.ProviderKeeper.GetValsetUpdateBlockHeight(ctx, uint64(1))
-	suite.Require().Equal(blockHeight, uint64(2))
+	providerKeeper.SetValsetUpdateBlockHeight(ctx, uint64(1), uint64(2))
+	blockHeight = providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(1))
+	require.Equal(t, blockHeight, uint64(2))
 
-	app.ProviderKeeper.DeleteValsetUpdateBlockHeight(ctx, uint64(1))
-	blockHeight = app.ProviderKeeper.GetValsetUpdateBlockHeight(ctx, uint64(1))
-	suite.Require().Zero(blockHeight)
+	providerKeeper.DeleteValsetUpdateBlockHeight(ctx, uint64(1))
+	blockHeight = providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(1))
+	require.Zero(t, blockHeight)
 
-	app.ProviderKeeper.SetValsetUpdateBlockHeight(ctx, uint64(1), uint64(2))
-	app.ProviderKeeper.SetValsetUpdateBlockHeight(ctx, uint64(3), uint64(4))
-	blockHeight = app.ProviderKeeper.GetValsetUpdateBlockHeight(ctx, uint64(3))
-	suite.Require().Equal(blockHeight, uint64(4))
+	providerKeeper.SetValsetUpdateBlockHeight(ctx, uint64(1), uint64(2))
+	providerKeeper.SetValsetUpdateBlockHeight(ctx, uint64(3), uint64(4))
+	blockHeight = providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(3))
+	require.Equal(t, blockHeight, uint64(4))
 }
 
-func (suite *KeeperTestSuite) TestSlashAcks() {
-	app := suite.providerChain.App.(*appProvider.App)
-	ctx := suite.ctx
+func TestSlashAcks(t *testing.T) {
+	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
 	var chainsAcks [][]string
 
 	penaltiesfN := func() (penalties []string) {
-		app.ProviderKeeper.IterateSlashAcks(ctx, func(id string, acks []string) bool {
+		providerKeeper.IterateSlashAcks(ctx, func(id string, acks []string) bool {
 			chainsAcks = append(chainsAcks, acks)
 			return true
 		})
@@ -167,59 +162,57 @@ func (suite *KeeperTestSuite) TestSlashAcks() {
 
 	chainID := "consumer"
 
-	acks := app.ProviderKeeper.GetSlashAcks(ctx, chainID)
-	suite.Require().Nil(acks)
+	acks := providerKeeper.GetSlashAcks(ctx, chainID)
+	require.Nil(t, acks)
 
 	p := []string{"alice", "bob", "charlie"}
-	app.ProviderKeeper.SetSlashAcks(ctx, chainID, p)
+	providerKeeper.SetSlashAcks(ctx, chainID, p)
 
-	acks = app.ProviderKeeper.GetSlashAcks(ctx, chainID)
-	suite.Require().NotNil(acks)
+	acks = providerKeeper.GetSlashAcks(ctx, chainID)
+	require.NotNil(t, acks)
 
-	suite.Require().Len(acks, 3)
-	emptied := app.ProviderKeeper.EmptySlashAcks(ctx, chainID)
-	suite.Require().Len(emptied, 3)
+	require.Len(t, acks, 3)
+	emptied := providerKeeper.EmptySlashAcks(ctx, chainID)
+	require.Len(t, emptied, 3)
 
-	acks = app.ProviderKeeper.GetSlashAcks(ctx, chainID)
-	suite.Require().Nil(acks)
+	acks = providerKeeper.GetSlashAcks(ctx, chainID)
+	require.Nil(t, acks)
 
 	chains := []string{"c1", "c2", "c3"}
 
 	for _, c := range chains {
-		app.ProviderKeeper.SetSlashAcks(ctx, c, p)
+		providerKeeper.SetSlashAcks(ctx, c, p)
 	}
 
 	penaltiesfN()
-	suite.Require().Len(chainsAcks, len(chains))
+	require.Len(t, chainsAcks, len(chains))
 }
 
-func (suite *KeeperTestSuite) TestAppendSlashAck() {
-	app := suite.providerChain.App.(*appProvider.App)
-	ctx := suite.ctx
+func TestAppendSlashAck(t *testing.T) {
+	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
 	p := []string{"alice", "bob", "charlie"}
 	chains := []string{"c1", "c2"}
-	app.ProviderKeeper.SetSlashAcks(ctx, chains[0], p)
+	providerKeeper.SetSlashAcks(ctx, chains[0], p)
 
-	app.ProviderKeeper.AppendSlashAck(ctx, chains[0], p[0])
-	acks := app.ProviderKeeper.GetSlashAcks(ctx, chains[0])
-	suite.Require().NotNil(acks)
-	suite.Require().Len(acks, len(p)+1)
+	providerKeeper.AppendSlashAck(ctx, chains[0], p[0])
+	acks := providerKeeper.GetSlashAcks(ctx, chains[0])
+	require.NotNil(t, acks)
+	require.Len(t, acks, len(p)+1)
 
-	app.ProviderKeeper.AppendSlashAck(ctx, chains[1], p[0])
-	acks = app.ProviderKeeper.GetSlashAcks(ctx, chains[1])
-	suite.Require().NotNil(acks)
-	suite.Require().Len(acks, 1)
+	providerKeeper.AppendSlashAck(ctx, chains[1], p[0])
+	acks = providerKeeper.GetSlashAcks(ctx, chains[1])
+	require.NotNil(t, acks)
+	require.Len(t, acks, 1)
 }
 
-func (suite *KeeperTestSuite) TestPendingVSCs() {
-	app := suite.providerChain.App.(*appProvider.App)
-	ctx := suite.ctx
+func TestPendingVSCs(t *testing.T) {
+	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
 	chainID := "consumer"
 
-	_, found := app.ProviderKeeper.GetPendingVSCs(ctx, chainID)
-	suite.Require().False(found)
+	_, found := providerKeeper.GetPendingVSCs(ctx, chainID)
+	require.False(t, found)
 
 	pks := ibcsimapp.CreateTestPubKeys(4)
 	var ppks [4]tmprotocrypto.PublicKey
@@ -243,12 +236,12 @@ func (suite *KeeperTestSuite) TestPendingVSCs() {
 		},
 	}
 	for _, packet := range packetList {
-		app.ProviderKeeper.AppendPendingVSC(ctx, chainID, packet)
+		providerKeeper.AppendPendingVSC(ctx, chainID, packet)
 	}
 
-	packets, found := app.ProviderKeeper.GetPendingVSCs(ctx, chainID)
-	suite.Require().True(found)
-	suite.Require().Len(packets, 2)
+	packets, found := providerKeeper.GetPendingVSCs(ctx, chainID)
+	require.True(t, found)
+	require.Len(t, packets, 2)
 
 	newPacket := ccv.ValidatorSetChangePacketData{
 		ValidatorUpdates: []abci.ValidatorUpdate{
@@ -256,19 +249,18 @@ func (suite *KeeperTestSuite) TestPendingVSCs() {
 		},
 		ValsetUpdateId: 3,
 	}
-	app.ProviderKeeper.AppendPendingVSC(ctx, chainID, newPacket)
-	emptied := app.ProviderKeeper.EmptyPendingVSC(ctx, chainID)
-	suite.Require().Len(emptied, 3)
-	suite.Require().True(emptied[len(emptied)-1].ValsetUpdateId == 3)
-	suite.Require().True(emptied[len(emptied)-1].GetValidatorUpdates()[0].PubKey.String() == ppks[3].String())
+	providerKeeper.AppendPendingVSC(ctx, chainID, newPacket)
+	emptied := providerKeeper.EmptyPendingVSC(ctx, chainID)
+	require.Len(t, emptied, 3)
+	require.True(t, emptied[len(emptied)-1].ValsetUpdateId == 3)
+	require.True(t, emptied[len(emptied)-1].GetValidatorUpdates()[0].PubKey.String() == ppks[3].String())
 
-	_, found = app.ProviderKeeper.GetPendingVSCs(ctx, chainID)
-	suite.Require().False(found)
+	_, found = providerKeeper.GetPendingVSCs(ctx, chainID)
+	require.False(t, found)
 }
 
-func (suite *KeeperTestSuite) TestInitHeight() {
-	app := suite.providerChain.App.(*appProvider.App)
-	ctx := suite.ctx
+func TestInitHeight(t *testing.T) {
+	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
 	tc := []struct {
 		chainID  string
@@ -279,17 +271,17 @@ func (suite *KeeperTestSuite) TestInitHeight() {
 		{expected: 12, chainID: "chain2"},
 	}
 
-	app.ProviderKeeper.SetInitChainHeight(ctx, tc[1].chainID, tc[1].expected)
-	app.ProviderKeeper.SetInitChainHeight(ctx, tc[2].chainID, tc[2].expected)
+	providerKeeper.SetInitChainHeight(ctx, tc[1].chainID, tc[1].expected)
+	providerKeeper.SetInitChainHeight(ctx, tc[2].chainID, tc[2].expected)
 
-	for _, t := range tc {
-		height := app.ProviderKeeper.GetInitChainHeight(ctx, t.chainID)
-		suite.Require().EqualValues(t.expected, height)
+	for _, tc := range tc {
+		height := providerKeeper.GetInitChainHeight(ctx, tc.chainID)
+		require.Equal(t, tc.expected, height)
 	}
 }
 
 func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
-	ProviderKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
+	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
 	providerStakingKeeper := suite.providerChain.App.(*appProvider.App).StakingKeeper
 
@@ -302,7 +294,7 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
 	suite.Require().Equal(stakingtypes.Bonded, validator.GetStatus())
 
 	// set init VSC id for chain0
-	ProviderKeeper.SetInitChainHeight(suite.ctx, suite.consumerChain.ChainID, uint64(suite.ctx.BlockHeight()))
+	providerKeeper.SetInitChainHeight(suite.ctx, suite.consumerChain.ChainID, uint64(suite.ctx.BlockHeight()))
 
 	// set validator signing-info
 	providerSlashingKeeper.SetValidatorSigningInfo(
@@ -311,7 +303,7 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
 		slashingtypes.ValidatorSigningInfo{Address: consAddr.String()},
 	)
 
-	_, err := ProviderKeeper.HandleSlashPacket(suite.ctx, suite.consumerChain.ChainID,
+	_, err := providerKeeper.HandleSlashPacket(suite.ctx, suite.consumerChain.ChainID,
 		ccv.NewSlashPacketData(
 			abci.Validator{Address: tmVal.Address, Power: 0},
 			uint64(0),
@@ -510,27 +502,27 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketDistribution() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestIterateOverUnbondingOpIndex() {
-	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
-	chainID := suite.consumerChain.ChainID
+func TestIterateOverUnbondingOpIndex(t *testing.T) {
+	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+	chainID := "6"
 
 	// mock an unbonding index
 	unbondingOpIndex := []uint64{0, 1, 2, 3, 4, 5, 6}
 
 	// set ubd ops by varying vsc ids and index slices
 	for i := 1; i < len(unbondingOpIndex); i++ {
-		providerKeeper.SetUnbondingOpIndex(suite.providerChain.GetContext(), chainID, uint64(i), unbondingOpIndex[:i])
+		providerKeeper.SetUnbondingOpIndex(ctx, chainID, uint64(i), unbondingOpIndex[:i])
 	}
 
 	// check iterator returns expected entries
 	i := 1
-	providerKeeper.IterateOverUnbondingOpIndex(suite.providerChain.GetContext(), chainID, func(vscID uint64, ubdIndex []uint64) bool {
-		suite.Require().Equal(uint64(i), vscID)
-		suite.Require().EqualValues(unbondingOpIndex[:i], ubdIndex)
+	providerKeeper.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) bool {
+		require.Equal(t, uint64(i), vscID)
+		require.EqualValues(t, unbondingOpIndex[:i], ubdIndex)
 		i++
 		return true
 	})
-	suite.Require().Equal(len(unbondingOpIndex), i)
+	require.Equal(t, len(unbondingOpIndex), i)
 }
 
 func TestMaturedUnbondingOps(t *testing.T) {
