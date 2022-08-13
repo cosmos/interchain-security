@@ -249,9 +249,9 @@ func (k Keeper) PendingCreateProposalIterator(ctx sdk.Context) sdk.Iterator {
 }
 
 // IteratePendingCreateProposal iterates over the pending proposals to create consumer chain clients in order
-// and creates the consumer client if the spawn time has passed, otherwise it will break out of loop and return.
+// and creates the consumer client if the spawn time has passed.
 func (k Keeper) IteratePendingCreateProposal(ctx sdk.Context) {
-	propsToExecute := k.ClientsFromCreateProposals(ctx)
+	propsToExecute := k.CreateProposalsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
 		err := k.CreateConsumerClient(ctx, prop.ChainId, prop.InitialHeight, prop.LockUnbondingOnTimeout)
@@ -261,12 +261,12 @@ func (k Keeper) IteratePendingCreateProposal(ctx sdk.Context) {
 	}
 }
 
-// ClientsFromCreateProposals iterates over the pending proposals in order and returns a list of consumer clients to be created.
-// A client is included in the returned list (and its proposal is deleted) if its proposed spawn time has passed,
-// otherwise the method will break out of loop and return.
+// CreateProposalsToExecute iterates over the pending proposals and returns an ordered list of proposals to be executed,
+// ie. consumer clients to be created. A prop is included in the returned list (and is deleted from store) if its proposed
+// spawn time has passed.
 //
 // Note: this method is split out from IteratePendingCreateProposal to be easily unit tested.
-func (k Keeper) ClientsFromCreateProposals(ctx sdk.Context) []types.CreateConsumerChainProposal {
+func (k Keeper) CreateProposalsToExecute(ctx sdk.Context) []types.CreateConsumerChainProposal {
 
 	iterator := k.PendingCreateProposalIterator(ctx)
 	defer iterator.Close()
@@ -293,6 +293,7 @@ func (k Keeper) ClientsFromCreateProposals(ctx sdk.Context) []types.CreateConsum
 		if !ctx.BlockTime().Before(spawnTime) {
 			propsToExecute = append(propsToExecute, prop)
 		} else {
+			// No more proposals to check, since they're stored/ordered by timestamp.
 			break
 		}
 	}
@@ -342,7 +343,7 @@ func (k Keeper) PendingStopProposalIterator(ctx sdk.Context) sdk.Iterator {
 // IteratePendingStopProposal iterates over the pending stop proposals in order and stop the chain if the stop time has passed,
 // otherwise it will break out of loop and return.
 func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
-	propsToExecute := k.ClientsFromStopProposals(ctx)
+	propsToExecute := k.StopProposalsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
 		err := k.StopConsumerChain(ctx, prop.ChainId, false, true)
@@ -352,12 +353,12 @@ func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
 	}
 }
 
-// ClientsFromStopProposals iterates over the pending stop proposals in order and returns a list of consumer chains to stop.
-// A client is included in the returned list (and its stop proposal is deleted) if its proposed stop time has passed,
-// otherwise the method will break out of loop and return.
+// StopProposalsToExecute iterates over the pending stop proposals and returns an ordered list of stop proposals to be executed,
+// ie. consumer chains to stop. A prop is included in the returned list (and is deleted from store) if its proposed
+// stop time has passed.
 //
-// Note: this method is split out from IteratePendingStopProposal to be easily unit tested.
-func (k Keeper) ClientsFromStopProposals(ctx sdk.Context) []types.StopConsumerChainProposal {
+// Note: this method is split out from IteratePendingCreateProposal to be easily unit tested.
+func (k Keeper) StopProposalsToExecute(ctx sdk.Context) []types.StopConsumerChainProposal {
 
 	iterator := k.PendingStopProposalIterator(ctx)
 	defer iterator.Close()
@@ -378,6 +379,7 @@ func (k Keeper) ClientsFromStopProposals(ctx sdk.Context) []types.StopConsumerCh
 		}
 
 		if !ctx.BlockTime().Before(stopTime) {
+			// No more proposals to check, since they're stored/ordered by timestamp.
 			propsToExecute = append(propsToExecute,
 				types.StopConsumerChainProposal{ChainId: chainID, StopTime: stopTime})
 		} else {
