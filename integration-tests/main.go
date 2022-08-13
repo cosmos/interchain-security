@@ -6,6 +6,7 @@ import (
 	"log"
 	"os/exec"
 	"reflect"
+	"time"
 
 	"github.com/kylelemons/godebug/pretty"
 )
@@ -13,6 +14,7 @@ import (
 var verbose = true
 
 func main() {
+	start := time.Now()
 	s := DefaultSystemConfig()
 
 	s.startDocker()
@@ -21,7 +23,7 @@ func main() {
 		s.runStep(step, verbose)
 	}
 
-	println("test successful")
+	fmt.Printf("test successful - time elapsed %v\n", time.Since(start))
 }
 
 func (s System) runStep(step Step, verbose bool) {
