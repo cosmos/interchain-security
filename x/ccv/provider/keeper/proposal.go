@@ -231,14 +231,17 @@ func (k Keeper) SetPendingCreateProposal(ctx sdk.Context, clientInfo *types.Crea
 }
 
 // GetPendingCreateProposal retrieves a pending proposal to create a consumer chain client (by spawn time and chain id)
-func (k Keeper) GetPendingCreateProposal(ctx sdk.Context, timestamp time.Time, chainID string) types.CreateConsumerChainProposal {
+func (k Keeper) GetPendingCreateProposal(ctx sdk.Context, spawnTime time.Time, chainID string) types.CreateConsumerChainProposal {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingCreateProposalKey(timestamp, chainID))
+	bz := store.Get(types.PendingCreateProposalKey(spawnTime, chainID))
 	if len(bz) == 0 {
 		return types.CreateConsumerChainProposal{}
 	}
 	var clientInfo types.CreateConsumerChainProposal
 	k.cdc.MustUnmarshal(bz, &clientInfo)
+	// Populate info that's only stored in key, not store value
+	clientInfo.SpawnTime = spawnTime
+	clientInfo.ChainId = chainID
 
 	return clientInfo
 }
@@ -287,6 +290,7 @@ func (k Keeper) CreateProposalsToExecute(ctx sdk.Context) []types.CreateConsumer
 
 		var prop types.CreateConsumerChainProposal
 		k.cdc.MustUnmarshal(iterator.Value(), &prop)
+		// Populate info that's only stored in key, not store value
 		prop.ChainId = chainID
 		prop.SpawnTime = spawnTime
 
@@ -379,10 +383,10 @@ func (k Keeper) StopProposalsToExecute(ctx sdk.Context) []types.StopConsumerChai
 		}
 
 		if !ctx.BlockTime().Before(stopTime) {
-			// No more proposals to check, since they're stored/ordered by timestamp.
 			propsToExecute = append(propsToExecute,
 				types.StopConsumerChainProposal{ChainId: chainID, StopTime: stopTime})
 		} else {
+			// No more proposals to check, since they're stored/ordered by timestamp.
 			break
 		}
 	}

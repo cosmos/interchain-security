@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -280,6 +281,7 @@ func TestInitHeight(t *testing.T) {
 	}
 }
 
+// Tests the handling of a double-signing related slash packet, with e2e tests
 func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
 	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
@@ -318,6 +320,69 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
 	signingInfo, _ := providerSlashingKeeper.GetValidatorSigningInfo(suite.ctx, consAddr)
 	suite.Require().True(signingInfo.JailedUntil.Equal(evidencetypes.DoubleSignJailEndTime))
 	suite.Require().True(signingInfo.Tombstoned)
+}
+
+// Tests the handling of a double-signing related slash packet, with mocks and unit tests
+// TODO(Shawn): Add in assertions to return values once https://github.com/stretchr/testify/issues/1251 is resolved
+func TestHandleSlashPacketDoubleSigning(t *testing.T) {
+	chainId := "consumer"
+	infractionHeight := int64(5)
+
+	cdc, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
+
+	slashPacket := ccv.NewSlashPacketData(
+		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
+			Power: int64(0)},
+		uint64(0),
+		stakingtypes.DoubleSign,
+	)
+
+	// Setup expected mock calls
+	mockStakingKeeper := testkeeper.MockStakingKeeper{}
+	mockStakingKeeper.On("Slash",
+		ctx,
+		sdk.ConsAddress(slashPacket.Validator.Address),
+		infractionHeight,
+		int64(0),      // power
+		sdk.NewDec(1), // Slash fraction
+		stakingtypes.DoubleSign).Once()
+
+	mockStakingKeeper.On("Jail",
+		ctx,
+		sdk.ConsAddress(slashPacket.Validator.Address)).Once()
+
+	mockStakingKeeper.On("GetValidatorByConsAddr",
+		ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Once()
+
+	mockSlashingKeeper := testkeeper.MockSlashingKeeper{}
+	mockSlashingKeeper.On("SlashFractionDoubleSign", ctx).Once()
+	mockSlashingKeeper.On("JailUntil", ctx, sdk.ConsAddress(slashPacket.Validator.Address),
+		evidencetypes.DoubleSignJailEndTime).Once()
+	mockSlashingKeeper.On("IsTombstoned", ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Once()
+	mockSlashingKeeper.On("Tombstone", ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Once()
+
+	providerKeeper := testkeeper.GetProviderKeeperWithMocks(t,
+		cdc,
+		storeKey,
+		paramsSubspace,
+		ctx,
+		capabilitykeeper.ScopedKeeper{},
+		testkeeper.MockChannelKeeper{},
+		testkeeper.MockPortKeeper{},
+		testkeeper.MockConnectionKeeper{},
+		testkeeper.MockClientKeeper{},
+		mockStakingKeeper,
+		mockSlashingKeeper,
+		testkeeper.MockAccountKeeper{},
+	)
+
+	providerKeeper.SetInitChainHeight(ctx, chainId, uint64(infractionHeight))
+
+	success, err := providerKeeper.HandleSlashPacket(ctx, chainId, slashPacket)
+	require.NoError(t, err)
+	require.True(t, success)
+	mockSlashingKeeper.AssertExpectations(t)
+	mockStakingKeeper.AssertExpectations(t)
 }
 
 func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
@@ -526,17 +591,17 @@ func TestIterateOverUnbondingOpIndex(t *testing.T) {
 }
 
 func TestMaturedUnbondingOps(t *testing.T) {
-	keeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
-	ids, err := keeper.GetMaturedUnbondingOps(ctx)
+	ids, err := providerKeeper.GetMaturedUnbondingOps(ctx)
 	require.NoError(t, err)
 	require.Nil(t, ids)
 
 	unbondingOpIds := []uint64{0, 1, 2, 3, 4, 5, 6}
-	err = keeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
+	err = providerKeeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
 	require.NoError(t, err)
 
-	ids, err = keeper.EmptyMaturedUnbondingOps(ctx)
+	ids, err = providerKeeper.EmptyMaturedUnbondingOps(ctx)
 	require.NoError(t, err)
 	require.Equal(t, len(unbondingOpIds), len(ids))
 	for i := 0; i < len(unbondingOpIds); i++ {

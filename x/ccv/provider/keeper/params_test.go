@@ -34,13 +34,13 @@ func TestParams(t *testing.T) {
 		paramsSubspace,
 		ctx,
 		capabilitykeeper.ScopedKeeper{},
-		testkeeper.DummyChannelKeeper{},
-		testkeeper.DummyPortKeeper{},
-		testkeeper.DummyConnectionKeeper{},
-		testkeeper.DummyClientKeeper{},
-		testkeeper.DummyStakingKeeper{},
-		testkeeper.DummySlashingKeeper{},
-		testkeeper.DummyAccountKeeper{},
+		testkeeper.MockChannelKeeper{},
+		testkeeper.MockPortKeeper{},
+		testkeeper.MockConnectionKeeper{},
+		testkeeper.MockClientKeeper{},
+		testkeeper.MockStakingKeeper{},
+		testkeeper.MockSlashingKeeper{},
+		testkeeper.MockAccountKeeper{},
 	)
 
 	params := providerKeeper.GetParams(ctx)
