@@ -9,6 +9,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 type Status int
@@ -89,6 +90,10 @@ const (
 
 	// LockUnbondingOnTimeoutBytePrefix is the byte prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
 	LockUnbondingOnTimeoutBytePrefix
+
+	// ValidatorKeyDelegationPrefix is the byte prefix that will store an index of validatorKey+chainId -> delegatedKey, which allows validators to set a different
+	// key to use for each consumer chain
+	ValidatorKeyDelegationPrefix
 )
 
 // PortKey returns the key to the port ID in the store
@@ -254,6 +259,12 @@ func PendingVSCsKey(chainID string) []byte {
 // on CCV channel timeout
 func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return append([]byte{LockUnbondingOnTimeoutBytePrefix}, []byte(chainID)...)
+}
+
+// ValidatorKeyDelegationKey returns the key that will store an index of validatorKey+chainId -> delegatedKey, which allows validators to set a different
+// key to use for each consumer chain
+func ValidatorKeyDelegationKey(chainID string, pubkey crypto.PublicKey) []byte {
+	return AppendMany([]byte{ValidatorKeyDelegationPrefix}, []byte(pubkey.String()), []byte(chainID))
 }
 
 // AppendMany appends a variable number of byte slices together

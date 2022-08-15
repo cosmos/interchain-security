@@ -26,6 +26,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	"github.com/tendermint/tendermint/libs/log"
+	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 // Keeper defines the Cross-Chain Validation Provider Keeper
@@ -780,4 +781,29 @@ func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bo
 func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ChainToClientKey(chainID))
+}
+
+// SetValidatorKeyDelegation sets an entry in the chainID+validatorKey -> delegatedKey index allowing validators
+// to use different keys for different consumer chains
+func (k Keeper) SetValidatorKeyDelegation(ctx sdk.Context, chainID string, pubkey tmcrypto.PublicKey, delegatedKey tmcrypto.PublicKey) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ValidatorKeyDelegationKey(chainID, pubkey), []byte(delegatedKey.String())) // TODO: need to figure out whether marshaling to a string is the right way
+}
+
+// SetValidatorKeyDelegation gets the public key that a given validator would like to use on a given consumer chain
+// Second return value is false if the validator has not delegated a key for the consumer chain.
+func (k Keeper) GetValidatorKeyDelegation(ctx sdk.Context, chainID string, pubkey tmcrypto.PublicKey) (tmcrypto.PublicKey, bool) {
+	store := ctx.KVStore(k.storeKey)
+	pubkeyBytes := store.Get(types.ValidatorKeyDelegationKey(chainID, pubkey))
+	if pubkeyBytes == nil {
+		return tmcrypto.PublicKey{}, false
+	}
+	return tmcrypto.PublicKey{ /*TODO: need to figure out how to unmarshal these*/ }, true
+}
+
+// DeleteValidatorKeyDelegation removes an entry in the chainID+validatorKey -> delegatedKey index allowing validators
+// stop delegating a key on a given consumer chain
+func (k Keeper) DeleteValidatorKeyDelegation(ctx sdk.Context, chainID string, pubkey tmcrypto.PublicKey) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ValidatorKeyDelegationKey(chainID, pubkey))
 }

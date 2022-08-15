@@ -135,6 +135,17 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 		// w/o changes in the voting power of the validators in the validator set
 		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
+			// check if any of the validators have chosen to delegate keys and substitute
+			// the delegated keys if they have
+			for i, update := range valUpdates {
+				delegatedKey, found := k.GetValidatorKeyDelegation(ctx, chainID, update.PubKey)
+
+				if found {
+					update.PubKey = delegatedKey
+					valUpdates[i] = update
+				}
+			}
+
 			// construct validator set change packet data
 			packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.EmptySlashAcks(ctx, chainID))
 
