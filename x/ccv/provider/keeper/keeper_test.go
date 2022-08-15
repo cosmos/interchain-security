@@ -384,9 +384,9 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 
 	providerKeeper.SetInitChainHeight(ctx, chainId, uint64(infractionHeight))
 
-	_, err := providerKeeper.HandleSlashPacket(ctx, chainId, slashPacket)
+	success, err := providerKeeper.HandleSlashPacket(ctx, chainId, slashPacket)
 	require.NoError(t, err)
-	// require.True(t, success)
+	require.True(t, success)
 }
 
 func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
