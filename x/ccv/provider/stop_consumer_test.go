@@ -242,7 +242,7 @@ func (s *ProviderTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd 
 					_, found = providerKeeper.GetUnbondingOp(s.providerCtx(), ubdIndex[ubdID])
 					s.Require().False(found)
 					ubd, _ := s.providerChain.App.(*appProvider.App).StakingKeeper.GetUnbondingDelegationByUnbondingId(s.providerCtx(), ubdIndex[ubdID])
-					s.Require().False(ubd.Entries[ubdID].UnbondingOnHold)
+					s.Require().Zero(ubd.Entries[ubdID].UnbondingOnHoldRefCount)
 				}
 				return true
 			},
