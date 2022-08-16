@@ -1,6 +1,6 @@
 --------------------------- MODULE CCV ---------------------------
 
-EXTENDS Integers, Apalache, Variants, typedefs
+EXTENDS Integers, Sequences, Apalache, typedefs
 
 CONSTANT 
   \* @type: Set($validator);
@@ -10,28 +10,18 @@ CONSTANT
   \* @type: Set($chain);
   ConsumerChainsInit, 
   \* @type: Set($chain);
-  AllConsumerChains, 
+  ConsumerChains, 
   \* @type: $height;
   MaturityDelay,
   \* @type: $height;
   MaxHeight
-
-CInit == 
-  LET Vs == {"1_OF_V", "2_OF_V", "3_OF_V"} IN
-  /\ Validators = Vs
-  /\ PowerInit = [v \in Vs |-> 10]
-  /\ ConsumerChainsInit = {"1_OF_C", "2_OF_C"}
-  /\ AllConsumerChains = {"1_OF_C", "2_OF_C", "3_OF_C"}
-  /\ MaturityDelay = 2
-  /\ MaxHeight = 10
-
 
 Heights == 0 .. MaxHeight
 
 \* Provider chain ID, assumed to be distinct from all consumer chain IDs
 ProviderChain == "provider_OF_C"
 
-Chains == AllConsumerChains \union {ProviderChain}
+Chains == ConsumerChains \union {ProviderChain}
 
 (* 
 Consumer chain variables:
@@ -48,63 +38,73 @@ Consumer chain variables:
 VARIABLES
   \* @type: $votingPower;
   votingPower,
-  \* @type: Set($message);
-  messages,
+  \* @type: $votingPowerOnChain;
+  votingPowerOnProviderLastBlock,
   \* @type: Set($chain);
   activeConsumers,
   \* @type: $chain -> $height;
   heights,
-  \* @type: $id;
-  nextId
+  \* @type: $chain -> Seq($packet);
+  ccvChannels,
+  \* @type: Set($ack);
+  acks,
+  \* @type: $height;
+  lastPacketAt,
+  \* @type: Str;
+  lastAction
 
-
+vars == <<
+  votingPower, votingPowerOnProviderLastBlock, activeConsumers,
+  heights, ccvChannels, acks, lastPacketAt, lastAction
+        >>
 
 Init == 
   /\ votingPower = [chain \in Chains |-> PowerInit]
-  /\ messages = {}
+  /\ votingPowerOnProviderLastBlock = PowerInit 
   /\ activeConsumers = ConsumerChainsInit
   /\ heights = [chain \in Chains |-> 0]
-  /\ nextId = 0
-
-\* @type: ($message) => Bool;
-Send(msg) == messages' = messages \union {msg}
-
-\* @type: ($validator, $height, $power, $id) => $message;
-UndelegateInit(v, h, pow, id) == 
-  Variant("UndelegateInit", [validator |-> v, height |-> h, powerReduction |-> pow, id |-> id])
-\* @type: ($validator, $validator, $height, $power, $id) => $message;
-RedelegateInit(src, dest, h, pow, id) == 
-  Variant("RedelegateInit", [src |-> src, dest |-> dest, height |-> h, powerDelta |-> pow, id |-> id])
-\* @type: ($validator, $height, $id) => $message;
-UnbondInit(v, h, id) == 
-  Variant("UnbondInit", [validator |-> v, height |-> h, id |-> id])
+  /\ ccvChannels = [chain \in ConsumerChains |-> <<>>]
+  /\ acks = {}
+  /\ lastPacketAt = 0
+  /\ lastAction = "Init"
 
 \* @type: ($chain, $id, $height) => $ack;
-Ack(c, id, h) == [chain |-> c, id |-> id, height |-> h]
-\* @type: ($chain, $id, $height) => $message;
-UndelegateAck(c, id, h) == Variant("UndelegateAck", Ack(c, id, h))
-\* @type: ($chain, $id, $height) => $message;
-RedelegateAck(c, id, h) == Variant("RedelegateAck", Ack(c, id, h))
-\* @type: ($chain, $id, $height) => $message;
-UnbondAck(c, id, h) == Variant("UnbondAck", Ack(c, id, h))
+Ack(c, id, h) == [chain |-> c, id |-> id, maturityHeight |-> h]
+\* @type: ($votingPowerOnChain, $height) => $packet;
+Packet(vp, h) == [newVP |-> vp, providerHeight |-> h]
 
-AdvanceId == 
-  \E n \in Int:
-    /\ n > nextId
-    /\ nextId' = n
+EndProviderBlockAndSendPacket ==
+  /\ IF votingPower[ProviderChain] /= votingPowerOnProviderLastBlock
+     THEN 
+     /\ ccvChannels' = 
+      [
+        chain \in ConsumerChains |-> Append(
+          ccvChannels[chain], 
+          Packet(votingPower[ProviderChain], heights[ProviderChain])
+          )
+      ]
+     /\ lastPacketAt' = heights[ProviderChain]
+     ELSE
+     /\ UNCHANGED <<ccvChannels, lastPacketAt>>
+  /\ \E h \in Int:
+    /\ h > heights[ProviderChain]
+    /\ h < MaxHeight
+    /\ heights' = [heights EXCEPT ![ProviderChain] = h]
+  /\ votingPowerOnProviderLastBlock' = votingPower[ProviderChain]
+  /\ UNCHANGED <<votingPower, activeConsumers, acks>>  
+  /\ lastAction' = "EndProviderBlockAndSendPacket"
 
-StartUndelegate == 
+Undelegate == 
   \E v \in Validators:
     /\ votingPower[ProviderChain][v] > 0 \* Only active validators can undelegate
     /\ \E reduction \in Int:
       /\ 0 < reduction 
       /\ reduction < votingPower[ProviderChain][v] \* strictly <, otherwise unbond
       /\ votingPower' = [votingPower EXCEPT ![ProviderChain][v] = @ - reduction]
-      /\ Send(UndelegateInit(v, heights[ProviderChain], reduction, nextId))
-    /\ AdvanceId
-    /\ UNCHANGED <<activeConsumers, heights>>
+    /\ UNCHANGED <<votingPowerOnProviderLastBlock, activeConsumers, heights, ccvChannels, acks, lastPacketAt>>
+    /\ lastAction' = "Undelegate"
 
-StartRedelegate == 
+Redelegate == 
   \E src, dest \in Validators:
     /\ src /= dest
     /\ votingPower[ProviderChain][src] > 0 \* Only active validators can redelegate
@@ -115,135 +115,93 @@ StartRedelegate ==
         ![ProviderChain][src] = @ - delta,
         ![ProviderChain][dest] = @ + delta
         ]
-      /\ Send(RedelegateInit(src, dest, heights[ProviderChain], delta, nextId))
-    /\ AdvanceId
-    /\ UNCHANGED <<activeConsumers, heights>>
+    /\ UNCHANGED <<votingPowerOnProviderLastBlock, activeConsumers, heights, ccvChannels, acks, lastPacketAt>>
+    /\ lastAction' = "Redelegate"
 
-StartUnbond == 
+\* TODO: if slow, merge unbond/undelegate/redelegate actions into one
+Unbond == 
   \E v \in Validators:
     /\ votingPower[ProviderChain][v] > 0 \* Only active validators can unbond
     /\ votingPower' = [votingPower EXCEPT ![ProviderChain][v] = 0]
-    /\ Send(UnbondInit(v, heights[ProviderChain], nextId))
-    /\ \E n \in Int:
-      /\ n > nextId
-      /\ nextId' = n
-    /\ UNCHANGED <<activeConsumers, heights>>
+    /\ UNCHANGED <<votingPowerOnProviderLastBlock, activeConsumers, heights, ccvChannels, acks, lastPacketAt>>
+    /\ lastAction' = "Unbond"
 
-AckUndelegate == 
+AckPacket == 
   \E c \in activeConsumers:
-    \E undelegate \in VariantFilter("UndelegateInit",messages):
-      /\ \A ack \in VariantFilter("UndelegateAck",messages):
+    /\ ccvChannels[c] /= <<>>
+    /\ LET packet == Head(ccvChannels[c]) IN
+      /\ \A ack \in acks:
         \/ ack.chain /= c
-        \/ ack.id /= undelegate.id
-      /\ votingPower' = [votingPower EXCEPT ![c][undelegate.validator] = @ - undelegate.powerReduction]
+        \/ ack.id /= packet.id
+      /\ votingPower' = [votingPower EXCEPT ![c] = packet.newVP]
       \* The voting power decreases immediately, but the ack message contains
       \* the height at which the VSC will mature 
-      /\ Send(UndelegateAck(c, undelegate.id, heights[c] + MaturityDelay))
-      /\ UNCHANGED <<activeConsumers, heights, nextId>>
+      /\ acks' = acks \union { Ack(c, packet.id, heights[c] + MaturityDelay) }
+      /\ ccvChannels' = [ccvChannels EXCEPT ![c] = Tail(@)]
+    /\ UNCHANGED <<votingPowerOnProviderLastBlock, activeConsumers, heights, lastPacketAt>>
+    /\ lastAction' = "AckPacket"
 
-AckRedelegate == 
-  \E c \in activeConsumers:
-    \E redelegate \in VariantFilter("RedelegateInit",messages):
-      /\ \A ack \in VariantFilter("RedelegateAck",messages):
-        \/ ack.chain /= c
-        \/ ack.id /= redelegate.id
-      /\ votingPower' = [votingPower EXCEPT 
-        ![c][redelegate.src] = @ - redelegate.powerDelta,
-        ![c][redelegate.dest] = @ + redelegate.powerDelta
-        ]
-      \* The voting power decreases immediately, but the ack message contains
-      \* the height at which the VSC will mature 
-      /\ Send(RedelegateAck(c, redelegate.id, heights[c] + MaturityDelay))
-      /\ UNCHANGED <<activeConsumers, heights, nextId>>
-
-AckUnbond == 
-  \E c \in activeConsumers:
-    \E unbond \in VariantFilter("UnbondInit",messages):
-      /\ \A ack \in VariantFilter("UnbondAck",messages):
-        \/ ack.chain /= c
-        \/ ack.id /= unbond.id
-      /\ votingPower' = [votingPower EXCEPT ![c][unbond.validator] = 0]
-      \* The voting power decreases immediately, but the ack message contains
-      \* the height at which the VSC will mature 
-      /\ Send(UnbondAck(c, unbond.id, heights[c] + MaturityDelay))
-      /\ UNCHANGED <<activeConsumers, heights, nextId>>
-
-
-AdvanceHeight ==
-  \E c \in Chains:
+AdvanceConsumerHeight ==
+  \E c \in ConsumerChains:
     \E h \in Int:
       /\ h > heights[c]
       /\ h < MaxHeight
       /\ heights' = [heights EXCEPT ![c] = h]
-      /\ UNCHANGED <<activeConsumers, messages, votingPower, nextId>>
+      /\ UNCHANGED <<votingPowerOnProviderLastBlock, activeConsumers, acks, votingPower, ccvChannels, lastPacketAt>>
+      /\ lastAction' = "AdvanceConsumerHeight"
 
-UndelegationInProgress == 
-  \E undelegate \in VariantFilter("UndelegateInit",messages):
-    LET h == undelegate.height
-        v == undelegate.validator 
-        id == undelegate.id IN 
-    \* At least one consumer chain has not sent an ack, OR
-    \* the ack has been sent, but the VCS hasn't matured yet
-    \/ \E c \in activeConsumers: 
-      \A ack \in VariantFilter("UndelegateAck",messages):
-        \/ ack.chain /= c
-        \/ ack.id /= id
-        \/ heights[c] < ack.height \* no maturity
-    \* Undelegation period hasn't elapsed 
-    \/ heights[ProviderChain] - h < MaturityDelay \* height > h
+AddNewConsumer ==
+  \E c \in ConsumerChains:
+    /\ c \notin activeConsumers
+    /\ activeConsumers' = activeConsumers \union {c}
+    /\ ccvChannels' = 
+      [ ccvChannels EXCEPT ![c] = 
+        <<Packet(votingPower[ProviderChain], heights[ProviderChain])>>
+      ]
+    /\ lastAction' = "AddNewConsumer"
+    /\ UNCHANGED 
+      << votingPower, votingPowerOnProviderLastBlock, (*activeConsumers,*)
+         heights, (*ccvChannels,*) acks, lastPacketAt(*, lastAction*) >>
 
-RedelegationInProgress == 
-  \E redelegate \in VariantFilter("RedelegateInit",messages):
-    LET h == redelegate.height
-        src == redelegate.src 
-        dest == redelegate.dest
-        id == redelegate.id IN 
-    \* At least one consumer chain has not sent an ack, OR
-    \* the ack has been sent, but the VCS hasn't matured yet
-    \/ \E c \in activeConsumers: 
-      \A ack \in VariantFilter("RedelegateAck",messages):
-        \/ ack.chain /= c
-        \/ ack.id /= id
-        \/ heights[c] < ack.height \* no maturity
-    \* Redelegation period hasn't elapsed 
-    \/ heights[ProviderChain] - h < MaturityDelay \* height > h
+\* @type: ($chain) => Bool;
+DropConsumer(c) == 
+  /\ c \in activeConsumers
+  /\ activeConsumers' = activeConsumers \ {c}
+  /\ ccvChannels' = [ ccvChannels EXCEPT ![c] = <<>> ]
+  /\ lastAction' = "AddNewConsumer"
+  /\ UNCHANGED 
+      << votingPower, votingPowerOnProviderLastBlock, (*activeConsumers,*)
+         heights, (*ccvChannels,*) acks, lastPacketAt(*, lastAction*) >>
+      
 
-UnbondingInProgress == 
-  \E unbond \in VariantFilter("UnbondInit",messages):
-    LET h == unbond.height
-        v == unbond.validator 
-        id == unbond.id IN 
-    \* At least one consumer chain has not sent an ack, OR
-    \* the ack has been sent, but the VCS hasn't matured yet
-    \/ \E c \in activeConsumers: 
-      \A ack \in VariantFilter("UnbondAck",messages):
-        \/ ack.chain /= c
-        \/ ack.id /= id
-        \/ heights[c] < ack.height \* no maturity
-    \* Unbonding period hasn't elapsed 
-    \/ heights[ProviderChain] - h < MaturityDelay \* height > h
+Next == 
+  \/ EndProviderBlockAndSendPacket
+  \/ Undelegate
+  \/ Redelegate
+  \/ Unbond
+  \/ AckPacket
+  \/ AdvanceConsumerHeight
+  \* \/ AddNewConsumer
+  \* \/ \E c \in activeConsumers: DropConsumer(c)
 
 
-ActiveVPC ==
-  \/ UndelegationInProgress
-  \/ RedelegationInProgress
-  \/ UnbondingInProgress
+LastVCSMatureOnProvider ==
+  lastPacketAt + MaturityDelay <= heights[ProviderChain]
+
+VPCUpdateInProgress == 
+  \* some chain has pending packets
+  \/ \E c \in activeConsumers: ccvChannels[c] /= <<>>
+  \* not enough time has elapsed on provider itself since last update
+  \/ ~LastVCSMatureOnProvider
+  \* All chains have processed a packet, but not enough time has elapsed
+  \/ \E ack \in acks: heights[ack.chain] < ack.maturityHeight
   
 AgreementOnPower == 
   \A c \in activeConsumers:
-    votingPower[c] = votingPower[ProviderChain]
-
-Next == 
-  \/ AdvanceHeight
-  \/ StartUndelegate
-  \/ StartRedelegate
-  \/ StartUnbond
-  \/ AckUndelegate
-  \/ AckRedelegate
-  \/ AckUnbond
+    votingPower[c] = votingPowerOnProviderLastBlock
 
 Inv == 
-  ~ActiveVPC => AgreementOnPower
+  ~VPCUpdateInProgress => AgreementOnPower
 
 
 =============================================================================
