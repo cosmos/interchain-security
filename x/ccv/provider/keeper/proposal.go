@@ -239,9 +239,6 @@ func (k Keeper) GetPendingCreateProposal(ctx sdk.Context, spawnTime time.Time, c
 	}
 	var clientInfo types.CreateConsumerChainProposal
 	k.cdc.MustUnmarshal(bz, &clientInfo)
-	// Populate info that's only stored in key, not store value
-	clientInfo.SpawnTime = spawnTime
-	clientInfo.ChainId = chainID
 
 	return clientInfo
 }
@@ -283,16 +280,13 @@ func (k Keeper) CreateProposalsToExecute(ctx sdk.Context) []types.CreateConsumer
 
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()
-		spawnTime, chainID, err := types.ParsePendingCreateProposalKey(key)
+		spawnTime, _, err := types.ParsePendingCreateProposalKey(key)
 		if err != nil {
 			panic(fmt.Errorf("failed to parse pending client key: %w", err))
 		}
 
 		var prop types.CreateConsumerChainProposal
 		k.cdc.MustUnmarshal(iterator.Value(), &prop)
-		// Populate info that's only stored in key, not store value
-		prop.ChainId = chainID
-		prop.SpawnTime = spawnTime
 
 		if !ctx.BlockTime().Before(spawnTime) {
 			propsToExecute = append(propsToExecute, prop)
