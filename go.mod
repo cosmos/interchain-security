@@ -3,7 +3,7 @@ module github.com/cosmos/interchain-security
 go 1.18
 
 require (
-	github.com/cosmos/cosmos-sdk v0.45.2-0.20220613134718-c783aea68fbd
+	github.com/cosmos/cosmos-sdk v0.45.2-0.20220811130336-846d0158765e
 	github.com/cosmos/ibc-go v1.2.2
 	github.com/cosmos/ibc-go/v3 v3.0.0-alpha1.0.20220210141024-fb2f0416254b
 	github.com/gogo/protobuf v1.3.3
@@ -128,7 +128,17 @@ require (
 
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
-	github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-beta1.0.20220628105017-c48f8e2dadb8
+	// github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-beta1.0.20220628105017-c48f8e2dadb8
+	github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-beta1.0.20220816135845-971e348faca3
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )
+
+// replace (
+// 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
+// 	github.com/cosmos/cosmos-sdk => /Users/danwt/Documents/work/cosmos-sdk
+// 	github.com/cosmos/ibc-go/v3 => /Users/danwt/Documents/work/informal-ibc-go
+// 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+// 	github.com/tendermint/tendermint => /Users/danwt/Documents/work/tendermint
+// 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
+// )
