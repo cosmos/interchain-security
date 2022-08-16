@@ -271,11 +271,11 @@ func (k Keeper) IteratePendingCreateProposal(ctx sdk.Context) {
 // Note: this method is split out from IteratePendingCreateProposal to be easily unit tested.
 func (k Keeper) CreateProposalsToExecute(ctx sdk.Context) []types.CreateConsumerChainProposal {
 
-	iterator := k.PendingCreateProposalIterator(ctx)
-	defer iterator.Close()
-
 	// store the (to be) executed proposals in order
 	propsToExecute := []types.CreateConsumerChainProposal{}
+
+	iterator := k.PendingCreateProposalIterator(ctx)
+	defer iterator.Close()
 
 	if !iterator.Valid() {
 		return propsToExecute
@@ -364,11 +364,11 @@ func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
 // Note: this method is split out from IteratePendingCreateProposal to be easily unit tested.
 func (k Keeper) StopProposalsToExecute(ctx sdk.Context) []types.StopConsumerChainProposal {
 
-	iterator := k.PendingStopProposalIterator(ctx)
-	defer iterator.Close()
-
 	// store the (to be) executed stop proposals in order
 	propsToExecute := []types.StopConsumerChainProposal{}
+
+	iterator := k.PendingStopProposalIterator(ctx)
+	defer iterator.Close()
 
 	if !iterator.Valid() {
 		return propsToExecute
