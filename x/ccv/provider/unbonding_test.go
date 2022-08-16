@@ -143,8 +143,8 @@ func (s *ProviderTestSuite) TestUndelegationNoValsetChange() {
 }
 
 // TestUndelegationDuringInit checks that before the CCV channel is established
-// 	- no undelegations can complete, even if the provider unbonding period elapses
-// 	- all the VSC packets are stored in state as pending
+//   - no undelegations can complete, even if the provider unbonding period elapses
+//   - all the VSC packets are stored in state as pending
 func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
@@ -332,8 +332,9 @@ const (
 )
 
 // incrementTimeByUnbondingPeriod increments the overall time by
-// 	- if provider == true, the unbonding period on the provider;
-//	- otherwise, the unbonding period on the consumer.
+//   - if provider == true, the unbonding period on the provider;
+//   - otherwise, the unbonding period on the consumer.
+//
 // Note that it is expected for the provider unbonding period
 // to be one day larger than the consumer unbonding period.
 func incrementTimeByUnbondingPeriod(s *ProviderTestSuite, chainType ChainType) {
@@ -394,7 +395,7 @@ func relayAllCommittedPackets(
 func checkStakingUnbondingOps(s *ProviderTestSuite, id uint64, found bool, onHold bool) {
 	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerChain.App.(*appProvider.App).StakingKeeper, id)
 	s.Require().True(found == wasFound)
-	s.Require().True(onHold == stakingUnbondingOp.UnbondingOnHold)
+	s.Require().True(onHold == (0 < stakingUnbondingOp.UnbondingOnHoldRefCount))
 }
 
 func checkCCVUnbondingOp(s *ProviderTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool) {
