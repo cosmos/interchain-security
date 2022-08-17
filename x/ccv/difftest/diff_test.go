@@ -104,6 +104,8 @@ func TestDTTestSuite(t *testing.T) {
 	suite.Run(t, new(DTTestSuite))
 }
 
+// createValidator creates an additional validator with zero commission
+// and zero tokens (zero voting power).
 func (s *DTTestSuite) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.ValAddress) {
 	privVal := difftest.GetPV(seedIx)
 	pubKey, err := privVal.GetPubKey()
@@ -193,29 +195,53 @@ func (s *DTTestSuite) ensureValidatorLexicographicOrderingMatchesModel(lesser sd
 	s.Require().Equal(-1, res)
 }
 
+// SetupTest sets up the test suite in a 'zero' state which is ready
+// to have a trace executed against it.
+// A zero state is a state in which two chains, a Provider and Consumer
+// are in communication via IBC and CCV and for which the validator
+// sets on both chains are equal.
+// Thus, in the zero state, the governance proposal and handshake
+// components of the Interchain Security lifecycle are complete.
+// The zero state is exactly the state that the model is initialized to.
 func (s *DTTestSuite) SetupTest() {
 
-	s.mustBeginBlock = map[string]bool{P: true, C: true}
+	// init utility data structures
 	s.network = difftest.MakeNetwork()
 	s.heightLastUpdateClient = map[string]int64{P: 0, C: 0}
-	s.trace = Trace{}
 	s.headersForUpdateClient = map[string][]*ibctmtypes.Header{P: {}, C: {}}
+	s.mustBeginBlock = map[string]bool{P: true, C: true}
+	s.trace = Trace{}
 
+	// Create the provider and consumer chains.
+	// The provider chain is bootstrapped with 1 delegator account.
+	// The chains are bootstrapped with 2 (active) validators.
 	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = difftest.NewDTProviderConsumerCoordinator(s.T())
 
-	val2, val2addr := s.createValidator(2)
-	val3, val3addr := s.createValidator(3)
-	val2pk, err := val2.GetPubKey()
-	s.Require().Nil(err)
-	val3pk, err := val3.GetPubKey()
-	s.Require().Nil(err)
-	s.valAddresses = append(s.valAddresses, val2addr)
-	s.valAddresses = append(s.valAddresses, val3addr)
-	s.providerChain.Signers[val2pk.Address().String()] = val2
-	s.providerChain.Signers[val3pk.Address().String()] = val3
-	s.consumerChain.Signers[val2pk.Address().String()] = val2
-	s.consumerChain.Signers[val3pk.Address().String()] = val3
+	// Diff testing tests scenarios in which the validator set changes.
+	// 4 validators in total are used. To allow for both jailed validators,
+	// and for validators to fall out of the active set regardless of jail status,
+	// (max) 2 active validators are used.
+	// The chains are initially created with the 2 (active) validators,
+	// thus, here we create the 2 additional validators.
+	for i := 2; i < 4; i++ {
+		val, addr := s.createValidator(i)
+		pubKey, err := val.GetPubKey()
+		s.Require().Nil(err)
+		s.valAddresses = append(s.valAddresses, addr)
+		s.providerChain.Signers[pubKey.Address().String()] = val
+		s.consumerChain.Signers[pubKey.Address().String()] = val
+	}
 
+	// Set the signing info in the slashing module for all validators to allow
+	// correct jailing behaviors.
+	s.setSigningInfos()
+
+	// In order to match the model to the system under test it is necessary
+	// to enforce a strict lexicographic ordering on the validators.
+	// We must do this because the staking module will break ties when
+	// deciding the active validator set by comparing addresses lexicographically.
+	// Thus, we assert here that the ordering in the model matches the ordering
+	// in the SUT.
 	for i := range s.valAddresses[:len(s.valAddresses)-1] {
 		// validators are chosen sorted descending in the staking module
 		greater := s.valAddresses[i]
@@ -223,23 +249,21 @@ func (s *DTTestSuite) SetupTest() {
 		s.ensureValidatorLexicographicOrderingMatchesModel(lesser, greater)
 	}
 
-	s.setSigningInfos()
-
-	tmConfig := ibctesting.NewTendermintConfig()
-
-	// commit a block on provider chain before creating client
+	// Commit the additional validators
 	s.coordinator.CommitBlock(s.providerChain)
 
 	// create client and consensus state of provider chain to initialize consumer chain genesis.
-	height := s.providerChain.LastHeader.GetHeight().(clienttypes.Height)
-	UpgradePath := []string{"upgrade", "upgradedIBCState"}
+	// create
+	// height := s.providerChain.LastHeader.GetHeight().(clienttypes.Height)
+	// UpgradePath := []string{"upgrade", "upgradedIBCState"}
 
+	tmConfig := ibctesting.NewTendermintConfig()
 	tmConfig.UnbondingPeriod = difftest.UNBONDING_P
 	tmConfig.TrustingPeriod = difftest.TRUSTING
 	tmConfig.MaxClockDrift = difftest.MAX_CLOCK_DRIFT
 	providerClient := ibctmtypes.NewClientState(
 		s.providerChain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
-		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
+		s.providerChain.LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
 	)
 	providerConsState := s.providerChain.LastHeader.ConsensusState()
 
