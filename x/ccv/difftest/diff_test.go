@@ -41,20 +41,6 @@ const P = "provider"
 const C = "consumer"
 
 /*
-In the model, height begins at 0 for both chains because the proposal, handshake
-ect are not modeled.
-By using an offset, the SUT height is at 100 on both chains
-when the trace actions start.
-*/
-const MODEL_HEIGHT_OFFSET = int64(99)
-const SUT_TIME_OFFSET = 1577923752
-const DELEGATOR_INITIAL_BALANCE = 1000000000000000
-const DENOM = sdk.DefaultBondDenom
-
-var SLASH_DOUBLESIGN = slashingtypes.DefaultSlashFractionDoubleSign
-var SLASH_DOWNTIME = slashingtypes.DefaultSlashFractionDowntime
-
-/*
 Equate SUT constants to model constants
 */
 func init() {
@@ -68,8 +54,8 @@ func init() {
 		difficult to test with differential testing (because of numerical
 		imprecision).
 	*/
-	SLASH_DOUBLESIGN = sdk.NewDec(0)
-	SLASH_DOWNTIME = sdk.NewDec(0)
+	difftest.SLASH_DOUBLESIGN = sdk.NewDec(0)
+	difftest.SLASH_DOWNTIME = sdk.NewDec(0)
 }
 
 type Ack struct {
@@ -190,7 +176,7 @@ func (s *DTTestSuite) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.Va
 	addr, err := sdk.ValAddressFromHex(val.Address.String())
 	s.Require().NoError(err)
 	PK := privVal.PrivKey.PubKey()
-	coin := sdk.NewCoin(DENOM, sdk.NewInt(0))
+	coin := sdk.NewCoin(difftest.DENOM, sdk.NewInt(0))
 	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{}, stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
 	s.Require().NoError(err)
 	pskServer := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
@@ -214,7 +200,7 @@ func (s *DTTestSuite) setSigningInfos() {
 
 func (s *DTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
 	pskServer := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
-	amt := sdk.NewCoin(DENOM, sdk.NewInt(int64(x)))
+	amt := sdk.NewCoin(difftest.DENOM, sdk.NewInt(int64(x)))
 	d := s.providerChain.SenderAccounts[del].SenderAccount.GetAddress()
 	msg := stakingtypes.NewMsgDelegate(d, val, amt)
 	pskServer.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
@@ -377,8 +363,8 @@ func (s *DTTestSuite) SetupTest() {
 	s.specialDelegate(0, s.validator(3), 1*difftest.TOKEN_SCALAR)
 
 	sparams := s.providerChain.App.(*appProvider.App).SlashingKeeper.GetParams(s.ctx(P))
-	sparams.SlashFractionDoubleSign = SLASH_DOUBLESIGN
-	sparams.SlashFractionDowntime = SLASH_DOWNTIME
+	sparams.SlashFractionDoubleSign = difftest.SLASH_DOUBLESIGN
+	sparams.SlashFractionDowntime = difftest.SLASH_DOWNTIME
 	s.providerChain.App.(*appProvider.App).SlashingKeeper.SetParams(s.ctx(P), sparams)
 
 	s.jumpNBlocks([]string{P, C}, 40, 5)
@@ -479,7 +465,7 @@ func (s *DTTestSuite) providerTokens(i int64) int64 {
 func (s *DTTestSuite) delegatorBalance() int64 {
 	d := s.delegator()
 	app := s.providerChain.App.(*appProvider.App)
-	bal := app.BankKeeper.GetBalance(s.ctx(P), d, DENOM)
+	bal := app.BankKeeper.GetBalance(s.ctx(P), d, difftest.DENOM)
 	return bal.Amount.Int64()
 }
 
@@ -551,7 +537,7 @@ func (s *DTTestSuite) delegate(val int64, amt int64) {
 	s.idempotentBeginBlock(P)
 	s.idempotentDeliverAcks(P)
 	server := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
-	coin := sdk.NewCoin(DENOM, sdk.NewInt(amt))
+	coin := sdk.NewCoin(difftest.DENOM, sdk.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
@@ -562,7 +548,7 @@ func (s *DTTestSuite) undelegate(val int64, amt int64) {
 	s.idempotentBeginBlock(P)
 	s.idempotentDeliverAcks(P)
 	server := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
-	coin := sdk.NewCoin(DENOM, sdk.NewInt(amt))
+	coin := sdk.NewCoin(difftest.DENOM, sdk.NewInt(amt))
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
@@ -681,7 +667,7 @@ func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime boo
 }
 
 func (s *DTTestSuite) matchState(chain string) {
-	SUTStartTime := time.Unix(SUT_TIME_OFFSET, 0).UTC()
+	SUTStartTime := time.Unix(difftest.SUT_TIME_OFFSET, 0).UTC()
 	modelOffset := time.Second * time.Duration(-5)
 	timeOffset := SUTStartTime.Add(modelOffset)
 
@@ -691,7 +677,7 @@ func (s *DTTestSuite) matchState(chain string) {
 
 	if chain == P {
 		ss := t.blocks.Provider[t.hLastCommit[P]].Snapshot
-		s.Require().Equalf(int64(ss.H.Provider+int(MODEL_HEIGHT_OFFSET)), s.height(P), diagnostic+"P height mismatch")
+		s.Require().Equalf(int64(ss.H.Provider+int(difftest.MODEL_HEIGHT_OFFSET)), s.height(P), diagnostic+"P height mismatch")
 		s.Require().Equalf(int64(ss.DelegatorTokens), s.delegatorBalance(), diagnostic+"del balance mismatch")
 		for j, jailedUntilTimestamp := range ss.Jailed {
 			s.Require().Equalf(jailedUntilTimestamp != nil, s.isJailed(int64(j)), diagnostic+"jail status mismatch for val %d", j)
@@ -705,7 +691,7 @@ func (s *DTTestSuite) matchState(chain string) {
 	if chain == C {
 		// TODO: check slash data structures?
 		ss := t.blocks.Consumer[t.hLastCommit[C]].Snapshot
-		s.Require().Equalf(int64(ss.H.Consumer+int(MODEL_HEIGHT_OFFSET)), s.height(C), diagnostic+"C height mismatch")
+		s.Require().Equalf(int64(ss.H.Consumer+int(difftest.MODEL_HEIGHT_OFFSET)), s.height(C), diagnostic+"C height mismatch")
 		for j, power := range ss.Power {
 			actual, err := s.consumerPower(int64(j))
 			if power != nil {
@@ -746,7 +732,7 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 		case "ConsumerSlash":
 			s.consumerSlash(
 				s.consAddr(int64(a.Val)),
-				int64(a.InfractionHeight)+MODEL_HEIGHT_OFFSET,
+				int64(a.InfractionHeight)+difftest.MODEL_HEIGHT_OFFSET,
 				a.IsDowntime,
 			)
 		default:
@@ -804,10 +790,14 @@ func loadTraces(fn string) []difftest.TraceData {
 	return ret
 }
 
+// TestAssumptions tests that the assumptions used to write the difftest
+// driver hold. This test therefore does not test the system, but only that
+// the driver is correctly setup.
 func (s *DTTestSuite) TestAssumptions() {
 
 	const FAIL_MESSAGE = "Diff test assumptions failed. There is a problem with the test driver."
 
+	// Check that each validator has signing info
 	for i := 0; i < 4; i++ {
 		_, found := s.providerChain.App.(*appProvider.App).SlashingKeeper.GetValidatorSigningInfo(s.ctx(P), s.consAddr(int64(i)))
 		if !found {
@@ -815,34 +805,41 @@ func (s *DTTestSuite) TestAssumptions() {
 		}
 	}
 
-	s.Require().Equal(SLASH_DOWNTIME, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDowntime(s.ctx(P)))
-	s.Require().Equal(SLASH_DOUBLESIGN, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDoubleSign(s.ctx(P)))
+	// Check that downtime and doublesign slash factors are correctly set.
+	s.Require().Equal(difftest.SLASH_DOWNTIME, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDowntime(s.ctx(P)))
+	s.Require().Equal(difftest.SLASH_DOUBLESIGN, s.providerChain.App.(*appProvider.App).SlashingKeeper.SlashFractionDoubleSign(s.ctx(P)))
 
+	// Check that unbondingTime is correctly set in staking module
 	stakeParams := s.stakingKeeperP().GetParams(s.ctx(P))
 	s.Require().Equal(stakeParams.UnbondingTime, difftest.UNBONDING_P)
+	// Check that unbondingTime is correctly set on consumer
 	s.Require().Equal(
 		s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.UnbondingTime(s.ctx(C)),
 		difftest.UNBONDING_C)
 
+	// Check that both chains are ready to begin a new block
 	s.Require().Equal(false, s.mustBeginBlock[P])
 	s.Require().Equal(false, s.mustBeginBlock[C])
 
-	/*
-		Adding a 1 is needed here because the model always increases
-		the height by one immediately before the first action.
-	*/
-	s.Require().Equal(0+1+MODEL_HEIGHT_OFFSET, s.height(P))
-	s.Require().Equal(0+1+MODEL_HEIGHT_OFFSET, s.height(C))
+	// Check that the heights of both chains match the model
+	// (A +1 is needed because the model always invisibly increases the height by 1
+	// as a first step)
+	s.Require().Equal(0+1+difftest.MODEL_HEIGHT_OFFSET, s.height(P))
+	s.Require().Equal(0+1+difftest.MODEL_HEIGHT_OFFSET, s.height(C))
 
+	// Check that no packets are in the network
 	s.Require().Empty(s.network.outboxPackets[P])
 	s.Require().Empty(s.network.outboxPackets[C])
 
-	s.Require().Equal(int64(SUT_TIME_OFFSET), s.time(P).Unix())
-	s.Require().Equal(int64(SUT_TIME_OFFSET), s.time(C).Unix())
-	s.Require().Equal(int64(SUT_TIME_OFFSET), s.globalTime().Unix())
+	// Check that both chains and the global time are zero'd (equal offset)
+	s.Require().Equal(int64(difftest.SUT_TIME_OFFSET), s.time(P).Unix())
+	s.Require().Equal(int64(difftest.SUT_TIME_OFFSET), s.time(C).Unix())
+	s.Require().Equal(int64(difftest.SUT_TIME_OFFSET), s.globalTime().Unix())
 
-	s.Require().Equal(int64(DELEGATOR_INITIAL_BALANCE), s.delegatorBalance())
+	// Check that the delegator account has the correct initial balance
+	s.Require().Equal(int64(difftest.DELEGATOR_INITIAL_BALANCE), s.delegatorBalance())
 
+	// Check that the maxValidators param is sset correctly in the staking module
 	maxValsE := uint32(2)
 	maxVals := s.stakingKeeperP().GetParams(s.ctx(P)).MaxValidators
 
@@ -850,11 +847,13 @@ func (s *DTTestSuite) TestAssumptions() {
 		s.T().Fatal(FAIL_MESSAGE)
 	}
 
+	// Check that the initial delegations to each validator are correctly
+	// initialised to match the model.
+	// Also check that the bond status for each validator match the model.
 	initialModelState := difftest.InitialModelState{
 		Delegation: []int64{4 * difftest.TOKEN_SCALAR, 3 * difftest.TOKEN_SCALAR, 2 * difftest.TOKEN_SCALAR, 1 * difftest.TOKEN_SCALAR},
 		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded, stakingtypes.Unbonded, stakingtypes.Unbonded},
 	}
-
 	for i := 0; i < 4; i++ {
 		E := initialModelState.Delegation[i]
 		A := s.delegation(int64(i))
@@ -879,18 +878,21 @@ func (s *DTTestSuite) TestAssumptions() {
 
 	sk := s.stakingKeeperP()
 
+	// Check that there are no unbonding delegations in the staking module
 	sk.IterateUnbondingDelegations(s.ctx(P),
 		func(index int64, ubd stakingtypes.UnbondingDelegation) bool {
 			s.T().Fatal(FAIL_MESSAGE)
 			return false // Don't stop
 		})
 
+	// Check that there are no redelegations in the staking module
 	sk.IterateRedelegations(s.ctx(P),
 		func(index int64, ubd stakingtypes.Redelegation) bool {
 			s.T().Fatal(FAIL_MESSAGE)
 			return false // Don't stop
 		})
 
+	// Check that there are no unbonding validators in the staking module
 	endTime := time.Unix(math.MaxInt64, 0)
 	endHeight := int64(math.MaxInt64)
 	unbondingValIterator := sk.ValidatorQueueIterator(s.ctx(P), endTime, endHeight)
@@ -899,6 +901,7 @@ func (s *DTTestSuite) TestAssumptions() {
 		s.T().Fatal(FAIL_MESSAGE)
 	}
 
+	// Check that the validator powers on the consumer chain are correct
 	eFound := []bool{true, true, false, false}
 	ePower := []int64{5 * difftest.TOKEN_SCALAR, 4 * difftest.TOKEN_SCALAR}
 
@@ -917,6 +920,9 @@ func (s *DTTestSuite) TestAssumptions() {
 
 	s.Require().Empty(ck.GetPendingSlashRequests(s.ctx(C)))
 
+	// Check that the number of maturing VSC ids on the consumer is exactly 1
+	// It should be exactly 1 because a VSC is sent to the consumer to finish
+	// the handshake/initialization.
 	var numUnbondingTimes = 0
 	ck.IteratePacketMaturityTime(s.ctx(C),
 		func(vscId uint64, timeNs uint64) bool {
@@ -926,6 +932,4 @@ func (s *DTTestSuite) TestAssumptions() {
 			}
 			return false // Don't stop
 		})
-
-	s.T().Fatal("Good test! (Sanity check)") // TODO: remove
 }
