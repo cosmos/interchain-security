@@ -258,7 +258,6 @@ class Staking {
     this.lastVals = newVals;
     this.lastTokens = _.clone(this.tokens);
   };
-
   delegate = (val, amt) => {
     this.delegatorTokens -= amt;
     this.tokens[val] += amt;

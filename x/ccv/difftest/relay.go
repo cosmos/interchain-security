@@ -13,7 +13,7 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// ConstructUpdateTMClientHeader will construct a valid 07-tendermint Header to update the
+// ConstructUpdateTMClientHeader will augment a valid 07-tendermint Header to update the
 // light client on the source chain.
 func ConstructUpdateTMClientHeaderWithTrustedHeight(chain *ibctesting.TestChain, header *ibctmtypes.Header, counterparty *ibctesting.TestChain, clientID string, trustedHeight clienttypes.Height) (*ibctmtypes.Header, error) {
 	// Relayer must query for LatestHeight on client to get TrustedHeight if the trusted height is not set
@@ -52,9 +52,10 @@ func ConstructUpdateTMClientHeaderWithTrustedHeight(chain *ibctesting.TestChain,
 	return header, nil
 }
 
+// UpdateReceiverClient is used to send a header to the receiving endpoint and update
+// the client of the respective chain.
 func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, header *ibctmtypes.Header) (err error) {
 
-	// header, err := receiver.Chain.ConstructUpdateTMClientHeader(sender.Chain, receiver.ClientID)
 	header, err = ConstructUpdateTMClientHeaderWithTrustedHeight(receiver.Chain, header, sender.Chain, receiver.ClientID, clienttypes.ZeroHeight())
 
 	if err != nil {
@@ -89,6 +90,7 @@ func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endp
 	return nil
 }
 
+// Try to receive a packet on receiver. Returns ack.
 func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet) (ack []byte, err error) {
 	packetKey := host.PacketCommitmentKey(packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 	proof, proofHeight := sender.Chain.QueryProof(packetKey)
@@ -122,6 +124,7 @@ func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p
 	return ack, nil
 }
 
+// Try to receive an ack on receiver.
 func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, packet channeltypes.Packet, ack []byte) (err error) {
 	p := packet
 	packetKey := host.PacketAcknowledgementKey(p.GetDestPort(), p.GetDestChannel(), p.GetSequence())

@@ -14,7 +14,7 @@ import (
 )
 
 func GetPV(seed []byte) mock.PV {
-	return mock.PV{&cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 }
 
 func getStakingKey(pv mock.PV) []byte {
@@ -28,6 +28,11 @@ func getStakingKey(pv mock.PV) []byte {
 	return key
 }
 
+// FuzzPrivateKeys will generate strings that can be used to seed
+// new validator private keys, in a manner that ensures a strictly increasing
+// order as per the lexicographic ordering of the staking module.
+// This is needed to make sure that the lexicographic ordering is always
+// consistent between the model and the SUT.
 func FuzzPrivateKeys(f *testing.F) {
 	f.Fuzz(func(t *testing.T, bz []byte) {
 		k := cryptoEd25519.SeedSize
@@ -57,11 +62,13 @@ func FuzzPrivateKeys(f *testing.F) {
 		}
 	})
 	/*
-		[
-		bbaaaababaabbaabababbaabbbbbbaaa,
-		abbbababbbabaaaaabaaabbbbababaab,
-		bbabaabaabbbbbabbbaababbbbabbbbb,
-		aabbbabaaaaababbbabaabaabbbbbbba
-		]
+		Will output something like
+			[
+			bbaaaababaabbaabababbaabbbbbbaaa,
+			abbbababbbabaaaaabaaabbbbababaab,
+			bbabaabaabbbbbabbbaababbbbabbbbb,
+			aabbbabaaaaababbbabaabaabbbbbbba
+			]
+		which can be used to generate validator private keys.
 	*/
 }

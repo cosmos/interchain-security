@@ -137,8 +137,9 @@ func (s *DTTestSuite) setSigningInfos() {
 	}
 }
 
-// specialDelegate
-func (s *DTTestSuite) specialDelegate(del int, val sdk.ValAddress, amt int) {
+// bootstrapDelegate is used to delegate tokens to newly created
+// validators in the setup process.
+func (s *DTTestSuite) bootstrapDelegate(del int, val sdk.ValAddress, amt int) {
 	d := s.providerChain.SenderAccounts[del].SenderAccount.GetAddress()
 	coins := sdk.NewCoin(difftest.DENOM, sdk.NewInt(int64(amt)))
 	msg := stakingtypes.NewMsgDelegate(d, val, coins)
@@ -326,11 +327,14 @@ func (s *DTTestSuite) SetupTest() {
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
 
-	// TODO: what is this for?
-	s.specialDelegate(1, s.validator(2), 1*difftest.TOKEN_SCALAR)
-	s.specialDelegate(1, s.validator(3), 1*difftest.TOKEN_SCALAR)
-	s.specialDelegate(0, s.validator(2), 2*difftest.TOKEN_SCALAR)
-	s.specialDelegate(0, s.validator(3), 1*difftest.TOKEN_SCALAR)
+	// Delegate some tokens to the 2 newly created additional validators.
+	// The delegations from addr 0 are 'true' delegations, while the delegations
+	// from addr 1 are used to mimic MinSelfDelegation, and to prevent validator
+	// deletion in the case that 'true' delegations fall to 0 in the course of the trace.
+	s.bootstrapDelegate(0, s.validator(2), 2*difftest.TOKEN_SCALAR) // 2 ensures strict val order
+	s.bootstrapDelegate(0, s.validator(3), 1*difftest.TOKEN_SCALAR)
+	s.bootstrapDelegate(1, s.validator(2), 1*difftest.TOKEN_SCALAR)
+	s.bootstrapDelegate(1, s.validator(3), 1*difftest.TOKEN_SCALAR)
 
 	// Set the slash factors on the provider to match the model
 	sparams := s.providerChain.App.(*appProvider.App).SlashingKeeper.GetParams(s.ctx(P))
