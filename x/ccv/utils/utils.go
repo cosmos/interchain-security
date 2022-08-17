@@ -7,7 +7,6 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	"github.com/cosmos/ibc-go/modules/core/exported"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -52,7 +51,7 @@ func GetChangePubKeyAddress(change abci.ValidatorUpdate) (addr []byte) {
 // over the source channelID and portID
 func SendIBCPacket(
 	ctx sdk.Context,
-	scopedKeeper capabilitykeeper.ScopedKeeper,
+	scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper,
 	channelID string,
 	portID string,
@@ -88,7 +87,7 @@ func SendIBCPacket(
 // not on an established CCV channel
 func OnRecvPacketOnUnknownChannel(
 	ctx sdk.Context,
-	scopedKeeper capabilitykeeper.ScopedKeeper,
+	scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper,
 	packet channeltypes.Packet,
 ) exported.Acknowledgement {

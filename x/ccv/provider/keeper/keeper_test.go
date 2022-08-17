@@ -340,38 +340,44 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 		stakingtypes.DoubleSign,
 	)
 
-	// Setup expected mock calls
 	mockStakingKeeper := testkeeper.NewMockStakingKeeper(ctrl)
-	mockStakingKeeper.EXPECT().Slash(
-		ctx,
-		sdk.ConsAddress(slashPacket.Validator.Address),
-		infractionHeight,
-		int64(0),      // power
-		sdk.NewDec(1), // Slash fraction
-		stakingtypes.DoubleSign).Return().Times(1)
-
-	mockStakingKeeper.EXPECT().Jail(
-		gomock.Eq(ctx),
-		gomock.Eq(sdk.ConsAddress(slashPacket.Validator.Address)),
-	).Return()
-
-	mockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-		ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Return(
-		stakingtypes.Validator{Status: stakingtypes.Bonded}, true,
-	).Times(1)
-
 	mockSlashingKeeper := testkeeper.NewMockSlashingKeeper(ctrl)
-	mockSlashingKeeper.EXPECT().SlashFractionDoubleSign(ctx).Return(sdk.NewDec(1)).Times(1)
-	mockSlashingKeeper.EXPECT().JailUntil(ctx, sdk.ConsAddress(slashPacket.Validator.Address),
-		evidencetypes.DoubleSignJailEndTime).Times(1)
-	mockSlashingKeeper.EXPECT().IsTombstoned(ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Return(false).Times(1)
-	mockSlashingKeeper.EXPECT().Tombstone(ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Times(1)
+
+	// Setup expected mock calls
+	gomock.InOrder(
+
+		mockStakingKeeper.EXPECT().GetValidatorByConsAddr(
+			ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Return(
+			stakingtypes.Validator{Status: stakingtypes.Bonded}, true,
+		).Times(1),
+
+		mockSlashingKeeper.EXPECT().IsTombstoned(ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Return(false).Times(1),
+
+		mockSlashingKeeper.EXPECT().SlashFractionDoubleSign(ctx).Return(sdk.NewDec(1)).Times(1),
+
+		mockSlashingKeeper.EXPECT().Tombstone(ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Times(1),
+
+		mockStakingKeeper.EXPECT().Slash(
+			ctx,
+			sdk.ConsAddress(slashPacket.Validator.Address),
+			infractionHeight,
+			int64(0),      // power
+			sdk.NewDec(1), // Slash fraction
+			stakingtypes.DoubleSign).Return().Times(1),
+
+		mockStakingKeeper.EXPECT().Jail(
+			gomock.Eq(ctx),
+			gomock.Eq(sdk.ConsAddress(slashPacket.Validator.Address)),
+		).Return(),
+
+		mockSlashingKeeper.EXPECT().JailUntil(ctx, sdk.ConsAddress(slashPacket.Validator.Address),
+			evidencetypes.DoubleSignJailEndTime).Times(1),
+	)
 
 	providerKeeper := testkeeper.GetProviderKeeperWithMocks(t,
 		cdc,
 		storeKey,
 		paramsSubspace,
-		ctx,
 		capabilitykeeper.ScopedKeeper{},
 		testkeeper.NewMockChannelKeeper(ctrl),
 		testkeeper.NewMockPortKeeper(ctrl),

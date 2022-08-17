@@ -2,32 +2,38 @@ package keeper_test
 
 import (
 	"sort"
+	"testing"
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/bytes"
 )
 
-func (suite *KeeperTestSuite) TestOnRecvVSCPacket() {
-	// setup CCV channel
-	suite.SetupCCVChannel()
+func TestOnRecvVSCPacket(t *testing.T) {
+	channelID1 := "channel1"
+	channelID2 := "channel2"
 
 	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	suite.Require().NoError(err)
+	require.NoError(t, err)
 	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	suite.Require().NoError(err)
+	require.NoError(t, err)
 	pk3, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	suite.Require().NoError(err)
+	require.NoError(t, err)
 
 	changes1 := []abci.ValidatorUpdate{
 		{
@@ -68,11 +74,11 @@ func (suite *KeeperTestSuite) TestOnRecvVSCPacket() {
 		packet                 channeltypes.Packet
 		newChanges             types.ValidatorSetChangePacketData
 		expectedPendingChanges types.ValidatorSetChangePacketData
-		expErrorAck            bool
+		noAck                  bool
 	}{
 		{
 			"success on first packet",
-			channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+			channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, channelID1, consumertypes.PortID, channelID2,
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
@@ -80,7 +86,7 @@ func (suite *KeeperTestSuite) TestOnRecvVSCPacket() {
 		},
 		{
 			"success on subsequent packet",
-			channeltypes.NewPacket(pd.GetBytes(), 2, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+			channeltypes.NewPacket(pd.GetBytes(), 2, providertypes.PortID, channelID1, consumertypes.PortID, channelID2,
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
@@ -88,11 +94,12 @@ func (suite *KeeperTestSuite) TestOnRecvVSCPacket() {
 		},
 		{
 			"success on packet with more changes",
-			channeltypes.NewPacket(pd2.GetBytes(), 3, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+			channeltypes.NewPacket(pd2.GetBytes(), 3, providertypes.PortID, channelID1, consumertypes.PortID, channelID2,
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
 				{
+					// this one is not included
 					PubKey: pk1,
 					Power:  30,
 				},
@@ -109,7 +116,7 @@ func (suite *KeeperTestSuite) TestOnRecvVSCPacket() {
 		},
 		{
 			"invalid packet: different destination channel than provider channel",
-			channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, "InvalidChannel",
+			channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, channelID1, consumertypes.PortID, "InvalidChannel",
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{}},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{}},
@@ -117,22 +124,65 @@ func (suite *KeeperTestSuite) TestOnRecvVSCPacket() {
 		},
 	}
 
-	for _, tc := range testCases {
-		ack := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.ctx, tc.packet, tc.newChanges)
-		suite.Require().NotNil(ack, "invalid test case: %s did not return ack", tc.name)
+	// Instantiate custom keeper with mocks
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	cdc, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
 
-		if tc.expErrorAck {
-			suite.Require().False(ack.Success(), "invalid test case: %s did not return an Error Acknowledgment", tc.name)
+	mockScopedKeeper := testkeeper.NewMockScopedKeeper(ctrl)
+	mockChannelKeeper := testkeeper.NewMockChannelKeeper(ctrl)
+
+	// Setup expected mock calls for final test case
+
+	dummyCap := &capabilitytypes.Capability{}
+	gomock.InOrder(
+
+		mockScopedKeeper.EXPECT().GetCapability(
+			ctx, host.ChannelCapabilityPath(consumertypes.PortID, "InvalidChannel"),
+		).Return(dummyCap, true).Times(1),
+
+		mockChannelKeeper.EXPECT().ChanCloseInit(
+			ctx, consumertypes.PortID, "InvalidChannel", dummyCap,
+		).Return(nil).Times(1),
+	)
+
+	consumerKeeper := testkeeper.GetConsumerKeeperWithMocks(t,
+		cdc,
+		storeKey,
+		paramsSubspace,
+		mockScopedKeeper,
+		mockChannelKeeper,
+		testkeeper.NewMockPortKeeper(ctrl),
+		testkeeper.NewMockConnectionKeeper(ctrl),
+		testkeeper.NewMockClientKeeper(ctrl),
+		testkeeper.NewMockSlashingKeeper(ctrl),
+		testkeeper.NewMockBankKeeper(ctrl),
+		testkeeper.NewMockAccountKeeper(ctrl),
+		testkeeper.NewMockIBCTransferKeeper(ctrl),
+		testkeeper.NewMockIBCCoreKeeper(ctrl),
+	)
+
+	consumerKeeper.SetProviderChannel(ctx, channelID2)
+	consumerKeeper.SetUnbondingTime(ctx, 100*time.Hour)
+
+	for _, tc := range testCases {
+		ack := consumerKeeper.OnRecvVSCPacket(ctx, tc.packet, tc.newChanges)
+
+		if tc.noAck {
+			// if closing channel was successful, no acknowledgement returned, see OnRecvPacketOnUnknownChannel
+			// TODO: Confirm this functionality
+			require.Nil(t, ack, "invalid test case: %s ack returned ", tc.name)
 		} else {
-			suite.Require().True(ack.Success(), "invalid test case: %s did not return a Success Acknowledgment", tc.name)
-			providerChannel, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.ctx)
-			suite.Require().True(ok)
-			suite.Require().Equal(tc.packet.DestinationChannel, providerChannel,
+			require.NotNil(t, ack, "invalid test case: %s did not return ack", tc.name)
+			require.True(t, ack.Success(), "invalid test case: %s did not return a Success Acknowledgment", tc.name)
+			providerChannel, ok := consumerKeeper.GetProviderChannel(ctx)
+			require.True(t, ok)
+			require.Equal(t, tc.packet.DestinationChannel, providerChannel,
 				"provider channel is not destination channel on successful receive for valid test case: %s", tc.name)
 
 			// Check that pending changes are accumulated and stored correctly
-			actualPendingChanges, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPendingChanges(suite.ctx)
-			suite.Require().True(ok)
+			actualPendingChanges, ok := consumerKeeper.GetPendingChanges(ctx)
+			require.True(t, ok)
 			// Sort to avoid dumb inequalities
 			sort.SliceStable(actualPendingChanges.ValidatorUpdates, func(i, j int) bool {
 				return actualPendingChanges.ValidatorUpdates[i].PubKey.Compare(actualPendingChanges.ValidatorUpdates[j].PubKey) == -1
@@ -140,17 +190,18 @@ func (suite *KeeperTestSuite) TestOnRecvVSCPacket() {
 			sort.SliceStable(tc.expectedPendingChanges.ValidatorUpdates, func(i, j int) bool {
 				return tc.expectedPendingChanges.ValidatorUpdates[i].PubKey.Compare(tc.expectedPendingChanges.ValidatorUpdates[j].PubKey) == -1
 			})
-			suite.Require().Equal(tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
+			require.Equal(t, tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
 
-			unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
-			suite.Require().True(found)
-			expectedTime := uint64(suite.ctx.BlockTime().Add(unbondingPeriod).UnixNano())
-			maturityTime := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, tc.newChanges.ValsetUpdateId)
-			suite.Require().Equal(expectedTime, maturityTime, "packet maturity time has unexpected value for case: %s", tc.name)
+			unbondingPeriod, found := consumerKeeper.GetUnbondingTime(ctx)
+			require.True(t, found)
+			expectedTime := uint64(ctx.BlockTime().Add(unbondingPeriod).UnixNano())
+			maturityTime := consumerKeeper.GetPacketMaturityTime(ctx, tc.newChanges.ValsetUpdateId)
+			require.Equal(t, expectedTime, maturityTime, "packet maturity time has unexpected value for case: %s", tc.name)
 		}
 	}
 }
 
+// TODO: maybe a unit test
 func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	// setup CCV channel
 	suite.SetupCCVChannel()
@@ -263,6 +314,7 @@ func incrementTimeBy(s *KeeperTestSuite, jumpPeriod time.Duration) {
 	}
 }
 
+// TODO: This is a unit test
 func (suite *KeeperTestSuite) TestOnAcknowledgement() {
 	packetData := types.NewSlashPacketData(
 		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Downtime,

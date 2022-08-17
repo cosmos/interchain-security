@@ -32,7 +32,6 @@ func TestParams(t *testing.T) {
 		cdc,
 		storeKey,
 		paramsSubspace,
-		ctx,
 		capabilitykeeper.ScopedKeeper{},
 		&testkeeper.MockChannelKeeper{},
 		&testkeeper.MockPortKeeper{},

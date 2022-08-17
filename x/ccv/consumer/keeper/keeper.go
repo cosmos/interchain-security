@@ -9,7 +9,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
@@ -29,7 +28,7 @@ type Keeper struct {
 	storeKey          sdk.StoreKey
 	cdc               codec.BinaryCodec
 	paramStore        paramtypes.Subspace
-	scopedKeeper      capabilitykeeper.ScopedKeeper
+	scopedKeeper      ccv.ScopedKeeper
 	channelKeeper     ccv.ChannelKeeper
 	portKeeper        ccv.PortKeeper
 	connectionKeeper  ccv.ConnectionKeeper
@@ -48,7 +47,7 @@ type Keeper struct {
 // collector (and not the provider chain)
 func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
-	scopedKeeper capabilitykeeper.ScopedKeeper,
+	scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	slashingKeeper ccv.SlashingKeeper, bankKeeper ccv.BankKeeper, accountKeeper ccv.AccountKeeper,
