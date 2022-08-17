@@ -122,6 +122,7 @@ func (s *DTTestSuite) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.Va
 	return privVal, addr
 }
 
+// setSigningInfos sets the validator signing info in the provider Slashing module
 func (s *DTTestSuite) setSigningInfos() {
 	for i := 0; i < 4; i++ {
 		info := slashingtypes.NewValidatorSigningInfo(
@@ -136,14 +137,18 @@ func (s *DTTestSuite) setSigningInfos() {
 	}
 }
 
-func (s *DTTestSuite) specialDelegate(del int, val sdk.ValAddress, x int) {
-	pskServer := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
-	amt := sdk.NewCoin(difftest.DENOM, sdk.NewInt(int64(x)))
+// specialDelegate
+func (s *DTTestSuite) specialDelegate(del int, val sdk.ValAddress, amt int) {
 	d := s.providerChain.SenderAccounts[del].SenderAccount.GetAddress()
-	msg := stakingtypes.NewMsgDelegate(d, val, amt)
+	coins := sdk.NewCoin(difftest.DENOM, sdk.NewInt(int64(amt)))
+	msg := stakingtypes.NewMsgDelegate(d, val, coins)
+	pskServer := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
 	pskServer.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
+// Manually construct and send an empty VSC packet from the provider
+// to the consumer. This is necessary to complete the handshake, and thus
+// match the model init state, without any additional validator power changes.
 func (s *DTTestSuite) sendEmptyVSCPacket() {
 	vscID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerChain.GetContext())
 
@@ -179,12 +184,9 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 	s.Require().NoError(err)
 }
 
+// Checks that the lexicographic ordering of validator addresses as computed in
+// the staking module match the ordering of validators in the model.
 func (s *DTTestSuite) ensureValidatorLexicographicOrderingMatchesModel(lesser sdk.ValAddress, greater sdk.ValAddress) {
-	/*
-		Ties in validator power are broken based on comparing PowerIndexKey. The model tie-break needs
-		to match the code tie-break at all times. This function ensures the tie break function in the model
-		is correct.
-	*/
 	lesserV, _ := s.stakingKeeperP().GetValidator(s.ctx(P), lesser)
 	greaterV, _ := s.stakingKeeperP().GetValidator(s.ctx(P), greater)
 	lesserKey := stakingtypes.GetValidatorsByPowerIndexKey(lesserV, sdk.DefaultPowerReduction)
@@ -252,33 +254,33 @@ func (s *DTTestSuite) SetupTest() {
 	// Commit the additional validators
 	s.coordinator.CommitBlock(s.providerChain)
 
-	// create client and consensus state of provider chain to initialize consumer chain genesis.
-	// create
-	// height := s.providerChain.LastHeader.GetHeight().(clienttypes.Height)
-	// UpgradePath := []string{"upgrade", "upgradedIBCState"}
-
+	// Configure tendermint parameters to match the model and allow
+	// compressed timescales.
 	tmConfig := ibctesting.NewTendermintConfig()
 	tmConfig.UnbondingPeriod = difftest.UNBONDING_P
 	tmConfig.TrustingPeriod = difftest.TRUSTING
 	tmConfig.MaxClockDrift = difftest.MAX_CLOCK_DRIFT
+
+	// Create Provider client
 	providerClient := ibctmtypes.NewClientState(
 		s.providerChain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 		s.providerChain.LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
 	)
 	providerConsState := s.providerChain.LastHeader.ConsensusState()
 
+	// Create Consumer genesis
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(s.providerChain.Vals)
-
 	params := consumertypes.NewParams(
 		true,
-		1000, // about 2 hr at 7.6 seconds per blocks
-		"",
-		"",
+		1000, // ignore distribution
+		"",   // ignore distribution
+		"",   // ignore distribution
 	)
 	consumerGenesis := consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, params)
 	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	ck.InitGenesis(s.ctx(C), consumerGenesis)
 
+	// Configure the ibc path
 	s.path = ibctesting.NewPath(s.consumerChain, s.providerChain)
 	s.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
 	s.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
@@ -291,48 +293,60 @@ func (s *DTTestSuite) SetupTest() {
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
-
 	s.path.EndpointA.ClientID = providerClientId
-
 	s.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
 	s.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
 
-	cfg := s.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
-	cfg.UnbondingPeriod = difftest.UNBONDING_P
-	cfg.TrustingPeriod = difftest.TRUSTING
-	cfg.MaxClockDrift = difftest.MAX_CLOCK_DRIFT
+	// Configure and create the consumer Client
+	tmConfig = s.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
+	tmConfig.UnbondingPeriod = difftest.UNBONDING_P
+	tmConfig.TrustingPeriod = difftest.TRUSTING
+	tmConfig.MaxClockDrift = difftest.MAX_CLOCK_DRIFT
 	s.path.EndpointB.CreateClient()
 
+	// Create the Consumer chain ID mapping in the provider state
 	s.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClientId(s.ctx(P), s.consumerChain.ChainID, s.path.EndpointB.ClientID)
 
+	// Handshake
 	s.coordinator.CreateConnections(s.path)
 	s.coordinator.CreateChannels(s.path)
+
+	// Set the unbonding time on the consumer to the model value
 	ck.SetUnbondingTime(s.ctx(C), difftest.UNBONDING_C)
+
+	// Send an empty VSC packet from the provider to the consumer to finish
+	// the handshake. This is necessary because the model starts from a
+	// completely initialized state, with a completed handshake.
 	s.sendEmptyVSCPacket()
 
 	s.jumpNBlocks([]string{P}, 1, 1)
 	s.jumpNBlocks([]string{C}, 4, 1)
 
+	// Begin new blocks to allow delegation
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
 
+	// TODO: what is this for?
 	s.specialDelegate(1, s.validator(2), 1*difftest.TOKEN_SCALAR)
 	s.specialDelegate(1, s.validator(3), 1*difftest.TOKEN_SCALAR)
 	s.specialDelegate(0, s.validator(2), 2*difftest.TOKEN_SCALAR)
 	s.specialDelegate(0, s.validator(3), 1*difftest.TOKEN_SCALAR)
 
+	// Set the slash factors on the provider to match the model
 	sparams := s.providerChain.App.(*appProvider.App).SlashingKeeper.GetParams(s.ctx(P))
 	sparams.SlashFractionDoubleSign = difftest.SLASH_DOUBLESIGN
 	sparams.SlashFractionDowntime = difftest.SLASH_DOWNTIME
 	s.providerChain.App.(*appProvider.App).SlashingKeeper.SetParams(s.ctx(P), sparams)
 
 	s.jumpNBlocks([]string{P, C}, 40, 5)
+	// Deliver the empty VSC packet in order to complete handshake
 	s.deliver(P, 1)
 	s.jumpNBlocks([]string{P, C}, 40, 5)
 
+	// Begin new blocks. This matches the SUT state to the model state
+	// and prepares the chains for actions.
 	s.idempotentBeginBlock(P)
 	s.idempotentBeginBlock(C)
-
 }
 
 // ctx returns the sdk.Context for the chain
