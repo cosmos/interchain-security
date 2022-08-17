@@ -41,9 +41,9 @@ const P = "provider"
 const C = "consumer"
 
 /*
-In the model, height begins at 0 for both chains because init
-is not modelled.
-With this offset, the SUT height is at 100 on both chains
+In the model, height begins at 0 for both chains because the proposal, handshake
+ect are not modeled.
+By using an offset, the SUT height is at 100 on both chains
 when the trace actions start.
 */
 const MODEL_HEIGHT_OFFSET = int64(99)
@@ -55,11 +55,19 @@ var SLASH_DOUBLESIGN = slashingtypes.DefaultSlashFractionDoubleSign
 var SLASH_DOWNTIME = slashingtypes.DefaultSlashFractionDowntime
 
 /*
-Match constants to model constants
+Equate SUT constants to model constants
 */
 func init() {
-	// Tokens = Power
+	/*
+		Enforce tokens === power
+	*/
 	sdk.DefaultPowerReduction = sdk.NewInt(1)
+	/*
+		Slash factors are set to 0 because setting them !=0 will lead
+		to numerical calculations in the staking module which are very
+		difficult to test with differential testing (because of numerical
+		imprecision).
+	*/
 	SLASH_DOUBLESIGN = sdk.NewDec(0)
 	SLASH_DOWNTIME = sdk.NewDec(0)
 }
@@ -89,7 +97,6 @@ func makeNetwork() Network {
 
 func (n Network) addPacket(sender string, packet channeltypes.Packet) {
 	n.outboxPackets[sender] = append(n.outboxPackets[sender], Packet{packet, 0})
-
 }
 
 func (n Network) addAck(sender string, ack []byte, packet channeltypes.Packet) {

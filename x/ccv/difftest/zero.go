@@ -61,7 +61,7 @@ var DTDefaultConsensusParams = &abci.ConsensusParams{
 
 func GetPV(seedIx int) mock.PV {
 	seed := []byte(PKSeeds[seedIx])
-	return mock.PV{&cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 }
 
 type InitialModelState struct {
