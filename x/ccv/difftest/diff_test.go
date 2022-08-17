@@ -270,6 +270,7 @@ func (s *DTTestSuite) SetupTest() {
 	s.heightLastClientUpdate = map[string]int64{P: 0, C: 0}
 	s.timeLastClientUpdate = map[string]int64{P: 0, C: 0}
 	s.trace = Trace{}
+	s.headersForUpdateClient = map[string][]*ibctmtypes.Header{P: {}, C: {}}
 
 	s.coordinator, s.providerChain, s.consumerChain, s.valAddresses = difftest.NewDTProviderConsumerCoordinator(s.T())
 
@@ -525,10 +526,13 @@ func (s DTTestSuite) idempotentUpdateClient(chain string) {
 		if then != 0 && expired {
 			s.Require().False(expired, s.trace.diagnostic()+" expired")
 		}
-		err := difftest.UpdateReceiverClient(s.endpoint(s.other(chain)), s.endpoint(chain))
-		if err != nil {
-			s.FailNow("Bad test")
+		for _, header := range s.headersForUpdateClient[s.other(chain)] {
+			err := difftest.UpdateReceiverClient(s.endpoint(s.other(chain)), s.endpoint(chain), header)
+			if err != nil {
+				s.FailNow("Bad test")
+			}
 		}
+		s.headersForUpdateClient[s.other(chain)] = []*ibctmtypes.Header{}
 		s.heightLastClientUpdate[chain] = otherHeight
 		s.timeLastClientUpdate[chain] = s.time(s.other(chain)).Unix()
 	}
@@ -745,7 +749,7 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 }
 
 func (s *DTTestSuite) TestTraces() {
-	traces := loadTraces("covering.json")
+	traces := loadTraces("coveringLong.json")
 	for i, trace := range traces {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			s.SetupTest()

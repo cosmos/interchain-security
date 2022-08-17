@@ -2,17 +2,60 @@ package difftest
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	"github.com/cosmos/ibc-go/v3/testing/simapp"
 	"github.com/stretchr/testify/require"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint) (err error) {
+// ConstructUpdateTMClientHeader will construct a valid 07-tendermint Header to update the
+// light client on the source chain.
+func ConstructUpdateTMClientHeaderWithTrustedHeight(chain *ibctesting.TestChain, header *ibctmtypes.Header, counterparty *ibctesting.TestChain, clientID string, trustedHeight clienttypes.Height) (*ibctmtypes.Header, error) {
+	// Relayer must query for LatestHeight on client to get TrustedHeight if the trusted height is not set
+	if trustedHeight.IsZero() {
+		trustedHeight = chain.GetClientState(clientID).GetLatestHeight().(clienttypes.Height)
+	}
+	var (
+		tmTrustedVals *tmtypes.ValidatorSet
+		ok            bool
+	)
+	// Once we get TrustedHeight from client, we must query the validators from the counterparty chain
+	// If the LatestHeight == LastHeader.Height, then TrustedValidators are current validators
+	// If LatestHeight < LastHeader.Height, we can query the historical validator set from HistoricalInfo
+	if trustedHeight == counterparty.LastHeader.GetHeight() {
+		tmTrustedVals = counterparty.Vals
+	} else {
+		// NOTE: We need to get validators from counterparty at height: trustedHeight+1
+		// since the last trusted validators for a header at height h
+		// is the NextValidators at h+1 committed to in header h by
+		// NextValidatorsHash
+		tmTrustedVals, ok = counterparty.GetValsAtHeight(int64(trustedHeight.RevisionHeight + 1))
+		if !ok {
+			return nil, sdkerrors.Wrapf(ibctmtypes.ErrInvalidHeaderHeight, "could not retrieve trusted validators at trustedHeight: %d", trustedHeight)
+		}
+	}
+	// inject trusted fields into last header
+	// for now assume revision number is 0
+	header.TrustedHeight = trustedHeight
 
-	header, err := receiver.Chain.ConstructUpdateTMClientHeader(sender.Chain, receiver.ClientID)
+	trustedVals, err := tmTrustedVals.ToProto()
+	if err != nil {
+		return nil, err
+	}
+	header.TrustedValidators = trustedVals
+
+	return header, nil
+}
+
+func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, header *ibctmtypes.Header) (err error) {
+
+	// header, err := receiver.Chain.ConstructUpdateTMClientHeader(sender.Chain, receiver.ClientID)
+	header, err = ConstructUpdateTMClientHeaderWithTrustedHeight(receiver.Chain, header, sender.Chain, receiver.ClientID, clienttypes.ZeroHeight())
 
 	if err != nil {
 		return err
