@@ -40,125 +40,61 @@ import (
 const P = "provider"
 const C = "consumer"
 
-/*
-Equate SUT constants to model constants
-*/
+// Equate SUT constants to model constants
 func init() {
-	/*
-		Enforce tokens === power
-	*/
+	//	Enforce tokens === power
 	sdk.DefaultPowerReduction = sdk.NewInt(1)
-	/*
-		Slash factors are set to 0 because setting them !=0 will lead
-		to numerical calculations in the staking module which are very
-		difficult to test with differential testing (because of numerical
-		imprecision).
-	*/
+	//	Slash factors are set to 0 because setting them !=0 will lead
+	//	to numerical calculations in the staking module which are very
+	//	difficult to test with differential testing (because of differences in
+	//	numerical precision.
 	difftest.SLASH_DOUBLESIGN = sdk.NewDec(0)
 	difftest.SLASH_DOWNTIME = sdk.NewDec(0)
-}
-
-type Ack struct {
-	ack     []byte
-	packet  channeltypes.Packet
-	commits int
-}
-
-type Packet struct {
-	packet  channeltypes.Packet
-	commits int
-}
-
-type Network struct {
-	outboxPackets map[string][]Packet
-	outboxAcks    map[string][]Ack
-}
-
-func makeNetwork() Network {
-	return Network{
-		outboxPackets: map[string][]Packet{},
-		outboxAcks:    map[string][]Ack{},
-	}
-}
-
-func (n Network) addPacket(sender string, packet channeltypes.Packet) {
-	n.outboxPackets[sender] = append(n.outboxPackets[sender], Packet{packet, 0})
-}
-
-func (n Network) addAck(sender string, ack []byte, packet channeltypes.Packet) {
-	n.outboxAcks[sender] = append(n.outboxAcks[sender], Ack{ack, packet, 0})
-}
-
-func (n Network) consumePackets(sender string, num int64) []Packet {
-	ret := []Packet{}
-	for _, p := range n.outboxPackets[sender][:num] {
-		if 1 < p.commits {
-			ret = append(ret, p)
-		} else {
-			break
-		}
-	}
-	n.outboxPackets[sender] = n.outboxPackets[sender][len(ret):]
-	return ret
-}
-
-func (n Network) consumeAcks(sender string) []Ack {
-	ret := []Ack{}
-	for _, a := range n.outboxAcks[sender] {
-		if 1 < a.commits {
-			ret = append(ret, a)
-		} else {
-			break
-		}
-	}
-	n.outboxAcks[sender] = n.outboxAcks[sender][len(ret):]
-	return ret
-}
-
-func (n Network) commit(sender string) {
-
-	for i := range n.outboxPackets[sender] {
-		n.outboxPackets[sender][i].commits += 1
-	}
-	for i := range n.outboxAcks[sender] {
-		n.outboxAcks[sender][i].commits += 1
-	}
 }
 
 type DTTestSuite struct {
 	suite.Suite
 
-	coordinator *ibctesting.Coordinator
-
-	// testing chains
+	coordinator   *ibctesting.Coordinator
 	providerChain *ibctesting.TestChain
 	consumerChain *ibctesting.TestChain
+	path          *ibctesting.Path
 
-	path *ibctesting.Path
-
-	mustBeginBlock map[string]bool
-
+	// keep around validators for easy access
 	valAddresses []sdk.ValAddress
 
-	network Network
+	// network for simulating relaying
+	network difftest.Network
 
-	heightLastClientUpdate map[string]int64
-	timeLastClientUpdate   map[string]int64
-
-	trace Trace
-
+	// chain -> height of last UpdateClient for chain
+	heightLastUpdateClient map[string]int64
+	// chain -> array of headers for UpdateClient
 	headersForUpdateClient map[string][]*ibctmtypes.Header
+
+	// chain -> necessary to BeginBlock?
+	// true if last action for chain was EndBlock
+	mustBeginBlock map[string]bool
+
+	// the current trace being executed
+	trace Trace
 }
 
 type Trace struct {
 	// index of trace in json
-	ix          int
-	actionIx    int
-	blocks      difftest.Blocks
+	ix int
+	// index of current action
+	actionIx int
+	// model block data for comparisons
+	blocks difftest.Blocks
+	// chain -> height of last commit on chain
+	// this is used to retrieve the correct block for model comparisons
 	hLastCommit map[string]int64
-	started     bool
+	// have begun executing trace?
+	// used to avoid model comparisons before trace has begun executing
+	started bool
 }
 
+// diagnostic returns a string for diagnosing errors
 func (t *Trace) diagnostic() string {
 	return fmt.Sprintf("\n[diagnostic][trace %d, action %d, hLastCommit {P:%d,C:%d}]", t.ix, t.actionIx, t.hLastCommit[P], t.hLastCommit[C])
 
@@ -236,7 +172,7 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 	s.idempotentUpdateClient(C)
 
 	ack, err := difftest.TryRecvPacket(s.endpoint(P), s.endpoint(C), packet)
-	s.network.addAck(C, ack, packet)
+	s.network.AddAck(C, ack, packet)
 
 	s.Require().NoError(err)
 }
@@ -260,9 +196,8 @@ func (s *DTTestSuite) ensureValidatorLexicographicOrderingMatchesModel(lesser sd
 func (s *DTTestSuite) SetupTest() {
 
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
-	s.network = makeNetwork()
-	s.heightLastClientUpdate = map[string]int64{P: 0, C: 0}
-	s.timeLastClientUpdate = map[string]int64{P: 0, C: 0}
+	s.network = difftest.MakeNetwork()
+	s.heightLastUpdateClient = map[string]int64{P: 0, C: 0}
 	s.trace = Trace{}
 	s.headersForUpdateClient = map[string][]*ibctmtypes.Header{P: {}, C: {}}
 
@@ -376,50 +311,62 @@ func (s *DTTestSuite) SetupTest() {
 
 }
 
+// ctx returns the sdk.Context for the chain
 func (s *DTTestSuite) ctx(chain string) sdk.Context {
 	return s.chain(chain).GetContext()
 }
 
+// chain returns the TestChain for a given chain identifier
 func (s *DTTestSuite) chain(chain string) *ibctesting.TestChain {
 	return map[string]*ibctesting.TestChain{P: s.providerChain, C: s.consumerChain}[chain]
 }
 
+// other returns the counterparty chain
 func (s *DTTestSuite) other(chain string) string {
 	return map[string]string{P: C, C: P}[chain]
 }
 
+// height returns the height of the current header of chain
 func (s *DTTestSuite) height(chain string) int64 {
 	return s.chain(chain).CurrentHeader.GetHeight()
 }
 
+// time returns the time of the current header of chain
 func (s *DTTestSuite) time(chain string) time.Time {
 	return s.chain(chain).CurrentHeader.Time
 }
 
+// globalTime returns the current global time of the test suite
 func (s *DTTestSuite) globalTime() time.Time {
 	return s.coordinator.CurrentTime
 }
 
+// endpoint returns the ibc Endpoint for the chain
 func (s *DTTestSuite) endpoint(chain string) *ibctesting.Endpoint {
 	return map[string]*ibctesting.Endpoint{P: s.path.EndpointB, C: s.path.EndpointA}[chain]
 }
 
+// delegator retrieves the address for the (sole) delegator account
 func (s *DTTestSuite) delegator() sdk.AccAddress {
 	return s.providerChain.SenderAccount.GetAddress()
 }
 
+// validator returns the address for the validator with id (ix) i
 func (s *DTTestSuite) validator(i int64) sdk.ValAddress {
 	return s.valAddresses[i]
 }
 
+// consAddr returns the ConsAdd for the validator with id (ix) i
 func (s *DTTestSuite) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(s.validator(i))
 }
 
+// stakingKeeperP returns the staking keeper for the provider chain
 func (s *DTTestSuite) stakingKeeperP() stakingkeeper.Keeper {
 	return s.providerChain.App.(*appProvider.App).StakingKeeper
 }
 
+// isJailed returns the jail status of validator with id (ix) i
 func (s *DTTestSuite) isJailed(i int64) bool {
 	val, found := s.stakingKeeperP().GetValidator(s.ctx(P), s.validator(i))
 	if !found {
@@ -428,6 +375,8 @@ func (s *DTTestSuite) isJailed(i int64) bool {
 	return val.IsJailed()
 }
 
+// consumerPower returns the power on the consumer chain for
+// validator with id (ix) i
 func (s *DTTestSuite) consumerPower(i int64) (int64, error) {
 	ck := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 
@@ -438,6 +387,8 @@ func (s *DTTestSuite) consumerPower(i int64) (int64, error) {
 	return v.Power, nil
 }
 
+// delegation returns the number of delegated tokens in the delegation from
+// the (sole) delegator account to the validator with id (ix) i
 func (s *DTTestSuite) delegation(i int64) int64 {
 	d, found := s.stakingKeeperP().GetDelegation(s.ctx(P), s.delegator(), s.validator(i))
 	if !found {
@@ -446,6 +397,8 @@ func (s *DTTestSuite) delegation(i int64) int64 {
 	return d.Shares.TruncateInt64()
 }
 
+// validatorStatus returns the validator status for validator with id (ix) i
+// on the provider chain
 func (s *DTTestSuite) validatorStatus(i int64) stakingtypes.BondStatus {
 	v, found := s.stakingKeeperP().GetValidator(s.ctx(P), s.validator(i))
 	if !found {
@@ -454,6 +407,8 @@ func (s *DTTestSuite) validatorStatus(i int64) stakingtypes.BondStatus {
 	return v.GetStatus()
 }
 
+// providerTokens returns the number of tokens that the validator with
+// id (ix) i has delegated to it in total on the provider chain
 func (s *DTTestSuite) providerTokens(i int64) int64 {
 	v, found := s.stakingKeeperP().GetValidator(s.ctx(P), s.validator(i))
 	if !found {
@@ -462,6 +417,7 @@ func (s *DTTestSuite) providerTokens(i int64) int64 {
 	return v.Tokens.Int64()
 }
 
+// delegatorBalance returns the balance of the (sole) delegator account
 func (s *DTTestSuite) delegatorBalance() int64 {
 	d := s.delegator()
 	app := s.providerChain.App.(*appProvider.App)
@@ -469,6 +425,10 @@ func (s *DTTestSuite) delegatorBalance() int64 {
 	return bal.Amount.Int64()
 }
 
+// idempotentBeginBlock begins a new block on chain
+// if it necessary to do so. It is necessary if
+// mustBeginBlock[chain] is true, which is the case
+// when the last action for the chain was EndBlock
 func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 	if s.mustBeginBlock[chain] {
 
@@ -492,17 +452,13 @@ func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 	}
 }
 
+// idempotentDeliverAcks will deliver any acks available on the network
+// which have been emitted by the counterparty chain since the last
+// call to idempotentDeliverAcks
 func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
-	/*
-		TODO: fix
-		There is a problem with acks https://github.com/cosmos/interchain-security/issues/240
-		Relaying the first ack to the provider (for the empty VSC sent first to consumer) fails,
-		thus sending subsequent acks is impossible as the sequence num will be out of order.
-	*/
-
-	for _, ack := range s.network.consumeAcks(s.other(receiver)) {
+	for _, ack := range s.network.ConsumeAcks(s.other(receiver)) {
 		s.idempotentUpdateClient(receiver)
-		err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.packet, ack.ack)
+		err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.Packet, ack.Ack)
 		if err != nil {
 			return err
 		}
@@ -510,16 +466,12 @@ func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
 	return nil
 }
 
+// idempotentUpdateClient will bring the client on chain
+// up to date by delivering each header committed on the
+// counterparty chain since the last idempotentUpdateClient
 func (s DTTestSuite) idempotentUpdateClient(chain string) {
 	otherHeight := s.height(s.other(chain))
-	if s.heightLastClientUpdate[chain] < otherHeight {
-		then := s.timeLastClientUpdate[chain]
-		now := s.time(chain).Unix()
-		trusting := int64(difftest.TRUSTING / time.Second)
-		expired := then+trusting <= now
-		if then != 0 && expired {
-			s.Require().False(expired, s.trace.diagnostic()+" expired")
-		}
+	if s.heightLastUpdateClient[chain] < otherHeight {
 		for _, header := range s.headersForUpdateClient[s.other(chain)] {
 			err := difftest.UpdateReceiverClient(s.endpoint(s.other(chain)), s.endpoint(chain), header)
 			if err != nil {
@@ -527,14 +479,16 @@ func (s DTTestSuite) idempotentUpdateClient(chain string) {
 			}
 		}
 		s.headersForUpdateClient[s.other(chain)] = []*ibctmtypes.Header{}
-		s.heightLastClientUpdate[chain] = otherHeight
-		s.timeLastClientUpdate[chain] = s.time(s.other(chain)).Unix()
+		s.heightLastUpdateClient[chain] = otherHeight
 	}
 
 }
 
+// delegate delegates amt tokens to validator val
 func (s *DTTestSuite) delegate(val int64, amt int64) {
+	// Make sure block has begun
 	s.idempotentBeginBlock(P)
+	// Deliver any outstanding acks
 	s.idempotentDeliverAcks(P)
 	server := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
 	coin := sdk.NewCoin(difftest.DENOM, sdk.NewInt(amt))
@@ -544,8 +498,11 @@ func (s *DTTestSuite) delegate(val int64, amt int64) {
 	server.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
+// undelegate undelegates amt tokens from validator val
 func (s *DTTestSuite) undelegate(val int64, amt int64) {
+	// Make sure block has begun
 	s.idempotentBeginBlock(P)
+	// Deliver any outstanding acks
 	s.idempotentDeliverAcks(P)
 	server := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
 	coin := sdk.NewCoin(difftest.DENOM, sdk.NewInt(amt))
@@ -555,12 +512,13 @@ func (s *DTTestSuite) undelegate(val int64, amt int64) {
 	server.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
 }
 
-func (s *DTTestSuite) hackBeginBlock(chain string) {
-	/*
-		This function is used to begin the next block after committing a block.
-		I tried hard to get rid of it but it seems that the testing framework
-		relies in many places on having a ctx() available. E.g. for UpdateClient
-	*/
+// enableCtx allows querying the chain even before beginBlock call
+// This function is necessary to allow accessing the Context for the
+// chain after EndBlock but before the next model based BeginBlock
+// A new header is created and BeginBlock is called, which creates
+// a ctx object. However this header will be overwritten when
+// beginBlock is called by jumpNBlocks.
+func (s *DTTestSuite) enableCtx(chain string) {
 	c := s.chain(chain)
 
 	dt := 5
@@ -577,12 +535,16 @@ func (s *DTTestSuite) hackBeginBlock(chain string) {
 	}
 
 	c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
-
 }
 
+// endBlock calls the endblocker of the chain, commits the block to tendermint
+// and applies validator set changes. It also collects packets and adds them
+// to the network.
 func (s *DTTestSuite) endBlock(chain string) {
 
+	// Make sure block has started
 	s.idempotentBeginBlock(chain)
+	// Deliver any outstanding acks
 	s.idempotentDeliverAcks(chain)
 
 	c := s.chain(chain)
@@ -590,7 +552,11 @@ func (s *DTTestSuite) endBlock(chain string) {
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
 
 	if s.trace.started {
-		// commit and compare model state *before* committing in SUT as need sdk.Context
+		// If the trace has started we match the state of the SUT to the model state.
+		// If the trace has not started (if this method is called during setup) then
+		// we omit the comparison.
+		// It is important that this occurs before App.Commit as the Context is needed
+		// for queries.
 		s.trace.hLastCommit[chain] += 1
 		s.matchState(chain)
 	}
@@ -602,27 +568,31 @@ func (s *DTTestSuite) endBlock(chain string) {
 	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
 
 	c.LastHeader = c.CurrentTMClientHeader()
+	// Store header to be used in UpdateClient
 	s.headersForUpdateClient[chain] = append(s.headersForUpdateClient[chain], c.LastHeader)
 
 	for _, e := range ebRes.Events {
 		if e.Type == channeltypes.EventTypeSendPacket {
 			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
-			s.network.addPacket(chain, packet)
+			// Collect packets
+			s.network.AddPacket(chain, packet)
 		}
 	}
 
-	s.network.commit(chain)
+	// Commit packets emmitted up to this point
+	s.network.Commit(chain)
 
+	// Register to begin a new block
 	s.mustBeginBlock[chain] = true
 
-	s.hackBeginBlock(chain)
-
+	// Enable using Context object for queries
+	s.enableCtx(chain)
 }
 
-// jumpNBlocks progresses the blockchain on one or both chains
-// in this manner, it is possible for chains to advance in close step or
-// separately.
+// jumpNBlocks progresses the blockchain on one or both chains.
+// In this manner, it is possible for chains to advance in (almost) lock-step or
+// separately (somewhat asynchronously).
 func (s *DTTestSuite) jumpNBlocks(chains []string, n int64, secondsPerBlock int64) {
 	for i := int64(0); i < n; i++ {
 		for _, c := range chains { // [P] or [P, C] or [C]
@@ -643,15 +613,15 @@ func (s *DTTestSuite) deliver(chain string, numPackets int64) {
 	// Make sure client is updated
 	s.idempotentUpdateClient(chain)
 	// Consume deliverable packets from the network
-	packets := s.network.consumePackets(s.other(chain), numPackets)
+	packets := s.network.ConsumePackets(s.other(chain), numPackets)
 	for _, p := range packets {
 		receiver := s.endpoint(chain)
 		sender := receiver.Counterparty
-		ack, err := difftest.TryRecvPacket(sender, receiver, p.packet)
+		ack, err := difftest.TryRecvPacket(sender, receiver, p.Packet)
 		if err != nil {
 			s.FailNow(s.trace.diagnostic()+"relay failed", err)
 		}
-		s.network.addAck(chain, ack, p.packet)
+		s.network.AddAck(chain, ack, p.Packet)
 	}
 }
 
@@ -676,7 +646,7 @@ func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime boo
 			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
 			// Collect any packets which may be emitted as a result of the action
-			s.network.addPacket(C, packet)
+			s.network.AddPacket(C, packet)
 		}
 	}
 }
@@ -684,7 +654,10 @@ func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime boo
 // matchState checks that the state in the model matches the current
 // state in the SUT for the given chain
 func (s *DTTestSuite) matchState(chain string) {
-	// Model time starts at 0 so we need an offset for comparisons
+	// Model time starts at 0 so we need an offset for comparisons.
+	// Subtract 5 seconds because matchState is done after ending a block but
+	// before the new block begins, while the model state uses an already
+	// begun next block.
 	modelTimeOffset := time.Unix(difftest.SUT_TIME_OFFSET, 0).UTC().Add(time.Second * time.Duration(-5))
 
 	trace := s.trace
@@ -859,8 +832,8 @@ func (s *DTTestSuite) TestAssumptions() {
 	s.Require().Equal(0+1+difftest.MODEL_HEIGHT_OFFSET, s.height(C))
 
 	// Check that no packets are in the network
-	s.Require().Empty(s.network.outboxPackets[P])
-	s.Require().Empty(s.network.outboxPackets[C])
+	s.Require().Empty(s.network.OutboxPackets[P])
+	s.Require().Empty(s.network.OutboxPackets[C])
 
 	// Check that both chains and the global time are zero'd (equal offset)
 	s.Require().Equal(int64(difftest.SUT_TIME_OFFSET), s.time(P).Unix())
