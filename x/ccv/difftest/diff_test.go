@@ -620,19 +620,29 @@ func (s *DTTestSuite) endBlock(chain string) {
 
 }
 
+// jumpNBlocks progresses the blockchain on one or both chains
+// in this manner, it is possible for chains to advance in close step or
+// separately.
 func (s *DTTestSuite) jumpNBlocks(chains []string, n int64, secondsPerBlock int64) {
 	for i := int64(0); i < n; i++ {
 		for _, c := range chains { // [P] or [P, C] or [C]
 			s.endBlock(c)
 		}
+		// When a chain starts a new block, it takes the global time. By advancing the global time after
+		// a chain commits a block, it is possible to test long gaps between blocks.
 		s.coordinator.CurrentTime = s.coordinator.CurrentTime.Add(time.Second * time.Duration(secondsPerBlock)).UTC()
 	}
 }
 
+// deliver numPackets packets from the network to chain
 func (s *DTTestSuite) deliver(chain string, numPackets int64) {
+	// Make sure block has started
 	s.idempotentBeginBlock(chain)
+	// Deliver any outstanding acks
 	s.idempotentDeliverAcks(chain)
+	// Make sure client is updated
 	s.idempotentUpdateClient(chain)
+	// Consume deliverable packets from the network
 	packets := s.network.consumePackets(s.other(chain), numPackets)
 	for _, p := range packets {
 		receiver := s.endpoint(chain)
@@ -645,8 +655,12 @@ func (s *DTTestSuite) deliver(chain string, numPackets int64) {
 	}
 }
 
+// consumerSlash simulates a slash event occurring on the consumer chain
+// it can be for a downtime or doublesign
 func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
+	// Make sure block has started
 	s.idempotentBeginBlock(C)
+	// Deliver any outstanding acks
 	s.idempotentDeliverAcks(C)
 	kind := stakingtypes.DoubleSign
 	if isDowntime {
@@ -661,54 +675,65 @@ func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime boo
 		if e.Type == channeltypes.EventTypeSendPacket {
 			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
+			// Collect any packets which may be emitted as a result of the action
 			s.network.addPacket(C, packet)
 		}
 	}
 }
 
+// matchState checks that the state in the model matches the current
+// state in the SUT for the given chain
 func (s *DTTestSuite) matchState(chain string) {
-	SUTStartTime := time.Unix(difftest.SUT_TIME_OFFSET, 0).UTC()
-	modelOffset := time.Second * time.Duration(-5)
-	timeOffset := SUTStartTime.Add(modelOffset)
+	// Model time starts at 0 so we need an offset for comparisons
+	modelTimeOffset := time.Unix(difftest.SUT_TIME_OFFSET, 0).UTC().Add(time.Second * time.Duration(-5))
 
-	t := s.trace
-
-	diagnostic := t.diagnostic()
+	trace := s.trace
+	// Get a diagnostic for debugging
+	diagnostic := trace.diagnostic()
 
 	if chain == P {
-		ss := t.blocks.Provider[t.hLastCommit[P]].Snapshot
+		ss := trace.blocks.Provider[trace.hLastCommit[P]].Snapshot
+		// Check height
 		s.Require().Equalf(int64(ss.H.Provider+int(difftest.MODEL_HEIGHT_OFFSET)), s.height(P), diagnostic+"P height mismatch")
-		s.Require().Equalf(int64(ss.DelegatorTokens), s.delegatorBalance(), diagnostic+"del balance mismatch")
+		// Check time
+		modelTime := time.Second * time.Duration(ss.T.Provider)
+		s.Require().Equalf(modelTimeOffset.Add(modelTime), s.time(P), diagnostic+"P time mismatch")
+		// Check delegator balance
+		s.Require().Equalf(int64(ss.DelegatorTokens), s.delegatorBalance(), diagnostic+"P del balance mismatch")
+		// Check jailing status for each validator
 		for j, jailedUntilTimestamp := range ss.Jailed {
-			s.Require().Equalf(jailedUntilTimestamp != nil, s.isJailed(int64(j)), diagnostic+"jail status mismatch for val %d", j)
+			s.Require().Equalf(jailedUntilTimestamp != nil, s.isJailed(int64(j)), diagnostic+"P jail status mismatch for val %d", j)
 		}
-		offset := time.Second * time.Duration(ss.T.Provider)
-		s.Require().Equalf(timeOffset.Add(offset), s.time(P), diagnostic+"P time mismatch")
+		// Check tokens
 		for j, tokens := range ss.Tokens {
 			s.Require().Equalf(int64(tokens), s.providerTokens(int64(j)), diagnostic+"P tokens mismatch for val %d", j)
 		}
 	}
 	if chain == C {
-		// TODO: check slash data structures?
-		ss := t.blocks.Consumer[t.hLastCommit[C]].Snapshot
+		ss := trace.blocks.Consumer[trace.hLastCommit[C]].Snapshot
+		// Check height
 		s.Require().Equalf(int64(ss.H.Consumer+int(difftest.MODEL_HEIGHT_OFFSET)), s.height(C), diagnostic+"C height mismatch")
+		// Check time
+		modelTime := time.Second * time.Duration(ss.T.Consumer)
+		s.Require().Equalf(modelTimeOffset.Add(modelTime), s.time(C), diagnostic+"C time mismatch")
+		// Check the validator powers
 		for j, power := range ss.Power {
 			actual, err := s.consumerPower(int64(j))
 			if power != nil {
-				s.Require().Nilf(err, diagnostic+"CC validator not found")
+				s.Require().Nilf(err, diagnostic+"C validator not found")
 				s.Require().Equalf(int64(*power), actual, diagnostic+"C power mismatch for val %d", j)
 			} else {
 				s.Require().Errorf(err, diagnostic+"C power mismatch for val %d, expect 0 (nil), got %d", j, actual)
 			}
 		}
-		offset := time.Second * time.Duration(ss.T.Consumer)
-		s.Require().Equalf(timeOffset.Add(offset), s.time(C), diagnostic+"C time mismatch")
 	}
 }
 
-func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
+// executeTrace w
+func executeTrace(s *DTTestSuite, trace difftest.TraceData) {
 	for i, action := range trace.Actions {
 		a := action.Action
+		// Record the action index for diagnostics
 		s.trace.actionIx = i
 		switch a.Kind {
 		case "Delegate":
@@ -732,6 +757,8 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 		case "ConsumerSlash":
 			s.consumerSlash(
 				s.consAddr(int64(a.Val)),
+				// The SUT height is greater than the model height
+				// because the SUT has to do initialization.
 				int64(a.InfractionHeight)+difftest.MODEL_HEIGHT_OFFSET,
 				a.IsDowntime,
 			)
@@ -741,18 +768,24 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 	}
 }
 
+// Test a set of traces
 func (s *DTTestSuite) TestTraces() {
 	traces := loadTraces("covering.json")
 	for i, trace := range traces {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
+			// Setup a new pair of chains for each trace
 			s.SetupTest()
 			defer func() {
+				// If a panic occurs, we trap it to print a diagnostic
+				// and improve debugging experience.
 				if r := recover(); r != nil {
 					fmt.Println(s.trace.diagnostic())
 					fmt.Println(r)
-					panic("HIT A PANIC")
+					panic("Panic occurred during difftest TestTraces")
 				}
 			}()
+			// Record information about the trace, for debugging
+			// diagnostics.
 			s.trace = Trace{
 				i,
 				0,
@@ -760,9 +793,7 @@ func (s *DTTestSuite) TestTraces() {
 				map[string]int64{P: 0, C: 0},
 				true,
 			}
-			fmt.Println("[finish setup, start actions]")
-			executeTrace(s, i, trace)
-			fmt.Println("[finish actions]")
+			executeTrace(s, trace)
 		})
 	}
 }
