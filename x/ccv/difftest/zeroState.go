@@ -26,7 +26,22 @@ import (
 	cryptoEd25519 "crypto/ed25519"
 
 	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 )
+
+/*
+In the model, height begins at 0 for both chains because the proposal, handshake
+ect are not modeled.
+By using an offset, the SUT height is at 100 on both chains
+when the trace actions start.
+*/
+const MODEL_HEIGHT_OFFSET = int64(99)
+const SUT_TIME_OFFSET = 1577923752
+const DELEGATOR_INITIAL_BALANCE = 1000000000000000
+const DENOM = sdk.DefaultBondDenom
+
+var SLASH_DOUBLESIGN = slashingtypes.DefaultSlashFractionDoubleSign
+var SLASH_DOWNTIME = slashingtypes.DefaultSlashFractionDowntime
 
 // TODO: move somewhere sensible with the other constants
 const UNBONDING_P = time.Second * 70
