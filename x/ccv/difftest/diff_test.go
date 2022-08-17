@@ -242,7 +242,8 @@ func (s *DTTestSuite) sendEmptyVSCPacket() {
 
 	s.idempotentUpdateClient(C)
 
-	_, err = difftest.TryRecvPacket(s.endpoint(P), s.endpoint(C), packet)
+	ack, err := difftest.TryRecvPacket(s.endpoint(P), s.endpoint(C), packet)
+	s.network.addAck(C, ack, packet)
 
 	s.Require().NoError(err)
 }
@@ -506,13 +507,13 @@ func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
 		thus sending subsequent acks is impossible as the sequence num will be out of order.
 	*/
 
-	// for _, ack := range s.network.consumeAcks(s.other(receiver)) {
-	// 	s.idempotentUpdateClient(receiver)
-	// 	err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.packet, ack.ack)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+	for _, ack := range s.network.consumeAcks(s.other(receiver)) {
+		s.idempotentUpdateClient(receiver)
+		err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.packet, ack.ack)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -670,7 +671,6 @@ func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime boo
 			s.network.addPacket(C, packet)
 		}
 	}
-
 }
 
 func (s *DTTestSuite) matchState(chain string) {
@@ -749,7 +749,7 @@ func executeTrace(s *DTTestSuite, traceNum int, trace difftest.TraceData) {
 }
 
 func (s *DTTestSuite) TestTraces() {
-	traces := loadTraces("coveringLong.json")
+	traces := loadTraces("covering.json")
 	for i, trace := range traces {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			s.SetupTest()
