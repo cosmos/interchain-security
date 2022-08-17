@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"os"
 	"testing"
@@ -153,6 +153,8 @@ type DTTestSuite struct {
 	timeLastClientUpdate   map[string]int64
 
 	trace Trace
+
+	headersForUpdateClient map[string][]*ibctmtypes.Header
 }
 
 type Trace struct {
@@ -379,12 +381,6 @@ func (s *DTTestSuite) SetupTest() {
 
 }
 
-/*
-~~~~~~~~~~~~
-QUERIES
-~~~~~~~~~~~~
-*/
-
 func (s *DTTestSuite) ctx(chain string) sdk.Context {
 	return s.chain(chain).GetContext()
 }
@@ -477,12 +473,6 @@ func (s *DTTestSuite) delegatorBalance() int64 {
 	bal := app.BankKeeper.GetBalance(s.ctx(P), d, DENOM)
 	return bal.Amount.Int64()
 }
-
-/*
-~~~~~~~~~~~~
-MODEL
-~~~~~~~~~~~~
-*/
 
 func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 	if s.mustBeginBlock[chain] {
@@ -614,6 +604,7 @@ func (s *DTTestSuite) endBlock(chain string) {
 	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
 
 	c.LastHeader = c.CurrentTMClientHeader()
+	s.headersForUpdateClient[chain] = append(s.headersForUpdateClient[chain], c.LastHeader)
 
 	for _, e := range ebRes.Events {
 		if e.Type == channeltypes.EventTypeSendPacket {
@@ -677,12 +668,6 @@ func (s *DTTestSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime boo
 	}
 
 }
-
-/*
-~~~~~~~~~~~~
-TRACE TEST
-~~~~~~~~~~~~
-*/
 
 func (s *DTTestSuite) matchState(chain string) {
 	SUTStartTime := time.Unix(SUT_TIME_OFFSET, 0).UTC()
@@ -795,7 +780,7 @@ func loadTraces(fn string) []difftest.TraceData {
 
 	defer fd.Close()
 
-	byteValue, _ := ioutil.ReadAll(fd)
+	byteValue, _ := io.ReadAll(fd)
 
 	var ret []difftest.TraceData
 
@@ -807,12 +792,6 @@ func loadTraces(fn string) []difftest.TraceData {
 
 	return ret
 }
-
-/*
-~~~~~~~~~~~~
-ASSUMPTIONS TEST
-~~~~~~~~~~~~
-*/
 
 func (s *DTTestSuite) TestAssumptions() {
 
