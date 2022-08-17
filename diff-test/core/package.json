@@ -24,7 +24,6 @@
   },
   "scripts": {
     "start": "node build/src/main.js",
-    "gen": "node build/src/gen.js",
     "clean": "rimraf coverage build tmp",
     "prebuild": "npm run lint",
     "build": "tsc -p tsconfig.json",
