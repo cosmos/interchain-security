@@ -1,64 +1,115 @@
-# node-typescript-boilerplate
+# Differential testing for Interchain Security 'core' protocol
 
-## Downloaded from here
+This directory contains model and trace generation code for the differential approach to testing Interchain Security. In particular, this work is used to test 'core' features of the protocol.
 
-https://github.com/jsynowiec/node-typescript-boilerplate
+## Scope
 
-## Info
+### Tested (Unchecked means that work is in progress. Checked means the work is complete.)
 
+The following aspects of the system are tested
 
-[![TypeScript version][ts-badge]][typescript-4-7]
-[![Node.js version][nodejs-badge]][nodejs]
-[![APLv2][license-badge]][license]
-[![Build Status - GitHub Actions][gha-badge]][gha-ci]
+- [x] Sending VSC packets from provider to one consumer
+- [x] Sending VSC maturities from one consumer to provider
+- [x] The bond-based-consumer-voting-power property
+- [x] Slashing logic (not including actual token burning)
+- [x] Validator power change
+- [x] Validators leaving or joining the active validor set
+- [x] Consumer initiated slashing
+- [x] Delegation operations
+- [x] Undelegation operations
+- [x] Validator unbonding
+- [x] Valiator jailing
+- [x] Validator tombstoning
+- [x] Packet acknowledgements
+- [ ] Redelegation operations
+- [ ] Unjailing operations
 
-👩🏻‍💻 Developer Ready: A comprehensive template. Works out of the box for most [Node.js][nodejs] projects.
+### NOT Tested
 
-🏃🏽 Instant Value: All basic tools included and configured:
+The following aspects of the system are not tested by this work.
 
-- [TypeScript][typescript] [4.7][typescript-4-7]
-- [ESM][esm]
-- [ESLint][eslint] with some initial rules recommendation
-- [Jest][jest] for fast unit testing and code coverage
-- Type definitions for Node.js and Jest
-- [Prettier][prettier] to enforce consistent code style
-- NPM [scripts](#available-scripts) for common operations
-- Simple example of TypeScript code and unit test
-- .editorconfig for consistent file format
-- Reproducible environments thanks to [Volta][volta]
-- Example configuration for [GitHub Actions][gh-actions]
+- Completing the IBC handshakes
+- Repairing an expired IBC channel through governance
+- Slashing with non-zero slash factors
+- Submitting proposals
+- Executing proposals
+- Adding a new consumer chain
+- Removing a consumer chain for any reason
+- Distribution of rewards
+- Provider Governance
+- Consumer Governance/Democracy
+- Anything to do with cosmwasm
+- Client timeouts or expiry
+- Restarting any chain from exported state
+- Any logic that deals with having _more than one consumer chain_
 
-🤲 Free as in speech: available under the APLv2 license.
+## Usage
 
-## Getting Started
+### Overview
 
-This project is intended to be used with the latest Active LTS release of [Node.js][nodejs].
+This typescript project contains code for
 
-## Available Scripts
+- Modelling the aspects of the system listed under TESTED above
+- Generating and executing actions against a model system based on those aspects, in order to explore various behaviors. The actions are generated using heuristics and randomness.
+- Recording traces of executions to file
+- Choosing a set of traces in a manner convenient for testing the SUT.
+- Replaying a given existing trace against a new model instance, for debugging purposes.
 
-- `clean` - remove coverage data, Jest cache and transpiled files,
-- `prebuild` - lint source files and tests before building,
-- `build` - transpile TypeScript to ES6,
-- `build:watch` - interactive watch mode to automatically transpile source files,
-- `lint` - lint source files and tests,
-- `prettier` - reformat files,
-- `test` - run tests,
-- `test:watch` - interactive watch mode to automatically re-run tests
+### Usage prerequisities
 
-## Additional Information
+```bash
+# nodejs version 16 is required.
+node --version
+# yarn package manager is required
+yarn --version
+# setup the project
+yarn install
+```
 
-### Why include Volta
+### Commands
 
-[Volta][volta]’s toolchain always keeps track of where you are, it makes sure the tools you use always respect the settings of the project you’re working on. This means you don’t have to worry about changing the state of your installed software when switching between projects. For example, it's [used by engineers at LinkedIn][volta-tomdale] to standardize tools and have reproducible development environments.
+There are several top level yarn project scripts which can be run via
 
-I recommend to [install][volta-getting-started] Volta and use it to manage your project's toolchain.
+```bash
+yarn <script_name>
+```
 
-### ES Modules
+as per the `scripts` entry in [package.json](./package.json). The most important of these are
 
-This template uses native [ESM][esm]. Make sure to read [this][nodejs-esm], and [this][ts47-esm] first.
+```bash
+# install the project
+yarn install;
+# build in watch mode. Repeatedly build the project when the src changes
+# recommended to run in background process
+yarn build:watch
+# start main.ts - the entry point to the program
+yarn start <args>
+# test - run the tests in __tests__
+yarn test
+```
 
-If your project requires CommonJS, you will have to [convert to ESM][sindresorhus-esm].
+The actual functionality has entrypoint in [src/main.ts](./src/main.ts). Please see the file for details. The available functionalities are
 
-## License
+```bash
+# generate traces
+yarn start gen <num minutes>
+# create a subset of traces
+yarn start subset
+# replay a trace from a file (for debugging)
+yarn start replay <filename> <trace index> <num actions>
+```
 
-Licensed under the APLv2. See the [LICENSE](https://github.com/jsynowiec/node-typescript-boilerplate/blob/main/LICENSE) file for details.
+### Workflow
+
+A workflow of updating the model and generating new traces for testing against the SUT might look like
+
+```bash
+# Generate traces for 2 minutes
+yarn start gen 2
+# Collect and compact a subset of these traces
+yarn start subset
+```
+
+### Extending the model
+
+All of the semantic logic of the model that relates to how the system is supposed to work is contained in [src/model.ts](./src/model.ts). All of the logic for generating actions (and thus traces) against the model is contained in [src/main.ts](./src/main.ts). The remaining files are less important.
