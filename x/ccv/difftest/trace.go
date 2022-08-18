@@ -79,7 +79,7 @@ type TraceData struct {
 		CcvTimeoutTimestamp    int    `json:"CCV_TIMEOUT_TIMESTAMP"`
 		InitialDelegatorTokens int    `json:"INITIAL_DELEGATOR_TOKENS"`
 		JailSeconds            int    `json:"JAIL_SECONDS"`
-		MaxJumps               int    `json:"MAX_JUMPS"`
+		MaxBlockAdvances       int    `json:"MAX_BLOCK_ADVANCES"`
 		MaxValidators          int    `json:"MAX_VALIDATORS"`
 		NumValidators          int    `json:"NUM_VALIDATORS"`
 		P                      string `json:"P"`
