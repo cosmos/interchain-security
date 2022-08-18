@@ -158,7 +158,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 		// the CCV channel was established, but it was then closed;
 		// the consumer chain is no longer safe
 
-		// clean up states
+		// cleanup state
 		am.keeper.DeleteProviderChannel(ctx)
 		am.keeper.DeleteProviderClient(ctx)
 
