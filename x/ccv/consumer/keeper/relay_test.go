@@ -99,7 +99,6 @@ func TestOnRecvVSCPacket(t *testing.T) {
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
 				{
-					// this one is not included
 					PubKey: pk1,
 					Power:  30,
 				},

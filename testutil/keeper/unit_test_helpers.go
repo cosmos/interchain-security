@@ -67,8 +67,6 @@ func GetConsumerKeeperAndCtx(t testing.TB) (consumerkeeper.Keeper, sdk.Context) 
 
 // Constructs a provider keeper for unit tests, backed by an in-memory db,
 // with ability to pass mocked or otherwise manipulated parameters.
-// Note: Use the dummy types defined in this file for keepers you don't wish to mock,
-// and SetupInMemKeeper() for other parameters you don't wish to manipulate.
 func GetProviderKeeperWithMocks(t testing.TB,
 	cdc *codec.ProtoCodec,
 	storeKey *storetypes.KVStoreKey,
@@ -102,8 +100,6 @@ func GetProviderKeeperWithMocks(t testing.TB,
 
 // Constructs a consumer keeper for unit tests, backed by an in-memory db,
 // with ability to pass mocked or otherwise manipulated parameters.
-// Note: Use the dummy types defined in this file for keepers you don't wish to mock,
-// and SetupInMemKeeper() for other parameters you don't wish to manipulate.
 func GetConsumerKeeperWithMocks(t testing.TB,
 	cdc *codec.ProtoCodec,
 	storeKey *storetypes.KVStoreKey,
