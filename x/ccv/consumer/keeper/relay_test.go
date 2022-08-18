@@ -145,7 +145,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		).Return(nil).Times(1),
 	)
 
-	consumerKeeper := testkeeper.GetConsumerKeeperWithMocks(t,
+	consumerKeeper := testkeeper.GetCustomConsumerKeeperWithMocks(
 		cdc,
 		storeKey,
 		paramsSubspace,
@@ -335,7 +335,7 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	mockScopedKeeper := testkeeper.NewMockScopedKeeper(ctrl)
 	mockChannelKeeper := testkeeper.NewMockChannelKeeper(ctrl)
 
-	consumerKeeper := testkeeper.GetConsumerKeeperWithMocks(t,
+	consumerKeeper := testkeeper.GetCustomConsumerKeeperWithMocks(
 		cdc,
 		storeKey,
 		paramsSubspace,

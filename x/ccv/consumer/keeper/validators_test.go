@@ -1,21 +1,39 @@
 package keeper_test
 
 import (
+	"testing"
+
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
-	consumerKeeper := k.consumerChain.App.(*appConsumer.App).ConsumerKeeper
-	ctx := k.ctx
+func TestApplyCCValidatorChanges(t *testing.T) {
+	// Construct a keeper with a custom codec
+	// TODO: We need to ensure all custom interfaces are registered in prod, see https://github.com/cosmos/interchain-security/issues/273
+	_, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
+	ir := codectypes.NewInterfaceRegistry()
+
+	// Public key implementation must be registered
+	cryptocodec.RegisterInterfaces(ir)
+	cdc := codec.NewProtoCodec(ir)
+
+	consumerKeeper := testkeeper.GetCustomConsumerKeeper(
+		cdc,
+		storeKey,
+		paramsSubspace,
+	)
 
 	// utility functions
 	getCCVals := func() (vals []types.CrossChainValidator) {
@@ -25,11 +43,11 @@ func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
 
 	setCCVals := func(vals []*tmtypes.Validator) {
 		for _, v := range vals {
-			pubkey, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
-			k.Require().NoError(err)
+			publicKey, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
+			require.NoError(t, err)
 
-			ccv, err := types.NewCCValidator(v.Address, v.VotingPower, pubkey)
-			k.Require().NoError(err)
+			ccv, err := types.NewCCValidator(v.Address, v.VotingPower, publicKey)
+			require.NoError(t, err)
 			consumerKeeper.SetCCValidator(ctx, ccv)
 		}
 	}
@@ -48,28 +66,35 @@ func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
 		return
 	}
 
-	// prepare the testing setup by clearing
-	// the current cross-chain validators in states
+	// prepare the testing setup by clearing the current cross-chain validators in states
 	clearCCVals()
 
-	// reuse the testsuite consumer chain validators
-	// to construct changes
-	tcVals := k.consumerChain.Vals.Validators
+	// setup a slice of validators with non zero voting power
+	numValidators := 4
+	tcValidators := []*tmtypes.Validator{}
+	for i := 0; i < numValidators; i++ {
+		pubKey, err := testkeeper.GenPubKey()
+		require.NoError(t, err)
+
+		votingPower := int64(i + 1)
+		validator := tmtypes.NewValidator(pubKey, votingPower)
+		tcValidators = append(tcValidators, validator)
+	}
+
 	changes := []abci.ValidatorUpdate{}
 	changesPower := int64(0)
 
-	for _, v := range tcVals {
+	for _, v := range tcValidators {
 		changes = append(changes, tmtypes.TM2PB.ValidatorUpdate(v))
 		changesPower += v.VotingPower
 	}
 
-	// finish setup by importing 3 out 4 testing validators
-	// into cross-chain validator states
-	setCCVals(tcVals[:len(tcVals)-1])
+	// finish setup by importing 3 out 4 testing validators into cross-chain validator states
+	setCCVals(tcValidators[:len(tcValidators)-1])
 
 	// verify setup
 	ccVals := getCCVals()
-	k.Require().Len(ccVals, len(tcVals)-1)
+	require.Len(t, ccVals, len(tcValidators)-1)
 
 	// test behaviors
 	testCases := []struct {
@@ -93,24 +118,25 @@ func (k KeeperTestSuite) TestApplyCCValidatorChanges() {
 			changes: []abci.ValidatorUpdate{
 				{PubKey: changes[0].PubKey, Power: changes[0].Power + 1},
 				{PubKey: changes[1].PubKey, Power: changes[1].Power + 2},
-				{PubKey: changes[2].PubKey, Power: changes[1].Power + 3},
-				{PubKey: changes[3].PubKey, Power: changes[1].Power + 4},
+				{PubKey: changes[2].PubKey, Power: changes[2].Power + 3},
+				{PubKey: changes[3].PubKey, Power: changes[3].Power + 4},
 			},
 			expTotalPower: changesPower + 10,
 			expValsNum:    len(ccVals) + 1,
 		},
 	}
 
-	for _, t := range testCases {
+	for _, tc := range testCases {
 
-		consumerKeeper.ApplyCCValidatorChanges(ctx, t.changes)
+		consumerKeeper.ApplyCCValidatorChanges(ctx, tc.changes)
 		gotVals := getCCVals()
 
-		k.Require().Len(gotVals, t.expValsNum)
-		k.Require().Equal(t.expTotalPower, sumCCValsPow(gotVals))
+		require.Len(t, gotVals, tc.expValsNum)
+		require.Equal(t, tc.expTotalPower, sumCCValsPow(gotVals))
 	}
 }
 
+// TODO: unit test
 func (k KeeperTestSuite) TestHistoricalInfo() {
 	consumerKeeper := k.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	cCtx := k.consumerChain.GetContext
@@ -147,6 +173,7 @@ func (k KeeperTestSuite) TestHistoricalInfo() {
 	k.Require().True(IsValSetSorted(recv.Valset, sdk.DefaultPowerReduction), "HistoricalInfo validators is not sorted")
 }
 
+// TODO e2e test, or it could be a unit?
 func (k KeeperTestSuite) TestTrackHistoricalInfo() {
 	consumerKeeper := k.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	cCtx := k.consumerChain.GetContext

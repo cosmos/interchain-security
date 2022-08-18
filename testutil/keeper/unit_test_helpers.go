@@ -14,9 +14,14 @@ import (
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
+	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
+
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 )
 
 // Constructs a provider keeper and context object for unit tests, backed by an in-memory db.
@@ -67,7 +72,7 @@ func GetConsumerKeeperAndCtx(t testing.TB) (consumerkeeper.Keeper, sdk.Context) 
 
 // Constructs a provider keeper for unit tests, backed by an in-memory db,
 // with ability to pass mocked or otherwise manipulated parameters.
-func GetProviderKeeperWithMocks(t testing.TB,
+func GetProviderKeeperWithMocks(
 	cdc *codec.ProtoCodec,
 	storeKey *storetypes.KVStoreKey,
 	paramsSubspace paramstypes.Subspace,
@@ -81,7 +86,7 @@ func GetProviderKeeperWithMocks(t testing.TB,
 	accountKeeper types.AccountKeeper,
 ) providerkeeper.Keeper {
 
-	k := providerkeeper.NewKeeper(
+	return providerkeeper.NewKeeper(
 		cdc,
 		storeKey,
 		paramsSubspace,
@@ -95,12 +100,11 @@ func GetProviderKeeperWithMocks(t testing.TB,
 		accountKeeper,
 		"",
 	)
-	return k
 }
 
 // Constructs a consumer keeper for unit tests, backed by an in-memory db,
 // with ability to pass mocked or otherwise manipulated parameters.
-func GetConsumerKeeperWithMocks(t testing.TB,
+func GetCustomConsumerKeeperWithMocks(
 	cdc *codec.ProtoCodec,
 	storeKey *storetypes.KVStoreKey,
 	paramsSubspace paramstypes.Subspace,
@@ -116,7 +120,7 @@ func GetConsumerKeeperWithMocks(t testing.TB,
 	ibcCoreKeeper types.IBCCoreKeeper,
 ) consumerkeeper.Keeper {
 
-	k := consumerkeeper.NewKeeper(
+	return consumerkeeper.NewKeeper(
 		cdc,
 		storeKey,
 		paramsSubspace,
@@ -132,7 +136,32 @@ func GetConsumerKeeperWithMocks(t testing.TB,
 		ibcCoreKeeper,
 		"",
 	)
-	return k
+}
+
+// Constructs a consumer keeper for unit tests, backed by an in-memory db,
+// with ability to pass manipulated parameters, but no mocked keepers.
+func GetCustomConsumerKeeper(
+	cdc *codec.ProtoCodec,
+	storeKey *storetypes.KVStoreKey,
+	paramsSubspace paramstypes.Subspace,
+) consumerkeeper.Keeper {
+
+	return consumerkeeper.NewKeeper(
+		cdc,
+		storeKey,
+		paramsSubspace,
+		&MockScopedKeeper{},
+		&MockChannelKeeper{},
+		&MockPortKeeper{},
+		&MockConnectionKeeper{},
+		&MockClientKeeper{},
+		&MockSlashingKeeper{},
+		&MockBankKeeper{},
+		&MockAccountKeeper{},
+		&MockIBCTransferKeeper{},
+		&MockIBCCoreKeeper{},
+		"",
+	)
 }
 
 func SetupInMemKeeper(t testing.TB) (*codec.ProtoCodec, *storetypes.KVStoreKey, paramstypes.Subspace, sdk.Context) {
@@ -156,4 +185,14 @@ func SetupInMemKeeper(t testing.TB) (*codec.ProtoCodec, *storetypes.KVStoreKey, 
 	)
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 	return cdc, storeKey, paramsSubspace, ctx
+}
+
+type PrivateKey struct {
+	PrivKey cryptotypes.PrivKey
+}
+
+// Generates a public key for unit tests (abiding by tricky interface implementations from tm/sdk)
+func GenPubKey() (crypto.PubKey, error) {
+	privKey := PrivateKey{ed25519.GenPrivKey()}
+	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
 }

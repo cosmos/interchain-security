@@ -23,7 +23,6 @@ import (
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/testutil/simapp"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -594,21 +593,10 @@ func TestCrossChainValidator(t *testing.T) {
 	cryptocodec.RegisterInterfaces(ir)
 	cdc := codec.NewProtoCodec(ir)
 
-	consumerKeeper := consumerkeeper.NewKeeper(
+	consumerKeeper := testkeeper.GetCustomConsumerKeeper(
 		cdc,
 		storeKey,
 		paramsSubspace,
-		&testkeeper.MockScopedKeeper{},
-		&testkeeper.MockChannelKeeper{},
-		&testkeeper.MockPortKeeper{},
-		&testkeeper.MockConnectionKeeper{},
-		&testkeeper.MockClientKeeper{},
-		&testkeeper.MockSlashingKeeper{},
-		&testkeeper.MockBankKeeper{},
-		&testkeeper.MockAccountKeeper{},
-		&testkeeper.MockIBCTransferKeeper{},
-		&testkeeper.MockIBCCoreKeeper{},
-		"",
 	)
 
 	// should return false
