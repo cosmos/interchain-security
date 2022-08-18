@@ -195,7 +195,9 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 	k.ClearPendingSlashRequests(ctx)
 }
 
-// OnAcknowledgementPacket handles acknowledgments for sent VSCMatured and Slash packets
+// OnAcknowledgementPacket executes application logic for acknowledgments of sent VSCMatured and Slash packets
+// in conjunction with the ibc keeper's execution of "acknowledgePacket",
+// according to https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
 		// Reasons for ErrorAcknowledgment

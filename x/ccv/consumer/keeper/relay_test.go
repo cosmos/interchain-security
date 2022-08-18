@@ -313,7 +313,10 @@ func incrementTimeBy(s *KeeperTestSuite, jumpPeriod time.Duration) {
 	}
 }
 
-func TestOnAcknowledgement(t *testing.T) {
+// TestOnAcknowledgementPacket tests application logic for acknowledgments of sent VSCMatured and Slash packets
+// in conjunction with the ibc keeper's execution of "acknowledgePacket",
+// according to https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements
+func TestOnAcknowledgementPacket(t *testing.T) {
 
 	// Channel ID to some dest chain that's not the established provider
 	channelIDToDestChain := "channelIDToDestChain"
@@ -355,9 +358,8 @@ func TestOnAcknowledgement(t *testing.T) {
 		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Downtime,
 	)
 
-	// According to ICS 004: (https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements),
-	// acknowledgePacket is in reference to a packet originally sent from this (consumer) module.
-	// TODO: Do we want to test weird edge cases like processing an ack where source port ID != consumer port ID?
+	// AcknowledgePacket is in reference to a packet originally sent from this (consumer) module.
+	// TODO: Do we want to test weird edge cases like processing an ack where source portID != consumer portID?
 	packet := channeltypes.NewPacket(
 		packetData.GetBytes(),
 		1,
