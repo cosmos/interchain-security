@@ -10,7 +10,6 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -599,7 +598,7 @@ func TestCrossChainValidator(t *testing.T) {
 		cdc,
 		storeKey,
 		paramsSubspace,
-		capabilitykeeper.ScopedKeeper{},
+		&testkeeper.MockScopedKeeper{},
 		&testkeeper.MockChannelKeeper{},
 		&testkeeper.MockPortKeeper{},
 		&testkeeper.MockConnectionKeeper{},

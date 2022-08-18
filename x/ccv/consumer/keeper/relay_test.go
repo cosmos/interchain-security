@@ -25,8 +25,8 @@ import (
 )
 
 func TestOnRecvVSCPacket(t *testing.T) {
-	channelID1 := "channel1"
-	channelID2 := "channel2"
+	consumerCCVChannelID := "consumerCCVChannelID"
+	providerCCVChannelID := "providerCCVChannelID"
 
 	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	require.NoError(t, err)
@@ -78,7 +78,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	}{
 		{
 			"success on first packet",
-			channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, channelID1, consumertypes.PortID, channelID2,
+			channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, providerCCVChannelID, consumertypes.PortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
@@ -86,7 +86,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		},
 		{
 			"success on subsequent packet",
-			channeltypes.NewPacket(pd.GetBytes(), 2, providertypes.PortID, channelID1, consumertypes.PortID, channelID2,
+			channeltypes.NewPacket(pd.GetBytes(), 2, providertypes.PortID, providerCCVChannelID, consumertypes.PortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
@@ -94,7 +94,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		},
 		{
 			"success on packet with more changes",
-			channeltypes.NewPacket(pd2.GetBytes(), 3, providertypes.PortID, channelID1, consumertypes.PortID, channelID2,
+			channeltypes.NewPacket(pd2.GetBytes(), 3, providertypes.PortID, providerCCVChannelID, consumertypes.PortID, consumerCCVChannelID,
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
@@ -116,7 +116,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		},
 		{
 			"invalid packet: different destination channel than provider channel",
-			channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, channelID1, consumertypes.PortID, "InvalidChannel",
+			channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, providerCCVChannelID, consumertypes.PortID, "InvalidChannel",
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{}},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{}},
@@ -162,7 +162,8 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		testkeeper.NewMockIBCCoreKeeper(ctrl),
 	)
 
-	consumerKeeper.SetProviderChannel(ctx, channelID2)
+	// Set channel to provider, still in context of consumer chain
+	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
 	consumerKeeper.SetUnbondingTime(ctx, 100*time.Hour)
 
 	for _, tc := range testCases {
@@ -314,7 +315,7 @@ func incrementTimeBy(s *KeeperTestSuite, jumpPeriod time.Duration) {
 }
 
 // TestOnAcknowledgementPacket tests application logic for acknowledgments of sent VSCMatured and Slash packets
-// in conjunction with the ibc keeper's execution of "acknowledgePacket",
+// in conjunction with the ibc module's execution of "acknowledgePacket",
 // according to https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements
 func TestOnAcknowledgementPacket(t *testing.T) {
 
