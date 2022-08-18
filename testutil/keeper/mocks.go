@@ -763,7 +763,6 @@ func (mr *MockIBCCoreKeeperMockRecorder) ChannelOpenInit(goCtx, msg interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChannelOpenInit", reflect.TypeOf((*MockIBCCoreKeeper)(nil).ChannelOpenInit), goCtx, msg)
 }
 
-
 // MockScopedKeeper is a mock of ScopedKeeper interface.
 type MockScopedKeeper struct {
 	ctrl     *gomock.Controller
