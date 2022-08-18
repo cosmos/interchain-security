@@ -17,7 +17,11 @@ func GetPV(seed []byte) mock.PV {
 	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 }
 
-func getStakingKey(pv mock.PV) []byte {
+// getStakingKeyBytes takes seed bytes which can be be used to create
+// a validator and returns the bytes that the staking module uses for
+// lexicographic comparison using that validator
+func getStakingKeyBytes(bz []byte) []byte {
+	pv := GetPV(bz)
 	pubKey, _ := pv.GetPubKey()
 	val := tmtypes.NewValidator(pubKey, 0)
 	addr, _ := sdk.ValAddressFromHex(val.Address.String())
@@ -36,23 +40,28 @@ func getStakingKey(pv mock.PV) []byte {
 func FuzzPrivateKeys(f *testing.F) {
 	f.Fuzz(func(t *testing.T, bz []byte) {
 		k := cryptoEd25519.SeedSize
+		// Ensure 4 keys are generated
 		if len(bz) < 4*k {
 			t.Skip()
 		}
+		// Map each byte to 'a' or 'b' characters
 		for i, char := range bz {
 			bz[i] = byte(int(char)%2 + int('a'))
 		}
 		var keys [][]byte
+		// Get the staking module lexicographic bytes
 		for i := 0; i < 4; i++ {
-			pv := GetPV(bz[i*k : i*k+k])
-			keys = append(keys, getStakingKey(pv))
+			keys = append(keys, getStakingKeyBytes(bz[i*k:i*k+k]))
 		}
 		good := true
+		// Check if the bytes are ordered strictly descending
 		for i := 0; i < 3; i++ {
 			// the execution is good if the keys are sorted in descending order
 			// Compare(a,b) === -1 IFF a > b
 			good = good && bytes.Compare(keys[i], keys[i+1]) == 1
 		}
+		// If the bytes are ordered strictly descending
+		// we can use them as validator key seeds for diff testing.
 		if good {
 			strings := make([]string, 4)
 			for i := 0; i < 4; i++ {

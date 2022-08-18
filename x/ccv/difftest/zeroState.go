@@ -29,33 +29,45 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 )
 
-/*
-In the model, height begins at 0 for both chains because the proposal, handshake
-ect are not modeled.
-By using an offset, the SUT height is at 100 on both chains
-when the trace actions start.
-*/
+// The initial ('zero') state of the model has both chains at height 0
+// but the SUT must complete setup beforehand. Therefore an offset is needed.
+// Using this offset sets both chain heights to 100 which eases debugging arithmetic.
 const MODEL_HEIGHT_OFFSET = int64(99)
+
+// A clock offset is also needed for the same reasons
 const SUT_TIME_OFFSET = 1577923752
+
+// The (sole) delegator account has a large fixed initial balance
 const DELEGATOR_INITIAL_BALANCE = 1000000000000000
 const DENOM = sdk.DefaultBondDenom
 
 var SLASH_DOUBLESIGN = slashingtypes.DefaultSlashFractionDoubleSign
 var SLASH_DOWNTIME = slashingtypes.DefaultSlashFractionDowntime
 
-// TODO: move somewhere sensible with the other constants
+// Unbonding period for the provider
 const UNBONDING_P = time.Second * 70
+
+// Unbonding period for the consumer
 const UNBONDING_C = time.Second * 45
+
+// Trusting period, must be < min (UNBONDING_P, UNBONDING_C)
 const TRUSTING = time.Second * 44
+
+// Allow greater clock drift
 const MAX_CLOCK_DRIFT = time.Second * 10000
+
+// Multiply all hardedcoded token amts by a fixed scalar
+// in accordance with the model.
 const TOKEN_SCALAR = 10000
 
+// Fixed seeds are used to create the private keys for validators.
+// The seeds are chosen to ensure that the resulting validators are
+// sorted in descending order by the staking module.
 var PKSeeds = []string{
 	"bbaaaababaabbaabababbaabbbbbbaaa",
 	"abbbababbbabaaaaabaaabbbbababaab",
 	"bbabaabaabbbbbabbbaababbbbabbbbb",
-	"aabbbabaaaaababbbabaabaabbbbbbba",
-}
+	"aabbbabaaaaababbbabaabaabbbbbbba"}
 
 var DTDefaultConsensusParams = &abci.ConsensusParams{
 	Block: &abci.BlockParams{
@@ -74,17 +86,21 @@ var DTDefaultConsensusParams = &abci.ConsensusParams{
 	},
 }
 
-func GetPV(seedIx int) mock.PV {
-	seed := []byte(PKSeeds[seedIx])
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
-}
-
-type InitialModelState struct {
+// InitialModelValidatorState represents the total delegation
+// and bond status of a validator
+type InitialModelValidatorState struct {
 	Delegation []int64
 	Status     []stakingtypes.BondStatus
 }
 
+// GetValidatorPrivateKey returns the validator private key using the given seed index
+func GetValidatorPrivateKey(seedIx int) mock.PV {
+	seed := []byte(PKSeeds[seedIx])
+	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+}
+
 func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, chainID string, balances ...banktypes.Balance) ibctesting.TestingApp {
+	// create and initialize the application
 	app, genesisState := appIniter()
 
 	// set genesis accounts
@@ -94,15 +110,17 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 	validators := make([]stakingtypes.Validator, 0, len(valSet.Validators))
 	delegations := make([]stakingtypes.Delegation, 0, len(valSet.Validators))
 
-	// tokens = power
+	// Check that tokens === power
 	require.Equal(t, sdk.NewInt(1), sdk.DefaultPowerReduction)
-	require.Equal(t, 2, len(valSet.Validators))
 
-	initialModelState := InitialModelState{
+	// In the model, two validators are initially bonded with power of 4 and 3 respectively
+	initialModelState := InitialModelValidatorState{
 		Delegation: []int64{4 * TOKEN_SCALAR, 3 * TOKEN_SCALAR},
 		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded},
 	}
 
+	// Counters needed to assign funds to bonded and unbonded pools for
+	// invariant checking.
 	totalBonded := sdk.NewInt(0)
 	totalUnbonded := sdk.NewInt(0)
 
@@ -110,6 +128,9 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 		delegation := initialModelState.Delegation[i]
 		status := initialModelState.Status[i]
 
+		// 1 unit EXTRA is delegated to validators to prevent them
+		// being deleted in case that the trace undelegates all
+		// other funds.
 		add := int64(1 * TOKEN_SCALAR)
 		tokens := sdk.NewInt(delegation + add)
 		if status == stakingtypes.Bonded {
@@ -118,13 +139,17 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 		if status == stakingtypes.Unbonded {
 			totalUnbonded = totalUnbonded.Add(tokens)
 		}
+		// (sole) delegator account receives delShares shares
 		delShares := sdk.NewDec(delegation)
+		// validator has additional shares due to 1 extra unit delegation
 		shares := sdk.NewDec(delegation + add)
 
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
 		require.NoError(t, err)
 		pkAny, err := codectypes.NewAnyWithValue(pk)
 		require.NoError(t, err)
+
+		// Create unjailed 0 commission validator
 		validator := stakingtypes.Validator{
 			OperatorAddress:   sdk.ValAddress(val.Address).String(),
 			ConsensusPubkey:   pkAny,
@@ -138,10 +163,12 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
 			MinSelfDelegation: sdk.ZeroInt(),
 		}
-
 		validators = append(validators, validator)
+
+		// Store delegation from the model delegator account
 		del := stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), delShares)
 		delegations = append(delegations, del)
+		// Remaining delegation is from extra account
 		del = stakingtypes.NewDelegation(genAccs[1].GetAddress(), val.Address.Bytes(), shares.Sub(delShares))
 		delegations = append(delegations, del)
 	}
@@ -170,6 +197,7 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 		Coins:   sdk.Coins{sdk.NewCoin(bondDenom, totalUnbonded)},
 	})
 
+	// Set model parameters
 	stakingGenesis.Params.MaxValidators = 2
 	stakingGenesis.Params.UnbondingTime = UNBONDING_P
 
@@ -177,7 +205,7 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 	stakingGenesis = *stakingtypes.NewGenesisState(stakingGenesis.Params, validators, delegations)
 	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(&stakingGenesis)
 
-	// update total supply
+	// update total funds supply
 	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, sdk.NewCoins(), []banktypes.Metadata{})
 	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
 
@@ -187,10 +215,8 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 	// init chain will set the validator set and initialize the genesis accounts
 	app.InitChain(
 		abci.RequestInitChain{
-			ChainId:    chainID,
-			Validators: []abci.ValidatorUpdate{},
-			// TODO: I'm not sure if it's OK to change this, the original is
-			// ibc-go/testing/simapp/test_helpers.go::DefaultConsensusParams
+			ChainId:         chainID,
+			Validators:      []abci.ValidatorUpdate{},
 			ConsensusParams: DTDefaultConsensusParams,
 			AppStateBytes:   stateBytes,
 		},
@@ -216,32 +242,32 @@ func DTSetupWithGenesisValSet(t *testing.T, appIniter ibctesting.AppIniter, valS
 	return app
 }
 
-func NewDTTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, appIniter ibctesting.AppIniter, chainID string, valSet *tmtypes.ValidatorSet, signers map[string]tmtypes.PrivValidator) *ibctesting.TestChain {
+func NewDTTestChainFromValidators(t *testing.T, coord *ibctesting.Coordinator, appIniter ibctesting.AppIniter, chainID string, valSet *tmtypes.ValidatorSet, signers map[string]tmtypes.PrivValidator) *ibctesting.TestChain {
 	genAccs := []authtypes.GenesisAccount{}
 	genBals := []banktypes.Balance{}
 	senderAccs := []ibctesting.SenderAccount{}
 
-	// generate genesis accounts
+	// Create genesis accounts
 	for i := 0; i < ibctesting.MaxAccounts; i++ {
-		senderPrivKey := secp256k1.GenPrivKey()
-		acc := authtypes.NewBaseAccount(senderPrivKey.PubKey().Address().Bytes(), senderPrivKey.PubKey(), uint64(i), 0)
-		// TODO: this weird number is a relic from having
-		// extra validators who aren't created in the genesis
-		// but are added later
-		amount, ok := sdk.NewIntFromString("1000000000030000")
-		require.True(t, ok)
+		pk := secp256k1.GenPrivKey()
+		acc := authtypes.NewBaseAccount(pk.PubKey().Address().Bytes(), pk.PubKey(), uint64(i), 0)
 
-		balance := banktypes.Balance{
+		// Give enough funds for many delegations
+		// Extra 30000 is to delegate to additional validators created later
+		// in order to bond them and still have 1000000000000000 remaining
+		amt := uint64(DELEGATOR_INITIAL_BALANCE + 30000)
+
+		bal := banktypes.Balance{
 			Address: acc.GetAddress().String(),
-			Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, amount)),
+			Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewIntFromUint64(amt))),
 		}
 
 		genAccs = append(genAccs, acc)
-		genBals = append(genBals, balance)
+		genBals = append(genBals, bal)
 
 		senderAcc := ibctesting.SenderAccount{
 			SenderAccount: acc,
-			SenderPrivKey: senderPrivKey,
+			SenderPrivKey: pk,
 		}
 
 		senderAccs = append(senderAccs, senderAcc)
@@ -280,49 +306,50 @@ func NewDTTestChainWithValSet(t *testing.T, coord *ibctesting.Coordinator, appIn
 	return chain
 }
 
-// NewTestChain initializes a new test chain with a default of 4 validators
-// Use this function if the tests do not need custom control over the validator set
-func NewDTTestChain(t *testing.T, coord *ibctesting.Coordinator, appIniter ibctesting.AppIniter, chainID string) (*ibctesting.TestChain, []sdk.ValAddress) {
-	// generate validators private/public key
-	var (
-		validatorsPerChain = 2
-		validators         []*tmtypes.Validator
-		signersByAddress   = make(map[string]tmtypes.PrivValidator, validatorsPerChain)
-	)
+// NewDTTestChainAndValidators initializes a new test chain with new validators
+func NewDTTestChainAndValidators(t *testing.T, coord *ibctesting.Coordinator, appIniter ibctesting.AppIniter, chainID string) (*ibctesting.TestChain, []sdk.ValAddress) {
 
+	numValidators := 2
 	addresses := []sdk.ValAddress{}
+	signers := make(map[string]tmtypes.PrivValidator, numValidators)
+	validators := []*tmtypes.Validator{}
 
-	for i := 0; i < validatorsPerChain; i++ {
-		privVal := GetPV(i)
+	for i := 0; i < numValidators; i++ {
+		privVal := GetValidatorPrivateKey(i)
+
 		pubKey, err := privVal.GetPubKey()
 		require.NoError(t, err)
-		// TODO: the power here needs to be computed another way
-		validators = append(validators, tmtypes.NewValidator(pubKey, int64((5-i)*TOKEN_SCALAR)))
-		signersByAddress[pubKey.Address().String()] = privVal
 
+		// Compute address
 		addr, err := sdk.ValAddressFromHex(pubKey.Address().String())
 		require.NoError(t, err)
 		addresses = append(addresses, addr)
+
+		// Save signer
+		signers[pubKey.Address().String()] = privVal
+
+		// Save validator with power
+		validators = append(validators, tmtypes.NewValidator(pubKey, int64((5-i)*TOKEN_SCALAR)))
 	}
 
-	// construct validator set;
-	// Note that the validators are sorted by voting power
-	// or, if equal, by address lexical order
 	valSet := tmtypes.NewValidatorSet(validators)
 
-	return NewDTTestChainWithValSet(t, coord, appIniter, chainID, valSet, signersByAddress), addresses
+	return NewDTTestChainFromValidators(t, coord, appIniter, chainID, valSet, signers), addresses
 }
 
 func NewDTProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain, []sdk.ValAddress) {
 	coordinator := simapp.NewBasicCoordinator(t)
-	chainID := ibctesting.GetChainID(0)
 	var addresses []sdk.ValAddress
-	// Create provider
-	coordinator.Chains[chainID], addresses = NewDTTestChain(t, coordinator, simapp.SetupTestingappProvider, chainID)
+
+	// Create provider, and validators.
+	chainID := ibctesting.GetChainID(0)
+	coordinator.Chains[chainID], addresses = NewDTTestChainAndValidators(t, coordinator, simapp.SetupTestingappProvider, chainID)
 	providerChain := coordinator.GetChain(chainID)
+
+	// Create consumer, using the same validators.
 	chainID = ibctesting.GetChainID(1)
-	// Create consumer
-	coordinator.Chains[chainID] = NewDTTestChainWithValSet(t, coordinator, simapp.SetupTestingAppConsumer, chainID, providerChain.Vals, providerChain.Signers)
+	coordinator.Chains[chainID] = NewDTTestChainFromValidators(t, coordinator, simapp.SetupTestingAppConsumer, chainID, providerChain.Vals, providerChain.Signers)
 	consumerChain := coordinator.GetChain(chainID)
+
 	return coordinator, providerChain, consumerChain, addresses
 }

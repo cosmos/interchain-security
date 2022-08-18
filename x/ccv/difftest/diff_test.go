@@ -107,7 +107,7 @@ func TestDTTestSuite(t *testing.T) {
 // createValidator creates an additional validator with zero commission
 // and zero tokens (zero voting power).
 func (s *DTTestSuite) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.ValAddress) {
-	privVal := difftest.GetPV(seedIx)
+	privVal := difftest.GetValidatorPrivateKey(seedIx)
 	pubKey, err := privVal.GetPubKey()
 	s.Require().NoError(err)
 	val := tmtypes.NewValidator(pubKey, 0)
@@ -896,7 +896,7 @@ func (s *DTTestSuite) TestAssumptions() {
 	// Check that the initial delegations to each validator are correctly
 	// initialised to match the model.
 	// Also check that the bond status for each validator match the model.
-	initialModelState := difftest.InitialModelState{
+	initialModelState := difftest.InitialModelValidatorState{
 		Delegation: []int64{4 * difftest.TOKEN_SCALAR, 3 * difftest.TOKEN_SCALAR, 2 * difftest.TOKEN_SCALAR, 1 * difftest.TOKEN_SCALAR},
 		Status:     []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded, stakingtypes.Unbonded, stakingtypes.Unbonded},
 	}
