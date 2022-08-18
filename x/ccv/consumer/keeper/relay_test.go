@@ -356,7 +356,7 @@ func TestOnAcknowledgement(t *testing.T) {
 	)
 
 	// According to ICS 004: (https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements),
-	// acknowledgedPacket is in reference to a packet originally sent from this (consumer) module.
+	// acknowledgePacket is in reference to a packet originally sent from this (consumer) module.
 	// TODO: Do we want to test weird edge cases like processing an ack where source port ID != consumer port ID?
 	packet := channeltypes.NewPacket(
 		packetData.GetBytes(),
