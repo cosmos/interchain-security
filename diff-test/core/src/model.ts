@@ -1,6 +1,6 @@
 import _ from 'underscore';
 import { Event } from './events.js';
-import { Blocks } from './properties.js';
+import { BlockHistory } from './properties.js';
 import { Sanity } from './sanity.js';
 import cloneDeep from 'clone-deep';
 
@@ -617,7 +617,7 @@ class Model {
   mustBeginBlock = {};
   sanity: Sanity;
 
-  constructor(sanity: Sanity, blocks: Blocks, events: Event[]) {
+  constructor(sanity: Sanity, blocks: BlockHistory, events: Event[]) {
     this.sanity = sanity;
     this.outbox[P] = new Outbox(this, P);
     this.outbox[C] = new Outbox(this, C);

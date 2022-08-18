@@ -3,7 +3,9 @@ import _ from 'underscore';
 import timeSpan from 'time-span';
 import cloneDeep from 'clone-deep';
 import {
-  BlockHistory
+  BlockHistory,
+  stakingWithoutSlashing,
+  bondBasedConsumerVotingPower
 } from './properties.js';
 import { Sanity as SanityChecker } from './sanity.js';
 import { Model } from './model.js';
@@ -313,10 +315,10 @@ function gen(minutes) {
     const end = timeSpan();
     ////////////////////////
     const sanity = new SanityChecker();
-    const blocks = new BlockHistory();
+    const hist = new BlockHistory();
     // Store all events emitted during trace execution
     const events = [];
-    const model = new Model(sanity, blocks, events);
+    const model = new Model(sanity, hist, events);
     const actionGenerator = new ActionGenerator(model);
     const actions = [];
     for (let j = 0; j < NUM_ACTIONS; j++) {
@@ -327,11 +329,18 @@ function gen(minutes) {
         action: a,
         // Store a snapshot of the model state at the given block commit
         // this is used for model comparisons when testing the SUT.
-        hLastCommit: cloneDeep(blocks.hLastCommit),
+        hLastCommit: cloneDeep(hist.hLastCommit),
       });
     }
+    // Check properties
+    if (!bondBasedConsumerVotingPower(hist)) {
+      throw "bondBasedConsumerVotingPower property failure"
+    }
+    if (!stakingWithoutSlashing(hist)) {
+      throw "stakingWithoutSlashing property failure"
+    }
     // Write the trace to file, along with metadata.
-    dumpTrace(`${DIR}trace_${i}.json`, events, actions, blocks.blocks);
+    dumpTrace(`${DIR}trace_${i}.json`, events, actions, hist.blocks);
     // Accumulate all events
     allEvents.push(...events);
     ////////////////////////
