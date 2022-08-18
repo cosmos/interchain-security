@@ -21,15 +21,26 @@ class Sanity {
     [C, 0],
   ]);
 
+  /**
+   * Records the updating of a client on chain at time t
+   */
   updateClient = (chain, t) => {
     if (this.tLastTrustedHeader[chain] + TRUSTING_SECONDS <= t) {
       throw 'EXPIRED! - not supposed to happen. There is a mistake in how the model or generator is written.';
     }
     this.tLastTrustedHeader[chain] = this.tLastCommit[chain == P ? C : P];
   };
+
+  /**
+   * Records the commitment of a block on chain at time t
+   */
   commitBlock = (chain, t) => {
     this.tLastCommit[chain] = t;
   };
+
+  /**
+   * Checks that a new validator set is sensible.
+   */
   newValSet = (vals) => {
     if (vals.length < 1) {
       throw 'EMPTY VAL SET! - not supposed to happen. There is a mistake in how the model or generator is written.';

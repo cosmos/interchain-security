@@ -2,7 +2,9 @@ import * as fs from 'fs';
 import _ from 'underscore';
 import timeSpan from 'time-span';
 import cloneDeep from 'clone-deep';
-import { Blocks as BlockHistory } from './properties.js';
+import {
+  BlockHistory
+} from './properties.js';
 import { Sanity as SanityChecker } from './sanity.js';
 import { Model } from './model.js';
 import {

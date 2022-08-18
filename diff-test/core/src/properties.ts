@@ -7,16 +7,31 @@ import {
   NUM_VALIDATORS,
 } from './constants.js';
 
+/**
+ * Data structure used to store a partial order of blocks. The partial order
+ * is induced by packet delivery for blocks on different chains, and by height
+ * for blocks on the same chain.
+ * See https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties
+ */
 class PartialOrder {
+  // map chain -> block height in chain -> block height in counterparty chain
   greatestPred = _.object([
     [P, new Map()],
     [C, new Map()],
   ]) as { provider: Map<number, number>; consumer: Map<number, number> };
+  // map chain -> block height in chain -> block height in counterparty chain
   leastSucc = _.object([
     [P, new Map()],
     [C, new Map()],
   ]) as { provider: Map<number, number>; consumer: Map<number, number> };
 
+  /**
+   * Mark the delivery of a packet. Induces a partial order between blocks
+   * on different chains.
+   * @param receivingChain chain receiving packet
+   * @param sendHeight send height on sending chain
+   * @param receiveHeight receive height on receiving chain
+   */
   deliver = (receivingChain, sendHeight, receiveHeight) => {
     let h = sendHeight;
     if (this.greatestPred[receivingChain].has(receiveHeight)) {
@@ -33,6 +48,13 @@ class PartialOrder {
     }
     this.leastSucc[sendingChain].set(sendHeight, h);
   };
+
+  /**
+   * @param chain chain of block
+   * @param height height of block
+   * @returns Returns the height greatest predecessing block on the counterparty
+   * chain if it exists, else undefined.
+   */
   getGreatestPred = (chain, height) => {
     const it = this.greatestPred[chain].keys();
     let bestH = -1;
@@ -51,6 +73,14 @@ class PartialOrder {
     }
     return bestV;
   };
+
+  /**
+   * 
+   * @param chain chain of block
+   * @param height height of block
+   * @returns Returns the height of the least successing block on the counterparty
+   * chain if it exists, else undefined.
+   */
   getLeastSucc = (chain, height) => {
     const it = this.leastSucc[chain].keys();
     let bestH = 100000000000000;
@@ -71,13 +101,16 @@ class PartialOrder {
   };
 }
 
+/**
+ * Store a snapshot of the model state for a given block height and time.
+ */
 interface Block {
   h;
   t;
   snapshot;
 }
 
-class Blocks {
+class BlockHistory {
   partialOrder = new PartialOrder();
   blocks = _.object([
     [P, new Map()],
@@ -105,12 +138,17 @@ function sum(arr): number {
 }
 
 /**
- * Is the total value in the system constant?
- * It only makes sense to check this if never slashing.
+ * Is the total fund value in the system constant?
+ * It only makes sense to check this if slashing with non-zero
+ * slash factors never occurs, because slashing with non-zero
+ * slash factors burns funds.
+ * 
+ * @param hist A history of blocks.
+ * @returns Is the property satisfied?
  */
-function stakingWithoutSlashing(blockz: Blocks): boolean {
+function stakingWithoutSlashing(hist: BlockHistory): boolean {
   const blocks = _.sortBy(
-    Array.from(blockz.blocks[P].entries()),
+    Array.from(hist.blocks[P].entries()),
     (e) => e[0],
   )
     .map((e) => e[1])
@@ -135,9 +173,17 @@ function stakingWithoutSlashing(blockz: Blocks): boolean {
   return true;
 }
 
-function bondBasedConsumerVotingPower(blockz: Blocks): boolean {
-  const partialOrder = blockz.partialOrder;
-  const blocks = blockz.blocks;
+/**
+ * Checks the bond-based consumer voting power property as defined
+ * in https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties
+ * but modified to account for finite executions and always zero slash factors.
+ * 
+ * @param hist A history of blocks.
+ * @returns Is the property satisfied?
+ */
+function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
+  const partialOrder = hist.partialOrder;
+  const blocks = hist.blocks;
   function powerProvider(block) {
     return _.range(NUM_VALIDATORS).map(
       (i) =>
@@ -203,7 +249,7 @@ function bondBasedConsumerVotingPower(blockz: Blocks): boolean {
 export {
   PartialOrder,
   Block,
-  Blocks,
+  BlockHistory,
   stakingWithoutSlashing,
   bondBasedConsumerVotingPower,
 };
