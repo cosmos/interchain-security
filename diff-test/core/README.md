@@ -94,7 +94,7 @@ The actual functionality has entrypoint in [src/main.ts](./src/main.ts). Please 
 # generate traces
 yarn start gen <num minutes>
 # create a subset of traces
-yarn start subset
+yarn start subset <output file abs path> <num event instances (optional)>
 # replay a trace from a file (for debugging)
 yarn start replay <filename> <trace index> <num actions>
 ```
@@ -107,7 +107,7 @@ A workflow of updating the model and generating new traces for testing against t
 # Generate traces for 2 minutes
 yarn start gen 2
 # Collect and compact a subset of these traces
-yarn start subset
+yarn start subset <abs path to x/ccv/difftest/traces.json> 20
 ```
 
 ### Extending the model

@@ -408,11 +408,16 @@ if (process.argv[2] === 'gen') {
  * Creates a trace file containing several traces, in a way that ensures
  * each interesting model event is emitted by some trace.
  * 
- * yarn start subset
+ * yarn start subset <output file abs path> <num event instances (optional)>
  */
 else if (process.argv[2] === 'subset') {
   console.log(`createSmallSubsetOfCoveringTraces`);
-  createSmallSubsetOfCoveringTraces();
+  const outFile = process.argv[3]
+  let eventInstances = 20
+  if (3 < process.argv.length) {
+    eventInstances = parseInt(process.argv[4])
+  }
+  createSmallSubsetOfCoveringTraces(outFile, eventInstances);
 }
 /*
  * Replay a trace from a a file, up to a given number of actions.

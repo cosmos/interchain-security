@@ -69,7 +69,7 @@ function dumpTrace(fn: string, events, actions, blocks) {
       BLOCK_SECONDS,
       TOKEN_SCALAR,
       INITIAL_DELEGATOR_TOKENS,
-      MAX_JUMPS: MAX_BLOCK_ADVANCES,
+      MAX_BLOCK_ADVANCES,
     },
     // Record which events occurred
     events,
@@ -84,7 +84,7 @@ function dumpTrace(fn: string, events, actions, blocks) {
     ),
   };
   // Write human readable JSON
-  const json = JSON.stringify([toDump], null, 4);
+  const json = JSON.stringify([toDump], null);
   fs.writeFileSync(fn, json);
 }
 
@@ -99,13 +99,11 @@ function dumpTrace(fn: string, events, actions, blocks) {
  * In this way, it is possible to obtain a concise set of traces which
  * test many model behaviors, reducing the time needed to test the SUT.
  */
-function createSmallSubsetOfCoveringTraces() {
+function createSmallSubsetOfCoveringTraces(outFile: string, numEventInstances: number) {
   // The number of times each event should occur
-  const EVENT_INSTANCES = 20
   // directory to read traces from
   const DIR = 'traces/';
   // file to write the new traces to
-  const OUTPUT_FN = "covering.json"
   let fns = [];
   fs.readdirSync(DIR).forEach((file) => {
     fns.push(`${DIR}${file}`);
@@ -128,7 +126,7 @@ function createSmallSubsetOfCoveringTraces() {
     });
     hits.push(hit);
   });
-  const target = possible.map((x) => Math.min(x, EVENT_INSTANCES));
+  const target = possible.map((x) => Math.min(x, numEventInstances));
   console.log(`finished reading traces and counting events`);
   function score(v): number {
     let x = 0;
@@ -156,7 +154,7 @@ function createSmallSubsetOfCoveringTraces() {
   fns.forEach((fn) => {
     allTraces.push(JSON.parse(fs.readFileSync(fn, 'utf8'))[0]);
   });
-  fs.writeFileSync(OUTPUT_FN, JSON.stringify(allTraces));
+  fs.writeFileSync(outFile, JSON.stringify(allTraces));
 }
 
 /**
