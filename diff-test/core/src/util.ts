@@ -17,7 +17,7 @@ import {
   BLOCK_SECONDS,
   TOKEN_SCALAR,
   INITIAL_DELEGATOR_TOKENS,
-  MAX_JUMPS,
+  MAX_BLOCK_ADVANCES,
 } from './constants.js';
 
 const meta = {
@@ -51,7 +51,7 @@ function dumpTrace(fn: string, events, actions, blocks) {
       BLOCK_SECONDS,
       TOKEN_SCALAR,
       INITIAL_DELEGATOR_TOKENS,
-      MAX_JUMPS,
+      MAX_JUMPS: MAX_BLOCK_ADVANCES,
     },
     events,
     actions,

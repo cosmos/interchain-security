@@ -1,3 +1,7 @@
+/*
+ * Used to track various semantic events that occur during model exploration.
+ */
+
 enum Event {
   REBOND_UNVAL = 'rebond_unval',
   COMPLETE_UNVAL_IN_ENDBLOCK = 'complete_unval_in_endblock',
