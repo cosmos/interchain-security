@@ -20,11 +20,19 @@ import {
   MAX_BLOCK_ADVANCES,
 } from './constants.js';
 
+/**
+ * Record meta data to written traces.
+ */
 const meta = {
+  // Commit of interchain-security/ that the trace was generated.
   commit: childProcess.execSync('git rev-parse HEAD').toString().trim(),
+  // Diff between the working tree and the commit.
   diff: childProcess.execSync('git diff').toString().trim(),
 };
 
+/**
+ * @param dir Forcibly an empty directory exists.
+ */
 function forceMakeEmptyDir(dir) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir);
@@ -34,9 +42,19 @@ function forceMakeEmptyDir(dir) {
   forceMakeEmptyDir(dir);
 }
 
+/**
+ * Write the trace data to file, with accompanying metadata.
+ * 
+ * @param fn Filename
+ * @param events Events included in trace
+ * @param actions Actions included in trace
+ * @param blocks Block snapshots included in trace
+ */
 function dumpTrace(fn: string, events, actions, blocks) {
   const toDump = {
+    // Record metadata
     meta,
+    // Record values of model constants
     constants: {
       P,
       C,
@@ -53,8 +71,11 @@ function dumpTrace(fn: string, events, actions, blocks) {
       INITIAL_DELEGATOR_TOKENS,
       MAX_JUMPS: MAX_BLOCK_ADVANCES,
     },
+    // Record which events occurred
     events,
+    // Record which actions occured
     actions,
+    // Record block snapshots, sorted by height and mapped by chain
     blocks: _.mapObject(blocks, (mapHtoSnapshot) =>
       _.sortBy(
         Array.from(mapHtoSnapshot.entries()),
@@ -62,12 +83,29 @@ function dumpTrace(fn: string, events, actions, blocks) {
       ).map((pair) => pair[1]),
     ),
   };
+  // Write human readable JSON
   const json = JSON.stringify([toDump], null, 4);
   fs.writeFileSync(fn, json);
 }
 
+/**
+ * Reads all json traces in traces/ and creates a new trace file
+ * consisting of a list of several traces. The traces in the new
+ * trace file are chosen in such a way to ensure a covering of
+ * each model event. 
+ * The traces are selected according to a greedy algorithm, ensuring
+ * that each event occurs EVENT_INSTANCES times while somewhat 
+ * minimizing the number of traces included.
+ * In this way, it is possible to obtain a concise set of traces which
+ * test many model behaviors, reducing the time needed to test the SUT.
+ */
 function createSmallSubsetOfCoveringTraces() {
+  // The number of times each event should occur
+  const EVENT_INSTANCES = 20
+  // directory to read traces from
   const DIR = 'traces/';
+  // file to write the new traces to
+  const OUTPUT_FN = "covering.json"
   let fns = [];
   fs.readdirSync(DIR).forEach((file) => {
     fns.push(`${DIR}${file}`);
@@ -90,7 +128,7 @@ function createSmallSubsetOfCoveringTraces() {
     });
     hits.push(hit);
   });
-  const target = possible.map((x) => Math.min(x, 20));
+  const target = possible.map((x) => Math.min(x, EVENT_INSTANCES));
   console.log(`finished reading traces and counting events`);
   function score(v): number {
     let x = 0;
@@ -118,9 +156,13 @@ function createSmallSubsetOfCoveringTraces() {
   fns.forEach((fn) => {
     allTraces.push(JSON.parse(fs.readFileSync(fn, 'utf8'))[0]);
   });
-  fs.writeFileSync(`covering.json`, JSON.stringify(allTraces));
+  fs.writeFileSync(OUTPUT_FN, JSON.stringify(allTraces));
 }
 
+/**
+ * Pretty print the number of times each event occurs.
+ * @param allEvents A map of event type to number of occurrences
+ */
 function logEventData(allEvents) {
   const eventCnt = _.countBy(allEvents, _.identity);
   for (const evt in Event) {
