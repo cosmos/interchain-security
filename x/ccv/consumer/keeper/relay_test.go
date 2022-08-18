@@ -201,7 +201,6 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	}
 }
 
-// TODO: maybe a unit test
 func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	// setup CCV channel
 	suite.SetupCCVChannel()
@@ -314,23 +313,92 @@ func incrementTimeBy(s *KeeperTestSuite, jumpPeriod time.Duration) {
 	}
 }
 
-// TODO: This is a unit test
-func (suite *KeeperTestSuite) TestOnAcknowledgement() {
+func TestOnAcknowledgement(t *testing.T) {
+
+	// Channel ID to some dest chain that's not the established provider
+	channelIDToDestChain := "channelIDToDestChain"
+
+	// Channel ID to established provider
+	channelIDToProvider := "channelIDToProvider"
+
+	// Channel ID on destination (counter party) chain
+	channelIDOnDest := "ChannelIDOnDest"
+
+	// Instantiate custom keeper with mocks
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	cdc, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
+
+	mockScopedKeeper := testkeeper.NewMockScopedKeeper(ctrl)
+	mockChannelKeeper := testkeeper.NewMockChannelKeeper(ctrl)
+
+	consumerKeeper := testkeeper.GetConsumerKeeperWithMocks(t,
+		cdc,
+		storeKey,
+		paramsSubspace,
+		mockScopedKeeper,
+		mockChannelKeeper,
+		testkeeper.NewMockPortKeeper(ctrl),
+		testkeeper.NewMockConnectionKeeper(ctrl),
+		testkeeper.NewMockClientKeeper(ctrl),
+		testkeeper.NewMockSlashingKeeper(ctrl),
+		testkeeper.NewMockBankKeeper(ctrl),
+		testkeeper.NewMockAccountKeeper(ctrl),
+		testkeeper.NewMockIBCTransferKeeper(ctrl),
+		testkeeper.NewMockIBCCoreKeeper(ctrl),
+	)
+
+	// Set an established provider channel for later in test
+	consumerKeeper.SetProviderChannel(ctx, channelIDToProvider)
+
 	packetData := types.NewSlashPacketData(
 		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Downtime,
 	)
 
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID,
-		consumertypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, uint64(time.Now().Add(60*time.Second).UnixNano()))
+	// According to ICS 004: (https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements),
+	// acknowledgedPacket is in reference to a packet originally sent from this (consumer) module.
+	// TODO: Do we want to test weird edge cases like processing an ack where source port ID != consumer port ID?
+	packet := channeltypes.NewPacket(
+		packetData.GetBytes(),
+		1,
+		consumertypes.PortID, // Source port
+		channelIDToDestChain, // Source channel
+		providertypes.PortID, // Dest (counter party) port
+		channelIDOnDest,      // Dest (counter party) channel
+		clienttypes.Height{},
+		uint64(time.Now().Add(60*time.Second).UnixNano()),
+	)
+
 	ack := channeltypes.NewResultAcknowledgement([]byte{1})
 
-	// expect no error
-	err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnAcknowledgementPacket(suite.ctx, packet, ack)
-	suite.Nil(err)
+	// expect no error returned from OnAcknowledgementPacket, no input error with ack
+	err := consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
+	require.Nil(t, err)
 
-	// expect an error
+	// Still expect no error returned from OnAcknowledgementPacket,
+	// but the input error ack will be handled with appropriate ChanCloseInit calls
+	dummyCap := &capabilitytypes.Capability{}
+	gomock.InOrder(
+
+		mockScopedKeeper.EXPECT().GetCapability(
+			ctx, host.ChannelCapabilityPath(consumertypes.PortID, channelIDToDestChain),
+		).Return(dummyCap, true).Times(1),
+		// Due to input error ack, ChanCloseInit is called on channel to destination chain
+		mockChannelKeeper.EXPECT().ChanCloseInit(
+			ctx, consumertypes.PortID, channelIDToDestChain, dummyCap,
+		).Return(nil).Times(1),
+
+		mockScopedKeeper.EXPECT().GetCapability(
+			ctx, host.ChannelCapabilityPath(consumertypes.PortID, channelIDToProvider),
+		).Return(dummyCap, true).Times(1),
+		// Due to input error ack and existence of established channel to provider,
+		// ChanCloseInit is called on channel to provider
+		mockChannelKeeper.EXPECT().ChanCloseInit(
+			ctx, consumertypes.PortID, channelIDToProvider, dummyCap,
+		).Return(nil).Times(1),
+	)
+
 	ack = channeltypes.NewErrorAcknowledgement("error")
-
-	err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnAcknowledgementPacket(suite.ctx, packet, ack)
-	suite.NotNil(err)
+	err = consumerKeeper.OnAcknowledgementPacket(ctx, packet, ack)
+	require.Nil(t, err)
 }

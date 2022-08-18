@@ -93,7 +93,7 @@ func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
 }
 
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
-// in order to expose it to the ICS20 transfer handler.
+// Following ICS 004: https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#closing-handshake
 func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)

@@ -208,11 +208,12 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			"channel", packet.SourceChannel,
 			"error", err,
 		)
+		// Initiate ChanCloseInit using packet source (non-counterparty) port and channel
 		err := k.ChanCloseInit(ctx, packet.SourcePort, packet.SourceChannel)
 		if err != nil {
 			return fmt.Errorf("ChanCloseInit(%s) failed: %s", packet.SourceChannel, err.Error())
 		}
-		// check if there is an established CCV channel
+		// check if there is an established CCV channel to provider
 		channelID, found := k.GetProviderChannel(ctx)
 		if !found {
 			return sdkerrors.Wrapf(types.ErrNoProposerChannelId, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)
