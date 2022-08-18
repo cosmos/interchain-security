@@ -11,6 +11,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -21,7 +22,6 @@ import (
 
 func TestApplyCCValidatorChanges(t *testing.T) {
 	// Construct a keeper with a custom codec
-	// TODO: We need to ensure all custom interfaces are registered in prod, see https://github.com/cosmos/interchain-security/issues/273
 	_, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
 	ir := codectypes.NewInterfaceRegistry()
 
@@ -41,17 +41,6 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 		return
 	}
 
-	setCCVals := func(vals []*tmtypes.Validator) {
-		for _, v := range vals {
-			publicKey, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
-			require.NoError(t, err)
-
-			ccv, err := types.NewCCValidator(v.Address, v.VotingPower, publicKey)
-			require.NoError(t, err)
-			consumerKeeper.SetCCValidator(ctx, ccv)
-		}
-	}
-
 	clearCCVals := func() {
 		ccVals := consumerKeeper.GetAllCCValidator(ctx)
 		for _, v := range ccVals {
@@ -69,17 +58,7 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 	// prepare the testing setup by clearing the current cross-chain validators in states
 	clearCCVals()
 
-	// setup a slice of validators with non zero voting power
-	numValidators := 4
-	tcValidators := []*tmtypes.Validator{}
-	for i := 0; i < numValidators; i++ {
-		pubKey, err := testkeeper.GenPubKey()
-		require.NoError(t, err)
-
-		votingPower := int64(i + 1)
-		validator := tmtypes.NewValidator(pubKey, votingPower)
-		tcValidators = append(tcValidators, validator)
-	}
+	tcValidators := GenerateValidators(t)
 
 	changes := []abci.ValidatorUpdate{}
 	changesPower := int64(0)
@@ -89,8 +68,8 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 		changesPower += v.VotingPower
 	}
 
-	// finish setup by importing 3 out 4 testing validators into cross-chain validator states
-	setCCVals(tcValidators[:len(tcValidators)-1])
+	// finish setup by storing 3 out 4 testing validators as cross-chain validator records
+	SetCCValidators(t, consumerKeeper, ctx, tcValidators[:len(tcValidators)-1])
 
 	// verify setup
 	ccVals := getCCVals()
@@ -136,44 +115,61 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 	}
 }
 
-// TODO: unit test
-func (k KeeperTestSuite) TestHistoricalInfo() {
-	consumerKeeper := k.consumerChain.App.(*appConsumer.App).ConsumerKeeper
-	cCtx := k.consumerChain.GetContext
+// Tests the getter and setter behavior for historical info
+func TestHistoricalInfo(t *testing.T) {
 
-	// get consumer validators
-	cVals := consumerKeeper.GetAllCCValidator(cCtx())
+	// Construct a keeper with a custom codec
+	_, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
+	ir := codectypes.NewInterfaceRegistry()
 
-	// iterates over validators and convert them to staking type
+	// Public key implementation must be registered
+	cryptocodec.RegisterInterfaces(ir)
+	cdc := codec.NewProtoCodec(ir)
+
+	consumerKeeper := testkeeper.GetCustomConsumerKeeper(
+		cdc,
+		storeKey,
+		paramsSubspace,
+	)
+
+	ctx = ctx.WithBlockHeight(15)
+
+	// Generate test validators, save them to store, and retrieve stored records
+	validators := GenerateValidators(t)
+	SetCCValidators(t, consumerKeeper, ctx, validators)
+	ccValidators := consumerKeeper.GetAllCCValidator(ctx)
+	require.Len(t, ccValidators, len(validators))
+
+	// iterate over validators and convert them to staking type
 	sVals := []stakingtypes.Validator{}
-	for _, v := range cVals {
+	for _, v := range ccValidators {
 		pk, err := v.ConsPubKey()
-		k.Require().NoError(err)
+		require.NoError(t, err)
 
 		val, err := stakingtypes.NewValidator(nil, pk, stakingtypes.Description{})
-		k.Require().NoError(err)
+		require.NoError(t, err)
 
 		// set voting power to random value
 		val.Tokens = sdk.TokensFromConsensusPower(tmrand.NewRand().Int64(), sdk.DefaultPowerReduction)
 		sVals = append(sVals, val)
 	}
 
-	currHeight := cCtx().BlockHeight()
+	currentHeight := ctx.BlockHeight()
 
 	// create and store historical info
-	hi := stakingtypes.NewHistoricalInfo(cCtx().BlockHeader(), sVals, sdk.DefaultPowerReduction)
-	consumerKeeper.SetHistoricalInfo(cCtx(), currHeight, &hi)
+	hi := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), sVals, sdk.DefaultPowerReduction)
+	consumerKeeper.SetHistoricalInfo(ctx, currentHeight, &hi)
 
 	// expect to get historical info
-	recv, found := consumerKeeper.GetHistoricalInfo(cCtx(), currHeight)
-	k.Require().True(found, "HistoricalInfo not found after set")
-	k.Require().Equal(hi, recv, "HistoricalInfo not equal")
+	recv, found := consumerKeeper.GetHistoricalInfo(ctx, currentHeight)
+	require.True(t, found, "HistoricalInfo not found after set")
+	require.Equal(t, hi, recv, "HistoricalInfo not equal")
 
 	// verify that historical info valset has validators sorted in order
-	k.Require().True(IsValSetSorted(recv.Valset, sdk.DefaultPowerReduction), "HistoricalInfo validators is not sorted")
+	require.True(t, IsValSetSorted(recv.Valset, sdk.DefaultPowerReduction), "HistoricalInfo validators is not sorted")
 }
 
-// TODO e2e test, or it could be a unit?
+// Tests the tracking of historical info in the context of new blocks being committed
 func (k KeeperTestSuite) TestTrackHistoricalInfo() {
 	consumerKeeper := k.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	cCtx := k.consumerChain.GetContext
@@ -260,4 +256,32 @@ func IsValSetSorted(data []stakingtypes.Validator, powerReduction sdk.Int) bool 
 		}
 	}
 	return true
+}
+
+// Generates 4 test validators with non zero voting power
+func GenerateValidators(t testing.TB) []*tmtypes.Validator {
+	numValidators := 4
+	validators := []*tmtypes.Validator{}
+	for i := 0; i < numValidators; i++ {
+		pubKey, err := testkeeper.GenPubKey()
+		require.NoError(t, err)
+
+		votingPower := int64(i + 1)
+		validator := tmtypes.NewValidator(pubKey, votingPower)
+		validators = append(validators, validator)
+	}
+	return validators
+}
+
+// Sets each input tmtypes.Validator as a types.CrossChainValidator in the consumer keeper store
+func SetCCValidators(t testing.TB, consumerKeeper keeper.Keeper,
+	ctx sdk.Context, validators []*tmtypes.Validator) {
+	for _, v := range validators {
+		publicKey, err := cryptocodec.FromTmPubKeyInterface(v.PubKey)
+		require.NoError(t, err)
+
+		ccv, err := types.NewCCValidator(v.Address, v.VotingPower, publicKey)
+		require.NoError(t, err)
+		consumerKeeper.SetCCValidator(ctx, ccv)
+	}
 }

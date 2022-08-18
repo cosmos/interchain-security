@@ -7,11 +7,12 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/ibc-go/v3/testing/mock"
 
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	testutil "github.com/cosmos/interchain-security/testutil/keeper"
 
 	"github.com/stretchr/testify/require"
 )
@@ -29,9 +30,8 @@ var (
 )
 
 func TestValidateInitialGenesisState(t *testing.T) {
-	// generate validator private/public key
-	privVal := mock.NewPV()
-	pubKey, err := privVal.GetPubKey()
+	// generate validator public key
+	pubKey, err := testutil.GenPubKey()
 	require.NoError(t, err)
 
 	// create validator set with single validator
@@ -147,8 +147,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 
 func TestValidateRestartGenesisState(t *testing.T) {
 	// generate validator private/public key
-	privVal := mock.NewPV()
-	pubKey, err := privVal.GetPubKey()
+	pubKey, err := testutil.GenPubKey()
 	require.NoError(t, err)
 
 	// create validator set with single validator

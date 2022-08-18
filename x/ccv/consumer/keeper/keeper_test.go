@@ -585,7 +585,7 @@ func (suite *KeeperTestSuite) TestSendSlashPacket() {
 func TestCrossChainValidator(t *testing.T) {
 
 	// Construct a keeper with a custom codec
-	// TODO: We need to ensure all custom interfaces are registered in prod, see https://github.com/cosmos/interchain-security/issues/273
+	// TODO: Ensure all custom interfaces are registered in prod, see https://github.com/cosmos/interchain-security/issues/273
 	_, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
 	ir := codectypes.NewInterfaceRegistry()
 

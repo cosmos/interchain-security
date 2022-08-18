@@ -28,7 +28,7 @@ func TestParams(t *testing.T) {
 
 	paramsSubspace.Set(ctx, types.KeyTemplateClient, expectedClientState)
 
-	providerKeeper := testkeeper.GetProviderKeeperWithMocks(t,
+	providerKeeper := testkeeper.GetProviderKeeperWithMocks(
 		cdc,
 		storeKey,
 		paramsSubspace,

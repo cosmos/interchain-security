@@ -374,7 +374,7 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 			evidencetypes.DoubleSignJailEndTime).Times(1),
 	)
 
-	providerKeeper := testkeeper.GetProviderKeeperWithMocks(t,
+	providerKeeper := testkeeper.GetProviderKeeperWithMocks(
 		cdc,
 		storeKey,
 		paramsSubspace,
