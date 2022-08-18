@@ -170,7 +170,6 @@ func TestOnRecvVSCPacket(t *testing.T) {
 
 		if tc.noAck {
 			// if closing channel was successful, no acknowledgement returned, see OnRecvPacketOnUnknownChannel
-			// TODO: Confirm this functionality
 			require.Nil(t, ack, "invalid test case: %s ack returned ", tc.name)
 		} else {
 			require.NotNil(t, ack, "invalid test case: %s did not return ack", tc.name)
@@ -359,7 +358,6 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	)
 
 	// AcknowledgePacket is in reference to a packet originally sent from this (consumer) module.
-	// TODO: Do we want to test weird edge cases like processing an ack where source portID != consumer portID?
 	packet := channeltypes.NewPacket(
 		packetData.GetBytes(),
 		1,
