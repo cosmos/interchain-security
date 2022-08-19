@@ -283,13 +283,13 @@ func (k Keeper) GetPacketMaturityTime(ctx sdk.Context, vscId uint64) uint64 {
 	return binary.BigEndian.Uint64(bz)
 }
 
-// DeletePacketMaturityTime deletes the maturity time for a given received VSC packet id
+// DeletePacketMaturityTime deletes the packet maturity time for a given received VSC packet id
 func (k Keeper) DeletePacketMaturityTime(ctx sdk.Context, vscId uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.PacketMaturityTimeKey(vscId))
 }
 
-// ClearPacketMaturityTime deletes all the maturity time in stores
+// ClearPacketMaturityTime deletes all the packet maturity time in the store
 func (k Keeper) ClearPacketMaturityTimes(ctx sdk.Context) {
 	vscIDs := []uint64{}
 	k.IteratePacketMaturityTime(ctx, func(vscId, _ uint64) bool {
@@ -343,7 +343,7 @@ func (k Keeper) GetHeightValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 	return binary.BigEndian.Uint64(bz)
 }
 
-// IterateHeightValsetUpdateID gets the valset update id recorded for a given block height
+// IterateHeightValsetUpdateID iterates over the valset update ids recorded for a given block height
 func (k Keeper) IterateHeightValsetUpdateID(ctx sdk.Context, cb func(height uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
@@ -356,7 +356,7 @@ func (k Keeper) IterateHeightValsetUpdateID(ctx sdk.Context, cb func(height uint
 	}
 }
 
-// ClearHeightValsetUpdateIDs clears the valset update ids in stores
+// ClearHeightValsetUpdateIDs clears the valset update ids in the store
 func (k Keeper) ClearHeightValsetUpdateIDs(ctx sdk.Context) {
 	k.IterateHeightValsetUpdateID(ctx, func(height uint64) bool {
 		k.DeleteHeightValsetUpdateID(ctx, height)
@@ -383,7 +383,7 @@ func (k Keeper) SetOutstandingDowntime(ctx sdk.Context, address sdk.ConsAddress)
 	store.Set(types.OutstandingDowntimeKey(address), []byte{})
 }
 
-// DeleteOutstandingDowntime deletes the outstanding downtime flags for the given validator address
+// DeleteOutstandingDowntime deletes the outstanding downtime flag for the given validator consensus address
 func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 	consAddr, err := sdk.ConsAddressFromBech32(consAddress)
 	if err != nil {
@@ -407,7 +407,7 @@ func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(consAddress 
 	}
 }
 
-// ClearOutstandingDowntime clears the outstanding downtime flags in stores
+// ClearOutstandingDowntime clears the outstanding downtime flags in the store
 func (k Keeper) ClearOutstandingDowntimes(ctx sdk.Context) {
 	addrs := []sdk.ConsAddress{}
 	k.IterateOutstandingDowntime(ctx, func(addr sdk.ConsAddress) bool {

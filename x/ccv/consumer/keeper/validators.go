@@ -204,7 +204,7 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	k.SetHistoricalInfo(ctx, ctx.BlockHeight(), &historicalEntry)
 }
 
-// IterateHistoricalInfo iterates over the historical info in a descending block height order
+// IterateHistoricalInfo iterates over the historical info for each block height in a ascendingorder
 func (k Keeper) IterateHistoricalInfo(ctx sdk.Context, cb func(height uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HistoricalInfoBytePrefix})
