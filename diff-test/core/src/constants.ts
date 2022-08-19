@@ -12,7 +12,8 @@ const TRUSTING_SECONDS = MAX_BLOCK_ADVANCES * BLOCK_INTERVAL_SECONDS - 1;
 const UNBONDING_SECONDS_C = TRUSTING_SECONDS + 1;
 // Unbonding period for provider. Must be greater than TRUSTING_SECONDS.
 // Should be greater than UNBONDING_SECONDS_C
-const UNBONDING_SECONDS_P = UNBONDING_SECONDS_C + 5 * BLOCK_INTERVAL_SECONDS;
+const UNBONDING_SECONDS_P =
+  UNBONDING_SECONDS_C + 5 * BLOCK_INTERVAL_SECONDS;
 // Total number of validators to model.
 const NUM_VALIDATORS = 4;
 // Maximum number of active validator at a given time. This should be less
@@ -20,7 +21,7 @@ const NUM_VALIDATORS = 4;
 // join and leave the active set, or are jailed.
 const MAX_VALIDATORS = 2; // allows jailing 2 validators
 const ZERO_TIMEOUT_HEIGHT = 100000; // TODO: think I can delete it?
-const CCV_TIMEOUT_TIMESTAMP = 100000;// TODO: think I can delete it?
+const CCV_TIMEOUT_TIMESTAMP = 100000; // TODO: think I can delete it?
 // Slash factor for double signing. This is set to 0 in order to test slashing
 // logic while avoiding divergence between model and SUT due to differences
 // in numerical implementations.

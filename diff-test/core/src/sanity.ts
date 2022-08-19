@@ -1,5 +1,5 @@
 import { P, C, TRUSTING_SECONDS } from './constants.js';
-import { Chain, Validator } from './common.js'
+import { Chain, Validator } from './common.js';
 
 /**
  * Checks that the model does not overapproximate the system
@@ -11,9 +11,9 @@ import { Chain, Validator } from './common.js'
  */
 class Sanity {
   // the timestamp contained in the latest trusted header
-  tLastTrustedHeader = { provider: 0, consumer: 0 }
+  tLastTrustedHeader = { provider: 0, consumer: 0 };
   // the timestamp of the last committed block
-  tLastCommit = { provider: 0, consumer: 0 }
+  tLastCommit = { provider: 0, consumer: 0 };
 
   /**
    * Records the updating of a client on chain at time t

@@ -1,6 +1,6 @@
-type Chain = 'provider' | 'consumer'
+type Chain = 'provider' | 'consumer';
 
-type Validator = number
+type Validator = number;
 
 interface Action {
   kind: string;
@@ -48,7 +48,7 @@ type Snapshot = {
   jailed: (number | undefined)[];
   delegatorTokens: number;
   power: (number | undefined)[];
-}
+};
 
 enum Status {
   BONDED = 'bonded',
@@ -71,7 +71,7 @@ interface Undelegation {
 }
 
 /**
- * Represents unbonding validator logic in the staking module. 
+ * Represents unbonding validator logic in the staking module.
  */
 interface Unval {
   val: Validator;
@@ -158,4 +158,30 @@ enum Event {
   CONSUMER_UPDATE_POWER_ZERO = 'consumer_update_power_zero',
 }
 
-export { Event, CommittedBlock, Chain, Validator, Action, Delegate, Undelegate, JumpNBlocks, Deliver, ConsumerSlash, Snapshot, Status, Undelegation, Unval, Vsc, VscMatured, Slash, PacketData, Packet }
+interface TraceAction {
+  action: Action;
+  hLastCommit: Record<Chain, number>;
+}
+
+export {
+  TraceAction,
+  Event,
+  CommittedBlock,
+  Chain,
+  Validator,
+  Action,
+  Delegate,
+  Undelegate,
+  JumpNBlocks,
+  Deliver,
+  ConsumerSlash,
+  Snapshot,
+  Status,
+  Undelegation,
+  Unval,
+  Vsc,
+  VscMatured,
+  Slash,
+  PacketData,
+  Packet,
+};

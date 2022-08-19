@@ -19,10 +19,19 @@ import {
 } from './constants.js';
 
 import {
-  Undelegation, Unval, Vsc, VscMatured,
-  Packet, Chain, Validator, PacketData,
-  Slash, Snapshot, Status, Event
-} from './common.js'
+  Undelegation,
+  Unval,
+  Vsc,
+  VscMatured,
+  Packet,
+  Chain,
+  Validator,
+  PacketData,
+  Slash,
+  Snapshot,
+  Status,
+  Event,
+} from './common.js';
 
 /**
  * Store outbound packets in FIFO order from a given chain.
@@ -53,7 +62,7 @@ class Outbox {
 
   /**
    * Adds a packet to the outbox, with 0 commits.
-   * 
+   *
    * @param data packet data
    */
   add = (data: PacketData) => {
@@ -68,7 +77,7 @@ class Outbox {
    * A packet is deliverable if it two blocks have committed on
    * the sender chain since the packet was sent. This is as
    * per the light-client functioning.
-   * 
+   *
    * @returns The number of deliverable packets.
    */
   numAvailable = (): number => {
@@ -77,7 +86,7 @@ class Outbox {
 
   /**
    * Get and internally delete deliverable packets from the outbox.
-   * 
+   *
    * @param num num packets to consumer
    * @returns A list of deliverable packets
    */
@@ -450,7 +459,9 @@ class CCVConsumer {
   outstandingDowntime = new Array(NUM_VALIDATORS).fill(false);
   // array of validators to power
   // value undefined if validator is not known to consumer
-  power: (number | undefined)[] = new Array(NUM_VALIDATORS).fill(undefined);
+  power: (number | undefined)[] = new Array(NUM_VALIDATORS).fill(
+    undefined,
+  );
 
   constructor(model: Model) {
     this.m = model;
@@ -489,7 +500,9 @@ class CCVConsumer {
     const changes = (() => {
       const ret: Map<Validator, number> = new Map();
       this.pendingChanges.forEach((updates) => {
-        Object.entries(updates).forEach(([val, power]) => ret.set(parseInt(val), power))
+        Object.entries(updates).forEach(([val, power]) =>
+          ret.set(parseInt(val), power),
+        );
       });
       return ret;
     })();
@@ -521,7 +534,11 @@ class CCVConsumer {
     });
   };
 
-  sendSlashRequest = (val: number, infractionHeight: number, isDowntime: boolean) => {
+  sendSlashRequest = (
+    val: number,
+    infractionHeight: number,
+    isDowntime: boolean,
+  ) => {
     if (isDowntime && this.outstandingDowntime[val]) {
       this.m.events.push(Event.DOWNTIME_SLASH_REQUEST_OUTSTANDING);
       return;
@@ -541,24 +558,24 @@ class CCVConsumer {
   };
 }
 
-
 class Model {
   T = 0;
-  h = { provider: 0, consumer: 0 }
-  t = { provider: 0, consumer: 0 }
-  outbox: Record<string, Outbox>;
+  h = { provider: 0, consumer: 0 };
+  t = { provider: 0, consumer: 0 };
+  outbox: Record<string, Outbox> = {
+    provider: new Outbox(this, P),
+    consumer: new Outbox(this, C),
+  };
   staking: Staking;
   ccvP: CCVProvider;
   ccvC: CCVConsumer;
   blocks: BlockHistory;
   events: Event[];
-  mustBeginBlock = { provider: true, consumer: true }
+  mustBeginBlock = { provider: true, consumer: true };
   sanity: Sanity;
 
   constructor(sanity: Sanity, blocks: BlockHistory, events: Event[]) {
     this.sanity = sanity;
-    this.outbox[P] = new Outbox(this, P);
-    this.outbox[C] = new Outbox(this, C);
     this.staking = new Staking(this);
     this.ccvP = new CCVProvider(this);
     this.ccvC = new CCVConsumer(this);
@@ -630,11 +647,7 @@ class Model {
     this.T += seconds;
   };
 
-  jumpNBlocks = (
-    n: number,
-    chains: Chain[],
-    secondsPerBlock: number,
-  ) => {
+  jumpNBlocks = (n: number, chains: Chain[], secondsPerBlock: number) => {
     for (let i = 0; i < n; i++) {
       chains.forEach(this.endBlock);
       this.increaseSeconds(secondsPerBlock);

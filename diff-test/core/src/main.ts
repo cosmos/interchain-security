@@ -5,7 +5,7 @@ import cloneDeep from 'clone-deep';
 import {
   BlockHistory,
   stakingWithoutSlashing,
-  bondBasedConsumerVotingPower
+  bondBasedConsumerVotingPower,
 } from './properties.js';
 import { Sanity as SanityChecker } from './sanity.js';
 import { Model } from './model.js';
@@ -23,17 +23,29 @@ import {
   TOKEN_SCALAR,
   MAX_BLOCK_ADVANCES,
 } from './constants.js';
-import { Action, Undelegate, Delegate, ConsumerSlash, Deliver, JumpNBlocks, Chain, Event } from './common.js'
-
+import {
+  Action,
+  Undelegate,
+  Delegate,
+  ConsumerSlash,
+  Deliver,
+  JumpNBlocks,
+  Chain,
+  Event,
+  TraceAction,
+} from './common.js';
 
 /**
  * Takes an object where values are probabilities and returns a random
  * key based on the distribution.
  */
 function weightedRandomKey(distr: Record<string, number>) {
-  const scalar = Object.values(distr).reduce((sum: number, y: number): number => sum + y, 0)
+  const scalar = Object.values(distr).reduce(
+    (sum: number, y: number): number => sum + y,
+    0,
+  );
   const x = Math.random() * scalar;
-  const pairs = Object.entries(distr)
+  const pairs = Object.entries(distr);
   let i = 0;
   let cum = 0;
   while (i < pairs.length - 1 && cum + pairs[i][1] < x) {
@@ -136,20 +148,22 @@ class ActionGenerator {
 
   // Return templates for possible Consumer initiated slash actions
   candidateConsumerSlash = (): Action[] => {
-    return _.range(NUM_VALIDATORS)
-      // Filter out absent validators
-      .filter((i) => this.model.ccvC.power[i] !== undefined)
-      // Filter out validators if slashing that validator would
-      // lead to all validators being jailed.
-      .filter((i) => {
-        const cntWouldBeNotJailed = this.didSlash.filter(
-          (slashed, j) => !slashed && j !== i,
-        ).length;
-        return 1 <= cntWouldBeNotJailed;
-      })
-      .map((i) => {
-        return { kind: 'ConsumerSlash', val: i };
-      });
+    return (
+      _.range(NUM_VALIDATORS)
+        // Filter out absent validators
+        .filter((i) => this.model.ccvC.power[i] !== undefined)
+        // Filter out validators if slashing that validator would
+        // lead to all validators being jailed.
+        .filter((i) => {
+          const cntWouldBeNotJailed = this.didSlash.filter(
+            (slashed, j) => !slashed && j !== i,
+          ).length;
+          return 1 <= cntWouldBeNotJailed;
+        })
+        .map((i) => {
+          return { kind: 'ConsumerSlash', val: i };
+        })
+    );
   };
 
   // Fill out a template for a selected Consumer initiated slash action
@@ -197,16 +211,20 @@ class ActionGenerator {
 
   // Return templates for possible packet Deliver actions
   candidateDeliver = (): Action[] => {
-    return [P, C]
-      // Only choose a candidate chain if there are deliverable packets available
-      // in the network.
-      .filter((c) => 0 < this.model.outbox[c == P ? C : P].numAvailable())
-      .map((c) => {
-        return {
-          kind: 'Deliver',
-          chain: c,
-        };
-      });
+    return (
+      [P, C]
+        // Only choose a candidate chain if there are deliverable packets available
+        // in the network.
+        .filter(
+          (c) => 0 < this.model.outbox[c == P ? C : P].numAvailable(),
+        )
+        .map((c) => {
+          return {
+            kind: 'Deliver',
+            chain: c,
+          };
+        })
+    );
   };
 
   // Fill out a selected Deliver action template
@@ -285,24 +303,24 @@ function gen(minutes: number) {
     const events: Event[] = [];
     const model = new Model(sanity, hist, events);
     const actionGenerator = new ActionGenerator(model);
-    const actions = [];
+    const actions: TraceAction[] = [];
     for (let j = 0; j < NUM_ACTIONS; j++) {
       const a = actionGenerator.get();
       doAction(model, a);
       actions.push({
         // Store the action taken
         action: a,
-        // Store a snapshot of the model state at the given block commit
-        // this is used for model comparisons when testing the SUT.
+        // Store the height of a snapshot which used be used for model
+        // state comparison with the SUT after the action is executed
         hLastCommit: cloneDeep(hist.hLastCommit),
       });
     }
     // Check properties
     if (!bondBasedConsumerVotingPower(hist)) {
-      throw "bondBasedConsumerVotingPower property failure"
+      throw 'bondBasedConsumerVotingPower property failure';
     }
     if (!stakingWithoutSlashing(hist)) {
-      throw "stakingWithoutSlashing property failure"
+      throw 'stakingWithoutSlashing property failure';
     }
     // Write the trace to file, along with metadata.
     dumpTrace(`${DIR}trace_${i}.json`, events, actions, hist.blocks);
@@ -313,7 +331,8 @@ function gen(minutes: number) {
     // Log progress stats
     if (i % 2000 === 0) {
       console.log(
-        `done ${i}, actions per second ${(i * NUM_ACTIONS) / (elapsedMillis / 1000)
+        `done ${i}, actions per second ${
+          (i * NUM_ACTIONS) / (elapsedMillis / 1000)
         }`,
       );
     }
@@ -329,7 +348,7 @@ function gen(minutes: number) {
  * side-by-side.
  * The model is deterministic, thus a fixed list of actions always
  * results in the same behavior and model states.
- * @param actions 
+ * @param actions
  */
 function replay(actions: Action[]) {
   const sanity = new SanityChecker();
@@ -353,7 +372,8 @@ function replay(actions: Action[]) {
 function replayFile(fn: string, ix: number, numActions: number) {
   const traces = JSON.parse(fs.readFileSync(fn, 'utf8'));
   const trace = ix !== undefined ? traces[ix] : traces[0];
-  const actions = trace.actions.map((a) => a.action).slice(0, numActions);
+  const traceActions = trace.actions as TraceAction[];
+  const actions = traceActions.map((a) => a.action).slice(0, numActions);
   replay(actions);
 }
 
@@ -362,34 +382,32 @@ console.log(`running main`);
 /*
  * Generate new traces and write them to files, for <minutes> minutes.
  *
- * yarn start gen <minutes> 
+ * yarn start gen <minutes>
  */
 if (process.argv[2] === 'gen') {
   console.log(`gen`);
   const minutes = parseInt(process.argv[3]);
   gen(minutes);
-}
+} else if (process.argv[2] === 'subset') {
 /*
  * Creates a trace file containing several traces, in a way that ensures
  * each interesting model event is emitted by some trace.
- * 
+ *
  * yarn start subset <output file abs path> <num event instances (optional)>
  */
-else if (process.argv[2] === 'subset') {
   console.log(`createSmallSubsetOfCoveringTraces`);
-  const outFile = process.argv[3]
-  let eventInstances = 20
+  const outFile = process.argv[3];
+  let eventInstances = 20;
   if (3 < process.argv.length) {
-    eventInstances = parseInt(process.argv[4])
+    eventInstances = parseInt(process.argv[4]);
   }
   createSmallSubsetOfCoveringTraces(outFile, eventInstances);
-}
+} else if (process.argv[2] === 'replay') {
 /*
  * Replay a trace from a a file, up to a given number of actions.
- * 
+ *
  * yarn start replay <filename> <list index> <num actions>
  */
-else if (process.argv[2] === 'replay') {
   console.log(`replay`);
   const [fn, traceNum, numActions] = process.argv.slice(3, 6);
   replayFile(fn, parseInt(traceNum), parseInt(numActions));
