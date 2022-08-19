@@ -19,11 +19,7 @@ type Snapshot struct {
 		Consumer int `json:"consumer"`
 		Provider int `json:"provider"`
 	} `json:"h"`
-	Jailed []*int `json:"jailed"`
-	Outbox struct {
-		C [][]interface{} `json:"C"`
-		P [][]interface{} `json:"P"`
-	} `json:"outbox"`
+	Jailed []*int   `json:"jailed"`
 	Power  []*int   `json:"power"`
 	Status []string `json:"status"`
 	T      struct {
@@ -52,6 +48,7 @@ type Snapshot struct {
 }
 
 type Block struct {
+	Chain    string   `json:"chain"`
 	H        int      `json:"h"`
 	T        int      `json:"t"`
 	Snapshot Snapshot `json:"snapshot"`
@@ -76,7 +73,6 @@ type TraceData struct {
 	Constants struct {
 		BlockSeconds           int    `json:"BLOCK_SECONDS"`
 		C                      string `json:"C"`
-		CcvTimeoutTimestamp    int    `json:"CCV_TIMEOUT_TIMESTAMP"`
 		InitialDelegatorTokens int    `json:"INITIAL_DELEGATOR_TOKENS"`
 		JailSeconds            int    `json:"JAIL_SECONDS"`
 		MaxBlockAdvances       int    `json:"MAX_BLOCK_ADVANCES"`
@@ -87,7 +83,6 @@ type TraceData struct {
 		TrustingSeconds        int    `json:"TRUSTING_SECONDS"`
 		UnbondingSecondsC      int    `json:"UNBONDING_SECONDS_C"`
 		UnbondingSecondsP      int    `json:"UNBONDING_SECONDS_P"`
-		ZeroTimeoutHeight      int    `json:"ZERO_TIMEOUT_HEIGHT"`
 	} `json:"constants"`
 	Events []string `json:"events"`
 	Meta   struct {
