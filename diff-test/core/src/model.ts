@@ -60,7 +60,7 @@ export interface Unval {
  */
 interface Vsc {
   vscID: number;
-  updates;
+  updates: Record<Validator, number>;
   downtimeSlashAcks: number[];
 }
 
@@ -419,7 +419,7 @@ class CCVProvider {
   vscID = 0;
   vscIDtoH: Record<number, number> = {};
   vscIDtoOpIDs = new Map();
-  downtimeSlashAcks = [];
+  downtimeSlashAcks: number[] = [];
   tombstoned = new Array(NUM_VALIDATORS).fill(false);
 
   constructor(model: Model) {
@@ -509,7 +509,7 @@ class CCVProvider {
 class CCVConsumer {
   m;
   hToVscID: Record<number, number> = { 0: 0, 1: 0 };
-  pendingChanges: Map<number, number>[] = [];
+  pendingChanges: Record<Validator, number>[] = [];
   maturingVscs: Map<number, number> = new Map();
   outstandingDowntime = new Array(NUM_VALIDATORS).fill(false);
   // array of validators to power
@@ -551,11 +551,9 @@ class CCVConsumer {
       return;
     }
     const changes = (() => {
-      const ret: Map<number, number> = new Map();
+      const ret: Map<Validator, number> = new Map();
       this.pendingChanges.forEach((updates) => {
-        _.keys(updates).forEach((k) => {
-          ret.set(k, updates[k]);
-        });
+        Object.entries(updates).forEach(([val, power]) => ret.set(parseInt(val), power))
       });
       return ret;
     })();
@@ -573,8 +571,8 @@ class CCVConsumer {
     });
   };
 
-  onReceive = (data) => {
-    this.onReceiveVSC(data);
+  onReceive = (data: PacketData) => {
+    this.onReceiveVSC(data as Vsc); // TODO: change!
   };
 
   onReceiveVSC = (data: Vsc) => {
@@ -607,26 +605,29 @@ class CCVConsumer {
   };
 }
 
+type Snapshot = {
+  h: Record<Chain, number>;
+  t: Record<Chain, number>;
+  tokens: number[];
+  status: Status[];
+  undelegationQ: Undelegation[];
+  validatorQ: Unval[];
+  jailed: (number | undefined)[];
+  delegatorTokens: number;
+  power: (number | undefined)[];
+}
+
 class Model {
   T = 0;
-  h: Record<Chain, number> = _.object([
-    [P, 0],
-    [C, 0],
-  ]) as Record<Chain, number>; // TODO: remove!
-  t: Record<Chain, number> = _.object([
-    [P, 0],
-    [C, 0],
-  ]) as Record<Chain, number>; // TODO: remove!
+  h = { provider: 0, consumer: 0 }
+  t = { provider: 0, consumer: 0 }
   outbox: Record<string, Outbox>;
   staking: Staking;
   ccvP: CCVProvider;
   ccvC: CCVConsumer;
   blocks: BlockHistory;
   events: Event[];
-  mustBeginBlock = _.object([
-    [P, true],
-    [C, true],
-  ]);
+  mustBeginBlock = { provider: true, consumer: true }
   sanity: Sanity;
 
   constructor(sanity: Sanity, blocks: BlockHistory, events: Event[]) {
@@ -646,18 +647,17 @@ class Model {
     // this.mustBeginBlock[C] = true;
   }
 
-  snapshot = () => {
+  snapshot = (): Snapshot => {
     return cloneDeep({
-      tokens: this.staking.tokens,
-      undelegationQ: this.staking.undelegationQ,
-      validatorQ: this.staking.validatorQ,
-      status: this.staking.status,
-      jailed: this.staking.jailed,
-      delegatorTokens: this.staking.delegatorTokens,
-      outbox: { P: this.outbox[P].fifo, C: this.outbox[C].fifo },
-      power: this.ccvC.power,
       h: this.h,
       t: this.t,
+      tokens: this.staking.tokens,
+      status: this.staking.status,
+      undelegationQ: this.staking.undelegationQ,
+      validatorQ: this.staking.validatorQ,
+      jailed: this.staking.jailed,
+      delegatorTokens: this.staking.delegatorTokens,
+      power: this.ccvC.power,
     });
   };
 
@@ -743,4 +743,4 @@ class Model {
   };
 }
 
-export { Outbox, Model, Status };
+export { Outbox, Model, Status, Chain, Validator, Snapshot };

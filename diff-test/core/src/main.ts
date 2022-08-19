@@ -8,7 +8,7 @@ import {
   bondBasedConsumerVotingPower
 } from './properties.js';
 import { Sanity as SanityChecker } from './sanity.js';
-import { Model } from './model.js';
+import { Model, Chain, Validator } from './model.js';
 import {
   createSmallSubsetOfCoveringTraces,
   dumpTrace,
@@ -23,6 +23,7 @@ import {
   TOKEN_SCALAR,
   MAX_BLOCK_ADVANCES,
 } from './constants.js';
+import { Event } from './events.js'
 
 interface Action {
   kind: string;
@@ -30,34 +31,34 @@ interface Action {
 
 type Delegate = {
   kind: string;
-  val: number;
+  val: Validator;
   amt: number;
 };
 
 type Undelegate = {
   kind: string;
-  val: number;
+  val: Validator;
   amt: number;
 };
 
 type JumpNBlocks = {
   kind: string;
-  chains: string[];
+  chains: Chain[];
   n: number;
   secondsPerBlock: number;
 };
 
 type Deliver = {
   kind: string;
-  chain: string;
-  numPackets: string;
+  chain: Chain;
+  numPackets: number;
 };
 
 type ConsumerSlash = {
   kind: string;
-  val: number;
+  val: Validator;
   infractionHeight: number;
-  isDowntime: number;
+  isDowntime: boolean;
 };
 
 /**
@@ -119,21 +120,21 @@ class ActionGenerator {
     // Choose an action type (kind) based on the probability distribution
     const kind = weightedRandomKey(distr);
     templates = templates.filter((a) => a.kind === kind);
-    const a = _.sample(templates);
+    const a = _.sample(templates) as Action;
     if (kind === 'Delegate') {
-      return this.selectDelegate(a);
+      return this.selectDelegate(a as Delegate);
     }
     if (kind === 'Undelegate') {
-      return this.selectUndelegate(a);
+      return this.selectUndelegate(a as Undelegate);
     }
     if (kind === 'JumpNBlocks') {
-      return this.selectJumpNBlocks(a);
+      return this.completeJumpNBlocks(a as JumpNBlocks);
     }
     if (kind === 'Deliver') {
-      return this.selectDeliver(a);
+      return this.completeDeliver(a as Deliver);
     }
     if (kind === 'ConsumerSlash') {
-      return this.selectConsumerSlash(a);
+      return this.selectConsumerSlash(a as ConsumerSlash);
     }
     throw `kind doesn't match`;
   };
@@ -187,12 +188,12 @@ class ActionGenerator {
   };
 
   // Fill out a template for a selected Consumer initiated slash action
-  selectConsumerSlash = (a): ConsumerSlash => {
+  selectConsumerSlash = (a: ConsumerSlash): ConsumerSlash => {
     this.didSlash[a.val] = true;
     return {
       ...a,
       infractionHeight: Math.floor(Math.random() * this.model.h[C]),
-      isDowntime: _.sample([true, false]),
+      isDowntime: Math.random() < 0.5,
     };
   };
 
@@ -200,10 +201,10 @@ class ActionGenerator {
   candidateJumpNBlocks = (): Action[] => [{ kind: 'JumpNBlocks' }];
 
   // Fill out a template for a selected JumpNBlocks action
-  selectJumpNBlocks = (a): JumpNBlocks => {
+  completeJumpNBlocks = (a: JumpNBlocks): JumpNBlocks => {
     // A JumpNBlocks action must be chosen to not advance either
     // chain too far ahead so that the IBC clients would expire as a result.
-    const chainCandidates = [];
+    const chainCandidates: Chain[][] = [];
     if (
       this.model.sanity.tLastCommit[P] ===
       this.model.sanity.tLastCommit[C]
@@ -222,9 +223,8 @@ class ActionGenerator {
     }
     a = {
       ...a,
-      chains: _.sample(chainCandidates),
-      // Choose the number of blocks from {1, MAX_JUMP}
-      n: _.sample([1, MAX_BLOCK_ADVANCES]),
+      chains: _.sample(chainCandidates) as Chain[],
+      n: _.sample([1, MAX_BLOCK_ADVANCES]) as number,
       secondsPerBlock: BLOCK_SECONDS,
     };
     return a;
@@ -245,7 +245,7 @@ class ActionGenerator {
   };
 
   // Fill out a selected Deliver action template
-  selectDeliver = (a): Deliver => {
+  completeDeliver = (a: Deliver): Deliver => {
     a = {
       ...a,
       // Randomly choose to deliver 1 or more packets
@@ -263,7 +263,7 @@ class ActionGenerator {
  * @param model The model instance
  * @param action The action to be executed against the model
  */
-function doAction(model, action: Action) {
+function doAction(model: Model, action: Action) {
   const kind = action.kind;
   if (kind === 'Delegate') {
     const a = action as Delegate;
@@ -295,7 +295,7 @@ function doAction(model, action: Action) {
  * data is included
  * @param minutes The number of minutes to generate traces.
  */
-function gen(minutes) {
+function gen(minutes: number) {
   // Compute millis run time
   const runTimeMillis = minutes * 60 * 1000;
   let elapsedMillis = 0;
@@ -317,7 +317,7 @@ function gen(minutes) {
     const sanity = new SanityChecker();
     const hist = new BlockHistory();
     // Store all events emitted during trace execution
-    const events = [];
+    const events: Event[] = [];
     const model = new Model(sanity, hist, events);
     const actionGenerator = new ActionGenerator(model);
     const actions = [];
@@ -369,7 +369,7 @@ function gen(minutes) {
 function replay(actions: Action[]) {
   const sanity = new SanityChecker();
   const blocks = new BlockHistory();
-  const events = [];
+  const events: Event[] = [];
   const model = new Model(sanity, blocks, events);
   for (let i = 0; i < actions.length; i++) {
     const a = actions[i];

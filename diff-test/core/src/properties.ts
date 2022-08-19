@@ -6,6 +6,7 @@ import {
   UNBONDING_SECONDS_C,
   NUM_VALIDATORS,
 } from './constants.js';
+import { Chain, Validator, Snapshot } from './model.js'
 
 /**
  * Data structure used to store a partial order of blocks. The partial order
@@ -15,15 +16,9 @@ import {
  */
 class PartialOrder {
   // map chain -> block height in chain -> block height in counterparty chain
-  greatestPred = _.object([
-    [P, new Map()],
-    [C, new Map()],
-  ]) as { provider: Map<number, number>; consumer: Map<number, number> };
+  greatestPred: Record<Chain, Map<number, number>> = { provider: new Map(), consumer: new Map() }
   // map chain -> block height in chain -> block height in counterparty chain
-  leastSucc = _.object([
-    [P, new Map()],
-    [C, new Map()],
-  ]) as { provider: Map<number, number>; consumer: Map<number, number> };
+  leastSucc: Record<Chain, Map<number, number>> = { provider: new Map(), consumer: new Map() }
 
   /**
    * Mark the delivery of a packet. Induces a partial order between blocks
@@ -32,11 +27,12 @@ class PartialOrder {
    * @param sendHeight send height on sending chain
    * @param receiveHeight receive height on receiving chain
    */
-  deliver = (receivingChain, sendHeight, receiveHeight) => {
+  deliver = (receivingChain: Chain, sendHeight: number, receiveHeight: number) => {
+    // TODO: can refactor to use if statement instead of typecast
     let h = sendHeight;
     if (this.greatestPred[receivingChain].has(receiveHeight)) {
       h = Math.max(
-        this.greatestPred[receivingChain].get(receiveHeight),
+        this.greatestPred[receivingChain].get(receiveHeight)!,
         h,
       );
     }
@@ -44,7 +40,7 @@ class PartialOrder {
     const sendingChain = receivingChain === P ? C : P;
     h = receiveHeight;
     if (this.leastSucc[sendingChain].has(sendHeight)) {
-      h = Math.min(this.leastSucc[sendingChain].get(sendHeight), h);
+      h = Math.min(this.leastSucc[sendingChain].get(sendHeight)!, h);
     }
     this.leastSucc[sendingChain].set(sendHeight, h);
   };
@@ -55,7 +51,7 @@ class PartialOrder {
    * @returns Returns the height greatest predecessing block on the counterparty
    * chain if it exists, else undefined.
    */
-  getGreatestPred = (chain, height) => {
+  getGreatestPred = (chain: Chain, height: number) => {
     const it = this.greatestPred[chain].keys();
     let bestH = -1;
     let bestV = -1;
@@ -64,7 +60,7 @@ class PartialOrder {
       const h = result.value;
       if (bestH < h && h <= height) {
         bestH = h;
-        bestV = this.greatestPred[chain].get(h);
+        bestV = this.greatestPred[chain].get(h)!;
       }
       result = it.next();
     }
@@ -81,16 +77,16 @@ class PartialOrder {
    * @returns Returns the height of the least successing block on the counterparty
    * chain if it exists, else undefined.
    */
-  getLeastSucc = (chain, height) => {
+  getLeastSucc = (chain: Chain, height: number) => {
     const it = this.leastSucc[chain].keys();
-    let bestH = 100000000000000;
+    let bestH = 100000000000000; // Infinity
     let bestV = -1;
     let result = it.next();
     while (!result.done) {
       const h = result.value;
       if (h < bestH && height <= h) {
         bestH = h;
-        bestV = this.leastSucc[chain].get(h);
+        bestV = this.leastSucc[chain].get(h)!;
       }
       result = it.next();
     }
@@ -105,9 +101,9 @@ class PartialOrder {
  * Store a snapshot of the model state for a given block height and time.
  */
 interface Block {
-  h;
-  t;
-  snapshot;
+  h: number;
+  t: number;
+  snapshot: Snapshot;
 }
 
 class BlockHistory {
@@ -120,7 +116,7 @@ class BlockHistory {
     [P, 0],
     [C, 0],
   ]) as { provider: number; consumer: number };
-  commitBlock = (chain, snapshot) => {
+  commitBlock = (chain: Chain, snapshot: Snapshot) => {
     const h = snapshot.h[chain];
     const t = snapshot.t[chain];
     const b: Block = {
@@ -133,8 +129,8 @@ class BlockHistory {
   };
 }
 
-function sum(arr): number {
-  return _.reduce(arr, (accum, x) => accum + x, 0);
+function sum(arr: number[]): number {
+  return arr.reduce((accum: number, x: number) => accum + x, 0)
 }
 
 /**
@@ -195,10 +191,10 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
         ),
     );
   }
-  function powerConsumer(block) {
+  function powerConsumer(block: Block) {
     return block.snapshot.power;
   }
-  function inner(hc) {
+  function inner(hc: number) {
     const hp = partialOrder.getGreatestPred(C, hc);
     assert(hp !== undefined, 'this should never happen.');
     function getHC_() {
