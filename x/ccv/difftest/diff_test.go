@@ -785,7 +785,7 @@ func executeTrace(s *DTTestSuite, trace difftest.TraceData) {
 
 // Test a set of traces
 func (s *DTTestSuite) TestTraces() {
-	traces := loadTraces("tracesAlt.json")
+	traces := loadTraces("traces.json")
 	for i, trace := range traces {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
@@ -979,3 +979,6 @@ func (s *DTTestSuite) TestAssumptions() {
 			return false // Don't stop
 		})
 }
+
+// go test -coverprofile=coverage.out ./...
+// go test -coverprofile=coverage.out -coverpkg=./... -timeout 1000m -run TestDTTestSuite/TestTraces x/ccv/difftest/diff_test.go | tee debug.txt
