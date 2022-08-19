@@ -118,7 +118,8 @@ func (s *DTTestSuite) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.Va
 	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{}, stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
 	s.Require().NoError(err)
 	pskServer := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
-	pskServer.CreateValidator(sdk.WrapSDKContext(s.ctx(P)), msg)
+	_, err = pskServer.CreateValidator(sdk.WrapSDKContext(s.ctx(P)), msg)
+	s.Require().NoError(err)
 	return privVal, addr
 }
 
@@ -144,7 +145,8 @@ func (s *DTTestSuite) bootstrapDelegate(del int, val sdk.ValAddress, amt int) {
 	coins := sdk.NewCoin(difftest.DENOM, sdk.NewInt(int64(amt)))
 	msg := stakingtypes.NewMsgDelegate(d, val, coins)
 	pskServer := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
-	pskServer.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
+	_, err := pskServer.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
+	s.Require().NoError(err)
 }
 
 // Manually construct and send an empty VSC packet from the provider
@@ -295,15 +297,18 @@ func (s *DTTestSuite) SetupTest() {
 		panic("must already have provider client on consumer chain")
 	}
 	s.path.EndpointA.ClientID = providerClientId
-	s.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	s.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
+	err := s.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
+	s.Require().NoError(err)
+	err = s.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
+	s.Require().NoError(err)
 
 	// Configure and create the consumer Client
 	tmConfig = s.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
 	tmConfig.UnbondingPeriod = difftest.UNBONDING_P
 	tmConfig.TrustingPeriod = difftest.TRUSTING
 	tmConfig.MaxClockDrift = difftest.MAX_CLOCK_DRIFT
-	s.path.EndpointB.CreateClient()
+	err = s.path.EndpointB.CreateClient()
+	s.Require().NoError(err)
 
 	// Create the Consumer chain ID mapping in the provider state
 	s.providerChain.App.(*appProvider.App).ProviderKeeper.SetConsumerClientId(s.ctx(P), s.consumerChain.ChainID, s.path.EndpointB.ClientID)
@@ -497,15 +502,12 @@ func (s *DTTestSuite) idempotentBeginBlock(chain string) {
 // idempotentDeliverAcks will deliver any acks available on the network
 // which have been emitted by the counterparty chain since the last
 // call to idempotentDeliverAcks
-func (s *DTTestSuite) idempotentDeliverAcks(receiver string) error {
+func (s *DTTestSuite) idempotentDeliverAcks(receiver string) {
 	for _, ack := range s.network.ConsumeAcks(s.other(receiver)) {
 		s.idempotentUpdateClient(receiver)
 		err := difftest.TryRecvAck(s.endpoint(s.other(receiver)), s.endpoint(receiver), ack.Packet, ack.Ack)
-		if err != nil {
-			return err
-		}
+		s.Require().NoError(err)
 	}
-	return nil
 }
 
 // idempotentUpdateClient will bring the client on chain
@@ -537,7 +539,8 @@ func (s *DTTestSuite) delegate(val int64, amt int64) {
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
-	server.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
+	_, err := server.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
+	s.Require().NoError(err)
 }
 
 // undelegate undelegates amt tokens from validator val
@@ -551,7 +554,8 @@ func (s *DTTestSuite) undelegate(val int64, amt int64) {
 	d := s.delegator()
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
-	server.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
+	_, err := server.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
+	s.Require().NoError(err)
 }
 
 // enableCtx allows querying the chain even before beginBlock call

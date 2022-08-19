@@ -14,6 +14,7 @@ import (
 )
 
 func GetPV(seed []byte) mock.PV {
+	//lint:ignore SA1019 We don't care because this is only a test.
 	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 }
 
