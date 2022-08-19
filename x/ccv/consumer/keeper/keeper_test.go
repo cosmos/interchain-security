@@ -690,16 +690,18 @@ func (suite *KeeperTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.
 }
 
 func (suite *KeeperTestSuite) TestProviderChannelClosed() {
+	// Init consumer states and provider channel
 	suite.SetupCCVChannel()
 	suite.SendEmptyVSCPacket()
 	channelID, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
 	suite.Require().True(found)
 
+	// Close provider channel
 	err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.ChanCloseInit(suite.consumerChain.GetContext(), types.PortID, channelID)
 	suite.Require().NoError(err)
-
 	suite.Require().True(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IsChannelClosed(suite.consumerChain.GetContext(), channelID))
 
+	// Init all consumer states left
 	consAddr := sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Address().Bytes())
 	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetOutstandingDowntime(suite.consumerChain.GetContext(), consAddr)
 	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingChanges(
@@ -708,7 +710,8 @@ func (suite *KeeperTestSuite) TestProviderChannelClosed() {
 	)
 	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingSlashRequests(
 		suite.consumerChain.GetContext(),
-		[]types.SlashRequest{{Infraction: stakingtypes.Downtime}, {Infraction: stakingtypes.DoubleSign}})
+		[]types.SlashRequest{{Infraction: stakingtypes.Downtime}, {Infraction: stakingtypes.DoubleSign}},
+	)
 
 	// check that begin blocker panics when the channel is closed
 	// and that the provider states are cleaned up
