@@ -14,7 +14,7 @@ import {
   dumpTrace,
   forceMakeEmptyDir,
   logEventData,
-} from './util.js';
+} from './traceUtil.js';
 import {
   P,
   C,
@@ -389,12 +389,12 @@ if (process.argv[2] === 'gen') {
   const minutes = parseInt(process.argv[3]);
   gen(minutes);
 } else if (process.argv[2] === 'subset') {
-/*
- * Creates a trace file containing several traces, in a way that ensures
- * each interesting model event is emitted by some trace.
- *
- * yarn start subset <output file abs path> <num event instances (optional)>
- */
+  /*
+   * Creates a trace file containing several traces, in a way that ensures
+   * each interesting model event is emitted by some trace.
+   *
+   * yarn start subset <output file abs path> <num event instances (optional)>
+   */
   console.log(`createSmallSubsetOfCoveringTraces`);
   const outFile = process.argv[3];
   let eventInstances = 20;
@@ -403,11 +403,11 @@ if (process.argv[2] === 'gen') {
   }
   createSmallSubsetOfCoveringTraces(outFile, eventInstances);
 } else if (process.argv[2] === 'replay') {
-/*
- * Replay a trace from a a file, up to a given number of actions.
- *
- * yarn start replay <filename> <list index> <num actions>
- */
+  /*
+   * Replay a trace from a a file, up to a given number of actions.
+   *
+   * yarn start replay <filename> <list index> <num actions>
+   */
   console.log(`replay`);
   const [fn, traceNum, numActions] = process.argv.slice(3, 6);
   replayFile(fn, parseInt(traceNum), parseInt(numActions));
