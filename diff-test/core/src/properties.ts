@@ -29,36 +29,38 @@ class PartialOrder {
   /**
    * Mark the delivery of a packet. Induces a partial order between blocks
    * on different chains.
-   * @param receivingChain chain receiving packet
+   * @param receiverChain chain receiving packet
    * @param sendHeight send height on sending chain
    * @param receiveHeight receive height on receiving chain
    */
   deliver = (
-    receivingChain: Chain,
+    receiverChain: Chain,
     sendHeight: number,
     receiveHeight: number,
   ) => {
-    // TODO: can refactor to use if statement instead of typecast
     let h = sendHeight;
-    if (this.greatestPred[receivingChain].has(receiveHeight)) {
+    if (this.greatestPred[receiverChain].has(receiveHeight)) {
       h = Math.max(
-        this.greatestPred[receivingChain].get(receiveHeight)!,
+        this.greatestPred[receiverChain].get(receiveHeight) as number,
         h,
       );
     }
-    this.greatestPred[receivingChain].set(receiveHeight, h);
-    const sendingChain = receivingChain === P ? C : P;
+    this.greatestPred[receiverChain].set(receiveHeight, h);
+    const senderChain = receiverChain === P ? C : P;
     h = receiveHeight;
-    if (this.leastSucc[sendingChain].has(sendHeight)) {
-      h = Math.min(this.leastSucc[sendingChain].get(sendHeight)!, h);
+    if (this.leastSucc[senderChain].has(sendHeight)) {
+      h = Math.min(
+        this.leastSucc[senderChain].get(sendHeight) as number,
+        h,
+      );
     }
-    this.leastSucc[sendingChain].set(sendHeight, h);
+    this.leastSucc[senderChain].set(sendHeight, h);
   };
 
   /**
    * @param chain chain of block
    * @param height height of block
-   * @returns Returns the height greatest predecessing block on the counterparty
+   * @returns Returns the height greatest predecessor block on the counterparty
    * chain if it exists, else undefined.
    */
   getGreatestPred = (chain: Chain, height: number) => {
@@ -70,11 +72,12 @@ class PartialOrder {
       const h = result.value;
       if (bestH < h && h <= height) {
         bestH = h;
-        bestV = this.greatestPred[chain].get(h)!;
+        bestV = this.greatestPred[chain].get(h) as number;
       }
       result = it.next();
     }
     if (bestV === -1) {
+      // No greatest predecessor exists.
       return undefined;
     }
     return bestV;
@@ -90,20 +93,21 @@ class PartialOrder {
   getLeastSucc = (chain: Chain, height: number) => {
     const it = this.leastSucc[chain].keys();
     let bestH = 100000000000000; // Infinity
-    let bestV = -1;
+    let bestAnswer = -1;
     let result = it.next();
     while (!result.done) {
       const h = result.value;
       if (h < bestH && height <= h) {
         bestH = h;
-        bestV = this.leastSucc[chain].get(h)!;
+        bestAnswer = this.leastSucc[chain].get(h) as number;
       }
       result = it.next();
     }
-    if (bestV === -1) {
+    if (bestAnswer === -1) {
+      // No least successor exists.
       return undefined;
     }
-    return bestV;
+    return bestAnswer;
   };
 }
 
