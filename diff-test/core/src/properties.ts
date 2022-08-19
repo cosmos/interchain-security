@@ -130,7 +130,7 @@ class BlockHistory {
 }
 
 function sum(arr: number[]): number {
-  return arr.reduce((accum: number, x: number) => accum + x, 0)
+  return arr.reduce((sum: number, x: number) => sum + x, 0)
 }
 
 /**
@@ -143,20 +143,14 @@ function sum(arr: number[]): number {
  * @returns Is the property satisfied?
  */
 function stakingWithoutSlashing(hist: BlockHistory): boolean {
-  const blocks = _.sortBy(
-    Array.from(hist.blocks[P].entries()),
-    (e) => e[0],
-  )
+  const blocks = Array.from(hist.blocks[P].entries()).sort((a, b) => a[0] - b[0])
     .map((e) => e[1])
     .map((b) => b.snapshot);
-  if (blocks.length < 2) {
-    return true;
-  }
 
-  function value(b) {
-    let x = b.delegatorTokens;
-    x += sum(b.tokens);
-    x += sum(b.undelegationQ.map((e) => e.balance));
+  function value(e: Snapshot) {
+    let x = e.delegatorTokens;
+    x += sum(e.tokens);
+    x += sum(e.undelegationQ.map((e) => e.balance));
     return x;
   }
 
@@ -180,7 +174,7 @@ function stakingWithoutSlashing(hist: BlockHistory): boolean {
 function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
   const partialOrder = hist.partialOrder;
   const blocks = hist.blocks;
-  function powerProvider(block) {
+  function powerProvider(block: Block) {
     return _.range(NUM_VALIDATORS).map(
       (i) =>
         block.snapshot.tokens[i] +
@@ -198,13 +192,13 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
     const hp = partialOrder.getGreatestPred(C, hc);
     assert(hp !== undefined, 'this should never happen.');
     function getHC_() {
-      const tsHC = blocks[C].get(hc).t;
+      const tsHC = (blocks[C].get(hc) as Block).t;
       // Get earliest height on consumer
       // that a VSC received at hc could mature
       const heights = Array.from(blocks[C].keys()).sort((a, b) => a - b);
       for (let i = 0; i < heights.length; i++) {
         const hc_ = heights[i];
-        if (tsHC + UNBONDING_SECONDS_C <= blocks[C].get(hc_).t) {
+        if (tsHC + UNBONDING_SECONDS_C <= (blocks[C].get(hc_) as Block).t) {
           return hc_;
         }
       }
@@ -224,10 +218,10 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
     }
     for (let h = hp; h < limit; h++) {
       for (let i = 0; i < NUM_VALIDATORS; i++) {
-        const powerP = powerProvider(blocks[P].get(h));
-        const powerC = powerConsumer(blocks[C].get(hc));
+        const powerP = powerProvider(blocks[P].get(h) as Block);
+        const powerC = powerConsumer(blocks[C].get(hc) as Block);
         if (powerC[i] !== undefined) {
-          if (powerP[i] < powerC[i]) {
+          if (powerP[i] < (powerC[i] as number)) {
             return false;
           }
         }
