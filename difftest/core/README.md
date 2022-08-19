@@ -113,3 +113,14 @@ yarn start subset <abs path to x/ccv/difftest/traces.json> 20
 ### Extending the model
 
 All of the semantic logic of the model that relates to how the system is supposed to work is contained in [src/model.ts](./src/model.ts). All of the logic for generating actions (and thus traces) against the model is contained in [src/main.ts](./src/main.ts). The remaining files are less important.
+
+### Ensuring a consistent Trace format
+
+The golang test driver must be able to parse the traces output by this Typescript project. Several tools exist to generate golang type definitions from json files. I strongly suggest using [gojsonstruct](https://github.com/twpayne/go-jsonstruct) to generate a new golang definition whenever the json trace format changes. The steps to do this are
+
+```bash
+# Pass the content of traces.json to gojsonstruct binary which will output a golang type definition
+gojsonstruct < <traces.json> > trace.go
+```
+
+The `trace.go` file output from the above command should be reconciled with the content in `difftest/trace.go`.
