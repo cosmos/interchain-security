@@ -19,6 +19,10 @@ import {
   INITIAL_DELEGATOR_TOKENS,
 } from './constants.js';
 
+type Chain = 'provider' | 'consumer'
+
+type Validator = number
+
 enum Status {
   BONDED = 'bonded',
   UNBONDING = 'unbonding',
@@ -29,58 +33,60 @@ enum Status {
  * Represents undelegation logic in the staking module.
  */
 export interface Undelegation {
-  val;
-  creationHeight;
-  completionTime;
-  balance;
-  initialBalance;
-  onHold;
-  opID;
-  expired;
+  val: Validator;
+  creationHeight: number;
+  completionTime: number;
+  balance: number;
+  initialBalance: number;
+  onHold: boolean;
+  opID: number;
+  expired: boolean;
 }
 
 /**
  * Represents unbonding validator logic in the staking module. 
  */
 export interface Unval {
-  val;
-  unbondingHeight;
-  unbondingTime;
-  onHold;
-  opID;
-  expired;
+  val: Validator;
+  unbondingHeight: number;
+  unbondingTime: number;
+  onHold: boolean;
+  opID: number;
+  expired: boolean;
 }
 
 /**
  * Validator Set Change data structure
  */
 interface Vsc {
-  vscID;
+  vscID: number;
   updates;
-  downtimeSlashAcks;
+  downtimeSlashAcks: number[];
 }
 
 /**
  * Validator Set Change Maturity notification data structure
  */
 interface VscMatured {
-  vscID;
+  vscID: number;
 }
 
 /**
  * Consumer Initiated Slash data structure
  */
 interface Slash {
-  val;
-  vscID;
-  isDowntime;
+  val: Validator;
+  vscID: number;
+  isDowntime: boolean;
 }
 
+type PacketData = Vsc | VscMatured | Slash;
+
 interface Packet {
-  timeoutHeight;
-  timeoutTimestamp;
-  data;
-  sendHeight;
+  timeoutHeight: number;
+  timeoutTimestamp: number;
+  data: PacketData;
+  sendHeight: number;
 }
 
 /**
@@ -94,12 +100,12 @@ class Outbox {
   chain;
   // [packet, num commits]
   fifo: [Packet, number][];
-  constructor(model, chain: string) {
+  constructor(model: Model, chain: Chain) {
     this.model = model;
     this.chain = chain;
     this.fifo = [];
   }
-  static createPacket(data, sendHeight): Packet {
+  static createPacket(data: PacketData, sendHeight: number): Packet {
     const zeroTimeoutHeight = ZERO_TIMEOUT_HEIGHT;
     const ccvTimeoutTimestamp = CCV_TIMEOUT_TIMESTAMP;
     return {
@@ -109,17 +115,19 @@ class Outbox {
       sendHeight: sendHeight,
     };
   }
+
   /**
    * Adds a packet to the outbox, with 0 commits.
    * 
    * @param data packet data
    */
-  add = (data) => {
+  add = (data: PacketData) => {
     this.fifo.push([
       Outbox.createPacket(data, this.model.h[this.chain]),
       0,
     ]);
   };
+
   /**
    * Get the number of deliverable packets from this outbox.
    * A packet is deliverable if it two blocks have committed on
@@ -131,6 +139,7 @@ class Outbox {
   numAvailable = (): number => {
     return this.fifo.filter((e) => 1 < e[1]).length;
   };
+
   /**
    * Get and internally delete deliverable packets from the outbox.
    * 
@@ -185,7 +194,7 @@ class Staking {
   validatorQ: Unval[] = [];
   // Validator jail timestamp
   // Undefined if validator is not jailed
-  jailed: number | undefined[] = new Array(NUM_VALIDATORS).fill(
+  jailed: (number | undefined)[] = new Array(NUM_VALIDATORS).fill(
     undefined,
   );
   // Initial balance of delegator account.
@@ -195,7 +204,7 @@ class Staking {
   opID = 0;
   // maps validator id -> power
   // used to compute validator set changes
-  changes = {};
+  changes: Record<Validator, number> = {};
   // The validators of the last block
   lastVals;
   // The number of tokens of the last block
@@ -206,7 +215,7 @@ class Staking {
    * Compute the new set of active validators
    */
   newVals = () => {
-    const valid = (i): boolean =>
+    const valid = (i: number): boolean =>
       1 <= this.tokens[i] && this.jailed[i] === undefined;
     let vals = _.range(NUM_VALIDATORS);
     // stable sort => breaks ties based on validator
@@ -218,7 +227,7 @@ class Staking {
     return vals;
   };
 
-  constructor(model) {
+  constructor(model: Model) {
     this.m = model;
     this.lastVals = this.newVals();
   }
@@ -275,7 +284,7 @@ class Staking {
       this.status[e.val] = Status.UNBONDED;
       this.m.events.push(Event.COMPLETE_UNVAL_IN_ENDBLOCK);
     });
-    const newUnvals = [];
+    const newUnvals: Unval[] = [];
     _.difference(oldVals, newVals)
       .sort((a, b) => a - b)
       .forEach((i) => {
@@ -322,13 +331,13 @@ class Staking {
     this.lastTokens = _.clone(this.tokens);
   };
 
-  delegate = (val, amt) => {
+  delegate = (val: Validator, amt: number) => {
     this.delegatorTokens -= amt;
     this.tokens[val] += amt;
     this.delegation[val] += amt;
   };
 
-  undelegate = (val, amt) => {
+  undelegate = (val: Validator, amt: number) => {
     if (this.delegation[val] < amt) {
       this.m.events.push(Event.INSUFFICIENT_SHARES);
       return;
@@ -350,8 +359,8 @@ class Staking {
     this.opID += 1;
   };
 
-  slash = (val, infractionHeight) => {
-    const valid = (e): boolean =>
+  slash = (val: Validator, infractionHeight: number) => {
+    const valid = (e: Undelegation): boolean =>
       e.val === val &&
       infractionHeight <= e.creationHeight &&
       (this.m.t[P] < e.completionTime || e.onHold);
@@ -363,12 +372,12 @@ class Staking {
     }
   };
 
-  jailUntil = (val, timestamp) => {
+  jailUntil = (val: Validator, timestamp: number) => {
     this.jailed[val] = timestamp;
     this.m.events.push(Event.JAIL);
   };
 
-  unbondingCanComplete = (opID) => {
+  unbondingCanComplete = (opID: number) => {
     {
       const e = _.find(this.validatorQ, (e) => e.opID === opID);
       if (e) {
@@ -408,12 +417,12 @@ class CCVProvider {
   m;
   initialHeight = 0;
   vscID = 0;
-  vscIDtoH = {};
+  vscIDtoH: Record<number, number> = {};
   vscIDtoOpIDs = new Map();
   downtimeSlashAcks = [];
   tombstoned = new Array(NUM_VALIDATORS).fill(false);
 
-  constructor(model) {
+  constructor(model: Model) {
     this.m = model;
   }
 
@@ -443,7 +452,7 @@ class CCVProvider {
     this.vscID += 1;
   };
 
-  onReceive = (data) => {
+  onReceive = (data: PacketData) => {
     // It's sufficient to use isDowntime field as differentiator
     if ('isDowntime' in data) {
       this.onReceiveSlash(data);
@@ -454,7 +463,7 @@ class CCVProvider {
 
   onReceiveVSCMatured = (data: VscMatured) => {
     if (this.vscIDtoOpIDs.has(data.vscID)) {
-      this.vscIDtoOpIDs.get(data.vscID).forEach((opID) => {
+      this.vscIDtoOpIDs.get(data.vscID).forEach((opID: number) => {
         this.m.staking.unbondingCanComplete(opID);
       });
       this.vscIDtoOpIDs.delete(data.vscID);
@@ -489,7 +498,7 @@ class CCVProvider {
     }
   };
 
-  afterUnbondingInitiated = (opID) => {
+  afterUnbondingInitiated = (opID: number) => {
     if (!this.vscIDtoOpIDs.has(this.vscID)) {
       this.vscIDtoOpIDs.set(this.vscID, []);
     }
@@ -499,15 +508,15 @@ class CCVProvider {
 
 class CCVConsumer {
   m;
-  hToVscID = { 0: 0, 1: 0 };
+  hToVscID: Record<number, number> = { 0: 0, 1: 0 };
   pendingChanges: Map<number, number>[] = [];
   maturingVscs: Map<number, number> = new Map();
   outstandingDowntime = new Array(NUM_VALIDATORS).fill(false);
   // array of validators to power
   // value undefined if validator is not known to consumer
-  power: number | undefined[] = new Array(NUM_VALIDATORS).fill(undefined);
+  power: (number | undefined)[] = new Array(NUM_VALIDATORS).fill(undefined);
 
-  constructor(model) {
+  constructor(model: Model) {
     this.m = model;
     // We model an initial state in which the consumer has already
     // received an up-to-date val set from the provider.
@@ -523,7 +532,7 @@ class CCVConsumer {
   endBlock = () => {
     // Unbond all the matured VSCs
     const matured = (() => {
-      const ret = [];
+      const ret: number[] = [];
       this.maturingVscs.forEach((time, vscID) => {
         if (time <= this.m.t[C]) {
           ret.push(vscID);
@@ -542,7 +551,7 @@ class CCVConsumer {
       return;
     }
     const changes = (() => {
-      const ret = new Map();
+      const ret: Map<number, number> = new Map();
       this.pendingChanges.forEach((updates) => {
         _.keys(updates).forEach((k) => {
           ret.set(k, updates[k]);
@@ -572,13 +581,13 @@ class CCVConsumer {
     this.hToVscID[this.m.h[C] + 1] = data.vscID;
     this.pendingChanges.push(data.updates);
     this.maturingVscs.set(data.vscID, this.m.t[C] + UNBONDING_SECONDS_C);
-    data.downtimeSlashAcks.forEach((val) => {
+    data.downtimeSlashAcks.forEach((val: number) => {
       this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_ACK);
       this.outstandingDowntime[val] = false;
     });
   };
 
-  sendSlashRequest = (val, infractionHeight, isDowntime) => {
+  sendSlashRequest = (val: number, infractionHeight: number, isDowntime: boolean) => {
     if (isDowntime && this.outstandingDowntime[val]) {
       this.m.events.push(Event.DOWNTIME_SLASH_REQUEST_OUTSTANDING);
       return;
@@ -600,21 +609,24 @@ class CCVConsumer {
 
 class Model {
   T = 0;
-  h = _.object([
+  h: Record<Chain, number> = _.object([
     [P, 0],
     [C, 0],
-  ]) as { provider: number; consumer: number };
-  t = _.object([
+  ]) as Record<Chain, number>; // TODO: remove!
+  t: Record<Chain, number> = _.object([
     [P, 0],
     [C, 0],
+  ]) as Record<Chain, number>; // TODO: remove!
+  outbox: Record<string, Outbox>;
+  staking: Staking;
+  ccvP: CCVProvider;
+  ccvC: CCVConsumer;
+  blocks: BlockHistory;
+  events: Event[];
+  mustBeginBlock = _.object([
+    [P, true],
+    [C, true],
   ]);
-  outbox = {};
-  staking = undefined;
-  ccvP = undefined;
-  ccvC = undefined;
-  blocks = undefined;
-  events = undefined;
-  mustBeginBlock = {};
   sanity: Sanity;
 
   constructor(sanity: Sanity, blocks: BlockHistory, events: Event[]) {
@@ -630,8 +642,8 @@ class Model {
     this.blocks.commitBlock(P, this.snapshot());
     this.blocks.commitBlock(C, this.snapshot());
     this.increaseSeconds(BLOCK_SECONDS);
-    this.mustBeginBlock[P] = true;
-    this.mustBeginBlock[C] = true;
+    // this.mustBeginBlock[P] = true;
+    // this.mustBeginBlock[C] = true;
   }
 
   snapshot = () => {
@@ -649,7 +661,7 @@ class Model {
     });
   };
 
-  idempotentBeginBlock = (chain) => {
+  idempotentBeginBlock = (chain: Chain) => {
     if (this.mustBeginBlock[chain]) {
       this.mustBeginBlock[chain] = false;
       this.h[chain] += 1;
@@ -674,7 +686,7 @@ class Model {
     this.staking.undelegate(val, amt);
   };
 
-  endBlock = (chain) => {
+  endBlock = (chain: Chain) => {
     this.idempotentBeginBlock(chain);
     if (chain === P) {
       this.staking.endBlock();
@@ -689,13 +701,13 @@ class Model {
     this.mustBeginBlock[chain] = true;
   };
 
-  increaseSeconds = (seconds) => {
+  increaseSeconds = (seconds: number) => {
     this.T += seconds;
   };
 
   jumpNBlocks = (
     n: number,
-    chains: string[],
+    chains: Chain[],
     secondsPerBlock: number,
   ) => {
     for (let i = 0; i < n; i++) {
@@ -704,7 +716,7 @@ class Model {
     }
   };
 
-  deliver = (chain: string, num: number) => {
+  deliver = (chain: Chain, num: number) => {
     this.idempotentBeginBlock(chain);
     this.sanity.updateClient(chain, this.t[chain]);
     if (chain === P) {

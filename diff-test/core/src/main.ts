@@ -64,10 +64,10 @@ type ConsumerSlash = {
  * Takes an object where values are probabilities and returns a random
  * key based on the distribution.
  */
-function weightedRandomKey(distr) {
-  const scalar = _.reduce(_.values(distr), (sum, y) => sum + y, 0);
+function weightedRandomKey(distr: Record<string, number>) {
+  const scalar = Object.values(distr).reduce((sum: number, y: number): number => sum + y, 0)
   const x = Math.random() * scalar;
-  const pairs = _.pairs(distr);
+  const pairs = Object.entries(distr)
   let i = 0;
   let cum = 0;
   while (i < pairs.length - 1 && cum + pairs[i][1] < x) {
@@ -81,7 +81,7 @@ class ActionGenerator {
   model;
   didSlash = new Array(NUM_VALIDATORS).fill(false);
 
-  constructor(model) {
+  constructor(model: Model) {
     this.model = model;
   }
 
@@ -149,7 +149,7 @@ class ActionGenerator {
   };
 
   // Fill out template for a selected Delegate action
-  selectDelegate = (a): Delegate => {
+  selectDelegate = (a: Delegate): Delegate => {
     return { ...a, amt: _.random(1, 5) * TOKEN_SCALAR };
   };
 
@@ -164,7 +164,7 @@ class ActionGenerator {
   };
 
   // Fill out template for a selected Undelegate action
-  selectUndelegate = (a): Undelegate => {
+  selectUndelegate = (a: Undelegate): Undelegate => {
     return { ...a, amt: _.random(1, 4) * TOKEN_SCALAR };
   };
 
