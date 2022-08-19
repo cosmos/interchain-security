@@ -20,8 +20,6 @@ const NUM_VALIDATORS = 4;
 // than NUM_VALIDATORS in order to test scenarios where validators
 // join and leave the active set, or are jailed.
 const MAX_VALIDATORS = 2; // allows jailing 2 validators
-const ZERO_TIMEOUT_HEIGHT = 100000; // TODO: think I can delete it?
-const CCV_TIMEOUT_TIMESTAMP = 100000; // TODO: think I can delete it?
 // Slash factor for double signing. This is set to 0 in order to test slashing
 // logic while avoiding divergence between model and SUT due to differences
 // in numerical implementations.
@@ -44,8 +42,6 @@ export {
   TRUSTING_SECONDS,
   NUM_VALIDATORS,
   MAX_VALIDATORS,
-  ZERO_TIMEOUT_HEIGHT,
-  CCV_TIMEOUT_TIMESTAMP,
   SLASH_DOUBLESIGN,
   SLASH_DOWNTIME,
   JAIL_SECONDS,

@@ -110,8 +110,6 @@ interface Slash {
 type PacketData = Vsc | VscMatured | Slash;
 
 interface Packet {
-  timeoutHeight: number;
-  timeoutTimestamp: number;
   data: PacketData;
   sendHeight: number;
 }

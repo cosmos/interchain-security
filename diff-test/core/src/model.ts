@@ -10,8 +10,6 @@ import {
   UNBONDING_SECONDS_C,
   NUM_VALIDATORS,
   MAX_VALIDATORS,
-  ZERO_TIMEOUT_HEIGHT,
-  CCV_TIMEOUT_TIMESTAMP,
   JAIL_SECONDS,
   BLOCK_SECONDS,
   TOKEN_SCALAR,
@@ -50,11 +48,7 @@ class Outbox {
     this.fifo = [];
   }
   static createPacket(data: PacketData, sendHeight: number): Packet {
-    const zeroTimeoutHeight = ZERO_TIMEOUT_HEIGHT;
-    const ccvTimeoutTimestamp = CCV_TIMEOUT_TIMESTAMP;
     return {
-      timeoutHeight: zeroTimeoutHeight,
-      timeoutTimestamp: ccvTimeoutTimestamp,
       data,
       sendHeight: sendHeight,
     };
