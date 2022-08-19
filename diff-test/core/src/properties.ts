@@ -6,7 +6,7 @@ import {
   UNBONDING_SECONDS_C,
   NUM_VALIDATORS,
 } from './constants.js';
-import { Chain, Validator, Snapshot } from './model.js'
+import { Snapshot, Chain, CommittedBlock } from './common.js'
 
 /**
  * Data structure used to store a partial order of blocks. The partial order
@@ -97,29 +97,17 @@ class PartialOrder {
   };
 }
 
-/**
- * Store a snapshot of the model state for a given block height and time.
- */
-interface Block {
-  h: number;
-  t: number;
-  snapshot: Snapshot;
-}
+
 
 class BlockHistory {
   partialOrder = new PartialOrder();
-  blocks = _.object([
-    [P, new Map()],
-    [C, new Map()],
-  ]) as { provider: Map<number, Block>; consumer: Map<number, Block> };
-  hLastCommit = _.object([
-    [P, 0],
-    [C, 0],
-  ]) as { provider: number; consumer: number };
+  blocks: Record<Chain, Map<number, CommittedBlock>> = { provider: new Map(), consumer: new Map() }
+  hLastCommit: Record<Chain, number> = { provider: 0, consumer: 0 }
   commitBlock = (chain: Chain, snapshot: Snapshot) => {
     const h = snapshot.h[chain];
     const t = snapshot.t[chain];
-    const b: Block = {
+    const b: CommittedBlock = {
+      chain,
       h,
       t,
       snapshot,
@@ -174,7 +162,7 @@ function stakingWithoutSlashing(hist: BlockHistory): boolean {
 function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
   const partialOrder = hist.partialOrder;
   const blocks = hist.blocks;
-  function powerProvider(block: Block) {
+  function powerProvider(block: CommittedBlock) {
     return _.range(NUM_VALIDATORS).map(
       (i) =>
         block.snapshot.tokens[i] +
@@ -185,20 +173,20 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
         ),
     );
   }
-  function powerConsumer(block: Block) {
+  function powerConsumer(block: CommittedBlock) {
     return block.snapshot.power;
   }
   function inner(hc: number) {
     const hp = partialOrder.getGreatestPred(C, hc);
     assert(hp !== undefined, 'this should never happen.');
     function getHC_() {
-      const tsHC = (blocks[C].get(hc) as Block).t;
+      const tsHC = (blocks[C].get(hc) as CommittedBlock).t;
       // Get earliest height on consumer
       // that a VSC received at hc could mature
       const heights = Array.from(blocks[C].keys()).sort((a, b) => a - b);
       for (let i = 0; i < heights.length; i++) {
         const hc_ = heights[i];
-        if (tsHC + UNBONDING_SECONDS_C <= (blocks[C].get(hc_) as Block).t) {
+        if (tsHC + UNBONDING_SECONDS_C <= (blocks[C].get(hc_) as CommittedBlock).t) {
           return hc_;
         }
       }
@@ -218,8 +206,8 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
     }
     for (let h = hp; h < limit; h++) {
       for (let i = 0; i < NUM_VALIDATORS; i++) {
-        const powerP = powerProvider(blocks[P].get(h) as Block);
-        const powerC = powerConsumer(blocks[C].get(hc) as Block);
+        const powerP = powerProvider(blocks[P].get(h) as CommittedBlock);
+        const powerC = powerConsumer(blocks[C].get(hc) as CommittedBlock);
         if (powerC[i] !== undefined) {
           if (powerP[i] < (powerC[i] as number)) {
             return false;
@@ -238,7 +226,7 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
 
 export {
   PartialOrder,
-  Block,
+  CommittedBlock,
   BlockHistory,
   stakingWithoutSlashing,
   bondBasedConsumerVotingPower,

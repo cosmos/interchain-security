@@ -8,7 +8,7 @@ import {
   bondBasedConsumerVotingPower
 } from './properties.js';
 import { Sanity as SanityChecker } from './sanity.js';
-import { Model, Chain, Validator } from './model.js';
+import { Model } from './model.js';
 import {
   createSmallSubsetOfCoveringTraces,
   dumpTrace,
@@ -23,43 +23,8 @@ import {
   TOKEN_SCALAR,
   MAX_BLOCK_ADVANCES,
 } from './constants.js';
-import { Event } from './events.js'
+import { Action, Undelegate, Delegate, ConsumerSlash, Deliver, JumpNBlocks, Chain, Event } from './common.js'
 
-interface Action {
-  kind: string;
-}
-
-type Delegate = {
-  kind: string;
-  val: Validator;
-  amt: number;
-};
-
-type Undelegate = {
-  kind: string;
-  val: Validator;
-  amt: number;
-};
-
-type JumpNBlocks = {
-  kind: string;
-  chains: Chain[];
-  n: number;
-  secondsPerBlock: number;
-};
-
-type Deliver = {
-  kind: string;
-  chain: Chain;
-  numPackets: number;
-};
-
-type ConsumerSlash = {
-  kind: string;
-  val: Validator;
-  infractionHeight: number;
-  isDowntime: boolean;
-};
 
 /**
  * Takes an object where values are probabilities and returns a random

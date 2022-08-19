@@ -1,5 +1,4 @@
 import _ from 'underscore';
-import { Event } from './events.js';
 import { BlockHistory } from './properties.js';
 import { Sanity } from './sanity.js';
 import cloneDeep from 'clone-deep';
@@ -19,75 +18,11 @@ import {
   INITIAL_DELEGATOR_TOKENS,
 } from './constants.js';
 
-type Chain = 'provider' | 'consumer'
-
-type Validator = number
-
-enum Status {
-  BONDED = 'bonded',
-  UNBONDING = 'unbonding',
-  UNBONDED = 'unbonded',
-}
-
-/**
- * Represents undelegation logic in the staking module.
- */
-export interface Undelegation {
-  val: Validator;
-  creationHeight: number;
-  completionTime: number;
-  balance: number;
-  initialBalance: number;
-  onHold: boolean;
-  opID: number;
-  expired: boolean;
-}
-
-/**
- * Represents unbonding validator logic in the staking module. 
- */
-export interface Unval {
-  val: Validator;
-  unbondingHeight: number;
-  unbondingTime: number;
-  onHold: boolean;
-  opID: number;
-  expired: boolean;
-}
-
-/**
- * Validator Set Change data structure
- */
-interface Vsc {
-  vscID: number;
-  updates: Record<Validator, number>;
-  downtimeSlashAcks: number[];
-}
-
-/**
- * Validator Set Change Maturity notification data structure
- */
-interface VscMatured {
-  vscID: number;
-}
-
-/**
- * Consumer Initiated Slash data structure
- */
-interface Slash {
-  val: Validator;
-  vscID: number;
-  isDowntime: boolean;
-}
-
-type PacketData = Vsc | VscMatured | Slash;
-
-interface Packet {
-  timeoutHeight: number;
-  timeoutTimestamp: number;
-  data: PacketData;
-  sendHeight: number;
-}
+import {
+  Undelegation, Unval, Vsc, VscMatured,
+  Packet, Chain, Validator, PacketData,
+  Slash, Snapshot, Status, Event
+} from './common.js'
 
 /**
  * Store outbound packets in FIFO order from a given chain.
@@ -224,6 +159,7 @@ class Staking {
     vals = vals.filter(valid);
     vals = vals.slice(0, MAX_VALIDATORS);
     this.m.sanity.newValSet(vals);
+    // TODO: compute val set power change < 1/3 ??
     return vals;
   };
 
@@ -605,17 +541,6 @@ class CCVConsumer {
   };
 }
 
-type Snapshot = {
-  h: Record<Chain, number>;
-  t: Record<Chain, number>;
-  tokens: number[];
-  status: Status[];
-  undelegationQ: Undelegation[];
-  validatorQ: Unval[];
-  jailed: (number | undefined)[];
-  delegatorTokens: number;
-  power: (number | undefined)[];
-}
 
 class Model {
   T = 0;

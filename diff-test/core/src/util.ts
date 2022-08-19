@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as childProcess from 'child_process';
 import _ from 'underscore';
-import { Event } from './events.js';
+import { Action, Chain, CommittedBlock, Event } from './common.js'
 
 import {
   P,
@@ -31,9 +31,10 @@ const meta = {
 };
 
 /**
- * @param dir Forcibly an empty directory exists.
+ * Forcibly ensure an empty directory exists.
+ * @param dir directory name
  */
-function forceMakeEmptyDir(dir) {
+function forceMakeEmptyDir(dir: string) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir);
     return;
@@ -50,7 +51,7 @@ function forceMakeEmptyDir(dir) {
  * @param actions Actions included in trace
  * @param blocks Block snapshots included in trace
  */
-function dumpTrace(fn: string, events, actions, blocks) {
+function dumpTrace(fn: string, events: Event[], actions: Action[], blocks: Record<Chain, Map<number, CommittedBlock>>) {
   const toDump = {
     // Record metadata
     meta,
@@ -98,13 +99,15 @@ function dumpTrace(fn: string, events, actions, blocks) {
  * minimizing the number of traces included.
  * In this way, it is possible to obtain a concise set of traces which
  * test many model behaviors, reducing the time needed to test the SUT.
+ * 
+ * @param outFile absolute filepath to write output to 
+ * @param numEventInstances max number of times to it each event
  */
 function createSmallSubsetOfCoveringTraces(outFile: string, numEventInstances: number) {
-  // The number of times each event should occur
   // directory to read traces from
   const DIR = 'traces/';
   // file to write the new traces to
-  let fns = [];
+  let fns: string[] = [];
   fs.readdirSync(DIR).forEach((file) => {
     fns.push(`${DIR}${file}`);
   });
@@ -161,10 +164,10 @@ function createSmallSubsetOfCoveringTraces(outFile: string, numEventInstances: n
  * Pretty print the number of times each event occurs.
  * @param allEvents A map of event type to number of occurrences
  */
-function logEventData(allEvents) {
+function logEventData(allEvents: Event[]) {
   const eventCnt = _.countBy(allEvents, _.identity);
   for (const evt in Event) {
-    const evtName = Event[evt];
+    const evtName = (Event as any)[evt]; // TODO: remove hack
     if (!_.has(eventCnt, evtName)) {
       eventCnt[evtName] = 0;
     }
