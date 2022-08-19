@@ -704,10 +704,11 @@ func (suite *KeeperTestSuite) TestProviderChannelClosed() {
 	// Init all consumer states left
 	consAddr := sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Address().Bytes())
 	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetOutstandingDowntime(suite.consumerChain.GetContext(), consAddr)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingChanges(
+	err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingChanges(
 		suite.consumerChain.GetContext(),
 		ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1},
 	)
+	suite.Require().NoError(err)
 	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingSlashRequests(
 		suite.consumerChain.GetContext(),
 		[]types.SlashRequest{{Infraction: stakingtypes.Downtime}, {Infraction: stakingtypes.DoubleSign}},
