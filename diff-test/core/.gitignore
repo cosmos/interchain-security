@@ -29,5 +29,3 @@ build/
 .DS_Store
 
 traces/
-tracesWithSlashing/
-**/trace*.json
