@@ -61,7 +61,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 
 	// set outstanding slashing flags to false
 	for _, addr := range newChanges.GetSlashAcks() {
-		k.ClearOutstandingDowntime(ctx, addr)
+		k.DeleteOutstandingDowntime(ctx, addr)
 	}
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})

@@ -161,6 +161,16 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 		// cleanup state
 		am.keeper.DeleteProviderChannel(ctx)
 		am.keeper.DeleteProviderClient(ctx)
+		am.keeper.DeletePort(ctx)
+		am.keeper.ClearCCValidators(ctx)
+		am.keeper.DeletePendingChanges(ctx)
+		am.keeper.DeleteUnbondingTime(ctx)
+		am.keeper.ClearPacketMaturityTimes(ctx)
+		am.keeper.ClearOutstandingDowntimes(ctx)
+		am.keeper.ClearHistoricalInfo(ctx)
+		am.keeper.ClearHeightValsetUpdateIDs(ctx)
+		am.keeper.ClearPendingSlashRequests(ctx)
+		am.keeper.SetParams(ctx, types.NewParams(false, 0, "", ""))
 
 		channelClosedMsg := fmt.Sprintf("CCV channel %q was closed - shutdown consumer chain since it is not secured anymore", channelID)
 		ctx.Logger().Error(channelClosedMsg)

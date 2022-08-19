@@ -699,21 +699,72 @@ func (suite *KeeperTestSuite) TestProviderChannelClosed() {
 	suite.Require().NoError(err)
 
 	suite.Require().True(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IsChannelClosed(suite.consumerChain.GetContext(), channelID))
-	shutdown := false
 
-	// check that begin block panics when a channel is closed
+	consAddr := sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Address().Bytes())
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetOutstandingDowntime(suite.consumerChain.GetContext(), consAddr)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingChanges(
+		suite.consumerChain.GetContext(),
+		ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1},
+	)
+	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingSlashRequests(
+		suite.consumerChain.GetContext(),
+		[]types.SlashRequest{{Infraction: stakingtypes.Downtime}, {Infraction: stakingtypes.DoubleSign}})
+
+	// check that begin blocker panics when the channel is closed
+	// and that the provider states are cleaned up
 	defer func() {
 		if r := recover(); r != nil {
-			shutdown = true
-		}
-	}()
-	suite.consumerChain.App.BeginBlock(abci.RequestBeginBlock{})
-	suite.Require().False(shutdown)
+			_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
+			suite.Require().False(found)
 
-	// check that that the provider states are cleaned up
-	_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
-	suite.Require().False(found)
-	_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
-	suite.Require().False(found)
+			_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
+			suite.Require().False(found)
+
+			_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
+			suite.Require().False(found)
+
+			p := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPort(suite.consumerChain.GetContext())
+			suite.Require().Zero(p)
+
+			vals := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetAllCCValidator(suite.consumerChain.GetContext())
+			suite.Require().Zero(vals)
+
+			_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPendingChanges(suite.consumerChain.GetContext())
+			suite.Require().False(found)
+
+			_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.consumerChain.GetContext())
+			suite.Require().False(found)
+
+			suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IteratePacketMaturityTime(suite.consumerChain.GetContext(), func(vscId, timeNs uint64) bool {
+				suite.Require().Fail("packet maturity time is not empty")
+				return true
+			})
+
+			suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IterateOutstandingDowntime(suite.consumerChain.GetContext(), func(_ sdk.ConsAddress) bool {
+				suite.Require().Fail("outstanding downtime is not empty")
+				return true
+			})
+
+			suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IterateHistoricalInfo(suite.consumerChain.GetContext(), func(_ uint64) bool {
+				suite.Require().Fail("historical info is not empty")
+				return true
+			})
+
+			suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IterateHeightValsetUpdateID(suite.consumerChain.GetContext(), func(height uint64) bool {
+				suite.Require().Fail("height to valset update ID mapping is not empty")
+				return true
+			})
+
+			reqs := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPendingSlashRequests(suite.consumerChain.GetContext())
+			suite.Require().Zero(reqs)
+
+			suite.Require().Zero(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetParams(suite.consumerChain.GetContext()))
+
+			return
+		}
+		suite.Require().Fail("Begin blocker did not panic with a closed channel")
+
+	}()
+	suite.consumerChain.App.(*appConsumer.App).BeginBlocker(suite.consumerChain.GetContext(), abci.RequestBeginBlock{})
 
 }
