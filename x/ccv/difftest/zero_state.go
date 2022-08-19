@@ -96,6 +96,7 @@ type InitialModelValidatorState struct {
 // GetValidatorPrivateKey returns the validator private key using the given seed index
 func GetValidatorPrivateKey(seedIx int) mock.PV {
 	seed := []byte(PKSeeds[seedIx])
+	//lint:ignore SA1019 We don't care because this is only a test.
 	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 }
 
