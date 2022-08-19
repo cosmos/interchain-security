@@ -85,7 +85,11 @@ func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endp
 		return err
 	}
 
-	receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
+	err = receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -113,7 +117,11 @@ func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p
 		return nil, err
 	}
 
-	receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
+	err = receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
+
+	if err != nil {
+		return nil, err
+	}
 
 	ack, err = ibctesting.ParseAckFromEvents(resWithAck.GetEvents())
 
@@ -148,7 +156,11 @@ func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, pack
 		return err
 	}
 
-	receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
+	err = receiver.Chain.SenderAccount.SetSequence(receiver.Chain.SenderAccount.GetSequence() + 1)
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
