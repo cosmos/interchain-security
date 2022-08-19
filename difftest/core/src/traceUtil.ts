@@ -102,51 +102,55 @@ function dumpTrace(
  * test many model behaviors, reducing the time needed to test the SUT.
  *
  * @param outFile absolute filepath to write output to
- * @param numEventInstances max number of times to it each event
+ * @param targetCntForEventMax max number of times to it each event
  */
 function createSmallSubsetOfCoveringTraces(
   outFile: string,
-  numEventInstances: number,
+  targetCntForEventMax: number,
 ) {
   // directory to read traces from
   const DIR = 'traces/';
   // file to write the new traces to
   const inputFilenames: string[] = [];
-  fs.readdirSync(DIR).forEach((file) => {
-    inputFilenames.push(`${DIR}${file}`);
+
+  fs.readdirSync(DIR).forEach((fn) => {
+    inputFilenames.push(`${DIR}${fn}`);
   });
-  const maxPossibleCntForEvent: number[] = [];
-  const cnt: number[] = [];
-  // Maps event names to an index
-  const ix: Record<string, number> = {};
+
+  const eventNameToCounterIx: Record<string, number> = {};
+
   for (const evt in Event) {
-    const i = Object.keys(Event).indexOf(evt);
-    const stringRepr = Object.values(Event)[i];
-    ix[stringRepr] = cnt.length;
-    cnt.push(0);
-    maxPossibleCntForEvent.push(0);
+    const stringRepr = Event[evt as keyof typeof Event];
+    eventNameToCounterIx[stringRepr] = Object.keys(Event).indexOf(evt);
   }
+
+  const NUM_EVENTS = Object.keys(Event).length;
+
+  const maxPossibleCntForEvent = new Array(NUM_EVENTS).fill(0);
+
   const eventCntsByTrace: [string, number[]][] = [];
   // For each trace file
   inputFilenames.forEach((fn) => {
     const trace = JSON.parse(fs.readFileSync(fn, 'utf8'))[0];
-    const thisCnt: number[] = new Array(cnt.length).fill(0);
+    const traceEventCnt: number[] = new Array(
+      Object.keys(Event).length,
+    ).fill(0);
     // for each event that occurred in the trace
     trace.events.forEach((evtName: string) => {
-      const i = ix[evtName];
+      const i = eventNameToCounterIx[evtName];
       // cnt the occurrences in this trace
-      thisCnt[i] += 1;
+      traceEventCnt[i] += 1;
       // cnt the global occurrences
       maxPossibleCntForEvent[i] += 1;
     });
-    eventCntsByTrace.push([fn, thisCnt]);
+    eventCntsByTrace.push([fn, traceEventCnt]);
   });
 
   const targetCntForEvent = maxPossibleCntForEvent.map((x) =>
-    Math.min(x, numEventInstances),
+    Math.min(x, targetCntForEventMax),
   );
-  console.log(`finished reading traces and counting events`);
 
+  const accumulatedCntForEvent = new Array(NUM_EVENTS).fill(0);
   /**
    * Computes greedy score for a event frequency cnt vector
    * @param v vector representing event counts
@@ -156,7 +160,10 @@ function createSmallSubsetOfCoveringTraces(
     let x = 0;
     for (let i = 0; i < v.length; i++) {
       // How many events of this type are still desired?
-      const need = Math.max(targetCntForEvent[i] - cnt[i], 0);
+      const need = Math.max(
+        targetCntForEvent[i] - accumulatedCntForEvent[i],
+        0,
+      );
       // How many events of this type does this trace have?
       const get = v[i];
       x += Math.min(need, get);
@@ -166,14 +173,28 @@ function createSmallSubsetOfCoveringTraces(
 
   const outputFilenames: string[] = [];
   // While we have not reached the target occurrence count for all events
-  while (cnt.some((x, i) => x < targetCntForEvent[i])) {
+  while (
+    accumulatedCntForEvent.some((x, i) => x < targetCntForEvent[i])
+  ) {
     // Sort by score descending
     eventCntsByTrace.sort((a, b) => score(b[1]) - score(a[1]));
-    const [fn] = eventCntsByTrace.shift()!;
+    const [fn, traceEventCnt] = eventCntsByTrace.shift()!;
+    for (let i = 0; i < traceEventCnt.length; i++) {
+      accumulatedCntForEvent[i] += traceEventCnt[i];
+    }
     // Use this trace
     outputFilenames.push(fn);
   }
+
+  // Diagnostic ////////////////////////////////////////////
   console.log(`num traces used: `, outputFilenames.length);
+  for (let i = 0; i < accumulatedCntForEvent.length; i++) {
+    const evtName = Object.keys(Event)[i];
+    const cnt = accumulatedCntForEvent[i];
+    console.log(evtName, cnt);
+  }
+  //////////////////////////////////////////////////////////
+
   const allTraces: any[] = [];
   outputFilenames.forEach((fn) => {
     const traceJson = JSON.parse(fs.readFileSync(fn, 'utf8'));
