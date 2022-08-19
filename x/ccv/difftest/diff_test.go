@@ -785,7 +785,7 @@ func executeTrace(s *DTTestSuite, trace difftest.TraceData) {
 
 // Test a set of traces
 func (s *DTTestSuite) TestTraces() {
-	traces := loadTraces("traces.json")
+	traces := loadTraces("tracesAlt.json")
 	for i, trace := range traces {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
