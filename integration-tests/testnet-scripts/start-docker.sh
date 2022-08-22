@@ -23,7 +23,7 @@ fi
 # Copy sdk directory to working dir if path was specified
 if [[ "$LOCAL_SDK_PATH" != "default" ]]
 then
-    cp -n -r "$LOCAL_SDK_PATH" .
+    cp -n -r "$LOCAL_SDK_PATH" ./cosmos-sdk
     printf "\n\nUsing local sdk version from %s\n\n\n" "$LOCAL_SDK_PATH"
 else
     printf "\n\nUsing default sdk version\n\n\n"
