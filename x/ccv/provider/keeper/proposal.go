@@ -27,7 +27,7 @@ func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateCons
 		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, p.LockUnbondingOnTimeout)
 	}
 
-	err := k.SetPendingCreateProposal(ctx, p)
+	err := k.SetPendingCreateProposal(ctx, *p)
 	if err != nil {
 		return err
 	}
@@ -208,9 +208,9 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 }
 
 // SetPendingCreateProposal stores a pending proposal to create a consumer chain client
-func (k Keeper) SetPendingCreateProposal(ctx sdk.Context, clientInfo *types.CreateConsumerChainProposal) error {
+func (k Keeper) SetPendingCreateProposal(ctx sdk.Context, clientInfo types.CreateConsumerChainProposal) error {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := k.cdc.Marshal(clientInfo)
+	bz, err := k.cdc.Marshal(&clientInfo)
 	if err != nil {
 		return err
 	}

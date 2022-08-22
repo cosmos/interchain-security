@@ -23,7 +23,7 @@ func (s *KeeperTestSuite) TestGenesis() {
 		expTimestamp    time.Time
 		expPendingVSC   ccv.ValidatorSetChangePacketData
 		expUbdOp        ccv.UnbondingOp
-		expCreateProp   *types.CreateConsumerChainProposal
+		expCreateProp   types.CreateConsumerChainProposal
 		expUbdIndex     []uint64 = []uint64{0, 1, 2}
 		expSlashAcks             = []string{
 			sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Address()).String(),
@@ -47,7 +47,7 @@ func (s *KeeperTestSuite) TestGenesis() {
 				restartHeight = uint64(ctx.BlockHeight())
 				expVSCID = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(ctx)
 				expTimestamp = time.Now().Add(time.Hour)
-				expCreateProp = &types.CreateConsumerChainProposal{
+				expCreateProp = types.CreateConsumerChainProposal{
 					ChainId:   consumerChainID,
 					SpawnTime: expTimestamp,
 				}

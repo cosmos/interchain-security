@@ -29,7 +29,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 
 	for _, cccp := range genState.CreateConsumerChainProposals {
-		k.SetPendingCreateProposal(ctx, &cccp)
+		k.SetPendingCreateProposal(ctx, cccp)
 	}
 	for _, sccp := range genState.StopConsumerChainProposals {
 		k.SetPendingStopProposal(ctx, sccp.ChainId, sccp.StopTime)
