@@ -66,8 +66,6 @@ type DTTestSuite struct {
 	// network for simulating relaying
 	network difftest.Network
 
-	// chain -> height of last UpdateClient for chain // TODO: I can remove this
-	heightLastUpdateClient map[string]int64
 	// chain -> array of headers for UpdateClient
 	headersForUpdateClient map[string][]*ibctmtypes.Header
 
@@ -211,7 +209,6 @@ func (s *DTTestSuite) SetupTest() {
 
 	// init utility data structures
 	s.network = difftest.MakeNetwork()
-	s.heightLastUpdateClient = map[string]int64{P: 0, C: 0}
 	s.headersForUpdateClient = map[string][]*ibctmtypes.Header{P: {}, C: {}}
 	s.mustBeginBlock = map[string]bool{P: true, C: true}
 	s.trace = Trace{}
@@ -513,18 +510,13 @@ func (s *DTTestSuite) idempotentDeliverAcks(receiver string) {
 // up to date by delivering each header committed on the
 // counterparty chain since the last idempotentUpdateClient
 func (s DTTestSuite) idempotentUpdateClient(chain string) {
-	otherHeight := s.height(s.other(chain))
-	if s.heightLastUpdateClient[chain] < otherHeight {
-		for _, header := range s.headersForUpdateClient[s.other(chain)] {
-			err := difftest.UpdateReceiverClient(s.endpoint(s.other(chain)), s.endpoint(chain), header)
-			if err != nil {
-				s.FailNow("Bad test")
-			}
+	for _, header := range s.headersForUpdateClient[s.other(chain)] {
+		err := difftest.UpdateReceiverClient(s.endpoint(s.other(chain)), s.endpoint(chain), header)
+		if err != nil {
+			s.FailNow("Bad test")
 		}
-		s.headersForUpdateClient[s.other(chain)] = []*ibctmtypes.Header{}
-		s.heightLastUpdateClient[chain] = otherHeight
 	}
-
+	s.headersForUpdateClient[s.other(chain)] = []*ibctmtypes.Header{}
 }
 
 // delegate delegates amt tokens to validator val
@@ -984,6 +976,3 @@ func (s *DTTestSuite) TestAssumptions() {
 			return false // Don't stop
 		})
 }
-
-// go test -coverprofile=coverage.out ./...
-// go test -coverprofile=coverage.out -coverpkg=./... -timeout 1000m -run TestDTTestSuite/TestTraces x/ccv/difftest/diff_test.go | tee debug.txt
