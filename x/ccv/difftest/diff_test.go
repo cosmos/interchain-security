@@ -66,7 +66,7 @@ type DTTestSuite struct {
 	// network for simulating relaying
 	network difftest.Network
 
-	// chain -> height of last UpdateClient for chain
+	// chain -> height of last UpdateClient for chain // TODO: I can remove this
 	heightLastUpdateClient map[string]int64
 	// chain -> array of headers for UpdateClient
 	headersForUpdateClient map[string][]*ibctmtypes.Header
@@ -119,7 +119,6 @@ func (s *DTTestSuite) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.Va
 	s.Require().NoError(err)
 	pskServer := stakingkeeper.NewMsgServerImpl(s.stakingKeeperP())
 	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(s.ctx(P)), msg)
-	// s.Require().NoError(err)
 	return privVal, addr
 }
 
@@ -540,7 +539,8 @@ func (s *DTTestSuite) delegate(val int64, amt int64) {
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgDelegate(d, v, coin)
 	_, err := server.Delegate(sdk.WrapSDKContext(s.ctx(P)), msg)
-	s.Require().NoError(err)
+	// There may or may not be an error, depending on the trace
+	_ = err
 }
 
 // undelegate undelegates amt tokens from validator val
@@ -555,7 +555,8 @@ func (s *DTTestSuite) undelegate(val int64, amt int64) {
 	v := s.validator(val)
 	msg := stakingtypes.NewMsgUndelegate(d, v, coin)
 	_, err := server.Undelegate(sdk.WrapSDKContext(s.ctx(P)), msg)
-	s.Require().NoError(err)
+	// There may or may not be an error, depending on the trace
+	_ = err
 }
 
 // enableCtx allows querying the chain even before beginBlock call
