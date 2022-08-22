@@ -13,8 +13,13 @@ WORKDIR /downloads
 # Copy in the repo under test
 ADD . /interchain-security
 
+WORKDIR /interchain-security
+
+RUN go mod edit -replace github.com/cosmos/cosmos-sdk@v0.45.2-0.20220613134718-c783aea68fbd=../cosmos-sdk
+RUN go mod tidy
+
 # Install interchain security binary
-RUN cd /interchain-security && make install
+RUN make install
 
 # Get Hermes build
 FROM informalsystems/hermes:1.0.0-rc.1 AS hermes-builder
