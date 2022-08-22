@@ -149,10 +149,10 @@ func TestUnbondingTime(t *testing.T) {
 
 // Tests that the provider client managed by the consumer keeper matches the client keeper's client state
 func (suite *KeeperTestSuite) TestProviderClientMatches() {
-	providerClient, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.ctx)
+	providerClientID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.ctx)
 	suite.Require().True(ok)
 
-	clientState, _ := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClient)
+	clientState, _ := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClientID)
 	suite.Require().Equal(suite.providerClient, clientState, "stored client state does not match genesis provider client")
 }
 
