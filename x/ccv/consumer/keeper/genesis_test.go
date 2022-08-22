@@ -33,7 +33,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 	portId := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPort(ctx)
 	suite.Require().Equal(consumertypes.PortID, portId)
 
-	clientId, ok := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderClient(ctx)
+	clientId, ok := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderClientID(ctx)
 	suite.Require().True(ok)
 	clientState, ok := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientId)
 	suite.Require().True(ok)
