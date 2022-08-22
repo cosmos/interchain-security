@@ -20,9 +20,6 @@ if [ -d "./cosmos-sdk" ]; then
 fi 
 cp -R ../cosmos-sdk .
 
-# edit go.mod within container
-# go mod tidy
-
 # Build the Docker container
 docker build -t "$CONTAINER_NAME" .
 

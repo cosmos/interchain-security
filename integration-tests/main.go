@@ -70,29 +70,13 @@ func (s System) runStep(step Step, verbose bool) {
 	pretty.Print(actualState)
 }
 
-var startDockerScript = `#!/bin/bash
-# If -e is not set then if the build fails, it will use the old container, resulting in a very confusing debugging situation
-# Setting -e makes it error out if the build fails
-set -eux 
-
-CONTAINER_NAME=%s
-INSTANCE_NAME=%s
-
-# Remove existing container instance
-set +e
-docker rm -f "$INSTANCE_NAME"
-set -e
-
-# Build the Docker container
-docker build -t "$CONTAINER_NAME" .
-
-# Run new test container instance
-docker run --name "$INSTANCE_NAME" --cap-add=NET_ADMIN "$CONTAINER_NAME" /bin/bash /testnet-scripts/beacon.sh
-`
-
 func (s System) startDocker() {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf(startDockerScript, s.containerConfig.containerName, s.containerConfig.instanceName))
+
+	cmd := exec.Command("/bin/bash", "-c",
+		"integration-tests/testnet-scripts/start-docker.sh "+
+			s.containerConfig.containerName+" "+
+			s.containerConfig.instanceName)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
