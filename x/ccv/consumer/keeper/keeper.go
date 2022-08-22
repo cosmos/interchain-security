@@ -164,17 +164,17 @@ func (k Keeper) DeleteUnbondingTime(ctx sdk.Context) {
 	store.Delete(types.UnbondingTimeKey())
 }
 
-// SetProviderClient sets the provider clientID that is validating the chain.
+// SetProviderClientID sets the provider clientID that is validating the chain.
 // Set in InitGenesis
-func (k Keeper) SetProviderClient(ctx sdk.Context, clientID string) {
+func (k Keeper) SetProviderClientID(ctx sdk.Context, clientID string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ProviderClientKey(), []byte(clientID))
+	store.Set(types.ProviderClientIDKey(), []byte(clientID))
 }
 
-// GetProviderClient gets the provider clientID that is validating the chain.
-func (k Keeper) GetProviderClient(ctx sdk.Context) (string, bool) {
+// GetProviderClientID gets the provider clientID that is validating the chain.
+func (k Keeper) GetProviderClientID(ctx sdk.Context) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	clientIdBytes := store.Get(types.ProviderClientKey())
+	clientIdBytes := store.Get(types.ProviderClientIDKey())
 	if clientIdBytes == nil {
 		return "", false
 	}
@@ -289,7 +289,7 @@ func (k Keeper) VerifyProviderChain(ctx sdk.Context, channelID string, connectio
 		return sdkerrors.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
 	}
 	// Verify that client id is expected clientID
-	expectedClientId, ok := k.GetProviderClient(ctx)
+	expectedClientId, ok := k.GetProviderClientID(ctx)
 	if !ok {
 		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "could not find provider client id")
 	}
