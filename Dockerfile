@@ -17,7 +17,7 @@ ADD . /interchain-security
 RUN cd /interchain-security && make install
 
 # Get Hermes build
-FROM informalsystems/hermes:1.0.0-rc.1 AS hermes-builder
+FROM informalsystems/hermes:1.0.0 AS hermes-builder
 
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y

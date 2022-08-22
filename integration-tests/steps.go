@@ -278,7 +278,7 @@ var happyPathSteps = []Step{
 	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.
 	{
 		action: RedelegateTokensAction{
-			chain:           provider,
+			chain:           providerChainId,
 			sourceValidator: 1,
 			destValidator:   2,
 			sender:          1,

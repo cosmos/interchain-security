@@ -609,7 +609,7 @@ func (s System) unbondTokens(
 }
 
 type RedelegateTokensAction struct {
-	chain           uint
+	chain           string
 	sourceValidator uint
 	destValidator   uint
 	sender          uint
