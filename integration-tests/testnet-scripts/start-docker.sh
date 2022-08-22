@@ -6,6 +6,7 @@ set -eux
 
 CONTAINER_NAME=$1
 INSTANCE_NAME=$2
+LOCAL_SDK_PATH=${3:-"default"} # Sets this var to default if null or unset
 
 # Remove existing container instance
 set +e
@@ -14,11 +15,19 @@ set -e
 
 # TODO: add comment about changing docker build context, but this is simpler and more generalizable
 
-# Copy sdk directory to working directory, delete old directory if it exists 
+# Delete old sdk directory if it exists 
 if [ -d "./cosmos-sdk" ]; then
-  rm -rf ./cosmos-sdk/
+    rm -rf ./cosmos-sdk/
 fi 
-cp -R ../cosmos-sdk .
+
+# Copy sdk directory to working dir if path was specified
+if [[ "$LOCAL_SDK_PATH" != "default" ]]
+then
+    cp -R "$LOCAL_SDK_PATH" .
+    printf "\n\nUsing local sdk version from %s\n\n\n" "$LOCAL_SDK_PATH"
+else
+    printf "\n\nUsing default sdk version\n\n\n"
+fi
 
 # Build the Docker container
 docker build -t "$CONTAINER_NAME" .

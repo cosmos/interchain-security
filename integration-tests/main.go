@@ -16,7 +16,7 @@ var verbose = true
 func main() {
 	start := time.Now()
 	s := DefaultSystemConfig()
-
+	s.ParseCLIFlags()
 	s.startDocker()
 
 	for _, step := range happyPathSteps {
@@ -73,10 +73,12 @@ func (s System) runStep(step Step, verbose bool) {
 func (s System) startDocker() {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 
-	cmd := exec.Command("/bin/bash", "-c",
-		"integration-tests/testnet-scripts/start-docker.sh "+
-			s.containerConfig.containerName+" "+
-			s.containerConfig.instanceName)
+	scriptStr := "integration-tests/testnet-scripts/start-docker.sh " +
+		s.containerConfig.containerName + " " +
+		s.containerConfig.instanceName + " " +
+		s.localSdkPath
+
+	cmd := exec.Command("/bin/bash", "-c", scriptStr)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
