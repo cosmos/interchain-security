@@ -32,7 +32,7 @@ message GenesisState {
   // OutstandingDowntimes nil on new chain, filled on restart.
   repeated OutstandingDowntime outstanding_downtime_slashing = 10
       [ (gogoproto.nullable) = false ];
-  // PendingSlashRequests filled on new chain, filled on restart.
+  // PendingSlashRequests filled in on new chain, nil on restart.
   repeated interchain_security.ccv.consumer.v1.SlashRequest pending_slash_requests = 11
       [ (gogoproto.nullable) = false ];
 }
@@ -44,8 +44,8 @@ message MaturingVSCPacket {
   uint64 maturity_time = 2;
 }
 
-// HeightValsetUpdateID defines the genesis information for each block height to
-// valset update id mapping.
+// HeightValsetUpdateID defines the genesis information for the mapping 
+// of each block height to a valset update id
 message HeightToValsetUpdateID {
   uint64 height = 1;
   uint64 valset_update_id = 2;

@@ -66,6 +66,7 @@ func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {
 				suite.Require().NoError(err)
 				proposal, ok = content.(*types.CreateConsumerChainProposal)
 				suite.Require().True(ok)
+				proposal.LockUnbondingOnTimeout = lockUbdOnTimeout
 			}, true, true,
 		},
 		{
@@ -76,6 +77,7 @@ func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {
 				suite.Require().NoError(err)
 				proposal, ok = content.(*types.CreateConsumerChainProposal)
 				suite.Require().True(ok)
+				proposal.LockUnbondingOnTimeout = lockUbdOnTimeout
 			}, true, false,
 		},
 	}
@@ -103,9 +105,9 @@ func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {
 					suite.Require().Equal(expectedGenesis, consumerGenesis)
 					suite.Require().NotEqual("", clientId, "consumer client was not created after spawn time reached")
 				} else {
-					gotClient := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingCreateProposal(ctx, proposal.SpawnTime, chainID)
-					suite.Require().Equal(initialHeight, gotClient.InitialHeight, "pending client not equal to clientstate in proposal")
-					suite.Require().Equal(lockUbdOnTimeout, gotClient.LockUnbondingOnTimeout, "pending client not equal to clientstate in proposal")
+					gotProposal := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingCreateProposal(ctx, proposal.SpawnTime, chainID)
+					suite.Require().Equal(initialHeight, gotProposal.InitialHeight, "unexpected pending proposal (InitialHeight)")
+					suite.Require().Equal(lockUbdOnTimeout, gotProposal.LockUnbondingOnTimeout, "unexpected pending proposal (LockUnbondingOnTimeout)")
 				}
 			} else {
 				suite.Require().Error(err, "did not return error on invalid case")
@@ -147,17 +149,16 @@ func (suite *KeeperTestSuite) TestIteratePendingStopProposal() {
 }
 
 func (suite *KeeperTestSuite) TestIteratePendingClientInfo() {
-	chainID := suite.consumerChain.ChainID
 	testCases := []struct {
 		types.CreateConsumerChainProposal
 		ExpDeleted bool
 	}{
 		{
-			CreateConsumerChainProposal: types.CreateConsumerChainProposal{ChainId: chainID, SpawnTime: time.Now().UTC()},
+			CreateConsumerChainProposal: types.CreateConsumerChainProposal{ChainId: "0", SpawnTime: time.Now().UTC()},
 			ExpDeleted:                  true,
 		},
 		{
-			CreateConsumerChainProposal: types.CreateConsumerChainProposal{ChainId: chainID, SpawnTime: time.Now().UTC().Add(time.Hour)},
+			CreateConsumerChainProposal: types.CreateConsumerChainProposal{ChainId: "1", SpawnTime: time.Now().UTC().Add(time.Hour)},
 			ExpDeleted:                  false,
 		},
 	}

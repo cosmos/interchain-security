@@ -101,7 +101,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		}
 	}
 
-	// populate Cross-Chain validators statest with initial valset
+	// populate cross chain validators states with initial valset
 	k.ApplyCCValidatorChanges(ctx, state.InitialValSet)
 
 	return state.InitialValSet
@@ -114,7 +114,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	if !params.Enabled {
 		return types.DefaultGenesisState()
 	}
-
+	// when the channel is already established the CCV module states are exported
+	// the client and consensus states are exported independenlty by the IBC module
 	if channelID, ok := k.GetProviderChannel(ctx); ok {
 		clientID, ok := k.GetProviderClient(ctx)
 		if !ok {
@@ -165,8 +166,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return gs
 	}
 
-	// if the channel isn't established, the client and consensus states and
-	// the pending slashing requests are exported
+	// if the channel isn't established, the client, consensus states
+	// and the pending slashing requests are exported
 
 	clientID, ok := k.GetProviderClient(ctx)
 	// if provider clientID and channelID don't exist on the consumer chain, then CCV protocol is disabled for this chain
