@@ -93,6 +93,7 @@ func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
 	return k
 }
 
+// TODO: all these comments below about the "transfer module"... are they left over from some boilerplate?
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
 // in order to expose it to the ICS20 transfer handler.
 func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {

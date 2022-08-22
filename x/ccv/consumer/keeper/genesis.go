@@ -16,14 +16,17 @@ import (
 // InitGenesis initializes the CCV consumer state and binds to PortID.
 func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.ValidatorUpdate {
 	k.SetParams(ctx, state.Params)
+	// TODO: This is the only place Params.Enabled is actually used... Seems odd
 	if !state.Params.Enabled {
 		return nil
 	}
 
+	// TODO: we only set this here, from a hardcoded value. Why is this being set in the store at all? We could just use the hardcoded value in ValidateConsumerChannelParams where we access it.
 	k.SetPort(ctx, types.PortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
 	// port capability from capability InitGenesis
+	// TODO: I need to understand this better. Why do we not know for sure? What are the scenarios in which it is bound or not already bound?
 	if !k.IsBound(ctx, types.PortID) {
 		// transfer module binds to the transfer port on InitChain
 		// and claims the returned capability
@@ -43,6 +46,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 
 		// Set the unbonding period: use the unbonding period on the provider to
 		// compute the unbonding period on the consumer
+		// TODO: do we really want to do this live? I think this should be hardcoded.
 		unbondingTime := utils.ComputeConsumerUnbondingPeriod(state.ProviderClientState.UnbondingPeriod)
 		k.SetUnbondingTime(ctx, unbondingTime)
 		// Set default value for valset update ID
@@ -63,6 +67,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 
 		// ensure that initial validator set is same as initial consensus state on provider client.
 		// this will be verified by provider module on channel handshake.
+		// TODO: If we didn't check for this, what would the harm be? Getting an error further down the initialization path when the provider checks?
 		vals, err := tmtypes.PB2TM.ValidatorUpdates(state.InitialValSet)
 		if err != nil {
 			panic(err)
@@ -83,6 +88,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		if !ok {
 			panic(fmt.Sprintf("client state has wrong type. expected: %T, got: %T", &ibctmtypes.ClientState{}, clientState))
 		}
+		// TODO: Let's just hardcode this
 		unbondingTime := utils.ComputeConsumerUnbondingPeriod(tmClientState.UnbondingPeriod)
 		k.SetUnbondingTime(ctx, unbondingTime)
 
@@ -109,34 +115,30 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return types.DefaultGenesisState()
 	}
 
-	if channelID, ok := k.GetProviderChannel(ctx); ok {
-		clientID, ok := k.GetProviderClient(ctx)
-		if !ok {
-			panic("provider client does not exist")
-		}
-		// ValUpdates must be filled in off-line
-		gs := types.NewRestartGenesisState(clientID, channelID, nil, nil, params)
-
-		maturingPackets := []types.MaturingVSCPacket{}
-		cb := func(vscId, timeNs uint64) bool {
-			mat := types.MaturingVSCPacket{
-				VscId:        vscId,
-				MaturityTime: timeNs,
-			}
-			maturingPackets = append(maturingPackets, mat)
-			return false
-		}
-		k.IteratePacketMaturityTime(ctx, cb)
-
-		gs.MaturingPackets = maturingPackets
-		return gs
-	}
 	clientID, ok := k.GetProviderClient(ctx)
 	// if provider clientID and channelID don't exist on the consumer chain, then CCV protocol is disabled for this chain
 	// return a disabled genesis state
 	if !ok {
 		return types.DefaultGenesisState()
 	}
+
+	if channelID, ok := k.GetProviderChannel(ctx); ok {
+		// Get the maturing packets
+		maturingPackets := []types.MaturingVSCPacket{}
+		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) bool {
+			mat := types.MaturingVSCPacket{
+				VscId:        vscId,
+				MaturityTime: timeNs,
+			}
+			maturingPackets = append(maturingPackets, mat)
+			return false
+		})
+
+		// ValUpdates must be filled in off-line
+		// TODO: I need to understand this use case better. Why can't we fill them here?
+		return types.NewRestartGenesisState(clientID, channelID, maturingPackets, nil, params)
+	}
+
 	cs, ok := k.clientKeeper.GetClientState(ctx, clientID)
 	if !ok {
 		panic("provider client not set on already running consumer chain")

@@ -19,16 +19,20 @@ const TransferTimeDelay = 1 * 7 * 24 * time.Hour // 1 weeks
 // The fraction of tokens allocated to the consumer redistribution address
 // during distribution events. The fraction is a string representing a
 // decimal number. For example "0.75" would represent 75%.
+// TODO: Shouldn't this be passed in when instantiating the keeper in app.go?
 const ConsumerRedistributeFrac = "0.75"
 
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
 func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 
+	// Find out when we last ran this function
 	ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
 	if err != nil {
 		return err
 	}
+
+	// We only distribute once every BlocksPerDistributionTransmission blocks
 	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
 	curHeight := ctx.BlockHeight()
 
@@ -37,17 +41,20 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		return nil
 	}
 
-	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
-	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
+	// consumerFeePoolAddr
+	feeCollectorAccount := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
+	feeTokens := k.bankKeeper.GetAllBalances(ctx, feeCollectorAccount)
 
-	// split the fee pool, send the consumer's fraction to the consumer redistribution address
+	// Split the fee pool, send the consumer's fraction to the consumer redistribution address
 	frac, err := sdk.NewDecFromStr(ConsumerRedistributeFrac)
 	if err != nil {
 		return err
 	}
-	decFPTokens := sdk.NewDecCoinsFromCoins(fpTokens...)
+	decFeeTokens := sdk.NewDecCoinsFromCoins(feeTokens...)
+
 	// NOTE the truncated decimal remainder will be sent to the provider fee pool
-	consRedistrTokens, _ := decFPTokens.MulDec(frac).TruncateDecimal()
+	consRedistrTokens, _ := decFeeTokens.MulDec(frac).TruncateDecimal()
+	// Send the coins that will stay with the consumer to the consumer redistribute module account
 	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
 		types.ConsumerRedistributeName, consRedistrTokens)
 	if err != nil {
@@ -59,16 +66,22 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	// tokens do not go through the consumer redistribute split twice in the
 	// event that the transfer fails the tokens are returned to the consumer
 	// chain.
-	remainingTokens := fpTokens.Sub(consRedistrTokens)
+	// TODO: couldn't we find the remainingTokens by simply querying k.bankKeeper.GetAllBalances(ctx, feeCollectorAccount) again?
+	remainingTokens := feeTokens.Sub(consRedistrTokens)
 	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
 		types.ConsumerToSendToProviderName, remainingTokens)
 	if err != nil {
 		return err
 	}
-	// empty out the toSendToProviderTokens address
+
+	// Find the number of tokens in the ToSendToProvider account
 	tstProviderAddr := k.authKeeper.GetModuleAccount(ctx,
 		types.ConsumerToSendToProviderName).GetAddress()
 	tstProviderTokens := k.bankKeeper.GetAllBalances(ctx, tstProviderAddr)
+
+	// Send all tokens in the ToSendToProvider account to the provider over IBC
+	// As mentioned above, if the send fails for some reason, the tokens will be sent
+	// the next time this function runs.
 	ch := k.GetDistributionTransmissionChannel(ctx)
 	providerAddr := k.GetProviderFeePoolAddrStr(ctx)
 	timeoutHeight := clienttypes.ZeroHeight()
@@ -87,6 +100,8 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 			return err
 		}
 	}
+
+	// Save the LastTransmissionBlockHeight for next time
 	newLtbh := types.LastTransmissionBlockHeight{
 		Height: ctx.BlockHeight(),
 	}

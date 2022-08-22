@@ -120,6 +120,7 @@ func OnRecvPacketOnUnknownChannel(
 // In general, the consumer unbonding period should be a bit smaller (e.g., one day)
 // than the provider unbonding period so that it covers the delays of relaying IBC packets.
 // As a result, delegators on the provider would not have to wait longer to unbond their tokens.
+// TODO: I don't think we should have this function
 func ComputeConsumerUnbondingPeriod(providerUnbondingPeriod time.Duration) time.Duration {
 	if providerUnbondingPeriod > 7*24*time.Hour {
 		// In general, the unbonding period on the consumer

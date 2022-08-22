@@ -271,6 +271,7 @@ func New(
 	// Remove the fee-pool from the group of blocked recipient addresses in bank
 	// this is required for the provider chain to be able to receive tokens from
 	// the consumer chain
+	// TODO: This looks like it shouldn't be here, isn't this only for the provider's app.go?
 	bankBlockedAddrs := app.ModuleAccountAddrs()
 	delete(bankBlockedAddrs, authtypes.NewModuleAddress(
 		authtypes.FeeCollectorName).String())
