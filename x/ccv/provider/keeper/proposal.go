@@ -231,9 +231,9 @@ func (k Keeper) SetPendingCreateProposal(ctx sdk.Context, clientInfo *types.Crea
 }
 
 // GetPendingCreateProposal retrieves a pending proposal to create a consumer chain client (by spawn time and chain id)
-func (k Keeper) GetPendingCreateProposal(ctx sdk.Context, timestamp time.Time, chainID string) types.CreateConsumerChainProposal {
+func (k Keeper) GetPendingCreateProposal(ctx sdk.Context, spawnTime time.Time, chainID string) types.CreateConsumerChainProposal {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingCreateProposalKey(timestamp, chainID))
+	bz := store.Get(types.PendingCreateProposalKey(spawnTime, chainID))
 	if len(bz) == 0 {
 		return types.CreateConsumerChainProposal{}
 	}
@@ -249,42 +249,54 @@ func (k Keeper) PendingCreateProposalIterator(ctx sdk.Context) sdk.Iterator {
 }
 
 // IteratePendingCreateProposal iterates over the pending proposals to create consumer chain clients in order
-// and creates the consumer client if the spawn time has passed, otherwise it will break out of loop and return.
+// and creates the consumer client if the spawn time has passed.
 func (k Keeper) IteratePendingCreateProposal(ctx sdk.Context) {
+	propsToExecute := k.CreateProposalsToExecute(ctx)
+
+	for _, prop := range propsToExecute {
+		err := k.CreateConsumerClient(ctx, prop.ChainId, prop.InitialHeight, prop.LockUnbondingOnTimeout)
+		if err != nil {
+			panic(fmt.Errorf("consumer client could not be created: %w", err))
+		}
+	}
+	// delete the executed proposals
+	k.DeletePendingCreateProposal(ctx, propsToExecute...)
+}
+
+// CreateProposalsToExecute iterates over the pending proposals and returns an ordered list of proposals to be executed,
+// ie. consumer clients to be created. A prop is included in the returned list if its proposed spawn time has passed.
+//
+// Note: this method is split out from IteratePendingCreateProposal to be easily unit tested.
+func (k Keeper) CreateProposalsToExecute(ctx sdk.Context) []types.CreateConsumerChainProposal {
+
+	// store the (to be) executed proposals in order
+	propsToExecute := []types.CreateConsumerChainProposal{}
 
 	iterator := k.PendingCreateProposalIterator(ctx)
 	defer iterator.Close()
 
 	if !iterator.Valid() {
-		return
+		return propsToExecute
 	}
-	// store the executed proposals in order
-	execProposals := []types.CreateConsumerChainProposal{}
 
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()
-		spawnTime, chainID, err := types.ParsePendingCreateProposalKey(key)
+		spawnTime, _, err := types.ParsePendingCreateProposalKey(key)
 		if err != nil {
 			panic(fmt.Errorf("failed to parse pending client key: %w", err))
 		}
 
-		var clientInfo types.CreateConsumerChainProposal
-		k.cdc.MustUnmarshal(iterator.Value(), &clientInfo)
+		var prop types.CreateConsumerChainProposal
+		k.cdc.MustUnmarshal(iterator.Value(), &prop)
 
 		if !ctx.BlockTime().Before(spawnTime) {
-			err := k.CreateConsumerClient(ctx, chainID, clientInfo.InitialHeight, clientInfo.LockUnbondingOnTimeout)
-			if err != nil {
-				panic(fmt.Errorf("consumer client could not be created: %w", err))
-			}
-			execProposals = append(execProposals,
-				types.CreateConsumerChainProposal{ChainId: chainID, SpawnTime: spawnTime})
+			propsToExecute = append(propsToExecute, prop)
 		} else {
+			// No more proposals to check, since they're stored/ordered by timestamp.
 			break
 		}
 	}
-
-	// delete the proposals executed
-	k.DeletePendingCreateProposal(ctx, execProposals...)
+	return propsToExecute
 }
 
 // DeletePendingCreateProposal deletes the given create consumer proposals
@@ -327,17 +339,36 @@ func (k Keeper) PendingStopProposalIterator(ctx sdk.Context) sdk.Iterator {
 // IteratePendingStopProposal iterates over the pending stop proposals in order and stop the chain if the stop time has passed,
 // otherwise it will break out of loop and return.
 func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
+	propsToExecute := k.StopProposalsToExecute(ctx)
+
+	for _, prop := range propsToExecute {
+		err := k.StopConsumerChain(ctx, prop.ChainId, false, true)
+		if err != nil {
+			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+		}
+	}
+	// delete the executed proposals
+	k.DeletePendingStopProposals(ctx, propsToExecute...)
+}
+
+// StopProposalsToExecute iterates over the pending stop proposals and returns an ordered list of stop proposals to be executed,
+// ie. consumer chains to stop. A prop is included in the returned list if its proposed stop time has passed.
+//
+// Note: this method is split out from IteratePendingCreateProposal to be easily unit tested.
+func (k Keeper) StopProposalsToExecute(ctx sdk.Context) []types.StopConsumerChainProposal {
+
+	// store the (to be) executed stop proposals in order
+	propsToExecute := []types.StopConsumerChainProposal{}
+
 	iterator := k.PendingStopProposalIterator(ctx)
 	defer iterator.Close()
 
 	if !iterator.Valid() {
-		return
+		return propsToExecute
 	}
 
-	// store the executed proposals in order
-	execProposals := []types.StopConsumerChainProposal{}
-
 	for ; iterator.Valid(); iterator.Next() {
+
 		key := iterator.Key()
 		stopTime, chainID, err := types.ParsePendingStopProposalKey(key)
 		if err != nil {
@@ -345,19 +376,14 @@ func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
 		}
 
 		if !ctx.BlockTime().Before(stopTime) {
-			err = k.StopConsumerChain(ctx, chainID, false, true)
-			if err != nil {
-				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
-			}
-			execProposals = append(execProposals,
+			propsToExecute = append(propsToExecute,
 				types.StopConsumerChainProposal{ChainId: chainID, StopTime: stopTime})
 		} else {
+			// No more proposals to check, since they're stored/ordered by timestamp.
 			break
 		}
 	}
-
-	// delete the proposals executed
-	k.DeletePendingStopProposals(ctx, execProposals...)
+	return propsToExecute
 }
 
 // CloseChannel closes the channel for the given channel ID on the condition
