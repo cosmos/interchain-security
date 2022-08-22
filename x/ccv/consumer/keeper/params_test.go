@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestParams tests the default params set for a consumer chain, and related getters/setters
 func TestParams(t *testing.T) {
 	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
 	consumerKeeper.SetParams(ctx, types.DefaultParams())

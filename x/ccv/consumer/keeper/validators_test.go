@@ -20,6 +20,7 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
+// TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
 func TestApplyCCValidatorChanges(t *testing.T) {
 	// Construct a keeper with a custom codec
 	_, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)

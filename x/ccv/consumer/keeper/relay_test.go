@@ -24,6 +24,7 @@ import (
 	"github.com/tendermint/tendermint/libs/bytes"
 )
 
+// TestOnRecvVSCPacket tests the behavior of OnRecvVSCPacket over various packet scenarios
 func TestOnRecvVSCPacket(t *testing.T) {
 	consumerCCVChannelID := "consumerCCVChannelID"
 	providerCCVChannelID := "providerCCVChannelID"
@@ -200,6 +201,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	}
 }
 
+// TestUnbondMaturePackets tests the behavior of UnbondMaturePackets and related state checks
 func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	// setup CCV channel
 	suite.SetupCCVChannel()
@@ -290,7 +292,7 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	suite.Require().Equal(uint64(2), commitments[1].Sequence, "did not send VSCMatured packet for VSC packet 2")
 }
 
-// incrementTimeByUnbondingPeriod increments the overall time by jumpPeriod
+// incrementTimeBy increments the overall time by jumpPeriod
 func incrementTimeBy(s *KeeperTestSuite, jumpPeriod time.Duration) {
 	// Get unboding period from staking keeper
 	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerChain.GetContext())

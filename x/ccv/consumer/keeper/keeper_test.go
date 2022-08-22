@@ -136,6 +136,7 @@ func (suite *KeeperTestSuite) SetupCCVChannel() {
 	suite.coordinator.CreateChannels(suite.path)
 }
 
+// TestUnbondingTime tests getter and setter functionality for the unbonding period of a consumer chain
 func TestUnbondingTime(t *testing.T) {
 	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
 	_, ok := consumerKeeper.GetUnbondingTime(ctx)
@@ -147,7 +148,7 @@ func TestUnbondingTime(t *testing.T) {
 	require.Equal(t, storedUnbondingPeriod, unbondingPeriod)
 }
 
-// Tests that the provider client managed by the consumer keeper matches the client keeper's client state
+// TestProviderClientMatches tests that the provider client managed by the consumer keeper matches the client keeper's client state
 func (suite *KeeperTestSuite) TestProviderClientMatches() {
 	providerClientID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.ctx)
 	suite.Require().True(ok)
@@ -156,6 +157,7 @@ func (suite *KeeperTestSuite) TestProviderClientMatches() {
 	suite.Require().Equal(suite.providerClient, clientState, "stored client state does not match genesis provider client")
 }
 
+// TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper
 func TestProviderClientID(t *testing.T) {
 	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
 	_, ok := consumerKeeper.GetProviderClientID(ctx)
@@ -166,6 +168,7 @@ func TestProviderClientID(t *testing.T) {
 	require.Equal(t, "someClientID", clientID)
 }
 
+// TestProviderChannel tests getter and setter functionality for the channel ID stored on consumer keeper
 func TestProviderChannel(t *testing.T) {
 	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
 	_, ok := consumerKeeper.GetProviderChannel(ctx)
@@ -176,6 +179,7 @@ func TestProviderChannel(t *testing.T) {
 	require.Equal(t, "channelID", channelID)
 }
 
+// TestPendingChanges tests getter, setter, and delete functionality for pending VSCs on a consumer chain
 func TestPendingChanges(t *testing.T) {
 	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	require.NoError(t, err)
@@ -209,6 +213,7 @@ func TestPendingChanges(t *testing.T) {
 	require.Nil(t, gotPd, "got non-nil pending changes after Delete")
 }
 
+// TestPacketMaturityTime tests getter, setter, and iterator functionality for the packet maturity time of a received VSC packet
 func TestPacketMaturityTime(t *testing.T) {
 	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
 	consumerKeeper.SetPacketMaturityTime(ctx, 1, 10)
@@ -236,6 +241,7 @@ func TestPacketMaturityTime(t *testing.T) {
 	})
 }
 
+// TestVerifyProviderChain tests the VerifyProviderChain method for the consumer keeper
 func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 	var connectionHops []string
 	channelID := "channel-0"
@@ -502,6 +508,7 @@ func (suite *KeeperTestSuite) TestValidatorDoubleSigning() {
 	suite.Require().EqualValues(expCommit, gotCommit)
 }
 
+// TestSendSlashPacket tests the functionality of SendSlashPacket and asserts state changes related to that method
 func (suite *KeeperTestSuite) TestSendSlashPacket() {
 	suite.SetupCCVChannel()
 
@@ -582,6 +589,7 @@ func (suite *KeeperTestSuite) TestSendSlashPacket() {
 	suite.Require().Len(requests, 0)
 }
 
+// TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records
 func TestCrossChainValidator(t *testing.T) {
 
 	// Construct a keeper with a custom codec
@@ -632,6 +640,7 @@ func TestCrossChainValidator(t *testing.T) {
 	require.False(t, found)
 }
 
+// TestPendingSlashRequests tests the getter, setter, appending method, and deletion method for pending slash requests
 func TestPendingSlashRequests(t *testing.T) {
 	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
 

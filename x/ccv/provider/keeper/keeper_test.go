@@ -129,6 +129,7 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 
+// TestValsetUpdateBlockHeight tests the getter, setter, and deletion methods for valset updates mapped to block height
 func TestValsetUpdateBlockHeight(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
@@ -149,6 +150,7 @@ func TestValsetUpdateBlockHeight(t *testing.T) {
 	require.Equal(t, blockHeight, uint64(4))
 }
 
+// TestSlashAcks tests the getter, setter, iteration, and deletion methods for stored slash acknowledgements
 func TestSlashAcks(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
@@ -190,6 +192,7 @@ func TestSlashAcks(t *testing.T) {
 	require.Len(t, chainsAcks, len(chains))
 }
 
+// TestAppendSlashAck tests the append method for stored slash acknowledgements
 func TestAppendSlashAck(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
@@ -208,6 +211,7 @@ func TestAppendSlashAck(t *testing.T) {
 	require.Len(t, acks, 1)
 }
 
+// TestPendingVSCs tests the getter, appending, and deletion methods for stored pending VSCs
 func TestPendingVSCs(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
@@ -261,6 +265,7 @@ func TestPendingVSCs(t *testing.T) {
 	require.False(t, found)
 }
 
+// TestInitHeight tests the getter and setter methods for the stored block heights (on provider) when a given consumer chain was started
 func TestInitHeight(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
@@ -282,7 +287,7 @@ func TestInitHeight(t *testing.T) {
 	}
 }
 
-// Tests the handling of a double-signing related slash packet, with e2e tests
+// TestHandleSlashPacketDoubleSigning tests the handling of a double-signing related slash packet, with e2e tests
 func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
 	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
@@ -323,7 +328,7 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
 	suite.Require().True(signingInfo.Tombstoned)
 }
 
-// Tests the handling of a double-signing related slash packet, with mocks and unit tests
+// TestHandleSlashPacketDoubleSigning tests the handling of a double-signing related slash packet, with mocks and unit tests
 func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -395,6 +400,7 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	require.True(t, success)
 }
 
+// TestHandleSlashPacketErrors tests errors for the HandleSlashPacket method in an e2e testing setting
 func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
 	providerStakingKeeper := suite.providerChain.App.(*appProvider.App).StakingKeeper
 	ProviderKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper

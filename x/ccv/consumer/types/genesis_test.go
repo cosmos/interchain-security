@@ -29,6 +29,8 @@ var (
 	upgradePath = []string{"upgrade", "upgradedIBCState"}
 )
 
+// TestValidateInitialGenesisState tests a NewInitialGenesisState instantiation,
+// and its Validate() method over different genesis scenarios
 func TestValidateInitialGenesisState(t *testing.T) {
 	// generate validator public key
 	pubKey, err := testutil.GenPubKey()
@@ -145,6 +147,8 @@ func TestValidateInitialGenesisState(t *testing.T) {
 	}
 }
 
+// TestValidateRestartGenesisState tests a NewRestartGenesisState instantiation,
+// and its Validate() method over different genesis scenarios
 func TestValidateRestartGenesisState(t *testing.T) {
 	// generate validator private/public key
 	pubKey, err := testutil.GenPubKey()
