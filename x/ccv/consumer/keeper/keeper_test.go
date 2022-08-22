@@ -103,7 +103,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.Require().True(found, "consumer client not found")
 	suite.path.EndpointB.ClientID = consumerClient
 	// - set consumer endpoint's clientID
-	providerClient, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
+	providerClient, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
 	suite.Require().True(found, "provider client not found")
 	suite.path.EndpointA.ClientID = providerClient
 	// - client config
@@ -149,19 +149,19 @@ func TestUnbondingTime(t *testing.T) {
 
 // Tests that the provider client managed by the consumer keeper matches the client keeper's client state
 func (suite *KeeperTestSuite) TestProviderClientMatches() {
-	providerClientID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.ctx)
+	providerClientID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.ctx)
 	suite.Require().True(ok)
 
 	clientState, _ := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClientID)
 	suite.Require().Equal(suite.providerClient, clientState, "stored client state does not match genesis provider client")
 }
 
-func TestProviderClient(t *testing.T) {
+func TestProviderClientID(t *testing.T) {
 	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
-	_, ok := consumerKeeper.GetProviderClient(ctx)
+	_, ok := consumerKeeper.GetProviderClientID(ctx)
 	require.False(t, ok)
-	consumerKeeper.SetProviderClient(ctx, "someClientID")
-	clientID, ok := consumerKeeper.GetProviderClient(ctx)
+	consumerKeeper.SetProviderClientID(ctx, "someClientID")
+	clientID, ok := consumerKeeper.GetProviderClientID(ctx)
 	require.True(t, ok)
 	require.Equal(t, "someClientID", clientID)
 }
