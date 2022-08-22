@@ -275,9 +275,11 @@ func (k Keeper) FlushClientInfo(ctx sdk.Context) {
 	execProposals := []types.CreateConsumerChainProposal{}
 	k.IteratePendingCreateProposal(ctx, func(clientInfo types.CreateConsumerChainProposal) bool {
 		if !ctx.BlockTime().Before(clientInfo.SpawnTime) {
-			k.CreateConsumerClient(ctx, clientInfo.ChainId, clientInfo.InitialHeight, clientInfo.LockUnbondingOnTimeout)
-			execProposals = append(execProposals,
-				clientInfo)
+			err := k.CreateConsumerClient(ctx, clientInfo.ChainId, clientInfo.InitialHeight, clientInfo.LockUnbondingOnTimeout)
+			if err != nil {
+				panic(err)
+			}
+			execProposals = append(execProposals, clientInfo)
 		} else {
 			return false
 		}

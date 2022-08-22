@@ -29,29 +29,31 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 
 	for _, cccp := range genState.CreateConsumerChainProposals {
-		k.SetPendingCreateProposal(ctx, cccp)
+		if err := k.SetPendingCreateProposal(ctx, cccp); err != nil {
+			panic(fmt.Errorf("pending create consumer chain proposal could not be persisted: %w", err))
+		}
 	}
 	for _, sccp := range genState.StopConsumerChainProposals {
 		k.SetPendingStopProposal(ctx, sccp.ChainId, sccp.StopTime)
 	}
 	for _, ubdOp := range genState.UnbondingOps {
-		k.SetUnbondingOp(ctx, ubdOp)
+		if err := k.SetUnbondingOp(ctx, ubdOp); err != nil {
+			panic(fmt.Errorf("unbonding op could not be persisted: %w", err))
+		}
 	}
 
 	// Set initial state for each consumer chain
 	for _, cs := range genState.ConsumerStates {
 		chainID := cs.ChainId
 		k.SetConsumerClientId(ctx, chainID, cs.ClientId)
-		k.SetConsumerGenesis(ctx, chainID, cs.ConsumerGenesis)
+		if err := k.SetConsumerGenesis(ctx, chainID, cs.ConsumerGenesis); err != nil {
+			panic(fmt.Errorf("consumer chain genesis could not be persisted: %w", err))
+		}
 		if cs.LockUnbondingOnTimeout {
 			k.SetLockUnbondingOnTimeout(ctx, chainID)
 		}
-
-		if cs.ChannelId == "" {
-			for _, vsc := range cs.PendingValsetChanges {
-				k.AppendPendingVSC(ctx, chainID, vsc)
-			}
-		} else {
+		// check if the CCV channel was established
+		if cs.ChannelId != "" {
 			k.SetChannelToChain(ctx, cs.ChannelId, chainID)
 			k.SetChainToChannel(ctx, chainID, cs.ChannelId)
 			k.SetInitChainHeight(ctx, chainID, cs.InitialHeight)
@@ -59,6 +61,10 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 			k.SetSlashAcks(ctx, cs.ChainId, cs.SlashDowntimeAck)
 			for _, ubdOpIndex := range cs.UnbondingOpsIndex {
 				k.SetUnbondingOpIndex(ctx, chainID, ubdOpIndex.ValsetUpdateId, ubdOpIndex.UnbondingOpIndex)
+			}
+		} else {
+			for _, vsc := range cs.PendingValsetChanges {
+				k.AppendPendingVSC(ctx, chainID, vsc)
 			}
 		}
 	}
