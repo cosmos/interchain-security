@@ -10,8 +10,7 @@ import (
 	app "github.com/cosmos/interchain-security/app/consumer"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -47,7 +46,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 	suite.Require().NoError(err)
 	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
 	suite.Require().NoError(err)
-	pd := types.NewValidatorSetChangePacketData(
+	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{
 			{
 				PubKey: pk1,
@@ -61,7 +60,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 		1,
 		nil,
 	)
-	packet := channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+	packet := channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
 	suite.consumerChain.App.(*app.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 

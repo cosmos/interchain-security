@@ -23,7 +23,6 @@ import (
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/stretchr/testify/require"
@@ -111,7 +110,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
-	suite.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
+	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
 	suite.path.EndpointA.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
@@ -661,10 +660,10 @@ func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
 	)
 
 	seq, ok := suite.providerChain.App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
-		suite.providerChain.GetContext(), providertypes.PortID, suite.path.EndpointB.ChannelID)
+		suite.providerChain.GetContext(), ccv.ProviderPortID, suite.path.EndpointB.ChannelID)
 	suite.Require().True(ok)
 
-	packet := channeltypes.NewPacket(pd.GetBytes(), seq, providertypes.PortID, suite.path.EndpointB.ChannelID,
+	packet := channeltypes.NewPacket(pd.GetBytes(), seq, ccv.ProviderPortID, suite.path.EndpointB.ChannelID,
 		consumertypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
 	err := suite.path.EndpointB.SendPacket(packet)
@@ -684,7 +683,7 @@ func (suite *KeeperTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.
 	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, consumertypes.PortID, suite.path.EndpointA.ChannelID,
-		providertypes.PortID, suite.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
+		ccv.ProviderPortID, suite.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
 	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
 }

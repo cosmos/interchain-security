@@ -285,10 +285,10 @@ func (s *ProviderTestSuite) SendEmptyVSCPacket() {
 	)
 
 	seq, ok := s.providerChain.App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
-		s.providerChain.GetContext(), providertypes.PortID, s.path.EndpointB.ChannelID)
+		s.providerChain.GetContext(), ccv.ProviderPortID, s.path.EndpointB.ChannelID)
 	s.Require().True(ok)
 
-	packet := channeltypes.NewPacket(pd.GetBytes(), seq, providertypes.PortID, s.path.EndpointB.ChannelID,
+	packet := channeltypes.NewPacket(pd.GetBytes(), seq, ccv.ProviderPortID, s.path.EndpointB.ChannelID,
 		consumertypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
 	err := s.path.EndpointB.SendPacket(packet)

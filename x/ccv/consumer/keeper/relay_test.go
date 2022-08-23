@@ -11,8 +11,8 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/bytes"
@@ -51,13 +51,13 @@ func (suite *KeeperTestSuite) TestOnRecvVSCPacket() {
 		},
 	}
 
-	pd := types.NewValidatorSetChangePacketData(
+	pd := ccv.NewValidatorSetChangePacketData(
 		changes1,
 		1,
 		nil,
 	)
 
-	pd2 := types.NewValidatorSetChangePacketData(
+	pd2 := ccv.NewValidatorSetChangePacketData(
 		changes2,
 		2,
 		nil,
@@ -66,32 +66,32 @@ func (suite *KeeperTestSuite) TestOnRecvVSCPacket() {
 	testCases := []struct {
 		name                   string
 		packet                 channeltypes.Packet
-		newChanges             types.ValidatorSetChangePacketData
-		expectedPendingChanges types.ValidatorSetChangePacketData
+		newChanges             ccv.ValidatorSetChangePacketData
+		expectedPendingChanges ccv.ValidatorSetChangePacketData
 		expErrorAck            bool
 	}{
 		{
 			"success on first packet",
-			channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+			channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
 				clienttypes.NewHeight(1, 0), 0),
-			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
-			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			false,
 		},
 		{
 			"success on subsequent packet",
-			channeltypes.NewPacket(pd.GetBytes(), 2, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+			channeltypes.NewPacket(pd.GetBytes(), 2, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
 				clienttypes.NewHeight(1, 0), 0),
-			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
-			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
+			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			false,
 		},
 		{
 			"success on packet with more changes",
-			channeltypes.NewPacket(pd2.GetBytes(), 3, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+			channeltypes.NewPacket(pd2.GetBytes(), 3, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
 				clienttypes.NewHeight(1, 0), 0),
-			types.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
-			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
+			ccv.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
+			ccv.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
 				{
 					PubKey: pk1,
 					Power:  30,
@@ -109,10 +109,10 @@ func (suite *KeeperTestSuite) TestOnRecvVSCPacket() {
 		},
 		{
 			"invalid packet: different destination channel than provider channel",
-			channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, "InvalidChannel",
+			channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, "InvalidChannel",
 				clienttypes.NewHeight(1, 0), 0),
-			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{}},
-			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{}},
+			ccv.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{}},
+			ccv.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{}},
 			true,
 		},
 	}
@@ -181,7 +181,7 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 	)
 
 	// send first packet
-	packet := channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+	packet := channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
 	ack := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
@@ -268,7 +268,7 @@ func (suite *KeeperTestSuite) TestOnAcknowledgement() {
 		abci.Validator{Address: bytes.HexBytes{}, Power: int64(1)}, uint64(1), stakingtypes.Downtime,
 	)
 
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID,
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ProviderPortID, suite.path.EndpointB.ChannelID,
 		consumertypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, uint64(time.Now().Add(60*time.Second).UnixNano()))
 	ack := channeltypes.NewResultAcknowledgement([]byte{1})
 

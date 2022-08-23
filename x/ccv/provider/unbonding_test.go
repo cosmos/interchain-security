@@ -8,7 +8,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
@@ -35,7 +35,7 @@ func (s *ProviderTestSuite) TestUndelegationProviderFirst() {
 	s.providerChain.NextBlock()
 
 	// relay 1 VSC packet from provider to consumer
-	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
+	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
 	// increment time so that the unbonding period ends on the provider
 	incrementTimeByUnbondingPeriod(s, Provider)
@@ -78,7 +78,7 @@ func (s *ProviderTestSuite) TestUndelegationConsumerFirst() {
 	s.providerChain.NextBlock()
 
 	// relay 1 VSC packet from provider to consumer
-	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
+	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
 	// increment time so that the unbonding period ends on the consumer
 	incrementTimeByUnbondingPeriod(s, Consumer)
@@ -119,7 +119,7 @@ func (s *ProviderTestSuite) TestUndelegationNoValsetChange() {
 	s.providerChain.NextBlock()
 
 	// relay 1 VSC packet from provider to consumer
-	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
+	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
 	// check that the unbonding is not complete
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
@@ -185,7 +185,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	s.SetupCCVChannel()
 
 	// relay VSC packets from provider to consumer
-	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 2)
+	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 2)
 
 	// increment time so that the unbonding period ends on the consumer
 	incrementTimeByUnbondingPeriod(s, Consumer)

@@ -8,6 +8,9 @@ const (
 	// module supports
 	Version = "1"
 
+	// ProviderPortID is the default port id that provider CCV module binds to
+	ProviderPortID = "provider"
+
 	RouterKey = ModuleName
 
 	// StoreKey defines the primary module store key

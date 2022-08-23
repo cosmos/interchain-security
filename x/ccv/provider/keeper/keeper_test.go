@@ -26,7 +26,6 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
@@ -109,7 +108,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
-	suite.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
+	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
 	suite.path.EndpointA.ChannelConfig.Version = types.Version
 	suite.path.EndpointB.ChannelConfig.Version = types.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED

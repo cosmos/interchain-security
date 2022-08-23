@@ -22,8 +22,6 @@ import (
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -104,9 +102,9 @@ func (suite *ProviderTestSuite) SetupTest() {
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
-	suite.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
-	suite.path.EndpointA.ChannelConfig.Version = types.Version
-	suite.path.EndpointB.ChannelConfig.Version = types.Version
+	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
+	suite.path.EndpointA.ChannelConfig.Version = ccv.Version
+	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 
@@ -197,7 +195,7 @@ func (s *ProviderTestSuite) TestPacketRoundtrip() {
 	s.providerChain.NextBlock()
 
 	// Relay 1 VSC packet from provider to consumer
-	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
+	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
 	// Increment time so that the unbonding period ends on the provider
 	incrementTimeByUnbondingPeriod(s, Provider)
@@ -258,10 +256,10 @@ func (s *ProviderTestSuite) TestSendSlashPacketDowntime() {
 
 	oldBlockTime := s.consumerCtx().BlockTime()
 	slashFraction := int64(100)
-	packetData := types.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.Downtime)
-	timeout := uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	packetData := ccv.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.Downtime)
+	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, consumertypes.PortID, s.path.EndpointA.ChannelID,
-		providertypes.PortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
+		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
 	// Send the downtime packet through CCV
 	err = s.path.EndpointA.SendPacket(packet)
@@ -272,7 +270,7 @@ func (s *ProviderTestSuite) TestSendSlashPacketDowntime() {
 
 	// save next VSC packet info
 	oldBlockTime = s.providerCtx().BlockTime()
-	timeout = uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	timeout = uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 	valsetUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the downtime packet on the provider chain;
@@ -296,7 +294,7 @@ func (s *ProviderTestSuite) TestSendSlashPacketDowntime() {
 		},
 	}
 	packetData2 := ccv.NewValidatorSetChangePacketData(valUpdates, valsetUpdateID, []string{consAddr.String()})
-	packet2 := channeltypes.NewPacket(packetData2.GetBytes(), 1, providertypes.PortID, s.path.EndpointB.ChannelID,
+	packet2 := channeltypes.NewPacket(packetData2.GetBytes(), 1, ccv.ProviderPortID, s.path.EndpointB.ChannelID,
 		consumertypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
 	// receive VSC packet about jailing on the consumer chain
@@ -376,11 +374,11 @@ func (s *ProviderTestSuite) TestSendSlashPacketDoubleSign() {
 	}
 
 	oldBlockTime := s.consumerCtx().BlockTime()
-	packetData := types.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.DoubleSign)
+	packetData := ccv.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.DoubleSign)
 
-	timeout := uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, consumertypes.PortID, s.path.EndpointA.ChannelID,
-		providertypes.PortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
+		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
 	// Send the downtime packet through CCV
 	err = s.path.EndpointA.SendPacket(packet)
@@ -388,7 +386,7 @@ func (s *ProviderTestSuite) TestSendSlashPacketDoubleSign() {
 
 	// save next VSC packet info
 	oldBlockTime = s.providerCtx().BlockTime()
-	timeout = uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	timeout = uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 	valsetUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the downtime packet on the provider chain;
@@ -412,7 +410,7 @@ func (s *ProviderTestSuite) TestSendSlashPacketDoubleSign() {
 		},
 	}
 	packetData2 := ccv.NewValidatorSetChangePacketData(valUpdates, valsetUpdateID, []string{})
-	packet2 := channeltypes.NewPacket(packetData2.GetBytes(), 1, providertypes.PortID, s.path.EndpointB.ChannelID,
+	packet2 := channeltypes.NewPacket(packetData2.GetBytes(), 1, ccv.ProviderPortID, s.path.EndpointB.ChannelID,
 		consumertypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
 	// receive VSC packet about jailing on the consumer chain
@@ -465,7 +463,7 @@ func (s *ProviderTestSuite) TestSlashPacketAcknowldgement() {
 	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 
 	packet := channeltypes.NewPacket([]byte{}, 1, consumertypes.PortID, s.path.EndpointA.ChannelID,
-		providertypes.PortID, "wrongchannel", clienttypes.Height{}, 0)
+		ccv.ProviderPortID, "wrongchannel", clienttypes.Height{}, 0)
 
 	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, ccv.SlashPacketData{})
 	s.Require().NotNil(ack)
