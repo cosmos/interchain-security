@@ -6,10 +6,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -114,4 +113,10 @@ type IBCCoreKeeper interface {
 		goCtx context.Context,
 		msg *channeltypes.MsgChannelOpenInit,
 	) (*channeltypes.MsgChannelOpenInitResponse, error)
+}
+
+type ScopedKeeper interface {
+	GetCapability(ctx sdk.Context, name string) (*capabilitytypes.Capability, bool)
+	AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) bool
+	ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error
 }

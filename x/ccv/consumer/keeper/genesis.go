@@ -48,7 +48,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		// Set default value for valset update ID
 		k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()), uint64(0))
 		// set provider client id.
-		k.SetProviderClient(ctx, clientID)
+		k.SetProviderClientID(ctx, clientID)
 	} else {
 		// verify that latest consensus state on provider client matches the initial validator set of restarted chain
 		// thus, IBC genesis MUST run before CCV consumer genesis
@@ -87,7 +87,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		k.SetUnbondingTime(ctx, unbondingTime)
 
 		// set provider client id
-		k.SetProviderClient(ctx, state.ProviderClientId)
+		k.SetProviderClientID(ctx, state.ProviderClientId)
 		// set provider channel id.
 		k.SetProviderChannel(ctx, state.ProviderChannelId)
 		// set all unbonding sequences
@@ -110,7 +110,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	if channelID, ok := k.GetProviderChannel(ctx); ok {
-		clientID, ok := k.GetProviderClient(ctx)
+		clientID, ok := k.GetProviderClientID(ctx)
 		if !ok {
 			panic("provider client does not exist")
 		}
@@ -131,7 +131,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		gs.MaturingPackets = maturingPackets
 		return gs
 	}
-	clientID, ok := k.GetProviderClient(ctx)
+	clientID, ok := k.GetProviderClientID(ctx)
 	// if provider clientID and channelID don't exist on the consumer chain, then CCV protocol is disabled for this chain
 	// return a disabled genesis state
 	if !ok {

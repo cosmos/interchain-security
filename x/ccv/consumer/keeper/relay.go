@@ -195,7 +195,9 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 	k.ClearPendingSlashRequests(ctx)
 }
 
-// OnAcknowledgementPacket handles acknowledgments for sent VSCMatured and Slash packets
+// OnAcknowledgementPacket executes application logic for acknowledgments of sent VSCMatured and Slash packets
+// in conjunction with the ibc module's execution of "acknowledgePacket",
+// according to https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
 		// Reasons for ErrorAcknowledgment
@@ -208,11 +210,12 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			"channel", packet.SourceChannel,
 			"error", err,
 		)
+		// Initiate ChanCloseInit using packet source (non-counterparty) port and channel
 		err := k.ChanCloseInit(ctx, packet.SourcePort, packet.SourceChannel)
 		if err != nil {
 			return fmt.Errorf("ChanCloseInit(%s) failed: %s", packet.SourceChannel, err.Error())
 		}
-		// check if there is an established CCV channel
+		// check if there is an established CCV channel to provider
 		channelID, found := k.GetProviderChannel(ctx)
 		if !found {
 			return sdkerrors.Wrapf(types.ErrNoProposerChannelId, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)

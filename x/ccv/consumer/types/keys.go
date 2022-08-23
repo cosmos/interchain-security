@@ -89,8 +89,8 @@ func UnbondingTimeKey() []byte {
 	return []byte{UnbondingTimeByteKey}
 }
 
-// ProviderClientKey returns the key for storing clientID of the provider
-func ProviderClientKey() []byte {
+// ProviderClientIDKey returns the key for storing clientID of the provider
+func ProviderClientIDKey() []byte {
 	return []byte{ProviderClientByteKey}
 }
 

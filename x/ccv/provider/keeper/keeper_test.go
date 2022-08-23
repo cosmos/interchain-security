@@ -97,7 +97,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.Require().True(found, "consumer client not found")
 	suite.path.EndpointB.ClientID = consumerClient
 	// - set consumer endpoint's clientID
-	providerClient, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
+	providerClient, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
 	suite.Require().True(found, "provider client not found")
 	suite.path.EndpointA.ClientID = providerClient
 	// - client config
@@ -129,6 +129,7 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 
+// TestValsetUpdateBlockHeight tests the getter, setter, and deletion methods for valset updates mapped to block height
 func TestValsetUpdateBlockHeight(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
@@ -149,6 +150,7 @@ func TestValsetUpdateBlockHeight(t *testing.T) {
 	require.Equal(t, blockHeight, uint64(4))
 }
 
+// TestSlashAcks tests the getter, setter, iteration, and deletion methods for stored slash acknowledgements
 func TestSlashAcks(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
@@ -190,6 +192,7 @@ func TestSlashAcks(t *testing.T) {
 	require.Len(t, chainsAcks, len(chains))
 }
 
+// TestAppendSlashAck tests the append method for stored slash acknowledgements
 func TestAppendSlashAck(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
@@ -208,6 +211,7 @@ func TestAppendSlashAck(t *testing.T) {
 	require.Len(t, acks, 1)
 }
 
+// TestPendingVSCs tests the getter, appending, and deletion methods for stored pending VSCs
 func TestPendingVSCs(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
@@ -261,6 +265,7 @@ func TestPendingVSCs(t *testing.T) {
 	require.False(t, found)
 }
 
+// TestInitHeight tests the getter and setter methods for the stored block heights (on provider) when a given consumer chain was started
 func TestInitHeight(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
@@ -282,7 +287,7 @@ func TestInitHeight(t *testing.T) {
 	}
 }
 
-// Tests the handling of a double-signing related slash packet, with e2e tests
+// TestHandleSlashPacketDoubleSigning tests the handling of a double-signing related slash packet, with e2e tests
 func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
 	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
@@ -323,7 +328,7 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
 	suite.Require().True(signingInfo.Tombstoned)
 }
 
-// Tests the handling of a double-signing related slash packet, with mocks and unit tests
+// TestHandleSlashPacketDoubleSigning tests the handling of a double-signing related slash packet, with mocks and unit tests
 func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -340,38 +345,44 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 		stakingtypes.DoubleSign,
 	)
 
-	// Setup expected mock calls
 	mockStakingKeeper := testkeeper.NewMockStakingKeeper(ctrl)
-	mockStakingKeeper.EXPECT().Slash(
-		ctx,
-		sdk.ConsAddress(slashPacket.Validator.Address),
-		infractionHeight,
-		int64(0),      // power
-		sdk.NewDec(1), // Slash fraction
-		stakingtypes.DoubleSign).Return().Times(1)
-
-	mockStakingKeeper.EXPECT().Jail(
-		gomock.Eq(ctx),
-		gomock.Eq(sdk.ConsAddress(slashPacket.Validator.Address)),
-	).Return()
-
-	mockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-		ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Return(
-		stakingtypes.Validator{Status: stakingtypes.Bonded}, true,
-	).Times(1)
-
 	mockSlashingKeeper := testkeeper.NewMockSlashingKeeper(ctrl)
-	mockSlashingKeeper.EXPECT().SlashFractionDoubleSign(ctx).Return(sdk.NewDec(1)).Times(1)
-	mockSlashingKeeper.EXPECT().JailUntil(ctx, sdk.ConsAddress(slashPacket.Validator.Address),
-		evidencetypes.DoubleSignJailEndTime).Times(1)
-	mockSlashingKeeper.EXPECT().IsTombstoned(ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Return(false).Times(1)
-	mockSlashingKeeper.EXPECT().Tombstone(ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Times(1)
 
-	providerKeeper := testkeeper.GetProviderKeeperWithMocks(t,
+	// Setup expected mock calls
+	gomock.InOrder(
+
+		mockStakingKeeper.EXPECT().GetValidatorByConsAddr(
+			ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Return(
+			stakingtypes.Validator{Status: stakingtypes.Bonded}, true,
+		).Times(1),
+
+		mockSlashingKeeper.EXPECT().IsTombstoned(ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Return(false).Times(1),
+
+		mockSlashingKeeper.EXPECT().SlashFractionDoubleSign(ctx).Return(sdk.NewDec(1)).Times(1),
+
+		mockSlashingKeeper.EXPECT().Tombstone(ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Times(1),
+
+		mockStakingKeeper.EXPECT().Slash(
+			ctx,
+			sdk.ConsAddress(slashPacket.Validator.Address),
+			infractionHeight,
+			int64(0),      // power
+			sdk.NewDec(1), // Slash fraction
+			stakingtypes.DoubleSign).Return().Times(1),
+
+		mockStakingKeeper.EXPECT().Jail(
+			gomock.Eq(ctx),
+			gomock.Eq(sdk.ConsAddress(slashPacket.Validator.Address)),
+		).Return(),
+
+		mockSlashingKeeper.EXPECT().JailUntil(ctx, sdk.ConsAddress(slashPacket.Validator.Address),
+			evidencetypes.DoubleSignJailEndTime).Times(1),
+	)
+
+	providerKeeper := testkeeper.GetProviderKeeperWithMocks(
 		cdc,
 		storeKey,
 		paramsSubspace,
-		ctx,
 		capabilitykeeper.ScopedKeeper{},
 		testkeeper.NewMockChannelKeeper(ctrl),
 		testkeeper.NewMockPortKeeper(ctrl),
@@ -389,6 +400,7 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	require.True(t, success)
 }
 
+// TestHandleSlashPacketErrors tests errors for the HandleSlashPacket method in an e2e testing setting
 func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
 	providerStakingKeeper := suite.providerChain.App.(*appProvider.App).StakingKeeper
 	ProviderKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
