@@ -226,13 +226,12 @@ func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.Weig
 	return nil
 }
 
-// ValidateCCVChannelParams validates a ccv channel
-func ValidateCCVChannelParams(
+// validateCCVChannelParams validates a ccv channel
+func validateCCVChannelParams(
 	ctx sdk.Context,
 	keeper keeper.Keeper,
 	order channeltypes.Order,
 	portID string,
-	channelID string,
 	version string,
 ) error {
 	// only ordered channels allowed
@@ -272,8 +271,8 @@ func (am AppModule) OnChanOpenInit(
 	}
 
 	// validate parameters
-	if err := ValidateCCVChannelParams(
-		ctx, am.keeper, order, portID, channelID, version,
+	if err := validateCCVChannelParams(
+		ctx, am.keeper, order, portID, version,
 	); err != nil {
 		return err
 	}

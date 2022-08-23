@@ -25,7 +25,7 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/provider/client/cli"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -40,30 +40,30 @@ type AppModuleBasic struct{}
 
 // Name implements AppModuleBasic interface
 func (AppModuleBasic) Name() string {
-	return types.ModuleName
+	return providertypes.ModuleName
 }
 
 // RegisterLegacyAminoCodec implements AppModuleBasic interface
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	types.RegisterLegacyAminoCodec(cdc)
+	providertypes.RegisterLegacyAminoCodec(cdc)
 }
 
 // RegisterInterfaces registers module concrete types into protobuf Any.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	types.RegisterInterfaces(registry)
+	providertypes.RegisterInterfaces(registry)
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the ibc
 // provider module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(types.DefaultGenesisState())
+	return cdc.MustMarshalJSON(providertypes.DefaultGenesisState())
 }
 
 // ValidateGenesis performs genesis state validation for the ibc provider module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
-	var data types.GenesisState
+	var data providertypes.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
-		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", providertypes.ModuleName, err)
 	}
 
 	return data.Validate()
@@ -77,7 +77,7 @@ func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Rout
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-provider module.
 // TODO
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	err := providertypes.RegisterQueryHandlerClient(context.Background(), mux, providertypes.NewQueryClient(clientCtx))
 	if err != nil {
 		panic(err)
 	}
@@ -120,7 +120,7 @@ func (am AppModule) Route() sdk.Route {
 
 // QuerierRoute implements the AppModule interface
 func (AppModule) QuerierRoute() string {
-	return types.QuerierRoute
+	return providertypes.QuerierRoute
 }
 
 // LegacyQuerierHandler implements the AppModule interface
@@ -131,13 +131,13 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 // RegisterServices registers module services.
 // TODO
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
 // InitGenesis performs genesis initialization for the provider module. It returns
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState types.GenesisState
+	var genesisState providertypes.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	am.keeper.InitGenesis(ctx, &genesisState)
 	// initialize validator update id
@@ -202,21 +202,20 @@ func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.Weig
 	return nil
 }
 
-// ValidateProviderChannelParams does validation of a newly created ccv channel. A provider
-// channel must be ORDERED, use the correct port (by default 'provider' on this module), and use the current
-// supported version.
-func ValidateProviderChannelParams(
+// validateCCVChannelParams validates a ccv channel
+func validateCCVChannelParams(
 	ctx sdk.Context,
 	keeper *keeper.Keeper,
 	order channeltypes.Order,
 	portID string,
 	channelID string,
 ) error {
+	// only ordered channels allowed
 	if order != channeltypes.ORDERED {
 		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.ORDERED, order)
 	}
 
-	// Require portID is the portID CCV module is bound to
+	// the port ID must match the port ID the CCV module is bounded to
 	boundPort := keeper.GetPort(ctx)
 	if boundPort != portID {
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
@@ -249,12 +248,20 @@ func (am AppModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (metadata string, err error) {
-	if err := ValidateProviderChannelParams(
+	// validate parameters
+	if err := validateCCVChannelParams(
 		ctx, am.keeper, order, portID, channelID,
 	); err != nil {
 		return "", err
 	}
 
+	// ensure the counterparty port ID matches the expected consumer port ID
+	if counterparty.PortId != ccv.ConsumerPortID {
+		return "", sdkerrors.Wrapf(porttypes.ErrInvalidPort,
+			"invalid counterparty port: %s, expected %s", counterparty.PortId, ccv.ConsumerPortID)
+	}
+
+	// ensure the counter party version matches the expected version
 	if counterpartyVersion != ccv.Version {
 		return "", sdkerrors.Wrapf(
 			ccv.ErrInvalidVersion, "invalid counterparty version: got: %s, expected %s",
@@ -278,7 +285,7 @@ func (am AppModule) OnChanOpenTry(
 		return "", err
 	}
 
-	md := types.HandshakeMetadata{
+	md := providertypes.HandshakeMetadata{
 		// NOTE that the fee pool collector address string provided to the
 		// the consumer chain must be excluded from the blocked addresses
 		// blacklist or all all ibc-transfers from the consumer chain to the
@@ -364,7 +371,7 @@ func (am AppModule) OnRecvPacket(
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypePacket,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
 			sdk.NewAttribute(ccv.AttributeKeyAckSuccess, fmt.Sprintf("%t", ack != nil)),
 		),
 	)
@@ -391,7 +398,7 @@ func (am AppModule) OnAcknowledgementPacket(
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypePacket,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
 			sdk.NewAttribute(ccv.AttributeKeyAck, ack.String()),
 		),
 	)
@@ -430,7 +437,7 @@ func (am AppModule) OnTimeoutPacket(
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypeTimeout,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
 		),
 	)
 
