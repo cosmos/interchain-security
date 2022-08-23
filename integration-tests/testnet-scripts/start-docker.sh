@@ -13,8 +13,6 @@ set +e
 docker rm -f "$INSTANCE_NAME"
 set -e
 
-# TODO: add comment about changing docker build context, but this is simpler and more generalizable
-
 # Delete old sdk directory if it exists 
 if [ -d "./cosmos-sdk" ]; then
     rm -rf ./cosmos-sdk/
