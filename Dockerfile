@@ -15,7 +15,8 @@ ADD . /interchain-security
 
 WORKDIR /interchain-security
 
-RUN if [ -d "./cosmos-sdk" ]; then go mod edit -replace github.com/cosmos/cosmos-sdk@v0.45.2-0.20220613134718-c783aea68fbd=./cosmos-sdk; fi
+# Do not specify version here. It leads to odd replacement behavior 
+RUN if [ -d "./cosmos-sdk" ]; then go mod edit -replace github.com/cosmos/cosmos-sdk=./cosmos-sdk; fi
 RUN go mod tidy
 
 # Install interchain security binary
