@@ -7,7 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 
@@ -49,7 +48,7 @@ func (s *ProviderTestSuite) TestUndelegationProviderFirst() {
 	incrementTimeByUnbondingPeriod(s, Consumer)
 
 	// relay 1 VSCMatured packet from consumer to provider
-	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 1)
+	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
 
 	// check that the unbonding operation completed
 	// - check that ccv unbonding op has been deleted
@@ -84,7 +83,7 @@ func (s *ProviderTestSuite) TestUndelegationConsumerFirst() {
 	incrementTimeByUnbondingPeriod(s, Consumer)
 
 	// relay 1 VSCMatured packet from consumer to provider
-	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 1)
+	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
 
 	// check that the unbonding is not complete
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
@@ -128,7 +127,7 @@ func (s *ProviderTestSuite) TestUndelegationNoValsetChange() {
 	incrementTimeByUnbondingPeriod(s, Consumer)
 
 	// relay 1 VSCMatured packet from consumer to provider
-	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 1)
+	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
 
 	// increment time so that the unbonding period ends on the provider
 	incrementTimeByUnbondingPeriod(s, Provider)
@@ -191,7 +190,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 	incrementTimeByUnbondingPeriod(s, Consumer)
 
 	// relay VSCMatured packets from consumer to provider
-	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 2)
+	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 2)
 
 	// check that the unbonding operation completed
 	// - check that ccv unbonding op has been deleted

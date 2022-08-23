@@ -20,7 +20,6 @@ import (
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/consumer"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
@@ -104,7 +103,7 @@ func (suite *ConsumerTestSuite) SetupTest() {
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
 	// - channel config
-	suite.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
+	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
 	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
 	suite.path.EndpointA.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
@@ -134,7 +133,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 			name: "success",
 			setup: func(suite *ConsumerTestSuite) {
 				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, channelID,
+				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
 					channeltypes.NewChannel(
 						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
 						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
@@ -148,7 +147,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 			setup: func(suite *ConsumerTestSuite) {
 				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetProviderChannel(suite.ctx, "channel-2")
 				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, channelID,
+				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
 					channeltypes.NewChannel(
 						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
 						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
@@ -163,7 +162,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 				// set path ORDER to UNORDERED
 				suite.path.EndpointA.ChannelConfig.Order = channeltypes.UNORDERED
 				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, channelID,
+				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
 					channeltypes.NewChannel(
 						channeltypes.INIT, channeltypes.UNORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
 						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
@@ -178,7 +177,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 				// set path port to invalid portID
 				suite.path.EndpointA.ChannelConfig.PortID = "invalidPort"
 				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, channelID,
+				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
 					channeltypes.NewChannel(
 						channeltypes.INIT, channeltypes.UNORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
 						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
@@ -193,7 +192,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 				// set path port to invalid version
 				suite.path.EndpointA.ChannelConfig.Version = "invalidVersion"
 				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, channelID,
+				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
 					channeltypes.NewChannel(
 						channeltypes.INIT, channeltypes.UNORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
 						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
@@ -215,7 +214,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 				path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
 				path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
 				// - channel config
-				path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
+				path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
 				path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
 				path.EndpointA.ChannelConfig.Version = ccv.Version
 				path.EndpointB.ChannelConfig.Version = ccv.Version
@@ -232,7 +231,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 				suite.path = path
 
 				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, channelID,
+				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
 					channeltypes.NewChannel(
 						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
 						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
@@ -250,7 +249,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 			tc.setup(suite)
 
 			consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
-			chanCap, err := suite.consumerChain.App.GetScopedIBCKeeper().NewCapability(suite.ctx, host.ChannelCapabilityPath(consumertypes.PortID, suite.path.EndpointA.ChannelID))
+			chanCap, err := suite.consumerChain.App.GetScopedIBCKeeper().NewCapability(suite.ctx, host.ChannelCapabilityPath(ccv.ConsumerPortID, suite.path.EndpointA.ChannelID))
 			suite.Require().NoError(err)
 
 			err = consumerModule.OnChanOpenInit(suite.ctx, suite.path.EndpointA.ChannelConfig.Order, []string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.PortID,
@@ -307,10 +306,10 @@ func (suite *ConsumerTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint
 func (suite *ConsumerTestSuite) TestOnChanOpenTry() {
 	// OnOpenTry must error even with correct arguments
 	consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
-	chanCap, err := suite.consumerChain.App.GetScopedIBCKeeper().NewCapability(suite.ctx, host.ChannelCapabilityPath(consumertypes.PortID, suite.path.EndpointA.ChannelID))
+	chanCap, err := suite.consumerChain.App.GetScopedIBCKeeper().NewCapability(suite.ctx, host.ChannelCapabilityPath(ccv.ConsumerPortID, suite.path.EndpointA.ChannelID))
 	suite.Require().NoError(err)
 
-	_, err = consumerModule.OnChanOpenTry(suite.ctx, channeltypes.ORDERED, []string{"connection-1"}, consumertypes.PortID, "channel-1", chanCap, channeltypes.NewCounterparty(ccv.ProviderPortID, "channel-1"), ccv.Version)
+	_, err = consumerModule.OnChanOpenTry(suite.ctx, channeltypes.ORDERED, []string{"connection-1"}, ccv.ConsumerPortID, "channel-1", chanCap, channeltypes.NewCounterparty(ccv.ProviderPortID, "channel-1"), ccv.Version)
 	suite.Require().Error(err, "OnChanOpenTry callback must error on consumer chain")
 }
 
@@ -326,7 +325,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 			name: "success",
 			setup: func(suite *ConsumerTestSuite) {
 				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, channelID,
+				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
 					channeltypes.NewChannel(
 						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
 						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
@@ -340,7 +339,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 			setup: func(suite *ConsumerTestSuite) {
 				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetProviderChannel(suite.ctx, "channel-2")
 				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, channelID,
+				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
 					channeltypes.NewChannel(
 						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
 						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
@@ -353,7 +352,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 			name: "invalid: mismatched versions",
 			setup: func(suite *ConsumerTestSuite) {
 				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, channelID,
+				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
 					channeltypes.NewChannel(
 						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
 						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
@@ -381,7 +380,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 			mdBz, err := (&md).Marshal()
 			suite.Require().NoError(err)
 
-			err = consumerModule.OnChanOpenAck(suite.ctx, consumertypes.PortID, channelID, counterChannelID, string(mdBz))
+			err = consumerModule.OnChanOpenAck(suite.ctx, ccv.ConsumerPortID, channelID, counterChannelID, string(mdBz))
 			if tc.expError {
 				suite.Require().Error(err)
 			} else {
@@ -392,7 +391,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 }
 
 func (suite *ConsumerTestSuite) TestOnChanOpenConfirm() {
-	suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, "channel-1",
+	suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, "channel-1",
 		channeltypes.NewChannel(
 			channeltypes.TRYOPEN, channeltypes.ORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, "channel-1"),
 			[]string{"connection-1"}, ccv.Version,
@@ -400,7 +399,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenConfirm() {
 
 	consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
 
-	err := consumerModule.OnChanOpenConfirm(suite.ctx, consumertypes.PortID, "channel-1")
+	err := consumerModule.OnChanOpenConfirm(suite.ctx, ccv.ConsumerPortID, "channel-1")
 	suite.Require().Error(err, "OnChanOpenConfirm must always fail")
 }
 
@@ -415,7 +414,7 @@ func (suite *ConsumerTestSuite) TestOnChanCloseInit() {
 			name: "can close duplicate in-progress channel once provider channel is established",
 			setup: func(suite *ConsumerTestSuite) {
 				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, channelID,
+				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
 					channeltypes.NewChannel(
 						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
 						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
@@ -438,7 +437,7 @@ func (suite *ConsumerTestSuite) TestOnChanCloseInit() {
 			name: "cannot close in-progress channel, no established channel yet",
 			setup: func(suite *ConsumerTestSuite) {
 				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, consumertypes.PortID, channelID,
+				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
 					channeltypes.NewChannel(
 						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
 						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
@@ -466,7 +465,7 @@ func (suite *ConsumerTestSuite) TestOnChanCloseInit() {
 
 			consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
 
-			err := consumerModule.OnChanCloseInit(suite.ctx, consumertypes.PortID, suite.path.EndpointA.ChannelID)
+			err := consumerModule.OnChanCloseInit(suite.ctx, ccv.ConsumerPortID, suite.path.EndpointA.ChannelID)
 
 			if tc.expError {
 				suite.Require().Error(err)

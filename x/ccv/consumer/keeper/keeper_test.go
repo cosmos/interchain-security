@@ -21,7 +21,6 @@ import (
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
@@ -109,7 +108,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
 	// - channel config
-	suite.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
+	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
 	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
 	suite.path.EndpointA.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
@@ -362,7 +361,7 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	consAddr := sdk.ConsAddress(vals[0].Address)
 
 	// save next sequence before sending a slash packet
-	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(suite.ctx, types.PortID, channelID)
+	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(suite.ctx, ccv.ConsumerPortID, channelID)
 	suite.Require().True(ok)
 
 	// Sign 100 blocks
@@ -403,7 +402,7 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 	})
 
 	// verify that the slash packet was sent
-	gotCommit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(suite.ctx, types.PortID, channelID, seq)
+	gotCommit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(suite.ctx, ccv.ConsumerPortID, channelID, seq)
 	suite.Require().NotNil(gotCommit, "did not found slash packet commitment")
 	suite.Require().EqualValues(expCommit, gotCommit, "invalid slash packet commitment")
 
@@ -463,7 +462,7 @@ func (suite *KeeperTestSuite) TestValidatorDoubleSigning() {
 	})
 
 	// save next sequence before sending a slash packet
-	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(suite.ctx, types.PortID, channelID)
+	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(suite.ctx, ccv.ConsumerPortID, channelID)
 	suite.Require().True(ok)
 
 	// construct slash packet data and get the expcted commit hash
@@ -479,7 +478,7 @@ func (suite *KeeperTestSuite) TestValidatorDoubleSigning() {
 	app.EvidenceKeeper.HandleEquivocationEvidence(suite.ctx, e)
 
 	// check that slash packet is sent
-	gotCommit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(suite.ctx, types.PortID, channelID, seq)
+	gotCommit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(suite.ctx, ccv.ConsumerPortID, channelID, seq)
 	suite.NotNil(gotCommit)
 
 	suite.Require().EqualValues(expCommit, gotCommit)
@@ -527,7 +526,7 @@ func (suite *KeeperTestSuite) TestSendSlashPacket() {
 	suite.Require().Len(requests, 16)
 
 	// save consumer next sequence
-	seq, _ := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, types.PortID, channelID)
+	seq, _ := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, ccv.ConsumerPortID, channelID)
 
 	// establish ccv channel by sending an empty VSC packet to consumer endpoint
 	suite.SendEmptyVSCPacket()
@@ -535,7 +534,7 @@ func (suite *KeeperTestSuite) TestSendSlashPacket() {
 	// check that each pending slash requests is sent once
 	// and that the downtime slash request duplicates are skipped (due to the outstanding downtime flag)
 	for i := 0; i < 16; i++ {
-		commit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, types.PortID, channelID, seq+uint64(i))
+		commit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq+uint64(i))
 		if i > 11 {
 			suite.Require().Nil(commit)
 			continue
@@ -581,7 +580,7 @@ func (suite *KeeperTestSuite) TestCrossChainValidator() {
 	suite.Require().NoError(err)
 
 	// set cross chain validator
-	ccVal, err := types.NewCCValidator(val.Address, 1000, pubkey)
+	ccVal, err := consumertypes.NewCCValidator(val.Address, 1000, pubkey)
 	suite.Require().NoError(err)
 
 	app.ConsumerKeeper.SetCCValidator(ctx, ccVal)
@@ -614,9 +613,9 @@ func (suite *KeeperTestSuite) TestPendingSlashRequests() {
 	ctx := suite.consumerChain.GetContext()
 
 	// prepare test setup by storing 10 pending slash requests
-	request := []types.SlashRequest{}
+	request := []consumertypes.SlashRequest{}
 	for i := 0; i < 10; i++ {
-		request = append(request, types.SlashRequest{})
+		request = append(request, consumertypes.SlashRequest{})
 		consumerKeeper.SetPendingSlashRequests(ctx, request)
 	}
 
@@ -628,7 +627,7 @@ func (suite *KeeperTestSuite) TestPendingSlashRequests() {
 		operation: func() {},
 		expLen:    10,
 	}, {
-		operation: func() { consumerKeeper.AppendPendingSlashRequests(ctx, types.SlashRequest{}) },
+		operation: func() { consumerKeeper.AppendPendingSlashRequests(ctx, consumertypes.SlashRequest{}) },
 		expLen:    11,
 	}, {
 		operation: func() { consumerKeeper.ClearPendingSlashRequests(ctx) },
@@ -664,7 +663,7 @@ func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
 	suite.Require().True(ok)
 
 	packet := channeltypes.NewPacket(pd.GetBytes(), seq, ccv.ProviderPortID, suite.path.EndpointB.ChannelID,
-		consumertypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+		ccv.ConsumerPortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
 	err := suite.path.EndpointB.SendPacket(packet)
 	suite.Require().NoError(err)
@@ -682,7 +681,7 @@ func (suite *KeeperTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.
 	oldBlockTime := ctx.BlockTime()
 	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID, suite.path.EndpointA.ChannelID,
 		ccv.ProviderPortID, suite.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
 	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)

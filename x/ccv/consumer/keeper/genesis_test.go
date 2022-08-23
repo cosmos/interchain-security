@@ -9,7 +9,6 @@ import (
 
 	app "github.com/cosmos/interchain-security/app/consumer"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -30,7 +29,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 
 	ctx := suite.consumerChain.GetContext()
 	portId := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPort(ctx)
-	suite.Require().Equal(consumertypes.PortID, portId)
+	suite.Require().Equal(ccv.ConsumerPortID, portId)
 
 	clientId, ok := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetProviderClient(ctx)
 	suite.Require().True(ok)
@@ -60,7 +59,7 @@ func (suite *KeeperTestSuite) TestGenesis() {
 		1,
 		nil,
 	)
-	packet := channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+	packet := channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, ccv.ConsumerPortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
 	suite.consumerChain.App.(*app.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 

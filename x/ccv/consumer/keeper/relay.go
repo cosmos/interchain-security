@@ -9,7 +9,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -79,13 +79,13 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 	}
 
 	store := ctx.KVStore(k.storeKey)
-	maturityIterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
+	maturityIterator := sdk.KVStorePrefixIterator(store, []byte{consumertypes.PacketMaturityTimeBytePrefix})
 	defer maturityIterator.Close()
 
 	currentTime := uint64(ctx.BlockTime().UnixNano())
 
 	for maturityIterator.Valid() {
-		vscId := types.IdFromPacketMaturityTimeKey(maturityIterator.Key())
+		vscId := consumertypes.IdFromPacketMaturityTimeKey(maturityIterator.Key())
 		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
 			// send VSCMatured packet
 			// - construct validator set change packet data
@@ -95,8 +95,8 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 				ctx,
 				k.scopedKeeper,
 				k.channelKeeper,
-				channelID,    // source channel id
-				types.PortID, // source port id
+				channelID,          // source channel id
+				ccv.ConsumerPortID, // source port id
 				packetData.GetBytes(),
 			)
 			if err != nil {
@@ -128,7 +128,7 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 	// if not, append slashing packet to pending slash requests
 	channelID, ok := k.GetProviderChannel(ctx)
 	if !ok {
-		k.AppendPendingSlashRequests(ctx, types.SlashRequest{
+		k.AppendPendingSlashRequests(ctx, consumertypes.SlashRequest{
 			Packet:     &packetData,
 			Infraction: infraction},
 		)
@@ -140,8 +140,8 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 		ctx,
 		k.scopedKeeper,
 		k.channelKeeper,
-		channelID,    // source channel id
-		types.PortID, // source port id
+		channelID,          // source channel id
+		ccv.ConsumerPortID, // source port id
 		packetData.GetBytes(),
 	)
 	if err != nil {
@@ -176,8 +176,8 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 				ctx,
 				k.scopedKeeper,
 				k.channelKeeper,
-				channelID,    // source channel id
-				types.PortID, // source port id
+				channelID,          // source channel id
+				ccv.ConsumerPortID, // source port id
 				slashReq.Packet.GetBytes(),
 			)
 			if err != nil {
@@ -215,11 +215,11 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		// check if there is an established CCV channel
 		channelID, found := k.GetProviderChannel(ctx)
 		if !found {
-			return sdkerrors.Wrapf(types.ErrNoProposerChannelId, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)
+			return sdkerrors.Wrapf(consumertypes.ErrNoProposerChannelId, "recv ErrorAcknowledgement on non-established channel %s", packet.SourceChannel)
 		}
 		if channelID != packet.SourceChannel {
 			// Close the established CCV channel as well
-			return k.ChanCloseInit(ctx, types.PortID, channelID)
+			return k.ChanCloseInit(ctx, ccv.ConsumerPortID, channelID)
 		}
 	}
 	return nil
@@ -231,7 +231,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 
 // IsChannelClosed returns a boolean whether a given channel is in the CLOSED state
 func (k Keeper) IsChannelClosed(ctx sdk.Context, channelID string) bool {
-	channel, found := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
+	channel, found := k.channelKeeper.GetChannel(ctx, ccv.ConsumerPortID, channelID)
 	if !found || channel.State == channeltypes.CLOSED {
 		return true
 	}
