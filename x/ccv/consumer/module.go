@@ -26,7 +26,7 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
@@ -42,7 +42,7 @@ type AppModuleBasic struct{}
 
 // Name implements AppModuleBasic interface
 func (AppModuleBasic) Name() string {
-	return types.ModuleName
+	return consumertypes.ModuleName
 }
 
 // RegisterLegacyAminoCodec implements AppModuleBasic interface
@@ -58,14 +58,14 @@ func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) 
 // DefaultGenesis returns default genesis state as raw bytes for the ibc
 // consumer module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(types.DefaultGenesisState())
+	return cdc.MustMarshalJSON(consumertypes.DefaultGenesisState())
 }
 
 // ValidateGenesis performs genesis state validation for the ibc consumer module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
-	var data types.GenesisState
+	var data consumertypes.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
-		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", consumertypes.ModuleName, err)
 	}
 
 	return data.Validate()
@@ -118,7 +118,7 @@ func (am AppModule) Route() sdk.Route {
 
 // QuerierRoute implements the AppModule interface
 func (AppModule) QuerierRoute() string {
-	return types.QuerierRoute
+	return consumertypes.QuerierRoute
 }
 
 // LegacyQuerierHandler implements the AppModule interface
@@ -134,7 +134,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 // InitGenesis performs genesis initialization for the consumer module. It returns
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState types.GenesisState
+	var genesisState consumertypes.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	return am.keeper.InitGenesis(ctx, &genesisState)
 }
@@ -226,10 +226,8 @@ func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.Weig
 	return nil
 }
 
-// ValidateConsumerChannelParams does validation of a newly created ccv channel. A consumer
-// channel must be ORDERED, use the correct port (by default 'consumer' on this module), and use the current
-// supported version.
-func ValidateConsumerChannelParams(
+// ValidateCCVChannelParams validates a ccv channel
+func ValidateCCVChannelParams(
 	ctx sdk.Context,
 	keeper keeper.Keeper,
 	order channeltypes.Order,
@@ -237,16 +235,18 @@ func ValidateConsumerChannelParams(
 	channelID string,
 	version string,
 ) error {
+	// only ordered channels allowed
 	if order != channeltypes.ORDERED {
 		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.ORDERED, order)
 	}
 
-	// Require portID is the portID CCV module is bound to
+	// the port ID must match the port ID the CCV module is bounded to
 	boundPort := keeper.GetPort(ctx)
 	if boundPort != portID {
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
 	}
 
+	// the version must match the expected version
 	if version != ccv.Version {
 		return sdkerrors.Wrapf(ccv.ErrInvalidVersion, "got %s, expected %s", version, ccv.Version)
 	}
@@ -271,13 +271,20 @@ func (am AppModule) OnChanOpenInit(
 			"provider channel: %s already set", providerChannel)
 	}
 
-	if err := ValidateConsumerChannelParams(
+	// validate parameters
+	if err := ValidateCCVChannelParams(
 		ctx, am.keeper, order, portID, channelID, version,
 	); err != nil {
 		return err
 	}
 
-	// Claim channel capability passed back by IBC module
+	// ensure the counterparty port ID matches the expected provider port ID
+	if counterparty.PortId != ccv.ProviderPortID {
+		return sdkerrors.Wrapf(porttypes.ErrInvalidPort,
+			"invalid counterparty port: %s, expected %s", counterparty.PortId, ccv.ProviderPortID)
+	}
+
+	// claim channel capability passed back by IBC module
 	if err := am.keeper.ClaimCapability(
 		ctx, chanCap, host.ChannelCapabilityPath(portID, channelID),
 	); err != nil {
@@ -413,7 +420,7 @@ func (am AppModule) OnRecvPacket(
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypePacket,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
 			sdk.NewAttribute(ccv.AttributeKeyAckSuccess, fmt.Sprintf("%t", ack != nil)),
 		),
 	)
@@ -440,7 +447,7 @@ func (am AppModule) OnAcknowledgementPacket(
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypePacket,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
 			sdk.NewAttribute(ccv.AttributeKeyAck, ack.String()),
 		),
 	)
@@ -481,7 +488,7 @@ func (am AppModule) OnTimeoutPacket(
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypeTimeout,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
 		),
 	)
 
