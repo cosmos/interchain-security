@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"time"
 )
 
@@ -43,6 +45,7 @@ type System struct {
 	containerConfig  ContainerConfig
 	validatorConfigs []ValidatorConfig
 	chainConfigs     map[string]ChainConfig
+	localSdkPath     string
 }
 
 func DefaultSystemConfig() System {
@@ -96,4 +99,12 @@ func DefaultSystemConfig() System {
 			},
 		},
 	}
+}
+
+func (s *System) ParseCLIFlags() {
+	localSdkPath := flag.String("local-sdk-path", "",
+		"path of a local sdk version to build and reference in integration tests")
+	flag.Parse()
+	s.localSdkPath = *localSdkPath
+	fmt.Println(s.localSdkPath)
 }
