@@ -72,7 +72,6 @@ func (s System) runStep(step Step, verbose bool) {
 
 func (s System) startDocker() {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-
 	scriptStr := "integration-tests/testnet-scripts/start-docker.sh " +
 		s.containerConfig.containerName + " " +
 		s.containerConfig.instanceName + " " +
