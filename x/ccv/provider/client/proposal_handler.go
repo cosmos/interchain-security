@@ -21,7 +21,10 @@ import (
 )
 
 // ProposalHandler is the param change proposal handler.
-var ProposalHandler = govclient.NewProposalHandler(NewCreateConsumerChainProposalTxCmd, ProposalRESTHandler)
+var (
+	CreateConsumerProposalHandler = govclient.NewProposalHandler(NewCreateConsumerChainProposalTxCmd, CreateConsumerProposalRESTHandler)
+	StopConsumerProposalHandler   = govclient.NewProposalHandler(NewStopConsumerChainProposalTxCmd, StopConsumerProposalRESTHandler)
+)
 
 // NewCreateConsumerChainProposalTxCmd returns a CLI command handler for creating
 // a new consumer chain proposal governance transaction.
@@ -67,6 +70,64 @@ Where proposal.json contains:
 			content := types.NewCreateConsumerChainProposal(
 				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
 				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime)
+
+			from := clientCtx.GetFromAddress()
+
+			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
+			if err != nil {
+				return err
+			}
+
+			msg, err := govtypes.NewMsgSubmitProposal(content, deposit, from)
+			if err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+}
+
+// NewStopConsumerChainProposalTxCmd returns a CLI command handler for stopping
+// a new consumer chain proposal governance transaction.
+func NewStopConsumerChainProposalTxCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "stop-consumer-chain [proposal-file]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Submit a consumer chain stoppage proposal",
+		Long: `
+Submit a consumer chain stoppage proposal along with an initial deposit.
+The proposal details must be supplied via a JSON file.
+
+Example:
+$ %s tx gov submit-proposal create-consumer-chain <path/to/proposal.json> --from=<key_or_address>
+
+Where proposal.json contains:
+
+{
+    "title": "Stop the FooChain",
+    "description": "It was a great chain",
+    "chain_id": "foochain",
+    "stop_time": "2022-01-27T15:59:50.121607-08:00",
+    "deposit": "10000stake"
+}
+		`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			proposal, err := ParseStopConsumerChainProposalJSON(args[0])
+			if err != nil {
+				return err
+			}
+
+			content, err := types.NewStopConsumerChainProposal(
+				proposal.Title, proposal.Description, proposal.ChainId, proposal.StopTime)
+			if err != nil {
+				return err
+			}
 
 			from := clientCtx.GetFromAddress()
 
@@ -162,15 +223,16 @@ func ParseStopConsumerChainProposalJSON(proposalFile string) (StopConsumerChainP
 
 // CreateConsumerProposalRESTHandler returns a ProposalRESTHandler that exposes the param
 // change REST handler with a given sub-route.
-func ProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
+func CreateConsumerProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
 	return govrest.ProposalRESTHandler{
 		SubRoute: "create_consumer_chain",
-		Handler:  postProposalHandlerFn(clientCtx),
+		Handler:  postCreateConsumerProposalHandlerFn(clientCtx),
 	}
 }
 
-func postProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
+func postCreateConsumerProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// var req CreateConsumerChainProposalReq
 		var req CreateConsumerChainProposalReq
 		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
 			return
@@ -184,6 +246,46 @@ func postProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
 		content := types.NewCreateConsumerChainProposal(
 			req.Title, req.Description, req.ChainId, req.InitialHeight,
 			req.GenesisHash, req.BinaryHash, req.SpawnTime)
+
+		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
+
+		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
+			return
+		}
+
+		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
+	}
+}
+
+// StopConsumerProposalRESTHandler returns a ProposalRESTHandler that exposes the param
+// change REST handler with a given sub-route.
+func StopConsumerProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
+	return govrest.ProposalRESTHandler{
+		SubRoute: "stop_consumer_chain",
+		Handler:  postStopConsumerProposalHandlerFn(clientCtx),
+	}
+}
+
+func postStopConsumerProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req StopConsumerChainProposalReq
+		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
+			return
+		}
+
+		req.BaseReq = req.BaseReq.Sanitize()
+		if !req.BaseReq.ValidateBasic(w) {
+			return
+		}
+
+		content, err := types.NewStopConsumerChainProposal(
+			req.Title, req.Description, req.ChainId, req.StopTime)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
 
 		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
 		if rest.CheckBadRequestError(w, err) {
