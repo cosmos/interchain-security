@@ -51,7 +51,7 @@ Inspect the [Makefile](./Makefile) if curious.
 
 Unit tests are useful for simple standalone functionality, and CRUD operations. Unit tests should use golang's standard testing package, and be defined in files formatted as ```<file being tested>_test.go``` in the same directory as the file being tested, following standard conventions. 
 
-[Mocked external keepers](./testutil/keeper/mocks.go) (implemented with [gomock](https://github.com/golang/mock) are available for testing more complex functionality, but still only relevant to execution within a single node. Ie. no internode or interchain communication. 
+[Mocked external keepers](./testutil/keeper/mocks.go) (implemented with [gomock](https://github.com/golang/mock)) are available for testing more complex functionality, but still only relevant to execution within a single node. Ie. no internode or interchain communication. 
 
 ### End to End (e2e) Tests
 
