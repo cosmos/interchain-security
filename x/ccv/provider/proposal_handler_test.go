@@ -15,6 +15,8 @@ import (
 
 // TestConsumerChainProposalHandler tests the handler for consumer chain proposals
 // for both CreateConsumerChainProposal and StopConsumerChainProposal
+//
+// TODO: Make this a unit test with mocks
 func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
 	var (
 		ctx     sdk.Context
