@@ -205,7 +205,7 @@ type StopConsumerChainProposalReq struct {
 	Description string `json:"description"`
 	ChainId     string `json:"chainId"`
 
-	StopTime time.Time `json:"spawnTime"`
+	StopTime time.Time `json:"stopTime"`
 	Deposit  sdk.Coins `json:"deposit"`
 }
 
