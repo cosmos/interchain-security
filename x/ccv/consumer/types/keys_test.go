@@ -38,7 +38,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = PortKey(), i+1
 	keys[i], i = LastDistributionTransmissionKey(), i+1
 	keys[i], i = UnbondingTimeKey(), i+1
-	keys[i], i = ProviderClientKey(), i+1
+	keys[i], i = ProviderClientIDKey(), i+1
 	keys[i], i = ProviderChannelKey(), i+1
 	keys[i], i = PendingChangesKey(), i+1
 	keys[i], i = []byte{HistoricalInfoBytePrefix}, i+1

@@ -6,7 +6,8 @@ import (
 	"testing"
 	"time"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
@@ -20,6 +21,7 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -30,6 +32,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 )
 
 type KeeperTestSuite struct {
@@ -99,7 +103,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.Require().True(found, "consumer client not found")
 	suite.path.EndpointB.ClientID = consumerClient
 	// - set consumer endpoint's clientID
-	providerClient, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
+	providerClient, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
 	suite.Require().True(found, "provider client not found")
 	suite.path.EndpointA.ClientID = providerClient
 	// - client config
@@ -132,41 +136,55 @@ func (suite *KeeperTestSuite) SetupCCVChannel() {
 	suite.coordinator.CreateChannels(suite.path)
 }
 
-func (suite *KeeperTestSuite) TestUnbondingTime() {
-	// The unbonding time on the consumer was already set during InitGenesis()
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeleteUnbondingTime(suite.ctx)
-	_, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
-	suite.Require().False(ok)
+// TestUnbondingTime tests getter and setter functionality for the unbonding period of a consumer chain
+func TestUnbondingTime(t *testing.T) {
+	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
+	_, ok := consumerKeeper.GetUnbondingTime(ctx)
+	require.False(t, ok)
 	unbondingPeriod := time.Hour * 24 * 7 * 3
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetUnbondingTime(suite.ctx, unbondingPeriod)
-	storedUnbondingPeriod, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
-	suite.Require().True(ok)
-	suite.Require().True(storedUnbondingPeriod == unbondingPeriod)
-
+	consumerKeeper.SetUnbondingTime(ctx, unbondingPeriod)
+	storedUnbondingPeriod, ok := consumerKeeper.GetUnbondingTime(ctx)
+	require.True(t, ok)
+	require.Equal(t, storedUnbondingPeriod, unbondingPeriod)
 }
 
-func (suite *KeeperTestSuite) TestProviderClient() {
-	providerClient, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.ctx)
+// TestProviderClientMatches tests that the provider client managed by the consumer keeper matches the client keeper's client state
+func (suite *KeeperTestSuite) TestProviderClientMatches() {
+	providerClientID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.ctx)
 	suite.Require().True(ok)
 
-	clientState, _ := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClient)
+	clientState, _ := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClientID)
 	suite.Require().Equal(suite.providerClient, clientState, "stored client state does not match genesis provider client")
 }
 
-func (suite *KeeperTestSuite) TestProviderChannel() {
-	_, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.ctx)
-	suite.Require().False(ok)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetProviderChannel(suite.ctx, "channelID")
-	channelID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.ctx)
-	suite.Require().True(ok)
-	suite.Require().Equal("channelID", channelID)
+// TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper
+func TestProviderClientID(t *testing.T) {
+	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
+	_, ok := consumerKeeper.GetProviderClientID(ctx)
+	require.False(t, ok)
+	consumerKeeper.SetProviderClientID(ctx, "someClientID")
+	clientID, ok := consumerKeeper.GetProviderClientID(ctx)
+	require.True(t, ok)
+	require.Equal(t, "someClientID", clientID)
 }
 
-func (suite *KeeperTestSuite) TestPendingChanges() {
+// TestProviderChannel tests getter and setter functionality for the channel ID stored on consumer keeper
+func TestProviderChannel(t *testing.T) {
+	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
+	_, ok := consumerKeeper.GetProviderChannel(ctx)
+	require.False(t, ok)
+	consumerKeeper.SetProviderChannel(ctx, "channelID")
+	channelID, ok := consumerKeeper.GetProviderChannel(ctx)
+	require.True(t, ok)
+	require.Equal(t, "channelID", channelID)
+}
+
+// TestPendingChanges tests getter, setter, and delete functionality for pending VSCs on a consumer chain
+func TestPendingChanges(t *testing.T) {
 	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	suite.Require().NoError(err)
+	require.NoError(t, err)
 	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	suite.Require().NoError(err)
+	require.NoError(t, err)
 
 	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{
@@ -183,43 +201,47 @@ func (suite *KeeperTestSuite) TestPendingChanges() {
 		nil,
 	)
 
-	err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingChanges(suite.ctx, pd)
-	suite.Require().NoError(err)
-	gotPd, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPendingChanges(suite.ctx)
-	suite.Require().True(ok)
-	suite.Require().Equal(&pd, gotPd, "packet data in store does not equal packet data set")
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeletePendingChanges(suite.ctx)
-	gotPd, ok = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPendingChanges(suite.ctx)
-	suite.Require().False(ok)
-	suite.Require().Nil(gotPd, "got non-nil pending changes after Delete")
+	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
+	err = consumerKeeper.SetPendingChanges(ctx, pd)
+	require.NoError(t, err)
+	gotPd, ok := consumerKeeper.GetPendingChanges(ctx)
+	require.True(t, ok)
+	require.Equal(t, &pd, gotPd, "packet data in store does not equal packet data set")
+	consumerKeeper.DeletePendingChanges(ctx)
+	gotPd, ok = consumerKeeper.GetPendingChanges(ctx)
+	require.False(t, ok)
+	require.Nil(t, gotPd, "got non-nil pending changes after Delete")
 }
 
-func (suite *KeeperTestSuite) TestPacketMaturityTime() {
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPacketMaturityTime(suite.ctx, 1, 10)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPacketMaturityTime(suite.ctx, 2, 25)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPacketMaturityTime(suite.ctx, 5, 15)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPacketMaturityTime(suite.ctx, 6, 40)
+// TestPacketMaturityTime tests getter, setter, and iterator functionality for the packet maturity time of a received VSC packet
+func TestPacketMaturityTime(t *testing.T) {
+	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper.SetPacketMaturityTime(ctx, 1, 10)
+	consumerKeeper.SetPacketMaturityTime(ctx, 2, 25)
+	consumerKeeper.SetPacketMaturityTime(ctx, 5, 15)
+	consumerKeeper.SetPacketMaturityTime(ctx, 6, 40)
 
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.DeletePacketMaturityTime(suite.ctx, 6)
+	consumerKeeper.DeletePacketMaturityTime(ctx, 6)
 
-	suite.Require().Equal(uint64(10), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 1))
-	suite.Require().Equal(uint64(25), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 2))
-	suite.Require().Equal(uint64(15), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 5))
-	suite.Require().Equal(uint64(0), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 3))
-	suite.Require().Equal(uint64(0), suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.ctx, 6))
+	require.Equal(t, uint64(10), consumerKeeper.GetPacketMaturityTime(ctx, 1))
+	require.Equal(t, uint64(25), consumerKeeper.GetPacketMaturityTime(ctx, 2))
+	require.Equal(t, uint64(15), consumerKeeper.GetPacketMaturityTime(ctx, 5))
+	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 3))
+	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 6))
 
 	orderedTimes := [][]uint64{{1, 10}, {2, 25}, {5, 15}}
 	i := 0
 
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IteratePacketMaturityTime(suite.ctx, func(seq, time uint64) bool {
+	consumerKeeper.IteratePacketMaturityTime(ctx, func(seq, time uint64) bool {
 		// require that we iterate through unbonding time in order of sequence
-		suite.Require().Equal(orderedTimes[i][0], seq)
-		suite.Require().Equal(orderedTimes[i][1], time)
+		require.Equal(t, orderedTimes[i][0], seq)
+		require.Equal(t, orderedTimes[i][1], time)
 		i++
 		return false
 	})
 }
 
+// TestVerifyProviderChain tests the VerifyProviderChain method for the consumer keeper
 func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 	var connectionHops []string
 	channelID := "channel-0"
@@ -486,6 +508,7 @@ func (suite *KeeperTestSuite) TestValidatorDoubleSigning() {
 	suite.Require().EqualValues(expCommit, gotCommit)
 }
 
+// TestSendSlashPacket tests the functionality of SendSlashPacket and asserts state changes related to that method
 func (suite *KeeperTestSuite) TestSendSlashPacket() {
 	suite.SetupCCVChannel()
 
@@ -566,53 +589,60 @@ func (suite *KeeperTestSuite) TestSendSlashPacket() {
 	suite.Require().Len(requests, 0)
 }
 
-func (suite *KeeperTestSuite) TestCrossChainValidator() {
-	app := suite.consumerChain.App.(*appConsumer.App)
-	ctx := suite.consumerChain.GetContext()
+// TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records
+func TestCrossChainValidator(t *testing.T) {
+
+	// Construct a keeper with a custom codec
+	// TODO: Ensure all custom interfaces are registered in prod, see https://github.com/cosmos/interchain-security/issues/273
+	_, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
+	ir := codectypes.NewInterfaceRegistry()
+
+	// Public key implementation must be registered
+	cryptocodec.RegisterInterfaces(ir)
+	cdc := codec.NewProtoCodec(ir)
+
+	consumerKeeper := testkeeper.GetCustomConsumerKeeper(
+		cdc,
+		storeKey,
+		paramsSubspace,
+	)
 
 	// should return false
-	_, foud := app.ConsumerKeeper.GetCCValidator(ctx, ed25519.GenPrivKey().PubKey().Address())
-	suite.Require().False(foud)
+	_, found := consumerKeeper.GetCCValidator(ctx, ed25519.GenPrivKey().PubKey().Address())
+	require.False(t, found)
 
-	// get a validator from consumer chain
-	val := suite.providerChain.Vals.Validators[0]
+	// Obtain derived private key
+	privKey := ed25519.GenPrivKey()
 
-	// convert validator publick key
-	pubkey, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
-	suite.Require().NoError(err)
+	// Set cross chain validator
+	ccVal, err := types.NewCCValidator(privKey.PubKey().Address(), 1000, privKey.PubKey())
+	require.NoError(t, err)
+	consumerKeeper.SetCCValidator(ctx, ccVal)
 
-	// set cross chain validator
-	ccVal, err := types.NewCCValidator(val.Address, 1000, pubkey)
-	suite.Require().NoError(err)
-
-	app.ConsumerKeeper.SetCCValidator(ctx, ccVal)
-
-	// should return true
-	gotCCVal, found := app.ConsumerKeeper.GetCCValidator(ctx, ccVal.Address)
-	suite.Require().True(found)
+	gotCCVal, found := consumerKeeper.GetCCValidator(ctx, ccVal.Address)
+	require.True(t, found)
 
 	// verify the returned validator values
-	suite.Require().EqualValues(ccVal, gotCCVal)
+	require.EqualValues(t, ccVal, gotCCVal)
 
 	// expect to return the same consensus pubkey
-	pk, err := gotCCVal.ConsPubKey()
-	suite.Require().NoError(err)
+	pk, err := ccVal.ConsPubKey()
+	require.NoError(t, err)
 	gotPK, err := gotCCVal.ConsPubKey()
-	suite.Require().NoError(err)
-
-	suite.Require().True(pk.Equals(gotPK))
+	require.NoError(t, err)
+	require.Equal(t, pk, gotPK)
 
 	// delete validator
-	app.ConsumerKeeper.DeleteCCValidator(ctx, ccVal.Address)
+	consumerKeeper.DeleteCCValidator(ctx, ccVal.Address)
 
 	// should return false
-	_, foud = app.ConsumerKeeper.GetCCValidator(ctx, ccVal.Address)
-	suite.Require().False(foud)
+	_, found = consumerKeeper.GetCCValidator(ctx, ccVal.Address)
+	require.False(t, found)
 }
 
-func (suite *KeeperTestSuite) TestPendingSlashRequests() {
-	consumerKeeper := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper
-	ctx := suite.consumerChain.GetContext()
+// TestPendingSlashRequests tests the getter, setter, appending method, and deletion method for pending slash requests
+func TestPendingSlashRequests(t *testing.T) {
+	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
 
 	// prepare test setup by storing 10 pending slash requests
 	request := []types.SlashRequest{}
@@ -637,10 +667,10 @@ func (suite *KeeperTestSuite) TestPendingSlashRequests() {
 	},
 	}
 
-	for _, t := range testCases {
-		t.operation()
+	for _, tc := range testCases {
+		tc.operation()
 		requests := consumerKeeper.GetPendingSlashRequests(ctx)
-		suite.Require().Len(requests, t.expLen)
+		require.Len(t, requests, tc.expLen)
 	}
 }
 
