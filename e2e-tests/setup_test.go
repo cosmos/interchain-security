@@ -2,12 +2,12 @@ package e2e_test
 
 import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	"bytes"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
@@ -38,6 +38,10 @@ type ProviderTestSuite struct {
 
 	path         *ibctesting.Path
 	transferPath *ibctesting.Path
+}
+
+func TestProviderTestSuite(t *testing.T) {
+	suite.Run(t, new(ProviderTestSuite))
 }
 
 func (suite *ProviderTestSuite) SetupTest() {
@@ -189,6 +193,10 @@ type ProviderKeeperTestSuite struct {
 	ctx           sdk.Context
 }
 
+func TestProviderKeeperTestSuite(t *testing.T) {
+	suite.Run(t, new(ProviderKeeperTestSuite))
+}
+
 func (suite *ProviderKeeperTestSuite) SetupTest() {
 	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
 
@@ -265,10 +273,6 @@ func (suite *ProviderKeeperTestSuite) SetupTest() {
 	suite.ctx = suite.providerChain.GetContext()
 }
 
-func TestProviderKeeperTestSuite(t *testing.T) {
-	suite.Run(t, new(ProviderKeeperTestSuite))
-}
-
 type ConsumerTestSuite struct {
 	suite.Suite
 
@@ -281,6 +285,10 @@ type ConsumerTestSuite struct {
 	path *ibctesting.Path
 
 	ctx sdk.Context
+}
+
+func TestConsumerTestSuite(t *testing.T) {
+	suite.Run(t, new(ConsumerTestSuite))
 }
 
 func (suite *ConsumerTestSuite) SetupTest() {
@@ -361,7 +369,7 @@ func (suite *ConsumerTestSuite) SetupTest() {
 	suite.coordinator.CreateConnections(suite.path)
 }
 
-// TODO: Can this be consolidated with above?
+// TODO: Can this be consolidated with ConsumerTestSuite above?
 type ConsumerKeeperTestSuite struct {
 	suite.Suite
 
@@ -377,6 +385,10 @@ type ConsumerKeeperTestSuite struct {
 	path *ibctesting.Path
 
 	ctx sdk.Context
+}
+
+func TestConsumerKeeperTestSuite(t *testing.T) {
+	suite.Run(t, new(ConsumerKeeperTestSuite))
 }
 
 func (suite *ConsumerKeeperTestSuite) SetupTest() {
@@ -460,8 +472,4 @@ func (suite *ConsumerKeeperTestSuite) SetupTest() {
 func (suite *ConsumerKeeperTestSuite) SetupCCVChannel() {
 	suite.coordinator.CreateConnections(suite.path)
 	suite.coordinator.CreateChannels(suite.path)
-}
-
-func TestConsumerKeeperTestSuite(t *testing.T) {
-	suite.Run(t, new(ConsumerKeeperTestSuite))
 }

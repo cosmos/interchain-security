@@ -14,7 +14,7 @@ jobs:
       - name: Figure out where we are
         run: ls
 
-      - name: Unit tests
+      - name: Unit and e2e tests
         run: go test ./...
 
       - name: Integration tests

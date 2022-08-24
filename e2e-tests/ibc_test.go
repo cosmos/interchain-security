@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
 	"github.com/cosmos/ibc-go/modules/core/exported"
@@ -23,7 +22,6 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
@@ -378,10 +376,6 @@ func (suite *ConsumerTestSuite) TestOnChanCloseInit() {
 			}
 		})
 	}
-}
-
-func TestConsumerTestSuite(t *testing.T) {
-	suite.Run(t, new(ConsumerTestSuite))
 }
 
 // TestProviderClientMatches tests that the provider client managed by the consumer keeper matches the client keeper's client state

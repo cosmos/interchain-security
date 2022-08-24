@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"strings"
-	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,7 +11,6 @@ import (
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
-	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -30,10 +28,6 @@ const (
 	Provider ChainType = iota
 	Consumer
 )
-
-func TestProviderTestSuite(t *testing.T) {
-	suite.Run(t, new(ProviderTestSuite))
-}
 
 func (s *ProviderTestSuite) providerCtx() sdk.Context {
 	return s.providerChain.GetContext()
