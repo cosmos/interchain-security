@@ -17,10 +17,12 @@ const (
 
 var (
 	_ govtypes.Content = &CreateConsumerChainProposal{}
+	_ govtypes.Content = &StopConsumerChainProposal{}
 )
 
 func init() {
 	govtypes.RegisterProposalType(ProposalTypeCreateConsumerChain)
+	govtypes.RegisterProposalType(ProposalTypeStopConsumerChain)
 }
 
 // NewCreateConsumerChainProposal creates a new create consumerchain proposal.
