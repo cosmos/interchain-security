@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"flag"
+	"fmt"
+	"time"
+)
 
 // Attributes that are unique to a validator. Allows us to map (part of) the set of uints to
 // a set of viable validators
@@ -36,6 +40,7 @@ type System struct {
 	containerConfig  ContainerConfig
 	validatorConfigs []ValidatorConfig
 	chainConfigs     []ChainConfig
+	localSdkPath     string
 }
 
 func DefaultSystemConfig() System {
@@ -89,4 +94,12 @@ func DefaultSystemConfig() System {
 			},
 		},
 	}
+}
+
+func (s *System) ParseCLIFlags() {
+	localSdkPath := flag.String("local-sdk-path", "",
+		"path of a local sdk version to build and reference in integration tests")
+	flag.Parse()
+	s.localSdkPath = *localSdkPath
+	fmt.Println(s.localSdkPath)
 }
