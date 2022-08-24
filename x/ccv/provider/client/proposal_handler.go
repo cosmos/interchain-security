@@ -193,7 +193,7 @@ type StopConsumerChainProposalJSON struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	ChainId     string    `json:"chain_id"`
-	StopTime    time.Time `json:"spawn_time"`
+	StopTime    time.Time `json:"stop_time"`
 	Deposit     string    `json:"deposit"`
 }
 
