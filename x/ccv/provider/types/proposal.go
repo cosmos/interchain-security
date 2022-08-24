@@ -116,7 +116,7 @@ func (sccp *StopConsumerChainProposal) ValidateBasic() error {
 	}
 
 	if sccp.StopTime.IsZero() {
-		return sdkerrors.Wrap(ErrInvalidStopProposal, "spawn time cannot be zero")
+		return sdkerrors.Wrap(ErrInvalidStopProposal, "stop time cannot be zero")
 	}
 	return nil
 }
