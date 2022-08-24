@@ -18,6 +18,10 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		(*govtypes.Content)(nil),
 		&CreateConsumerChainProposal{},
 	)
+	registry.RegisterImplementations(
+		(*govtypes.Content)(nil),
+		&StopConsumerChainProposal{},
+	)
 }
 
 var (

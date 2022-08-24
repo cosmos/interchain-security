@@ -125,7 +125,42 @@ func ParseCreateConsumerChainProposalJSON(proposalFile string) (CreateConsumerCh
 	return proposal, nil
 }
 
-// ProposalRESTHandler returns a ProposalRESTHandler that exposes the param
+type StopConsumerChainProposalJSON struct {
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	ChainId     string    `json:"chain_id"`
+	StopTime    time.Time `json:"stop_time"`
+	Deposit     string    `json:"deposit"`
+}
+
+type StopConsumerChainProposalReq struct {
+	BaseReq  rest.BaseReq   `json:"base_req"`
+	Proposer sdk.AccAddress `json:"proposer"`
+
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	ChainId     string `json:"chainId"`
+
+	StopTime time.Time `json:"stopTime"`
+	Deposit  sdk.Coins `json:"deposit"`
+}
+
+func ParseStopConsumerChainProposalJSON(proposalFile string) (StopConsumerChainProposalJSON, error) {
+	proposal := StopConsumerChainProposalJSON{}
+
+	contents, err := ioutil.ReadFile(filepath.Clean(proposalFile))
+	if err != nil {
+		return proposal, err
+	}
+
+	if err := json.Unmarshal(contents, &proposal); err != nil {
+		return proposal, err
+	}
+
+	return proposal, nil
+}
+
+// CreateConsumerProposalRESTHandler returns a ProposalRESTHandler that exposes the param
 // change REST handler with a given sub-route.
 func ProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
 	return govrest.ProposalRESTHandler{
