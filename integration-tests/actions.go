@@ -628,6 +628,9 @@ func (s System) redelegateTokens(action RedelegateTokensAction, verbose bool) {
 		`--chain-id`, s.chainConfigs[action.chain].chainId,
 		`--home`, s.getValidatorHome(action.chain, action.sender),
 		`--node`, s.getValidatorNode(action.chain, action.sender),
+		// Need to manually set gas limit past default (200000),
+		// since redelegate has a lot of operations
+		`--gas`, "900000", 
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,

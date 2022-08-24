@@ -288,8 +288,8 @@ var happyPathSteps = []Step{
 			providerChainId: ChainState{
 				ValPowers: &map[uint]uint{
 					0: 500,
-					1: 490,
-					2: 510,
+					1: 489,
+					2: 511,
 				},
 			},
 			consumerChainId: ChainState{

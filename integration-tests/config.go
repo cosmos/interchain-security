@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"time"
 )
 
@@ -106,5 +105,4 @@ func (s *System) ParseCLIFlags() {
 		"path of a local sdk version to build and reference in integration tests")
 	flag.Parse()
 	s.localSdkPath = *localSdkPath
-	fmt.Println(s.localSdkPath)
 }

@@ -161,7 +161,7 @@ do
     GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$VAL_ID:9091"
     LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$VAL_ID:26655"
     P2P_ADDRESS="--p2p.laddr tcp://$CHAIN_IP_PREFIX.$VAL_ID:26656"
-    LOG_LEVEL="--log_level info"
+    LOG_LEVEL="--log_level trace" # Keep as "trace" to see panic messages
     ENABLE_WEBGRPC="--grpc-web.enable=false"
 
     PERSISTENT_PEERS=""
