@@ -119,7 +119,7 @@ func (suite *ProviderTestSuite) SetupTest() {
 }
 
 // TODO: Can this be consolidated with ProviderTestSuite above?
-type KeeperTestSuite struct {
+type ProviderKeeperTestSuite struct {
 	suite.Suite
 	coordinator *ibctesting.Coordinator
 
@@ -130,7 +130,7 @@ type KeeperTestSuite struct {
 	ctx           sdk.Context
 }
 
-func (suite *KeeperTestSuite) SetupTest() {
+func (suite *ProviderKeeperTestSuite) SetupTest() {
 	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
 
 	// valsets must match
@@ -206,8 +206,8 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.ctx = suite.providerChain.GetContext()
 }
 
-func TestKeeperTestSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
+func TestProviderKeeperTestSuite(t *testing.T) {
+	suite.Run(t, new(ProviderKeeperTestSuite))
 }
 
 func (suite *ProviderTestSuite) SetupCCVChannel() {

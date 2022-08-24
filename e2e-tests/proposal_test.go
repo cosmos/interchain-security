@@ -85,7 +85,7 @@ func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestMakeConsumerGenesis() {
+func (suite *ProviderKeeperTestSuite) TestMakeConsumerGenesis() {
 	suite.SetupTest()
 
 	actualGenesis, err := suite.providerChain.App.(*appProvider.App).ProviderKeeper.MakeConsumerGenesis(suite.providerChain.GetContext())
@@ -112,7 +112,7 @@ func (suite *KeeperTestSuite) TestMakeConsumerGenesis() {
 	suite.Require().Equal(actualGenesis, expectedGenesis, "consumer chain genesis created incorrectly")
 }
 
-func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {
+func (suite *ProviderKeeperTestSuite) TestCreateConsumerChainProposal() {
 	var (
 		ctx      sdk.Context
 		proposal *types.CreateConsumerChainProposal
@@ -125,12 +125,12 @@ func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {
 
 	testCases := []struct {
 		name         string
-		malleate     func(*KeeperTestSuite)
+		malleate     func(*ProviderKeeperTestSuite)
 		expPass      bool
 		spawnReached bool
 	}{
 		{
-			"valid create consumer chain proposal: spawn time reached", func(suite *KeeperTestSuite) {
+			"valid create consumer chain proposal: spawn time reached", func(suite *ProviderKeeperTestSuite) {
 				// ctx blocktime is after proposal's spawn time
 				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
 				content, err := types.NewCreateConsumerChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
@@ -141,7 +141,7 @@ func (suite *KeeperTestSuite) TestCreateConsumerChainProposal() {
 			}, true, true,
 		},
 		{
-			"valid proposal: spawn time has not yet been reached", func(suite *KeeperTestSuite) {
+			"valid proposal: spawn time has not yet been reached", func(suite *ProviderKeeperTestSuite) {
 				// ctx blocktime is before proposal's spawn time
 				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now())
 				content, err := types.NewCreateConsumerChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now().Add(time.Hour))

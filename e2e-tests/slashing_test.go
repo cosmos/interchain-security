@@ -273,7 +273,7 @@ func (s *ProviderTestSuite) TestSlashPacketAcknowldgement() {
 }
 
 // TestHandleSlashPacketDoubleSigning tests the handling of a double-signing related slash packet, with e2e tests
-func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
+func (suite *ProviderKeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
 	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
 	providerStakingKeeper := suite.providerChain.App.(*appProvider.App).StakingKeeper
@@ -314,7 +314,7 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketDoubleSigning() {
 }
 
 // TestHandleSlashPacketErrors tests errors for the HandleSlashPacket method in an e2e testing setting
-func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
+func (suite *ProviderKeeperTestSuite) TestHandleSlashPacketErrors() {
 	providerStakingKeeper := suite.providerChain.App.(*appProvider.App).StakingKeeper
 	ProviderKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
@@ -398,7 +398,7 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketErrors() {
 // TestHandleSlashPacketDistribution tests the slashing of an undelegation balance
 // by varying the slash packet VSC ID mapping to infraction heights
 // lesser, equal or greater than the undelegation entry creation height
-func (suite *KeeperTestSuite) TestHandleSlashPacketDistribution() {
+func (suite *ProviderKeeperTestSuite) TestHandleSlashPacketDistribution() {
 	providerStakingKeeper := suite.providerChain.App.(*appProvider.App).StakingKeeper
 	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 
@@ -419,20 +419,20 @@ func (suite *KeeperTestSuite) TestHandleSlashPacketDistribution() {
 
 	// setup the test with a delegation, a no-op and an undelegation
 	setupOperations := []struct {
-		fn func(suite *KeeperTestSuite) error
+		fn func(suite *ProviderKeeperTestSuite) error
 	}{
 		{
-			func(suite *KeeperTestSuite) error {
+			func(suite *ProviderKeeperTestSuite) error {
 				testShares, err = providerStakingKeeper.Delegate(suite.providerChain.GetContext(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
 				return err
 			},
 		}, {
-			func(suite *KeeperTestSuite) error {
+			func(suite *ProviderKeeperTestSuite) error {
 				return nil
 			},
 		}, {
 			// undelegate a quarter of the new shares created
-			func(suite *KeeperTestSuite) error {
+			func(suite *ProviderKeeperTestSuite) error {
 				_, err = providerStakingKeeper.Undelegate(suite.providerChain.GetContext(), delAddr, valAddr, testShares.QuoInt64(4))
 				return err
 			},

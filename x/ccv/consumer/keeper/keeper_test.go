@@ -36,7 +36,7 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 )
 
-type KeeperTestSuite struct {
+type ConsumerKeeperTestSuite struct {
 	suite.Suite
 
 	coordinator *ibctesting.Coordinator
@@ -53,7 +53,7 @@ type KeeperTestSuite struct {
 	ctx sdk.Context
 }
 
-func (suite *KeeperTestSuite) SetupTest() {
+func (suite *ConsumerKeeperTestSuite) SetupTest() {
 	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
 
 	// valsets must match
@@ -131,7 +131,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.ctx = suite.consumerChain.GetContext()
 }
 
-func (suite *KeeperTestSuite) SetupCCVChannel() {
+func (suite *ConsumerKeeperTestSuite) SetupCCVChannel() {
 	suite.coordinator.CreateConnections(suite.path)
 	suite.coordinator.CreateChannels(suite.path)
 }
@@ -149,7 +149,7 @@ func TestUnbondingTime(t *testing.T) {
 }
 
 // TestProviderClientMatches tests that the provider client managed by the consumer keeper matches the client keeper's client state
-func (suite *KeeperTestSuite) TestProviderClientMatches() {
+func (suite *ConsumerKeeperTestSuite) TestProviderClientMatches() {
 	providerClientID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.ctx)
 	suite.Require().True(ok)
 
@@ -242,18 +242,18 @@ func TestPacketMaturityTime(t *testing.T) {
 }
 
 // TestVerifyProviderChain tests the VerifyProviderChain method for the consumer keeper
-func (suite *KeeperTestSuite) TestVerifyProviderChain() {
+func (suite *ConsumerKeeperTestSuite) TestVerifyProviderChain() {
 	var connectionHops []string
 	channelID := "channel-0"
 	testCases := []struct {
 		name           string
-		setup          func(suite *KeeperTestSuite)
+		setup          func(suite *ConsumerKeeperTestSuite)
 		connectionHops []string
 		expError       bool
 	}{
 		{
 			name: "success",
-			setup: func(suite *KeeperTestSuite) {
+			setup: func(suite *ConsumerKeeperTestSuite) {
 				// create consumer client on provider chain
 				providerUnbondingPeriod := suite.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(suite.providerChain.GetContext())
 				consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
@@ -271,7 +271,7 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 		},
 		{
 			name: "connection hops is not length 1",
-			setup: func(suite *KeeperTestSuite) {
+			setup: func(suite *ConsumerKeeperTestSuite) {
 				// create consumer client on provider chain
 				providerUnbondingPeriod := suite.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(suite.providerChain.GetContext())
 				consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
@@ -286,7 +286,7 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 		},
 		{
 			name: "connection does not exist",
-			setup: func(suite *KeeperTestSuite) {
+			setup: func(suite *ConsumerKeeperTestSuite) {
 				// set connection hops to be connection hop from path endpoint
 				connectionHops = []string{"connection-dne"}
 			},
@@ -294,7 +294,7 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 		},
 		{
 			name: "clientID does not match",
-			setup: func(suite *KeeperTestSuite) {
+			setup: func(suite *ConsumerKeeperTestSuite) {
 				// create consumer client on provider chain
 				providerUnbondingPeriod := suite.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(suite.providerChain.GetContext())
 				consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
@@ -335,7 +335,7 @@ func (suite *KeeperTestSuite) TestVerifyProviderChain() {
 // using the given unbonding period.
 // It will update the clientID for the endpoint if the message
 // is successfully executed.
-func (suite *KeeperTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) {
+func (suite *ConsumerKeeperTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) {
 	// ensure counterparty has committed state
 	endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
 
@@ -369,7 +369,7 @@ func (suite *KeeperTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, 
 // TestValidatorDowntime tests if a slash packet is sent
 // and if the outstanding slashing flag is switched
 // when a validator has downtime on the slashing module
-func (suite *KeeperTestSuite) TestValidatorDowntime() {
+func (suite *ConsumerKeeperTestSuite) TestValidatorDowntime() {
 	// initial setup
 	suite.SetupCCVChannel()
 	suite.SendEmptyVSCPacket()
@@ -451,7 +451,7 @@ func (suite *KeeperTestSuite) TestValidatorDowntime() {
 
 // TestValidatorDoubleSigning tests if a slash packet is sent
 // when a double-signing evidence is handled by the evidence module
-func (suite *KeeperTestSuite) TestValidatorDoubleSigning() {
+func (suite *ConsumerKeeperTestSuite) TestValidatorDoubleSigning() {
 	// initial setup
 	suite.SetupCCVChannel()
 	suite.SendEmptyVSCPacket()
@@ -509,7 +509,7 @@ func (suite *KeeperTestSuite) TestValidatorDoubleSigning() {
 }
 
 // TestSendSlashPacket tests the functionality of SendSlashPacket and asserts state changes related to that method
-func (suite *KeeperTestSuite) TestSendSlashPacket() {
+func (suite *ConsumerKeeperTestSuite) TestSendSlashPacket() {
 	suite.SetupCCVChannel()
 
 	app := suite.consumerChain.App.(*appConsumer.App)
@@ -676,7 +676,7 @@ func TestPendingSlashRequests(t *testing.T) {
 
 // SendEmptyVSCPacket sends a VSC packet without any changes
 // to ensure that the channel gets established
-func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
+func (suite *ConsumerKeeperTestSuite) SendEmptyVSCPacket() {
 	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 
 	oldBlockTime := suite.providerChain.GetContext().BlockTime()
@@ -703,13 +703,13 @@ func (suite *KeeperTestSuite) SendEmptyVSCPacket() {
 	suite.Require().NoError(err)
 }
 
-func TestKeeperTestSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
+func TestConsumerKeeperTestSuite(t *testing.T) {
+	suite.Run(t, new(ConsumerKeeperTestSuite))
 }
 
 // commitSlashPacket returns a commit hash for the given slash packet data
 // Note that it must be called before sending the embedding IBC packet.
-func (suite *KeeperTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.SlashPacketData) []byte {
+func (suite *ConsumerKeeperTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.SlashPacketData) []byte {
 	oldBlockTime := ctx.BlockTime()
 	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 
