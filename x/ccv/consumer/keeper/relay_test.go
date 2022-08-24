@@ -202,7 +202,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 }
 
 // TestUnbondMaturePackets tests the behavior of UnbondMaturePackets and related state checks
-func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
+func (suite *ConsumerKeeperTestSuite) TestUnbondMaturePackets() {
 	// setup CCV channel
 	suite.SetupCCVChannel()
 
@@ -293,7 +293,7 @@ func (suite *KeeperTestSuite) TestUnbondMaturePackets() {
 }
 
 // incrementTimeBy increments the overall time by jumpPeriod
-func incrementTimeBy(s *KeeperTestSuite, jumpPeriod time.Duration) {
+func incrementTimeBy(s *ConsumerKeeperTestSuite, jumpPeriod time.Duration) {
 	// Get unboding period from staking keeper
 	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerChain.GetContext())
 	s.Require().True(found)

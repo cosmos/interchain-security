@@ -17,7 +17,7 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-func (suite *KeeperTestSuite) TestGenesis() {
+func (suite *ConsumerKeeperTestSuite) TestGenesis() {
 	genesis := suite.consumerChain.App.(*app.App).ConsumerKeeper.ExportGenesis(suite.consumerChain.GetContext())
 
 	suite.Require().Equal(suite.providerClient, genesis.ProviderClientState)
