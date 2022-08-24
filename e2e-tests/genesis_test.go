@@ -1,4 +1,4 @@
-package keeper_test
+package e2e_test
 
 import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -17,7 +17,7 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-func (suite *ConsumerKeeperTestSuite) TestGenesis() {
+func (suite *ConsumerKeeperTestSuite) TestConsumerGenesis() {
 	genesis := suite.consumerChain.App.(*app.App).ConsumerKeeper.ExportGenesis(suite.consumerChain.GetContext())
 
 	suite.Require().Equal(suite.providerClient, genesis.ProviderClientState)

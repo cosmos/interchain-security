@@ -1,14 +1,13 @@
-package consumer_test
+package e2e_test
 
 import (
-	"bytes"
 	"fmt"
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/cosmos/ibc-go/modules/core/exported"
+	"github.com/cosmos/interchain-security/x/ccv/utils"
+
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
@@ -18,110 +17,14 @@ import (
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
-	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/consumer"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
-
-	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
-
-type ConsumerTestSuite struct {
-	suite.Suite
-
-	coordinator *ibctesting.Coordinator
-
-	// testing chains
-	providerChain *ibctesting.TestChain
-	consumerChain *ibctesting.TestChain
-
-	path *ibctesting.Path
-
-	ctx sdk.Context
-}
-
-func (suite *ConsumerTestSuite) SetupTest() {
-	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
-
-	// valsets must match
-	providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
-	consumerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.consumerChain.Vals)
-	suite.Require().True(len(providerValUpdates) == len(consumerValUpdates), "initial valset not matching")
-	for i := 0; i < len(providerValUpdates); i++ {
-		addr1 := utils.GetChangePubKeyAddress(providerValUpdates[i])
-		addr2 := utils.GetChangePubKeyAddress(consumerValUpdates[i])
-		suite.Require().True(bytes.Equal(addr1, addr2), "validator mismatch")
-	}
-
-	// move both chains to the next block
-	suite.providerChain.NextBlock()
-	suite.consumerChain.NextBlock()
-
-	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
-	err := suite.providerChain.App.(*appProvider.App).ProviderKeeper.CreateConsumerClient(
-		suite.providerChain.GetContext(),
-		suite.consumerChain.ChainID,
-		suite.consumerChain.LastHeader.GetHeight().(clienttypes.Height),
-		false,
-	)
-	suite.Require().NoError(err)
-	// move provider to next block to commit the state
-	suite.providerChain.NextBlock()
-
-	// initialize the consumer chain with the genesis state stored on the provider
-	consumerGenesis, found := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerGenesis(
-		suite.providerChain.GetContext(),
-		suite.consumerChain.ChainID,
-	)
-	suite.Require().True(found, "consumer genesis not found")
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
-
-	// create path for the CCV channel
-	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
-
-	// update CCV path with correct info
-	// - set provider endpoint's clientID
-	consumerClient, found := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClientId(
-		suite.providerChain.GetContext(),
-		suite.consumerChain.ChainID,
-	)
-	suite.Require().True(found, "consumer client not found")
-	suite.path.EndpointB.ClientID = consumerClient
-	// - set consumer endpoint's clientID
-	providerClient, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
-	suite.Require().True(found, "provider client not found")
-	suite.path.EndpointA.ClientID = providerClient
-	// - client config
-	providerUnbondingPeriod := suite.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(suite.providerChain.GetContext())
-	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = providerUnbondingPeriod
-	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / utils.TrustingPeriodFraction
-	consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
-	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
-	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
-	// - channel config
-	suite.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
-	suite.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
-	suite.path.EndpointA.ChannelConfig.Version = ccv.Version
-	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
-	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
-	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-
-	// set chains sender account number
-	// TODO: to be fixed in #151
-	err = suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	suite.Require().NoError(err)
-	err = suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
-	suite.Require().NoError(err)
-
-	suite.ctx = suite.consumerChain.GetContext()
-
-	suite.coordinator.CreateConnections(suite.path)
-}
 
 func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 	channelID := "channel-1"
@@ -479,4 +382,138 @@ func (suite *ConsumerTestSuite) TestOnChanCloseInit() {
 
 func TestConsumerTestSuite(t *testing.T) {
 	suite.Run(t, new(ConsumerTestSuite))
+}
+
+// TestProviderClientMatches tests that the provider client managed by the consumer keeper matches the client keeper's client state
+func (suite *ConsumerKeeperTestSuite) TestProviderClientMatches() {
+	providerClientID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.ctx)
+	suite.Require().True(ok)
+
+	clientState, _ := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClientID)
+	suite.Require().Equal(suite.providerClient, clientState, "stored client state does not match genesis provider client")
+}
+
+// TestVerifyProviderChain tests the VerifyProviderChain method for the consumer keeper
+func (suite *ConsumerKeeperTestSuite) TestVerifyProviderChain() {
+	var connectionHops []string
+	channelID := "channel-0"
+	testCases := []struct {
+		name           string
+		setup          func(suite *ConsumerKeeperTestSuite)
+		connectionHops []string
+		expError       bool
+	}{
+		{
+			name: "success",
+			setup: func(suite *ConsumerKeeperTestSuite) {
+				// create consumer client on provider chain
+				providerUnbondingPeriod := suite.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(suite.providerChain.GetContext())
+				consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
+				suite.CreateCustomClient(suite.path.EndpointB, consumerUnbondingPeriod)
+				err := suite.path.EndpointB.CreateClient()
+				suite.Require().NoError(err)
+
+				suite.coordinator.CreateConnections(suite.path)
+
+				// set connection hops to be connection hop from path endpoint
+				connectionHops = []string{suite.path.EndpointA.ConnectionID}
+			},
+			connectionHops: []string{suite.path.EndpointA.ConnectionID},
+			expError:       false,
+		},
+		{
+			name: "connection hops is not length 1",
+			setup: func(suite *ConsumerKeeperTestSuite) {
+				// create consumer client on provider chain
+				providerUnbondingPeriod := suite.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(suite.providerChain.GetContext())
+				consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
+				suite.CreateCustomClient(suite.path.EndpointB, consumerUnbondingPeriod)
+
+				suite.coordinator.CreateConnections(suite.path)
+
+				// set connection hops to be connection hop from path endpoint
+				connectionHops = []string{suite.path.EndpointA.ConnectionID, "connection-2"}
+			},
+			expError: true,
+		},
+		{
+			name: "connection does not exist",
+			setup: func(suite *ConsumerKeeperTestSuite) {
+				// set connection hops to be connection hop from path endpoint
+				connectionHops = []string{"connection-dne"}
+			},
+			expError: true,
+		},
+		{
+			name: "clientID does not match",
+			setup: func(suite *ConsumerKeeperTestSuite) {
+				// create consumer client on provider chain
+				providerUnbondingPeriod := suite.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(suite.providerChain.GetContext())
+				consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
+				suite.CreateCustomClient(suite.path.EndpointB, consumerUnbondingPeriod)
+
+				// create a new provider client on consumer chain that is different from the one in genesis
+				suite.CreateCustomClient(suite.path.EndpointA, providerUnbondingPeriod)
+
+				suite.coordinator.CreateConnections(suite.path)
+
+				// set connection hops to be connection hop from path endpoint
+				connectionHops = []string{suite.path.EndpointA.ConnectionID}
+			},
+			expError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		suite.Run(fmt.Sprintf("Case: %s", tc.name), func() {
+			suite.SetupTest() // reset suite
+
+			tc.setup(suite)
+
+			// Verify ProviderChain on consumer chain using path returned by setup
+			err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.VerifyProviderChain(suite.ctx, channelID, connectionHops)
+
+			if tc.expError {
+				suite.Require().Error(err, "invalid case did not return error")
+			} else {
+				suite.Require().NoError(err, "valid case returned error")
+			}
+		})
+	}
+}
+
+// CreateCustomClient creates an IBC client on the endpoint
+// using the given unbonding period.
+// It will update the clientID for the endpoint if the message
+// is successfully executed.
+func (suite *ConsumerKeeperTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) {
+	// ensure counterparty has committed state
+	endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
+
+	suite.Require().Equal(exported.Tendermint, endpoint.ClientConfig.GetClientType(), "only Tendermint client supported")
+
+	tmConfig, ok := endpoint.ClientConfig.(*ibctesting.TendermintConfig)
+	require.True(endpoint.Chain.T, ok)
+	tmConfig.UnbondingPeriod = unbondingPeriod
+	tmConfig.TrustingPeriod = unbondingPeriod / utils.TrustingPeriodFraction
+
+	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
+	UpgradePath := []string{"upgrade", "upgradedIBCState"}
+	clientState := ibctmtypes.NewClientState(
+		endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
+		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
+	)
+	consensusState := endpoint.Counterparty.Chain.LastHeader.ConsensusState()
+
+	msg, err := clienttypes.NewMsgCreateClient(
+		clientState, consensusState, endpoint.Chain.SenderAccount.GetAddress().String(),
+	)
+	require.NoError(endpoint.Chain.T, err)
+
+	res, err := endpoint.Chain.SendMsgs(msg)
+	require.NoError(endpoint.Chain.T, err)
+
+	endpoint.ClientID, err = ibctesting.ParseClientIDFromEvents(res.GetEvents())
+	require.NoError(endpoint.Chain.T, err)
 }

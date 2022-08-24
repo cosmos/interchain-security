@@ -48,6 +48,7 @@ Inspect the [Makefile](./Makefile) if curious.
 **Running tests**
 
 TODO: correct the testing language here
+TODO: Also make sure the automated tests run after new changes
 
 ```bash
 # run all unit tests using make

@@ -8,9 +8,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/stretchr/testify/suite"
+	abci "github.com/tendermint/tendermint/abci/types"
 
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
@@ -194,4 +200,67 @@ func getStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper,
 	}
 
 	return stakingUnbondingOp, found
+}
+
+// SendEmptyVSCPacket sends a VSC packet without any changes
+// to ensure that the channel gets established
+func (suite *ConsumerKeeperTestSuite) SendEmptyVSCPacket() {
+	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
+
+	oldBlockTime := suite.providerChain.GetContext().BlockTime()
+	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+
+	valUpdateID := providerKeeper.GetValidatorSetUpdateId(suite.providerChain.GetContext())
+
+	pd := ccv.NewValidatorSetChangePacketData(
+		[]abci.ValidatorUpdate{},
+		valUpdateID,
+		nil,
+	)
+
+	seq, ok := suite.providerChain.App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
+		suite.providerChain.GetContext(), providertypes.PortID, suite.path.EndpointB.ChannelID)
+	suite.Require().True(ok)
+
+	packet := channeltypes.NewPacket(pd.GetBytes(), seq, providertypes.PortID, suite.path.EndpointB.ChannelID,
+		consumertypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+
+	err := suite.path.EndpointB.SendPacket(packet)
+	suite.Require().NoError(err)
+	err = suite.path.EndpointA.RecvPacket(packet)
+	suite.Require().NoError(err)
+}
+
+// commitSlashPacket returns a commit hash for the given slash packet data
+// Note that it must be called before sending the embedding IBC packet.
+func (suite *ConsumerKeeperTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.SlashPacketData) []byte {
+	oldBlockTime := ctx.BlockTime()
+	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+		providertypes.PortID, suite.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
+
+	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
+}
+
+// incrementTimeBy increments the overall time by jumpPeriod
+func incrementTimeBy(s *ConsumerKeeperTestSuite, jumpPeriod time.Duration) {
+	// Get unboding period from staking keeper
+	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerChain.GetContext())
+	s.Require().True(found)
+	split := 1
+	if jumpPeriod > consumerUnbondingPeriod/utils.TrustingPeriodFraction {
+		// Make sure the clients do not expire
+		split = 4
+		jumpPeriod = jumpPeriod / 4
+	}
+	for i := 0; i < split; i++ {
+		s.coordinator.IncrementTimeBy(jumpPeriod)
+		// Update the provider client on the consumer
+		err := s.path.EndpointA.UpdateClient()
+		s.Require().NoError(err)
+		// Update the consumer client on the provider
+		err = s.path.EndpointB.UpdateClient()
+		s.Require().NoError(err)
+	}
 }
