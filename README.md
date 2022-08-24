@@ -47,25 +47,25 @@ Inspect the [Makefile](./Makefile) if curious.
 
 ## Tests
 
-**Unit Tests**
+### Unit Tests
 
 Unit tests are useful for simple standalone functionality, and CRUD operations. Unit tests should use golang's standard testing package, and be defined in files formatted as ```<file being tested>_test.go``` in the same directory as the file being tested, following standard conventions. 
 
 [Mocked external keepers](./testutil/keeper/mocks.go) (implemented with [gomock](https://github.com/golang/mock) are available for testing more complex functionality, but still only relevant to execution within a single node. Ie. no internode or interchain communication. 
 
-**End to End (e2e) Tests**
+### End to End (e2e) Tests
 
 [e2e-tests](./e2e-tests/) utilize the [IBC Testing Package](https://github.com/cosmos/ibc-go/tree/main/testing), and test functionality that is wider in scope than a unit test, but still able to be validated in-memory. Ie. code where advancing blocks would be useful, simulated handshakes, simulated packet relays, etc. 
 
-**Differential Tests (WIP)**
+### Differential Tests (WIP)
 
 Similar to e2e tests, but they compare the system state to an expected state generated from a model implementation.
 
-**Integration Tests**
+### Integration Tests 
 
 [Integration tests](./integration-tests/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. Integration tests use queries/transactions invoked from CLI to drive and validate the code.
 
-**Running tests**
+### Running tests
 
 ```bash
 # run all static analysis, unit, e2e, and integration tests using make
@@ -94,7 +94,7 @@ go run ./integration-tests/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk
 go test -fuzz=<regex-to-match-test-name>
 ```
 
-**Linters and static analysis**
+### Linters and static analysis
 
 Several analyzers are used on the code including [CodeQL](https://codeql.github.com/), [SonarCloud](https://sonarcloud.io/), [golangci-lint](https://golangci-lint.run/) and [gosec](https://github.com/securego/gosec). Some of these are run on github when committing to PRs ect, but some tools are also applicable locally, and are built into golang.
 
@@ -124,11 +124,11 @@ go install github.com/go-critic/go-critic/cmd/gocritic@latest
 pre-commit run --all-files
 ```
 
-**Debugging**
+### Debugging
 
 If using VSCode, see [vscode-go/wiki/debugging](https://github.com/golang/vscode-go/wiki/debugging) to debug unit tests or go binaries.
 
-**More**
+### More
 
 More instructions will be added soon, in time for the testnet.
 
