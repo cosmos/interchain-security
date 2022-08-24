@@ -65,7 +65,7 @@ Similar to e2e tests, but they compare the system state to an expected state gen
 
 [Integration tests](./integration-tests/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. Integration tests use queries/transactions invoked from CLI to drive and validate the code.
 
-### Running tests
+### Running Tests
 
 ```bash
 # run all static analysis, unit, e2e, and integration tests using make
@@ -94,7 +94,7 @@ go run ./integration-tests/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk
 go test -fuzz=<regex-to-match-test-name>
 ```
 
-### Linters and static analysis
+### Linters and Static Analysis
 
 Several analyzers are used on the code including [CodeQL](https://codeql.github.com/), [SonarCloud](https://sonarcloud.io/), [golangci-lint](https://golangci-lint.run/) and [gosec](https://github.com/securego/gosec). Some of these are run on github when committing to PRs ect, but some tools are also applicable locally, and are built into golang.
 
