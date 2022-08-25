@@ -16,8 +16,8 @@ import (
 
 type SendTokensAction struct {
 	chain  string
-	from   uint
-	to     uint
+	from   string
+	to     string
 	amount uint
 }
 
@@ -59,7 +59,8 @@ type StartChainAction struct {
 }
 
 type StartChainValidator struct {
-	id         uint
+	// String that maps to a ValidatorConfig in the system config
+	id         string
 	allocation uint
 	stake      uint
 }
@@ -145,8 +146,8 @@ func (s System) startChain(
 
 type SubmitTextProposalAction struct {
 	chain       string
-	from        uint
-	deposit     uint
+	from        string
+	deposit     string
 	propType    string
 	title       string
 	description string
@@ -181,7 +182,7 @@ func (s System) submitTextProposal(
 
 type SubmitConsumerProposalAction struct {
 	chain         string
-	from          uint
+	from          string
 	deposit       uint
 	consumerChain string
 	spawnTime     uint
@@ -250,7 +251,7 @@ func (s System) submitConsumerProposal(
 
 type VoteGovProposalAction struct {
 	chain      string
-	from       []uint
+	from       []string
 	vote       []string
 	propNumber uint
 }
@@ -263,7 +264,7 @@ func (s System) voteGovProposal(
 	for i, val := range action.from {
 		wg.Add(1)
 		vote := action.vote[i]
-		go func(val uint, vote string) {
+		go func(val string, vote string) {
 			defer wg.Done()
 			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 			bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[action.chain].binaryName,
@@ -306,7 +307,7 @@ func (s System) startConsumerChain(
 		"query", "provider", "consumer-genesis",
 		s.chainConfigs[action.consumerChain].chainId,
 
-		`--node`, s.getValidatorNode(action.providerChain, s.getValidatorNum(action.providerChain)),
+		`--node`, s.getValidatorNode(action.providerChain, s.getValidator(action.providerChain)),
 		`-o`, `json`,
 	)
 
@@ -330,7 +331,7 @@ func (s System) startConsumerChain(
 
 type AddChainToRelayerAction struct {
 	chain     string
-	validator uint
+	validator string
 }
 
 const hermesChainConfigTemplate = `
@@ -538,8 +539,8 @@ func (s System) relayPackets(
 
 type DelegateTokensAction struct {
 	chain  string
-	from   uint
-	to     uint
+	from   string
+	to     string
 	amount uint
 }
 
@@ -574,8 +575,8 @@ func (s System) delegateTokens(
 
 type UnbondTokensAction struct {
 	chain      string
-	sender     uint
-	unbondFrom uint
+	sender     string
+	unbondFrom string
 	amount     uint
 }
 
@@ -610,7 +611,8 @@ func (s System) unbondTokens(
 
 var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
 
-func (s System) getValidatorNum(chain string) uint {
+// TODO: Need to confirm functionality here.
+func (s System) getValidator(chain string) string {
 	// Get first subdirectory of the directory of this chain, which will be the home directory of one of the validators
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c", `cd /`+s.chainConfigs[chain].chainId+`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
@@ -619,18 +621,19 @@ func (s System) getValidatorNum(chain string) uint {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	validator, err := strconv.Atoi(queryValidatorRegex.FindString(string(bz)))
+	// TODO: Change the logic here that parses the folder
+	_, err = strconv.Atoi(queryValidatorRegex.FindString(string(bz)))
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	return uint(validator)
+	return "TODO"
 }
 
-func (s System) getValidatorNode(chain string, validator uint) string {
+func (s System) getValidatorNode(chain string, validator string) string {
 	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator) + ":26658"
 }
 
-func (s System) getValidatorHome(chain string, validator uint) string {
+func (s System) getValidatorHome(chain string, validator string) string {
 	return `/` + s.chainConfigs[chain].chainId + `/validator` + fmt.Sprint(validator)
 }

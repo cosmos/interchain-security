@@ -7,12 +7,18 @@ import (
 )
 
 const (
+	// Strings mapped to validator configs
+	validatorAlice = "alice"
+	validatorBob   = "bob"
+	validatorCarol = "carol"
+
+	// Strings mapped to chain configs
 	providerChainId = "provider"
 	consumerChainId = "consumer"
 )
 
-// Attributes that are unique to a validator. Allows us to map (part of) the set of uints to
-// a set of viable validators
+// Attributes that are unique to a validator. Allows us to map (part of)
+// the set of strings defined above to a set of viable validators
 type ValidatorConfig struct {
 	mnemonic         string
 	delAddress       string
@@ -22,8 +28,8 @@ type ValidatorConfig struct {
 	nodeKey          string
 }
 
-// Attributes that are unique to a chain. Allows us to map (part of) the set of uints to
-// a set of viable chains
+// Attributes that are unique to a chain. Allows us to map (part of)
+// the set of strings defined above to a set of viable chains
 type ChainConfig struct {
 	chainId        string
 	ipPrefix       string
@@ -43,9 +49,9 @@ type ContainerConfig struct {
 // They are probably not part of the model
 type System struct {
 	containerConfig  ContainerConfig
-	validatorConfigs []ValidatorConfig
-	localSdkPath     string
+	validatorConfigs map[string]ValidatorConfig
 	chainConfigs     map[string]ChainConfig
+	localSdkPath     string
 }
 
 func DefaultSystemConfig() System {
@@ -56,8 +62,8 @@ func DefaultSystemConfig() System {
 			ccvVersion:    "1",
 			now:           time.Now(),
 		},
-		validatorConfigs: []ValidatorConfig{
-			{
+		validatorConfigs: map[string]ValidatorConfig{
+			validatorAlice: {
 				mnemonic:         "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
 				delAddress:       "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
 				valoperAddress:   "cosmosvaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtrgtng",
@@ -65,7 +71,7 @@ func DefaultSystemConfig() System {
 				privValidatorKey: `{"address":"06C0F3E47CC5C748269088DC2F36411D3AAA27C6","pub_key":{"type":"tendermint/PubKeyEd25519","value":"RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uX+ZpDMg89a6gtqs/+MQpCTSqlkZ0nJQJOhLlCJvwvdGtyVDP1siGQjL+B8vjzmDc9gx6IiS7ip6jj3nvztfXQ=="}}`,
 				nodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"fjw4/DAhyRPnwKgXns5SV7QfswRSXMWJpHS7TyULDmJ8ofUc5poQP8dgr8bZRbCV5RV8cPqDq3FPdqwpmUbmdA=="}}`,
 			},
-			{
+			validatorBob: {
 				mnemonic:         "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
 				delAddress:       "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
 				valoperAddress:   "cosmosvaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9qakmjnw",
@@ -73,7 +79,7 @@ func DefaultSystemConfig() System {
 				privValidatorKey: `{"address":"99BD3A72EF12CD024E7584B3AC900AE3743C6ADF","pub_key":{"type":"tendermint/PubKeyEd25519","value":"mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"QePcwfWtOavNK7pBJrtoLMzarHKn6iBWfWPFeyV+IdmYA3pFdjFIzgw0ZIiuJiJLuke7ABw4cNADL3/CeVLM4g=="}}`,
 				nodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TQ4vHcO/vKdzGtWpelkX53WdMQd4kTsWGFrdcatdXFvWyO215Rewn5IRP0FszPLWr2DqPzmuH8WvxYGk5aeOXw=="}}`,
 			},
-			{
+			validatorCarol: {
 				mnemonic:         "sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal",
 				delAddress:       "cosmos19hz4m226ztankqramvt4a7t0shejv4dc79gp9u",
 				valoperAddress:   "cosmosvaloper19hz4m226ztankqramvt4a7t0shejv4dcm3u5f0",

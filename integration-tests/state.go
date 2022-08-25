@@ -16,9 +16,9 @@ import (
 type State map[string]ChainState
 
 type ChainState struct {
-	ValBalances *map[uint]uint
+	ValBalances *map[string]uint
 	Proposals   *map[uint]Proposal
-	ValPowers   *map[uint]uint
+	ValPowers   *map[string]uint
 }
 
 type Proposal interface {
@@ -82,7 +82,7 @@ func (s System) getBlockHeight(chain string) uint {
 
 		"query", "tendermint-validator-set",
 
-		`--node`, s.getValidatorNode(chain, s.getValidatorNum(chain)),
+		`--node`, s.getValidatorNode(chain, s.getValidator(chain)),
 	).CombinedOutput()
 
 	if err != nil {
@@ -109,8 +109,8 @@ func (s System) waitBlocks(chain string, blocks uint) {
 	}
 }
 
-func (s System) getBalances(chain string, modelState map[uint]uint) map[uint]uint {
-	systemState := map[uint]uint{}
+func (s System) getBalances(chain string, modelState map[string]uint) map[string]uint {
+	systemState := map[string]uint{}
 	for k := range modelState {
 		systemState[k] = s.getBalance(chain, k)
 	}
@@ -127,8 +127,8 @@ func (s System) getProposals(chain string, modelState map[uint]Proposal) map[uin
 	return systemState
 }
 
-func (s System) getValPowers(chain string, modelState map[uint]uint) map[uint]uint {
-	systemState := map[uint]uint{}
+func (s System) getValPowers(chain string, modelState map[string]uint) map[string]uint {
+	systemState := map[string]uint{}
 	for k := range modelState {
 		systemState[k] = s.getValPower(chain, k)
 	}
@@ -136,14 +136,14 @@ func (s System) getValPowers(chain string, modelState map[uint]uint) map[uint]ui
 	return systemState
 }
 
-func (s System) getBalance(chain string, validator uint) uint {
+func (s System) getBalance(chain string, validator string) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
 		"query", "bank", "balances",
 		s.validatorConfigs[validator].delAddress,
 
-		`--node`, s.getValidatorNode(chain, s.getValidatorNum(chain)),
+		`--node`, s.getValidatorNode(chain, s.getValidator(chain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -166,7 +166,7 @@ func (s System) getProposal(chain string, proposal uint) Proposal {
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
 
-		`--node`, s.getValidatorNode(chain, s.getValidatorNum(chain)),
+		`--node`, s.getValidatorNode(chain, s.getValidator(chain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -238,13 +238,13 @@ type ValPubKey struct {
 	Value string `yaml:"value"`
 }
 
-func (s System) getValPower(chain string, validator uint) uint {
+func (s System) getValPower(chain string, validator string) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
 		"query", "tendermint-validator-set",
 
-		`--node`, s.getValidatorNode(chain, s.getValidatorNum(chain)),
+		`--node`, s.getValidatorNode(chain, s.getValidator(chain)),
 	).CombinedOutput()
 
 	if err != nil {
