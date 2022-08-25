@@ -43,7 +43,7 @@ export PATH=$PATH:$(go env GOPATH)/bin
 
 Inspect the [Makefile](./Makefile) if curious.
 
-## Tests
+## Testing
 
 ### Unit Tests
 
