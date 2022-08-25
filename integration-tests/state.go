@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
@@ -282,4 +283,38 @@ func (s System) getValPower(chain string, validator string) uint {
 	log.Fatalf("Validator %v not in tendermint validator set", validator)
 
 	return 0
+}
+
+// Obtains the validator corresponding to the first subdirectory (validator node home dir)
+// in the specified chain's directory within the docker container
+//
+// TODO: A better solution to returning a arbitrary validator to fulfill queries is to
+// dedicate a full node outside of consensus to fulfill queries.
+// See https://github.com/cosmos/interchain-security/issues/263
+//
+// TODO: It's still possible this method doesn't work as-is. Do more testing
+func (s System) getValidator(chain string) string {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c", `cd /`+s.chainConfigs[chain].chainId+`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// Returned string will be of format: "validator<validator-name>/"
+	bzPrefixTrimmed := strings.TrimPrefix(string(bz), "validator")
+	bzFullyTrimmed := strings.TrimSuffix(bzPrefixTrimmed, "/")
+	if bzPrefixTrimmed == string(bz) || bzFullyTrimmed == string(bz) {
+		log.Fatal("unexpected validator subdirectory name: ", bz)
+	}
+
+	return bzFullyTrimmed
+}
+
+func (s System) getValidatorNode(chain string, validator string) string {
+	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator) + ":26658"
+}
+
+func (s System) getValidatorHome(chain string, validator string) string {
+	return `/` + s.chainConfigs[chain].chainId + `/validator` + fmt.Sprint(validator)
 }

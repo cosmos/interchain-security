@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
-	"regexp"
-	"strconv"
 	"sync"
 	"time"
 
@@ -607,33 +605,4 @@ func (s System) unbondTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
-}
-
-var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
-
-// TODO: Need to confirm functionality here.
-func (s System) getValidator(chain string) string {
-	// Get first subdirectory of the directory of this chain, which will be the home directory of one of the validators
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c", `cd /`+s.chainConfigs[chain].chainId+`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
-
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	// TODO: Change the logic here that parses the folder
-	_, err = strconv.Atoi(queryValidatorRegex.FindString(string(bz)))
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	return "TODO"
-}
-
-func (s System) getValidatorNode(chain string, validator string) string {
-	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator) + ":26658"
-}
-
-func (s System) getValidatorHome(chain string, validator string) string {
-	return `/` + s.chainConfigs[chain].chainId + `/validator` + fmt.Sprint(validator)
 }
