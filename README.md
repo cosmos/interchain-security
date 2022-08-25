@@ -13,8 +13,6 @@ CCV stands for cross chain validation and refers to the subset of Interchain Sec
 
 The code for CCV is housed under [x/ccv](./x/ccv). The `types` folder contains types and related functions that are used by both provider and consumer chains, while the `consumer` module contains the code run by consumer chains and the `provider` module contains the code run by provider chain.
 
-NOTE: At the moment the testing app may not be functional, please rely on the IBC testing suite to write unit tests for the moment.
-
 ## Instructions
 
 **Prerequisites**

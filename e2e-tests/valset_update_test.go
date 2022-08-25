@@ -4,6 +4,7 @@ import (
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
@@ -12,6 +13,28 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
+
+// TestPacketRoundtrip tests a CCV packet roundtrip when tokens are bonded on provider
+func (s *ProviderTestSuite) TestPacketRoundtrip() {
+	s.SetupCCVChannel()
+
+	// Bond some tokens on provider to change validator powers
+	bondAmt := sdk.NewInt(1000000)
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	delegate(s, delAddr, bondAmt)
+
+	// Send CCV packet to consumer
+	s.providerChain.NextBlock()
+
+	// Relay 1 VSC packet from provider to consumer
+	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
+
+	// Increment time so that the unbonding period ends on the provider
+	incrementTimeByUnbondingPeriod(s, Provider)
+
+	// Relay 1 VSCMatured packet from consumer to provider
+	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 1)
+}
 
 // TestUnbondMaturePackets tests the behavior of UnbondMaturePackets and related state checks
 func (suite *ConsumerKeeperTestSuite) TestUnbondMaturePackets() {

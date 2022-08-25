@@ -11,10 +11,14 @@ import (
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
+	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	"github.com/cosmos/ibc-go/modules/core/exported"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
@@ -257,4 +261,80 @@ func incrementTimeBy(s *ConsumerKeeperTestSuite, jumpPeriod time.Duration) {
 		err = s.path.EndpointB.UpdateClient()
 		s.Require().NoError(err)
 	}
+}
+
+// TODO: The two CreateCustomClient methods below can be consolidated when test suite structures are consolidated
+
+// CreateCustomClient creates an IBC client on the endpoint
+// using the given unbonding period.
+// It will update the clientID for the endpoint if the message
+// is successfully executed.
+func (suite *ConsumerKeeperTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) {
+	// ensure counterparty has committed state
+	endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
+
+	suite.Require().Equal(exported.Tendermint, endpoint.ClientConfig.GetClientType(), "only Tendermint client supported")
+
+	tmConfig, ok := endpoint.ClientConfig.(*ibctesting.TendermintConfig)
+	require.True(endpoint.Chain.T, ok)
+	tmConfig.UnbondingPeriod = unbondingPeriod
+	tmConfig.TrustingPeriod = unbondingPeriod / utils.TrustingPeriodFraction
+
+	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
+	UpgradePath := []string{"upgrade", "upgradedIBCState"}
+	clientState := ibctmtypes.NewClientState(
+		endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
+		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
+	)
+	consensusState := endpoint.Counterparty.Chain.LastHeader.ConsensusState()
+
+	msg, err := clienttypes.NewMsgCreateClient(
+		clientState, consensusState, endpoint.Chain.SenderAccount.GetAddress().String(),
+	)
+	require.NoError(endpoint.Chain.T, err)
+
+	res, err := endpoint.Chain.SendMsgs(msg)
+	require.NoError(endpoint.Chain.T, err)
+
+	endpoint.ClientID, err = ibctesting.ParseClientIDFromEvents(res.GetEvents())
+	require.NoError(endpoint.Chain.T, err)
+}
+
+// CreateCustomClient creates an IBC client on the endpoint
+// using the given unbonding period.
+// It will update the clientID for the endpoint if the message
+// is successfully executed.
+func (suite *ConsumerTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) (err error) {
+	// ensure counterparty has committed state
+	endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
+
+	suite.Require().Equal(exported.Tendermint, endpoint.ClientConfig.GetClientType(), "only Tendermint client supported")
+
+	tmConfig, ok := endpoint.ClientConfig.(*ibctesting.TendermintConfig)
+	require.True(endpoint.Chain.T, ok)
+	tmConfig.UnbondingPeriod = unbondingPeriod
+	tmConfig.TrustingPeriod = unbondingPeriod / utils.TrustingPeriodFraction
+
+	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
+	UpgradePath := []string{"upgrade", "upgradedIBCState"}
+	clientState := ibctmtypes.NewClientState(
+		endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
+		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
+	)
+	consensusState := endpoint.Counterparty.Chain.LastHeader.ConsensusState()
+
+	msg, err := clienttypes.NewMsgCreateClient(
+		clientState, consensusState, endpoint.Chain.SenderAccount.GetAddress().String(),
+	)
+	require.NoError(endpoint.Chain.T, err)
+
+	res, err := endpoint.Chain.SendMsgs(msg)
+	if err != nil {
+		return err
+	}
+
+	endpoint.ClientID, err = ibctesting.ParseClientIDFromEvents(res.GetEvents())
+	require.NoError(endpoint.Chain.T, err)
+
+	return nil
 }
