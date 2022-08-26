@@ -19,7 +19,7 @@ type SendTokensAction struct {
 	amount uint
 }
 
-func (s System) sendTokens(
+func (s TestRun) sendTokens(
 	action SendTokensAction,
 	verbose bool,
 ) {
@@ -57,43 +57,52 @@ type StartChainAction struct {
 }
 
 type StartChainValidator struct {
-	// String that maps to a ValidatorConfig in the system config
+	// Validator id defined in config.go
 	id         string
 	allocation uint
 	stake      uint
 }
 
-func (s System) startChain(
+func (s TestRun) startChain(
 	action StartChainAction,
 	verbose bool,
 ) {
 	chainConfig := s.chainConfigs[action.chain]
 	type jsonValAttrs struct {
+		Id               string `json:"id"`
+		IpSuffix         string `json:"ip_suffix"`
 		Mnemonic         string `json:"mnemonic"`
 		Allocation       string `json:"allocation"`
 		Stake            string `json:"stake"`
-		Number           string `json:"number"`
 		PrivValidatorKey string `json:"priv_validator_key"`
 		NodeKey          string `json:"node_key"`
 	}
 
-	var validators []jsonValAttrs
+	var valsToMarshal []jsonValAttrs
 	for _, val := range action.validators {
-		validators = append(validators, jsonValAttrs{
+
+		valConfig, found := s.validatorConfigs[val.id]
+		if !found {
+			panic(fmt.Sprintf("validator config not found from val id of: %v\n", val.id))
+		}
+
+		valsToMarshal = append(valsToMarshal, jsonValAttrs{
+			Id:               fmt.Sprint(val.id),
+			IpSuffix:         fmt.Sprint(valConfig.ipSuffix),
 			Mnemonic:         s.validatorConfigs[val.id].mnemonic,
-			NodeKey:          s.validatorConfigs[val.id].nodeKey,
-			PrivValidatorKey: s.validatorConfigs[val.id].privValidatorKey,
 			Allocation:       fmt.Sprint(val.allocation) + "stake",
 			Stake:            fmt.Sprint(val.stake) + "stake",
-			Number:           fmt.Sprint(val.id),
+			PrivValidatorKey: s.validatorConfigs[val.id].privValidatorKey,
+			NodeKey:          s.validatorConfigs[val.id].nodeKey,
 		})
 	}
 
-	vals, err := json.Marshal(validators)
+	vals, err := json.Marshal(valsToMarshal)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// TODO: here is some more genesis changes
 	var genesisChanges string
 	if action.genesisChanges != "" {
 		genesisChanges = chainConfig.genesisChanges + " | " + action.genesisChanges
@@ -151,7 +160,7 @@ type SubmitTextProposalAction struct {
 	description string
 }
 
-func (s System) submitTextProposal(
+func (s TestRun) submitTextProposal(
 	action SubmitTextProposalAction,
 	verbose bool,
 ) {
@@ -199,7 +208,7 @@ type CreateConsumerChainProposalJSON struct {
 	Deposit       string             `json:"deposit"`
 }
 
-func (s System) submitConsumerProposal(
+func (s TestRun) submitConsumerProposal(
 	action SubmitConsumerProposalAction,
 	verbose bool,
 ) {
@@ -254,7 +263,7 @@ type VoteGovProposalAction struct {
 	propNumber uint
 }
 
-func (s System) voteGovProposal(
+func (s TestRun) voteGovProposal(
 	action VoteGovProposalAction,
 	verbose bool,
 ) {
@@ -295,7 +304,7 @@ type StartConsumerChainAction struct {
 	validators    []StartChainValidator
 }
 
-func (s System) startConsumerChain(
+func (s TestRun) startConsumerChain(
 	action StartConsumerChainAction,
 	verbose bool,
 ) {
@@ -305,7 +314,7 @@ func (s System) startConsumerChain(
 		"query", "provider", "consumer-genesis",
 		s.chainConfigs[action.consumerChain].chainId,
 
-		`--node`, s.getValidatorNode(action.providerChain, s.getValidator(action.providerChain)),
+		`--node`, s.getValidatorNode(action.providerChain, s.getDefaultValId(action.providerChain)),
 		`-o`, `json`,
 	)
 
@@ -357,7 +366,7 @@ websocket_addr = "%s"
 	numerator = "1"
 `
 
-func (s System) addChainToRelayer(
+func (s TestRun) addChainToRelayer(
 	action AddChainToRelayerAction,
 	verbose bool,
 ) {
@@ -416,7 +425,7 @@ type AddIbcConnectionAction struct {
 	order   string
 }
 
-func (s System) addIbcConnection(
+func (s TestRun) addIbcConnection(
 	action AddIbcConnectionAction,
 	verbose bool,
 ) {
@@ -463,7 +472,7 @@ type AddIbcChannelAction struct {
 	order       string
 }
 
-func (s System) addIbcChannel(
+func (s TestRun) addIbcChannel(
 	action AddIbcChannelAction,
 	verbose bool,
 ) {
@@ -514,7 +523,7 @@ type RelayPacketsAction struct {
 	channel uint
 }
 
-func (s System) relayPackets(
+func (s TestRun) relayPackets(
 	action RelayPacketsAction,
 	verbose bool,
 ) {
@@ -542,7 +551,7 @@ type DelegateTokensAction struct {
 	amount uint
 }
 
-func (s System) delegateTokens(
+func (s TestRun) delegateTokens(
 	action DelegateTokensAction,
 	verbose bool,
 ) {
@@ -578,7 +587,7 @@ type UnbondTokensAction struct {
 	amount     uint
 }
 
-func (s System) unbondTokens(
+func (s TestRun) unbondTokens(
 	action UnbondTokensAction,
 	verbose bool,
 ) {

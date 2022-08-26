@@ -26,6 +26,7 @@ type ValidatorConfig struct {
 	valconsAddress   string
 	privValidatorKey string
 	nodeKey          string
+	ipSuffix         uint8 // TODO: can't be 0, and one other constraint
 }
 
 // Attributes that are unique to a chain. Allows us to map (part of)
@@ -45,17 +46,17 @@ type ContainerConfig struct {
 	now           time.Time
 }
 
-// These values will not be altered during a typical test run
-// They are probably not part of the model
-type System struct {
+type TestRun struct {
+	// These are the non altered values during a typical test run, where multiple test runs can exist
+	// to validate different action sequences and corresponding state checks.
 	containerConfig  ContainerConfig
 	validatorConfigs map[string]ValidatorConfig
 	chainConfigs     map[string]ChainConfig
 	localSdkPath     string
 }
 
-func DefaultSystemConfig() System {
-	return System{
+func DefaultTestRun() TestRun {
+	return TestRun{
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-container",
 			instanceName:  "interchain-security-instance",
@@ -70,6 +71,7 @@ func DefaultSystemConfig() System {
 				valconsAddress:   "cosmosvalcons1qmq08eruchr5sf5s3rwz7djpr5a25f7xw4mceq",
 				privValidatorKey: `{"address":"06C0F3E47CC5C748269088DC2F36411D3AAA27C6","pub_key":{"type":"tendermint/PubKeyEd25519","value":"RrclQz9bIhkIy/gfL485g3PYMeiIku4qeo495787X10="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"uX+ZpDMg89a6gtqs/+MQpCTSqlkZ0nJQJOhLlCJvwvdGtyVDP1siGQjL+B8vjzmDc9gx6IiS7ip6jj3nvztfXQ=="}}`,
 				nodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"fjw4/DAhyRPnwKgXns5SV7QfswRSXMWJpHS7TyULDmJ8ofUc5poQP8dgr8bZRbCV5RV8cPqDq3FPdqwpmUbmdA=="}}`,
+				ipSuffix:         1,
 			},
 			validatorBob: {
 				mnemonic:         "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
@@ -78,6 +80,7 @@ func DefaultSystemConfig() System {
 				valconsAddress:   "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
 				privValidatorKey: `{"address":"99BD3A72EF12CD024E7584B3AC900AE3743C6ADF","pub_key":{"type":"tendermint/PubKeyEd25519","value":"mAN6RXYxSM4MNGSIriYiS7pHuwAcOHDQAy9/wnlSzOI="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"QePcwfWtOavNK7pBJrtoLMzarHKn6iBWfWPFeyV+IdmYA3pFdjFIzgw0ZIiuJiJLuke7ABw4cNADL3/CeVLM4g=="}}`,
 				nodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TQ4vHcO/vKdzGtWpelkX53WdMQd4kTsWGFrdcatdXFvWyO215Rewn5IRP0FszPLWr2DqPzmuH8WvxYGk5aeOXw=="}}`,
+				ipSuffix:         2,
 			},
 			validatorCarol: {
 				mnemonic:         "sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal",
@@ -86,13 +89,14 @@ func DefaultSystemConfig() System {
 				valconsAddress:   "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
 				privValidatorKey: `{"address":"C888306A908A217B9A943D1DAD8790044D0947A4","pub_key":{"type":"tendermint/PubKeyEd25519","value":"IHo4QEikWZfIKmM0X+N+BjKttz8HOzGs2npyjiba3Xk="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"z08bmSB91uFVpVmR3t2ewd/bDjZ/AzwQpe5rKjWiPG0gejhASKRZl8gqYzRf434GMq23Pwc7MazaenKOJtrdeQ=="}}`,
 				nodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"WLTcHEjbwB24Wp3z5oBSYTvtGQonz/7IQabOFw85BN0UkkyY5HDf38o8oHlFxVI26f+DFVeICuLbe9aXKGnUeg=="}}`,
+				ipSuffix:         3,
 			},
 		},
 		chainConfigs: map[string]ChainConfig{
 			providerChainId: {
 				chainId:        providerChainId,
 				binaryName:     "interchain-security-pd",
-				ipPrefix:       "7.7.7",
+				ipPrefix:       "7.7.7", // TODO: Change this ish, also below
 				votingWaitTime: 5,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\"",
 			},
@@ -107,7 +111,7 @@ func DefaultSystemConfig() System {
 	}
 }
 
-func (s *System) ParseCLIFlags() {
+func (s *TestRun) ParseCLIFlags() {
 	localSdkPath := flag.String("local-sdk-path", "",
 		"path of a local sdk version to build and reference in integration tests")
 	flag.Parse()

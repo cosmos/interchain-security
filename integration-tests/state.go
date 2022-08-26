@@ -44,16 +44,16 @@ type ConsumerProposal struct {
 
 func (p ConsumerProposal) isProposal() {}
 
-func (s System) getState(modelState State) State {
-	systemState := State{}
+func (s TestRun) getState(modelState State) State {
+	TestRunState := State{}
 	for k, modelState := range modelState {
-		systemState[k] = s.getChainState(k, modelState)
+		TestRunState[k] = s.getChainState(k, modelState)
 	}
 
-	return systemState
+	return TestRunState
 }
 
-func (s System) getChainState(chain string, modelState ChainState) ChainState {
+func (s TestRun) getChainState(chain string, modelState ChainState) ChainState {
 	chainState := ChainState{}
 
 	if modelState.ValBalances != nil {
@@ -77,13 +77,13 @@ func (s System) getChainState(chain string, modelState ChainState) ChainState {
 
 var blockHeightRegex = regexp.MustCompile(`block_height: "(\d+)"`)
 
-func (s System) getBlockHeight(chain string) uint {
+func (s TestRun) getBlockHeight(chain string) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
 		"query", "tendermint-validator-set",
 
-		`--node`, s.getValidatorNode(chain, s.getValidator(chain)),
+		`--node`, s.getValidatorNode(chain, s.getDefaultValId(chain)),
 	).CombinedOutput()
 
 	if err != nil {
@@ -98,7 +98,7 @@ func (s System) getBlockHeight(chain string) uint {
 	return uint(blockHeight)
 }
 
-func (s System) waitBlocks(chain string, blocks uint) {
+func (s TestRun) waitBlocks(chain string, blocks uint) {
 	startBlock := s.getBlockHeight(chain)
 
 	for {
@@ -110,41 +110,41 @@ func (s System) waitBlocks(chain string, blocks uint) {
 	}
 }
 
-func (s System) getBalances(chain string, modelState map[string]uint) map[string]uint {
-	systemState := map[string]uint{}
+func (s TestRun) getBalances(chain string, modelState map[string]uint) map[string]uint {
+	TestRunState := map[string]uint{}
 	for k := range modelState {
-		systemState[k] = s.getBalance(chain, k)
+		TestRunState[k] = s.getBalance(chain, k)
 	}
 
-	return systemState
+	return TestRunState
 }
 
-func (s System) getProposals(chain string, modelState map[uint]Proposal) map[uint]Proposal {
-	systemState := map[uint]Proposal{}
+func (s TestRun) getProposals(chain string, modelState map[uint]Proposal) map[uint]Proposal {
+	TestRunState := map[uint]Proposal{}
 	for k := range modelState {
-		systemState[k] = s.getProposal(chain, k)
+		TestRunState[k] = s.getProposal(chain, k)
 	}
 
-	return systemState
+	return TestRunState
 }
 
-func (s System) getValPowers(chain string, modelState map[string]uint) map[string]uint {
-	systemState := map[string]uint{}
+func (s TestRun) getValPowers(chain string, modelState map[string]uint) map[string]uint {
+	TestRunState := map[string]uint{}
 	for k := range modelState {
-		systemState[k] = s.getValPower(chain, k)
+		TestRunState[k] = s.getValPower(chain, k)
 	}
 
-	return systemState
+	return TestRunState
 }
 
-func (s System) getBalance(chain string, validator string) uint {
+func (s TestRun) getBalance(chain string, validator string) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
 		"query", "bank", "balances",
 		s.validatorConfigs[validator].delAddress,
 
-		`--node`, s.getValidatorNode(chain, s.getValidator(chain)),
+		`--node`, s.getValidatorNode(chain, s.getDefaultValId(chain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -160,14 +160,14 @@ func (s System) getBalance(chain string, validator string) uint {
 var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
 
 // interchain-securityd query gov proposals
-func (s System) getProposal(chain string, proposal uint) Proposal {
+func (s TestRun) getProposal(chain string, proposal uint) Proposal {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
 
-		`--node`, s.getValidatorNode(chain, s.getValidator(chain)),
+		`--node`, s.getValidatorNode(chain, s.getDefaultValId(chain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -239,13 +239,13 @@ type ValPubKey struct {
 	Value string `yaml:"value"`
 }
 
-func (s System) getValPower(chain string, validator string) uint {
+func (s TestRun) getValPower(chain string, validator string) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
 
 		"query", "tendermint-validator-set",
 
-		`--node`, s.getValidatorNode(chain, s.getValidator(chain)),
+		`--node`, s.getValidatorNode(chain, s.getDefaultValId(chain)),
 	).CombinedOutput()
 
 	if err != nil {
@@ -293,9 +293,9 @@ func (s System) getValPower(chain string, validator string) uint {
 // See https://github.com/cosmos/interchain-security/issues/263
 //
 // TODO: It's still possible this method doesn't work as-is. Do more testing
-func (s System) getValidator(chain string) string {
+func (s TestRun) getDefaultValId(chainId string) string {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c", `cd /`+s.chainConfigs[chain].chainId+`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c", `cd /`+s.chainConfigs[chainId].chainId+`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
@@ -311,10 +311,13 @@ func (s System) getValidator(chain string) string {
 	return bzFullyTrimmed
 }
 
-func (s System) getValidatorNode(chain string, validator string) string {
-	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator) + ":26658"
+// TODO: panic with err message if string not found in maps
+func (s TestRun) getValidatorNode(chainId string, validatorId string) string {
+	return "tcp://" + s.chainConfigs[chainId].ipPrefix + "." +
+		fmt.Sprint(s.validatorConfigs[validatorId].ipSuffix) + ":26658"
 }
 
-func (s System) getValidatorHome(chain string, validator string) string {
-	return `/` + s.chainConfigs[chain].chainId + `/validator` + fmt.Sprint(validator)
+// TODO: panic with err message if string not found in maps
+func (s TestRun) getValidatorHome(chainId string, validatorId string) string {
+	return `/` + s.chainConfigs[chainId].chainId + `/validator` + fmt.Sprint(validatorId)
 }

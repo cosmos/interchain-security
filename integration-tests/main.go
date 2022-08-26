@@ -15,7 +15,7 @@ var verbose = true
 
 func main() {
 	start := time.Now()
-	s := DefaultSystemConfig()
+	s := DefaultTestRun()
 	s.ParseCLIFlags()
 	s.startDocker()
 
@@ -26,7 +26,7 @@ func main() {
 	fmt.Printf("test successful - time elapsed %v\n", time.Since(start))
 }
 
-func (s System) runStep(step Step, verbose bool) {
+func (s TestRun) runStep(step Step, verbose bool) {
 	fmt.Printf("%#v\n", step.action)
 	switch action := step.action.(type) {
 	case StartChainAction:
@@ -70,7 +70,7 @@ func (s System) runStep(step Step, verbose bool) {
 	pretty.Print(actualState)
 }
 
-func (s System) startDocker() {
+func (s TestRun) startDocker() {
 	scriptStr := "integration-tests/testnet-scripts/start-docker.sh " +
 		s.containerConfig.containerName + " " +
 		s.containerConfig.instanceName + " " +
