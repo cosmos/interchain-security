@@ -3,19 +3,21 @@ package main
 import (
 	"flag"
 	"fmt"
+	"strconv"
 	"time"
 )
 
+// TODO: Determine if user defined type (wrapping a primitive string) is desired in long run
 type chainID string
 type validatorID string
 
 const (
-	// Strings mapped to validator configs, literals must be two characters long for network config
+	// Strings mapped to validator configs
 	alice = validatorID("al")
 	bob   = validatorID("bo")
 	carol = validatorID("ca")
 
-	// Strings mapped to chain configs, literals must be two characters long for network config
+	// Strings mapped to chain config
 	provider = chainID("pr")
 	consumer = chainID("co")
 )
@@ -29,14 +31,16 @@ type ValidatorConfig struct {
 	valconsAddress   string
 	privValidatorKey string
 	nodeKey          string
-	ipSuffix         string // Must be an integer greater than 0 and less than 254
+	// Must be an integer greater than 0 and less than 254
+	ipSuffix string
 }
 
 // Attributes that are unique to a chain. Allows us to map (part of)
 // the set of strings defined above to a set of viable chains
 type ChainConfig struct {
-	chainId        chainID
-	ipPrefix       string // Must be unique per chain
+	chainId chainID
+	// Must be unique per chain
+	ipPrefix       string
 	votingWaitTime uint
 	// Any transformations to apply to the genesis file of all chains instantiated with this chain config, as a jq string.
 	// Example: ".app_state.gov.voting_params.voting_period = \"5s\" | .app_state.slashing.params.signed_blocks_window = \"2\" | .app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\""
@@ -102,14 +106,14 @@ func DefaultTestRun() TestRun {
 			provider: {
 				chainId:        provider,
 				binaryName:     "interchain-security-pd",
-				ipPrefix:       "7.7.7", // TODO: Change this
+				ipPrefix:       "7.7.7",
 				votingWaitTime: 5,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\"",
 			},
 			consumer: {
 				chainId:        consumer,
 				binaryName:     "interchain-security-cd",
-				ipPrefix:       "7.7.8", // TODO: Change this
+				ipPrefix:       "7.7.8",
 				votingWaitTime: 10,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\"",
 			},
@@ -123,4 +127,39 @@ func (s *TestRun) ParseCLIFlags() {
 	flag.Parse()
 	s.localSdkPath = *localSdkPath
 	fmt.Println(s.localSdkPath)
+}
+
+// ValidateStringLiterals enforces that configs follow the constraints
+// necessary to to execute the tests
+//
+// Note: Network interfaces within the container will be named as
+// "$CHAIN_ID-$VAL_ID-out" etc. where this name is constrained to 15 bytes or less.
+// Therefore each string literal used as a validatorID or chainID
+// needs to be 5 char or less.
+func (s *TestRun) ValidateStringLiterals() {
+	for valID, valConfig := range s.validatorConfigs {
+
+		if len(valID) > 5 {
+			panic("validator id string literal must be 5 char or less")
+		}
+
+		ipSuffix, err := strconv.Atoi(valConfig.ipSuffix)
+		if err != nil {
+			panic(fmt.Sprintf("ip suffix must be an int: %v\n", err))
+		}
+
+		if ipSuffix < 1 || ipSuffix > 253 {
+			panic("ip suffix out of range, need to change config")
+		}
+	}
+
+	for chainID, chainConfig := range s.chainConfigs {
+		if len(chainID) > 5 {
+			panic("chain id string literal must be 5 char or less")
+		}
+
+		if chainID != chainConfig.chainId {
+			panic("chain config is mapped to a chain id that is different than what's stored in the config")
+		}
+	}
 }

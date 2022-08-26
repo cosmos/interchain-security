@@ -17,6 +17,7 @@ func main() {
 	start := time.Now()
 	tr := DefaultTestRun()
 	tr.ParseCLIFlags()
+	tr.ValidateStringLiterals()
 	tr.startDocker()
 
 	for _, step := range happyPathSteps {
