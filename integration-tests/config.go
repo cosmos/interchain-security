@@ -51,6 +51,7 @@ type ContainerConfig struct {
 	now           time.Time
 }
 
+// TODO: Split out TestRun and system wide config like localsdkpath
 type TestRun struct {
 	// These are the non altered values during a typical test run, where multiple test runs can exist
 	// to validate different action sequences and corresponding state checks.
