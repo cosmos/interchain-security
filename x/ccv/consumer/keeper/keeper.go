@@ -160,6 +160,7 @@ func (k Keeper) GetUnbondingTime(ctx sdk.Context) (time.Duration, bool) {
 }
 
 // DeleteUnbondingTime deletes the unbonding period of the consumer chain
+// TODO JEHAN: This seems to be unused
 func (k Keeper) DeleteUnbondingTime(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.UnbondingTimeKey())
@@ -263,6 +264,7 @@ func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscId, maturityTime uint6
 }
 
 // GetPacketMaturityTime gets the maturity time for a given received VSC packet id
+// TODO JEHAN: This, and IteratePacketMaturityTime doesn't seem to be used anywhere besides tests. We should use the iterator wherever possible
 func (k Keeper) GetPacketMaturityTime(ctx sdk.Context, vscId uint64) uint64 {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PacketMaturityTimeKey(vscId))
@@ -280,6 +282,7 @@ func (k Keeper) DeletePacketMaturityTime(ctx sdk.Context, vscId uint64) {
 
 // VerifyProviderChain verifies that the chain trying to connect on the channel handshake
 // is the expected provider chain.
+// TODO JEHAN: I need to go over the sequence diagrams and understand the handshake again
 func (k Keeper) VerifyProviderChain(ctx sdk.Context, channelID string, connectionHops []string) error {
 	if len(connectionHops) != 1 {
 		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
@@ -320,6 +323,7 @@ func (k Keeper) GetHeightValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 }
 
 // DeleteHeightValsetUpdateID deletes the valset update id for a given block height
+// TODO JEHAN: This seems to be unused
 func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.HeightValsetUpdateIDKey(height))
@@ -357,6 +361,7 @@ func (k Keeper) SetCCValidator(ctx sdk.Context, v types.CrossChainValidator) {
 }
 
 // GetCCValidator returns a cross-chain validator for a given address
+// TODO JEHAN: I don't actually understand what this is and how it relates to updating powers in tendermint
 func (k Keeper) GetCCValidator(ctx sdk.Context, addr []byte) (validator types.CrossChainValidator, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	v := store.Get(types.CrossChainValidatorKey(addr))

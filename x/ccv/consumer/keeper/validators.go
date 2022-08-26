@@ -14,6 +14,8 @@ import (
 
 // ApplyCCValidatorChanges applies the given changes to the cross-chain validators states
 // and returns updates to forward to tendermint.
+// TODO JEHAN: Need to understand all this stuff in this file better
+// TODO JEHAN: Ohhhh this is to implement the necessary staking module interface for other modules, right?
 func (k Keeper) ApplyCCValidatorChanges(ctx sdk.Context, changes []abci.ValidatorUpdate) []abci.ValidatorUpdate {
 	ret := []abci.ValidatorUpdate{}
 	for _, change := range changes {
@@ -152,6 +154,7 @@ func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
 
 // TrackHistoricalInfo saves the latest historical-info and deletes the oldest
 // heights that are below pruning height
+// TODO JEHAN: I need to understand this better
 func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 
 	entryNum := types.HistoricalEntries

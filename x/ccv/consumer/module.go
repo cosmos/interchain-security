@@ -46,11 +46,13 @@ func (AppModuleBasic) Name() string {
 }
 
 // RegisterLegacyAminoCodec implements AppModuleBasic interface
+// TODO JEHAN: what's going on here? Do we need this?
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	// ccv.RegisterLegacyAminoCodec(cdc)
 }
 
 // RegisterInterfaces registers module concrete types into protobuf Any.
+// TODO JEHAN: what's going on here? Do we need this?
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	// ccv.RegisterInterfaces(registry)
 }
@@ -72,23 +74,23 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 }
 
 // RegisterRESTRoutes implements AppModuleBasic interface
-// TODO
+// TODO JEHAN: I guess we don't need this until we write queries
 func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-consumer module.
-// TODO
+// TODO JEHAN: I guess we don't need this until we write queries
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 }
 
 // GetTxCmd implements AppModuleBasic interface
-// TODO
+// TODO JEHAN: I guess we don't need this if we don't have any txs
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
 	return nil
 }
 
 // GetQueryCmd implements AppModuleBasic interface
-// TODO
+// TODO JEHAN: I guess we don't need this until we write queries
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 	return nil
 }
@@ -108,7 +110,7 @@ func NewAppModule(k keeper.Keeper) AppModule {
 
 // RegisterInvariants implements the AppModule interface
 func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
-	// TODO
+	// TODO JEHAN: need to understand invariants better. this could be quite useful for us. maybe marius will be interested
 }
 
 // Route implements the AppModule interface
@@ -127,12 +129,13 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 }
 
 // RegisterServices registers module services.
-// TODO
+// TODO JEHAN: what is this for?
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 }
 
 // InitGenesis performs genesis initialization for the consumer module. It returns
 // no validator updates.
+// TODO JEHAN: the above comment is definitely incorrect
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
@@ -152,6 +155,7 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 // BeginBlock implements the AppModule interface
 // Set the VSC ID for the subsequent block to the same value as the current block
 // Panic if the provider's channel was established and then closed
+// TODO JEHAN: This happens when the consumer times out or is stopped by a governance proposal on the provider. do we want to do anything more bespoke, since it is an important code path?
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	channelID, found := am.keeper.GetProviderChannel(ctx)
 	if found && am.keeper.IsChannelClosed(ctx, channelID) {
@@ -159,6 +163,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 		// the consumer chain is no longer safe
 
 		// cleanup state
+		// TODO JEHAN: Anything else to clean up here?
 		am.keeper.DeleteProviderChannel(ctx)
 
 		channelClosedMsg := fmt.Sprintf("CCV channel %q was closed - shutdown consumer chain since it is not secured anymore", channelID)
@@ -168,6 +173,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 
 	blockHeight := uint64(ctx.BlockHeight())
 	vID := am.keeper.GetHeightValsetUpdateID(ctx, blockHeight)
+	// TODO JEHAN: I need to understand better why this is being set here, and not only in relay.go. I guess it's just carrying it over to the new block?
 	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight+1, vID)
 
 	am.keeper.TrackHistoricalInfo(ctx)
@@ -187,8 +193,8 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		panic(err)
 	}
 
-	data, ok := am.keeper.GetPendingChanges(ctx)
-	if !ok {
+	data, found := am.keeper.GetPendingChanges(ctx)
+	if !found {
 		return []abci.ValidatorUpdate{}
 	}
 	// apply changes to cross-chain validator set
@@ -201,7 +207,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 // AppModuleSimulation functions
 
 // GenerateGenesisState creates a randomized GenState of the transfer module.
-// TODO
+// TODO JEHAN: Talk to Dan about any synergy of this built in fuzzing stuff and his diff tests
 func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 }
 
@@ -229,6 +235,7 @@ func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.Weig
 // ValidateConsumerChannelParams does validation of a newly created ccv channel. A consumer
 // channel must be ORDERED, use the correct port (by default 'consumer' on this module), and use the current
 // supported version.
+// TODO JEHAN: Maybe move this into relay.go to be with the other IBC stuff?
 func ValidateConsumerChannelParams(
 	ctx sdk.Context,
 	keeper keeper.Keeper,
@@ -255,6 +262,7 @@ func ValidateConsumerChannelParams(
 
 // OnChanOpenInit implements the IBCModule interface
 // this function is called by the relayer.
+// TODO JEHAN: we have some code in OnRecvPacketOnUnknownChannel that rejects packets sent on the "wrong channel". Can we simply stop any other channels from being opened here and skip that other code?
 func (am AppModule) OnChanOpenInit(
 	ctx sdk.Context,
 	order channeltypes.Order,
@@ -310,6 +318,7 @@ func (am AppModule) OnChanOpenAck(
 	counterpartyMetadata string,
 ) error {
 	// ensure provider channel has already been created
+	// TODO JEHAN: should the above comment be "ensure provider channel has NOT already been created"?
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok {
 		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
 			"provider channel: %s already established", providerChannel)
@@ -326,6 +335,7 @@ func (am AppModule) OnChanOpenAck(
 			"invalid counterparty version: %s, expected %s", md.Version, ccv.Version)
 	}
 
+	// TODO JEHAN: This doesn't seem to be a problem, but I can't imagine what the benefit would be. I might prefer if we hardcoded this.
 	am.keeper.SetProviderFeePoolAddrStr(ctx, md.ProviderFeePoolAddr)
 
 	///////////////////////////////////////////////////
@@ -337,11 +347,13 @@ func (am AppModule) OnChanOpenAck(
 
 	// reuse the connection hops for this channel for the
 	// transfer channel being created.
+	// TODO JEHAN: Elsewhere in the code I see we only allow direct channels, so presumably this could be hardcoded
 	connHops, err := am.keeper.GetConnectionHops(ctx, portID, channelID)
 	if err != nil {
 		return err
 	}
 
+	// TODO JEHAN: need to understand better how this works
 	distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
 		transfertypes.PortID,
 		transfertypes.Version,
@@ -376,6 +388,7 @@ func (am AppModule) OnChanCloseInit(
 	channelID string,
 ) error {
 	// allow relayers to close duplicate OPEN channels, if the provider channel has already been established
+	// TODO JEHAN: need to understand this better
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok && providerChannel != channelID {
 		return nil
 	}
@@ -464,6 +477,7 @@ func (am AppModule) OnAcknowledgementPacket(
 }
 
 // OnTimeoutPacket implements the IBCModule interface
+// TODO JEHAN: Need to understand timeouts better
 func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,

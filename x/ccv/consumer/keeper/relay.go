@@ -21,13 +21,17 @@ import (
 func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) exported.Acknowledgement {
 	// get the provider channel
 	providerChannel, found := k.GetProviderChannel(ctx)
+	// TODO JEHAN: Need to understand this better. I guess we are just checking that we have received the packet on the chain's "canonical" channel for CCV?
+	// TODO JEHAN: Is it possible a packet coming in on an unknown channel could be coming from the wrong chain, or is it limited to just being from a garbage channel from the right chain?
 	if found && providerChannel != packet.DestinationChannel {
 		// VSC packet was sent on a channel different than the provider channel
+		// TODO JEHAN: Do we really need to do this? Can't we just ignore these?
 		return utils.OnRecvPacketOnUnknownChannel(ctx, k.scopedKeeper, k.channelKeeper, packet)
 	}
 	if !found {
 		// the first packet from the provider chain
 		// - mark the CCV channel as established
+		// TODO JEHAN: So, we just make the channel of the first CCV packet received the canonical channel?
 		k.SetProviderChannel(ctx, packet.DestinationChannel)
 		// - send pending slash requests in states
 		k.SendPendingSlashRequests(ctx)
@@ -79,6 +83,7 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 	}
 
 	store := ctx.KVStore(k.storeKey)
+	// TODO JEHAN: Shouldn't we be using the iterator from keeper.go instead?
 	maturityIterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 	defer maturityIterator.Close()
 
@@ -112,6 +117,7 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 }
 
 // SendSlashPacket sends a slash packet containing the given validator data and slashing info
+// TODO JEHAN: How does this relate to SendPendingSlashRequests?
 func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valsetUpdateID uint64, infraction stakingtypes.InfractionType) {
 	consAddr := sdk.ConsAddress(validator.Address)
 	downtime := infraction == stakingtypes.Downtime
@@ -156,6 +162,7 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 
 // SendPendingSlashRequests iterates over the stored pending slash requests in reverse order
 // and sends the embedded slash packets to the provider chain
+// TODO JEHAN: How does this relate to SendSlashPacket?
 func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 	channelID, ok := k.GetProviderChannel(ctx)
 	if !ok {
@@ -208,6 +215,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			"channel", packet.SourceChannel,
 			"error", err,
 		)
+		// TODO JEHAN: Why do we close on error? Seems extreme. Is there a security reason?
 		err := k.ChanCloseInit(ctx, packet.SourcePort, packet.SourceChannel)
 		if err != nil {
 			return fmt.Errorf("ChanCloseInit(%s) failed: %s", packet.SourceChannel, err.Error())

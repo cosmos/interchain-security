@@ -19,6 +19,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates new consumer parameters with provided arguments
+// TODO JEHAN: Do we really need to get this boilerplate-ey?
 func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string) Params {
 	return Params{
