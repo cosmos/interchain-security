@@ -15,50 +15,50 @@ var verbose = true
 
 func main() {
 	start := time.Now()
-	s := DefaultSystemConfig()
-	s.ParseCLIFlags()
-	s.startDocker()
+	tr := DefaultTestRun()
+	tr.ParseCLIFlags()
+	tr.startDocker()
 
 	for _, step := range happyPathSteps {
-		s.runStep(step, verbose)
+		tr.runStep(step, verbose)
 	}
 
 	fmt.Printf("test successful - time elapsed %v\n", time.Since(start))
 }
 
-func (s System) runStep(step Step, verbose bool) {
+func (tr TestRun) runStep(step Step, verbose bool) {
 	fmt.Printf("%#v\n", step.action)
 	switch action := step.action.(type) {
 	case StartChainAction:
-		s.startChain(action, verbose)
+		tr.startChain(action, verbose)
 	case SendTokensAction:
-		s.sendTokens(action, verbose)
+		tr.sendTokens(action, verbose)
 	case SubmitTextProposalAction:
-		s.submitTextProposal(action, verbose)
+		tr.submitTextProposal(action, verbose)
 	case SubmitConsumerProposalAction:
-		s.submitConsumerProposal(action, verbose)
+		tr.submitConsumerProposal(action, verbose)
 	case VoteGovProposalAction:
-		s.voteGovProposal(action, verbose)
+		tr.voteGovProposal(action, verbose)
 	case StartConsumerChainAction:
-		s.startConsumerChain(action, verbose)
+		tr.startConsumerChain(action, verbose)
 	case AddChainToRelayerAction:
-		s.addChainToRelayer(action, verbose)
+		tr.addChainToRelayer(action, verbose)
 	case AddIbcConnectionAction:
-		s.addIbcConnection(action, verbose)
+		tr.addIbcConnection(action, verbose)
 	case AddIbcChannelAction:
-		s.addIbcChannel(action, verbose)
+		tr.addIbcChannel(action, verbose)
 	case RelayPacketsAction:
-		s.relayPackets(action, verbose)
+		tr.relayPackets(action, verbose)
 	case DelegateTokensAction:
-		s.delegateTokens(action, verbose)
+		tr.delegateTokens(action, verbose)
 	case UnbondTokensAction:
-		s.unbondTokens(action, verbose)
+		tr.unbondTokens(action, verbose)
 	default:
 		log.Fatalf(fmt.Sprintf(`unknown action: %#v`, action))
 	}
 
 	modelState := step.state
-	actualState := s.getState(step.state)
+	actualState := tr.getState(step.state)
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
@@ -70,13 +70,13 @@ func (s System) runStep(step Step, verbose bool) {
 	pretty.Print(actualState)
 }
 
-func (s System) startDocker() {
+func (tr TestRun) startDocker() {
 	scriptStr := "integration-tests/testnet-scripts/start-docker.sh " +
-		s.containerConfig.containerName + " " +
-		s.containerConfig.instanceName + " " +
-		s.localSdkPath
+		tr.containerConfig.containerName + " " +
+		tr.containerConfig.instanceName + " " +
+		tr.localSdkPath
 
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
 	cmd := exec.Command("/bin/bash", "-c", scriptStr)
 
 	cmdReader, err := cmd.StdoutPipe()

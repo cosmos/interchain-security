@@ -13,12 +13,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type State map[uint]ChainState
+type State map[chainID]ChainState
 
 type ChainState struct {
-	ValBalances *map[uint]uint
+	ValBalances *map[validatorID]uint
 	Proposals   *map[uint]Proposal
-	ValPowers   *map[uint]uint
+	ValPowers   *map[validatorID]uint
 }
 
 type Proposal interface {
@@ -35,7 +35,7 @@ func (p TextProposal) isProposal() {}
 
 type ConsumerProposal struct {
 	Deposit       uint
-	Chain         uint
+	Chain         chainID
 	SpawnTime     int
 	InitialHeight clienttypes.Height
 	Status        string
@@ -43,31 +43,31 @@ type ConsumerProposal struct {
 
 func (p ConsumerProposal) isProposal() {}
 
-func (s System) getState(modelState State) State {
+func (tr TestRun) getState(modelState State) State {
 	systemState := State{}
 	for k, modelState := range modelState {
-		systemState[k] = s.getChainState(k, modelState)
+		systemState[k] = tr.getChainState(k, modelState)
 	}
 
 	return systemState
 }
 
-func (s System) getChainState(chain uint, modelState ChainState) ChainState {
+func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState {
 	chainState := ChainState{}
 
 	if modelState.ValBalances != nil {
-		valBalances := s.getBalances(chain, *modelState.ValBalances)
+		valBalances := tr.getBalances(chain, *modelState.ValBalances)
 		chainState.ValBalances = &valBalances
 	}
 
 	if modelState.Proposals != nil {
-		proposals := s.getProposals(chain, *modelState.Proposals)
+		proposals := tr.getProposals(chain, *modelState.Proposals)
 		chainState.Proposals = &proposals
 	}
 
 	if modelState.ValPowers != nil {
-		s.waitBlocks(chain, 1)
-		powers := s.getValPowers(chain, *modelState.ValPowers)
+		tr.waitBlocks(chain, 1)
+		powers := tr.getValPowers(chain, *modelState.ValPowers)
 		chainState.ValPowers = &powers
 	}
 
@@ -76,13 +76,13 @@ func (s System) getChainState(chain uint, modelState ChainState) ChainState {
 
 var blockHeightRegex = regexp.MustCompile(`block_height: "(\d+)"`)
 
-func (s System) getBlockHeight(chain uint) uint {
+func (tr TestRun) getBlockHeight(chain chainID) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
 
 		"query", "tendermint-validator-set",
 
-		`--node`, s.getValidatorNode(chain, s.getValidatorNum(chain)),
+		`--node`, tr.getValidatorNode(chain, tr.getValidatorNum(chain)),
 	).CombinedOutput()
 
 	if err != nil {
@@ -97,11 +97,11 @@ func (s System) getBlockHeight(chain uint) uint {
 	return uint(blockHeight)
 }
 
-func (s System) waitBlocks(chain uint, blocks uint) {
-	startBlock := s.getBlockHeight(chain)
+func (tr TestRun) waitBlocks(chain chainID, blocks uint) {
+	startBlock := tr.getBlockHeight(chain)
 
 	for {
-		thisBlock := s.getBlockHeight(chain)
+		thisBlock := tr.getBlockHeight(chain)
 		if thisBlock >= startBlock+blocks {
 			return
 		}
@@ -109,41 +109,41 @@ func (s System) waitBlocks(chain uint, blocks uint) {
 	}
 }
 
-func (s System) getBalances(chain uint, modelState map[uint]uint) map[uint]uint {
-	systemState := map[uint]uint{}
+func (tr TestRun) getBalances(chain chainID, modelState map[validatorID]uint) map[validatorID]uint {
+	actualState := map[validatorID]uint{}
 	for k := range modelState {
-		systemState[k] = s.getBalance(chain, k)
+		actualState[k] = tr.getBalance(chain, k)
 	}
 
-	return systemState
+	return actualState
 }
 
-func (s System) getProposals(chain uint, modelState map[uint]Proposal) map[uint]Proposal {
-	systemState := map[uint]Proposal{}
+func (tr TestRun) getProposals(chain chainID, modelState map[uint]Proposal) map[uint]Proposal {
+	actualState := map[uint]Proposal{}
 	for k := range modelState {
-		systemState[k] = s.getProposal(chain, k)
+		actualState[k] = tr.getProposal(chain, k)
 	}
 
-	return systemState
+	return actualState
 }
 
-func (s System) getValPowers(chain uint, modelState map[uint]uint) map[uint]uint {
-	systemState := map[uint]uint{}
+func (tr TestRun) getValPowers(chain chainID, modelState map[validatorID]uint) map[validatorID]uint {
+	actualState := map[validatorID]uint{}
 	for k := range modelState {
-		systemState[k] = s.getValPower(chain, k)
+		actualState[k] = tr.getValPower(chain, k)
 	}
 
-	return systemState
+	return actualState
 }
 
-func (s System) getBalance(chain uint, validator uint) uint {
+func (tr TestRun) getBalance(chain chainID, validator validatorID) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
 
 		"query", "bank", "balances",
-		s.validatorConfigs[validator].delAddress,
+		tr.validatorConfigs[validator].delAddress,
 
-		`--node`, s.getValidatorNode(chain, s.getValidatorNum(chain)),
+		`--node`, tr.getValidatorNode(chain, tr.getValidatorNum(chain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -159,14 +159,14 @@ func (s System) getBalance(chain uint, validator uint) uint {
 var noProposalRegex = regexp.MustCompile(`doesn't exist: key not found`)
 
 // interchain-securityd query gov proposals
-func (s System) getProposal(chain uint, proposal uint) Proposal {
+func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
 
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
 
-		`--node`, s.getValidatorNode(chain, s.getValidatorNum(chain)),
+		`--node`, tr.getValidatorNode(chain, tr.getValidatorNum(chain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -197,12 +197,12 @@ func (s System) getProposal(chain uint, proposal uint) Proposal {
 		}
 	case "/interchain_security.ccv.provider.v1.CreateConsumerChainProposal":
 		chainId := gjson.Get(string(bz), `content.chain_id`).String()
-		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time().Sub(s.containerConfig.now)
+		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time().Sub(tr.containerConfig.now)
 
-		var chain uint
-		for i, conf := range s.chainConfigs {
-			if conf.chainId == chainId {
-				chain = uint(i)
+		var chain chainID
+		for i, conf := range tr.chainConfigs {
+			if string(conf.chainId) == chainId {
+				chain = i
 				break
 			}
 		}
@@ -238,13 +238,13 @@ type ValPubKey struct {
 	Value string `yaml:"value"`
 }
 
-func (s System) getValPower(chain uint, validator uint) uint {
+func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, s.chainConfigs[chain].binaryName,
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
 
 		"query", "tendermint-validator-set",
 
-		`--node`, s.getValidatorNode(chain, s.getValidatorNum(chain)),
+		`--node`, tr.getValidatorNode(chain, tr.getValidatorNum(chain)),
 	).CombinedOutput()
 
 	if err != nil {
@@ -269,7 +269,7 @@ func (s System) getValPower(chain uint, validator uint) uint {
 	}
 
 	for _, val := range valset.Validators {
-		if val.Address == s.validatorConfigs[validator].valconsAddress {
+		if val.Address == tr.validatorConfigs[validator].valconsAddress {
 			votingPower, err := strconv.Atoi(val.VotingPower)
 			if err != nil {
 				log.Fatalf("error: %v", err)
