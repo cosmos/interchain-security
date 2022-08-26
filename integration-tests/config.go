@@ -6,15 +6,18 @@ import (
 	"time"
 )
 
+type chainID string
+type validatorID string
+
 const (
 	// Strings mapped to validator configs
-	validatorAlice = "alice"
-	validatorBob   = "bob"
-	validatorCarol = "carol"
+	alice = validatorID("alice")
+	bob   = validatorID("bob")
+	carol = validatorID("carol")
 
 	// Strings mapped to chain configs
-	providerChainId = "provider"
-	consumerChainId = "consumer"
+	provider = chainID("provider")
+	consumer = chainID("consumer")
 )
 
 // Attributes that are unique to a validator. Allows us to map (part of)
@@ -32,7 +35,7 @@ type ValidatorConfig struct {
 // Attributes that are unique to a chain. Allows us to map (part of)
 // the set of strings defined above to a set of viable chains
 type ChainConfig struct {
-	chainId        string
+	chainId        chainID
 	ipPrefix       string
 	votingWaitTime uint
 	genesisChanges string
@@ -50,8 +53,8 @@ type TestRun struct {
 	// These are the non altered values during a typical test run, where multiple test runs can exist
 	// to validate different action sequences and corresponding state checks.
 	containerConfig  ContainerConfig
-	validatorConfigs map[string]ValidatorConfig
-	chainConfigs     map[string]ChainConfig
+	validatorConfigs map[validatorID]ValidatorConfig
+	chainConfigs     map[chainID]ChainConfig
 	localSdkPath     string
 }
 
@@ -63,8 +66,8 @@ func DefaultTestRun() TestRun {
 			ccvVersion:    "1",
 			now:           time.Now(),
 		},
-		validatorConfigs: map[string]ValidatorConfig{
-			validatorAlice: {
+		validatorConfigs: map[validatorID]ValidatorConfig{
+			alice: {
 				mnemonic:         "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
 				delAddress:       "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
 				valoperAddress:   "cosmosvaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtrgtng",
@@ -73,7 +76,7 @@ func DefaultTestRun() TestRun {
 				nodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"fjw4/DAhyRPnwKgXns5SV7QfswRSXMWJpHS7TyULDmJ8ofUc5poQP8dgr8bZRbCV5RV8cPqDq3FPdqwpmUbmdA=="}}`,
 				ipSuffix:         1,
 			},
-			validatorBob: {
+			bob: {
 				mnemonic:         "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
 				delAddress:       "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
 				valoperAddress:   "cosmosvaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9qakmjnw",
@@ -82,7 +85,7 @@ func DefaultTestRun() TestRun {
 				nodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TQ4vHcO/vKdzGtWpelkX53WdMQd4kTsWGFrdcatdXFvWyO215Rewn5IRP0FszPLWr2DqPzmuH8WvxYGk5aeOXw=="}}`,
 				ipSuffix:         2,
 			},
-			validatorCarol: {
+			carol: {
 				mnemonic:         "sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal",
 				delAddress:       "cosmos19hz4m226ztankqramvt4a7t0shejv4dc79gp9u",
 				valoperAddress:   "cosmosvaloper19hz4m226ztankqramvt4a7t0shejv4dcm3u5f0",
@@ -92,16 +95,16 @@ func DefaultTestRun() TestRun {
 				ipSuffix:         3,
 			},
 		},
-		chainConfigs: map[string]ChainConfig{
-			providerChainId: {
-				chainId:        providerChainId,
+		chainConfigs: map[chainID]ChainConfig{
+			provider: {
+				chainId:        provider,
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7", // TODO: Change this ish, also below
 				votingWaitTime: 5,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\"",
 			},
-			consumerChainId: {
-				chainId:        consumerChainId,
+			consumer: {
+				chainId:        consumer,
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 10,
