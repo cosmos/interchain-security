@@ -158,7 +158,7 @@ func (tr TestRun) submitTextProposal(
 	action SubmitTextProposalAction,
 	verbose bool,
 ) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
 		"tx", "gov", "submit-proposal",
@@ -273,7 +273,7 @@ func (tr TestRun) voteGovProposal(
 		vote := action.vote[i]
 		go func(val validatorID, vote string) {
 			defer wg.Done()
-			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 			bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
 				"tx", "gov", "vote",
@@ -308,7 +308,7 @@ func (tr TestRun) startConsumerChain(
 	action StartConsumerChainAction,
 	verbose bool,
 ) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.providerChain].binaryName,
 
 		"query", "provider", "consumer-genesis",
@@ -387,7 +387,7 @@ func (tr TestRun) addChainToRelayer(
 
 	bashCommand := fmt.Sprintf(`echo '%s' >> %s`, chainConfig, "/root/.hermes/config.toml")
 
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
 		bashCommand,
 	).CombinedOutput()
@@ -397,7 +397,7 @@ func (tr TestRun) addChainToRelayer(
 
 	// Save mnemonic to file within container
 	saveMnemonicCommand := fmt.Sprintf(`echo '%s' > %s`, tr.validatorConfigs[action.validator].mnemonic, "/root/.hermes/mnemonic.txt")
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c",
 		saveMnemonicCommand,
 	).CombinedOutput()
@@ -405,7 +405,7 @@ func (tr TestRun) addChainToRelayer(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"keys", "add",
 		"--chain", string(tr.chainConfigs[action.chain].chainId),
@@ -429,7 +429,7 @@ func (tr TestRun) addIbcConnection(
 	action AddIbcConnectionAction,
 	verbose bool,
 ) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"create", "connection",
 		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
@@ -476,7 +476,7 @@ func (tr TestRun) addIbcChannel(
 	action AddIbcChannelAction,
 	verbose bool,
 ) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
 		"create", "channel",
 		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
@@ -528,7 +528,7 @@ func (tr TestRun) relayPackets(
 	verbose bool,
 ) {
 	// hermes clear packets ibc0 transfer channel-13
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes", "clear", "packets",
 		"--chain", string(tr.chainConfigs[action.chain].chainId),
 		"--port", action.port,
@@ -555,7 +555,7 @@ func (tr TestRun) delegateTokens(
 	action DelegateTokensAction,
 	verbose bool,
 ) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
 		"tx", "staking", "delegate",
@@ -591,7 +591,7 @@ func (tr TestRun) unbondTokens(
 	action UnbondTokensAction,
 	verbose bool,
 ) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
 		"tx", "staking", "unbond",

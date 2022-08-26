@@ -10,14 +10,12 @@ type chainID string
 type validatorID string
 
 const (
-	// TODO: Why two characters again?
-
-	// Strings mapped to validator configs, literals must be two characters long
+	// Strings mapped to validator configs, literals must be two characters long for network config
 	alice = validatorID("al")
 	bob   = validatorID("bo")
 	carol = validatorID("ca")
 
-	// Strings mapped to chain configs, literals must be two characters long
+	// Strings mapped to chain configs, literals must be two characters long for network config
 	provider = chainID("pr")
 	consumer = chainID("co")
 )
