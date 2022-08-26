@@ -73,9 +73,10 @@ func (s System) startChain(
 		Mnemonic         string `json:"mnemonic"`
 		Allocation       string `json:"allocation"`
 		Stake            string `json:"stake"`
-		Number           string `json:"number"`
+		ValId            string `json:"val_id"`
 		PrivValidatorKey string `json:"priv_validator_key"`
 		NodeKey          string `json:"node_key"`
+		IpSuffix         string `json:"ip_suffix"`
 	}
 
 	var validators []jsonValAttrs
@@ -83,10 +84,11 @@ func (s System) startChain(
 		validators = append(validators, jsonValAttrs{
 			Mnemonic:         s.validatorConfigs[val.id].mnemonic,
 			NodeKey:          s.validatorConfigs[val.id].nodeKey,
+			ValId:            fmt.Sprint(val.id), // TODO: make this actual id
 			PrivValidatorKey: s.validatorConfigs[val.id].privValidatorKey,
 			Allocation:       fmt.Sprint(val.allocation) + "stake",
 			Stake:            fmt.Sprint(val.stake) + "stake",
-			Number:           fmt.Sprint(val.id),
+			IpSuffix:         s.validatorConfigs[val.id].IpSuffix,
 		})
 	}
 
@@ -362,7 +364,7 @@ func (s System) addChainToRelayer(
 	action AddChainToRelayerAction,
 	verbose bool,
 ) {
-	valIp := s.chainConfigs[action.chain].ipPrefix + `.` + fmt.Sprint(action.validator)
+	valIp := s.getValidatorIP(action.chain, action.validator)
 	chainId := s.chainConfigs[action.chain].chainId
 	keyName := "validator" + fmt.Sprint(action.validator)
 	rpcAddr := "http://" + valIp + ":26658"
@@ -628,7 +630,11 @@ func (s System) getValidatorNum(chain uint) uint {
 }
 
 func (s System) getValidatorNode(chain uint, validator uint) string {
-	return "tcp://" + s.chainConfigs[chain].ipPrefix + "." + fmt.Sprint(validator) + ":26658"
+	return "tcp://" + s.getValidatorIP(chain, validator) + ":26658"
+}
+
+func (s System) getValidatorIP(chain uint, validator uint) string {
+	return s.chainConfigs[chain].ipPrefix + "." + s.validatorConfigs[validator].IpSuffix
 }
 
 func (s System) getValidatorHome(chain uint, validator uint) string {
