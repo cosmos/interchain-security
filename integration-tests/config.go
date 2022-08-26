@@ -38,6 +38,8 @@ type ChainConfig struct {
 	chainId        chainID
 	ipPrefix       string // Must be unique per chain
 	votingWaitTime uint
+	// Any transformations to apply to the genesis file of all chains instantiated with this chain config, as a jq string.
+	// Example: ".app_state.gov.voting_params.voting_period = \"5s\" | .app_state.slashing.params.signed_blocks_window = \"2\""
 	genesisChanges string
 	binaryName     string
 }
@@ -100,16 +102,23 @@ func DefaultTestRun() TestRun {
 			provider: {
 				chainId:        provider,
 				binaryName:     "interchain-security-pd",
-				ipPrefix:       "7.7.7", // TODO: Change this ish, also below
+				ipPrefix:       "7.7.7", // TODO: Change this
 				votingWaitTime: 5,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\"",
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\" | " +
+					// Custom slashing parameters for testing validator downtime functionality
+					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\"",
 			},
 			consumer: {
 				chainId:        consumer,
 				binaryName:     "interchain-security-cd",
-				ipPrefix:       "7.7.8",
+				ipPrefix:       "7.7.8", // TODO: Change this
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\"",
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
+					// Custom slashing parameters for testing validator downtime functionality
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\"",
 			},
 		},
 	}

@@ -18,6 +18,8 @@ var happyPathSteps = []Step{
 				{id: alice, stake: 500000000, allocation: 10000000000},
 				{id: carol, stake: 500000000, allocation: 10000000000},
 			},
+			genesisChanges: "", // No custom genesis changes for this action
+			skipGentx:      false,
 		},
 		state: State{
 			provider: ChainState{

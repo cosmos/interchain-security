@@ -25,7 +25,7 @@ func (tr TestRun) sendTokens(
 	verbose bool,
 ) {
 	binaryName := tr.chainConfigs[action.chain].binaryName
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, binaryName,
 
 		"tx", "bank", "send",
@@ -51,8 +51,9 @@ func (tr TestRun) sendTokens(
 }
 
 type StartChainAction struct {
-	chain          chainID
-	validators     []StartChainValidator
+	chain      chainID
+	validators []StartChainValidator
+	// Genesis changes specific to this action, appended to genesis changes defined in chain config
 	genesisChanges string
 	skipGentx      bool
 }
@@ -83,7 +84,7 @@ func (tr TestRun) startChain(
 		validators = append(validators, jsonValAttrs{
 			Mnemonic:         tr.validatorConfigs[val.id].mnemonic,
 			NodeKey:          tr.validatorConfigs[val.id].nodeKey,
-			ValId:            fmt.Sprint(val.id), // TODO: make this actual id
+			ValId:            fmt.Sprint(val.id),
 			PrivValidatorKey: tr.validatorConfigs[val.id].privValidatorKey,
 			Allocation:       fmt.Sprint(val.allocation) + "stake",
 			Stake:            fmt.Sprint(val.stake) + "stake",
@@ -96,7 +97,7 @@ func (tr TestRun) startChain(
 		log.Fatal(err)
 	}
 
-	// TODO: Make genesis changes more standardized to add onto
+	// Concat genesis changes defined in chain config, with any custom genesis changes for this chain instantiation
 	var genesisChanges string
 	if action.genesisChanges != "" {
 		genesisChanges = chainConfig.genesisChanges + " | " + action.genesisChanges
