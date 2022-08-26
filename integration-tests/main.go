@@ -76,7 +76,7 @@ func (tr TestRun) startDocker() {
 		tr.containerConfig.instanceName + " " +
 		tr.localSdkPath
 
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("/bin/bash", "-c", scriptStr)
 
 	cmdReader, err := cmd.StdoutPipe()
