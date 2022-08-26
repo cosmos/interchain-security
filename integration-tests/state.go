@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
@@ -284,11 +285,29 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 	return 0
 }
 
+// Gets a default validator for txs and queries using the first subdirectory
+// of the directory of the input chain, which will be the home directory
+// of one of the validators.
 // TODO: Best solution for default validator fulfilling queries etc. is a dedicated, non validating, full node.
 // See https://github.com/cosmos/interchain-security/issues/263
-func (tr TestRun) getDefaultValidator(chain chainID) validatorID {
-	// change this!!
-	return validatorID("alice")
+func (s TestRun) getDefaultValidator(chain chainID) validatorID {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c",
+		`cd /`+string(s.chainConfigs[chain].chainId)+
+			`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// Returned string will be of format: "validator<valID literal>/"
+	bzPrefixTrimmed := strings.TrimPrefix(string(bz), "validator")
+	bzFullyTrimmed := bzPrefixTrimmed[:len(bzPrefixTrimmed)-2]
+	if bzPrefixTrimmed == string(bz) || bzFullyTrimmed == string(bz) {
+		log.Fatal("unexpected validator subdirectory name: ", bz)
+	}
+
+	return validatorID(bzFullyTrimmed)
 }
 
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {
