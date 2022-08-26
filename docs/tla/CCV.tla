@@ -1,4 +1,15 @@
 --------------------------- MODULE CCV ---------------------------
+(*
+ * Modeling voting power relay between provider- and consumer chains in ICS.
+ *
+ * Simplifications:
+ *   - We only track voting power, not bonded tokens
+ *   - CCV channel creation is atomic and never fails/times out.
+ *   - No new consumers join midway.
+ *   - Block height is not modeled.
+ * 
+ * Jure Kukovec, 2022
+ *)
 
 EXTENDS Integers, Sequences, Apalache, typedefs
 
