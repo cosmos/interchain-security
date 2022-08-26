@@ -105,7 +105,7 @@ func (tr TestRun) startChain(
 		genesisChanges = chainConfig.genesisChanges
 	}
 
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
 		"/testnet-scripts/start-chain.sh", chainConfig.binaryName, string(vals),
 		string(chainConfig.chainId), chainConfig.ipPrefix, genesisChanges,
