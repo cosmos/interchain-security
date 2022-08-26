@@ -10,14 +10,16 @@ type chainID string
 type validatorID string
 
 const (
-	// Strings mapped to validator configs
-	alice = validatorID("alice")
-	bob   = validatorID("bob")
-	carol = validatorID("carol")
+	// TODO: Why two characters again?
 
-	// Strings mapped to chain configs
-	provider = chainID("provider")
-	consumer = chainID("consumer")
+	// Strings mapped to validator configs, literals must be two characters long
+	alice = validatorID("al")
+	bob   = validatorID("bo")
+	carol = validatorID("ca")
+
+	// Strings mapped to chain configs, literals must be two characters long
+	provider = chainID("pr")
+	consumer = chainID("co")
 )
 
 // Attributes that are unique to a validator. Allows us to map (part of)
@@ -29,14 +31,14 @@ type ValidatorConfig struct {
 	valconsAddress   string
 	privValidatorKey string
 	nodeKey          string
-	ipSuffix         string // TODO: can't be 0, less than 255
+	ipSuffix         string // Must be an integer greater than 0 and less than 254
 }
 
 // Attributes that are unique to a chain. Allows us to map (part of)
 // the set of strings defined above to a set of viable chains
 type ChainConfig struct {
 	chainId        chainID
-	ipPrefix       string
+	ipPrefix       string // Must be unique per chain
 	votingWaitTime uint
 	genesisChanges string
 	binaryName     string

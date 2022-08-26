@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
-	"regexp"
 	"sync"
 	"time"
 
@@ -96,6 +95,7 @@ func (tr TestRun) startChain(
 		log.Fatal(err)
 	}
 
+	// TODO: Make genesis changes more standardized to add onto
 	var genesisChanges string
 	if action.genesisChanges != "" {
 		genesisChanges = chainConfig.genesisChanges + " | " + action.genesisChanges
@@ -307,7 +307,7 @@ func (tr TestRun) startConsumerChain(
 		"query", "provider", "consumer-genesis",
 		string(tr.chainConfigs[action.consumerChain].chainId),
 
-		`--node`, tr.getValidatorNode(action.providerChain, tr.getValidatorNum(action.providerChain)),
+		`--node`, tr.getValidatorNode(action.providerChain, tr.getDefaultValidator(action.providerChain)),
 		`-o`, `json`,
 	)
 
@@ -607,36 +607,4 @@ func (tr TestRun) unbondTokens(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
-}
-
-var queryValidatorRegex = regexp.MustCompile(`(\d+)`)
-
-// TODO : change naming
-func (tr TestRun) getValidatorNum(chain chainID) validatorID {
-	// // Get first subdirectory of the directory of this chain, which will be the home directory of one of the validators
-	// //#nosec G204 -- Bypass linter warning for spawning subprocess with cmd argumenttr.
-	// bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "bash", "-c", `cd /`+tr.chainConfigs[chain].chainId+`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
-
-	// if err != nil {
-	// 	log.Fatal(err, "\n", string(bz))
-	// }
-
-	// validator, err := strconv.Atoi(queryValidatorRegex.FindString(string(bz)))
-	// if err != nil {
-	// 	log.Fatal(err, "\n", string(bz))
-	// }
-
-	return alice
-}
-
-func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {
-	return "tcp://" + tr.getValidatorIP(chain, validator) + ":26658"
-}
-
-func (tr TestRun) getValidatorIP(chain chainID, validator validatorID) string {
-	return tr.chainConfigs[chain].ipPrefix + "." + tr.validatorConfigs[validator].ipSuffix
-}
-
-func (tr TestRun) getValidatorHome(chain chainID, validator validatorID) string {
-	return `/` + string(tr.chainConfigs[chain].chainId) + `/validator` + fmt.Sprint(validator)
 }

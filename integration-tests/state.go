@@ -82,7 +82,7 @@ func (tr TestRun) getBlockHeight(chain chainID) uint {
 
 		"query", "tendermint-validator-set",
 
-		`--node`, tr.getValidatorNode(chain, tr.getValidatorNum(chain)),
+		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
 	).CombinedOutput()
 
 	if err != nil {
@@ -143,7 +143,7 @@ func (tr TestRun) getBalance(chain chainID, validator validatorID) uint {
 		"query", "bank", "balances",
 		tr.validatorConfigs[validator].delAddress,
 
-		`--node`, tr.getValidatorNode(chain, tr.getValidatorNum(chain)),
+		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -166,7 +166,7 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
 
-		`--node`, tr.getValidatorNode(chain, tr.getValidatorNum(chain)),
+		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -244,7 +244,7 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 
 		"query", "tendermint-validator-set",
 
-		`--node`, tr.getValidatorNode(chain, tr.getValidatorNum(chain)),
+		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
 	).CombinedOutput()
 
 	if err != nil {
@@ -282,4 +282,22 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 	log.Fatalf("Validator %v not in tendermint validator set", validator)
 
 	return 0
+}
+
+// TODO: Best solution for default validator fulfilling queries etc. is a dedicated, non validating, full node.
+// See https://github.com/cosmos/interchain-security/issues/263
+func (tr TestRun) getDefaultValidator(chain chainID) validatorID {
+	return alice
+}
+
+func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {
+	return "tcp://" + tr.getValidatorIP(chain, validator) + ":26658"
+}
+
+func (tr TestRun) getValidatorIP(chain chainID, validator validatorID) string {
+	return tr.chainConfigs[chain].ipPrefix + "." + tr.validatorConfigs[validator].ipSuffix
+}
+
+func (tr TestRun) getValidatorHome(chain chainID, validator validatorID) string {
+	return `/` + string(tr.chainConfigs[chain].chainId) + `/validator` + fmt.Sprint(validator)
 }
