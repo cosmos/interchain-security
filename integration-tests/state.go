@@ -287,7 +287,8 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 // TODO: Best solution for default validator fulfilling queries etc. is a dedicated, non validating, full node.
 // See https://github.com/cosmos/interchain-security/issues/263
 func (tr TestRun) getDefaultValidator(chain chainID) validatorID {
-	return alice
+	// change this!!
+	return validatorID("alice")
 }
 
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {

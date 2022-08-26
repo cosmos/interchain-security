@@ -11,17 +11,6 @@ import (
 type chainID string
 type validatorID string
 
-const (
-	// Strings mapped to validator configs
-	alice = validatorID("al")
-	bob   = validatorID("bo")
-	carol = validatorID("ca")
-
-	// Strings mapped to chain config
-	provider = chainID("pr")
-	consumer = chainID("co")
-)
-
 // Attributes that are unique to a validator. Allows us to map (part of)
 // the set of strings defined above to a set of viable validators
 type ValidatorConfig struct {
@@ -74,7 +63,7 @@ func DefaultTestRun() TestRun {
 			now:           time.Now(),
 		},
 		validatorConfigs: map[validatorID]ValidatorConfig{
-			alice: {
+			validatorID("alice"): {
 				mnemonic:         "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
 				delAddress:       "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
 				valoperAddress:   "cosmosvaloper19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddtrgtng",
@@ -83,7 +72,7 @@ func DefaultTestRun() TestRun {
 				nodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"fjw4/DAhyRPnwKgXns5SV7QfswRSXMWJpHS7TyULDmJ8ofUc5poQP8dgr8bZRbCV5RV8cPqDq3FPdqwpmUbmdA=="}}`,
 				ipSuffix:         "4",
 			},
-			bob: {
+			validatorID("bob"): {
 				mnemonic:         "glass trip produce surprise diamond spin excess gaze wash drum human solve dress minor artefact canoe hard ivory orange dinner hybrid moral potato jewel",
 				delAddress:       "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la",
 				valoperAddress:   "cosmosvaloper1dkas8mu4kyhl5jrh4nzvm65qz588hy9qakmjnw",
@@ -92,7 +81,7 @@ func DefaultTestRun() TestRun {
 				nodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"TQ4vHcO/vKdzGtWpelkX53WdMQd4kTsWGFrdcatdXFvWyO215Rewn5IRP0FszPLWr2DqPzmuH8WvxYGk5aeOXw=="}}`,
 				ipSuffix:         "5",
 			},
-			carol: {
+			validatorID("carol"): {
 				mnemonic:         "sight similar better jar bitter laptop solve fashion father jelly scissors chest uniform play unhappy convince silly clump another conduct behave reunion marble animal",
 				delAddress:       "cosmos19hz4m226ztankqramvt4a7t0shejv4dc79gp9u",
 				valoperAddress:   "cosmosvaloper19hz4m226ztankqramvt4a7t0shejv4dcm3u5f0",
@@ -103,15 +92,15 @@ func DefaultTestRun() TestRun {
 			},
 		},
 		chainConfigs: map[chainID]ChainConfig{
-			provider: {
-				chainId:        provider,
+			chainID("provi"): {
+				chainId:        chainID("provi"),
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 5,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\"",
 			},
-			consumer: {
-				chainId:        consumer,
+			chainID("consu"): {
+				chainId:        chainID("consu"),
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 10,

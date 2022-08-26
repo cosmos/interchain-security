@@ -12,59 +12,59 @@ type Step struct {
 var happyPathSteps = []Step{
 	{
 		action: StartChainAction{
-			chain: provider,
+			chain: chainID("provi"),
 			validators: []StartChainValidator{
-				{id: bob, stake: 500000000, allocation: 10000000000},
-				{id: alice, stake: 500000000, allocation: 10000000000},
-				{id: carol, stake: 500000000, allocation: 10000000000},
+				{id: validatorID("bob"), stake: 500000000, allocation: 10000000000},
+				{id: validatorID("alice"), stake: 500000000, allocation: 10000000000},
+				{id: validatorID("carol"), stake: 500000000, allocation: 10000000000},
 			},
 			genesisChanges: "", // No custom genesis changes for this action
 			skipGentx:      false,
 		},
 		state: State{
-			provider: ChainState{
+			chainID("provi"): ChainState{
 				ValBalances: &map[validatorID]uint{
-					alice: 9500000000,
-					bob:   9500000000,
+					validatorID("alice"): 9500000000,
+					validatorID("bob"):   9500000000,
 				},
 			},
 		},
 	},
 	{
 		action: SendTokensAction{
-			chain:  provider,
-			from:   alice,
-			to:     bob,
+			chain:  chainID("provi"),
+			from:   validatorID("alice"),
+			to:     validatorID("bob"),
 			amount: 2,
 		},
 		state: State{
-			provider: ChainState{
+			chainID("provi"): ChainState{
 				ValBalances: &map[validatorID]uint{
-					alice: 9499999998,
-					bob:   9500000002,
+					validatorID("alice"): 9499999998,
+					validatorID("bob"):   9500000002,
 				},
 			},
 		},
 	},
 	{
 		action: SubmitConsumerProposalAction{
-			chain:         provider,
-			from:          alice,
+			chain:         chainID("provi"),
+			from:          validatorID("alice"),
 			deposit:       10000001,
-			consumerChain: consumer,
+			consumerChain: chainID("consu"),
 			spawnTime:     0,
 			initialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 		},
 		state: State{
-			provider: ChainState{
+			chainID("provi"): ChainState{
 				ValBalances: &map[validatorID]uint{
-					alice: 9489999997,
-					bob:   9500000002,
+					validatorID("alice"): 9489999997,
+					validatorID("bob"):   9500000002,
 				},
 				Proposals: &map[uint]Proposal{
 					1: ConsumerProposal{
 						Deposit:       10000001,
-						Chain:         consumer,
+						Chain:         chainID("consu"),
 						SpawnTime:     0,
 						InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 						Status:        "PROPOSAL_STATUS_VOTING_PERIOD",
@@ -75,75 +75,75 @@ var happyPathSteps = []Step{
 	},
 	{
 		action: VoteGovProposalAction{
-			chain:      provider,
-			from:       []validatorID{alice, bob, carol},
+			chain:      chainID("provi"),
+			from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
 			vote:       []string{"yes", "yes", "yes"},
 			propNumber: 1,
 		},
 		state: State{
-			provider: ChainState{
+			chainID("provi"): ChainState{
 				Proposals: &map[uint]Proposal{
 					1: ConsumerProposal{
 						Deposit:       10000001,
-						Chain:         consumer,
+						Chain:         chainID("consu"),
 						SpawnTime:     0,
 						InitialHeight: clienttypes.Height{RevisionNumber: 0, RevisionHeight: 1},
 						Status:        "PROPOSAL_STATUS_PASSED",
 					},
 				},
 				ValBalances: &map[validatorID]uint{
-					alice: 9499999998,
-					bob:   9500000002,
+					validatorID("alice"): 9499999998,
+					validatorID("bob"):   9500000002,
 				},
 			},
 		},
 	},
 	{
 		action: StartConsumerChainAction{
-			consumerChain: consumer,
-			providerChain: provider,
+			consumerChain: chainID("consu"),
+			providerChain: chainID("provi"),
 			validators: []StartChainValidator{
-				{id: carol, stake: 500000000, allocation: 10000000000},
-				{id: alice, stake: 500000000, allocation: 10000000000},
-				{id: bob, stake: 500000000, allocation: 10000000000},
+				{id: validatorID("carol"), stake: 500000000, allocation: 10000000000},
+				{id: validatorID("alice"), stake: 500000000, allocation: 10000000000},
+				{id: validatorID("bob"), stake: 500000000, allocation: 10000000000},
 			},
 		},
 		state: State{
-			provider: ChainState{
+			chainID("provi"): ChainState{
 				ValBalances: &map[validatorID]uint{
-					alice: 9499999998,
-					bob:   9500000002,
+					validatorID("alice"): 9499999998,
+					validatorID("bob"):   9500000002,
 				},
 			},
-			consumer: ChainState{
+			chainID("consu"): ChainState{
 				ValBalances: &map[validatorID]uint{
-					alice: 10000000000,
-					bob:   10000000000,
+					validatorID("alice"): 10000000000,
+					validatorID("bob"):   10000000000,
 				},
 			},
 		},
 	},
 	{
 		action: SendTokensAction{
-			chain:  consumer,
-			from:   alice,
-			to:     bob,
+			chain:  chainID("consu"),
+			from:   validatorID("alice"),
+			to:     validatorID("bob"),
 			amount: 1,
 		},
 		state: State{
-			consumer: ChainState{
+			chainID("consu"): ChainState{
 				// Tx on consumer chain should not go through before ICS channel is setup
 				ValBalances: &map[validatorID]uint{
-					alice: 10000000000,
-					bob:   10000000000,
+					validatorID("alice"): 10000000000,
+					validatorID("bob"):   10000000000,
 				},
 			},
 		},
 	},
 	{
 		action: AddIbcConnectionAction{
-			chainA:  consumer,
-			chainB:  provider,
+			chainA:  chainID("consu"),
+			chainB:  chainID("provi"),
 			clientA: 0,
 			clientB: 0,
 			order:   "ordered",
@@ -152,8 +152,8 @@ var happyPathSteps = []Step{
 	},
 	{
 		action: AddIbcChannelAction{
-			chainA:      consumer,
-			chainB:      provider,
+			chainA:      chainID("consu"),
+			chainB:      chainID("provi"),
 			connectionA: 0,
 			portA:       "consumer",
 			portB:       "provider",
@@ -163,115 +163,115 @@ var happyPathSteps = []Step{
 	},
 	{
 		action: DelegateTokensAction{
-			chain:  provider,
-			from:   alice,
-			to:     alice,
+			chain:  chainID("provi"),
+			from:   validatorID("alice"),
+			to:     validatorID("alice"),
 			amount: 11000000,
 		},
 		state: State{
-			provider: ChainState{
+			chainID("provi"): ChainState{
 				ValPowers: &map[validatorID]uint{
-					alice: 511,
-					bob:   500,
-					carol: 500,
+					validatorID("alice"): 511,
+					validatorID("bob"):   500,
+					validatorID("carol"): 500,
 				},
 			},
-			consumer: ChainState{
+			chainID("consu"): ChainState{
 				ValPowers: &map[validatorID]uint{
-					alice: 500,
-					bob:   500,
-					carol: 500,
+					validatorID("alice"): 500,
+					validatorID("bob"):   500,
+					validatorID("carol"): 500,
 				},
 			},
 		},
 	},
 	{
 		action: SendTokensAction{
-			chain:  consumer,
-			from:   alice,
-			to:     bob,
+			chain:  chainID("consu"),
+			from:   validatorID("alice"),
+			to:     validatorID("bob"),
 			amount: 1,
 		},
 		state: State{
-			consumer: ChainState{
+			chainID("consu"): ChainState{
 				// Tx should not go through, ICS channel is not setup until first VSC packet has been relayed to consumer
 				ValBalances: &map[validatorID]uint{
-					alice: 10000000000,
-					bob:   10000000000,
+					validatorID("alice"): 10000000000,
+					validatorID("bob"):   10000000000,
 				},
 			},
 		},
 	},
 	{
 		action: RelayPacketsAction{
-			chain:   provider,
+			chain:   chainID("provi"),
 			port:    "provider",
 			channel: 0,
 		},
 		state: State{
-			consumer: ChainState{
+			chainID("consu"): ChainState{
 				ValPowers: &map[validatorID]uint{
-					alice: 511,
-					bob:   500,
-					carol: 500,
+					validatorID("alice"): 511,
+					validatorID("bob"):   500,
+					validatorID("carol"): 500,
 				},
 			},
 		},
 	},
 	{
 		action: SendTokensAction{
-			chain:  consumer,
-			from:   alice,
-			to:     bob,
+			chain:  chainID("consu"),
+			from:   validatorID("alice"),
+			to:     validatorID("bob"),
 			amount: 1,
 		},
 		state: State{
-			consumer: ChainState{
+			chainID("consu"): ChainState{
 				// Now tx should execute
 				ValBalances: &map[validatorID]uint{
-					alice: 9999999999,
-					bob:   10000000001,
+					validatorID("alice"): 9999999999,
+					validatorID("bob"):   10000000001,
 				},
 			},
 		},
 	},
 	{
 		action: UnbondTokensAction{
-			chain:      provider,
-			unbondFrom: alice,
-			sender:     alice,
+			chain:      chainID("provi"),
+			unbondFrom: validatorID("alice"),
+			sender:     validatorID("alice"),
 			amount:     11000000,
 		},
 		state: State{
-			provider: ChainState{
+			chainID("provi"): ChainState{
 				ValPowers: &map[validatorID]uint{
-					alice: 500,
-					bob:   500,
-					carol: 500,
+					validatorID("alice"): 500,
+					validatorID("bob"):   500,
+					validatorID("carol"): 500,
 				},
 			},
-			consumer: ChainState{
+			chainID("consu"): ChainState{
 				ValPowers: &map[validatorID]uint{
 					// Voting power on consumer should not be affected yet
-					alice: 511,
-					bob:   500,
-					carol: 500,
+					validatorID("alice"): 511,
+					validatorID("bob"):   500,
+					validatorID("carol"): 500,
 				},
 			},
 		},
 	},
 	{
 		action: RelayPacketsAction{
-			chain:   provider,
+			chain:   chainID("provi"),
 			port:    "provider",
 			channel: 0,
 		},
 		state: State{
-			consumer: ChainState{
+			chainID("consu"): ChainState{
 				ValPowers: &map[validatorID]uint{
-					alice: 500,
-					bob:   500,
-					carol: 500,
+					validatorID("alice"): 500,
+					validatorID("bob"):   500,
+					validatorID("carol"): 500,
 				},
 			},
 		},
