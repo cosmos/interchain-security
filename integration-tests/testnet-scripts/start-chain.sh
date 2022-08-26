@@ -43,7 +43,7 @@ NODES=$(echo "$VALIDATORS" | jq '. | length')
 # first we start a genesis.json with the first validator
 # the first validator will also collect the gentx's once gnerated
 FIRST_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[0].val_id")
-FIRST_VAL_IP_PREFIX=$(echo "$VALIDATORS" | jq -r ".[0].ip_suffix")
+FIRST_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[0].ip_suffix")
 echo "$VALIDATORS" | jq -r ".[0].mnemonic" | $BIN init --home /$CHAIN_ID/validator$FIRST_VAL_ID --chain-id=$CHAIN_ID validator$FIRST_VAL_ID --recover > /dev/null
 
 # Apply jq transformations to genesis file
@@ -193,7 +193,7 @@ done
 
 # poll for chain start
 set +e
-until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$FIRST_VAL_IP_PREFIX:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
+until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$FIRST_VAL_IP_SUFFIX:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
 set -e
 
 echo "done!!!!!!!!"
