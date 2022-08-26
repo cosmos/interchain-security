@@ -1,4 +1,4 @@
-package provider_test
+package e2e_test
 
 import (
 	"time"
