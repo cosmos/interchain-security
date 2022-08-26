@@ -155,7 +155,7 @@ do
     VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$i].ip_suffix")
     # add this ip for loopback dialing
     # TODO: Any changes here?
-    ip addr add $CHAIN_IP_PREFIX.$VAL_ID/32 dev eth0 || true # allowed to fail
+    ip addr add $CHAIN_IP_PREFIX.$VAL_IP_SUFFIX/32 dev eth0 || true # allowed to fail
 
 
     GAIA_HOME="--home /$CHAIN_ID/validator$VAL_ID"
