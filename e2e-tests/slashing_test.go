@@ -330,8 +330,8 @@ func (suite *ProviderKeeperTestSuite) TestHandleSlashPacketErrors() {
 	// save VSC ID
 	vID := ProviderKeeper.GetValidatorSetUpdateId(suite.ctx)
 
-	// set faulty block height for current VSC ID
-	ProviderKeeper.SetValsetUpdateBlockHeight(suite.ctx, vID, 0)
+	// remove block height for current VSC ID
+	ProviderKeeper.DeleteValsetUpdateBlockHeight(suite.ctx, vID)
 
 	// expect an error if block height mapping VSC ID is zero
 	_, err = ProviderKeeper.HandleSlashPacket(suite.ctx, consumerChainID, ccv.SlashPacketData{ValsetUpdateId: vID})
