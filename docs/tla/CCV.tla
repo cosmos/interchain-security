@@ -29,7 +29,15 @@ CONSTANT
   \* Time that needs to elapse, before a message is considered to have
   \* timed out (resulting in the removal of the related consumer chain).
   \* @type: $time;
-  Timeout
+  Timeout,
+  \* Maximal time by which clocks are assumed to differ from the provider chain.
+  \* Since consumer chains don't communicate, we don't care about 
+  \* drift between tow consumers (though it's implicitly less than MaxDrift, if
+  \* each differs from the provider chain by at most MaxDrift).
+  \* The specification doesn't force clocks to maintain bounded drift, 
+  \* but the invariants are only verified in cases where clocks never drift too far.
+  \* @type: $time;
+  MaxDrift
 
 \* Timeout must be more than MaturityDelay, otherwise VPCs would
 \* never have the opportunity to mature.
@@ -91,7 +99,10 @@ VARIABLES
   \* of delegations and un-delegations, with a net 0 change in voting power).
   \* We use this flag to determine whether it is necessary to send a VPC packet.
   \* @type: Bool;
-  votingPowerHasChanged
+  votingPowerHasChanged,
+  \* Invariant flag, TRUE iff clocks never drifted too much
+  \* @type: Bool;
+  boundedDrift
 
 \* Helper tuples for UNCHANGED syntax
 \* We don't track activeConsumers and lastAction in var tuples, because
@@ -103,6 +114,9 @@ providerVars ==
 consumerVars ==
   << votingPowerReferences, ccvChannels, currentTimes, maturityTimes >>
 
+\* @type: <<Bool, Bool>>;
+bookkeepingVars == 
+  << votingPowerHasChanged, boundedDrift >>
 
 
 (*** NON-ACTION DEFINITIONS ***)
@@ -121,17 +135,17 @@ UndefinedPower == [node \in Nodes |-> -1]
 Chains == ConsumerChains \union {ProviderChain}
 
 \* Takes parameters, so primed and non-primed values can be passed
-\* @type: ($chain, Seq($packet), $time, $time) => Bool;
-PacketTimeoutForConsumer(c, channel, consumerT, providerT) == 
+\* @type: ($chain, Seq($packet), $time, $time, $packet -> $time) => Bool;
+PacketTimeoutForConsumer(c, channel, consumerT, providerT, maturity) == 
   \* Option 1: Timeout on reception
   \//\ Len(channel) /= 0
     \* Head is always the oldest packet, so if there is a timeout for some packet, 
     \* there must be one for Head too
     /\ consumerT > Head(channel) + Timeout 
   \* Option 2: Timeout on acknowledgement
-  \/ \E packet \in DOMAIN maturityTimes[c]: 
-    \* Note: Reception time = maturityTimes[c][packet] - MaturityDelay
-    /\ providerT + MaturityDelay > maturityTimes[c][packet] + Timeout
+  \/ \E packet \in DOMAIN maturity: 
+    \* Note: Reception time = maturity[packet] - MaturityDelay
+    /\ providerT + MaturityDelay > maturity[packet] + Timeout
     \* Not yet acknowledged
     /\ \A ack \in acks:
       \/ ack.chain /= c
@@ -158,6 +172,15 @@ LastPacketTime ==
 Ack(c, packetT, ackT) == 
   [chain |-> c, packetTime |-> packetT, ackTime |-> ackT]
 
+\* @type: (Int, Int) => Int;
+Delta(a,b) == IF a > b THEN a - b ELSE b - a
+
+\* @type: (a -> Int, Set(a), Int) => Bool;
+BoundedDeltas(fn, dom, bound) ==
+  /\ dom \subseteq DOMAIN fn
+  /\ \A v1, v2 \in dom:
+    Delta(fn[v1], fn[v2]) <= bound
+
 (*** ACTIONS ***)
 
 Init == 
@@ -173,6 +196,7 @@ Init ==
   /\ currentTimes = [c \in Chains |-> 0]
   /\ maturityTimes = [c \in ConsumerChains |-> [t \in {} |-> UndefinedTime]]
   /\ votingPowerHasChanged = FALSE
+  /\ boundedDrift = TRUE
   /\ lastAction = "Init"
 
 \* We combine all (un)delegate actions, as well as (un)bonding actions into an
@@ -232,7 +256,7 @@ AckPacket ==
 DropConsumers == 
   \E newActive \in SUBSET activeConsumers:
   /\ activeConsumers' = 
-    { c \in newActive: ~PacketTimeoutForConsumer(c, ccvChannels'[c], currentTimes'[c], currentTimes'[ProviderChain]) }
+    { c \in newActive: ~PacketTimeoutForConsumer(c, ccvChannels'[c], currentTimes'[c], currentTimes'[ProviderChain], maturityTimes'[c]) }
   
       
 \* Partial action, always happens on EndBlock, may also happen independently
@@ -278,7 +302,8 @@ EndProviderBlockAndSendPacket ==
 Stagnate ==
   /\ UNCHANGED providerVars
   /\ UNCHANGED consumerVars
-  /\ UNCHANGED << activeConsumers, votingPowerHasChanged >>
+  /\ UNCHANGED activeConsumers
+  /\ UNCHANGED bookkeepingVars
   /\ lastAction' = "Stagnate"
 
 Next == 
@@ -290,6 +315,8 @@ Next ==
       \/ AdvanceTime
     \* Drop timed out, maybe more
     /\ DropConsumers
+    /\ boundedDrift' = 
+      BoundedDeltas(currentTimes', activeConsumers' \union {ProviderChain}, MaxDrift)
   \//\ activeConsumers = {}
     /\ Stagnate
 
@@ -309,7 +336,7 @@ VPCUpdateInProgress ==
 
 ActiveConsumersNotTimedOut ==
   \A c \in activeConsumers:
-    ~PacketTimeoutForConsumer(c, ccvChannels[c], currentTimes[c], currentTimes[ProviderChain])
+    ~PacketTimeoutForConsumer(c, ccvChannels[c], currentTimes[c], currentTimes[ProviderChain], maturityTimes[c])
 
 \* Sanity- predicates check that the data structures don't take on unexpected values
 SanityVP == 
@@ -334,13 +361,18 @@ Sanity ==
   /\ SanityRefs
   /\ SanityMaturity
 
+
+\* Since the clocks may drift, any delay that exceeds
+\* Timeout + MaxDrift is perceived as timeout on all chains
+AdjustedTimeout == Timeout + MaxDrift
+
 \* Any packet sent by the provider is either received within Timeout, or
 \* the consumer chain is no longer considered active.
 RcvdInTime ==
   \A t \in DOMAIN votingPowerHist:
     \A c \in activeConsumers:
       \* If c is still active after Timeout has elapsed from packet t broadcast ...
-      currentTimes[c] >= t + Timeout =>
+      currentTimes[c] >= t + AdjustedTimeout =>
         \* ... then c must have received packet t
         t \in DOMAIN maturityTimes[c]
 
@@ -351,7 +383,7 @@ AckdInTime ==
     \A t \in DOMAIN maturityTimes[c]:
       \* If c is still active after Timeout has elapsed from packet t reception ...
       \* Note: Reception time = maturityTimes[c][p] - MaturityDelay
-      currentTimes[ProviderChain] + MaturityDelay >= maturityTimes[c][t] + Timeout =>
+      currentTimes[ProviderChain] + MaturityDelay >= maturityTimes[c][t] + AdjustedTimeout =>
         \* ... then c must have acknowledged packet t
         \E ack \in acks:
           /\ ack.chain = c
@@ -365,17 +397,24 @@ EventuallyAllAcks ==
   \A t \in DOMAIN votingPowerHist:
     \* If a packet was sent at time t and enough time has elapsed, 
     \* s.t. all consumers should have responded ...
-    currentTimes[ProviderChain] >= t + 2 * Timeout =>
+    currentTimes[ProviderChain] >= t + 2 * AdjustedTimeout =>
         \* then, all consumers have acked
         \A c \in activeConsumers:
           \E ack \in acks:
             /\ ack.chain = c
             /\ ack.packetTime = t
 
+BoundedDrift ==
+  \A c1, c2 \in activeConsumers \union {ProviderChain}:
+    Delta(currentTimes[c1], currentTimes[c2]) <= MaxDrift
+
 Inv ==
-  /\ Sanity
-  /\ ActiveConsumersNotTimedOut
-  /\ EventuallyAllAcks
+  \* /\ Sanity
+  \* /\ ActiveConsumersNotTimedOut
+  /\ (boundedDrift => 
+      /\ RcvdInTime
+      /\ AckdInTime
+      )
   \* /\ RcvdInTime
   \* /\ AckdInTime
   

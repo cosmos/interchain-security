@@ -5,6 +5,7 @@ Nodes == {"1_OF_N", "2_OF_N", "3_OF_N", "4_OF_N"}
 ConsumerChains == {"1_OF_C", "2_OF_C", "3_OF_C", "4_OF_C"}
 MaturityDelay == 2
 Timeout == 4
+MaxDrift == 2
 
 \* Provider chain only
 VARIABLES
@@ -33,7 +34,9 @@ VARIABLES
   \* @type: Str;
   lastAction,
   \* @type: Bool;
-  votingPowerHasChanged
+  votingPowerHasChanged,
+  \* @type: Bool;
+  boundedDrift
 
 INSTANCE CCV
 
