@@ -19,8 +19,6 @@ import (
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 
-	// consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	// providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 
 	tmtypes "github.com/tendermint/tendermint/types"
