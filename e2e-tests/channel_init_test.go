@@ -240,11 +240,11 @@ func (suite *ConsumerTestSuite) TestOnChanOpenTry() {
 func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 
 	var (
-		channelID        string
-		counterChannelID string
-		metadataBz       []byte
-		metadata         providertypes.HandshakeMetadata
-		err              error
+		portID     string
+		channelID  string
+		metadataBz []byte
+		metadata   providertypes.HandshakeMetadata
+		err        error
 	)
 	testCases := []struct {
 		name     string
@@ -275,14 +275,28 @@ func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 				suite.Require().NoError(err)
 			}, false,
 		},
+		// See ConsumerKeeper.GetConnectionHops as to why portID and channelID must be correct
+		{
+			"invalid: portID ",
+			func() {
+				portID = "invalidPort"
+			}, false,
+		},
+		{
+			"invalid: channelID ",
+			func() {
+				channelID = "invalidChan"
+			}, false,
+		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
 		suite.Run(fmt.Sprintf("Case: %s", tc.name), func() {
 			suite.SetupTest() // reset
+			portID = ccv.ConsumerPortID
 			channelID = "channel-1"
-			counterChannelID = "channel-2"
+			counterChannelID := "channel-2" // per spec this is not required by onChanOpenAck()
 			suite.path.EndpointA.ChannelID = channelID
 
 			// Set INIT channel on consumer chain
@@ -314,7 +328,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 
 			err = consumerModule.OnChanOpenAck(
 				suite.ctx,
-				ccv.ConsumerPortID,
+				portID,
 				channelID,
 				counterChannelID,
 				string(metadataBz),

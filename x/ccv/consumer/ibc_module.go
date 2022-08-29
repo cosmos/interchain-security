@@ -103,7 +103,7 @@ func (am AppModule) OnChanOpenAck(
 	ctx sdk.Context,
 	portID,
 	channelID string,
-	counterpartyChannelID string,
+	counterpartyChannelID string, // Unused
 	counterpartyMetadata string,
 ) error {
 	// ensure provider channel has not already been created
