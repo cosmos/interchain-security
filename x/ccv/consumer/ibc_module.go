@@ -35,10 +35,17 @@ func (am AppModule) OnChanOpenInit(
 			"provider channel: %s already set", providerChannel)
 	}
 
+	// Validate parameters
 	if err := validateCCVChannelParams(
 		ctx, am.keeper, order, portID, version,
 	); err != nil {
 		return err
+	}
+
+	// ensure the counterparty port ID matches the expected provider port ID
+	if counterparty.PortId != ccv.ProviderPortID {
+		return sdkerrors.Wrapf(porttypes.ErrInvalidPort,
+			"invalid counterparty port: %s, expected %s", counterparty.PortId, ccv.ProviderPortID)
 	}
 
 	// Claim channel capability passed back by IBC module
@@ -59,16 +66,18 @@ func validateCCVChannelParams(
 	portID string,
 	version string,
 ) error {
+	// Only ordered channels allowed
 	if order != channeltypes.ORDERED {
 		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.ORDERED, order)
 	}
 
-	// Require portID is the portID CCV module is bound to
+	// the port ID must match the port ID the CCV module is bounded to
 	boundPort := keeper.GetPort(ctx)
 	if boundPort != portID {
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
 	}
 
+	// the version must match the expected version
 	if version != ccv.Version {
 		return sdkerrors.Wrapf(ccv.ErrInvalidVersion, "got %s, expected %s", version, ccv.Version)
 	}

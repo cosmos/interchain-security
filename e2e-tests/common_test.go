@@ -299,11 +299,11 @@ func (suite *ConsumerKeeperTestSuite) CreateCustomClient(endpoint *ibctesting.En
 	require.NoError(endpoint.Chain.T, err)
 }
 
-// CreateCustomClient creates an IBC client on the endpoint
+// createCustomClient creates an IBC client on the endpoint
 // using the given unbonding period.
 // It will update the clientID for the endpoint if the message
 // is successfully executed.
-func (suite *ConsumerTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) (err error) {
+func (suite *ConsumerTestSuite) createCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) (err error) {
 	// ensure counterparty has committed state
 	endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
 
