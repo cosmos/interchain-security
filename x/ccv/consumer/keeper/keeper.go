@@ -94,6 +94,7 @@ func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
 }
 
 // TODO: all these comments below about the "transfer module"... are they left over from some boilerplate?
+// TODO JEHAN: rename "transfer" boilerplate
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
 // in order to expose it to the ICS20 transfer handler.
 func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
@@ -131,6 +132,7 @@ func (k Keeper) SetPort(ctx sdk.Context, portID string) {
 }
 
 // AuthenticateCapability wraps the scopedKeeper's AuthenticateCapability function
+// TODO JEHAN: this isn't being used anywhere
 func (k Keeper) AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) bool {
 	return k.scopedKeeper.AuthenticateCapability(ctx, cap, name)
 }
@@ -361,7 +363,6 @@ func (k Keeper) SetCCValidator(ctx sdk.Context, v types.CrossChainValidator) {
 }
 
 // GetCCValidator returns a cross-chain validator for a given address
-// TODO JEHAN: I don't actually understand what this is and how it relates to updating powers in tendermint
 func (k Keeper) GetCCValidator(ctx sdk.Context, addr []byte) (validator types.CrossChainValidator, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	v := store.Get(types.CrossChainValidatorKey(addr))

@@ -31,7 +31,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	if !found {
 		// the first packet from the provider chain
 		// - mark the CCV channel as established
-		// TODO JEHAN: So, we just make the channel of the first CCV packet received the canonical channel?
+		// We make the channel of the first VSC packet received the canonical ccv channel
 		k.SetProviderChannel(ctx, packet.DestinationChannel)
 		// - send pending slash requests in states
 		k.SendPendingSlashRequests(ctx)
@@ -161,7 +161,8 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 }
 
 // SendPendingSlashRequests iterates over the stored pending slash requests in reverse order
-// and sends the embedded slash packets to the provider chain
+// and sends the embedded slash packets to the provider chain.
+// This gets used if there are slash requests created before the channel is open.
 // TODO JEHAN: How does this relate to SendSlashPacket?
 func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 	channelID, ok := k.GetProviderChannel(ctx)

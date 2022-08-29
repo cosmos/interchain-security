@@ -17,18 +17,20 @@ import (
 func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.ValidatorUpdate {
 	k.SetParams(ctx, state.Params)
 	// TODO: This is the only place Params.Enabled is actually used... Seems odd
+	// TODO JEHAN: get rid of Params.Enabled
 	if !state.Params.Enabled {
 		return nil
 	}
 
 	// TODO: we only set this here, from a hardcoded value. Why is this being set in the store at all? We could just use the hardcoded value in ValidateConsumerChannelParams where we access it.
+	// TODO JEHAN: get rid of this and use the hardcoded value
 	k.SetPort(ctx, types.PortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
 	// port capability from capability InitGenesis
 	// TODO: I need to understand this better. Why do we not know for sure? What are the scenarios in which it is bound or not already bound?
 	if !k.IsBound(ctx, types.PortID) {
-		// transfer module binds to the transfer port on InitChain
+		// ccvconsumer module binds to the ccvconsumer port on InitChain
 		// and claims the returned capability
 		err := k.BindPort(ctx, types.PortID)
 		if err != nil {
@@ -47,6 +49,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		// Set the unbonding period: use the unbonding period on the provider to
 		// compute the unbonding period on the consumer
 		// TODO: do we really want to do this live? I think this should be hardcoded.
+		// TODO JEHAN: hardcode this in app.go. At some point in the future, make this a param
 		unbondingTime := utils.ComputeConsumerUnbondingPeriod(state.ProviderClientState.UnbondingPeriod)
 		k.SetUnbondingTime(ctx, unbondingTime)
 		// Set default value for valset update ID
@@ -67,7 +70,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 
 		// ensure that initial validator set is same as initial consensus state on provider client.
 		// this will be verified by provider module on channel handshake.
-		// TODO: If we didn't check for this, what would the harm be? Getting an error further down the initialization path when the provider checks?
 		vals, err := tmtypes.PB2TM.ValidatorUpdates(state.InitialValSet)
 		if err != nil {
 			panic(err)
@@ -136,6 +138,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 		// ValUpdates must be filled in off-line
 		// TODO: I need to understand this use case better. Why can't we fill them here?
+		// TODO JEHAN: fill this in with GetAllCCValidator
 		return types.NewRestartGenesisState(clientID, channelID, maturingPackets, nil, params)
 	}
 
@@ -156,5 +159,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic("provider consensus state is not tendermint consensus state")
 	}
 	// ValUpdates must be filled in off-line
+	// TODO JEHAN: fill this in with GetAllCCValidator
 	return types.NewInitialGenesisState(tmCs, tmConsState, nil, params)
 }
