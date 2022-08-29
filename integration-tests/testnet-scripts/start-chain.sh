@@ -9,7 +9,8 @@ BIN=$1
 #     mnemonic: "crackle snap pop ... etc",
 #     allocation: "10000000000stake,10000000000footoken",
 #     stake: "5000000000stake",
-#     number: "0",
+#     val_id: "alice",
+#     ip_suffix: "1",
 #     priv_validator_key: "{\"address\": \"3566F464673B2F069758DAE86FC25D04017BB147\",\"pub_key\": {\"type\": \"tendermint/PubKeyEd25519\",\"value\": \"XrLjKdc4mB2gfqplvnoySjSJq2E90RynUwaO3WhJutk=\"},\"priv_key\": {\"type\": \"tendermint/PrivKeyEd25519\",\"value\": \"czGSLs/Ocau8aJ5J5zQHMxf3d7NR0xjMECN6YGTIWqtesuMp1ziYHaB+qmW+ejJKNImrYT3RHKdTBo7daEm62Q==\"}}"
 #     node_key: "{\"priv_key\":{\"type\":\"tendermint/PrivKeyEd25519\",\"value\":\"alIHj6hXnzpLAadgb7+E2eeecwxoNdzuZrfhMX36EaD5/LgzL0ZUoVp7AK3np0K5T35JWLLv0jJKmeRIhG0GjA==\"}}"
 # }, ... ]
@@ -41,7 +42,8 @@ NODES=$(echo "$VALIDATORS" | jq '. | length')
 
 # first we start a genesis.json with the first validator
 # the first validator will also collect the gentx's once gnerated
-FIRST_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[0].number")
+FIRST_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[0].val_id")
+FIRST_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[0].ip_suffix")
 echo "$VALIDATORS" | jq -r ".[0].mnemonic" | $BIN init --home /$CHAIN_ID/validator$FIRST_VAL_ID --chain-id=$CHAIN_ID validator$FIRST_VAL_ID --recover > /dev/null
 
 # Apply jq transformations to genesis file
@@ -55,7 +57,7 @@ mv /$CHAIN_ID/edited-genesis.json /$CHAIN_ID/genesis.json
 
 for i in $(seq 0 $(($NODES - 1)));
 do
-    VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].number")
+    VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
 
     # Generate an application key for each validator
     # Sets up an arbitrary number of validators on a single machine by manipulating
@@ -85,7 +87,7 @@ done
 
 for i in $(seq 0 $(($NODES - 1)));
 do
-    VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].number")
+    VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
     # Copy in the genesis.json
     cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$VAL_ID/config/genesis.json
 
@@ -140,7 +142,7 @@ if [ "$SKIP_GENTX" = "false" ] ; then
     # put the now final genesis.json into the correct folders
     for i in $(seq 1 $(($NODES - 1)));
     do
-        VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].number")
+        VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
         cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$VAL_ID/config/genesis.json
     done
 fi
@@ -152,15 +154,16 @@ fi
 
 for i in $(seq 0 $(($NODES - 1)));
 do
-    VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].number")
+    VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
+    VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$i].ip_suffix")
     # add this ip for loopback dialing
-    ip addr add $CHAIN_IP_PREFIX.$VAL_ID/32 dev eth0 || true # allowed to fail
+    ip addr add $CHAIN_IP_PREFIX.$VAL_IP_SUFFIX/32 dev eth0 || true # allowed to fail
 
     GAIA_HOME="--home /$CHAIN_ID/validator$VAL_ID"
-    RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$VAL_ID:26658"
-    GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$VAL_ID:9091"
-    LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$VAL_ID:26655"
-    P2P_ADDRESS="--p2p.laddr tcp://$CHAIN_IP_PREFIX.$VAL_ID:26656"
+    RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26658"
+    GRPC_ADDRESS="--grpc.address $CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:9091"
+    LISTEN_ADDRESS="--address tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26655"
+    P2P_ADDRESS="--p2p.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26656"
     LOG_LEVEL="--log_level info"
     ENABLE_WEBGRPC="--grpc-web.enable=false"
 
@@ -169,9 +172,10 @@ do
     for j in $(seq 0 $(($NODES - 1)));
     do
         if [ $i -ne $j ]; then
-            PEER_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$j].number")
+            PEER_VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$j].val_id")
+            PEER_VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$j].ip_suffix") # i vs j could be it 
             NODE_ID=$($BIN tendermint show-node-id --home /$CHAIN_ID/validator$PEER_VAL_ID)
-            ADDRESS="$NODE_ID@$CHAIN_IP_PREFIX.$PEER_VAL_ID:26656"
+            ADDRESS="$NODE_ID@$CHAIN_IP_PREFIX.$PEER_VAL_IP_SUFFIX:26656"
             # (jq -r '.body.memo' /$CHAIN_ID/validator$j/config/gentx/*) # Getting the address from the gentx should also work
             PERSISTENT_PEERS="$PERSISTENT_PEERS,$ADDRESS"
         fi
@@ -189,7 +193,7 @@ done
 
 # poll for chain start
 set +e
-until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$FIRST_VAL_ID:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
+until $BIN query block --node "tcp://$CHAIN_IP_PREFIX.$FIRST_VAL_IP_SUFFIX:26658" | grep -q -v '{"block_id":{"hash":"","parts":{"total":0,"hash":""}},"block":null}'; do sleep 0.3 ; done
 set -e
 
 echo "done!!!!!!!!"
