@@ -106,7 +106,7 @@ func (am AppModule) OnChanOpenAck(
 	counterpartyChannelID string,
 	counterpartyMetadata string,
 ) error {
-	// ensure provider channel has already been created
+	// ensure provider channel has not already been created
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok {
 		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
 			"provider channel: %s already established", providerChannel)

@@ -108,7 +108,6 @@ func (suite *ConsumerKeeperTestSuite) TestConsumerGenesis() {
 func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 	var (
 		channel *channeltypes.Channel
-		// chanCap *capabilitytypes.Capability
 	)
 
 	testCases := []struct {
@@ -239,77 +238,92 @@ func (suite *ConsumerTestSuite) TestOnChanOpenTry() {
 }
 
 func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
-	channelID := "channel-1"
-	counterChannelID := "channel-2"
+
+	var (
+		channelID        string
+		counterChannelID string
+		metadataBz       []byte
+		metadata         providertypes.HandshakeMetadata
+		err              error
+	)
 	testCases := []struct {
 		name     string
-		setup    func(suite *ConsumerTestSuite)
-		expError bool
+		malleate func()
+		expPass  bool
 	}{
 		{
-			name: "success",
-			setup: func(suite *ConsumerTestSuite) {
-				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
-					channeltypes.NewChannel(
-						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
-						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
-				)
-				suite.path.EndpointA.ChannelID = channelID
-			},
-			expError: false,
+			"success", func() {}, true,
 		},
 		{
-			name: "invalid: provider channel already established",
-			setup: func(suite *ConsumerTestSuite) {
+			"invalid: provider channel already established",
+			func() {
 				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetProviderChannel(suite.ctx, "channel-2")
-				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
-					channeltypes.NewChannel(
-						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
-						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
-				)
-				suite.path.EndpointA.ChannelID = channelID
-			},
-			expError: true,
+			}, false,
 		},
 		{
-			name: "invalid: mismatched versions",
-			setup: func(suite *ConsumerTestSuite) {
-				// Set INIT channel on consumer chain
-				suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(suite.ctx, ccv.ConsumerPortID, channelID,
-					channeltypes.NewChannel(
-						channeltypes.INIT, channeltypes.ORDERED, channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
-						[]string{suite.path.EndpointA.ConnectionID}, suite.path.EndpointA.ChannelConfig.Version),
-				)
-				suite.path.EndpointA.ChannelID = channelID
-				// set provider version to invalid version
-				suite.path.EndpointB.ChannelConfig.Version = "invalidVersion"
-			},
-			expError: true,
+			"invalid: cannot unmarshal ack metadata ",
+			func() {
+				metadataBz = []byte{78, 89, 20}
+			}, false,
+		},
+		{
+			"invalid: mismatched versions",
+			func() {
+				// Set counter party version to an invalid value, passed as marshaled metadata
+				metadata.Version = "invalidVersion"
+				metadataBz, err = (&metadata).Marshal()
+				suite.Require().NoError(err)
+			}, false,
 		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
 		suite.Run(fmt.Sprintf("Case: %s", tc.name), func() {
-			suite.SetupTest() // reset suite
-			tc.setup(suite)
+			suite.SetupTest() // reset
+			channelID = "channel-1"
+			counterChannelID = "channel-2"
+			suite.path.EndpointA.ChannelID = channelID
 
-			consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
+			// Set INIT channel on consumer chain
+			suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(
+				suite.ctx,
+				ccv.ConsumerPortID,
+				channelID,
+				channeltypes.NewChannel(
+					channeltypes.INIT,
+					channeltypes.ORDERED,
+					channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
+					[]string{suite.path.EndpointA.ConnectionID},
+					suite.path.EndpointA.ChannelConfig.Version,
+				),
+			)
 
-			md := providertypes.HandshakeMetadata{
+			consumerModule := consumer.NewAppModule(
+				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
+
+			metadata := providertypes.HandshakeMetadata{
 				ProviderFeePoolAddr: "", // dummy address used
 				Version:             suite.path.EndpointB.ChannelConfig.Version,
 			}
-			mdBz, err := (&md).Marshal()
+
+			metadataBz, err = (&metadata).Marshal()
 			suite.Require().NoError(err)
 
-			err = consumerModule.OnChanOpenAck(suite.ctx, ccv.ConsumerPortID, channelID, counterChannelID, string(mdBz))
-			if tc.expError {
-				suite.Require().Error(err)
-			} else {
+			tc.malleate() // Explicitly change fields already defined
+
+			err = consumerModule.OnChanOpenAck(
+				suite.ctx,
+				ccv.ConsumerPortID,
+				channelID,
+				counterChannelID,
+				string(metadataBz),
+			)
+
+			if tc.expPass {
 				suite.Require().NoError(err)
+			} else {
+				suite.Require().Error(err)
 			}
 		})
 	}
