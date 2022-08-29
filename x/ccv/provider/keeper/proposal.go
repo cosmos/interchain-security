@@ -24,7 +24,7 @@ import (
 // as a pending client, and set once spawn time has passed.
 func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateConsumerChainProposal) error {
 	if !ctx.BlockTime().Before(p.SpawnTime) {
-		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, p.LockUnbondingOnTimeout)
+		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, false)
 	}
 
 	err := k.SetPendingCreateProposal(ctx, p)
@@ -254,7 +254,7 @@ func (k Keeper) IteratePendingCreateProposal(ctx sdk.Context) {
 	propsToExecute := k.CreateProposalsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
-		err := k.CreateConsumerClient(ctx, prop.ChainId, prop.InitialHeight, prop.LockUnbondingOnTimeout)
+		err := k.CreateConsumerClient(ctx, prop.ChainId, prop.InitialHeight, false)
 		if err != nil {
 			panic(fmt.Errorf("consumer client could not be created: %w", err))
 		}
