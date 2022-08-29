@@ -18,8 +18,9 @@ import (
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+
+	// consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	// providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -103,8 +104,8 @@ func (suite *ProviderTestSuite) SetupTest() {
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
 	// - channel config
-	suite.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
-	suite.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
+	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
+	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
 	suite.path.EndpointA.ChannelConfig.Version = types.Version
 	suite.path.EndpointB.ChannelConfig.Version = types.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
@@ -256,8 +257,8 @@ func (suite *ProviderKeeperTestSuite) SetupTest() {
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
 	// - channel config
-	suite.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
-	suite.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
+	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
+	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
 	suite.path.EndpointA.ChannelConfig.Version = types.Version
 	suite.path.EndpointB.ChannelConfig.Version = types.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
@@ -350,8 +351,8 @@ func (suite *ConsumerTestSuite) SetupTest() {
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
 	// - channel config
-	suite.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
-	suite.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
+	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
+	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
 	suite.path.EndpointA.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
@@ -452,8 +453,8 @@ func (suite *ConsumerKeeperTestSuite) SetupTest() {
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
 	// - channel config
-	suite.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
-	suite.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
+	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
+	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
 	suite.path.EndpointA.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
