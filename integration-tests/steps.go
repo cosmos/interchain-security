@@ -347,7 +347,7 @@ var happyPathSteps = []Step{
 		},
 	},
 
-	// TODO: Still need to test provider invoked downtime
+	// TODO: Bring the node back up, then test provider invoked downtime
 
 	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.
 }
