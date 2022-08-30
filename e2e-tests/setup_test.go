@@ -19,8 +19,6 @@ import (
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 
-	"github.com/cosmos/interchain-security/x/ccv/types"
-
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/stretchr/testify/suite"
@@ -104,8 +102,8 @@ func (suite *ProviderTestSuite) SetupTest() {
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
 	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
-	suite.path.EndpointA.ChannelConfig.Version = types.Version
-	suite.path.EndpointB.ChannelConfig.Version = types.Version
+	suite.path.EndpointA.ChannelConfig.Version = ccv.Version
+	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 
@@ -257,8 +255,8 @@ func (suite *ProviderKeeperTestSuite) SetupTest() {
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
 	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
-	suite.path.EndpointA.ChannelConfig.Version = types.Version
-	suite.path.EndpointB.ChannelConfig.Version = types.Version
+	suite.path.EndpointA.ChannelConfig.Version = ccv.Version
+	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 

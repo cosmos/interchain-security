@@ -8,7 +8,6 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
@@ -50,7 +49,7 @@ func (suite *ConsumerKeeperTestSuite) TestUnbondMaturePackets() {
 	pk2, err := cryptocodec.ToTmProtoPublicKey(pk)
 	suite.Require().NoError(err)
 
-	pd := types.NewValidatorSetChangePacketData(
+	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{
 			{
 				PubKey: pk1,
