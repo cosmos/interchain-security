@@ -12,6 +12,7 @@ import (
 	clienttmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
@@ -529,10 +530,9 @@ func (suite *ConsumerKeeperTestSuite) TestVerifyProviderChain() {
 // https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-cotry1
 func (suite *ProviderTestSuite) TestOnChanOpenTry() {
 	var (
-		channel *channeltypes.Channel
-		// chanCap             *capabilitytypes.Capability
-		// counterparty        channeltypes.Counterparty
-		// counterpartyVersion string
+		channel             *channeltypes.Channel
+		counterpartyVersion string
+		providerKeeper      *providerkeeper.Keeper
 	)
 
 	testCases := []struct {
@@ -542,6 +542,44 @@ func (suite *ProviderTestSuite) TestOnChanOpenTry() {
 	}{
 		{
 			"success", func() {}, true,
+		},
+		{
+			"invalid order", func() {
+				channel.Ordering = channeltypes.UNORDERED
+			}, false,
+		},
+		{
+			"invalid port ID", func() {
+				suite.path.EndpointA.ChannelConfig.PortID = ibctesting.MockPort
+			}, false,
+		},
+		{
+			"invalid counter party port ID", func() {
+				channel.Counterparty.PortId = ibctesting.MockPort
+			}, false,
+		},
+		{
+			"invalid counter party version", func() {
+				counterpartyVersion = "invalidVersion"
+			}, false,
+		},
+		{
+			"unexpected client ID mapped to chain ID", func() {
+				providerKeeper.SetConsumerClientId(
+					suite.providerCtx(),
+					suite.path.EndpointA.Chain.ChainID,
+					"invalidClientID",
+				)
+			}, false,
+		},
+		{
+			"other CCV channel exists for this consumer chain", func() {
+				providerKeeper.SetChainToChannel(
+					suite.providerCtx(),
+					suite.path.EndpointA.Chain.ChainID,
+					"some existing channel ID",
+				)
+			}, false,
 		},
 	}
 
@@ -563,16 +601,17 @@ func (suite *ProviderTestSuite) TestOnChanOpenTry() {
 				suite.path.EndpointB.ChannelConfig.PortID,
 				suite.path.EndpointA.ChannelID,
 			)
+			counterpartyVersion = ccv.Version
 
 			channel = &channeltypes.Channel{
 				State:          channeltypes.INIT,
 				Ordering:       channeltypes.ORDERED,
 				Counterparty:   counterparty,
 				ConnectionHops: []string{suite.path.EndpointA.ConnectionID},
-				Version:        ccv.Version,
+				Version:        counterpartyVersion,
 			}
 
-			providerKeeper := &suite.providerChain.App.(*appProvider.App).ProviderKeeper
+			providerKeeper = &suite.providerChain.App.(*appProvider.App).ProviderKeeper
 			providerModule := provider.NewAppModule(providerKeeper)
 			chanCap, err := suite.providerChain.App.GetScopedIBCKeeper().NewCapability(
 				suite.providerCtx(),
@@ -616,7 +655,7 @@ func (suite *ProviderTestSuite) TestOnChanOpenTry() {
 				suite.path.EndpointA.ChannelID,
 				chanCap,
 				channel.Counterparty,
-				channel.GetVersion(),
+				counterpartyVersion,
 			)
 
 			if tc.expPass {
