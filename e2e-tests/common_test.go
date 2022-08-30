@@ -109,6 +109,21 @@ func undelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAdd
 	return valsetUpdateID
 }
 
+func redelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
+	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec) {
+	// delegate bondAmt tokens on provider to change validator powers
+	completionTime, err := s.providerChain.App.(*appProvider.App).StakingKeeper.BeginRedelegation(
+		s.providerCtx(),
+		delAddr,
+		valSrcAddr,
+		ValDstAddr,
+		sharesAmount,
+	)
+	s.Require().NoError(err)
+	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
+	s.Require().Equal(s.providerCtx().BlockHeader().Time.Add(providerUnbondingPeriod), completionTime)
+}
+
 // relayAllCommittedPackets relays all committed packets from `srcChain` on `path`
 func relayAllCommittedPackets(
 	s *ProviderTestSuite,
