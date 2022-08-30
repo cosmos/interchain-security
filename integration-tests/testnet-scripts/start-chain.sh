@@ -46,24 +46,29 @@ for i in $(seq 0 $(($NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
     VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$i].ip_suffix")
-    VETH_NAME="$CHAIN_ID-$VAL_ID"
+    NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
     IP_ADDR="$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX/24" 
 
-    # TODO: Add comments
-    ip netns add $VETH_NAME
-    ip link add $VETH_NAME-in type veth peer name $VETH_NAME-out
-    ip link set $VETH_NAME-in netns $VETH_NAME
-    ip netns exec $VETH_NAME ip addr add $IP_ADDR dev $VETH_NAME-in
+    # Create network namespace 
+    ip netns add $NET_NAMESPACE_NAME
+    # Create virtual ethernet device to connect with bridge 
+    ip link add $NET_NAMESPACE_NAME-in type veth peer name $NET_NAMESPACE_NAME-out
+    # Connect virtual ethernet device to namespace
+    ip link set $NET_NAMESPACE_NAME-in netns $NET_NAMESPACE_NAME
+    # Assign ip address to namespace
+    ip netns exec $NET_NAMESPACE_NAME ip addr add $IP_ADDR dev $NET_NAMESPACE_NAME-in
 done
 
+# Create virtual bridge device (acts like a switch)
 ip link add name virtual-bridge type bridge || true # why true here?
 
 # TODO: I think this can be moved into upper for loop
 for i in $(seq 0 $(($NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
-    VETH_NAME="$CHAIN_ID-$VAL_ID"
-    ip link set $VETH_NAME-out master virtual-bridge
+    NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
+    # Assign each output end of virtual ethernet deice to the bridge
+    ip link set $NET_NAMESPACE_NAME-out master virtual-bridge
 done
 
 ip link set virtual-bridge up
@@ -71,13 +76,16 @@ ip link set virtual-bridge up
 for i in $(seq 0 $(($NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
-    VETH_NAME="$CHAIN_ID-$VAL_ID"
+    NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
 
-    ip link set $VETH_NAME-out up
-    ip netns exec $VETH_NAME ip link set dev $VETH_NAME-in up
-    ip netns exec $VETH_NAME ip link set dev lo up
+    # Enable in/out interfaces to the namespace 
+    ip link set $NET_NAMESPACE_NAME-out up
+    ip netns exec $NET_NAMESPACE_NAME ip link set dev $NET_NAMESPACE_NAME-in up
+    # Enable loopback device
+    ip netns exec $NET_NAMESPACE_NAME ip link set dev lo up
 done
 
+# Assign IP to bridge to route between default network namespace and bridge 
 BRIDGE_IP="$CHAIN_IP_PREFIX.254/24"
 ip addr add $BRIDGE_IP dev virtual-bridge
 
@@ -197,7 +205,7 @@ for i in $(seq 0 $(($NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
     VAL_IP_SUFFIX=$(echo "$VALIDATORS" | jq -r ".[$i].ip_suffix")
-    VETH_NAME="$CHAIN_ID-$VAL_ID"
+    NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
 
     GAIA_HOME="--home /$CHAIN_ID/validator$VAL_ID"
     RPC_ADDRESS="--rpc.laddr tcp://$CHAIN_IP_PREFIX.$VAL_IP_SUFFIX:26658"
@@ -225,7 +233,7 @@ do
     PERSISTENT_PEERS="--p2p.persistent_peers ${PERSISTENT_PEERS:1}"
 
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
-    ip netns exec $VETH_NAME $BIN $ARGS start &> /$CHAIN_ID/validator$VAL_ID/logs &
+    ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/validator$VAL_ID/logs &
 done
 
 
