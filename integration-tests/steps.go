@@ -352,6 +352,7 @@ var happyPathSteps = []Step{
 			bringUp:  validatorID("bob"),
 		},
 		state: State{
+			// No unjailing tx sent yet, bob will still have no voting power
 			chainID("provi"): ChainState{
 				ValPowers: &map[validatorID]uint{
 					validatorID("alice"): 510,
@@ -368,7 +369,9 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
-	// TODO: Bring the node back up, then test provider invoked downtime
+	// TODO: Test unjailing functionality once that is implemented
+
+	// TODO: Test provider initiated downtime
 
 	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.
 }
