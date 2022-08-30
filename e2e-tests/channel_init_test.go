@@ -242,6 +242,8 @@ func (suite *ConsumerTestSuite) TestOnChanOpenTry() {
 	suite.Require().Error(err, "OnChanOpenTry callback must error on consumer chain")
 }
 
+// TestOnChanOpenAck tests the consumer module's OnChanOpenAck implementation against the spec:
+// https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-ccf-coack1
 func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 
 	var (
