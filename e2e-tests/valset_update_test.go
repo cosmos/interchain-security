@@ -145,9 +145,6 @@ func (s *ProviderTestSuite) TestRedelegationNoConsumer() {
 	val0PowerBefore := stakingKeeper.GetLastValidatorPower(s.providerCtx(), val0Addr)
 	_, shares, _ := delegate(s, delAddr, bondAmt)
 
-	// TODO: Make this more clear
-	s.Require().Equal(bondAmt.Int64()/1000000, shares.RoundInt().Int64())
-
 	// Assert expected amount was bonded to validator 0
 	val0TokensAfter := stakingKeeper.Validator(s.providerCtx(), val0Addr).GetBondedTokens()
 	s.Require().Equal(val0TokensAfter.Sub(val0TokensBefore), bondAmt)
@@ -192,3 +189,5 @@ func (s *ProviderTestSuite) TestRedelegationNoConsumer() {
 	s.Require().Greater(val1PowerAfter, val1PowerBefore)
 	s.Require().Equal(val0PowerBefore, stakingKeeper.GetLastValidatorPower(s.providerCtx(), val0Addr))
 }
+
+// TODO: e2e test with consumer

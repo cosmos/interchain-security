@@ -302,8 +302,23 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
-
-	// TODO: relay to consumer !!
+	{
+		action: RelayPacketsAction{
+			chain:   chainID("provi"),
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					// Now power changes are seen by consumer
+					validatorID("alice"): 500,
+					validatorID("bob"):   489,
+					validatorID("carol"): 511,
+				},
+			},
+		},
+	},
 
 	// TODO: Test full unbonding functionality, tracked as: https://github.com/cosmos/interchain-security/issues/311
 }
