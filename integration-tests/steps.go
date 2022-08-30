@@ -279,14 +279,14 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: ValidatorDowntimeAction{
+		action: SlashAction{
 			downOn: chainID("consu"),
 			// TODO: First validator cannot be brought down until this issue is resolved:
 			// https://github.com/cosmos/interchain-security/issues/263
 			toDown: validatorID("bob"),
 		},
 		state: State{
-			// validator powers not affected on either chain yet
+			// validator should be slashed on consumer, powers not affected on either chain yet
 			chainID("provi"): ChainState{
 				ValPowers: &map[validatorID]uint{
 					validatorID("alice"): 510,
@@ -313,7 +313,7 @@ var happyPathSteps = []Step{
 			chainID("provi"): ChainState{
 				ValPowers: &map[validatorID]uint{
 					validatorID("alice"): 510,
-					// Downtime slash processed by provider
+					// Downtime slash and corresponding voting power change are processed by provider
 					validatorID("bob"):   0,
 					validatorID("carol"): 500,
 				},
@@ -347,16 +347,17 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RestoreValidatorUptimeAction{
-			isDownOn: chainID("consu"),
-			bringUp:  validatorID("bob"),
+		action: RestoreVotingPowerAction{
+			restoreOn: chainID("consu"),
+			provider:  chainID("provi"),
+			toRestore: validatorID("bob"),
 		},
 		state: State{
-			// No unjailing tx sent yet, bob will still have no voting power
 			chainID("provi"): ChainState{
 				ValPowers: &map[validatorID]uint{
 					validatorID("alice"): 510,
-					validatorID("bob"):   0,
+					// 1% of bob's stake should be slashed as set in config.go
+					validatorID("bob"):   495,
 					validatorID("carol"): 500,
 				},
 			},
@@ -369,7 +370,22 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
-	// TODO: Test unjailing functionality once that is implemented
+	{
+		action: RelayPacketsAction{
+			chain:   chainID("provi"),
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					validatorID("bob"):   495,
+					validatorID("carol"): 500,
+				},
+			},
+		},
+	},
 
 	// TODO: Test provider initiated downtime
 

@@ -54,10 +54,10 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 		tr.delegateTokens(action, verbose)
 	case UnbondTokensAction:
 		tr.unbondTokens(action, verbose)
-	case ValidatorDowntimeAction:
-		tr.InvokeValidatorDowntime(action, verbose)
-	case RestoreValidatorUptimeAction:
-		tr.RestoreValidatorUptime(action, verbose)
+	case SlashAction:
+		tr.InvokeSlash(action, verbose)
+	case RestoreVotingPowerAction:
+		tr.RestoreVotingPower(action, verbose)
 	default:
 		log.Fatalf(fmt.Sprintf(`unknown action: %#v`, action))
 	}

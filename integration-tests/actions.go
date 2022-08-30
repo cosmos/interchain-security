@@ -617,25 +617,28 @@ func (tr TestRun) unbondTokens(
 	}
 }
 
-type ValidatorDowntimeAction struct {
+type SlashAction struct {
 	downOn chainID
 	toDown validatorID
 }
 
-func (tr TestRun) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose bool) {
+func (tr TestRun) InvokeSlash(action SlashAction, verbose bool) {
 	tr.ToggleValidatorDowntime(action.downOn, action.toDown, true, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
 	tr.waitBlocks(action.downOn, 10, time.Minute)
 }
 
-type RestoreValidatorUptimeAction struct {
-	isDownOn chainID
-	bringUp  validatorID
+type RestoreVotingPowerAction struct {
+	restoreOn chainID
+	provider  chainID
+	toRestore validatorID
 }
 
-func (tr TestRun) RestoreValidatorUptime(action RestoreValidatorUptimeAction, verbose bool) {
-	tr.ToggleValidatorDowntime(action.isDownOn, action.bringUp, false, verbose)
-	// TODO: Recovery logic
+func (tr TestRun) RestoreVotingPower(action RestoreVotingPowerAction, verbose bool) {
+	tr.ToggleValidatorDowntime(action.restoreOn, action.toRestore, false, verbose)
+	// Wait the downtime_jail_duration set in config.go
+	time.Sleep(61 * time.Second)
+	tr.UnjailValidator(action.provider, action.toRestore, verbose)
 }
 
 // Toggles validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
@@ -662,6 +665,31 @@ func (tr TestRun) ToggleValidatorDowntime(chain chainID, validator validatorID, 
 
 	if verbose {
 		fmt.Println("toggle downtime cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
+// Sends an unjail transaction to the provider chain
+func (tr TestRun) UnjailValidator(provider chainID, validator validatorID, verbose bool) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[provider].binaryName,
+		"tx", "slashing", "unjail",
+		// tr.validatorConfigs[validator].valconsAddress,
+		// Validator is sender here
+		`--from`, `validator`+fmt.Sprint(validator),
+		`--chain-id`, string(tr.chainConfigs[provider].chainId),
+		`--home`, tr.getValidatorHome(provider, validator),
+		`--node`, tr.getValidatorNode(provider, validator),
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	)
+	if verbose {
+		fmt.Println("unjail cmd:", cmd.String())
 	}
 
 	bz, err := cmd.CombinedOutput()
