@@ -629,13 +629,13 @@ func (tr TestRun) InvokeSlash(action SlashAction, verbose bool) {
 }
 
 type RestoreVotingPowerAction struct {
-	restoreOn chainID
+	bringUpOn chainID
 	provider  chainID
 	toRestore validatorID
 }
 
 func (tr TestRun) RestoreVotingPower(action RestoreVotingPowerAction, verbose bool) {
-	tr.ToggleValidatorDowntime(action.restoreOn, action.toRestore, false, verbose)
+	tr.ToggleValidatorDowntime(action.bringUpOn, action.toRestore, false, verbose)
 	// Wait the downtime_jail_duration set in config.go
 	time.Sleep(61 * time.Second)
 	tr.UnjailValidator(action.provider, action.toRestore, verbose)

@@ -348,7 +348,7 @@ var happyPathSteps = []Step{
 	},
 	{
 		action: RestoreVotingPowerAction{
-			restoreOn: chainID("consu"),
+			bringUpOn: chainID("consu"),
 			provider:  chainID("provi"),
 			toRestore: validatorID("bob"),
 		},
@@ -386,8 +386,83 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
-
-	// TODO: Test provider initiated downtime
+	{
+		action: SlashAction{
+			downOn: chainID("provi"),
+			toDown: validatorID("carol"),
+		},
+		state: State{
+			chainID("provi"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					validatorID("bob"):   495,
+					validatorID("carol"): 0,
+				},
+			},
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					validatorID("bob"):   495,
+					validatorID("carol"): 500,
+				},
+			},
+		},
+	},
+	{
+		action: RelayPacketsAction{
+			chain:   chainID("provi"),
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					validatorID("bob"):   495,
+					validatorID("carol"): 0,
+				},
+			},
+		},
+	},
+	{
+		action: RestoreVotingPowerAction{
+			bringUpOn: chainID("provi"),
+			provider:  chainID("provi"),
+			toRestore: validatorID("carol"),
+		},
+		state: State{
+			chainID("provi"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					validatorID("bob"):   495,
+					validatorID("carol"): 495,
+				},
+			},
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					validatorID("bob"):   495,
+					validatorID("carol"): 0,
+				},
+			},
+		},
+	},
+	{
+		action: RelayPacketsAction{
+			chain:   chainID("provi"),
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					validatorID("bob"):   495,
+					validatorID("carol"): 495,
+				},
+			},
+		},
+	},
 
 	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.
 }
