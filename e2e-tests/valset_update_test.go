@@ -128,6 +128,7 @@ func (suite *ConsumerKeeperTestSuite) TestUnbondMaturePackets() {
 	suite.Require().Equal(uint64(2), commitments[1].Sequence, "did not send VSCMatured packet for VSC packet 2")
 }
 
+// TestRedelegationNoConsumer tests a redelegate transaction submitted on a provider chain with no consumers
 func (s *ProviderTestSuite) TestRedelegationNoConsumer() {
 	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
 	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
@@ -190,4 +191,7 @@ func (s *ProviderTestSuite) TestRedelegationNoConsumer() {
 	s.Require().Equal(val0PowerBefore, stakingKeeper.GetLastValidatorPower(s.providerCtx(), val0Addr))
 }
 
-// TODO: e2e test with consumer
+// TestRedelegationWithConsumer tests a redelegate transaction submitted on a provider chain a consumer
+func (s *ProviderTestSuite) TestRedelegationWithConsumer() {
+	// TODO
+}
