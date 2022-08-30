@@ -42,6 +42,9 @@ NODES=$(echo "$VALIDATORS" | jq '. | length')
 
 # SETUP NETWORK NAMESPACES, see: https://adil.medium.com/container-networking-under-the-hood-network-namespaces-6b2b8fe8dc2a
 
+# Create virtual bridge device (acts like a switch)
+ip link add name virtual-bridge type bridge || true 
+
 for i in $(seq 0 $(($NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
@@ -53,24 +56,15 @@ do
     ip netns add $NET_NAMESPACE_NAME
     # Create virtual ethernet device to connect with bridge 
     ip link add $NET_NAMESPACE_NAME-in type veth peer name $NET_NAMESPACE_NAME-out
-    # Connect virtual ethernet device to namespace
+    # Connect input end of virtual ethernet device to namespace
     ip link set $NET_NAMESPACE_NAME-in netns $NET_NAMESPACE_NAME
     # Assign ip address to namespace
     ip netns exec $NET_NAMESPACE_NAME ip addr add $IP_ADDR dev $NET_NAMESPACE_NAME-in
-done
-
-# Create virtual bridge device (acts like a switch)
-ip link add name virtual-bridge type bridge || true # why true here?
-
-# TODO: I think this can be moved into upper for loop
-for i in $(seq 0 $(($NODES - 1)));
-do
-    VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
-    NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
-    # Assign each output end of virtual ethernet deice to the bridge
+    # Connect output end of virtual ethernet device to bridge
     ip link set $NET_NAMESPACE_NAME-out master virtual-bridge
 done
 
+# Enable bridge interface
 ip link set virtual-bridge up
 
 for i in $(seq 0 $(($NODES - 1)));
@@ -78,14 +72,14 @@ do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
     NET_NAMESPACE_NAME="$CHAIN_ID-$VAL_ID"
 
-    # Enable in/out interfaces to the namespace 
+    # Enable in/out interfaces for the namespace 
     ip link set $NET_NAMESPACE_NAME-out up
     ip netns exec $NET_NAMESPACE_NAME ip link set dev $NET_NAMESPACE_NAME-in up
     # Enable loopback device
     ip netns exec $NET_NAMESPACE_NAME ip link set dev lo up
 done
 
-# Assign IP to bridge to route between default network namespace and bridge 
+# Assign IP for bridge, to route between default network namespace and bridge 
 BRIDGE_IP="$CHAIN_IP_PREFIX.254/24"
 ip addr add $BRIDGE_IP dev virtual-bridge
 
