@@ -678,7 +678,6 @@ func (tr TestRun) UnjailValidator(provider chainID, validator validatorID, verbo
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[provider].binaryName,
 		"tx", "slashing", "unjail",
-		// tr.validatorConfigs[validator].valconsAddress,
 		// Validator is sender here
 		`--from`, `validator`+fmt.Sprint(validator),
 		`--chain-id`, string(tr.chainConfigs[provider].chainId),
