@@ -191,7 +191,7 @@ func (s *ProviderTestSuite) TestRedelegationNoConsumer() {
 	s.Require().Equal(val0PowerBefore, stakingKeeper.GetLastValidatorPower(s.providerCtx(), val0Addr))
 }
 
-// TestRedelegationWithConsumer tests a redelegate transaction submitted on a provider chain a consumer
+// TestRedelegationWithConsumer tests a redelegate transaction submitted on a provider chain with a consumer
 func (s *ProviderTestSuite) TestRedelegationWithConsumer() {
 	// TODO
 }
