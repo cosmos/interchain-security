@@ -616,3 +616,28 @@ func (tr TestRun) unbondTokens(
 		log.Fatal(err, "\n", string(bz))
 	}
 }
+
+type ValidatorDowntimeAction struct {
+	downOn chainID
+	toDown validatorID
+}
+
+// Simulates validator downtime by moving the home folder of the node, making it's binary panic
+// TODO: Downtime needs to be implemented more elegantly to allow validators to come back online
+func (tr TestRun) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose bool) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "mv",
+		"/"+string(action.downOn)+"/validator"+fmt.Sprint(action.toDown)+"/", "//")
+
+	if verbose {
+		fmt.Println("censor cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	// Wait appropriate amount of blocks
+	tr.waitBlocks(action.downOn, 10, 4*time.Minute) // TODO: do we need 11?
+}

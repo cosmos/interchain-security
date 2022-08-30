@@ -97,14 +97,22 @@ func DefaultTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 5,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\"",
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\" | " +
+					// Custom slashing parameters for testing validator downtime functionality
+					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\"",
 			},
 			chainID("consu"): {
 				chainId:        chainID("consu"),
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\"",
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
+					// Custom slashing parameters for testing validator downtime functionality
+					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\"",
 			},
 		},
 	}

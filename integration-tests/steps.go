@@ -240,12 +240,14 @@ var happyPathSteps = []Step{
 			chain:      chainID("provi"),
 			unbondFrom: validatorID("alice"),
 			sender:     validatorID("alice"),
-			amount:     11000000,
+			// Leave alice with majority stake so non-faulty validators will maintain more than
+			// 2/3 voting power during downtime tests below.
+			amount: 1000000,
 		},
 		state: State{
 			chainID("provi"): ChainState{
 				ValPowers: &map[validatorID]uint{
-					validatorID("alice"): 500,
+					validatorID("alice"): 510,
 					validatorID("bob"):   500,
 					validatorID("carol"): 500,
 				},
@@ -269,12 +271,83 @@ var happyPathSteps = []Step{
 		state: State{
 			chainID("consu"): ChainState{
 				ValPowers: &map[validatorID]uint{
-					validatorID("alice"): 500,
+					validatorID("alice"): 510,
 					validatorID("bob"):   500,
 					validatorID("carol"): 500,
 				},
 			},
 		},
 	},
+	{
+		action: ValidatorDowntimeAction{
+			downOn: chainID("consu"),
+			// TODO: First validator cannot be brought down until this issue is resolved:
+			// https://github.com/cosmos/interchain-security/issues/263
+			toDown: validatorID("bob"),
+		},
+		state: State{
+			// validator powers not affected on either chain yet
+			chainID("provi"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					validatorID("bob"):   500,
+					validatorID("carol"): 500,
+				},
+			},
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					validatorID("bob"):   500,
+					validatorID("carol"): 500,
+				},
+			},
+		},
+	},
+	{
+		action: RelayPacketsAction{
+			chain:   chainID("provi"),
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			chainID("provi"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					// Downtime slash processed by provider
+					validatorID("bob"):   0,
+					validatorID("carol"): 500,
+				},
+			},
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					validatorID("bob"):   500,
+					validatorID("carol"): 500,
+				},
+			},
+		},
+	},
+	// A block is incremented each action, hence why VSC is committed on provider,
+	// and can now be relayed as packet to consumer
+	{
+		action: RelayPacketsAction{
+			chain:   chainID("provi"),
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					// VSC now seen on consumer
+					validatorID("bob"):   0,
+					validatorID("carol"): 500,
+				},
+			},
+		},
+	},
+
+	// TODO: Still need to test provider invoked downtime
+
 	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.
 }
