@@ -34,5 +34,5 @@ docker build -t "$CONTAINER_NAME" .
 rm -rf ./cosmos-sdk/
 
 # Run new test container instance
-docker run --name "$INSTANCE_NAME" --cap-add=NET_ADMIN "$CONTAINER_NAME" /bin/bash /testnet-scripts/beacon.sh
+docker run --name "$INSTANCE_NAME" --cap-add=NET_ADMIN --privileged "$CONTAINER_NAME" /bin/bash /testnet-scripts/beacon.sh
 `

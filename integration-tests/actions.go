@@ -622,22 +622,50 @@ type ValidatorDowntimeAction struct {
 	toDown validatorID
 }
 
-// Simulates validator downtime by moving the home folder of the node, making it's binary panic
-// TODO: Downtime needs to be implemented more elegantly to allow validators to come back online
 func (tr TestRun) InvokeValidatorDowntime(action ValidatorDowntimeAction, verbose bool) {
+	tr.ToggleValidatorDowntime(action.downOn, action.toDown, true, verbose)
+	// Wait appropriate amount of blocks for validator to be slashed
+	tr.waitBlocks(action.downOn, 10, time.Minute)
+}
+
+type RestoreValidatorUptimeAction struct {
+	isDownOn chainID
+	bringUp  validatorID
+}
+
+func (tr TestRun) RestoreValidatorUptime(action RestoreValidatorUptimeAction, verbose bool) {
+	tr.ToggleValidatorDowntime(action.isDownOn, action.bringUp, false, verbose)
+	// TODO: Recovery logic
+}
+
+// Toggles validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
+func (tr TestRun) ToggleValidatorDowntime(chain chainID, validator validatorID, down bool, verbose bool) {
+
+	var lastArg string
+	if down {
+		lastArg = "down"
+	} else {
+		lastArg = "up"
+	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "mv",
-		"/"+string(action.downOn)+"/validator"+fmt.Sprint(action.toDown)+"/", "//")
+	cmd := exec.Command(
+		"docker",
+		"exec",
+		tr.containerConfig.instanceName,
+		"ip",
+		"link",
+		"set",
+		string(chain)+"-"+string(validator)+"-out",
+		lastArg,
+	)
 
 	if verbose {
-		fmt.Println("censor cmd:", cmd.String())
+		fmt.Println("toggle downtime cmd:", cmd.String())
 	}
 
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
-
-	// Wait appropriate amount of blocks
-	tr.waitBlocks(action.downOn, 10, 4*time.Minute) // TODO: do we need 11?
 }

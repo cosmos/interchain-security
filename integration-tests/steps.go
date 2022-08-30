@@ -346,7 +346,28 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
-
+	{
+		action: RestoreValidatorUptimeAction{
+			isDownOn: chainID("consu"),
+			bringUp:  validatorID("bob"),
+		},
+		state: State{
+			chainID("provi"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					validatorID("bob"):   0,
+					validatorID("carol"): 500,
+				},
+			},
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 510,
+					validatorID("bob"):   0,
+					validatorID("carol"): 500,
+				},
+			},
+		},
+	},
 	// TODO: Bring the node back up, then test provider invoked downtime
 
 	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.

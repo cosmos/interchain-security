@@ -56,6 +56,8 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 		tr.unbondTokens(action, verbose)
 	case ValidatorDowntimeAction:
 		tr.InvokeValidatorDowntime(action, verbose)
+	case RestoreValidatorUptimeAction:
+		tr.RestoreValidatorUptime(action, verbose)
 	default:
 		log.Fatalf(fmt.Sprintf(`unknown action: %#v`, action))
 	}
