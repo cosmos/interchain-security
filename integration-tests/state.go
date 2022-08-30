@@ -284,7 +284,7 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 		}
 	}
 
-	// Validator not in set, it's validator power is zero.
+	// Validator not in set, its validator power is zero.
 	return 0
 }
 
