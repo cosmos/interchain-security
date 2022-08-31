@@ -30,7 +30,7 @@ type CoreSuite struct {
 	// the current traces being executed
 	traces Traces
 
-	ibcsim simibc.Framework
+	ibcsim simibc.RelayedPath
 
 	// keep around validators for easy access
 	valAddresses []sdk.ValAddress
@@ -462,5 +462,5 @@ func (s *CoreSuite) SetupTest() {
 	s.valAddresses = valAddresses
 	s.offsetHeight = offsetHeight
 	s.offsetTimeUnix = offsetTimeUnix
-	s.ibcsim = simibc.MakeFramework(s.Suite.T(), path)
+	s.ibcsim = simibc.MakeRelayedPath(s.Suite.T(), path)
 }

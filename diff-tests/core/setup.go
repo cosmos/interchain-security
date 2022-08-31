@@ -56,7 +56,7 @@ type Builder struct {
 	// keep around validators for easy access
 	valAddresses []sdk.ValAddress
 
-	link        simibc.TwoChainLink
+	link        simibc.NetworkLink
 	coordinator *ibctesting.Coordinator
 	path        *ibctesting.Path
 	// chain -> array of headers for UpdateClient
@@ -486,7 +486,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 }
 
 func (b *Builder) createLink() {
-	b.link = simibc.MakeTwoChainLink()
+	b.link = simibc.MakeNetworkLink()
 	// init utility data structures
 	b.mustBeginBlock = map[string]bool{P: true, C: true}
 	b.clientHeaders = map[string][]*ibctmtypes.Header{}
