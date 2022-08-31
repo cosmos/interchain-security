@@ -108,19 +108,36 @@ func undelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAdd
 	return valsetUpdateID
 }
 
+// Executes a BeginRedelegation (unbonding and redelegation) operation
+// on the provider chain using delegations from delAddr
 func redelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
 	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec) {
+	ctx := s.providerCtx()
+
 	// delegate bondAmt tokens on provider to change validator powers
 	completionTime, err := s.providerChain.App.(*appProvider.App).StakingKeeper.BeginRedelegation(
-		s.providerCtx(),
+		ctx,
 		delAddr,
 		valSrcAddr,
 		ValDstAddr,
 		sharesAmount,
 	)
 	s.Require().NoError(err)
-	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
-	s.Require().Equal(s.providerCtx().BlockHeader().Time.Add(providerUnbondingPeriod), completionTime)
+
+	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
+	providerUnbondingPeriod := stakingKeeper.UnbondingTime(ctx)
+
+	valSrc, found := stakingKeeper.GetValidator(ctx, valSrcAddr)
+	s.Require().True(found)
+
+	// Completion time of redelegation operation will be after unbonding period if source val is bonded
+	if valSrc.IsBonded() {
+		s.Require().Equal(ctx.BlockHeader().Time.Add(providerUnbondingPeriod), completionTime)
+	}
+	// Completion time of redelegation operation will be at unbonding time of validator if it's unbonding
+	if valSrc.IsUnbonding() {
+		s.Require().Equal(valSrc.UnbondingTime, completionTime)
+	}
 }
 
 // relayAllCommittedPackets relays all committed packets from `srcChain` on `path`
