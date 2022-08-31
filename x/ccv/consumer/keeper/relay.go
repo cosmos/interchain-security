@@ -71,13 +71,13 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	return ack
 }
 
-// WriteVSCMaturedPackets will iterate over the persisted maturity times of previously
+// SendVSCMaturedPackets will iterate over the persisted maturity times of previously
 // received VSC packets in order, and write acknowledgements for all matured VSC packets.
 //
 // Note: Per spec, a VSC reaching maturity on a consumer chain means that all the unbonding
 // operations that resulted in validator updates included in that VSC have matured on
 // the consumer chain.
-func (k Keeper) WriteVSCMaturedPackets(ctx sdk.Context) error {
+func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 
 	// This method is a no-op if there is no established channel to the provider.
 	channelID, ok := k.GetProviderChannel(ctx)

@@ -34,8 +34,8 @@ func (s *ProviderTestSuite) TestPacketRoundtrip() {
 	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
 }
 
-// TestWriteVSCMaturedPackets tests the behavior of WriteVSCMaturedPackets and related state checks
-func (suite *ConsumerKeeperTestSuite) TestWriteVSCMaturedPackets() {
+// TestSendVSCMaturedPackets tests the behavior of SendVSCMaturedPackets and related state checks
+func (suite *ConsumerKeeperTestSuite) TestSendVSCMaturedPackets() {
 	// setup CCV channel
 	suite.SetupCCVChannel()
 
@@ -101,7 +101,7 @@ func (suite *ConsumerKeeperTestSuite) TestWriteVSCMaturedPackets() {
 	// increase time
 	incrementTimeBy(suite, unbondingPeriod-time.Hour)
 
-	err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.WriteVSCMaturedPackets(suite.consumerChain.GetContext())
+	err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SendVSCMaturedPackets(suite.consumerChain.GetContext())
 	suite.Require().NoError(err)
 
 	// ensure first two packets are unbonded and VSCMatured packets are sent
