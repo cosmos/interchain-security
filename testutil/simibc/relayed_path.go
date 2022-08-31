@@ -13,63 +13,68 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
-type Framework struct {
-	T             *testing.T
-	Link          TwoChainLink
+// RelayedPath augments ibctesting.Path, giving fine-grained control
+// over delivery of client updates, packet and ack delivery, and
+// chain time and height progression.
+type RelayedPath struct {
+	t             *testing.T
 	path          *ibctesting.Path
 	clientHeaders map[string][]*ibctmtypes.Header
+	Link          NetworkLink
 }
 
-func MakeFramework(t *testing.T, path *ibctesting.Path) Framework {
-	return Framework{
-		T:             t,
-		Link:          MakeTwoChainLink(),
+// MakeRelayedPath returns an initialized RelayedPath
+func MakeRelayedPath(t *testing.T, path *ibctesting.Path) RelayedPath {
+	return RelayedPath{
+		t:             t,
+		Link:          MakeNetworkLink(),
 		clientHeaders: map[string][]*ibctmtypes.Header{},
 		path:          path,
 	}
 }
 
-func (f *Framework) Chain(chainID string) *ibctesting.TestChain {
+// Chain returns the chain with ChainID <chainID>
+func (f *RelayedPath) Chain(chainID string) *ibctesting.TestChain {
 	if f.path.EndpointA.Chain.ChainID == chainID {
 		return f.path.EndpointA.Chain
 	}
 	if f.path.EndpointB.Chain.ChainID == chainID {
 		return f.path.EndpointB.Chain
 	}
-	f.T.Fatal("chain")
+	f.t.Fatal("chain")
 	return nil
 }
 
 // UpdateClient will update the chain light client with
 // each header added to the counterparty chain since the last
 // call.
-func (f *Framework) UpdateClient(chainID string) {
+func (f *RelayedPath) UpdateClient(chainID string) {
 	for _, header := range f.clientHeaders[f.other(chainID)] {
 		err := UpdateReceiverClient(f.endpoint(f.other(chainID)), f.endpoint(chainID), header)
 		if err != nil {
-			f.T.Fatal("UpdateClient")
+			f.t.Fatal("UpdateClient")
 		}
 	}
 	f.clientHeaders[f.other(chainID)] = []*ibctmtypes.Header{}
 }
 
 // DeliverPackets delivers <num> packets to chain
-func (f *Framework) DeliverPackets(chainID string, num int) {
+func (f *RelayedPath) DeliverPackets(chainID string, num int) {
 	for _, p := range f.Link.ConsumePackets(f.other(chainID), num) {
 		ack, err := TryRecvPacket(f.endpoint(f.other(chainID)), f.endpoint(chainID), p.Packet)
 		if err != nil {
-			f.T.Fatal("deliver")
+			f.t.Fatal("deliver")
 		}
 		f.Link.AddAck(chainID, ack, p.Packet)
 	}
 }
 
 // DeliverAcks delivers <num> acks to chain
-func (f *Framework) DeliverAcks(chainID string, num int) {
+func (f *RelayedPath) DeliverAcks(chainID string, num int) {
 	for _, ack := range f.Link.ConsumeAcks(f.other(chainID), num) {
 		err := TryRecvAck(f.endpoint(f.other(chainID)), f.endpoint(chainID), ack.Packet, ack.Ack)
 		if err != nil {
-			f.T.Fatal("deliverAcks")
+			f.t.Fatal("deliverAcks")
 		}
 	}
 }
@@ -77,7 +82,7 @@ func (f *Framework) DeliverAcks(chainID string, num int) {
 // EndAndBeginBlock calls EndBlock and commits block state, and then increments time and calls
 // BeginBlock, for the chain. preCommitCallback is called after EndBlock and before Commit,
 // allowing access to the sdk.Context are EndBlock.
-func (f *Framework) EndAndBeginBlock(chainID string, dt time.Duration, preCommitCallback func()) {
+func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preCommitCallback func()) {
 	c := f.Chain(chainID)
 
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
@@ -119,24 +124,24 @@ func (f *Framework) EndAndBeginBlock(chainID string, dt time.Duration, preCommit
 	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
 }
 
-func (f *Framework) other(chainID string) string {
+func (f *RelayedPath) other(chainID string) string {
 	if f.path.EndpointA.Chain.ChainID == chainID {
 		return f.path.EndpointB.Chain.ChainID
 	}
 	if f.path.EndpointB.Chain.ChainID == chainID {
 		return f.path.EndpointA.Chain.ChainID
 	}
-	f.T.Fatal("other")
+	f.t.Fatal("other")
 	return ""
 }
 
-func (f *Framework) endpoint(chainID string) *ibctesting.Endpoint {
+func (f *RelayedPath) endpoint(chainID string) *ibctesting.Endpoint {
 	if chainID == f.path.EndpointA.Chain.ChainID {
 		return f.path.EndpointA
 	}
 	if chainID == f.path.EndpointB.Chain.ChainID {
 		return f.path.EndpointB
 	}
-	f.T.Fatal("endpoint")
+	f.t.Fatal("endpoint")
 	return nil
 }
