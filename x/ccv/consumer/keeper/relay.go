@@ -18,6 +18,9 @@ import (
 // OnRecvVSCPacket sets the pending validator set changes that will be flushed to ABCI on Endblock
 // and set the maturity time for the packet. Once the maturity time elapses, a VSCMatured packet is
 // sent back to the provider chain.
+//
+// Note: CCV uses an ordered IBC channel, meaning VSC packet changes will be accumulated (and later
+// processed by ApplyCCValidatorChanges) s.t. more recent val power changes overwrite older ones.
 func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) exported.Acknowledgement {
 	// get the provider channel
 	providerChannel, found := k.GetProviderChannel(ctx)
@@ -71,7 +74,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // WriteVSCMaturedPackets will iterate over the persisted maturity times of previously
 // received VSC packets in order, and write acknowledgements for all matured VSC packets.
 //
-// Per spec, a VSC reaching maturity on a consumer chain means that all the unbonding
+// Note: Per spec, a VSC reaching maturity on a consumer chain means that all the unbonding
 // operations that resulted in validator updates included in that VSC have matured on
 // the consumer chain.
 func (k Keeper) WriteVSCMaturedPackets(ctx sdk.Context) error {
