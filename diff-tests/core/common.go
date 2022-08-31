@@ -16,9 +16,9 @@ const C = "consumer"
 // ValStates represents the total delegation
 // and bond status of a validator
 type ValStates struct {
-	Delegation           []int64
-	Tokens               []int64
-	ValidatorExtraTokens []int64
+	Delegation           []int
+	Tokens               []int
+	ValidatorExtraTokens []int
 	Status               []stakingtypes.BondStatus
 }
 
@@ -53,6 +53,7 @@ func init() {
 			"abbbababbbabaaaaabaaabbbbababaab",
 			"bbabaabaabbbbbabbbaababbbbabbbbb",
 			"aabbbabaaaaababbbabaabaabbbbbbba"},
+		NumValidators:          4,
 		MaxValidators:          2,
 		InitialDelegatorTokens: 10000000000000,
 		SlashDoublesign:        sdk.NewDec(0),
@@ -63,9 +64,9 @@ func init() {
 		MaxClockDrift:          time.Second * 10000,
 		BlockSeconds:           time.Second * 6,
 		ValStates: ValStates{
-			Delegation:           []int64{4000, 3000, 2000, 1000},
-			Tokens:               []int64{5000, 4000, 3000, 2000},
-			ValidatorExtraTokens: []int64{1000, 1000, 1000, 1000},
+			Delegation:           []int{4000, 3000, 2000, 1000},
+			Tokens:               []int{5000, 4000, 3000, 2000},
+			ValidatorExtraTokens: []int{1000, 1000, 1000, 1000},
 			Status: []stakingtypes.BondStatus{stakingtypes.Bonded, stakingtypes.Bonded,
 				stakingtypes.Unbonded, stakingtypes.Unbonded},
 		},

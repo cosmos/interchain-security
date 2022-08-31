@@ -326,7 +326,7 @@ func (s *CoreSuite) TestAssumptions() {
 
 	// Provider delegations are correct
 	for i := 0; i < len(initState.ValStates.Delegation); i++ {
-		E := initState.ValStates.Delegation[i]
+		E := int64(initState.ValStates.Delegation[i])
 		A := s.delegation(int64(i))
 		if E != A {
 			s.T().Fatal(FAIL_MSG)
@@ -335,7 +335,7 @@ func (s *CoreSuite) TestAssumptions() {
 
 	// Provider validator tokens are correct
 	for i := 0; i < len(initState.ValStates.Tokens); i++ {
-		E := initState.ValStates.Tokens[i]
+		E := int64(initState.ValStates.Tokens[i])
 		A := s.providerTokens(int64(i))
 		if E != A {
 			s.T().Fatal(FAIL_MSG)
@@ -392,7 +392,7 @@ func (s *CoreSuite) TestAssumptions() {
 		val, found := s.consumerKeeper().GetCCValidator(s.ctx(C), addr)
 		s.Require().Equal(expectFound, found)
 		if expectFound {
-			if expectPower != val.Power {
+			if int64(expectPower) != val.Power {
 				s.T().Fatal(FAIL_MSG)
 			}
 		}
@@ -432,7 +432,7 @@ func (s *CoreSuite) TestTraces() {
 				if r := recover(); r != nil {
 					fmt.Println(s.traces.Diagnostic())
 					fmt.Println(r)
-					panic("Panic occurred during difftest TestTraces")
+					panic("Panic occurred during TestTraces")
 				}
 			}()
 			// Record information about the trace, for debugging

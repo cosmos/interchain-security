@@ -135,9 +135,15 @@ func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingAp
 		acc := authtypes.NewBaseAccount(pk.PubKey().Address().Bytes(), pk.PubKey(), uint64(i), 0)
 
 		// Give enough funds for many delegations
-		// Extra units are to delegate to additional validators created later
+		// Extra units are to delegate to extra validators created later
 		// in order to bond them and still have INITIAL_DELEGATOR_TOKENS remaining
-		amt := uint64(b.initState.InitialDelegatorTokens + 3000) // TODO:!!  compute this
+		extra := 0
+		for j := 0; j < b.initState.NumValidators; j++ {
+			if b.initState.ValStates.Status[j] != stakingtypes.Bonded {
+				extra += b.initState.ValStates.Delegation[j]
+			}
+		}
+		amt := uint64(b.initState.InitialDelegatorTokens + extra)
 
 		bal := banktypes.Balance{
 			Address: acc.GetAddress().String(),
@@ -170,13 +176,13 @@ func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingAp
 		delegation := b.initState.ValStates.Delegation[i]
 		extra := b.initState.ValStates.ValidatorExtraTokens[i]
 
-		tokens := sdk.NewInt(delegation + extra)
+		tokens := sdk.NewInt(int64(delegation + extra))
 		b.suite.Require().Equal(status, stakingtypes.Bonded, "All genesis validators should be bonded")
 		sumBonded = sumBonded.Add(tokens)
 		// delegator account receives delShares shares
-		delShares := sdk.NewDec(delegation)
+		delShares := sdk.NewDec(int64(delegation))
 		// validator has additional sumShares due to extra units
-		sumShares := sdk.NewDec(delegation + extra)
+		sumShares := sdk.NewDec(int64(delegation + extra))
 
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
 		require.NoError(b.suite.T(), err)
@@ -323,7 +329,7 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 		signers[pubKey.Address().String()] = privVal
 
 		// Save validator with power
-		validators = append(validators, tmtypes.NewValidator(pubKey, power))
+		validators = append(validators, tmtypes.NewValidator(pubKey, int64(power)))
 	}
 
 	return tmtypes.NewValidatorSet(validators), signers, addresses
@@ -440,8 +446,8 @@ func (b *Builder) addExtraValidators() {
 		if b.initState.ValStates.Status[i] == stakingtypes.Unbonded {
 			del := b.initState.ValStates.Delegation[i]
 			extra := b.initState.ValStates.ValidatorExtraTokens[i]
-			b.delegate(0, b.validator(int64(i)), del)
-			b.delegate(1, b.validator(int64(i)), extra)
+			b.delegate(0, b.validator(int64(i)), int64(del))
+			b.delegate(1, b.validator(int64(i)), int64(extra))
 		}
 	}
 }
@@ -648,9 +654,7 @@ func (b *Builder) endBlock(chainID string) {
 	// Commit packets emmitted up to this point
 	b.link.Commit(chainID)
 
-	// TODO:! unhardcode
-	dt := 6
-	newT := b.coordinator.CurrentTime.Add(time.Second * time.Duration(dt)).UTC()
+	newT := b.coordinator.CurrentTime.Add(b.initState.BlockSeconds).UTC()
 
 	// increment the current header
 	c.CurrentHeader = tmproto.Header{
@@ -717,7 +721,7 @@ func (b *Builder) build() {
 		b.idempotentBeginBlock(C)
 		b.endBlock(b.chainID(C))
 		b.mustBeginBlock = map[string]bool{P: true, C: true}
-		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(6)).UTC()
+		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockSeconds).UTC()
 	}
 
 	b.idempotentBeginBlock(P)
@@ -733,7 +737,7 @@ func (b *Builder) build() {
 		b.deliverAcks(b.chainID(C))
 		b.endBlock(b.chainID(C))
 		b.mustBeginBlock = map[string]bool{P: true, C: true}
-		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(6)).UTC()
+		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockSeconds).UTC()
 	}
 
 	b.idempotentBeginBlock(P)
@@ -749,9 +753,9 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	*ibctesting.Path, []sdk.ValAddress, int64, int64) {
 	b := Builder{initState: initState, suite: suite}
 	b.build()
-
+	// Height of the last committed block (current header is not committed)
 	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
 	// Time of the last committed block (current header is not committed)
-	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(time.Second * (-6)).Unix()
+	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(-b.initState.BlockSeconds).Unix()
 	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
 }
