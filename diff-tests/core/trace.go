@@ -68,12 +68,14 @@ type TraceData struct {
 
 func LoadTraces(fn string) []TraceData {
 
+	/* #nosec */
 	fd, err := os.Open(fn)
 
 	if err != nil {
 		panic(err)
 	}
 
+	/* #nosec */
 	defer fd.Close()
 
 	byteValue, _ := io.ReadAll(fd)
