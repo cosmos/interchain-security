@@ -13,6 +13,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -389,7 +390,7 @@ func (k Keeper) StopProposalsToExecute(ctx sdk.Context) []types.StopConsumerChai
 // CloseChannel closes the channel for the given channel ID on the condition
 // that the channel exists and isn't already in the CLOSED state
 func (k Keeper) CloseChannel(ctx sdk.Context, channelID string) {
-	channel, found := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
+	channel, found := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
 	if found && channel.State != channeltypes.CLOSED {
 		err := k.chanCloseInit(ctx, channelID)
 		if err != nil {
