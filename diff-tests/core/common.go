@@ -73,8 +73,8 @@ func init() {
 		MaxEntries: 1000000,
 		ConsensusParams: &abci.ConsensusParams{
 			Block: &abci.BlockParams{
-				MaxBytes: 200000,
-				MaxGas:   2000000,
+				MaxBytes: 9223372036854775807,
+				MaxGas:   9223372036854775807,
 			},
 			Evidence: &tmproto.EvidenceParams{
 				MaxAgeNumBlocks: 302400,
