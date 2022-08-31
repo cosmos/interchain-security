@@ -9,9 +9,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
@@ -28,13 +26,13 @@ func (s *ProviderTestSuite) TestPacketRoundtrip() {
 	s.providerChain.NextBlock()
 
 	// Relay 1 VSC packet from provider to consumer
-	relayAllCommittedPackets(s, s.providerChain, s.path, providertypes.PortID, s.path.EndpointB.ChannelID, 1)
+	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
 	// Increment time so that the unbonding period ends on the provider
 	incrementTimeByUnbondingPeriod(s, Provider)
 
 	// Relay 1 VSCMatured packet from consumer to provider
-	relayAllCommittedPackets(s, s.consumerChain, s.path, consumertypes.PortID, s.path.EndpointA.ChannelID, 1)
+	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
 }
 
 // TestUnbondMaturePackets tests the behavior of UnbondMaturePackets and related state checks
@@ -52,7 +50,7 @@ func (suite *ConsumerKeeperTestSuite) TestUnbondMaturePackets() {
 	pk2, err := cryptocodec.ToTmProtoPublicKey(pk)
 	suite.Require().NoError(err)
 
-	pd := types.NewValidatorSetChangePacketData(
+	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{
 			{
 				PubKey: pk1,
@@ -68,7 +66,7 @@ func (suite *ConsumerKeeperTestSuite) TestUnbondMaturePackets() {
 	)
 
 	// send first packet
-	packet := channeltypes.NewPacket(pd.GetBytes(), 1, providertypes.PortID, suite.path.EndpointB.ChannelID, consumertypes.PortID, suite.path.EndpointA.ChannelID,
+	packet := channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, ccv.ConsumerPortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
 	ack := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
@@ -120,7 +118,7 @@ func (suite *ConsumerKeeperTestSuite) TestUnbondMaturePackets() {
 	// check that the packets are committed in state
 	commitments := suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
 		suite.consumerChain.GetContext(),
-		consumertypes.PortID,
+		ccv.ConsumerPortID,
 		suite.path.EndpointA.ChannelID,
 	)
 	suite.Require().Equal(2, len(commitments), "did not find packet commitments")

@@ -258,7 +258,7 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 // and set the channel status to validating.
 // If there is already a ccv channel between the provider and consumer chain then close the channel, so that another channel can be made.
 func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
-	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
+	channel, ok := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
 	if !ok {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
 	}
@@ -462,12 +462,12 @@ func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (strin
 
 // chanCloseInit defines a wrapper function for the channel Keeper's function
 func (k Keeper) chanCloseInit(ctx sdk.Context, channelID string) error {
-	capName := host.ChannelCapabilityPath(types.PortID, channelID)
+	capName := host.ChannelCapabilityPath(ccv.ProviderPortID, channelID)
 	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
 	if !ok {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
-	return k.channelKeeper.ChanCloseInit(ctx, types.PortID, channelID, chanCap)
+	return k.channelKeeper.ChanCloseInit(ctx, ccv.ProviderPortID, channelID, chanCap)
 }
 
 func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {

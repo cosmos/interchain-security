@@ -7,8 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/stretchr/testify/require"
@@ -232,11 +231,11 @@ func (suite *ConsumerKeeperTestSuite) SendEmptyVSCPacket() {
 	)
 
 	seq, ok := suite.providerChain.App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
-		suite.providerChain.GetContext(), providertypes.PortID, suite.path.EndpointB.ChannelID)
+		suite.providerChain.GetContext(), ccv.ProviderPortID, suite.path.EndpointB.ChannelID)
 	suite.Require().True(ok)
 
-	packet := channeltypes.NewPacket(pd.GetBytes(), seq, providertypes.PortID, suite.path.EndpointB.ChannelID,
-		consumertypes.PortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+	packet := channeltypes.NewPacket(pd.GetBytes(), seq, ccv.ProviderPortID, suite.path.EndpointB.ChannelID,
+		ccv.ConsumerPortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
 	err := suite.path.EndpointB.SendPacket(packet)
 	suite.Require().NoError(err)
@@ -250,8 +249,8 @@ func (suite *ConsumerKeeperTestSuite) commitSlashPacket(ctx sdk.Context, packetD
 	oldBlockTime := ctx.BlockTime()
 	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, consumertypes.PortID, suite.path.EndpointA.ChannelID,
-		providertypes.PortID, suite.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID, suite.path.EndpointA.ChannelID,
+		ccv.ProviderPortID, suite.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
 	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
 }
@@ -315,11 +314,11 @@ func (suite *ConsumerKeeperTestSuite) CreateCustomClient(endpoint *ibctesting.En
 	require.NoError(endpoint.Chain.T, err)
 }
 
-// CreateCustomClient creates an IBC client on the endpoint
+// createCustomClient creates an IBC client on the endpoint
 // using the given unbonding period.
 // It will update the clientID for the endpoint if the message
 // is successfully executed.
-func (suite *ConsumerTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) (err error) {
+func (suite *ConsumerTestSuite) createCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) (err error) {
 	// ensure counterparty has committed state
 	endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
 

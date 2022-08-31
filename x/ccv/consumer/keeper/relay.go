@@ -95,8 +95,8 @@ func (k Keeper) UnbondMaturePackets(ctx sdk.Context) error {
 				ctx,
 				k.scopedKeeper,
 				k.channelKeeper,
-				channelID,    // source channel id
-				types.PortID, // source port id
+				channelID,          // source channel id
+				ccv.ConsumerPortID, // source port id
 				packetData.GetBytes(),
 			)
 			if err != nil {
@@ -140,8 +140,8 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 		ctx,
 		k.scopedKeeper,
 		k.channelKeeper,
-		channelID,    // source channel id
-		types.PortID, // source port id
+		channelID,          // source channel id
+		ccv.ConsumerPortID, // source port id
 		packetData.GetBytes(),
 	)
 	if err != nil {
@@ -176,8 +176,8 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 				ctx,
 				k.scopedKeeper,
 				k.channelKeeper,
-				channelID,    // source channel id
-				types.PortID, // source port id
+				channelID,          // source channel id
+				ccv.ConsumerPortID, // source port id
 				slashReq.Packet.GetBytes(),
 			)
 			if err != nil {
@@ -222,7 +222,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		}
 		if channelID != packet.SourceChannel {
 			// Close the established CCV channel as well
-			return k.ChanCloseInit(ctx, types.PortID, channelID)
+			return k.ChanCloseInit(ctx, ccv.ConsumerPortID, channelID)
 		}
 	}
 	return nil
@@ -234,7 +234,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 
 // IsChannelClosed returns a boolean whether a given channel is in the CLOSED state
 func (k Keeper) IsChannelClosed(ctx sdk.Context, channelID string) bool {
-	channel, found := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
+	channel, found := k.channelKeeper.GetChannel(ctx, ccv.ConsumerPortID, channelID)
 	if !found || channel.State == channeltypes.CLOSED {
 		return true
 	}
