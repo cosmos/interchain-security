@@ -146,7 +146,7 @@ func undelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAdd
 }
 
 // Executes a BeginRedelegation (unbonding and redelegation) operation
-// on the provider chain using delegations from delAddr
+// on the provider chain using delegated funds from delAddr
 func redelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
 	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec) {
 	ctx := s.providerCtx()
