@@ -386,6 +386,7 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
+	// Now we test provider initiated downtime/slashing
 	{
 		action: SlashAction{
 			downOn: chainID("provi"),
