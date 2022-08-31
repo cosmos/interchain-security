@@ -14,48 +14,29 @@ import (
 )
 
 type Framework struct {
-	T    *testing.T
-	Link TwoChainLink
-	path *ibctesting.Path
-	// chain -> array of headers for UpdateClient
+	T             *testing.T
+	Link          TwoChainLink
+	path          *ibctesting.Path
 	clientHeaders map[string][]*ibctmtypes.Header
-	Chains        map[string]*ibctesting.TestChain // TODO: uncaps
 }
 
-func MakeFramework(t *testing.T, chains map[string]*ibctesting.TestChain, path *ibctesting.Path) Framework {
-	trueTime := map[string]time.Time{}
-	for id, c := range chains {
-		trueTime[id] = c.CurrentHeader.Time
-	}
+func MakeFramework(t *testing.T, path *ibctesting.Path) Framework {
 	return Framework{
 		T:             t,
 		Link:          MakeTwoChainLink(),
-		Chains:        chains,
 		clientHeaders: map[string][]*ibctmtypes.Header{},
 		path:          path,
 	}
 }
 
-// TODO: right now framework assumes exactly 2 chains
-func (f *Framework) other(chainID string) string {
-	for k := range f.Chains {
-		if k != chainID {
-			return k
-		}
+func (f *Framework) Chain(chainID string) *ibctesting.TestChain {
+	if f.path.EndpointA.Chain.ChainID == chainID {
+		return f.path.EndpointA.Chain
 	}
-	f.T.Fatal("other")
-	return ""
-}
-
-func (f *Framework) endpoint(chainID string) *ibctesting.Endpoint {
-	// TODO: this is hardcoded for interchain security use case!
-	if chainID == ibctesting.GetChainID(0) {
-		return f.path.EndpointB
+	if f.path.EndpointB.Chain.ChainID == chainID {
+		return f.path.EndpointB.Chain
 	}
-	if chainID == ibctesting.GetChainID(1) {
-		return f.path.EndpointA
-	}
-	f.T.Fatal("endpoint")
+	f.T.Fatal("chain")
 	return nil
 }
 
@@ -97,7 +78,7 @@ func (f *Framework) DeliverAcks(chainID string, num int) {
 // BeginBlock, for the chain. preCommitCallback is called after EndBlock and before Commit,
 // allowing access to the sdk.Context are EndBlock.
 func (f *Framework) EndAndBeginBlock(chainID string, dt time.Duration, preCommitCallback func()) {
-	c := f.Chains[chainID]
+	c := f.Chain(chainID)
 
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
 
@@ -136,4 +117,26 @@ func (f *Framework) EndAndBeginBlock(chainID string, dt time.Duration, preCommit
 	}
 
 	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
+}
+
+func (f *Framework) other(chainID string) string {
+	if f.path.EndpointA.Chain.ChainID == chainID {
+		return f.path.EndpointB.Chain.ChainID
+	}
+	if f.path.EndpointB.Chain.ChainID == chainID {
+		return f.path.EndpointA.Chain.ChainID
+	}
+	f.T.Fatal("other")
+	return ""
+}
+
+func (f *Framework) endpoint(chainID string) *ibctesting.Endpoint {
+	if chainID == f.path.EndpointA.Chain.ChainID {
+		return f.path.EndpointA
+	}
+	if chainID == f.path.EndpointB.Chain.ChainID {
+		return f.path.EndpointB
+	}
+	f.T.Fatal("endpoint")
+	return nil
 }
