@@ -11,9 +11,6 @@ const (
 	// ModuleName defines the CCV consumer module name
 	ModuleName = "ccvconsumer"
 
-	// PortID is the default port id that consumer module binds to
-	PortID = "consumer"
-
 	// StoreKey is the store key string for IBC consumer
 	StoreKey = ModuleName
 

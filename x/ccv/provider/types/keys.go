@@ -17,9 +17,6 @@ const (
 	// ModuleName defines the CCV provider module name
 	ModuleName = "provider"
 
-	// PortID is the default port id that transfer module binds to
-	PortID = "provider"
-
 	// StoreKey is the store key string for IBC transfer
 	StoreKey = ModuleName
 

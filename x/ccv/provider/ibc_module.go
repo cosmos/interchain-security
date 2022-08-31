@@ -40,12 +40,21 @@ func (am AppModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (metadata string, err error) {
+
+	// Validate parameters
 	if err := validateCCVChannelParams(
 		ctx, am.keeper, order, portID,
 	); err != nil {
 		return "", err
 	}
 
+	// ensure the counterparty port ID matches the expected consumer port ID
+	if counterparty.PortId != ccv.ConsumerPortID {
+		return "", sdkerrors.Wrapf(porttypes.ErrInvalidPort,
+			"invalid counterparty port: %s, expected %s", counterparty.PortId, ccv.ConsumerPortID)
+	}
+
+	// ensure the counter party version matches the expected version
 	if counterpartyVersion != ccv.Version {
 		return "", sdkerrors.Wrapf(
 			ccv.ErrInvalidVersion, "invalid counterparty version: got: %s, expected %s",
@@ -96,7 +105,7 @@ func validateCCVChannelParams(
 		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.ORDERED, order)
 	}
 
-	// Require portID is the portID CCV module is bound to
+	// the port ID must match the port ID the CCV module is bounded to
 	boundPort := keeper.GetPort(ctx)
 	if boundPort != portID {
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
