@@ -565,13 +565,13 @@ func (k Keeper) SetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId, bloc
 }
 
 // GetValsetUpdateBlockHeight gets the block height for a given valset update id
-func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) uint64 {
+func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
 	if bz == nil {
-		return 0
+		return 0, false
 	}
-	return binary.BigEndian.Uint64(bz)
+	return binary.BigEndian.Uint64(bz), true
 }
 
 // DeleteValsetUpdateBlockHeight deletes the block height value for a given vaset update id
@@ -661,14 +661,14 @@ func (k Keeper) SetInitChainHeight(ctx sdk.Context, chainID string, height uint6
 }
 
 // GetInitChainHeight returns the provider block height when the given consumer chain was initiated
-func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) uint64 {
+func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.InitChainHeightKey(chainID))
 	if bz == nil {
-		return 0
+		return 0, false
 	}
 
-	return binary.BigEndian.Uint64(bz)
+	return binary.BigEndian.Uint64(bz), true
 }
 
 // DeleteInitChainHeight deletes the block height value for which the given consumer chain's channel was established

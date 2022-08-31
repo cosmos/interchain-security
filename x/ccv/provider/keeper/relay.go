@@ -205,14 +205,15 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
 	// map VSC ID to infraction height for the given chain ID
 	var infractionHeight uint64
+	var found bool
 	if data.ValsetUpdateId == 0 {
-		infractionHeight = k.GetInitChainHeight(ctx, chainID)
+		infractionHeight, found = k.GetInitChainHeight(ctx, chainID)
 	} else {
-		infractionHeight = k.GetValsetUpdateBlockHeight(ctx, data.ValsetUpdateId)
+		infractionHeight, found = k.GetValsetUpdateBlockHeight(ctx, data.ValsetUpdateId)
 	}
 
-	// return if there isn't any initial chain height for the consumer chain
-	if infractionHeight == 0 {
+	// return error if we cannot find infraction height matching the validator update id
+	if !found {
 		return false, fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
