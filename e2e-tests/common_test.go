@@ -77,6 +77,43 @@ func delegateAndUndelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt
 	return initBalance, valsetUpdateId
 }
 
+// Delegates "amount" to a source validator, then redelegates that same amount to a dest validator,
+// with related state assertions along the way.
+//
+// Note: This function advances blocks in-between operations, where validator powers are
+// not checked, since they are checked in integration tests.
+func delegateAndRedelegate(s *ProviderTestSuite, delAddr sdk.AccAddress,
+	srcValAddr sdk.ValAddress, dstValAddr sdk.ValAddress, amount sdk.Int) {
+
+	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
+
+	// Delegate to src validator
+	srcValTokensBefore := stakingKeeper.Validator(s.providerCtx(), srcValAddr).GetBondedTokens()
+	_, sharesDelegated, _ := delegate(s, delAddr, amount)
+
+	// Assert expected amount was bonded to src validator
+	srcValTokensAfter := stakingKeeper.Validator(s.providerCtx(), srcValAddr).GetBondedTokens()
+	s.Require().Equal(srcValTokensAfter.Sub(srcValTokensBefore), amount)
+
+	s.providerChain.NextBlock()
+
+	dstValTokensBefore := stakingKeeper.Validator(s.providerCtx(), dstValAddr).GetBondedTokens()
+
+	// redelegate shares from src to dst validators
+	redelegate(s, delAddr,
+		srcValAddr,
+		dstValAddr,
+		sharesDelegated,
+	)
+
+	// Assert expected amount was delegated to dst val
+	dstValTokensAfter := stakingKeeper.Validator(s.providerCtx(), dstValAddr).GetBondedTokens()
+	s.Require().Equal(dstValTokensAfter.Sub(dstValTokensBefore), amount)
+
+	// Assert delegated tokens amount returned to original value for src validator
+	s.Require().Equal(srcValTokensBefore, stakingKeeper.Validator(s.providerCtx(), srcValAddr).GetBondedTokens())
+}
+
 // delegate delegates bondAmt to the first validator
 func delegate(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBalance sdk.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
 	initBalance = getBalance(s, s.providerCtx(), delAddr)
@@ -155,7 +192,8 @@ func relayAllCommittedPackets(
 		portID,
 		channelID,
 	)
-	s.Require().Equal(expectedPackets, len(commitments), "did not find packet commitments")
+	s.Require().Equal(expectedPackets, len(commitments),
+		"actual number of packet commitments does not match expectation")
 
 	// relay all packets from srcChain to counterparty
 	for _, commitment := range commitments {
@@ -215,6 +253,24 @@ func checkCCVUnbondingOp(s *ProviderTestSuite, providerCtx sdk.Context, chainID 
 		s.Require().True(len(entries[0].UnbondingConsumerChains) > 0, "Unbonding op with no consumer chains")
 		s.Require().True(strings.Compare(entries[0].UnbondingConsumerChains[0], "testchain2") == 0, "Unbonding op with unexpected consumer chain")
 	}
+}
+
+// Checks that an expected amount of redelegations exist for a delegator
+// via the staking keeper, then returns those redelegations.
+func checkRedelegations(s *ProviderTestSuite, delAddr sdk.AccAddress,
+	expect uint16) []stakingtypes.Redelegation {
+
+	redelegations := s.providerChain.App.(*appProvider.App).StakingKeeper.
+		GetRedelegations(s.providerCtx(), delAddr, 2)
+
+	s.Require().Len(redelegations, int(expect))
+	return redelegations
+}
+
+// Checks that a redelegation entry has a completion time equal to an expected time
+func checkRedelegationEntryCompletionTime(
+	s *ProviderTestSuite, entry stakingtypes.RedelegationEntry, expectedCompletion time.Time) {
+	s.Require().Equal(expectedCompletion, entry.CompletionTime)
 }
 
 func getStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
