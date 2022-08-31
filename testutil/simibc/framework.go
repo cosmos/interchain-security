@@ -59,9 +59,9 @@ func (f *Framework) endpoint(chainID string) *ibctesting.Endpoint {
 	return nil
 }
 
-// UpdateClient will bring the client on chain
-// up to date by delivering each header committed on the
-// counterparty chain since the last idempotentUpdateClient
+// UpdateClient will update the chain light client with
+// each header added to the counterparty chain since the last
+// call.
 func (f *Framework) UpdateClient(chainID string) {
 	for _, header := range f.clientHeaders[f.other(chainID)] {
 		err := UpdateReceiverClient(f.endpoint(f.other(chainID)), f.endpoint(chainID), header)
@@ -72,14 +72,10 @@ func (f *Framework) UpdateClient(chainID string) {
 	f.clientHeaders[f.other(chainID)] = []*ibctmtypes.Header{}
 }
 
-// deliver numPackets packets from the network to chain
+// DeliverPackets delivers <num> packets to chain
 func (f *Framework) DeliverPackets(chainID string, num int) {
-	// Consume deliverable packets from the network
-	packets := f.Link.ConsumePackets(f.other(chainID), num)
-	for _, p := range packets {
-		receiver := f.endpoint(chainID)
-		sender := receiver.Counterparty
-		ack, err := TryRecvPacket(sender, receiver, p.Packet)
+	for _, p := range f.Link.ConsumePackets(f.other(chainID), num) {
+		ack, err := TryRecvPacket(f.endpoint(f.other(chainID)), f.endpoint(chainID), p.Packet)
 		if err != nil {
 			f.T.Fatal("deliver")
 		}
@@ -87,6 +83,7 @@ func (f *Framework) DeliverPackets(chainID string, num int) {
 	}
 }
 
+// DeliverAcks delivers <num> acks to chain
 func (f *Framework) DeliverAcks(chainID string, num int) {
 	for _, ack := range f.Link.ConsumeAcks(f.other(chainID), num) {
 		err := TryRecvAck(f.endpoint(f.other(chainID)), f.endpoint(chainID), ack.Packet, ack.Ack)
