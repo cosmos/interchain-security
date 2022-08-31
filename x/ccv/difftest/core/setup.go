@@ -43,9 +43,9 @@ import (
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
 	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 type Builder struct {
@@ -498,10 +498,10 @@ func (b *Builder) createLink() {
 func (b *Builder) doIBCHandshake() {
 	// Configure the ibc path
 	b.path = ibctesting.NewPath(b.consumerChain(), b.providerChain())
-	b.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
-	b.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
-	b.path.EndpointA.ChannelConfig.Version = types.Version
-	b.path.EndpointB.ChannelConfig.Version = types.Version
+	b.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
+	b.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
+	b.path.EndpointA.ChannelConfig.Version = ccv.Version
+	b.path.EndpointB.ChannelConfig.Version = ccv.Version
 	b.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	b.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 
@@ -548,12 +548,12 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 	)
 
 	seq, ok := b.providerChain().App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
-		b.ctx(P), providertypes.PortID, b.path.EndpointB.ChannelID)
+		b.ctx(P), ccv.ProviderPortID, b.path.EndpointB.ChannelID)
 
 	b.suite.Require().True(ok)
 
-	packet := channeltypes.NewPacket(pd.GetBytes(), seq, providertypes.PortID, b.endpoint(P).ChannelID,
-		consumertypes.PortID, b.endpoint(C).ChannelID, clienttypes.Height{}, timeout)
+	packet := channeltypes.NewPacket(pd.GetBytes(), seq, ccv.ProviderPortID, b.endpoint(P).ChannelID,
+		ccv.ConsumerPortID, b.endpoint(C).ChannelID, clienttypes.Height{}, timeout)
 
 	channelCap := b.endpoint(P).Chain.GetChannelCapability(packet.GetSourcePort(), packet.GetSourceChannel())
 
