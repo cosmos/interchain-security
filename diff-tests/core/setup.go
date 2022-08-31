@@ -756,7 +756,7 @@ func (b *Builder) build() {
 
 }
 
-func GetZeroState(suite *suite.Suite, initState InitState) (map[string]*ibctesting.TestChain,
+func GetZeroState(suite *suite.Suite, initState InitState) (
 	*ibctesting.Path, []sdk.ValAddress, int64, int64) {
 	b := Builder{initState: initState, suite: suite}
 	b.build()
@@ -766,5 +766,5 @@ func GetZeroState(suite *suite.Suite, initState InitState) (map[string]*ibctesti
 	// Time of last committed block
 	// TODO: unhardcode, better document
 	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(time.Second * (-6)).Unix()
-	return b.coordinator.Chains, b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
+	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
 }

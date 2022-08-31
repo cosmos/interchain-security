@@ -54,11 +54,11 @@ func (s *CoreSuite) chain(chain string) *ibctesting.TestChain {
 }
 
 func (s *CoreSuite) providerChain() *ibctesting.TestChain {
-	return s.ibcsim.Chains[ibctesting.GetChainID(0)]
+	return s.ibcsim.Chain(ibctesting.GetChainID(0))
 }
 
 func (s *CoreSuite) consumerChain() *ibctesting.TestChain {
-	return s.ibcsim.Chains[ibctesting.GetChainID(1)]
+	return s.ibcsim.Chain(ibctesting.GetChainID(1))
 }
 
 func (b *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
@@ -458,13 +458,9 @@ func TestCoreSuite(t *testing.T) {
 // The zero state is exactly the state that the model is initialized to.
 func (s *CoreSuite) SetupTest() {
 	state := initState
-	chains, path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(&s.Suite, state)
+	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(&s.Suite, state)
 	s.valAddresses = valAddresses
 	s.offsetHeight = offsetHeight
 	s.offsetTimeUnix = offsetTimeUnix
-	for _, chain := range chains {
-		// Coordinator is no longer needed!
-		chain.Coordinator = nil
-	}
-	s.ibcsim = simibc.MakeFramework(s.Suite.T(), chains, path)
+	s.ibcsim = simibc.MakeFramework(s.Suite.T(), path)
 }
