@@ -169,8 +169,8 @@ func relayAllCommittedPackets(
 }
 
 // incrementTimeByUnbondingPeriod increments the overall time by
-//   - if provider == true, the unbonding period on the provider;
-//   - otherwise, the unbonding period on the consumer.
+//  - if chainType == Provider, the unbonding period on the provider.
+//  - otherwise, the unbonding period on the consumer.
 //
 // Note that it is expected for the provider unbonding period
 // to be one day larger than the consumer unbonding period.

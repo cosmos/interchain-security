@@ -214,7 +214,7 @@ func (s *ProviderTestSuite) TestUnbondingNoConsumer() {
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
 
 	// increment time so that the unbonding period ends on the provider;
-	// cannot use incrementTimeByProviderUnbondingPeriod() since it tries
+	// cannot use incrementTimeByUnbondingPeriod() since it tries
 	// to also update the provider's client on the consumer
 	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
 	s.coordinator.IncrementTimeBy(providerUnbondingPeriod + time.Hour)
@@ -277,7 +277,7 @@ func (s *ProviderTestSuite) TestRedelegationNoConsumer() {
 
 	s.providerChain.NextBlock()
 
-	// 1 redelegation record should exist with appropriate maturation time
+	// 1 redelegation record should exist for original delegator, with appropriate maturation time
 	redelegations := stakingKeeper.GetRedelegations(s.providerCtx(), delAddr, 2)
 	s.Require().Len(redelegations, 1)
 	redelgation := redelegations[0]
@@ -290,6 +290,16 @@ func (s *ProviderTestSuite) TestRedelegationNoConsumer() {
 	val1PowerAfter := stakingKeeper.GetLastValidatorPower(s.providerCtx(), val1Addr)
 	s.Require().Greater(val1PowerAfter, val1PowerBefore)
 	s.Require().Equal(val0PowerBefore, stakingKeeper.GetLastValidatorPower(s.providerCtx(), val0Addr))
+
+	// Increment time so that the unbonding period passes on the provider
+	incrementTimeByUnbondingPeriod(s, Provider)
+
+	// Call NextBlock on the provider (which increments the height)
+	s.providerChain.NextBlock()
+
+	// No redelegation records should exist for original delegator anymore
+	redelegations = stakingKeeper.GetRedelegations(s.providerCtx(), delAddr, 2)
+	s.Require().Empty(redelegations)
 }
 
 // TestRedelegationWithConsumer tests a redelegate transaction submitted on a provider chain with a consumer
