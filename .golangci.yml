@@ -1,0 +1,5 @@
+linters-settings:
+  staticcheck:
+    checks:
+      - all
+      - "-SA1019" # cosmosEd25519 allowed in tests
