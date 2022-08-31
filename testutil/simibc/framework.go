@@ -89,7 +89,6 @@ func (f *Framework) DeliverPackets(chainID string, num int) {
 
 func (f *Framework) DeliverAcks(chainID string, num int) {
 	for _, ack := range f.Link.ConsumeAcks(f.other(chainID), num) {
-		f.UpdateClient(chainID) // TODO: remove!!!! TODO::::
 		err := TryRecvAck(f.endpoint(f.other(chainID)), f.endpoint(chainID), ack.Packet, ack.Ack)
 		if err != nil {
 			f.T.Fatal("deliverAcks")
