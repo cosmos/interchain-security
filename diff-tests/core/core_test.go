@@ -18,7 +18,7 @@ import (
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 
-	ibcsim "github.com/cosmos/interchain-security/ibcsim"
+	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
@@ -30,7 +30,7 @@ type CoreSuite struct {
 	// the current traces being executed
 	traces Traces
 
-	ibcsim ibcsim.Framework
+	ibcsim simibc.Framework
 
 	// keep around validators for easy access
 	valAddresses []sdk.ValAddress
@@ -483,5 +483,5 @@ func (s *CoreSuite) SetupTest() {
 		// Coordinator is no longer needed!
 		chain.Coordinator = nil
 	}
-	s.ibcsim = ibcsim.MakeFramework(s.Suite.T(), chains, path)
+	s.ibcsim = simibc.MakeFramework(s.Suite.T(), chains, path)
 }
