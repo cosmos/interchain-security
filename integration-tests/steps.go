@@ -276,5 +276,49 @@ var happyPathSteps = []Step{
 			},
 		},
 	},
-	// TODO: Test full unbonding functionality, considering liquidity after unbonding period, etc.
+	{
+		action: RedelegateTokensAction{
+			chain:    chainID("provi"),
+			src:      validatorID("bob"),
+			dst:      validatorID("carol"),
+			txSender: validatorID("bob"),
+			amount:   11000000,
+		},
+		state: State{
+			chainID("provi"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 500,
+					validatorID("bob"):   489,
+					validatorID("carol"): 511,
+				},
+			},
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					// Voting power changes not seen by consumer yet
+					validatorID("alice"): 500,
+					validatorID("bob"):   500,
+					validatorID("carol"): 500,
+				},
+			},
+		},
+	},
+	{
+		action: RelayPacketsAction{
+			chain:   chainID("provi"),
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					// Now power changes are seen by consumer
+					validatorID("alice"): 500,
+					validatorID("bob"):   489,
+					validatorID("carol"): 511,
+				},
+			},
+		},
+	},
+
+	// TODO: Test full unbonding functionality, tracked as: https://github.com/cosmos/interchain-security/issues/311
 }
