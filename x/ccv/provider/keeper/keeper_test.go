@@ -26,20 +26,24 @@ import (
 func TestValsetUpdateBlockHeight(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
-	blockHeight := providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(0))
+	blockHeight, found := providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(0))
+	require.False(t, found)
 	require.Zero(t, blockHeight)
 
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, uint64(1), uint64(2))
-	blockHeight = providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(1))
+	blockHeight, found = providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(1))
+	require.True(t, found)
 	require.Equal(t, blockHeight, uint64(2))
 
 	providerKeeper.DeleteValsetUpdateBlockHeight(ctx, uint64(1))
-	blockHeight = providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(1))
+	blockHeight, found = providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(1))
+	require.False(t, found)
 	require.Zero(t, blockHeight)
 
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, uint64(1), uint64(2))
 	providerKeeper.SetValsetUpdateBlockHeight(ctx, uint64(3), uint64(4))
-	blockHeight = providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(3))
+	blockHeight, found = providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(3))
+	require.True(t, found)
 	require.Equal(t, blockHeight, uint64(4))
 }
 
@@ -175,7 +179,7 @@ func TestInitHeight(t *testing.T) {
 	providerKeeper.SetInitChainHeight(ctx, tc[2].chainID, tc[2].expected)
 
 	for _, tc := range tc {
-		height := providerKeeper.GetInitChainHeight(ctx, tc.chainID)
+		height, _ := providerKeeper.GetInitChainHeight(ctx, tc.chainID)
 		require.Equal(t, tc.expected, height)
 	}
 }
