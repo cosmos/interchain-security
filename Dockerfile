@@ -7,6 +7,7 @@ RUN apk add --no-cache $PACKAGES
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux
+ENV GOFLAGS="-buildvcs=false"
 
 WORKDIR /downloads
 
