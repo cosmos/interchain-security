@@ -617,6 +617,45 @@ func (tr TestRun) unbondTokens(
 	}
 }
 
+type RedelegateTokensAction struct {
+	chain    chainID
+	src      validatorID
+	dst      validatorID
+	txSender validatorID
+	amount   uint
+}
+
+func (tr TestRun) redelegateTokens(action RedelegateTokensAction, verbose bool) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec",
+		tr.containerConfig.instanceName,
+		tr.chainConfigs[action.chain].binaryName,
+
+		"tx", "staking", "redelegate",
+		tr.validatorConfigs[action.src].valoperAddress,
+		tr.validatorConfigs[action.dst].valoperAddress,
+		fmt.Sprint(action.amount)+`stake`,
+		`--from`, `validator`+fmt.Sprint(action.txSender),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--home`, tr.getValidatorHome(action.chain, action.txSender),
+		`--node`, tr.getValidatorNode(action.chain, action.txSender),
+		// Need to manually set gas limit past default (200000), since redelegate has a lot of operations
+		`--gas`, "900000",
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("redelegate cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
 type SlashAction struct {
 	downOn chainID
 	toDown validatorID
