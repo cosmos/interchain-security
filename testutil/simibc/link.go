@@ -1,50 +1,51 @@
-package ibcsim
+package simibc
 
 import channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
+// Ack represents and ack committed to block state
 type Ack struct {
 	Ack     []byte
 	Packet  channeltypes.Packet
 	Commits int
 }
 
+// Packet represents a packet committed to block state
 type Packet struct {
 	Packet  channeltypes.Packet
 	Commits int
 }
 
-// Link contains outboxes of packets and acknowledgements and
+// TwoChainLink contains outboxes of packets and acknowledgements and
 // allows fine-grained control over delivery of acks and packets
-// to mimic a real ibc network between two chains.
-type Link struct {
+// to mimic a real relaying relationship between two chains.
+type TwoChainLink struct {
 	OutboxPackets map[string][]Packet
 	OutboxAcks    map[string][]Ack
 }
 
-// MakeLink creates a new empty network.
-func MakeLink() Link {
-	return Link{
+// MakeTwoChainLink creates a new empty network.
+func MakeTwoChainLink() TwoChainLink {
+	return TwoChainLink{
 		OutboxPackets: map[string][]Packet{},
 		OutboxAcks:    map[string][]Ack{},
 	}
 }
 
-// AddPacket adds an outbound packet from the sender to the counterparty
-func (n Link) AddPacket(sender string, packet channeltypes.Packet) {
+// AddPacket adds an outbound packet from the sender to the counterparty.
+func (n TwoChainLink) AddPacket(sender string, packet channeltypes.Packet) {
 	n.OutboxPackets[sender] = append(n.OutboxPackets[sender], Packet{packet, 0})
 }
 
-// AddAck adds an outbound ack from the sender of the ack to the counterparty.
-// In this case the counterparty is the sender of the original packet being acked.
-func (n Link) AddAck(sender string, ack []byte, packet channeltypes.Packet) {
+// AddAck adds an outbound ack, for future delivery to the sender of the packet
+// being acked.
+func (n TwoChainLink) AddAck(sender string, ack []byte, packet channeltypes.Packet) {
 	n.OutboxAcks[sender] = append(n.OutboxAcks[sender], Ack{ack, packet, 0})
 }
 
-// Consume packets returns and internally deletes all packets with 2 or more
-// commits.
-func (n Link) ConsumePackets(sender string, num int64) []Packet {
+// ConsumePackets returns and internally delets all packets with 2 or more commits.
+func (n TwoChainLink) ConsumePackets(sender string, num int) []Packet {
 	ret := []Packet{}
-	sz := int64(len(n.OutboxPackets[sender]))
+	sz := len(n.OutboxPackets[sender])
 	if sz < num {
 		num = sz
 	}
@@ -59,10 +60,14 @@ func (n Link) ConsumePackets(sender string, num int64) []Packet {
 	return ret
 }
 
-// Consume acks returns and internally deletes all acks with 2 or more commits.
-func (n Link) ConsumeAcks(sender string) []Ack {
+// ConsumeAcks returns and internally deletes all acks with 2 or more commits.
+func (n TwoChainLink) ConsumeAcks(sender string, num int) []Ack {
 	ret := []Ack{}
-	for _, a := range n.OutboxAcks[sender] {
+	sz := len(n.OutboxAcks[sender])
+	if sz < num {
+		num = sz
+	}
+	for _, a := range n.OutboxAcks[sender][:num] {
 		if 1 < a.Commits {
 			ret = append(ret, a)
 		} else {
@@ -73,12 +78,12 @@ func (n Link) ConsumeAcks(sender string) []Ack {
 	return ret
 }
 
-// Commit marks a block commit for a sending chain and will make packets
-// visible as the usual operation of ibc. In practice it takes 2 commits
-// for a packet to become available for delivery, due to off-by one in
-// the light client.
-func (n Link) Commit(sender string) {
-
+// Commit marks a block commit for a chain and will make its outbound
+// packets visible as per the functioning of ibc. In practice it takes
+// 2 commits for a packet to become available for delivery, due to the
+// need for the light client to have block h + 1 for a packet in block
+// h.
+func (n TwoChainLink) Commit(sender string) {
 	for i := range n.OutboxPackets[sender] {
 		n.OutboxPackets[sender][i].Commits += 1
 	}

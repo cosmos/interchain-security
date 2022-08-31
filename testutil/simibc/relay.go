@@ -1,4 +1,4 @@
-package ibcsim
+package simibc
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
