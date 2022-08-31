@@ -40,7 +40,8 @@ The following aspects of the system are not tested by this work.
 - Provider Governance
 - Consumer Governance/Democracy
 - Anything to do with cosmwasm
-- Client timeouts or expiry
+- Client expiry
+- Packet timeouts
 - Restarting any chain from exported state
 - Any logic that deals with having _more than one consumer chain_
 
