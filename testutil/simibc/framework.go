@@ -1,4 +1,4 @@
-package ibcsim
+package simibc
 
 import (
 	"time"
@@ -15,7 +15,7 @@ import (
 
 type Framework struct {
 	T    *testing.T
-	Link Link
+	Link TwoChainLink
 	path *ibctesting.Path
 	// chain -> array of headers for UpdateClient
 	clientHeaders map[string][]*ibctmtypes.Header
@@ -29,7 +29,7 @@ func MakeFramework(t *testing.T, chains map[string]*ibctesting.TestChain, path *
 	}
 	return Framework{
 		T:             t,
-		Link:          MakeLink(),
+		Link:          MakeTwoChainLink(),
 		Chains:        chains,
 		clientHeaders: map[string][]*ibctmtypes.Header{},
 		path:          path,
@@ -73,9 +73,9 @@ func (f *Framework) UpdateClient(chainID string) {
 }
 
 // deliver numPackets packets from the network to chain
-func (f *Framework) DeliverPackets(chainID string, numPackets int64) {
+func (f *Framework) DeliverPackets(chainID string, num int) {
 	// Consume deliverable packets from the network
-	packets := f.Link.ConsumePackets(f.other(chainID), numPackets)
+	packets := f.Link.ConsumePackets(f.other(chainID), num)
 	for _, p := range packets {
 		receiver := f.endpoint(chainID)
 		sender := receiver.Counterparty
@@ -87,12 +87,9 @@ func (f *Framework) DeliverPackets(chainID string, numPackets int64) {
 	}
 }
 
-// DeliverAcks will deliver any acks available on the network
-// which have been emitted by the counterparty chain since the last
-// call to DeliverAcks
-func (f *Framework) DeliverAcks(chainID string) {
-	for _, ack := range f.Link.ConsumeAcks(f.other(chainID)) {
-		f.UpdateClient(chainID) // TODO: remove!
+func (f *Framework) DeliverAcks(chainID string, num int) {
+	for _, ack := range f.Link.ConsumeAcks(f.other(chainID), num) {
+		f.UpdateClient(chainID) // TODO: remove!!!! TODO::::
 		err := TryRecvAck(f.endpoint(f.other(chainID)), f.endpoint(chainID), ack.Packet, ack.Ack)
 		if err != nil {
 			f.T.Fatal("deliverAcks")
@@ -100,6 +97,9 @@ func (f *Framework) DeliverAcks(chainID string) {
 	}
 }
 
+// EndAndBeginBlock calls EndBlock and commits block state, and then increments time and calls
+// BeginBlock, for the chain. preCommitCallback is called after EndBlock and before Commit,
+// allowing access to the sdk.Context are EndBlock.
 func (f *Framework) EndAndBeginBlock(chainID string, dt time.Duration, preCommitCallback func()) {
 	c := f.Chains[chainID]
 
@@ -114,6 +114,7 @@ func (f *Framework) EndAndBeginBlock(chainID string, dt time.Duration, preCommit
 	c.NextVals = ibctesting.ApplyValSetChanges(c.T, c.Vals, ebRes.ValidatorUpdates)
 
 	c.LastHeader = c.CurrentTMClientHeader()
+
 	// Store header to be used in UpdateClient
 	f.clientHeaders[chainID] = append(f.clientHeaders[chainID], c.LastHeader)
 

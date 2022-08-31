@@ -149,9 +149,9 @@ func (s *CoreSuite) delegatorBalance() int64 {
 // delegate delegates amt tokens to validator val
 func (s *CoreSuite) delegate(val int64, amt int64) {
 	// Makes sure client is updated
-	s.ibcsim.UpdateClient(s.chainID(P))
+	s.ibcsim.UpdateClient(s.chainID(P)) // TODO: can i delete?
 	// Deliver any outstanding acks
-	s.ibcsim.DeliverAcks(s.chainID(P))
+	s.ibcsim.DeliverAcks(s.chainID(P), 99999)
 	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
@@ -165,9 +165,9 @@ func (s *CoreSuite) delegate(val int64, amt int64) {
 // undelegate undelegates amt tokens from validator val
 func (s *CoreSuite) undelegate(val int64, amt int64) {
 	// Makes sure client is updated
-	s.ibcsim.UpdateClient(s.chainID(P))
+	s.ibcsim.UpdateClient(s.chainID(P)) // TODO: can i delete?
 	// Deliver any outstanding acks
-	s.ibcsim.DeliverAcks(s.chainID(P))
+	s.ibcsim.DeliverAcks(s.chainID(P), 999999)
 	server := stakingkeeper.NewMsgServerImpl(s.providerStakingKeeper())
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(amt))
 	d := s.delegator()
@@ -182,7 +182,7 @@ func (s *CoreSuite) undelegate(val int64, amt int64) {
 // it can be for a downtime or doublesign
 func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
 	// Deliver any outstanding acks
-	s.ibcsim.DeliverAcks(s.chainID(C))
+	s.ibcsim.DeliverAcks(s.chainID(C), 999999)
 	kind := stakingtypes.DoubleSign
 	if isDowntime {
 		kind = stakingtypes.Downtime
@@ -207,11 +207,11 @@ func (s *CoreSuite) updateClient(chain string) {
 }
 
 // deliver numPackets packets from the network to chain
-func (s *CoreSuite) deliver(chain string, numPackets int64) {
+func (s *CoreSuite) deliver(chain string, numPackets int) {
 	// Makes sure client is updated
 	s.ibcsim.UpdateClient(s.chainID(chain))
 	// Deliver any outstanding acks
-	s.ibcsim.DeliverAcks(s.chainID(chain))
+	s.ibcsim.DeliverAcks(s.chainID(chain), 999999)
 	// Consume deliverable packets from the network
 	s.ibcsim.DeliverPackets(s.chainID(chain), numPackets)
 }
@@ -219,9 +219,9 @@ func (s *CoreSuite) deliver(chain string, numPackets int64) {
 func (s *CoreSuite) endAndBeginBlock(chain string) {
 
 	// Makes sure client is updated
-	s.ibcsim.UpdateClient(s.chainID(chain))
+	s.ibcsim.UpdateClient(s.chainID(chain)) // TODO: can i delete?
 	// Deliver any outstanding acks
-	s.ibcsim.DeliverAcks(s.chainID(chain))
+	s.ibcsim.DeliverAcks(s.chainID(chain), 9999999)
 
 	s.ibcsim.EndAndBeginBlock(s.chainID(chain), time.Second*6, func() {
 		s.matchState()
@@ -295,7 +295,7 @@ func (s *CoreSuite) executeTrace() {
 		case "UpdateClient":
 			s.updateClient(a.Chain)
 		case "Deliver":
-			s.deliver(a.Chain, int64(a.NumPackets))
+			s.deliver(a.Chain, a.NumPackets)
 		case "EndAndBeginBlock":
 			s.endAndBeginBlock(a.Chain)
 		default:

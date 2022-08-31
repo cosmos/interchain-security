@@ -56,7 +56,7 @@ type Builder struct {
 	// keep around validators for easy access
 	valAddresses []sdk.ValAddress
 
-	link        simibc.Link
+	link        simibc.TwoChainLink
 	coordinator *ibctesting.Coordinator
 	path        *ibctesting.Path
 	// chain -> array of headers for UpdateClient
@@ -486,7 +486,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 }
 
 func (b *Builder) createLink() {
-	b.link = simibc.MakeLink()
+	b.link = simibc.MakeTwoChainLink()
 	// init utility data structures
 	b.mustBeginBlock = map[string]bool{P: true, C: true}
 	b.clientHeaders = map[string][]*ibctmtypes.Header{}
@@ -611,8 +611,8 @@ func (b *Builder) updateClient(chainID string) {
 	b.clientHeaders[b.otherID(chainID)] = []*ibctmtypes.Header{}
 }
 
-func (b *Builder) deliver(chainID string, numPackets int64) {
-	packets := b.link.ConsumePackets(b.otherID(chainID), numPackets)
+func (b *Builder) deliver(chainID string) {
+	packets := b.link.ConsumePackets(b.otherID(chainID), 1)
 	for _, p := range packets {
 		receiver := b.endpointFromID(chainID)
 		sender := receiver.Counterparty
@@ -625,7 +625,7 @@ func (b *Builder) deliver(chainID string, numPackets int64) {
 }
 
 func (b *Builder) deliverAcks(chainID string) {
-	for _, ack := range b.link.ConsumeAcks(b.otherID(chainID)) {
+	for _, ack := range b.link.ConsumeAcks(b.otherID(chainID), 999999) {
 		err := simibc.TryRecvAck(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), ack.Packet, ack.Ack)
 		if err != nil {
 			b.coordinator.Fatal("deliverAcks")
@@ -735,7 +735,7 @@ func (b *Builder) build() {
 	// Deliver outstanding ack
 	b.deliverAcks(b.chainID(P))
 	// Deliver the maturity from the first VSC (needed to complete handshake)
-	b.deliver(b.chainID(P), 1)
+	b.deliver(b.chainID(P))
 
 	for i := 0; i < 2; i++ {
 		b.idempotentBeginBlock(P)
