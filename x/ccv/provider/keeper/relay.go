@@ -145,8 +145,8 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 					ctx,
 					k.scopedKeeper,
 					k.channelKeeper,
-					channelID,    // source channel id
-					types.PortID, // source port id
+					channelID,          // source channel id
+					ccv.ProviderPortID, // source port id
 					packetData.GetBytes(),
 				)
 				if err != nil {
@@ -172,8 +172,8 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 			ctx,
 			k.scopedKeeper,
 			k.channelKeeper,
-			channelID,    // source channel id
-			types.PortID, // source port id
+			channelID,          // source channel id
+			ccv.ProviderPortID, // source port id
 			data.GetBytes(),
 		)
 		if err != nil {
