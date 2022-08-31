@@ -39,7 +39,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
-	ibcsim "github.com/cosmos/interchain-security/ibcsim"
+	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
@@ -56,7 +56,7 @@ type Builder struct {
 	// keep around validators for easy access
 	valAddresses []sdk.ValAddress
 
-	link        ibcsim.Link
+	link        simibc.Link
 	coordinator *ibctesting.Coordinator
 	path        *ibctesting.Path
 	// chain -> array of headers for UpdateClient
@@ -486,7 +486,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 }
 
 func (b *Builder) createLink() {
-	b.link = ibcsim.MakeLink()
+	b.link = simibc.MakeLink()
 	// init utility data structures
 	b.mustBeginBlock = map[string]bool{P: true, C: true}
 	b.clientHeaders = map[string][]*ibctmtypes.Header{}
@@ -571,7 +571,7 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 
 	b.updateClient(b.chainID(C))
 
-	ack, err := ibcsim.TryRecvPacket(b.endpoint(P), b.endpoint(C), packet)
+	ack, err := simibc.TryRecvPacket(b.endpoint(P), b.endpoint(C), packet)
 
 	b.link.AddAck(b.chainID(C), ack, packet)
 
@@ -603,7 +603,7 @@ func (b *Builder) beginBlock(chainID string) {
 
 func (b *Builder) updateClient(chainID string) {
 	for _, header := range b.clientHeaders[b.otherID(chainID)] {
-		err := ibcsim.UpdateReceiverClient(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), header)
+		err := simibc.UpdateReceiverClient(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), header)
 		if err != nil {
 			b.coordinator.Fatal("updateClient")
 		}
@@ -616,7 +616,7 @@ func (b *Builder) deliver(chainID string, numPackets int64) {
 	for _, p := range packets {
 		receiver := b.endpointFromID(chainID)
 		sender := receiver.Counterparty
-		ack, err := ibcsim.TryRecvPacket(sender, receiver, p.Packet)
+		ack, err := simibc.TryRecvPacket(sender, receiver, p.Packet)
 		if err != nil {
 			b.coordinator.Fatal("deliver")
 		}
@@ -626,7 +626,7 @@ func (b *Builder) deliver(chainID string, numPackets int64) {
 
 func (b *Builder) deliverAcks(chainID string) {
 	for _, ack := range b.link.ConsumeAcks(b.otherID(chainID)) {
-		err := ibcsim.TryRecvAck(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), ack.Packet, ack.Ack)
+		err := simibc.TryRecvAck(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), ack.Packet, ack.Ack)
 		if err != nil {
 			b.coordinator.Fatal("deliverAcks")
 		}
