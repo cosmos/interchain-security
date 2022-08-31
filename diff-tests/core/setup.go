@@ -49,24 +49,16 @@ import (
 )
 
 type Builder struct {
-	initState InitState
-
-	suite *suite.Suite
-
-	// keep around validators for easy access
-	valAddresses []sdk.ValAddress
-
-	link        simibc.NetworkLink
-	coordinator *ibctesting.Coordinator
-	path        *ibctesting.Path
-	// chain -> array of headers for UpdateClient
-	clientHeaders map[string][]*ibctmtypes.Header
-	// chain -> necessary to BeginBlock?
-	// true if last action for chain was EndBlock
+	suite          *suite.Suite
+	link           simibc.NetworkLink
+	path           *ibctesting.Path
+	coordinator    *ibctesting.Coordinator
+	clientHeaders  map[string][]*ibctmtypes.Header
 	mustBeginBlock map[string]bool
+	valAddresses   []sdk.ValAddress
+	initState      InitState
 }
 
-// ctx returns the sdk.Context for the chain
 func (b *Builder) ctx(chain string) sdk.Context {
 	return b.chain(chain).GetContext()
 }
@@ -111,17 +103,14 @@ func (b *Builder) endpointFromID(chainID string) *ibctesting.Endpoint {
 	return map[string]*ibctesting.Endpoint{ibctesting.GetChainID(0): b.path.EndpointB, ibctesting.GetChainID(1): b.path.EndpointA}[chainID]
 }
 
-// endpoint returns the ibc Endpoint for the chain
 func (b *Builder) endpoint(chain string) *ibctesting.Endpoint {
 	return map[string]*ibctesting.Endpoint{P: b.path.EndpointB, C: b.path.EndpointA}[chain]
 }
 
-// validator returns the address for the validator with id (ix) i
 func (b *Builder) validator(i int64) sdk.ValAddress {
 	return b.valAddresses[i]
 }
 
-// consAddr returns the ConsAdd for the validator with id (ix) i
 func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(b.validator(i))
 }
@@ -517,8 +506,8 @@ func (b *Builder) doIBCHandshake() {
 
 	// Configure and create the consumer Client
 	tmConfig := b.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
-	// TODO: this is intentionally set to UNBONDING period for P (provider)
-	// TODO: not sure why it breaks without this.
+	// TODO: This is intentionally set to unbonding period for P (provider)
+	// TODO: Not sure why it breaks without this.
 	tmConfig.UnbondingPeriod = b.initState.UnbondingP
 	tmConfig.TrustingPeriod = b.initState.Trusting
 	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
@@ -761,10 +750,8 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	b := Builder{initState: initState, suite: suite}
 	b.build()
 
-	// Height of last
 	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
-	// Time of last committed block
-	// TODO: unhardcode, better document
+	// Time of the last committed block (current header is not committed)
 	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(time.Second * (-6)).Unix()
 	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
 }

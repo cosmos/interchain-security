@@ -30,11 +30,14 @@ type CoreSuite struct {
 	// the current traces being executed
 	traces Traces
 
-	ibcsim simibc.RelayedPath
+	// simulate a relayed path
+	simibc simibc.RelayedPath
 
 	// keep around validators for easy access
 	valAddresses []sdk.ValAddress
 
+	// offsets: the model time and heights start at 0
+	// so offsets are needed for comparisons.
 	offsetTimeUnix int64
 	offsetHeight   int64
 }
@@ -54,11 +57,11 @@ func (s *CoreSuite) chain(chain string) *ibctesting.TestChain {
 }
 
 func (s *CoreSuite) providerChain() *ibctesting.TestChain {
-	return s.ibcsim.Chain(ibctesting.GetChainID(0))
+	return s.simibc.Chain(ibctesting.GetChainID(0))
 }
 
 func (s *CoreSuite) consumerChain() *ibctesting.TestChain {
-	return s.ibcsim.Chain(ibctesting.GetChainID(1))
+	return s.simibc.Chain(ibctesting.GetChainID(1))
 }
 
 func (b *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
@@ -181,33 +184,31 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 	before := len(ctx.EventManager().Events())
 	s.consumerKeeper().Slash(ctx, val, h, 0, sdk.Dec{}, kind)
 	evts := ctx.EventManager().ABCIEvents()
-	// TODO: It's weird to have this here
 	for _, e := range evts[before:] {
 		if e.Type == channeltypes.EventTypeSendPacket {
 			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
-			// Collect any packets which may be emitted as a result of the action
-			s.ibcsim.Link.AddPacket(s.chainID(C), packet)
+			s.simibc.Link.AddPacket(s.chainID(C), packet)
 		}
 	}
 }
 
 func (s *CoreSuite) updateClient(chain string) {
-	s.ibcsim.UpdateClient(s.chainID(chain))
+	s.simibc.UpdateClient(s.chainID(chain))
 }
 
 // deliver numPackets packets from the network to chain
 func (s *CoreSuite) deliver(chain string, numPackets int) {
 	// Makes sure client is updated
-	s.ibcsim.UpdateClient(s.chainID(chain))
+	s.simibc.UpdateClient(s.chainID(chain))
 	// Deliver any outstanding acks
-	s.ibcsim.DeliverAcks(s.chainID(chain), 999999)
+	s.simibc.DeliverAcks(s.chainID(chain), 999999)
 	// Consume deliverable packets from the network
-	s.ibcsim.DeliverPackets(s.chainID(chain), numPackets)
+	s.simibc.DeliverPackets(s.chainID(chain), numPackets)
 }
 
 func (s *CoreSuite) endAndBeginBlock(chain string) {
-	s.ibcsim.EndAndBeginBlock(s.chainID(chain), time.Second*6, func() {
+	s.simibc.EndAndBeginBlock(s.chainID(chain), time.Second*6, func() {
 		s.matchState()
 	})
 }
@@ -315,9 +316,6 @@ func (s *CoreSuite) TestAssumptions() {
 	// Consumer unbonding period is correct
 	s.Require().Equal(s.consumerKeeper().UnbondingTime(s.ctx(C)), initState.UnbondingC)
 
-	// TODO: check light client trusting period
-	// TODO: check light client max clock drift
-
 	// Each validator has signing info
 	for i := 0; i < len(initState.ValStates.Tokens); i++ {
 		_, found := s.providerSlashingKeeper().GetValidatorSigningInfo(s.ctx(P), s.consAddr(int64(i)))
@@ -400,21 +398,22 @@ func (s *CoreSuite) TestAssumptions() {
 		}
 	}
 
-	// Both chain times are zero'd
-	// TODO: comment on +6, unhardcode
+	// The offset time is the last committed time, but the SUT is +1 block ahead
+	// because the currentHeader time is ahead of the last committed. Therefore sub
+	// the difference (duration of 1 block).
 	s.Require().Equal(int64(s.offsetTimeUnix), s.time(P).Add(time.Second*(-6)).Unix())
 	s.Require().Equal(int64(s.offsetTimeUnix), s.time(C).Add(time.Second*(-6)).Unix())
 
-	// TODO: comment on -1
-	// Both chain heights are zero'd
+	// The offset height is the last committed height, but the SUT is +1 because
+	// the currentHeader is +1 ahead of the last committed. Therefore sub 1.
 	s.Require().Equal(s.offsetHeight, s.height(P)-1)
 	s.Require().Equal(s.offsetHeight, s.height(C)-1)
 
 	// Network is empty
-	s.Require().Empty(s.ibcsim.Link.OutboxPackets[P])
-	s.Require().Empty(s.ibcsim.Link.OutboxPackets[C])
-	s.Require().Empty(s.ibcsim.Link.OutboxAcks[P])
-	s.Require().Empty(s.ibcsim.Link.OutboxAcks[C])
+	s.Require().Empty(s.simibc.Link.OutboxPackets[P])
+	s.Require().Empty(s.simibc.Link.OutboxPackets[C])
+	s.Require().Empty(s.simibc.Link.OutboxAcks[P])
+	s.Require().Empty(s.simibc.Link.OutboxAcks[C])
 }
 
 // Test a set of traces
@@ -422,7 +421,6 @@ func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
 		Data: LoadTraces("traces.json"),
 	}
-	// s.traces.Data = []TraceData{s.traces.Data[7]}
 	for i := range s.traces.Data {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
@@ -448,19 +446,13 @@ func TestCoreSuite(t *testing.T) {
 	suite.Run(t, new(CoreSuite))
 }
 
-// SetupTest sets up the test suite in a 'zero' state which is ready
-// to have a trace executed against it.
-// A zero state is a state in which two chains, a Provider and Consumer
-// are in communication via IBC and CCV and for which the validator
-// sets on both chains are equal.
-// In the zero state, the governance proposal and handshake
-// components of the Interchain Security lifecycle are complete.
-// The zero state is exactly the state that the model is initialized to.
+// SetupTest sets up the test suite in a 'zero' state which matches
+// the initial state in the model.
 func (s *CoreSuite) SetupTest() {
 	state := initState
 	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(&s.Suite, state)
 	s.valAddresses = valAddresses
 	s.offsetHeight = offsetHeight
 	s.offsetTimeUnix = offsetTimeUnix
-	s.ibcsim = simibc.MakeRelayedPath(s.Suite.T(), path)
+	s.simibc = simibc.MakeRelayedPath(s.Suite.T(), path)
 }
