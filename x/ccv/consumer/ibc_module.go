@@ -35,10 +35,17 @@ func (am AppModule) OnChanOpenInit(
 			"provider channel: %s already set", providerChannel)
 	}
 
+	// Validate parameters
 	if err := validateCCVChannelParams(
 		ctx, am.keeper, order, portID, version,
 	); err != nil {
 		return err
+	}
+
+	// ensure the counterparty port ID matches the expected provider port ID
+	if counterparty.PortId != ccv.ProviderPortID {
+		return sdkerrors.Wrapf(porttypes.ErrInvalidPort,
+			"invalid counterparty port: %s, expected %s", counterparty.PortId, ccv.ProviderPortID)
 	}
 
 	// Claim channel capability passed back by IBC module
@@ -59,16 +66,18 @@ func validateCCVChannelParams(
 	portID string,
 	version string,
 ) error {
+	// Only ordered channels allowed
 	if order != channeltypes.ORDERED {
 		return sdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.ORDERED, order)
 	}
 
-	// Require portID is the portID CCV module is bound to
+	// the port ID must match the port ID the CCV module is bounded to
 	boundPort := keeper.GetPort(ctx)
 	if boundPort != portID {
 		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
 	}
 
+	// the version must match the expected version
 	if version != ccv.Version {
 		return sdkerrors.Wrapf(ccv.ErrInvalidVersion, "got %s, expected %s", version, ccv.Version)
 	}
@@ -94,10 +103,10 @@ func (am AppModule) OnChanOpenAck(
 	ctx sdk.Context,
 	portID,
 	channelID string,
-	counterpartyChannelID string,
+	_ string, // Counter party channel ID is unused per spec
 	counterpartyMetadata string,
 ) error {
-	// ensure provider channel has already been created
+	// ensure provider channel has not already been created
 	if providerChannel, ok := am.keeper.GetProviderChannel(ctx); ok {
 		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel,
 			"provider channel: %s already established", providerChannel)

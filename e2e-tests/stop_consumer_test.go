@@ -8,7 +8,6 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -285,11 +284,11 @@ func (s *ProviderTestSuite) SendEmptyVSCPacket() {
 	)
 
 	seq, ok := s.providerChain.App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
-		s.providerChain.GetContext(), providertypes.PortID, s.path.EndpointB.ChannelID)
+		s.providerChain.GetContext(), ccv.ProviderPortID, s.path.EndpointB.ChannelID)
 	s.Require().True(ok)
 
-	packet := channeltypes.NewPacket(pd.GetBytes(), seq, providertypes.PortID, s.path.EndpointB.ChannelID,
-		consumertypes.PortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
+	packet := channeltypes.NewPacket(pd.GetBytes(), seq, ccv.ProviderPortID, s.path.EndpointB.ChannelID,
+		ccv.ConsumerPortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
 	err := s.path.EndpointB.SendPacket(packet)
 	s.Require().NoError(err)
