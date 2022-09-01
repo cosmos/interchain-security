@@ -173,8 +173,8 @@ func (s *CoreSuite) undelegate(val int64, amt int64) {
 	_ = err
 }
 
-// consumerSlash simulates a slash event occurring on the consumer chain
-// it can be for a downtime or doublesign
+// consumerSlash simulates a slash event occurring on the consumer chain.
+// It can be for a downtime or doublesign.
 func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
 	kind := stakingtypes.DoubleSign
 	if isDowntime {
@@ -183,6 +183,7 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 	ctx := s.ctx(C)
 	before := len(ctx.EventManager().Events())
 	s.consumerKeeper().Slash(ctx, val, h, 0, sdk.Dec{}, kind)
+	// consumer module emits packets on slash, so these must be collected.
 	evts := ctx.EventManager().ABCIEvents()
 	for _, e := range evts[before:] {
 		if e.Type == channeltypes.EventTypeSendPacket {
@@ -403,8 +404,8 @@ func (s *CoreSuite) TestAssumptions() {
 	// The offset time is the last committed time, but the SUT is +1 block ahead
 	// because the currentHeader time is ahead of the last committed. Therefore sub
 	// the difference (duration of 1 block).
-	s.Require().Equal(int64(s.offsetTimeUnix), s.time(P).Add(time.Second*(-6)).Unix())
-	s.Require().Equal(int64(s.offsetTimeUnix), s.time(C).Add(time.Second*(-6)).Unix())
+	s.Require().Equal(int64(s.offsetTimeUnix), s.time(P).Add(-initState.BlockSeconds).Unix())
+	s.Require().Equal(int64(s.offsetTimeUnix), s.time(C).Add(-initState.BlockSeconds).Unix())
 
 	// The offset height is the last committed height, but the SUT is +1 because
 	// the currentHeader is +1 ahead of the last committed. Therefore sub 1.
@@ -434,6 +435,7 @@ func (s *CoreSuite) TestTraces() {
 				if r := recover(); r != nil {
 					fmt.Println(s.traces.Diagnostic())
 					fmt.Println(r)
+					// Double panic to halt.
 					panic("Panic occurred during TestTraces")
 				}
 			}()
