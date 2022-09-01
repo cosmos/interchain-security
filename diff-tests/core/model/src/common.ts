@@ -122,6 +122,12 @@ interface CommittedBlock {
   invariantSnapshot: InvariantSnapshot;
 }
 
+/**
+ * A snapshot of model state which is the consequence
+ * of doing an Action against the model. Used
+ * for state comparisons with the SUT, and to make
+ * traces human readable.
+ */
 interface Consequence {
   h?: number; // Chain local height
   t?: number; // Chain local timestamp
