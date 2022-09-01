@@ -10,7 +10,6 @@ The following aspects of the system are tested
 
 - [x] Sending VSC packets from provider to one consumer
 - [x] Sending VSC maturities from one consumer to provider
-- [x] The bond-based-consumer-voting-power property
 - [x] Slashing logic (not including actual token burning)
 - [x] Validator power change
 - [x] Validators leaving or joining the active validor set
@@ -21,9 +20,12 @@ The following aspects of the system are tested
 - [x] Valiator jailing
 - [x] Validator tombstoning
 - [x] Packet acknowledgements
+- [x] The 'Bond Based Consumer Voting Power' property ([link](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties))
+- [ ] The 'Validator Set Replication' property ([link](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties))
+- [ ] The 'Slashable Consumer Misbehavior' property ([link](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties)) (_maybe_)
+- [ ] PendingVSC when consumer start (_maybe_)
 - [ ] Redelegation operations
 - [ ] Unjailing operations
-- [ ] PendingVSC when consumer start (_undecided_)
 
 ### NOT Tested
 
