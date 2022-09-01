@@ -113,7 +113,7 @@ A workflow of updating the model and generating new traces for testing against t
 # Generate traces for 30 seconds
 yarn start gen 30
 # Collect and compact a subset of these traces
-yarn start subset </abs/path/to/x/ccv/difftest/traces.json> 20
+yarn start subset </abs/path/to/core/driver/traces.json> 200
 ```
 
 ### Extending the model
