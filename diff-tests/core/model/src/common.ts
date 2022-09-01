@@ -19,7 +19,7 @@ interface Undelegation {
   initialBalance: number;
   onHold: boolean;
   opID: number;
-  expired: boolean;
+  willBeProcessedByStakingModule: boolean;
 }
 
 /**

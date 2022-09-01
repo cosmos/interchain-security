@@ -238,12 +238,16 @@ class Staking {
     );
 
     // Process undelegations
-    const expiredUndels = this.undelegationQ.filter(
-      (e) => e.completionTime <= this.m.t[P] && !e.expired,
+    const processedUndels = this.undelegationQ.filter(
+      (e) =>
+        e.completionTime <= this.m.t[P] &&
+        e.willBeProcessedByStakingModule,
     );
-    expiredUndels.forEach((e: Undelegation) => (e.expired = true));
-    const completedUndels = expiredUndels.filter((e) => !e.onHold);
-    if (completedUndels.length < expiredUndels.length) {
+    processedUndels.forEach(
+      (e: Undelegation) => (e.willBeProcessedByStakingModule = false),
+    );
+    const completedUndels = processedUndels.filter((e) => !e.onHold);
+    if (completedUndels.length < processedUndels.length) {
       this.m.events.push(Event.SOME_UNDELS_EXPIRED_BUT_NOT_COMPLETED);
     }
     this.undelegationQ = this.undelegationQ.filter(
@@ -285,7 +289,7 @@ class Staking {
       initialBalance: amt,
       onHold: true,
       opID: this.opID,
-      expired: false,
+      willBeProcessedByStakingModule: true,
     };
     this.undelegationQ.push(und);
     this.m.ccvP.afterUnbondingInitiated(this.opID);
