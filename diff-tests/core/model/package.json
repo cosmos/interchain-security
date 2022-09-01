@@ -1,7 +1,7 @@
 {
-  "name": "node-typescript-boilerplate",
-  "version": "0.0.0",
-  "description": "Minimalistic boilerplate to quick-start Node.js development in TypeScript.",
+  "name": "diff-tests-core",
+  "version": "3.0.1",
+  "description": "A model for generating difference tests for Interchain Security core protocol components.",
   "type": "module",
   "engines": {
     "node": ">= 16.13 <17"
@@ -34,7 +34,7 @@
     "prettier": "prettier --config .prettierrc --write .",
     "test:watch": "jest --watch"
   },
-  "author": "Jakub Synowiec <jsynowiec@users.noreply.github.com>",
+  "author": "",
   "license": "Apache-2.0",
   "dependencies": {
     "@types/clone-deep": "^4.0.1",
