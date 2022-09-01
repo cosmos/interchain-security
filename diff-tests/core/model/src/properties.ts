@@ -63,7 +63,10 @@ class PartialOrder {
    * @returns Returns the height greatest predecessor block on the counterparty
    * chain if it exists, else undefined.
    */
-  getGreatestPred = (chain: Chain, height: number) => {
+  getGreatestPred = (
+    chain: Chain,
+    height: number,
+  ): number | undefined => {
     const it = this.greatestPred[chain].keys();
     let bestH = -1;
     let bestV = -1;
@@ -90,7 +93,7 @@ class PartialOrder {
    * @returns Returns the height of the least successing block on the counterparty
    * chain if it exists, else undefined.
    */
-  getLeastSucc = (chain: Chain, height: number) => {
+  getLeastSucc = (chain: Chain, height: number): number | undefined => {
     const it = this.leastSucc[chain].keys();
     let bestH = 100000000000000; // Infinity
     let bestAnswer = -1;
@@ -117,7 +120,6 @@ class BlockHistory {
     provider: new Map(),
     consumer: new Map(),
   };
-  hLastCommit: Record<Chain, number> = { provider: 0, consumer: 0 };
   commitBlock = (chain: Chain, invariantSnapshot: InvariantSnapshot) => {
     const h = invariantSnapshot.h[chain];
     const b: CommittedBlock = {
@@ -125,7 +127,6 @@ class BlockHistory {
       invariantSnapshot,
     };
     this.blocks[chain].set(h, b);
-    this.hLastCommit[chain] = h;
   };
 }
 
@@ -189,7 +190,7 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
   function powerConsumer(block: CommittedBlock) {
     return block.invariantSnapshot.power;
   }
-  function inner(hc: number) {
+  function inner(hc: number): boolean {
     const hp = partialOrder.getGreatestPred(C, hc);
     assert(hp !== undefined, 'this should never happen.');
     function getHC_() {
