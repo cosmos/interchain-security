@@ -133,10 +133,18 @@ class ActionGenerator {
     throw `kind doesn't match`;
   };
 
+  /**
+   * Update internal state to inform rule based action generation
+   * and prevent generating traces which over approximate the system.
+   * e.g. traces that expire the light clients or jail all validators.
+   * @param a action
+   */
   do = (a: Action) => {
+    // Update internal state to prevent jailing all validators
     if (a.kind === 'ConsumerSlash') {
       this.didSlash[(a as ConsumerSlash).val] = true;
     }
+    // Update internal state to prevent expiring light clients
     if (a.kind === 'UpdateClient') {
       const chain = (a as UpdateClient).chain;
       if (
@@ -149,6 +157,7 @@ class ActionGenerator {
       this.tLastTrustedHeader[chain] =
         this.tLastCommit[chain == P ? C : P];
     }
+    // Update internal state to prevent expiring light clients
     if (a.kind === 'EndAndBeginBlock') {
       const chain = (a as EndAndBeginBlock).chain;
       this.tLastCommit[chain] = this.model.t[chain];
