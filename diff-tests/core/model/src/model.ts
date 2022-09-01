@@ -155,13 +155,22 @@ class Staking {
     );
 
     {
-      // Check if 2/3 of power of old val set is included in new one
-      const lastPowerTheseVals = this.lastTokens.reduce(
+      // Is at least 2/3 of new active voting power held by
+      // old validators?
+
+      // How much active power does the old val set have?
+      const newActivePowerOldVals = this.tokens.reduce(
+        (sum, x, i) =>
+          // old val and new val
+          this.lastVals.includes(i) && vals.includes(i) ? sum + x : sum,
+        0,
+      );
+      // How much active power is there in total?
+      const newActivePowerTotal = this.tokens.reduce(
         (sum, x, i) => (vals.includes(i) ? sum + x : sum),
         0,
       );
-      const nowTotalPower = this.tokens.reduce((sum, x) => sum + x, 0);
-      if (lastPowerTheseVals < (2 / 3) * nowTotalPower) {
+      if (newActivePowerOldVals < (2 / 3) * newActivePowerTotal) {
         this.m.events.push(Event.MORE_THAN_ONE_THIRD_VAL_POWER_CHANGE);
       }
     }
