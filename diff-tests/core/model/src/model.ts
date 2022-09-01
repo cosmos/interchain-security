@@ -97,13 +97,14 @@ class Outbox {
 class Staking {
   // Model handle
   m;
-  // Validator delegations from the delegator
+  // Validator delegations from the sole delegator account.
   // A fixed descending order is used for the initial values to allow
   // easy setup in the SUT.
   delegation: number[];
-  // Validator tokens
-  // additional units are given to prevent validators from being deleted
-  // by the staking module when the delegation falls to 0.
+  // Validator tokens. Tokens are equivalent to power, with a ratio 1:1.
+  // Validator tokens are not equal to delegation, because the validator
+  // may have tokens from delegation by OTHER delegators, and we model
+  // a single delegator.
   tokens: number[];
   // Validator status
   status: Status[];
@@ -114,7 +115,9 @@ class Staking {
   // Validator jail timestamp
   // Undefined if validator is not jailed
   jailed: (number | undefined)[];
-  // Initial balance of delegator account.
+  // Initial balance of the sole delegator account.
+  // Only a single delegator is modelled, as this seems sufficient
+  // to exercise all Interchain Security logic.
   delegatorTokens: number;
   // Unique ID used to count unbonding and redelegation queue entries,
   // as well as unbonding validators.
