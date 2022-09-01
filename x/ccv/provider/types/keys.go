@@ -88,6 +88,11 @@ const (
 	LockUnbondingOnTimeoutBytePrefix
 )
 
+const (
+	// UnbondingOpIndexKey should be of set length: prefix + hashed chain ID + uint64
+	UnbondingOpIndexKeySize = 1 + 32 + 8
+)
+
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {
 	return []byte{PortByteKey}
@@ -199,12 +204,12 @@ func UnbondingOpIndexKey(chainID string, valsetUpdateID uint64) []byte {
 }
 
 // ParseUnbondingOpIndexKey parses an unbonding op index key for VSC ID
+// Removes the prefix + chainID from index key and returns only the key part.
 func ParseUnbondingOpIndexKey(key []byte) (vscID []byte, err error) {
-	// This key should be of set length: prefix + hashed chain ID + uint64
-	expectedBytes := 1 + 32 + 8
-	if len(key) != expectedBytes {
+	if len(key) != UnbondingOpIndexKeySize {
 		return nil, sdkerrors.Wrapf(
-			sdkerrors.ErrLogic, "key provided is incorrect: the key has incorrect length, expected %d, got %d", expectedBytes, len(key),
+			sdkerrors.ErrLogic, "key provided is incorrect: the key has incorrect length, expected %d, got %d",
+			UnbondingOpIndexKeySize, len(key),
 		)
 	}
 	return key[1+32:], nil
