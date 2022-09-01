@@ -59,6 +59,14 @@ func (f *RelayedPath) UpdateClient(chainID string) {
 }
 
 // DeliverPackets delivers <num> packets to chain
+// A real relayer will relay packets from one chain to another chain
+// in two steps. First it will observe sufficiently committed outbound
+// packets on the sender chain. Second, it will submit transactions
+// containing those packets to the receiver chain.
+// This method simulates the second step: sufficiently committed
+// packets that have been already added to the OrderedLink will be
+// delivered. It is necessary to add outbound packets to the link
+// separately.
 func (f *RelayedPath) DeliverPackets(chainID string, num int) {
 	for _, p := range f.Link.ConsumePackets(f.other(chainID), num) {
 		ack, err := TryRecvPacket(f.endpoint(f.other(chainID)), f.endpoint(chainID), p.Packet)
