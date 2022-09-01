@@ -20,16 +20,16 @@ type RelayedPath struct {
 	t             *testing.T
 	path          *ibctesting.Path
 	clientHeaders map[string][]*ibctmtypes.Header
-	Link          NetworkLink
+	Link          OrderedLink
 }
 
 // MakeRelayedPath returns an initialized RelayedPath
 func MakeRelayedPath(t *testing.T, path *ibctesting.Path) RelayedPath {
 	return RelayedPath{
 		t:             t,
-		Link:          MakeNetworkLink(),
 		clientHeaders: map[string][]*ibctmtypes.Header{},
 		path:          path,
+		Link:          MakeOrderedLink(),
 	}
 }
 
@@ -81,7 +81,7 @@ func (f *RelayedPath) DeliverAcks(chainID string, num int) {
 
 // EndAndBeginBlock calls EndBlock and commits block state, and then increments time and calls
 // BeginBlock, for the chain. preCommitCallback is called after EndBlock and before Commit,
-// allowing access to the sdk.Context are EndBlock.
+// allowing access to the sdk.Context after EndBlock.
 func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preCommitCallback func()) {
 	c := f.Chain(chainID)
 

@@ -50,7 +50,7 @@ import (
 
 type Builder struct {
 	suite          *suite.Suite
-	link           simibc.NetworkLink
+	link           simibc.OrderedLink
 	path           *ibctesting.Path
 	coordinator    *ibctesting.Coordinator
 	clientHeaders  map[string][]*ibctmtypes.Header
@@ -481,7 +481,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 }
 
 func (b *Builder) createLink() {
-	b.link = simibc.MakeNetworkLink()
+	b.link = simibc.MakeOrderedLink()
 	// init utility data structures
 	b.mustBeginBlock = map[string]bool{P: true, C: true}
 	b.clientHeaders = map[string][]*ibctmtypes.Header{}
