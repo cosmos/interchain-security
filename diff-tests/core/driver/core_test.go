@@ -213,13 +213,15 @@ func (s *CoreSuite) endAndBeginBlock(chain string) {
 	})
 }
 
+// matchState compares the state in the SUT to the state in the
+// the model.
 func (s *CoreSuite) matchState() {
 
 	// Get a diagnostic for debugging
 	diagnostic := s.traces.Diagnostic()
 	chain := s.traces.Action().Chain
 
-	// Model time starts at 0 so we need an offset for comparisons.
+	// Model time, height start at 0 so we need an offset for comparisons.
 	sutTimeOffset := time.Unix(s.offsetTimeUnix, 0).UTC()
 	modelTimeOffset := time.Duration(s.traces.Time()) * time.Second
 	s.Require().Equalf(sutTimeOffset.Add(modelTimeOffset), s.time(chain), diagnostic+"%s Time mismatch", chain)
