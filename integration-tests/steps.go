@@ -47,7 +47,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: SubmitConsumerProposalAction{
+		action: submitConsumerProposalAction{
 			chain:         chainID("provi"),
 			from:          validatorID("alice"),
 			deposit:       10000001,
@@ -74,7 +74,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: VoteGovProposalAction{
+		action: voteGovProposalAction{
 			chain:      chainID("provi"),
 			from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
 			vote:       []string{"yes", "yes", "yes"},
@@ -99,7 +99,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: StartConsumerChainAction{
+		action: startConsumerChainAction{
 			consumerChain: chainID("consu"),
 			providerChain: chainID("provi"),
 			validators: []StartChainValidator{
@@ -141,7 +141,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: AddIbcConnectionAction{
+		action: addIbcConnectionAction{
 			chainA:  chainID("consu"),
 			chainB:  chainID("provi"),
 			clientA: 0,
@@ -151,7 +151,7 @@ var happyPathSteps = []Step{
 		state: State{},
 	},
 	{
-		action: AddIbcChannelAction{
+		action: addIbcChannelAction{
 			chainA:      chainID("consu"),
 			chainB:      chainID("provi"),
 			connectionA: 0,
@@ -162,7 +162,7 @@ var happyPathSteps = []Step{
 		state: State{},
 	},
 	{
-		action: DelegateTokensAction{
+		action: delegateTokensAction{
 			chain:  chainID("provi"),
 			from:   validatorID("alice"),
 			to:     validatorID("alice"),
@@ -203,7 +203,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RelayPacketsAction{
+		action: relayPacketsAction{
 			chain:   chainID("provi"),
 			port:    "provider",
 			channel: 0,
@@ -236,7 +236,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: UnbondTokensAction{
+		action: unbondTokensAction{
 			chain:      chainID("provi"),
 			unbondFrom: validatorID("alice"),
 			sender:     validatorID("alice"),
@@ -261,7 +261,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RelayPacketsAction{
+		action: relayPacketsAction{
 			chain:   chainID("provi"),
 			port:    "provider",
 			channel: 0,
@@ -277,7 +277,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RedelegateTokensAction{
+		action: redelegateTokensAction{
 			chain:    chainID("provi"),
 			src:      validatorID("alice"),
 			dst:      validatorID("carol"),
@@ -305,7 +305,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RelayPacketsAction{
+		action: relayPacketsAction{
 			chain:   chainID("provi"),
 			port:    "provider",
 			channel: 0,
@@ -322,11 +322,11 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: SlashAction{
-			downOn: chainID("consu"),
+		action: downtimeSlashAction{
+			chain: chainID("consu"),
 			// TODO: First validator cannot be brought down until this issue is resolved:
 			// https://github.com/cosmos/interchain-security/issues/263
-			toDown: validatorID("bob"),
+			validator: validatorID("bob"),
 		},
 		state: State{
 			// validator should be slashed on consumer, powers not affected on either chain yet
@@ -347,7 +347,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RelayPacketsAction{
+		action: relayPacketsAction{
 			chain:   chainID("provi"),
 			port:    "provider",
 			channel: 0,
@@ -356,7 +356,7 @@ var happyPathSteps = []Step{
 			chainID("provi"): ChainState{
 				ValPowers: &map[validatorID]uint{
 					validatorID("alice"): 509,
-					// Downtime slash and corresponding voting power change are processed by provider
+					// Downtime jailing and corresponding voting power change are processed by provider
 					validatorID("bob"):   0,
 					validatorID("carol"): 501,
 				},
@@ -373,7 +373,7 @@ var happyPathSteps = []Step{
 	// A block is incremented each action, hence why VSC is committed on provider,
 	// and can now be relayed as packet to consumer
 	{
-		action: RelayPacketsAction{
+		action: relayPacketsAction{
 			chain:   chainID("provi"),
 			port:    "provider",
 			channel: 0,
@@ -390,10 +390,9 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RestoreVotingPowerAction{
-			bringUpOn: chainID("consu"),
+		action: unjailValidatorAction{
 			provider:  chainID("provi"),
-			toRestore: validatorID("bob"),
+			validator: validatorID("bob"),
 		},
 		state: State{
 			chainID("provi"): ChainState{
@@ -414,7 +413,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RelayPacketsAction{
+		action: relayPacketsAction{
 			chain:   chainID("provi"),
 			port:    "provider",
 			channel: 0,
@@ -431,9 +430,9 @@ var happyPathSteps = []Step{
 	},
 	// Now we test provider initiated downtime/slashing
 	{
-		action: SlashAction{
-			downOn: chainID("provi"),
-			toDown: validatorID("carol"),
+		action: downtimeSlashAction{
+			chain:     chainID("provi"),
+			validator: validatorID("carol"),
 		},
 		state: State{
 			chainID("provi"): ChainState{
@@ -454,7 +453,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RelayPacketsAction{
+		action: relayPacketsAction{
 			chain:   chainID("provi"),
 			port:    "provider",
 			channel: 0,
@@ -470,10 +469,9 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RestoreVotingPowerAction{
-			bringUpOn: chainID("provi"),
+		action: unjailValidatorAction{
 			provider:  chainID("provi"),
-			toRestore: validatorID("carol"),
+			validator: validatorID("carol"),
 		},
 		state: State{
 			chainID("provi"): ChainState{
@@ -493,7 +491,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RelayPacketsAction{
+		action: relayPacketsAction{
 			chain:   chainID("provi"),
 			port:    "provider",
 			channel: 0,

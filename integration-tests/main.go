@@ -34,32 +34,32 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 		tr.startChain(action, verbose)
 	case SendTokensAction:
 		tr.sendTokens(action, verbose)
-	case SubmitTextProposalAction:
+	case submitTextProposalAction:
 		tr.submitTextProposal(action, verbose)
-	case SubmitConsumerProposalAction:
+	case submitConsumerProposalAction:
 		tr.submitConsumerProposal(action, verbose)
-	case VoteGovProposalAction:
+	case voteGovProposalAction:
 		tr.voteGovProposal(action, verbose)
-	case StartConsumerChainAction:
+	case startConsumerChainAction:
 		tr.startConsumerChain(action, verbose)
-	case AddChainToRelayerAction:
+	case addChainToRelayerAction:
 		tr.addChainToRelayer(action, verbose)
-	case AddIbcConnectionAction:
+	case addIbcConnectionAction:
 		tr.addIbcConnection(action, verbose)
-	case AddIbcChannelAction:
+	case addIbcChannelAction:
 		tr.addIbcChannel(action, verbose)
-	case RelayPacketsAction:
+	case relayPacketsAction:
 		tr.relayPackets(action, verbose)
-	case DelegateTokensAction:
+	case delegateTokensAction:
 		tr.delegateTokens(action, verbose)
-	case UnbondTokensAction:
+	case unbondTokensAction:
 		tr.unbondTokens(action, verbose)
-	case RedelegateTokensAction:
+	case redelegateTokensAction:
 		tr.redelegateTokens(action, verbose)
-	case SlashAction:
-		tr.InvokeSlash(action, verbose)
-	case RestoreVotingPowerAction:
-		tr.RestoreVotingPower(action, verbose)
+	case downtimeSlashAction:
+		tr.invokeDowntimeSlash(action, verbose)
+	case unjailValidatorAction:
+		tr.unjailValidator(action, verbose)
 	default:
 		log.Fatalf(fmt.Sprintf(`unknown action: %#v`, action))
 	}
