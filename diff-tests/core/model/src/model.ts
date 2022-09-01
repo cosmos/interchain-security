@@ -128,6 +128,11 @@ class Staking {
   // Used to compute validator power changes used in VSCs
   lastTokens: number[];
 
+  constructor(model: Model, { staking }: ModelInitState) {
+    this.m = model;
+    Object.assign(this, staking);
+  }
+
   /**
    * Compute the new set of active validators
    */
@@ -159,11 +164,6 @@ class Staking {
     }
     return vals;
   };
-
-  constructor(model: Model, { staking }: ModelInitState) {
-    this.m = model;
-    Object.assign(this, staking);
-  }
 
   endBlockComputeValUpdates = () => {
     const oldVals = this.lastVals;
@@ -343,12 +343,21 @@ class Staking {
 
 class CCVProvider {
   m;
+  // height of onChanOpenConfirm event
   initialHeight: number;
+  // next id to use
   vscID: number;
+  // map ids to height of sending
+  // used to calculate infraction height from consumer initiated slashing
   vscIDtoH: Record<number, number>;
+  // map ids to unbonding operation ids
+  // used to mature unbonding operations when receiving maturity packets
   vscIDtoOpIDs: Map<number, number[]>;
-  downtimeSlashAcks: number[];
+  // validators who have been slashed since last VSC
+  downtimeSlashAcks: Validator[];
+  // is a validator tombstoned?
   tombstoned: boolean[];
+  // unbonding operations to be completed in EndBlock
   matureUnbondingOps: number[];
 
   constructor(model: Model, { ccvP }: ModelInitState) {
@@ -446,9 +455,14 @@ class CCVProvider {
 
 class CCVConsumer {
   m;
+  // maps consumer height h to the id of the last vscid
+  // received at height h-1
   hToVscID: Record<number, number>;
+  // validator power changes pending aggregation
   pendingChanges: Record<Validator, number>[];
+  // maps vscid to earliest timestamp to mature
   maturingVscs: Map<number, number>;
+  // is there an outstanding downtime operation for a validator?
   outstandingDowntime: boolean[];
   // array of validators to power
   // value undefined if validator is not known to consumer
@@ -515,14 +529,14 @@ class CCVConsumer {
     this.hToVscID[this.m.h[C] + 1] = data.vscID;
     this.pendingChanges.push(data.updates);
     this.maturingVscs.set(data.vscID, this.m.t[C] + UNBONDING_SECONDS_C);
-    data.downtimeSlashAcks.forEach((val: number) => {
+    data.downtimeSlashAcks.forEach((val: Validator) => {
       this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_ACK);
       this.outstandingDowntime[val] = false;
     });
   };
 
   sendSlashRequest = (
-    val: number,
+    val: Validator,
     infractionHeight: number,
     isDowntime: boolean,
   ) => {
