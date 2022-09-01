@@ -60,7 +60,13 @@ class Outbox {
    * @param data packet data
    */
   add = (data: PacketData) => {
-    this.fifo.push([{ data, sendHeight: this.model.h[this.chain] }, 0]);
+    this.fifo.push([
+      {
+        data,
+        sendHeight: this.model.h[this.chain],
+      },
+      0,
+    ]);
   };
 
   /**
