@@ -91,6 +91,9 @@ func LoadTraces(fn string) []TraceData {
 	return ret
 }
 
+// Traces stores a list of traces
+// and gives a diagnostic for debugging
+// failed tests.
 type Traces struct {
 	// index of trace in json
 	CurrentTraceIx int
@@ -103,6 +106,13 @@ type Traces struct {
 // diagnostic returns a string for diagnosing errors
 func (t *Traces) Diagnostic() string {
 	return fmt.Sprintf("\n[diagnostic][trace %d, action %d, kind %s]", t.CurrentTraceIx, t.CurrentActionIx, t.Action().Kind)
+}
+
+func (t *Traces) Trace() TraceData {
+	return t.Data[t.CurrentTraceIx]
+}
+func (t *Traces) Actions() []ActionAndConsequence {
+	return t.Trace().Actions
 }
 
 func (t *Traces) Action() Action {

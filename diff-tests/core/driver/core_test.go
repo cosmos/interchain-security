@@ -257,7 +257,7 @@ func (s *CoreSuite) matchState() {
 }
 
 func (s *CoreSuite) executeTrace() {
-	for i := range s.traces.Data[s.traces.CurrentTraceIx].Actions {
+	for i := range s.traces.Actions() {
 		s.traces.CurrentActionIx = i
 		a := s.traces.Action()
 		switch a.Kind {
