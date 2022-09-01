@@ -208,7 +208,7 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 }
 
 func (s *CoreSuite) endAndBeginBlock(chain string) {
-	s.simibc.EndAndBeginBlock(s.chainID(chain), time.Second*6, func() {
+	s.simibc.EndAndBeginBlock(s.chainID(chain), initState.BlockSeconds, func() {
 		s.matchState()
 	})
 }
@@ -227,21 +227,21 @@ func (s *CoreSuite) matchState() {
 	s.Require().Equalf(sutTimeOffset.Add(modelTimeOffset), s.time(chain), diagnostic+"%s Time mismatch", chain)
 	s.Require().Equalf(s.offsetHeight+int64(s.traces.Height()), s.height(chain), diagnostic+"%s Time mismatch", chain)
 	if chain == P {
-		for j := 0; j < 4; j++ {
+		for j := 0; j < initState.NumValidators; j++ {
 			have := s.validatorStatus(int64(j))
 			s.Require().Equalf(s.traces.Status(j), have, diagnostic+"P bond status mismatch for val %d, expect %s, have %s", j, s.traces.Status(j).String(), have.String())
 		}
-		for j := 0; j < 4; j++ {
+		for j := 0; j < initState.NumValidators; j++ {
 			s.Require().Equalf(int64(s.traces.Tokens(j)), s.providerTokens(int64(j)), diagnostic+"P tokens mismatch for val %d", j)
 		}
 		// TODO: delegations
 		s.Require().Equalf(int64(s.traces.DelegatorTokens()), s.delegatorBalance(), diagnostic+"P del balance mismatch")
-		for j := 0; j < 4; j++ {
+		for j := 0; j < initState.NumValidators; j++ {
 			s.Require().Equalf(s.traces.Jailed(j) != nil, s.isJailed(int64(j)), diagnostic+"P jail status mismatch for val %d", j)
 		}
 	}
 	if chain == C {
-		for j := 0; j < 4; j++ {
+		for j := 0; j < initState.NumValidators; j++ {
 			exp := s.traces.ConsumerPower(j)
 			actual, err := s.consumerPower(int64(j))
 			if exp != nil {
