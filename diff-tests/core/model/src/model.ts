@@ -592,7 +592,7 @@ class Model {
     this.ccvC.sendSlashRequest(val, infractionHeight, isDowntime);
   };
 
-  updateClient = (chain: Chain) => {
+  updateClient = (_: Chain) => {
     // noop
   };
 
