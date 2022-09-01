@@ -668,8 +668,6 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 	tr.waitBlocks(action.chain, 10, time.Minute)
 	// Bring validator back up
 	tr.toggleValidatorDowntime(action.chain, action.validator, false, verbose)
-	// Wait the downtime_jail_duration set in config.go
-	time.Sleep(61 * time.Second)
 }
 
 // Toggles validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
@@ -711,6 +709,10 @@ type unjailValidatorAction struct {
 
 // Sends an unjail transaction to the provider chain
 func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
+
+	// Wait the downtime_jail_duration set in config.go
+	time.Sleep(61 * time.Second)
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
 		tr.containerConfig.instanceName,
