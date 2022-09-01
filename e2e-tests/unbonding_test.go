@@ -214,7 +214,7 @@ func (s *ProviderTestSuite) TestUnbondingNoConsumer() {
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
 
 	// increment time so that the unbonding period ends on the provider;
-	// cannot use incrementTimeByProviderUnbondingPeriod() since it tries
+	// cannot use incrementTimeByUnbondingPeriod() since it tries
 	// to also update the provider's client on the consumer
 	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
 	s.coordinator.IncrementTimeBy(providerUnbondingPeriod + time.Hour)
@@ -227,4 +227,120 @@ func (s *ProviderTestSuite) TestUnbondingNoConsumer() {
 	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
 	// - check that half the coins have been returned
 	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
+}
+
+// TestRedelegationNoConsumer tests a redelegate transaction
+// submitted on a provider chain with no consumers
+func (s *ProviderTestSuite) TestRedelegationNoConsumer() {
+
+	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
+	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
+
+	// remove the consumer chain, which was already registered during setup
+	providerKeeper.DeleteConsumerClientId(s.providerCtx(), s.consumerChain.ChainID)
+
+	// Setup delegator, bond amount, and src/dst validators
+	bondAmt := sdk.NewInt(10000000)
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	_, srcVal := s.getVal(0)
+	_, dstVal := s.getVal(1)
+
+	delegateAndRedelegate(
+		s,
+		delAddr,
+		srcVal,
+		dstVal,
+		bondAmt,
+	)
+
+	// 1 redelegation record should exist for original delegator
+	redelegations := checkRedelegations(s, delAddr, 1)
+
+	// Check that the only entry has appropriate maturation time, the unbonding period from now
+	checkRedelegationEntryCompletionTime(
+		s,
+		redelegations[0].Entries[0],
+		s.providerCtx().BlockTime().Add(stakingKeeper.UnbondingTime(s.providerCtx())),
+	)
+
+	// Increment time so that the unbonding period passes on the provider
+	incrementTimeByUnbondingPeriod(s, Provider)
+
+	// Call NextBlock on the provider (which increments the height)
+	s.providerChain.NextBlock()
+
+	// No redelegation records should exist for original delegator anymore
+	checkRedelegations(s, delAddr, 0)
+}
+
+// TestRedelegationWithConsumer tests a redelegate transaction submitted on a provider chain
+// when the unbonding period elapses first on the provider chain
+func (s *ProviderTestSuite) TestRedelegationProviderFirst() {
+	s.SetupCCVChannel()
+
+	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
+	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
+
+	// Setup delegator, bond amount, and src/dst validators
+	bondAmt := sdk.NewInt(10000000)
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	_, srcVal := s.getVal(0)
+	_, dstVal := s.getVal(1)
+
+	delegateAndRedelegate(
+		s,
+		delAddr,
+		srcVal,
+		dstVal,
+		bondAmt,
+	)
+
+	// 1 redelegation record should exist for original delegator
+	redelegations := checkRedelegations(s, delAddr, 1)
+
+	// Check that the only entry has appropriate maturation time, the unbonding period from now
+	checkRedelegationEntryCompletionTime(
+		s,
+		redelegations[0].Entries[0],
+		s.providerCtx().BlockTime().Add(stakingKeeper.UnbondingTime(s.providerCtx())),
+	)
+
+	// Save the current valset update ID
+	valsetUpdateID := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+
+	// Check that CCV unbonding op was created from AfterUnbondingInitiated hook
+	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true)
+
+	// Call NextBlock on the provider (which increments the height)
+	s.providerChain.NextBlock()
+
+	// Relay 2 VSC packets from provider to consumer (original delegation, and redelegation)
+	relayAllCommittedPackets(s, s.providerChain, s.path,
+		ccv.ProviderPortID, s.path.EndpointB.ChannelID, 2)
+
+	// Increment time so that the unbonding period ends on the provider
+	incrementTimeByUnbondingPeriod(s, Provider)
+
+	// 1 redelegation record should still exist for original delegator on provider
+	checkRedelegations(s, delAddr, 1)
+
+	// CCV unbonding op should also still exist
+	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true)
+
+	// Increment time so that the unbonding period ends on the consumer
+	incrementTimeByUnbondingPeriod(s, Consumer)
+
+	// Relay 2 VSCMatured packets from consumer to provider (original delegation and redelegation)
+	relayAllCommittedPackets(s, s.consumerChain,
+		s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 2)
+
+	//
+	// Check that the redelegation operation has now completed on provider
+	//
+
+	// Redelegation record should be deleted for original delegator
+	checkRedelegations(s, delAddr, 0)
+
+	// Check that ccv unbonding op has been deleted
+	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
 }

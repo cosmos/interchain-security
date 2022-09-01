@@ -54,6 +54,8 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 		tr.delegateTokens(action, verbose)
 	case UnbondTokensAction:
 		tr.unbondTokens(action, verbose)
+	case RedelegateTokensAction:
+		tr.redelegateTokens(action, verbose)
 	default:
 		log.Fatalf(fmt.Sprintf(`unknown action: %#v`, action))
 	}
