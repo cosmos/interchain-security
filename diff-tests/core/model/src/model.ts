@@ -340,7 +340,7 @@ class Staking {
       if (e.completionTime <= this.m.t[P]) {
         this.delegatorTokens += e.balance;
         this.undelegationQ = this.undelegationQ.filter((x) => x !== e);
-        this.m.events.push(Event.COMPLETE_UNDEL_NOW);
+        this.m.events.push(Event.COMPLETE_UNDEL_IMMEDIATE);
       } else {
         e.onHold = false;
         this.m.events.push(Event.SET_UNDEL_HOLD_FALSE);
@@ -377,17 +377,21 @@ class CCVProvider {
     Object.assign(this, ccvP);
   }
 
-  endBlock = () => {
+  endBlockCIS = () => {
     this.vscIDtoH[this.vscID] = this.m.h[P] + 1;
+  };
+
+  endBlockVSU = () => {
+    // notify staking module that unbonding operations can complete
     this.matureUnbondingOps.forEach((opID) => {
       this.m.staking.unbondingCanComplete(opID);
     });
     this.matureUnbondingOps = [];
     const valUpdates = this.m.staking.valUpdates();
-    const hasOps =
-      this.vscIDtoOpIDs.has(this.vscID) &&
-      0 < this.vscIDtoOpIDs.get(this.vscID)!.length;
-    if (0 < _.keys(valUpdates).length || hasOps) {
+    if (
+      0 < _.keys(valUpdates).length ||
+      this.vscIDtoOpIDs.has(this.vscID)
+    ) {
       if (0 === _.keys(valUpdates).length) {
         this.m.events.push(Event.SEND_VSC_NOT_BECAUSE_CHANGE);
       }
@@ -405,6 +409,11 @@ class CCVProvider {
       this.m.outbox[P].add(data);
     }
     this.vscID += 1;
+  };
+
+  endBlock = () => {
+    this.endBlockCIS();
+    this.endBlockVSU();
   };
 
   onReceive = (data: PacketData) => {
@@ -524,12 +533,16 @@ class CCVConsumer {
     this.pendingChanges = [];
 
     changes.forEach((power, val) => {
-      this.power[val] = undefined;
       if (0 < power) {
-        this.m.events.push(Event.CONSUMER_UPDATE_POWER_POSITIVE);
+        if (this.power[val] === undefined) {
+          this.m.events.push(Event.CONSUMER_ADD_VAL);
+        } else {
+          this.m.events.push(Event.CONSUMER_UPDATE_VAL);
+        }
         this.power[val] = power;
       } else {
-        this.m.events.push(Event.CONSUMER_UPDATE_POWER_ZERO);
+        this.power[val] = undefined;
+        this.m.events.push(Event.CONSUMER_DEL_VAL);
       }
     });
   };
