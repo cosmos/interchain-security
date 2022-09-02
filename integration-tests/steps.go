@@ -47,7 +47,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: SubmitConsumerProposalAction{
+		action: submitConsumerProposalAction{
 			chain:         chainID("provi"),
 			from:          validatorID("alice"),
 			deposit:       10000001,
@@ -74,7 +74,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: VoteGovProposalAction{
+		action: voteGovProposalAction{
 			chain:      chainID("provi"),
 			from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
 			vote:       []string{"yes", "yes", "yes"},
@@ -99,7 +99,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: StartConsumerChainAction{
+		action: startConsumerChainAction{
 			consumerChain: chainID("consu"),
 			providerChain: chainID("provi"),
 			validators: []StartChainValidator{
@@ -141,7 +141,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: AddIbcConnectionAction{
+		action: addIbcConnectionAction{
 			chainA:  chainID("consu"),
 			chainB:  chainID("provi"),
 			clientA: 0,
@@ -151,7 +151,7 @@ var happyPathSteps = []Step{
 		state: State{},
 	},
 	{
-		action: AddIbcChannelAction{
+		action: addIbcChannelAction{
 			chainA:      chainID("consu"),
 			chainB:      chainID("provi"),
 			connectionA: 0,
@@ -162,7 +162,7 @@ var happyPathSteps = []Step{
 		state: State{},
 	},
 	{
-		action: DelegateTokensAction{
+		action: delegateTokensAction{
 			chain:  chainID("provi"),
 			from:   validatorID("alice"),
 			to:     validatorID("alice"),
@@ -203,7 +203,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RelayPacketsAction{
+		action: relayPacketsAction{
 			chain:   chainID("provi"),
 			port:    "provider",
 			channel: 0,
@@ -236,16 +236,16 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: UnbondTokensAction{
+		action: unbondTokensAction{
 			chain:      chainID("provi"),
 			unbondFrom: validatorID("alice"),
 			sender:     validatorID("alice"),
-			amount:     11000000,
+			amount:     1000000,
 		},
 		state: State{
 			chainID("provi"): ChainState{
 				ValPowers: &map[validatorID]uint{
-					validatorID("alice"): 500,
+					validatorID("alice"): 510,
 					validatorID("bob"):   500,
 					validatorID("carol"): 500,
 				},
@@ -261,7 +261,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RelayPacketsAction{
+		action: relayPacketsAction{
 			chain:   chainID("provi"),
 			port:    "provider",
 			channel: 0,
@@ -269,7 +269,7 @@ var happyPathSteps = []Step{
 		state: State{
 			chainID("consu"): ChainState{
 				ValPowers: &map[validatorID]uint{
-					validatorID("alice"): 500,
+					validatorID("alice"): 510,
 					validatorID("bob"):   500,
 					validatorID("carol"): 500,
 				},
@@ -277,25 +277,27 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RedelegateTokensAction{
+		action: redelegateTokensAction{
 			chain:    chainID("provi"),
-			src:      validatorID("bob"),
+			src:      validatorID("alice"),
 			dst:      validatorID("carol"),
-			txSender: validatorID("bob"),
-			amount:   11000000,
+			txSender: validatorID("alice"),
+			// Leave alice with majority stake so non-faulty validators maintain more than
+			// 2/3 voting power during downtime tests below, avoiding chain halt
+			amount: 1000000,
 		},
 		state: State{
 			chainID("provi"): ChainState{
 				ValPowers: &map[validatorID]uint{
-					validatorID("alice"): 500,
-					validatorID("bob"):   489,
-					validatorID("carol"): 511,
+					validatorID("alice"): 509,
+					validatorID("bob"):   500,
+					validatorID("carol"): 501,
 				},
 			},
 			chainID("consu"): ChainState{
 				ValPowers: &map[validatorID]uint{
 					// Voting power changes not seen by consumer yet
-					validatorID("alice"): 500,
+					validatorID("alice"): 510,
 					validatorID("bob"):   500,
 					validatorID("carol"): 500,
 				},
@@ -303,7 +305,7 @@ var happyPathSteps = []Step{
 		},
 	},
 	{
-		action: RelayPacketsAction{
+		action: relayPacketsAction{
 			chain:   chainID("provi"),
 			port:    "provider",
 			channel: 0,
@@ -312,13 +314,199 @@ var happyPathSteps = []Step{
 			chainID("consu"): ChainState{
 				ValPowers: &map[validatorID]uint{
 					// Now power changes are seen by consumer
-					validatorID("alice"): 500,
-					validatorID("bob"):   489,
-					validatorID("carol"): 511,
+					validatorID("alice"): 509,
+					validatorID("bob"):   500,
+					validatorID("carol"): 501,
+				},
+			},
+		},
+	},
+	{
+		action: downtimeSlashAction{
+			chain: chainID("consu"),
+			// TODO: First validator cannot be brought down until this issue is resolved:
+			// https://github.com/cosmos/interchain-security/issues/263
+			validator: validatorID("bob"),
+		},
+		state: State{
+			// validator should be slashed on consumer, powers not affected on either chain yet
+			chainID("provi"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 509,
+					validatorID("bob"):   500,
+					validatorID("carol"): 501,
+				},
+			},
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 509,
+					validatorID("bob"):   500,
+					validatorID("carol"): 501,
+				},
+			},
+		},
+	},
+	{
+		action: relayPacketsAction{
+			chain:   chainID("provi"),
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			chainID("provi"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 509,
+					// Downtime jailing and corresponding voting power change are processed by provider
+					validatorID("bob"):   0,
+					validatorID("carol"): 501,
+				},
+			},
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 509,
+					validatorID("bob"):   500,
+					validatorID("carol"): 501,
+				},
+			},
+		},
+	},
+	// A block is incremented each action, hence why VSC is committed on provider,
+	// and can now be relayed as packet to consumer
+	{
+		action: relayPacketsAction{
+			chain:   chainID("provi"),
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 509,
+					// VSC now seen on consumer
+					validatorID("bob"):   0,
+					validatorID("carol"): 501,
+				},
+			},
+		},
+	},
+	{
+		action: unjailValidatorAction{
+			provider:  chainID("provi"),
+			validator: validatorID("bob"),
+		},
+		state: State{
+			chainID("provi"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 509,
+					// 1% of bob's stake should be slashed as set in config.go
+					validatorID("bob"):   495,
+					validatorID("carol"): 501,
+				},
+			},
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 509,
+					validatorID("bob"):   0,
+					validatorID("carol"): 501,
+				},
+			},
+		},
+	},
+	{
+		action: relayPacketsAction{
+			chain:   chainID("provi"),
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 509,
+					validatorID("bob"):   495,
+					validatorID("carol"): 501,
+				},
+			},
+		},
+	},
+	// Now we test provider initiated downtime/slashing
+	{
+		action: downtimeSlashAction{
+			chain:     chainID("provi"),
+			validator: validatorID("carol"),
+		},
+		state: State{
+			chainID("provi"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					// Non faulty validators still maintain just above 2/3 power here
+					validatorID("alice"): 509,
+					validatorID("bob"):   495,
+					validatorID("carol"): 0,
+				},
+			},
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 509,
+					validatorID("bob"):   495,
+					validatorID("carol"): 501,
+				},
+			},
+		},
+	},
+	{
+		action: relayPacketsAction{
+			chain:   chainID("provi"),
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 509,
+					validatorID("bob"):   495,
+					validatorID("carol"): 0,
+				},
+			},
+		},
+	},
+	{
+		action: unjailValidatorAction{
+			provider:  chainID("provi"),
+			validator: validatorID("carol"),
+		},
+		state: State{
+			chainID("provi"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 509,
+					validatorID("bob"):   495,
+					validatorID("carol"): 495,
+				},
+			},
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 509,
+					validatorID("bob"):   495,
+					validatorID("carol"): 0,
+				},
+			},
+		},
+	},
+	{
+		action: relayPacketsAction{
+			chain:   chainID("provi"),
+			port:    "provider",
+			channel: 0,
+		},
+		state: State{
+			chainID("consu"): ChainState{
+				ValPowers: &map[validatorID]uint{
+					validatorID("alice"): 509,
+					validatorID("bob"):   495,
+					validatorID("carol"): 495,
 				},
 			},
 		},
 	},
 
 	// TODO: Test full unbonding functionality, tracked as: https://github.com/cosmos/interchain-security/issues/311
+
 }
