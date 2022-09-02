@@ -108,6 +108,7 @@ type InvariantSnapshot = {
   h: Record<Chain, number>;
   t: Record<Chain, number>;
   tokens: number[];
+  status: Status[];
   undelegationQ: Undelegation[];
   delegatorTokens: number;
   power: (number | undefined)[];
@@ -146,6 +147,9 @@ interface TraceAction {
   consequence: Consequence;
 }
 
+/**
+ * See model.ts for field docstrings
+ */
 type ModelInitState = {
   h: Record<Chain, number>;
   t: Record<Chain, number>;

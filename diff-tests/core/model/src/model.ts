@@ -632,6 +632,7 @@ class Model {
       h: this.h,
       t: this.t,
       tokens: this.staking.tokens,
+      status: this.staking.status,
       undelegationQ: this.staking.undelegationQ,
       delegatorTokens: this.staking.delegatorTokens,
       power: this.ccvC.power,
