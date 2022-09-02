@@ -3,7 +3,6 @@ package core
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -604,7 +603,7 @@ func (b *Builder) updateClient(chainID string) {
 			b.coordinator.Fatal("updateClient")
 		}
 		if chainID == "testchain0" {
-			fmt.Println("suc update with header ", header.GetTime().String(), " at ", b.chain(P).CurrentHeader.Time.String())
+			// fmt.Println("suc update with header ", header.GetTime().String(), " at ", b.chain(P).CurrentHeader.Time.String())
 		}
 	}
 	b.clientHeaders[b.otherID(chainID)] = []*ibctmtypes.Header{}
