@@ -145,17 +145,20 @@ class ActionGenerator {
       this.didSlash[(a as ConsumerSlash).val] = true;
     }
     // Update internal state to prevent expiring light clients
-    if (a.kind === 'UpdateClient') {
+    if (a.kind === 'UpdateClient' || a.kind === 'Deliver') {
       const chain = (a as UpdateClient).chain;
       if (
         this.tLastTrustedHeader[chain] + TRUSTING_SECONDS <=
         this.model.t[chain]
       ) {
         // Sanity check to make sure client cannot expire
-        throw 'Client expired, model is not written correctly.';
+        throw 'Client expired (updateClient), model is not written correctly.';
       }
       this.tLastTrustedHeader[chain] =
         this.tLastCommit[chain == P ? C : P];
+      if (chain === P) {
+        console.log(`tlasttrusted`, this.tLastTrustedHeader[chain]);
+      }
     }
     // Update internal state to prevent expiring light clients
     if (a.kind === 'EndAndBeginBlock') {
@@ -360,13 +363,16 @@ function gen(seconds: number, checkProperties: boolean) {
  * results in the same behavior and model states.
  * @param actions
  */
-function replay(actions: Action[]) {
+function replay(actions: TraceAction[]) {
   const blocks = new BlockHistory();
   const events: Event[] = [];
   const model = new Model(blocks, events, MODEL_INIT_STATE);
+  const actionGenerator = new ActionGenerator(model);
   for (let i = 0; i < actions.length; i++) {
     const a = actions[i];
-    doAction(model, a);
+    console.log(a);
+    actionGenerator.do(a.action);
+    doAction(model, a.action);
   }
 }
 
@@ -382,7 +388,7 @@ function replayFile(fn: string, ix: number, numActions: number) {
   const traces = JSON.parse(fs.readFileSync(fn, 'utf8'));
   const trace = ix !== undefined ? traces[ix] : traces[0];
   const traceActions = trace.actions as TraceAction[];
-  const actions = traceActions.map((a) => a.action).slice(0, numActions);
+  const actions = traceActions.slice(0, numActions);
   replay(actions);
 }
 

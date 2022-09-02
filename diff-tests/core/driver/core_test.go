@@ -194,6 +194,17 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 	}
 }
 
+/*
+The bug is:
+
+In the model update is a noop and packets can be delivered regardless of updates
+
+In the code update does an update
+so does deliver
+
+this means if deliver uses all the headers too early, there may be no header left for a future updateclient
+*/
+
 func (s *CoreSuite) updateClient(chain string) {
 	s.simibc.UpdateClient(s.chainID(chain))
 }
@@ -201,7 +212,7 @@ func (s *CoreSuite) updateClient(chain string) {
 // deliver numPackets packets from the network to chain
 func (s *CoreSuite) deliver(chain string, numPackets int) {
 	// Makes sure client is updated
-	s.simibc.UpdateClient(s.chainID(chain))
+	s.updateClient(chain)
 	// Deliver any outstanding acks
 	s.simibc.DeliverAcks(s.chainID(chain), 999999)
 	// Consume deliverable packets from the network
@@ -259,7 +270,9 @@ func (s *CoreSuite) matchState() {
 func (s *CoreSuite) executeTrace() {
 	for i := range s.traces.Actions() {
 		s.traces.CurrentActionIx = i
+
 		a := s.traces.Action()
+
 		switch a.Kind {
 		case "Delegate":
 			s.delegate(
@@ -424,10 +437,14 @@ func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
 		Data: LoadTraces("traces.json"),
 	}
+	s.traces.Data = []TraceData{s.traces.Data[69]}
 	for i := range s.traces.Data {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
+			fmt.Println("BEGIN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+			fmt.Println("currentHeaderTime(s):", s.time(P).String(), s.time(C).String())
+
 			s.traces.CurrentTraceIx = i
 			defer func() {
 				// If a panic occurs, we trap it to print a diagnostic

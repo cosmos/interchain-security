@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -602,6 +603,9 @@ func (b *Builder) updateClient(chainID string) {
 		if err != nil {
 			b.coordinator.Fatal("updateClient")
 		}
+		if chainID == "testchain0" {
+			fmt.Println("suc update with header ", header.GetTime().String(), " at ", b.chain(P).CurrentHeader.Time.String())
+		}
 	}
 	b.clientHeaders[b.otherID(chainID)] = []*ibctmtypes.Header{}
 }
@@ -743,10 +747,13 @@ func (b *Builder) build() {
 	b.idempotentBeginBlock(P)
 	b.idempotentBeginBlock(C)
 
-	// Ensure both clients are up to date
-	b.updateClient(P)
-	b.updateClient(C)
-
+	b.endBlock(b.chainID(P))
+	b.endBlock(b.chainID(C))
+	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(b.initState.BlockSeconds).UTC()
+	b.beginBlock(b.chainID(P))
+	b.beginBlock(b.chainID(C))
+	b.updateClient(b.chainID(P))
+	b.updateClient(b.chainID(C))
 }
 
 func GetZeroState(suite *suite.Suite, initState InitState) (
