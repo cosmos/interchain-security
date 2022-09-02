@@ -6,7 +6,7 @@
   @typeAlias: time = Int; 
   @typeAlias: votingPowerOnChain = $node -> $power;
   @typeAlias: packet = $time;
-  @typeAlias: ack = [chain: $chain, packetTime: $time, ackTime: $time];
+  @typeAlias: matureVSCPacket = [chain: $chain, packet: $packet, maturityTime: $time];
 *)
 AliasesCVV == TRUE
 =============================================================================

@@ -4,20 +4,20 @@ EXTENDS Integers
 
 Nodes == {"1_OF_N", "2_OF_N", "3_OF_N", "4_OF_N"}
 ConsumerChains == {"1_OF_C", "2_OF_C", "3_OF_C", "4_OF_C"}
-\* MaturityDelay == 3 * 7 * 24 \* h
+\* UnbondingPeriod == 3 * 7 * 24 \* h
 \* Timeout == 4 * 7 * 24 \* h
 \* MaxDrift == 24 \* h
 
 CONSTANT 
   \* @type: $time;
-  MaturityDelay,
+  UnbondingPeriod,
   \* @type: $time;
   Timeout,
   \* @type: $time;
   MaxDrift
 
 CInit ==
-  /\ MaturityDelay \in Nat
+  /\ UnbondingPeriod \in Nat
   /\ Timeout \in Nat
   /\ MaxDrift \in Nat
   /\ MaxDrift < Timeout
@@ -28,10 +28,12 @@ VARIABLES
   votingPowerHist,
   \* @type: $votingPowerOnChain;
   votingPowerRunning,
-  \* @type: Set($chain);
-  activeConsumers,
-  \* @type: Set($ack);
-  acks
+  \* @type: $chain -> STATUS;
+  consumerStatus,
+  \* @type: $packet -> Set($chain);
+  expectedResponders,
+  \* @type: Set($matureVSCPacket);
+  maturePackets
 
 \* Consumer chains or both
 VARIABLES  
