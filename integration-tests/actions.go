@@ -140,13 +140,13 @@ func (tr TestRun) startChain(
 		log.Fatal(err)
 	}
 
-	tr.addChainToRelayer(AddChainToRelayerAction{
+	tr.addChainToRelayer(addChainToRelayerAction{
 		chain:     action.chain,
 		validator: action.validators[0].id,
 	}, verbose)
 }
 
-type SubmitTextProposalAction struct {
+type submitTextProposalAction struct {
 	chain       chainID
 	from        validatorID
 	deposit     uint
@@ -156,7 +156,7 @@ type SubmitTextProposalAction struct {
 }
 
 func (tr TestRun) submitTextProposal(
-	action SubmitTextProposalAction,
+	action submitTextProposalAction,
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -182,7 +182,7 @@ func (tr TestRun) submitTextProposal(
 	}
 }
 
-type SubmitConsumerProposalAction struct {
+type submitConsumerProposalAction struct {
 	chain         chainID
 	from          validatorID
 	deposit       uint
@@ -192,7 +192,7 @@ type SubmitConsumerProposalAction struct {
 }
 
 // TODO: import this directly from the module once it is merged
-type CreateConsumerChainProposalJSON struct {
+type createConsumerChainProposalJSON struct {
 	Title         string             `json:"title"`
 	Description   string             `json:"description"`
 	ChainId       string             `json:"chain_id"`
@@ -204,11 +204,11 @@ type CreateConsumerChainProposalJSON struct {
 }
 
 func (tr TestRun) submitConsumerProposal(
-	action SubmitConsumerProposalAction,
+	action submitConsumerProposalAction,
 	verbose bool,
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
-	prop := CreateConsumerChainProposalJSON{
+	prop := createConsumerChainProposalJSON{
 		Title:         "Create a chain",
 		Description:   "Gonna be a great chain",
 		ChainId:       string(tr.chainConfigs[action.consumerChain].chainId),
@@ -257,7 +257,7 @@ func (tr TestRun) submitConsumerProposal(
 	}
 }
 
-type VoteGovProposalAction struct {
+type voteGovProposalAction struct {
 	chain      chainID
 	from       []validatorID
 	vote       []string
@@ -265,7 +265,7 @@ type VoteGovProposalAction struct {
 }
 
 func (tr TestRun) voteGovProposal(
-	action VoteGovProposalAction,
+	action voteGovProposalAction,
 	verbose bool,
 ) {
 	var wg sync.WaitGroup
@@ -299,14 +299,14 @@ func (tr TestRun) voteGovProposal(
 	time.Sleep(time.Duration(tr.chainConfigs[action.chain].votingWaitTime) * time.Second)
 }
 
-type StartConsumerChainAction struct {
+type startConsumerChainAction struct {
 	consumerChain chainID
 	providerChain chainID
 	validators    []StartChainValidator
 }
 
 func (tr TestRun) startConsumerChain(
-	action StartConsumerChainAction,
+	action startConsumerChainAction,
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -337,7 +337,7 @@ func (tr TestRun) startConsumerChain(
 	}, verbose)
 }
 
-type AddChainToRelayerAction struct {
+type addChainToRelayerAction struct {
 	chain     chainID
 	validator validatorID
 }
@@ -368,7 +368,7 @@ websocket_addr = "%s"
 `
 
 func (tr TestRun) addChainToRelayer(
-	action AddChainToRelayerAction,
+	action addChainToRelayerAction,
 	verbose bool,
 ) {
 	valIp := tr.getValidatorIP(action.chain, action.validator)
@@ -418,7 +418,7 @@ func (tr TestRun) addChainToRelayer(
 	}
 }
 
-type AddIbcConnectionAction struct {
+type addIbcConnectionAction struct {
 	chainA  chainID
 	chainB  chainID
 	clientA uint
@@ -427,7 +427,7 @@ type AddIbcConnectionAction struct {
 }
 
 func (tr TestRun) addIbcConnection(
-	action AddIbcConnectionAction,
+	action addIbcConnectionAction,
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -464,7 +464,7 @@ func (tr TestRun) addIbcConnection(
 	}
 }
 
-type AddIbcChannelAction struct {
+type addIbcChannelAction struct {
 	chainA      chainID
 	chainB      chainID
 	connectionA uint
@@ -474,7 +474,7 @@ type AddIbcChannelAction struct {
 }
 
 func (tr TestRun) addIbcChannel(
-	action AddIbcChannelAction,
+	action addIbcChannelAction,
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -518,14 +518,14 @@ func (tr TestRun) addIbcChannel(
 	}
 }
 
-type RelayPacketsAction struct {
+type relayPacketsAction struct {
 	chain   chainID
 	port    string
 	channel uint
 }
 
 func (tr TestRun) relayPackets(
-	action RelayPacketsAction,
+	action relayPacketsAction,
 	verbose bool,
 ) {
 	// hermes clear packets ibc0 transfer channel-13
@@ -545,7 +545,7 @@ func (tr TestRun) relayPackets(
 	}
 }
 
-type DelegateTokensAction struct {
+type delegateTokensAction struct {
 	chain  chainID
 	from   validatorID
 	to     validatorID
@@ -553,7 +553,7 @@ type DelegateTokensAction struct {
 }
 
 func (tr TestRun) delegateTokens(
-	action DelegateTokensAction,
+	action delegateTokensAction,
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -581,7 +581,7 @@ func (tr TestRun) delegateTokens(
 	}
 }
 
-type UnbondTokensAction struct {
+type unbondTokensAction struct {
 	chain      chainID
 	sender     validatorID
 	unbondFrom validatorID
@@ -589,7 +589,7 @@ type UnbondTokensAction struct {
 }
 
 func (tr TestRun) unbondTokens(
-	action UnbondTokensAction,
+	action unbondTokensAction,
 	verbose bool,
 ) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
@@ -617,7 +617,7 @@ func (tr TestRun) unbondTokens(
 	}
 }
 
-type RedelegateTokensAction struct {
+type redelegateTokensAction struct {
 	chain    chainID
 	src      validatorID
 	dst      validatorID
@@ -625,7 +625,7 @@ type RedelegateTokensAction struct {
 	amount   uint
 }
 
-func (tr TestRun) redelegateTokens(action RedelegateTokensAction, verbose bool) {
+func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
 		tr.containerConfig.instanceName,
@@ -648,6 +648,87 @@ func (tr TestRun) redelegateTokens(action RedelegateTokensAction, verbose bool) 
 
 	if verbose {
 		fmt.Println("redelegate cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
+type downtimeSlashAction struct {
+	chain     chainID
+	validator validatorID
+}
+
+func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) {
+	// Bring validator down
+	tr.setValidatorDowntime(action.chain, action.validator, true, verbose)
+	// Wait appropriate amount of blocks for validator to be slashed
+	tr.waitBlocks(action.chain, 3, time.Minute)
+	// Bring validator back up
+	tr.setValidatorDowntime(action.chain, action.validator, false, verbose)
+}
+
+// Sets validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
+func (tr TestRun) setValidatorDowntime(chain chainID, validator validatorID, down bool, verbose bool) {
+
+	var lastArg string
+	if down {
+		lastArg = "down"
+	} else {
+		lastArg = "up"
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command(
+		"docker",
+		"exec",
+		tr.containerConfig.instanceName,
+		"ip",
+		"link",
+		"set",
+		string(chain)+"-"+string(validator)+"-out",
+		lastArg,
+	)
+
+	if verbose {
+		fmt.Println("toggle downtime cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
+type unjailValidatorAction struct {
+	provider  chainID
+	validator validatorID
+}
+
+// Sends an unjail transaction to the provider chain
+func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
+
+	// Wait just past the downtime_jail_duration set in config.go
+	time.Sleep(3 * time.Second)
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec",
+		tr.containerConfig.instanceName,
+		tr.chainConfigs[action.provider].binaryName,
+		"tx", "slashing", "unjail",
+		// Validator is sender here
+		`--from`, `validator`+fmt.Sprint(action.validator),
+		`--chain-id`, string(tr.chainConfigs[action.provider].chainId),
+		`--home`, tr.getValidatorHome(action.provider, action.validator),
+		`--node`, tr.getValidatorNode(action.provider, action.validator),
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	)
+	if verbose {
+		fmt.Println("unjail cmd:", cmd.String())
 	}
 
 	bz, err := cmd.CombinedOutput()

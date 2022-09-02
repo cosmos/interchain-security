@@ -97,14 +97,24 @@ func DefaultTestRun() TestRun {
 				binaryName:     "interchain-security-pd",
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 5,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\"",
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\" | " +
+					// Custom slashing parameters for testing validator downtime functionality
+					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 			chainID("consu"): {
 				chainId:        chainID("consu"),
 				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\"",
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},
 	}
@@ -121,10 +131,10 @@ func (s *TestRun) ParseCLIFlags() {
 // ValidateStringLiterals enforces that configs follow the constraints
 // necessary to to execute the tests
 //
-// Note: Network interfaces within the container will be named as
-// "$CHAIN_ID-$VAL_ID-out" etc. where this name is constrained to 15 bytes or less.
-// Therefore each string literal used as a validatorID or chainID
-// needs to be 5 char or less.
+// Note: Network interfaces (name of virtual ethernet interfaces for ip link)
+// within the container will be named as "$CHAIN_ID-$VAL_ID-out" etc.
+// where this name is constrained to 15 bytes or less. Therefore each string literal
+// used as a validatorID or chainID needs to be 5 char or less.
 func (s *TestRun) ValidateStringLiterals() {
 	for valID, valConfig := range s.validatorConfigs {
 
