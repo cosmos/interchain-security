@@ -120,6 +120,11 @@ class BlockHistory {
     provider: new Map(),
     consumer: new Map(),
   };
+  /**
+   * Mark state as permanently committed to the blockchain.
+   * @param chain
+   * @param invariantSnapshot
+   */
   commitBlock = (chain: Chain, invariantSnapshot: InvariantSnapshot) => {
     const h = invariantSnapshot.h[chain];
     const b: CommittedBlock = {
