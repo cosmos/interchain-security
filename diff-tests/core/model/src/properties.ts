@@ -175,39 +175,6 @@ function stakingWithoutSlashing(hist: BlockHistory): boolean {
   return true;
 }
 
-function powerProviderOld(block: CommittedBlock): number[] {
-  return _.range(NUM_VALIDATORS).map(
-    (i) =>
-      block.invariantSnapshot.tokens[i] +
-      sum(
-        block.invariantSnapshot.undelegationQ
-          .filter((e) => e.val === i)
-          .map((e) => e.initialBalance),
-      ),
-  );
-}
-
-/**
- * @param block to compute validator voting powers for
- * @param hp is the earliest height for unbondings to account for
- * @returns burnable voting power for each validator on the Provider chain
- */
-function powerProviderNew(block: CommittedBlock, hp: number): number[] {
-  return _.range(NUM_VALIDATORS).map((i) => {
-    let x = 0;
-    if (block.invariantSnapshot.status[i] !== Status.UNBONDED) {
-      x += block.invariantSnapshot.tokens[i];
-    }
-    x += sum(
-      block.invariantSnapshot.undelegationQ
-        .filter((e) => e.val === i)
-        .filter((e) => hp <= e.creationHeight)
-        .map((e) => e.initialBalance),
-    );
-    return x;
-  });
-}
-
 /**
  * Checks the bond-based consumer voting power property as defined
  * in https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties
@@ -219,7 +186,26 @@ function powerProviderNew(block: CommittedBlock, hp: number): number[] {
 function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
   const partialOrder = hist.partialOrder;
   const blocks = hist.blocks;
-
+  /**
+   * @param block to compute validator voting powers for
+   * @param hp is the earliest height for unbondings to account for
+   * @returns burnable voting power for each validator on the Provider chain
+   */
+  function powerProvider(block: CommittedBlock, hp: number): number[] {
+    return _.range(NUM_VALIDATORS).map((i) => {
+      let x = 0;
+      if (block.invariantSnapshot.status[i] !== Status.UNBONDED) {
+        x += block.invariantSnapshot.tokens[i];
+      }
+      x += sum(
+        block.invariantSnapshot.undelegationQ
+          .filter((e) => e.val === i)
+          .filter((e) => hp <= e.creationHeight)
+          .map((e) => e.initialBalance),
+      );
+      return x;
+    });
+  }
   function powerConsumer(block: CommittedBlock) {
     return block.invariantSnapshot.power;
   }
@@ -257,7 +243,7 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
     }
     for (let h = hp; h < limit; h++) {
       for (let i = 0; i < NUM_VALIDATORS; i++) {
-        const powerP = powerProviderNew(
+        const powerP = powerProvider(
           blocks[P].get(h) as CommittedBlock,
           hp + 1,
         );
