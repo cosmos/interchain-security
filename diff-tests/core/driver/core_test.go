@@ -234,10 +234,12 @@ func (s *CoreSuite) matchState() {
 	chain := s.traces.Action().Chain
 
 	// Model time, height start at 0 so we need an offset for comparisons.
-	sutTimeOffset := time.Unix(s.offsetTimeUnix, 0).UTC()
+	sutTimeOffset := time.Unix(s.offsetTimeUnix, 0).Add(-initState.BlockSeconds).UTC()
 	modelTimeOffset := time.Duration(s.traces.Time()) * time.Second
+	sutHeightOffset := s.offsetHeight - 1
+	modelHeightOffset := int64(s.traces.Height())
 	s.Require().Equalf(sutTimeOffset.Add(modelTimeOffset), s.time(chain), diagnostic+"%s Time mismatch", chain)
-	s.Require().Equalf(s.offsetHeight+int64(s.traces.Height()), s.height(chain), diagnostic+"%s Time mismatch", chain)
+	s.Require().Equalf(sutHeightOffset+modelHeightOffset, s.height(chain), diagnostic+"%s Time mismatch", chain)
 	if chain == P {
 		for j := 0; j < initState.NumValidators; j++ {
 			have := s.validatorStatus(int64(j))
@@ -437,7 +439,7 @@ func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
 		Data: LoadTraces("traces.json"),
 	}
-	s.traces.Data = []TraceData{s.traces.Data[69]}
+	// s.traces.Data = []TraceData{s.traces.Data[69]}
 	for i := range s.traces.Data {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace

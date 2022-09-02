@@ -156,9 +156,6 @@ class ActionGenerator {
       }
       this.tLastTrustedHeader[chain] =
         this.tLastCommit[chain == P ? C : P];
-      if (chain === P) {
-        console.log(`tlasttrusted`, this.tLastTrustedHeader[chain]);
-      }
     }
     // Update internal state to prevent expiring light clients
     if (a.kind === 'EndAndBeginBlock') {

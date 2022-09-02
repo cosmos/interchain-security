@@ -619,6 +619,8 @@ class Model {
     this.blocks.partialOrder.deliver(C, 0, 0);
     this.blocks.commitBlock(P, this.invariantSnapshot());
     this.blocks.commitBlock(C, this.invariantSnapshot());
+    this.beginBlock(P);
+    this.beginBlock(C);
   }
 
   invariantSnapshot = (): InvariantSnapshot => {
@@ -668,6 +670,11 @@ class Model {
   };
 
   endAndBeginBlock = (chain: Chain) => {
+    this.endBlock(chain);
+    this.beginBlock(chain);
+  };
+
+  endBlock = (chain: Chain) => {
     if (chain === P) {
       this.staking.endBlock();
       this.ccvP.endBlock();
@@ -677,6 +684,9 @@ class Model {
     }
     this.outbox[chain].commit();
     this.blocks.commitBlock(chain, this.invariantSnapshot());
+  };
+
+  beginBlock = (chain: Chain) => {
     this.h[chain] += 1;
     this.t[chain] += BLOCK_SECONDS;
     if (chain === P) {
