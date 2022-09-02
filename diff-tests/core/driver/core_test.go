@@ -444,8 +444,6 @@ func (s *CoreSuite) TestTraces() {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
-			// fmt.Println("BEGIN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-			// fmt.Println("currentHeaderTime(s):", s.time(P).String(), s.time(C).String())
 
 			s.traces.CurrentTraceIx = i
 			defer func() {

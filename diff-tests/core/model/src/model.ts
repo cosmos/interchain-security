@@ -616,6 +616,10 @@ class Model {
     this.staking = new Staking(this, state);
     this.ccvP = new CCVProvider(this, state);
     this.ccvC = new CCVConsumer(this, state);
+    // Implicitly, there is already a partial order between
+    // model initial blocks on P and C because C starts with
+    // the same validator set as P (and thus must have received
+    // a packet from P).
     this.blocks.partialOrder.deliver(C, 0, 0);
     this.blocks.commitBlock(P, this.invariantSnapshot());
     this.blocks.commitBlock(C, this.invariantSnapshot());

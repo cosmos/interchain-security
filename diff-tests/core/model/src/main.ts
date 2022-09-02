@@ -145,6 +145,8 @@ class ActionGenerator {
       this.didSlash[(a as ConsumerSlash).val] = true;
     }
     // Update internal state to prevent expiring light clients
+    // Client is also updated for Deliver, because this is needed in practice
+    // for SUT.
     if (a.kind === 'UpdateClient' || a.kind === 'Deliver') {
       const chain = (a as UpdateClient).chain;
       if (

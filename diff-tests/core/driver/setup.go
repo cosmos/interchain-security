@@ -602,9 +602,6 @@ func (b *Builder) updateClient(chainID string) {
 		if err != nil {
 			b.coordinator.Fatal("updateClient")
 		}
-		if chainID == "testchain0" {
-			// fmt.Println("suc update with header ", header.GetTime().String(), " at ", b.chain(P).CurrentHeader.Time.String())
-		}
 	}
 	b.clientHeaders[b.otherID(chainID)] = []*ibctmtypes.Header{}
 }
