@@ -23,7 +23,7 @@ type OrderedLink struct {
 	OutboxAcks    map[string][]Ack
 }
 
-// MakeOrderedLink creates a new empty network.
+// MakeOrderedLink creates a new empty network link.
 func MakeOrderedLink() OrderedLink {
 	return OrderedLink{
 		OutboxPackets: map[string][]Packet{},
