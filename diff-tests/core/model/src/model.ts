@@ -234,7 +234,7 @@ class Staking {
   };
 
   endBlockMaturation = () => {
-    // Process unbonding validators
+    // Process any unbonding validators that might have matured
     const completedUnvals = this.validatorQ.filter(
       (e: Unval) =>
         e.unbondingTime <= this.m.t[P] &&
@@ -249,7 +249,7 @@ class Staking {
       (e) => !completedUnvals.includes(e),
     );
 
-    // Process undelegations
+    // Process any undelegations that might have matured
     const processedUndels = this.undelegationQ.filter(
       (e) =>
         e.completionTime <= this.m.t[P] &&
@@ -328,6 +328,7 @@ class Staking {
 
   unbondingCanComplete = (opID: number) => {
     {
+      // Allow maturity of relevant validator
       const e = _.find(this.validatorQ, (e) => e.opID === opID);
       if (e) {
         e.onHold = false;
@@ -335,15 +336,18 @@ class Staking {
         return;
       }
     }
-    const e = _.find(this.undelegationQ, (e) => e.opID === opID);
-    if (e) {
-      if (e.completionTime <= this.m.t[P]) {
-        this.delegatorTokens += e.balance;
-        this.undelegationQ = this.undelegationQ.filter((x) => x !== e);
-        this.m.events.push(Event.COMPLETE_UNDEL_IMMEDIATE);
-      } else {
-        e.onHold = false;
-        this.m.events.push(Event.SET_UNDEL_HOLD_FALSE);
+    {
+      // Allow maturity of relevant unbonding delegation
+      const e = _.find(this.undelegationQ, (e) => e.opID === opID);
+      if (e) {
+        if (e.completionTime <= this.m.t[P]) {
+          this.delegatorTokens += e.balance;
+          this.undelegationQ = this.undelegationQ.filter((x) => x !== e);
+          this.m.events.push(Event.COMPLETE_UNDEL_IMMEDIATE);
+        } else {
+          e.onHold = false;
+          this.m.events.push(Event.SET_UNDEL_HOLD_FALSE);
+        }
       }
     }
   };
@@ -499,8 +503,8 @@ class CCVConsumer {
     this.hToVscID[this.m.h[C] + 1] = this.hToVscID[this.m.h[C]];
   };
 
-  endBlock = () => {
-    // Unbond all the matured VSCs
+  endBlockVSU = () => {
+    // Gather all matured VSCs
     const matured = (() => {
       const ret: number[] = [];
       this.maturingVscs.forEach((time, vscID) => {
@@ -510,16 +514,15 @@ class CCVConsumer {
       });
       return ret;
     })();
+    // Send a maturity packet for each matured VSC
     matured.forEach((vscID) => {
       const data: VscMatured = { vscID };
       this.m.events.push(Event.CONSUMER_SEND_MATURATION);
       this.m.outbox[C].add(data);
       this.maturingVscs.delete(vscID);
     });
-    // gather and apply any changes
-    if (this.pendingChanges.length < 1) {
-      return;
-    }
+
+    // Aggregate and apply validator voting power changes
     const changes = (() => {
       const ret: Map<Validator, number> = new Map();
       this.pendingChanges.forEach((updates) => {
@@ -545,6 +548,10 @@ class CCVConsumer {
         this.m.events.push(Event.CONSUMER_DEL_VAL);
       }
     });
+  };
+
+  endBlock = () => {
+    this.endBlockVSU();
   };
 
   onReceive = (data: PacketData) => {
