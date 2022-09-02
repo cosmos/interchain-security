@@ -174,7 +174,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		panic(err)
 	}
 
-	err = am.keeper.UnbondMaturePackets(ctx)
+	err = am.keeper.SendVSCMaturedPackets(ctx)
 	if err != nil {
 		panic(err)
 	}
