@@ -50,16 +50,9 @@ func (f *RelayedPath) Chain(chainID string) *ibctesting.TestChain {
 // call.
 func (f *RelayedPath) UpdateClient(chainID string) {
 	for _, header := range f.clientHeaders[f.other(chainID)] {
-		if chainID == "testchain0" {
-			// fmt.Println("try update with header ", header.GetTime().String(), " at ", f.Chain(chainID).CurrentHeader.Time.String())
-		}
-
 		err := UpdateReceiverClient(f.endpoint(f.other(chainID)), f.endpoint(chainID), header)
 		if err != nil {
 			f.t.Fatal("UpdateClient")
-		}
-		if chainID == "testchain0" {
-			// fmt.Println("suc update with header ", header.GetTime().String(), " at ", f.Chain(chainID).CurrentHeader.Time.String())
 		}
 	}
 	f.clientHeaders[f.other(chainID)] = []*ibctmtypes.Header{}
