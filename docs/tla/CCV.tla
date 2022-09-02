@@ -39,10 +39,6 @@ CONSTANT
   \* @type: $time;
   MaxDrift
 
-\* Timeout must be more than MaturityDelay, otherwise VPCs would
-\* never have the opportunity to mature.
-ASSUME (Timeout > MaturityDelay)
-
 \* Provider chain only
 VARIABLES
   \* Snapshots of the voting power on the provider chain, at the times
@@ -75,7 +71,10 @@ VARIABLES
   \* Note that a packet being placed in the channel is not considered 
   \* received by the consumer, until the receive-action is taken.
   \* @type: $chain -> Seq($packet);
-  ccvChannels,
+  ccvChannelsPending,
+  \* The queues of VPC packets, that have been received by consumer chains in the past.
+  \* @type: $chain -> Seq($packet);
+  ccvChannelsResolved,
   \* The current times of all chains (including the provider).
   \* @type: $chain -> $time;
   currentTimes,
@@ -112,7 +111,7 @@ providerVars ==
   << votingPowerHist, votingPowerRunning, acks >>
 
 consumerVars ==
-  << votingPowerReferences, ccvChannels, currentTimes, maturityTimes >>
+  << votingPowerReferences, ccvChannelsPending, ccvChannelsResolved, currentTimes, maturityTimes >>
 
 \* @type: <<Bool, Bool>>;
 bookkeepingVars == 
@@ -134,22 +133,35 @@ UndefinedPower == [node \in Nodes |-> -1]
 \* variables, e.g. currentTimes
 Chains == ConsumerChains \union {ProviderChain}
 
-\* Takes parameters, so primed and non-primed values can be passed
-\* @type: ($chain, Seq($packet), $time, $time, $packet -> $time) => Bool;
-PacketTimeoutForConsumer(c, channel, consumerT, providerT, maturity) == 
-  \* Option 1: Timeout on reception
-  \//\ Len(channel) /= 0
-    \* Head is always the oldest packet, so if there is a timeout for some packet, 
-    \* there must be one for Head too
-    /\ consumerT > Head(channel) + Timeout 
-  \* Option 2: Timeout on acknowledgement
-  \/ \E packet \in DOMAIN maturity: 
+\* According to https://github.com/cosmos/ibc/blob/main/spec/core/ics-004-channel-and-packet-semantics/README.md#receiving-packets
+\* we need to use >=.
+TimeoutGuard(a,b) == a >= b
+
+\* @type: (Seq($packet), $time) => Bool;
+TimeoutOnReception(channel, consumerT) ==
+  /\ Len(channel) /= 0
+  \* Head is always the oldest packet, so if there is a timeout for some packet, 
+  \* there must be one for Head too
+  /\ TimeoutGuard(consumerT, Head(channel) + Timeout)
+
+
+\* @type: ($chain, $time, $packet -> $time) => Bool;
+TimeoutOnAcknowledgement(c, providerT, maturity) ==
+  \E packet \in DOMAIN maturity: 
     \* Note: Reception time = maturity[packet] - MaturityDelay
-    /\ providerT + MaturityDelay > maturity[packet] + Timeout
+    /\ TimeoutGuard(providerT + MaturityDelay, maturity[packet] + Timeout)
     \* Not yet acknowledged
     /\ \A ack \in acks:
       \/ ack.chain /= c
       \/ ack.packetTime /= packet
+
+\* Takes parameters, so primed and non-primed values can be passed
+\* @type: ($chain, Seq($packet), $time, $time, $packet -> $time) => Bool;
+PacketTimeoutForConsumer(c, channel, consumerT, providerT, maturity) == 
+  \* Option 1: Timeout on reception
+  \/ TimeoutOnReception(channel, consumerT)
+  \* Option 2: Timeout on acknowledgement
+  \/ TimeoutOnAcknowledgement(c, providerT, maturity)
 
 \* Because we're not using functions with fixed domains, we can't use EXCEPT.
 \* Thus, we need a helper method for domain-extension.
@@ -181,6 +193,10 @@ BoundedDeltas(fn, dom, bound) ==
   /\ \A v1, v2 \in dom:
     Delta(fn[v1], fn[v2]) <= bound
 
+\* All the packets ever sent to c in the order they were sent in
+\* @type: ($chain) => Seq($packet);
+PacketOrder(c) == ccvChannelsResolved[c] \o ccvChannelsPending[c]
+
 (*** ACTIONS ***)
 
 Init == 
@@ -192,7 +208,8 @@ Init ==
   /\ activeConsumers = ConsumerChains
   /\ acks = {}
   /\ votingPowerReferences = [chain \in ConsumerChains |-> UndefinedTime]
-  /\ ccvChannels = [chain \in ConsumerChains |-> <<>>]
+  /\ ccvChannelsPending = [chain \in ConsumerChains |-> <<>>]
+  /\ ccvChannelsResolved = [chain \in ConsumerChains |-> <<>>]
   /\ currentTimes = [c \in Chains |-> 0]
   /\ maturityTimes = [c \in ConsumerChains |-> [t \in {} |-> UndefinedTime]]
   /\ votingPowerHasChanged = FALSE
@@ -218,8 +235,8 @@ VotingPowerChange ==
 RcvPacket == 
   \E c \in activeConsumers:
     \* There must be a packet to be received
-    /\ Len(ccvChannels[c]) /= 0
-    /\ LET packet == Head(ccvChannels[c]) IN
+    /\ Len(ccvChannelsPending[c]) /= 0
+    /\ LET packet == Head(ccvChannelsPending[c]) IN
       \* The voting power adjusts immediately, but the acknowledgement message 
       \* is sent later, on maturity 
       /\ votingPowerReferences' = [votingPowerReferences EXCEPT ![c] = packet]
@@ -228,8 +245,9 @@ RcvPacket ==
         maturityTimes EXCEPT ![c] =
           ExtendFnBy(maturityTimes[c], packet, currentTimes[c] + MaturityDelay)
         ]
+      /\ ccvChannelsResolved' = [ccvChannelsResolved EXCEPT ![c] = Append(@, packet)]
     \* Drop from channel, to unblock reception of other packets.
-    /\ ccvChannels' = [ccvChannels EXCEPT ![c] = Tail(@)]
+    /\ ccvChannelsPending' = [ccvChannelsPending EXCEPT ![c] = Tail(@)]
     /\ UNCHANGED providerVars
     /\ UNCHANGED currentTimes
     /\ UNCHANGED votingPowerHasChanged
@@ -256,7 +274,7 @@ AckPacket ==
 DropConsumers == 
   \E newActive \in SUBSET activeConsumers:
   /\ activeConsumers' = 
-    { c \in newActive: ~PacketTimeoutForConsumer(c, ccvChannels'[c], currentTimes'[c], currentTimes'[ProviderChain], maturityTimes'[c]) }
+    { c \in newActive: ~PacketTimeoutForConsumer(c, ccvChannelsPending'[c], currentTimes'[c], currentTimes'[ProviderChain], maturityTimes'[c]) }
   
       
 \* Partial action, always happens on EndBlock, may also happen independently
@@ -273,17 +291,17 @@ AdvanceTimeCore ==
 AdvanceTime ==
   /\ AdvanceTimeCore
   /\ UNCHANGED providerVars
-  /\ UNCHANGED << votingPowerReferences, ccvChannels, maturityTimes >>
+  /\ UNCHANGED << votingPowerReferences, ccvChannelsPending, ccvChannelsResolved, maturityTimes >>
   /\ UNCHANGED votingPowerHasChanged
   /\ lastAction' = "AdvanceTime"
 
 EndProviderBlockAndSendPacket ==
   \* Packets are only sent if there is a VPC
   /\ votingPowerHasChanged
-  /\ ccvChannels' = 
+  /\ ccvChannelsPending' = 
     [
       chain \in ConsumerChains |-> Append(
-        ccvChannels[chain], 
+        ccvChannelsPending[chain], 
         \* a packet is just the current time, the VP can be read from votingPowerHist
         currentTimes[ProviderChain]
         )
@@ -294,7 +312,7 @@ EndProviderBlockAndSendPacket ==
   \* packet sending forces time progression on provider
   /\ AdvanceTimeCore
   /\ currentTimes'[ProviderChain] > currentTimes[ProviderChain]
-  /\ UNCHANGED <<votingPowerReferences, maturityTimes>>
+  /\ UNCHANGED <<votingPowerReferences, maturityTimes, ccvChannelsResolved>>
   /\ UNCHANGED <<votingPowerRunning, acks>>
   /\ lastAction' = "EndProviderBlockAndSendPacket"
 
@@ -315,7 +333,7 @@ Next ==
       \/ AdvanceTime
     \* Drop timed out, maybe more
     /\ DropConsumers
-    /\ boundedDrift' = 
+    /\ boundedDrift' = boundedDrift /\
       BoundedDeltas(currentTimes', activeConsumers' \union {ProviderChain}, MaxDrift)
   \//\ activeConsumers = {}
     /\ Stagnate
@@ -329,14 +347,14 @@ LastVCSMatureOnProvider ==
 VPCUpdateInProgress == 
   \* some chain has pending packets
   \/ \E c \in activeConsumers: 
-    \/ Len(ccvChannels[c]) /= 0
+    \/ Len(ccvChannelsPending[c]) /= 0
     \/ \E packet \in DOMAIN maturityTimes[c]: maturityTimes[c][packet] < currentTimes[c]
   \* not enough time has elapsed on provider itself since last update
   \/ ~LastVCSMatureOnProvider
 
 ActiveConsumersNotTimedOut ==
   \A c \in activeConsumers:
-    ~PacketTimeoutForConsumer(c, ccvChannels[c], currentTimes[c], currentTimes[ProviderChain], maturityTimes[c])
+    ~PacketTimeoutForConsumer(c, ccvChannelsPending[c], currentTimes[c], currentTimes[ProviderChain], maturityTimes[c])
 
 \* Sanity- predicates check that the data structures don't take on unexpected values
 SanityVP == 
@@ -372,7 +390,7 @@ RcvdInTime ==
   \A t \in DOMAIN votingPowerHist:
     \A c \in activeConsumers:
       \* If c is still active after Timeout has elapsed from packet t broadcast ...
-      currentTimes[c] >= t + AdjustedTimeout =>
+      TimeoutGuard(currentTimes[c], t + AdjustedTimeout) =>
         \* ... then c must have received packet t
         t \in DOMAIN maturityTimes[c]
 
@@ -383,7 +401,7 @@ AckdInTime ==
     \A t \in DOMAIN maturityTimes[c]:
       \* If c is still active after Timeout has elapsed from packet t reception ...
       \* Note: Reception time = maturityTimes[c][p] - MaturityDelay
-      currentTimes[ProviderChain] + MaturityDelay >= maturityTimes[c][t] + AdjustedTimeout =>
+      TimeoutGuard(currentTimes[ProviderChain] + MaturityDelay, maturityTimes[c][t] + AdjustedTimeout) =>
         \* ... then c must have acknowledged packet t
         \E ack \in acks:
           /\ ack.chain = c
@@ -397,16 +415,100 @@ EventuallyAllAcks ==
   \A t \in DOMAIN votingPowerHist:
     \* If a packet was sent at time t and enough time has elapsed, 
     \* s.t. all consumers should have responded ...
-    currentTimes[ProviderChain] >= t + 2 * AdjustedTimeout =>
+    TimeoutGuard(currentTimes[ProviderChain], t + 2 * AdjustedTimeout) =>
         \* then, all consumers have acked
         \A c \in activeConsumers:
           \E ack \in acks:
             /\ ack.chain = c
             /\ ack.packetTime = t
 
-BoundedDrift ==
-  \A c1, c2 \in activeConsumers \union {ProviderChain}:
-    Delta(currentTimes[c1], currentTimes[c2]) <= MaxDrift
+
+\* Invariants from https://github.com/cosmos/interchain-security/blob/main/docs/quality_assurance.md
+
+(* 
+4.10 - The provider chain's correctness is not affected by a consumer chain 
+shutting down
+
+What is "provider chain correctness"?
+*)
+
+(* 
+4.11 - The provider chain can graciously handle a CCV packet timing out 
+(without shutting down) - expected outcome: 
+consumer chain shuts down and its state in provider CCV module is removed
+*)
+Inv411 == 
+  boundedDrift =>
+  \A c \in ConsumerChains:
+    TimeoutOnReception(ccvChannelsPending[c], currentTimes[c]) =>
+      c \notin activeConsumers
+
+(* 
+4.12 - The provider chain can graciously handle a StopConsumerChainProposal - 
+expected outcome: consumer chain shuts down and its state 
+in provider CCV module is removed.
+
+What is "graciously handle"?
+*)
+  
+(*
+6.01 - Every validator set on any consumer chain MUST either be or have been 
+a validator set on the provider chain.
+
+In the current model, implicit through construction (votingPowerReferences)
+*)
+Inv601 ==
+  \A c \in activeConsumers:
+    LET ref == votingPowerReferences[c] IN
+    ref /= UndefinedTime => ref \in DOMAIN votingPowerHist
+
+(*
+6.02 - Any update in the power of a validator val on the provider, as a result of
+- (increase) Delegate() / Redelegate() to val
+- (increase) val joining the provider validator set
+- (decrease) Undelegate() / Redelegate() from val
+- (decrease) Slash(val)
+- (decrease) val leaving the provider validator set
+MUST be present in a ValidatorSetChangePacket that is sent to all registered consumer chains
+*)
+Inv602 ==
+  \A packet \in DOMAIN votingPowerHist:
+    \A c \in activeConsumers:
+      LET packetsToC == PacketOrder(c) IN
+      \E i \in DOMAIN packetsToC:
+        packetsToC[i] = packet
+
+(*
+6.03 - Every consumer chain receives the same sequence of 
+ValidatorSetChangePackets in the same order.
+
+Note: consider only prefixes on received packets (ccvChannelsResolved)
+*)
+Inv603 == 
+  \A c1,c2 \in activeConsumers:
+    PacketOrder(c1) = PacketOrder(c2)
+
+(*
+7.01 - For every ValidatorSetChangePacket received by a consumer chain at 
+time t, a MaturedVSCPacket is sent back to the provider in the first block 
+with a timestamp >= t + UnbondingPeriod
+
+Modification: not necessarily _first_ block with that timestamp, 
+since we don't model height _and_ time.
+*)
+Inv701 ==
+  boundedDrift => AckdInTime
+
+(*
+7.02 - If an unbonding operation resulted in a ValidatorSetChangePacket sent
+to all registered consumer chains, then it cannot complete before receiving
+matching MaturedVSCPackets from these consumer chains 
+(unless some of these consumer chains are removed)
+
+We can define change completion, but we don't model it. Best approximation:
+*)
+Inv702 ==
+  boundedDrift => EventuallyAllAcks
 
 Inv ==
   \* /\ Sanity

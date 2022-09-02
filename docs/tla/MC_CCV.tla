@@ -1,11 +1,26 @@
 --------------------------- MODULE MC_CCV ---------------------------
 
+EXTENDS Integers
 
 Nodes == {"1_OF_N", "2_OF_N", "3_OF_N", "4_OF_N"}
 ConsumerChains == {"1_OF_C", "2_OF_C", "3_OF_C", "4_OF_C"}
-MaturityDelay == 2
-Timeout == 4
-MaxDrift == 2
+\* MaturityDelay == 3 * 7 * 24 \* h
+\* Timeout == 4 * 7 * 24 \* h
+\* MaxDrift == 24 \* h
+
+CONSTANT 
+  \* @type: $time;
+  MaturityDelay,
+  \* @type: $time;
+  Timeout,
+  \* @type: $time;
+  MaxDrift
+
+CInit ==
+  /\ MaturityDelay \in Nat
+  /\ Timeout \in Nat
+  /\ MaxDrift \in Nat
+  /\ MaxDrift < Timeout
 
 \* Provider chain only
 VARIABLES
@@ -23,7 +38,9 @@ VARIABLES
   \* @type: $chain -> $time;
   votingPowerReferences,
   \* @type: $chain -> Seq($packet);
-  ccvChannels,
+  ccvChannelsPending,
+  \* @type: $chain -> Seq($packet);
+  ccvChannelsResolved,
   \* @type: $chain -> $time;
   currentTimes,
   \* @type: $chain -> $time -> $time;
