@@ -435,6 +435,7 @@ class CCVProvider {
     }
 
     if (this.m.staking.status[data.val] === Status.UNBONDED) {
+      this.m.events.push(Event.RECEIVE_SLASH_REQUEST_UNBONDED);
       return;
     }
 
