@@ -78,7 +78,7 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 }
 
 func (tr TestRun) startDocker() {
-	scriptStr := "integration-tests/testnet-scripts/start-docker.sh " +
+	scriptStr := "tests/integration/testnet-scripts/start-docker.sh " +
 		tr.containerConfig.containerName + " " +
 		tr.containerConfig.instanceName + " " +
 		tr.localSdkPath

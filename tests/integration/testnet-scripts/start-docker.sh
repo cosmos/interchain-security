@@ -14,8 +14,8 @@ docker rm -f "$INSTANCE_NAME"
 set -e
 
 # Delete old sdk directory if it exists 
-if [ -d "./cosmos-sdk" ]; then
-    rm -rf ./cosmos-sdk/
+if [ -d "../cosmos-sdk" ]; then
+    rm -rf ../cosmos-sdk/
 fi 
 
 # Copy sdk directory to working dir if path was specified
@@ -31,7 +31,7 @@ fi
 docker build -t "$CONTAINER_NAME" .
 
 # Remove copied sdk directory
-rm -rf ./cosmos-sdk/
+rm -rf ../cosmos-sdk/
 
 # Run new test container instance with extended privileges.
 # Extended privileges are granted to the container here to allow for network namespace manipulation (bringing a node up/down) 
