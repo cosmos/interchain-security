@@ -191,6 +191,9 @@ class Staking {
     });
     // Start unbonding old validators
     _.difference(oldVals, newVals)
+      // sort is necessary because order of iteration
+      // defines an implicit mapping of opID to unval.
+      // This must match SUT.
       .sort((a, b) => a - b)
       .forEach((i) => {
         const unval: Unval = {
@@ -214,18 +217,14 @@ class Staking {
         this.changes[i] = this.tokens[i];
       }
     });
-    _.difference(newVals, oldVals)
-      .sort((a, b) => a - b)
-      .forEach((i) => {
-        // validator bonded
-        this.changes[i] = this.tokens[i];
-      });
-    _.difference(oldVals, newVals)
-      .sort((a, b) => a - b)
-      .forEach((i) => {
-        // validator no longer bonded
-        this.changes[i] = 0;
-      });
+    _.difference(newVals, oldVals).forEach((i) => {
+      // validator bonded
+      this.changes[i] = this.tokens[i];
+    });
+    _.difference(oldVals, newVals).forEach((i) => {
+      // validator no longer bonded
+      this.changes[i] = 0;
+    });
 
     // Save the valset and their tokens
     // (mimics block commit)
