@@ -85,7 +85,7 @@ enum Event {
   COMPLETE_UNVAL_IN_ENDBLOCK = 'complete_unval_in_endblock',
   SET_UNVAL_HOLD_FALSE = 'set_unval_hold_false',
   COMPLETE_UNDEL_IN_ENDBLOCK = 'complete_undel_in_endblock',
-  COMPLETE_UNDEL_NOW = 'complete_undel_now',
+  COMPLETE_UNDEL_IMMEDIATE = 'complete_undel_immediate',
   SET_UNDEL_HOLD_FALSE = 'set_undel_hold_false',
   INSUFFICIENT_SHARES = 'insufficient_shares',
   SLASH_UNDEL = 'slash_undel',
@@ -102,8 +102,9 @@ enum Event {
   RECEIVE_DOUBLE_SIGN_SLASH_REQUEST = 'receive_double_sign_slash_request',
   RECEIVE_SLASH_REQUEST_UNBONDED = 'receive_slash_request_unbonded',
   DOWNTIME_SLASH_REQUEST_OUTSTANDING = 'downtime_slash_request_outstanding',
-  CONSUMER_UPDATE_POWER_POSITIVE = 'consumer_update_power_positive',
-  CONSUMER_UPDATE_POWER_ZERO = 'consumer_update_power_zero',
+  CONSUMER_UPDATE_VAL = 'consumer_update_val',
+  CONSUMER_DEL_VAL = 'consumer_del_val',
+  CONSUMER_ADD_VAL = 'consumer_add_val',
   MORE_THAN_ONE_THIRD_VAL_POWER_CHANGE = 'more_than_one_third_val_power_change',
 }
 
