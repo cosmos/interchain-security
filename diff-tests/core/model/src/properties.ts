@@ -14,6 +14,13 @@ import {
 } from './common.js';
 
 /**
+ * Queries and data structures in this file are currently naive
+ * and below optimal.
+ * Partial order queries and other total order queries in
+ * bond-based-consumer-voting-power can be done with binary searches.
+ */
+
+/**
  * Data structure used to store a partial order of blocks. The partial order
  * is induced by packet delivery for blocks on different chains, and by height
  * for blocks on the same chain.
