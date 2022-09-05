@@ -211,7 +211,6 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 	if err := ack.GetError(); err != "" {
 		// Reasons for ErrorAcknowledgment
 		//  - packet data could not be successfully decoded
-		//  - packet sent on a non-established channel
 		//  - the Slash packet was ill-formed (errors while handling it)
 		// None of these should ever happen.
 		k.Logger(ctx).Error(

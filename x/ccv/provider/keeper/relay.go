@@ -88,10 +88,8 @@ func (k Keeper) CompleteMaturedUnbondingOps(ctx sdk.Context) {
 // OnAcknowledgementPacket handles acknowledgments for sent VSC packets
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
-		// Either the VSC packet data could not be successfully decoded
-		// or the VSC packet was sent on a channel other than the established
-		// provider channel and ChanCloseInit failed.
-		// Neither of these should ever happen.
+		// The VSC packet data could not be successfully decoded.
+		// This should never happen.
 		if chainID, ok := k.GetChannelToChain(ctx, packet.SourceChannel); ok {
 			// stop consumer chain and uses the LockUnbondingOnTimeout flag
 			// to decide whether the unbonding operations should be released
