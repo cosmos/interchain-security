@@ -37,14 +37,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	if !found {
 		// VSCMatured packet was sent on a channel different than any of the established CCV channels;
 		// this should never happen
-		errAck := channeltypes.NewErrorAcknowledgement(
-			fmt.Sprintf(
-				"received packet on a channel %s that is not an established CCV channel",
-				packet.DestinationChannel,
-			),
-		)
-		return &errAck
-		// panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
+		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
@@ -197,14 +190,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	if !found {
 		// SlashPacket packet was sent on a channel different than any of the established CCV channels;
 		// this should never happen
-		errAck := channeltypes.NewErrorAcknowledgement(
-			fmt.Sprintf(
-				"received packet on a channel %s that is not an established CCV channel",
-				packet.DestinationChannel,
-			),
-		)
-		return &errAck
-		// panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
+		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
 	// apply slashing
