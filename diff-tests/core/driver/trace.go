@@ -24,7 +24,7 @@ type Consequence struct {
 	DelegatorTokens     int      `json:"delegatorTokens,omitempty"`
 	Jailed              []*int   `json:"jailed,omitempty"`
 	OutstandingDowntime []bool   `json:"outstandingDowntime,omitempty"`
-	Power               []*int   `json:"power,omitempty"`
+	ConsumerPower       []*int   `json:"consumerPower,omitempty"`
 	Status              []string `json:"status,omitempty"`
 	Tokens              []int    `json:"tokens,omitempty"`
 	H                   int      `json:"h,omitempty"`
@@ -140,7 +140,7 @@ func (t *Traces) OutstandingDowntime(i int) bool {
 }
 
 func (t *Traces) ConsumerPower(i int) *int {
-	return t.Consequence().Power[i]
+	return t.Consequence().ConsumerPower[i]
 }
 
 func (t *Traces) Status(i int) stakingtypes.BondStatus {
