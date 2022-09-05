@@ -46,7 +46,7 @@ const MODEL_INIT_STATE: ModelInitState = {
     pendingChanges: [],
     maturingVscs: new Map(),
     outstandingDowntime: [false, false, false, false],
-    power: [5000, 4000, undefined, undefined],
+    consumerPower: [5000, 4000, undefined, undefined],
   },
   ccvP: {
     initialHeight: 0,

@@ -214,7 +214,7 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
     });
   }
   function powerConsumer(block: CommittedBlock) {
-    return block.invariantSnapshot.power;
+    return block.invariantSnapshot.consumerPower;
   }
   function inner(hc: number): boolean {
     const hp = partialOrder.getGreatestPred(C, hc);

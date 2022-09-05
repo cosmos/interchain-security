@@ -243,7 +243,7 @@ function doAction(model: Model, action: Action): Consequence {
       return {
         h: model.h[C],
         t: model.t[C],
-        power: model.ccvC.power,
+        consumerPower: model.ccvC.consumerPower,
         outstandingDowntime: model.ccvC.outstandingDowntime,
       };
     }
@@ -266,7 +266,7 @@ function doAction(model: Model, action: Action): Consequence {
       return {
         h: model.h[C],
         t: model.t[C],
-        power: model.ccvC.power,
+        consumerPower: model.ccvC.consumerPower,
         outstandingDowntime: model.ccvC.outstandingDowntime,
       };
     }

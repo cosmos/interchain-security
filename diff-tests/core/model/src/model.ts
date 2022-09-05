@@ -491,7 +491,7 @@ class CCVConsumer {
   outstandingDowntime: boolean[];
   // array of validators to power
   // value undefined if validator is not known to consumer
-  power: (number | undefined)[];
+  consumerPower: (number | undefined)[];
 
   constructor(model: Model, { ccvC }: ModelInitState) {
     this.m = model;
@@ -536,14 +536,14 @@ class CCVConsumer {
 
     changes.forEach((power, val) => {
       if (0 < power) {
-        if (this.power[val] === undefined) {
+        if (this.consumerPower[val] === undefined) {
           this.m.events.push(Event.CONSUMER_ADD_VAL);
         } else {
           this.m.events.push(Event.CONSUMER_UPDATE_VAL);
         }
-        this.power[val] = power;
+        this.consumerPower[val] = power;
       } else {
-        this.power[val] = undefined;
+        this.consumerPower[val] = undefined;
         this.m.events.push(Event.CONSUMER_DEL_VAL);
       }
     });
@@ -635,7 +635,7 @@ class Model {
       status: this.staking.status,
       undelegationQ: this.staking.undelegationQ,
       delegatorTokens: this.staking.delegatorTokens,
-      power: this.ccvC.power,
+      consumerPower: this.ccvC.consumerPower,
     });
   };
 
