@@ -67,7 +67,7 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 	}
 
 	if modelState.ValPowers != nil {
-		tr.waitBlocks(chain, 1)
+		tr.waitBlocks(chain, 1, 10*time.Second)
 		powers := tr.getValPowers(chain, *modelState.ValPowers)
 		chainState.ValPowers = &powers
 	}
@@ -98,15 +98,19 @@ func (tr TestRun) getBlockHeight(chain chainID) uint {
 	return uint(blockHeight)
 }
 
-func (tr TestRun) waitBlocks(chain chainID, blocks uint) {
+func (tr TestRun) waitBlocks(chain chainID, blocks uint, timeout time.Duration) {
 	startBlock := tr.getBlockHeight(chain)
 
+	start := time.Now()
 	for {
 		thisBlock := tr.getBlockHeight(chain)
 		if thisBlock >= startBlock+blocks {
 			return
 		}
-		time.Sleep(100 * time.Millisecond)
+		if time.Since(start) > timeout {
+			panic(fmt.Sprintf("\n\n\nwaitBlocks method has timed out after: %s\n\n", timeout))
+		}
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 
@@ -280,8 +284,7 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 		}
 	}
 
-	log.Fatalf("Validator %v not in tendermint validator set", validator)
-
+	// Validator not in set, its validator power is zero.
 	return 0
 }
 
