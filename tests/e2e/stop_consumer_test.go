@@ -139,7 +139,10 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 				ctx = s.providerCtx().WithBlockTime(time.Now().Add(time.Hour))
 
 				// set invalid unbonding op index
-				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetUnbondingOpIndex(ctx, chainID, 0, []uint64{0})
+				idx := ccv.UnbondingOpsIndex{
+					Ids: []uint64{0},
+				}
+				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetUnbondingOpIndex(ctx, chainID, 0, idx)
 
 				content, err := providertypes.NewStopConsumerChainProposal("title", "description", chainID, time.Now())
 				s.Require().NoError(err)
