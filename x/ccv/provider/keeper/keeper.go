@@ -313,12 +313,12 @@ func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 }
 
 // This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
-func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, IDs []uint64) {
+func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, index ccv.UnbondingOpsIndex) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz, err := json.Marshal(IDs)
+	bz, err := index.Marshal()
 	if err != nil {
-		panic("Failed to JSON marshal")
+		panic("Failed to marshal UnbondingOpsIndex")
 	}
 
 	store.Set(types.UnbondingOpIndexKey(chainID, valsetUpdateID), bz)
@@ -340,34 +340,32 @@ func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb 
 		}
 		vscID = binary.BigEndian.Uint64(vscBytes)
 
-		var ids []uint64
-		err = json.Unmarshal(iterator.Value(), &ids)
-		if err != nil {
+		var index ccv.UnbondingOpsIndex
+		if err = index.Unmarshal(iterator.Value()); err != nil {
 			panic("Failed to unmarshal JSON")
 		}
 
-		if !cb(vscID, ids) {
+		if !cb(vscID, index.GetIds()) {
 			return
 		}
 	}
 }
 
 // This index allows retrieving UnbondingDelegationEntries by chainID and valsetUpdateID
-func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) ([]uint64, bool) {
+func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (ccv.UnbondingOpsIndex, bool) {
 	store := ctx.KVStore(k.storeKey)
 
 	bz := store.Get(types.UnbondingOpIndexKey(chainID, valsetUpdateID))
 	if bz == nil {
-		return []uint64{}, false
+		return ccv.UnbondingOpsIndex{}, false
 	}
 
-	var ids []uint64
-	err := json.Unmarshal(bz, &ids)
-	if err != nil {
-		panic("Failed to JSON unmarshal")
+	var idx ccv.UnbondingOpsIndex
+	if err := idx.Unmarshal(bz); err != nil {
+		panic("Failed to unmarshal UnbondingOpsIndex")
 	}
 
-	return ids, true
+	return idx, true
 }
 
 // This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
@@ -378,11 +376,11 @@ func (k Keeper) DeleteUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUp
 
 // Retrieve UnbondingDelegationEntries by chainID and valsetUpdateID
 func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (entries []ccv.UnbondingOp, found bool) {
-	ids, found := k.GetUnbondingOpIndex(ctx, chainID, valsetUpdateID)
+	idx, found := k.GetUnbondingOpIndex(ctx, chainID, valsetUpdateID)
 	if !found {
 		return entries, false
 	}
-	for _, id := range ids {
+	for _, id := range idx.GetIds() {
 		entry, found := k.GetUnbondingOp(ctx, id)
 		if !found {
 			// TODO JEHAN: is this the correct way to deal with this?
@@ -538,7 +536,7 @@ func (h StakingHooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
 	// Add to indexes
 	for _, consumerChainID := range consumerChainIDS {
 		index, _ := h.k.GetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID)
-		index = append(index, ID)
+		index.Ids = append(index.GetIds(), ID)
 		h.k.SetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID, index)
 	}
 
