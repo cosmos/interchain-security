@@ -393,17 +393,18 @@ func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valset
 }
 
 // GetMaturedUnbondingOps returns the list of matured unbonding operation ids
-func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64, err error) {
+func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ccv.MaturedUnbondingOps, error) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.MaturedUnbondingOpsKey())
 	if bz == nil {
-		return nil, nil
+		return ccv.MaturedUnbondingOps{}, nil
 	}
-	err = json.Unmarshal(bz, &ids)
-	if err != nil {
-		return nil, err
+
+	var ops ccv.MaturedUnbondingOps
+	if err := ops.Unmarshal(bz); err != nil {
+		return ccv.MaturedUnbondingOps{}, err
 	}
-	return ids, nil
+	return ops, nil
 }
 
 // AppendMaturedUnbondingOps adds a list of ids to the list of matured unbonding operation ids
@@ -411,15 +412,15 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	existingIds, err := k.GetMaturedUnbondingOps(ctx)
+	maturedOps, err := k.GetMaturedUnbondingOps(ctx)
 	if err != nil {
 		return err
 	}
-	// append works also on a nil list
-	existingIds = append(existingIds, ids...)
+
+	maturedOps.Ids = append(maturedOps.Ids, ids...)
 
 	store := ctx.KVStore(k.storeKey)
-	bz, err := json.Marshal(existingIds)
+	bz, err := maturedOps.Marshal()
 	if err != nil {
 		return err
 	}
@@ -428,14 +429,14 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) error {
 }
 
 // EmptyMaturedUnbondingOps empties and returns list of matured unbonding operation ids (if it exists)
-func (k Keeper) EmptyMaturedUnbondingOps(ctx sdk.Context) ([]uint64, error) {
-	ids, err := k.GetMaturedUnbondingOps(ctx)
+func (k Keeper) EmptyMaturedUnbondingOps(ctx sdk.Context) (ccv.MaturedUnbondingOps, error) {
+	maturedOps, err := k.GetMaturedUnbondingOps(ctx)
 	if err != nil {
-		return nil, err
+		return ccv.MaturedUnbondingOps{}, err
 	}
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.MaturedUnbondingOpsKey())
-	return ids, nil
+	return maturedOps, nil
 }
 
 func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (string, *ibctmtypes.ClientState, error) {

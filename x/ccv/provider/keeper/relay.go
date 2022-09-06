@@ -72,11 +72,11 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 
 // CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
 func (k Keeper) CompleteMaturedUnbondingOps(ctx sdk.Context) {
-	ids, err := k.EmptyMaturedUnbondingOps(ctx)
+	maturedOps, err := k.EmptyMaturedUnbondingOps(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("could not get the list of matured unbonding ops: %s", err.Error()))
 	}
-	for _, id := range ids {
+	for _, id := range maturedOps.GetIds() {
 		// Attempt to complete unbonding in staking module
 		err := k.stakingKeeper.UnbondingCanComplete(ctx, id)
 		if err != nil {

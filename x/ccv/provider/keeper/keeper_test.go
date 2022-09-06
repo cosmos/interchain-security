@@ -287,18 +287,18 @@ func TestIterateOverUnbondingOpIndex(t *testing.T) {
 func TestMaturedUnbondingOps(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
-	ids, err := providerKeeper.GetMaturedUnbondingOps(ctx)
+	maturedOps, err := providerKeeper.GetMaturedUnbondingOps(ctx)
 	require.NoError(t, err)
-	require.Nil(t, ids)
+	require.Empty(t, maturedOps.Ids)
 
 	unbondingOpIds := []uint64{0, 1, 2, 3, 4, 5, 6}
 	err = providerKeeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
 	require.NoError(t, err)
 
-	ids, err = providerKeeper.EmptyMaturedUnbondingOps(ctx)
+	maturedOpsAfterEmpty, err := providerKeeper.EmptyMaturedUnbondingOps(ctx)
 	require.NoError(t, err)
-	require.Equal(t, len(unbondingOpIds), len(ids))
+	require.Equal(t, len(unbondingOpIds), len(maturedOpsAfterEmpty.Ids))
 	for i := 0; i < len(unbondingOpIds); i++ {
-		require.Equal(t, unbondingOpIds[i], ids[i])
+		require.Equal(t, unbondingOpIds[i], maturedOpsAfterEmpty.Ids[i])
 	}
 }
