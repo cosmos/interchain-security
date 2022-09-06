@@ -194,17 +194,6 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 	}
 }
 
-/*
-The bug is:
-
-In the model update is a noop and packets can be delivered regardless of updates
-
-In the code update does an update
-so does deliver
-
-this means if deliver uses all the headers too early, there may be no header left for a future updateclient
-*/
-
 func (s *CoreSuite) updateClient(chain string) {
 	s.simibc.UpdateClient(s.chainID(chain))
 }
