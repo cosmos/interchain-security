@@ -53,7 +53,7 @@ Unit tests are useful for simple standalone functionality, and CRUD operations. 
 
 ### End to End (e2e) Tests
 
-[e2e-tests](./e2e-tests/) utilize the [IBC Testing Package](https://github.com/cosmos/ibc-go/tree/main/testing), and test functionality that is wider in scope than a unit test, but still able to be validated in-memory. Ie. code where advancing blocks would be useful, simulated handshakes, simulated packet relays, etc. 
+[e2e-tests](./tests/e2e/) utilize the [IBC Testing Package](https://github.com/cosmos/ibc-go/tree/main/testing), and test functionality that is wider in scope than a unit test, but still able to be validated in-memory. Ie. code where advancing blocks would be useful, simulated handshakes, simulated packet relays, etc. 
 
 ### Differential Tests (WIP)
 
@@ -61,7 +61,7 @@ Similar to e2e tests, but they compare the system state to an expected state gen
 
 ### Integration Tests 
 
-[Integration tests](./integration-tests/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. Integration tests use queries/transactions invoked from CLI to drive and validate the code.
+[Integration tests](./tests/integration/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. Integration tests use queries/transactions invoked from CLI to drive and validate the code.
 
 ### Running Tests
 
@@ -85,9 +85,9 @@ go test -run <test-suite-name>/<test-name> ./...
 # example: run a single e2e test
 go test -run TestProviderTestSuite/TestPacketRoundtrip ./...
 # run all integration tests
-go run ./integration-tests/...
+go run ./tests/integration/...
 # run all integration tests with a local cosmos sdk
-go run ./integration-tests/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/"
+go run ./tests/integration/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/"
 # run golang native fuzz tests (https://go.dev/doc/tutorial/fuzz)
 go test -fuzz=<regex-to-match-test-name>
 ```

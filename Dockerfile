@@ -7,6 +7,7 @@ RUN apk add --no-cache $PACKAGES
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux
+ENV GOFLAGS="-buildvcs=false"
 
 WORKDIR /downloads
 
@@ -23,7 +24,7 @@ RUN go mod tidy
 RUN make install
 
 # Get Hermes build
-FROM informalsystems/hermes:1.0.0-rc.1 AS hermes-builder
+FROM informalsystems/hermes:1.0.0 AS hermes-builder
 
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y
@@ -41,7 +42,7 @@ COPY --from=is-builder /go/bin/interchain-security-cd /usr/local/bin/interchain-
 
 
 # Copy in the shell scripts that run the testnet
-ADD ./integration-tests/testnet-scripts /testnet-scripts
+ADD ./tests/integration/testnet-scripts /testnet-scripts
 
 # Copy in the hermes config
-ADD ./integration-tests/testnet-scripts/hermes-config.toml /root/.hermes/config.toml
+ADD ./tests/integration/testnet-scripts/hermes-config.toml /root/.hermes/config.toml
