@@ -42,7 +42,7 @@ COPY --from=is-builder /go/bin/interchain-security-cd /usr/local/bin/interchain-
 
 
 # Copy in the shell scripts that run the testnet
-ADD ./integration-tests/testnet-scripts /testnet-scripts
+ADD ./tests/integration/testnet-scripts /testnet-scripts
 
 # Copy in the hermes config
-ADD ./integration-tests/testnet-scripts/hermes-config.toml /root/.hermes/config.toml
+ADD ./tests/integration/testnet-scripts/hermes-config.toml /root/.hermes/config.toml
