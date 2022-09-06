@@ -25,8 +25,10 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	// get the provider channel
 	providerChannel, found := k.GetProviderChannel(ctx)
 	if found && providerChannel != packet.DestinationChannel {
-		// VSC packet was sent on a channel different than the provider channel
-		return utils.OnRecvPacketOnUnknownChannel(ctx, k.scopedKeeper, k.channelKeeper, packet)
+		// VSC packet was sent on a channel different than the provider channel;
+		// this should never happen
+		panic(fmt.Errorf("VSCPacket received on unknown channel %s; expected: %s",
+			packet.DestinationChannel, providerChannel))
 	}
 	if !found {
 		// the first packet from the provider chain
@@ -209,7 +211,6 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 	if err := ack.GetError(); err != "" {
 		// Reasons for ErrorAcknowledgment
 		//  - packet data could not be successfully decoded
-		//  - packet sent on a non-established channel
 		//  - the Slash packet was ill-formed (errors while handling it)
 		// None of these should ever happen.
 		k.Logger(ctx).Error(
