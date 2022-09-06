@@ -72,7 +72,6 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		packet                 channeltypes.Packet
 		newChanges             types.ValidatorSetChangePacketData
 		expectedPendingChanges types.ValidatorSetChangePacketData
-		noAck                  bool
 	}{
 		{
 			"success on first packet",
@@ -80,7 +79,6 @@ func TestOnRecvVSCPacket(t *testing.T) {
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
-			false,
 		},
 		{
 			"success on subsequent packet",
@@ -88,7 +86,6 @@ func TestOnRecvVSCPacket(t *testing.T) {
 				clienttypes.NewHeight(1, 0), 0),
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes1},
-			false,
 		},
 		{
 			"success on packet with more changes",
@@ -109,15 +106,6 @@ func TestOnRecvVSCPacket(t *testing.T) {
 					Power:  10,
 				},
 			}},
-			false,
-		},
-		{
-			"invalid packet: different destination channel than provider channel",
-			channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, providerCCVChannelID, ccv.ConsumerPortID, "InvalidChannel",
-				clienttypes.NewHeight(1, 0), 0),
-			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{}},
-			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{}},
-			true,
 		},
 	}
 
@@ -128,20 +116,6 @@ func TestOnRecvVSCPacket(t *testing.T) {
 
 	mockScopedKeeper := testkeeper.NewMockScopedKeeper(ctrl)
 	mockChannelKeeper := testkeeper.NewMockChannelKeeper(ctrl)
-
-	// Setup expected mock calls for final test case
-
-	dummyCap := &capabilitytypes.Capability{}
-	gomock.InOrder(
-
-		mockScopedKeeper.EXPECT().GetCapability(
-			ctx, host.ChannelCapabilityPath(ccv.ConsumerPortID, "InvalidChannel"),
-		).Return(dummyCap, true).Times(1),
-
-		mockChannelKeeper.EXPECT().ChanCloseInit(
-			ctx, ccv.ConsumerPortID, "InvalidChannel", dummyCap,
-		).Return(nil).Times(1),
-	)
 
 	consumerKeeper := testkeeper.GetCustomConsumerKeeperWithMocks(
 		cdc,
@@ -166,35 +140,30 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	for _, tc := range testCases {
 		ack := consumerKeeper.OnRecvVSCPacket(ctx, tc.packet, tc.newChanges)
 
-		if tc.noAck {
-			// if closing channel was successful, no acknowledgement returned, see OnRecvPacketOnUnknownChannel
-			require.Nil(t, ack, "invalid test case: %s ack returned ", tc.name)
-		} else {
-			require.NotNil(t, ack, "invalid test case: %s did not return ack", tc.name)
-			require.True(t, ack.Success(), "invalid test case: %s did not return a Success Acknowledgment", tc.name)
-			providerChannel, ok := consumerKeeper.GetProviderChannel(ctx)
-			require.True(t, ok)
-			require.Equal(t, tc.packet.DestinationChannel, providerChannel,
-				"provider channel is not destination channel on successful receive for valid test case: %s", tc.name)
+		require.NotNil(t, ack, "invalid test case: %s did not return ack", tc.name)
+		require.True(t, ack.Success(), "invalid test case: %s did not return a Success Acknowledgment", tc.name)
+		providerChannel, ok := consumerKeeper.GetProviderChannel(ctx)
+		require.True(t, ok)
+		require.Equal(t, tc.packet.DestinationChannel, providerChannel,
+			"provider channel is not destination channel on successful receive for valid test case: %s", tc.name)
 
-			// Check that pending changes are accumulated and stored correctly
-			actualPendingChanges, ok := consumerKeeper.GetPendingChanges(ctx)
-			require.True(t, ok)
-			// Sort to avoid dumb inequalities
-			sort.SliceStable(actualPendingChanges.ValidatorUpdates, func(i, j int) bool {
-				return actualPendingChanges.ValidatorUpdates[i].PubKey.Compare(actualPendingChanges.ValidatorUpdates[j].PubKey) == -1
-			})
-			sort.SliceStable(tc.expectedPendingChanges.ValidatorUpdates, func(i, j int) bool {
-				return tc.expectedPendingChanges.ValidatorUpdates[i].PubKey.Compare(tc.expectedPendingChanges.ValidatorUpdates[j].PubKey) == -1
-			})
-			require.Equal(t, tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
+		// Check that pending changes are accumulated and stored correctly
+		actualPendingChanges, ok := consumerKeeper.GetPendingChanges(ctx)
+		require.True(t, ok)
+		// Sort to avoid dumb inequalities
+		sort.SliceStable(actualPendingChanges.ValidatorUpdates, func(i, j int) bool {
+			return actualPendingChanges.ValidatorUpdates[i].PubKey.Compare(actualPendingChanges.ValidatorUpdates[j].PubKey) == -1
+		})
+		sort.SliceStable(tc.expectedPendingChanges.ValidatorUpdates, func(i, j int) bool {
+			return tc.expectedPendingChanges.ValidatorUpdates[i].PubKey.Compare(tc.expectedPendingChanges.ValidatorUpdates[j].PubKey) == -1
+		})
+		require.Equal(t, tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
 
-			unbondingPeriod, found := consumerKeeper.GetUnbondingTime(ctx)
-			require.True(t, found)
-			expectedTime := uint64(ctx.BlockTime().Add(unbondingPeriod).UnixNano())
-			maturityTime := consumerKeeper.GetPacketMaturityTime(ctx, tc.newChanges.ValsetUpdateId)
-			require.Equal(t, expectedTime, maturityTime, "packet maturity time has unexpected value for case: %s", tc.name)
-		}
+		unbondingPeriod, found := consumerKeeper.GetUnbondingTime(ctx)
+		require.True(t, found)
+		expectedTime := uint64(ctx.BlockTime().Add(unbondingPeriod).UnixNano())
+		maturityTime := consumerKeeper.GetPacketMaturityTime(ctx, tc.newChanges.ValsetUpdateId)
+		require.Equal(t, expectedTime, maturityTime, "packet maturity time has unexpected value for case: %s", tc.name)
 	}
 }
 
