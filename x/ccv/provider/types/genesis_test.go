@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Tests validation of consumer states and params within a provider genesis state
 func TestValidateGenesisState(t *testing.T) {
 	testCases := []struct {
 		name     string

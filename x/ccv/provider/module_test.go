@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/golang/mock/gomock"
@@ -16,14 +17,20 @@ import (
 
 // Tests the provider's InitGenesis implementation against the spec:
 // https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-initg1
+//
+// Note: Genesis validation for the provider is tested in TestValidateGenesisState
 func TestInitGenesis(t *testing.T) {
 
 	type testCase struct {
 		name string
-		// Whether port capability is bound to the CCV provider module already
+		// Whether port capability is already bound to the CCV provider module
 		isBound bool
 		// Provider's storage of consumer state to test against
 		consumerStates []types.ConsumerState
+		// Error returned from ClaimCapability during port binding, default: nil
+		errFromClaimCap error
+		// Whether method call should panic, default: false
+		expPanic bool
 	}
 
 	tests := []testCase{
@@ -65,9 +72,19 @@ func TestInitGenesis(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:    "capability not owned, method should panic",
+			isBound: false,
+			consumerStates: []types.ConsumerState{
+				{
+					ChainId:   "chainId77",
+					ChannelId: "channelIdToChain77",
+				},
+			},
+			errFromClaimCap: capabilitytypes.ErrCapabilityNotOwned,
+			expPanic:        true,
+		},
 	}
-
-	// TODO: Test "invalid channel id"?
 
 	for _, tc := range tests {
 		//
@@ -116,7 +133,7 @@ func TestInitGenesis(t *testing.T) {
 			orderedCalls = append(orderedCalls,
 				mockPortKeeper.EXPECT().BindPort(ctx, ccv.ProviderPortID).Return(dummyCap),
 				mockScopedKeeper.EXPECT().ClaimCapability(
-					ctx, dummyCap, host.PortPath(ccv.ProviderPortID)).Return(nil),
+					ctx, dummyCap, host.PortPath(ccv.ProviderPortID)).Return(tc.errFromClaimCap),
 			)
 		}
 
@@ -125,6 +142,13 @@ func TestInitGenesis(t *testing.T) {
 		//
 		// Execute method, then assert expected results
 		//
+		if tc.expPanic {
+			require.Panics(t, assert.PanicTestFunc(func() {
+				appModule.InitGenesis(ctx, cdc, jsonBytes)
+			}), tc.name)
+			continue // Nothing else to verify
+		}
+
 		valUpdates := appModule.InitGenesis(ctx, cdc, jsonBytes)
 
 		numStatesCounted := 0

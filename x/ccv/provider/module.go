@@ -128,12 +128,15 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
-// InitGenesis performs genesis initialization for the provider module. It returns
-// no validator updates.
+// InitGenesis performs genesis initialization for the provider module. It returns no validator updates.
+// Note: This method along with ValidateGenesis satisfies the CCV spec:
+// https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-initg1
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState providertypes.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
+
 	am.keeper.InitGenesis(ctx, &genesisState)
+
 	// initialize validator update id
 	// TODO: Include in genesis and initialize from genesis value
 	am.keeper.SetValidatorSetUpdateId(ctx, 1)
