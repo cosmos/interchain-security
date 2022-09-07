@@ -23,3 +23,15 @@ message QueryConsumerGenesisResponse {
   interchain_security.ccv.consumer.v1.GenesisState genesis_state = 1
       [ (gogoproto.nullable) = false ];
 }
+
+message QueryConsumerChainsRequest {}
+
+message QueryConsumerChainsResponse { repeated string chain_id = 1; }
+
+message PendingConsumerChainStarsRequest {}
+
+message PendingConsumerChainStartResponse { repeated string chain_id = 1; }
+
+message PendingConsumerChainStopsRequest {}
+
+message PendingConsumerChainStopsResponse { repeated string chain_id = 1; }
