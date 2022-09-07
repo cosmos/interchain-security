@@ -20,7 +20,7 @@ func TestInitGenesis(t *testing.T) {
 
 	type testCase struct {
 		name string
-		// Whether port capability is bound already
+		// Whether port capability is bound to the CCV provider module already
 		isBound bool
 		// Provider's storage of consumer state to test against
 		consumerStates []types.ConsumerState
