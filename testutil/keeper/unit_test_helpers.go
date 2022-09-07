@@ -8,7 +8,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
@@ -76,7 +75,7 @@ func GetProviderKeeperWithMocks(
 	cdc *codec.ProtoCodec,
 	storeKey *storetypes.KVStoreKey,
 	paramsSubspace paramstypes.Subspace,
-	capabilityKeeper capabilitykeeper.ScopedKeeper,
+	capabilityKeeper types.ScopedKeeper,
 	channelKeeper types.ChannelKeeper,
 	portKeeper types.PortKeeper,
 	connectionKeeper types.ConnectionKeeper,
