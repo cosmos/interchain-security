@@ -261,44 +261,39 @@ func TestIterateOverUnbondingOpIndex(t *testing.T) {
 	chainID := "6"
 
 	// mock an unbonding index
-	unbondingOpIndex := ccv.UnbondingOpsIndex{
-		Ids: []uint64{0, 1, 2, 3, 4, 5, 6},
-	}
+	unbondingOpIndex := []uint64{0, 1, 2, 3, 4, 5, 6}
 
 	// set ubd ops by varying vsc ids and index slices
-	for i := 1; i < len(unbondingOpIndex.Ids); i++ {
-		testIdx := ccv.UnbondingOpsIndex{
-			Ids: unbondingOpIndex.Ids[:i],
-		}
-		providerKeeper.SetUnbondingOpIndex(ctx, chainID, uint64(i), testIdx)
+	for i := 1; i < len(unbondingOpIndex); i++ {
+		providerKeeper.SetUnbondingOpIndex(ctx, chainID, uint64(i), unbondingOpIndex[:i])
 	}
 
 	// check iterator returns expected entries
 	i := 1
 	providerKeeper.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) bool {
 		require.Equal(t, uint64(i), vscID)
-		require.EqualValues(t, unbondingOpIndex.Ids[:i], ubdIndex)
+		require.EqualValues(t, unbondingOpIndex[:i], ubdIndex)
 		i++
 		return true
 	})
-	require.Equal(t, len(unbondingOpIndex.Ids), i)
+	require.Equal(t, len(unbondingOpIndex), i)
 }
 
 func TestMaturedUnbondingOps(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
-	maturedOps, err := providerKeeper.GetMaturedUnbondingOps(ctx)
+	ids, err := providerKeeper.GetMaturedUnbondingOps(ctx)
 	require.NoError(t, err)
-	require.Empty(t, maturedOps.Ids)
+	require.Nil(t, ids)
 
 	unbondingOpIds := []uint64{0, 1, 2, 3, 4, 5, 6}
 	err = providerKeeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
 	require.NoError(t, err)
 
-	maturedOpsAfterEmpty, err := providerKeeper.EmptyMaturedUnbondingOps(ctx)
+	ids, err = providerKeeper.EmptyMaturedUnbondingOps(ctx)
 	require.NoError(t, err)
-	require.Equal(t, len(unbondingOpIds), len(maturedOpsAfterEmpty.Ids))
+	require.Equal(t, len(unbondingOpIds), len(ids))
 	for i := 0; i < len(unbondingOpIds); i++ {
-		require.Equal(t, unbondingOpIds[i], maturedOpsAfterEmpty.Ids[i])
+		require.Equal(t, unbondingOpIds[i], ids[i])
 	}
 }
