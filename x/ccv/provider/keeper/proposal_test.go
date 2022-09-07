@@ -10,6 +10,41 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
+// Tests the CreateConsumerChainProposal method against the SpawnConsumerChainProposalHandler spec:
+// https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-spccprop1
+func TestCreateConsumerChainProposal(t *testing.T) {
+
+	type testCase struct {
+		name string
+		prop *types.CreateConsumerChainProposal
+	}
+
+	tests := []testCase{
+		{
+			name: "non pending proposal, consumer client created",
+			prop: types.NewCreateConsumerChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now().Add(time.Hour)),
+		},
+	}
+
+	// Then for specific cases
+	testCreatedConsumerClient(t)
+}
+
+// Tests the CreateConsumerClient method against the spec:
+// https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-spccprop1
+func TestCreateConsumerClient(t *testing.T) {
+
+}
+
+// Executes test assertions for a created consumer client.
+//
+// Note: Separated from TestCreateConsumerClient to also be called from TestCreateConsumerChainProposal.
+func testCreatedConsumerClient(t *testing.T) {
+
+}
+
+// TODO : comments to all this shiz
+
 func TestPendingStopProposalDeletion(t *testing.T) {
 
 	testCases := []struct {
