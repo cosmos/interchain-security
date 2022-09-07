@@ -34,7 +34,7 @@ const (
 	ConsumerToSendToProviderName = "cons_to_send_to_provider"
 
 	// UnbondingPeriod is the time duration to mature the VSC packets
-	UnbondingPeriod time.Duration = 600 * time.Second
+	UnbondingPeriod time.Duration = 96 * time.Hour
 )
 
 // Iota generated keys/key prefixes (as a byte), supports 256 possible values

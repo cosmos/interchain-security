@@ -126,11 +126,11 @@ func ComputeConsumerUnbondingPeriod(providerUnbondingPeriod time.Duration) time.
 		// In general, the unbonding period on the consumer
 		// is one day less than the unbonding period on the provider
 		return providerUnbondingPeriod - 24*time.Hour // one day less
-	} else if providerUnbondingPeriod >= 24*time.Hour {
-		// If the unbonding period on the provider is
-		// between one day and one week, then the unbonding period
-		// on the consumer is one hour less
-		return providerUnbondingPeriod - time.Hour // one hour less
+		// } else if providerUnbondingPeriod >= 24*time.Hour {
+		// 	// If the unbonding period on the provider is
+		// 	// between one day and one week, then the unbonding period
+		// 	// on the consumer is one hour less
+		// 	return providerUnbondingPeriod - time.Hour // one hour less
 	} else {
 		// If the unbonding period on the provider is
 		// less than one day, then the unbonding period
