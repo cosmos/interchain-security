@@ -109,7 +109,7 @@ func TestInitGenesis(t *testing.T) {
 			),
 		}
 
-		// If port capability is not already bound, port will be binded and capability claimed.
+		// If port capability is not already bound, port will be bound and capability claimed.
 		if !tc.isBound {
 			dummyCap := &capabilitytypes.Capability{}
 
