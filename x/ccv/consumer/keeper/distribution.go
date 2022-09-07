@@ -25,10 +25,13 @@ const ConsumerRedistributeFrac = "0.75"
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
 func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 
+	// Find out when we last ran this function
 	ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
 	if err != nil {
 		return err
 	}
+
+	// We only distribute once every BlocksPerDistributionTransmission blocks
 	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
 	curHeight := ctx.BlockHeight()
 
@@ -48,6 +51,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	decFPTokens := sdk.NewDecCoinsFromCoins(fpTokens...)
 	// NOTE the truncated decimal remainder will be sent to the provider fee pool
 	consRedistrTokens, _ := decFPTokens.MulDec(frac).TruncateDecimal()
+	// Send the coins that will stay with the consumer to the consumer redistribute module account
 	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
 		types.ConsumerRedistributeName, consRedistrTokens)
 	if err != nil {
@@ -66,13 +70,19 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		return err
 	}
 
-	// empty out the toSendToProviderTokens address
+	// First check if there is a transfer channel open
 	ch := k.GetDistributionTransmissionChannel(ctx)
 	transferChannel, found := k.channelKeeper.GetChannel(ctx, transfertypes.PortID, ch)
+
 	if found && transferChannel.State == channeltypes.OPEN {
+		// Find the number of tokens in the ToSendToProvider account
 		tstProviderAddr := k.authKeeper.GetModuleAccount(ctx,
 			types.ConsumerToSendToProviderName).GetAddress()
 		tstProviderTokens := k.bankKeeper.GetAllBalances(ctx, tstProviderAddr)
+
+		// Send all tokens in the ToSendToProvider account to the provider over IBC
+		// if the send fails for some reason, the tokens will be sent
+		// the next time this function runs.
 		providerAddr := k.GetProviderFeePoolAddrStr(ctx)
 		timeoutHeight := clienttypes.ZeroHeight()
 		timeoutTimestamp := uint64(ctx.BlockTime().Add(TransferTimeDelay).UnixNano())
@@ -92,6 +102,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		}
 	}
 
+	// Save the LastTransmissionBlockHeight for next time
 	newLtbh := types.LastTransmissionBlockHeight{
 		Height: ctx.BlockHeight(),
 	}
