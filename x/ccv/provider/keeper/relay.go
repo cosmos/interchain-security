@@ -35,8 +35,9 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	// check that the channel is established
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {
-		// VSCMatured packet was sent on a channel different than any of the established CCV channels
-		return utils.OnRecvPacketOnUnknownChannel(ctx, k.scopedKeeper, k.channelKeeper, packet)
+		// VSCMatured packet was sent on a channel different than any of the established CCV channels;
+		// this should never happen
+		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
@@ -87,10 +88,8 @@ func (k Keeper) CompleteMaturedUnbondingOps(ctx sdk.Context) {
 // OnAcknowledgementPacket handles acknowledgments for sent VSC packets
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 	if err := ack.GetError(); err != "" {
-		// Either the VSC packet data could not be successfully decoded
-		// or the VSC packet was sent on a channel other than the established
-		// provider channel and ChanCloseInit failed.
-		// Neither of these should ever happen.
+		// The VSC packet data could not be successfully decoded.
+		// This should never happen.
 		if chainID, ok := k.GetChannelToChain(ctx, packet.SourceChannel); ok {
 			// stop consumer chain and uses the LockUnbondingOnTimeout flag
 			// to decide whether the unbonding operations should be released
@@ -187,8 +186,9 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	// check that the channel is established
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {
-		// Slash packet was sent on a channel different than any of the established CCV channels
-		return utils.OnRecvPacketOnUnknownChannel(ctx, k.scopedKeeper, k.channelKeeper, packet)
+		// SlashPacket packet was sent on a channel different than any of the established CCV channels;
+		// this should never happen
+		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
 	// apply slashing

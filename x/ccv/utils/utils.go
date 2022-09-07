@@ -1,13 +1,11 @@
 package utils
 
 import (
-	"fmt"
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/ibc-go/modules/core/exported"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
@@ -81,37 +79,6 @@ func SendIBCPacket(
 		clienttypes.Height{}, uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
 	)
 	return channelKeeper.SendPacket(ctx, channelCap, packet)
-}
-
-// OnRecvPacketOnUnknownChannel handles a received packet that was sent
-// not on an established CCV channel
-func OnRecvPacketOnUnknownChannel(
-	ctx sdk.Context,
-	scopedKeeper ccv.ScopedKeeper,
-	channelKeeper ccv.ChannelKeeper,
-	packet channeltypes.Packet,
-) exported.Acknowledgement {
-	var err error = nil
-	// try closing the channel on which the packet was received
-	chanCap, found := scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(packet.DestinationPort, packet.DestinationChannel))
-	if found {
-		err = channelKeeper.ChanCloseInit(ctx, packet.DestinationPort, packet.DestinationChannel, chanCap)
-	} else {
-		err = sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
-	}
-	// if closing was unsuccessful, return error acknowledgement
-	if err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement(
-			fmt.Sprintf(
-				"received packet on a channel %s that is not an established CCV channel; ChanCloseInit failed: %s",
-				packet.DestinationChannel,
-				err.Error(),
-			),
-		)
-		return &errAck
-	}
-	// if closing was successful, no need to return acknowledgement
-	return nil
 }
 
 // ComputeConsumerUnbondingPeriod computes the unbonding period on the consumer

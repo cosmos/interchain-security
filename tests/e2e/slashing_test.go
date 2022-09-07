@@ -257,8 +257,10 @@ func (s *ProviderTestSuite) TestSlashPacketAcknowldgement() {
 	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
 	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 
+	s.SetupCCVChannel()
+
 	packet := channeltypes.NewPacket([]byte{}, 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
-		ccv.ProviderPortID, "wrongchannel", clienttypes.Height{}, 0)
+		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, 0)
 
 	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, ccv.SlashPacketData{})
 	s.Require().NotNil(ack)
