@@ -24,7 +24,7 @@ func init() {
 }
 
 // NewCreateConsumerChainProposal creates a new create consumerchain proposal.
-func NewCreateConsumerChainProposal(title, description, chainID string, initialHeight clienttypes.Height, genesisHash, binaryHash []byte, spawnTime time.Time) (govtypes.Content, error) {
+func NewCreateConsumerChainProposal(title, description, chainID string, initialHeight clienttypes.Height, genesisHash, binaryHash []byte, spawnTime time.Time) govtypes.Content {
 	return &CreateConsumerChainProposal{
 		Title:         title,
 		Description:   description,
@@ -33,7 +33,7 @@ func NewCreateConsumerChainProposal(title, description, chainID string, initialH
 		GenesisHash:   genesisHash,
 		BinaryHash:    binaryHash,
 		SpawnTime:     spawnTime,
-	}, nil
+	}
 }
 
 // GetTitle returns the title of a create consumerchain proposal.
