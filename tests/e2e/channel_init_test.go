@@ -710,8 +710,7 @@ func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
 				initialHeight := clienttypes.NewHeight(2, 3)
 				// ctx blocktime is after proposal's spawn time
 				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content, err = types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
-				suite.Require().NoError(err)
+				content = types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
 			}, true,
 		},
 		{
@@ -804,8 +803,7 @@ func (suite *ProviderKeeperTestSuite) TestCreateConsumerChainProposal() {
 			"valid create consumer chain proposal: spawn time reached", func(suite *ProviderKeeperTestSuite) {
 				// ctx blocktime is after proposal's spawn time
 				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content, err := types.NewCreateConsumerChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
-				suite.Require().NoError(err)
+				content := types.NewCreateConsumerChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
 				proposal, ok = content.(*types.CreateConsumerChainProposal)
 				suite.Require().True(ok)
 				proposal.LockUnbondingOnTimeout = lockUbdOnTimeout
@@ -815,8 +813,7 @@ func (suite *ProviderKeeperTestSuite) TestCreateConsumerChainProposal() {
 			"valid proposal: spawn time has not yet been reached", func(suite *ProviderKeeperTestSuite) {
 				// ctx blocktime is before proposal's spawn time
 				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now())
-				content, err := types.NewCreateConsumerChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now().Add(time.Hour))
-				suite.Require().NoError(err)
+				content := types.NewCreateConsumerChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now().Add(time.Hour))
 				proposal, ok = content.(*types.CreateConsumerChainProposal)
 				suite.Require().True(ok)
 				proposal.LockUnbondingOnTimeout = lockUbdOnTimeout

@@ -64,12 +64,9 @@ Where proposal.json contains:
 				return err
 			}
 
-			content, err := types.NewCreateConsumerChainProposal(
+			content := types.NewCreateConsumerChainProposal(
 				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
 				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime)
-			if err != nil {
-				return err
-			}
 
 			from := clientCtx.GetFromAddress()
 
@@ -149,12 +146,9 @@ func postProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
 			return
 		}
 
-		content, err := types.NewCreateConsumerChainProposal(
+		content := types.NewCreateConsumerChainProposal(
 			req.Title, req.Description, req.ChainId, req.InitialHeight,
 			req.GenesisHash, req.BinaryHash, req.SpawnTime)
-		if rest.CheckBadRequestError(w, err) {
-			return
-		}
 
 		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
 		if rest.CheckBadRequestError(w, err) {
