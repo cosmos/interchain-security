@@ -105,7 +105,7 @@ func TestInitGenesis(t *testing.T) {
 				ctx, host.PortPath(ccv.ProviderPortID),
 			).Return(
 				&capabilitytypes.Capability{},
-				tc.isBound, // Capability is returned successfully if port capability is already bound
+				tc.isBound, // Capability is returned successfully if port capability is already bound to this module.
 			),
 		}
 
