@@ -228,14 +228,14 @@ func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, clientInfo *type
 		return err
 	}
 
-	store.Set(types.PendingConsumerAdditionPropKey(clientInfo.SpawnTime, clientInfo.ChainId), bz)
+	store.Set(types.PendingCAPKey(clientInfo.SpawnTime, clientInfo.ChainId), bz)
 	return nil
 }
 
 // GetPendingConsumerAdditionProp retrieves a pending proposal to create a consumer chain client (by spawn time and chain id)
 func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.Time, chainID string) types.ConsumerAdditionProposal {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingConsumerAdditionPropKey(spawnTime, chainID))
+	bz := store.Get(types.PendingCAPKey(spawnTime, chainID))
 	if len(bz) == 0 {
 		return types.ConsumerAdditionProposal{}
 	}
@@ -247,7 +247,7 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 
 func (k Keeper) PendingConsumerAdditionPropIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
-	return sdk.KVStorePrefixIterator(store, []byte{types.PendingConsumerAdditionPropBytePrefix})
+	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
 }
 
 // IteratePendingConsumerAdditionProps iterates over the pending consumer addition proposals to create
@@ -285,7 +285,7 @@ func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.Consumer
 
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()
-		spawnTime, _, err := types.ParsePendingConsumerAdditionPropKey(key)
+		spawnTime, _, err := types.ParsePendingCAPKey(key)
 		if err != nil {
 			panic(fmt.Errorf("failed to parse pending client key: %w", err))
 		}
@@ -308,7 +308,7 @@ func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ..
 	store := ctx.KVStore(k.storeKey)
 
 	for _, p := range proposals {
-		store.Delete(types.PendingConsumerAdditionPropKey(p.SpawnTime, p.ChainId))
+		store.Delete(types.PendingCAPKey(p.SpawnTime, p.ChainId))
 	}
 }
 
