@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
@@ -16,16 +15,8 @@ import (
 func TestParams(t *testing.T) {
 	defaultParams := types.DefaultParams()
 
-	// Constuct our own params subspace
 	cdc, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
-	keyTable := paramstypes.NewKeyTable(paramstypes.NewParamSetPair(types.KeyTemplateClient, &ibctmtypes.ClientState{}, func(value interface{}) error { return nil }))
-	paramsSubspace = paramsSubspace.WithKeyTable(keyTable)
-
-	expectedClientState :=
-		ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			time.Second*10, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, true, true)
-
-	paramsSubspace.Set(ctx, types.KeyTemplateClient, expectedClientState)
+	testkeeper.SetTemplateClientState(ctx, &paramsSubspace)
 
 	providerKeeper := testkeeper.GetProviderKeeperWithMocks(
 		cdc,

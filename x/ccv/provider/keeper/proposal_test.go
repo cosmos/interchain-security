@@ -4,43 +4,264 @@ import (
 	"testing"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	"github.com/golang/mock/gomock"
+
 	"github.com/stretchr/testify/require"
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+
+	extra "github.com/oxyno-zeta/gomock-extra-matcher"
 )
 
-// Tests the CreateConsumerChainProposal method against the SpawnConsumerChainProposalHandler spec:
+// Tests the HandleCreateConsumerChainProposal method against the SpawnConsumerChainProposalHandler spec:
 // https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-spccprop1
-func TestCreateConsumerChainProposal(t *testing.T) {
+func TestHandleCreateConsumerChainProposal(t *testing.T) {
+
+	const (
+		// Value to inject into mocked returned value for CreateClient in each test case
+		clientIDToInject = "clientID"
+	)
 
 	type testCase struct {
-		name string
-		prop *types.CreateConsumerChainProposal
+		description string
+		prop        *types.CreateConsumerChainProposal
+		// Time when prop is handled
+		blockTime time.Time
+		// Whether it's expected that the spawn time has passed and client should be created
+		expCreatedClient bool
 	}
+
+	// Snapshot times asserted in tests
+	now := time.Now().UTC()
+	hourFromNow := now.Add(time.Hour).UTC()
 
 	tests := []testCase{
 		{
-			name: "non pending proposal, consumer client created",
-			prop: types.NewCreateConsumerChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now().Add(time.Hour)),
+			description: "ctx block time is after proposal's spawn time, expected that client is created",
+			prop: types.NewCreateConsumerChainProposal(
+				"title",
+				"description",
+				"chainID",
+				clienttypes.NewHeight(2, 3),
+				[]byte("gen_hash"),
+				[]byte("bin_hash"),
+				now, // Spawn time
+			).(*types.CreateConsumerChainProposal),
+			blockTime:        hourFromNow,
+			expCreatedClient: true,
+		},
+		{
+			description: `ctx block time is before proposal's spawn time,
+			 expected that no client is created and the proposal is persisted as pending`,
+			prop: types.NewCreateConsumerChainProposal(
+				"title",
+				"description",
+				"chainID",
+				clienttypes.NewHeight(2, 3),
+				[]byte("gen_hash"),
+				[]byte("bin_hash"),
+				hourFromNow, // Spawn time
+			).(*types.CreateConsumerChainProposal),
+			blockTime:        now,
+			expCreatedClient: false,
 		},
 	}
 
-	// Then for specific cases
-	testCreatedConsumerClient(t)
+	for _, tc := range tests {
+
+		// Keeper is setup in the same way whether the tested proposal is expected to be stored as pending
+		// or not. Mock calls however, are only asserted if we expect a client to be created.
+		ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper := setupKeeper(t)
+
+		ctx = ctx.WithBlockTime(tc.blockTime)
+
+		if tc.expCreatedClient {
+			setupMocksForClientCreation(ctx, providerKeeper, mockClientKeeper, mockStakingKeeper,
+				tc.prop.ChainId, tc.prop.InitialHeight, clientIDToInject)
+		}
+
+		tc.prop.LockUnbondingOnTimeout = false // Full functionality not implemented yet.
+
+		err := providerKeeper.HandleCreateConsumerChainProposal(ctx, tc.prop)
+		require.NoError(t, err)
+
+		if tc.expCreatedClient {
+			testCreatedConsumerClient(t, ctx, providerKeeper, tc.prop.ChainId, clientIDToInject)
+		} else {
+			// check that stored pending prop is exactly the same as the initially instantiated prop
+			gotProposal := providerKeeper.GetPendingCreateProposal(ctx, tc.prop.SpawnTime, tc.prop.ChainId)
+			require.Equal(t, *tc.prop, gotProposal)
+			// double check that a client for this chain does not exist
+			_, found := providerKeeper.GetConsumerClientId(ctx, tc.prop.ChainId)
+			require.False(t, found)
+		}
+		ctrl.Finish()
+	}
 }
 
-// Tests the CreateConsumerClient method against the spec:
-// https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-spccprop1
+// Tests the CreateConsumerClient method against the spec,
+// with more granularity than what's covered in TestHandleCreateConsumerChainProposal.
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
 func TestCreateConsumerClient(t *testing.T) {
 
+	// Arbitrary values used in the following tests and assertions
+	const (
+		arbitraryClientID = "clientID"
+		arbitraryChainID  = "chainID"
+		lockUbdOnTimeout  = false // Always set to false as is.
+	)
+
+	var (
+		arbitraryLatestHeight = clienttypes.NewHeight(4, 5)
+	)
+
+	type testCase struct {
+		description string
+		// Any state-mutating setup specific to this test case
+		testSetup func() (sdk.Context, *gomock.Controller, providerkeeper.Keeper)
+		// Whether a client should be created
+		expClientCreated bool
+	}
+	tests := []testCase{
+		{
+			description: "No odd state mutation, new client should be created",
+			testSetup: func() (sdk.Context, *gomock.Controller, providerkeeper.Keeper) {
+
+				ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper := setupKeeper(t)
+
+				// Valid client creation is asserted with mock expectations here
+				setupMocksForClientCreation(ctx, providerKeeper, mockClientKeeper, mockStakingKeeper,
+					arbitraryChainID, arbitraryLatestHeight, arbitraryClientID)
+
+				return ctx, ctrl, providerKeeper
+			},
+			expClientCreated: true,
+		},
+		{
+			description: "client for this chain already exists, new one is not created",
+			testSetup: func() (sdk.Context, *gomock.Controller, providerkeeper.Keeper) {
+
+				ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper := setupKeeper(t)
+
+				providerKeeper.SetConsumerClientId(ctx, arbitraryChainID, arbitraryClientID)
+
+				// Expect none of the client creation related calls to happen
+				mockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Times(0)
+				mockClientKeeper.EXPECT().CreateClient(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				mockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(), gomock.Any()).Times(0)
+				mockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).Times(0)
+
+				return ctx, ctrl, providerKeeper
+			},
+			expClientCreated: false,
+		},
+	}
+
+	for _, tc := range tests {
+		// Setup
+		ctx, ctrl, providerKeeper := tc.testSetup()
+
+		// Call method with arbitrary const values defined above.
+		err := providerKeeper.CreateConsumerClient(
+			ctx, arbitraryChainID, arbitraryLatestHeight, lockUbdOnTimeout)
+
+		require.NoError(t, err)
+
+		if tc.expClientCreated {
+			testCreatedConsumerClient(t, ctx, providerKeeper, arbitraryChainID, arbitraryClientID)
+		}
+
+		// Assert mock calls from setup functions
+		ctrl.Finish()
+	}
 }
 
 // Executes test assertions for a created consumer client.
 //
 // Note: Separated from TestCreateConsumerClient to also be called from TestCreateConsumerChainProposal.
-func testCreatedConsumerClient(t *testing.T) {
+func testCreatedConsumerClient(t *testing.T,
+	ctx sdk.Context, providerKeeper providerkeeper.Keeper, expectedChainID string, expectedClientID string) {
 
+	// ClientID should be stored.
+	clientId, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
+	require.True(t, found, "consumer client not found")
+	require.Equal(t, expectedClientID, clientId)
+
+	// Lock unbonding on timeout flag always false for now.
+	lockUbdOnTimeout := providerKeeper.GetLockUnbondingOnTimeout(ctx, expectedChainID)
+	require.False(t, lockUbdOnTimeout)
+
+	// Only assert that consumer genesis was set,
+	// more granular tests on consumer genesis should be defined in TestMakeConsumerGenesis
+	_, ok := providerKeeper.GetConsumerGenesis(ctx, expectedChainID)
+	require.True(t, ok)
+}
+
+// Sets up mock call expectations for a consumer client being created.
+func setupMocksForClientCreation(ctx sdk.Context, providerKeeper providerkeeper.Keeper,
+	mockClientKeeper *testkeeper.MockClientKeeper,
+	mockStakingKeeper *testkeeper.MockStakingKeeper,
+	expectedChainID string, expectedLatestHeight clienttypes.Height, clientIDToInject string) {
+
+	gomock.InOrder(
+		mockStakingKeeper.EXPECT().UnbondingTime(ctx).Return(time.Hour).Times(
+			1, // called once in CreateConsumerClient
+		),
+
+		mockClientKeeper.EXPECT().CreateClient(
+			ctx,
+			// Allows us to expect a match by field. These are the only two client state values
+			// that are dependant on parameters passed to CreateConsumerClient.
+			extra.StructMatcher().Field(
+				"ChainId", expectedChainID).Field(
+				"LatestHeight", expectedLatestHeight,
+			),
+			gomock.Any(),
+		).Return(clientIDToInject, nil).Times(1),
+
+		mockStakingKeeper.EXPECT().UnbondingTime(ctx).Return(time.Hour).Times(
+			1, // called again in MakeConsumerGenesis
+		),
+
+		mockClientKeeper.EXPECT().GetSelfConsensusState(ctx,
+			clienttypes.GetSelfHeight(ctx)).Return(&ibctmtypes.ConsensusState{}, nil).Times(1),
+
+		mockStakingKeeper.EXPECT().IterateLastValidatorPowers(ctx, gomock.Any()).Times(1),
+	)
+}
+
+// Sets up keepers in a way that's common to testing proposals and client creation in this file.
+func setupKeeper(t *testing.T) (
+	sdk.Context, *gomock.Controller, providerkeeper.Keeper,
+	*testkeeper.MockClientKeeper, *testkeeper.MockStakingKeeper) {
+
+	ctrl := gomock.NewController(t)
+	cdc, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
+
+	testkeeper.SetTemplateClientState(ctx, &paramsSubspace)
+
+	mockClientKeeper := testkeeper.NewMockClientKeeper(ctrl)
+	mockStakingKeeper := testkeeper.NewMockStakingKeeper(ctrl)
+
+	providerKeeper := testkeeper.GetProviderKeeperWithMocks(
+		cdc,
+		storeKey,
+		paramsSubspace,
+		testkeeper.NewMockScopedKeeper(ctrl),
+		testkeeper.NewMockChannelKeeper(ctrl),
+		testkeeper.NewMockPortKeeper(ctrl),
+		testkeeper.NewMockConnectionKeeper(ctrl),
+		mockClientKeeper,
+		mockStakingKeeper,
+		testkeeper.NewMockSlashingKeeper(ctrl),
+		testkeeper.NewMockAccountKeeper(ctrl),
+	)
+	return ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper
 }
 
 // TODO : comments to all this shiz

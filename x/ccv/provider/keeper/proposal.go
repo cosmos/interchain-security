@@ -20,10 +20,13 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 )
 
-// CreateConsumerChainProposal will receive the consumer chain's client state from the proposal.
+// HandleCreateConsumerChainProposal will receive the consumer chain's client state from the proposal.
 // If the spawn time has already passed, then set the consumer chain. Otherwise store the client
 // as a pending client, and set once spawn time has passed.
-func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateConsumerChainProposal) error {
+//
+// Note: This method implements "SpawnConsumerChainProposalHandler" in spec:
+// https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-spccprop1
+func (k Keeper) HandleCreateConsumerChainProposal(ctx sdk.Context, p *types.CreateConsumerChainProposal) error {
 	if !ctx.BlockTime().Before(p.SpawnTime) {
 		// lockUbdOnTimeout is set to be false, regardless of what the proposal says, until we can specify and test issues around this use case more thoroughly
 		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, false)
@@ -37,9 +40,57 @@ func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateCons
 	return nil
 }
 
-// StopConsumerChainProposal stops a consumer chain and released the outstanding unbonding operations.
+// CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
+// on top of the CCV client to ensure connection with the right consumer chain.
+func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
+	// check that a client for this chain does not exist
+	if _, found := k.GetConsumerClientId(ctx, chainID); found {
+		// drop the proposal
+		return nil
+	}
+
+	// Use the unbonding period on the provider to compute the unbonding period on the consumer
+	unbondingPeriod := utils.ComputeConsumerUnbondingPeriod(k.stakingKeeper.UnbondingTime(ctx))
+
+	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
+	clientState := k.GetTemplateClient(ctx)
+	clientState.ChainId = chainID
+	clientState.LatestHeight = initialHeight
+	clientState.TrustingPeriod = unbondingPeriod / utils.TrustingPeriodFraction
+	clientState.UnbondingPeriod = unbondingPeriod
+
+	// TODO: Allow for current validators to set different keys
+	consensusState := ibctmtypes.NewConsensusState(
+		ctx.BlockTime(),
+		commitmenttypes.NewMerkleRoot([]byte(ibctmtypes.SentinelRoot)),
+		ctx.BlockHeader().NextValidatorsHash,
+	)
+
+	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)
+	if err != nil {
+		return err
+	}
+	k.SetConsumerClientId(ctx, chainID, clientID)
+
+	consumerGen, err := k.MakeConsumerGenesis(ctx)
+	if err != nil {
+		return err
+	}
+	err = k.SetConsumerGenesis(ctx, chainID, consumerGen)
+	if err != nil {
+		return err
+	}
+
+	// store LockUnbondingOnTimeout flag
+	if lockUbdOnTimeout {
+		k.SetLockUnbondingOnTimeout(ctx, chainID)
+	}
+	return nil
+}
+
+// HandleStopConsumerChainProposal stops a consumer chain and released the outstanding unbonding operations.
 // If the stop time hasn't already passed, it stores the proposal as a pending proposal.
-func (k Keeper) StopConsumerChainProposal(ctx sdk.Context, p *types.StopConsumerChainProposal) error {
+func (k Keeper) HandleStopConsumerChainProposal(ctx sdk.Context, p *types.StopConsumerChainProposal) error {
 
 	if !ctx.BlockTime().Before(p.StopTime) {
 		return k.StopConsumerChain(ctx, p.ChainId, false, true)
@@ -117,51 +168,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	return nil
 }
 
-// CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
-// on top of the CCV client to ensure connection with the right consumer chain.
-func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
-	// check that a client for this chain does not exist
-	if _, found := k.GetConsumerClientId(ctx, chainID); found {
-		// drop the proposal
-		return nil
-	}
-
-	// Use the unbonding period on the provider to
-	// compute the unbonding period on the consumer
-	unbondingTime := utils.ComputeConsumerUnbondingPeriod(k.stakingKeeper.UnbondingTime(ctx))
-
-	// create clientstate by getting template client from parameters and filling in zeroed fields from proposal.
-	clientState := k.GetTemplateClient(ctx)
-	clientState.ChainId = chainID
-	clientState.LatestHeight = initialHeight
-	clientState.TrustingPeriod = unbondingTime / utils.TrustingPeriodFraction
-	clientState.UnbondingPeriod = unbondingTime
-
-	// TODO: Allow for current validators to set different keys
-	consensusState := ibctmtypes.NewConsensusState(ctx.BlockTime(), commitmenttypes.NewMerkleRoot([]byte(ibctmtypes.SentinelRoot)), ctx.BlockHeader().NextValidatorsHash)
-	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)
-	if err != nil {
-		return err
-	}
-
-	k.SetConsumerClientId(ctx, chainID, clientID)
-	consumerGen, err := k.MakeConsumerGenesis(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = k.SetConsumerGenesis(ctx, chainID, consumerGen)
-	if err != nil {
-		return err
-	}
-
-	// store LockUnbondingOnTimeout flag
-	if lockUbdOnTimeout {
-		k.SetLockUnbondingOnTimeout(ctx, chainID)
-	}
-	return nil
-}
-
+// TODO: test better with unit test
 func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisState, err error) {
 	unbondingTime := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
@@ -252,6 +259,8 @@ func (k Keeper) PendingCreateProposalIterator(ctx sdk.Context) sdk.Iterator {
 
 // IteratePendingCreateProposal iterates over the pending proposals to create consumer chain clients in order
 // and creates the consumer client if the spawn time has passed.
+//
+// Note: This method implements "BeginBlockInit" in spec: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-init1
 func (k Keeper) IteratePendingCreateProposal(ctx sdk.Context) {
 	propsToExecute := k.CreateProposalsToExecute(ctx)
 

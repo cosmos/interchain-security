@@ -158,7 +158,7 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 
 			tc.malleate(s)
 
-			err := s.providerChain.App.(*appProvider.App).ProviderKeeper.StopConsumerChainProposal(ctx, proposal)
+			err := s.providerChain.App.(*appProvider.App).ProviderKeeper.HandleStopConsumerChainProposal(ctx, proposal)
 			if tc.expPass {
 				s.Require().NoError(err, "error returned on valid case")
 				if tc.stopReached {

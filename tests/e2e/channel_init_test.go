@@ -689,10 +689,8 @@ func (suite *ProviderTestSuite) TestOnChanOpenInit() {
 	suite.Require().Error(err, "OnChanOpenInit must error on provider chain")
 }
 
-// TestConsumerChainProposalHandler tests the handler for consumer chain proposals
-// for both CreateConsumerChainProposal and StopConsumerChainProposal
-//
-// TODO: Determine if it's possible to make this a unit test
+// TestConsumerChainProposalHandler tests the highest level handler for proposals concerning both
+// creating and stopping consumer chains.
 func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
 	var (
 		ctx     sdk.Context
@@ -706,7 +704,7 @@ func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
 		expPass  bool
 	}{
 		{
-			"valid create consumerchain proposal", func(suite *ProviderTestSuite) {
+			"valid create consumer chain proposal", func(suite *ProviderTestSuite) {
 				initialHeight := clienttypes.NewHeight(2, 3)
 				// ctx blocktime is after proposal's spawn time
 				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
@@ -714,7 +712,7 @@ func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
 			}, true,
 		},
 		{
-			"valid stop consumerchain proposal", func(suite *ProviderTestSuite) {
+			"valid stop consumer chain proposal", func(suite *ProviderTestSuite) {
 				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
 				content, err = types.NewStopConsumerChainProposal("title", "description", "chainID", time.Now())
 				suite.Require().NoError(err)
@@ -755,6 +753,7 @@ func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
 	}
 }
 
+// TODO: Becomes unit test
 func (suite *ProviderKeeperTestSuite) TestMakeConsumerGenesis() {
 	suite.SetupTest()
 
@@ -780,77 +779,4 @@ func (suite *ProviderKeeperTestSuite) TestMakeConsumerGenesis() {
 	expectedGenesis.ProviderConsensusState.Root.Hash = []byte{}
 
 	suite.Require().Equal(actualGenesis, expectedGenesis, "consumer chain genesis created incorrectly")
-}
-
-func (suite *ProviderKeeperTestSuite) TestCreateConsumerChainProposal() {
-	var (
-		ctx      sdk.Context
-		proposal *types.CreateConsumerChainProposal
-		ok       bool
-	)
-
-	chainID := "chainID"
-	initialHeight := clienttypes.NewHeight(2, 3)
-	lockUbdOnTimeout := false
-
-	testCases := []struct {
-		name         string
-		malleate     func(*ProviderKeeperTestSuite)
-		expPass      bool
-		spawnReached bool
-	}{
-		{
-			"valid create consumer chain proposal: spawn time reached", func(suite *ProviderKeeperTestSuite) {
-				// ctx blocktime is after proposal's spawn time
-				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content := types.NewCreateConsumerChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
-				proposal, ok = content.(*types.CreateConsumerChainProposal)
-				suite.Require().True(ok)
-				proposal.LockUnbondingOnTimeout = lockUbdOnTimeout
-			}, true, true,
-		},
-		{
-			"valid proposal: spawn time has not yet been reached", func(suite *ProviderKeeperTestSuite) {
-				// ctx blocktime is before proposal's spawn time
-				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now())
-				content := types.NewCreateConsumerChainProposal("title", "description", chainID, initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now().Add(time.Hour))
-				proposal, ok = content.(*types.CreateConsumerChainProposal)
-				suite.Require().True(ok)
-				proposal.LockUnbondingOnTimeout = lockUbdOnTimeout
-			}, true, false,
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-
-		suite.Run(tc.name, func() {
-			suite.SetupTest()
-
-			tc.malleate(suite)
-
-			err := suite.providerChain.App.(*appProvider.App).ProviderKeeper.CreateConsumerChainProposal(ctx, proposal)
-			if tc.expPass {
-				suite.Require().NoError(err, "error returned on valid case")
-				if tc.spawnReached {
-					clientId, found := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClientId(ctx, chainID)
-					suite.Require().True(found, "consumer client not found")
-					consumerGenesis, ok := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerGenesis(ctx, chainID)
-					suite.Require().True(ok)
-
-					expectedGenesis, err := suite.providerChain.App.(*appProvider.App).ProviderKeeper.MakeConsumerGenesis(ctx)
-					suite.Require().NoError(err)
-
-					suite.Require().Equal(expectedGenesis, consumerGenesis)
-					suite.Require().NotEqual("", clientId, "consumer client was not created after spawn time reached")
-				} else {
-					gotProposal := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingCreateProposal(ctx, proposal.SpawnTime, chainID)
-					suite.Require().Equal(initialHeight, gotProposal.InitialHeight, "unexpected pending proposal (InitialHeight)")
-					suite.Require().Equal(lockUbdOnTimeout, gotProposal.LockUnbondingOnTimeout, "unexpected pending proposal (LockUnbondingOnTimeout)")
-				}
-			} else {
-				suite.Require().Error(err, "did not return error on invalid case")
-			}
-		})
-	}
 }

@@ -2,21 +2,28 @@ package keeper
 
 import (
 	"testing"
+	time "time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+
+	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
@@ -184,6 +191,24 @@ func SetupInMemKeeper(t testing.TB) (*codec.ProtoCodec, *storetypes.KVStoreKey, 
 	)
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 	return cdc, storeKey, paramsSubspace, ctx
+}
+
+// Sets a template client state for a params subspace so that the provider's
+// GetTemplateClient method will be satisfied.
+func SetTemplateClientState(ctx sdk.Context, subspace *paramstypes.Subspace) {
+
+	keyTable := paramstypes.NewKeyTable(paramstypes.NewParamSetPair(
+		providertypes.KeyTemplateClient, &ibctmtypes.ClientState{},
+		func(value interface{}) error { return nil }))
+
+	*subspace = subspace.WithKeyTable(keyTable)
+
+	templateClientState :=
+		ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
+			time.Second*10, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(),
+			[]string{"upgrade", "upgradedIBCState"}, true, true)
+
+	subspace.Set(ctx, providertypes.KeyTemplateClient, templateClientState)
 }
 
 type PrivateKey struct {
