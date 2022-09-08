@@ -37,15 +37,15 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 	return nil
 }
 
-// ConsumerRemovalProposal stops a consumer chain and released the outstanding unbonding operations.
+// HandleConsumerRemovalProposal stops a consumer chain and releases the outstanding unbonding operations.
 // If the stop time hasn't already passed, it stores the proposal as a pending proposal.
-func (k Keeper) ConsumerRemovalProposal(ctx sdk.Context, p *types.ConsumerRemovalProposal) error {
+func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.ConsumerRemovalProposal) error {
 
 	if !ctx.BlockTime().Before(p.StopTime) {
 		return k.StopConsumerChain(ctx, p.ChainId, false, true)
 	}
 
-	k.SetPendingStopProposal(ctx, p.ChainId, p.StopTime)
+	k.SetPendingConsumerRemovalProp(ctx, p.ChainId, p.StopTime)
 	return nil
 }
 
@@ -312,38 +312,39 @@ func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ..
 	}
 }
 
-// SetPendingStopProposal sets the consumer chain ID for the given timestamp
-func (k Keeper) SetPendingStopProposal(ctx sdk.Context, chainID string, timestamp time.Time) {
+// SetPendingConsumerRemovalProp stores a pending proposal to remove and stop a consumer chain
+func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, chainID string, timestamp time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.PendingStopProposalKey(timestamp, chainID), []byte{})
+	store.Set(types.PendingCRPKey(timestamp, chainID), []byte{})
 }
 
-// GetPendingStopProposal returns a boolean if a pending stop proposal exists for the given consumer chain ID and the timestamp
-func (k Keeper) GetPendingStopProposal(ctx sdk.Context, chainID string, timestamp time.Time) bool {
+// GetPendingConsumerRemovalProp returns a boolean if a pending consumer removal proposal
+// exists for the given consumer chain ID and timestamp
+func (k Keeper) GetPendingConsumerRemovalProp(ctx sdk.Context, chainID string, timestamp time.Time) bool {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingStopProposalKey(timestamp, chainID))
+	bz := store.Get(types.PendingCRPKey(timestamp, chainID))
 
 	return bz != nil
 }
 
-// DeletePendingStopProposals deletes the given stop proposals
-func (k Keeper) DeletePendingStopProposals(ctx sdk.Context, proposals ...types.ConsumerRemovalProposal) {
+// DeletePendingConsumerRemovalProps deletes the given consumer removal proposals
+func (k Keeper) DeletePendingConsumerRemovalProps(ctx sdk.Context, proposals ...types.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
 
 	for _, p := range proposals {
-		store.Delete(types.PendingStopProposalKey(p.StopTime, p.ChainId))
+		store.Delete(types.PendingCRPKey(p.StopTime, p.ChainId))
 	}
 }
 
-func (k Keeper) PendingStopProposalIterator(ctx sdk.Context) sdk.Iterator {
+func (k Keeper) PendingConsumerRemovalPropIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
-	return sdk.KVStorePrefixIterator(store, []byte{types.PendingStopProposalBytePrefix})
+	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
 }
 
-// IteratePendingStopProposal iterates over the pending stop proposals in order and stop the chain if the stop time has passed,
-// otherwise it will break out of loop and return.
-func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
-	propsToExecute := k.StopProposalsToExecute(ctx)
+// IteratePendingConsumerRemovalProps iterates over the pending consumer removal proposals
+// in order and stop/removes the chain if the stop time has passed, otherwise it will break out of loop and return.
+func (k Keeper) IteratePendingConsumerRemovalProps(ctx sdk.Context) {
+	propsToExecute := k.ConsumerRemovalPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
 		err := k.StopConsumerChain(ctx, prop.ChainId, false, true)
@@ -352,19 +353,21 @@ func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
 		}
 	}
 	// delete the executed proposals
-	k.DeletePendingStopProposals(ctx, propsToExecute...)
+	k.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
 }
 
-// StopProposalsToExecute iterates over the pending stop proposals and returns an ordered list of stop proposals to be executed,
-// ie. consumer chains to stop. A prop is included in the returned list if its proposed stop time has passed.
+// ConsumerRemovalPropsToExecute iterates over the pending consumer removal proposals
+// and returns an ordered list of consumer removal proposals to be executed,
+// ie. consumer chains to be stopped and removed from the provider chain.
+// A prop is included in the returned list if its proposed stop time has passed.
 //
-// Note: this method is split out from IteratePendingCreateProposal to be easily unit tested.
-func (k Keeper) StopProposalsToExecute(ctx sdk.Context) []types.ConsumerRemovalProposal {
+// Note: this method is split out from IteratePendingConsumerRemovalProps to be easily unit tested.
+func (k Keeper) ConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerRemovalProposal {
 
-	// store the (to be) executed stop proposals in order
+	// store the (to be) executed consumer removal proposals in order
 	propsToExecute := []types.ConsumerRemovalProposal{}
 
-	iterator := k.PendingStopProposalIterator(ctx)
+	iterator := k.PendingConsumerRemovalPropIterator(ctx)
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -374,9 +377,9 @@ func (k Keeper) StopProposalsToExecute(ctx sdk.Context) []types.ConsumerRemovalP
 	for ; iterator.Valid(); iterator.Next() {
 
 		key := iterator.Key()
-		stopTime, chainID, err := types.ParsePendingStopProposalKey(key)
+		stopTime, chainID, err := types.ParsePendingCRPKey(key)
 		if err != nil {
-			panic(fmt.Errorf("failed to parse pending stop proposal key: %w", err))
+			panic(fmt.Errorf("failed to parse pending consumer removal proposal key: %w", err))
 		}
 
 		if !ctx.BlockTime().Before(stopTime) {

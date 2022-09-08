@@ -111,7 +111,7 @@ func (s *ProviderTestSuite) TestConsumerRemovalProposal() {
 		stopReached bool
 	}{
 		{
-			"valid stop consumer chain proposal: stop time reached", func(suite *ProviderTestSuite) {
+			"valid consumer removal proposal: stop time reached", func(suite *ProviderTestSuite) {
 
 				// ctx blocktime is after proposal's stop time
 				ctx = s.providerCtx().WithBlockTime(time.Now().Add(time.Hour))
@@ -158,19 +158,19 @@ func (s *ProviderTestSuite) TestConsumerRemovalProposal() {
 
 			tc.malleate(s)
 
-			err := s.providerChain.App.(*appProvider.App).ProviderKeeper.ConsumerRemovalProposal(ctx, proposal)
+			err := s.providerChain.App.(*appProvider.App).ProviderKeeper.HandleConsumerRemovalProposal(ctx, proposal)
 			if tc.expPass {
 				s.Require().NoError(err, "error returned on valid case")
 				if tc.stopReached {
-					// check that the pending stop consumer chain proposal is deleted
-					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingStopProposal(ctx, chainID, proposal.StopTime)
-					s.Require().False(found, "pending stop consumer proposal wasn't deleted")
+					// check that the pending consumer removal proposal is deleted
+					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingConsumerRemovalProp(ctx, chainID, proposal.StopTime)
+					s.Require().False(found, "pending consumer removal proposal wasn't deleted")
 
 					// check that the consumer chain is removed
 					s.checkConsumerChainIsRemoved(chainID, false)
 
 				} else {
-					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingStopProposal(ctx, chainID, proposal.StopTime)
+					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingConsumerRemovalProp(ctx, chainID, proposal.StopTime)
 					s.Require().True(found, "pending stop consumer was not found for chain ID %s", chainID)
 
 					// check that the consumer chain client exists

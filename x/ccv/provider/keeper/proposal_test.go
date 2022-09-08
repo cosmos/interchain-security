@@ -10,7 +10,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
-func TestPendingStopProposalDeletion(t *testing.T) {
+func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 
 	testCases := []struct {
 		types.ConsumerRemovalProposal
@@ -28,29 +28,29 @@ func TestPendingStopProposalDeletion(t *testing.T) {
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
 	for _, tc := range testCases {
-		providerKeeper.SetPendingStopProposal(ctx, tc.ChainId, tc.StopTime)
+		providerKeeper.SetPendingConsumerRemovalProp(ctx, tc.ChainId, tc.StopTime)
 	}
 
 	ctx = ctx.WithBlockTime(time.Now().UTC())
 
-	propsToExecute := providerKeeper.StopProposalsToExecute(ctx)
-	// Delete stop proposals, same as what would be done by IteratePendingStopProposal
-	providerKeeper.DeletePendingStopProposals(ctx, propsToExecute...)
+	propsToExecute := providerKeeper.ConsumerRemovalPropsToExecute(ctx)
+	// Delete consumer removal proposals, same as what would be done by IteratePendingConsumerRemovalProps
+	providerKeeper.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
 	numDeleted := 0
 	for _, tc := range testCases {
-		res := providerKeeper.GetPendingStopProposal(ctx, tc.ChainId, tc.StopTime)
+		res := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.ChainId, tc.StopTime)
 		if !tc.ExpDeleted {
-			require.NotEmpty(t, res, "stop proposal was deleted: %s %s", tc.ChainId, tc.StopTime.String())
+			require.NotEmpty(t, res, "consumer removal prop was deleted: %s %s", tc.ChainId, tc.StopTime.String())
 			continue
 		}
-		require.Empty(t, res, "stop proposal was not deleted %s %s", tc.ChainId, tc.StopTime.String())
+		require.Empty(t, res, "consumer removal prop was not deleted %s %s", tc.ChainId, tc.StopTime.String())
 		require.Equal(t, propsToExecute[numDeleted].ChainId, tc.ChainId)
 		numDeleted += 1
 	}
 }
 
-// Tests that pending stop proposals are accessed in order by timestamp via the iterator
-func TestPendingStopProposalsOrder(t *testing.T) {
+// Tests that pending consumer removal proposals are accessed in order by timestamp via the iterator
+func TestPendingConsumerRemovalPropOrder(t *testing.T) {
 
 	now := time.Now().UTC()
 
@@ -100,14 +100,14 @@ func TestPendingStopProposalsOrder(t *testing.T) {
 		ctx = ctx.WithBlockTime(tc.accessTime)
 
 		for _, prop := range tc.propSubmitOrder {
-			providerKeeper.SetPendingStopProposal(ctx, prop.ChainId, prop.StopTime)
+			providerKeeper.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
 		}
-		propsToExecute := providerKeeper.StopProposalsToExecute(ctx)
+		propsToExecute := providerKeeper.ConsumerRemovalPropsToExecute(ctx)
 		require.Equal(t, tc.expectedOrderedProps, propsToExecute)
 	}
 }
 
-func TestPendingCreateProposalsDeletion(t *testing.T) {
+func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 
 	testCases := []struct {
 		types.ConsumerAdditionProposal
@@ -138,17 +138,17 @@ func TestPendingCreateProposalsDeletion(t *testing.T) {
 	for _, tc := range testCases {
 		res := providerKeeper.GetPendingConsumerAdditionProp(ctx, tc.SpawnTime, tc.ChainId)
 		if !tc.ExpDeleted {
-			require.NotEmpty(t, res, "create proposal was deleted: %s %s", tc.ChainId, tc.SpawnTime.String())
+			require.NotEmpty(t, res, "consumer addition proposal was deleted: %s %s", tc.ChainId, tc.SpawnTime.String())
 			continue
 		}
-		require.Empty(t, res, "create proposal was not deleted %s %s", tc.ChainId, tc.SpawnTime.String())
+		require.Empty(t, res, "consumer addition proposal was not deleted %s %s", tc.ChainId, tc.SpawnTime.String())
 		require.Equal(t, propsToExecute[numDeleted].ChainId, tc.ChainId)
 		numDeleted += 1
 	}
 }
 
-// Tests that pending create proposals are accessed in order by timestamp via the iterator
-func TestPendingCreateProposalsOrder(t *testing.T) {
+// Tests that pending consumer addition proposals are accessed in order by timestamp via the iterator
+func TestPendingConsumerAdditionPropOrder(t *testing.T) {
 
 	now := time.Now().UTC()
 

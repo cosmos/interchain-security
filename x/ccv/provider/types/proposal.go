@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	ProposalTypeCreateConsumerChain = "CreateConsumerChain"
-	ProposalTypeStopConsumerChain   = "StopConsumerChain"
+	ProposalTypeConsumerAddition = "ConsumerAddition"
+	ProposalTypeConsumerRemoval  = "ConsumerRemoval"
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	govtypes.RegisterProposalType(ProposalTypeCreateConsumerChain)
+	govtypes.RegisterProposalType(ProposalTypeConsumerAddition)
 }
 
 // NewConsumerAdditionProposal creates a new consumer addition proposal.
@@ -47,7 +47,7 @@ func (cccp *ConsumerAdditionProposal) ProposalRoute() string { return RouterKey 
 
 // ProposalType returns the type of a consumer addition proposal.
 func (cccp *ConsumerAdditionProposal) ProposalType() string {
-	return ProposalTypeCreateConsumerChain
+	return ProposalTypeConsumerAddition
 }
 
 // ValidateBasic runs basic stateless validity checks
@@ -89,7 +89,7 @@ func (cccp *ConsumerAdditionProposal) String() string {
 	SpawnTime: %s`, cccp.Title, cccp.Description, cccp.ChainId, cccp.InitialHeight, cccp.GenesisHash, cccp.BinaryHash, cccp.SpawnTime)
 }
 
-// NewConsumerRemovalProposal creates a new stop consumer chain proposal.
+// NewConsumerRemovalProposal creates a new consumer removal proposal.
 func NewConsumerRemovalProposal(title, description, chainID string, stopTime time.Time) (govtypes.Content, error) {
 	return &ConsumerRemovalProposal{
 		Title:       title,
@@ -99,11 +99,11 @@ func NewConsumerRemovalProposal(title, description, chainID string, stopTime tim
 	}, nil
 }
 
-// ProposalRoute returns the routing key of a stop consumer chain proposal.
+// ProposalRoute returns the routing key of a consumer removal proposal.
 func (sccp *ConsumerRemovalProposal) ProposalRoute() string { return RouterKey }
 
-// ProposalType returns the type of a stop consumer chain proposal.
-func (sccp *ConsumerRemovalProposal) ProposalType() string { return ProposalTypeStopConsumerChain }
+// ProposalType returns the type of a consumer removal proposal.
+func (sccp *ConsumerRemovalProposal) ProposalType() string { return ProposalTypeConsumerRemoval }
 
 // ValidateBasic runs basic stateless validity checks
 func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
@@ -112,11 +112,11 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 	}
 
 	if strings.TrimSpace(sccp.ChainId) == "" {
-		return sdkerrors.Wrap(ErrInvalidStopProposal, "consumer chain id must not be blank")
+		return sdkerrors.Wrap(ErrInvalidConsumerRemovalProp, "consumer chain id must not be blank")
 	}
 
 	if sccp.StopTime.IsZero() {
-		return sdkerrors.Wrap(ErrInvalidStopProposal, "spawn time cannot be zero")
+		return sdkerrors.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
 	}
 	return nil
 }
