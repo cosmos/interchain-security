@@ -29,13 +29,6 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	if err != nil {
 		return err
 	}
-	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
-	curHeight := ctx.BlockHeight()
-
-	if (curHeight - ltbh.Height) < bpdt {
-		// not enough blocks have passed for  a transmission to occur
-		return nil
-	}
 
 	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
 	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
@@ -64,6 +57,14 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		types.ConsumerToSendToProviderName, remainingTokens)
 	if err != nil {
 		return err
+	}
+
+	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
+	curHeight := ctx.BlockHeight()
+
+	if (curHeight - ltbh.Height) < bpdt {
+		// not enough blocks have passed for  a transmission to occur
+		return nil
 	}
 
 	// empty out the toSendToProviderTokens address

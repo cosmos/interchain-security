@@ -7,8 +7,25 @@ install: go.sum
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-pd
 		go install $(BUILD_FLAGS) ./cmd/interchain-security-cd
 
+# run all tests: unit, e2e, diff, and integration
 test: 
-	go test ./...
+	go test ./... && go run ./tests/integration/... 
+
+# run e2e and unit tests
+test-short:
+	go test ./tests/e2e/... ./x/... ./app/...
+
+# run difference tests
+test-diff:
+	go test ./tests/difference/...
+
+# run integration tests
+test-integration:
+	go run ./tests/integration/...
+
+# run all tests with caching disabled
+test-no-cache:
+	go test ./... -count=1 && go run ./tests/integration/...
 
 BUILD_TARGETS := build
 
