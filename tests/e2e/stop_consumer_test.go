@@ -95,6 +95,7 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 	s.checkConsumerChainIsRemoved(consumerChainID, false)
 }
 
+// TODO: compare to what you have . Prob make this a unit
 func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 	var (
 		ctx      sdk.Context
