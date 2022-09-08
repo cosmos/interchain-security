@@ -13,16 +13,16 @@ import (
 func TestPendingStopProposalDeletion(t *testing.T) {
 
 	testCases := []struct {
-		types.StopConsumerChainProposal
+		types.ConsumerRemovalProposal
 		ExpDeleted bool
 	}{
 		{
-			StopConsumerChainProposal: types.StopConsumerChainProposal{ChainId: "8", StopTime: time.Now().UTC()},
-			ExpDeleted:                true,
+			ConsumerRemovalProposal: types.ConsumerRemovalProposal{ChainId: "8", StopTime: time.Now().UTC()},
+			ExpDeleted:              true,
 		},
 		{
-			StopConsumerChainProposal: types.StopConsumerChainProposal{ChainId: "9", StopTime: time.Now().UTC().Add(time.Hour)},
-			ExpDeleted:                false,
+			ConsumerRemovalProposal: types.ConsumerRemovalProposal{ChainId: "9", StopTime: time.Now().UTC().Add(time.Hour)},
+			ExpDeleted:              false,
 		},
 	}
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
@@ -55,41 +55,41 @@ func TestPendingStopProposalsOrder(t *testing.T) {
 	now := time.Now().UTC()
 
 	// props with unique chain ids and spawn times
-	sampleProp1 := types.StopConsumerChainProposal{ChainId: "1", StopTime: now}
-	sampleProp2 := types.StopConsumerChainProposal{ChainId: "2", StopTime: now.Add(1 * time.Hour)}
-	sampleProp3 := types.StopConsumerChainProposal{ChainId: "3", StopTime: now.Add(2 * time.Hour)}
-	sampleProp4 := types.StopConsumerChainProposal{ChainId: "4", StopTime: now.Add(3 * time.Hour)}
-	sampleProp5 := types.StopConsumerChainProposal{ChainId: "5", StopTime: now.Add(4 * time.Hour)}
+	sampleProp1 := types.ConsumerRemovalProposal{ChainId: "1", StopTime: now}
+	sampleProp2 := types.ConsumerRemovalProposal{ChainId: "2", StopTime: now.Add(1 * time.Hour)}
+	sampleProp3 := types.ConsumerRemovalProposal{ChainId: "3", StopTime: now.Add(2 * time.Hour)}
+	sampleProp4 := types.ConsumerRemovalProposal{ChainId: "4", StopTime: now.Add(3 * time.Hour)}
+	sampleProp5 := types.ConsumerRemovalProposal{ChainId: "5", StopTime: now.Add(4 * time.Hour)}
 
 	testCases := []struct {
-		propSubmitOrder      []types.StopConsumerChainProposal
+		propSubmitOrder      []types.ConsumerRemovalProposal
 		accessTime           time.Time
-		expectedOrderedProps []types.StopConsumerChainProposal
+		expectedOrderedProps []types.ConsumerRemovalProposal
 	}{
 		{
-			propSubmitOrder: []types.StopConsumerChainProposal{
+			propSubmitOrder: []types.ConsumerRemovalProposal{
 				sampleProp1, sampleProp2, sampleProp3, sampleProp4, sampleProp5,
 			},
 			accessTime: now.Add(30 * time.Minute),
-			expectedOrderedProps: []types.StopConsumerChainProposal{
+			expectedOrderedProps: []types.ConsumerRemovalProposal{
 				sampleProp1,
 			},
 		},
 		{
-			propSubmitOrder: []types.StopConsumerChainProposal{
+			propSubmitOrder: []types.ConsumerRemovalProposal{
 				sampleProp3, sampleProp2, sampleProp1, sampleProp5, sampleProp4,
 			},
 			accessTime: now.Add(3 * time.Hour).Add(30 * time.Minute),
-			expectedOrderedProps: []types.StopConsumerChainProposal{
+			expectedOrderedProps: []types.ConsumerRemovalProposal{
 				sampleProp1, sampleProp2, sampleProp3, sampleProp4,
 			},
 		},
 		{
-			propSubmitOrder: []types.StopConsumerChainProposal{
+			propSubmitOrder: []types.ConsumerRemovalProposal{
 				sampleProp5, sampleProp4, sampleProp3, sampleProp2, sampleProp1,
 			},
 			accessTime: now.Add(5 * time.Hour),
-			expectedOrderedProps: []types.StopConsumerChainProposal{
+			expectedOrderedProps: []types.ConsumerRemovalProposal{
 				sampleProp1, sampleProp2, sampleProp3, sampleProp4, sampleProp5,
 			},
 		},

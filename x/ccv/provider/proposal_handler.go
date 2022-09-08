@@ -14,8 +14,8 @@ func NewConsumerChainProposalHandler(k keeper.Keeper) govtypes.Handler {
 		switch c := content.(type) {
 		case *types.ConsumerAdditionProposal:
 			return k.HandleConsumerAdditionProposal(ctx, c)
-		case *types.StopConsumerChainProposal:
-			return k.StopConsumerChainProposal(ctx, c)
+		case *types.ConsumerRemovalProposal:
+			return k.ConsumerRemovalProposal(ctx, c)
 		default:
 			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized ccv proposal content type: %T", c)
 		}

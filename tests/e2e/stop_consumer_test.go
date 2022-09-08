@@ -95,10 +95,10 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 	s.checkConsumerChainIsRemoved(consumerChainID, false)
 }
 
-func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
+func (s *ProviderTestSuite) TestConsumerRemovalProposal() {
 	var (
 		ctx      sdk.Context
-		proposal *providertypes.StopConsumerChainProposal
+		proposal *providertypes.ConsumerRemovalProposal
 		ok       bool
 	)
 
@@ -115,9 +115,9 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 
 				// ctx blocktime is after proposal's stop time
 				ctx = s.providerCtx().WithBlockTime(time.Now().Add(time.Hour))
-				content, err := providertypes.NewStopConsumerChainProposal("title", "description", chainID, time.Now())
+				content, err := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now())
 				s.Require().NoError(err)
-				proposal, ok = content.(*providertypes.StopConsumerChainProposal)
+				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
 				s.Require().True(ok)
 			}, true, true,
 		},
@@ -126,9 +126,9 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 
 				// ctx blocktime is before proposal's stop time
 				ctx = s.providerCtx().WithBlockTime(time.Now())
-				content, err := providertypes.NewStopConsumerChainProposal("title", "description", chainID, time.Now().Add(time.Hour))
+				content, err := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now().Add(time.Hour))
 				s.Require().NoError(err)
-				proposal, ok = content.(*providertypes.StopConsumerChainProposal)
+				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
 				s.Require().True(ok)
 			}, true, false,
 		},
@@ -141,9 +141,9 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 				// set invalid unbonding op index
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetUnbondingOpIndex(ctx, chainID, 0, []uint64{0})
 
-				content, err := providertypes.NewStopConsumerChainProposal("title", "description", chainID, time.Now())
+				content, err := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now())
 				s.Require().NoError(err)
-				proposal, ok = content.(*providertypes.StopConsumerChainProposal)
+				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
 				s.Require().True(ok)
 			}, false, true,
 		},
@@ -158,7 +158,7 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 
 			tc.malleate(s)
 
-			err := s.providerChain.App.(*appProvider.App).ProviderKeeper.StopConsumerChainProposal(ctx, proposal)
+			err := s.providerChain.App.(*appProvider.App).ProviderKeeper.ConsumerRemovalProposal(ctx, proposal)
 			if tc.expPass {
 				s.Require().NoError(err, "error returned on valid case")
 				if tc.stopReached {

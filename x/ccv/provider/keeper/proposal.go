@@ -37,9 +37,9 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 	return nil
 }
 
-// StopConsumerChainProposal stops a consumer chain and released the outstanding unbonding operations.
+// ConsumerRemovalProposal stops a consumer chain and released the outstanding unbonding operations.
 // If the stop time hasn't already passed, it stores the proposal as a pending proposal.
-func (k Keeper) StopConsumerChainProposal(ctx sdk.Context, p *types.StopConsumerChainProposal) error {
+func (k Keeper) ConsumerRemovalProposal(ctx sdk.Context, p *types.ConsumerRemovalProposal) error {
 
 	if !ctx.BlockTime().Before(p.StopTime) {
 		return k.StopConsumerChain(ctx, p.ChainId, false, true)
@@ -327,7 +327,7 @@ func (k Keeper) GetPendingStopProposal(ctx sdk.Context, chainID string, timestam
 }
 
 // DeletePendingStopProposals deletes the given stop proposals
-func (k Keeper) DeletePendingStopProposals(ctx sdk.Context, proposals ...types.StopConsumerChainProposal) {
+func (k Keeper) DeletePendingStopProposals(ctx sdk.Context, proposals ...types.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
 
 	for _, p := range proposals {
@@ -359,10 +359,10 @@ func (k Keeper) IteratePendingStopProposal(ctx sdk.Context) {
 // ie. consumer chains to stop. A prop is included in the returned list if its proposed stop time has passed.
 //
 // Note: this method is split out from IteratePendingCreateProposal to be easily unit tested.
-func (k Keeper) StopProposalsToExecute(ctx sdk.Context) []types.StopConsumerChainProposal {
+func (k Keeper) StopProposalsToExecute(ctx sdk.Context) []types.ConsumerRemovalProposal {
 
 	// store the (to be) executed stop proposals in order
-	propsToExecute := []types.StopConsumerChainProposal{}
+	propsToExecute := []types.ConsumerRemovalProposal{}
 
 	iterator := k.PendingStopProposalIterator(ctx)
 	defer iterator.Close()
@@ -381,7 +381,7 @@ func (k Keeper) StopProposalsToExecute(ctx sdk.Context) []types.StopConsumerChai
 
 		if !ctx.BlockTime().Before(stopTime) {
 			propsToExecute = append(propsToExecute,
-				types.StopConsumerChainProposal{ChainId: chainID, StopTime: stopTime})
+				types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime})
 		} else {
 			// No more proposals to check, since they're stored/ordered by timestamp.
 			break

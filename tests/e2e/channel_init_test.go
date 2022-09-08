@@ -690,7 +690,7 @@ func (suite *ProviderTestSuite) TestOnChanOpenInit() {
 }
 
 // TestConsumerChainProposalHandler tests the handler for consumer chain proposals
-// for both ConsumerAdditionProposal and StopConsumerChainProposal
+// for both ConsumerAdditionProposal and ConsumerRemovalProposal
 //
 // TODO: Determine if it's possible to make this a unit test
 func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
@@ -716,7 +716,7 @@ func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
 		{
 			"valid stop consumer chain proposal", func(suite *ProviderTestSuite) {
 				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content, err = types.NewStopConsumerChainProposal("title", "description", "chainID", time.Now())
+				content, err = types.NewConsumerRemovalProposal("title", "description", "chainID", time.Now())
 				suite.Require().NoError(err)
 			}, true,
 		},

@@ -89,9 +89,9 @@ func (cccp *ConsumerAdditionProposal) String() string {
 	SpawnTime: %s`, cccp.Title, cccp.Description, cccp.ChainId, cccp.InitialHeight, cccp.GenesisHash, cccp.BinaryHash, cccp.SpawnTime)
 }
 
-// NewStopConsumerChainProposal creates a new stop consumer chain proposal.
-func NewStopConsumerChainProposal(title, description, chainID string, stopTime time.Time) (govtypes.Content, error) {
-	return &StopConsumerChainProposal{
+// NewConsumerRemovalProposal creates a new stop consumer chain proposal.
+func NewConsumerRemovalProposal(title, description, chainID string, stopTime time.Time) (govtypes.Content, error) {
+	return &ConsumerRemovalProposal{
 		Title:       title,
 		Description: description,
 		ChainId:     chainID,
@@ -100,13 +100,13 @@ func NewStopConsumerChainProposal(title, description, chainID string, stopTime t
 }
 
 // ProposalRoute returns the routing key of a stop consumer chain proposal.
-func (sccp *StopConsumerChainProposal) ProposalRoute() string { return RouterKey }
+func (sccp *ConsumerRemovalProposal) ProposalRoute() string { return RouterKey }
 
 // ProposalType returns the type of a stop consumer chain proposal.
-func (sccp *StopConsumerChainProposal) ProposalType() string { return ProposalTypeStopConsumerChain }
+func (sccp *ConsumerRemovalProposal) ProposalType() string { return ProposalTypeStopConsumerChain }
 
 // ValidateBasic runs basic stateless validity checks
-func (sccp *StopConsumerChainProposal) ValidateBasic() error {
+func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 	if err := govtypes.ValidateAbstract(sccp); err != nil {
 		return err
 	}
