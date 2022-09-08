@@ -24,8 +24,9 @@ import (
 // If the spawn time has already passed, then set the consumer chain. Otherwise store the client
 // as a pending client, and set once spawn time has passed.
 //
-// Note: This method implements "SpawnConsumerChainProposalHandler" in spec:
-// https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-spccprop1
+// Note: This method implements SpawnConsumerChainProposalHandler in spec.
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-spccprop1
+// Spec tag: [CCV-PCF-SPCCPROP.1]
 func (k Keeper) HandleCreateConsumerChainProposal(ctx sdk.Context, p *types.CreateConsumerChainProposal) error {
 	if !ctx.BlockTime().Before(p.SpawnTime) {
 		// lockUbdOnTimeout is set to be false, regardless of what the proposal says, until we can specify and test issues around this use case more thoroughly
@@ -42,6 +43,8 @@ func (k Keeper) HandleCreateConsumerChainProposal(ctx sdk.Context, p *types.Crea
 
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right consumer chain.
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
+// Spec tag: [CCV-PCF-CRCLIENT.1]
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
 	// check that a client for this chain does not exist
 	if _, found := k.GetConsumerClientId(ctx, chainID); found {
@@ -90,6 +93,10 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHei
 
 // HandleStopConsumerChainProposal stops a consumer chain and released the outstanding unbonding operations.
 // If the stop time hasn't already passed, it stores the proposal as a pending proposal.
+//
+// This method implements StopConsumerChainProposalHandler from spec.
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stccprop1
+// Spec tag: [CCV-PCF-STCCPROP.1]
 func (k Keeper) HandleStopConsumerChainProposal(ctx sdk.Context, p *types.StopConsumerChainProposal) error {
 
 	if !ctx.BlockTime().Before(p.StopTime) {
@@ -102,6 +109,10 @@ func (k Keeper) HandleStopConsumerChainProposal(ctx sdk.Context, p *types.StopCo
 
 // StopConsumerChain cleans up the states for the given consumer chain ID and, if the given lockUbd is false,
 // it completes the outstanding unbonding operations lock by the consumer chain.
+//
+// This method implements StopConsumerChain from spec.
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stcc1
+// Spec tag: [CCV-PCF-STCC.1]
 func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, closeChan bool) (err error) {
 	// check that a client for chainID exists
 	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
