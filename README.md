@@ -67,7 +67,7 @@ Similar to e2e tests, but they compare the system state to an expected state gen
 Tests can be run using `make`:
 
 ```bash
-# run all static analysis, unit, e2e, and integration tests
+# run unit, e2e, and integration tests
 make test
 
 # run unit and e2e tests - prefer this for local development
