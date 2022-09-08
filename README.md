@@ -64,12 +64,27 @@ Similar to e2e tests, but they compare the system state to an expected state gen
 [Integration tests](./tests/integration/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. Integration tests use queries/transactions invoked from CLI to drive and validate the code.
 
 ### Running Tests
+Tests can be run using `make`:
 
 ```bash
-# run all static analysis, unit, e2e, and integration tests using make
-TODO
-# run all unit and e2e tests using make
+# run all static analysis, unit, e2e, and integration tests
 make test
+
+# run unit and e2e tests - prefer this for local development
+make test-short
+
+# run difference tests
+make test-diff
+
+# run integration tests
+make test-integration
+
+# equivalent to make test with caching disabled
+make test-no-cache
+```
+
+Alternatively you can run tests using `go test`:
+```bash
 # run all unit and e2e tests using go
 go test ./...
 # run all unit and e2e tests with verbose output
