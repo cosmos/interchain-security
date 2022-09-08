@@ -21,7 +21,7 @@ jobs:
         with:
           go-version: "1.18.0" # The Go version to download (if necessary) and use.
       - name: Test with coverage
-        run: go test -coverprofile=coverage.out ./...
+        run: go test -coverpkg=./x/... -coverprofile=coverage.out ./...
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
