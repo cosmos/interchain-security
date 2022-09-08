@@ -75,7 +75,7 @@ go test ./...
 # run all unit and e2e tests with verbose output
 go test -v ./..
 # run all unit and e2e tests with coverage stats
-go test -cover ./..
+go test -coverpkg=./x/... -coverprofile=coverage.out ./...
 # run a single unit test
 go test -run <unit-test-name> path/to/package
 # example: run a single unit test
