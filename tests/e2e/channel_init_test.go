@@ -689,8 +689,8 @@ func (suite *ProviderTestSuite) TestOnChanOpenInit() {
 	suite.Require().Error(err, "OnChanOpenInit must error on provider chain")
 }
 
-// TestConsumerChainProposalHandler tests the handler for consumer chain proposals
-// for both ConsumerAdditionProposal and ConsumerRemovalProposal
+// TestConsumerChainProposalHandler tests the highest level handler
+// for both ConsumerAdditionProposals and ConsumerRemovalProposals
 //
 // TODO: Determine if it's possible to make this a unit test
 func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
