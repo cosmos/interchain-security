@@ -67,7 +67,7 @@ Similar to e2e tests, but they compare the system state to an expected state gen
 Tests can be run using `make`:
 
 ```bash
-# run unit, e2e, and integration tests
+# run unit, e2e, diff, and integration tests
 make test
 
 # run unit and e2e tests - prefer this for local development
@@ -85,11 +85,11 @@ make test-no-cache
 
 Alternatively you can run tests using `go test`:
 ```bash
-# run all unit and e2e tests using go
+# run all unit, e2e, and diff tests using go
 go test ./...
-# run all unit and e2e tests with verbose output
+# run all unit, e2e, and diff tests with verbose output
 go test -v ./..
-# run all unit and e2e tests with coverage stats
+# run all unit, e2e, and diff tests with coverage stats
 go test -coverpkg=./x/... -coverprofile=coverage.out ./...
 # run a single unit test
 go test -run <unit-test-name> path/to/package
