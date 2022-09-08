@@ -15,8 +15,9 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
-// Tests the provider's InitGenesis implementation against the spec:
-// https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-initg1
+// Tests the provider's InitGenesis implementation against the spec.
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-initg1
+// Spec tag: [CCV-PCF-INITG.1]
 //
 // Note: Genesis validation for the provider is tested in TestValidateGenesisState
 func TestInitGenesis(t *testing.T) {
