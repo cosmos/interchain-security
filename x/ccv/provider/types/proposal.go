@@ -16,16 +16,16 @@ const (
 )
 
 var (
-	_ govtypes.Content = &CreateConsumerChainProposal{}
+	_ govtypes.Content = &ConsumerAdditionProposal{}
 )
 
 func init() {
 	govtypes.RegisterProposalType(ProposalTypeCreateConsumerChain)
 }
 
-// NewCreateConsumerChainProposal creates a new create consumerchain proposal.
-func NewCreateConsumerChainProposal(title, description, chainID string, initialHeight clienttypes.Height, genesisHash, binaryHash []byte, spawnTime time.Time) govtypes.Content {
-	return &CreateConsumerChainProposal{
+// NewConsumerAdditionProposal creates a new create consumerchain proposal.
+func NewConsumerAdditionProposal(title, description, chainID string, initialHeight clienttypes.Height, genesisHash, binaryHash []byte, spawnTime time.Time) govtypes.Content {
+	return &ConsumerAdditionProposal{
 		Title:         title,
 		Description:   description,
 		ChainId:       chainID,
@@ -36,49 +36,49 @@ func NewCreateConsumerChainProposal(title, description, chainID string, initialH
 	}
 }
 
-// GetTitle returns the title of a create consumerchain proposal.
-func (cccp *CreateConsumerChainProposal) GetTitle() string { return cccp.Title }
+// GetTitle returns the title of a consumer addition proposal.
+func (cccp *ConsumerAdditionProposal) GetTitle() string { return cccp.Title }
 
-// GetDescription returns the description of a create consumerchain proposal.
-func (cccp *CreateConsumerChainProposal) GetDescription() string { return cccp.Description }
+// GetDescription returns the description of a consumer addition proposal.
+func (cccp *ConsumerAdditionProposal) GetDescription() string { return cccp.Description }
 
-// ProposalRoute returns the routing key of a create consumerchain proposal.
-func (cccp *CreateConsumerChainProposal) ProposalRoute() string { return RouterKey }
+// ProposalRoute returns the routing key of a consumer addition proposal.
+func (cccp *ConsumerAdditionProposal) ProposalRoute() string { return RouterKey }
 
-// ProposalType returns the type of a create consumerchain proposal.
-func (cccp *CreateConsumerChainProposal) ProposalType() string {
+// ProposalType returns the type of a consumer addition proposal.
+func (cccp *ConsumerAdditionProposal) ProposalType() string {
 	return ProposalTypeCreateConsumerChain
 }
 
 // ValidateBasic runs basic stateless validity checks
-func (cccp *CreateConsumerChainProposal) ValidateBasic() error {
+func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 	if err := govtypes.ValidateAbstract(cccp); err != nil {
 		return err
 	}
 
 	if strings.TrimSpace(cccp.ChainId) == "" {
-		return sdkerrors.Wrap(ErrInvalidCreateProposal, "consumer chain id must not be blank")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "consumer chain id must not be blank")
 	}
 
 	if cccp.InitialHeight.IsZero() {
-		return sdkerrors.Wrap(ErrInvalidCreateProposal, "initial height cannot be zero")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "initial height cannot be zero")
 	}
 
 	if len(cccp.GenesisHash) == 0 {
-		return sdkerrors.Wrap(ErrInvalidCreateProposal, "genesis hash cannot be empty")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "genesis hash cannot be empty")
 	}
 	if len(cccp.BinaryHash) == 0 {
-		return sdkerrors.Wrap(ErrInvalidCreateProposal, "binary hash cannot be empty")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "binary hash cannot be empty")
 	}
 
 	if cccp.SpawnTime.IsZero() {
-		return sdkerrors.Wrap(ErrInvalidCreateProposal, "spawn time cannot be zero")
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "spawn time cannot be zero")
 	}
 	return nil
 }
 
-// String returns the string representation of the CreateConsumerChainProposal.
-func (cccp *CreateConsumerChainProposal) String() string {
+// String returns the string representation of the ConsumerAdditionProposal.
+func (cccp *ConsumerAdditionProposal) String() string {
 	return fmt.Sprintf(`CreateConsumerChain Proposal
 	Title: %s
 	Description: %s

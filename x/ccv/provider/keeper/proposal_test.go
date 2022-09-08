@@ -110,33 +110,33 @@ func TestPendingStopProposalsOrder(t *testing.T) {
 func TestPendingCreateProposalsDeletion(t *testing.T) {
 
 	testCases := []struct {
-		types.CreateConsumerChainProposal
+		types.ConsumerAdditionProposal
 		ExpDeleted bool
 	}{
 		{
-			CreateConsumerChainProposal: types.CreateConsumerChainProposal{ChainId: "0", SpawnTime: time.Now().UTC()},
-			ExpDeleted:                  true,
+			ConsumerAdditionProposal: types.ConsumerAdditionProposal{ChainId: "0", SpawnTime: time.Now().UTC()},
+			ExpDeleted:               true,
 		},
 		{
-			CreateConsumerChainProposal: types.CreateConsumerChainProposal{ChainId: "1", SpawnTime: time.Now().UTC().Add(time.Hour)},
-			ExpDeleted:                  false,
+			ConsumerAdditionProposal: types.ConsumerAdditionProposal{ChainId: "1", SpawnTime: time.Now().UTC().Add(time.Hour)},
+			ExpDeleted:               false,
 		},
 	}
 	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
 
 	for _, tc := range testCases {
-		err := providerKeeper.SetPendingCreateProposal(ctx, &tc.CreateConsumerChainProposal)
+		err := providerKeeper.SetPendingConsumerAdditionProp(ctx, &tc.ConsumerAdditionProposal)
 		require.NoError(t, err)
 	}
 
 	ctx = ctx.WithBlockTime(time.Now().UTC())
 
-	propsToExecute := providerKeeper.CreateProposalsToExecute(ctx)
-	// Delete create proposals, same as what would be done by IteratePendingCreateProposal
-	providerKeeper.DeletePendingCreateProposal(ctx, propsToExecute...)
+	propsToExecute := providerKeeper.ConsumerAdditionPropsToExecute(ctx)
+	// Delete consumer addition proposals, same as what would be done by IteratePendingConsumerAdditionProps
+	providerKeeper.DeletePendingConsumerAdditionProps(ctx, propsToExecute...)
 	numDeleted := 0
 	for _, tc := range testCases {
-		res := providerKeeper.GetPendingCreateProposal(ctx, tc.SpawnTime, tc.ChainId)
+		res := providerKeeper.GetPendingConsumerAdditionProp(ctx, tc.SpawnTime, tc.ChainId)
 		if !tc.ExpDeleted {
 			require.NotEmpty(t, res, "create proposal was deleted: %s %s", tc.ChainId, tc.SpawnTime.String())
 			continue
@@ -153,41 +153,41 @@ func TestPendingCreateProposalsOrder(t *testing.T) {
 	now := time.Now().UTC()
 
 	// props with unique chain ids and spawn times
-	sampleProp1 := types.CreateConsumerChainProposal{ChainId: "1", SpawnTime: now}
-	sampleProp2 := types.CreateConsumerChainProposal{ChainId: "2", SpawnTime: now.Add(1 * time.Hour)}
-	sampleProp3 := types.CreateConsumerChainProposal{ChainId: "3", SpawnTime: now.Add(2 * time.Hour)}
-	sampleProp4 := types.CreateConsumerChainProposal{ChainId: "4", SpawnTime: now.Add(3 * time.Hour)}
-	sampleProp5 := types.CreateConsumerChainProposal{ChainId: "5", SpawnTime: now.Add(4 * time.Hour)}
+	sampleProp1 := types.ConsumerAdditionProposal{ChainId: "1", SpawnTime: now}
+	sampleProp2 := types.ConsumerAdditionProposal{ChainId: "2", SpawnTime: now.Add(1 * time.Hour)}
+	sampleProp3 := types.ConsumerAdditionProposal{ChainId: "3", SpawnTime: now.Add(2 * time.Hour)}
+	sampleProp4 := types.ConsumerAdditionProposal{ChainId: "4", SpawnTime: now.Add(3 * time.Hour)}
+	sampleProp5 := types.ConsumerAdditionProposal{ChainId: "5", SpawnTime: now.Add(4 * time.Hour)}
 
 	testCases := []struct {
-		propSubmitOrder      []types.CreateConsumerChainProposal
+		propSubmitOrder      []types.ConsumerAdditionProposal
 		accessTime           time.Time
-		expectedOrderedProps []types.CreateConsumerChainProposal
+		expectedOrderedProps []types.ConsumerAdditionProposal
 	}{
 		{
-			propSubmitOrder: []types.CreateConsumerChainProposal{
+			propSubmitOrder: []types.ConsumerAdditionProposal{
 				sampleProp1, sampleProp2, sampleProp3, sampleProp4, sampleProp5,
 			},
 			accessTime: now.Add(30 * time.Minute),
-			expectedOrderedProps: []types.CreateConsumerChainProposal{
+			expectedOrderedProps: []types.ConsumerAdditionProposal{
 				sampleProp1,
 			},
 		},
 		{
-			propSubmitOrder: []types.CreateConsumerChainProposal{
+			propSubmitOrder: []types.ConsumerAdditionProposal{
 				sampleProp3, sampleProp2, sampleProp1, sampleProp5, sampleProp4,
 			},
 			accessTime: now.Add(3 * time.Hour).Add(30 * time.Minute),
-			expectedOrderedProps: []types.CreateConsumerChainProposal{
+			expectedOrderedProps: []types.ConsumerAdditionProposal{
 				sampleProp1, sampleProp2, sampleProp3, sampleProp4,
 			},
 		},
 		{
-			propSubmitOrder: []types.CreateConsumerChainProposal{
+			propSubmitOrder: []types.ConsumerAdditionProposal{
 				sampleProp5, sampleProp4, sampleProp3, sampleProp2, sampleProp1,
 			},
 			accessTime: now.Add(5 * time.Hour),
-			expectedOrderedProps: []types.CreateConsumerChainProposal{
+			expectedOrderedProps: []types.ConsumerAdditionProposal{
 				sampleProp1, sampleProp2, sampleProp3, sampleProp4, sampleProp5,
 			},
 		},
@@ -198,10 +198,10 @@ func TestPendingCreateProposalsOrder(t *testing.T) {
 		ctx = ctx.WithBlockTime(tc.accessTime)
 
 		for _, prop := range tc.propSubmitOrder {
-			err := providerKeeper.SetPendingCreateProposal(ctx, &prop)
+			err := providerKeeper.SetPendingConsumerAdditionProp(ctx, &prop)
 			require.NoError(t, err)
 		}
-		propsToExecute := providerKeeper.CreateProposalsToExecute(ctx)
+		propsToExecute := providerKeeper.ConsumerAdditionPropsToExecute(ctx)
 		require.Equal(t, tc.expectedOrderedProps, propsToExecute)
 	}
 }

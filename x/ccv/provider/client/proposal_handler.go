@@ -21,11 +21,11 @@ import (
 )
 
 // ProposalHandler is the param change proposal handler.
-var ProposalHandler = govclient.NewProposalHandler(NewCreateConsumerChainProposalTxCmd, ProposalRESTHandler)
+var ProposalHandler = govclient.NewProposalHandler(NewConsumerAdditionProposalTxCmd, ProposalRESTHandler)
 
-// NewCreateConsumerChainProposalTxCmd returns a CLI command handler for creating
+// NewConsumerAdditionProposalTxCmd returns a CLI command handler for creating
 // a new consumer chain proposal governance transaction.
-func NewCreateConsumerChainProposalTxCmd() *cobra.Command {
+func NewConsumerAdditionProposalTxCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "create-consumer-chain [proposal-file]",
 		Args:  cobra.ExactArgs(1),
@@ -59,12 +59,12 @@ Where proposal.json contains:
 				return err
 			}
 
-			proposal, err := ParseCreateConsumerChainProposalJSON(args[0])
+			proposal, err := ParseConsumerAdditionProposalJSON(args[0])
 			if err != nil {
 				return err
 			}
 
-			content := types.NewCreateConsumerChainProposal(
+			content := types.NewConsumerAdditionProposal(
 				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
 				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime)
 
@@ -85,7 +85,7 @@ Where proposal.json contains:
 	}
 }
 
-type CreateConsumerChainProposalJSON struct {
+type ConsumerAdditionProposalJSON struct {
 	Title         string             `json:"title"`
 	Description   string             `json:"description"`
 	ChainId       string             `json:"chain_id"`
@@ -96,7 +96,7 @@ type CreateConsumerChainProposalJSON struct {
 	Deposit       string             `json:"deposit"`
 }
 
-type CreateConsumerChainProposalReq struct {
+type ConsumerAdditionProposalReq struct {
 	BaseReq  rest.BaseReq   `json:"base_req"`
 	Proposer sdk.AccAddress `json:"proposer"`
 
@@ -110,8 +110,8 @@ type CreateConsumerChainProposalReq struct {
 	Deposit       sdk.Coins          `json:"deposit"`
 }
 
-func ParseCreateConsumerChainProposalJSON(proposalFile string) (CreateConsumerChainProposalJSON, error) {
-	proposal := CreateConsumerChainProposalJSON{}
+func ParseConsumerAdditionProposalJSON(proposalFile string) (ConsumerAdditionProposalJSON, error) {
+	proposal := ConsumerAdditionProposalJSON{}
 
 	contents, err := ioutil.ReadFile(filepath.Clean(proposalFile))
 	if err != nil {
@@ -136,7 +136,7 @@ func ProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
 
 func postProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req CreateConsumerChainProposalReq
+		var req ConsumerAdditionProposalReq
 		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
 			return
 		}
@@ -146,7 +146,7 @@ func postProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
 			return
 		}
 
-		content := types.NewCreateConsumerChainProposal(
+		content := types.NewConsumerAdditionProposal(
 			req.Title, req.Description, req.ChainId, req.InitialHeight,
 			req.GenesisHash, req.BinaryHash, req.SpawnTime)
 

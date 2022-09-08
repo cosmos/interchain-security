@@ -52,9 +52,9 @@ const (
 	// ChainToClientBytePrefix is the byte prefix for storing the consumer chainID for a given consumer clientid.
 	ChainToClientBytePrefix
 
-	// PendingCreateProposalBytePrefix is the byte prefix for storing the pending identified consumer chain client before the spawn time occurs.
+	// PendingConsumerAdditionPropBytePrefix is the byte prefix for storing the pending consumer addition proposal before the spawn time occurs.
 	// The key includes the BigEndian timestamp to allow for efficient chronological iteration
-	PendingCreateProposalBytePrefix
+	PendingConsumerAdditionPropBytePrefix
 
 	// PendingStopProposalBytePrefix is the byte prefix for storing the pending identified consumer chain before the stop time occurs.
 	// The key includes the BigEndian timestamp to allow for efficient chronological iteration
@@ -123,15 +123,15 @@ func ChainToClientKey(chainID string) []byte {
 	return append([]byte{ChainToClientBytePrefix}, []byte(chainID)...)
 }
 
-// PendingCreateProposalKey returns the key under which a pending identified client is stored
-func PendingCreateProposalKey(timestamp time.Time, chainID string) []byte {
+// PendingConsumerAdditionPropKey returns the key under which a pending consumer addition proposal is stored
+func PendingConsumerAdditionPropKey(timestamp time.Time, chainID string) []byte {
 	timeBz := sdk.FormatTimeBytes(timestamp)
 	timeBzL := len(timeBz)
-	prefixL := len([]byte{PendingCreateProposalBytePrefix})
+	prefixL := len([]byte{PendingConsumerAdditionPropBytePrefix})
 
 	bz := make([]byte, prefixL+8+timeBzL+len(chainID))
 	// copy the prefix
-	copy(bz[:prefixL], []byte{PendingCreateProposalBytePrefix})
+	copy(bz[:prefixL], []byte{PendingConsumerAdditionPropBytePrefix})
 	// copy the time length
 	copy(bz[prefixL:prefixL+8], sdk.Uint64ToBigEndian(uint64(timeBzL)))
 	// copy the time bytes
@@ -141,9 +141,10 @@ func PendingCreateProposalKey(timestamp time.Time, chainID string) []byte {
 	return bz
 }
 
-// ParsePendingCreateProposalKey returns the time and chain ID for a pending client key or an error if unparseable
-func ParsePendingCreateProposalKey(bz []byte) (time.Time, string, error) {
-	expectedPrefix := []byte{PendingCreateProposalBytePrefix}
+// ParsePendingConsumerAdditionPropKey returns the time and chain ID
+// for a pending consumer addition proposal key or an error if unparsable
+func ParsePendingConsumerAdditionPropKey(bz []byte) (time.Time, string, error) {
+	expectedPrefix := []byte{PendingConsumerAdditionPropBytePrefix}
 	prefixL := len(expectedPrefix)
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
 		return time.Time{}, "", fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)

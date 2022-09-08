@@ -200,7 +200,7 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			Title:       title,
 			Description: description,
 		}
-	case "/interchain_security.ccv.provider.v1.CreateConsumerChainProposal":
+	case "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal":
 		chainId := gjson.Get(string(bz), `content.chain_id`).String()
 		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time().Sub(tr.containerConfig.now)
 

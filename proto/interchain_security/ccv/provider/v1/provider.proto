@@ -9,10 +9,10 @@ import "google/protobuf/timestamp.proto";
 import "ibc/core/client/v1/client.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
 
-// CreateConsumerChainProposal is a governance proposal on the provider chain to spawn a new consumer chain.
+// ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
 // If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
 // or get slashed. It is recommended that spawn time occurs after the proposal end time.
-message CreateConsumerChainProposal {
+message ConsumerAdditionProposal {
     option (gogoproto.goproto_getters)  = false;
     option (gogoproto.goproto_stringer) = false;
   

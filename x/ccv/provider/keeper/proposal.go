@@ -20,16 +20,16 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 )
 
-// CreateConsumerChainProposal will receive the consumer chain's client state from the proposal.
+// HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
 // If the spawn time has already passed, then set the consumer chain. Otherwise store the client
 // as a pending client, and set once spawn time has passed.
-func (k Keeper) CreateConsumerChainProposal(ctx sdk.Context, p *types.CreateConsumerChainProposal) error {
+func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
 	if !ctx.BlockTime().Before(p.SpawnTime) {
 		// lockUbdOnTimeout is set to be false, regardless of what the proposal says, until we can specify and test issues around this use case more thoroughly
 		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, false)
 	}
 
-	err := k.SetPendingCreateProposal(ctx, p)
+	err := k.SetPendingConsumerAdditionProp(ctx, p)
 	if err != nil {
 		return err
 	}
@@ -220,40 +220,40 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 	return gen, nil
 }
 
-// SetPendingCreateProposal stores a pending proposal to create a consumer chain client
-func (k Keeper) SetPendingCreateProposal(ctx sdk.Context, clientInfo *types.CreateConsumerChainProposal) error {
+// SetPendingConsumerAdditionProp stores a pending proposal to create a consumer chain client
+func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, clientInfo *types.ConsumerAdditionProposal) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(clientInfo)
 	if err != nil {
 		return err
 	}
 
-	store.Set(types.PendingCreateProposalKey(clientInfo.SpawnTime, clientInfo.ChainId), bz)
+	store.Set(types.PendingConsumerAdditionPropKey(clientInfo.SpawnTime, clientInfo.ChainId), bz)
 	return nil
 }
 
-// GetPendingCreateProposal retrieves a pending proposal to create a consumer chain client (by spawn time and chain id)
-func (k Keeper) GetPendingCreateProposal(ctx sdk.Context, spawnTime time.Time, chainID string) types.CreateConsumerChainProposal {
+// GetPendingConsumerAdditionProp retrieves a pending proposal to create a consumer chain client (by spawn time and chain id)
+func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.Time, chainID string) types.ConsumerAdditionProposal {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingCreateProposalKey(spawnTime, chainID))
+	bz := store.Get(types.PendingConsumerAdditionPropKey(spawnTime, chainID))
 	if len(bz) == 0 {
-		return types.CreateConsumerChainProposal{}
+		return types.ConsumerAdditionProposal{}
 	}
-	var clientInfo types.CreateConsumerChainProposal
+	var clientInfo types.ConsumerAdditionProposal
 	k.cdc.MustUnmarshal(bz, &clientInfo)
 
 	return clientInfo
 }
 
-func (k Keeper) PendingCreateProposalIterator(ctx sdk.Context) sdk.Iterator {
+func (k Keeper) PendingConsumerAdditionPropIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
-	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCreateProposalBytePrefix})
+	return sdk.KVStorePrefixIterator(store, []byte{types.PendingConsumerAdditionPropBytePrefix})
 }
 
-// IteratePendingCreateProposal iterates over the pending proposals to create consumer chain clients in order
-// and creates the consumer client if the spawn time has passed.
-func (k Keeper) IteratePendingCreateProposal(ctx sdk.Context) {
-	propsToExecute := k.CreateProposalsToExecute(ctx)
+// IteratePendingConsumerAdditionProps iterates over the pending consumer addition proposals to create
+// clients in order and creates the consumer client if the spawn time has passed.
+func (k Keeper) IteratePendingConsumerAdditionProps(ctx sdk.Context) {
+	propsToExecute := k.ConsumerAdditionPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
 		// lockUbdOnTimeout is set to be false, regardless of what the proposal says, until we can specify and test issues around this use case more thoroughly
@@ -263,19 +263,20 @@ func (k Keeper) IteratePendingCreateProposal(ctx sdk.Context) {
 		}
 	}
 	// delete the executed proposals
-	k.DeletePendingCreateProposal(ctx, propsToExecute...)
+	k.DeletePendingConsumerAdditionProps(ctx, propsToExecute...)
 }
 
-// CreateProposalsToExecute iterates over the pending proposals and returns an ordered list of proposals to be executed,
-// ie. consumer clients to be created. A prop is included in the returned list if its proposed spawn time has passed.
+// ConsumerAdditionPropsToExecute iterates over the pending consumer addition proposals
+// and returns an ordered list of proposals to be executed, ie. consumer clients to be created.
+// A prop is included in the returned list if its proposed spawn time has passed.
 //
-// Note: this method is split out from IteratePendingCreateProposal to be easily unit tested.
-func (k Keeper) CreateProposalsToExecute(ctx sdk.Context) []types.CreateConsumerChainProposal {
+// Note: this method is split out from IteratePendingConsumerAdditionProposals to be easily unit tested.
+func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.ConsumerAdditionProposal {
 
 	// store the (to be) executed proposals in order
-	propsToExecute := []types.CreateConsumerChainProposal{}
+	propsToExecute := []types.ConsumerAdditionProposal{}
 
-	iterator := k.PendingCreateProposalIterator(ctx)
+	iterator := k.PendingConsumerAdditionPropIterator(ctx)
 	defer iterator.Close()
 
 	if !iterator.Valid() {
@@ -284,12 +285,12 @@ func (k Keeper) CreateProposalsToExecute(ctx sdk.Context) []types.CreateConsumer
 
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()
-		spawnTime, _, err := types.ParsePendingCreateProposalKey(key)
+		spawnTime, _, err := types.ParsePendingConsumerAdditionPropKey(key)
 		if err != nil {
 			panic(fmt.Errorf("failed to parse pending client key: %w", err))
 		}
 
-		var prop types.CreateConsumerChainProposal
+		var prop types.ConsumerAdditionProposal
 		k.cdc.MustUnmarshal(iterator.Value(), &prop)
 
 		if !ctx.BlockTime().Before(spawnTime) {
@@ -302,12 +303,12 @@ func (k Keeper) CreateProposalsToExecute(ctx sdk.Context) []types.CreateConsumer
 	return propsToExecute
 }
 
-// DeletePendingCreateProposal deletes the given create consumer proposals
-func (k Keeper) DeletePendingCreateProposal(ctx sdk.Context, proposals ...types.CreateConsumerChainProposal) {
+// DeletePendingConsumerAdditionProps deletes the given consumer addition proposals
+func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ...types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
 
 	for _, p := range proposals {
-		store.Delete(types.PendingCreateProposalKey(p.SpawnTime, p.ChainId))
+		store.Delete(types.PendingConsumerAdditionPropKey(p.SpawnTime, p.ChainId))
 	}
 }
 

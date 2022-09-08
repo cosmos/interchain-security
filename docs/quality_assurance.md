@@ -85,7 +85,7 @@ The main concern addressed in this section is the correctness of the provider ch
 | 4.10 | The provider chain's correctness is not affected by a consumer chain shutting down | `Scheduled` | `Future work` | `Future work` | `Scheduled` | `NA` |
 | 4.11 | The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `Future work` | `Future work` | `Scheduled` | `NA` |
 | 4.12 | The provider chain can graciously handle a `StopConsumerChainProposal` <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `Done` <br /> see [stop_consumer_test.go](../x/ccv/provider/stop_consumer_test.go) | `Future work` | `Scheduled` | `NA` |
-| 4.13 | The provider chain can graciously handle a `SpawnConsumerChainProposal` <br /> - expected outcome: a consumer chain is registered and a client is created | `Scheduled` |`Done` <br /> see [TestCreateConsumerChainProposal](../x/ccv/provider/keeper/proposal_test.go#L44) | `Future work` | `Scheduled` | `NA` |
+| 4.13 | The provider chain can graciously handle a `SpawnConsumerChainProposal` <br /> - expected outcome: a consumer chain is registered and a client is created | `Scheduled` |`Done` <br /> see [TestConsumerAdditionProposal](../x/ccv/provider/keeper/proposal_test.go#L44) | `Future work` | `Scheduled` | `NA` |
 
 ### Interchain Security Protocol Correctness
 

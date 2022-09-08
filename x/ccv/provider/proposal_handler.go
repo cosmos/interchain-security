@@ -8,12 +8,12 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
-// NewConsumerChainProposalHandler defines the CCV provider proposal handler
+// NewConsumerChainProposalHandler defines the handler for consumer addition and consumer removal proposals.
 func NewConsumerChainProposalHandler(k keeper.Keeper) govtypes.Handler {
 	return func(ctx sdk.Context, content govtypes.Content) error {
 		switch c := content.(type) {
-		case *types.CreateConsumerChainProposal:
-			return k.CreateConsumerChainProposal(ctx, c)
+		case *types.ConsumerAdditionProposal:
+			return k.HandleConsumerAdditionProposal(ctx, c)
 		case *types.StopConsumerChainProposal:
 			return k.StopConsumerChainProposal(ctx, c)
 		default:
