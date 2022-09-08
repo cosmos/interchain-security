@@ -584,12 +584,15 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 // SetSlashAcks sets the slash acks under the given chain ID
 func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	store := ctx.KVStore(k.storeKey)
-	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(acks)
-	if err != nil {
-		panic("failed to encode json")
+
+	sa := types.SlashAcks{
+		Addresses: acks,
 	}
-	store.Set(types.SlashAcksKey(chainID), buf.Bytes())
+	bz, err := sa.Marshal()
+	if err != nil {
+		panic("failed to marshal SlashAcks")
+	}
+	store.Set(types.SlashAcksKey(chainID), bz)
 }
 
 // GetSlashAcks returns the slash acks stored under the given chain ID
@@ -599,15 +602,12 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	if bz == nil {
 		return nil
 	}
-	var acks []string
-	buf := bytes.NewBuffer(bz)
-
-	err := json.NewDecoder(buf).Decode(&acks)
-	if err != nil {
+	var acks types.SlashAcks
+	if err := acks.Unmarshal(bz); err != nil {
 		panic(fmt.Errorf("failed to decode json: %w", err))
 	}
 
-	return acks
+	return acks.GetAddresses()
 }
 
 // EmptySlashAcks empties and returns the slash acks for a given chain ID
@@ -631,15 +631,13 @@ func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks [
 
 		chainID := string(iterator.Key()[1:])
 
-		var data []string
-		buf := bytes.NewBuffer(iterator.Value())
-
-		err := json.NewDecoder(buf).Decode(&data)
+		var sa types.SlashAcks
+		err := sa.Unmarshal(iterator.Value())
 		if err != nil {
-			panic(fmt.Errorf("failed to decode json: %w", err))
+			panic(fmt.Errorf("failed to unmarshal SlashAcks: %w", err))
 		}
 
-		if !cb(chainID, data) {
+		if !cb(chainID, sa.GetAddresses()) {
 			return
 		}
 	}
