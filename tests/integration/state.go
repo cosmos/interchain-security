@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 )

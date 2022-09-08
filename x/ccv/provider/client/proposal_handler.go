@@ -21,21 +21,21 @@ import (
 )
 
 // ProposalHandler is the param change proposal handler.
-var ProposalHandler = govclient.NewProposalHandler(NewConsumerAdditionProposalTxCmd, ProposalRESTHandler)
+var ProposalHandler = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd, ProposalRESTHandler)
 
-// NewConsumerAdditionProposalTxCmd returns a CLI command handler for creating
-// a new consumer chain proposal governance transaction.
-func NewConsumerAdditionProposalTxCmd() *cobra.Command {
+// SubmitConsumerAdditionPropTxCmd returns a CLI command handler for submitting
+// a consumer addition proposal via a transaction.
+func SubmitConsumerAdditionPropTxCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "create-consumer-chain [proposal-file]",
+		Use:   "consumer-addition [proposal-file]",
 		Args:  cobra.ExactArgs(1),
-		Short: "Submit a consumer chain creation proposal",
+		Short: "Submit a consumer addition proposal",
 		Long: `
-Submit a consumer chain creation proposal along with an initial deposit.
+Submit a consumer addition proposal along with an initial deposit.
 The proposal details must be supplied via a JSON file.
 
 Example:
-$ %s tx gov submit-proposal create-consumer-chain <path/to/proposal.json> --from=<key_or_address>
+$ %s tx gov submit-proposal consumer-addition <path/to/proposal.json> --from=<key_or_address>
 
 Where proposal.json contains:
 
@@ -129,7 +129,7 @@ func ParseConsumerAdditionProposalJSON(proposalFile string) (ConsumerAdditionPro
 // change REST handler with a given sub-route.
 func ProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
 	return govrest.ProposalRESTHandler{
-		SubRoute: "create_consumer_chain",
+		SubRoute: "propose_consumer_addition",
 		Handler:  postProposalHandlerFn(clientCtx),
 	}
 }
