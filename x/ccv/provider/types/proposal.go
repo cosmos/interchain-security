@@ -23,7 +23,7 @@ func init() {
 	govtypes.RegisterProposalType(ProposalTypeCreateConsumerChain)
 }
 
-// NewConsumerAdditionProposal creates a new create consumerchain proposal.
+// NewConsumerAdditionProposal creates a new consumer addition proposal.
 func NewConsumerAdditionProposal(title, description, chainID string, initialHeight clienttypes.Height, genesisHash, binaryHash []byte, spawnTime time.Time) govtypes.Content {
 	return &ConsumerAdditionProposal{
 		Title:         title,
