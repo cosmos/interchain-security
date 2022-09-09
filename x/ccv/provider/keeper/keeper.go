@@ -9,7 +9,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
@@ -33,7 +32,7 @@ type Keeper struct {
 	storeKey         sdk.StoreKey
 	cdc              codec.BinaryCodec
 	paramSpace       paramtypes.Subspace
-	scopedKeeper     capabilitykeeper.ScopedKeeper
+	scopedKeeper     ccv.ScopedKeeper
 	channelKeeper    ccv.ChannelKeeper
 	portKeeper       ccv.PortKeeper
 	connectionKeeper ccv.ConnectionKeeper
@@ -46,7 +45,7 @@ type Keeper struct {
 
 // NewKeeper creates a new provider Keeper instance
 func NewKeeper(
-	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper capabilitykeeper.ScopedKeeper,
+	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
@@ -264,7 +263,7 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 // and set the channel status to validating.
 // If there is already a ccv channel between the provider and consumer chain then close the channel, so that another channel can be made.
 func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
-	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
+	channel, ok := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
 	if !ok {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
 	}
@@ -279,9 +278,6 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	// Verify that there isn't already a CCV channel for the consumer chain
 	// If there is, then close the channel.
 	if prevChannel, ok := k.GetChannelToChain(ctx, chainID); ok {
-		if err := k.chanCloseInit(ctx, channelID); err != nil {
-			return err
-		}
 		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, chainID)
 	}
 
@@ -468,12 +464,12 @@ func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (strin
 
 // chanCloseInit defines a wrapper function for the channel Keeper's function
 func (k Keeper) chanCloseInit(ctx sdk.Context, channelID string) error {
-	capName := host.ChannelCapabilityPath(types.PortID, channelID)
+	capName := host.ChannelCapabilityPath(ccv.ProviderPortID, channelID)
 	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
 	if !ok {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
-	return k.channelKeeper.ChanCloseInit(ctx, types.PortID, channelID, chanCap)
+	return k.channelKeeper.ChanCloseInit(ctx, ccv.ProviderPortID, channelID, chanCap)
 }
 
 func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
@@ -571,13 +567,13 @@ func (k Keeper) SetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId, bloc
 }
 
 // GetValsetUpdateBlockHeight gets the block height for a given valset update id
-func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) uint64 {
+func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
 	if bz == nil {
-		return 0
+		return 0, false
 	}
-	return binary.BigEndian.Uint64(bz)
+	return binary.BigEndian.Uint64(bz), true
 }
 
 // DeleteValsetUpdateBlockHeight deletes the block height value for a given vaset update id
@@ -667,14 +663,14 @@ func (k Keeper) SetInitChainHeight(ctx sdk.Context, chainID string, height uint6
 }
 
 // GetInitChainHeight returns the provider block height when the given consumer chain was initiated
-func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) uint64 {
+func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.InitChainHeightKey(chainID))
 	if bz == nil {
-		return 0
+		return 0, false
 	}
 
-	return binary.BigEndian.Uint64(bz)
+	return binary.BigEndian.Uint64(bz), true
 }
 
 // DeleteInitChainHeight deletes the block height value for which the given consumer chain's channel was established

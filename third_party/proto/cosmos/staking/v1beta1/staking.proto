@@ -9,6 +9,7 @@ import "google/protobuf/timestamp.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "tendermint/types/types.proto";
+import "tendermint/abci/types.proto";
 
 option go_package = "github.com/cosmos/cosmos-sdk/x/staking/types";
 
@@ -118,8 +119,11 @@ message Validator {
     (gogoproto.nullable)   = false
   ];
 
-  // True if this validator's unbonding has been stopped by an external module
-  bool unbonding_on_hold = 12;
+  // strictly positive if this validator's unbonding has been stopped by external modules
+  int64 unbonding_on_hold_ref_count = 12;
+
+  // list of unbonding ids, each uniquely identifing an unbonding of this validator
+  repeated uint64 unbonding_ids = 13;
 }
 
 // BondStatus is the status of a validator.
@@ -233,8 +237,8 @@ message UnbondingDelegationEntry {
   // Incrementing id that uniquely identifies this entry
   uint64 unbonding_id = 5;
 
-  // True if this entry's unbonding has been stopped by an external module
-  bool unbonding_on_hold = 6;
+  // Strictly positive if this entry's unbonding has been stopped by external modules
+  int64 unbonding_on_hold_ref_count = 6;
 }
 
 // RedelegationEntry defines a redelegation object with relevant metadata.
@@ -260,8 +264,8 @@ message RedelegationEntry {
   // Incrementing id that uniquely identifies this entry
   uint64 unbonding_id = 5;
 
-  // True if this entry's unbonding has been stopped by an external module
-  bool unbonding_on_hold = 6;
+  // Strictly positive if this entry's unbonding has been stopped by external modules
+  int64 unbonding_on_hold_ref_count = 6;
 }
 
 // Redelegation contains the list of a particular delegator's redelegating bonds
@@ -358,4 +362,9 @@ enum InfractionType {
   INFRACTION_TYPE_DOUBLE_SIGN = 1 [(gogoproto.enumvalue_customname) = "DoubleSign"];
   // DOWNTIME defines a validator that missed signing too many blocks.
   INFRACTION_TYPE_DOWNTIME = 2 [(gogoproto.enumvalue_customname) = "Downtime"];
+}
+
+// ValidatorUpdates defines an array of abci.ValidatorUpdate objects.
+message ValidatorUpdates {
+  repeated tendermint.abci.ValidatorUpdate updates = 1 [(gogoproto.nullable) = false];
 }

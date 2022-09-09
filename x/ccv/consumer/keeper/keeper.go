@@ -9,7 +9,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
@@ -29,7 +28,7 @@ type Keeper struct {
 	storeKey          sdk.StoreKey
 	cdc               codec.BinaryCodec
 	paramStore        paramtypes.Subspace
-	scopedKeeper      capabilitykeeper.ScopedKeeper
+	scopedKeeper      ccv.ScopedKeeper
 	channelKeeper     ccv.ChannelKeeper
 	portKeeper        ccv.PortKeeper
 	connectionKeeper  ccv.ConnectionKeeper
@@ -48,7 +47,7 @@ type Keeper struct {
 // collector (and not the provider chain)
 func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
-	scopedKeeper capabilitykeeper.ScopedKeeper,
+	scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	slashingKeeper ccv.SlashingKeeper, bankKeeper ccv.BankKeeper, accountKeeper ccv.AccountKeeper,
@@ -94,7 +93,7 @@ func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
 }
 
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
-// in order to expose it to the ICS20 transfer handler.
+// Following ICS 004: https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#closing-handshake
 func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
@@ -164,17 +163,17 @@ func (k Keeper) DeleteUnbondingTime(ctx sdk.Context) {
 	store.Delete(types.UnbondingTimeKey())
 }
 
-// SetProviderClient sets the provider clientID that is validating the chain.
+// SetProviderClientID sets the provider clientID that is validating the chain.
 // Set in InitGenesis
-func (k Keeper) SetProviderClient(ctx sdk.Context, clientID string) {
+func (k Keeper) SetProviderClientID(ctx sdk.Context, clientID string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ProviderClientKey(), []byte(clientID))
+	store.Set(types.ProviderClientIDKey(), []byte(clientID))
 }
 
-// GetProviderClient gets the provider clientID that is validating the chain.
-func (k Keeper) GetProviderClient(ctx sdk.Context) (string, bool) {
+// GetProviderClientID gets the provider clientID that is validating the chain.
+func (k Keeper) GetProviderClientID(ctx sdk.Context) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	clientIdBytes := store.Get(types.ProviderClientKey())
+	clientIdBytes := store.Get(types.ProviderClientIDKey())
 	if clientIdBytes == nil {
 		return "", false
 	}
@@ -289,7 +288,7 @@ func (k Keeper) VerifyProviderChain(ctx sdk.Context, channelID string, connectio
 		return sdkerrors.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
 	}
 	// Verify that client id is expected clientID
-	expectedClientId, ok := k.GetProviderClient(ctx)
+	expectedClientId, ok := k.GetProviderClientID(ctx)
 	if !ok {
 		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "could not find provider client id")
 	}

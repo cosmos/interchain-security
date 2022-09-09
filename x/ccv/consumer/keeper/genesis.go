@@ -6,7 +6,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -14,20 +15,20 @@ import (
 )
 
 // InitGenesis initializes the CCV consumer state and binds to PortID.
-func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.ValidatorUpdate {
+func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) []abci.ValidatorUpdate {
 	k.SetParams(ctx, state.Params)
 	if !state.Params.Enabled {
 		return nil
 	}
 
-	k.SetPort(ctx, types.PortID)
+	k.SetPort(ctx, ccv.ConsumerPortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
 	// port capability from capability InitGenesis
-	if !k.IsBound(ctx, types.PortID) {
+	if !k.IsBound(ctx, ccv.ConsumerPortID) {
 		// transfer module binds to the transfer port on InitChain
 		// and claims the returned capability
-		err := k.BindPort(ctx, types.PortID)
+		err := k.BindPort(ctx, ccv.ConsumerPortID)
 		if err != nil {
 			panic(fmt.Sprintf("could not claim port capability: %v", err))
 		}
@@ -48,7 +49,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		// Set default value for valset update ID
 		k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()), uint64(0))
 		// set provider client id.
-		k.SetProviderClient(ctx, clientID)
+		k.SetProviderClientID(ctx, clientID)
 	} else {
 		// verify that latest consensus state on provider client matches the initial validator set of restarted chain
 		// thus, IBC genesis MUST run before CCV consumer genesis
@@ -87,7 +88,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 		k.SetUnbondingTime(ctx, unbondingTime)
 
 		// set provider client id
-		k.SetProviderClient(ctx, state.ProviderClientId)
+		k.SetProviderClientID(ctx, state.ProviderClientId)
 		// set provider channel id.
 		k.SetProviderChannel(ctx, state.ProviderChannelId)
 		// set all unbonding sequences
@@ -103,23 +104,23 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) []abci.V
 
 // ExportGenesis exports the CCV consumer state. If the channel has already been established, then we export
 // provider chain. Otherwise, this is still considered a new chain and we export latest client state.
-func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
+func (k Keeper) ExportGenesis(ctx sdk.Context) *consumertypes.GenesisState {
 	params := k.GetParams(ctx)
 	if !params.Enabled {
-		return types.DefaultGenesisState()
+		return consumertypes.DefaultGenesisState()
 	}
 
 	if channelID, ok := k.GetProviderChannel(ctx); ok {
-		clientID, ok := k.GetProviderClient(ctx)
+		clientID, ok := k.GetProviderClientID(ctx)
 		if !ok {
 			panic("provider client does not exist")
 		}
 		// ValUpdates must be filled in off-line
-		gs := types.NewRestartGenesisState(clientID, channelID, nil, nil, params)
+		gs := consumertypes.NewRestartGenesisState(clientID, channelID, nil, nil, params)
 
-		maturingPackets := []types.MaturingVSCPacket{}
+		maturingPackets := []consumertypes.MaturingVSCPacket{}
 		cb := func(vscId, timeNs uint64) bool {
-			mat := types.MaturingVSCPacket{
+			mat := consumertypes.MaturingVSCPacket{
 				VscId:        vscId,
 				MaturityTime: timeNs,
 			}
@@ -131,11 +132,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		gs.MaturingPackets = maturingPackets
 		return gs
 	}
-	clientID, ok := k.GetProviderClient(ctx)
+	clientID, ok := k.GetProviderClientID(ctx)
 	// if provider clientID and channelID don't exist on the consumer chain, then CCV protocol is disabled for this chain
 	// return a disabled genesis state
 	if !ok {
-		return types.DefaultGenesisState()
+		return consumertypes.DefaultGenesisState()
 	}
 	cs, ok := k.clientKeeper.GetClientState(ctx, clientID)
 	if !ok {
@@ -154,5 +155,5 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic("provider consensus state is not tendermint consensus state")
 	}
 	// ValUpdates must be filled in off-line
-	return types.NewInitialGenesisState(tmCs, tmConsState, nil, params)
+	return consumertypes.NewInitialGenesisState(tmCs, tmConsState, nil, params)
 }
