@@ -3,14 +3,13 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
@@ -20,18 +19,15 @@ import (
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
 func TestApplyCCValidatorChanges(t *testing.T) {
 	// Construct a keeper with a custom codec
-	_, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
-	ir := codectypes.NewInterfaceRegistry()
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
 
-	// Public key implementation must be registered
-	cryptocodec.RegisterInterfaces(ir)
-	cdc := codec.NewProtoCodec(ir)
+	// Explicitly register public key interface
+	testkeeper.RegisterSdkCryptoCodecInterfaces(&keeperParams)
 
-	consumerKeeper := testkeeper.GetCustomConsumerKeeper(
-		cdc,
-		storeKey,
-		paramsSubspace,
-	)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, testkeeper.NewMockedKeepers(ctrl))
+	ctx := keeperParams.Ctx
 
 	// utility functions
 	getCCVals := func() (vals []types.CrossChainValidator) {
@@ -117,20 +113,14 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 func TestHistoricalInfo(t *testing.T) {
 
 	// Construct a keeper with a custom codec
-	_, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
-	ir := codectypes.NewInterfaceRegistry()
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	// Explicitly register public key interface
+	testkeeper.RegisterSdkCryptoCodecInterfaces(&keeperParams)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, testkeeper.NewMockedKeepers(ctrl))
 
-	// Public key implementation must be registered
-	cryptocodec.RegisterInterfaces(ir)
-	cdc := codec.NewProtoCodec(ir)
-
-	consumerKeeper := testkeeper.GetCustomConsumerKeeper(
-		cdc,
-		storeKey,
-		paramsSubspace,
-	)
-
-	ctx = ctx.WithBlockHeight(15)
+	ctx := keeperParams.Ctx.WithBlockHeight(15)
 
 	// Generate test validators, save them to store, and retrieve stored records
 	validators := GenerateValidators(t)
