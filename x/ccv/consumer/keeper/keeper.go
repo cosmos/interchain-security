@@ -123,12 +123,6 @@ func (k Keeper) GetPort(ctx sdk.Context) string {
 	return string(store.Get(types.PortKey()))
 }
 
-// DeletePort deletes the portID for the transfer module
-func (k Keeper) DeletePort(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.PortKey())
-}
-
 // SetPort sets the portID for the transfer module. Used in InitGenesis
 func (k Keeper) SetPort(ctx sdk.Context, portID string) {
 	store := ctx.KVStore(k.storeKey)
@@ -185,12 +179,6 @@ func (k Keeper) GetProviderClient(ctx sdk.Context) (string, bool) {
 		return "", false
 	}
 	return string(clientIdBytes), true
-}
-
-// DeleteProviderClient deletes the provider clientID that is validating the chain.
-func (k Keeper) DeleteProviderClient(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ProviderClientKey())
 }
 
 // SetProviderChannel sets the provider channelID that is validating the chain.
@@ -289,19 +277,6 @@ func (k Keeper) DeletePacketMaturityTime(ctx sdk.Context, vscId uint64) {
 	store.Delete(types.PacketMaturityTimeKey(vscId))
 }
 
-// ClearPacketMaturityTime deletes all the packet maturity time in the store
-func (k Keeper) ClearPacketMaturityTimes(ctx sdk.Context) {
-	vscIDs := []uint64{}
-	k.IteratePacketMaturityTime(ctx, func(vscId, _ uint64) bool {
-		vscIDs = append(vscIDs, vscId)
-		return false
-	})
-
-	for _, id := range vscIDs {
-		k.DeletePacketMaturityTime(ctx, id)
-	}
-}
-
 // VerifyProviderChain verifies that the chain trying to connect on the channel handshake
 // is the expected provider chain.
 func (k Keeper) VerifyProviderChain(ctx sdk.Context, channelID string, connectionHops []string) error {
@@ -356,14 +331,6 @@ func (k Keeper) IterateHeightValsetUpdateID(ctx sdk.Context, cb func(height uint
 	}
 }
 
-// ClearHeightValsetUpdateIDs clears the valset update ids in the store
-func (k Keeper) ClearHeightValsetUpdateIDs(ctx sdk.Context) {
-	k.IterateHeightValsetUpdateID(ctx, func(height uint64) bool {
-		k.DeleteHeightValsetUpdateID(ctx, height)
-		return false
-	})
-}
-
 // DeleteHeightValsetUpdateID deletes the valset update id for a given block height
 func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 	store := ctx.KVStore(k.storeKey)
@@ -391,33 +358,6 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 	}
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.OutstandingDowntimeKey(consAddr))
-}
-
-func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(consAddress sdk.ConsAddress) bool) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
-
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		addr := sdk.ConsAddress(iterator.Key()[1:])
-
-		if cb(addr) {
-			break
-		}
-	}
-}
-
-// ClearOutstandingDowntime clears the outstanding downtime flags in the store
-func (k Keeper) ClearOutstandingDowntimes(ctx sdk.Context) {
-	addrs := []sdk.ConsAddress{}
-	k.IterateOutstandingDowntime(ctx, func(addr sdk.ConsAddress) bool {
-		addrs = append(addrs, addr)
-		return false
-	})
-
-	for _, a := range addrs {
-		k.DeleteOutstandingDowntime(ctx, a.String())
-	}
 }
 
 // SetCCValidator sets a cross-chain validator under its validator address
@@ -462,14 +402,6 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 	return validators
 }
 
-// ClearCCValidators deletes all cross-chain validators in store
-func (k Keeper) ClearCCValidators(ctx sdk.Context) {
-	vals := k.GetAllCCValidator(ctx)
-	for _, v := range vals {
-		k.DeleteCCValidator(ctx, v.Address)
-	}
-}
-
 // SetPendingSlashRequests sets the pending slash requests in store
 func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests []types.SlashRequest) {
 	store := ctx.KVStore(k.storeKey)
@@ -497,15 +429,15 @@ func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) (requests []types.Slash
 	return
 }
 
+// ClearPendingSlashRequests clears the pending slash requests in store
+func (k Keeper) DeletePendingSlashRequests(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete([]byte{types.PendingSlashRequestsBytePrefix})
+}
+
 // AppendPendingSlashRequests appends the given slash request to the pending slash requests in store
 func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashRequest) {
 	requests := k.GetPendingSlashRequests(ctx)
 	requests = append(requests, req)
 	k.SetPendingSlashRequests(ctx, requests)
-}
-
-// ClearPendingSlashRequests clears the pending slash requests in store
-func (k Keeper) ClearPendingSlashRequests(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete([]byte{types.PendingSlashRequestsBytePrefix})
 }

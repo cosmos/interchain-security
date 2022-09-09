@@ -59,7 +59,8 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	// set height to VSC id mapping
 	k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())+1, newChanges.ValsetUpdateId)
 
-	// set outstanding slashing flags to false
+	// remove outstanding slashing flags of the validators
+	// for which the slashing was acknowledged by the provider chain
 	for _, addr := range newChanges.GetSlashAcks() {
 		k.DeleteOutstandingDowntime(ctx, addr)
 	}
@@ -192,7 +193,7 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 	}
 
 	// clear pending slash requests
-	k.ClearPendingSlashRequests(ctx)
+	k.DeletePendingSlashRequests(ctx)
 }
 
 // OnAcknowledgementPacket handles acknowledgments for sent VSCMatured and Slash packets

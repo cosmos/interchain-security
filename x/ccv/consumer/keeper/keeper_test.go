@@ -632,7 +632,7 @@ func (suite *KeeperTestSuite) TestPendingSlashRequests() {
 		operation: func() { consumerKeeper.AppendPendingSlashRequests(ctx, types.SlashRequest{}) },
 		expLen:    11,
 	}, {
-		operation: func() { consumerKeeper.ClearPendingSlashRequests(ctx) },
+		operation: func() { consumerKeeper.DeletePendingSlashRequests(ctx) },
 		expLen:    0,
 	},
 	}
@@ -689,10 +689,14 @@ func (suite *KeeperTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.
 	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
 }
 
+// TestProviderChannelClosed checks that a consumer chain panic
+// when its provider channel was established and then closed
 func (suite *KeeperTestSuite) TestProviderChannelClosed() {
-	// Init consumer states and provider channel
 	suite.SetupCCVChannel()
+
+	// established provider channel with a first VSC packet
 	suite.SendEmptyVSCPacket()
+
 	channelID, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
 	suite.Require().True(found)
 
@@ -701,74 +705,13 @@ func (suite *KeeperTestSuite) TestProviderChannelClosed() {
 	suite.Require().NoError(err)
 	suite.Require().True(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IsChannelClosed(suite.consumerChain.GetContext(), channelID))
 
-	// Init all consumer states left
-	consAddr := sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Address().Bytes())
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetOutstandingDowntime(suite.consumerChain.GetContext(), consAddr)
-	err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingChanges(
-		suite.consumerChain.GetContext(),
-		ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1},
-	)
-	suite.Require().NoError(err)
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetPendingSlashRequests(
-		suite.consumerChain.GetContext(),
-		[]types.SlashRequest{{Infraction: stakingtypes.Downtime}, {Infraction: stakingtypes.DoubleSign}},
-	)
-
-	// check that begin blocker panics when the channel is closed
-	// and that the provider states are cleaned up
+	// defered function that asserts that begin blocker did panics
 	defer func() {
 		if r := recover(); r != nil {
-			_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
-			suite.Require().False(found)
-
-			_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
-			suite.Require().False(found)
-
-			_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(suite.consumerChain.GetContext())
-			suite.Require().False(found)
-
-			p := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPort(suite.consumerChain.GetContext())
-			suite.Require().Zero(p)
-
-			vals := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetAllCCValidator(suite.consumerChain.GetContext())
-			suite.Require().Zero(vals)
-
-			_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPendingChanges(suite.consumerChain.GetContext())
-			suite.Require().False(found)
-
-			_, found = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.consumerChain.GetContext())
-			suite.Require().False(found)
-
-			suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IteratePacketMaturityTime(suite.consumerChain.GetContext(), func(vscId, timeNs uint64) bool {
-				suite.Require().Fail("packet maturity time is not empty")
-				return true
-			})
-
-			suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IterateOutstandingDowntime(suite.consumerChain.GetContext(), func(_ sdk.ConsAddress) bool {
-				suite.Require().Fail("outstanding downtime is not empty")
-				return true
-			})
-
-			suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IterateHistoricalInfo(suite.consumerChain.GetContext(), func(_ uint64) bool {
-				suite.Require().Fail("historical info is not empty")
-				return true
-			})
-
-			suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IterateHeightValsetUpdateID(suite.consumerChain.GetContext(), func(height uint64) bool {
-				suite.Require().Fail("height to valset update ID mapping is not empty")
-				return true
-			})
-
-			reqs := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPendingSlashRequests(suite.consumerChain.GetContext())
-			suite.Require().Zero(reqs)
-
-			suite.Require().Zero(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetParams(suite.consumerChain.GetContext()))
-
 			return
 		}
 		suite.Require().Fail("Begin blocker did not panic with a closed channel")
 
 	}()
 	suite.consumerChain.App.(*appConsumer.App).BeginBlocker(suite.consumerChain.GetContext(), abci.RequestBeginBlock{})
-
 }
