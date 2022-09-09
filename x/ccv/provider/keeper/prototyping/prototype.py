@@ -15,9 +15,6 @@ class KeyDelegation:
                 # If validator is known to the consumer
                 self.localKeysForWhichUpdateMustBeSent.add(v)
 
-    def GetLocalKey(self, foreignKey):
-        return self.foreignKeyToLocalKey[foreignKey]
-
     def ComputeUpdates(self, vscid, localUpdates):
         updates = {}
         # Ship updates for any
