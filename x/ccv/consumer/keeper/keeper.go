@@ -317,19 +317,6 @@ func (k Keeper) GetHeightValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 	return binary.BigEndian.Uint64(bz)
 }
 
-// IterateHeightValsetUpdateID iterates over the valset update ids recorded for a given block height
-func (k Keeper) IterateHeightValsetUpdateID(ctx sdk.Context, cb func(height uint64) bool) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		height := binary.BigEndian.Uint64(iterator.Key()[1:])
-		if cb(height) {
-			break
-		}
-	}
-}
-
 // DeleteHeightValsetUpdateID deletes the valset update id for a given block height
 func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 	store := ctx.KVStore(k.storeKey)

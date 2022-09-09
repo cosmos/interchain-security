@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -202,31 +201,4 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 
 	// Set latest HistoricalInfo at current height
 	k.SetHistoricalInfo(ctx, ctx.BlockHeight(), &historicalEntry)
-}
-
-// IterateHistoricalInfo iterates over the historical info for each block height in a ascendingorder
-func (k Keeper) IterateHistoricalInfo(ctx sdk.Context, cb func(height uint64) bool) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HistoricalInfoBytePrefix})
-
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		height := binary.BigEndian.Uint64(iterator.Key()[1:])
-
-		if cb(height) {
-			break
-		}
-	}
-}
-
-// ClearHistoricalInfo clears the historical info in stores
-func (k Keeper) ClearHistoricalInfo(ctx sdk.Context) {
-	heights := []uint64{}
-	k.IterateHistoricalInfo(ctx, func(h uint64) bool {
-		heights = append(heights, h)
-		return false
-	})
-	for _, h := range heights {
-		k.DeleteHistoricalInfo(ctx, int64(h))
-	}
 }
