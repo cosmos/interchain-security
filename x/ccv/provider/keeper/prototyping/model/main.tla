@@ -18,57 +18,6 @@ VARIABLES
     \* @type: Set(<<Int, Int>>);
     awaitedVSCIds
 
-InitConsumer ==
-    /\ actionKind' = "InitConsumer"
-    /\ UNCHANGED  nextVSCId
-    /\ nextConsumerId' = nextConsumerId + 1
-    /\ initialisingConsumers' = initialisingConsumers \cup {nextConsumerId}
-    /\ UNCHANGED activeConsumers
-    /\ UNCHANGED awaitedVSCIds
-    
-ActivateConsumer == 
-    /\ actionKind' = "ActivateConsumer"
-    /\ UNCHANGED nextVSCId
-    /\ UNCHANGED nextConsumerId
-    /\ \E c \in initialisingConsumers:
-        /\ initialisingConsumers' = initialisingConsumers \ {c}
-        /\ activeConsumers' = activeConsumers \cup {c}
-    /\ UNCHANGED awaitedVSCIds
-
-StopConsumer == 
-    /\ actionKind' = "StopConsumer"
-    /\ UNCHANGED nextVSCId
-    /\ UNCHANGED nextConsumerId
-    /\  \/ \E c \in initialisingConsumers:
-            /\ initialisingConsumers' = initialisingConsumers \ {c}
-            /\ UNCHANGED activeConsumers
-            /\ UNCHANGED awaitedVSCIds
-        \/ \E c \in activeConsumers:
-            /\ UNCHANGED initialisingConsumers
-            /\ activeConsumers' = activeConsumers \ {c}
-            /\ awaitedVSCIds' = {pair \in awaitedVSCIds: pair[1] # c}
-
-(*
-After EndBlock the SUT will check that the ref cnts are 0 for every
-VSCID that does not appear in awaited, and that ref cnts are positive
-for every VSCID that does appear in awaited
-*)
-EndBlock == 
-    /\ actionKind' = "EndBlock"
-    /\ nextVSCId' = nextVSCId + 1
-    /\ UNCHANGED nextConsumerId
-    /\ UNCHANGED initialisingConsumers
-    /\ UNCHANGED  activeConsumers
-    /\ awaitedVSCIds' = awaitedVSCIds \cup {<<c, nextVSCId>> : c \in activeConsumers}
-    
-RecvMaturity == 
-    /\ actionKind' = "RecvMaturity"
-    /\ UNCHANGED nextVSCId
-    /\ UNCHANGED nextConsumerId
-    /\ UNCHANGED initialisingConsumers
-    /\ UNCHANGED activeConsumers
-    /\ \E pair \in awaitedVSCIds:
-        awaitedVSCIds' = awaitedVSCIds \ {pair} 
 
 Init == 
     /\ actionKind = "Init"
@@ -78,13 +27,21 @@ Init ==
     /\ activeConsumers = {}
     /\ awaitedVSCIds = {}
 
-Next == 
-    \/ InitConsumer
-    \/ ActivateConsumer 
-    \/ StopConsumer
-    \/ EndBlock
-    \/ RecvMaturity
+EndBlock == 
 
-Inv == \A pair \in awaitedVSCIds : pair[1] \in (initialisingConsumers \cup activeConsumers)
+SetKey ==
+
+ReceiveSlash == 
+
+ReceiveMaturity ==
+
+Next == 
+    \/ EndBlock
+    \/ SetKey
+    \/ ReceiveSlash
+    \/ ReceiveMaturity
+
+\* When a validator had a positive power on the consumer, it was slashable up until UNBONDING_PERIOD later
+Inv == 
 
 ====
