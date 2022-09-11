@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -87,15 +86,10 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 		return nil
 	}
 
-	store := ctx.KVStore(k.storeKey)
-	maturityIterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
-	defer maturityIterator.Close()
-
+	var iterErr error
 	currentTime := uint64(ctx.BlockTime().UnixNano())
-
-	for maturityIterator.Valid() {
-		vscId := types.IdFromPacketMaturityTimeKey(maturityIterator.Key())
-		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
+	k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) bool {
+		if currentTime >= timeNs {
 			// send VSCMatured packet
 			// - construct validator set change packet data
 			packetData := ccv.NewVSCMaturedPacketData(vscId)
@@ -109,13 +103,18 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 				packetData.GetBytes(),
 			)
 			if err != nil {
-				return err
+				iterErr = err
+				return true
 			}
 			k.DeletePacketMaturityTime(ctx, vscId)
 		} else {
-			break
+			return true
 		}
-		maturityIterator.Next()
+		return false
+	})
+
+	if iterErr != nil {
+		return iterErr
 	}
 	return nil
 }

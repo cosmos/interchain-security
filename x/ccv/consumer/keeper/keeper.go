@@ -241,12 +241,12 @@ func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		// Extract bytes following the 1 byte prefix
-		seqBytes := iterator.Key()[1:]
-		seq := binary.BigEndian.Uint64(seqBytes)
+		vscIdBytes := iterator.Key()[1:]
+		vscId := binary.BigEndian.Uint64(vscIdBytes)
 
 		timeNs := binary.BigEndian.Uint64(iterator.Value())
 
-		if cb(seq, timeNs) {
+		if cb(vscId, timeNs) {
 			break
 		}
 	}
