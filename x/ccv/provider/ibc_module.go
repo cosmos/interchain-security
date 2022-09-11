@@ -102,9 +102,8 @@ func validateCCVChannelParams(
 	}
 
 	// the port ID must match the port ID the CCV module is bounded to
-	boundPort := keeper.GetPort(ctx)
-	if boundPort != portID {
-		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
+	if ccv.ProviderPortID != portID {
+		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, ccv.ProviderPortID)
 	}
 	return nil
 }
