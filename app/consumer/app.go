@@ -119,10 +119,10 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:                    nil,
-		ibcconsumertypes.ConsumerRedistributeName:     nil,
-		ibcconsumertypes.ConsumerToSendToProviderName: nil,
-		ibctransfertypes.ModuleName:                   {authtypes.Minter, authtypes.Burner},
+		authtypes.FeeCollectorName:                nil,
+		ibcconsumertypes.ConsumerRedistributeName: nil,
+		ibcconsumertypes.SendToProviderName:       nil,
+		ibctransfertypes.ModuleName:               {authtypes.Minter, authtypes.Burner},
 	}
 )
 

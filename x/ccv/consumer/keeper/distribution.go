@@ -24,22 +24,20 @@ const ConsumerRedistributeFrac = "0.75"
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
 func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
-
-	ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
-	if err != nil {
-		return err
-	}
-
+	// Get the address of the consumer fee pool, and get the tokens it currently contains
 	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
 	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 
-	// split the fee pool, send the consumer's fraction to the consumer redistribution address
+	// Get the fraction of rewards and fees that will be kept by the consumer
 	frac, err := sdk.NewDecFromStr(ConsumerRedistributeFrac)
 	if err != nil {
 		return err
 	}
+
+	// Split the fee tokens and send the ones that will remain on the consumer
+	// to the consumer redistribute account. TruncateDecimal leaves a remainder.
+	// We ignore it here and this remainder will be sent to the provider below.
 	decFPTokens := sdk.NewDecCoinsFromCoins(fpTokens...)
-	// NOTE the truncated decimal remainder will be sent to the provider fee pool
 	consRedistrTokens, _ := decFPTokens.MulDec(frac).TruncateDecimal()
 	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
 		types.ConsumerRedistributeName, consRedistrTokens)
@@ -47,32 +45,34 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		return err
 	}
 
-	// Send the remainder to the Provider fee pool over ibc. Buffer these
-	// through a secondary address on the consumer chain to ensure that the
-	// tokens do not go through the consumer redistribute split twice in the
-	// event that the transfer fails the tokens are returned to the consumer
-	// chain.
+	// Send the rest of the tokens to the SendToProvider buffer address.
 	remainingTokens := fpTokens.Sub(consRedistrTokens)
 	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
-		types.ConsumerToSendToProviderName, remainingTokens)
+		types.SendToProviderName, remainingTokens)
 	if err != nil {
 		return err
 	}
 
+	// Check if enough blocks have passed to send a reward transfer.
+	ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
+	if err != nil {
+		return err
+	}
 	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
 	curHeight := ctx.BlockHeight()
-
 	if (curHeight - ltbh.Height) < bpdt {
 		// not enough blocks have passed for  a transmission to occur
 		return nil
 	}
 
-	// empty out the toSendToProviderTokens address
+	// Send tokens in SendToProvider account to the provider.
+	// If this fails for some reason, the tokens will stay in the SendToProvider account,
+	// and will end up getting sent whenever it next works.
 	ch := k.GetDistributionTransmissionChannel(ctx)
 	transferChannel, found := k.channelKeeper.GetChannel(ctx, transfertypes.PortID, ch)
 	if found && transferChannel.State == channeltypes.OPEN {
 		tstProviderAddr := k.authKeeper.GetModuleAccount(ctx,
-			types.ConsumerToSendToProviderName).GetAddress()
+			types.SendToProviderName).GetAddress()
 		tstProviderTokens := k.bankKeeper.GetAllBalances(ctx, tstProviderAddr)
 		providerAddr := k.GetProviderFeePoolAddrStr(ctx)
 		timeoutHeight := clienttypes.ZeroHeight()
