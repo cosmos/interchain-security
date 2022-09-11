@@ -295,7 +295,7 @@ func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 	store.Delete(types.UnbondingOpKey(id))
 }
 
-// This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
+// This index allows retreiving UnbondingOps by chainID and valsetUpdateID
 func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, IDs []uint64) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -335,7 +335,7 @@ func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb 
 	}
 }
 
-// This index allows retrieving UnbondingDelegationEntries by chainID and valsetUpdateID
+// This index allows retrieving UnbondingOps by chainID and valsetUpdateID
 func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) ([]uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -353,28 +353,27 @@ func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 	return ids, true
 }
 
-// This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
+// This index allows retreiving UnbondingOps by chainID and valsetUpdateID
 func (k Keeper) DeleteUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.UnbondingOpIndexKey(chainID, valsetUpdateID))
 }
 
-// Retrieve UnbondingDelegationEntries by chainID and valsetUpdateID
-func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (entries []ccv.UnbondingOp, found bool) {
+// Retrieve UnbondingOps by chainID and valsetUpdateID
+func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (ops []ccv.UnbondingOp, found bool) {
 	ids, found := k.GetUnbondingOpIndex(ctx, chainID, valsetUpdateID)
 	if !found {
-		return entries, false
+		return ops, false
 	}
 	for _, id := range ids {
 		entry, found := k.GetUnbondingOp(ctx, id)
 		if !found {
-			// TODO JEHAN: is this the correct way to deal with this?
 			panic("did not find UnbondingOp according to index- index was probably not correctly updated")
 		}
-		entries = append(entries, entry)
+		ops = append(ops, entry)
 	}
 
-	return entries, true
+	return ops, true
 }
 
 // GetMaturedUnbondingOps returns the list of matured unbonding operation ids
