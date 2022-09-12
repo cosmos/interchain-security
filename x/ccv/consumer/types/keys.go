@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/binary"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
@@ -28,6 +29,9 @@ const (
 
 	// ConsumerToSendToProviderName is a "buffer" address for outgoing fees to be transferred to the provider chain
 	ConsumerToSendToProviderName = "cons_to_send_to_provider"
+
+	// UnbondingPeriod is the time duration to mature the VSC packets
+	UnbondingPeriod time.Duration = 48 * time.Hour
 )
 
 // Iota generated keys/key prefixes (as a byte), supports 256 possible values
