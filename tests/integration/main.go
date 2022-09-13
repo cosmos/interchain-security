@@ -65,6 +65,8 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 		tr.transferChannelComplete(action, verbose)
 	case relayPacketsAction:
 		tr.relayPackets(action, verbose)
+	case relayRewardPacketsToProviderAction:
+		tr.relayRewardPacketsToProvider(action, verbose)
 	case delegateTokensAction:
 		tr.delegateTokens(action, verbose)
 	case unbondTokensAction:
@@ -75,8 +77,8 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 		tr.invokeDowntimeSlash(action, verbose)
 	case unjailValidatorAction:
 		tr.unjailValidator(action, verbose)
-	case registerRepresentAction:
-		tr.registerRepresent(action, verbose)
+	case registerRepresentativeAction:
+		tr.registerRepresentative(action, verbose)
 	default:
 		log.Fatalf(fmt.Sprintf(`unknown action: %#v`, action))
 	}

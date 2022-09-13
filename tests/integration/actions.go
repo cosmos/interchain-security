@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -704,6 +705,27 @@ func (tr TestRun) relayPackets(
 	}
 }
 
+type relayRewardPacketsToProviderAction struct {
+	consumerChain chainID
+	providerChain chainID
+	port          string
+	channel       uint
+}
+
+func (tr TestRun) relayRewardPacketsToProvider(
+	action relayRewardPacketsToProviderAction,
+	verbose bool,
+) {
+	blockPerDistribution, _ := strconv.ParseUint(strings.Trim(tr.getParam(action.consumerChain, Param{Subspace: "ccvconsumer", Key: "BlocksPerDistributionTransmission"}), "\""), 10, 64)
+	currentBlock := uint64(tr.getBlockHeight(action.consumerChain))
+	if currentBlock <= blockPerDistribution {
+		tr.waitBlocks(action.consumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
+	}
+
+	tr.relayPackets(relayPacketsAction{chain: action.consumerChain, port: action.port, channel: action.channel}, verbose)
+	tr.waitBlocks(action.providerChain, 1, 10*time.Second)
+}
+
 type delegateTokensAction struct {
 	chain  chainID
 	from   validatorID
@@ -896,18 +918,18 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 	}
 }
 
-type registerRepresentAction struct {
-	chain      chainID
-	represents []validatorID
-	stakes     []uint
+type registerRepresentativeAction struct {
+	chain           chainID
+	representatives []validatorID
+	stakes          []uint
 }
 
-func (tr TestRun) registerRepresent(
-	action registerRepresentAction,
+func (tr TestRun) registerRepresentative(
+	action registerRepresentativeAction,
 	verbose bool,
 ) {
 	var wg sync.WaitGroup
-	for i, val := range action.represents {
+	for i, val := range action.representatives {
 		wg.Add(1)
 		stake := action.stakes[i]
 		go func(val validatorID, stake uint) {

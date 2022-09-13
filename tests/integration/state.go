@@ -17,11 +17,12 @@ import (
 type State map[chainID]ChainState
 
 type ChainState struct {
-	ValBalances     *map[validatorID]uint
-	Proposals       *map[uint]Proposal
-	ValPowers       *map[validatorID]uint
-	RepresentPowers *map[validatorID]uint
-	Params          *[]Param
+	ValBalances          *map[validatorID]uint
+	Proposals            *map[uint]Proposal
+	ValPowers            *map[validatorID]uint
+	RepresentativePowers *map[validatorID]uint
+	Params               *[]Param
+	Rewards              *Rewards
 }
 
 type Proposal interface {
@@ -42,6 +43,16 @@ type ConsumerProposal struct {
 	SpawnTime     int
 	InitialHeight clienttypes.Height
 	Status        string
+}
+
+type Rewards struct {
+	IsRewarded map[validatorID]bool
+	//if true it will calculate if the validator/delegator is rewarded between 2 successive blocks,
+	//otherwise it will calculate if it received any rewards since the 1st block
+	IsIncrementalReward bool
+	//if true checks rewards for "stake" token, otherwise checks rewards from
+	//other chains (e.g. false is used to check if provider received rewards from a consumer chain)
+	IsNativeDenom bool
 }
 
 func (p ConsumerProposal) isProposal() {}
@@ -90,14 +101,19 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 		chainState.ValPowers = &powers
 	}
 
-	if modelState.RepresentPowers != nil {
-		representPowers := tr.getRepresentPowers(chain, *modelState.RepresentPowers)
-		chainState.RepresentPowers = &representPowers
+	if modelState.RepresentativePowers != nil {
+		representPowers := tr.getRepresentativePowers(chain, *modelState.RepresentativePowers)
+		chainState.RepresentativePowers = &representPowers
 	}
 
 	if modelState.Params != nil {
 		params := tr.getParams(chain, *modelState.Params)
 		chainState.Params = &params
+	}
+
+	if modelState.Rewards != nil {
+		rewards := tr.getRewards(chain, *modelState.Rewards)
+		chainState.Rewards = &rewards
 	}
 
 	return chainState
@@ -169,10 +185,10 @@ func (tr TestRun) getValPowers(chain chainID, modelState map[validatorID]uint) m
 	return actualState
 }
 
-func (tr TestRun) getRepresentPowers(chain chainID, modelState map[validatorID]uint) map[validatorID]uint {
+func (tr TestRun) getRepresentativePowers(chain chainID, modelState map[validatorID]uint) map[validatorID]uint {
 	actualState := map[validatorID]uint{}
 	for k := range modelState {
-		actualState[k] = tr.getRepresentPower(chain, k)
+		actualState[k] = tr.getRepresentativePower(chain, k)
 	}
 
 	return actualState
@@ -185,6 +201,48 @@ func (tr TestRun) getParams(chain chainID, modelState []Param) []Param {
 	}
 
 	return actualState
+}
+
+func (tr TestRun) getRewards(chain chainID, modelState Rewards) Rewards {
+	receivedRewards := map[validatorID]bool{}
+
+	currentBlock := tr.getBlockHeight(chain)
+	tr.waitBlocks(chain, 1, 10*time.Second)
+	nextBlock := tr.getBlockHeight(chain)
+	tr.waitBlocks(chain, 1, 10*time.Second)
+
+	if !modelState.IsIncrementalReward {
+		currentBlock = 1
+	}
+	for k := range modelState.IsRewarded {
+		receivedRewards[k] = tr.getReward(chain, k, nextBlock, modelState.IsNativeDenom) > tr.getReward(chain, k, currentBlock, modelState.IsNativeDenom)
+	}
+
+	return Rewards{IsRewarded: receivedRewards, IsIncrementalReward: modelState.IsIncrementalReward, IsNativeDenom: modelState.IsNativeDenom}
+}
+
+func (tr TestRun) getReward(chain chainID, validator validatorID, blockHeight uint, isNativeDenom bool) float64 {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+
+		"query", "distribution", "rewards",
+		tr.validatorConfigs[validator].delAddress,
+
+		`--height`, fmt.Sprint(blockHeight),
+		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
+		`-o`, `json`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	denomCondition := `total.#(denom!="stake").amount`
+	if isNativeDenom {
+		denomCondition = `total.#(denom=="stake").amount`
+	}
+
+	return gjson.Get(string(bz), denomCondition).Float()
 }
 
 func (tr TestRun) getBalance(chain chainID, validator validatorID) uint {
@@ -341,7 +399,7 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 	return 0
 }
 
-func (tr TestRun) getRepresentPower(chain chainID, validator validatorID) uint {
+func (tr TestRun) getRepresentativePower(chain chainID, validator validatorID) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
 
