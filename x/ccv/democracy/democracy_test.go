@@ -18,7 +18,6 @@ import (
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 
@@ -91,7 +90,7 @@ func (s *ConsumerDemocracyTestSuite) SetupTest() {
 	s.Require().True(found, "consumer client not found")
 	s.path.EndpointB.ClientID = consumerClient
 	// - set consumer endpoint's clientID
-	providerClient, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClient(s.consumerChain.GetContext())
+	providerClient, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(s.consumerChain.GetContext())
 	s.Require().True(found, "provider client not found")
 	s.path.EndpointA.ClientID = providerClient
 	// - client config
@@ -102,8 +101,8 @@ func (s *ConsumerDemocracyTestSuite) SetupTest() {
 	s.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
 	s.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
 	// - channel config
-	s.path.EndpointA.ChannelConfig.PortID = consumertypes.PortID
-	s.path.EndpointB.ChannelConfig.PortID = providertypes.PortID
+	s.path.EndpointA.ChannelConfig.PortID = types.ConsumerPortID
+	s.path.EndpointB.ChannelConfig.PortID = types.ProviderPortID
 	s.path.EndpointA.ChannelConfig.Version = types.Version
 	s.path.EndpointB.ChannelConfig.Version = types.Version
 	s.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED

@@ -259,7 +259,7 @@ func New(
 		capabilitytypes.StoreKey, authzkeeper.StoreKey,
 		ibcconsumertypes.StoreKey,
 	)
-	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, ccvstakingtypes.TStoreKey)
+	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	app := &App{
@@ -334,7 +334,6 @@ func New(
 	ccvstakingKeeper := ccvstakingkeeper.NewKeeper(
 		appCodec,
 		keys[ccvstakingtypes.StoreKey],
-		tkeys[ccvstakingtypes.TStoreKey],
 		app.AccountKeeper,
 		app.BankKeeper,
 		app.GetSubspace(ccvstakingtypes.ModuleName),
