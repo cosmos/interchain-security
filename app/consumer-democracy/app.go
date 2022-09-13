@@ -80,19 +80,16 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
-	// add ccv distribution CALUM
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	ccvdistrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
 	ccvdistrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	ccvdistrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	ccvdistr "github.com/cosmos/interchain-security/x/ccv/democracy/distribution"
 
-	// add ccv staking BILY
 	ccvstakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	ccvstakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ccvstaking "github.com/cosmos/interchain-security/x/ccv/democracy/staking"
 
-	// add gov Billy
 	ccvgov "github.com/cosmos/cosmos-sdk/x/gov"
 	ccvgovkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	ccvgovtypes "github.com/cosmos/cosmos-sdk/x/gov/types"

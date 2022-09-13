@@ -65,7 +65,7 @@ func NewProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibc
 	return coordinator, providerChain, consumerChain
 }
 
-// NewCoordinator initializes Coordinator with 0 TestChains
+// NewCoordinator initializes Coordinator with provider and democracy consumer TestChains
 func NewProviderConsumerDemocracyCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain) {
 	coordinator := NewBasicCoordinator(t)
 	chainID := ibctesting.GetChainID(1)

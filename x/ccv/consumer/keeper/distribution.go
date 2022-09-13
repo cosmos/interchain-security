@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"fmt"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -42,11 +41,9 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	decFPTokens := sdk.NewDecCoinsFromCoins(fpTokens...)
 	// NOTE the truncated decimal remainder will be sent to the provider fee pool
 	consRedistrTokens, _ := decFPTokens.MulDec(frac).TruncateDecimal()
-	fmt.Println("consRedistrTokens", consRedistrTokens)
 	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName,
 		types.ConsumerRedistributeName, consRedistrTokens)
 	if err != nil {
-		fmt.Println("error sending to ConsumerRedistributeName", err)
 		return err
 	}
 
