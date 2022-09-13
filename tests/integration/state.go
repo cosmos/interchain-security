@@ -17,9 +17,11 @@ import (
 type State map[chainID]ChainState
 
 type ChainState struct {
-	ValBalances *map[validatorID]uint
-	Proposals   *map[uint]Proposal
-	ValPowers   *map[validatorID]uint
+	ValBalances     *map[validatorID]uint
+	Proposals       *map[uint]Proposal
+	ValPowers       *map[validatorID]uint
+	RepresentPowers *map[validatorID]uint
+	Params          *[]Param
 }
 
 type Proposal interface {
@@ -43,6 +45,22 @@ type ConsumerProposal struct {
 }
 
 func (p ConsumerProposal) isProposal() {}
+
+type ParamsProposal struct {
+	Deposit  uint
+	Status   string
+	Subspace string
+	Key      string
+	Value    string
+}
+
+func (p ParamsProposal) isProposal() {}
+
+type Param struct {
+	Subspace string
+	Key      string
+	Value    string
+}
 
 func (tr TestRun) getState(modelState State) State {
 	systemState := State{}
@@ -70,6 +88,16 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 		tr.waitBlocks(chain, 1, 10*time.Second)
 		powers := tr.getValPowers(chain, *modelState.ValPowers)
 		chainState.ValPowers = &powers
+	}
+
+	if modelState.RepresentPowers != nil {
+		representPowers := tr.getRepresentPowers(chain, *modelState.RepresentPowers)
+		chainState.RepresentPowers = &representPowers
+	}
+
+	if modelState.Params != nil {
+		params := tr.getParams(chain, *modelState.Params)
+		chainState.Params = &params
 	}
 
 	return chainState
@@ -136,6 +164,24 @@ func (tr TestRun) getValPowers(chain chainID, modelState map[validatorID]uint) m
 	actualState := map[validatorID]uint{}
 	for k := range modelState {
 		actualState[k] = tr.getValPower(chain, k)
+	}
+
+	return actualState
+}
+
+func (tr TestRun) getRepresentPowers(chain chainID, modelState map[validatorID]uint) map[validatorID]uint {
+	actualState := map[validatorID]uint{}
+	for k := range modelState {
+		actualState[k] = tr.getRepresentPower(chain, k)
+	}
+
+	return actualState
+}
+
+func (tr TestRun) getParams(chain chainID, modelState []Param) []Param {
+	actualState := []Param{}
+	for _, p := range modelState {
+		actualState = append(actualState, Param{Subspace: p.Subspace, Key: p.Key, Value: tr.getParam(chain, p)})
 	}
 
 	return actualState
@@ -222,7 +268,14 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 				RevisionHeight: gjson.Get(string(bz), `content.initial_height.revision_height`).Uint(),
 			},
 		}
-
+	case "/cosmos.params.v1beta1.ParameterChangeProposal":
+		return ParamsProposal{
+			Deposit:  uint(deposit),
+			Status:   status,
+			Subspace: gjson.Get(string(bz), `content.changes.0.subspace`).String(),
+			Key:      gjson.Get(string(bz), `content.changes.0.key`).String(),
+			Value:    gjson.Get(string(bz), `content.changes.0.value`).String(),
+		}
 	}
 
 	log.Fatal("unknown proposal type", string(bz))
@@ -286,6 +339,47 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 
 	// Validator not in set, its validator power is zero.
 	return 0
+}
+
+func (tr TestRun) getRepresentPower(chain chainID, validator validatorID) uint {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+
+		"query", "staking", "validator",
+		tr.validatorConfigs[validator].valoperAddress,
+
+		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
+		`-o`, `json`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	amount := gjson.Get(string(bz), `tokens`)
+
+	return uint(amount.Uint())
+}
+
+func (tr TestRun) getParam(chain chainID, param Param) string {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+
+		"query", "params", "subspace",
+		param.Subspace,
+		param.Key,
+
+		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
+		`-o`, `json`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	value := gjson.Get(string(bz), `value`)
+
+	return value.String()
 }
 
 // Gets a default validator for txs and queries using the first subdirectory

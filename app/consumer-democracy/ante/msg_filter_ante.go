@@ -22,6 +22,7 @@ type (
 	}
 )
 
+// TODO Ethernal: remove this, it is duplicated (consumerante does the same thing)
 func NewMsgFilterDecorator(k ConsumerKeeper) MsgFilterDecorator {
 	return MsgFilterDecorator{
 		ConsumerKeeper: k,

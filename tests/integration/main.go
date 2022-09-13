@@ -14,6 +14,7 @@ import (
 var verbose = true
 
 func main() {
+	fmt.Println("============================================ start happy path tests ============================================")
 	start := time.Now()
 	tr := DefaultTestRun()
 	tr.ParseCLIFlags()
@@ -24,7 +25,17 @@ func main() {
 		tr.runStep(step, verbose)
 	}
 
-	fmt.Printf("test successful - time elapsed %v\n", time.Since(start))
+	fmt.Printf("happy path tests successful - time elapsed %v\n", time.Since(start))
+
+	fmt.Println("============================================ start democracy path tests ============================================")
+	start = time.Now()
+	tr.startDocker()
+
+	for _, step := range democracySteps {
+		tr.runStep(step, verbose)
+	}
+
+	fmt.Printf("democracy path tests successful - time elapsed %v\n", time.Since(start))
 }
 
 func (tr TestRun) runStep(step Step, verbose bool) {
@@ -38,6 +49,8 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 		tr.submitTextProposal(action, verbose)
 	case submitConsumerProposalAction:
 		tr.submitConsumerProposal(action, verbose)
+	case submitParamChangeProposalAction:
+		tr.submitParamChangeProposal(action, verbose)
 	case voteGovProposalAction:
 		tr.voteGovProposal(action, verbose)
 	case startConsumerChainAction:
@@ -48,6 +61,8 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 		tr.addIbcConnection(action, verbose)
 	case addIbcChannelAction:
 		tr.addIbcChannel(action, verbose)
+	case transferChannelCompleteAction:
+		tr.transferChannelComplete(action, verbose)
 	case relayPacketsAction:
 		tr.relayPackets(action, verbose)
 	case delegateTokensAction:
@@ -60,6 +75,8 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 		tr.invokeDowntimeSlash(action, verbose)
 	case unjailValidatorAction:
 		tr.unjailValidator(action, verbose)
+	case registerRepresentAction:
+		tr.registerRepresent(action, verbose)
 	default:
 		log.Fatalf(fmt.Sprintf(`unknown action: %#v`, action))
 	}

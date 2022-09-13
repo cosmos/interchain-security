@@ -1,5 +1,6 @@
 package democracy_test
 
+// TODO Ethernal: move to e2e folder, remove commented code
 import (
 	"bytes"
 	"fmt"
