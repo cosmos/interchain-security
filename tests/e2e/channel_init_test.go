@@ -716,8 +716,7 @@ func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
 		{
 			"valid consumer removal proposal", func(suite *ProviderTestSuite) {
 				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content, err = types.NewConsumerRemovalProposal("title", "description", "chainID", time.Now())
-				suite.Require().NoError(err)
+				content = types.NewConsumerRemovalProposal("title", "description", "chainID", time.Now())
 			}, true,
 		},
 		{

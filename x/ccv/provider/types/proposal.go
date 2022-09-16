@@ -90,13 +90,13 @@ func (cccp *ConsumerAdditionProposal) String() string {
 }
 
 // NewConsumerRemovalProposal creates a new consumer removal proposal.
-func NewConsumerRemovalProposal(title, description, chainID string, stopTime time.Time) (govtypes.Content, error) {
+func NewConsumerRemovalProposal(title, description, chainID string, stopTime time.Time) govtypes.Content {
 	return &ConsumerRemovalProposal{
 		Title:       title,
 		Description: description,
 		ChainId:     chainID,
 		StopTime:    stopTime,
-	}, nil
+	}
 }
 
 // ProposalRoute returns the routing key of a consumer removal proposal.

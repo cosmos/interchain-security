@@ -115,8 +115,7 @@ func (s *ProviderTestSuite) TestConsumerRemovalProposal() {
 
 				// ctx blocktime is after proposal's stop time
 				ctx = s.providerCtx().WithBlockTime(time.Now().Add(time.Hour))
-				content, err := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now())
-				s.Require().NoError(err)
+				content := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now())
 				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
 				s.Require().True(ok)
 			}, true, true,
@@ -126,8 +125,7 @@ func (s *ProviderTestSuite) TestConsumerRemovalProposal() {
 
 				// ctx blocktime is before proposal's stop time
 				ctx = s.providerCtx().WithBlockTime(time.Now())
-				content, err := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now().Add(time.Hour))
-				s.Require().NoError(err)
+				content := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now().Add(time.Hour))
 				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
 				s.Require().True(ok)
 			}, true, false,
@@ -141,8 +139,7 @@ func (s *ProviderTestSuite) TestConsumerRemovalProposal() {
 				// set invalid unbonding op index
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetUnbondingOpIndex(ctx, chainID, 0, []uint64{0})
 
-				content, err := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now())
-				s.Require().NoError(err)
+				content := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now())
 				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
 				s.Require().True(ok)
 			}, false, true,
