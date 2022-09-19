@@ -29,10 +29,10 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// CreateConsumerChainProposal is a governance proposal on the provider chain to spawn a new consumer chain.
+// ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
 // If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
 // or get slashed. It is recommended that spawn time occurs after the proposal end time.
-type CreateConsumerChainProposal struct {
+type ConsumerAdditionProposal struct {
 	// the title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	// the description of the proposal
@@ -56,17 +56,17 @@ type CreateConsumerChainProposal struct {
 	LockUnbondingOnTimeout bool `protobuf:"varint,8,opt,name=lock_unbonding_on_timeout,json=lockUnbondingOnTimeout,proto3" json:"lock_unbonding_on_timeout,omitempty"`
 }
 
-func (m *CreateConsumerChainProposal) Reset()      { *m = CreateConsumerChainProposal{} }
-func (*CreateConsumerChainProposal) ProtoMessage() {}
-func (*CreateConsumerChainProposal) Descriptor() ([]byte, []int) {
+func (m *ConsumerAdditionProposal) Reset()      { *m = ConsumerAdditionProposal{} }
+func (*ConsumerAdditionProposal) ProtoMessage() {}
+func (*ConsumerAdditionProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f22ec409a72b7b72, []int{0}
 }
-func (m *CreateConsumerChainProposal) XXX_Unmarshal(b []byte) error {
+func (m *ConsumerAdditionProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *CreateConsumerChainProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ConsumerAdditionProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_CreateConsumerChainProposal.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ConsumerAdditionProposal.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -76,22 +76,22 @@ func (m *CreateConsumerChainProposal) XXX_Marshal(b []byte, deterministic bool) 
 		return b[:n], nil
 	}
 }
-func (m *CreateConsumerChainProposal) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateConsumerChainProposal.Merge(m, src)
+func (m *ConsumerAdditionProposal) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ConsumerAdditionProposal.Merge(m, src)
 }
-func (m *CreateConsumerChainProposal) XXX_Size() int {
+func (m *ConsumerAdditionProposal) XXX_Size() int {
 	return m.Size()
 }
-func (m *CreateConsumerChainProposal) XXX_DiscardUnknown() {
-	xxx_messageInfo_CreateConsumerChainProposal.DiscardUnknown(m)
+func (m *ConsumerAdditionProposal) XXX_DiscardUnknown() {
+	xxx_messageInfo_ConsumerAdditionProposal.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_CreateConsumerChainProposal proto.InternalMessageInfo
+var xxx_messageInfo_ConsumerAdditionProposal proto.InternalMessageInfo
 
 // StopConsumerProposal is a governance proposal on the provider chain to stop a consumer chain.
 // If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
 // operation funds are released if the LockUnbondingOnTimeout parameter is set to false for the consumer chain ID.
-type StopConsumerChainProposal struct {
+type ConsumerRemovalProposal struct {
 	// the title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	// the description of the proposal
@@ -102,18 +102,18 @@ type StopConsumerChainProposal struct {
 	StopTime time.Time `protobuf:"bytes,4,opt,name=stop_time,json=stopTime,proto3,stdtime" json:"stop_time"`
 }
 
-func (m *StopConsumerChainProposal) Reset()         { *m = StopConsumerChainProposal{} }
-func (m *StopConsumerChainProposal) String() string { return proto.CompactTextString(m) }
-func (*StopConsumerChainProposal) ProtoMessage()    {}
-func (*StopConsumerChainProposal) Descriptor() ([]byte, []int) {
+func (m *ConsumerRemovalProposal) Reset()         { *m = ConsumerRemovalProposal{} }
+func (m *ConsumerRemovalProposal) String() string { return proto.CompactTextString(m) }
+func (*ConsumerRemovalProposal) ProtoMessage()    {}
+func (*ConsumerRemovalProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f22ec409a72b7b72, []int{1}
 }
-func (m *StopConsumerChainProposal) XXX_Unmarshal(b []byte) error {
+func (m *ConsumerRemovalProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *StopConsumerChainProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ConsumerRemovalProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_StopConsumerChainProposal.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ConsumerRemovalProposal.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -123,40 +123,40 @@ func (m *StopConsumerChainProposal) XXX_Marshal(b []byte, deterministic bool) ([
 		return b[:n], nil
 	}
 }
-func (m *StopConsumerChainProposal) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StopConsumerChainProposal.Merge(m, src)
+func (m *ConsumerRemovalProposal) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ConsumerRemovalProposal.Merge(m, src)
 }
-func (m *StopConsumerChainProposal) XXX_Size() int {
+func (m *ConsumerRemovalProposal) XXX_Size() int {
 	return m.Size()
 }
-func (m *StopConsumerChainProposal) XXX_DiscardUnknown() {
-	xxx_messageInfo_StopConsumerChainProposal.DiscardUnknown(m)
+func (m *ConsumerRemovalProposal) XXX_DiscardUnknown() {
+	xxx_messageInfo_ConsumerRemovalProposal.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_StopConsumerChainProposal proto.InternalMessageInfo
+var xxx_messageInfo_ConsumerRemovalProposal proto.InternalMessageInfo
 
-func (m *StopConsumerChainProposal) GetTitle() string {
+func (m *ConsumerRemovalProposal) GetTitle() string {
 	if m != nil {
 		return m.Title
 	}
 	return ""
 }
 
-func (m *StopConsumerChainProposal) GetDescription() string {
+func (m *ConsumerRemovalProposal) GetDescription() string {
 	if m != nil {
 		return m.Description
 	}
 	return ""
 }
 
-func (m *StopConsumerChainProposal) GetChainId() string {
+func (m *ConsumerRemovalProposal) GetChainId() string {
 	if m != nil {
 		return m.ChainId
 	}
 	return ""
 }
 
-func (m *StopConsumerChainProposal) GetStopTime() time.Time {
+func (m *ConsumerRemovalProposal) GetStopTime() time.Time {
 	if m != nil {
 		return m.StopTime
 	}
@@ -261,8 +261,8 @@ func (m *HandshakeMetadata) GetVersion() string {
 }
 
 func init() {
-	proto.RegisterType((*CreateConsumerChainProposal)(nil), "interchain_security.ccv.provider.v1.CreateConsumerChainProposal")
-	proto.RegisterType((*StopConsumerChainProposal)(nil), "interchain_security.ccv.provider.v1.StopConsumerChainProposal")
+	proto.RegisterType((*ConsumerAdditionProposal)(nil), "interchain_security.ccv.provider.v1.ConsumerAdditionProposal")
+	proto.RegisterType((*ConsumerRemovalProposal)(nil), "interchain_security.ccv.provider.v1.ConsumerRemovalProposal")
 	proto.RegisterType((*Params)(nil), "interchain_security.ccv.provider.v1.Params")
 	proto.RegisterType((*HandshakeMetadata)(nil), "interchain_security.ccv.provider.v1.HandshakeMetadata")
 }
@@ -314,7 +314,7 @@ var fileDescriptor_f22ec409a72b7b72 = []byte{
 	0x00, 0x00,
 }
 
-func (m *CreateConsumerChainProposal) Marshal() (dAtA []byte, err error) {
+func (m *ConsumerAdditionProposal) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -324,12 +324,12 @@ func (m *CreateConsumerChainProposal) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *CreateConsumerChainProposal) MarshalTo(dAtA []byte) (int, error) {
+func (m *ConsumerAdditionProposal) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *CreateConsumerChainProposal) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ConsumerAdditionProposal) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -400,7 +400,7 @@ func (m *CreateConsumerChainProposal) MarshalToSizedBuffer(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 
-func (m *StopConsumerChainProposal) Marshal() (dAtA []byte, err error) {
+func (m *ConsumerRemovalProposal) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -410,12 +410,12 @@ func (m *StopConsumerChainProposal) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *StopConsumerChainProposal) MarshalTo(dAtA []byte) (int, error) {
+func (m *ConsumerRemovalProposal) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *StopConsumerChainProposal) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ConsumerRemovalProposal) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -535,7 +535,7 @@ func encodeVarintProvider(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *CreateConsumerChainProposal) Size() (n int) {
+func (m *ConsumerAdditionProposal) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -571,7 +571,7 @@ func (m *CreateConsumerChainProposal) Size() (n int) {
 	return n
 }
 
-func (m *StopConsumerChainProposal) Size() (n int) {
+func (m *ConsumerRemovalProposal) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -630,7 +630,7 @@ func sovProvider(x uint64) (n int) {
 func sozProvider(x uint64) (n int) {
 	return sovProvider(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *CreateConsumerChainProposal) Unmarshal(dAtA []byte) error {
+func (m *ConsumerAdditionProposal) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -653,10 +653,10 @@ func (m *CreateConsumerChainProposal) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: CreateConsumerChainProposal: wiretype end group for non-group")
+			return fmt.Errorf("proto: ConsumerAdditionProposal: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CreateConsumerChainProposal: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ConsumerAdditionProposal: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -930,7 +930,7 @@ func (m *CreateConsumerChainProposal) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *StopConsumerChainProposal) Unmarshal(dAtA []byte) error {
+func (m *ConsumerRemovalProposal) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -953,10 +953,10 @@ func (m *StopConsumerChainProposal) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: StopConsumerChainProposal: wiretype end group for non-group")
+			return fmt.Errorf("proto: ConsumerRemovalProposal: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: StopConsumerChainProposal: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ConsumerRemovalProposal: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

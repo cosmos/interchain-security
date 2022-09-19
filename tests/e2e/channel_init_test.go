@@ -704,18 +704,17 @@ func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
 		expPass  bool
 	}{
 		{
-			"valid create consumer chain proposal", func(suite *ProviderTestSuite) {
+			"valid consumer addition proposal", func(suite *ProviderTestSuite) {
 				initialHeight := clienttypes.NewHeight(2, 3)
 				// ctx blocktime is after proposal's spawn time
 				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content = types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
+				content = types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
 			}, true,
 		},
 		{
-			"valid stop consumer chain proposal", func(suite *ProviderTestSuite) {
+			"valid consumer removal proposal", func(suite *ProviderTestSuite) {
 				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content, err = types.NewStopConsumerChainProposal("title", "description", "chainID", time.Now())
-				suite.Require().NoError(err)
+				content = types.NewConsumerRemovalProposal("title", "description", "chainID", time.Now())
 			}, true,
 		},
 		{
