@@ -83,6 +83,9 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx()
+		defer ctrl.Finish()
+		ctx = ctx.WithBlockTime(tc.accessTime)
 
 		// Keeper is setup in the same way whether the tested proposal is expected to be stored as pending
 		// or not. Mock calls however, are only asserted if we expect a client to be created.
@@ -291,7 +294,8 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 			ExpDeleted:               false,
 		},
 	}
-	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	defer ctrl.Finish()
 
 	for _, tc := range testCases {
 		err := providerKeeper.SetPendingConsumerAdditionProp(ctx, &tc.ConsumerAdditionProposal)
@@ -363,7 +367,9 @@ func TestPendingConsumerAdditionPropOrder(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+		providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+		defer ctrl.Finish()
+
 		ctx = ctx.WithBlockTime(tc.accessTime)
 
 		for _, prop := range tc.propSubmitOrder {
