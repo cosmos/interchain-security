@@ -7,6 +7,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/golang/mock/gomock"
 
@@ -83,19 +85,21 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx()
-		defer ctrl.Finish()
-		ctx = ctx.WithBlockTime(tc.accessTime)
-
-		// Keeper is setup in the same way whether the tested proposal is expected to be stored as pending
-		// or not. Mock calls however, are only asserted if we expect a client to be created.
-		ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper := setupKeeper(t)
+		// Common setup
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		ctrl := gomock.NewController(t)
+		mocks := testkeeper.NewMockedKeepers(ctrl)
+		ctx := keeperParams.Ctx
+		providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		if tc.expCreatedClient {
-			setupMocksForClientCreation(ctx, providerKeeper, mockClientKeeper, mockStakingKeeper,
-				tc.prop.ChainId, tc.prop.InitialHeight, clientIDToInject)
+			// Mock calls are only asserted if we expect a client to be created.
+			gomock.InOrder(
+				getMocksForClientCreation(ctx, &mocks, "chainID", clienttypes.NewHeight(4, 5), "clientID")...,
+			)
+
 		}
 
 		tc.prop.LockUnbondingOnTimeout = false // Full functionality not implemented yet.
@@ -123,71 +127,61 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 // Spec tag: [CCV-PCF-CRCLIENT.1]
 func TestCreateConsumerClient(t *testing.T) {
 
-	// Arbitrary values used in the following tests and assertions
-	const (
-		arbitraryClientID = "clientID"
-		arbitraryChainID  = "chainID"
-		lockUbdOnTimeout  = false // Always set to false as is.
-	)
-
-	var (
-		arbitraryLatestHeight = clienttypes.NewHeight(4, 5)
-	)
-
 	type testCase struct {
 		description string
-		// Any state-mutating setup specific to this test case
-		testSetup func() (sdk.Context, *gomock.Controller, providerkeeper.Keeper)
+		// Any state-mutating setup on keeper and expected mock calls, specific to this test case
+		setup func(*providerkeeper.Keeper, sdk.Context, *testkeeper.MockedKeepers)
 		// Whether a client should be created
 		expClientCreated bool
 	}
 	tests := []testCase{
 		{
-			description: "No odd state mutation, new client should be created",
-			testSetup: func() (sdk.Context, *gomock.Controller, providerkeeper.Keeper) {
-
-				ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper := setupKeeper(t)
+			description: "No state mutation, new client should be created",
+			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
 
 				// Valid client creation is asserted with mock expectations here
-				setupMocksForClientCreation(ctx, providerKeeper, mockClientKeeper, mockStakingKeeper,
-					arbitraryChainID, arbitraryLatestHeight, arbitraryClientID)
-
-				return ctx, ctrl, providerKeeper
+				gomock.InOrder(
+					getMocksForClientCreation(ctx, mocks, "chainID", clienttypes.NewHeight(4, 5), "clientID")...,
+				)
 			},
 			expClientCreated: true,
 		},
 		{
 			description: "client for this chain already exists, new one is not created",
-			testSetup: func() (sdk.Context, *gomock.Controller, providerkeeper.Keeper) {
+			setup: func(providerKeeper *providerkeeper.Keeper, ctx sdk.Context, mocks *testkeeper.MockedKeepers) {
 
-				ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper := setupKeeper(t)
-
-				providerKeeper.SetConsumerClientId(ctx, arbitraryChainID, arbitraryClientID)
+				providerKeeper.SetConsumerClientId(ctx, "chainID", "clientID")
 
 				// Expect none of the client creation related calls to happen
-				mockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Times(0)
-				mockClientKeeper.EXPECT().CreateClient(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-				mockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(), gomock.Any()).Times(0)
-				mockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).Times(0)
+				mocks.MockStakingKeeper.EXPECT().UnbondingTime(gomock.Any()).Times(0)
+				mocks.MockClientKeeper.EXPECT().CreateClient(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+				mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(gomock.Any(), gomock.Any()).Times(0)
+				mocks.MockStakingKeeper.EXPECT().IterateLastValidatorPowers(gomock.Any(), gomock.Any()).Times(0)
 
-				return ctx, ctrl, providerKeeper
 			},
 			expClientCreated: false,
 		},
 	}
 
 	for _, tc := range tests {
-		// Setup
-		ctx, ctrl, providerKeeper := tc.testSetup()
+		// Common setup
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		ctrl := gomock.NewController(t)
+		mocks := testkeeper.NewMockedKeepers(ctrl)
+		ctx := keeperParams.Ctx
+		providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
-		// Call method with arbitrary const values defined above.
+		// Test specific setup
+		tc.setup(&providerKeeper, ctx, &mocks)
+
+		// Call method with same arbitrary values as defined above in mock expectations.
 		err := providerKeeper.CreateConsumerClient(
-			ctx, arbitraryChainID, arbitraryLatestHeight, lockUbdOnTimeout)
+			ctx, "chainID", clienttypes.NewHeight(4, 5), false) // LockUbdOnTimeout always false for now
 
 		require.NoError(t, err)
 
 		if tc.expClientCreated {
-			testCreatedConsumerClient(t, ctx, providerKeeper, arbitraryChainID, arbitraryClientID)
+			testCreatedConsumerClient(t, ctx, providerKeeper, "chainID", "clientID")
 		}
 
 		// Assert mock calls from setup functions
@@ -216,18 +210,16 @@ func testCreatedConsumerClient(t *testing.T,
 	require.True(t, ok)
 }
 
-// Sets up mock call expectations for a consumer client being created.
-func setupMocksForClientCreation(ctx sdk.Context, providerKeeper providerkeeper.Keeper,
-	mockClientKeeper *testkeeper.MockClientKeeper,
-	mockStakingKeeper *testkeeper.MockStakingKeeper,
-	expectedChainID string, expectedLatestHeight clienttypes.Height, clientIDToInject string) {
+// Returns mock call expectations for a consumer client being created.
+func getMocksForClientCreation(ctx sdk.Context, mocks *testkeeper.MockedKeepers,
+	expectedChainID string, expectedLatestHeight clienttypes.Height, clientIDToInject string) []*gomock.Call {
 
-	gomock.InOrder(
-		mockStakingKeeper.EXPECT().UnbondingTime(ctx).Return(time.Hour).Times(
+	return []*gomock.Call{
+		mocks.MockStakingKeeper.EXPECT().UnbondingTime(ctx).Return(time.Hour).Times(
 			1, // called once in CreateConsumerClient
 		),
 
-		mockClientKeeper.EXPECT().CreateClient(
+		mocks.MockClientKeeper.EXPECT().CreateClient(
 			ctx,
 			// Allows us to expect a match by field. These are the only two client state values
 			// that are dependant on parameters passed to CreateConsumerClient.
@@ -238,47 +230,17 @@ func setupMocksForClientCreation(ctx sdk.Context, providerKeeper providerkeeper.
 			gomock.Any(),
 		).Return(clientIDToInject, nil).Times(1),
 
-		mockStakingKeeper.EXPECT().UnbondingTime(ctx).Return(time.Hour).Times(
+		mocks.MockStakingKeeper.EXPECT().UnbondingTime(ctx).Return(time.Hour).Times(
 			1, // called again in MakeConsumerGenesis
 		),
 
-		mockClientKeeper.EXPECT().GetSelfConsensusState(ctx,
+		mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(ctx,
 			clienttypes.GetSelfHeight(ctx)).Return(&ibctmtypes.ConsensusState{}, nil).Times(1),
 
-		mockStakingKeeper.EXPECT().IterateLastValidatorPowers(ctx, gomock.Any()).Times(1),
-	)
+		mocks.MockStakingKeeper.EXPECT().IterateLastValidatorPowers(ctx, gomock.Any()).Times(1),
+	}
 }
 
-// Sets up keepers in a way that's common to testing proposals and client creation in this file.
-func setupKeeper(t *testing.T) (
-	sdk.Context, *gomock.Controller, providerkeeper.Keeper,
-	*testkeeper.MockClientKeeper, *testkeeper.MockStakingKeeper) {
-
-	// TODO: Use the refactored unit test helpers, then maybe this method wont be needed anymore
-
-	ctrl := gomock.NewController(t)
-	cdc, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
-
-	testkeeper.SetTemplateClientState(ctx, &paramsSubspace)
-
-	mockClientKeeper := testkeeper.NewMockClientKeeper(ctrl)
-	mockStakingKeeper := testkeeper.NewMockStakingKeeper(ctrl)
-
-	providerKeeper := testkeeper.GetProviderKeeperWithMocks(
-		cdc,
-		storeKey,
-		paramsSubspace,
-		testkeeper.NewMockScopedKeeper(ctrl),
-		testkeeper.NewMockChannelKeeper(ctrl),
-		testkeeper.NewMockPortKeeper(ctrl),
-		testkeeper.NewMockConnectionKeeper(ctrl),
-		mockClientKeeper,
-		mockStakingKeeper,
-		testkeeper.NewMockSlashingKeeper(ctrl),
-		testkeeper.NewMockAccountKeeper(ctrl),
-	)
-	return ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper
-}
 func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 
 	testCases := []struct {
@@ -389,10 +351,10 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 	type testCase struct {
 		description string
-		prop        *types.ConsumerRemovalProposal
-		// Any state-mutating setup specific to this test case
-		testSetup func() (sdk.Context, *gomock.Controller, providerkeeper.Keeper,
-			*testkeeper.MockClientKeeper, *testkeeper.MockStakingKeeper)
+		// Consumer removal proposal to handle
+		prop *types.ConsumerRemovalProposal
+		// State-mutating setup specific to this test case
+		setup func(sdk.Context, *providerkeeper.Keeper)
 		// Time when prop is handled
 		blockTime time.Time
 		// Whether we should expect the method to return an error
@@ -401,98 +363,111 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		expStop bool
 	}
 
-	//
-	// TODO: Merge unit test refactors into this PR, then continue below.
-	// TODO: Need to have all keeper setup(s) defined in testSetup function, with returned values only
 	// TODO: Make sure to cover everything that was covered before in the e2e test.
-	//
 
 	// Snapshot times asserted in tests
 	now := time.Now().UTC()
 	hourFromNow := now.Add(time.Hour).UTC()
 
 	tests := []testCase{
-		// TODO: Use prop constructor once refactors are done
 		{
 			description: "valid stop consumer chain proposal: stop time reached",
-			prop: &providertypes.ConsumerRemovalProposal{
-				Title:       "title",
-				Description: "description",
-				ChainId:     "chainId",
-				StopTime:    now,
-			},
-			testSetup: func() (sdk.Context, *gomock.Controller, providerkeeper.Keeper,
-				*testkeeper.MockClientKeeper, *testkeeper.MockStakingKeeper) {
-				ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper := setupKeeper(t)
-				return ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper
-			},
+			prop: providertypes.NewConsumerRemovalProposal(
+				"title",
+				"description",
+				"chainId",
+				now,
+			).(*providertypes.ConsumerRemovalProposal),
+			setup:     func(sdk.Context, *providerkeeper.Keeper) {},
 			blockTime: hourFromNow, // After stop time.
 			expErr:    false,
 			expStop:   true,
 		},
-		{
-			description: "valid proposal: stop time has not yet been reached",
-			prop: &providertypes.ConsumerRemovalProposal{
-				Title:       "title",
-				Description: "description",
-				ChainId:     "chainId",
-				StopTime:    hourFromNow,
-			},
-			testSetup: func() (sdk.Context, *gomock.Controller, providerkeeper.Keeper,
-				*testkeeper.MockClientKeeper, *testkeeper.MockStakingKeeper) {
-				ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper := setupKeeper(t)
-				return ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper
-			},
-			blockTime: now, // Before proposal's stop time
-			expErr:    false,
-			expStop:   false,
-		},
-		{
-			description: "valid proposal: fail due to an invalid unbonding index",
-			prop: &providertypes.ConsumerRemovalProposal{
-				Title:       "title",
-				Description: "description",
-				ChainId:     "chainId",
-				StopTime:    now,
-			},
-			testSetup: func() (sdk.Context, *gomock.Controller, providerkeeper.Keeper,
-				*testkeeper.MockClientKeeper, *testkeeper.MockStakingKeeper) {
-				ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper := setupKeeper(t)
-				// set invalid unbonding op index
-				providerKeeper.SetUnbondingOpIndex(ctx, "chainId", 0, []uint64{0})
-				return ctx, ctrl, providerKeeper, mockClientKeeper, mockStakingKeeper
-			},
-			blockTime: hourFromNow,
-			expErr:    true,
-			expStop:   true,
-		},
+		// {
+		// 	description: "valid proposal: stop time has not yet been reached",
+		// 	prop: providertypes.NewConsumerRemovalProposal(
+		// 		"title",
+		// 		"description",
+		// 		"chainId",
+		// 		hourFromNow,
+		// 	).(*providertypes.ConsumerRemovalProposal),
+		// 	setup:     func(sdk.Context, *providerkeeper.Keeper) {},
+		// 	blockTime: now, // Before proposal's stop time
+		// 	expErr:    false,
+		// 	expStop:   false,
+		// },
+		// {
+		// 	description: "valid proposal: fail due to an invalid unbonding index",
+		// 	prop: providertypes.NewConsumerRemovalProposal(
+		// 		"title",
+		// 		"description",
+		// 		"chainId",
+		// 		now,
+		// 	).(*providertypes.ConsumerRemovalProposal),
+		// 	setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper) {
+		// 		// set invalid unbonding op index
+		// 		providerKeeper.SetUnbondingOpIndex(ctx, "chainId", 0, []uint64{0})
+		// 	},
+		// 	blockTime: hourFromNow, // After stop time.
+		// 	expErr:    true,
+		// 	expStop:   true,
+		// },
 		// TODO: test case that client id already exists
 	}
 
 	for _, tc := range tests {
-
 		// Common setup
-		ctx, _, providerKeeper, mockClientKeeper, mockStakingKeeper := tc.testSetup()
-		ctx = ctx.WithBlockTime(tc.blockTime)
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		ctx := keeperParams.Ctx.WithBlockTime(tc.blockTime)
+		testkeeper.SetTemplateClientState(ctx, keeperParams.ParamsSubspace)
+		ctrl := gomock.NewController(t)
+		mocks := testkeeper.NewMockedKeepers(ctrl)
+
+		// Mock expectations
 		injectedClientID := "clientID"
-		setupMocksForClientCreation(ctx, providerKeeper, mockClientKeeper, mockStakingKeeper,
+		expectations := getMocksForClientCreation(ctx, &mocks,
 			tc.prop.ChainId, clienttypes.NewHeight(2, 3), injectedClientID)
-		providerKeeper.CreateConsumerClient(ctx, tc.prop.ChainId, clienttypes.NewHeight(2, 3), false)
-
 		injectedChannelId := "channelID"
-		// TODO Mock channel keeper
 
-		err := providerKeeper.SetConsumerChain(ctx, injectedChannelId)
+		// Mocks for SetConsumerChain called below
+		expectations = append(expectations,
+			mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, gomock.Any()).Return(
+				channeltypes.Channel{
+					State:          channeltypes.OPEN,
+					ConnectionHops: []string{"connectionID"},
+				},
+				true,
+			).Times(1),
+			mocks.MockConnectionKeeper.EXPECT().GetConnection(ctx, "connectionID").Return(
+				conntypes.ConnectionEnd{ClientId: injectedClientID}, true,
+			).Times(1),
+			mocks.MockClientKeeper.EXPECT().GetClientState(ctx, injectedClientID).Return(
+				&ibctmtypes.ClientState{ChainId: tc.prop.ChainId}, true,
+			).Times(1),
+		)
+
+		// Mocks for actually stopping the consumer chain
+		expectations = append(expectations,
+			getMocksForStoppingConsumer(ctx, &mocks, injectedChannelId)...,
+		)
+		gomock.InOrder(expectations...)
+
+		// Keeper setup
+		providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
+		err := providerKeeper.CreateConsumerClient(ctx, tc.prop.ChainId, clienttypes.NewHeight(2, 3), false)
 		require.NoError(t, err)
-		// TODO: make better here after updating downstream
-		setupMocksForClosingChannel(ctx, providerKeeper, nil, nil)
+		err = providerKeeper.SetConsumerChain(ctx, injectedChannelId)
+		require.NoError(t, err)
+
+		// Setup specific to test case
+		tc.setup(ctx, &providerKeeper)
 
 		err = providerKeeper.HandleConsumerRemovalProposal(ctx, tc.prop)
 
 		if tc.expErr {
-			require.NoError(t, err)
-		} else {
 			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
 		}
 
 		if tc.expStop {
@@ -507,7 +482,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		}
 
 		// Assert mock calls from setup functions
-		// ctrl.Finish()
+		ctrl.Finish()
 	}
 }
 
@@ -535,20 +510,20 @@ func testStoppedConsumerChain(t *testing.T, ctx sdk.Context, providerKeeper prov
 	// TODO:  Mas around unbonding ops
 }
 
-// Sets up mock call expectations for a channel being closed.
-func setupMocksForClosingChannel(ctx sdk.Context, providerKeeper providerkeeper.Keeper,
-	mockChannelKeeper *testkeeper.MockChannelKeeper,
-	mockScopedKeeper *testkeeper.MockScopedKeeper) {
-
+// Returns mock call expectations for a consumer being stopped. See StopConsumerChain
+func getMocksForStoppingConsumer(ctx sdk.Context, mocks *testkeeper.MockedKeepers,
+	channelIDToInject string) []*gomock.Call {
 	dummyCap := &capabilitytypes.Capability{}
-	// TODO: might need to combine with previous expects
-	gomock.InOrder(
-		mockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID,
-			gomock.Any()).Return("channelID", true).Times(1),
-		mockScopedKeeper.EXPECT().GetCapability(ctx, gomock.Any()).Return(dummyCap, true).Times(1),
-		mockChannelKeeper.EXPECT().ChanCloseInit(ctx, ccv.ProviderPortID, "channelID", dummyCap),
-	)
+	return []*gomock.Call{
+		// mocks.MockScopedKeeper.EXPECT().GetCapability(ctx, gomock.Any()).Return(dummyCap, true).Times(1),
+		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, channelIDToInject).Return(
+			channeltypes.Channel{State: channeltypes.OPEN}, true,
+		).Times(1),
+		mocks.MockScopedKeeper.EXPECT().GetCapability(ctx, gomock.Any()).Return(dummyCap, true).Times(1),
+		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(ctx, ccv.ProviderPortID, channelIDToInject, dummyCap).Times(1),
+	}
 }
+
 func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 
 	testCases := []struct {
@@ -564,7 +539,8 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 			ExpDeleted:              false,
 		},
 	}
-	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	defer ctrl.Finish()
 
 	for _, tc := range testCases {
 		providerKeeper.SetPendingConsumerRemovalProp(ctx, tc.ChainId, tc.StopTime)
@@ -635,7 +611,8 @@ func TestPendingConsumerRemovalPropOrder(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+		providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+		defer ctrl.Finish()
 		ctx = ctx.WithBlockTime(tc.accessTime)
 
 		for _, prop := range tc.propSubmitOrder {
