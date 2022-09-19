@@ -23,7 +23,7 @@ import (
 	extra "github.com/oxyno-zeta/gomock-extra-matcher"
 )
 
-// TODO(Shawn): Finish commenting all tests in this file
+// TODO: Finish putting spec tags and links all over the place, then editing the coverage file.
 
 //
 // Initialization sub-protocol related tests of proposal.go
@@ -210,7 +210,7 @@ func testCreatedConsumerClient(t *testing.T,
 	require.True(t, ok)
 }
 
-// Returns mock call expectations for a consumer client being created.
+// getMocksForClientCreation returns mock call expectations for a consumer client being created.
 func getMocksForClientCreation(ctx sdk.Context, mocks *testkeeper.MockedKeepers,
 	expectedChainID string, expectedLatestHeight clienttypes.Height, clientIDToInject string) []*gomock.Call {
 
@@ -241,6 +241,8 @@ func getMocksForClientCreation(ctx sdk.Context, mocks *testkeeper.MockedKeepers,
 	}
 }
 
+// TestPendingConsumerAdditionPropDeletion tests the getting/setting
+// and deletion of consumer addition props
 func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 
 	testCases := []struct {
@@ -282,7 +284,8 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 	}
 }
 
-// Tests that pending consumer addition proposals are accessed in order by timestamp via the iterator
+// TestPendingConsumerAdditionPropOrder tests that pending consumer addition proposals
+// are accessed in order by timestamp via the iterator
 func TestPendingConsumerAdditionPropOrder(t *testing.T) {
 
 	now := time.Now().UTC()
@@ -347,23 +350,21 @@ func TestPendingConsumerAdditionPropOrder(t *testing.T) {
 // Consumer Chain Removal sub-protocol related tests of proposal.go
 //
 
+// TestHandleConsumerRemovalProposal tests HandleConsumerRemovalProposal against its corresponding spec method.
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stccprop1
+// Spec tag: [CCV-PCF-STCCPROP.1]
 func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 	type testCase struct {
 		description string
 		// Consumer removal proposal to handle
 		prop *types.ConsumerRemovalProposal
-		// State-mutating setup specific to this test case
-		setup func(sdk.Context, *providerkeeper.Keeper)
 		// Time when prop is handled
 		blockTime time.Time
-		// Whether we should expect the method to return an error
-		expErr bool
 		// Whether consumer chain should have been stopped
 		expStop bool
 	}
-
-	// TODO: Make sure to cover everything that was covered before in the e2e test.
 
 	// Snapshot times asserted in tests
 	now := time.Now().UTC()
@@ -371,98 +372,121 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 	tests := []testCase{
 		{
-			description: "valid stop consumer chain proposal: stop time reached",
+			description: "valid proposal: stop time reached",
 			prop: providertypes.NewConsumerRemovalProposal(
 				"title",
 				"description",
-				"chainId",
+				"chainID",
 				now,
 			).(*providertypes.ConsumerRemovalProposal),
-			setup:     func(sdk.Context, *providerkeeper.Keeper) {},
 			blockTime: hourFromNow, // After stop time.
-			expErr:    false,
 			expStop:   true,
 		},
-		// {
-		// 	description: "valid proposal: stop time has not yet been reached",
-		// 	prop: providertypes.NewConsumerRemovalProposal(
-		// 		"title",
-		// 		"description",
-		// 		"chainId",
-		// 		hourFromNow,
-		// 	).(*providertypes.ConsumerRemovalProposal),
-		// 	setup:     func(sdk.Context, *providerkeeper.Keeper) {},
-		// 	blockTime: now, // Before proposal's stop time
-		// 	expErr:    false,
-		// 	expStop:   false,
-		// },
-		// {
-		// 	description: "valid proposal: fail due to an invalid unbonding index",
-		// 	prop: providertypes.NewConsumerRemovalProposal(
-		// 		"title",
-		// 		"description",
-		// 		"chainId",
-		// 		now,
-		// 	).(*providertypes.ConsumerRemovalProposal),
-		// 	setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper) {
-		// 		// set invalid unbonding op index
-		// 		providerKeeper.SetUnbondingOpIndex(ctx, "chainId", 0, []uint64{0})
-		// 	},
-		// 	blockTime: hourFromNow, // After stop time.
-		// 	expErr:    true,
-		// 	expStop:   true,
-		// },
-		// TODO: test case that client id already exists
+		{
+			description: "valid proposal: stop time has not yet been reached",
+			prop: providertypes.NewConsumerRemovalProposal(
+				"title",
+				"description",
+				"chainID",
+				hourFromNow,
+			).(*providertypes.ConsumerRemovalProposal),
+			blockTime: now, // Before proposal's stop time
+			expStop:   false,
+		},
 	}
 
 	for _, tc := range tests {
+
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		ctx := keeperParams.Ctx.WithBlockTime(tc.blockTime)
 		testkeeper.SetTemplateClientState(ctx, keeperParams.ParamsSubspace)
 		ctrl := gomock.NewController(t)
 		mocks := testkeeper.NewMockedKeepers(ctrl)
-
-		// Mock expectations
-		injectedClientID := "clientID"
-		expectations := getMocksForClientCreation(ctx, &mocks,
-			tc.prop.ChainId, clienttypes.NewHeight(2, 3), injectedClientID)
-		injectedChannelId := "channelID"
-
-		// Mocks for SetConsumerChain called below
-		expectations = append(expectations,
-			mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, gomock.Any()).Return(
-				channeltypes.Channel{
-					State:          channeltypes.OPEN,
-					ConnectionHops: []string{"connectionID"},
-				},
-				true,
-			).Times(1),
-			mocks.MockConnectionKeeper.EXPECT().GetConnection(ctx, "connectionID").Return(
-				conntypes.ConnectionEnd{ClientId: injectedClientID}, true,
-			).Times(1),
-			mocks.MockClientKeeper.EXPECT().GetClientState(ctx, injectedClientID).Return(
-				&ibctmtypes.ClientState{ChainId: tc.prop.ChainId}, true,
-			).Times(1),
-		)
-
-		// Mocks for actually stopping the consumer chain
-		expectations = append(expectations,
-			getMocksForStoppingConsumer(ctx, &mocks, injectedChannelId)...,
-		)
-		gomock.InOrder(expectations...)
-
-		// Keeper setup
 		providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
-		err := providerKeeper.CreateConsumerClient(ctx, tc.prop.ChainId, clienttypes.NewHeight(2, 3), false)
+
+		// Mock expectations and setup for stopping the consumer chain, if applicable
+		if tc.expStop {
+			setupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
+		}
+		// Note: when expStop is false, no mocks are setup,
+		// meaning no external keeper methods are allowed to be called.
+
+		err := providerKeeper.HandleConsumerRemovalProposal(ctx, tc.prop)
 		require.NoError(t, err)
-		err = providerKeeper.SetConsumerChain(ctx, injectedChannelId)
-		require.NoError(t, err)
+
+		if tc.expStop {
+			// Expect no pending proposal to exist
+			found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
+			require.False(t, found)
+
+			testConsumerStateIsCleaned(t, ctx, providerKeeper, tc.prop.ChainId, "channelID")
+		} else {
+			// Proposal should be stored as pending
+			found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
+			require.True(t, found)
+		}
+
+		// Assert mock calls from setup function
+		ctrl.Finish()
+	}
+}
+
+// Tests the StopConsumerChain method against the spec,
+// with more granularity than what's covered in TestHandleConsumerRemovalProposal, or e2e tests.
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stcc1
+// Spec tag: [CCV-PCF-STCC.1]
+func TestStopConsumerChain(t *testing.T) {
+	type testCase struct {
+		description string
+		// State-mutating setup specific to this test case
+		setup func(sdk.Context, *providerkeeper.Keeper, testkeeper.MockedKeepers)
+		// Whether we should expect the method to return an error
+		expErr bool
+	}
+
+	tests := []testCase{
+		{
+			description: "fail due to an invalid unbonding index",
+			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				// set invalid unbonding op index
+				providerKeeper.SetUnbondingOpIndex(ctx, "chainID", 0, []uint64{0})
+
+				// StopConsumerChain should return error, but state is still cleaned (asserted with mocks).
+				setupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
+			},
+			expErr: true,
+		},
+		{
+			description: "proposal dropped, client doesn't exist",
+			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				// No mocks, meaning no external keeper methods are allowed to be called.
+			},
+			expErr: false,
+		},
+		{
+			description: "valid stop of consumer chain, all mock calls hit",
+			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				setupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
+			},
+			expErr: false,
+		},
+	}
+
+	for _, tc := range tests {
+
+		// Common setup
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		ctx := keeperParams.Ctx
+		testkeeper.SetTemplateClientState(ctx, keeperParams.ParamsSubspace)
+		ctrl := gomock.NewController(t)
+		mocks := testkeeper.NewMockedKeepers(ctrl)
+		providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 		// Setup specific to test case
-		tc.setup(ctx, &providerKeeper)
+		tc.setup(ctx, &providerKeeper, mocks)
 
-		err = providerKeeper.HandleConsumerRemovalProposal(ctx, tc.prop)
+		err := providerKeeper.StopConsumerChain(ctx, "chainID", false, true)
 
 		if tc.expErr {
 			require.Error(t, err)
@@ -470,31 +494,59 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		if tc.expStop {
-			testStoppedConsumerChain(t, ctx, providerKeeper, tc.prop.ChainId, injectedChannelId)
-		} else {
-			// Proposal should be stored as pending
-			found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
-			require.True(t, found)
-			// double check that a client for this chain does still exist
-			_, found = providerKeeper.GetConsumerClientId(ctx, tc.prop.ChainId)
-			require.True(t, found)
-		}
+		testConsumerStateIsCleaned(t, ctx, providerKeeper, "chainID", "channelID")
 
-		// Assert mock calls from setup functions
 		ctrl.Finish()
 	}
 }
 
-// TODO: Test https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stcc1
-// Similar to the more granular test for CreateConsumerClient above. Test unbonding ops, etc.
+// setupForStoppingConsumerChain registers expected mock calls and corresponding state setup
+// which asserts that a consumer chain was properly stopped from StopConsumerChain().
+func setupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
+	providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 
-// Executes test assertions for a stopped consumer chain.
-//
-// Note: Separated from TestStopConsumerChain to also be called from TestHandleConsumerRemovalProposal.
-func testStoppedConsumerChain(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
+	// Mock expectations for client creation
+	expectations := getMocksForClientCreation(ctx, &mocks,
+		"chainID", clienttypes.NewHeight(2, 3), "clientID")
+
+	dummyCap := &capabilitytypes.Capability{}
+	expectations = append(expectations,
+		// Mocks for SetConsumerChain called below
+		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, gomock.Any()).Return(
+			channeltypes.Channel{
+				State:          channeltypes.OPEN,
+				ConnectionHops: []string{"connectionID"},
+			},
+			true,
+		).Times(1),
+		mocks.MockConnectionKeeper.EXPECT().GetConnection(ctx, "connectionID").Return(
+			conntypes.ConnectionEnd{ClientId: "clientID"}, true,
+		).Times(1),
+		mocks.MockClientKeeper.EXPECT().GetClientState(ctx, "clientID").Return(
+			&ibctmtypes.ClientState{ChainId: "chainID"}, true,
+		).Times(1),
+
+		// Mocks for calling the stop consumer chain method
+		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, "channelID").Return(
+			channeltypes.Channel{State: channeltypes.OPEN}, true,
+		).Times(1),
+		mocks.MockScopedKeeper.EXPECT().GetCapability(ctx, gomock.Any()).Return(dummyCap, true).Times(1),
+		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(ctx, ccv.ProviderPortID, "channelID", dummyCap).Times(1),
+	)
+
+	gomock.InOrder(expectations...)
+
+	// Keeper setup
+	err := providerKeeper.CreateConsumerClient(ctx, "chainID", clienttypes.NewHeight(2, 3), false)
+	require.NoError(t, err)
+	err = providerKeeper.SetConsumerChain(ctx, "channelID")
+	require.NoError(t, err)
+}
+
+// testConsumerStateIsCleaned executes test assertions for a stopped consumer chain's state being cleaned.
+func testConsumerStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
 	expectedChainID string, expectedChannelID string) {
-	// Expect state to be cleaned.
+
 	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
 	require.False(t, found)
 	found = providerKeeper.GetLockUnbondingOnTimeout(ctx, expectedChainID)
@@ -507,23 +559,10 @@ func testStoppedConsumerChain(t *testing.T, ctx sdk.Context, providerKeeper prov
 	require.False(t, found)
 	acks := providerKeeper.GetSlashAcks(ctx, expectedChainID)
 	require.Empty(t, acks)
-	// TODO:  Mas around unbonding ops
 }
 
-// Returns mock call expectations for a consumer being stopped. See StopConsumerChain
-func getMocksForStoppingConsumer(ctx sdk.Context, mocks *testkeeper.MockedKeepers,
-	channelIDToInject string) []*gomock.Call {
-	dummyCap := &capabilitytypes.Capability{}
-	return []*gomock.Call{
-		// mocks.MockScopedKeeper.EXPECT().GetCapability(ctx, gomock.Any()).Return(dummyCap, true).Times(1),
-		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, channelIDToInject).Return(
-			channeltypes.Channel{State: channeltypes.OPEN}, true,
-		).Times(1),
-		mocks.MockScopedKeeper.EXPECT().GetCapability(ctx, gomock.Any()).Return(dummyCap, true).Times(1),
-		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(ctx, ccv.ProviderPortID, channelIDToInject, dummyCap).Times(1),
-	}
-}
-
+// TestPendingConsumerRemovalPropDeletion tests the getting/setting
+// and deletion of consumer removal props
 func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 
 	testCases := []struct {
