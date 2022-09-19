@@ -43,6 +43,7 @@ func (k Keeper) HandleCreateConsumerChainProposal(ctx sdk.Context, p *types.Crea
 
 // CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
 // on top of the CCV client to ensure connection with the right consumer chain.
+//
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
 // Spec tag: [CCV-PCF-CRCLIENT.1]
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
@@ -179,7 +180,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	return nil
 }
 
-// TODO: test better with unit test
+// MakeConsumerGenesis Constructs a consumer genesis state.
 func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisState, err error) {
 	unbondingTime := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
