@@ -5,67 +5,50 @@ EXTENDS Integers, FiniteSets, Sequences, TLC, Apalache
 
 (*
 
-@typeAlias: Action = [ kind : Str, ... ];
-@typeAlias: Pair = [ lk : Str, fk : Str ];
-@typeAlias: LK = Str;
-@typeAlias: FK = Str;
-@typeAlias: Mapping = LK -> FK;
+    @typeAlias: ACTION = [ kind : Str ];
+    @typeAlias: LK = Str;
+    @typeAlias: FK = Str;
+    @typeAlias: MAPPING = LK -> FK;
+    @typeAlias: POWER = LK -> Int;
 
 *)
 
-LKS = 
-
-Pairs == {
-    [ lk : "lk0", fk : "fk0-0" ],
-    [ lk : "lk0", fk : "fk0-1" ],
-    [ lk : "lk0", fk : "fk0-2" ],
-    [ lk : "lk1", fk : "fk1-0" ],
-    [ lk : "lk1", fk : "fk1-1" ],
-    [ lk : "lk1", fk : "fk1-2" ],
-    [ lk : "lk2", fk : "fk2-0" ],
-    [ lk : "lk2", fk : "fk2-1" ],
-    [ lk : "lk2", fk : "fk2-2" ]
-    }
-
-Mappings == { f \in [LKS -> FKS] : ~ (\E a, b \in DOMAIN f : f[a] = f[b]) }
-Powers == [ LKS -> 0..2 ]
-
 VARIABLES
-    \* @type: Action;
+    \* @type: ACTION;
     action,
-    \* @type: Mapping;
+    \* @type: MAPPING;
     mapping,
-    \* @type: Str -> Int;
-    powers,
+    \* @type: POWER;
+    power
+
+\* @type: () => Set(LK);
+LKS == {"lk0", "lk1", "lk2"}
+
+\* @type: () => Set(FK);
+FKS == {"fk0", "fk1", "fk2", "fk3", "fk4", "fk5", "fk6", "fk7", "fk8"}
+
+\* @type: () => Set(MAPPING);
+Mappings == { f \in [LKS -> FKS] : ~ (\E a, b \in DOMAIN f : f[a] = f[b]) }
+
+\* @type: () => Set(POWER);
+Powers == [ LKS -> 0..2 ]
 
 
 Init == 
+    /\ action = [kind |-> "none"]
+    /\ mapping \in Mappings
+    /\ power \in Powers
 
 EndBlock == 
     \E m \in Mappings, p \in Powers : 
-    
-
-SetKey ==
-    \E p \in Pairs : 
-
-ReceiveSlash == 
-
-ReceiveMaturity ==
+    /\ UNCHANGED action
+    /\ mapping' = m 
+    /\ power' = p
 
 Next == 
     \/ EndBlock
-    \/ SetKey
-    \/ ReceiveSlash
-    \/ ReceiveMaturity
+    \/ TRUE
 
-Inv == 
-
-(*
-It is always possible to slash a local key as long as the 
-An FK to LK mapping is always available from the time an update includes the LK until the time the vscid
-for 
-
-If a vscid for a given mapping was not matured then the mapping exists
-*)
+Inv == TRUE
 
 ====
