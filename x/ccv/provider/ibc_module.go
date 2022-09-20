@@ -16,6 +16,9 @@ import (
 )
 
 // OnChanOpenInit implements the IBCModule interface
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coinit1
+// Spec Tag: [CCV-PCF-COINIT.1]
 func (am AppModule) OnChanOpenInit(
 	ctx sdk.Context,
 	order channeltypes.Order,
