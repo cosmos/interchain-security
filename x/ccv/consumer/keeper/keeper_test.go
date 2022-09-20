@@ -8,7 +8,6 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -18,7 +17,7 @@ import (
 // TestUnbondingTime tests getter and setter functionality for the unbonding period of a consumer chain
 func TestUnbondingTime(t *testing.T) {
 
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	_, ok := consumerKeeper.GetUnbondingTime(ctx)
@@ -33,7 +32,7 @@ func TestUnbondingTime(t *testing.T) {
 // TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper
 func TestProviderClientID(t *testing.T) {
 
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	_, ok := consumerKeeper.GetProviderClientID(ctx)
@@ -47,7 +46,7 @@ func TestProviderClientID(t *testing.T) {
 // TestProviderChannel tests getter and setter functionality for the channel ID stored on consumer keeper
 func TestProviderChannel(t *testing.T) {
 
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	_, ok := consumerKeeper.GetProviderChannel(ctx)
@@ -80,7 +79,7 @@ func TestPendingChanges(t *testing.T) {
 		nil,
 	)
 
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	err = consumerKeeper.SetPendingChanges(ctx, pd)
@@ -97,7 +96,7 @@ func TestPendingChanges(t *testing.T) {
 // TestPacketMaturityTime tests getter, setter, and iterator functionality for the packet maturity time of a received VSC packet
 func TestPacketMaturityTime(t *testing.T) {
 
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	consumerKeeper.SetPacketMaturityTime(ctx, 1, 10)
@@ -128,14 +127,11 @@ func TestPacketMaturityTime(t *testing.T) {
 // TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records
 func TestCrossChainValidator(t *testing.T) {
 
-	// Construct a keeper with a custom codec
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	// Explicitly register public key interface
-	testkeeper.RegisterSdkCryptoCodecInterfaces(&keeperParams)
-	ctrl := gomock.NewController(t)
+	// Explicitly register codec with public key interface
+	keeperParams.RegisterSdkCryptoCodecInterfaces()
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
-	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, testkeeper.NewMockedKeepers(ctrl))
-	ctx := keeperParams.Ctx
 
 	// should return false
 	_, found := consumerKeeper.GetCCValidator(ctx, ed25519.GenPrivKey().PubKey().Address())
@@ -173,7 +169,7 @@ func TestCrossChainValidator(t *testing.T) {
 // TestPendingSlashRequests tests the getter, setter, appending method, and deletion method for pending slash requests
 func TestPendingSlashRequests(t *testing.T) {
 
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// prepare test setup by storing 10 pending slash requests

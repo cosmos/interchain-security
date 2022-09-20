@@ -9,7 +9,6 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
@@ -18,16 +17,12 @@ import (
 
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
 func TestApplyCCValidatorChanges(t *testing.T) {
-	// Construct a keeper with a custom codec
+
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-
-	// Explicitly register public key interface
-	testkeeper.RegisterSdkCryptoCodecInterfaces(&keeperParams)
-
-	ctrl := gomock.NewController(t)
+	// Explicitly register cdc with public key interface
+	keeperParams.RegisterSdkCryptoCodecInterfaces()
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
-	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, testkeeper.NewMockedKeepers(ctrl))
-	ctx := keeperParams.Ctx
 
 	// utility functions
 	getCCVals := func() (vals []types.CrossChainValidator) {
@@ -112,15 +107,12 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 // Tests the getter and setter behavior for historical info
 func TestHistoricalInfo(t *testing.T) {
 
-	// Construct a keeper with a custom codec
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	// Explicitly register public key interface
-	testkeeper.RegisterSdkCryptoCodecInterfaces(&keeperParams)
-	ctrl := gomock.NewController(t)
+	// Explicitly register cdc with public key interface
+	keeperParams.RegisterSdkCryptoCodecInterfaces()
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
-	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, testkeeper.NewMockedKeepers(ctrl))
-
-	ctx := keeperParams.Ctx.WithBlockHeight(15)
+	ctx = keeperParams.Ctx.WithBlockHeight(15)
 
 	// Generate test validators, save them to store, and retrieve stored records
 	validators := GenerateValidators(t)
