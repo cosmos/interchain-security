@@ -13,6 +13,17 @@ EXTENDS Integers, FiniteSets, Sequences, TLC, Apalache
 
 *)
 
+CONSTANTS
+    \* @type: Set(LK);
+    LKS,
+    \* @type: Set(FK);
+    FKS,
+    \* @type: Set(MAPPING);
+    Mappings,
+    \* @type: Set(POWER);
+    Powers 
+
+
 VARIABLES
     \* @type: ACTION;
     action,
@@ -21,18 +32,11 @@ VARIABLES
     \* @type: POWER;
     power
 
-\* @type: () => Set(LK);
-LKS == {"lk0", "lk1", "lk2"}
-
-\* @type: () => Set(FK);
-FKS == {"fk0", "fk1", "fk2", "fk3", "fk4", "fk5", "fk6", "fk7", "fk8"}
-
-\* @type: () => Set(MAPPING);
-Mappings == { f \in [LKS -> FKS] : ~ (\E a, b \in DOMAIN f : f[a] = f[b]) }
-
-\* @type: () => Set(POWER);
-Powers == [ LKS -> 0..2 ]
-
+CInit == 
+    /\ LKS = {"lk0", "lk1", "lk2"}
+    /\ FKS = {"fk0", "fk1", "fk2", "fk3", "fk4", "fk5", "fk6", "fk7", "fk8"}
+    /\ Mappings = { f \in [LKS -> FKS] : ~ (\E a, b \in DOMAIN f : f[a] = f[b]) }
+    /\ Powers = [ LKS -> 0..2 ]
 
 Init == 
     /\ action = [kind |-> "none"]
