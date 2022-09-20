@@ -27,22 +27,22 @@ func TestValidateBasic(t *testing.T) {
 	}{
 		{
 			"success",
-			types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now()),
+			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now()),
 			true,
 		},
 		{
 			"fails validate abstract - empty title",
-			types.NewCreateConsumerChainProposal(" ", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now()),
+			types.NewConsumerAdditionProposal(" ", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now()),
 			false,
 		},
 		{
 			"chainID is empty",
-			types.NewCreateConsumerChainProposal("title", "description", " ", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now()),
+			types.NewConsumerAdditionProposal("title", "description", " ", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now()),
 			false,
 		},
 		{
 			"initial height is zero",
-			&types.CreateConsumerChainProposal{
+			&types.ConsumerAdditionProposal{
 				Title:         "title",
 				Description:   "description",
 				ChainId:       "chainID",
@@ -55,17 +55,17 @@ func TestValidateBasic(t *testing.T) {
 		},
 		{
 			"genesis hash is empty",
-			types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte(""), []byte("bin_hash"), time.Now()),
+			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte(""), []byte("bin_hash"), time.Now()),
 			false,
 		},
 		{
 			"binary hash is empty",
-			types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte(""), time.Now()),
+			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte(""), time.Now()),
 			false,
 		},
 		{
 			"time is zero",
-			types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Time{}),
+			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Time{}),
 			false,
 		},
 	}
@@ -81,10 +81,10 @@ func TestValidateBasic(t *testing.T) {
 	}
 }
 
-func TestMarshalCreateConsumerChainProposal(t *testing.T) {
-	content := types.NewCreateConsumerChainProposal("title", "description", "chainID", clienttypes.NewHeight(0, 1), []byte("gen_hash"), []byte("bin_hash"), time.Now().UTC())
+func TestMarshalConsumerAdditionProposal(t *testing.T) {
+	content := types.NewConsumerAdditionProposal("title", "description", "chainID", clienttypes.NewHeight(0, 1), []byte("gen_hash"), []byte("bin_hash"), time.Now().UTC())
 
-	cccp, ok := content.(*types.CreateConsumerChainProposal)
+	cccp, ok := content.(*types.ConsumerAdditionProposal)
 	require.True(t, ok)
 
 	// create codec
@@ -100,17 +100,17 @@ func TestMarshalCreateConsumerChainProposal(t *testing.T) {
 	require.NoError(t, err)
 
 	// unmarshal proposal
-	newCccp := &types.CreateConsumerChainProposal{}
+	newCccp := &types.ConsumerAdditionProposal{}
 	err = cdc.UnmarshalJSON(bz, newCccp)
 	require.NoError(t, err)
 
 	require.True(t, proto.Equal(cccp, newCccp), "unmarshalled proposal does not equal original proposal")
 }
 
-func TestCreateConsumerChainProposalString(t *testing.T) {
+func TestConsumerAdditionProposalString(t *testing.T) {
 	initialHeight := clienttypes.NewHeight(2, 3)
 	spawnTime := time.Now()
-	proposal := types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), spawnTime)
+	proposal := types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), spawnTime)
 
 	expect := fmt.Sprintf(`CreateConsumerChain Proposal
 	Title: title
@@ -121,5 +121,5 @@ func TestCreateConsumerChainProposalString(t *testing.T) {
 	BinaryHash: %s
 	SpawnTime: %s`, initialHeight, []byte("gen_hash"), []byte("bin_hash"), spawnTime)
 
-	require.Equal(t, expect, proposal.String(), "string method for CreateConsumerChainProposal returned unexpected string")
+	require.Equal(t, expect, proposal.String(), "string method for ConsumerAdditionProposal returned unexpected string")
 }

@@ -10,7 +10,8 @@ import (
 	"sync"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	"github.com/cosmos/interchain-security/x/ccv/provider/client"
 )
 
 type SendTokensAction struct {
@@ -191,25 +192,13 @@ type submitConsumerProposalAction struct {
 	initialHeight clienttypes.Height
 }
 
-// TODO: import this directly from the module once it is merged
-type createConsumerChainProposalJSON struct {
-	Title         string             `json:"title"`
-	Description   string             `json:"description"`
-	ChainId       string             `json:"chain_id"`
-	InitialHeight clienttypes.Height `json:"initial_height"`
-	GenesisHash   []byte             `json:"genesis_hash"`
-	BinaryHash    []byte             `json:"binary_hash"`
-	SpawnTime     time.Time          `json:"spawn_time"`
-	Deposit       string             `json:"deposit"`
-}
-
-func (tr TestRun) submitConsumerProposal(
+func (tr TestRun) submitConsumerAdditionProposal(
 	action submitConsumerProposalAction,
 	verbose bool,
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
-	prop := createConsumerChainProposalJSON{
-		Title:         "Create a chain",
+	prop := client.ConsumerAdditionProposalJSON{
+		Title:         "Propose the addition of a new chain",
 		Description:   "Gonna be a great chain",
 		ChainId:       string(tr.chainConfigs[action.consumerChain].chainId),
 		InitialHeight: action.initialHeight,
@@ -240,7 +229,7 @@ func (tr TestRun) submitConsumerProposal(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-proposal", "create-consumer-chain",
+		"tx", "gov", "submit-proposal", "consumer-addition",
 		"/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
