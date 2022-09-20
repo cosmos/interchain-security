@@ -92,15 +92,12 @@ func TestInitGenesis(t *testing.T) {
 		// Setup
 		//
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		ctrl := gomock.NewController(t)
-		mocks := testkeeper.NewMockedKeepers(ctrl)
-		providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
+		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 
 		appModule := provider.NewAppModule(&providerKeeper)
 		genState := types.NewGenesisState(tc.consumerStates, types.DefaultParams())
-		ctx := keeperParams.Ctx
-		cdc := keeperParams.Cdc
 
+		cdc := keeperParams.Cdc
 		jsonBytes := cdc.MustMarshalJSON(genState)
 
 		//
