@@ -23,7 +23,7 @@ import (
 
 // TestValsetUpdateBlockHeight tests the getter, setter, and deletion methods for valset updates mapped to block height
 func TestValsetUpdateBlockHeight(t *testing.T) {
-	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	blockHeight, found := providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(0))
@@ -49,7 +49,7 @@ func TestValsetUpdateBlockHeight(t *testing.T) {
 
 // TestSlashAcks tests the getter, setter, iteration, and deletion methods for stored slash acknowledgements
 func TestSlashAcks(t *testing.T) {
-	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	var chainsAcks [][]string
@@ -92,7 +92,7 @@ func TestSlashAcks(t *testing.T) {
 
 // TestAppendSlashAck tests the append method for stored slash acknowledgements
 func TestAppendSlashAck(t *testing.T) {
-	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	p := []string{"alice", "bob", "charlie"}
@@ -112,7 +112,7 @@ func TestAppendSlashAck(t *testing.T) {
 
 // TestPendingVSCs tests the getter, appending, and deletion methods for stored pending VSCs
 func TestPendingVSCs(t *testing.T) {
-	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	chainID := "consumer"
@@ -167,7 +167,7 @@ func TestPendingVSCs(t *testing.T) {
 
 // TestInitHeight tests the getter and setter methods for the stored block heights (on provider) when a given consumer chain was started
 func TestInitHeight(t *testing.T) {
-	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	tc := []struct {
@@ -252,7 +252,7 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 
 func TestIterateOverUnbondingOpIndex(t *testing.T) {
 
-	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	chainID := "6"
@@ -278,7 +278,7 @@ func TestIterateOverUnbondingOpIndex(t *testing.T) {
 
 func TestMaturedUnbondingOps(t *testing.T) {
 
-	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	ids, err := providerKeeper.GetMaturedUnbondingOps(ctx)

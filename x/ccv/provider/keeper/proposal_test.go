@@ -82,16 +82,14 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 	for _, tc := range tests {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		ctx := keeperParams.Ctx.WithBlockTime(tc.blockTime)
-		testkeeper.SetTemplateClientState(ctx, keeperParams.ParamsSubspace)
-		ctrl := gomock.NewController(t)
-		mocks := testkeeper.NewMockedKeepers(ctrl)
-		providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
+		keeperParams.SetTemplateClientState()
+		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		if tc.expCreatedClient {
 			// Mock calls are only asserted if we expect a client to be created.
 			gomock.InOrder(
-				getMocksForClientCreation(ctx, &mocks, "chainID", clienttypes.NewHeight(2, 3), "clientID")...,
+				getMocksForCreateConsumerClient(ctx, &mocks, "chainID", clienttypes.NewHeight(2, 3))...,
 			)
 		}
 
@@ -135,7 +133,7 @@ func TestCreateConsumerClient(t *testing.T) {
 
 				// Valid client creation is asserted with mock expectations here
 				gomock.InOrder(
-					getMocksForClientCreation(ctx, mocks, "chainID", clienttypes.NewHeight(4, 5), "clientID")...,
+					getMocksForCreateConsumerClient(ctx, mocks, "chainID", clienttypes.NewHeight(4, 5))...,
 				)
 			},
 			expClientCreated: true,
@@ -160,11 +158,8 @@ func TestCreateConsumerClient(t *testing.T) {
 	for _, tc := range tests {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		ctrl := gomock.NewController(t)
-		ctx := keeperParams.Ctx
-		testkeeper.SetTemplateClientState(ctx, keeperParams.ParamsSubspace)
-		mocks := testkeeper.NewMockedKeepers(ctrl)
-		providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
+		keeperParams.SetTemplateClientState()
+		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 
 		// Test specific setup
 		tc.setup(&providerKeeper, ctx, &mocks)
@@ -205,9 +200,9 @@ func testCreatedConsumerClient(t *testing.T,
 	require.True(t, ok)
 }
 
-// getMocksForClientCreation returns mock call expectations for a consumer client being created.
-func getMocksForClientCreation(ctx sdk.Context, mocks *testkeeper.MockedKeepers,
-	expectedChainID string, expectedLatestHeight clienttypes.Height, clientIDToInject string) []*gomock.Call {
+// getMocksForCreateConsumerClient returns mock call expectations needed to call CreateConsumerClient().
+func getMocksForCreateConsumerClient(ctx sdk.Context, mocks *testkeeper.MockedKeepers,
+	expectedChainID string, expectedLatestHeight clienttypes.Height) []*gomock.Call {
 
 	return []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().UnbondingTime(ctx).Return(time.Hour).Times(
@@ -223,7 +218,7 @@ func getMocksForClientCreation(ctx sdk.Context, mocks *testkeeper.MockedKeepers,
 				"LatestHeight", expectedLatestHeight,
 			),
 			gomock.Any(),
-		).Return(clientIDToInject, nil).Times(1),
+		).Return("clientID", nil).Times(1),
 
 		mocks.MockStakingKeeper.EXPECT().UnbondingTime(ctx).Return(time.Hour).Times(
 			1, // called again in MakeConsumerGenesis
@@ -233,6 +228,38 @@ func getMocksForClientCreation(ctx sdk.Context, mocks *testkeeper.MockedKeepers,
 			clienttypes.GetSelfHeight(ctx)).Return(&ibctmtypes.ConsensusState{}, nil).Times(1),
 
 		mocks.MockStakingKeeper.EXPECT().IterateLastValidatorPowers(ctx, gomock.Any()).Times(1),
+	}
+}
+
+// getMocksForSetConsumerChain returns mock call expectations needed to call SetConsumerChain().
+func getMocksForSetConsumerChain(ctx sdk.Context, mocks *testkeeper.MockedKeepers,
+	chainIDToInject string) []*gomock.Call {
+	return []*gomock.Call{
+		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, gomock.Any()).Return(
+			channeltypes.Channel{
+				State:          channeltypes.OPEN,
+				ConnectionHops: []string{"connectionID"},
+			},
+			true,
+		).Times(1),
+		mocks.MockConnectionKeeper.EXPECT().GetConnection(ctx, "connectionID").Return(
+			conntypes.ConnectionEnd{ClientId: "clientID"}, true,
+		).Times(1),
+		mocks.MockClientKeeper.EXPECT().GetClientState(ctx, "clientID").Return(
+			&ibctmtypes.ClientState{ChainId: chainIDToInject}, true,
+		).Times(1),
+	}
+}
+
+// getMocksForStopConsumerChain returns mock call expectations needed to call StopConsumerChain().
+func getMocksForStopConsumerChain(ctx sdk.Context, mocks *testkeeper.MockedKeepers) []*gomock.Call {
+	dummyCap := &capabilitytypes.Capability{}
+	return []*gomock.Call{
+		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, "channelID").Return(
+			channeltypes.Channel{State: channeltypes.OPEN}, true,
+		).Times(1),
+		mocks.MockScopedKeeper.EXPECT().GetCapability(ctx, gomock.Any()).Return(dummyCap, true).Times(1),
+		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(ctx, ccv.ProviderPortID, "channelID", dummyCap).Times(1),
 	}
 }
 
@@ -253,7 +280,7 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 			ExpDeleted:               false,
 		},
 	}
-	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	for _, tc := range testCases {
@@ -328,7 +355,7 @@ func TestPendingConsumerAdditionPropOrder(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		ctx = ctx.WithBlockTime(tc.accessTime)
@@ -395,11 +422,9 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		ctx := keeperParams.Ctx.WithBlockTime(tc.blockTime)
-		testkeeper.SetTemplateClientState(ctx, keeperParams.ParamsSubspace)
-		ctrl := gomock.NewController(t)
-		mocks := testkeeper.NewMockedKeepers(ctrl)
-		providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
+		keeperParams.SetTemplateClientState()
+		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		// Mock expectations and setup for stopping the consumer chain, if applicable
 		if tc.expStop {
@@ -473,11 +498,8 @@ func TestStopConsumerChain(t *testing.T) {
 
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		ctx := keeperParams.Ctx
-		testkeeper.SetTemplateClientState(ctx, keeperParams.ParamsSubspace)
-		ctrl := gomock.NewController(t)
-		mocks := testkeeper.NewMockedKeepers(ctrl)
-		providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
+		keeperParams.SetTemplateClientState()
+		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 
 		// Setup specific to test case
 		tc.setup(ctx, &providerKeeper, mocks)
@@ -496,43 +518,20 @@ func TestStopConsumerChain(t *testing.T) {
 	}
 }
 
+// TODO: Determine if this method and the other mock functions should move to unit test helpers
+
 // setupForStoppingConsumerChain registers expected mock calls and corresponding state setup
 // which asserts that a consumer chain was properly stopped from StopConsumerChain().
 func setupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 
-	// Mock expectations for client creation
-	expectations := getMocksForClientCreation(ctx, &mocks,
-		"chainID", clienttypes.NewHeight(2, 3), "clientID")
-
-	dummyCap := &capabilitytypes.Capability{}
-	expectations = append(expectations,
-		// Mocks for SetConsumerChain called below
-		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, gomock.Any()).Return(
-			channeltypes.Channel{
-				State:          channeltypes.OPEN,
-				ConnectionHops: []string{"connectionID"},
-			},
-			true,
-		).Times(1),
-		mocks.MockConnectionKeeper.EXPECT().GetConnection(ctx, "connectionID").Return(
-			conntypes.ConnectionEnd{ClientId: "clientID"}, true,
-		).Times(1),
-		mocks.MockClientKeeper.EXPECT().GetClientState(ctx, "clientID").Return(
-			&ibctmtypes.ClientState{ChainId: "chainID"}, true,
-		).Times(1),
-
-		// Mocks for calling the stop consumer chain method
-		mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, "channelID").Return(
-			channeltypes.Channel{State: channeltypes.OPEN}, true,
-		).Times(1),
-		mocks.MockScopedKeeper.EXPECT().GetCapability(ctx, gomock.Any()).Return(dummyCap, true).Times(1),
-		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(ctx, ccv.ProviderPortID, "channelID", dummyCap).Times(1),
-	)
+	expectations := getMocksForCreateConsumerClient(ctx, &mocks,
+		"chainID", clienttypes.NewHeight(2, 3))
+	expectations = append(expectations, getMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
+	expectations = append(expectations, getMocksForStopConsumerChain(ctx, &mocks)...)
 
 	gomock.InOrder(expectations...)
 
-	// Keeper setup
 	err := providerKeeper.CreateConsumerClient(ctx, "chainID", clienttypes.NewHeight(2, 3), false)
 	require.NoError(t, err)
 	err = providerKeeper.SetConsumerChain(ctx, "channelID")
@@ -574,7 +573,7 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 			ExpDeleted:              false,
 		},
 	}
-	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	for _, tc := range testCases {
@@ -646,7 +645,7 @@ func TestPendingConsumerRemovalPropOrder(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 		ctx = ctx.WithBlockTime(tc.accessTime)
 
@@ -667,12 +666,10 @@ func TestBeginBlockInit(t *testing.T) {
 	now := time.Now().UTC()
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	ctrl := gomock.NewController(t)
+	keeperParams.SetTemplateClientState()
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
-	mocks := testkeeper.NewMockedKeepers(ctrl)
-	ctx := keeperParams.Ctx.WithBlockTime(now)
-	testkeeper.SetTemplateClientState(ctx, keeperParams.ParamsSubspace)
-	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
+	ctx = ctx.WithBlockTime(now)
 
 	pendingProps := []*providertypes.ConsumerAdditionProposal{
 		providertypes.NewConsumerAdditionProposal(
@@ -688,8 +685,8 @@ func TestBeginBlockInit(t *testing.T) {
 
 	gomock.InOrder(
 		// Expect client creation for the 1st and second proposals (spawn time already passed)
-		append(getMocksForClientCreation(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4), "clientID"),
-			getMocksForClientCreation(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4), "clientID")...)...,
+		append(getMocksForCreateConsumerClient(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4)),
+			getMocksForCreateConsumerClient(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4))...)...,
 	)
 
 	for _, prop := range pendingProps {
@@ -711,7 +708,74 @@ func TestBeginBlockInit(t *testing.T) {
 	require.True(t, found)
 }
 
-// TODO: Test equiv to above tests for removal proposals
+// TestBeginBlockCCR tests BeginBlockCCR against the spec.
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-ccr1
+// Spec tag: [CCV-PCF-BBLOCK-CCR.1]
+func TestBeginBlockCCR(t *testing.T) {
+	now := time.Now().UTC()
 
-// TODO: find a common file (in unit test helpers), to define hardcoded strings like chainID, etc.
-// TODO: Even latest height should be defined somewhere
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeperParams.SetTemplateClientState()
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	defer ctrl.Finish()
+	ctx = ctx.WithBlockTime(now)
+
+	pendingProps := []*providertypes.ConsumerRemovalProposal{
+		providertypes.NewConsumerRemovalProposal(
+			"title", "description", "chain1", now.Add(-time.Hour).UTC(),
+		).(*providertypes.ConsumerRemovalProposal),
+		providertypes.NewConsumerRemovalProposal(
+			"title", "description", "chain2", now,
+		).(*providertypes.ConsumerRemovalProposal),
+		providertypes.NewConsumerRemovalProposal(
+			"title", "description", "chain3", now.Add(time.Hour).UTC(),
+		).(*providertypes.ConsumerRemovalProposal),
+	}
+
+	//
+	// Mock expectations
+	//
+	expectations := []*gomock.Call{}
+	for _, prop := range pendingProps {
+		// A consumer chain is setup corresponding to each prop, making these mocks necessary
+		expectations = append(expectations, getMocksForCreateConsumerClient(ctx, &mocks,
+			prop.ChainId, clienttypes.NewHeight(2, 3))...)
+		expectations = append(expectations, getMocksForSetConsumerChain(ctx, &mocks, prop.ChainId)...)
+	}
+	// Only first two consumer chains should be stopped
+	expectations = append(expectations, getMocksForStopConsumerChain(ctx, &mocks)...)
+	expectations = append(expectations, getMocksForStopConsumerChain(ctx, &mocks)...)
+
+	gomock.InOrder(expectations...)
+
+	//
+	// Remaining setup
+	//
+	for _, prop := range pendingProps {
+		// Setup a valid consumer chain for each prop
+		err := providerKeeper.CreateConsumerClient(ctx, prop.ChainId, clienttypes.NewHeight(2, 3), false)
+		require.NoError(t, err)
+		err = providerKeeper.SetConsumerChain(ctx, "channelID")
+		require.NoError(t, err)
+
+		// Set removal props for all consumer chains
+		providerKeeper.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
+	}
+
+	//
+	// Test execution
+	//
+	providerKeeper.BeginBlockCCR(ctx)
+
+	// Only the 3rd (final) proposal is still stored as pending
+	found := providerKeeper.GetPendingConsumerRemovalProp(
+		ctx, pendingProps[0].ChainId, pendingProps[0].StopTime)
+	require.False(t, found)
+	found = providerKeeper.GetPendingConsumerRemovalProp(
+		ctx, pendingProps[1].ChainId, pendingProps[1].StopTime)
+	require.False(t, found)
+	found = providerKeeper.GetPendingConsumerRemovalProp(
+		ctx, pendingProps[2].ChainId, pendingProps[2].StopTime)
+	require.True(t, found)
+}
