@@ -91,35 +91,23 @@ func TestInitGenesis(t *testing.T) {
 		//
 		// Setup
 		//
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		ctrl := gomock.NewController(t)
-		cdc, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
-
-		mockScopedKeeper := testkeeper.NewMockScopedKeeper(ctrl)
-		mockPortKeeper := testkeeper.NewMockPortKeeper(ctrl)
-
-		providerKeeper := testkeeper.GetProviderKeeperWithMocks(
-			cdc,
-			storeKey,
-			paramsSubspace,
-			mockScopedKeeper,
-			testkeeper.NewMockChannelKeeper(ctrl),
-			mockPortKeeper,
-			testkeeper.NewMockConnectionKeeper(ctrl),
-			testkeeper.NewMockClientKeeper(ctrl),
-			testkeeper.NewMockStakingKeeper(ctrl),
-			testkeeper.NewMockSlashingKeeper(ctrl),
-			testkeeper.NewMockAccountKeeper(ctrl),
-		)
+		mocks := testkeeper.NewMockedKeepers(ctrl)
+		providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 		appModule := provider.NewAppModule(&providerKeeper)
 		genState := types.NewGenesisState(tc.consumerStates, types.DefaultParams())
+		ctx := keeperParams.Ctx
+		cdc := keeperParams.Cdc
+
 		jsonBytes := cdc.MustMarshalJSON(genState)
 
 		//
 		// Assert mocked logic before method executes
 		//
 		orderedCalls := []*gomock.Call{
-			mockScopedKeeper.EXPECT().GetCapability(
+			mocks.MockScopedKeeper.EXPECT().GetCapability(
 				ctx, host.PortPath(ccv.ProviderPortID),
 			).Return(
 				&capabilitytypes.Capability{},
@@ -132,8 +120,8 @@ func TestInitGenesis(t *testing.T) {
 			dummyCap := &capabilitytypes.Capability{}
 
 			orderedCalls = append(orderedCalls,
-				mockPortKeeper.EXPECT().BindPort(ctx, ccv.ProviderPortID).Return(dummyCap),
-				mockScopedKeeper.EXPECT().ClaimCapability(
+				mocks.MockPortKeeper.EXPECT().BindPort(ctx, ccv.ProviderPortID).Return(dummyCap),
+				mocks.MockScopedKeeper.EXPECT().ClaimCapability(
 					ctx, dummyCap, host.PortPath(ccv.ProviderPortID)).Return(tc.errFromClaimCap),
 			)
 		}

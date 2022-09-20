@@ -155,10 +155,10 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-	// Check if there are any consumer chains that are due to be spawned
-	am.keeper.IteratePendingConsumerAdditionProps(ctx)
-	// Check if there are any consumer chains that are due to be stopped
-	am.keeper.IteratePendingConsumerRemovalProps(ctx)
+	// Create clients to consumer chains that are due to be spawned via pending consumer addition proposals
+	am.keeper.BeginBlockInit(ctx)
+	// Stop and remove state for any consumer chains that are due to be stopped via pending consumer removal proposals
+	am.keeper.BeginBlockCCR(ctx)
 }
 
 // EndBlock implements the AppModule interface

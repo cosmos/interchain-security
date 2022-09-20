@@ -752,7 +752,7 @@ func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
 	}
 }
 
-// TODO: Becomes unit test
+// TestMakeConsumerGenesis tests the MakeConsumerGenesis method used to instantiate a consumer.
 func (suite *ProviderKeeperTestSuite) TestMakeConsumerGenesis() {
 	suite.SetupTest()
 

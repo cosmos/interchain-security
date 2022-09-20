@@ -252,16 +252,16 @@ func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, clientInfo *type
 }
 
 // GetPendingConsumerAdditionProp retrieves a pending proposal to create a consumer chain client (by spawn time and chain id)
-func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.Time, chainID string) types.ConsumerAdditionProposal {
+func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.Time,
+	chainID string) (prop types.ConsumerAdditionProposal, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingCAPKey(spawnTime, chainID))
 	if len(bz) == 0 {
-		return types.ConsumerAdditionProposal{}
+		return prop, false
 	}
-	var clientInfo types.ConsumerAdditionProposal
-	k.cdc.MustUnmarshal(bz, &clientInfo)
+	k.cdc.MustUnmarshal(bz, &prop)
 
-	return clientInfo
+	return prop, true
 }
 
 func (k Keeper) PendingConsumerAdditionPropIterator(ctx sdk.Context) sdk.Iterator {
@@ -269,11 +269,12 @@ func (k Keeper) PendingConsumerAdditionPropIterator(ctx sdk.Context) sdk.Iterato
 	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
 }
 
-// IteratePendingConsumerAdditionProps iterates over the pending consumer addition proposals to create
-// clients in order and creates the consumer client if the spawn time has passed.
+// BeginBlockInit iterates over the pending consumer addition proposals in order, and creates
+// clients for props in which the spawn time has passed. Executed proposals are deleted.
 //
-// Note: This method implements "BeginBlockInit" in spec: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-init1
-func (k Keeper) IteratePendingConsumerAdditionProps(ctx sdk.Context) {
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-init1
+// Spec tag:[CCV-PCF-BBLOCK-INIT.1]
+func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	propsToExecute := k.ConsumerAdditionPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
@@ -362,9 +363,13 @@ func (k Keeper) PendingConsumerRemovalPropIterator(ctx sdk.Context) sdk.Iterator
 	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
 }
 
-// IteratePendingConsumerRemovalProps iterates over the pending consumer removal proposals
-// in order and stop/removes the chain if the stop time has passed, otherwise it will break out of loop and return.
-func (k Keeper) IteratePendingConsumerRemovalProps(ctx sdk.Context) {
+// BeginBlockCCR iterates over the pending consumer removal proposals
+// in order and stop/removes the chain if the stop time has passed,
+// otherwise it will break out of loop and return. Executed proposals are deleted.
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-ccr1
+// Spec tag: [CCV-PCF-BBLOCK-CCR.1]
+func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 	propsToExecute := k.ConsumerRemovalPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {

@@ -23,7 +23,7 @@ import (
 	extra "github.com/oxyno-zeta/gomock-extra-matcher"
 )
 
-// TODO: Finish putting spec tags and links all over the place, then editing the coverage file.
+// TODO: Finish putting spec tags and links all over the place, then editing the coverage file
 
 //
 // Initialization sub-protocol related tests of proposal.go
@@ -33,11 +33,6 @@ import (
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-spccprop1
 // Spec tag: [CCV-PCF-SPCCPROP.1]
 func TestHandleConsumerAdditionProposal(t *testing.T) {
-
-	const (
-		// Value to inject into mocked returned value for CreateClient in each test case
-		clientIDToInject = "clientID"
-	)
 
 	type testCase struct {
 		description string
@@ -87,19 +82,17 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 	for _, tc := range tests {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		ctx := keeperParams.Ctx.WithBlockTime(tc.blockTime)
+		testkeeper.SetTemplateClientState(ctx, keeperParams.ParamsSubspace)
 		ctrl := gomock.NewController(t)
 		mocks := testkeeper.NewMockedKeepers(ctrl)
-		ctx := keeperParams.Ctx
 		providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
-
-		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		if tc.expCreatedClient {
 			// Mock calls are only asserted if we expect a client to be created.
 			gomock.InOrder(
-				getMocksForClientCreation(ctx, &mocks, "chainID", clienttypes.NewHeight(4, 5), "clientID")...,
+				getMocksForClientCreation(ctx, &mocks, "chainID", clienttypes.NewHeight(2, 3), "clientID")...,
 			)
-
 		}
 
 		tc.prop.LockUnbondingOnTimeout = false // Full functionality not implemented yet.
@@ -108,13 +101,14 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 		require.NoError(t, err)
 
 		if tc.expCreatedClient {
-			testCreatedConsumerClient(t, ctx, providerKeeper, tc.prop.ChainId, clientIDToInject)
+			testCreatedConsumerClient(t, ctx, providerKeeper, tc.prop.ChainId, "clientID")
 		} else {
 			// check that stored pending prop is exactly the same as the initially instantiated prop
-			gotProposal := providerKeeper.GetPendingConsumerAdditionProp(ctx, tc.prop.SpawnTime, tc.prop.ChainId)
+			gotProposal, found := providerKeeper.GetPendingConsumerAdditionProp(ctx, tc.prop.SpawnTime, tc.prop.ChainId)
+			require.True(t, found)
 			require.Equal(t, *tc.prop, gotProposal)
 			// double check that a client for this chain does not exist
-			_, found := providerKeeper.GetConsumerClientId(ctx, tc.prop.ChainId)
+			_, found = providerKeeper.GetConsumerClientId(ctx, tc.prop.ChainId)
 			require.False(t, found)
 		}
 		ctrl.Finish()
@@ -167,8 +161,9 @@ func TestCreateConsumerClient(t *testing.T) {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		ctrl := gomock.NewController(t)
-		mocks := testkeeper.NewMockedKeepers(ctrl)
 		ctx := keeperParams.Ctx
+		testkeeper.SetTemplateClientState(ctx, keeperParams.ParamsSubspace)
+		mocks := testkeeper.NewMockedKeepers(ctrl)
 		providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 		// Test specific setup
@@ -242,7 +237,7 @@ func getMocksForClientCreation(ctx sdk.Context, mocks *testkeeper.MockedKeepers,
 }
 
 // TestPendingConsumerAdditionPropDeletion tests the getting/setting
-// and deletion of consumer addition props
+// and deletion keeper methods for pending consumer addition props
 func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 
 	testCases := []struct {
@@ -273,8 +268,9 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 	providerKeeper.DeletePendingConsumerAdditionProps(ctx, propsToExecute...)
 	numDeleted := 0
 	for _, tc := range testCases {
-		res := providerKeeper.GetPendingConsumerAdditionProp(ctx, tc.SpawnTime, tc.ChainId)
+		res, found := providerKeeper.GetPendingConsumerAdditionProp(ctx, tc.SpawnTime, tc.ChainId)
 		if !tc.ExpDeleted {
+			require.True(t, found)
 			require.NotEmpty(t, res, "consumer addition proposal was deleted: %s %s", tc.ChainId, tc.SpawnTime.String())
 			continue
 		}
@@ -562,7 +558,7 @@ func testConsumerStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 }
 
 // TestPendingConsumerRemovalPropDeletion tests the getting/setting
-// and deletion of consumer removal props
+// and deletion methods for pending consumer removal props
 func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 
 	testCases := []struct {
@@ -661,3 +657,60 @@ func TestPendingConsumerRemovalPropOrder(t *testing.T) {
 		require.Equal(t, tc.expectedOrderedProps, propsToExecute)
 	}
 }
+
+// TestBeginBlockInit directly tests BeginBlockInit against the spec using helpers defined above.
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-init1
+// Spec tag:[CCV-PCF-BBLOCK-INIT.1]
+func TestBeginBlockInit(t *testing.T) {
+
+	now := time.Now().UTC()
+
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mocks := testkeeper.NewMockedKeepers(ctrl)
+	ctx := keeperParams.Ctx.WithBlockTime(now)
+	testkeeper.SetTemplateClientState(ctx, keeperParams.ParamsSubspace)
+	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
+
+	pendingProps := []*providertypes.ConsumerAdditionProposal{
+		providertypes.NewConsumerAdditionProposal(
+			"title", "description", "chain1", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
+			now.Add(-time.Hour).UTC()).(*providertypes.ConsumerAdditionProposal),
+		providertypes.NewConsumerAdditionProposal(
+			"title", "description", "chain2", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
+			now.UTC()).(*providertypes.ConsumerAdditionProposal),
+		providertypes.NewConsumerAdditionProposal(
+			"title", "description", "chain3", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
+			now.Add(time.Hour).UTC()).(*providertypes.ConsumerAdditionProposal),
+	}
+
+	gomock.InOrder(
+		// Expect client creation for the 1st and second proposals (spawn time already passed)
+		append(getMocksForClientCreation(ctx, &mocks, "chain1", clienttypes.NewHeight(3, 4), "clientID"),
+			getMocksForClientCreation(ctx, &mocks, "chain2", clienttypes.NewHeight(3, 4), "clientID")...)...,
+	)
+
+	for _, prop := range pendingProps {
+		providerKeeper.SetPendingConsumerAdditionProp(ctx, prop)
+	}
+
+	providerKeeper.BeginBlockInit(ctx)
+
+	// Only the 3rd (final) proposal is still stored as pending
+	_, found := providerKeeper.GetPendingConsumerAdditionProp(
+		ctx, pendingProps[0].SpawnTime, pendingProps[0].ChainId)
+	require.False(t, found)
+	_, found = providerKeeper.GetPendingConsumerAdditionProp(
+		ctx, pendingProps[1].SpawnTime, pendingProps[1].ChainId)
+	require.False(t, found)
+	_, found = providerKeeper.GetPendingConsumerAdditionProp(
+		ctx, pendingProps[2].SpawnTime, pendingProps[2].ChainId)
+	require.True(t, found)
+}
+
+// TODO: Test equiv to above tests for removal proposals
+
+// TODO: find a common file (in unit test helpers), to define hardcoded strings like chainID, etc.
+// TODO: Even latest height should be defined somewhere
