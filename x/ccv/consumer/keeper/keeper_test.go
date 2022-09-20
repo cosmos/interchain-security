@@ -177,9 +177,9 @@ func TestPendingSlashRequests(t *testing.T) {
 	defer ctrl.Finish()
 
 	// prepare test setup by storing 10 pending slash requests
-	request := []types.SlashRequest{}
+	request := []*types.SlashRequest{}
 	for i := 0; i < 10; i++ {
-		request = append(request, types.SlashRequest{})
+		request = append(request, &types.SlashRequest{})
 		consumerKeeper.SetPendingSlashRequests(ctx, request)
 	}
 
