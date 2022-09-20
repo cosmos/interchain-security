@@ -174,12 +174,163 @@ func TestOnChanOpenTry(t *testing.T) {
 			ctrl.Finish()
 		} else {
 			require.Error(t, err)
-			// See if you can allow ctrl not to finish like this?
-			ctrl = nil
 		}
 	}
 }
 
-// OnChanOpenAck for provider (doesn't exist)
+// TestOnChanOpenAck tests the provider's OnChanOpenAck method against spec.
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coack1
+// Spec tag: [CCV-PCF-COACK.1]
+func TestOnChanOpenAck(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+		t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	providerModule := provider.NewAppModule(&providerKeeper)
 
-// OnChanOpenConfirm for provider (doesn't exist)
+	// OnChanOpenAck must error for provider even with correct arguments
+	err := providerModule.OnChanOpenAck(
+		ctx,
+		ccv.ProviderPortID,
+		"providerChannelID",
+		"consumerChannelID",
+		ccv.Version,
+	)
+	require.Error(t, err, "OnChanOpenAck must error on provider chain")
+}
+
+// TestOnChanOpenConfirm tests the provider's OnChanOpenConfirm method against the spec.
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coconfirm1
+// Spec tag: [CCV-PCF-COCONFIRM.1]
+//
+// TODO: Validate spec requirement that duplicate channels attempting to become canonical CCV channel are closed.
+// See: https://github.com/cosmos/interchain-security/issues/327
+func TestOnChanOpenConfirm(t *testing.T) {
+
+	testCases := []struct {
+		name                string
+		mockExpectations    func(sdk.Context, testkeeper.MockedKeepers) []*gomock.Call
+		setDuplicateChannel bool
+		expPass             bool
+	}{
+		{
+			name: "channel not found",
+			mockExpectations: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) []*gomock.Call {
+				return []*gomock.Call{
+					mocks.MockChannelKeeper.EXPECT().GetChannel(
+						ctx, ccv.ProviderPortID, gomock.Any()).Return(channeltypes.Channel{},
+						false, // Found is false
+					).Times(1),
+				}
+			},
+			expPass: false,
+		},
+		{
+			name: "too many connection hops",
+			mockExpectations: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) []*gomock.Call {
+				return []*gomock.Call{
+					mocks.MockChannelKeeper.EXPECT().GetChannel(
+						ctx, ccv.ProviderPortID, gomock.Any()).Return(channeltypes.Channel{
+						State:          channeltypes.OPEN,
+						ConnectionHops: []string{"connectionID", "another"}, // Two hops is two many
+					}, false,
+					).Times(1),
+				}
+			},
+			expPass: false,
+		},
+		{
+			name: "connection not found",
+			mockExpectations: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) []*gomock.Call {
+				return []*gomock.Call{
+					mocks.MockChannelKeeper.EXPECT().GetChannel(
+						ctx, ccv.ProviderPortID, gomock.Any()).Return(channeltypes.Channel{
+						State:          channeltypes.OPEN,
+						ConnectionHops: []string{"connectionID"},
+					}, true,
+					).Times(1),
+					mocks.MockConnectionKeeper.EXPECT().GetConnection(ctx, "connectionID").Return(
+						conntypes.ConnectionEnd{}, false, // Found is false
+					).Times(1),
+				}
+			},
+			expPass: false,
+		},
+		{
+			name: "client state not found",
+			mockExpectations: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) []*gomock.Call {
+				return []*gomock.Call{
+					mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, ccv.ProviderPortID, gomock.Any()).Return(
+						channeltypes.Channel{
+							State:          channeltypes.OPEN,
+							ConnectionHops: []string{"connectionID"},
+						},
+						true,
+					).Times(1),
+					mocks.MockConnectionKeeper.EXPECT().GetConnection(ctx, "connectionID").Return(
+						conntypes.ConnectionEnd{ClientId: "clientID"}, true,
+					).Times(1),
+					mocks.MockClientKeeper.EXPECT().GetClientState(ctx, "clientID").Return(
+						nil, false, // Found is false
+					).Times(1),
+				}
+			},
+			expPass: false,
+		},
+		{
+			name: "CCV channel already exists, error returned, but dup channel is not closed",
+			mockExpectations: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) []*gomock.Call {
+				// Error is returned after all expected mock calls are hit for SetConsumerChain
+				return testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, "consumerChainID")
+			},
+			setDuplicateChannel: true, // Only case where duplicate channel is setup
+			expPass:             false,
+		},
+		{
+			name: "success",
+			mockExpectations: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) []*gomock.Call {
+				// Full SetConsumerChain method should run without error, hitting all expected mocks
+				return testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, "consumerChainID")
+			},
+			expPass: true,
+		},
+	}
+
+	for _, tc := range testCases {
+
+		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+			t, testkeeper.NewInMemKeeperParams(t))
+
+		gomock.InOrder(tc.mockExpectations(ctx, mocks)...)
+
+		if tc.setDuplicateChannel {
+			providerKeeper.SetChainToChannel(ctx, "consumerChainID", "existingChannelID")
+		}
+
+		providerModule := provider.NewAppModule(&providerKeeper)
+
+		err := providerModule.OnChanOpenConfirm(ctx, "providerPortID", "channelID")
+
+		if tc.expPass {
+
+			require.NoError(t, err)
+			// Validate channel mappings
+			channelID, found := providerKeeper.GetChainToChannel(ctx, "consumerChainID")
+			require.True(t, found)
+			require.Equal(t, "channelID", channelID)
+
+			chainID, found := providerKeeper.GetChannelToChain(ctx, "channelID")
+			require.True(t, found)
+			require.Equal(t, "consumerChainID", chainID)
+
+			height, found := providerKeeper.GetInitChainHeight(ctx, "consumerChainID")
+			require.True(t, found)
+			require.Equal(t, ctx.BlockHeight(), int64(height))
+
+		} else {
+			require.Error(t, err)
+		}
+		ctrl.Finish()
+	}
+}

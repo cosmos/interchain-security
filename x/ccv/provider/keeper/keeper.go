@@ -266,14 +266,14 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
 	}
 	connectionID := channel.ConnectionHops[0]
-	chainID, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
+	_, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
 	if err != nil {
 		return err
 	}
 	// Verify that there isn't already a CCV channel for the consumer chain
-	// If there is, then close the channel.
-	if prevChannel, ok := k.GetChannelToChain(ctx, chainID); ok {
-		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, chainID)
+	chainID := tmClient.ChainId
+	if prevChannelID, ok := k.GetChainToChannel(ctx, chainID); ok {
+		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannelID, chainID)
 	}
 
 	// the CCV channel is established:
@@ -440,21 +440,27 @@ func (k Keeper) EmptyMaturedUnbondingOps(ctx sdk.Context) ([]uint64, error) {
 	return ids, nil
 }
 
-func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (string, *ibctmtypes.ClientState, error) {
-	// Retrieve the underlying client state.
+// Retrieves the underlying client state corresponding to a connection ID.
+func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (
+	clientID string, tmClient *ibctmtypes.ClientState, err error) {
+
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
 	if !ok {
-		return "", nil, sdkerrors.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
+		return "", nil, sdkerrors.Wrapf(conntypes.ErrConnectionNotFound,
+			"connection not found for connection ID: %s", connectionID)
 	}
-	client, ok := k.clientKeeper.GetClientState(ctx, conn.ClientId)
+	clientID = conn.ClientId
+	clientState, ok := k.clientKeeper.GetClientState(ctx, clientID)
 	if !ok {
-		return "", nil, sdkerrors.Wrapf(clienttypes.ErrClientNotFound, "client not found for client ID: %s", conn.ClientId)
+		return "", nil, sdkerrors.Wrapf(clienttypes.ErrClientNotFound,
+			"client not found for client ID: %s", conn.ClientId)
 	}
-	tmClient, ok := client.(*ibctmtypes.ClientState)
+	tmClient, ok = clientState.(*ibctmtypes.ClientState)
 	if !ok {
-		return "", nil, sdkerrors.Wrapf(clienttypes.ErrInvalidClientType, "invalid client type. expected %s, got %s", ibcexported.Tendermint, client.ClientType())
+		return "", nil, sdkerrors.Wrapf(clienttypes.ErrInvalidClientType,
+			"invalid client type. expected %s, got %s", ibcexported.Tendermint, clientState.ClientType())
 	}
-	return conn.ClientId, tmClient, nil
+	return clientID, tmClient, err
 }
 
 // chanCloseInit defines a wrapper function for the channel Keeper's function
