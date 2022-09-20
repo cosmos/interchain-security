@@ -4,43 +4,28 @@ import (
 	"testing"
 	"time"
 
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
+// TestParams tests the default params of the keeper, and getting/setting new params.
 func TestParams(t *testing.T) {
 	defaultParams := types.DefaultParams()
 
-	// Constuct our own params subspace
-	cdc, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
-	keyTable := paramstypes.NewKeyTable(paramstypes.NewParamSetPair(types.KeyTemplateClient, &ibctmtypes.ClientState{}, func(value interface{}) error { return nil }))
-	paramsSubspace = paramsSubspace.WithKeyTable(keyTable)
-
-	expectedClientState :=
-		ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			time.Second*10, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, true, true)
-
-	paramsSubspace.Set(ctx, types.KeyTemplateClient, expectedClientState)
-
-	providerKeeper := testkeeper.GetProviderKeeperWithMocks(
-		cdc,
-		storeKey,
-		paramsSubspace,
-		capabilitykeeper.ScopedKeeper{},
-		&testkeeper.MockChannelKeeper{},
-		&testkeeper.MockPortKeeper{},
-		&testkeeper.MockConnectionKeeper{},
-		&testkeeper.MockClientKeeper{},
-		&testkeeper.MockStakingKeeper{},
-		&testkeeper.MockSlashingKeeper{},
-		&testkeeper.MockAccountKeeper{},
-	)
+	// Construct an in-mem keeper with a default template client state set
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mocks := testkeeper.NewMockedKeepers(ctrl)
+	ctx := keeperParams.Ctx
+	// Populate template client state to test against
+	testkeeper.SetTemplateClientState(ctx, keeperParams.ParamsSubspace)
+	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 	params := providerKeeper.GetParams(ctx)
 	require.Equal(t, defaultParams, params)
