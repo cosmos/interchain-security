@@ -112,7 +112,7 @@ func TestHistoricalInfo(t *testing.T) {
 	keeperParams.RegisterSdkCryptoCodecInterfaces()
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
-	ctx = keeperParams.Ctx.WithBlockHeight(15)
+	ctx = ctx.WithBlockHeight(15)
 
 	// Generate test validators, save them to store, and retrieve stored records
 	validators := GenerateValidators(t)
