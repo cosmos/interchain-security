@@ -693,7 +693,8 @@ func TestBeginBlockInit(t *testing.T) {
 	)
 
 	for _, prop := range pendingProps {
-		providerKeeper.SetPendingConsumerAdditionProp(ctx, prop)
+		err := providerKeeper.SetPendingConsumerAdditionProp(ctx, prop)
+		require.NoError(t, err)
 	}
 
 	providerKeeper.BeginBlockInit(ctx)
