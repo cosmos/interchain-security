@@ -10,7 +10,8 @@ import (
 
 // TestParams tests the default params set for a consumer chain, and related getters/setters
 func TestParams(t *testing.T) {
-	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	defer ctrl.Finish()
 	consumerKeeper.SetParams(ctx, types.DefaultParams())
 
 	expParams := types.NewParams(false, 1000, "", "") // these are the default params, IBC suite independently sets enabled=true
