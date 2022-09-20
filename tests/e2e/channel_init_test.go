@@ -8,11 +8,7 @@ import (
 
 	"fmt"
 
-	ibctypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
-	clienttmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
@@ -110,6 +106,10 @@ func (suite *ConsumerKeeperTestSuite) TestConsumerGenesis() {
 		suite.consumerChain.App.(*app.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), restartGenesis)
 	})
 }
+
+// TODO: Make comment in relevant issue about this PR moving e2e -> unit for provider, but still needed for consumer
+// OR just do the migration in this PR if it's quick
+
 func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 	var (
 		channel *channeltypes.Channel
@@ -526,167 +526,6 @@ func (suite *ConsumerKeeperTestSuite) TestVerifyProviderChain() {
 			}
 		})
 	}
-}
-
-// TestOnChanOpenTry validates the provider's OnChanOpenTry implementation against the spec:
-// https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-cotry1
-func (suite *ProviderTestSuite) TestOnChanOpenTry() {
-	var (
-		channel             *channeltypes.Channel
-		counterpartyVersion string
-		providerKeeper      *providerkeeper.Keeper
-	)
-
-	testCases := []struct {
-		name     string
-		malleate func()
-		expPass  bool
-	}{
-		{
-			"success", func() {}, true,
-		},
-		{
-			"invalid order", func() {
-				channel.Ordering = channeltypes.UNORDERED
-			}, false,
-		},
-		{
-			"invalid port ID", func() {
-				suite.path.EndpointA.ChannelConfig.PortID = ibctesting.MockPort
-			}, false,
-		},
-		{
-			"invalid counter party port ID", func() {
-				channel.Counterparty.PortId = ibctesting.MockPort
-			}, false,
-		},
-		{
-			"invalid counter party version", func() {
-				counterpartyVersion = "invalidVersion"
-			}, false,
-		},
-		{
-			"unexpected client ID mapped to chain ID", func() {
-				providerKeeper.SetConsumerClientId(
-					suite.providerCtx(),
-					suite.path.EndpointA.Chain.ChainID,
-					"invalidClientID",
-				)
-			}, false,
-		},
-		{
-			"other CCV channel exists for this consumer chain", func() {
-				providerKeeper.SetChainToChannel(
-					suite.providerCtx(),
-					suite.path.EndpointA.Chain.ChainID,
-					"some existing channel ID",
-				)
-			}, false,
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-
-		suite.Run(tc.name, func() {
-			suite.SetupTest() // reset
-
-			suite.path.EndpointA.ChannelConfig.PortID = ccv.ProviderPortID
-			suite.path.EndpointA.ChannelID = "providerChanID"
-			suite.path.EndpointB.ChannelConfig.PortID = ccv.ConsumerPortID
-			suite.path.EndpointB.ChannelID = "consumerChanID"
-			suite.path.EndpointA.ConnectionID = "ConnID"
-			suite.path.EndpointA.ClientID = "ClientID"
-			suite.path.EndpointA.Chain.ChainID = "ChainID"
-
-			counterparty := channeltypes.NewCounterparty(
-				suite.path.EndpointB.ChannelConfig.PortID,
-				suite.path.EndpointA.ChannelID,
-			)
-			counterpartyVersion = ccv.Version
-
-			channel = &channeltypes.Channel{
-				State:          channeltypes.INIT,
-				Ordering:       channeltypes.ORDERED,
-				Counterparty:   counterparty,
-				ConnectionHops: []string{suite.path.EndpointA.ConnectionID},
-				Version:        counterpartyVersion,
-			}
-
-			providerKeeper = &suite.providerChain.App.(*appProvider.App).ProviderKeeper
-			providerModule := provider.NewAppModule(providerKeeper)
-			chanCap, err := suite.providerChain.App.GetScopedIBCKeeper().NewCapability(
-				suite.providerCtx(),
-				host.ChannelCapabilityPath(
-					suite.path.EndpointA.ChannelConfig.PortID,
-					suite.path.EndpointA.ChannelID,
-				),
-			)
-			suite.Require().NoError(err)
-
-			// Manual keeper setup
-			connKeeper := suite.providerChain.App.GetIBCKeeper().ConnectionKeeper
-			connKeeper.SetConnection(
-				suite.providerCtx(),
-				suite.path.EndpointA.ConnectionID,
-				ibctypes.ConnectionEnd{
-					ClientId: suite.path.EndpointA.ClientID,
-				},
-			)
-			clientKeeper := suite.providerChain.App.GetIBCKeeper().ClientKeeper
-			clientKeeper.SetClientState(
-				suite.providerCtx(),
-				suite.path.EndpointA.ClientID,
-				&clienttmtypes.ClientState{
-					ChainId: suite.path.EndpointA.Chain.ChainID,
-				},
-			)
-			providerKeeper.SetConsumerClientId(
-				suite.providerCtx(),
-				suite.path.EndpointA.Chain.ChainID,
-				suite.path.EndpointA.ClientID,
-			)
-
-			tc.malleate() // explicitly change fields
-
-			metadata, err := providerModule.OnChanOpenTry(
-				suite.providerCtx(),
-				channel.Ordering,
-				channel.GetConnectionHops(),
-				suite.path.EndpointA.ChannelConfig.PortID,
-				suite.path.EndpointA.ChannelID,
-				chanCap,
-				channel.Counterparty,
-				counterpartyVersion,
-			)
-
-			if tc.expPass {
-				suite.Require().NoError(err)
-				md := &providertypes.HandshakeMetadata{}
-				err = md.Unmarshal([]byte(metadata))
-				suite.Require().NoError(err)
-			} else {
-				suite.Require().Error(err)
-			}
-		})
-	}
-}
-
-func (suite *ProviderTestSuite) TestOnChanOpenInit() {
-	// OnChanOpenInit must error for provider even with correct arguments
-	providerModule := provider.NewAppModule(&suite.providerChain.App.(*appProvider.App).ProviderKeeper)
-
-	err := providerModule.OnChanOpenInit(
-		suite.providerCtx(),
-		channeltypes.ORDERED,
-		[]string{"connection-1"},
-		ccv.ProviderPortID,
-		"channel-1",
-		nil,
-		channeltypes.NewCounterparty(ccv.ConsumerPortID, "channel-1"),
-		ccv.Version,
-	)
-	suite.Require().Error(err, "OnChanOpenInit must error on provider chain")
 }
 
 // TestConsumerChainProposalHandler tests the highest level handler for proposals concerning both
