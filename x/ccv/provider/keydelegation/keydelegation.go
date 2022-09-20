@@ -1,4 +1,4 @@
-package keeper
+package keydelegation
 
 import "errors"
 
@@ -32,6 +32,11 @@ func MakeKeyDelegation() KeyDelegation {
 }
 
 func (m *KeyDelegation) SetForeignKey(lk LK, fk FK) {
+	if currFk, ok := m.localKeyToCurrentForeignKey[lk]; ok {
+		if currFk == fk {
+			return
+		}
+	}
 	m.localKeyToCurrentForeignKey[lk] = fk
 	if u, ok := m.localKeyToLastUpdate[lk]; ok {
 		if 0 < u.power {

@@ -10,6 +10,15 @@ EXTENDS Integers, FiniteSets, Sequences, TLC, Apalache
     @typeAlias: fk = Str;
     @typeAlias: mapping = $lk -> $fk;
     @typeAlias: power = $lk -> Int;
+    
+    @typeAlias: state = {
+        Action : $action,
+        Mapping : $mapping,
+        Power : $power,
+        TP : Int,
+        TC : Int,
+        TM : Int,
+    };
 
 *)
 
@@ -39,7 +48,6 @@ VARIABLES
     \* @type: Int;
     TM
 
-
 CInit == 
     /\ LKS = {"lk0", "lk1", "lk2"}
     /\ FKS = {"fk0", "fk1", "fk2", "fk3", "fk4", "fk5", "fk6", "fk7", "fk8"}
@@ -48,7 +56,7 @@ CInit ==
 
 Init == 
     \E m \in MAPPINGS : 
-    /\ \A a, b \in DOMAIN m : a = b \/ m[a] # m[b]
+    /\ \A a, b \in DOMAIN m : m[a] = m[b] => a = b
     /\ Action = [kind |-> "none"]
     /\ Mapping = m
     /\ Power \in POWERS
@@ -58,7 +66,7 @@ Init ==
 
 EndBlock == 
     \E m \in MAPPINGS, p \in POWERS : 
-    /\ \A a, b \in DOMAIN m : a = b \/ m[a] # m[b]
+    /\ \A a, b \in DOMAIN m : m[a] = m[b] => a = b
     /\ UNCHANGED Action
     /\ Mapping' = m
     /\ Power' = p
