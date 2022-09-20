@@ -22,7 +22,7 @@
     - [UnbondingSequence](#interchain_security.ccv.consumer.v1.UnbondingSequence)
   
 - [interchain_security/ccv/provider/v1/provider.proto](#interchain_security/ccv/provider/v1/provider.proto)
-    - [CreateConsumerChainProposal](#interchain_security.ccv.provider.v1.CreateConsumerChainProposal)
+    - [ConsumerAdditionProposal](#interchain_security.ccv.provider.v1.ConsumerAdditionProposal)
     - [HandshakeMetadata](#interchain_security.ccv.provider.v1.HandshakeMetadata)
     - [Params](#interchain_security.ccv.provider.v1.Params)
   
@@ -278,10 +278,10 @@ UnbondingSequence defines the genesis information for each unbonding packet sequ
 
 
 
-<a name="interchain_security.ccv.provider.v1.CreateConsumerChainProposal"></a>
+<a name="interchain_security.ccv.provider.v1.ConsumerAdditionProposal"></a>
 
-### CreateConsumerChainProposal
-CreateConsumerChainProposal is a governance proposal on the provider chain to spawn a new consumer chain.
+### ConsumerAdditionProposal
+ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
 If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
 or get slashed. It is recommended that spawn time occurs after the proposal end time.
 
