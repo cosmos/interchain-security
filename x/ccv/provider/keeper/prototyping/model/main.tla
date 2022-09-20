@@ -1,35 +1,52 @@
 ---- MODULE main ----
 
-\* EXTENDS Integers, FiniteSets, Sequences, TLC, Apalache
-EXTENDS Integers, FiniteSets, Sequences, TLC
+EXTENDS Integers, FiniteSets, Sequences, TLC, Apalache
+\* EXTENDS Integers, FiniteSets, Sequences, TLC
+
+(*
+
+@typeAlias: Action = [ kind : Str, ... ];
+@typeAlias: Pair = [ lk : Str, fk : Str ];
+@typeAlias: LK = Str;
+@typeAlias: FK = Str;
+@typeAlias: Mapping = LK -> FK;
+
+*)
+
+LKS = 
+
+Pairs == {
+    [ lk : "lk0", fk : "fk0-0" ],
+    [ lk : "lk0", fk : "fk0-1" ],
+    [ lk : "lk0", fk : "fk0-2" ],
+    [ lk : "lk1", fk : "fk1-0" ],
+    [ lk : "lk1", fk : "fk1-1" ],
+    [ lk : "lk1", fk : "fk1-2" ],
+    [ lk : "lk2", fk : "fk2-0" ],
+    [ lk : "lk2", fk : "fk2-1" ],
+    [ lk : "lk2", fk : "fk2-2" ]
+    }
+
+Mappings == { f \in [LKS -> FKS] : ~ (\E a, b \in DOMAIN f : f[a] = f[b]) }
+Powers == [ LKS -> 0..2 ]
 
 VARIABLES
-    \* @type: Str;
-    actionKind,
-    \* @type: Int;
-    nextVSCId,
-    \* @type: Int;
-    nextConsumerId,
-    \* @type: Set(Int);
-    initialisingConsumers,
-    \* @type: Set(Int); 
-    activeConsumers,
-    \* Maps consumer -> vscId
-    \* @type: Set(<<Int, Int>>);
-    awaitedVSCIds
+    \* @type: Action;
+    action,
+    \* @type: Mapping;
+    mapping,
+    \* @type: Str -> Int;
+    powers,
 
 
 Init == 
-    /\ actionKind = "Init"
-    /\ nextVSCId = 0
-    /\ nextConsumerId = 0
-    /\ initialisingConsumers = {}
-    /\ activeConsumers = {}
-    /\ awaitedVSCIds = {}
 
 EndBlock == 
+    \E m \in Mappings, p \in Powers : 
+    
 
 SetKey ==
+    \E p \in Pairs : 
 
 ReceiveSlash == 
 
@@ -41,7 +58,14 @@ Next ==
     \/ ReceiveSlash
     \/ ReceiveMaturity
 
-\* When a validator had a positive power on the consumer, it was slashable up until UNBONDING_PERIOD later
 Inv == 
+
+(*
+It is always possible to slash a local key as long as the 
+An FK to LK mapping is always available from the time an update includes the LK until the time the vscid
+for 
+
+If a vscid for a given mapping was not matured then the mapping exists
+*)
 
 ====

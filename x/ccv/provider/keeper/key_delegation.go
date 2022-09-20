@@ -12,7 +12,9 @@ type update struct {
 }
 
 type KeyDelegation struct {
-	localKeyToLastUpdate              map[LK]update
+	// TODO: how to GC this?
+	localKeyToLastUpdate map[LK]update
+	// TODO: how to GC this?
 	localKeyToCurrentForeignKey       map[LK]FK
 	foreignKeyToLocalKey              map[FK]LK
 	foreignKeyToVscidWhenLastSent     map[FK]VSCID
