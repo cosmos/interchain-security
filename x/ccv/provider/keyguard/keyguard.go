@@ -1,4 +1,4 @@
-package keydelegation
+package keyguard
 
 import "errors"
 
@@ -11,18 +11,25 @@ type update struct {
 	power int
 }
 
-type KeyDelegation struct {
-	// TODO: how to GC this?
+type KeyGuard struct {
+	// A new key is added when a relevant update is returned by ComputeUpdates
+	// the key is deleted at earliest after sending an update corresponding
+	// to a call to staking::DeleteValidator
 	localKeyToLastUpdate map[LK]update
-	// TODO: how to GC this?
-	localKeyToCurrentForeignKey       map[LK]FK
-	foreignKeyToLocalKey              map[FK]LK
-	foreignKeyToVscidWhenLastSent     map[FK]VSCID
+	// A new key is added on staking::CreateValidator
+	// the key is deleted at earliest after sending an update corresponding
+	// to a call to staking::DeleteValidator
+	localKeyToCurrentForeignKey map[LK]FK
+	// Prunable state
+	foreignKeyToLocalKey map[FK]LK
+	// Prunable state
+	foreignKeyToVscidWhenLastSent map[FK]VSCID
+	// Ephemeral state: will be cleared after each call to ComputeUpdates
 	localKeysForWhichUpdateMustBeSent []LK
 }
 
-func MakeKeyDelegation() KeyDelegation {
-	return KeyDelegation{
+func MakeKeyGuard() KeyGuard {
+	return KeyGuard{
 		localKeyToLastUpdate:              map[LK]update{},
 		localKeyToCurrentForeignKey:       map[LK]FK{},
 		foreignKeyToLocalKey:              map[FK]LK{},
@@ -31,7 +38,7 @@ func MakeKeyDelegation() KeyDelegation {
 	}
 }
 
-func (m *KeyDelegation) SetForeignKey(lk LK, fk FK) {
+func (m *KeyGuard) SetForeignKey(lk LK, fk FK) {
 	if currFk, ok := m.localKeyToCurrentForeignKey[lk]; ok {
 		if currFk == fk {
 			return
@@ -47,7 +54,7 @@ func (m *KeyDelegation) SetForeignKey(lk LK, fk FK) {
 	}
 }
 
-func (m *KeyDelegation) GetLocalKey(fk FK) (LK, error) {
+func (m *KeyGuard) GetLocalKey(fk FK) (LK, error) {
 	if lk, ok := m.foreignKeyToLocalKey[fk]; ok {
 		return lk, nil
 	} else {
@@ -55,7 +62,7 @@ func (m *KeyDelegation) GetLocalKey(fk FK) (LK, error) {
 	}
 }
 
-func (m *KeyDelegation) Prune(mostRecentlyMaturedVscid VSCID) {
+func (m *KeyGuard) Prune(mostRecentlyMaturedVscid VSCID) {
 	toRemove := []FK{}
 	for fk, vscid := range m.foreignKeyToVscidWhenLastSent {
 		if vscid <= mostRecentlyMaturedVscid {
@@ -68,7 +75,7 @@ func (m *KeyDelegation) Prune(mostRecentlyMaturedVscid VSCID) {
 	}
 }
 
-func (m *KeyDelegation) ComputeUpdates(vscid VSCID, localUpdates []update) (foreignUpdates []update) {
+func (m *KeyGuard) ComputeUpdates(vscid VSCID, localUpdates []update) (foreignUpdates []update) {
 	foreignUpdates = []update{}
 
 	// Create any updates for validators whose power did not change

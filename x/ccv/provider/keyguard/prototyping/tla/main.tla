@@ -5,20 +5,10 @@ EXTENDS Integers, FiniteSets, Sequences, TLC, Apalache
 
 (*
 
-    @typeAlias: action = { kind : Str };
     @typeAlias: lk = Str;
     @typeAlias: fk = Str;
     @typeAlias: mapping = $lk -> $fk;
-    @typeAlias: power = $lk -> Int;
-    
-    @typeAlias: state = {
-        Action : $action,
-        Mapping : $mapping,
-        Power : $power,
-        TP : Int,
-        TC : Int,
-        TM : Int,
-    };
+    @typeAlias: updates = $lk -> Int;
 
 *)
 
@@ -28,19 +18,13 @@ CONSTANTS
     \* @type: Set($lk);
     LKS,
     \* @type: Set($fk);
-    FKS,
-    \* @type: Set($mapping);
-    MAPPINGS,
-    \* @type: Set($power);
-    POWERS 
+    FKS
 
 VARIABLES
-    \* @type: $action;
-    Action,
     \* @type: $mapping;
     Mapping,
-    \* @type: $power;
-    Power,
+    \* @type: $updates;
+    Updates,
     \* @type: Int;
     TP,
     \* @type: Int;
@@ -51,43 +35,37 @@ VARIABLES
 CInit == 
     /\ LKS = {"lk0", "lk1", "lk2"}
     /\ FKS = {"fk0", "fk1", "fk2", "fk3", "fk4", "fk5", "fk6", "fk7", "fk8"}
-    /\ MAPPINGS = [LKS -> FKS]
-    /\ POWERS = [ LKS -> 0..2 ]
 
 Init == 
-    \E m \in MAPPINGS : 
+    \E m \in [LKS -> FKS], ss \in SUBSET LKS: 
     /\ \A a, b \in DOMAIN m : m[a] = m[b] => a = b
-    /\ Action = [kind |-> "none"]
     /\ Mapping = m
-    /\ Power \in POWERS
+    /\ Updates \in [ss -> 0..2]
     /\ TP = 1
     /\ TC = 0
     /\ TM = 0
 
 EndBlock == 
-    \E m \in MAPPINGS, p \in POWERS : 
+    \E m \in [LKS -> FKS], ss \in SUBSET LKS: 
     /\ \A a, b \in DOMAIN m : m[a] = m[b] => a = b
-    /\ UNCHANGED Action
     /\ Mapping' = m
-    /\ Power' = p
+    /\ Updates' \in [ss -> 0..2]
     /\ TP' = TP + 1
     /\ UNCHANGED TC
     /\ UNCHANGED TM
 
 UpdateConsumer == 
     \E t \in (TC+1)..TP :
-    /\ UNCHANGED Action
     /\ UNCHANGED Mapping
-    /\ UNCHANGED Power
+    /\ UNCHANGED Updates
     /\ UNCHANGED TP
     /\ TC' = t
     /\ UNCHANGED TM
 
 ReceiveMaturities == 
     \E t \in (TM+1)..TC :
-    /\ UNCHANGED Action
     /\ UNCHANGED Mapping
-    /\ UNCHANGED Power
+    /\ UNCHANGED Updates
     /\ UNCHANGED TP
     /\ UNCHANGED TC
     /\ TM' = t
@@ -96,7 +74,5 @@ Next ==
     \/ EndBlock
     \/ UpdateConsumer
     \/ ReceiveMaturities
-
-Inv == TRUE
 
 ====

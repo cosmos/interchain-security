@@ -1,4 +1,4 @@
-package keeper_test
+package keyguard_test
 
 import (
 	"testing"
