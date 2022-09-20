@@ -4,12 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -18,7 +17,10 @@ import (
 
 // TestUnbondingTime tests getter and setter functionality for the unbonding period of a consumer chain
 func TestUnbondingTime(t *testing.T) {
-	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
+
+	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	defer ctrl.Finish()
+
 	_, ok := consumerKeeper.GetUnbondingTime(ctx)
 	require.False(t, ok)
 	unbondingPeriod := time.Hour * 24 * 7 * 3
@@ -30,7 +32,10 @@ func TestUnbondingTime(t *testing.T) {
 
 // TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper
 func TestProviderClientID(t *testing.T) {
-	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
+
+	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	defer ctrl.Finish()
+
 	_, ok := consumerKeeper.GetProviderClientID(ctx)
 	require.False(t, ok)
 	consumerKeeper.SetProviderClientID(ctx, "someClientID")
@@ -41,7 +46,10 @@ func TestProviderClientID(t *testing.T) {
 
 // TestProviderChannel tests getter and setter functionality for the channel ID stored on consumer keeper
 func TestProviderChannel(t *testing.T) {
-	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
+
+	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	defer ctrl.Finish()
+
 	_, ok := consumerKeeper.GetProviderChannel(ctx)
 	require.False(t, ok)
 	consumerKeeper.SetProviderChannel(ctx, "channelID")
@@ -72,7 +80,9 @@ func TestPendingChanges(t *testing.T) {
 		nil,
 	)
 
-	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	defer ctrl.Finish()
+
 	err = consumerKeeper.SetPendingChanges(ctx, pd)
 	require.NoError(t, err)
 	gotPd, ok := consumerKeeper.GetPendingChanges(ctx)
@@ -86,7 +96,10 @@ func TestPendingChanges(t *testing.T) {
 
 // TestPacketMaturityTime tests getter, setter, and iterator functionality for the packet maturity time of a received VSC packet
 func TestPacketMaturityTime(t *testing.T) {
-	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
+
+	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	defer ctrl.Finish()
+
 	consumerKeeper.SetPacketMaturityTime(ctx, 1, 10)
 	consumerKeeper.SetPacketMaturityTime(ctx, 2, 25)
 	consumerKeeper.SetPacketMaturityTime(ctx, 5, 15)
@@ -116,19 +129,13 @@ func TestPacketMaturityTime(t *testing.T) {
 func TestCrossChainValidator(t *testing.T) {
 
 	// Construct a keeper with a custom codec
-	// TODO: Ensure all custom interfaces are registered in prod, see https://github.com/cosmos/interchain-security/issues/273
-	_, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
-	ir := codectypes.NewInterfaceRegistry()
-
-	// Public key implementation must be registered
-	cryptocodec.RegisterInterfaces(ir)
-	cdc := codec.NewProtoCodec(ir)
-
-	consumerKeeper := testkeeper.GetCustomConsumerKeeper(
-		cdc,
-		storeKey,
-		paramsSubspace,
-	)
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	// Explicitly register public key interface
+	testkeeper.RegisterSdkCryptoCodecInterfaces(&keeperParams)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, testkeeper.NewMockedKeepers(ctrl))
+	ctx := keeperParams.Ctx
 
 	// should return false
 	_, found := consumerKeeper.GetCCValidator(ctx, ed25519.GenPrivKey().PubKey().Address())
@@ -165,7 +172,9 @@ func TestCrossChainValidator(t *testing.T) {
 
 // TestPendingSlashRequests tests the getter, setter, appending method, and deletion method for pending slash requests
 func TestPendingSlashRequests(t *testing.T) {
-	consumerKeeper, ctx := testkeeper.GetConsumerKeeperAndCtx(t)
+
+	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	defer ctrl.Finish()
 
 	// prepare test setup by storing 10 pending slash requests
 	request := []types.SlashRequest{}

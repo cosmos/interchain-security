@@ -25,7 +25,8 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 			ExpDeleted:              false,
 		},
 	}
-	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	defer ctrl.Finish()
 
 	for _, tc := range testCases {
 		providerKeeper.SetPendingConsumerRemovalProp(ctx, tc.ChainId, tc.StopTime)
@@ -96,7 +97,8 @@ func TestPendingConsumerRemovalPropOrder(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+		providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+		defer ctrl.Finish()
 		ctx = ctx.WithBlockTime(tc.accessTime)
 
 		for _, prop := range tc.propSubmitOrder {
@@ -122,7 +124,8 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 			ExpDeleted:               false,
 		},
 	}
-	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	defer ctrl.Finish()
 
 	for _, tc := range testCases {
 		err := providerKeeper.SetPendingConsumerAdditionProp(ctx, &tc.ConsumerAdditionProposal)
@@ -194,7 +197,9 @@ func TestPendingConsumerAdditionPropOrder(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+		providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+		defer ctrl.Finish()
+
 		ctx = ctx.WithBlockTime(tc.accessTime)
 
 		for _, prop := range tc.propSubmitOrder {
