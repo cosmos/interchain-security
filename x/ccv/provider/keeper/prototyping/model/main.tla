@@ -4,25 +4,54 @@ EXTENDS Integers, FiniteSets, Sequences, TLC, Apalache
 
 (*
 
-    @typeAlias: X = Str;
+    @typeAlias: action = { kind : Str };
+    @typeAlias: lk = Str;
+    @typeAlias: fk = Str;
+    @typeAlias: mapping = $lk -> $fk;
+    @typeAlias: power = $lk -> Int;
 
 *)
 
+TypeAliases == TRUE
+
 CONSTANTS
-    \* @type: Set(X);
-    XS
+    \* @type: Set($lk);
+    LKS,
+    \* @type: Set($fk);
+    FKS,
+    \* @type: Set($mapping);
+    MAPPINGS,
+    \* @type: Set($power);
+    POWERS 
 
 VARIABLES
-    \* @type: Int;
-    a
+    \* @type: $action;
+    Action,
+    \* @type: $mapping;
+    Mapping,
+    \* @type: $power;
+    Power
 
-CInit == XS = {"k", "u", "v"}
+CInit == 
+    /\ LKS = {"lk0", "lk1", "lk2"}
+    /\ FKS = {"fk0", "fk1", "fk2", "fk3", "fk4", "fk5", "fk6", "fk7", "fk8"}
+    /\ MAPPINGS = { f \in [LKS -> FKS] : ~ (\E a, b \in DOMAIN f : f[a] = f[b]) }
+    /\ POWERS = [ LKS -> 0..2 ]
 
-Init == a = 42
+Init == 
+    /\ Action = [kind |-> "none"]
+    /\ Mapping \in MAPPINGS
+    /\ Power \in POWERS
 
-Go == a' = 42
+EndBlock == 
+    \E m \in MAPPINGS, p \in POWERS : 
+    /\ UNCHANGED Action
+    /\ Mapping' = m 
+    /\ Power' = p
 
-Next == Go
+Next == 
+    \/ EndBlock
+    \/ TRUE
 
 Inv == TRUE
 
