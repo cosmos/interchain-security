@@ -11,7 +11,7 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-var verbose = true
+var verbose = false
 
 func main() {
 	fmt.Println("============================================ start happy path tests ============================================")
@@ -27,7 +27,7 @@ func main() {
 
 	fmt.Printf("happy path tests successful - time elapsed %v\n", time.Since(start))
 
-	fmt.Println("============================================ start democracy path tests ============================================")
+	fmt.Println("============================================ start democracy tests ============================================")
 	start = time.Now()
 	tr.startDocker()
 
@@ -35,7 +35,7 @@ func main() {
 		tr.runStep(step, verbose)
 	}
 
-	fmt.Printf("democracy path tests successful - time elapsed %v\n", time.Since(start))
+	fmt.Printf("democracy tests successful - time elapsed %v\n", time.Since(start))
 }
 
 func (tr TestRun) runStep(step Step, verbose bool) {
