@@ -24,8 +24,6 @@ type KeyGuard struct {
 	// the key is deleted at earliest after sending an update corresponding
 	// to a call to staking::DeleteValidator TODO: impl this
 	localToForeign map[LK]FK
-	// Ephemeral state: will be cleared after each call to ComputeUpdates
-	localsWhichMustUpdate []LK
 	// Prunable state
 	foreignToLocal map[FK]LK
 	// Prunable state
@@ -38,16 +36,11 @@ func MakeKeyGuard() KeyGuard {
 		localToForeign:                   map[LK]FK{},
 		foreignToLocal:                   map[FK]LK{},
 		foreignToGreatestVSCID:           map[FK]VSCID{},
-		localsWhichMustUpdate:            []LK{},
 	}
 }
 
 func (m *KeyGuard) SetLocalToForeign(lk LK, fk FK) {
 	m.localToForeign[lk] = fk
-	if _, ok := m.localToLastPositiveForeignUpdate[lk]; ok {
-		// We must create an update
-		m.localsWhichMustUpdate = append(m.localsWhichMustUpdate, lk)
-	}
 }
 
 func (m *KeyGuard) GetLocal(fk FK) (LK, error) {
@@ -58,44 +51,66 @@ func (m *KeyGuard) GetLocal(fk FK) (LK, error) {
 	}
 }
 
-func (m *KeyGuard) ComputeUpdates(vscid VSCID, localUpdates []update) []update {
+func (m *KeyGuard) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
+
+	lks := []LK{}
+
+	// Key changes
+	for lk, newFk := range m.localToForeign {
+		if u, ok := m.localToLastPositiveForeignUpdate[lk]; ok {
+			oldFk := u.key
+			if oldFk != newFk {
+				lks = append(lks, lk)
+			}
+		}
+	}
+	// Power changes
+	for lk := range localUpdates {
+		lks = append(lks, lk)
+	}
 
 	foreignUpdates := map[FK]int{}
 
-	// Create updates for any locals whose foreign key changed
-	// NOTE: this includes the case of updating to the same foreign key
-	for _, lk := range m.localsWhichMustUpdate {
-		fk := m.localToForeign[lk]
-		fu := m.localToLastPositiveForeignUpdate[lk]
-		// Create an update which will delete the validator for the old key
-		foreignUpdates[fu.key] = 0
-		delete(m.localToLastPositiveForeignUpdate, lk)
-		// Create an update which will add the validator for the new key
-		foreignUpdates[fk] = fu.power
-		m.localToLastPositiveForeignUpdate[lk] = update{key: fk, power: fu.power}
-	}
-
-	m.localsWhichMustUpdate = []LK{}
-
-	for _, localUpdate := range localUpdates {
-		if fu, ok := m.localToLastPositiveForeignUpdate[localUpdate.key]; ok {
-			// If an update for the local key existed, send a deletion
-			foreignUpdates[fu.key] = 0
+	// Iterate each lk for which the fk changed, or there is a power update
+	for _, lk := range lks {
+		power := 0
+		if last, ok := m.localToLastPositiveForeignUpdate[lk]; ok {
+			foreignUpdates[last.key] = 0
+			power = last.power
+			delete(m.localToLastPositiveForeignUpdate, lk)
 		}
-		fk := m.localToForeign[localUpdate.key]
-		// Create an update which will add or update the validator for the current key
-		foreignUpdates[fk] = localUpdate.power
-		if 0 < localUpdate.power {
-			m.localToLastPositiveForeignUpdate[localUpdate.key] = update{key: fk, power: localUpdate.power}
-		} else {
-			delete(m.localToLastPositiveForeignUpdate, localUpdate.key)
+		if newPower, ok := localUpdates[lk]; ok {
+			if 0 < newPower {
+				power = newPower
+			}
+		}
+		if 0 < power {
+			fk := m.localToForeign[lk]
+			foreignUpdates[fk] = power
+			m.localToLastPositiveForeignUpdate[lk] = update{key: fk, power: power}
 		}
 	}
+
+	for fk := range foreignUpdates {
+		m.foreignToGreatestVSCID[fk] = vscid
+	}
+
+	return foreignUpdates
+}
+
+func (m *KeyGuard) ComputeUpdates(vscid VSCID, localUpdates []update) []update {
+
+	local := map[LK]int{}
+
+	for _, u := range localUpdates {
+		local[u.key] = u.power
+	}
+
+	foreign := m.inner(vscid, local)
 
 	ret := []update{}
-	// Update internal bookkeeping
-	for fk, power := range foreignUpdates {
-		m.foreignToGreatestVSCID[fk] = vscid
+
+	for fk, power := range foreign {
 		ret = append(ret, update{key: fk, power: power})
 	}
 

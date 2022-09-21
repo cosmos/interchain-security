@@ -158,7 +158,7 @@ func getTrace(t *testing.T) []TraceState {
 		}
 		for !good() {
 			for lk := 0; lk < NUM_VALS; lk++ {
-				ret[lk] = rand.Intn(NUM_FKS) + 100
+				ret[lk] = -rand.Intn(NUM_FKS)
 			}
 		}
 		return ret
