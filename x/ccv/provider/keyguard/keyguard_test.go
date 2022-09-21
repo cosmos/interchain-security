@@ -21,11 +21,11 @@ type Driver struct {
 	lastTC int
 	lastTM int
 	// indexed by TP
-	mappings        []map[LK]FK
-	foreignUpdates  [][]update
-	providerValSets []ValSet
+	mappings       []map[LK]FK
+	foreignUpdates [][]update
+	localValSets   []ValSet
 	// corresponds to TC
-	consumerValSet ValSet
+	foreignValSet ValSet
 }
 
 type ValSet struct {
@@ -53,25 +53,25 @@ func (d *Driver) runTrace(t *testing.T) {
 	d.lastTM = 0
 	d.mappings = []map[LK]FK{}
 	d.foreignUpdates = [][]update{}
-	d.providerValSets = []ValSet{}
-	d.consumerValSet = MakeValSet()
+	d.localValSets = []ValSet{}
+	d.foreignValSet = MakeValSet()
 
 	init := d.trace[0]
 	d.mappings = append(d.mappings, init.Mapping)
 	for lk, fk := range init.Mapping {
 		kg.SetForeignKey(lk, fk)
 	}
-	// Set the initial provider set
-	d.providerValSets = append(d.providerValSets, MakeValSet())
-	d.providerValSets[init.TP].processUpdates(init.LocalUpdates)
-	// Set the initial consumer set
+	// Set the initial local set
+	d.localValSets = append(d.localValSets, MakeValSet())
+	d.localValSets[init.TP].processUpdates(init.LocalUpdates)
+	// Set the initial foreign set
 	d.foreignUpdates = append(d.foreignUpdates, kg.ComputeUpdates(init.TP, init.LocalUpdates))
-	d.consumerValSet.processUpdates(d.foreignUpdates[init.TC])
+	d.foreignValSet.processUpdates(d.foreignUpdates[init.TC])
 	kg.Prune(init.TM)
 
 	require.Len(t, d.mappings, 1)
 	require.Len(t, d.foreignUpdates, 1)
-	require.Len(t, d.providerValSets, 1)
+	require.Len(t, d.localValSets, 1)
 
 	for i, s := range d.trace {
 		if i < 1 {
@@ -79,11 +79,11 @@ func (d *Driver) runTrace(t *testing.T) {
 		}
 		if d.lastTP < s.TP {
 			d.mappings = append(d.mappings, s.Mapping)
-			d.providerValSets = append(d.providerValSets, MakeValSet())
-			for lk, power := range d.providerValSets[i-1].keyToPower {
-				d.providerValSets[i].keyToPower[lk] = power
+			d.localValSets = append(d.localValSets, MakeValSet())
+			for lk, power := range d.localValSets[i-1].keyToPower {
+				d.localValSets[i].keyToPower[lk] = power
 			}
-			d.providerValSets[i].processUpdates(s.LocalUpdates)
+			d.localValSets[i].processUpdates(s.LocalUpdates)
 			d.lastTP = s.TP
 
 			for lk, fk := range s.Mapping {
@@ -93,7 +93,7 @@ func (d *Driver) runTrace(t *testing.T) {
 		}
 		if d.lastTC < s.TC {
 			for j := d.lastTC + 1; j <= s.TC; j++ {
-				d.consumerValSet.processUpdates(d.foreignUpdates[j])
+				d.foreignValSet.processUpdates(d.foreignUpdates[j])
 			}
 			d.lastTC = s.TC
 		}
@@ -108,10 +108,10 @@ func (d *Driver) runTrace(t *testing.T) {
 }
 
 func (d *Driver) checkProperties(t *testing.T) {
-	// Check that the valSet on the fake consumer is the valSet
-	// on the provider at time TC via inverse mapping
-	foreignSet := d.consumerValSet.keyToPower
-	localSet := d.providerValSets[d.lastTC].keyToPower
+	// Check that the foreign ValSet is equal to the local ValSet
+	// at time TC via inverse mapping
+	foreignSet := d.foreignValSet.keyToPower
+	localSet := d.localValSets[d.lastTC].keyToPower
 	mapping := d.mappings[d.lastTC]
 	inverseMapping := map[FK]LK{}
 	for lk, fk := range mapping {
