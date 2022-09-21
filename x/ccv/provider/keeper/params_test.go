@@ -18,7 +18,7 @@ func TestParams(t *testing.T) {
 
 	// Construct an in-mem keeper with a populated template client state
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	keeperParams.SetTemplateClientState()
+	keeperParams.SetTemplateClientState(nil)
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 

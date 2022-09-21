@@ -166,7 +166,7 @@ func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 
 // Sets a template client state for a params subspace so that the provider's
 // GetTemplateClient method will be satisfied.
-func (params *InMemKeeperParams) SetTemplateClientState() {
+func (params *InMemKeeperParams) SetTemplateClientState(customState *ibctmtypes.ClientState) {
 
 	keyTable := paramstypes.NewKeyTable(paramstypes.NewParamSetPair(
 		providertypes.KeyTemplateClient, &ibctmtypes.ClientState{},
@@ -175,12 +175,14 @@ func (params *InMemKeeperParams) SetTemplateClientState() {
 	newSubspace := params.ParamsSubspace.WithKeyTable(keyTable)
 	params.ParamsSubspace = &newSubspace
 
-	templateClientState :=
-		ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
+	// Default template client state if none provided
+	if customState == nil {
+		customState = ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 			time.Second*10, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(),
 			[]string{"upgrade", "upgradedIBCState"}, true, true)
+	}
 
-	params.ParamsSubspace.Set(params.Ctx, providertypes.KeyTemplateClient, templateClientState)
+	params.ParamsSubspace.Set(params.Ctx, providertypes.KeyTemplateClient, customState)
 }
 
 // Registers proto interfaces for params.Cdc
@@ -203,4 +205,22 @@ type PrivateKey struct {
 func GenPubKey() (crypto.PubKey, error) {
 	privKey := PrivateKey{ed25519.GenPrivKey()}
 	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
+}
+
+// SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
+// which asserts that a consumer chain was properly stopped from StopConsumerChain().
+func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
+	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers) {
+
+	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
+		"chainID", clienttypes.NewHeight(2, 3))
+	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
+	expectations = append(expectations, GetMocksForStopConsumerChain(ctx, &mocks)...)
+
+	gomock.InOrder(expectations...)
+
+	err := providerKeeper.CreateConsumerClient(ctx, "chainID", clienttypes.NewHeight(2, 3), false)
+	require.NoError(t, err)
+	err = providerKeeper.SetConsumerChain(ctx, "channelID")
+	require.NoError(t, err)
 }

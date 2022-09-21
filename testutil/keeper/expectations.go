@@ -26,7 +26,7 @@ import (
 func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 	expectedChainID string, expectedLatestHeight clienttypes.Height) []*gomock.Call {
 
-	return []*gomock.Call{
+	expectations := []*gomock.Call{
 		mocks.MockStakingKeeper.EXPECT().UnbondingTime(ctx).Return(time.Hour).Times(
 			1, // called once in CreateConsumerClient
 		),
@@ -41,10 +41,17 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 			),
 			gomock.Any(),
 		).Return("clientID", nil).Times(1),
+	}
 
-		mocks.MockStakingKeeper.EXPECT().UnbondingTime(ctx).Return(time.Hour).Times(
-			1, // called again in MakeConsumerGenesis
-		),
+	expectations = append(expectations, GetMocksForMakeConsumerGenesis(ctx, mocks, time.Hour)...)
+	return expectations
+}
+
+// GetMocksForMakeConsumerGenesis returns mock expectations needed to call MakeConsumerGenesis().
+func GetMocksForMakeConsumerGenesis(ctx sdk.Context, mocks *MockedKeepers,
+	unbondingTimeToInject time.Duration) []*gomock.Call {
+	return []*gomock.Call{
+		mocks.MockStakingKeeper.EXPECT().UnbondingTime(ctx).Return(unbondingTimeToInject).Times(1),
 
 		mocks.MockClientKeeper.EXPECT().GetSelfConsensusState(ctx,
 			clienttypes.GetSelfHeight(ctx)).Return(&ibctmtypes.ConsensusState{}, nil).Times(1),

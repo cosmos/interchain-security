@@ -8,7 +8,6 @@ import (
 
 	"fmt"
 
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
@@ -17,24 +16,15 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 
-	"encoding/json"
-	"time"
-
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	"github.com/cosmos/interchain-security/x/ccv/consumer"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
-	"github.com/cosmos/interchain-security/x/ccv/provider"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
 func (suite *ConsumerKeeperTestSuite) TestConsumerGenesis() {
@@ -107,9 +97,16 @@ func (suite *ConsumerKeeperTestSuite) TestConsumerGenesis() {
 	})
 }
 
-// TODO: Make comment in relevant issue about this PR moving e2e -> unit for provider, but still needed for consumer
-// OR just do the migration in this PR if it's quick
+// TestProviderClientMatches tests that the provider client managed by the consumer keeper matches the client keeper's client state
+func (suite *ConsumerKeeperTestSuite) TestProviderClientMatches() {
+	providerClientID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.ctx)
+	suite.Require().True(ok)
 
+	clientState, _ := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClientID)
+	suite.Require().Equal(suite.providerClient, clientState, "stored client state does not match genesis provider client")
+}
+
+// TODO: unit and spec tags
 func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 	var (
 		channel *channeltypes.Channel
@@ -226,6 +223,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenInit() {
 	}
 }
 
+// TODO: unit and spec tags
 func (suite *ConsumerTestSuite) TestOnChanOpenTry() {
 	// OnOpenTry must error even with correct arguments
 	consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
@@ -242,6 +240,7 @@ func (suite *ConsumerTestSuite) TestOnChanOpenTry() {
 	suite.Require().Error(err, "OnChanOpenTry callback must error on consumer chain")
 }
 
+// TODO: unit and spec tags
 // TestOnChanOpenAck tests the consumer module's OnChanOpenAck implementation against the spec:
 // https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-ccf-coack1
 func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
@@ -350,12 +349,14 @@ func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
 	}
 }
 
+// TODO: unit and spec tags
 func (suite *ConsumerTestSuite) TestOnChanOpenConfirm() {
 	consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
 	err := consumerModule.OnChanOpenConfirm(suite.ctx, ccv.ConsumerPortID, "channel-1")
 	suite.Require().Error(err, "OnChanOpenConfirm callback must error on consumer chain")
 }
 
+// TODO: unit and spec tags
 func (suite *ConsumerTestSuite) TestOnChanCloseInit() {
 	channelID := "channel-1"
 	testCases := []struct {
@@ -429,15 +430,9 @@ func (suite *ConsumerTestSuite) TestOnChanCloseInit() {
 	}
 }
 
-// TestProviderClientMatches tests that the provider client managed by the consumer keeper matches the client keeper's client state
-func (suite *ConsumerKeeperTestSuite) TestProviderClientMatches() {
-	providerClientID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.ctx)
-	suite.Require().True(ok)
+// TODO: Identify what other "close" IBC methods are missing from consumer or provider, and update testing table
 
-	clientState, _ := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClientID)
-	suite.Require().Equal(suite.providerClient, clientState, "stored client state does not match genesis provider client")
-}
-
+// TODO: unit and spec tags
 // TestVerifyProviderChain tests the VerifyProviderChain method for the consumer keeper
 func (suite *ConsumerKeeperTestSuite) TestVerifyProviderChain() {
 	var connectionHops []string
@@ -526,95 +521,4 @@ func (suite *ConsumerKeeperTestSuite) TestVerifyProviderChain() {
 			}
 		})
 	}
-}
-
-// TestConsumerChainProposalHandler tests the highest level handler for proposals concerning both
-// creating and stopping consumer chains.
-func (suite *ProviderTestSuite) TestConsumerChainProposalHandler() {
-	var (
-		ctx     sdk.Context
-		content govtypes.Content
-		err     error
-	)
-
-	testCases := []struct {
-		name     string
-		malleate func(*ProviderTestSuite)
-		expPass  bool
-	}{
-		{
-			"valid consumer addition proposal", func(suite *ProviderTestSuite) {
-				initialHeight := clienttypes.NewHeight(2, 3)
-				// ctx blocktime is after proposal's spawn time
-				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content = types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
-			}, true,
-		},
-		{
-			"valid consumer removal proposal", func(suite *ProviderTestSuite) {
-				ctx = suite.providerChain.GetContext().WithBlockTime(time.Now().Add(time.Hour))
-				content = types.NewConsumerRemovalProposal("title", "description", "chainID", time.Now())
-			}, true,
-		},
-		{
-			"nil proposal", func(suite *ProviderTestSuite) {
-				ctx = suite.providerChain.GetContext()
-				content = nil
-			}, false,
-		},
-		{
-			"unsupported proposal type", func(suite *ProviderTestSuite) {
-				ctx = suite.providerChain.GetContext()
-				content = distributiontypes.NewCommunityPoolSpendProposal(ibctesting.Title, ibctesting.Description, suite.providerChain.SenderAccount.GetAddress(), sdk.NewCoins(sdk.NewCoin("communityfunds", sdk.NewInt(10))))
-			}, false,
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-
-		suite.Run(tc.name, func() {
-			suite.SetupTest() // reset
-
-			tc.malleate(suite)
-
-			proposalHandler := provider.NewConsumerChainProposalHandler(suite.providerChain.App.(*appProvider.App).ProviderKeeper)
-
-			err = proposalHandler(ctx, content)
-
-			if tc.expPass {
-				suite.Require().NoError(err)
-			} else {
-				suite.Require().Error(err)
-			}
-		})
-	}
-}
-
-// TestMakeConsumerGenesis tests the MakeConsumerGenesis method used to instantiate a consumer.
-func (suite *ProviderKeeperTestSuite) TestMakeConsumerGenesis() {
-	suite.SetupTest()
-
-	actualGenesis, err := suite.providerChain.App.(*appProvider.App).ProviderKeeper.MakeConsumerGenesis(suite.providerChain.GetContext())
-	suite.Require().NoError(err)
-
-	jsonString := `{"params":{"enabled":true, "blocks_per_distribution_transmission":1000, "lock_unbonding_on_timeout": false},"new_chain":true,"provider_client_state":{"chain_id":"testchain1","trust_level":{"numerator":1,"denominator":3},"trusting_period":907200000000000,"unbonding_period":1814400000000000,"max_clock_drift":10000000000,"frozen_height":{},"latest_height":{"revision_height":5},"proof_specs":[{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":33,"min_prefix_length":4,"max_prefix_length":12,"hash":1}},{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":32,"min_prefix_length":1,"max_prefix_length":1,"hash":1}}],"upgrade_path":["upgrade","upgradedIBCState"],"allow_update_after_expiry":true,"allow_update_after_misbehaviour":true},"provider_consensus_state":{"timestamp":"2020-01-02T00:00:10Z","root":{"hash":"LpGpeyQVLUo9HpdsgJr12NP2eCICspcULiWa5u9udOA="},"next_validators_hash":"E30CE736441FB9101FADDAF7E578ABBE6DFDB67207112350A9A904D554E1F5BE"},"unbonding_sequences":null,"initial_val_set":[{"pub_key":{"type":"tendermint/PubKeyEd25519","value":"dcASx5/LIKZqagJWN0frOlFtcvz91frYmj/zmoZRWro="},"power":1}]}`
-
-	var expectedGenesis consumertypes.GenesisState
-	err = json.Unmarshal([]byte(jsonString), &expectedGenesis)
-	suite.Require().NoError(err)
-
-	// Zero out differing fields- TODO: figure out how to get the test suite to
-	// keep these deterministic
-	actualGenesis.ProviderConsensusState.NextValidatorsHash = []byte{}
-	expectedGenesis.ProviderConsensusState.NextValidatorsHash = []byte{}
-
-	// set valset to one empty validator because SetupTest() creates 4 validators per chain
-	actualGenesis.InitialValSet = []abci.ValidatorUpdate{{PubKey: crypto.PublicKey{}, Power: actualGenesis.InitialValSet[0].Power}}
-	expectedGenesis.InitialValSet[0].PubKey = crypto.PublicKey{}
-
-	actualGenesis.ProviderConsensusState.Root.Hash = []byte{}
-	expectedGenesis.ProviderConsensusState.Root.Hash = []byte{}
-
-	suite.Require().Equal(actualGenesis, expectedGenesis, "consumer chain genesis created incorrectly")
 }
