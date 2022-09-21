@@ -1,6 +1,7 @@
 package keyguard
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 
@@ -16,6 +17,7 @@ type TraceState struct {
 }
 
 type Driver struct {
+	t      *testing.T
 	trace  []TraceState
 	lastTP int
 	lastTC int
@@ -45,7 +47,7 @@ func (vs *ValSet) processUpdates(updates []update) {
 	}
 }
 
-func (d *Driver) runTrace(t *testing.T) {
+func (d *Driver) runTrace() {
 	kg := MakeKeyGuard()
 
 	d.lastTP = 0
@@ -69,9 +71,9 @@ func (d *Driver) runTrace(t *testing.T) {
 	d.foreignValSet.processUpdates(d.foreignUpdates[init.TC])
 	kg.Prune(init.TM)
 
-	require.Len(t, d.mappings, 1)
-	require.Len(t, d.foreignUpdates, 1)
-	require.Len(t, d.localValSets, 1)
+	require.Len(d.t, d.mappings, 1)
+	require.Len(d.t, d.foreignUpdates, 1)
+	require.Len(d.t, d.localValSets, 1)
 
 	for i, s := range d.trace {
 		if i < 1 {
@@ -85,7 +87,6 @@ func (d *Driver) runTrace(t *testing.T) {
 			}
 			d.localValSets[i].processUpdates(s.LocalUpdates)
 			d.lastTP = s.TP
-
 			for lk, fk := range s.Mapping {
 				kg.SetLocalToForeign(lk, fk)
 			}
@@ -103,11 +104,11 @@ func (d *Driver) runTrace(t *testing.T) {
 			kg.Prune(s.TM)
 			d.lastTM = s.TM
 		}
-		d.checkProperties(t)
+		d.checkProperties()
 	}
 }
 
-func (d *Driver) checkProperties(t *testing.T) {
+func (d *Driver) checkProperties() {
 	// Check that the foreign ValSet is equal to the local ValSet
 	// at time TC via inverse mapping
 	foreignSet := d.foreignValSet.keyToPower
@@ -123,11 +124,11 @@ func (d *Driver) checkProperties(t *testing.T) {
 	}
 	for lk, actual := range foreignSetAsLocal {
 		expect := localSet[lk]
-		require.Equal(t, expect, actual)
+		require.Equal(d.t, expect, actual)
 	}
 	for lk, expect := range localSet {
 		actual := foreignSetAsLocal[lk]
-		require.Equal(t, expect, actual)
+		require.Equal(d.t, expect, actual)
 	}
 
 	// TODO: check pruning and reverse queries
@@ -242,14 +243,18 @@ func getTrace(t *testing.T) []TraceState {
 }
 
 func TestPrototype(t *testing.T) {
+
+	rand.Seed(40)
 	for i := 0; i < 1000; i++ {
+		fmt.Println("i: ", i)
 		trace := []TraceState{}
 		for len(trace) < 2 {
 			trace = getTrace(t)
 		}
 		d := Driver{}
 		d.trace = trace
-		d.runTrace(t)
+		d.t = t
+		d.runTrace()
 	}
 }
 
@@ -258,7 +263,8 @@ func TestKeyDelegation(t *testing.T) {
 	for _, trace := range traces {
 		d := Driver{}
 		d.trace = trace
-		d.runTrace(t)
+		d.t = t
+		d.runTrace()
 	}
 }
 
