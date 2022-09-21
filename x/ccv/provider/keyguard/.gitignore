@@ -1,0 +1,6 @@
+*.json
+*.tla
+*.cfg
+!main.tla
+!main.cfg
+*apalache*

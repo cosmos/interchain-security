@@ -74,17 +74,14 @@ func (d *Driver) runTrace() {
 	require.Len(d.t, d.foreignUpdates, 1)
 	require.Len(d.t, d.localValSets, 1)
 
-	for i, s := range d.trace {
-		if i < 1 {
-			continue
-		}
+	for _, s := range d.trace[1:] {
 		if d.lastTP < s.TP {
 			d.mappings = append(d.mappings, s.Mapping)
 			d.localValSets = append(d.localValSets, MakeValSet())
-			for lk, power := range d.localValSets[i-1].keyToPower {
-				d.localValSets[i].keyToPower[lk] = power
+			for lk, power := range d.localValSets[d.lastTP].keyToPower {
+				d.localValSets[s.TP].keyToPower[lk] = power
 			}
-			d.localValSets[i].processUpdates(s.LocalUpdates)
+			d.localValSets[s.TP].processUpdates(s.LocalUpdates)
 			d.lastTP = s.TP
 			for lk, fk := range s.Mapping {
 				kg.SetLocalToForeign(lk, fk)
@@ -130,12 +127,12 @@ func (d *Driver) checkProperties() {
 		require.Equal(d.t, expect, actual)
 	}
 
-	// TODO: check pruning and reverse queries
+	// TODO: check pruning is correct (reverse lookup)
 }
 
 func getTrace(t *testing.T) []TraceState {
 
-	TRACE_LEN := 3
+	TRACE_LEN := 1000
 	NUM_VALS := 3
 	NUM_FKS := 9
 
@@ -265,21 +262,3 @@ func TestKeyDelegation(t *testing.T) {
 		d.runTrace()
 	}
 }
-
-// TODO:
-
-// These are the critical properties
-// 1. All validator sets on consumer are a validator set for provider for an earlier
-// time, mapped through the effective mapping at that time.
-// 2. It is always possible to fetch a local key, given a foreign key, if the foreign
-// key is still known to the consumer
-
-// My thinking now is that I can test by doing the following
-// If the trace TP increases than there is a new mapping and local updates
-// the local updates aggregate to create a local validator set
-// record that validator set, and the relevant mapping to time T=TP
-// If TC increases to time T, can check the ACTUAL validator set in C
-//	 It should be be possible to query kg for every validator foreign key
-//    in any intermediate val set in [TM+1, TP]
-// It should not be possible to query kg for any validator that does not appear
-// 		in any intermediate vla set in [0, TM]
