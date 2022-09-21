@@ -58,28 +58,61 @@ func (d *Driver) runTrace(t *testing.T, trace []TraceState) {
 	for _, u := range init.LocalUpdates {
 		d.valSets[0][u.key] = u.power
 	}
+	kg.Prune(0)
 
 	for _, s := range trace[1:] {
 		if d.lastTP < s.TP {
-			d.lastTP = s.TP
 			d.mappings = append(d.mappings, s.Mapping)
 			for lk, fk := range s.Mapping {
 				kg.SetForeignKey(lk, fk)
 			}
 			d.foreignUpdates = append(d.foreignUpdates, kg.ComputeUpdates(s.TP, s.LocalUpdates))
+			d.lastTP = s.TP
 		}
 		if d.lastTC < s.TC {
 			for i := d.lastTC + 1; i <= s.TC; i++ {
 				d.fakeConsumer.processUpdates(d.foreignUpdates[i])
 			}
+			d.lastTC = s.TC
 		}
 		if d.lastTM < s.TM {
-			// TODO: careful of meaning of TM because
-			// it is initialised to 0 but actually 0 has not matured
-			// TODO: prune up to TM
+			// TODO: check this because TM is initialised to 0 but 0 has not actually matured
+			// TODO: I think one solution IS TO ACTUALLY prune 0 in init
+			kg.Prune(s.TM)
+			d.lastTM = s.TM
 		}
+		d.checkProperties(t)
 		// TODO: check properties
 	}
+}
+
+func (d *Driver) checkProperties(t *testing.T) {
+	// Check that the valSet on the fake consumer is the valSet
+	// on the provider at time TC via inverse mapping
+	foreignSet := d.fakeConsumer.valSet
+	localSet := d.valSets[d.lastTC]
+	mapping := d.mappings[d.lastTC]
+	inverseMapping := map[FK]LK{}
+	for lk, fk := range mapping {
+		inverseMapping[fk] = lk
+	}
+	foreignSetAsLocal := map[LK]int{}
+	for fk, power := range foreignSet {
+		foreignSetAsLocal[inverseMapping[fk]] = power
+	}
+	for lk, actual := range foreignSetAsLocal {
+		expect := localSet[lk]
+		if expect != actual {
+			t.Fatalf("[A]")
+		}
+	}
+	for lk, expect := range localSet {
+		actual := foreignSetAsLocal[lk]
+		if expect != actual {
+			t.Fatalf("[B]")
+		}
+	}
+
 }
 
 func getTrace() []TraceState {
@@ -103,7 +136,7 @@ func getTrace() []TraceState {
 		}
 		for !good() {
 			for lk := 0; lk < NUM_VALS; lk++ {
-				ret[lk] = rand.Intn(NUM_FKS)
+				ret[lk] = rand.Intn(NUM_FKS) + 100
 			}
 		}
 		return ret
