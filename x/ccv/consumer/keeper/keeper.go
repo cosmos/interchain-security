@@ -276,7 +276,7 @@ func (k Keeper) DeletePacketMaturityTime(ctx sdk.Context, vscId uint64) {
 
 // VerifyProviderChain verifies that the chain trying to connect on the channel handshake
 // is the expected provider chain.
-func (k Keeper) VerifyProviderChain(ctx sdk.Context, channelID string, connectionHops []string) error {
+func (k Keeper) VerifyProviderChain(ctx sdk.Context, connectionHops []string) error {
 	if len(connectionHops) != 1 {
 		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to provider chain")
 	}

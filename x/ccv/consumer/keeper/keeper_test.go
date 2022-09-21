@@ -5,9 +5,12 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -199,5 +202,88 @@ func TestPendingSlashRequests(t *testing.T) {
 		tc.operation()
 		requests := consumerKeeper.GetPendingSlashRequests(ctx)
 		require.Len(t, requests, tc.expLen)
+	}
+}
+
+// TestVerifyProviderChain tests the VerifyProviderChain method for the consumer keeper
+func TestVerifyProviderChain(t *testing.T) {
+
+	testCases := []struct {
+		name string
+		// State-mutating setup specific to this test case
+		mockSetup      func(sdk.Context, testkeeper.MockedKeepers)
+		connectionHops []string
+		expError       bool
+	}{
+		{
+			name: "success",
+			mockSetup: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockConnectionKeeper.EXPECT().GetConnection(
+						ctx, "connectionID",
+					).Return(conntypes.ConnectionEnd{ClientId: "clientID"}, true).Times(1),
+				)
+			},
+			connectionHops: []string{"connectionID"},
+			expError:       false,
+		},
+		{
+			name: "connection hops is not length 1",
+			mockSetup: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+				// Expect no calls to GetConnection(), VerifyProviderChain will return from first step.
+				gomock.InAnyOrder(
+					mocks.MockConnectionKeeper.EXPECT().GetConnection(gomock.Any(), gomock.Any()).Times(0),
+				)
+			},
+			connectionHops: []string{"connectionID", "otherConnID"},
+			expError:       true,
+		},
+		{
+			name: "connection does not exist",
+			mockSetup: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockConnectionKeeper.EXPECT().GetConnection(
+						ctx, "connectionID").Return(conntypes.ConnectionEnd{},
+						false, // Found is returned as false
+					).Times(1),
+				)
+			},
+			connectionHops: []string{"connectionID"},
+			expError:       true,
+		},
+		{
+			name: "found clientID does not match expectation",
+			mockSetup: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockConnectionKeeper.EXPECT().GetConnection(
+						ctx, "connectionID").Return(
+						conntypes.ConnectionEnd{ClientId: "unexpectedClientID"}, true,
+					).Times(1),
+				)
+			},
+			connectionHops: []string{"connectionID"},
+			expError:       true,
+		},
+	}
+
+	for _, tc := range testCases {
+
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+
+		// Common setup
+		consumerKeeper.SetProviderClientID(ctx, "clientID") // Set expected provider clientID
+
+		// Specific mock setup
+		tc.mockSetup(ctx, mocks)
+
+		err := consumerKeeper.VerifyProviderChain(ctx, tc.connectionHops)
+
+		if tc.expError {
+			require.Error(t, err, "invalid case did not return error")
+		} else {
+			require.NoError(t, err, "valid case returned error")
+		}
+		ctrl.Finish()
 	}
 }

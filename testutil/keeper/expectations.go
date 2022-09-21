@@ -81,8 +81,6 @@ func GetMocksForSetConsumerChain(ctx sdk.Context, mocks *MockedKeepers,
 }
 
 // GetMocksForStopConsumerChain returns mock expectations needed to call StopConsumerChain().
-//
-// TODO: replace "channelID" with a parameter
 func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomock.Call {
 	dummyCap := &capabilitytypes.Capability{}
 	return []*gomock.Call{
