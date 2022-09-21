@@ -147,6 +147,12 @@ func getTrace() []TraceState {
 	return ret
 }
 
+func TestPrototype(t *testing.T) {
+	trace := getTrace()
+	d := Driver{}
+	d.runTrace(t, trace)
+}
+
 func TestKeyDelegation(t *testing.T) {
 	traces := [][]TraceState{}
 	for _, trace := range traces {
