@@ -3,6 +3,8 @@ package keyguard
 import (
 	"math/rand"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 type TraceState struct {
@@ -14,25 +16,31 @@ type TraceState struct {
 }
 
 type Driver struct {
-	trace          []TraceState
-	lastTP         int
-	lastTC         int
-	lastTM         int
-	valSets        []map[LK]int
-	mappings       []map[LK]FK
-	foreignUpdates [][]update
-	fakeConsumer   FakeConsumer
+	trace  []TraceState
+	lastTP int
+	lastTC int
+	lastTM int
+	// indexed by TP
+	mappings        []map[LK]FK
+	foreignUpdates  [][]update
+	providerValSets []ValSet
+	// corresponds to TC
+	consumerValSet ValSet
 }
 
-type FakeConsumer struct {
-	valSet map[FK]int
+type ValSet struct {
+	keyToPower map[int]int
 }
 
-func (f *FakeConsumer) processUpdates(updates []update) {
+func MakeValSet() ValSet {
+	return ValSet{keyToPower: map[int]int{}}
+}
+
+func (vs *ValSet) processUpdates(updates []update) {
 	for _, u := range updates {
-		delete(f.valSet, u.key)
+		delete(vs.keyToPower, u.key)
 		if 0 < u.power {
-			f.valSet[u.key] = u.power
+			vs.keyToPower[u.key] = u.power
 		}
 	}
 }
@@ -43,11 +51,10 @@ func (d *Driver) runTrace(t *testing.T) {
 	d.lastTP = 0
 	d.lastTC = 0
 	d.lastTM = 0
-	d.valSets = []map[LK]int{}
 	d.mappings = []map[LK]FK{}
 	d.foreignUpdates = [][]update{}
-	d.fakeConsumer = FakeConsumer{}
-	d.fakeConsumer.valSet = map[FK]int{}
+	d.providerValSets = []ValSet{}
+	d.consumerValSet = MakeValSet()
 
 	init := d.trace[0]
 	d.mappings = append(d.mappings, init.Mapping)
@@ -55,27 +62,35 @@ func (d *Driver) runTrace(t *testing.T) {
 		kg.SetForeignKey(lk, fk)
 	}
 	d.foreignUpdates = append(d.foreignUpdates, kg.ComputeUpdates(init.TP, init.LocalUpdates))
-	d.valSets = append(d.valSets, map[LK]int{})
-	for _, u := range init.LocalUpdates {
-		d.valSets[0][u.key] = u.power
-	}
-	kg.Prune(0)
+	d.providerValSets = append(d.providerValSets, MakeValSet())
+	d.providerValSets[init.TP].processUpdates(init.LocalUpdates)
+	kg.Prune(init.TM)
 
-	for _, s := range d.trace[1:] {
+	require.Len(t, d.mappings, 1)
+	require.Len(t, d.foreignUpdates, 1)
+	require.Len(t, d.providerValSets, 1)
+
+	for i, s := range d.trace {
+		if i < 1 {
+			continue
+		}
 		if d.lastTP < s.TP {
 			d.mappings = append(d.mappings, s.Mapping)
+			d.providerValSets = append(d.providerValSets, MakeValSet())
+			for lk, power := range d.providerValSets[i-1].keyToPower {
+				d.providerValSets[i].keyToPower[lk] = power
+			}
+			d.providerValSets[i].processUpdates(s.LocalUpdates)
+			d.lastTP = s.TP
+
 			for lk, fk := range s.Mapping {
 				kg.SetForeignKey(lk, fk)
 			}
-			for _, u := range s.LocalUpdates {
-				d.valSets
-			}
 			d.foreignUpdates = append(d.foreignUpdates, kg.ComputeUpdates(s.TP, s.LocalUpdates))
-			d.lastTP = s.TP
 		}
 		if d.lastTC < s.TC {
-			for i := d.lastTC + 1; i <= s.TC; i++ {
-				d.fakeConsumer.processUpdates(d.foreignUpdates[i])
+			for j := d.lastTC + 1; j <= s.TC; j++ {
+				d.consumerValSet.processUpdates(d.foreignUpdates[j])
 			}
 			d.lastTC = s.TC
 		}
@@ -86,15 +101,14 @@ func (d *Driver) runTrace(t *testing.T) {
 			d.lastTM = s.TM
 		}
 		d.checkProperties(t)
-		// TODO: check properties
 	}
 }
 
 func (d *Driver) checkProperties(t *testing.T) {
 	// Check that the valSet on the fake consumer is the valSet
 	// on the provider at time TC via inverse mapping
-	foreignSet := d.fakeConsumer.valSet
-	localSet := d.valSets[d.lastTC]
+	foreignSet := d.consumerValSet.keyToPower
+	localSet := d.providerValSets[d.lastTC].keyToPower
 	mapping := d.mappings[d.lastTC]
 	inverseMapping := map[FK]LK{}
 	for lk, fk := range mapping {
@@ -106,15 +120,11 @@ func (d *Driver) checkProperties(t *testing.T) {
 	}
 	for lk, actual := range foreignSetAsLocal {
 		expect := localSet[lk]
-		if expect != actual {
-			t.Fatalf("[A]")
-		}
+		require.Equal(t, expect, actual)
 	}
 	for lk, expect := range localSet {
 		actual := foreignSetAsLocal[lk]
-		if expect != actual {
-			t.Fatalf("[B]")
-		}
+		require.Equal(t, expect, actual)
 	}
 
 }
