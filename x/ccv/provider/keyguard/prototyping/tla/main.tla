@@ -1,7 +1,6 @@
 ---- MODULE main ----
 
 EXTENDS Integers, FiniteSets, Sequences, TLC, Apalache
-\* EXTENDS Integers, FiniteSets, Sequences, TLC
 
 (*
 
@@ -14,11 +13,8 @@ EXTENDS Integers, FiniteSets, Sequences, TLC, Apalache
 
 TypeAliases == TRUE
 
-CONSTANTS
-    \* @type: Set($lk);
-    LKS,
-    \* @type: Set($fk);
-    FKS
+LKS == {"lk0", "lk1", "lk2"}
+FKS == {"fk0", "fk1", "fk2", "fk3", "fk4", "fk5", "fk6", "fk7", "fk8"}
 
 VARIABLES
     \* @type: $mapping;
@@ -31,10 +27,6 @@ VARIABLES
     TC,
     \* @type: Int;
     TM
-
-CInit == 
-    /\ LKS = {"lk0", "lk1", "lk2"}
-    /\ FKS = {"fk0", "fk1", "fk2", "fk3", "fk4", "fk5", "fk6", "fk7", "fk8"}
 
 Init == 
     \E m \in [LKS -> FKS], ss \in SUBSET LKS: 
@@ -74,5 +66,7 @@ Next ==
     \/ EndBlock
     \/ UpdateConsumer
     \/ ReceiveMaturities
+
+View == <<Mapping, Updates, TP, TC, TM>>
 
 ====
