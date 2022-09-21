@@ -59,7 +59,7 @@ func (d *Driver) runTrace(t *testing.T) {
 	init := d.trace[0]
 	d.mappings = append(d.mappings, init.Mapping)
 	for lk, fk := range init.Mapping {
-		kg.SetForeignKey(lk, fk)
+		kg.SetLocalToForeign(lk, fk)
 	}
 	// Set the initial local set
 	d.localValSets = append(d.localValSets, MakeValSet())
@@ -87,7 +87,7 @@ func (d *Driver) runTrace(t *testing.T) {
 			d.lastTP = s.TP
 
 			for lk, fk := range s.Mapping {
-				kg.SetForeignKey(lk, fk)
+				kg.SetLocalToForeign(lk, fk)
 			}
 			d.foreignUpdates = append(d.foreignUpdates, kg.ComputeUpdates(s.TP, s.LocalUpdates))
 		}
@@ -133,9 +133,9 @@ func (d *Driver) checkProperties(t *testing.T) {
 	// TODO: check pruning and reverse queries
 }
 
-func getTrace() []TraceState {
+func getTrace(t *testing.T) []TraceState {
 
-	TRACE_LEN := 2
+	TRACE_LEN := 3
 	NUM_VALS := 3
 	NUM_FKS := 9
 
@@ -144,6 +144,9 @@ func getTrace() []TraceState {
 		// Create a mapping of nums [0, NUM_VALS] mapped injectively to [0, NUM_FKS]
 		ret := map[LK]FK{}
 		good := func() bool {
+			if len(ret) != NUM_VALS {
+				return false
+			}
 			seen := map[FK]bool{}
 			for _, fk := range ret {
 				if _, ok := seen[fk]; ok {
@@ -181,70 +184,73 @@ func getTrace() []TraceState {
 		},
 	}
 
-	i := 0
+	i := 1
 	for i < TRACE_LEN {
 		choice := rand.Intn(3)
+		last := ret[len(ret)-1]
+		good := false
 		if choice == 0 {
 			ret = append(ret, TraceState{
 				Mapping:      mapping(),
 				LocalUpdates: localUpdates(),
-				TP:           ret[i].TP + 1,
-				TC:           ret[i].TC,
-				TM:           ret[i].TM,
+				TP:           last.TP + 1,
+				TC:           last.TC,
+				TM:           last.TM,
 			})
-			i++
+			good = true
 		}
 		if choice == 1 {
-			curr := ret[i].TC
-			limInclusive := ret[i].TP
+			curr := last.TC
+			limInclusive := last.TP
 			if curr < limInclusive {
 				// add in [1, limInclusive - curr]
 				// rand in [0, limInclusive - curr - 1]
 				// bound is [0, limInclusive - curr)
 				newTC := rand.Intn(limInclusive-curr) + curr + 1
-				if newTC <= curr || limInclusive < curr {
-					panic("bad choice 1")
-				}
+				require.True(t, curr < newTC && curr <= limInclusive)
 				ret = append(ret, TraceState{
-					Mapping:      ret[i].Mapping,
-					LocalUpdates: ret[i].LocalUpdates,
-					TP:           ret[i].TP,
+					Mapping:      nil,
+					LocalUpdates: nil,
+					TP:           last.TP,
 					TC:           newTC,
-					TM:           ret[i].TM,
+					TM:           last.TM,
 				})
-				i++
+				good = true
 			}
 		}
 		if choice == 2 {
-			curr := ret[i].TM
-			limInclusive := ret[i].TC
+			curr := last.TM
+			limInclusive := last.TC
 			if curr < limInclusive {
 				newTM := rand.Intn(limInclusive-curr) + curr + 1
-				if newTM <= curr || limInclusive < curr {
-					panic("bad choice 2")
-				}
+				require.True(t, curr < newTM && curr <= limInclusive)
 				ret = append(ret, TraceState{
-					Mapping:      ret[i].Mapping,
-					LocalUpdates: ret[i].LocalUpdates,
-					TP:           ret[i].TP,
-					TC:           ret[i].TC,
+					Mapping:      nil,
+					LocalUpdates: nil,
+					TP:           last.TP,
+					TC:           last.TC,
 					TM:           newTM,
 				})
-				i++
+				good = true
 			}
+		}
+		if good {
+			i++
 		}
 	}
 	return ret
 }
 
 func TestPrototype(t *testing.T) {
-	trace := []TraceState{}
-	for len(trace) < 2 {
-		trace = getTrace()
+	for i := 0; i < 1000; i++ {
+		trace := []TraceState{}
+		for len(trace) < 2 {
+			trace = getTrace(t)
+		}
+		d := Driver{}
+		d.trace = trace
+		d.runTrace(t)
 	}
-	d := Driver{}
-	d.trace = trace
-	d.runTrace(t)
 }
 
 func TestKeyDelegation(t *testing.T) {

@@ -19,97 +19,99 @@ type KeyGuard struct {
 	// A new key is added when a relevant update is returned by ComputeUpdates
 	// the key is deleted at earliest after sending an update corresponding
 	// to a call to staking::DeleteValidator TODO: impl this
-	localKeyToLastUpdate map[LK]update
+	localToLastUpdate map[LK]update
 	// A new key is added on staking::CreateValidator
 	// the key is deleted at earliest after sending an update corresponding
 	// to a call to staking::DeleteValidator TODO: impl this
-	localKeyToCurrentForeignKey map[LK]FK
+	localToForeign map[LK]FK
 	// Prunable state
-	foreignKeyToLocalKey map[FK]LK
+	foreignToLocal map[FK]LK
 	// Prunable state
-	foreignKeyToVscidWhenLastSent map[FK]VSCID
+	foreignToGreatestVSCID map[FK]VSCID
 	// Ephemeral state: will be cleared after each call to ComputeUpdates
-	localKeysForWhichUpdateMustBeSent []LK
+	localsWhichMustUpdate []LK
 }
 
 func MakeKeyGuard() KeyGuard {
 	return KeyGuard{
-		localKeyToLastUpdate:              map[LK]update{},
-		localKeyToCurrentForeignKey:       map[LK]FK{},
-		foreignKeyToLocalKey:              map[FK]LK{},
-		foreignKeyToVscidWhenLastSent:     map[FK]VSCID{},
-		localKeysForWhichUpdateMustBeSent: []LK{},
+		localToLastUpdate:      map[LK]update{},
+		localToForeign:         map[LK]FK{},
+		foreignToLocal:         map[FK]LK{},
+		foreignToGreatestVSCID: map[FK]VSCID{},
+		localsWhichMustUpdate:  []LK{},
 	}
 }
 
-func (m *KeyGuard) SetForeignKey(lk LK, fk FK) {
-	if currFk, ok := m.localKeyToCurrentForeignKey[lk]; ok {
+func (m *KeyGuard) SetLocalToForeign(lk LK, fk FK) {
+	if currFk, ok := m.localToForeign[lk]; ok {
 		if currFk == fk {
 			return
 		}
 	}
-	m.localKeyToCurrentForeignKey[lk] = fk
-	if u, ok := m.localKeyToLastUpdate[lk]; ok {
+	m.localToForeign[lk] = fk
+	// If an update was created for lk
+	if u, ok := m.localToLastUpdate[lk]; ok {
+		// If that update was not a deletion
 		if 0 < u.power {
-			// If last update had positive power then the consumer is aware of the old key
-			// so a deletion update must be sent.
-			m.localKeysForWhichUpdateMustBeSent = append(m.localKeysForWhichUpdateMustBeSent, lk)
+			// We must create an update
+			m.localsWhichMustUpdate = append(m.localsWhichMustUpdate, lk)
 		}
 	}
 }
 
-func (m *KeyGuard) GetLocalKey(fk FK) (LK, error) {
-	if lk, ok := m.foreignKeyToLocalKey[fk]; ok {
+func (m *KeyGuard) GetLocal(fk FK) (LK, error) {
+	if lk, ok := m.foreignToLocal[fk]; ok {
 		return lk, nil
 	} else {
-		return -1, errors.New("nope")
-	}
-}
-
-func (m *KeyGuard) Prune(mostRecentlyMaturedVscid VSCID) {
-	toRemove := []FK{}
-	for fk, vscid := range m.foreignKeyToVscidWhenLastSent {
-		if vscid <= mostRecentlyMaturedVscid {
-			toRemove = append(toRemove, fk)
-		}
-	}
-	for _, fk := range toRemove {
-		delete(m.foreignKeyToVscidWhenLastSent, fk)
-		delete(m.foreignKeyToLocalKey, fk)
+		return -1, errors.New("Nope")
 	}
 }
 
 func (m *KeyGuard) ComputeUpdates(vscid VSCID, localUpdates []update) (foreignUpdates []update) {
+
 	foreignUpdates = []update{}
 
 	// Create any updates for validators whose power did not change
-	for _, lk := range m.localKeysForWhichUpdateMustBeSent {
-		currKey := m.localKeyToCurrentForeignKey[lk]
-		u := m.localKeyToLastUpdate[lk]
+	for _, lk := range m.localsWhichMustUpdate {
+		currKey := m.localToForeign[lk]
+		u := m.localToLastUpdate[lk]
 		// Create an update which will delete the validator for the old key
 		foreignUpdates = append(foreignUpdates, update{key: u.key, power: 0})
 		// Create an update which will add the validator for the new key
 		foreignUpdates = append(foreignUpdates, update{key: currKey, power: u.power})
 	}
-	m.localKeysForWhichUpdateMustBeSent = []LK{}
+	m.localsWhichMustUpdate = []LK{}
 
 	// Create any updates for validators whose powers did change
 	for _, u := range localUpdates {
 		// Check if the consumer has an old key
-		if lastU, ok := m.localKeyToLastUpdate[u.key]; ok {
+		if lastU, ok := m.localToLastUpdate[u.key]; ok {
 			// Create an update which will delete the validator for the old key
 			foreignUpdates = append(foreignUpdates, update{key: lastU.key, power: 0})
 		}
-		currKey := m.localKeyToCurrentForeignKey[u.key]
+		currKey := m.localToForeign[u.key]
 		// Create an update which will add/update the validator for the current key
 		foreignUpdates = append(foreignUpdates, update{key: currKey, power: u.power})
 	}
 
 	// Update internal bookkeeping
 	for _, u := range foreignUpdates {
-		m.foreignKeyToVscidWhenLastSent[u.key] = vscid
-		m.localKeyToLastUpdate[m.foreignKeyToLocalKey[u.key]] = u
+		m.foreignToGreatestVSCID[u.key] = vscid
+		m.localToLastUpdate[m.foreignToLocal[u.key]] = u
 	}
 
 	return foreignUpdates
+}
+
+func (m *KeyGuard) Prune(mostRecentlyMaturedVscid VSCID) {
+	toRemove := []FK{}
+	for fk, vscid := range m.foreignToGreatestVSCID {
+		if vscid <= mostRecentlyMaturedVscid {
+			toRemove = append(toRemove, fk)
+		}
+	}
+	for _, fk := range toRemove {
+		delete(m.foreignToGreatestVSCID, fk)
+		delete(m.foreignToLocal, fk)
+	}
 }
