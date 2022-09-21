@@ -71,6 +71,13 @@ func (m *KeyGuard) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 
 	foreignUpdates := map[FK]int{}
 
+	// need to go over every local key with a key change or a power update
+	// add a deletion for all of these, that have a last positive update
+	// need to go over every local key with a key change or a power update
+	// 	if new power update is 0, do nothing
+	//  if new power update is positive, use it
+	//  else: use old power update, which must be positve
+
 	// Iterate each lk for which the fk changed, or there is a power update
 	for _, lk := range lks {
 		power := 0
