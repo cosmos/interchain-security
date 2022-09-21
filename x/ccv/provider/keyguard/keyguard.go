@@ -71,35 +71,44 @@ func (m *KeyGuard) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 
 	foreignUpdates := map[FK]int{}
 
-	// need to go over every local key with a key change or a power update
-	// add a deletion for all of these, that have a last positive update
-	// need to go over every local key with a key change or a power update
-	// 	if new power update is 0, do nothing
-	//  if new power update is positive, use it
-	//  else: use old power update, which must be positve
+	// Make a temporary copy
+	localToLastPositiveForeignUpdate := map[LK]update{}
+	for lk, u := range m.localToLastPositiveForeignUpdate {
+		localToLastPositiveForeignUpdate[lk] = u
+	}
 
-	// Iterate each lk for which the fk changed, or there is a power update
+	// Iterate all local keys for which either the foreign key changed or there
+	// has been a power update.
+	for _, lk := range lks {
+		if last, ok := m.localToLastPositiveForeignUpdate[lk]; ok {
+			// If the key has previously been shipped in an update
+			// delete it.
+			foreignUpdates[last.key] = 0
+			delete(localToLastPositiveForeignUpdate, lk)
+		}
+	}
+
+	// Iterate all local keys for which either the foreign key changed or there
+	// has been a power update.
 	for _, lk := range lks {
 		power := 0
-		// If a positive update was sent, undo it.
-		// Store power for possible redo.
 		if last, ok := m.localToLastPositiveForeignUpdate[lk]; ok {
-			foreignUpdates[last.key] = 0
+			// If there was a positive power before, use it.
 			power = last.power
-			delete(m.localToLastPositiveForeignUpdate, lk)
 		}
-		// If there is a power update
+		// If there is a new power use it.
 		if newPower, ok := localUpdates[lk]; ok {
 			power = newPower
 		}
-		// If power is 0, already deleted a few lines above
-		// If power is positive, we are updating or redoing
+		// Only ship positive powers.
 		if 0 < power {
 			fk := m.localToForeign[lk]
 			foreignUpdates[fk] = power
-			m.localToLastPositiveForeignUpdate[lk] = update{key: fk, power: power}
+			localToLastPositiveForeignUpdate[lk] = update{key: fk, power: power}
 		}
 	}
+
+	m.localToLastPositiveForeignUpdate = localToLastPositiveForeignUpdate
 
 	for fk := range foreignUpdates {
 		m.foreignToGreatestVSCID[fk] = vscid

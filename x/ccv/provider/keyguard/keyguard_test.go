@@ -1,7 +1,6 @@
 package keyguard
 
 import (
-	"fmt"
 	"math/rand"
 	"testing"
 
@@ -246,7 +245,6 @@ func TestPrototype(t *testing.T) {
 
 	rand.Seed(40)
 	for i := 0; i < 1000; i++ {
-		fmt.Println("i: ", i)
 		trace := []TraceState{}
 		for len(trace) < 2 {
 			trace = getTrace(t)
