@@ -43,11 +43,6 @@ func MakeKeyGuard() KeyGuard {
 }
 
 func (m *KeyGuard) SetLocalToForeign(lk LK, fk FK) {
-	if currFk, ok := m.localToForeign[lk]; ok {
-		if currFk == fk {
-			return
-		}
-	}
 	m.localToForeign[lk] = fk
 	// If an update was created for lk
 	if u, ok := m.localToLastUpdate[lk]; ok {
@@ -67,18 +62,19 @@ func (m *KeyGuard) GetLocal(fk FK) (LK, error) {
 	}
 }
 
-func (m *KeyGuard) ComputeUpdates(vscid VSCID, localUpdates []update) (foreignUpdates []update) {
+func (m *KeyGuard) ComputeUpdates(vscid VSCID, localUpdates []update) []update {
 
-	foreignUpdates = []update{}
+	foreignUpdates := map[FK]int{}
 
-	// Create any updates for validators whose power did not change
+	// Create updates for any locals whose foreign key changed
+	// NOTE: this includes the case of updating to the same foreign key
 	for _, lk := range m.localsWhichMustUpdate {
-		currKey := m.localToForeign[lk]
+		fk := m.localToForeign[lk]
 		u := m.localToLastUpdate[lk]
 		// Create an update which will delete the validator for the old key
-		foreignUpdates = append(foreignUpdates, update{key: u.key, power: 0})
+		foreignUpdates[u.key] = 0
 		// Create an update which will add the validator for the new key
-		foreignUpdates = append(foreignUpdates, update{key: currKey, power: u.power})
+		foreignUpdates[fk] = u.power
 	}
 	m.localsWhichMustUpdate = []LK{}
 
