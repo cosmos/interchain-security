@@ -7,6 +7,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -77,6 +78,7 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 			func(suite *ProviderTestSuite) error {
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetSlashAcks(s.providerCtx(), consumerChainID, []string{"validator-1", "validator-2", "validator-3"})
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetLockUnbondingOnTimeout(s.providerCtx(), consumerChainID)
+				s.providerChain.App.(*appProvider.App).ProviderKeeper.AppendPendingVSC(s.providerCtx(), consumerChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
 				return nil
 			},
 		},
@@ -95,10 +97,10 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 	s.checkConsumerChainIsRemoved(consumerChainID, false)
 }
 
-func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
+func (s *ProviderTestSuite) TestConsumerRemovalProposal() {
 	var (
 		ctx      sdk.Context
-		proposal *providertypes.StopConsumerChainProposal
+		proposal *providertypes.ConsumerRemovalProposal
 		ok       bool
 	)
 
@@ -111,13 +113,12 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 		stopReached bool
 	}{
 		{
-			"valid stop consumer chain proposal: stop time reached", func(suite *ProviderTestSuite) {
+			"valid consumer removal proposal: stop time reached", func(suite *ProviderTestSuite) {
 
 				// ctx blocktime is after proposal's stop time
 				ctx = s.providerCtx().WithBlockTime(time.Now().Add(time.Hour))
-				content, err := providertypes.NewStopConsumerChainProposal("title", "description", chainID, time.Now())
-				s.Require().NoError(err)
-				proposal, ok = content.(*providertypes.StopConsumerChainProposal)
+				content := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now())
+				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
 				s.Require().True(ok)
 			}, true, true,
 		},
@@ -126,9 +127,8 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 
 				// ctx blocktime is before proposal's stop time
 				ctx = s.providerCtx().WithBlockTime(time.Now())
-				content, err := providertypes.NewStopConsumerChainProposal("title", "description", chainID, time.Now().Add(time.Hour))
-				s.Require().NoError(err)
-				proposal, ok = content.(*providertypes.StopConsumerChainProposal)
+				content := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now().Add(time.Hour))
+				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
 				s.Require().True(ok)
 			}, true, false,
 		},
@@ -141,9 +141,8 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 				// set invalid unbonding op index
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetUnbondingOpIndex(ctx, chainID, 0, []uint64{0})
 
-				content, err := providertypes.NewStopConsumerChainProposal("title", "description", chainID, time.Now())
-				s.Require().NoError(err)
-				proposal, ok = content.(*providertypes.StopConsumerChainProposal)
+				content := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now())
+				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
 				s.Require().True(ok)
 			}, false, true,
 		},
@@ -158,19 +157,19 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 
 			tc.malleate(s)
 
-			err := s.providerChain.App.(*appProvider.App).ProviderKeeper.StopConsumerChainProposal(ctx, proposal)
+			err := s.providerChain.App.(*appProvider.App).ProviderKeeper.HandleConsumerRemovalProposal(ctx, proposal)
 			if tc.expPass {
 				s.Require().NoError(err, "error returned on valid case")
 				if tc.stopReached {
-					// check that the pending stop consumer chain proposal is deleted
-					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingStopProposal(ctx, chainID, proposal.StopTime)
-					s.Require().False(found, "pending stop consumer proposal wasn't deleted")
+					// check that the pending consumer removal proposal is deleted
+					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingConsumerRemovalProp(ctx, chainID, proposal.StopTime)
+					s.Require().False(found, "pending consumer removal proposal wasn't deleted")
 
 					// check that the consumer chain is removed
 					s.checkConsumerChainIsRemoved(chainID, false)
 
 				} else {
-					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingStopProposal(ctx, chainID, proposal.StopTime)
+					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingConsumerRemovalProp(ctx, chainID, proposal.StopTime)
 					s.Require().True(found, "pending stop consumer was not found for chain ID %s", chainID)
 
 					// check that the consumer chain client exists
@@ -250,8 +249,10 @@ func (s *ProviderTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd 
 	}
 
 	// verify consumer chain's states are removed
+	_, found := providerKeeper.GetConsumerGenesis(s.providerCtx(), chainID)
+	s.Require().False(found)
 	s.Require().False(providerKeeper.GetLockUnbondingOnTimeout(s.providerCtx(), chainID))
-	_, found := providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
+	_, found = providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
 	s.Require().False(found)
 
 	_, found = providerKeeper.GetChainToChannel(s.providerCtx(), chainID)
@@ -262,12 +263,11 @@ func (s *ProviderTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd 
 
 	s.Require().Nil(providerKeeper.GetSlashAcks(s.providerCtx(), chainID))
 	s.Require().Zero(providerKeeper.GetInitChainHeight(s.providerCtx(), chainID))
-	// TODO Simon: check that pendingVSCPacket are emptied - once
-	// https://github.com/cosmos/interchain-security/issues/27 is implemented
+	s.Require().Nil(providerKeeper.GetPendingVSCs(s.providerCtx(), chainID))
 }
 
 // TODO Simon: duplicated from consumer/keeper_test.go; figure out how it can be refactored
-// SendEmptyVSCPacket sends a VSC packet without any changes
+// SendEmptyVSCPacket sends a VSC packet with no valset changes
 // to ensure that the CCV channel gets established
 func (s *ProviderTestSuite) SendEmptyVSCPacket() {
 	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
@@ -294,4 +294,30 @@ func (s *ProviderTestSuite) SendEmptyVSCPacket() {
 	s.Require().NoError(err)
 	err = s.path.EndpointA.RecvPacket(packet)
 	s.Require().NoError(err)
+}
+
+// TestProviderChannelClosed checks that a consumer chain panics
+// when the provider channel was established and then closed
+func (suite *ConsumerKeeperTestSuite) TestProviderChannelClosed() {
+
+	suite.SetupCCVChannel()
+	// establish provider channel with a first VSC packet
+	suite.SendEmptyVSCPacket()
+
+	channelID, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
+	suite.Require().True(found)
+
+	// close provider channel
+	err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.ChanCloseInit(suite.consumerChain.GetContext(), ccv.ConsumerPortID, channelID)
+	suite.Require().NoError(err)
+	suite.Require().True(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IsChannelClosed(suite.consumerChain.GetContext(), channelID))
+
+	// assert begin blocker did panics
+	defer func() {
+		if r := recover(); r != nil {
+			return
+		}
+		suite.Require().Fail("Begin blocker did not panic with a closed channel")
+	}()
+	suite.consumerChain.App.(*appConsumer.App).BeginBlocker(suite.consumerChain.GetContext(), abci.RequestBeginBlock{})
 }

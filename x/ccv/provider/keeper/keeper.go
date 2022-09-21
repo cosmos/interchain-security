@@ -228,6 +228,11 @@ func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (consumertyp
 	return data, true
 }
 
+func (k Keeper) DeleteConsumerGenesis(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerGenesisKey(chainID))
+}
+
 // VerifyConsumerChain verifies that the chain trying to connect on the channel handshake
 // is the expected consumer chain.
 func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectionHops []string) error {
@@ -316,9 +321,12 @@ func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, IDs []uint64) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz, err := json.Marshal(IDs)
+	index := ccv.UnbondingOpsIndex{
+		Ids: IDs,
+	}
+	bz, err := index.Marshal()
 	if err != nil {
-		panic("Failed to JSON marshal")
+		panic("Failed to marshal UnbondingOpsIndex")
 	}
 
 	store.Set(types.UnbondingOpIndexKey(chainID, valsetUpdateID), bz)
@@ -340,13 +348,12 @@ func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb 
 		}
 		vscID = binary.BigEndian.Uint64(vscBytes)
 
-		var ids []uint64
-		err = json.Unmarshal(iterator.Value(), &ids)
-		if err != nil {
+		var index ccv.UnbondingOpsIndex
+		if err = index.Unmarshal(iterator.Value()); err != nil {
 			panic("Failed to unmarshal JSON")
 		}
 
-		if !cb(vscID, ids) {
+		if !cb(vscID, index.GetIds()) {
 			return
 		}
 	}
@@ -361,13 +368,12 @@ func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 		return []uint64{}, false
 	}
 
-	var ids []uint64
-	err := json.Unmarshal(bz, &ids)
-	if err != nil {
-		panic("Failed to JSON unmarshal")
+	var idx ccv.UnbondingOpsIndex
+	if err := idx.Unmarshal(bz); err != nil {
+		panic("Failed to unmarshal UnbondingOpsIndex")
 	}
 
-	return ids, true
+	return idx.GetIds(), true
 }
 
 // This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
@@ -401,11 +407,12 @@ func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64, err error
 	if bz == nil {
 		return nil, nil
 	}
-	err = json.Unmarshal(bz, &ids)
-	if err != nil {
+
+	var ops ccv.MaturedUnbondingOps
+	if err := ops.Unmarshal(bz); err != nil {
 		return nil, err
 	}
-	return ids, nil
+	return ops.GetIds(), nil
 }
 
 // AppendMaturedUnbondingOps adds a list of ids to the list of matured unbonding operation ids
@@ -417,11 +424,13 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) error {
 	if err != nil {
 		return err
 	}
-	// append works also on a nil list
-	existingIds = append(existingIds, ids...)
+
+	maturedOps := ccv.MaturedUnbondingOps{
+		Ids: append(existingIds, ids...),
+	}
 
 	store := ctx.KVStore(k.storeKey)
-	bz, err := json.Marshal(existingIds)
+	bz, err := maturedOps.Marshal()
 	if err != nil {
 		return err
 	}
@@ -580,12 +589,15 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 // SetSlashAcks sets the slash acks under the given chain ID
 func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	store := ctx.KVStore(k.storeKey)
-	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(acks)
-	if err != nil {
-		panic("failed to encode json")
+
+	sa := types.SlashAcks{
+		Addresses: acks,
 	}
-	store.Set(types.SlashAcksKey(chainID), buf.Bytes())
+	bz, err := sa.Marshal()
+	if err != nil {
+		panic("failed to marshal SlashAcks")
+	}
+	store.Set(types.SlashAcksKey(chainID), bz)
 }
 
 // GetSlashAcks returns the slash acks stored under the given chain ID
@@ -595,15 +607,12 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	if bz == nil {
 		return nil
 	}
-	var acks []string
-	buf := bytes.NewBuffer(bz)
-
-	err := json.NewDecoder(buf).Decode(&acks)
-	if err != nil {
+	var acks types.SlashAcks
+	if err := acks.Unmarshal(bz); err != nil {
 		panic(fmt.Errorf("failed to decode json: %w", err))
 	}
 
-	return acks
+	return acks.GetAddresses()
 }
 
 // EmptySlashAcks empties and returns the slash acks for a given chain ID
@@ -627,15 +636,13 @@ func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks [
 
 		chainID := string(iterator.Key()[1:])
 
-		var data []string
-		buf := bytes.NewBuffer(iterator.Value())
-
-		err := json.NewDecoder(buf).Decode(&data)
+		var sa types.SlashAcks
+		err := sa.Unmarshal(iterator.Value())
 		if err != nil {
-			panic(fmt.Errorf("failed to decode json: %w", err))
+			panic(fmt.Errorf("failed to unmarshal SlashAcks: %w", err))
 		}
 
-		if !cb(chainID, data) {
+		if !cb(chainID, sa.GetAddresses()) {
 			return
 		}
 	}
