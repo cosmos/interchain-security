@@ -6,3 +6,4 @@ docs/tla/states/
 *.out
 vendor/
 .vscode
+x/ccv/provider/keyguard/__debug_bin
