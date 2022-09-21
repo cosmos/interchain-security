@@ -20,6 +20,20 @@ type Driver struct {
 	valSets        []map[LK]int
 	mappings       []map[LK]FK
 	foreignUpdates [][]update
+	fakeConsumer   FakeConsumer
+}
+
+type FakeConsumer struct {
+	valSet map[FK]int
+}
+
+func (f *FakeConsumer) processUpdates(updates []update) {
+	for _, u := range updates {
+		delete(f.valSet, u.key)
+		if 0 < u.power {
+			f.valSet[u.key] = u.power
+		}
+	}
 }
 
 func (d *Driver) runTrace(t *testing.T, trace []TraceState) {
@@ -31,6 +45,8 @@ func (d *Driver) runTrace(t *testing.T, trace []TraceState) {
 	d.valSets = []map[LK]int{}
 	d.mappings = []map[LK]FK{}
 	d.foreignUpdates = [][]update{}
+	d.fakeConsumer = FakeConsumer{}
+	d.fakeConsumer.valSet = map[FK]int{}
 
 	init := trace[0]
 	d.mappings = append(d.mappings, init.Mapping)
@@ -45,7 +61,6 @@ func (d *Driver) runTrace(t *testing.T, trace []TraceState) {
 
 	for _, s := range trace[1:] {
 		if d.lastTP < s.TP {
-			// TODO: impl all endblock shenanigans
 			d.lastTP = s.TP
 			d.mappings = append(d.mappings, s.Mapping)
 			for lk, fk := range s.Mapping {
@@ -55,10 +70,8 @@ func (d *Driver) runTrace(t *testing.T, trace []TraceState) {
 		}
 		if d.lastTC < s.TC {
 			for i := d.lastTC + 1; i <= s.TC; i++ {
-				// TODO: forward d.foreignUpdates[i] to the consumer logic
+				d.fakeConsumer.processUpdates(d.foreignUpdates[i])
 			}
-			// use foreign updates ini range
-			// TODO: do 'slash' checks
 		}
 		if d.lastTM < s.TM {
 			// TODO: careful of meaning of TM because
