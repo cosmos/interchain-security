@@ -1,4 +1,4 @@
-package keyguard
+package keydel
 
 import (
 	"math/rand"
