@@ -58,19 +58,22 @@ func getTrace() []TraceState {
 	NUM_FKS := 9
 
 	mapping := func() map[LK]FK {
+		// TODO: currently I don't generate partial mappings but I might want to
 		// Create a mapping of nums [0, NUM_VALS] mapped injectively to [0, NUM_FKS]
 		ret := map[LK]FK{}
 		good := func() bool {
-			for i := 0; i < NUM_VALS-1; i++ {
-				if ret[i] == ret[i+1] {
+			seen := map[FK]bool{}
+			for _, fk := range ret {
+				if _, ok := seen[fk]; ok {
 					return false
 				}
+				seen[fk] = true
 			}
 			return true
 		}
 		for !good() {
-			for i := 0; i < NUM_VALS; i++ {
-				ret[i] = rand.Intn(NUM_FKS)
+			for lk := 0; lk < NUM_VALS; lk++ {
+				ret[lk] = rand.Intn(NUM_FKS)
 			}
 		}
 		return ret
@@ -78,9 +81,10 @@ func getTrace() []TraceState {
 
 	localUpdates := func() []update {
 		ret := []update{}
+		// include 0 to all validators
 		include := rand.Intn(NUM_VALS + 1)
-		for _, i := range rand.Perm(NUM_VALS)[0:include] {
-			ret = append(ret, update{key: i, power: rand.Intn(3)})
+		for _, lk := range rand.Perm(NUM_VALS)[0:include] {
+			ret = append(ret, update{key: lk, power: rand.Intn(3)})
 		}
 		return ret
 	}
