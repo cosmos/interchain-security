@@ -15,7 +15,7 @@ type update struct {
 // TODO: I need to integrate this into the system
 // TODO: I need to integrate with staking Create/Destroy validator
 
-type KeyGuard struct {
+type KeyDel struct {
 	// A new key is added when a relevant update is returned by ComputeUpdates
 	// the key is deleted at earliest after sending an update corresponding
 	// to a call to staking::DeleteValidator TODO: impl this
@@ -30,8 +30,8 @@ type KeyGuard struct {
 	foreignToGreatestVSCID map[FK]VSCID
 }
 
-func MakeKeyGuard() KeyGuard {
-	return KeyGuard{
+func MakeKeyDel() KeyDel {
+	return KeyDel{
 		localToLastPositiveForeignUpdate: map[LK]update{},
 		localToForeign:                   map[LK]FK{},
 		foreignToLocal:                   map[FK]LK{},
@@ -39,25 +39,25 @@ func MakeKeyGuard() KeyGuard {
 	}
 }
 
-func (m *KeyGuard) SetLocalToForeign(lk LK, fk FK) {
-	m.localToForeign[lk] = fk
+func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) {
+	e.localToForeign[lk] = fk
 }
 
-func (m *KeyGuard) GetLocal(fk FK) (LK, error) {
-	if lk, ok := m.foreignToLocal[fk]; ok {
+func (e *KeyDel) GetLocal(fk FK) (LK, error) {
+	if lk, ok := e.foreignToLocal[fk]; ok {
 		return lk, nil
 	} else {
 		return -1, errors.New("Nope")
 	}
 }
 
-func (m *KeyGuard) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
+func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 
 	lks := []LK{}
 
 	// Key changes
-	for lk, newFk := range m.localToForeign {
-		if u, ok := m.localToLastPositiveForeignUpdate[lk]; ok {
+	for lk, newFk := range e.localToForeign {
+		if u, ok := e.localToLastPositiveForeignUpdate[lk]; ok {
 			oldFk := u.key
 			if oldFk != newFk {
 				lks = append(lks, lk)
@@ -73,14 +73,14 @@ func (m *KeyGuard) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 
 	// Make a temporary copy
 	localToLastPositiveForeignUpdate := map[LK]update{}
-	for lk, u := range m.localToLastPositiveForeignUpdate {
+	for lk, u := range e.localToLastPositiveForeignUpdate {
 		localToLastPositiveForeignUpdate[lk] = u
 	}
 
 	// Iterate all local keys for which either the foreign key changed or there
 	// has been a power update.
 	for _, lk := range lks {
-		if last, ok := m.localToLastPositiveForeignUpdate[lk]; ok {
+		if last, ok := e.localToLastPositiveForeignUpdate[lk]; ok {
 			// If the key has previously been shipped in an update
 			// delete it.
 			foreignUpdates[last.key] = 0
@@ -92,7 +92,7 @@ func (m *KeyGuard) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	// has been a power update.
 	for _, lk := range lks {
 		power := 0
-		if last, ok := m.localToLastPositiveForeignUpdate[lk]; ok {
+		if last, ok := e.localToLastPositiveForeignUpdate[lk]; ok {
 			// If there was a positive power before, use it.
 			power = last.power
 		}
@@ -102,22 +102,22 @@ func (m *KeyGuard) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 		}
 		// Only ship positive powers.
 		if 0 < power {
-			fk := m.localToForeign[lk]
+			fk := e.localToForeign[lk]
 			foreignUpdates[fk] = power
 			localToLastPositiveForeignUpdate[lk] = update{key: fk, power: power}
 		}
 	}
 
-	m.localToLastPositiveForeignUpdate = localToLastPositiveForeignUpdate
+	e.localToLastPositiveForeignUpdate = localToLastPositiveForeignUpdate
 
 	for fk := range foreignUpdates {
-		m.foreignToGreatestVSCID[fk] = vscid
+		e.foreignToGreatestVSCID[fk] = vscid
 	}
 
 	return foreignUpdates
 }
 
-func (m *KeyGuard) ComputeUpdates(vscid VSCID, localUpdates []update) []update {
+func (e *KeyDel) ComputeUpdates(vscid VSCID, localUpdates []update) []update {
 
 	local := map[LK]int{}
 
@@ -125,7 +125,7 @@ func (m *KeyGuard) ComputeUpdates(vscid VSCID, localUpdates []update) []update {
 		local[u.key] = u.power
 	}
 
-	foreign := m.inner(vscid, local)
+	foreign := e.inner(vscid, local)
 
 	ret := []update{}
 
@@ -136,15 +136,15 @@ func (m *KeyGuard) ComputeUpdates(vscid VSCID, localUpdates []update) []update {
 	return ret
 }
 
-func (m *KeyGuard) Prune(mostRecentlyMaturedVscid VSCID) {
+func (e *KeyDel) Prune(mostRecentlyMaturedVscid VSCID) {
 	toRemove := []FK{}
-	for fk, vscid := range m.foreignToGreatestVSCID {
+	for fk, vscid := range e.foreignToGreatestVSCID {
 		if vscid <= mostRecentlyMaturedVscid {
 			toRemove = append(toRemove, fk)
 		}
 	}
 	for _, fk := range toRemove {
-		delete(m.foreignToGreatestVSCID, fk)
-		delete(m.foreignToLocal, fk)
+		delete(e.foreignToGreatestVSCID, fk)
+		delete(e.foreignToLocal, fk)
 	}
 }

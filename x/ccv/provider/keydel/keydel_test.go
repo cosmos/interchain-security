@@ -47,7 +47,7 @@ func (vs *ValSet) processUpdates(updates []update) {
 }
 
 func (d *Driver) runTrace() {
-	kg := MakeKeyGuard()
+	kg := MakeKeyDel()
 
 	d.lastTP = 0
 	d.lastTC = 0
@@ -239,8 +239,6 @@ func getTrace(t *testing.T) []TraceState {
 }
 
 func TestPrototype(t *testing.T) {
-
-	rand.Seed(40)
 	for i := 0; i < 1000; i++ {
 		trace := []TraceState{}
 		for len(trace) < 2 {
@@ -253,12 +251,14 @@ func TestPrototype(t *testing.T) {
 	}
 }
 
-func TestKeyDelegation(t *testing.T) {
-	traces := [][]TraceState{}
-	for _, trace := range traces {
-		d := Driver{}
-		d.trace = trace
-		d.t = t
-		d.runTrace()
-	}
+func TestActual(t *testing.T) {
+	/*
+		traces := [][]TraceState{}
+		for _, trace := range traces {
+			d := Driver{}
+			d.trace = trace
+			d.t = t
+			d.runTrace()
+		}
+	*/
 }
