@@ -1,6 +1,7 @@
 package keyguard
 
 import (
+	"math/rand"
 	"testing"
 )
 
@@ -49,6 +50,101 @@ func (d *Driver) runTrace(t *testing.T, trace []TraceState) {
 			// prune and do slash checks
 		}
 	}
+}
+
+func getTrace() []TraceState {
+
+	NUM_VALS := 3
+	NUM_FKS := 9
+
+	mapping := func() map[LK]FK {
+		// Create a mapping of nums [0, NUM_VALS] mapped injectively to [0, NUM_FKS]
+		ret := map[LK]FK{}
+		good := func() bool {
+			for i := 0; i < NUM_VALS-1; i++ {
+				if ret[i] == ret[i+1] {
+					return false
+				}
+			}
+			return true
+		}
+		for !good() {
+			for i := 0; i < NUM_VALS; i++ {
+				ret[i] = rand.Intn(NUM_FKS)
+			}
+		}
+		return ret
+	}
+
+	localUpdates := func() []update {
+		ret := []update{}
+		include := rand.Intn(NUM_VALS + 1)
+		for _, i := range rand.Perm(NUM_VALS)[0:include] {
+			ret = append(ret, update{key: i, power: rand.Intn(3)})
+		}
+		return ret
+	}
+
+	ret := []TraceState{
+		TraceState{
+			Mapping:      mapping(),
+			LocalUpdates: localUpdates(),
+			TP:           0,
+			TC:           0,
+			TM:           0,
+		},
+	}
+
+	for i := 0; i < 100; i++ {
+		choice := rand.Intn(3)
+		if choice == 0 {
+			ret = append(ret, TraceState{
+				Mapping:      mapping(),
+				LocalUpdates: localUpdates(),
+				TP:           ret[i].TP + 1,
+				TC:           ret[i].TC,
+				TM:           ret[i].TM,
+			})
+		}
+		if choice == 1 {
+			curr := ret[i].TC
+			limInclusive := ret[i].TP
+			if curr < limInclusive {
+				// add in [1, limInclusive - curr]
+				// rand in [0, limInclusive - curr - 1]
+				// bound is [0, limInclusive - curr)
+				newTC := rand.Intn(limInclusive-curr) + curr + 1
+				if newTC <= curr || limInclusive < curr {
+					panic("bad choice 1")
+				}
+				ret = append(ret, TraceState{
+					Mapping:      ret[i].Mapping,
+					LocalUpdates: ret[i].LocalUpdates,
+					TP:           ret[i].TP,
+					TC:           newTC,
+					TM:           ret[i].TM,
+				})
+			}
+		}
+		if choice == 2 {
+			curr := ret[i].TM
+			limInclusive := ret[i].TC
+			if curr < limInclusive {
+				newTM := rand.Intn(limInclusive-curr) + curr + 1
+				if newTM <= curr || limInclusive < curr {
+					panic("bad choice 2")
+				}
+				ret = append(ret, TraceState{
+					Mapping:      ret[i].Mapping,
+					LocalUpdates: ret[i].LocalUpdates,
+					TP:           ret[i].TP,
+					TC:           ret[i].TC,
+					TM:           newTM,
+				})
+			}
+		}
+	}
+	return ret
 }
 
 func TestKeyDelegation(t *testing.T) {

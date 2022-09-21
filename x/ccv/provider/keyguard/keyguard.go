@@ -11,14 +11,18 @@ type update struct {
 	power int
 }
 
+// TODO: I need to integrate this into the keyStore
+// TODO: I need to integrate this into the system
+// TODO: I need to integrate with staking Create/Destroy validator
+
 type KeyGuard struct {
 	// A new key is added when a relevant update is returned by ComputeUpdates
 	// the key is deleted at earliest after sending an update corresponding
-	// to a call to staking::DeleteValidator
+	// to a call to staking::DeleteValidator TODO: impl this
 	localKeyToLastUpdate map[LK]update
 	// A new key is added on staking::CreateValidator
 	// the key is deleted at earliest after sending an update corresponding
-	// to a call to staking::DeleteValidator
+	// to a call to staking::DeleteValidator TODO: impl this
 	localKeyToCurrentForeignKey map[LK]FK
 	// Prunable state
 	foreignKeyToLocalKey map[FK]LK
