@@ -14,6 +14,7 @@ type TraceState struct {
 }
 
 type Driver struct {
+	trace          []TraceState
 	lastTP         int
 	lastTC         int
 	lastTM         int
@@ -36,8 +37,8 @@ func (f *FakeConsumer) processUpdates(updates []update) {
 	}
 }
 
-func (d *Driver) runTrace(t *testing.T, trace []TraceState) {
-	kg := KeyGuard{}
+func (d *Driver) runTrace(t *testing.T) {
+	kg := MakeKeyGuard()
 
 	d.lastTP = 0
 	d.lastTC = 0
@@ -48,7 +49,7 @@ func (d *Driver) runTrace(t *testing.T, trace []TraceState) {
 	d.fakeConsumer = FakeConsumer{}
 	d.fakeConsumer.valSet = map[FK]int{}
 
-	init := trace[0]
+	init := d.trace[0]
 	d.mappings = append(d.mappings, init.Mapping)
 	for lk, fk := range init.Mapping {
 		kg.SetForeignKey(lk, fk)
@@ -60,11 +61,14 @@ func (d *Driver) runTrace(t *testing.T, trace []TraceState) {
 	}
 	kg.Prune(0)
 
-	for _, s := range trace[1:] {
+	for _, s := range d.trace[1:] {
 		if d.lastTP < s.TP {
 			d.mappings = append(d.mappings, s.Mapping)
 			for lk, fk := range s.Mapping {
 				kg.SetForeignKey(lk, fk)
+			}
+			for _, u := range s.LocalUpdates {
+				d.valSets
 			}
 			d.foreignUpdates = append(d.foreignUpdates, kg.ComputeUpdates(s.TP, s.LocalUpdates))
 			d.lastTP = s.TP
@@ -162,7 +166,8 @@ func getTrace() []TraceState {
 		},
 	}
 
-	for i := 0; i < 100; i++ {
+	i := 0
+	for i < 100 {
 		choice := rand.Intn(3)
 		if choice == 0 {
 			ret = append(ret, TraceState{
@@ -172,6 +177,7 @@ func getTrace() []TraceState {
 				TC:           ret[i].TC,
 				TM:           ret[i].TM,
 			})
+			i++
 		}
 		if choice == 1 {
 			curr := ret[i].TC
@@ -191,6 +197,7 @@ func getTrace() []TraceState {
 					TC:           newTC,
 					TM:           ret[i].TM,
 				})
+				i++
 			}
 		}
 		if choice == 2 {
@@ -208,6 +215,7 @@ func getTrace() []TraceState {
 					TC:           ret[i].TC,
 					TM:           newTM,
 				})
+				i++
 			}
 		}
 	}
@@ -220,14 +228,16 @@ func TestPrototype(t *testing.T) {
 		trace = getTrace()
 	}
 	d := Driver{}
-	d.runTrace(t, trace)
+	d.trace = trace
+	d.runTrace(t)
 }
 
 func TestKeyDelegation(t *testing.T) {
 	traces := [][]TraceState{}
 	for _, trace := range traces {
 		d := Driver{}
-		d.runTrace(t, trace)
+		d.trace = trace
+		d.runTrace(t)
 	}
 }
 
