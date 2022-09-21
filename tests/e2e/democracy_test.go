@@ -235,13 +235,18 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
 		consumerRedistributeDifference = consumerRedistributeDifference.Add(representativeDifference[key])
 	}
 
+	//confirm that the total amount given to the community pool plus all representatives is equal to the total amount taken out of distribution
 	s.Require().Equal(distrModuleDifference, consumerRedistributeDifference)
+	//confirm that the percentage given to the community pool is equal to the configured community tax percentage.
 	s.Require().Equal(communityPoolDifference.Quo(consumerRedistributeDifference), distrKeeper.GetCommunityTax(s.consumerCtx()))
+	//check that the fraction actually kept by the consumer is the correct fraction. using InEpsilon because the math code uses truncations
 	s.Require().InEpsilon(distrModuleDifference.Quo(providerDifference.Add(distrModuleDifference)).MustFloat64(), consumerFraction.MustFloat64(), float64(0.0001))
+	//check that the fraction actually kept by the provider is the correct fraction. using InEpsilon because the math code uses truncations
 	s.Require().InEpsilon(providerDifference.Quo(providerDifference.Add(distrModuleDifference)).MustFloat64(), sdk.NewDec(1).Sub(consumerFraction).MustFloat64(), float64(0.0001))
 
 	totalRepresentativePower := stakingKeeper.GetValidatorSet().TotalBondedTokens(s.consumerCtx())
 
+	//check that each representative has gotten the correct amount of rewards
 	for key, representativeTokens := range representativesTokens {
 		powerFraction := sdk.NewDecFromInt(representativeTokens).QuoTruncate(sdk.NewDecFromInt(totalRepresentativePower))
 		s.Require().Equal(powerFraction, representativeDifference[key].Quo(consumerRedistributeDifference.Sub(communityPoolDifference)))

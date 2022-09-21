@@ -24,7 +24,7 @@ var (
 	_ module.AppModuleSimulation = AppModule{}
 )
 
-// AppModule embeds the Cosmos SDK's x/staking AppModuleBasic.
+// AppModule embeds the Cosmos SDK's x/distribution AppModuleBasic.
 type AppModuleBasic struct {
 	distr.AppModuleBasic
 }
@@ -69,22 +69,16 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	if ctx.BlockHeight() > 1 {
 		am.AllocateTokens(ctx)
 	}
-
-	// record the proposer for when we payout on the next block
-	consAddr := sdk.ConsAddress(req.Header.ProposerAddress)
-	am.keeper.SetPreviousProposerConsAddr(ctx, consAddr)
 }
 
 // AllocateTokens handles distribution of the collected fees
-// bondedVotes is a list of (validator address, validator voted on last block flag) for all
-// validators in the bonded set.
 func (am AppModule) AllocateTokens(
 	ctx sdk.Context,
 ) {
 
 	// fetch and clear the collected fees for distribution, since this is
 	// called in BeginBlock, collected fees will be from the previous block
-	// (and distributed to the previous proposer)
+	// (and distributed to the current representatives)
 	feeCollector := am.accountKeeper.GetModuleAccount(ctx, consumertypes.ConsumerRedistributeName)
 	feesCollectedInt := am.bankKeeper.GetAllBalances(ctx, feeCollector.GetAddress())
 	feesCollected := sdk.NewDecCoinsFromCoins(feesCollectedInt...)
@@ -99,27 +93,25 @@ func (am AppModule) AllocateTokens(
 	// general discussions here: https://github.com/cosmos/cosmos-sdk/issues/2906#issuecomment-441867634
 	feePool := am.keeper.GetFeePool(ctx)
 	vs := am.stakingKeeper.GetValidatorSet()
-	totalPower := vs.TotalBondedTokens(ctx)
-	if totalPower.IsZero() {
+	totalBondedTokens := vs.TotalBondedTokens(ctx)
+	if totalBondedTokens.IsZero() {
 		feePool.CommunityPool = feePool.CommunityPool.Add(feesCollected...)
 		am.keeper.SetFeePool(ctx, feePool)
 		return
 	}
 
-	// calculate fraction allocated to validators
+	// calculate the fraction allocated to representatives by subtracting the community tax.
+	// e.g. if community tax is 0.02, representatives fraction will be 0.98 (2% goes to the community pool and the rest to the representatives)
 	remaining := feesCollected
 	communityTax := am.keeper.GetCommunityTax(ctx)
-	voteMultiplier := sdk.OneDec().Sub(communityTax)
+	representativesFraction := sdk.OneDec().Sub(communityTax)
 
-	// allocate tokens proportionally to voting power
-	// TODO consider parallelizing later, ref https://github.com/cosmos/cosmos-sdk/pull/3099#discussion_r246276376
-
+	// allocate tokens proportionally to representatives voting power
 	vs.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) bool {
-
-		// TODO consider microslashing for missing votes.
-		// ref https://github.com/cosmos/cosmos-sdk/issues/2525#issuecomment-430838701
-		powerFraction := sdk.NewDecFromInt(validator.GetTokens()).QuoTruncate(sdk.NewDecFromInt(totalPower))
-		reward := feesCollected.MulDecTruncate(voteMultiplier).MulDecTruncate(powerFraction)
+		//we get this validator's percentage of the total power by dividing their tokens by the total bonded tokens
+		powerFraction := sdk.NewDecFromInt(validator.GetTokens()).QuoTruncate(sdk.NewDecFromInt(totalBondedTokens))
+		//we truncate here again, which means that the reward will be slightly lower than it should be
+		reward := feesCollected.MulDecTruncate(representativesFraction).MulDecTruncate(powerFraction)
 		am.keeper.AllocateTokensToValidator(ctx, validator, reward)
 		remaining = remaining.Sub(reward)
 
@@ -127,6 +119,7 @@ func (am AppModule) AllocateTokens(
 	})
 
 	// allocate community funding
+	//due to the 3 truncations above, remaining sent to the community pool will be slightly more than it should be. This is OK
 	feePool.CommunityPool = feePool.CommunityPool.Add(remaining...)
 	am.keeper.SetFeePool(ctx, feePool)
 }
