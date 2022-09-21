@@ -9,10 +9,10 @@ import "google/protobuf/timestamp.proto";
 import "ibc/core/client/v1/client.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
 
-// CreateConsumerChainProposal is a governance proposal on the provider chain to spawn a new consumer chain.
+// ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
 // If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
 // or get slashed. It is recommended that spawn time occurs after the proposal end time.
-message CreateConsumerChainProposal {
+message ConsumerAdditionProposal {
     option (gogoproto.goproto_getters)  = false;
     option (gogoproto.goproto_stringer) = false;
   
@@ -40,10 +40,10 @@ message CreateConsumerChainProposal {
     bool lock_unbonding_on_timeout = 8;   
   }
  
-// StopConsumerProposal is a governance proposal on the provider chain to stop a consumer chain.
+// ConsumerRemovalProposal is a governance proposal on the provider chain to remove (and stop) a consumer chain.
 // If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
 // operation funds are released if the LockUnbondingOnTimeout parameter is set to false for the consumer chain ID.
- message StopConsumerChainProposal {
+ message ConsumerRemovalProposal {
     // the title of the proposal
     string title = 1;
     // the description of the proposal
@@ -63,4 +63,10 @@ message Params {
 message HandshakeMetadata {
   string provider_fee_pool_addr = 1;
   string version                = 2;
+}
+
+// SlashAcks contains addesses of consumer chain validators
+// successfully slashed on the provider chain
+message SlashAcks {
+  repeated string addresses = 1;
 }

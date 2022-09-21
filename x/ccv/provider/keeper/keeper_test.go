@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"testing"
 
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"github.com/golang/mock/gomock"
 
@@ -24,7 +23,8 @@ import (
 
 // TestValsetUpdateBlockHeight tests the getter, setter, and deletion methods for valset updates mapped to block height
 func TestValsetUpdateBlockHeight(t *testing.T) {
-	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	defer ctrl.Finish()
 
 	blockHeight, found := providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(0))
 	require.False(t, found)
@@ -49,7 +49,8 @@ func TestValsetUpdateBlockHeight(t *testing.T) {
 
 // TestSlashAcks tests the getter, setter, iteration, and deletion methods for stored slash acknowledgements
 func TestSlashAcks(t *testing.T) {
-	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	defer ctrl.Finish()
 
 	var chainsAcks [][]string
 
@@ -91,7 +92,8 @@ func TestSlashAcks(t *testing.T) {
 
 // TestAppendSlashAck tests the append method for stored slash acknowledgements
 func TestAppendSlashAck(t *testing.T) {
-	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	defer ctrl.Finish()
 
 	p := []string{"alice", "bob", "charlie"}
 	chains := []string{"c1", "c2"}
@@ -110,7 +112,8 @@ func TestAppendSlashAck(t *testing.T) {
 
 // TestPendingVSCs tests the getter, appending, and deletion methods for stored pending VSCs
 func TestPendingVSCs(t *testing.T) {
-	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	defer ctrl.Finish()
 
 	chainID := "consumer"
 
@@ -164,7 +167,8 @@ func TestPendingVSCs(t *testing.T) {
 
 // TestInitHeight tests the getter and setter methods for the stored block heights (on provider) when a given consumer chain was started
 func TestInitHeight(t *testing.T) {
-	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	defer ctrl.Finish()
 
 	tc := []struct {
 		chainID  string
@@ -186,13 +190,12 @@ func TestInitHeight(t *testing.T) {
 
 // TestHandleSlashPacketDoubleSigning tests the handling of a double-signing related slash packet, with mocks and unit tests
 func TestHandleSlashPacketDoubleSigning(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
 	chainId := "consumer"
 	infractionHeight := int64(5)
 
-	cdc, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	ctx := keeperParams.Ctx
 
 	slashPacket := ccv.NewSlashPacketData(
 		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
@@ -201,8 +204,11 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 		stakingtypes.DoubleSign,
 	)
 
-	mockStakingKeeper := testkeeper.NewMockStakingKeeper(ctrl)
-	mockSlashingKeeper := testkeeper.NewMockSlashingKeeper(ctrl)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mocks := testkeeper.NewMockedKeepers(ctrl)
+	mockSlashingKeeper := mocks.MockSlashingKeeper
+	mockStakingKeeper := mocks.MockStakingKeeper
 
 	// Setup expected mock calls
 	gomock.InOrder(
@@ -235,19 +241,7 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 			evidencetypes.DoubleSignJailEndTime).Times(1),
 	)
 
-	providerKeeper := testkeeper.GetProviderKeeperWithMocks(
-		cdc,
-		storeKey,
-		paramsSubspace,
-		capabilitykeeper.ScopedKeeper{},
-		testkeeper.NewMockChannelKeeper(ctrl),
-		testkeeper.NewMockPortKeeper(ctrl),
-		testkeeper.NewMockConnectionKeeper(ctrl),
-		testkeeper.NewMockClientKeeper(ctrl),
-		mockStakingKeeper,
-		mockSlashingKeeper,
-		testkeeper.NewMockAccountKeeper(ctrl),
-	)
+	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 	providerKeeper.SetInitChainHeight(ctx, chainId, uint64(infractionHeight))
 
@@ -257,7 +251,10 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 }
 
 func TestIterateOverUnbondingOpIndex(t *testing.T) {
-	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+
+	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	defer ctrl.Finish()
+
 	chainID := "6"
 
 	// mock an unbonding index
@@ -280,7 +277,9 @@ func TestIterateOverUnbondingOpIndex(t *testing.T) {
 }
 
 func TestMaturedUnbondingOps(t *testing.T) {
-	providerKeeper, ctx := testkeeper.GetProviderKeeperAndCtx(t)
+
+	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	defer ctrl.Finish()
 
 	ids, err := providerKeeper.GetMaturedUnbondingOps(ctx)
 	require.NoError(t, err)

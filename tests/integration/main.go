@@ -37,7 +37,7 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 	case submitTextProposalAction:
 		tr.submitTextProposal(action, verbose)
 	case submitConsumerProposalAction:
-		tr.submitConsumerProposal(action, verbose)
+		tr.submitConsumerAdditionProposal(action, verbose)
 	case voteGovProposalAction:
 		tr.voteGovProposal(action, verbose)
 	case startConsumerChainAction:

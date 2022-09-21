@@ -1,9 +1,7 @@
 package keeper
 
 import (
-	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -389,30 +387,34 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 }
 
 // SetPendingSlashRequests sets the pending slash requests in store
-func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests []types.SlashRequest) {
+func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests []*types.SlashRequest) {
 	store := ctx.KVStore(k.storeKey)
-	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(&requests)
+
+	sr := types.SlashRequests{
+		Requests: requests,
+	}
+	bz, err := sr.Marshal()
 	if err != nil {
 		panic(fmt.Errorf("failed to encode slash request json: %w", err))
 	}
-	store.Set([]byte{types.PendingSlashRequestsBytePrefix}, buf.Bytes())
+	store.Set([]byte{types.PendingSlashRequestsBytePrefix}, bz)
 }
 
 // GetPendingSlashRequest returns the pending slash requests in store
-func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) (requests []types.SlashRequest) {
+func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) []*types.SlashRequest {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get([]byte{types.PendingSlashRequestsBytePrefix})
 	if bz == nil {
-		return
+		return []*types.SlashRequest{}
 	}
-	buf := bytes.NewBuffer(bz)
-	err := json.NewDecoder(buf).Decode(&requests)
+
+	var sr types.SlashRequests
+	err := sr.Unmarshal(bz)
 	if err != nil {
 		panic(fmt.Errorf("failed to decode slash request json: %w", err))
 	}
 
-	return
+	return sr.GetRequests()
 }
 
 // ClearPendingSlashRequests clears the pending slash requests in store
@@ -424,6 +426,6 @@ func (k Keeper) DeletePendingSlashRequests(ctx sdk.Context) {
 // AppendPendingSlashRequests appends the given slash request to the pending slash requests in store
 func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashRequest) {
 	requests := k.GetPendingSlashRequests(ctx)
-	requests = append(requests, req)
+	requests = append(requests, &req)
 	k.SetPendingSlashRequests(ctx, requests)
 }

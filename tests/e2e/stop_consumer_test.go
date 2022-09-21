@@ -97,10 +97,10 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 	s.checkConsumerChainIsRemoved(consumerChainID, false)
 }
 
-func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
+func (s *ProviderTestSuite) TestConsumerRemovalProposal() {
 	var (
 		ctx      sdk.Context
-		proposal *providertypes.StopConsumerChainProposal
+		proposal *providertypes.ConsumerRemovalProposal
 		ok       bool
 	)
 
@@ -113,13 +113,12 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 		stopReached bool
 	}{
 		{
-			"valid stop consumer chain proposal: stop time reached", func(suite *ProviderTestSuite) {
+			"valid consumer removal proposal: stop time reached", func(suite *ProviderTestSuite) {
 
 				// ctx blocktime is after proposal's stop time
 				ctx = s.providerCtx().WithBlockTime(time.Now().Add(time.Hour))
-				content, err := providertypes.NewStopConsumerChainProposal("title", "description", chainID, time.Now())
-				s.Require().NoError(err)
-				proposal, ok = content.(*providertypes.StopConsumerChainProposal)
+				content := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now())
+				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
 				s.Require().True(ok)
 			}, true, true,
 		},
@@ -128,9 +127,8 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 
 				// ctx blocktime is before proposal's stop time
 				ctx = s.providerCtx().WithBlockTime(time.Now())
-				content, err := providertypes.NewStopConsumerChainProposal("title", "description", chainID, time.Now().Add(time.Hour))
-				s.Require().NoError(err)
-				proposal, ok = content.(*providertypes.StopConsumerChainProposal)
+				content := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now().Add(time.Hour))
+				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
 				s.Require().True(ok)
 			}, true, false,
 		},
@@ -143,9 +141,8 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 				// set invalid unbonding op index
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetUnbondingOpIndex(ctx, chainID, 0, []uint64{0})
 
-				content, err := providertypes.NewStopConsumerChainProposal("title", "description", chainID, time.Now())
-				s.Require().NoError(err)
-				proposal, ok = content.(*providertypes.StopConsumerChainProposal)
+				content := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now())
+				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
 				s.Require().True(ok)
 			}, false, true,
 		},
@@ -160,19 +157,19 @@ func (s *ProviderTestSuite) TestStopConsumerChainProposal() {
 
 			tc.malleate(s)
 
-			err := s.providerChain.App.(*appProvider.App).ProviderKeeper.StopConsumerChainProposal(ctx, proposal)
+			err := s.providerChain.App.(*appProvider.App).ProviderKeeper.HandleConsumerRemovalProposal(ctx, proposal)
 			if tc.expPass {
 				s.Require().NoError(err, "error returned on valid case")
 				if tc.stopReached {
-					// check that the pending stop consumer chain proposal is deleted
-					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingStopProposal(ctx, chainID, proposal.StopTime)
-					s.Require().False(found, "pending stop consumer proposal wasn't deleted")
+					// check that the pending consumer removal proposal is deleted
+					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingConsumerRemovalProp(ctx, chainID, proposal.StopTime)
+					s.Require().False(found, "pending consumer removal proposal wasn't deleted")
 
 					// check that the consumer chain is removed
 					s.checkConsumerChainIsRemoved(chainID, false)
 
 				} else {
-					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingStopProposal(ctx, chainID, proposal.StopTime)
+					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingConsumerRemovalProp(ctx, chainID, proposal.StopTime)
 					s.Require().True(found, "pending stop consumer was not found for chain ID %s", chainID)
 
 					// check that the consumer chain client exists

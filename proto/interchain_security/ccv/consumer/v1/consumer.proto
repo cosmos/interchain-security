@@ -50,3 +50,8 @@ message SlashRequest {
     interchain_security.ccv.v1.SlashPacketData packet = 1;
     cosmos.staking.v1beta1.InfractionType infraction = 2;
 }
+
+// SlashRequests is a list of slash requests for CCV consumer module
+message SlashRequests {
+  repeated SlashRequest requests = 1;
+}
