@@ -464,7 +464,7 @@ func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (
 		return "", nil, sdkerrors.Wrapf(clienttypes.ErrInvalidClientType,
 			"invalid client type. expected %s, got %s", ibcexported.Tendermint, clientState.ClientType())
 	}
-	return clientID, tmClient, err
+	return clientID, tmClient, nil
 }
 
 // chanCloseInit defines a wrapper function for the channel Keeper's function
