@@ -194,7 +194,7 @@ func TestPendingSlashRequests(t *testing.T) {
 		operation: func() { consumerKeeper.AppendPendingSlashRequests(ctx, types.SlashRequest{}) },
 		expLen:    11,
 	}, {
-		operation: func() { consumerKeeper.ClearPendingSlashRequests(ctx) },
+		operation: func() { consumerKeeper.DeletePendingSlashRequests(ctx) },
 		expLen:    0,
 	},
 	}

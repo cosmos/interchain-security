@@ -228,6 +228,11 @@ func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (consumertyp
 	return data, true
 }
 
+func (k Keeper) DeleteConsumerGenesis(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerGenesisKey(chainID))
+}
+
 // VerifyConsumerChain verifies that the chain trying to connect on the channel handshake
 // is the expected consumer chain.
 func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectionHops []string) error {
