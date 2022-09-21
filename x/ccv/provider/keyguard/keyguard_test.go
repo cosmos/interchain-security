@@ -61,9 +61,12 @@ func (d *Driver) runTrace(t *testing.T) {
 	for lk, fk := range init.Mapping {
 		kg.SetForeignKey(lk, fk)
 	}
-	d.foreignUpdates = append(d.foreignUpdates, kg.ComputeUpdates(init.TP, init.LocalUpdates))
+	// Set the initial provider set
 	d.providerValSets = append(d.providerValSets, MakeValSet())
 	d.providerValSets[init.TP].processUpdates(init.LocalUpdates)
+	// Set the initial consumer set
+	d.foreignUpdates = append(d.foreignUpdates, kg.ComputeUpdates(init.TP, init.LocalUpdates))
+	d.consumerValSet.processUpdates(d.foreignUpdates[init.TC])
 	kg.Prune(init.TM)
 
 	require.Len(t, d.mappings, 1)
@@ -127,10 +130,12 @@ func (d *Driver) checkProperties(t *testing.T) {
 		require.Equal(t, expect, actual)
 	}
 
+	// TODO: check pruning and reverse queries
 }
 
 func getTrace() []TraceState {
 
+	TRACE_LEN := 2
 	NUM_VALS := 3
 	NUM_FKS := 9
 
@@ -177,7 +182,7 @@ func getTrace() []TraceState {
 	}
 
 	i := 0
-	for i < 100 {
+	for i < TRACE_LEN {
 		choice := rand.Intn(3)
 		if choice == 0 {
 			ret = append(ret, TraceState{
