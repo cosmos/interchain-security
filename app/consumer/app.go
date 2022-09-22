@@ -347,7 +347,7 @@ func New(
 		app.GetSubspace(slashingtypes.ModuleName),
 	)
 
-	// register slashing module StakingHooks to the consumer keeper
+	// register slashing module Slashing hooks to the consumer keeper
 	app.ConsumerKeeper = *app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
 	consumerModule := ibcconsumer.NewAppModule(app.ConsumerKeeper)
 

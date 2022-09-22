@@ -267,7 +267,7 @@ func (k Keeper) GetPacketMaturityTime(ctx sdk.Context, vscId uint64) uint64 {
 	return binary.BigEndian.Uint64(bz)
 }
 
-// DeletePacketMaturityTime deletes the the maturity time for a given received VSC packet id
+// DeletePacketMaturityTime deletes the packet maturity time for a given received VSC packet id
 func (k Keeper) DeletePacketMaturityTime(ctx sdk.Context, vscId uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.PacketMaturityTimeKey(vscId))
@@ -333,9 +333,9 @@ func (k Keeper) SetOutstandingDowntime(ctx sdk.Context, address sdk.ConsAddress)
 	store.Set(types.OutstandingDowntimeKey(address), []byte{})
 }
 
-// ClearOutstandingDowntime clears the outstanding downtime flag for a given validator
-func (k Keeper) ClearOutstandingDowntime(ctx sdk.Context, address string) {
-	consAddr, err := sdk.ConsAddressFromBech32(address)
+// DeleteOutstandingDowntime deletes the outstanding downtime flag for the given validator consensus address
+func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
+	consAddr, err := sdk.ConsAddressFromBech32(consAddress)
 	if err != nil {
 		return
 	}
@@ -416,15 +416,15 @@ func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) []*types.SlashRequest {
 	return sr.GetRequests()
 }
 
+// ClearPendingSlashRequests clears the pending slash requests in store
+func (k Keeper) DeletePendingSlashRequests(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete([]byte{types.PendingSlashRequestsBytePrefix})
+}
+
 // AppendPendingSlashRequests appends the given slash request to the pending slash requests in store
 func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashRequest) {
 	requests := k.GetPendingSlashRequests(ctx)
 	requests = append(requests, &req)
 	k.SetPendingSlashRequests(ctx, requests)
-}
-
-// ClearPendingSlashRequests clears the pending slash requests in store
-func (k Keeper) ClearPendingSlashRequests(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete([]byte{types.PendingSlashRequestsBytePrefix})
 }

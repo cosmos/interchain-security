@@ -150,9 +150,6 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 		// the CCV channel was established, but it was then closed;
 		// the consumer chain is no longer safe
 
-		// cleanup state
-		am.keeper.DeleteProviderChannel(ctx)
-
 		channelClosedMsg := fmt.Sprintf("CCV channel %q was closed - shutdown consumer chain since it is not secured anymore", channelID)
 		ctx.Logger().Error(channelClosedMsg)
 		panic(channelClosedMsg)
