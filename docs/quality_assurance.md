@@ -101,12 +101,12 @@ In addition, the implementation MUST guarantee the following [system properties]
 
 ---
 
-| ID | Concern re. *Channel Uniqueness* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
-| -- | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| 5.01 | `SpawnConsumerChainProposal(chainId)` should fail if a consumer with `chainId` is already registered | `Scheduled` | `??` | `NA` | `Scheduled` | `Scheduled` <br /> high priority |
-| 5.02 | The channel handshake for a consumer with `chainId` should fail if there is already an established CCV channel for `chainId`  | `Scheduled` | `??` | `NA` | `Scheduled` | `Scheduled` <br /> high priority |
-| 5.03 | *Channel Uniqueness* should hold even if a consumer chain restarts | `Scheduled` | `??` | `NA` | `Scheduled` | `NA` |
-| 5.04 | *Channel Uniqueness* should hold even when a client expires | `Scheduled` | `??` | `NA` | `Scheduled` | `NA` |
+| ID | Concern re. *Channel Uniqueness* | Code Review | Unit Testing | E2e Testing | Diff. Testing | Testnet | Protocol audit |
+| -- | -------------------------------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
+| 5.01 | `HandleConsumerAdditionProposal()` should fail if a consumer with `chainId` is already registered | `Scheduled` | `DONE` see [here](../x/ccv/provider/keeper/proposal_test.go#L138) | `??` | `NA` | `Scheduled` | `Scheduled` <br /> high priority |
+| 5.02 | The channel handshake for a consumer with `chainId` should fail if there is already an established CCV channel for `chainId`  | `Scheduled` | `DONE` see [here](../x/ccv/provider/ibc_module_test.go#L103) and [here](../x/ccv/consumer/ibc_module_test.go#L59) | `??` | `NA` | `Scheduled` | `Scheduled` <br /> high priority |
+| 5.03 | *Channel Uniqueness* should hold even if a consumer chain restarts | `Scheduled` | `NA` | `??` | `NA` | `Scheduled` | `NA` |
+| 5.04 | *Channel Uniqueness* should hold even when a client expires | `Scheduled` | `??` | `NA` | `NA` | `Scheduled` | `NA` |
 
 ---
 
