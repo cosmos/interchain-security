@@ -11,16 +11,22 @@ const TRACE_LEN = 1000
 const NUM_VALS = 3
 const NUM_FKS = 9
 
+type MapInstruction struct {
+	lk LK
+	fk FK
+}
+
 type TraceState struct {
-	Mapping      map[LK]FK
-	LocalUpdates []update
-	TP           int
-	TC           int
-	TM           int
+	MapInstructions []MapInstruction
+	LocalUpdates    []update
+	TP              int
+	TC              int
+	TM              int
 }
 
 type Driver struct {
 	t      *testing.T
+	e      *KeyDel
 	trace  []TraceState
 	lastTP int
 	lastTC int
@@ -50,9 +56,18 @@ func (vs *ValSet) processUpdates(updates []update) {
 	}
 }
 
-func (d *Driver) runTrace() {
-	e := MakeKeyDel()
+func (d *Driver) applyMapInstruction(instructions []MapInstruction) {
+	for _, instruction := range instructions {
+		_ = d.e.SetLocalToForeign(instruction.lk, instruction.fk)
+	}
+	copy := map[LK]FK{}
+	for lk, fk := range d.e.localToForeign {
+		copy[lk] = fk
+	}
+	d.mappings = append(d.mappings, copy)
+}
 
+func (d *Driver) runTrace() {
 	d.lastTP = 0
 	d.lastTC = 0
 	d.lastTM = 0
@@ -62,17 +77,14 @@ func (d *Driver) runTrace() {
 	d.foreignValSet = MakeValSet()
 
 	init := d.trace[0]
-	d.mappings = append(d.mappings, init.Mapping)
-	for lk, fk := range init.Mapping {
-		e.SetLocalToForeign(lk, fk)
-	}
+	d.applyMapInstruction(init.MapInstructions)
 	// Set the initial local set
 	d.localValSets = append(d.localValSets, MakeValSet())
 	d.localValSets[init.TP].processUpdates(init.LocalUpdates)
 	// Set the initial foreign set
-	d.foreignUpdates = append(d.foreignUpdates, e.ComputeUpdates(init.TP, init.LocalUpdates))
+	d.foreignUpdates = append(d.foreignUpdates, d.e.ComputeUpdates(init.TP, init.LocalUpdates))
 	d.foreignValSet.processUpdates(d.foreignUpdates[init.TC])
-	e.Prune(init.TM)
+	d.e.Prune(init.TM)
 
 	require.Len(d.t, d.mappings, 1)
 	require.Len(d.t, d.foreignUpdates, 1)
@@ -80,17 +92,16 @@ func (d *Driver) runTrace() {
 
 	for _, s := range d.trace[1:] {
 		if d.lastTP < s.TP {
-			d.mappings = append(d.mappings, s.Mapping)
-			d.localValSets = append(d.localValSets, MakeValSet())
-			for lk, power := range d.localValSets[d.lastTP].keyToPower {
-				d.localValSets[s.TP].keyToPower[lk] = power
+			d.applyMapInstruction(s.MapInstructions)
+			{
+				d.localValSets = append(d.localValSets, MakeValSet())
+				for lk, power := range d.localValSets[d.lastTP].keyToPower {
+					d.localValSets[s.TP].keyToPower[lk] = power
+				}
+				d.localValSets[s.TP].processUpdates(s.LocalUpdates)
 			}
-			d.localValSets[s.TP].processUpdates(s.LocalUpdates)
 			d.lastTP = s.TP
-			for lk, fk := range s.Mapping {
-				e.SetLocalToForeign(lk, fk)
-			}
-			d.foreignUpdates = append(d.foreignUpdates, e.ComputeUpdates(s.TP, s.LocalUpdates))
+			d.foreignUpdates = append(d.foreignUpdates, d.e.ComputeUpdates(s.TP, s.LocalUpdates))
 		}
 		if d.lastTC < s.TC {
 			for j := d.lastTC + 1; j <= s.TC; j++ {
@@ -99,15 +110,15 @@ func (d *Driver) runTrace() {
 			d.lastTC = s.TC
 		}
 		if d.lastTM < s.TM {
-			e.Prune(s.TM)
+			d.e.Prune(s.TM)
 			d.lastTM = s.TM
 		}
-		d.checkProperties(e)
-		require.True(d.t, e.internalInvariants())
+		d.checkProperties()
+		require.True(d.t, d.e.internalInvariants())
 	}
 }
 
-func (d *Driver) checkProperties(e KeyDel) {
+func (d *Driver) checkProperties() {
 
 	/*
 		A consumer who receives vscid i must have a validator set
@@ -166,10 +177,10 @@ func (d *Driver) checkProperties(e KeyDel) {
 			}
 		}
 		for fk := 0; fk < NUM_FKS; fk++ {
-			_, actual := e.usedForeignToLocal[fk]
+			_, actual := d.e.usedForeignToLocal[fk]
 			_, expect := expectQueryable[fk]
 			require.Equal(d.t, expect, actual)
-			_, actual = e.usedForeignToLastVSCID[fk]
+			_, actual = d.e.usedForeignToLastVSCID[fk]
 			require.Equal(d.t, expect, actual)
 		}
 	}
@@ -181,7 +192,7 @@ func (d *Driver) checkProperties(e KeyDel) {
 
 func getTrace(t *testing.T) []TraceState {
 
-	mapping := func() map[LK]FK {
+	mappings := func() []MapInstruction {
 		// TODO: currently I don't generate partial mappings but I might want to
 		// Create a mapping of nums [0, NUM_VALS] mapped injectively to [0, NUM_FKS]
 		ret := map[LK]FK{}
@@ -218,11 +229,11 @@ func getTrace(t *testing.T) []TraceState {
 
 	ret := []TraceState{
 		{
-			Mapping:      mapping(),
-			LocalUpdates: localUpdates(),
-			TP:           0,
-			TC:           0,
-			TM:           0,
+			MapInstructions: mappings(),
+			LocalUpdates:    localUpdates(),
+			TP:              0,
+			TC:              0,
+			TM:              0,
 		},
 	}
 
@@ -233,11 +244,11 @@ func getTrace(t *testing.T) []TraceState {
 		good := false
 		if choice == 0 {
 			ret = append(ret, TraceState{
-				Mapping:      mapping(),
-				LocalUpdates: localUpdates(),
-				TP:           last.TP + 1,
-				TC:           last.TC,
-				TM:           last.TM,
+				MapInstructions: mapping(),
+				LocalUpdates:    localUpdates(),
+				TP:              last.TP + 1,
+				TC:              last.TC,
+				TM:              last.TM,
 			})
 			good = true
 		}
@@ -251,11 +262,11 @@ func getTrace(t *testing.T) []TraceState {
 				newTC := rand.Intn(limInclusive-curr) + curr + 1
 				require.True(t, curr < newTC && curr <= limInclusive)
 				ret = append(ret, TraceState{
-					Mapping:      nil,
-					LocalUpdates: nil,
-					TP:           last.TP,
-					TC:           newTC,
-					TM:           last.TM,
+					MapInstructions: nil,
+					LocalUpdates:    nil,
+					TP:              last.TP,
+					TC:              newTC,
+					TM:              last.TM,
 				})
 				good = true
 			}
@@ -267,11 +278,11 @@ func getTrace(t *testing.T) []TraceState {
 				newTM := rand.Intn(limInclusive-curr) + curr + 1
 				require.True(t, curr < newTM && curr <= limInclusive)
 				ret = append(ret, TraceState{
-					Mapping:      nil,
-					LocalUpdates: nil,
-					TP:           last.TP,
-					TC:           last.TC,
-					TM:           newTM,
+					MapInstructions: nil,
+					LocalUpdates:    nil,
+					TP:              last.TP,
+					TC:              last.TC,
+					TM:              newTM,
 				})
 				good = true
 			}
@@ -292,6 +303,8 @@ func TestPrototype(t *testing.T) {
 		d := Driver{}
 		d.trace = trace
 		d.t = t
+		e := MakeKeyDel()
+		d.e = &e
 		d.runTrace()
 	}
 }
