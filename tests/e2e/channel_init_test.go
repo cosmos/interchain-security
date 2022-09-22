@@ -6,15 +6,11 @@ import (
 
 	app "github.com/cosmos/interchain-security/app/consumer"
 
-	"fmt"
-
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	"github.com/cosmos/interchain-security/x/ccv/consumer"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -99,130 +95,4 @@ func (suite *ConsumerKeeperTestSuite) TestProviderClientMatches() {
 
 	clientState, _ := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClientID)
 	suite.Require().Equal(suite.providerClient, clientState, "stored client state does not match genesis provider client")
-}
-
-// TODO: unit and spec tags
-func (suite *ConsumerTestSuite) TestOnChanOpenTry() {
-	// OnOpenTry must error even with correct arguments
-	consumerModule := consumer.NewAppModule(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
-	_, err := consumerModule.OnChanOpenTry(
-		suite.ctx,
-		channeltypes.ORDERED,
-		[]string{"connection-1"},
-		ccv.ConsumerPortID,
-		"channel-1",
-		nil,
-		channeltypes.NewCounterparty(ccv.ProviderPortID, "channel-1"),
-		ccv.Version,
-	)
-	suite.Require().Error(err, "OnChanOpenTry callback must error on consumer chain")
-}
-
-// TODO: unit and spec tags
-// TestOnChanOpenAck tests the consumer module's OnChanOpenAck implementation against the spec:
-// https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-ccf-coack1
-func (suite *ConsumerTestSuite) TestOnChanOpenAck() {
-
-	var (
-		portID     string
-		channelID  string
-		metadataBz []byte
-		metadata   providertypes.HandshakeMetadata
-		err        error
-	)
-	testCases := []struct {
-		name     string
-		malleate func()
-		expPass  bool
-	}{
-		{
-			"success", func() {}, true,
-		},
-		{
-			"invalid: provider channel already established",
-			func() {
-				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetProviderChannel(suite.ctx, "channel-2")
-			}, false,
-		},
-		{
-			"invalid: cannot unmarshal ack metadata ",
-			func() {
-				metadataBz = []byte{78, 89, 20}
-			}, false,
-		},
-		{
-			"invalid: mismatched versions",
-			func() {
-				// Set counter party version to an invalid value, passed as marshaled metadata
-				metadata.Version = "invalidVersion"
-				metadataBz, err = (&metadata).Marshal()
-				suite.Require().NoError(err)
-			}, false,
-		},
-		// See ConsumerKeeper.GetConnectionHops as to why portID and channelID must be correct
-		{
-			"invalid: portID ",
-			func() {
-				portID = "invalidPort"
-			}, false,
-		},
-		{
-			"invalid: channelID ",
-			func() {
-				channelID = "invalidChan"
-			}, false,
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-		suite.Run(fmt.Sprintf("Case: %s", tc.name), func() {
-			suite.SetupTest() // reset
-			portID = ccv.ConsumerPortID
-			channelID = "channel-1"
-			counterChannelID := "channel-2" // per spec this is not required by onChanOpenAck()
-			suite.path.EndpointA.ChannelID = channelID
-
-			// Set INIT channel on consumer chain
-			suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.SetChannel(
-				suite.ctx,
-				ccv.ConsumerPortID,
-				channelID,
-				channeltypes.NewChannel(
-					channeltypes.INIT,
-					channeltypes.ORDERED,
-					channeltypes.NewCounterparty(ccv.ProviderPortID, ""),
-					[]string{suite.path.EndpointA.ConnectionID},
-					suite.path.EndpointA.ChannelConfig.Version,
-				),
-			)
-
-			consumerModule := consumer.NewAppModule(
-				suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper)
-
-			metadata := providertypes.HandshakeMetadata{
-				ProviderFeePoolAddr: "", // dummy address used
-				Version:             suite.path.EndpointB.ChannelConfig.Version,
-			}
-
-			metadataBz, err = (&metadata).Marshal()
-			suite.Require().NoError(err)
-
-			tc.malleate() // Explicitly change fields already defined
-
-			err = consumerModule.OnChanOpenAck(
-				suite.ctx,
-				portID,
-				channelID,
-				counterChannelID,
-				string(metadataBz),
-			)
-
-			if tc.expPass {
-				suite.Require().NoError(err)
-			} else {
-				suite.Require().Error(err)
-			}
-		})
-	}
 }

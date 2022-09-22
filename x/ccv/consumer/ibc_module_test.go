@@ -5,12 +5,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -143,9 +145,151 @@ func TestOnChanOpenInit(t *testing.T) {
 	}
 }
 
-// TODO: OnChanOpenTry
+// TestOnChanOpenTry validates the consumer's OnChanOpenTry implementation against the spec.
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-ccf-cotry1
+// Spec tag: [CCV-CCF-COTRY.1]
+func TestOnChanOpenTry(t *testing.T) {
 
-// TODO: OnChanOpenAck
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	// No external keeper methods should be called
+	defer ctrl.Finish()
+	consumerModule := consumer.NewAppModule(consumerKeeper)
+
+	// OnOpenTry must error even with correct arguments
+	_, err := consumerModule.OnChanOpenTry(
+		ctx,
+		channeltypes.ORDERED,
+		[]string{"connection-1"},
+		ccv.ConsumerPortID,
+		"channel-1",
+		nil,
+		channeltypes.NewCounterparty(ccv.ProviderPortID, "channel-1"),
+		ccv.Version,
+	)
+	require.Error(t, err, "OnChanOpenTry callback must error on consumer chain")
+}
+
+// TestOnChanOpenAck validates the consumer's OnChanOpenAck implementation against the spec.
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-ccf-coack1
+// Spec tag: [CCV-CCF-COACK.1]
+func TestOnChanOpenAck(t *testing.T) {
+
+	// Params for the OnChanOpenAck method
+	type params struct {
+		ctx                   sdk.Context
+		portID                string
+		channelID             string
+		counterpartyChannelID string
+		counterpartyMetadata  string
+	}
+
+	testCases := []struct {
+		name string
+		// Test-case specific function that mutates method parameters and setups expected mock calls
+		setup   func(sdk.Context, *consumerkeeper.Keeper, *params, testkeeper.MockedKeepers)
+		expPass bool
+	}{
+		{
+			"success",
+			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+				// Expected msg
+				distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
+					transfertypes.PortID,
+					transfertypes.Version,
+					channeltypes.UNORDERED,
+					[]string{"connectionID"},
+					transfertypes.PortID,
+					"", // signer unused
+				)
+
+				// Expected mock calls
+				gomock.InOrder(
+					mocks.MockChannelKeeper.EXPECT().GetChannel(
+						ctx, params.portID, params.channelID).Return(channeltypes.Channel{
+						ConnectionHops: []string{"connectionID"},
+					}, true).Times(1),
+					mocks.MockIBCCoreKeeper.EXPECT().ChannelOpenInit(
+						sdk.WrapSDKContext(ctx), distrTransferMsg).Return(
+						&channeltypes.MsgChannelOpenInitResponse{}, nil,
+					).Times(1),
+				)
+			},
+			true,
+		},
+		{
+			"invalid: provider channel already established",
+			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+				keeper.SetProviderChannel(ctx, "existingProviderChannelID")
+			}, false,
+		},
+		{
+			"invalid: cannot unmarshal ack metadata ",
+			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+				params.counterpartyMetadata = "bunkData"
+			}, false,
+		},
+		{
+			"invalid: mismatched serialized version",
+			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+				md := providertypes.HandshakeMetadata{
+					ProviderFeePoolAddr: "", // dummy address used
+					Version:             "bunkVersion",
+				}
+				metadataBz, err := md.Marshal()
+				require.NoError(t, err)
+				params.counterpartyMetadata = string(metadataBz)
+			}, false,
+		},
+	}
+
+	for _, tc := range testCases {
+		// Common setup
+		consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(
+			t, testkeeper.NewInMemKeeperParams(t))
+		consumerModule := consumer.NewAppModule(consumerKeeper)
+
+		// Instantiate valid params as default. Individual test cases mutate these as needed.
+		params := params{
+			ctx:                   ctx,
+			portID:                ccv.ConsumerPortID,
+			channelID:             "consumerCCVChannelID",
+			counterpartyChannelID: "providerCCVChannelID",
+		}
+
+		metadata := providertypes.HandshakeMetadata{
+			ProviderFeePoolAddr: "someAcct",
+			Version:             ccv.Version,
+		}
+
+		metadataBz, err := metadata.Marshal()
+		require.NoError(t, err)
+
+		params.counterpartyMetadata = string(metadataBz)
+
+		tc.setup(ctx, &consumerKeeper, &params, mocks)
+
+		err = consumerModule.OnChanOpenAck(
+			params.ctx,
+			params.portID,
+			params.channelID,
+			params.counterpartyChannelID,
+			params.counterpartyMetadata,
+		)
+
+		if tc.expPass {
+			require.NoError(t, err)
+			// Confirm address of the distribution module account (on provider) was persisted on consumer
+			distModuleAcct := consumerKeeper.GetProviderFeePoolAddrStr(ctx)
+			require.Equal(t, "someAcct", distModuleAcct)
+		} else {
+			require.Error(t, err)
+		}
+		// Confirm there are no unexpected external keeper calls
+		ctrl.Finish()
+	}
+}
 
 // TestOnChanOpenConfirm validates the consumer's OnChanOpenConfirm implementation against the spec.
 //
