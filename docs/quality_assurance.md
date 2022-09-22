@@ -43,8 +43,8 @@ IBC packets:
 
 | ID | Concern | Code Review | Unit Testing | E2E Testing | Diff. Testing | Testnet |
 | -- | ------- | ----------- | ------------ | ----------- | ------------- | ------- |
-| 2.01 | Create IBC clients | `Scheduled` (ibc-go team) | `Done` | `NA` | `Future work` | `Scheduled` | 
-| 2.02 | Getting consumer `UnbondingPeriod` from IBC client | `Scheduled` (ibc-go team) | `Done, see TestUnbondingTime` | `??` | `NA` | `NA` | 
+| 2.01 | Create IBC clients | `Scheduled` (ibc-go team) | `Done` | `??` | `Future work` | `Scheduled` | 
+| 2.02 | Getting consumer `UnbondingPeriod` from IBC client | `Scheduled` (ibc-go team) | `Done`, see TestUnbondingTime` | `??` | `NA` | `NA` | 
 | 2.03 | Create CCV channel (handshake) | `Scheduled` (ibc-go team) | `Done` | `NA` | `Future work` | `Scheduled` | 
 | 2.04 | Sending IBC packets <br /> - see `x/ccv/utils/utils.go:SendIBCPacket()` | `Scheduled` (ibc-go team) | `??` | `Done` | `Done` | `Scheduled` |
 | 2.05 | Handling acknowledgments | `Scheduled` (ibc-go team) | `Partial Coverage` | `Partial coverage` | `Scheduled` | `Scheduled` |
@@ -58,11 +58,11 @@ IBC packets:
 
 A prerequisite of the code review is to open a PR with all the [SDK changes](https://github.com/cosmos/cosmos-sdk/tree/interchain-security-rebase) needed by Interchain Security.
 
-| ID | Concern | Code Review | Unit Testing | Diff. testing | Testnet | 
-| -- | ------- | ----------- | ------------ | ------------- | ------- | 
-| 3.01 | Changes to staking module | `Scheduled` (sdk team) | `Partial coverage` <br /> see [unbonding_test.go](../x/ccv/provider/unbonding_test.go) <br />  redelegation and validator unbonding missing | `Partial coverage` | `Scheduled` | 
-| 3.02 | Changes to slashing module | `Scheduled` (sdk team) | `Done` <br /> see [TestValidatorDowntime](../x/ccv/consumer/keeper/keeper_test.go#L345) <br />  | `NA` | `Scheduled` | 
-| 3.03 | Changes to evidence module | `Scheduled` (sdk team) | `Done` <br /> see [TestValidatorDoubleSigning](../x/ccv/consumer/keeper/keeper_test.go#L427) <br />  | `NA` | `Scheduled` | 
+| ID | Concern | Code Review | Unit Testing | E2E Testing | Diff. Testing | Testnet | 
+| -- | ------- | ----------- | ------------ | ----------- | ------------- | ------- |
+| 3.01 | Changes to staking module | `Scheduled` (sdk team) | `??` | `Partial coverage` <br /> see [unbonding_test.go](../x/tests/e2e/unbonding_test.go) <br /> redelegation could be expanded, validator unbonding missing | `Partial coverage` | `Scheduled` | 
+| 3.02 | Changes to slashing module | `Scheduled` (sdk team) | `??` | `Done` <br /> see [TestValidatorDowntime](../x/tests/e2e/slashing_test.go#L502) <br />  | `NA` | `Scheduled` | 
+| 3.03 | Changes to evidence module | `Scheduled` (sdk team) | `??` | `Done` <br /> see [TestValidatorDoubleSigning](../x/tests/e2e/slashing_test.go#L584) <br />  | `NA` | `Scheduled` | 
 
 ### Provider Chain Correctness
 
