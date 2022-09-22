@@ -47,8 +47,8 @@ func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 			// to commit an infraction under the foreign key X and change
 			// the mapping of foreign key X to a local key B before the evidence
 			// arrives.
-			return errors.New(`Cannot reuse foreign key which is associated
-			to a different local key.`)
+			return errors.New(`cannot reuse foreign key which is associated
+			to a different local key`)
 		}
 	}
 	e.localToForeign[lk] = fk
