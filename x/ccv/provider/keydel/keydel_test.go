@@ -7,6 +7,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const TRACE_LEN = 1000
+const NUM_VALS = 3
+const NUM_FKS = 9
+
 type TraceState struct {
 	Mapping      map[LK]FK
 	LocalUpdates []update
@@ -47,7 +51,7 @@ func (vs *ValSet) processUpdates(updates []update) {
 }
 
 func (d *Driver) runTrace() {
-	kg := MakeKeyDel()
+	kd := MakeKeyDel()
 
 	d.lastTP = 0
 	d.lastTC = 0
@@ -60,15 +64,15 @@ func (d *Driver) runTrace() {
 	init := d.trace[0]
 	d.mappings = append(d.mappings, init.Mapping)
 	for lk, fk := range init.Mapping {
-		kg.SetLocalToForeign(lk, fk)
+		kd.SetLocalToForeign(lk, fk)
 	}
 	// Set the initial local set
 	d.localValSets = append(d.localValSets, MakeValSet())
 	d.localValSets[init.TP].processUpdates(init.LocalUpdates)
 	// Set the initial foreign set
-	d.foreignUpdates = append(d.foreignUpdates, kg.ComputeUpdates(init.TP, init.LocalUpdates))
+	d.foreignUpdates = append(d.foreignUpdates, kd.ComputeUpdates(init.TP, init.LocalUpdates))
 	d.foreignValSet.processUpdates(d.foreignUpdates[init.TC])
-	kg.Prune(init.TM)
+	kd.Prune(init.TM)
 
 	require.Len(d.t, d.mappings, 1)
 	require.Len(d.t, d.foreignUpdates, 1)
@@ -84,9 +88,9 @@ func (d *Driver) runTrace() {
 			d.localValSets[s.TP].processUpdates(s.LocalUpdates)
 			d.lastTP = s.TP
 			for lk, fk := range s.Mapping {
-				kg.SetLocalToForeign(lk, fk)
+				kd.SetLocalToForeign(lk, fk)
 			}
-			d.foreignUpdates = append(d.foreignUpdates, kg.ComputeUpdates(s.TP, s.LocalUpdates))
+			d.foreignUpdates = append(d.foreignUpdates, kd.ComputeUpdates(s.TP, s.LocalUpdates))
 		}
 		if d.lastTC < s.TC {
 			for j := d.lastTC + 1; j <= s.TC; j++ {
@@ -95,22 +99,30 @@ func (d *Driver) runTrace() {
 			d.lastTC = s.TC
 		}
 		if d.lastTM < s.TM {
-			// TODO: check this because TM is initialised to 0 but 0 has not actually matured
-			// TODO: I think one solution IS TO ACTUALLY prune 0 in init
-			kg.Prune(s.TM)
+			kd.Prune(s.TM)
 			d.lastTM = s.TM
 		}
-		d.checkProperties()
+		d.checkProperties(kd)
 	}
 }
 
-func (d *Driver) checkProperties() {
+func (d *Driver) checkProperties(kd KeyDel) {
 
+	/*
+		A consumer who receives vscid i must have a validator set
+		equal to the validator set on the provider at vscid id mapped
+		through the key delegation.
+	*/
 	validatorSetReplication := func() {
 		// Check that the foreign ValSet is equal to the local ValSet
 		// at time TC via inverse mapping
+
+		// Get the current consumer val set
 		foreignSet := d.foreignValSet.keyToPower
+		// Get the provider set at the relevant time
 		localSet := d.localValSets[d.lastTC].keyToPower
+
+		// Map the consumer set back through the inverse key mapping
 		mapping := d.mappings[d.lastTC]
 		inverseMapping := map[FK]LK{}
 		for lk, fk := range mapping {
@@ -120,26 +132,55 @@ func (d *Driver) checkProperties() {
 		for fk, power := range foreignSet {
 			foreignSetAsLocal[inverseMapping[fk]] = power
 		}
-		for lk, actual := range foreignSetAsLocal {
-			expect := localSet[lk]
-			require.Equal(d.t, expect, actual)
+
+		// Ensure that the validator sets match exactly
+		for lk, expectedPower := range localSet {
+			actualPower := foreignSetAsLocal[lk]
+			require.Equal(d.t, expectedPower, actualPower)
 		}
-		for lk, expect := range localSet {
-			actual := foreignSetAsLocal[lk]
+		for lk, actualPower := range foreignSetAsLocal {
+			expectedPower := localSet[lk]
+			require.Equal(d.t, expectedPower, actualPower)
+		}
+	}
+
+	/*
+		Two more properties which must be satisfied by KeyDel when
+		used correctly inside a wider system:
+
+		1. If a foreign key is delivered to the consumer with positive power at
+		   VSCID i then the local key associated to it must be retrievable
+		   until i is matured. (Consumer initiated slashing property).
+		2. If a foreign key is not delivered to the consumer at any VSCID j
+		   with i < j and i is matured, then the foreign key is deleted
+		   from storage. (Garbage collection property).
+	*/
+	queries := func() {
+		expectQueryable := map[FK]bool{}
+		// If the foreign key was used in [TimeMaturity + 1, TimeConsumer]
+		// it must be queryable.
+		for i := d.lastTM + 1; i <= d.lastTC; i++ {
+			valSet := d.localValSets[i]
+			mapping := d.mappings[i]
+			for lk := range valSet.keyToPower {
+				expectQueryable[mapping[lk]] = true
+			}
+		}
+		for fk := 0; fk < NUM_FKS; fk++ {
+			_, actual := kd.foreignToLocal[fk]
+			_, expect := expectQueryable[fk]
+			require.Equal(d.t, expect, actual)
+			_, actual = kd.foreignToGreatestVSCIDUsed[fk]
 			require.Equal(d.t, expect, actual)
 		}
 	}
 
 	validatorSetReplication()
+	queries()
 
-	// TODO: check pruning is correct (reverse lookup)
 }
 
 func getTrace(t *testing.T) []TraceState {
-
-	TRACE_LEN := 1000
-	NUM_VALS := 3
-	NUM_FKS := 9
 
 	mapping := func() map[LK]FK {
 		// TODO: currently I don't generate partial mappings but I might want to
@@ -160,7 +201,7 @@ func getTrace(t *testing.T) []TraceState {
 		}
 		for !good() {
 			for lk := 0; lk < NUM_VALS; lk++ {
-				ret[lk] = -rand.Intn(NUM_FKS)
+				ret[lk] = rand.Intn(NUM_FKS)
 			}
 		}
 		return ret

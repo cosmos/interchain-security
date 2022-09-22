@@ -39,8 +39,20 @@ func MakeKeyDel() KeyDel {
 	}
 }
 
-func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) {
+func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
+	if existingLk, ok := e.foreignToLocal[fk]; ok {
+		if existingLk != lk {
+			// We prevent reusing foreign keys which are still used for local
+			// key lookups. Otherwise it would be possible for a local key A
+			// to commit an infraction under the foreign key X and change
+			// the mapping of foreign key X to a local key B before the evidence
+			// arrives.
+			return errors.New(`Cannot reuse foreign key which is associated
+			to a different local key.`)
+		}
+	}
 	e.localToForeign[lk] = fk
+	return nil
 }
 
 func (e *KeyDel) GetLocal(fk FK) (LK, error) {
