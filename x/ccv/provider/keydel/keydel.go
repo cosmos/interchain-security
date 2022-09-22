@@ -46,8 +46,8 @@ func MakeKeyDel() KeyDel {
 
 func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 	if _, ok := e.foreignIsMappedTo[fk]; ok {
-		return errors.New(`cannot reuse foreign key which is associated
-			to a different local key`)
+		return errors.New(`cannot use foreign key which is 
+						   already associated to a local key`)
 	}
 	if _, ok := e.usedForeignToLocal[fk]; ok {
 		// We prevent reusing foreign keys which are still used for local
@@ -55,8 +55,8 @@ func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 		// to commit an infraction under the foreign key X and change
 		// the mapping of foreign key X to a local key B before evidence
 		// arrives.
-		return errors.New(`cannot reuse foreign key which was associated to a different
-		local key and which is still queryable`)
+		return errors.New(`cannot reuse foreign key which was associated to
+						   a different local key and which is still queryable`)
 	}
 	if otherFk, ok := e.localToForeign[lk]; ok {
 		delete(e.foreignIsMappedTo, otherFk)
@@ -84,8 +84,8 @@ func (e *KeyDel) Prune(mostRecentlyMaturedVscid VSCID) {
 		}
 	}
 	for _, fk := range toRemove {
-		delete(e.usedForeignToLastVSCID, fk)
 		delete(e.usedForeignToLocal, fk)
+		delete(e.usedForeignToLastVSCID, fk)
 	}
 }
 
@@ -186,9 +186,23 @@ func (e *KeyDel) internalInvariants() bool {
 		seen[fk] = true
 	}
 
-	// All local keys have a reverse lookup
+	// All foreign keys mapped to by local keys are noted
 	for _, fk := range e.localToForeign {
-		if _, ok := e.usedForeignToLocal[fk]; !ok {
+		if _, ok := e.foreignIsMappedTo[fk]; !ok {
+			return false
+		}
+	}
+
+	// All mapped to foreign keys are actually mapped toy
+	for fk := range e.foreignIsMappedTo {
+		good := false
+		for _, mappedFK := range e.localToForeign {
+			if mappedFK == fk {
+				good = true
+				break
+			}
+		}
+		if !good {
 			return false
 		}
 	}

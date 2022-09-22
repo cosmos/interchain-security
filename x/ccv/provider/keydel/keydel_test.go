@@ -157,6 +157,9 @@ func (d *Driver) checkProperties() {
 		Two more properties which must be satisfied by KeyDel when
 		used correctly inside a wider system:
 
+		TODO: need to rephrase the below because they aren't completely accurate
+		the upper bound on time is actually TP (inclusive), not TC.
+
 		1. If a foreign key is delivered to the consumer with positive power at
 		   VSCID i then the local key associated to it must be retrievable
 		   until i is matured. (Consumer initiated slashing property).
@@ -164,11 +167,11 @@ func (d *Driver) checkProperties() {
 		   with i < j and i is matured, then the foreign key is deleted
 		   from storage. (Garbage collection property).
 	*/
-	queries := func() {
+	queriesAndGarbageCollection := func() {
 		expectQueryable := map[FK]bool{}
 		// If the foreign key was used in [TimeMaturity + 1, TimeConsumer]
 		// it must be queryable.
-		for i := d.lastTM + 1; i <= d.lastTC; i++ {
+		for i := d.lastTM + 1; i <= d.lastTP; i++ {
 			for _, u := range d.foreignUpdates[i] {
 				expectQueryable[u.key] = true
 			}
@@ -187,7 +190,7 @@ func (d *Driver) checkProperties() {
 	}
 
 	validatorSetReplication()
-	queries()
+	queriesAndGarbageCollection()
 
 }
 
