@@ -11,13 +11,13 @@ const TRACE_LEN = 1000
 const NUM_VALS = 3
 const NUM_FKS = 9
 
-type MapInstruction struct {
+type mapInstruction struct {
 	lk LK
 	fk FK
 }
 
 type TraceState struct {
-	MapInstructions []MapInstruction
+	MapInstructions []mapInstruction
 	LocalUpdates    []update
 	TP              int
 	TC              int
@@ -56,7 +56,7 @@ func (vs *ValSet) processUpdates(updates []update) {
 	}
 }
 
-func (d *Driver) applyMapInstruction(instructions []MapInstruction) {
+func (d *Driver) applyMapInstruction(instructions []mapInstruction) {
 	for _, instruction := range instructions {
 		_ = d.e.SetLocalToForeign(instruction.lk, instruction.fk)
 	}
@@ -192,27 +192,12 @@ func (d *Driver) checkProperties() {
 
 func getTrace(t *testing.T) []TraceState {
 
-	mappings := func() []MapInstruction {
-		// TODO: currently I don't generate partial mappings but I might want to
-		// Create a mapping of nums [0, NUM_VALS] mapped injectively to [0, NUM_FKS]
-		ret := map[LK]FK{}
-		good := func() bool {
-			if len(ret) != NUM_VALS {
-				return false
-			}
-			seen := map[FK]bool{}
-			for _, fk := range ret {
-				if _, ok := seen[fk]; ok {
-					return false
-				}
-				seen[fk] = true
-			}
-			return true
-		}
-		for !good() {
-			for lk := 0; lk < NUM_VALS; lk++ {
-				ret[lk] = rand.Intn(NUM_FKS)
-			}
+	mappings := func() []mapInstruction {
+		ret := []mapInstruction{}
+		// include 0 to all validators
+		include := rand.Intn(NUM_VALS + 1)
+		for _, lk := range rand.Perm(NUM_VALS)[0:include] {
+			ret = append(ret, mapInstruction{lk, rand.Intn(NUM_FKS)})
 		}
 		return ret
 	}
@@ -244,7 +229,7 @@ func getTrace(t *testing.T) []TraceState {
 		good := false
 		if choice == 0 {
 			ret = append(ret, TraceState{
-				MapInstructions: mapping(),
+				MapInstructions: mappings(),
 				LocalUpdates:    localUpdates(),
 				TP:              last.TP + 1,
 				TC:              last.TC,
