@@ -71,8 +71,8 @@ The main concern addressed in this section is the correctness of the provider ch
 - one single consumer chain;
 - multiple consumer chains.
 
-| ID | Concern | Code Review | Unit Testing | E2e Testing | Diff. Testing | Testnet | Protocol audit |
-| -- | ------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
+| ID | Concern | Code Review | Unit | E2e | Diff. Testing | Testnet | Protocol audit |
+| -- | ------- | ----------- | ---- | --- | ------------- | ------- | -------------- |
 | 4.01 | Liveness of undelegations <br /> - unbonding delegation entries are eventually removed from `UnbondingDelegation` | `Scheduled` | `NA` | `Done` <br /> see [unbonding_test.go](../tests/e2e/unbonding_test.go) | `Done` | `Scheduled` | `Scheduled` |
 | 4.02 | Liveness of redelegations <br /> - redelegations entries are eventually removed from `Redelegations` | `NA` | `Scheduled` | `Scheduled` | `Scheduled` | `Scheduled` | `Scheduled` |
 | 4.03 | Liveness of validator unbondings <br /> - unbonding validators with no delegations are eventually removed from `Validators` | `NA` | `Scheduled` | `Scheduled` | `Done` | `Scheduled` | `Scheduled` |
