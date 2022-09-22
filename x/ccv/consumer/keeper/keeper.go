@@ -120,7 +120,7 @@ func (k Keeper) GetPort(ctx sdk.Context) string {
 	return string(store.Get(types.PortKey()))
 }
 
-// SetPort sets the portID for the transfer module. Used in InitGenesis
+// SetPort sets the portID for the CCV module. Used in InitGenesis
 func (k Keeper) SetPort(ctx sdk.Context, portID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.PortKey(), []byte(portID))
@@ -131,8 +131,7 @@ func (k Keeper) AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Cap
 	return k.scopedKeeper.AuthenticateCapability(ctx, cap, name)
 }
 
-// ClaimCapability allows the transfer module that can claim a capability that IBC module
-// passes to it
+// ClaimCapability claims a capability that the IBC module passes to it
 func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error {
 	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
 }
@@ -161,14 +160,14 @@ func (k Keeper) DeleteUnbondingTime(ctx sdk.Context) {
 	store.Delete(types.UnbondingTimeKey())
 }
 
-// SetProviderClientID sets the provider clientID that is validating the chain.
+// SetProviderClientID sets the clientID for the client to the provider.
 // Set in InitGenesis
 func (k Keeper) SetProviderClientID(ctx sdk.Context, clientID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ProviderClientIDKey(), []byte(clientID))
 }
 
-// GetProviderClientID gets the provider clientID that is validating the chain.
+// GetProviderClientID gets the clientID for the client to the provider.
 func (k Keeper) GetProviderClientID(ctx sdk.Context) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
 	clientIdBytes := store.Get(types.ProviderClientIDKey())
@@ -178,13 +177,13 @@ func (k Keeper) GetProviderClientID(ctx sdk.Context) (string, bool) {
 	return string(clientIdBytes), true
 }
 
-// SetProviderChannel sets the provider channelID that is validating the chain.
+// SetProviderChannel sets the channelID for the channel to the provider.
 func (k Keeper) SetProviderChannel(ctx sdk.Context, channelID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.ProviderChannelKey(), []byte(channelID))
 }
 
-// GetProviderChannel gets the provider channelID that is validating the chain.
+// GetProviderChannel gets the channelID for the channel to the provider.
 func (k Keeper) GetProviderChannel(ctx sdk.Context) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
 	channelIdBytes := store.Get(types.ProviderChannelKey())
@@ -194,7 +193,7 @@ func (k Keeper) GetProviderChannel(ctx sdk.Context) (string, bool) {
 	return string(channelIdBytes), true
 }
 
-// DeleteProviderChannel deletes the provider channel ID that is validating the chain.
+// DeleteProviderChannel deletes the channelID for the channel to the provider.
 func (k Keeper) DeleteProviderChannel(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ProviderChannelKey())

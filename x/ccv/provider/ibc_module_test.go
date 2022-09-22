@@ -118,7 +118,7 @@ func TestOnChanOpenTry(t *testing.T) {
 			t, testkeeper.NewInMemKeeperParams(t))
 		providerModule := provider.NewAppModule(&providerKeeper)
 
-		providerKeeper.SetPort(ctx, "providerPortID")
+		providerKeeper.SetPort(ctx, ccv.ProviderPortID)
 		providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientIDToConsumer")
 
 		// Instantiate valid params as default. Individual test cases mutate these as needed.
@@ -126,7 +126,7 @@ func TestOnChanOpenTry(t *testing.T) {
 			ctx:                 ctx,
 			order:               channeltypes.ORDERED,
 			connectionHops:      []string{"connectionIDToConsumer"},
-			portID:              "providerPortID",
+			portID:              ccv.ProviderPortID,
 			channelID:           "providerChannelID",
 			chanCap:             &capabilitytypes.Capability{},
 			counterparty:        channeltypes.NewCounterparty(ccv.ConsumerPortID, "consumerChannelID"),
