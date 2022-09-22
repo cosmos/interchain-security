@@ -33,9 +33,9 @@ For an overview of the Interchain Security workflow, have a look at [the diagram
 | ID | Concern | Code Review | Automatic Tools | Unit Testing |
 | -- | ------- | ----------- | --------------- | ------------ |
 | 1.01 | Unexpected panics | `Scheduled` | `??` | `??` |
-| 1.02 | Handling errors | `Scheduled` | `gosec` | `??` |
+| 1.02 | Handling errors | `Scheduled` | `gosec` | `Partial coverage` |
 | 1.03 | Accessing store (setters, getters, iterators) | `Scheduled` | `??` | `Partial coverage` |
-| 1.04 | Serialization / deserialization | `Scheduled` | `??` | `??` |
+| 1.04 | Serialization / deserialization | `Scheduled` | `??` | `Partial coverage` |
 | 1.05 | Storage leaks | `Scheduled` | `NA` | `??` |
 
 ### Integration with IBC
@@ -47,18 +47,18 @@ IBC packets:
 - MaturedVSCPacket
 - SlashPacketData
 
-| ID | Concern | Code Review | Unit Testing | Diff. testing | Testnet |
+| ID | Concern | Code Review | Unit Testing | E2E Testing | Diff. Testing | Testnet |
 | -- | ------- | ----------- | ------------ | ------------- | ------- |
-| 2.01 | Create IBC clients | `Scheduled` (ibc-go team) | `Done` | `Future work` | `Scheduled` | 
-| 2.02 | Getting consumer `UnbondingPeriod` from IBC client | `Scheduled` (ibc-go team) | `??` | `NA` | `NA` | 
-| 2.03 | Create CCV channel (handshake) | `Scheduled` (ibc-go team) | `Done` | `Future work` | `Scheduled` | 
-| 2.04 | Sending IBC packets <br /> - see `x/ccv/utils/utils.go:SendIBCPacket()` | `Scheduled` (ibc-go team) | `Done` | `Done` | `Scheduled` |
-| 2.05 | Handling acknowledgments | `Scheduled` (ibc-go team) | `Partial coverage` | `Scheduled` | `Scheduled` |
-| 2.06 | Handling timeouts | `Scheduled` (ibc-go team) | `Partial coverage` | `Future work` | `Scheduled` |
-| 2.07 | **Handling IBC client expiration** | `Scheduled` (ibc-go team) <br /> high priority | `??` | `Future work` | `Scheduled` |
-| 2.08 | ICS-20 channel creation | `Scheduled` (ibc-go team) | `??` | `Future work` | `Scheduled` | 
-| 2.09 | ICS-20 transfer | `Scheduled` (ibc-go team) | `??` | `NA` | `Scheduled` | 
-| 2.10 | Changes in IBC-GO testing suite | `Scheduled` (ibc-go team) | `NA` | `Partial coverage` | `NA` | 
+| 2.01 | Create IBC clients | `Scheduled` (ibc-go team) | `Done` | `NA` | `Future work` | `Scheduled` | 
+| 2.02 | Getting consumer `UnbondingPeriod` from IBC client | `Scheduled` (ibc-go team) | `Done, see TestUnbondingTime` | `??` | `NA` | `NA` | 
+| 2.03 | Create CCV channel (handshake) | `Scheduled` (ibc-go team) | `Done` | `NA` | `Future work` | `Scheduled` | 
+| 2.04 | Sending IBC packets <br /> - see `x/ccv/utils/utils.go:SendIBCPacket()` | `Scheduled` (ibc-go team) | `??` | `Done` | `Done` | `Scheduled` |
+| 2.05 | Handling acknowledgments | `Scheduled` (ibc-go team) | `Partial Coverage` | `Partial coverage` | `Scheduled` | `Scheduled` |
+| 2.06 | Handling timeouts | `Scheduled` (ibc-go team) | `??` |`??` | `Future work` | `Scheduled` |
+| 2.07 | **Handling IBC client expiration** | `Scheduled` (ibc-go team) <br /> high priority | `??` | `??` | `Future work` | `Scheduled` |
+| 2.08 | ICS-20 channel creation | `Scheduled` (ibc-go team) | `??` | `??` |`Future work` | `Scheduled` | 
+| 2.09 | ICS-20 transfer | `Scheduled` (ibc-go team) | `??` | `??` | `NA` | `Scheduled` | 
+| 2.10 | Changes in IBC-GO testing suite | `Scheduled` (ibc-go team) | `NA` | `??` | `Partial coverage` | `NA` | 
 
 ### Integration with Cosmos SDK
 
