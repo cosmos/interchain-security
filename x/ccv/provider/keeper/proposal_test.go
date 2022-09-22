@@ -21,8 +21,6 @@ import (
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
-// TODO: Finish putting spec tags and links all over the place, then editing the coverage file
-
 //
 // Initialization sub-protocol related tests of proposal.go
 //
