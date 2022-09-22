@@ -8,8 +8,8 @@ import (
 )
 
 const TRACE_LEN = 1000
-const NUM_VALS = 3
-const NUM_FKS = 9
+const NUM_VALS = 4
+const NUM_FKS = 50
 
 type mapInstruction struct {
 	lk LK
@@ -219,10 +219,15 @@ func getTrace(t *testing.T) []TraceState {
 		return ret
 	}
 
+	initialMappings := []mapInstruction{}
+	for i := 0; i < NUM_VALS; i++ {
+		initialMappings = append(initialMappings, mapInstruction{i, i})
+	}
+
 	ret := []TraceState{
 		{
 			// Hard code initial mapping
-			MapInstructions: []mapInstruction{{0, 0}, {1, 1}, {2, 2}},
+			MapInstructions: initialMappings,
 			LocalUpdates:    localUpdates(),
 			TP:              0,
 			TC:              0,
