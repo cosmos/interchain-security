@@ -60,9 +60,9 @@ A prerequisite of the code review is to open a PR with all the [SDK changes](htt
 
 | ID | Concern | Code Review | Unit Testing | E2E Testing | Diff. Testing | Testnet | 
 | -- | ------- | ----------- | ------------ | ----------- | ------------- | ------- |
-| 3.01 | Changes to staking module | `Scheduled` (sdk team) | `??` | `Partial coverage` <br /> see [unbonding_test.go](../x/tests/e2e/unbonding_test.go) <br /> redelegation could be expanded, validator unbonding missing | `Partial coverage` | `Scheduled` | 
-| 3.02 | Changes to slashing module | `Scheduled` (sdk team) | `??` | `Done` <br /> see [TestValidatorDowntime](../x/tests/e2e/slashing_test.go#L502) <br />  | `NA` | `Scheduled` | 
-| 3.03 | Changes to evidence module | `Scheduled` (sdk team) | `??` | `Done` <br /> see [TestValidatorDoubleSigning](../x/tests/e2e/slashing_test.go#L584) <br />  | `NA` | `Scheduled` | 
+| 3.01 | Changes to staking module | `Scheduled` (sdk team) | `??` | `Partial coverage` <br /> see [unbonding_test.go](../tests/e2e/unbonding_test.go) <br /> redelegation could be expanded, validator unbonding missing | `Partial coverage` | `Scheduled` | 
+| 3.02 | Changes to slashing module | `Scheduled` (sdk team) | `??` | `Done` <br /> see [TestValidatorDowntime](../tests/e2e/slashing_test.go#L502) <br />  | `NA` | `Scheduled` | 
+| 3.03 | Changes to evidence module | `Scheduled` (sdk team) | `??` | `Done` <br /> see [TestValidatorDoubleSigning](../tests/e2e/slashing_test.go#L584) <br />  | `NA` | `Scheduled` | 
 
 ### Provider Chain Correctness
 
