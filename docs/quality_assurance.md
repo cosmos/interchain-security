@@ -42,7 +42,7 @@ IBC packets:
 - SlashPacketData
 
 | ID | Concern | Code Review | Unit Testing | E2E Testing | Diff. Testing | Testnet |
-| -- | ------- | ----------- | ------------ | ------------- | ------- |
+| -- | ------- | ----------- | ------------ | ----------- | ------------- | ------- |
 | 2.01 | Create IBC clients | `Scheduled` (ibc-go team) | `Done` | `NA` | `Future work` | `Scheduled` | 
 | 2.02 | Getting consumer `UnbondingPeriod` from IBC client | `Scheduled` (ibc-go team) | `Done, see TestUnbondingTime` | `??` | `NA` | `NA` | 
 | 2.03 | Create CCV channel (handshake) | `Scheduled` (ibc-go team) | `Done` | `NA` | `Future work` | `Scheduled` | 
