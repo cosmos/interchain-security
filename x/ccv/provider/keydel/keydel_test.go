@@ -105,27 +105,32 @@ func (d *Driver) runTrace() {
 }
 
 func (d *Driver) checkProperties() {
-	// Check that the foreign ValSet is equal to the local ValSet
-	// at time TC via inverse mapping
-	foreignSet := d.foreignValSet.keyToPower
-	localSet := d.localValSets[d.lastTC].keyToPower
-	mapping := d.mappings[d.lastTC]
-	inverseMapping := map[FK]LK{}
-	for lk, fk := range mapping {
-		inverseMapping[fk] = lk
+
+	validatorSetReplication := func() {
+		// Check that the foreign ValSet is equal to the local ValSet
+		// at time TC via inverse mapping
+		foreignSet := d.foreignValSet.keyToPower
+		localSet := d.localValSets[d.lastTC].keyToPower
+		mapping := d.mappings[d.lastTC]
+		inverseMapping := map[FK]LK{}
+		for lk, fk := range mapping {
+			inverseMapping[fk] = lk
+		}
+		foreignSetAsLocal := map[LK]int{}
+		for fk, power := range foreignSet {
+			foreignSetAsLocal[inverseMapping[fk]] = power
+		}
+		for lk, actual := range foreignSetAsLocal {
+			expect := localSet[lk]
+			require.Equal(d.t, expect, actual)
+		}
+		for lk, expect := range localSet {
+			actual := foreignSetAsLocal[lk]
+			require.Equal(d.t, expect, actual)
+		}
 	}
-	foreignSetAsLocal := map[LK]int{}
-	for fk, power := range foreignSet {
-		foreignSetAsLocal[inverseMapping[fk]] = power
-	}
-	for lk, actual := range foreignSetAsLocal {
-		expect := localSet[lk]
-		require.Equal(d.t, expect, actual)
-	}
-	for lk, expect := range localSet {
-		actual := foreignSetAsLocal[lk]
-		require.Equal(d.t, expect, actual)
-	}
+
+	validatorSetReplication()
 
 	// TODO: check pruning is correct (reverse lookup)
 }

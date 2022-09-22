@@ -27,7 +27,7 @@ type KeyDel struct {
 	// Prunable state
 	foreignToLocal map[FK]LK
 	// Prunable state
-	foreignToGreatestVSCID map[FK]VSCID
+	foreignToGreatestVSCIDUsed map[FK]VSCID
 }
 
 func MakeKeyDel() KeyDel {
@@ -35,7 +35,7 @@ func MakeKeyDel() KeyDel {
 		localToLastPositiveForeignUpdate: map[LK]update{},
 		localToForeign:                   map[LK]FK{},
 		foreignToLocal:                   map[FK]LK{},
-		foreignToGreatestVSCID:           map[FK]VSCID{},
+		foreignToGreatestVSCIDUsed:       map[FK]VSCID{},
 	}
 }
 
@@ -49,6 +49,38 @@ func (e *KeyDel) GetLocal(fk FK) (LK, error) {
 	} else {
 		return -1, errors.New("Nope")
 	}
+}
+
+func (e *KeyDel) Prune(mostRecentlyMaturedVscid VSCID) {
+	toRemove := []FK{}
+	for fk, vscid := range e.foreignToGreatestVSCIDUsed {
+		if vscid <= mostRecentlyMaturedVscid {
+			toRemove = append(toRemove, fk)
+		}
+	}
+	for _, fk := range toRemove {
+		delete(e.foreignToGreatestVSCIDUsed, fk)
+		delete(e.foreignToLocal, fk)
+	}
+}
+
+func (e *KeyDel) ComputeUpdates(vscid VSCID, localUpdates []update) (foreignUpdates []update) {
+
+	local := map[LK]int{}
+
+	for _, u := range localUpdates {
+		local[u.key] = u.power
+	}
+
+	foreign := e.inner(vscid, local)
+
+	foreignUpdates = []update{}
+
+	for fk, power := range foreign {
+		foreignUpdates = append(foreignUpdates, update{key: fk, power: power})
+	}
+
+	return foreignUpdates
 }
 
 func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
@@ -72,9 +104,9 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	foreignUpdates := map[FK]int{}
 
 	// Make a temporary copy
-	localToLastPositiveForeignUpdate := map[LK]update{}
+	lkTLPFU := map[LK]update{}
 	for lk, u := range e.localToLastPositiveForeignUpdate {
-		localToLastPositiveForeignUpdate[lk] = u
+		lkTLPFU[lk] = u
 	}
 
 	// Iterate all local keys for which either the foreign key changed or there
@@ -84,7 +116,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 			// If the key has previously been shipped in an update
 			// delete it.
 			foreignUpdates[last.key] = 0
-			delete(localToLastPositiveForeignUpdate, lk)
+			delete(lkTLPFU, lk)
 		}
 	}
 
@@ -104,47 +136,13 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 		if 0 < power {
 			fk := e.localToForeign[lk]
 			foreignUpdates[fk] = power
-			localToLastPositiveForeignUpdate[lk] = update{key: fk, power: power}
+			lkTLPFU[lk] = update{key: fk, power: power}
+			e.foreignToLocal[fk] = lk
+			e.foreignToGreatestVSCIDUsed[fk] = vscid
 		}
 	}
 
-	e.localToLastPositiveForeignUpdate = localToLastPositiveForeignUpdate
-
-	for fk := range foreignUpdates {
-		e.foreignToGreatestVSCID[fk] = vscid
-	}
+	e.localToLastPositiveForeignUpdate = lkTLPFU
 
 	return foreignUpdates
-}
-
-func (e *KeyDel) ComputeUpdates(vscid VSCID, localUpdates []update) []update {
-
-	local := map[LK]int{}
-
-	for _, u := range localUpdates {
-		local[u.key] = u.power
-	}
-
-	foreign := e.inner(vscid, local)
-
-	ret := []update{}
-
-	for fk, power := range foreign {
-		ret = append(ret, update{key: fk, power: power})
-	}
-
-	return ret
-}
-
-func (e *KeyDel) Prune(mostRecentlyMaturedVscid VSCID) {
-	toRemove := []FK{}
-	for fk, vscid := range e.foreignToGreatestVSCID {
-		if vscid <= mostRecentlyMaturedVscid {
-			toRemove = append(toRemove, fk)
-		}
-	}
-	for _, fk := range toRemove {
-		delete(e.foreignToGreatestVSCID, fk)
-		delete(e.foreignToLocal, fk)
-	}
 }
