@@ -33,9 +33,11 @@ type KeyDel struct {
 func MakeKeyDel() KeyDel {
 	return KeyDel{
 		localToLastPositiveForeignUpdate: map[LK]update{},
-		localToForeign:                   map[LK]FK{},
-		foreignToLocal:                   map[FK]LK{},
-		foreignToGreatestVSCIDUsed:       map[FK]VSCID{},
+		// At most one local key can map to a given foreign key
+		localToForeign: map[LK]FK{},
+		// Many foreign keys can map to the same local key
+		foreignToLocal:             map[FK]LK{},
+		foreignToGreatestVSCIDUsed: map[FK]VSCID{},
 	}
 }
 
@@ -52,6 +54,11 @@ func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 		}
 	}
 	e.localToForeign[lk] = fk
+	// TODO: I need to rethink how garbage collection works a bit
+	// because fks are always for the current reverse local key set
+	// In the tests, I also need to change the way mappings are checked
+	// because some mappings might be rejected by this function
+	e.foreignToLocal[fk] = lk
 	return nil
 }
 
@@ -163,24 +170,23 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 
 // Returns true iff internal invariants hold
 func (e *KeyDel) internalInvariants() bool {
-	// All keys of foreignToLocal and foreignToGreatestVSCIDUsed are equal
-	for fk := range e.foreignToLocal {
-		if _, ok := e.foreignToGreatestVSCIDUsed[fk]; !ok {
-			return false
-		}
-	}
-	for fk := range e.foreignToGreatestVSCIDUsed {
-		if _, ok := e.foreignToLocal[fk]; !ok {
-			return false
-		}
-	}
-	seen := map[FK]bool{}
+
 	// No two local keys can map to the same foreign key
+	seen := map[FK]bool{}
 	for _, fk := range e.localToForeign {
 		if seen[fk] {
 			return false
 		}
 		seen[fk] = true
 	}
+
+	// All local keys have a reverse lookup
+	for _, fk := range e.localToForeign {
+		if _, ok := e.foreignToLocal[fk]; !ok {
+			return false
+		}
+	}
+
 	return true
+
 }
