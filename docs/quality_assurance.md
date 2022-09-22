@@ -118,24 +118,24 @@ In addition, the implementation MUST guarantee the following [system properties]
 
 ---
 
-| ID | Concern re. *Bond-Based Consumer Voting Power* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
-| -- | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| 7.01 | For every `ValidatorSetChangePacket` received by a consumer chain at time `t`, a `MaturedVSCPacket` is sent back to the provider in the first block with a timestamp `>= t + UnbondingPeriod` | `Scheduled` | `Scheduled` | `Done` | `Scheduled` | `Scheduled` |
-| 7.02 | If an unbonding operation resulted in a `ValidatorSetChangePacket` sent to all registered consumer chains, then it cannot complete before receiving matching `MaturedVSCPacket`s from these consumer chains (unless some of these consumer chains are removed) | `Scheduled` | `Scheduled` | `Done` | `Scheduled` | `Scheduled` |
+| ID | Concern re. *Bond-Based Consumer Voting Power* | Code Review | Unit Testing | E2e Testing | Diff. Testing | Testnet | Protocol audit |
+| -- | ---------------------------------------------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
+| 7.01 | For every `ValidatorSetChangePacket` received by a consumer chain at time `t`, a `MaturedVSCPacket` is sent back to the provider in the first block with a timestamp `>= t + UnbondingPeriod` | `Scheduled` | `??` | `Scheduled` | `Done` | `Scheduled` | `Scheduled` |
+| 7.02 | If an unbonding operation resulted in a `ValidatorSetChangePacket` sent to all registered consumer chains, then it cannot complete before receiving matching `MaturedVSCPacket`s from these consumer chains (unless some of these consumer chains are removed) | `Scheduled` | `??` | `Scheduled` | `Done` | `Scheduled` | `Scheduled` |
 
 ---
 
-| ID | Concern re. *Slashable Consumer Misbehavior* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
-| -- | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| 8.01 | Multiple downtime infractions committed by the same validator `val` on the same consumer chain without `val` requesting to `Unjail` itself result in a single `SlashPacket` | `Scheduled` | `??` | `Done` | `Scheduled` | `Scheduled` |
-| 8.02 | If evidence of misbehavior is submitted on a consumer chain within the unbonding period targeting an amount `x` of staked tokens, the amount `x` cannot be unlocked on the provider before the corresponding `SlashPacket` is received <br /> - `SlashPacket` will not arrive after the corresponding `MaturedVSCPacket`s | `Scheduled` | `??` | `Done` | `Scheduled` | `Scheduled` |
+| ID | Concern re. *Slashable Consumer Misbehavior* | Code Review | Unit Testing | E2e Testing | Diff. testing | Testnet | Protocol audit |
+| -- | -------------------------------------------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
+| 8.01 | Multiple downtime infractions committed by the same validator `val` on the same consumer chain without `val` requesting to `Unjail` itself result in a single `SlashPacket` | `Scheduled` | `??` | `??` | `??` | `Done` | `Scheduled` | `Scheduled` |
+| 8.02 | If evidence of misbehavior is submitted on a consumer chain within the unbonding period targeting an amount `x` of staked tokens, the amount `x` cannot be unlocked on the provider before the corresponding `SlashPacket` is received <br /> - `SlashPacket` will not arrive after the corresponding `MaturedVSCPacket`s | `Scheduled` | `??` | `??` | `??` | `Done` | `Scheduled` | `Scheduled` |
 
 ---
 
-| ID | Concern re. *Consumer Rewards Distribution* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
-| -- | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| 9.01 | Validators on the provider chain receive rewards for participating in IS | `Scheduled` | `Scheduled` | `NA` | `Scheduled` | `NA` |
-| 9.02 | The rewards sent to the provider chain are escrowed on the consumer chains (no double spend) | `Scheduled` | `Scheduled` | `NA` | `Scheduled` | `NA` |
+| ID | Concern re. *Consumer Rewards Distribution* | Code Review | Unit Testing | E2e Testing | Diff. testing | Testnet | Protocol audit |
+| -- | ------------------------------------------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
+| 9.01 | Validators on the provider chain receive rewards for participating in IS | `Scheduled` | `NA` | `Scheduled` | `NA` | `Scheduled` | `NA` |
+| 9.02 | The rewards sent to the provider chain are escrowed on the consumer chains (no double spend) | `Scheduled` | `NA` | `Scheduled` | `NA` | `Scheduled` | `NA` |
 
 ---
 
@@ -146,14 +146,14 @@ The main concern addressed in this section is the correctness of the consumer ch
 - governance-enabled consumer chain ([gov-cc](https://github.com/cosmos/interchain-security/issues/141)), with the modified staking and distribution modules (see `x/ccv/staking` and `x/ccv/distribution`); also, must look at the [atom-gov module](https://github.com/cosmos/interchain-security/issues/162)
 - CosmWasm-enabled consumer chain ([wasm-cc](https://github.com/cosmos/interchain-security/issues/143)), with the CosmWasm module enabled
 
-| ID | Concern | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
-| -- | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| 10.01 | Consumer chain liveness (blocks are being produced) | `Scheduled` | `NA` | `??` | `Scheduled` | `NA` |
-| 10.02 | A chain has the ability to restart as a consumer chain with no more than 24 hours downtime | `Scheduled` | `NA` | `??` | `Scheduled` | `NA` |
-| 10.03 | A consumer chain has the ability to restart as a normal chain after shutting down, either controlled (via `ConsumerRemovalProposal`) or due to timing out | `Scheduled` | `??` | `??` | `Scheduled` | `NA` |
-| 10.04 | A consumer chain has the ability to restart as a consumer chain with the same `chainId` after shutting down, either controlled (via `ConsumerRemovalProposal`) or due to timing out | `Scheduled` | `??` | `??` | `Scheduled` | `NA` |
-| 10.05 | Governance on `gov-cc` | `Scheduled` | `??` | `??` | `Scheduled` | `NA` |
-| 10.06 | CosmWasm on `wasm-cc` | `Scheduled` | `??` | `??` | `Scheduled` | `NA` |
+| ID | Concern | Code Review | Unit Testing | E2e Testing | Diff. testing | Testnet | Protocol audit |
+| -- | ------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
+| 10.01 | Consumer chain liveness (blocks are being produced) | `Scheduled` | `NA` | `NA` | `??` | `Scheduled` | `NA` |
+| 10.02 | A chain has the ability to restart as a consumer chain with no more than 24 hours downtime | `Scheduled` | `NA` | `NA` | `??` | `Scheduled` | `NA` |
+| 10.03 | A consumer chain has the ability to restart as a normal chain after shutting down, either controlled (via `ConsumerRemovalProposal`) or due to timing out | `Scheduled` | `??` | `??` | `??` | `Scheduled` | `NA` |
+| 10.04 | A consumer chain has the ability to restart as a consumer chain with the same `chainId` after shutting down, either controlled (via `ConsumerRemovalProposal`) or due to timing out | `Scheduled` | `NA` | `??` | `??` | `Scheduled` | `NA` |
+| 10.05 | Governance on `gov-cc` | `Scheduled` | `??` | `??` | `??` | `Scheduled` | `NA` |
+| 10.06 | CosmWasm on `wasm-cc` | `Scheduled` | `??` | `??` | `??` | `Scheduled` | `NA` |
 | TBA ...
 
 > TODO create clear concerns for `gov-cc` and `wasm-cc` once the implementations are done
