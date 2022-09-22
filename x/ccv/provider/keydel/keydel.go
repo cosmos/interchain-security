@@ -129,6 +129,8 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 			// delete it.
 			foreignUpdates[last.key] = 0
 			delete(lkTLPFU, lk)
+			e.foreignToLocal[last.key] = lk
+			e.foreignToGreatestVSCIDUsed[last.key] = vscid
 		}
 	}
 
@@ -157,4 +159,28 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	e.localToLastPositiveForeignUpdate = lkTLPFU
 
 	return foreignUpdates
+}
+
+// Returns true iff internal invariants hold
+func (e *KeyDel) internalInvariants() bool {
+	// All keys of foreignToLocal and foreignToGreatestVSCIDUsed are equal
+	for fk := range e.foreignToLocal {
+		if _, ok := e.foreignToGreatestVSCIDUsed[fk]; !ok {
+			return false
+		}
+	}
+	for fk := range e.foreignToGreatestVSCIDUsed {
+		if _, ok := e.foreignToLocal[fk]; !ok {
+			return false
+		}
+	}
+	seen := map[FK]bool{}
+	// No two local keys can map to the same foreign key
+	for _, fk := range e.localToForeign {
+		if seen[fk] {
+			return false
+		}
+		seen[fk] = true
+	}
+	return true
 }

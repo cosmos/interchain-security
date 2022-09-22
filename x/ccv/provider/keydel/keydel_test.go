@@ -51,7 +51,7 @@ func (vs *ValSet) processUpdates(updates []update) {
 }
 
 func (d *Driver) runTrace() {
-	kd := MakeKeyDel()
+	e := MakeKeyDel()
 
 	d.lastTP = 0
 	d.lastTC = 0
@@ -64,15 +64,15 @@ func (d *Driver) runTrace() {
 	init := d.trace[0]
 	d.mappings = append(d.mappings, init.Mapping)
 	for lk, fk := range init.Mapping {
-		kd.SetLocalToForeign(lk, fk)
+		e.SetLocalToForeign(lk, fk)
 	}
 	// Set the initial local set
 	d.localValSets = append(d.localValSets, MakeValSet())
 	d.localValSets[init.TP].processUpdates(init.LocalUpdates)
 	// Set the initial foreign set
-	d.foreignUpdates = append(d.foreignUpdates, kd.ComputeUpdates(init.TP, init.LocalUpdates))
+	d.foreignUpdates = append(d.foreignUpdates, e.ComputeUpdates(init.TP, init.LocalUpdates))
 	d.foreignValSet.processUpdates(d.foreignUpdates[init.TC])
-	kd.Prune(init.TM)
+	e.Prune(init.TM)
 
 	require.Len(d.t, d.mappings, 1)
 	require.Len(d.t, d.foreignUpdates, 1)
@@ -88,9 +88,9 @@ func (d *Driver) runTrace() {
 			d.localValSets[s.TP].processUpdates(s.LocalUpdates)
 			d.lastTP = s.TP
 			for lk, fk := range s.Mapping {
-				kd.SetLocalToForeign(lk, fk)
+				e.SetLocalToForeign(lk, fk)
 			}
-			d.foreignUpdates = append(d.foreignUpdates, kd.ComputeUpdates(s.TP, s.LocalUpdates))
+			d.foreignUpdates = append(d.foreignUpdates, e.ComputeUpdates(s.TP, s.LocalUpdates))
 		}
 		if d.lastTC < s.TC {
 			for j := d.lastTC + 1; j <= s.TC; j++ {
@@ -99,14 +99,15 @@ func (d *Driver) runTrace() {
 			d.lastTC = s.TC
 		}
 		if d.lastTM < s.TM {
-			kd.Prune(s.TM)
+			e.Prune(s.TM)
 			d.lastTM = s.TM
 		}
-		d.checkProperties(kd)
+		d.checkProperties(e)
+		require.True(d.t, e.internalInvariants())
 	}
 }
 
-func (d *Driver) checkProperties(kd KeyDel) {
+func (d *Driver) checkProperties(e KeyDel) {
 
 	/*
 		A consumer who receives vscid i must have a validator set
@@ -160,17 +161,15 @@ func (d *Driver) checkProperties(kd KeyDel) {
 		// If the foreign key was used in [TimeMaturity + 1, TimeConsumer]
 		// it must be queryable.
 		for i := d.lastTM + 1; i <= d.lastTC; i++ {
-			valSet := d.localValSets[i]
-			mapping := d.mappings[i]
-			for lk := range valSet.keyToPower {
-				expectQueryable[mapping[lk]] = true
+			for _, u := range d.foreignUpdates[i] {
+				expectQueryable[u.key] = true
 			}
 		}
 		for fk := 0; fk < NUM_FKS; fk++ {
-			_, actual := kd.foreignToLocal[fk]
+			_, actual := e.foreignToLocal[fk]
 			_, expect := expectQueryable[fk]
 			require.Equal(d.t, expect, actual)
-			_, actual = kd.foreignToGreatestVSCIDUsed[fk]
+			_, actual = e.foreignToGreatestVSCIDUsed[fk]
 			require.Equal(d.t, expect, actual)
 		}
 	}
