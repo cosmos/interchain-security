@@ -56,7 +56,7 @@ func (vs *ValSet) processUpdates(updates []update) {
 	}
 }
 
-func (d *Driver) applyMapInstruction(instructions []mapInstruction) {
+func (d *Driver) applyMapInstructions(instructions []mapInstruction) {
 	for _, instruction := range instructions {
 		_ = d.e.SetLocalToForeign(instruction.lk, instruction.fk)
 	}
@@ -67,17 +67,20 @@ func (d *Driver) applyMapInstruction(instructions []mapInstruction) {
 	d.mappings = append(d.mappings, copy)
 }
 
+func (d *Driver) applyLocalUpdates(localUpdates []update) {
+	valSet := MakeValSet()
+	for lk, power := range d.localValSets[d.lastTP].keyToPower {
+		valSet.keyToPower[lk] = power
+	}
+	valSet.processUpdates(localUpdates)
+	d.localValSets = append(d.localValSets, valSet)
+}
+
 func (d *Driver) runTrace() {
-	d.lastTP = 0
-	d.lastTC = 0
-	d.lastTM = 0
-	d.mappings = []map[LK]FK{}
-	d.foreignUpdates = [][]update{}
-	d.localValSets = []ValSet{}
-	d.foreignValSet = MakeValSet()
 
 	init := d.trace[0]
-	d.applyMapInstruction(init.MapInstructions)
+	// Set the initial map
+	d.applyMapInstructions(init.MapInstructions)
 	// Set the initial local set
 	d.localValSets = append(d.localValSets, MakeValSet())
 	d.localValSets[init.TP].processUpdates(init.LocalUpdates)
@@ -92,16 +95,10 @@ func (d *Driver) runTrace() {
 
 	for _, s := range d.trace[1:] {
 		if d.lastTP < s.TP {
-			d.applyMapInstruction(s.MapInstructions)
-			{
-				d.localValSets = append(d.localValSets, MakeValSet())
-				for lk, power := range d.localValSets[d.lastTP].keyToPower {
-					d.localValSets[s.TP].keyToPower[lk] = power
-				}
-				d.localValSets[s.TP].processUpdates(s.LocalUpdates)
-			}
-			d.lastTP = s.TP
+			d.applyMapInstructions(s.MapInstructions)
+			d.applyLocalUpdates(s.LocalUpdates)
 			d.foreignUpdates = append(d.foreignUpdates, d.e.ComputeUpdates(s.TP, s.LocalUpdates))
+			d.lastTP = s.TP
 		}
 		if d.lastTC < s.TC {
 			for j := d.lastTC + 1; j <= s.TC; j++ {
@@ -126,8 +123,6 @@ func (d *Driver) checkProperties() {
 		through the key delegation.
 	*/
 	validatorSetReplication := func() {
-		// Check that the foreign ValSet is equal to the local ValSet
-		// at time TC via inverse mapping
 
 		// Get the current consumer val set
 		foreignSet := d.foreignValSet.keyToPower
@@ -194,10 +189,13 @@ func getTrace(t *testing.T) []TraceState {
 
 	mappings := func() []mapInstruction {
 		ret := []mapInstruction{}
-		// include 0 to all validators
-		include := rand.Intn(NUM_VALS + 1)
-		for _, lk := range rand.Perm(NUM_VALS)[0:include] {
-			ret = append(ret, mapInstruction{lk, rand.Intn(NUM_FKS)})
+		// Go several times to have overlapping validator updates
+		for i := 0; i < 2; i++ {
+			// include 0 to all validators
+			include := rand.Intn(NUM_VALS + 1)
+			for _, lk := range rand.Perm(NUM_VALS)[0:include] {
+				ret = append(ret, mapInstruction{lk, rand.Intn(NUM_FKS)})
+			}
 		}
 		return ret
 	}
@@ -214,7 +212,8 @@ func getTrace(t *testing.T) []TraceState {
 
 	ret := []TraceState{
 		{
-			MapInstructions: mappings(),
+			// Hard code initial mapping
+			MapInstructions: []mapInstruction{{0, 0}, {1, 1}, {2, 2}},
 			LocalUpdates:    localUpdates(),
 			TP:              0,
 			TC:              0,
@@ -222,11 +221,9 @@ func getTrace(t *testing.T) []TraceState {
 		},
 	}
 
-	i := 1
-	for i < TRACE_LEN {
+	for i := 0; i < TRACE_LEN; i++ {
 		choice := rand.Intn(3)
 		last := ret[len(ret)-1]
-		good := false
 		if choice == 0 {
 			ret = append(ret, TraceState{
 				MapInstructions: mappings(),
@@ -235,7 +232,6 @@ func getTrace(t *testing.T) []TraceState {
 				TC:              last.TC,
 				TM:              last.TM,
 			})
-			good = true
 		}
 		if choice == 1 {
 			curr := last.TC
@@ -253,7 +249,6 @@ func getTrace(t *testing.T) []TraceState {
 					TC:              newTC,
 					TM:              last.TM,
 				})
-				good = true
 			}
 		}
 		if choice == 2 {
@@ -269,11 +264,7 @@ func getTrace(t *testing.T) []TraceState {
 					TC:              last.TC,
 					TM:              newTM,
 				})
-				good = true
 			}
-		}
-		if good {
-			i++
 		}
 	}
 	return ret
@@ -286,10 +277,17 @@ func TestPrototype(t *testing.T) {
 			trace = getTrace(t)
 		}
 		d := Driver{}
-		d.trace = trace
 		d.t = t
 		e := MakeKeyDel()
 		d.e = &e
+		d.trace = trace
+		d.lastTP = 0
+		d.lastTC = 0
+		d.lastTM = 0
+		d.mappings = []map[LK]FK{}
+		d.foreignUpdates = [][]update{}
+		d.localValSets = []ValSet{}
+		d.foreignValSet = MakeValSet()
 		d.runTrace()
 	}
 }
