@@ -166,10 +166,10 @@ func (d *Driver) checkProperties(e KeyDel) {
 			}
 		}
 		for fk := 0; fk < NUM_FKS; fk++ {
-			_, actual := e.foreignToLocal[fk]
+			_, actual := e.usedForeignToLocal[fk]
 			_, expect := expectQueryable[fk]
 			require.Equal(d.t, expect, actual)
-			_, actual = e.foreignToGreatestVSCIDUsed[fk]
+			_, actual = e.usedForeignToLastVSCID[fk]
 			require.Equal(d.t, expect, actual)
 		}
 	}

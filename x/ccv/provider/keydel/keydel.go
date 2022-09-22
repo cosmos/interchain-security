@@ -11,59 +11,64 @@ type update struct {
 	power int
 }
 
-// TODO: I need to integrate this into the keyStore
-// TODO: I need to integrate this into the system
-// TODO: I need to integrate with staking Create/Destroy validator
+// TODO:
+// 1. Integrate into kv store.
+// 2. integrate into Provider::EndBlock,
+// 3. integrate with create/destroy validator
 
 type KeyDel struct {
-	// A new key is added when a relevant update is returned by ComputeUpdates
-	// the key is deleted at earliest after sending an update corresponding
-	// to a call to staking::DeleteValidator TODO: impl this
-	localToLastPositiveForeignUpdate map[LK]update
 	// A new key is added on staking::CreateValidator
 	// the key is deleted at earliest after sending an update corresponding
-	// to a call to staking::DeleteValidator TODO: impl this
+	// to a call to staking::DeleteValidator
+	// At most one local key can map to a given foreign key
 	localToForeign map[LK]FK
+	// Is the foreign key mapped to in localToForeign?
+	foreignIsMappedTo map[FK]bool
 	// Prunable state
-	foreignToLocal map[FK]LK
+	usedForeignToLocal map[FK]LK
 	// Prunable state
-	foreignToGreatestVSCIDUsed map[FK]VSCID
+	usedForeignToLastVSCID map[FK]VSCID
+	// A new key is added when a relevant update is returned by ComputeUpdates
+	// the key is deleted at earliest after sending an update corresponding
+	// to a call to staking::DeleteValidator
+	localToLastPositiveForeignUpdate map[LK]update
 }
 
 func MakeKeyDel() KeyDel {
 	return KeyDel{
+		localToForeign:                   map[LK]FK{},
+		foreignIsMappedTo:                map[FK]bool{},
+		usedForeignToLocal:               map[FK]LK{},
+		usedForeignToLastVSCID:           map[FK]VSCID{},
 		localToLastPositiveForeignUpdate: map[LK]update{},
-		// At most one local key can map to a given foreign key
-		localToForeign: map[LK]FK{},
-		// Many foreign keys can map to the same local key
-		foreignToLocal:             map[FK]LK{},
-		foreignToGreatestVSCIDUsed: map[FK]VSCID{},
 	}
 }
 
 func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
-	if existingLk, ok := e.foreignToLocal[fk]; ok {
-		if existingLk != lk {
-			// We prevent reusing foreign keys which are still used for local
-			// key lookups. Otherwise it would be possible for a local key A
-			// to commit an infraction under the foreign key X and change
-			// the mapping of foreign key X to a local key B before the evidence
-			// arrives.
-			return errors.New(`cannot reuse foreign key which is associated
+	if _, ok := e.foreignIsMappedTo[fk]; ok {
+		return errors.New(`cannot reuse foreign key which is associated
 			to a different local key`)
-		}
+	}
+	if _, ok := e.usedForeignToLocal[fk]; ok {
+		// We prevent reusing foreign keys which are still used for local
+		// key lookups. Otherwise it would be possible for a local key A
+		// to commit an infraction under the foreign key X and change
+		// the mapping of foreign key X to a local key B before evidence
+		// arrives.
+		return errors.New(`cannot reuse foreign key which was associated to a different
+		local key and which is still queryable`)
+	}
+	if otherFk, ok := e.localToForeign[lk]; ok {
+		delete(e.foreignIsMappedTo, otherFk)
 	}
 	e.localToForeign[lk] = fk
-	// TODO: I need to rethink how garbage collection works a bit
-	// because fks are always for the current reverse local key set
-	// In the tests, I also need to change the way mappings are checked
-	// because some mappings might be rejected by this function
-	e.foreignToLocal[fk] = lk
+	e.foreignIsMappedTo[fk] = true
 	return nil
 }
 
 func (e *KeyDel) GetLocal(fk FK) (LK, error) {
-	if lk, ok := e.foreignToLocal[fk]; ok {
+	// TODO: make possible even for unused?
+	if lk, ok := e.usedForeignToLocal[fk]; ok {
 		return lk, nil
 	} else {
 		return -1, errors.New("Nope")
@@ -72,14 +77,14 @@ func (e *KeyDel) GetLocal(fk FK) (LK, error) {
 
 func (e *KeyDel) Prune(mostRecentlyMaturedVscid VSCID) {
 	toRemove := []FK{}
-	for fk, vscid := range e.foreignToGreatestVSCIDUsed {
+	for fk, vscid := range e.usedForeignToLastVSCID {
 		if vscid <= mostRecentlyMaturedVscid {
 			toRemove = append(toRemove, fk)
 		}
 	}
 	for _, fk := range toRemove {
-		delete(e.foreignToGreatestVSCIDUsed, fk)
-		delete(e.foreignToLocal, fk)
+		delete(e.usedForeignToLastVSCID, fk)
+		delete(e.usedForeignToLocal, fk)
 	}
 }
 
@@ -136,8 +141,8 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 			// delete it.
 			foreignUpdates[last.key] = 0
 			delete(lkTLPFU, lk)
-			e.foreignToLocal[last.key] = lk
-			e.foreignToGreatestVSCIDUsed[last.key] = vscid
+			e.usedForeignToLocal[last.key] = lk
+			e.usedForeignToLastVSCID[last.key] = vscid
 		}
 	}
 
@@ -158,8 +163,8 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 			fk := e.localToForeign[lk]
 			foreignUpdates[fk] = power
 			lkTLPFU[lk] = update{key: fk, power: power}
-			e.foreignToLocal[fk] = lk
-			e.foreignToGreatestVSCIDUsed[fk] = vscid
+			e.usedForeignToLocal[fk] = lk
+			e.usedForeignToLastVSCID[fk] = vscid
 		}
 	}
 
@@ -182,7 +187,7 @@ func (e *KeyDel) internalInvariants() bool {
 
 	// All local keys have a reverse lookup
 	for _, fk := range e.localToForeign {
-		if _, ok := e.foreignToLocal[fk]; !ok {
+		if _, ok := e.usedForeignToLocal[fk]; !ok {
 			return false
 		}
 	}
