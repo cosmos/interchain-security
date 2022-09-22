@@ -84,8 +84,8 @@ The main concern addressed in this section is the correctness of the provider ch
 | 4.09 | The provider chain can easily be restarted with IS enabled <br /> - `ExportGenesis` & `InitGenesis` | `Scheduled` | `??` | `Future work` | `Future work` | `Scheduled` | `NA` |
 | 4.10 | The provider chain's correctness is not affected by a consumer chain shutting down | `Scheduled` | `NA` | `Future work` | `Future work` | `Scheduled` | `NA` |
 | 4.11 | The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `??` | `Future work` | `Future work` | `Scheduled` | `NA` |
-| 4.12 | The provider chain can graciously handle a `ConsumerRemovalProposal` <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `Done` <br /> see [TestHandleConsumerRemovalProposal](../x/ccv/provider/keeper/proposal_test.go#L315) | `NA` | `Future work` | `Scheduled` | `NA` |
-| 4.13 | The provider chain can graciously handle a `ConsumerAdditionProposal` <br /> - expected outcome: a consumer chain is registered and a client is created | `Scheduled` |`Done` <br /> see [TestHandleConsumerAdditionProposal](../x/ccv/provider/keeper/proposal_test.go#L31) | `NA` | `Future work` | `Scheduled` | `NA` |
+| 4.12 | The provider chain can graciously handle a `ConsumerRemovalProposal` <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `Done` <br /> see [here](../x/ccv/provider/keeper/proposal_test.go#L315) | `NA` | `Future work` | `Scheduled` | `NA` |
+| 4.13 | The provider chain can graciously handle a `ConsumerAdditionProposal` <br /> - expected outcome: a consumer chain is registered and a client is created | `Scheduled` |`Done` <br /> see [here](../x/ccv/provider/keeper/proposal_test.go#L31) | `NA` | `Future work` | `Scheduled` | `NA` |
 
 ### Interchain Security Protocol Correctness
 
