@@ -67,7 +67,8 @@ func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 }
 
 func (e *KeyDel) GetLocal(fk FK) (LK, error) {
-	// TODO: make possible even for unused?
+	// TODO: make it possible lookup local keys even
+	// when the foreign key has not yet been used?
 	if lk, ok := e.usedForeignToLocal[fk]; ok {
 		return lk, nil
 	} else {
