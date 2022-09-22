@@ -372,10 +372,3 @@ func TestOnChanCloseConfirm(t *testing.T) {
 	err := consumerModule.OnChanCloseConfirm(ctx, "portID", "channelID")
 	require.NoError(t, err)
 }
-
-// Can maybe do these last three in a separate PR, not migrated from e2e anyways
-// TODO: OnRecvPacket
-
-// TODO: OnAcknowledgementPacket
-
-// TODO: OnTimeoutPacket
