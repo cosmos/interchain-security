@@ -110,11 +110,11 @@ In addition, the implementation MUST guarantee the following [system properties]
 
 ---
 
-| ID | Concern re. *Validator Set Replication* | Code Review | Unit Testing | Diff. testing | Testnet | Protocol audit |
-| -- | ------- | ----------- | ------------ | ------------- | ------- | ----- |
-| 6.01 | Every validator set on any consumer chain MUST either be or have been a validator set on the provider chain. | `Scheduled` | `NA` | `Done` | `Scheduled` | `Scheduled` |
-| 6.02 | Any update in the power of a validator `val` on the provider, as a result of <br /> - (increase) `Delegate()` / `Redelegate()` to `val` <br /> - (increase) `val` joining the provider validator set <br /> - (decrease) `Undelegate()` / `Redelegate()` from `val` <br /> - (decrease) `Slash(val)` <br /> - (decrease) `val` leaving the provider validator set <br /> MUST be present in a `ValidatorSetChangePacket` that is sent to all registered consumer chains | `Scheduled` | `NA` | `Done` | `Scheduled` | `Scheduled` |
-| 6.03 | Every consumer chain receives the same sequence of `ValidatorSetChangePacket`s in the same order. | `Scheduled` | `NA` | `NA` | `Scheduled` | `Scheduled` <br /> high priority |
+| ID | Concern re. *Validator Set Replication* | Code Review | Unit Testing | E2e Testing | Diff. testing | Testnet | Protocol audit |
+| -- | --------------------------------------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
+| 6.01 | Every validator set on any consumer chain MUST either be or have been a validator set on the provider chain. | `Scheduled` | `NA` | `NA` | `Done` | `Scheduled` | `Scheduled` |
+| 6.02 | Any update in the power of a validator `val` on the provider, as a result of <br /> - (increase) `Delegate()` / `Redelegate()` to `val` <br /> - (increase) `val` joining the provider validator set <br /> - (decrease) `Undelegate()` / `Redelegate()` from `val` <br /> - (decrease) `Slash(val)` <br /> - (decrease) `val` leaving the provider validator set <br /> MUST be present in a `ValidatorSetChangePacket` that is sent to all registered consumer chains | `Scheduled` | `NA` | `NA` | `Done` | `Scheduled` | `Scheduled` |
+| 6.03 | Every consumer chain receives the same sequence of `ValidatorSetChangePacket`s in the same order. | `Scheduled` | `NA` | `NA` | `NA` | `Scheduled` | `Scheduled` <br /> high priority |
 
 ---
 
