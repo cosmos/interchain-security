@@ -1,11 +1,5 @@
 # Interchain Security: Quality Assurance
 
-
-
-# TODO(SHAWN: UPDATE THIS DOC WITH NEW UNIT TESTS OF THE PR, REMOVED E2E, etc. 
-
-
-
 This document contains the overview of the quality assurance process necessary for the release of Interchain Security v1. 
 
 The verification of Interchain Security is done using the following approaches:
