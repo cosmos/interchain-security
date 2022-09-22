@@ -47,7 +47,7 @@ func MakeValSet() ValSet {
 	return ValSet{keyToPower: map[int]int{}}
 }
 
-func (vs *ValSet) processUpdates(updates []update) {
+func (vs *ValSet) applyUpdates(updates []update) {
 	for _, u := range updates {
 		delete(vs.keyToPower, u.key)
 		if 0 < u.power {
@@ -72,22 +72,24 @@ func (d *Driver) applyLocalUpdates(localUpdates []update) {
 	for lk, power := range d.localValSets[d.lastTP].keyToPower {
 		valSet.keyToPower[lk] = power
 	}
-	valSet.processUpdates(localUpdates)
+	valSet.applyUpdates(localUpdates)
 	d.localValSets = append(d.localValSets, valSet)
 }
 
 func (d *Driver) runTrace() {
 
-	init := d.trace[0]
-	// Set the initial map
-	d.applyMapInstructions(init.MapInstructions)
-	// Set the initial local set
-	d.localValSets = append(d.localValSets, MakeValSet())
-	d.localValSets[init.TP].processUpdates(init.LocalUpdates)
-	// Set the initial foreign set
-	d.foreignUpdates = append(d.foreignUpdates, d.e.ComputeUpdates(init.TP, init.LocalUpdates))
-	d.foreignValSet.processUpdates(d.foreignUpdates[init.TC])
-	d.e.Prune(init.TM)
+	{
+		init := d.trace[0]
+		// Set the initial map
+		d.applyMapInstructions(init.MapInstructions)
+		// Set the initial local set
+		d.localValSets = append(d.localValSets, MakeValSet())
+		d.localValSets[init.TP].applyUpdates(init.LocalUpdates)
+		// Set the initial foreign set
+		d.foreignUpdates = append(d.foreignUpdates, d.e.ComputeUpdates(init.TP, init.LocalUpdates))
+		d.foreignValSet.applyUpdates(d.foreignUpdates[init.TC])
+		d.e.Prune(init.TM)
+	}
 
 	require.Len(d.t, d.mappings, 1)
 	require.Len(d.t, d.foreignUpdates, 1)
@@ -102,7 +104,7 @@ func (d *Driver) runTrace() {
 		}
 		if d.lastTC < s.TC {
 			for j := d.lastTC + 1; j <= s.TC; j++ {
-				d.foreignValSet.processUpdates(d.foreignUpdates[j])
+				d.foreignValSet.applyUpdates(d.foreignUpdates[j])
 			}
 			d.lastTC = s.TC
 		}
@@ -172,9 +174,13 @@ func (d *Driver) checkProperties() {
 			}
 		}
 		for fk := 0; fk < NUM_FKS; fk++ {
-			_, actual := d.e.usedForeignToLocal[fk]
 			_, expect := expectQueryable[fk]
+
+			// Check foreign to local lookup is available (or not)
+			_, actual := d.e.usedForeignToLocal[fk]
 			require.Equal(d.t, expect, actual)
+
+			// Check internals are consistent
 			_, actual = d.e.usedForeignToLastVSCID[fk]
 			require.Equal(d.t, expect, actual)
 		}
