@@ -25,7 +25,7 @@ const ConsumerRedistributeFrac = "0.75"
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
 func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 
-	ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
+	ltbh, err := k.GetLastTransmissionBlockHeight(ctx) // TODO: rename Transmission -> Distribution(BlockHeight)
 	if err != nil {
 		return err
 	}
@@ -66,6 +66,11 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		// not enough blocks have passed for  a transmission to occur
 		return nil
 	}
+	// TODO
+	// return 3 numbers
+	// last one -> we have that
+	// next one -> add the interval to it
+	// next interval -> the interval to add
 
 	// empty out the toSendToProviderTokens address
 	ch := k.GetDistributionTransmissionChannel(ctx)
@@ -100,11 +105,11 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	return k.SetLastTransmissionBlockHeight(ctx, newLtbh)
 }
 
-func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) (
+func (k Keeper) GetLastDistributionBlockHeight(ctx sdk.Context) (
 	*types.LastTransmissionBlockHeight, error) {
 
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.LastDistributionTransmissionKey())
+	bz := store.Get(types.LastDistributionBlockHeightKey())
 	ltbh := &types.LastTransmissionBlockHeight{}
 	if bz != nil {
 		err := ltbh.Unmarshal(bz)
@@ -123,7 +128,7 @@ func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context,
 	if err != nil {
 		return err
 	}
-	store.Set(types.LastDistributionTransmissionKey(), bz)
+	store.Set(types.LastDistributionBlockHeightKey(), bz)
 	return nil
 }
 

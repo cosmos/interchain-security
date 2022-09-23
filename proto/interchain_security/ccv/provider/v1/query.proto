@@ -25,18 +25,18 @@ service Query {
   }
 
   // PendingConsumerChainStarts queries pending consumer chain starts
-  // rpc PendingConsumerChainStarts(PendingConsumerChainStarsRequest)
-  //     returns (PendingConsumerChainStartResponse) {
-  //   option (google.api.http).get =
-  //       "/interchain_security/ccv/provider/pending_consumer_chain_starts";
-  // }
+  rpc PendingConsumerChainStarts(PendingConsumerChainStarsRequest)
+      returns (PendingConsumerChainStartResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/provider/pending_consumer_chain_starts";
+  }
 
-  // // PendingConsumerChainStops queries pending consumer chain stops
-  // rpc PendingConsumerChainStops(PendingConsumerChainStopsRequest)
-  //     returns (PendingConsumerChainStopsResponse) {
-  //   option (google.api.http).get =
-  //       "/interchain_security/ccv/provider/pending_consumer_chain_stops";
-  // }
+  // PendingConsumerChainStops queries pending consumer chain stops
+  rpc PendingConsumerChainStops(PendingConsumerChainStopsRequest)
+      returns (PendingConsumerChainStopsResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/provider/pending_consumer_chain_stops";
+  }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
