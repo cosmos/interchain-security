@@ -21,6 +21,11 @@ const TransferTimeDelay = 1 * 7 * 24 * time.Hour // 1 weeks
 // decimal number. For example "0.75" would represent 75%.
 const ConsumerRedistributeFrac = "0.75"
 
+// TODO
+// return 3 numbers
+// last one -> we have that
+// next one -> add the interval to it
+// next interval -> the interval to add
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
 func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
@@ -58,6 +63,9 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	if err != nil {
 		return err
 	}
+	// TODO:
+	// check account balance for for prov:types.ConsumerToSendToProviderName; for cons: types.ConsumerRedistributeName
+	// also return sum
 
 	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
 	curHeight := ctx.BlockHeight()
@@ -66,11 +74,6 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		// not enough blocks have passed for  a transmission to occur
 		return nil
 	}
-	// TODO
-	// return 3 numbers
-	// last one -> we have that
-	// next one -> add the interval to it
-	// next interval -> the interval to add
 
 	// empty out the toSendToProviderTokens address
 	ch := k.GetDistributionTransmissionChannel(ctx)
