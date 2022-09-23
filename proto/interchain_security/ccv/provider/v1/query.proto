@@ -15,6 +15,28 @@ service Query {
     option (google.api.http).get =
         "/interchain_security/ccv/provider/consumer_genesis/{chain_id}";
   }
+
+  // ConsumerChains queries active consumer chains supported by the provider
+  // chain
+  rpc ConsumerChains(QueryConsumerChainsRequest)
+      returns (QueryConsumerChainsResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/provider/consumer_chains";
+  }
+
+  // PendingConsumerChainStarts queries pending consumer chain starts
+  // rpc PendingConsumerChainStarts(PendingConsumerChainStarsRequest)
+  //     returns (PendingConsumerChainStartResponse) {
+  //   option (google.api.http).get =
+  //       "/interchain_security/ccv/provider/pending_consumer_chain_starts";
+  // }
+
+  // // PendingConsumerChainStops queries pending consumer chain stops
+  // rpc PendingConsumerChainStops(PendingConsumerChainStopsRequest)
+  //     returns (PendingConsumerChainStopsResponse) {
+  //   option (google.api.http).get =
+  //       "/interchain_security/ccv/provider/pending_consumer_chain_stops";
+  // }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
@@ -26,12 +48,12 @@ message QueryConsumerGenesisResponse {
 
 message QueryConsumerChainsRequest {}
 
-message QueryConsumerChainsResponse { repeated string chain_id = 1; }
+message QueryConsumerChainsResponse { repeated string chain_ids = 1; }
 
 message PendingConsumerChainStarsRequest {}
 
-message PendingConsumerChainStartResponse { repeated string chain_id = 1; }
+message PendingConsumerChainStartResponse { repeated string chain_ids = 1; }
 
 message PendingConsumerChainStopsRequest {}
 
-message PendingConsumerChainStopsResponse { repeated string chain_id = 1; }
+message PendingConsumerChainStopsResponse { repeated string chain_ids = 1; }

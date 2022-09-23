@@ -19,6 +19,7 @@ func NewQueryCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(NewQueryConsumerGenesisCmd())
+	cmd.AddCommand(CmdConsumerChains())
 
 	return cmd
 }
@@ -44,6 +45,33 @@ func NewQueryConsumerGenesisCmd() *cobra.Command {
 			}
 
 			return clientCtx.PrintProto(&res.GenesisState)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdConsumerChains() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list-consumer-chains",
+		Short: "Query active consumer chains for provider chain.",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryConsumerChainsRequest{}
+			res, err := queryClient.ConsumerChains(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
 		},
 	}
 

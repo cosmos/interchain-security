@@ -30,3 +30,19 @@ func (k Keeper) ConsumerGenesis(c context.Context, req *types.QueryConsumerGenes
 
 	return &types.QueryConsumerGenesisResponse{GenesisState: gen}, nil
 }
+
+func (k Keeper) ConsumerChains(goCtx context.Context, req *types.QueryConsumerChainsRequest) (*types.QueryConsumerChainsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	chains := []string{}
+	cb := func(ctx sdk.Context, chainID string) bool {
+		chains = append(chains, chainID)
+		return false
+	}
+	k.IterateConsumerChains(ctx, cb)
+
+	return &types.QueryConsumerChainsResponse{ChainIds: chains}, nil
+}
