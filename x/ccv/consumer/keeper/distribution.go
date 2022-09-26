@@ -21,16 +21,11 @@ const TransferTimeDelay = 1 * 7 * 24 * time.Hour // 1 weeks
 // decimal number. For example "0.75" would represent 75%.
 const ConsumerRedistributeFrac = "0.75"
 
-// TODO
-// return 3 numbers
-// last one -> we have that
-// next one -> add the interval to it
-// next interval -> the interval to add
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
 func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 
-	ltbh, err := k.GetLastTransmissionBlockHeight(ctx) // TODO: rename Transmission -> Distribution(BlockHeight)
+	ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
 	if err != nil {
 		return err
 	}
@@ -63,9 +58,6 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	if err != nil {
 		return err
 	}
-	// TODO:
-	// check account balance for for prov:types.ConsumerToSendToProviderName; for cons: types.ConsumerRedistributeName
-	// also return sum
 
 	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
 	curHeight := ctx.BlockHeight()
@@ -112,7 +104,7 @@ func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) (
 	*types.LastTransmissionBlockHeight, error) {
 
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.LastDistributionBlockHeightKey())
+	bz := store.Get(types.LastDistributionTransmissionKey())
 	ltbh := &types.LastTransmissionBlockHeight{}
 	if bz != nil {
 		err := ltbh.Unmarshal(bz)
@@ -131,7 +123,7 @@ func (k Keeper) SetLastTransmissionBlockHeight(ctx sdk.Context,
 	if err != nil {
 		return err
 	}
-	store.Set(types.LastDistributionBlockHeightKey(), bz)
+	store.Set(types.LastDistributionTransmissionKey(), bz)
 	return nil
 }
 
@@ -147,4 +139,37 @@ func (k Keeper) GetConnectionHops(ctx sdk.Context, srcPort, srcChan string) ([]s
 			"cannot get connection hops from non-existent channel")
 	}
 	return ch.ConnectionHops, nil
+}
+
+// GetEstimatedNextFeeDistribution returns data about next fee distribution. Data represents an estimation of
+// accumulated fees at the current block height.
+func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) (types.NextFeeDistributionEstimate, error) {
+	lastH, err := k.GetLastTransmissionBlockHeight(ctx)
+	if err != nil {
+		return types.NextFeeDistributionEstimate{}, err
+	}
+
+	nextH := lastH.GetHeight() + k.GetBlocksPerDistributionTransmission(ctx)
+
+	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
+	total := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
+
+	frac, err := sdk.NewDecFromStr(ConsumerRedistributeFrac)
+	if err != nil {
+		return types.NextFeeDistributionEstimate{}, err
+	}
+
+	totalTokens := sdk.NewDecCoinsFromCoins(total...)
+	consumerTokens, _ := totalTokens.MulDec(frac).TruncateDecimal()
+	providerTokens := total.Sub(consumerTokens)
+
+	return types.NextFeeDistributionEstimate{
+		CurrentHeight:        ctx.BlockHeight(),
+		LastHeight:           lastH.GetHeight(),
+		NextHeight:           nextH,
+		DistributionFraction: ConsumerRedistributeFrac,
+		Total:                totalTokens.String(),
+		Provider:             providerTokens.String(),
+		Consumer:             consumerTokens.String(),
+	}, nil
 }

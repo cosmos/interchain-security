@@ -75,8 +75,8 @@ func PortKey() []byte {
 	return []byte{PortByteKey}
 }
 
-// LastDistributionBlockHeightKey returns the key to the last distribution transmission in the store
-func LastDistributionBlockHeightKey() []byte {
+// LastDistributionTransmissionKey returns the key to the last distribution transmission in the store
+func LastDistributionTransmissionKey() []byte {
 	return []byte{LastDistributionTransmissionByteKey}
 }
 
