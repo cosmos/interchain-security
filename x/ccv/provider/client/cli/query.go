@@ -20,6 +20,8 @@ func NewQueryCmd() *cobra.Command {
 
 	cmd.AddCommand(NewQueryConsumerGenesisCmd())
 	cmd.AddCommand(CmdConsumerChains())
+	cmd.AddCommand(CmdConsumerStartProposals())
+	cmd.AddCommand(CmdConsumerStopProposals())
 
 	return cmd
 }
