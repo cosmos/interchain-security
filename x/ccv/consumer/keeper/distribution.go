@@ -108,7 +108,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	return k.SetLastTransmissionBlockHeight(ctx, newLtbh)
 }
 
-func (k Keeper) GetLastDistributionBlockHeight(ctx sdk.Context) (
+func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) (
 	*types.LastTransmissionBlockHeight, error) {
 
 	store := ctx.KVStore(k.storeKey)

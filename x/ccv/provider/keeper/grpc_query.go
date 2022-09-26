@@ -46,3 +46,25 @@ func (k Keeper) ConsumerChains(goCtx context.Context, req *types.QueryConsumerCh
 
 	return &types.QueryConsumerChainsResponse{ChainIds: chains}, nil
 }
+
+func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.QueryConsumerChainStartProposalsRequest) (*types.QueryConsumerChainStartProposalsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	props := k.GetAllConsumerAdditionProps(ctx)
+
+	return &types.QueryConsumerChainStartProposalsResponse{Proposals: &props}, nil
+}
+
+func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryConsumerChainStopProposalsRequest) (*types.QueryConsumerChainStopProposalsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	props := k.GetAllConsumerRemovalProps(ctx)
+
+	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &props}, nil
+}

@@ -341,8 +341,38 @@ func (k Keeper) IteratePendingConsumerAdditionProps(ctx sdk.Context, cb func(spa
 	}
 }
 
-// DeletePendingConsumerAdditionProps deletes the given consumer addition proposals.
-// This method should be called once the proposal has been acted upon.
+// GetAllConsumerAdditionProps returns all consumer addition proposals separated into matured and pending.
+func (k Keeper) GetAllConsumerAdditionProps(ctx sdk.Context) types.ConsumerAdditionProposals {
+	props := types.ConsumerAdditionProposals{}
+
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
+	defer iterator.Close()
+
+	if !iterator.Valid() {
+		return props
+	}
+
+	for ; iterator.Valid(); iterator.Next() {
+		key := iterator.Key()
+		spawnTime, _, err := types.ParsePendingCAPKey(key)
+		if err != nil {
+			panic(fmt.Errorf("failed to parse pending client key: %w", err))
+		}
+
+		var prop types.ConsumerAdditionProposal
+		k.cdc.MustUnmarshal(iterator.Value(), &prop)
+
+		if !ctx.BlockTime().Before(spawnTime) {
+			props.Matured = append(props.Pending, &prop)
+		} else {
+			props.Pending = append(props.Pending, &prop)
+		}
+	}
+	return props
+}
+
+// DeletePendingConsumerAdditionProps deletes the given consumer addition proposals
 func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ...types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -441,6 +471,37 @@ func (k Keeper) IteratePendingConsumerRemovalProps(ctx sdk.Context, cb func(stop
 			return
 		}
 	}
+}
+
+// GetAllConsumerRemovalProps returns all consumer removal proposals separated into matured and pending.
+func (k Keeper) GetAllConsumerRemovalProps(ctx sdk.Context) types.ConsumerRemovalProposals {
+	props := types.ConsumerRemovalProposals{}
+
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
+	defer iterator.Close()
+
+	if !iterator.Valid() {
+		return props
+	}
+
+	for ; iterator.Valid(); iterator.Next() {
+		key := iterator.Key()
+		stopTime, chainID, err := types.ParsePendingCRPKey(key)
+		if err != nil {
+			panic(fmt.Errorf("failed to parse pending consumer removal proposal key: %w", err))
+		}
+
+		if !ctx.BlockTime().Before(stopTime) {
+			props.Matured = append(props.Matured,
+				&types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime})
+		} else {
+			props.Pending = append(props.Pending,
+				&types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime})
+		}
+	}
+
+	return props
 }
 
 // CloseChannel closes the channel for the given channel ID on the condition

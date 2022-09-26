@@ -6,6 +6,8 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types"
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
 import "interchain_security/ccv/consumer/v1/genesis.proto";
+import "interchain_security/ccv/provider/v1/provider.proto";
+
 
 service Query {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
@@ -24,18 +26,18 @@ service Query {
         "/interchain_security/ccv/provider/consumer_chains";
   }
 
-  // PendingConsumerChainStarts queries pending consumer chain starts
-  rpc PendingConsumerChainStarts(PendingConsumerChainStarsRequest)
-      returns (PendingConsumerChainStartResponse) {
+  // QueryConsumerChainStarts queries consumer chain start proposals.
+  rpc QueryConsumerChainStarts(QueryConsumerChainStartProposalsRequest)
+      returns (QueryConsumerChainStartProposalsResponse) {
     option (google.api.http).get =
-        "/interchain_security/ccv/provider/pending_consumer_chain_starts";
+        "/interchain_security/ccv/provider/consumer_chain_start_proposals";
   }
 
-  // PendingConsumerChainStops queries pending consumer chain stops
-  rpc PendingConsumerChainStops(PendingConsumerChainStopsRequest)
-      returns (PendingConsumerChainStopsResponse) {
+  // QueryConsumerChainStops queries consumer chain stop proposals.
+  rpc QueryConsumerChainStops(QueryConsumerChainStopProposalsRequest)
+      returns (QueryConsumerChainStopProposalsResponse) {
     option (google.api.http).get =
-        "/interchain_security/ccv/provider/pending_consumer_chain_stops";
+        "/interchain_security/ccv/provider/consumer_chain_stop_proposals";
   }
 }
 
@@ -50,10 +52,14 @@ message QueryConsumerChainsRequest {}
 
 message QueryConsumerChainsResponse { repeated string chain_ids = 1; }
 
-message PendingConsumerChainStarsRequest {}
+message QueryConsumerChainStartProposalsRequest {}
 
-message PendingConsumerChainStartResponse { repeated string chain_ids = 1; }
+message QueryConsumerChainStartProposalsResponse { 
+  ConsumerAdditionProposals proposals = 1;
+}
 
-message PendingConsumerChainStopsRequest {}
+message QueryConsumerChainStopProposalsRequest {}
 
-message PendingConsumerChainStopsResponse { repeated string chain_ids = 1; }
+message QueryConsumerChainStopProposalsResponse { 
+  ConsumerRemovalProposals proposals = 1;
+}
