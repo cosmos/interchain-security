@@ -160,6 +160,7 @@ func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) (types.NextFeeD
 	}
 
 	totalTokens := sdk.NewDecCoinsFromCoins(total...)
+	// truncated decimals are implicitly added to provider
 	consumerTokens, _ := totalTokens.MulDec(frac).TruncateDecimal()
 	providerTokens := total.Sub(consumerTokens)
 
@@ -169,7 +170,7 @@ func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) (types.NextFeeD
 		NextHeight:           nextH,
 		DistributionFraction: ConsumerRedistributeFrac,
 		Total:                totalTokens.String(),
-		Provider:             providerTokens.String(),
-		Consumer:             consumerTokens.String(),
+		Provider:             sdk.NewDecCoinsFromCoins(providerTokens...).String(),
+		Consumer:             sdk.NewDecCoinsFromCoins(consumerTokens...).String(),
 	}, nil
 }
