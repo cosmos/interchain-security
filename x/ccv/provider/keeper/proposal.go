@@ -60,6 +60,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 
 	// clean up states
 	k.DeleteConsumerClientId(ctx, chainID)
+	k.DeleteConsumerGenesis(ctx, chainID)
 	k.DeleteLockUnbondingOnTimeout(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
@@ -76,6 +77,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	k.EmptyPendingVSC(ctx, chainID)
 
 	// release unbonding operations if they aren't locked
+	var vscIDs []uint64
 	if !lockUbd {
 		// iterate over the consumer chain's unbonding operation VSC ids
 		k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ids []uint64) bool {
@@ -105,13 +107,19 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 			if err := k.AppendMaturedUnbondingOps(ctx, maturedIds); err != nil {
 				panic(fmt.Errorf("mature unbonding ops could not be appended: %w", err))
 			}
-			// clean up index
-			k.DeleteUnbondingOpIndex(ctx, chainID, vscID)
+
+			vscIDs = append(vscIDs, vscID)
 			return true
 		})
 	}
+
 	if err != nil {
 		return err
+	}
+
+	// clean up indexes
+	for _, id := range vscIDs {
+		k.DeleteUnbondingOpIndex(ctx, chainID, id)
 	}
 
 	return nil

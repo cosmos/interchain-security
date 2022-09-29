@@ -7,6 +7,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -248,8 +249,10 @@ func (s *ProviderTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd 
 	}
 
 	// verify consumer chain's states are removed
+	_, found := providerKeeper.GetConsumerGenesis(s.providerCtx(), chainID)
+	s.Require().False(found)
 	s.Require().False(providerKeeper.GetLockUnbondingOnTimeout(s.providerCtx(), chainID))
-	_, found := providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
+	_, found = providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
 	s.Require().False(found)
 
 	_, found = providerKeeper.GetChainToChannel(s.providerCtx(), chainID)
@@ -291,4 +294,30 @@ func (s *ProviderTestSuite) SendEmptyVSCPacket() {
 	s.Require().NoError(err)
 	err = s.path.EndpointA.RecvPacket(packet)
 	s.Require().NoError(err)
+}
+
+// TestProviderChannelClosed checks that a consumer chain panics
+// when the provider channel was established and then closed
+func (suite *ConsumerKeeperTestSuite) TestProviderChannelClosed() {
+
+	suite.SetupCCVChannel()
+	// establish provider channel with a first VSC packet
+	suite.SendEmptyVSCPacket()
+
+	channelID, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
+	suite.Require().True(found)
+
+	// close provider channel
+	err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.ChanCloseInit(suite.consumerChain.GetContext(), ccv.ConsumerPortID, channelID)
+	suite.Require().NoError(err)
+	suite.Require().True(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IsChannelClosed(suite.consumerChain.GetContext(), channelID))
+
+	// assert begin blocker did panics
+	defer func() {
+		if r := recover(); r != nil {
+			return
+		}
+		suite.Require().Fail("Begin blocker did not panic with a closed channel")
+	}()
+	suite.consumerChain.App.(*appConsumer.App).BeginBlocker(suite.consumerChain.GetContext(), abci.RequestBeginBlock{})
 }

@@ -13,6 +13,7 @@ import (
 	tmdb "github.com/tendermint/tm-db"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 )
 
@@ -22,6 +23,14 @@ func SetupTestingappProvider() (ibctesting.TestingApp, map[string]json.RawMessag
 	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
 	testApp := appProvider.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
+}
+
+func SetupTestingAppConsumerDemocracy() (ibctesting.TestingApp, map[string]json.RawMessage) {
+	db := tmdb.NewMemDB()
+	// encCdc := app.MakeTestEncodingConfig()
+	encoding := cosmoscmd.MakeEncodingConfig(appConsumerDemocracy.ModuleBasics)
+	testApp := appConsumerDemocracy.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
+	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Marshaler)
 }
 
 func SetupTestingAppConsumer() (ibctesting.TestingApp, map[string]json.RawMessage) {
@@ -52,6 +61,19 @@ func NewProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibc
 	chainID = ibctesting.GetChainID(2)
 	coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(t, coordinator,
 		SetupTestingAppConsumer, chainID, providerChain.Vals, providerChain.Signers)
+	consumerChain := coordinator.GetChain(chainID)
+	return coordinator, providerChain, consumerChain
+}
+
+// NewCoordinator initializes Coordinator with provider and democracy consumer TestChains
+func NewProviderConsumerDemocracyCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain) {
+	coordinator := NewBasicCoordinator(t)
+	chainID := ibctesting.GetChainID(1)
+	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingappProvider, chainID)
+	providerChain := coordinator.GetChain(chainID)
+	chainID = ibctesting.GetChainID(2)
+	coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(t, coordinator,
+		SetupTestingAppConsumerDemocracy, chainID, providerChain.Vals, providerChain.Signers)
 	consumerChain := coordinator.GetChain(chainID)
 	return coordinator, providerChain, consumerChain
 }

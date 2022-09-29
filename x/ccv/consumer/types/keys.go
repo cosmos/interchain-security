@@ -121,8 +121,8 @@ func HeightValsetUpdateIDKey(height uint64) []byte {
 }
 
 // OutstandingDowntimeKey returns the key to a validators' outstanding downtime by consensus address
-func OutstandingDowntimeKey(v sdk.ConsAddress) []byte {
-	return append([]byte{OutstandingDowntimeBytePrefix}, v.Bytes()...)
+func OutstandingDowntimeKey(address sdk.ConsAddress) []byte {
+	return append([]byte{OutstandingDowntimeBytePrefix}, address.Bytes()...)
 }
 
 // CrossChainValidatorKey returns the key to a cross chain validator by consensus address
