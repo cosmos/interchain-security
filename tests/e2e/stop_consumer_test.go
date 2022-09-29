@@ -77,6 +77,7 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 			func(suite *ProviderTestSuite) error {
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetSlashAcks(s.providerCtx(), consumerChainID, []string{"validator-1", "validator-2", "validator-3"})
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetLockUnbondingOnTimeout(s.providerCtx(), consumerChainID)
+				s.providerChain.App.(*appProvider.App).ProviderKeeper.AppendPendingVSC(s.providerCtx(), consumerChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
 				return nil
 			},
 		},
@@ -259,12 +260,11 @@ func (s *ProviderTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd 
 
 	s.Require().Nil(providerKeeper.GetSlashAcks(s.providerCtx(), chainID))
 	s.Require().Zero(providerKeeper.GetInitChainHeight(s.providerCtx(), chainID))
-	// TODO Simon: check that pendingVSCPacket are emptied - once
-	// https://github.com/cosmos/interchain-security/issues/27 is implemented
+	s.Require().Nil(providerKeeper.GetPendingVSCs(s.providerCtx(), chainID))
 }
 
 // TODO Simon: duplicated from consumer/keeper_test.go; figure out how it can be refactored
-// SendEmptyVSCPacket sends a VSC packet without any changes
+// SendEmptyVSCPacket sends a VSC packet with no valset changes
 // to ensure that the CCV channel gets established
 func (s *ProviderTestSuite) SendEmptyVSCPacket() {
 	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper

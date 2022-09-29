@@ -135,10 +135,10 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 	store.Delete(types.ChainToChannelKey(chainID))
 }
 
-// IterateConsumerChains iterates over all of the consumer chains that the provider module controls.
-// It calls the provided callback function which takes in a chainID and returns
+// IterateConsumerChains iterates over all of the consumer chains that the provider module controls
+// It calls the provided callback function which takes in a chainID and client ID to return
 // a stop boolean which will stop the iteration.
-func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID string) (stop bool)) {
+func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID, clientID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
 	defer iterator.Close()
@@ -150,9 +150,9 @@ func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, 
 	for ; iterator.Valid(); iterator.Next() {
 		// remove 1 byte prefix from key to retrieve chainID
 		chainID := string(iterator.Key()[1:])
+		clientID := string(iterator.Value())
 
-		stop := cb(ctx, chainID)
-		if stop {
+		if !cb(ctx, chainID, clientID) {
 			return
 		}
 	}
@@ -310,6 +310,25 @@ func (k Keeper) GetUnbondingOp(ctx sdk.Context, id uint64) (ccv.UnbondingOp, boo
 func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.UnbondingOpKey(id))
+}
+
+func (k Keeper) IterateOverUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdOp ccv.UnbondingOp) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.UnbondingOpBytePrefix})
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		id := binary.BigEndian.Uint64(iterator.Key()[1:])
+		bz := iterator.Value()
+		if bz == nil {
+			panic(fmt.Errorf("unbonding operation is nil for id %d", id))
+		}
+		ubdOp := types.MustUnmarshalUnbondingOp(k.cdc, bz)
+
+		if !cb(id, ubdOp) {
+			break
+		}
+	}
 }
 
 // This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
@@ -525,7 +544,7 @@ func (k *Keeper) Hooks() StakingHooks {
 func (h StakingHooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
 	var consumerChainIDS []string
 
-	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
+	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
 		consumerChainIDS = append(consumerChainIDS, chainID)
 		return false
 	})
@@ -573,6 +592,23 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint6
 		return 0, false
 	}
 	return binary.BigEndian.Uint64(bz), true
+}
+
+// IterateSlashAcks iterates through the slash acks set in the store
+func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(valsetUpdateId, height uint64) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+
+		valsetUpdateId := binary.BigEndian.Uint64(iterator.Key()[1:])
+		height := binary.BigEndian.Uint64(iterator.Value())
+
+		if !cb(valsetUpdateId, height) {
+			return
+		}
+	}
 }
 
 // DeleteValsetUpdateBlockHeight deletes the block height value for a given vaset update id

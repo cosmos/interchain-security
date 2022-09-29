@@ -172,7 +172,7 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 	}
 
 	// iterate over pending slash requests in reverse order
-	requests := k.GetPendingSlashRequests(ctx)
+	requests := k.GetPendingSlashRequests(ctx).Requests
 	for i := len(requests) - 1; i >= 0; i-- {
 		slashReq := requests[i]
 

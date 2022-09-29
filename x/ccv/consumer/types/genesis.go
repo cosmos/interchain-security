@@ -12,9 +12,8 @@ import (
 )
 
 // NewInitialGenesisState returns a consumer GenesisState for a completely new consumer chain.
-// TODO: Include chain status
 func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
-	initValSet []abci.ValidatorUpdate, params Params) *GenesisState {
+	initValSet []abci.ValidatorUpdate, slashRequests SlashRequests, params Params) *GenesisState {
 
 	return &GenesisState{
 		Params:                 params,
@@ -22,21 +21,28 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 		ProviderClientState:    cs,
 		ProviderConsensusState: consState,
 		InitialValSet:          initValSet,
+		PendingSlashRequests:   slashRequests,
 	}
 }
 
 // NewRestartGenesisState returns a consumer GenesisState that has already been established.
 func NewRestartGenesisState(clientID, channelID string,
 	maturingPackets []MaturingVSCPacket,
-	initValSet []abci.ValidatorUpdate, params Params) *GenesisState {
+	initValSet []abci.ValidatorUpdate,
+	heightToValsetUpdateIDs []HeightToValsetUpdateID,
+	outstandingDowntimes []OutstandingDowntime,
+	params Params,
+) *GenesisState {
 
 	return &GenesisState{
-		Params:            params,
-		ProviderClientId:  clientID,
-		ProviderChannelId: channelID,
-		MaturingPackets:   maturingPackets,
-		NewChain:          false,
-		InitialValSet:     initValSet,
+		Params:                      params,
+		ProviderClientId:            clientID,
+		ProviderChannelId:           channelID,
+		MaturingPackets:             maturingPackets,
+		NewChain:                    false,
+		InitialValSet:               initValSet,
+		HeightToValsetUpdateId:      heightToValsetUpdateIDs,
+		OutstandingDowntimeSlashing: outstandingDowntimes,
 	}
 }
 
