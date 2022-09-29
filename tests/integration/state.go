@@ -441,6 +441,7 @@ func (tr TestRun) getParam(chain chainID, param Param) string {
 }
 
 // Gets a default validator for input chain by parsing node home directories.
+//lint:ignore U1000 Ignore unused function temporarily for debugging
 func (s TestRun) getDefaultValidator(chain chainID) validatorID {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c",
