@@ -5,6 +5,7 @@ import (
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	types "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -13,18 +14,20 @@ func NewGenesisState(
 	vscIdToHeights []ValsetUpdateIdToHeight,
 	consumerStates []ConsumerState,
 	unbondingOps []types.UnbondingOp,
-	createProposals []CreateConsumerChainProposal,
-	stopProposals []StopConsumerChainProposal,
+	matureUbdOps *ccv.MaturedUnbondingOps,
+	additionProposals []ConsumerAdditionProposal,
+	removalProposals []ConsumerRemovalProposal,
 	params Params,
 ) *GenesisState {
 	return &GenesisState{
-		ValsetUpdateId:               vscID,
-		ValsetUpdateIdToHeight:       vscIdToHeights,
-		ConsumerStates:               consumerStates,
-		UnbondingOps:                 unbondingOps,
-		CreateConsumerChainProposals: createProposals,
-		StopConsumerChainProposals:   stopProposals,
-		Params:                       params,
+		ValsetUpdateId:            vscID,
+		ValsetUpdateIdToHeight:    vscIdToHeights,
+		ConsumerStates:            consumerStates,
+		UnbondingOps:              unbondingOps,
+		MatureUnbondingOps:        matureUbdOps,
+		ConsumerAdditionProposals: additionProposals,
+		ConsumerRemovalProposals:  removalProposals,
+		Params:                    params,
 	}
 }
 

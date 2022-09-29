@@ -25,15 +25,17 @@ message GenesisState {
   repeated interchain_security.ccv.v1.UnbondingOp unbonding_ops = 3
   [ (gogoproto.nullable) = false ];
   // empty for a completely new chain
-    repeated ValsetUpdateIdToHeight valset_update_id_to_height = 4
+  interchain_security.ccv.v1.MaturedUnbondingOps mature_unbonding_ops = 4;
+    // empty for a completely new chain
+  repeated ValsetUpdateIdToHeight valset_update_id_to_height = 5
   [ (gogoproto.nullable) = false ];
   // empty for a completely new chain
-  repeated CreateConsumerChainProposal create_consumer_chain_proposals = 5
+  repeated ConsumerAdditionProposal consumer_addition_proposals = 6
   [ (gogoproto.nullable) = false ];  
   // empty for a completely new chain
-  repeated StopConsumerChainProposal stop_consumer_chain_proposals = 6
+  repeated ConsumerRemovalProposal consumer_removal_proposals = 7
   [ (gogoproto.nullable) = false ];
-  Params params = 7
+  Params params = 8
   [ (gogoproto.nullable) = false ];
 }
 

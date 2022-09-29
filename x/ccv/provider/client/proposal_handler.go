@@ -21,21 +21,21 @@ import (
 )
 
 // ProposalHandler is the param change proposal handler.
-var ProposalHandler = govclient.NewProposalHandler(NewCreateConsumerChainProposalTxCmd, ProposalRESTHandler)
+var ProposalHandler = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd, ProposalRESTHandler)
 
-// NewCreateConsumerChainProposalTxCmd returns a CLI command handler for creating
-// a new consumer chain proposal governance transaction.
-func NewCreateConsumerChainProposalTxCmd() *cobra.Command {
+// SubmitConsumerAdditionPropTxCmd returns a CLI command handler for submitting
+// a consumer addition proposal via a transaction.
+func SubmitConsumerAdditionPropTxCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "create-consumer-chain [proposal-file]",
+		Use:   "consumer-addition [proposal-file]",
 		Args:  cobra.ExactArgs(1),
-		Short: "Submit a consumer chain creation proposal",
+		Short: "Submit a consumer addition proposal",
 		Long: `
-Submit a consumer chain creation proposal along with an initial deposit.
+Submit a consumer addition proposal along with an initial deposit.
 The proposal details must be supplied via a JSON file.
 
 Example:
-$ %s tx gov submit-proposal create-consumer-chain <path/to/proposal.json> --from=<key_or_address>
+$ %s tx gov submit-proposal consumer-addition <path/to/proposal.json> --from=<key_or_address>
 
 Where proposal.json contains:
 
@@ -59,17 +59,14 @@ Where proposal.json contains:
 				return err
 			}
 
-			proposal, err := ParseCreateConsumerChainProposalJSON(args[0])
+			proposal, err := ParseConsumerAdditionProposalJSON(args[0])
 			if err != nil {
 				return err
 			}
 
-			content, err := types.NewCreateConsumerChainProposal(
+			content := types.NewConsumerAdditionProposal(
 				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
 				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime)
-			if err != nil {
-				return err
-			}
 
 			from := clientCtx.GetFromAddress()
 
@@ -88,7 +85,7 @@ Where proposal.json contains:
 	}
 }
 
-type CreateConsumerChainProposalJSON struct {
+type ConsumerAdditionProposalJSON struct {
 	Title         string             `json:"title"`
 	Description   string             `json:"description"`
 	ChainId       string             `json:"chain_id"`
@@ -99,7 +96,7 @@ type CreateConsumerChainProposalJSON struct {
 	Deposit       string             `json:"deposit"`
 }
 
-type CreateConsumerChainProposalReq struct {
+type ConsumerAdditionProposalReq struct {
 	BaseReq  rest.BaseReq   `json:"base_req"`
 	Proposer sdk.AccAddress `json:"proposer"`
 
@@ -113,8 +110,8 @@ type CreateConsumerChainProposalReq struct {
 	Deposit       sdk.Coins          `json:"deposit"`
 }
 
-func ParseCreateConsumerChainProposalJSON(proposalFile string) (CreateConsumerChainProposalJSON, error) {
-	proposal := CreateConsumerChainProposalJSON{}
+func ParseConsumerAdditionProposalJSON(proposalFile string) (ConsumerAdditionProposalJSON, error) {
+	proposal := ConsumerAdditionProposalJSON{}
 
 	contents, err := ioutil.ReadFile(filepath.Clean(proposalFile))
 	if err != nil {
@@ -132,14 +129,14 @@ func ParseCreateConsumerChainProposalJSON(proposalFile string) (CreateConsumerCh
 // change REST handler with a given sub-route.
 func ProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
 	return govrest.ProposalRESTHandler{
-		SubRoute: "create_consumer_chain",
+		SubRoute: "propose_consumer_addition",
 		Handler:  postProposalHandlerFn(clientCtx),
 	}
 }
 
 func postProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req CreateConsumerChainProposalReq
+		var req ConsumerAdditionProposalReq
 		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
 			return
 		}
@@ -149,12 +146,9 @@ func postProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
 			return
 		}
 
-		content, err := types.NewCreateConsumerChainProposal(
+		content := types.NewConsumerAdditionProposal(
 			req.Title, req.Description, req.ChainId, req.InitialHeight,
 			req.GenesisHash, req.BinaryHash, req.SpawnTime)
-		if rest.CheckBadRequestError(w, err) {
-			return
-		}
 
 		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
 		if rest.CheckBadRequestError(w, err) {

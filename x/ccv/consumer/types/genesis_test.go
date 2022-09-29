@@ -7,11 +7,12 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/ibc-go/v3/testing/mock"
 
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	testutil "github.com/cosmos/interchain-security/testutil/keeper"
 
 	"github.com/stretchr/testify/require"
 )
@@ -28,10 +29,11 @@ var (
 	upgradePath = []string{"upgrade", "upgradedIBCState"}
 )
 
+// TestValidateInitialGenesisState tests a NewInitialGenesisState instantiation,
+// and its Validate() method over different genesis scenarios
 func TestValidateInitialGenesisState(t *testing.T) {
-	// generate validator private/public key
-	privVal := mock.NewPV()
-	pubKey, err := privVal.GetPubKey()
+	// generate validator public key
+	pubKey, err := testutil.GenPubKey()
 	require.NoError(t, err)
 
 	// create validator set with single validator
@@ -53,29 +55,29 @@ func TestValidateInitialGenesisState(t *testing.T) {
 	}{
 		{
 			"valid new consumer genesis state",
-			types.NewInitialGenesisState(cs, consensusState, valUpdates, nil, params),
+			types.NewInitialGenesisState(cs, consensusState, valUpdates, types.SlashRequests{}, params),
 			false,
 		},
 		{
 			"invalid new consumer genesis state: nil client state",
-			types.NewInitialGenesisState(nil, consensusState, valUpdates, nil, params),
+			types.NewInitialGenesisState(nil, consensusState, valUpdates, types.SlashRequests{}, params),
 			true,
 		},
 		{
 			"invalid new consumer genesis state: invalid client state",
 			types.NewInitialGenesisState(&ibctmtypes.ClientState{ChainId: "badClientState"},
-				consensusState, valUpdates, nil, params),
+				consensusState, valUpdates, types.SlashRequests{}, params),
 			true,
 		},
 		{
 			"invalid new consumer genesis state: nil consensus state",
-			types.NewInitialGenesisState(cs, nil, valUpdates, nil, params),
+			types.NewInitialGenesisState(cs, nil, valUpdates, types.SlashRequests{}, params),
 			true,
 		},
 		{
 			"invalid new consumer genesis state: invalid consensus state",
 			types.NewInitialGenesisState(cs, &ibctmtypes.ConsensusState{Timestamp: time.Now()},
-				valUpdates, nil, params),
+				valUpdates, types.SlashRequests{}, params),
 			true,
 		},
 		{
@@ -91,7 +93,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				valUpdates,
 				nil,
 				nil,
-				nil,
+				types.SlashRequests{},
 			},
 			true,
 		},
@@ -108,7 +110,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				valUpdates,
 				nil,
 				nil,
-				nil,
+				types.SlashRequests{},
 			},
 			true,
 		},
@@ -125,13 +127,13 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				valUpdates,
 				nil,
 				nil,
-				nil,
+				types.SlashRequests{},
 			},
 			true,
 		},
 		{
 			"invalid new consumer genesis state: nil initial validator set",
-			types.NewInitialGenesisState(cs, consensusState, nil, nil, params),
+			types.NewInitialGenesisState(cs, consensusState, nil, types.SlashRequests{}, params),
 			true,
 		},
 		{
@@ -139,7 +141,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 			types.NewInitialGenesisState(
 				cs, ibctmtypes.NewConsensusState(
 					time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), []byte("wrong_hash")),
-				valUpdates, nil, params),
+				valUpdates, types.SlashRequests{}, params),
 			true,
 		},
 	}
@@ -154,10 +156,11 @@ func TestValidateInitialGenesisState(t *testing.T) {
 	}
 }
 
+// TestValidateRestartGenesisState tests a NewRestartGenesisState instantiation,
+// and its Validate() method over different genesis scenarios
 func TestValidateRestartGenesisState(t *testing.T) {
 	// generate validator private/public key
-	privVal := mock.NewPV()
-	pubKey, err := privVal.GetPubKey()
+	pubKey, err := testutil.GenPubKey()
 	require.NoError(t, err)
 
 	// create validator set with single validator
@@ -228,7 +231,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 				valUpdates,
 				nil,
 				nil,
-				nil,
+				types.SlashRequests{},
 			},
 			true,
 		},
@@ -245,7 +248,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 				valUpdates,
 				nil,
 				nil,
-				nil,
+				types.SlashRequests{},
 			},
 			true,
 		},

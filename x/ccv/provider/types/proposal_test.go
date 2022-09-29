@@ -18,72 +18,61 @@ import (
 )
 
 func TestValidateBasic(t *testing.T) {
-	var (
-		proposal govtypes.Content
-		err      error
-	)
 	initialHeight := clienttypes.NewHeight(2, 3)
 
 	testCases := []struct {
 		name     string
-		malleate func()
+		proposal govtypes.Content
 		expPass  bool
 	}{
 		{
-			"success", func() {
-				proposal, err = types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
-				require.NoError(t, err)
-			}, true,
+			"success",
+			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now()),
+			true,
 		},
 		{
-			"fails validate abstract - empty title", func() {
-				proposal, err = types.NewCreateConsumerChainProposal(" ", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
-				require.NoError(t, err)
-			}, false,
+			"fails validate abstract - empty title",
+			types.NewConsumerAdditionProposal(" ", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now()),
+			false,
 		},
 		{
-			"chainID is empty", func() {
-				proposal, err = types.NewCreateConsumerChainProposal("title", "description", " ", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now())
-				require.NoError(t, err)
-			}, false,
+			"chainID is empty",
+			types.NewConsumerAdditionProposal("title", "description", " ", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now()),
+			false,
 		},
 		{
-			"initial height is zero", func() {
-				proposal = &types.CreateConsumerChainProposal{
-					Title:         "title",
-					Description:   "description",
-					ChainId:       "chainID",
-					InitialHeight: clienttypes.Height{},
-					GenesisHash:   []byte("gen_hash"),
-					BinaryHash:    []byte("bin_hash"),
-					SpawnTime:     time.Now(),
-				}
-			}, false,
+			"initial height is zero",
+			&types.ConsumerAdditionProposal{
+				Title:         "title",
+				Description:   "description",
+				ChainId:       "chainID",
+				InitialHeight: clienttypes.Height{},
+				GenesisHash:   []byte("gen_hash"),
+				BinaryHash:    []byte("bin_hash"),
+				SpawnTime:     time.Now(),
+			},
+			false,
 		},
 		{
-			"genesis hash is empty", func() {
-				proposal, err = types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte(""), []byte("bin_hash"), time.Now())
-				require.NoError(t, err)
-			}, false,
+			"genesis hash is empty",
+			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte(""), []byte("bin_hash"), time.Now()),
+			false,
 		},
 		{
-			"binary hash is empty", func() {
-				proposal, err = types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte(""), time.Now())
-				require.NoError(t, err)
-			}, false,
+			"binary hash is empty",
+			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte(""), time.Now()),
+			false,
 		},
 		{
-			"time is zero", func() {
-				proposal, err = types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Time{})
-				require.NoError(t, err)
-			}, false,
+			"time is zero",
+			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Time{}),
+			false,
 		},
 	}
 
 	for _, tc := range testCases {
-		tc.malleate()
 
-		err := proposal.ValidateBasic()
+		err := tc.proposal.ValidateBasic()
 		if tc.expPass {
 			require.NoError(t, err, "valid case: %s should not return error. got %w", tc.name, err)
 		} else {
@@ -92,11 +81,10 @@ func TestValidateBasic(t *testing.T) {
 	}
 }
 
-func TestMarshalCreateConsumerChainProposal(t *testing.T) {
-	content, err := types.NewCreateConsumerChainProposal("title", "description", "chainID", clienttypes.NewHeight(0, 1), []byte("gen_hash"), []byte("bin_hash"), time.Now().UTC())
-	require.NoError(t, err)
+func TestMarshalConsumerAdditionProposal(t *testing.T) {
+	content := types.NewConsumerAdditionProposal("title", "description", "chainID", clienttypes.NewHeight(0, 1), []byte("gen_hash"), []byte("bin_hash"), time.Now().UTC())
 
-	cccp, ok := content.(*types.CreateConsumerChainProposal)
+	cccp, ok := content.(*types.ConsumerAdditionProposal)
 	require.True(t, ok)
 
 	// create codec
@@ -112,18 +100,17 @@ func TestMarshalCreateConsumerChainProposal(t *testing.T) {
 	require.NoError(t, err)
 
 	// unmarshal proposal
-	newCccp := &types.CreateConsumerChainProposal{}
+	newCccp := &types.ConsumerAdditionProposal{}
 	err = cdc.UnmarshalJSON(bz, newCccp)
 	require.NoError(t, err)
 
 	require.True(t, proto.Equal(cccp, newCccp), "unmarshalled proposal does not equal original proposal")
 }
 
-func TestCreateConsumerChainProposalString(t *testing.T) {
+func TestConsumerAdditionProposalString(t *testing.T) {
 	initialHeight := clienttypes.NewHeight(2, 3)
 	spawnTime := time.Now()
-	proposal, err := types.NewCreateConsumerChainProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), spawnTime)
-	require.NoError(t, err)
+	proposal := types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), spawnTime)
 
 	expect := fmt.Sprintf(`CreateConsumerChain Proposal
 	Title: title
@@ -134,5 +121,5 @@ func TestCreateConsumerChainProposalString(t *testing.T) {
 	BinaryHash: %s
 	SpawnTime: %s`, initialHeight, []byte("gen_hash"), []byte("bin_hash"), spawnTime)
 
-	require.Equal(t, expect, proposal.String(), "string method for CreateConsumerChainProposal returned unexpected string")
+	require.Equal(t, expect, proposal.String(), "string method for ConsumerAdditionProposal returned unexpected string")
 }

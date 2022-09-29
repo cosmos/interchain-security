@@ -29,13 +29,6 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	if err != nil {
 		return err
 	}
-	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
-	curHeight := ctx.BlockHeight()
-
-	if (curHeight - ltbh.Height) < bpdt {
-		// not enough blocks have passed for  a transmission to occur
-		return nil
-	}
 
 	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
 	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
@@ -65,28 +58,41 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	if err != nil {
 		return err
 	}
+
+	bpdt := k.GetBlocksPerDistributionTransmission(ctx)
+	curHeight := ctx.BlockHeight()
+
+	if (curHeight - ltbh.Height) < bpdt {
+		// not enough blocks have passed for  a transmission to occur
+		return nil
+	}
+
 	// empty out the toSendToProviderTokens address
-	tstProviderAddr := k.authKeeper.GetModuleAccount(ctx,
-		types.ConsumerToSendToProviderName).GetAddress()
-	tstProviderTokens := k.bankKeeper.GetAllBalances(ctx, tstProviderAddr)
 	ch := k.GetDistributionTransmissionChannel(ctx)
-	providerAddr := k.GetProviderFeePoolAddrStr(ctx)
-	timeoutHeight := clienttypes.ZeroHeight()
-	timeoutTimestamp := uint64(ctx.BlockTime().Add(TransferTimeDelay).UnixNano())
-	for _, token := range tstProviderTokens {
-		err := k.ibcTransferKeeper.SendTransfer(ctx,
-			transfertypes.PortID,
-			ch,
-			token,
-			tstProviderAddr,
-			providerAddr,
-			timeoutHeight,
-			timeoutTimestamp,
-		)
-		if err != nil {
-			return err
+	transferChannel, found := k.channelKeeper.GetChannel(ctx, transfertypes.PortID, ch)
+	if found && transferChannel.State == channeltypes.OPEN {
+		tstProviderAddr := k.authKeeper.GetModuleAccount(ctx,
+			types.ConsumerToSendToProviderName).GetAddress()
+		tstProviderTokens := k.bankKeeper.GetAllBalances(ctx, tstProviderAddr)
+		providerAddr := k.GetProviderFeePoolAddrStr(ctx)
+		timeoutHeight := clienttypes.ZeroHeight()
+		timeoutTimestamp := uint64(ctx.BlockTime().Add(TransferTimeDelay).UnixNano())
+		for _, token := range tstProviderTokens {
+			err := k.ibcTransferKeeper.SendTransfer(ctx,
+				transfertypes.PortID,
+				ch,
+				token,
+				tstProviderAddr,
+				providerAddr,
+				timeoutHeight,
+				timeoutTimestamp,
+			)
+			if err != nil {
+				return err
+			}
 		}
 	}
+
 	newLtbh := types.LastTransmissionBlockHeight{
 		Height: ctx.BlockHeight(),
 	}

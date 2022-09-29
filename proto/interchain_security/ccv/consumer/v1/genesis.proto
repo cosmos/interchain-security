@@ -33,8 +33,8 @@ message GenesisState {
   repeated OutstandingDowntime outstanding_downtime_slashing = 10
       [ (gogoproto.nullable) = false ];
   // PendingSlashRequests filled in on new chain, nil on restart.
-  repeated interchain_security.ccv.consumer.v1.SlashRequest pending_slash_requests = 11
-      [ (gogoproto.nullable) = false ];
+ interchain_security.ccv.consumer.v1.SlashRequests pending_slash_requests = 11
+ [ (gogoproto.nullable) = false ];
 }
 
 // UnbondingSequence defines the genesis information for each unbonding packet

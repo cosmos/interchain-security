@@ -19,7 +19,7 @@ var (
 	ErrInvalidVSCMaturedTime    = sdkerrors.Register(ModuleName, 12, "invalid maturity time for VSC packet")
 	ErrInvalidConsumerState     = sdkerrors.Register(ModuleName, 13, "provider chain has invalid state for consumer chain")
 	ErrInvalidConsumerClient    = sdkerrors.Register(ModuleName, 14, "ccv channel is not built on correct client")
-	ErrInvalidProposal          = sdkerrors.Register(ModuleName, 15, "invalid create consumer chain proposal")
+	ErrInvalidProposal          = sdkerrors.Register(ModuleName, 15, "invalid proposal")
 	ErrInvalidHandshakeMetadata = sdkerrors.Register(ModuleName, 16, "invalid provider handshake metadata")
 	ErrChannelNotFound          = sdkerrors.Register(ModuleName, 17, "channel not found")
 	ErrClientNotFound           = sdkerrors.Register(ModuleName, 18, "client not found")

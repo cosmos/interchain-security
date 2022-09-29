@@ -13,8 +13,6 @@ CCV stands for cross chain validation and refers to the subset of Interchain Sec
 
 The code for CCV is housed under [x/ccv](./x/ccv). The `types` folder contains types and related functions that are used by both provider and consumer chains, while the `consumer` module contains the code run by consumer chains and the `provider` module contains the code run by provider chain.
 
-NOTE: At the moment the testing app may not be functional, please rely on the IBC testing suite to write unit tests for the moment.
-
 ## Instructions
 
 **Prerequisites**
@@ -45,28 +43,71 @@ export PATH=$PATH:$(go env GOPATH)/bin
 
 Inspect the [Makefile](./Makefile) if curious.
 
-**Running tests**
+## Testing
+
+### Unit Tests
+
+Unit tests are useful for simple standalone functionality, and CRUD operations. Unit tests should use golang's standard testing package, and be defined in files formatted as ```<file being tested>_test.go``` in the same directory as the file being tested, following standard conventions. 
+
+[Mocked external keepers](./testutil/keeper/mocks.go) (implemented with [gomock](https://github.com/golang/mock)) are available for testing more complex functionality, but still only relevant to execution within a single node. Ie. no internode or interchain communication. 
+
+### End to End (e2e) Tests
+
+[e2e-tests](./tests/e2e/) utilize the [IBC Testing Package](https://github.com/cosmos/ibc-go/tree/main/testing), and test functionality that is wider in scope than a unit test, but still able to be validated in-memory. Ie. code where advancing blocks would be useful, simulated handshakes, simulated packet relays, etc. 
+
+### Differential Tests (WIP)
+
+Similar to e2e tests, but they compare the system state to an expected state generated from a model implementation.
+
+### Integration Tests 
+
+[Integration tests](./tests/integration/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. Integration tests use queries/transactions invoked from CLI to drive and validate the code.
+
+### Running Tests
+Tests can be run using `make`:
 
 ```bash
-# run all unit tests using make
+# run unit, e2e, diff, and integration tests
 make test
-# run all unit tests using go
+
+# run unit and e2e tests - prefer this for local development
+make test-short
+
+# run difference tests
+make test-diff
+
+# run integration tests
+make test-integration
+
+# equivalent to make test with caching disabled
+make test-no-cache
+```
+
+Alternatively you can run tests using `go test`:
+```bash
+# run all unit, e2e, and diff tests using go
 go test ./...
-# run all unit tests with verbose output
+# run all unit, e2e, and diff tests with verbose output
 go test -v ./..
-# run all unit tests with coverage stats
-go test -cover ./..
+# run all unit, e2e, and diff tests with coverage stats
+go test -coverpkg=./x/... -coverprofile=coverage.out ./...
 # run a single unit test
-go test -run <test-suite-name>/<test-name> ./...
+go test -run <unit-test-name> path/to/package
 # example: run a single unit test
+go test -run TestSlashAcks ./x/ccv/provider/keeper
+# run a single e2e test
+go test -run <test-suite-name>/<test-name> ./...
+# example: run a single e2e test
 go test -run TestProviderTestSuite/TestPacketRoundtrip ./...
-# run the integration tests
-go run ./integration-tests/...
+# run all integration tests
+go run ./tests/integration/...
+# run all integration tests with a local cosmos sdk
+go run ./tests/integration/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/"
 # run golang native fuzz tests (https://go.dev/doc/tutorial/fuzz)
 go test -fuzz=<regex-to-match-test-name>
 ```
 
-**Linters and static analysis**
+### Linters and Static Analysis
 
 Several analyzers are used on the code including [CodeQL](https://codeql.github.com/), [SonarCloud](https://sonarcloud.io/), [golangci-lint](https://golangci-lint.run/) and [gosec](https://github.com/securego/gosec). Some of these are run on github when committing to PRs ect, but some tools are also applicable locally, and are built into golang.
 
@@ -96,11 +137,11 @@ go install github.com/go-critic/go-critic/cmd/gocritic@latest
 pre-commit run --all-files
 ```
 
-**Debugging**
+### Debugging
 
 If using VSCode, see [vscode-go/wiki/debugging](https://github.com/golang/vscode-go/wiki/debugging) to debug unit tests or go binaries.
 
-**More**
+### More
 
 More instructions will be added soon, in time for the testnet.
 

@@ -202,3 +202,21 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	// Set latest HistoricalInfo at current height
 	k.SetHistoricalInfo(ctx, ctx.BlockHeight(), &historicalEntry)
 }
+
+// ValidatorUpdates gets all cross-chain validators converted to the ABCI validator update type
+func (k Keeper) ValidatorUpdates(ctx sdk.Context) ([]abci.ValidatorUpdate, error) {
+	vals := k.GetAllCCValidator(ctx)
+	valUpdates := make([]abci.ValidatorUpdate, 0, len(vals))
+	for _, v := range vals {
+		pk, err := v.ConsPubKey()
+		if err != nil {
+			return nil, err
+		}
+		tmPK, err := cryptocodec.ToTmProtoPublicKey(pk)
+		if err != nil {
+			return nil, err
+		}
+		valUpdates = append(valUpdates, abci.ValidatorUpdate{PubKey: tmPK, Power: v.Power})
+	}
+	return valUpdates, nil
+}

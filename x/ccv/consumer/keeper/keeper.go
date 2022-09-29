@@ -1,15 +1,12 @@
 package keeper
 
 import (
-	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
@@ -29,7 +26,7 @@ type Keeper struct {
 	storeKey          sdk.StoreKey
 	cdc               codec.BinaryCodec
 	paramStore        paramtypes.Subspace
-	scopedKeeper      capabilitykeeper.ScopedKeeper
+	scopedKeeper      ccv.ScopedKeeper
 	channelKeeper     ccv.ChannelKeeper
 	portKeeper        ccv.PortKeeper
 	connectionKeeper  ccv.ConnectionKeeper
@@ -48,7 +45,7 @@ type Keeper struct {
 // collector (and not the provider chain)
 func NewKeeper(
 	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
-	scopedKeeper capabilitykeeper.ScopedKeeper,
+	scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	slashingKeeper ccv.SlashingKeeper, bankKeeper ccv.BankKeeper, accountKeeper ccv.AccountKeeper,
@@ -94,7 +91,7 @@ func (k *Keeper) SetHooks(sh ccv.ConsumerHooks) *Keeper {
 }
 
 // ChanCloseInit defines a wrapper function for the channel Keeper's function
-// in order to expose it to the ICS20 transfer handler.
+// Following ICS 004: https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#closing-handshake
 func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
@@ -164,17 +161,17 @@ func (k Keeper) DeleteUnbondingTime(ctx sdk.Context) {
 	store.Delete(types.UnbondingTimeKey())
 }
 
-// SetProviderClient sets the provider clientID that is validating the chain.
+// SetProviderClientID sets the provider clientID that is validating the chain.
 // Set in InitGenesis
-func (k Keeper) SetProviderClient(ctx sdk.Context, clientID string) {
+func (k Keeper) SetProviderClientID(ctx sdk.Context, clientID string) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ProviderClientKey(), []byte(clientID))
+	store.Set(types.ProviderClientIDKey(), []byte(clientID))
 }
 
-// GetProviderClient gets the provider clientID that is validating the chain.
-func (k Keeper) GetProviderClient(ctx sdk.Context) (string, bool) {
+// GetProviderClientID gets the provider clientID that is validating the chain.
+func (k Keeper) GetProviderClientID(ctx sdk.Context) (string, bool) {
 	store := ctx.KVStore(k.storeKey)
-	clientIdBytes := store.Get(types.ProviderClientKey())
+	clientIdBytes := store.Get(types.ProviderClientIDKey())
 	if clientIdBytes == nil {
 		return "", false
 	}
@@ -289,7 +286,7 @@ func (k Keeper) VerifyProviderChain(ctx sdk.Context, channelID string, connectio
 		return sdkerrors.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
 	}
 	// Verify that client id is expected clientID
-	expectedClientId, ok := k.GetProviderClient(ctx)
+	expectedClientId, ok := k.GetProviderClientID(ctx)
 	if !ok {
 		return sdkerrors.Wrapf(clienttypes.ErrInvalidClient, "could not find provider client id")
 	}
@@ -423,37 +420,38 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 }
 
 // SetPendingSlashRequests sets the pending slash requests in store
-func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests []types.SlashRequest) {
+func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests types.SlashRequests) {
 	store := ctx.KVStore(k.storeKey)
-	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(&requests)
+	bz, err := requests.Marshal()
 	if err != nil {
 		panic(fmt.Errorf("failed to encode slash request json: %w", err))
 	}
-	store.Set([]byte{types.PendingSlashRequestsBytePrefix}, buf.Bytes())
+	store.Set([]byte{types.PendingSlashRequestsBytePrefix}, bz)
 }
 
 // GetPendingSlashRequest returns the pending slash requests in store
-func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) (requests []types.SlashRequest) {
+func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) types.SlashRequests {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get([]byte{types.PendingSlashRequestsBytePrefix})
 	if bz == nil {
-		return
+		return types.SlashRequests{}
 	}
-	buf := bytes.NewBuffer(bz)
-	err := json.NewDecoder(buf).Decode(&requests)
+
+	var sr types.SlashRequests
+	err := sr.Unmarshal(bz)
 	if err != nil {
 		panic(fmt.Errorf("failed to decode slash request json: %w", err))
 	}
 
-	return
+	return sr
 }
 
 // AppendPendingSlashRequests appends the given slash request to the pending slash requests in store
 func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashRequest) {
-	requests := k.GetPendingSlashRequests(ctx)
-	requests = append(requests, req)
-	k.SetPendingSlashRequests(ctx, requests)
+	sr := k.GetPendingSlashRequests(ctx)
+	srArray := sr.GetRequests()
+	srArray = append(srArray, req)
+	k.SetPendingSlashRequests(ctx, types.SlashRequests{srArray})
 }
 
 // ClearPendingSlashRequests clears the pending slash requests in store

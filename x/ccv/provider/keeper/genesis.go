@@ -10,14 +10,14 @@ import (
 )
 
 func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
-	k.SetPort(ctx, types.PortID)
+	k.SetPort(ctx, ccv.ProviderPortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
 	// port capability from capability InitGenesis
-	if !k.IsBound(ctx, types.PortID) {
+	if !k.IsBound(ctx, ccv.ProviderPortID) {
 		// transfer module binds to the transfer port on InitChain
 		// and claims the returned capability
-		err := k.BindPort(ctx, types.PortID)
+		err := k.BindPort(ctx, ccv.ProviderPortID)
 		if err != nil {
 			panic(fmt.Sprintf("could not claim port capability: %v", err))
 		}
@@ -25,21 +25,25 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 
 	k.SetValidatorSetUpdateId(ctx, genState.ValsetUpdateId)
 	for _, v2h := range genState.ValsetUpdateIdToHeight {
-		k.SetValsetUpdateBlockHeight(ctx, v2h.Height, v2h.ValsetUpdateId)
+		k.SetValsetUpdateBlockHeight(ctx, v2h.ValsetUpdateId, v2h.Height)
 	}
 
-	for _, cccp := range genState.CreateConsumerChainProposals {
-		if err := k.SetPendingCreateProposal(ctx, cccp); err != nil {
+	for _, cccp := range genState.ConsumerAdditionProposals {
+		if err := k.SetPendingConsumerAdditionProp(ctx, &cccp); err != nil {
 			panic(fmt.Errorf("pending create consumer chain proposal could not be persisted: %w", err))
 		}
 	}
-	for _, sccp := range genState.StopConsumerChainProposals {
-		k.SetPendingStopProposal(ctx, sccp.ChainId, sccp.StopTime)
+	for _, sccp := range genState.ConsumerRemovalProposals {
+		k.SetPendingConsumerRemovalProp(ctx, sccp.ChainId, sccp.StopTime)
 	}
 	for _, ubdOp := range genState.UnbondingOps {
 		if err := k.SetUnbondingOp(ctx, ubdOp); err != nil {
 			panic(fmt.Errorf("unbonding op could not be persisted: %w", err))
 		}
+	}
+
+	if genState.MatureUnbondingOps != nil {
+		k.AppendMaturedUnbondingOps(ctx, genState.MatureUnbondingOps.Ids)
 	}
 
 	// Set initial state for each consumer chain
@@ -92,7 +96,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		channelId, found := k.GetChainToChannel(ctx, chainID)
 		if found {
 			cs.ChannelId = channelId
-			cs.InitialHeight = k.GetInitChainHeight(ctx, chainID)
+			cs.InitialHeight, _ = k.GetInitChainHeight(ctx, chainID)
 			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chainID)
 			ubdOpIndexes := []types.UnbondingOpIndex{}
 			k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) bool {
@@ -124,19 +128,20 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return true
 	})
 
-	stopChainProposals := []types.StopConsumerChainProposal{}
-	k.IteratePendingStopProposal(ctx, func(chainID string, stopTime time.Time) bool {
-		stopChainProposals = append(stopChainProposals,
-			types.StopConsumerChainProposal{
-				ChainId:  chainID,
-				StopTime: stopTime,
-			},
-		)
+	matureUbdOps, err := k.GetMaturedUnbondingOps(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	addProps := []types.ConsumerAdditionProposal{}
+	k.IteratePendingConsumerAdditionProps(ctx, func(_ time.Time, prop types.ConsumerAdditionProposal) bool {
+		addProps = append(addProps, prop)
 		return true
 	})
-	createConsumerChainProposals := []types.CreateConsumerChainProposal{}
-	k.IteratePendingCreateProposal(ctx, func(clientInfo types.CreateConsumerChainProposal) bool {
-		createConsumerChainProposals = append(createConsumerChainProposals, clientInfo)
+
+	remProps := []types.ConsumerRemovalProposal{}
+	k.IteratePendingConsumerRemovalProps(ctx, func(_ time.Time, prop types.ConsumerRemovalProposal) bool {
+		remProps = append(remProps, prop)
 		return true
 	})
 
@@ -147,8 +152,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		vscIDToHeights,
 		consumerStates,
 		ubdOps,
-		createConsumerChainProposals,
-		stopChainProposals,
+		&ccv.MaturedUnbondingOps{Ids: matureUbdOps},
+		addProps,
+		remProps,
 		params,
 	)
 }

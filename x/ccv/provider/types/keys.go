@@ -17,9 +17,6 @@ const (
 	// ModuleName defines the CCV provider module name
 	ModuleName = "provider"
 
-	// PortID is the default port id that transfer module binds to
-	PortID = "provider"
-
 	// StoreKey is the store key string for IBC transfer
 	StoreKey = ModuleName
 
@@ -55,13 +52,13 @@ const (
 	// ChainToClientBytePrefix is the byte prefix for storing the consumer chainID for a given consumer clientid.
 	ChainToClientBytePrefix
 
-	// PendingCreateProposalBytePrefix is the byte prefix for storing the pending identified consumer chain client before the spawn time occurs.
+	// PendingCAPBytePrefix is the byte prefix for storing pending consumer addition proposals before the spawn time occurs.
 	// The key includes the BigEndian timestamp to allow for efficient chronological iteration
-	PendingCreateProposalBytePrefix
+	PendingCAPBytePrefix
 
-	// PendingStopProposalBytePrefix is the byte prefix for storing the pending identified consumer chain before the stop time occurs.
+	// PendingCRPBytePrefix is the byte prefix for storing pending consumer removal proposals before the stop time occurs.
 	// The key includes the BigEndian timestamp to allow for efficient chronological iteration
-	PendingStopProposalBytePrefix
+	PendingCRPBytePrefix
 
 	// UnbondingOpBytePrefix is the byte prefix that stores a record of all the ids of consumer chains that
 	// need to unbond before a given delegation can unbond on this chain.
@@ -89,6 +86,11 @@ const (
 
 	// LockUnbondingOnTimeoutBytePrefix is the byte prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
 	LockUnbondingOnTimeoutBytePrefix
+)
+
+const (
+	// UnbondingOpIndexKey should be of set length: prefix + hashed chain ID + uint64
+	UnbondingOpIndexKeySize = 1 + 32 + 8
 )
 
 // PortKey returns the key to the port ID in the store
@@ -121,15 +123,15 @@ func ChainToClientKey(chainID string) []byte {
 	return append([]byte{ChainToClientBytePrefix}, []byte(chainID)...)
 }
 
-// PendingCreateProposalKey returns the key under which a pending identified client is stored
-func PendingCreateProposalKey(timestamp time.Time, chainID string) []byte {
+// PendingCAPKey returns the key under which a pending consumer addition proposal is stored
+func PendingCAPKey(timestamp time.Time, chainID string) []byte {
 	timeBz := sdk.FormatTimeBytes(timestamp)
 	timeBzL := len(timeBz)
-	prefixL := len([]byte{PendingCreateProposalBytePrefix})
+	prefixL := len([]byte{PendingCAPBytePrefix})
 
 	bz := make([]byte, prefixL+8+timeBzL+len(chainID))
 	// copy the prefix
-	copy(bz[:prefixL], []byte{PendingCreateProposalBytePrefix})
+	copy(bz[:prefixL], []byte{PendingCAPBytePrefix})
 	// copy the time length
 	copy(bz[prefixL:prefixL+8], sdk.Uint64ToBigEndian(uint64(timeBzL)))
 	// copy the time bytes
@@ -139,9 +141,10 @@ func PendingCreateProposalKey(timestamp time.Time, chainID string) []byte {
 	return bz
 }
 
-// ParsePendingCreateProposalKey returns the time and chain ID for a pending client key or an error if unparseable
-func ParsePendingCreateProposalKey(bz []byte) (time.Time, string, error) {
-	expectedPrefix := []byte{PendingCreateProposalBytePrefix}
+// ParsePendingCAPKey returns the time and chain ID for a pending consumer addition proposal key
+// or an error if unparsable
+func ParsePendingCAPKey(bz []byte) (time.Time, string, error) {
+	expectedPrefix := []byte{PendingCAPBytePrefix}
 	prefixL := len(expectedPrefix)
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
 		return time.Time{}, "", fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
@@ -157,15 +160,15 @@ func ParsePendingCreateProposalKey(bz []byte) (time.Time, string, error) {
 	return timestamp, chainID, nil
 }
 
-// PendingStopProposalKey returns the key under which pending consumer chain stop proposals are stored
-func PendingStopProposalKey(timestamp time.Time, chainID string) []byte {
+// PendingCRPKey returns the key under which pending consumer removal proposals are stored
+func PendingCRPKey(timestamp time.Time, chainID string) []byte {
 	timeBz := sdk.FormatTimeBytes(timestamp)
 	timeBzL := len(timeBz)
-	prefixL := len([]byte{PendingStopProposalBytePrefix})
+	prefixL := len([]byte{PendingCRPBytePrefix})
 
 	bz := make([]byte, prefixL+8+timeBzL+len(chainID))
 	// copy the prefix
-	copy(bz[:prefixL], []byte{PendingStopProposalBytePrefix})
+	copy(bz[:prefixL], []byte{PendingCRPBytePrefix})
 	// copy the time length
 	copy(bz[prefixL:prefixL+8], sdk.Uint64ToBigEndian(uint64(timeBzL)))
 	// copy the time bytes
@@ -175,9 +178,9 @@ func PendingStopProposalKey(timestamp time.Time, chainID string) []byte {
 	return bz
 }
 
-// ParsePendingStopProposalKey returns the time and chain ID for a pending consumer chain stop proposal key or an error if unparseable
-func ParsePendingStopProposalKey(bz []byte) (time.Time, string, error) {
-	expectedPrefix := []byte{PendingStopProposalBytePrefix}
+// ParsePendingCRPKey returns the time and chain ID for a pending consumer removal proposal key or an error if unparseable
+func ParsePendingCRPKey(bz []byte) (time.Time, string, error) {
+	expectedPrefix := []byte{PendingCRPBytePrefix}
 	prefixL := len(expectedPrefix)
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
 		return time.Time{}, "", fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
@@ -202,12 +205,12 @@ func UnbondingOpIndexKey(chainID string, valsetUpdateID uint64) []byte {
 }
 
 // ParseUnbondingOpIndexKey parses an unbonding op index key for VSC ID
+// Removes the prefix + chainID from index key and returns only the key part.
 func ParseUnbondingOpIndexKey(key []byte) (vscID []byte, err error) {
-	// This key should be of set length: prefix + hashed chain ID + uint64
-	expectedBytes := 1 + 32 + 8
-	if len(key) != expectedBytes {
+	if len(key) != UnbondingOpIndexKeySize {
 		return nil, sdkerrors.Wrapf(
-			sdkerrors.ErrLogic, "key provided is incorrect: the key has incorrect length, expected %d, got %d", expectedBytes, len(key),
+			sdkerrors.ErrLogic, "key provided is incorrect: the key has incorrect length, expected %d, got %d",
+			UnbondingOpIndexKeySize, len(key),
 		)
 	}
 	return key[1+32:], nil

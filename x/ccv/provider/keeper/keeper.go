@@ -9,7 +9,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
@@ -33,7 +32,7 @@ type Keeper struct {
 	storeKey         sdk.StoreKey
 	cdc              codec.BinaryCodec
 	paramSpace       paramtypes.Subspace
-	scopedKeeper     capabilitykeeper.ScopedKeeper
+	scopedKeeper     ccv.ScopedKeeper
 	channelKeeper    ccv.ChannelKeeper
 	portKeeper       ccv.PortKeeper
 	connectionKeeper ccv.ConnectionKeeper
@@ -46,7 +45,7 @@ type Keeper struct {
 
 // NewKeeper creates a new provider Keeper instance
 func NewKeeper(
-	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper capabilitykeeper.ScopedKeeper,
+	cdc codec.BinaryCodec, key sdk.StoreKey, paramSpace paramtypes.Subspace, scopedKeeper ccv.ScopedKeeper,
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
@@ -153,8 +152,7 @@ func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, 
 		chainID := string(iterator.Key()[1:])
 		clientID := string(iterator.Value())
 
-		stop := cb(ctx, chainID, clientID)
-		if stop {
+		if !cb(ctx, chainID, clientID) {
 			return
 		}
 	}
@@ -260,7 +258,7 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 // and set the channel status to validating.
 // If there is already a ccv channel between the provider and consumer chain then close the channel, so that another channel can be made.
 func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
-	channel, ok := k.channelKeeper.GetChannel(ctx, types.PortID, channelID)
+	channel, ok := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
 	if !ok {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
 	}
@@ -275,9 +273,6 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	// Verify that there isn't already a CCV channel for the consumer chain
 	// If there is, then close the channel.
 	if prevChannel, ok := k.GetChannelToChain(ctx, chainID); ok {
-		if err := k.chanCloseInit(ctx, channelID); err != nil {
-			return err
-		}
 		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, chainID)
 	}
 
@@ -340,9 +335,12 @@ func (k Keeper) IterateOverUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdO
 func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, IDs []uint64) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz, err := json.Marshal(IDs)
+	index := ccv.UnbondingOpsIndex{
+		Ids: IDs,
+	}
+	bz, err := index.Marshal()
 	if err != nil {
-		panic("Failed to JSON marshal")
+		panic("Failed to marshal UnbondingOpsIndex")
 	}
 
 	store.Set(types.UnbondingOpIndexKey(chainID, valsetUpdateID), bz)
@@ -364,13 +362,12 @@ func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb 
 		}
 		vscID = binary.BigEndian.Uint64(vscBytes)
 
-		var ids []uint64
-		err = json.Unmarshal(iterator.Value(), &ids)
-		if err != nil {
+		var index ccv.UnbondingOpsIndex
+		if err = index.Unmarshal(iterator.Value()); err != nil {
 			panic("Failed to unmarshal JSON")
 		}
 
-		if !cb(vscID, ids) {
+		if !cb(vscID, index.GetIds()) {
 			return
 		}
 	}
@@ -385,13 +382,12 @@ func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 		return []uint64{}, false
 	}
 
-	var ids []uint64
-	err := json.Unmarshal(bz, &ids)
-	if err != nil {
-		panic("Failed to JSON unmarshal")
+	var idx ccv.UnbondingOpsIndex
+	if err := idx.Unmarshal(bz); err != nil {
+		panic("Failed to unmarshal UnbondingOpsIndex")
 	}
 
-	return ids, true
+	return idx.GetIds(), true
 }
 
 // This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
@@ -425,11 +421,12 @@ func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64, err error
 	if bz == nil {
 		return nil, nil
 	}
-	err = json.Unmarshal(bz, &ids)
-	if err != nil {
+
+	var ops ccv.MaturedUnbondingOps
+	if err := ops.Unmarshal(bz); err != nil {
 		return nil, err
 	}
-	return ids, nil
+	return ops.GetIds(), nil
 }
 
 // AppendMaturedUnbondingOps adds a list of ids to the list of matured unbonding operation ids
@@ -441,11 +438,13 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) error {
 	if err != nil {
 		return err
 	}
-	// append works also on a nil list
-	existingIds = append(existingIds, ids...)
+
+	maturedOps := ccv.MaturedUnbondingOps{
+		Ids: append(existingIds, ids...),
+	}
 
 	store := ctx.KVStore(k.storeKey)
-	bz, err := json.Marshal(existingIds)
+	bz, err := maturedOps.Marshal()
 	if err != nil {
 		return err
 	}
@@ -483,12 +482,12 @@ func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (strin
 
 // chanCloseInit defines a wrapper function for the channel Keeper's function
 func (k Keeper) chanCloseInit(ctx sdk.Context, channelID string) error {
-	capName := host.ChannelCapabilityPath(types.PortID, channelID)
+	capName := host.ChannelCapabilityPath(ccv.ProviderPortID, channelID)
 	chanCap, ok := k.scopedKeeper.GetCapability(ctx, capName)
 	if !ok {
 		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
-	return k.channelKeeper.ChanCloseInit(ctx, types.PortID, channelID, chanCap)
+	return k.channelKeeper.ChanCloseInit(ctx, ccv.ProviderPortID, channelID, chanCap)
 }
 
 func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
@@ -586,13 +585,13 @@ func (k Keeper) SetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId, bloc
 }
 
 // GetValsetUpdateBlockHeight gets the block height for a given valset update id
-func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) uint64 {
+func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
 	if bz == nil {
-		return 0
+		return 0, false
 	}
-	return binary.BigEndian.Uint64(bz)
+	return binary.BigEndian.Uint64(bz), true
 }
 
 // IterateSlashAcks iterates through the slash acks set in the store
@@ -621,13 +620,15 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 // SetSlashAcks sets the slash acks under the given chain ID
 func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	store := ctx.KVStore(k.storeKey)
-	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(acks)
-	if err != nil {
-		panic("failed to encode json")
-	}
 
-	store.Set(types.SlashAcksKey(chainID), buf.Bytes())
+	sa := types.SlashAcks{
+		Addresses: acks,
+	}
+	bz, err := sa.Marshal()
+	if err != nil {
+		panic("failed to marshal SlashAcks")
+	}
+	store.Set(types.SlashAcksKey(chainID), bz)
 }
 
 // GetSlashAcks returns the slash acks stored under the given chain ID
@@ -637,16 +638,12 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	if bz == nil {
 		return nil
 	}
-
-	var acks []string
-	buf := bytes.NewBuffer(bz)
-
-	err := json.NewDecoder(buf).Decode(&acks)
-	if err != nil {
+	var acks types.SlashAcks
+	if err := acks.Unmarshal(bz); err != nil {
 		panic(fmt.Errorf("failed to decode json: %w", err))
 	}
 
-	return acks
+	return acks.GetAddresses()
 }
 
 // EmptySlashAcks empties and returns the slash acks for a given chain ID
@@ -670,15 +667,13 @@ func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks [
 
 		chainID := string(iterator.Key()[1:])
 
-		var data []string
-		buf := bytes.NewBuffer(iterator.Value())
-
-		err := json.NewDecoder(buf).Decode(&data)
+		var sa types.SlashAcks
+		err := sa.Unmarshal(iterator.Value())
 		if err != nil {
-			panic(fmt.Errorf("failed to decode json: %w", err))
+			panic(fmt.Errorf("failed to unmarshal SlashAcks: %w", err))
 		}
 
-		if !cb(chainID, data) {
+		if !cb(chainID, sa.GetAddresses()) {
 			return
 		}
 	}
@@ -701,14 +696,14 @@ func (k Keeper) SetInitChainHeight(ctx sdk.Context, chainID string, height uint6
 }
 
 // GetInitChainHeight returns the provider block height when the given consumer chain was initiated
-func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) uint64 {
+func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.InitChainHeightKey(chainID))
 	if bz == nil {
-		return 0
+		return 0, false
 	}
 
-	return binary.BigEndian.Uint64(bz)
+	return binary.BigEndian.Uint64(bz), true
 }
 
 // DeleteInitChainHeight deletes the block height value for which the given consumer chain's channel was established

@@ -1,37 +1,39 @@
 package keeper_test
 
 import (
-	app "github.com/cosmos/interchain-security/app/consumer"
+	"testing"
+
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	"github.com/stretchr/testify/require"
 )
 
-func (suite *KeeperTestSuite) TestParams() {
-	// suite setup initializes genesis
-	expParams := types.NewParams(true, 1000, "", "") // these are the default params
+// TestParams tests the default params set for a consumer chain, and related getters/setters
+func TestParams(t *testing.T) {
+	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	defer ctrl.Finish()
+	consumerKeeper.SetParams(ctx, types.DefaultParams())
 
-	params := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetParams(suite.consumerChain.GetContext())
-	suite.Require().Equal(expParams, params)
+	expParams := types.NewParams(false, 1000, "", "") // these are the default params, IBC suite independently sets enabled=true
+
+	params := consumerKeeper.GetParams(ctx)
+	require.Equal(t, expParams, params)
 
 	newParams := types.NewParams(false, 1000, "abc", "def")
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.SetParams(suite.consumerChain.GetContext(), newParams)
-	params = suite.consumerChain.App.(*app.App).ConsumerKeeper.GetParams(suite.consumerChain.GetContext())
-	suite.Require().Equal(newParams, params)
+	consumerKeeper.SetParams(ctx, newParams)
+	params = consumerKeeper.GetParams(ctx)
+	require.Equal(t, newParams, params)
 
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.
-		SetBlocksPerDistributionTransmission(suite.consumerChain.GetContext(), 10)
-	gotBPDT := suite.consumerChain.App.(*app.App).ConsumerKeeper.
-		GetBlocksPerDistributionTransmission(suite.consumerChain.GetContext())
-	suite.Require().Equal(gotBPDT, int64(10))
+	consumerKeeper.SetBlocksPerDistributionTransmission(ctx, 10)
+	gotBPDT := consumerKeeper.GetBlocksPerDistributionTransmission(ctx)
+	require.Equal(t, gotBPDT, int64(10))
 
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.
-		SetDistributionTransmissionChannel(suite.consumerChain.GetContext(), "foobarbaz")
-	gotChan := suite.consumerChain.App.(*app.App).ConsumerKeeper.
-		GetDistributionTransmissionChannel(suite.consumerChain.GetContext())
-	suite.Require().Equal(gotChan, "foobarbaz")
+	consumerKeeper.SetDistributionTransmissionChannel(ctx, "foobarbaz")
+	gotChan := consumerKeeper.GetDistributionTransmissionChannel(ctx)
+	require.Equal(t, gotChan, "foobarbaz")
 
-	suite.consumerChain.App.(*app.App).ConsumerKeeper.
-		SetProviderFeePoolAddrStr(suite.consumerChain.GetContext(), "foobar")
-	gotAddr := suite.consumerChain.App.(*app.App).ConsumerKeeper.
-		GetProviderFeePoolAddrStr(suite.consumerChain.GetContext())
-	suite.Require().Equal(gotAddr, "foobar")
+	consumerKeeper.SetProviderFeePoolAddrStr(ctx, "foobar")
+	gotAddr := consumerKeeper.
+		GetProviderFeePoolAddrStr(ctx)
+	require.Equal(t, gotAddr, "foobar")
 }

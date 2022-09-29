@@ -10,9 +10,6 @@ const (
 	// ModuleName defines the CCV consumer module name
 	ModuleName = "ccvconsumer"
 
-	// PortID is the default port id that consumer module binds to
-	PortID = "consumer"
-
 	// StoreKey is the store key string for IBC consumer
 	StoreKey = ModuleName
 
@@ -88,8 +85,8 @@ func UnbondingTimeKey() []byte {
 	return []byte{UnbondingTimeByteKey}
 }
 
-// ProviderClientKey returns the key for storing clientID of the provider
-func ProviderClientKey() []byte {
+// ProviderClientIDKey returns the key for storing clientID of the provider
+func ProviderClientIDKey() []byte {
 	return []byte{ProviderClientByteKey}
 }
 

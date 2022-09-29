@@ -10,6 +10,18 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 )
 
+const (
+	// DefaultTrustingPeriod is duration of the period since
+	// the LastestTimestamp during which the submitted headers are valid for upgrade
+	DefaultTrustingPeriod = 3 * 7 * 24 * time.Hour
+
+	// DefaultUnbondingPeriod of the staking unbonding period
+	DefaultUnbondingPeriod = 4 * 7 * 24 * time.Hour
+
+	// DefaultMaxClockDrift defines how much new (untrusted) header's Time can drift into the future.
+	DefaultMaxClockDrift = 10 * time.Second
+)
+
 var (
 	KeyTemplateClient = []byte("TemplateClient")
 )
@@ -32,7 +44,7 @@ func DefaultParams() Params {
 	// these fields will be populated during proposal handler.
 	return NewParams(
 		ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			time.Second*10, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, true, true),
+			DefaultMaxClockDrift, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, true, true),
 	)
 }
 
@@ -62,8 +74,8 @@ func validateTemplateClient(i interface{}) error {
 
 	// populate zeroed fields with valid fields
 	copiedClient.ChainId = "chainid"
-	copiedClient.TrustingPeriod = 3 * 7 * 24 * time.Hour
-	copiedClient.UnbondingPeriod = 4 * 7 * 24 * time.Hour
+	copiedClient.TrustingPeriod = DefaultTrustingPeriod
+	copiedClient.UnbondingPeriod = DefaultUnbondingPeriod
 	copiedClient.LatestHeight = clienttypes.NewHeight(0, 1)
 
 	if err := copiedClient.Validate(); err != nil {

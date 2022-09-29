@@ -6,6 +6,9 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
+// about 2 hr at 7.6 seconds per blocks
+const DefaultBlocksPerDistributionTransmission = 1000
+
 var (
 	KeyEnabled                           = []byte("Enabled")
 	KeyBlocksPerDistributionTransmission = []byte("BlocksPerDistributionTransmission")
@@ -33,7 +36,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 func DefaultParams() Params {
 	return NewParams(
 		false,
-		1000, // about 2 hr at 7.6 seconds per blocks
+		DefaultBlocksPerDistributionTransmission,
 		"",
 		"",
 	)
