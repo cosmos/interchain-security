@@ -438,12 +438,12 @@ func (tr TestRun) addChainToRelayer(
 	action addChainToRelayerAction,
 	verbose bool,
 ) {
-	valIp := tr.getValidatorIP(action.chain, action.validator)
+	queryNodeIP := tr.getQueryNodeIP(action.chain)
 	chainId := tr.chainConfigs[action.chain].chainId
-	keyName := "validator" + fmt.Sprint(action.validator)
-	rpcAddr := "http://" + valIp + ":26658"
-	grpcAddr := "tcp://" + valIp + ":9091"
-	wsAddr := "ws://" + valIp + ":26657/websocket"
+	keyName := "query"
+	rpcAddr := "http://" + queryNodeIP + ":26658"
+	grpcAddr := "tcp://" + queryNodeIP + ":9091"
+	wsAddr := "ws://" + queryNodeIP + ":26657/websocket"
 
 	chainConfig := fmt.Sprintf(hermesChainConfigTemplate,
 		grpcAddr,
