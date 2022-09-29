@@ -43,42 +43,33 @@ func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak govtypes.AccountKeep
 
 func (am AppModule) EndBlock(ctx sdk.Context, request abci.RequestEndBlock) []abci.ValidatorUpdate {
 
-	am.keeper.IterateInactiveProposalsQueue(ctx, ctx.BlockHeader().Time, func(proposal govtypes.Proposal) bool {
-		//if there are forbidden proposals in inactive proposals queue, refund deposit and delete proposal from all storages
-		deleteForbiddenProposal(ctx, am, proposal, false)
-		return false
-	})
-
 	am.keeper.IterateActiveProposalsQueue(ctx, ctx.BlockHeader().Time, func(proposal govtypes.Proposal) bool {
 		//if there are forbidden proposals in active proposals queue, refund deposit, delete votes for that proposal
 		//and delete proposal from all storages
-		deleteForbiddenProposal(ctx, am, proposal, true)
+		deleteForbiddenProposal(ctx, am, proposal)
 		return false
 	})
 
 	return am.AppModule.EndBlock(ctx, request)
 }
 
-func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govtypes.Proposal, isActive bool) {
+func deleteForbiddenProposal(ctx sdk.Context, am AppModule, proposal govtypes.Proposal) {
 	if am.isProposalWhitelisted(proposal.GetContent()) {
 		return
 	}
 
-	eventType := govtypes.EventTypeInactiveProposal
-	//if the proposal is active, delete the votes related to it
-	if isActive {
-		//Tally's return result won't be used in decision if the tokens will be burned or refunded (they are always refunded), but
-		//this function needs to be called to delete the votes related to the given proposal, since the deleteVote function is
-		// private and cannot be called directly from the overridden app module
-		eventType = govtypes.EventTypeActiveProposal
-		am.keeper.Tally(ctx, proposal)
-	}
+	//delete the votes related to the proposal calling Tally
+	//Tally's return result won't be used in decision if the tokens will be burned or refunded (they are always refunded), but
+	//this function needs to be called to delete the votes related to the given proposal, since the deleteVote function is
+	// private and cannot be called directly from the overridden app module
+	am.keeper.Tally(ctx, proposal)
+
 	am.keeper.DeleteProposal(ctx, proposal.ProposalId)
 	am.keeper.RefundDeposits(ctx, proposal.ProposalId)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			eventType,
+			govtypes.EventTypeActiveProposal,
 			sdk.NewAttribute(govtypes.AttributeKeyProposalID, fmt.Sprintf("%d", proposal.ProposalId)),
 			sdk.NewAttribute(govtypes.AttributeKeyProposalResult, AttributeValueProposalForbidden),
 		),
