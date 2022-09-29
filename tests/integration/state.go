@@ -127,7 +127,7 @@ func (tr TestRun) getBlockHeight(chain chainID) uint {
 
 		"query", "tendermint-validator-set",
 
-		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
+		`--node`, tr.getQueryNode(chain),
 	).CombinedOutput()
 
 	if err != nil {
@@ -229,7 +229,7 @@ func (tr TestRun) getReward(chain chainID, validator validatorID, blockHeight ui
 		tr.validatorConfigs[validator].delAddress,
 
 		`--height`, fmt.Sprint(blockHeight),
-		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
+		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -252,7 +252,7 @@ func (tr TestRun) getBalance(chain chainID, validator validatorID) uint {
 		"query", "bank", "balances",
 		tr.validatorConfigs[validator].delAddress,
 
-		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
+		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -275,7 +275,7 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 		"query", "gov", "proposal",
 		fmt.Sprint(proposal),
 
-		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
+		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -360,7 +360,7 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 
 		"query", "tendermint-validator-set",
 
-		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
+		`--node`, tr.getQueryNode(chain),
 	).CombinedOutput()
 
 	if err != nil {
@@ -406,7 +406,7 @@ func (tr TestRun) getRepresentativePower(chain chainID, validator validatorID) u
 		"query", "staking", "validator",
 		tr.validatorConfigs[validator].valoperAddress,
 
-		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
+		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -427,7 +427,7 @@ func (tr TestRun) getParam(chain chainID, param Param) string {
 		param.Subspace,
 		param.Key,
 
-		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
+		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
 	).CombinedOutput()
 
@@ -440,16 +440,12 @@ func (tr TestRun) getParam(chain chainID, param Param) string {
 	return value.String()
 }
 
-// Gets a default validator for txs and queries using the first subdirectory
-// of the directory of the input chain, which will be the home directory
-// of one of the validators.
-// TODO: Best solution for default validator fulfilling queries etc. is a dedicated, non validating, full node.
-// See https://github.com/cosmos/interchain-security/issues/263
+// Gets a default validator for input chain by parsing node home directories.
 func (s TestRun) getDefaultValidator(chain chainID) validatorID {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c",
 		`cd /`+string(s.chainConfigs[chain].chainId)+
-			`; ls -d */ | awk '{print $1}' | head -n 1`).CombinedOutput()
+			`; ls -d */ | awk '/validator/{print $1}' | head -n 1`).CombinedOutput()
 
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
@@ -459,7 +455,7 @@ func (s TestRun) getDefaultValidator(chain chainID) validatorID {
 	bzPrefixTrimmed := strings.TrimPrefix(string(bz), "validator")
 	bzFullyTrimmed := bzPrefixTrimmed[:len(bzPrefixTrimmed)-2]
 	if bzPrefixTrimmed == string(bz) || bzFullyTrimmed == string(bz) {
-		log.Fatal("unexpected validator subdirectory name: ", bz)
+		log.Fatalf("unexpected validator subdirectory name: %s ", bz)
 	}
 
 	return validatorID(bzFullyTrimmed)
@@ -476,3 +472,19 @@ func (tr TestRun) getValidatorIP(chain chainID, validator validatorID) string {
 func (tr TestRun) getValidatorHome(chain chainID, validator validatorID) string {
 	return `/` + string(tr.chainConfigs[chain].chainId) + `/validator` + fmt.Sprint(validator)
 }
+
+// getQueryNode returns query node tcp address on chain.
+func (tr TestRun) getQueryNode(chain chainID) string {
+	return fmt.Sprintf("tcp://%s:26658", tr.getQueryNodeIP(chain))
+}
+
+// getQueryNodeIP returns query node IP for chain,
+// ipSuffix is hardcoded to be 253 on all query nodes.
+func (tr TestRun) getQueryNodeIP(chain chainID) string {
+	return fmt.Sprintf("%s.253", tr.chainConfigs[chain].ipPrefix)
+}
+
+// getQueryNodeHome returns query node home on chain.
+// func (tr TestRun) getQueryNodeHome(chain chainID) string {
+// 	return fmt.Sprintf("/%s/query", tr.chainConfigs[chain].chainId)
+// }

@@ -377,7 +377,7 @@ func (tr TestRun) startConsumerChain(
 		"query", "provider", "consumer-genesis",
 		string(tr.chainConfigs[action.consumerChain].chainId),
 
-		`--node`, tr.getValidatorNode(action.providerChain, tr.getDefaultValidator(action.providerChain)),
+		`--node`, tr.getQueryNode(action.providerChain),
 		`-o`, `json`,
 	)
 
