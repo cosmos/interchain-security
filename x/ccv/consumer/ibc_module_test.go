@@ -40,60 +40,60 @@ func TestOnChanOpenInit(t *testing.T) {
 	testCases := []struct {
 		name string
 		// Test-case specific function that mutates method parameters and setups expected mock calls
-		setup   func(sdk.Context, *consumerkeeper.Keeper, *params, testkeeper.MockedKeepers)
+		setup   func(*consumerkeeper.Keeper, *params, testkeeper.MockedKeepers)
 		expPass bool
 	}{
 		{
-			"success", func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			"success", func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
 					mocks.MockScopedKeeper.EXPECT().ClaimCapability(
-						ctx, params.chanCap, host.ChannelCapabilityPath(
+						params.ctx, params.chanCap, host.ChannelCapabilityPath(
 							params.portID, params.channelID)).Return(nil).Times(1),
 					mocks.MockConnectionKeeper.EXPECT().GetConnection(
-						ctx, "connectionIDToProvider").Return(
+						params.ctx, "connectionIDToProvider").Return(
 						conntypes.ConnectionEnd{ClientId: "clientIDToProvider"}, true).Times(1),
 				)
 			}, true,
 		},
 		{
 			"invalid: channel to provider already established",
-			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
-				keeper.SetProviderChannel(ctx, "existingProviderChanID")
+			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+				keeper.SetProviderChannel(params.ctx, "existingProviderChanID")
 			}, false,
 		},
 		{
 			"invalid: UNORDERED channel",
-			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				params.order = channeltypes.UNORDERED
 			}, false,
 		},
 		{
 			"invalid port ID, not CCV port",
-			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				params.portID = "someDingusPortID"
 			}, false,
 		},
 		{
 			"invalid version",
-			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				params.version = "someDingusVer"
 			}, false,
 		},
 		{
 			"invalid counterparty port ID",
-			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				params.counterparty.PortId = "someOtherDingusPortID"
 			}, false,
 		},
 		{
 			"invalid clientID to provider",
-			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
 					mocks.MockScopedKeeper.EXPECT().ClaimCapability(
-						ctx, params.chanCap, host.ChannelCapabilityPath(
+						params.ctx, params.chanCap, host.ChannelCapabilityPath(
 							params.portID, params.channelID)).Return(nil).Times(1),
 					mocks.MockConnectionKeeper.EXPECT().GetConnection(
-						ctx, "connectionIDToProvider").Return(
+						params.ctx, "connectionIDToProvider").Return(
 						conntypes.ConnectionEnd{ClientId: "unexpectedClientID"}, true).Times(1), // unexpected clientID
 				)
 			}, false,
@@ -122,7 +122,7 @@ func TestOnChanOpenInit(t *testing.T) {
 			version:        ccv.Version,
 		}
 
-		tc.setup(ctx, &consumerKeeper, &params, mocks)
+		tc.setup(&consumerKeeper, &params, mocks)
 
 		err := consumerModule.OnChanOpenInit(
 			params.ctx,
