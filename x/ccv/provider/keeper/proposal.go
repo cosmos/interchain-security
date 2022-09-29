@@ -284,7 +284,7 @@ func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.Consumer
 			propsToExecute = append(propsToExecute, prop)
 			return true
 		}
-		return true
+		return false
 	})
 
 	return propsToExecute

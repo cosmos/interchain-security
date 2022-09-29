@@ -23,7 +23,7 @@ message GenesisState {
   // MaturingPackets nil on new chain, filled on restart.
   repeated MaturingVSCPacket maturing_packets = 7
       [ (gogoproto.nullable) = false ];
-  // InitialValset filled in on new chain, manually filled in on restart.
+  // InitialValset filled in on new chain and on restart.
   repeated .tendermint.abci.ValidatorUpdate initial_val_set = 8
       [ (gogoproto.nullable) = false ];
   // HeightToValsetUpdateId nil on new chain, filled on restart.
@@ -37,8 +37,8 @@ message GenesisState {
  [ (gogoproto.nullable) = false ];
 }
 
-// UnbondingSequence defines the genesis information for each unbonding packet
-// sequence.
+// MaturingVSCPacket defines the genesis information for the
+// unbonding VSC packet
 message MaturingVSCPacket {
   uint64 vscId = 1;
   uint64 maturity_time = 2;

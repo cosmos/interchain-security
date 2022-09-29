@@ -13,26 +13,25 @@ import "interchain_security/ccv/consumer/v1/genesis.proto";
 
 // GenesisState defines the CCV provider chain genesis state
 message GenesisState {
-  // empty for a completely new chain
+  // empty for a new chain
   uint64 valset_update_id = 1; 
-  // empty for a completely new chain
+  // empty for a new chain
   repeated ConsumerState consumer_states = 2 [ 
     (gogoproto.nullable) = false,
     (gogoproto.moretags) = "yaml:\"consumer_states\""
   ];
-  // UnbondingOps defines the consumer chains that are still unbonding
-  // empty for a completely new chain
+  // empty for a new chain
   repeated interchain_security.ccv.v1.UnbondingOp unbonding_ops = 3
   [ (gogoproto.nullable) = false ];
-  // empty for a completely new chain
+  // empty for a new chain
   interchain_security.ccv.v1.MaturedUnbondingOps mature_unbonding_ops = 4;
-    // empty for a completely new chain
+    // empty for a new chain
   repeated ValsetUpdateIdToHeight valset_update_id_to_height = 5
   [ (gogoproto.nullable) = false ];
-  // empty for a completely new chain
+  // empty for a new chain
   repeated ConsumerAdditionProposal consumer_addition_proposals = 6
   [ (gogoproto.nullable) = false ];  
-  // empty for a completely new chain
+  // empty for a new chain
   repeated ConsumerRemovalProposal consumer_removal_proposals = 7
   [ (gogoproto.nullable) = false ];
   Params params = 8
@@ -47,6 +46,7 @@ message ConsumerState {
   string channel_id = 2;
   // ClientID defines the IBC client ID for the consumer chain
   string client_id = 3;
+  // InitalHeight defines the initial block height for the consumer chain
   uint64 initial_height = 4;
   // LockUnbondingOnTimeout defines whether the unbonding funds should be released for this
   // chain in case of a IBC channel timeout

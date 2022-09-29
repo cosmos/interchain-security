@@ -23,8 +23,8 @@ func TestInitGenesis(t *testing.T) {
 	consumerChainID := "consumer"
 	consumerChainID2 := "consumer2"
 
-	expClientIDToConsumer := "tendermint-07"
-	expChannelIDToConsumer := "channel-0"
+	expClientID := "tendermint-07"
+	expChannelID := "channel-0"
 
 	expHeight := uint64(5)
 	expVSCID := uint64(1)
@@ -53,8 +53,8 @@ func TestInitGenesis(t *testing.T) {
 		[]providertypes.ConsumerState{
 			{
 				ChainId:                consumerChainID,
-				ClientId:               expClientIDToConsumer,
-				ChannelId:              expChannelIDToConsumer,
+				ClientId:               expClientID,
+				ChannelId:              expChannelID,
 				InitialHeight:          expHeight,
 				LockUnbondingOnTimeout: true,
 				SlashDowntimeAck:       expSlashAcks,
@@ -64,7 +64,7 @@ func TestInitGenesis(t *testing.T) {
 				ConsumerGenesis: *consumertypes.DefaultGenesisState(),
 			}, {
 				ChainId:              consumerChainID2,
-				ClientId:             expClientIDToConsumer,
+				ClientId:             expClientID,
 				PendingValsetChanges: expVSCPackets,
 				ConsumerGenesis:      *consumertypes.DefaultGenesisState(),
 			},
@@ -108,8 +108,8 @@ func TestInitGenesis(t *testing.T) {
 	require.Equal(t, expHeight, initHeight)
 	channelID, found := pk.GetChainToChannel(ctx, consumerChainID)
 	require.True(t, found)
-	require.Equal(t, expChannelIDToConsumer, channelID)
-	_, found = pk.GetChannelToChain(ctx, expChannelIDToConsumer)
+	require.Equal(t, expChannelID, channelID)
+	_, found = pk.GetChannelToChain(ctx, expChannelID)
 	require.True(t, found)
 	_, found = pk.GetConsumerClientId(ctx, consumerChainID)
 	require.True(t, found)
@@ -154,11 +154,11 @@ func TestExportGenesis(t *testing.T) {
 	// consumer chain related states
 	consumerChainID := "consumer"
 	consumerChainID2 := "consumer2"
-	expClientIDToConsumer := "tendermint-07"
-	expChannelIDToConsumer := "channel-0"
-	pk.SetConsumerClientId(ctx, consumerChainID, expClientIDToConsumer)
-	pk.SetConsumerClientId(ctx, consumerChainID2, expClientIDToConsumer)
-	pk.SetChainToChannel(ctx, consumerChainID, expChannelIDToConsumer)
+	expClientID := "tendermint-07"
+	expChannelID := "channel-0"
+	pk.SetConsumerClientId(ctx, consumerChainID, expClientID)
+	pk.SetConsumerClientId(ctx, consumerChainID2, expClientID)
+	pk.SetChainToChannel(ctx, consumerChainID, expChannelID)
 	pk.SetConsumerGenesis(ctx, consumerChainID, *consumertypes.DefaultGenesisState())
 	pk.SetConsumerGenesis(ctx, consumerChainID2, *consumertypes.DefaultGenesisState())
 	pk.SetLockUnbondingOnTimeout(ctx, consumerChainID)
@@ -195,8 +195,8 @@ func TestExportGenesis(t *testing.T) {
 		[]providertypes.ConsumerState{
 			{
 				ChainId:                consumerChainID,
-				ClientId:               expClientIDToConsumer,
-				ChannelId:              expChannelIDToConsumer,
+				ClientId:               expClientID,
+				ChannelId:              expChannelID,
 				LockUnbondingOnTimeout: true,
 				SlashDowntimeAck:       expSlashAcks,
 				UnbondingOpsIndex: []providertypes.UnbondingOpIndex{
@@ -206,7 +206,7 @@ func TestExportGenesis(t *testing.T) {
 			}, {
 				ChainId:              consumerChainID2,
 				PendingValsetChanges: expVSCPackets,
-				ClientId:             expClientIDToConsumer,
+				ClientId:             expClientID,
 				ConsumerGenesis:      *consumertypes.DefaultGenesisState(),
 			},
 		},

@@ -118,21 +118,18 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 	}
 
 	// get the current validator set
-	valset, err := k.ValidatorUpdates(ctx)
+	valset, err := k.GetValidatorUpdates(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("fail to retrieve the validator set: %s", err))
 	}
 
-	// when the channel is already established the CCV module states are exported
-	// the client and consensus states are exported independenlty by the IBC module
+	// when a channel exists the CCV module states are exported
 	if channelID, ok := k.GetProviderChannel(ctx); ok {
 		clientID, ok := k.GetProviderClientID(ctx)
 		if !ok {
 			panic("provider client does not exist")
 		}
 
-		// when the channel is already established, we export only the CCV module states;
-		// the IBC module exports the client and consensus states
 		maturingPackets := []types.MaturingVSCPacket{}
 		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) bool {
 			mat := types.MaturingVSCPacket{
@@ -173,8 +170,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			params,
 		)
 	} else {
-		// if the channel isn't established, the client, consensus states
-		// and the pending slashing requests are exported
+		// if there is no channel client, consensus states and
+		// the pending slashing requests are exported
 		clientID, ok := k.GetProviderClientID(ctx)
 		// if provider clientID and channelID don't exist on the consumer chain, then CCV protocol is disabled for this chain
 		// return a disabled genesis state
