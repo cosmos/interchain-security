@@ -159,8 +159,8 @@ func TestExportGenesis(t *testing.T) {
 	pk.SetConsumerClientId(ctx, consumerChainID, expClientID)
 	pk.SetConsumerClientId(ctx, consumerChainID2, expClientID)
 	pk.SetChainToChannel(ctx, consumerChainID, expChannelID)
-	pk.SetConsumerGenesis(ctx, consumerChainID, *consumertypes.DefaultGenesisState())
-	pk.SetConsumerGenesis(ctx, consumerChainID2, *consumertypes.DefaultGenesisState())
+	require.NoError(t, pk.SetConsumerGenesis(ctx, consumerChainID, *consumertypes.DefaultGenesisState()))
+	require.NoError(t, pk.SetConsumerGenesis(ctx, consumerChainID2, *consumertypes.DefaultGenesisState()))
 	pk.SetLockUnbondingOnTimeout(ctx, consumerChainID)
 
 	// unbonding operations states
@@ -168,15 +168,15 @@ func TestExportGenesis(t *testing.T) {
 	expUbdOp := ccv.UnbondingOp{Id: expVSCID, UnbondingConsumerChains: []string{consumerChainID}}
 	expUbdIndex := []uint64{0, 1, 2}
 	pk.SetValidatorSetUpdateId(ctx, uint64(1))
-	pk.SetUnbondingOp(ctx, expUbdOp)
+	require.NoError(t, pk.SetUnbondingOp(ctx, expUbdOp))
 	pk.SetUnbondingOpIndex(ctx, consumerChainID, expVSCID, expUbdIndex)
-	pk.AppendMaturedUnbondingOps(ctx, expUbdIndex)
+	require.NoError(t, pk.AppendMaturedUnbondingOps(ctx, expUbdIndex))
 
 	// pending consumer chain proposals
 	expTimestamp := time.Now().UTC().Add(time.Hour)
 	expAddProp := types.ConsumerAdditionProposal{ChainId: consumerChainID, SpawnTime: expTimestamp}
 	expRemProp := types.ConsumerRemovalProposal{ChainId: consumerChainID, StopTime: expTimestamp}
-	pk.SetPendingConsumerAdditionProp(ctx, &expAddProp)
+	require.NoError(t, pk.SetPendingConsumerAdditionProp(ctx, &expAddProp))
 	pk.SetPendingConsumerRemovalProp(ctx, consumerChainID, expTimestamp)
 
 	// pending VSCPacket state

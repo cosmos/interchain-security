@@ -29,6 +29,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 
 	for _, cccp := range genState.ConsumerAdditionProposals {
+		// prevent implicit memory aliasing
+		cccp := cccp
 		if err := k.SetPendingConsumerAdditionProp(ctx, &cccp); err != nil {
 			panic(fmt.Errorf("pending create consumer chain proposal could not be persisted: %w", err))
 		}
@@ -43,7 +45,9 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 
 	if genState.MatureUnbondingOps != nil {
-		k.AppendMaturedUnbondingOps(ctx, genState.MatureUnbondingOps.Ids)
+		if err := k.AppendMaturedUnbondingOps(ctx, genState.MatureUnbondingOps.Ids); err != nil {
+			panic(err)
+		}
 	}
 
 	// Set initial state for each consumer chain

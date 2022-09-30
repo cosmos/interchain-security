@@ -90,13 +90,10 @@ func (suite *ConsumerKeeperTestSuite) TestConsumerGenesis() {
 		ccv.ConsumerPortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
 	suite.consumerChain.App.(*app.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
-
-	// mocking the fact that consumer chain validators should be provider chain validators
-	// TODO: Fix testing suite so we can initialize both chains with the same validator set
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
 
 	restartGenesis := suite.consumerChain.App.(*app.App).ConsumerKeeper.ExportGenesis(suite.consumerChain.GetContext())
-	restartGenesis.InitialValSet = valUpdates
+	suite.Require().Equal(valUpdates, restartGenesis.InitialValSet)
 
 	// ensure reset genesis is set correctly
 	providerChannel := suite.path.EndpointA.ChannelID

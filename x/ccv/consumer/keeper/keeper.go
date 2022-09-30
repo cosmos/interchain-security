@@ -457,5 +457,5 @@ func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashReque
 	sr := k.GetPendingSlashRequests(ctx)
 	srArray := sr.GetRequests()
 	srArray = append(srArray, req)
-	k.SetPendingSlashRequests(ctx, types.SlashRequests{srArray})
+	k.SetPendingSlashRequests(ctx, types.SlashRequests{Requests: srArray})
 }
