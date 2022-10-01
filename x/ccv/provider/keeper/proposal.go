@@ -23,6 +23,10 @@ import (
 // HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
 // If the spawn time has already passed, then set the consumer chain. Otherwise store the client
 // as a pending client, and set once spawn time has passed.
+//
+// Note: This method implements SpawnConsumerChainProposalHandler in spec.
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-spccprop1
+// Spec tag: [CCV-PCF-SPCCPROP.1]
 func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
 	if !ctx.BlockTime().Before(p.SpawnTime) {
 		// lockUbdOnTimeout is set to be false, regardless of what the proposal says, until we can specify and test issues around this use case more thoroughly
@@ -37,8 +41,63 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 	return nil
 }
 
-// HandleConsumerRemovalProposal stops a consumer chain and releases the outstanding unbonding operations.
+// CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
+// on top of the CCV client to ensure connection with the right consumer chain.
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
+// Spec tag: [CCV-PCF-CRCLIENT.1]
+func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
+	// check that a client for this chain does not exist
+	if _, found := k.GetConsumerClientId(ctx, chainID); found {
+		// drop the proposal
+		return nil
+	}
+
+	// Use the unbonding period on the provider to compute the unbonding period on the consumer
+	unbondingPeriod := utils.ComputeConsumerUnbondingPeriod(k.stakingKeeper.UnbondingTime(ctx))
+
+	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
+	clientState := k.GetTemplateClient(ctx)
+	clientState.ChainId = chainID
+	clientState.LatestHeight = initialHeight
+	clientState.TrustingPeriod = unbondingPeriod / utils.TrustingPeriodFraction
+	clientState.UnbondingPeriod = unbondingPeriod
+
+	// TODO: Allow for current validators to set different keys
+	consensusState := ibctmtypes.NewConsensusState(
+		ctx.BlockTime(),
+		commitmenttypes.NewMerkleRoot([]byte(ibctmtypes.SentinelRoot)),
+		ctx.BlockHeader().NextValidatorsHash,
+	)
+
+	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)
+	if err != nil {
+		return err
+	}
+	k.SetConsumerClientId(ctx, chainID, clientID)
+
+	consumerGen, err := k.MakeConsumerGenesis(ctx)
+	if err != nil {
+		return err
+	}
+	err = k.SetConsumerGenesis(ctx, chainID, consumerGen)
+	if err != nil {
+		return err
+	}
+
+	// store LockUnbondingOnTimeout flag
+	if lockUbdOnTimeout {
+		k.SetLockUnbondingOnTimeout(ctx, chainID)
+	}
+	return nil
+}
+
+// HandleConsumerRemovalProposal stops a consumer chain and released the outstanding unbonding operations.
 // If the stop time hasn't already passed, it stores the proposal as a pending proposal.
+//
+// This method implements StopConsumerChainProposalHandler from spec.
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stccprop1
+// Spec tag: [CCV-PCF-STCCPROP.1]
 func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.ConsumerRemovalProposal) error {
 
 	if !ctx.BlockTime().Before(p.StopTime) {
@@ -51,6 +110,10 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 
 // StopConsumerChain cleans up the states for the given consumer chain ID and, if the given lockUbd is false,
 // it completes the outstanding unbonding operations lock by the consumer chain.
+//
+// This method implements StopConsumerChain from spec.
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stcc1
+// Spec tag: [CCV-PCF-STCC.1]
 func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, closeChan bool) (err error) {
 	// check that a client for chainID exists
 	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
@@ -125,51 +188,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	return nil
 }
 
-// CreateConsumerClient will create the CCV client for the given consumer chain. The CCV channel must be built
-// on top of the CCV client to ensure connection with the right consumer chain.
-func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
-	// check that a client for this chain does not exist
-	if _, found := k.GetConsumerClientId(ctx, chainID); found {
-		// drop the proposal
-		return nil
-	}
-
-	// Use the unbonding period on the provider to
-	// compute the unbonding period on the consumer
-	unbondingTime := utils.ComputeConsumerUnbondingPeriod(k.stakingKeeper.UnbondingTime(ctx))
-
-	// create clientstate by getting template client from parameters and filling in zeroed fields from proposal.
-	clientState := k.GetTemplateClient(ctx)
-	clientState.ChainId = chainID
-	clientState.LatestHeight = initialHeight
-	clientState.TrustingPeriod = unbondingTime / utils.TrustingPeriodFraction
-	clientState.UnbondingPeriod = unbondingTime
-
-	// TODO: Allow for current validators to set different keys
-	consensusState := ibctmtypes.NewConsensusState(ctx.BlockTime(), commitmenttypes.NewMerkleRoot([]byte(ibctmtypes.SentinelRoot)), ctx.BlockHeader().NextValidatorsHash)
-	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)
-	if err != nil {
-		return err
-	}
-
-	k.SetConsumerClientId(ctx, chainID, clientID)
-	consumerGen, err := k.MakeConsumerGenesis(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = k.SetConsumerGenesis(ctx, chainID, consumerGen)
-	if err != nil {
-		return err
-	}
-
-	// store LockUnbondingOnTimeout flag
-	if lockUbdOnTimeout {
-		k.SetLockUnbondingOnTimeout(ctx, chainID)
-	}
-	return nil
-}
-
+// MakeConsumerGenesis constructs a consumer genesis state.
 func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisState, err error) {
 	unbondingTime := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
@@ -241,16 +260,16 @@ func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, clientInfo *type
 }
 
 // GetPendingConsumerAdditionProp retrieves a pending proposal to create a consumer chain client (by spawn time and chain id)
-func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.Time, chainID string) types.ConsumerAdditionProposal {
+func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.Time,
+	chainID string) (prop types.ConsumerAdditionProposal, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingCAPKey(spawnTime, chainID))
 	if len(bz) == 0 {
-		return types.ConsumerAdditionProposal{}
+		return prop, false
 	}
-	var clientInfo types.ConsumerAdditionProposal
-	k.cdc.MustUnmarshal(bz, &clientInfo)
+	k.cdc.MustUnmarshal(bz, &prop)
 
-	return clientInfo
+	return prop, true
 }
 
 func (k Keeper) PendingConsumerAdditionPropIterator(ctx sdk.Context) sdk.Iterator {
@@ -258,9 +277,12 @@ func (k Keeper) PendingConsumerAdditionPropIterator(ctx sdk.Context) sdk.Iterato
 	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
 }
 
-// IteratePendingConsumerAdditionProps iterates over the pending consumer addition proposals to create
-// clients in order and creates the consumer client if the spawn time has passed.
-func (k Keeper) IteratePendingConsumerAdditionProps(ctx sdk.Context) {
+// BeginBlockInit iterates over the pending consumer addition proposals in order, and creates
+// clients for props in which the spawn time has passed. Executed proposals are deleted.
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-init1
+// Spec tag:[CCV-PCF-BBLOCK-INIT.1]
+func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	propsToExecute := k.ConsumerAdditionPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
@@ -349,9 +371,13 @@ func (k Keeper) PendingConsumerRemovalPropIterator(ctx sdk.Context) sdk.Iterator
 	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
 }
 
-// IteratePendingConsumerRemovalProps iterates over the pending consumer removal proposals
-// in order and stop/removes the chain if the stop time has passed, otherwise it will break out of loop and return.
-func (k Keeper) IteratePendingConsumerRemovalProps(ctx sdk.Context) {
+// BeginBlockCCR iterates over the pending consumer removal proposals
+// in order and stop/removes the chain if the stop time has passed,
+// otherwise it will break out of loop and return. Executed proposals are deleted.
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-ccr1
+// Spec tag: [CCV-PCF-BBLOCK-CCR.1]
+func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 	propsToExecute := k.ConsumerRemovalPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
