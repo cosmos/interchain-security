@@ -188,12 +188,12 @@ func TestOnChanOpenAck(t *testing.T) {
 	testCases := []struct {
 		name string
 		// Test-case specific function that mutates method parameters and setups expected mock calls
-		setup   func(sdk.Context, *consumerkeeper.Keeper, *params, testkeeper.MockedKeepers)
+		setup   func(*consumerkeeper.Keeper, *params, testkeeper.MockedKeepers)
 		expPass bool
 	}{
 		{
 			"success",
-			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				// Expected msg
 				distrTransferMsg := channeltypes.NewMsgChannelOpenInit(
 					transfertypes.PortID,
@@ -207,11 +207,11 @@ func TestOnChanOpenAck(t *testing.T) {
 				// Expected mock calls
 				gomock.InOrder(
 					mocks.MockChannelKeeper.EXPECT().GetChannel(
-						ctx, params.portID, params.channelID).Return(channeltypes.Channel{
+						params.ctx, params.portID, params.channelID).Return(channeltypes.Channel{
 						ConnectionHops: []string{"connectionID"},
 					}, true).Times(1),
 					mocks.MockIBCCoreKeeper.EXPECT().ChannelOpenInit(
-						sdk.WrapSDKContext(ctx), distrTransferMsg).Return(
+						sdk.WrapSDKContext(params.ctx), distrTransferMsg).Return(
 						&channeltypes.MsgChannelOpenInitResponse{}, nil,
 					).Times(1),
 				)
@@ -220,19 +220,19 @@ func TestOnChanOpenAck(t *testing.T) {
 		},
 		{
 			"invalid: provider channel already established",
-			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
-				keeper.SetProviderChannel(ctx, "existingProviderChannelID")
+			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+				keeper.SetProviderChannel(params.ctx, "existingProviderChannelID")
 			}, false,
 		},
 		{
 			"invalid: cannot unmarshal ack metadata ",
-			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				params.counterpartyMetadata = "bunkData"
 			}, false,
 		},
 		{
 			"invalid: mismatched serialized version",
-			func(ctx sdk.Context, keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
+			func(keeper *consumerkeeper.Keeper, params *params, mocks testkeeper.MockedKeepers) {
 				md := providertypes.HandshakeMetadata{
 					ProviderFeePoolAddr: "", // dummy address used
 					Version:             "bunkVersion",
@@ -268,7 +268,7 @@ func TestOnChanOpenAck(t *testing.T) {
 
 		params.counterpartyMetadata = string(metadataBz)
 
-		tc.setup(ctx, &consumerKeeper, &params, mocks)
+		tc.setup(&consumerKeeper, &params, mocks)
 
 		err = consumerModule.OnChanOpenAck(
 			params.ctx,
