@@ -1,19 +1,17 @@
 package e2e_test
 
 import (
-	"time"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
+// Tests the functionality of stopping a consumer chain at a higher level than unit tests
 func (s *ProviderTestSuite) TestStopConsumerChain() {
 
 	// default consumer chain ID
@@ -95,102 +93,6 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 
 	// check all states are removed and the unbonding operation released
 	s.checkConsumerChainIsRemoved(consumerChainID, false)
-}
-
-func (s *ProviderTestSuite) TestConsumerRemovalProposal() {
-	var (
-		ctx      sdk.Context
-		proposal *providertypes.ConsumerRemovalProposal
-		ok       bool
-	)
-
-	chainID := s.consumerChain.ChainID
-
-	testCases := []struct {
-		name        string
-		malleate    func(*ProviderTestSuite)
-		expPass     bool
-		stopReached bool
-	}{
-		{
-			"valid consumer removal proposal: stop time reached", func(suite *ProviderTestSuite) {
-
-				// ctx blocktime is after proposal's stop time
-				ctx = s.providerCtx().WithBlockTime(time.Now().Add(time.Hour))
-				content := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now())
-				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
-				s.Require().True(ok)
-			}, true, true,
-		},
-		{
-			"valid proposal: stop time has not yet been reached", func(suite *ProviderTestSuite) {
-
-				// ctx blocktime is before proposal's stop time
-				ctx = s.providerCtx().WithBlockTime(time.Now())
-				content := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now().Add(time.Hour))
-				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
-				s.Require().True(ok)
-			}, true, false,
-		},
-		{
-			"valid proposal: fail due to an invalid unbonding index", func(suite *ProviderTestSuite) {
-
-				// ctx blocktime is after proposal's stop time
-				ctx = s.providerCtx().WithBlockTime(time.Now().Add(time.Hour))
-
-				// set invalid unbonding op index
-				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetUnbondingOpIndex(ctx, chainID, 0, []uint64{0})
-
-				content := providertypes.NewConsumerRemovalProposal("title", "description", chainID, time.Now())
-				proposal, ok = content.(*providertypes.ConsumerRemovalProposal)
-				s.Require().True(ok)
-			}, false, true,
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-
-		s.Run(tc.name, func() {
-			s.SetupTest()
-			s.SetupCCVChannel()
-
-			tc.malleate(s)
-
-			err := s.providerChain.App.(*appProvider.App).ProviderKeeper.HandleConsumerRemovalProposal(ctx, proposal)
-			if tc.expPass {
-				s.Require().NoError(err, "error returned on valid case")
-				if tc.stopReached {
-					// check that the pending consumer removal proposal is deleted
-					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingConsumerRemovalProp(ctx, chainID, proposal.StopTime)
-					s.Require().False(found, "pending consumer removal proposal wasn't deleted")
-
-					// check that the consumer chain is removed
-					s.checkConsumerChainIsRemoved(chainID, false)
-
-				} else {
-					found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingConsumerRemovalProp(ctx, chainID, proposal.StopTime)
-					s.Require().True(found, "pending stop consumer was not found for chain ID %s", chainID)
-
-					// check that the consumer chain client exists
-					_, found = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClientId(s.providerCtx(), chainID)
-					s.Require().True(found)
-
-					// check that the chainToChannel and channelToChain exist for the consumer chain ID
-					_, found = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetChainToChannel(s.providerCtx(), chainID)
-					s.Require().True(found)
-
-					_, found = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetChannelToChain(s.providerCtx(), s.path.EndpointB.ChannelID)
-					s.Require().True(found)
-
-					// check that channel is in OPEN state
-					s.Require().Equal(channeltypes.OPEN, s.path.EndpointB.GetChannel().State)
-				}
-			} else {
-				s.Require().Error(err, "did not return error on invalid case")
-			}
-		})
-	}
 }
 
 // TODO Simon: implement OnChanCloseConfirm in IBC-GO testing to close the consumer chain's channel end

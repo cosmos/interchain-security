@@ -140,51 +140,56 @@ func NewInMemConsumerKeeper(params InMemKeeperParams, mocks MockedKeepers) consu
 	)
 }
 
-// The minimum boilerplate way to obtain an in-memory provider keeper, context, and controller.
+// Returns an in-memory provider keeper, context, controller, and mocks, given a test instance and parameters.
 //
 // Note: Calling ctrl.Finish() at the end of a test function ensures that
 // no unexpected calls to external keepers are made.
-func GetProviderKeeperAndCtx(t *testing.T) (providerkeeper.Keeper, sdk.Context, *gomock.Controller) {
-	params := NewInMemKeeperParams(t)
+func GetProviderKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
+	providerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers) {
+
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
-	return NewInMemProviderKeeper(params, mocks), params.Ctx, ctrl
+	return NewInMemProviderKeeper(params, mocks), params.Ctx, ctrl, mocks
 }
 
-// The minimum boilerplate way to obtain an-in memory consumer keeper, context, and controller.
+// Return an in-memory consumer keeper, context, controller, and mocks, given a test instance and parameters.
 //
 // Note: Calling ctrl.Finish() at the end of a test function ensures that
 // no unexpected calls to external keepers are made.
-func GetConsumerKeeperAndCtx(t *testing.T) (consumerkeeper.Keeper, sdk.Context, *gomock.Controller) {
-	params := NewInMemKeeperParams(t)
+func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
+	consumerkeeper.Keeper, sdk.Context, *gomock.Controller, MockedKeepers) {
+
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
-	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl
+	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
 }
 
 // Sets a template client state for a params subspace so that the provider's
 // GetTemplateClient method will be satisfied.
-func SetTemplateClientState(ctx sdk.Context, subspace *paramstypes.Subspace) {
+func (params *InMemKeeperParams) SetTemplateClientState(customState *ibctmtypes.ClientState) {
 
 	keyTable := paramstypes.NewKeyTable(paramstypes.NewParamSetPair(
 		providertypes.KeyTemplateClient, &ibctmtypes.ClientState{},
 		func(value interface{}) error { return nil }))
 
-	*subspace = subspace.WithKeyTable(keyTable)
+	newSubspace := params.ParamsSubspace.WithKeyTable(keyTable)
+	params.ParamsSubspace = &newSubspace
 
-	templateClientState :=
-		ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
+	// Default template client state if none provided
+	if customState == nil {
+		customState = ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 			time.Second*10, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(),
 			[]string{"upgrade", "upgradedIBCState"}, true, true)
+	}
 
-	subspace.Set(ctx, providertypes.KeyTemplateClient, templateClientState)
+	params.ParamsSubspace.Set(params.Ctx, providertypes.KeyTemplateClient, customState)
 }
 
 // Registers proto interfaces for params.Cdc
 //
 // For now, we explicitly force certain unit tests to register sdk crypto interfaces.
 // TODO: This function will be executed automatically once https://github.com/cosmos/interchain-security/issues/273 is solved.
-func RegisterSdkCryptoCodecInterfaces(params *InMemKeeperParams) {
+func (params *InMemKeeperParams) RegisterSdkCryptoCodecInterfaces() {
 	ir := codectypes.NewInterfaceRegistry()
 	// Public key implementation registered here
 	cryptocodec.RegisterInterfaces(ir)
@@ -200,4 +205,22 @@ type PrivateKey struct {
 func GenPubKey() (crypto.PubKey, error) {
 	privKey := PrivateKey{ed25519.GenPrivKey()}
 	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
+}
+
+// SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
+// which asserts that a consumer chain was properly stopped from StopConsumerChain().
+func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
+	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers) {
+
+	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
+		"chainID", clienttypes.NewHeight(2, 3))
+	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
+	expectations = append(expectations, GetMocksForStopConsumerChain(ctx, &mocks)...)
+
+	gomock.InOrder(expectations...)
+
+	err := providerKeeper.CreateConsumerClient(ctx, "chainID", clienttypes.NewHeight(2, 3), false)
+	require.NoError(t, err)
+	err = providerKeeper.SetConsumerChain(ctx, "channelID")
+	require.NoError(t, err)
 }

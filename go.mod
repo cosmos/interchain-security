@@ -31,6 +31,7 @@ require (
 
 require (
 	github.com/golang/mock v1.6.0
+	github.com/oxyno-zeta/gomock-extra-matcher v1.1.0
 	github.com/regen-network/cosmos-proto v0.3.1
 )
 
