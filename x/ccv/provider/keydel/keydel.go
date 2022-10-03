@@ -47,7 +47,7 @@ func MakeKeyDel() KeyDel {
 func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 	if _, ok := e.foreignIsMappedTo[fk]; ok {
 		return errors.New(`cannot use foreign key which is 
-						   already associated to a local key`)
+						   already currently associated to a local key`)
 	}
 	if _, ok := e.usedForeignToLocal[fk]; ok {
 		// We prevent reusing foreign keys which are still used for local
