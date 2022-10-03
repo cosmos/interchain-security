@@ -116,16 +116,14 @@ func TestInitGenesis(t *testing.T) {
 		},
 	}
 
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	// Explicitly register codec with public key interface
-	keeperParams.RegisterSdkCryptoCodecInterfaces()
-	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
-	defer ctrl.Finish()
-
-	consumerKeeper.SetParams(ctx, params)
-
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+
+			keeperParams := testkeeper.NewInMemKeeperParams(t)
+			// Explicitly register codec with public key interface
+			keeperParams.RegisterSdkCryptoCodecInterfaces()
+			consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+			defer ctrl.Finish()
 
 			// test setup
 			tc.malleate(ctx, mocks)
@@ -222,6 +220,7 @@ func TestExportGenesis(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+
 			keeperParams := testkeeper.NewInMemKeeperParams(t)
 			// Explicitly register codec with public key interface
 			keeperParams.RegisterSdkCryptoCodecInterfaces()
