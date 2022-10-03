@@ -10,7 +10,7 @@ import (
 
 // TestParams tests the default params set for a consumer chain, and related getters/setters
 func TestParams(t *testing.T) {
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	consumerKeeper.SetParams(ctx, types.DefaultParams())
 

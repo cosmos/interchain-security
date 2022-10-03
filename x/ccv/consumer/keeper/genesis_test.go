@@ -116,17 +116,12 @@ func TestInitGenesis(t *testing.T) {
 		},
 	}
 
-	// instantiate in-mem consumer keeper with mocks
-	ctrl := gomock.NewController(t)
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	// Explicitly register codec with public key interface
+	keeperParams.RegisterSdkCryptoCodecInterfaces()
+	consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	mocks := testkeeper.NewMockedKeepers(ctrl)
-	ctx := keeperParams.Ctx
-
-	// explicitly register public key interface
-	testkeeper.RegisterSdkCryptoCodecInterfaces(&keeperParams)
-	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
 	consumerKeeper.SetParams(ctx, params)
 
 	for _, tc := range testCases {
@@ -227,17 +222,11 @@ func TestExportGenesis(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// instantiate in-mem consumer keeper with mocks
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
 			keeperParams := testkeeper.NewInMemKeeperParams(t)
-			mocks := testkeeper.NewMockedKeepers(ctrl)
-			ctx := keeperParams.Ctx
-
-			// explicitly register public key interface
-			testkeeper.RegisterSdkCryptoCodecInterfaces(&keeperParams)
-			consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
+			// Explicitly register codec with public key interface
+			keeperParams.RegisterSdkCryptoCodecInterfaces()
+			consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+			defer ctrl.Finish()
 			consumerKeeper.SetParams(ctx, params)
 
 			// test setup

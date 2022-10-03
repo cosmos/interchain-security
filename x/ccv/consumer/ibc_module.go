@@ -55,7 +55,7 @@ func (am AppModule) OnChanOpenInit(
 		return err
 	}
 
-	return am.keeper.VerifyProviderChain(ctx, channelID, connectionHops)
+	return am.keeper.VerifyProviderChain(ctx, connectionHops)
 }
 
 // validateCCVChannelParams validates a ccv channel

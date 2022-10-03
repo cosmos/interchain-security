@@ -128,12 +128,15 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
-// InitGenesis performs genesis initialization for the provider module. It returns
-// no validator updates.
+// InitGenesis performs genesis initialization for the provider module. It returns no validator updates.
+// Note: This method along with ValidateGenesis satisfies the CCV spec:
+// https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-initg1
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState providertypes.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
+
 	am.keeper.InitGenesis(ctx, &genesisState)
+
 	// initialize validator update id
 	// TODO: Include in genesis and initialize from genesis value
 	am.keeper.SetValidatorSetUpdateId(ctx, 1)
@@ -152,10 +155,10 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-	// Check if there are any consumer chains that are due to be spawned
-	am.keeper.IterateMatureConsumerAdditionProps(ctx)
-	// Check if there are any consumer chains that are due to be stopped
-	am.keeper.IterateMatureConsumerRemovalProps(ctx)
+	// Create clients to consumer chains that are due to be spawned via pending consumer addition proposals
+	am.keeper.BeginBlockInit(ctx)
+	// Stop and remove state for any consumer chains that are due to be stopped via pending consumer removal proposals
+	am.keeper.BeginBlockCCR(ctx)
 }
 
 // EndBlock implements the AppModule interface

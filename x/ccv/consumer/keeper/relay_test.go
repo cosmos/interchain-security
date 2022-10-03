@@ -109,7 +109,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		},
 	}
 
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// Set channel to provider, still in context of consumer chain

@@ -126,7 +126,7 @@ func TestInitGenesis(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, expUbdIndex, ubdIndex)
 
-	addProp := pk.GetPendingConsumerAdditionProp(ctx, expTimestamp, consumerChainID)
+	addProp, _ := pk.GetPendingConsumerAdditionProp(ctx, expTimestamp, consumerChainID)
 	require.Equal(t, expAddProp, addProp)
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, consumerChainID, expTimestamp))
 
@@ -146,7 +146,7 @@ func TestInitGenesis(t *testing.T) {
 }
 
 func TestExportGenesis(t *testing.T) {
-	pk, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// populate the provider states manually

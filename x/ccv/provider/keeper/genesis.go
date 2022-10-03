@@ -15,7 +15,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	// Only try to bind to port if it is not already bound, since we may already own
 	// port capability from capability InitGenesis
 	if !k.IsBound(ctx, ccv.ProviderPortID) {
-		// transfer module binds to the transfer port on InitChain
+		// CCV module binds to the provider port on InitChain
 		// and claims the returned capability
 		err := k.BindPort(ctx, ccv.ProviderPortID)
 		if err != nil {
