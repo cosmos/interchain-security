@@ -117,13 +117,13 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 		return consumertypes.DefaultGenesisState()
 	}
 
-	// get the current validator set
+	// export the current validator set
 	valset, err := k.GetValidatorUpdates(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("fail to retrieve the validator set: %s", err))
 	}
 
-	// when a channel exists the CCV module states are exported
+	// export all the states created after a provider channel got established
 	if channelID, ok := k.GetProviderChannel(ctx); ok {
 		clientID, ok := k.GetProviderClientID(ctx)
 		if !ok {
@@ -159,7 +159,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			return false
 		})
 
-		// ValUpdates must be filled in off-line
 		genesis = types.NewRestartGenesisState(
 			clientID,
 			channelID,
@@ -170,8 +169,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			params,
 		)
 	} else {
-		// if there is no channel client, consensus states and
-		// the pending slashing requests are exported
 		clientID, ok := k.GetProviderClientID(ctx)
 		// if provider clientID and channelID don't exist on the consumer chain, then CCV protocol is disabled for this chain
 		// return a disabled genesis state
@@ -194,7 +191,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 		if !ok {
 			panic("provider consensus state is not tendermint consensus state")
 		}
-
+		// export client states and pending slashing requests into a new chain genesis
 		genesis = consumertypes.NewInitialGenesisState(tmCs, tmConsState, valset, k.GetPendingSlashRequests(ctx), params)
 	}
 

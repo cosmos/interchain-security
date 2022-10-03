@@ -89,6 +89,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chainID, clientID))
 		}
 
+		// initial consumer chain states
 		cs := types.ConsumerState{
 			ChainId:                chainID,
 			ClientId:               clientID,
@@ -100,14 +101,17 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		channelId, found := k.GetChainToChannel(ctx, chainID)
 		if found {
 			cs.ChannelId = channelId
-			cs.InitialHeight, _ = k.GetInitChainHeight(ctx, chainID)
+			cs.InitialHeight, found = k.GetInitChainHeight(ctx, chainID)
+			if !found {
+				panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chainID, clientID))
+			}
 			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chainID)
-			ubdOpIndexes := []types.UnbondingOpIndex{}
 			k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) bool {
-				ubdOpIndexes = append(ubdOpIndexes, types.UnbondingOpIndex{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex})
+				cs.UnbondingOpsIndex = append(cs.UnbondingOpsIndex,
+					types.UnbondingOpIndex{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex},
+				)
 				return true
 			})
-			cs.UnbondingOpsIndex = ubdOpIndexes
 		} else {
 			if pendingVSC, found := k.GetPendingVSCs(ctx, chainID); found {
 				cs.PendingValsetChanges = pendingVSC
