@@ -52,18 +52,15 @@ func MakeKeyDel() KeyDel {
 }
 
 func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
+	inUse := false
 	if _, ok := e.foreignIsMappedTo[fk]; ok {
-		return errors.New(`cannot use foreign key which is 
-						   already currently associated to a local key`)
+		inUse = true
 	}
 	if _, ok := e.foreignToLastUpdate[fk]; ok {
-		// We prevent reusing foreign keys which are still used for local
-		// key lookups. Otherwise it would be possible for a local key A
-		// to commit an infraction under the foreign key X and change
-		// the mapping of foreign key X to a local key B before evidence
-		// arrives.
-		return errors.New(`cannot reuse foreign key which was associated to
-						   a different local key and which is still queryable`)
+		inUse = true
+	}
+	if inUse {
+		return errors.New(`cannot reuse foreign key which is currently being used for lookups`)
 	}
 	if otherFk, ok := e.localToForeign[lk]; ok {
 		delete(e.foreignIsMappedTo, otherFk)
