@@ -204,7 +204,7 @@ func (d *Driver) checkProperties() {
 		   after i that references the foreign key. The foreign key cannot be used
 		   for slashing anymore, so it can and should be pruned.
 	*/
-	queriesAndCorrectPruning := func() {
+	pruning := func() {
 		expectQueryable := map[FK]bool{}
 
 		for i := d.lastTM + 1; i <= d.lastTP; i++ {
@@ -232,17 +232,35 @@ func (d *Driver) checkProperties() {
 	}
 
 	/*
-		For a given foreign key: if a local key lookup is successful, the
-		local key returned is the unique local key which was known to the
-		consumer
-	*/
-	correctSlashing := func() {
+	 */
+	queries := func() {
+		// For each vscid that the consumer has received, but not yet
+		// matured
+		for i := d.lastTM + 1; i <= d.lastTC; i++ {
+			for consumerFK := range d.foreignValSets[i].keyToPower {
+				queriedLK, err := d.e.GetLocal(consumerFK)
+				// There must be a corresponding local key
+				require.Nil(d.t, err)
+				providerFKs := map[FK]bool{}
+				for providerLK, providerFK := range d.mappings[i] {
+					require.Falsef(d.t, providerFKs[providerFK], "two local keys map to the same foreign key")
+					providerFKs[providerFK] = true
+					if consumerFK == providerFK {
+						// A mapping to the consumer FK was found
+						// The corresponding LK must be the one queried.
+						require.Equal(d.t, providerLK, queriedLK)
+					}
+				}
+				// Check that the comparison was actually made!
+				require.Truef(d.t, providerFKs[consumerFK], "no mapping found for foreign key")
+			}
 
+		}
 	}
 
 	validatorSetReplication()
-	queriesAndCorrectPruning()
-	correctSlashing()
+	pruning()
+	queries()
 
 }
 
