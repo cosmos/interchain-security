@@ -203,8 +203,8 @@ func (e *KeyDel) internalInvariants() bool {
 	// All mapped to foreign keys are actually mapped to
 	for fk := range e.foreignIsMappedTo {
 		good := false
-		for _, mappedFK := range e.localToForeign {
-			if mappedFK == fk {
+		for _, candidateFk := range e.localToForeign {
+			if candidateFk == fk {
 				good = true
 				break
 			}
