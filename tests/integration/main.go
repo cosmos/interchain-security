@@ -19,13 +19,13 @@ func main() {
 	tr := DefaultTestRun()
 	tr.ParseCLIFlags()
 	tr.ValidateStringLiterals()
-	tr.startDocker()
+	// tr.startDocker()
 
-	for _, step := range happyPathSteps {
-		tr.runStep(step, verbose)
-	}
+	// for _, step := range happyPathSteps {
+	// 	tr.runStep(step, verbose)
+	// }
 
-	fmt.Printf("happy path tests successful - time elapsed %v\n", time.Since(start))
+	// fmt.Printf("happy path tests successful - time elapsed %v\n", time.Since(start))
 
 	fmt.Println("============================================ start democracy tests ============================================")
 	start = time.Now()
