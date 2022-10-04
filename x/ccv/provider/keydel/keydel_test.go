@@ -235,12 +235,9 @@ func (d *Driver) checkProperties() {
 		for fk := 0; fk < NUM_FKS; fk++ {
 			_, expect := expectQueryable[fk]
 
-			// Check foreign to local lookup is available (or not)
-			_, actual := d.e.usedForeignToLocal[fk]
-			require.Equal(d.t, expect, actual)
+			// Chech that lookup is available
+			_, actual := d.e.usedForeignToLastUpdate[fk]
 
-			// Check internals are consistent
-			_, actual = d.e.usedForeignToLastVSCID[fk]
 			require.Equal(d.t, expect, actual)
 		}
 	}

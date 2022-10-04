@@ -7,7 +7,14 @@ type FK = int
 type VSCID = int
 
 type update struct {
-	key   FK
+	key   int
+	power int
+}
+
+type lastUpdate struct {
+	fk    FK
+	lk    LK
+	vscid int
 	power int
 }
 
@@ -32,10 +39,8 @@ type KeyDel struct {
 	localToForeign map[LK]FK
 	// Is the foreign key mapped to in localToForeign?
 	foreignIsMappedTo map[FK]bool
-	// Prunable state
-	usedForeignToLocal map[FK]LK
-	// Prunable state
-	usedForeignToLastVSCID map[FK]VSCID
+	//TODO:
+	usedForeignToLastUpdate map[FK]lastUpdate
 	// A new key is added when a relevant update is returned by ComputeUpdates
 	// the key is deleted at earliest after sending an update corresponding
 	// to a call to staking::DeleteValidator
@@ -46,8 +51,7 @@ func MakeKeyDel() KeyDel {
 	return KeyDel{
 		localToForeign:                   map[LK]FK{},
 		foreignIsMappedTo:                map[FK]bool{},
-		usedForeignToLocal:               map[FK]LK{},
-		usedForeignToLastVSCID:           map[FK]VSCID{},
+		usedForeignToLastUpdate:          map[FK]lastUpdate{},
 		localToLastPositiveForeignUpdate: map[LK]update{},
 	}
 }
@@ -57,7 +61,7 @@ func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 		return errors.New(`cannot use foreign key which is 
 						   already currently associated to a local key`)
 	}
-	if _, ok := e.usedForeignToLocal[fk]; ok {
+	if _, ok := e.usedForeignToLastUpdate[fk]; ok {
 		// We prevent reusing foreign keys which are still used for local
 		// key lookups. Otherwise it would be possible for a local key A
 		// to commit an infraction under the foreign key X and change
@@ -77,8 +81,8 @@ func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 func (e *KeyDel) GetLocal(fk FK) (LK, error) {
 	// TODO: make it possible lookup local keys even
 	// when the foreign key has not yet been used?
-	if lk, ok := e.usedForeignToLocal[fk]; ok {
-		return lk, nil
+	if u, ok := e.usedForeignToLastUpdate[fk]; ok {
+		return u.lk, nil
 	} else {
 		return -1, errors.New("local key not found for foreign key")
 	}
@@ -86,14 +90,13 @@ func (e *KeyDel) GetLocal(fk FK) (LK, error) {
 
 func (e *KeyDel) Prune(mostRecentlyMaturedVscid VSCID) {
 	toRemove := []FK{}
-	for fk, vscid := range e.usedForeignToLastVSCID {
-		if vscid <= mostRecentlyMaturedVscid {
+	for fk, u := range e.usedForeignToLastUpdate {
+		if u.vscid <= mostRecentlyMaturedVscid {
 			toRemove = append(toRemove, fk)
 		}
 	}
 	for _, fk := range toRemove {
-		delete(e.usedForeignToLocal, fk)
-		delete(e.usedForeignToLastVSCID, fk)
+		delete(e.usedForeignToLastUpdate, fk)
 	}
 }
 
@@ -148,8 +151,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 			// Create a deletion update
 			foreignUpdates[last.key] = 0
 			delete(lkTLPFU, lk)
-			e.usedForeignToLocal[last.key] = lk
-			e.usedForeignToLastVSCID[last.key] = vscid
+			e.usedForeignToLastUpdate[last.key] = lastUpdate{fk: last.key, lk: lk, vscid: vscid, power: 0}
 		}
 	}
 
@@ -170,11 +172,12 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 			fk := e.localToForeign[lk]
 			foreignUpdates[fk] = power
 			lkTLPFU[lk] = update{key: fk, power: power}
-			e.usedForeignToLocal[fk] = lk
-			e.usedForeignToLastVSCID[fk] = vscid
+			e.usedForeignToLastUpdate[fk] = lastUpdate{fk: fk, lk: lk, vscid: vscid, power: power}
 		}
 	}
 
+	// TODO: I can replace RHS with some logic which does addition/deletion based on
+	// power in e.usedForeignToLastUpdate
 	e.localToLastPositiveForeignUpdate = lkTLPFU
 
 	return foreignUpdates
