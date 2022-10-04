@@ -30,50 +30,49 @@ type KeyDel struct {
 	// the key is deleted at earliest after sending an update corresponding
 	// to a call to staking::DeleteValidator
 	// At most one local key can map to a given foreign key
-	localToForeign map[LK]FK
+	lkToFk map[LK]FK
 	// Is the foreign key mapped to in localToForeign?
-	foreignIsMappedTo map[FK]bool
+	fkInUse map[FK]bool
 	//TODO:
-	foreignToLastUpdate map[FK]lastUpdate
+	fkToUpdate map[FK]lastUpdate
 	// A new key is added when a relevant update is returned by ComputeUpdates
 	// the key is deleted at earliest after sending an update corresponding
 	// to a call to staking::DeleteValidator
-	localToLastPositiveForeignUpdate map[LK]update
+	lkToPositiveUpdate map[LK]update
 }
 
 func MakeKeyDel() KeyDel {
 	return KeyDel{
-		localToForeign:      map[LK]FK{},
-		foreignIsMappedTo:   map[FK]bool{},
-		foreignToLastUpdate: map[FK]lastUpdate{},
-		// TODO: can compute necessary logic from this field from foreignToLastUpdate
-		localToLastPositiveForeignUpdate: map[LK]update{},
+		lkToFk:             map[LK]FK{},
+		fkInUse:            map[FK]bool{},
+		fkToUpdate:         map[FK]lastUpdate{},
+		lkToPositiveUpdate: map[LK]update{},
 	}
 }
 
 func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 	inUse := false
-	if _, ok := e.foreignIsMappedTo[fk]; ok {
+	if _, ok := e.fkInUse[fk]; ok {
 		inUse = true
 	}
-	if _, ok := e.foreignToLastUpdate[fk]; ok {
+	if _, ok := e.fkToUpdate[fk]; ok {
 		inUse = true
 	}
 	if inUse {
 		return errors.New(`cannot reuse foreign key which is currently being used for lookups`)
 	}
-	if otherFk, ok := e.localToForeign[lk]; ok {
-		delete(e.foreignIsMappedTo, otherFk)
+	if otherFk, ok := e.lkToFk[lk]; ok {
+		delete(e.fkInUse, otherFk)
 	}
-	e.localToForeign[lk] = fk
-	e.foreignIsMappedTo[fk] = true
+	e.lkToFk[lk] = fk
+	e.fkInUse[fk] = true
 	return nil
 }
 
 func (e *KeyDel) GetLocal(fk FK) (LK, error) {
 	// TODO: make it possible lookup local keys even
 	// when the foreign key has not yet been used?
-	if u, ok := e.foreignToLastUpdate[fk]; ok {
+	if u, ok := e.fkToUpdate[fk]; ok {
 		return u.lk, nil
 	} else {
 		return -1, errors.New("local key not found for foreign key")
@@ -82,7 +81,7 @@ func (e *KeyDel) GetLocal(fk FK) (LK, error) {
 
 func (e *KeyDel) Prune(vscid VSCID) {
 	toRemove := []FK{}
-	for _, u := range e.foreignToLastUpdate {
+	for _, u := range e.fkToUpdate {
 		// If the last update has matured, and that
 		// update was a deletion (0 power), pruning
 		// is possible.
@@ -91,7 +90,7 @@ func (e *KeyDel) Prune(vscid VSCID) {
 		}
 	}
 	for _, fk := range toRemove {
-		delete(e.foreignToLastUpdate, fk)
+		delete(e.fkToUpdate, fk)
 	}
 }
 
@@ -119,8 +118,8 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	lks := []LK{}
 
 	// Key changes
-	for lk, newFk := range e.localToForeign {
-		if u, ok := e.localToLastPositiveForeignUpdate[lk]; ok {
+	for lk, newFk := range e.lkToFk {
+		if u, ok := e.lkToPositiveUpdate[lk]; ok {
 			oldFk := u.key
 			if oldFk != newFk {
 				lks = append(lks, lk)
@@ -136,17 +135,17 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 
 	// Make a temporary copy
 	lkTLPFU := map[LK]update{}
-	for lk, u := range e.localToLastPositiveForeignUpdate {
+	for lk, u := range e.lkToPositiveUpdate {
 		lkTLPFU[lk] = u
 	}
 
 	// Iterate all local keys for which there was previously a positive update.
 	for _, lk := range lks {
-		if last, ok := e.localToLastPositiveForeignUpdate[lk]; ok {
+		if last, ok := e.lkToPositiveUpdate[lk]; ok {
 			// Create a deletion update
 			foreignUpdates[last.key] = 0
 			delete(lkTLPFU, lk)
-			e.foreignToLastUpdate[last.key] = lastUpdate{fk: last.key, lk: lk, vscid: vscid, power: 0}
+			e.fkToUpdate[last.key] = lastUpdate{fk: last.key, lk: lk, vscid: vscid, power: 0}
 		}
 	}
 
@@ -154,7 +153,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	// has been a power update.
 	for _, lk := range lks {
 		power := 0
-		if last, ok := e.localToLastPositiveForeignUpdate[lk]; ok {
+		if last, ok := e.lkToPositiveUpdate[lk]; ok {
 			// If there was a positive power before, use it.
 			power = last.power
 		}
@@ -164,16 +163,14 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 		}
 		// Only ship positive powers. Zero powers are accounted for above.
 		if 0 < power {
-			fk := e.localToForeign[lk]
+			fk := e.lkToFk[lk]
 			foreignUpdates[fk] = power
 			lkTLPFU[lk] = update{key: fk, power: power}
-			e.foreignToLastUpdate[fk] = lastUpdate{fk: fk, lk: lk, vscid: vscid, power: power}
+			e.fkToUpdate[fk] = lastUpdate{fk: fk, lk: lk, vscid: vscid, power: power}
 		}
 	}
 
-	// TODO: I can replace RHS with some logic which does addition/deletion based on
-	// power in e.usedForeignToLastUpdate??
-	e.localToLastPositiveForeignUpdate = lkTLPFU
+	e.lkToPositiveUpdate = lkTLPFU
 
 	return foreignUpdates
 }
@@ -183,7 +180,7 @@ func (e *KeyDel) internalInvariants() bool {
 
 	// No two local keys can map to the same foreign key
 	seen := map[FK]bool{}
-	for _, fk := range e.localToForeign {
+	for _, fk := range e.lkToFk {
 		if seen[fk] {
 			return false
 		}
@@ -191,16 +188,16 @@ func (e *KeyDel) internalInvariants() bool {
 	}
 
 	// All foreign keys mapped to by local keys are noted
-	for _, fk := range e.localToForeign {
-		if _, ok := e.foreignIsMappedTo[fk]; !ok {
+	for _, fk := range e.lkToFk {
+		if _, ok := e.fkInUse[fk]; !ok {
 			return false
 		}
 	}
 
 	// All mapped to foreign keys are actually mapped to
-	for fk := range e.foreignIsMappedTo {
+	for fk := range e.fkInUse {
 		good := false
-		for _, candidateFk := range e.localToForeign {
+		for _, candidateFk := range e.lkToFk {
 			if candidateFk == fk {
 				good = true
 				break
