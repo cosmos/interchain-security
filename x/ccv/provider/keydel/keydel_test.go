@@ -189,25 +189,31 @@ func (d *Driver) checkProperties() {
 		Two more properties which must be satisfied by KeyDel when
 		used correctly inside a wider system:
 
-		TODO: need to rephrase the below because they aren't completely accurate
-		the upper bound on time is actually TP (inclusive), not TC.
-
-		1. If a foreign key is delivered to the consumer with positive power at
-		   VSCID i then the local key associated to it must be retrievable
-		   until i is matured. (Consumer initiated slashing property).
-		2. If a foreign key is not delivered to the consumer at any VSCID j
-		   with i < j and i is matured, then the foreign key is deleted
-		   from storage. (Garbage collection property).
+		1. If a foreign key IS used in an update for the consumer, with a positive
+		   power, at VSCID i, then the local key associated to it must be queryable
+		   until i is matured. (Consumer Initiated Slashing Property). Phrased another
+		   way: foreign keys which are known to the consumer may be useable for slashing
+		   until the corresponding maturity is received. Thus they must be queryable.
+		2. If a foreign key IS NOT used in an update for a consumer for a VSCID j
+		   with i < j, and i is matured, then the foreign key is deleted from storage.
+		   (Pruning property). Phrased another way: i matured, and there was no update
+		   after i that references the foreign key. The foreign key cannot be used
+		   for slashing anymore, so it can and should be garbage collected.
 	*/
 	queriesAndCorrectPruning := func() {
 		expectQueryable := map[FK]bool{}
-		// If the foreign key was used in [TimeMaturity + 1, TimeConsumer]
-		// it must be queryable.
+
 		for i := d.lastTM + 1; i <= d.lastTP; i++ {
+			// If the foreign key was used, recently, and did not mature
+			/// then we expect it to be queryable (for slashing).
 			for _, u := range d.foreignUpdates[i] {
 				expectQueryable[u.key] = true
 			}
+			// Otherwise, it was not used, or was used a long time ago
+			// (after maturity). Then we expect it to be garbage collected.
 		}
+
+		// Simply check every foreign key for the correct queryable-ness.
 		for fk := 0; fk < NUM_FKS; fk++ {
 			_, expect := expectQueryable[fk]
 
