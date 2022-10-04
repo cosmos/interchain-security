@@ -131,9 +131,11 @@ func (d *Driver) runTrace() {
 				for fk, power := range d.foreignValSets[d.lastTC].keyToPower {
 					d.foreignValSets[j].keyToPower[fk] = power
 				}
-				for k := d.lastTC + 1; k <= j; k++ {
-					d.foreignValSets[j].applyUpdates(d.foreignUpdates[k])
-				}
+			}
+			// Apply the updates since lastTC ONLY TO s.TC
+			// This models the consumer receiving updates from several blocks at once
+			for j := d.lastTC + 1; j <= s.TC; j++ {
+				d.foreignValSets[s.TC].applyUpdates(d.foreignUpdates[j])
 			}
 			d.lastTC = s.TC
 		}
