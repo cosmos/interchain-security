@@ -684,7 +684,7 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 
 	// verify that all requests are stored
 	requests := app.ConsumerKeeper.GetPendingSlashRequests(ctx)
-	suite.Require().Len(requests, 16)
+	suite.Require().Len(requests.GetRequests(), 16)
 
 	// save consumer next sequence
 	seq, _ := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, ccv.ConsumerPortID, channelID)
@@ -705,7 +705,7 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 
 	// check that outstanding downtime flags
 	// are all set to true for validators slashed for downtime requests
-	for _, r := range requests {
+	for _, r := range requests.GetRequests() {
 		downtime := r.Infraction == stakingtypes.Downtime
 		if downtime {
 			consAddr := sdk.ConsAddress(r.Packet.Validator.Address)
@@ -715,12 +715,12 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 
 	// check that pending slash requests get cleared after being sent
 	requests = app.ConsumerKeeper.GetPendingSlashRequests(ctx)
-	suite.Require().Len(requests, 0)
+	suite.Require().Len(requests.GetRequests(), 0)
 
 	// check that slash requests aren't stored when channel is established
 	app.ConsumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.Downtime)
 	app.ConsumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.DoubleSign)
 
 	requests = app.ConsumerKeeper.GetPendingSlashRequests(ctx)
-	suite.Require().Len(requests, 0)
+	suite.Require().Len(requests.GetRequests(), 0)
 }
