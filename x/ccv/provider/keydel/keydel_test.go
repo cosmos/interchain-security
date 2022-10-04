@@ -32,11 +32,11 @@ type Driver struct {
 	lastTC int
 	lastTM int
 	// indexed by time (starting at 0)
-	mappings           []map[LK]FK
-	foreignUpdates     [][]update
-	localValSets       []ValSet
-	foreignValSets     []ValSet
-	foreignValSetTimes []int
+	mappings       []map[LK]FK
+	foreignUpdates [][]update
+	localValSets   []ValSet
+	foreignValSets []ValSet
+	foreignValSetT []int
 }
 
 func MakeDriver(t *testing.T, trace []TraceState) Driver {
@@ -52,7 +52,7 @@ func MakeDriver(t *testing.T, trace []TraceState) Driver {
 	d.foreignUpdates = [][]update{}
 	d.localValSets = []ValSet{}
 	d.foreignValSets = []ValSet{}
-	d.foreignValSetTimes = []int{}
+	d.foreignValSetT = []int{}
 	return d
 }
 
@@ -107,7 +107,7 @@ func (d *Driver) runTrace() {
 		d.foreignValSets = append(d.foreignValSets, MakeValSet())
 		d.foreignValSets[init.TC].applyUpdates(d.foreignUpdates[init.TC])
 		// The first foreign set equal to the local set at time 0
-		d.foreignValSetTimes = append(d.foreignValSetTimes, 0)
+		d.foreignValSetT = append(d.foreignValSetT, 0)
 		d.e.Prune(init.TM)
 	}
 
@@ -129,19 +129,23 @@ func (d *Driver) runTrace() {
 		}
 		if d.lastTC < s.TC {
 			// Duplicate the valSet known at lastTC
-			for j := d.lastTC + 1; j <= s.TC; j++ {
+			for j := d.lastTC + 1; j < s.TC; j++ {
+				d.foreignValSetT = append(d.foreignValSetT, d.lastTC)
 				d.foreignValSets = append(d.foreignValSets, MakeValSet())
-				d.foreignValSetTimes = append(d.foreignValSetTimes, d.lastTC)
 				for fk, power := range d.foreignValSets[d.lastTC].keyToPower {
 					d.foreignValSets[j].keyToPower[fk] = power
 				}
 			}
 			// Apply the updates since lastTC ONLY TO s.TC
 			// This models the consumer receiving updates from several blocks at once
+			d.foreignValSetT = append(d.foreignValSetT, s.TC)
+			d.foreignValSets = append(d.foreignValSets, MakeValSet())
+			for fk, power := range d.foreignValSets[d.lastTC].keyToPower {
+				d.foreignValSets[s.TC].keyToPower[fk] = power
+			}
 			for j := d.lastTC + 1; j <= s.TC; j++ {
 				d.foreignValSets[s.TC].applyUpdates(d.foreignUpdates[j])
 			}
-			d.foreignValSetTimes[s.TC] = s.TC
 			d.lastTC = s.TC
 		}
 		if d.lastTM < s.TM {
@@ -249,7 +253,7 @@ func (d *Driver) checkProperties() {
 				providerFKs := map[FK]bool{}
 				// Check that the local key was indeed the key used at the time
 				// corresponding to the foreign set.
-				mapping := d.mappings[d.foreignValSetTimes[i]]
+				mapping := d.mappings[d.foreignValSetT[i]]
 				for providerLK, providerFK := range mapping {
 					require.Falsef(d.t, providerFKs[providerFK], "two local keys map to the same foreign key")
 					providerFKs[providerFK] = true
