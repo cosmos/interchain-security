@@ -40,7 +40,7 @@ type KeyDel struct {
 	// Is the foreign key mapped to in localToForeign?
 	foreignIsMappedTo map[FK]bool
 	//TODO:
-	usedForeignToLastUpdate map[FK]lastUpdate
+	foreignToLastUpdate map[FK]lastUpdate
 	// A new key is added when a relevant update is returned by ComputeUpdates
 	// the key is deleted at earliest after sending an update corresponding
 	// to a call to staking::DeleteValidator
@@ -51,7 +51,7 @@ func MakeKeyDel() KeyDel {
 	return KeyDel{
 		localToForeign:                   map[LK]FK{},
 		foreignIsMappedTo:                map[FK]bool{},
-		usedForeignToLastUpdate:          map[FK]lastUpdate{},
+		foreignToLastUpdate:              map[FK]lastUpdate{},
 		localToLastPositiveForeignUpdate: map[LK]update{},
 	}
 }
@@ -61,7 +61,7 @@ func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 		return errors.New(`cannot use foreign key which is 
 						   already currently associated to a local key`)
 	}
-	if _, ok := e.usedForeignToLastUpdate[fk]; ok {
+	if _, ok := e.foreignToLastUpdate[fk]; ok {
 		// We prevent reusing foreign keys which are still used for local
 		// key lookups. Otherwise it would be possible for a local key A
 		// to commit an infraction under the foreign key X and change
@@ -81,22 +81,22 @@ func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 func (e *KeyDel) GetLocal(fk FK) (LK, error) {
 	// TODO: make it possible lookup local keys even
 	// when the foreign key has not yet been used?
-	if u, ok := e.usedForeignToLastUpdate[fk]; ok {
+	if u, ok := e.foreignToLastUpdate[fk]; ok {
 		return u.lk, nil
 	} else {
 		return -1, errors.New("local key not found for foreign key")
 	}
 }
 
-func (e *KeyDel) Prune(mostRecentlyMaturedVscid VSCID) {
+func (e *KeyDel) Prune(vscid VSCID) {
 	toRemove := []FK{}
-	for fk, u := range e.usedForeignToLastUpdate {
-		if u.vscid <= mostRecentlyMaturedVscid && u.power == 0 {
+	for fk, u := range e.foreignToLastUpdate {
+		if u.vscid <= vscid && u.power == 0 {
 			toRemove = append(toRemove, fk)
 		}
 	}
 	for _, fk := range toRemove {
-		delete(e.usedForeignToLastUpdate, fk)
+		delete(e.foreignToLastUpdate, fk)
 	}
 }
 
@@ -151,7 +151,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 			// Create a deletion update
 			foreignUpdates[last.key] = 0
 			delete(lkTLPFU, lk)
-			e.usedForeignToLastUpdate[last.key] = lastUpdate{fk: last.key, lk: lk, vscid: vscid, power: 0}
+			e.foreignToLastUpdate[last.key] = lastUpdate{fk: last.key, lk: lk, vscid: vscid, power: 0}
 		}
 	}
 
@@ -172,7 +172,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 			fk := e.localToForeign[lk]
 			foreignUpdates[fk] = power
 			lkTLPFU[lk] = update{key: fk, power: power}
-			e.usedForeignToLastUpdate[fk] = lastUpdate{fk: fk, lk: lk, vscid: vscid, power: power}
+			e.foreignToLastUpdate[fk] = lastUpdate{fk: fk, lk: lk, vscid: vscid, power: power}
 		}
 	}
 

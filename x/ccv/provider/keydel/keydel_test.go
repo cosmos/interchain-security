@@ -158,8 +158,8 @@ func (d *Driver) runTrace() {
 			d.e.Prune(s.TM)
 			d.lastTM = s.TM
 		}
-		d.checkProperties()
 		require.True(d.t, d.e.internalInvariants())
+		d.checkProperties()
 	}
 }
 
@@ -238,7 +238,7 @@ func (d *Driver) checkProperties() {
 			_, expect := expectQueryable[fk]
 
 			// Chech that lookup is available
-			_, actual := d.e.usedForeignToLastUpdate[fk]
+			_, actual := d.e.foreignToLastUpdate[fk]
 
 			require.Equal(d.t, expect, actual)
 		}
