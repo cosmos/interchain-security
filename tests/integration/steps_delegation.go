@@ -1,7 +1,87 @@
 package main
 
-// stepsDelegation tests unbonding and redelegation operations.
-func stepsDelegation(consumerName string) []Step {
+// stepsDelegate tests basic delegation and resulting validator power changes.
+func stepsDelegate(consumerName string) []Step {
+	return []Step{
+		{
+			action: delegateTokensAction{
+				chain:  chainID("provi"),
+				from:   validatorID("alice"),
+				to:     validatorID("alice"),
+				amount: 11000000,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 500,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: SendTokensAction{
+				chain:  chainID(consumerName),
+				from:   validatorID("alice"),
+				to:     validatorID("bob"),
+				amount: 1,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					// Tx should not go through, ICS channel is not setup until first VSC packet has been relayed to consumer
+					ValBalances: &map[validatorID]uint{
+						validatorID("alice"): 10000000000,
+						validatorID("bob"):   10000000000,
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chain:   chainID("provi"),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: SendTokensAction{
+				chain:  chainID(consumerName),
+				from:   validatorID("alice"),
+				to:     validatorID("bob"),
+				amount: 1,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					// Now tx should execute
+					ValBalances: &map[validatorID]uint{
+						validatorID("alice"): 9999999999,
+						validatorID("bob"):   10000000001,
+					},
+				},
+			},
+		},
+	}
+}
+
+// stepsDelegate tests validatod unbonding, redelegation and resulting validator power changes.
+func stepsUnbondRedelegate(consumerName string) []Step {
 	return []Step{
 		{
 			action: unbondTokensAction{

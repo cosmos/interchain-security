@@ -2,40 +2,44 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"os/exec"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/kylelemons/godebug/pretty"
 )
 
 var verbose = false
+var localSdkPath = flag.String("local-sdk-path", "",
+	"path of a local sdk version to build and reference in integration tests")
 
 func main() {
-	fmt.Println("============================================ start happy path tests ============================================")
+	flag.Parse()
+
+	// wg waits for all runners to complete
+	var wg sync.WaitGroup
+
 	start := time.Now()
 	tr := DefaultTestRun()
-	tr.ParseCLIFlags()
+	tr.SetLocalSDKPath(*localSdkPath)
 	tr.ValidateStringLiterals()
-	// tr.startDocker()
 
-	// for _, step := range happyPathSteps {
-	// 	tr.runStep(step, verbose)
-	// }
+	dmc := DemocracyTestRun()
+	dmc.SetLocalSDKPath(*localSdkPath)
+	dmc.ValidateStringLiterals()
 
-	// fmt.Printf("happy path tests successful - time elapsed %v\n", time.Since(start))
+	wg.Add(1)
+	go tr.ExecuteSteps(&wg, "default", happyPathSteps)
 
-	fmt.Println("============================================ start democracy tests ============================================")
-	start = time.Now()
-	tr.startDocker()
+	wg.Add(1)
+	go dmc.ExecuteSteps(&wg, "democracy", democracySteps)
 
-	for _, step := range democracySteps {
-		tr.runStep(step, verbose)
-	}
-
-	fmt.Printf("democracy tests successful - time elapsed %v\n", time.Since(start))
+	wg.Wait()
+	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
 }
 
 func (tr TestRun) runStep(step Step, verbose bool) {
@@ -94,6 +98,22 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 	}
 
 	pretty.Print(actualState)
+}
+
+// Starts docker container and sequentially runs steps
+func (tr TestRun) ExecuteSteps(wg *sync.WaitGroup, name string, steps []Step) {
+	defer wg.Done()
+	fmt.Printf("============================================ start %s tests ============================================\n", name)
+
+	start := time.Now()
+	tr.startDocker()
+
+	for _, step := range steps {
+		tr.runStep(step, verbose)
+	}
+
+	fmt.Printf("\n\ntime elapsed for %s: %v\n", name, time.Since(start))
+	fmt.Printf("============================================ end %s tests ============================================\n", name)
 }
 
 func (tr TestRun) startDocker() {
