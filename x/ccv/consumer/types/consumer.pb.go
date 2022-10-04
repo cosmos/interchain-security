@@ -29,6 +29,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Params defines the parameters for CCV consumer module
 type Params struct {
+  	// TODO: Remove enabled flag and find a better way to setup e2e tests
+ 	// See: https://github.com/cosmos/interchain-security/issues/339
 	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	///////////////////////
 	// Distribution Params
