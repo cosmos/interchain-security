@@ -35,8 +35,8 @@ type Driver struct {
 	mappings       []map[LK]FK
 	foreignUpdates [][]update
 	localValSets   []ValSet
-	// corresponds to TC
-	foreignValSet ValSet
+	// indexed by TC
+	foreignValSets []ValSet
 }
 
 type ValSet struct {
@@ -87,7 +87,8 @@ func (d *Driver) runTrace() {
 		d.localValSets[init.TP].applyUpdates(init.LocalUpdates)
 		// Set the initial foreign set
 		d.foreignUpdates = append(d.foreignUpdates, d.e.ComputeUpdates(init.TP, init.LocalUpdates))
-		d.foreignValSet.applyUpdates(d.foreignUpdates[init.TC])
+		d.foreignValSets = append(d.foreignValSets, MakeValSet())
+		d.foreignValSets[init.TC].applyUpdates(d.foreignUpdates[init.TC])
 		d.e.Prune(init.TM)
 	}
 
@@ -97,18 +98,30 @@ func (d *Driver) runTrace() {
 
 	for _, s := range d.trace[1:] {
 		if d.lastTP < s.TP {
+			// Provider time increment:
+			// Apply some key mappings and create some new validator power updates
 			d.applyMapInstructions(s.MapInstructions)
 			d.applyLocalUpdates(s.LocalUpdates)
 			d.foreignUpdates = append(d.foreignUpdates, d.e.ComputeUpdates(s.TP, s.LocalUpdates))
 			d.lastTP = s.TP
 		}
 		if d.lastTC < s.TC {
+			// Duplicate the valSet known at lastTC
 			for j := d.lastTC + 1; j <= s.TC; j++ {
-				d.foreignValSet.applyUpdates(d.foreignUpdates[j])
+				d.foreignValSets = append(d.foreignValSets, MakeValSet())
+				for fk, power := range d.foreignValSets[d.lastTC].keyToPower {
+					d.foreignValSets[j].keyToPower[fk] = power
+				}
+			}
+			// Apply the updates since lastTC ONLY TO s.TC
+			// This models the consumer receiving updates from several blocks at once
+			for j := d.lastTC + 1; j <= s.TC; j++ {
+				d.foreignValSets[s.TC].applyUpdates(d.foreignUpdates[j])
 			}
 			d.lastTC = s.TC
 		}
 		if d.lastTM < s.TM {
+			// Models maturations being received on the provider.
 			d.e.Prune(s.TM)
 			d.lastTM = s.TM
 		}
@@ -127,7 +140,7 @@ func (d *Driver) checkProperties() {
 	validatorSetReplication := func() {
 
 		// Get the current consumer val set
-		foreignSet := d.foreignValSet.keyToPower
+		foreignSet := d.foreignValSets[d.lastTC].keyToPower
 		// Get the provider set at the relevant time
 		localSet := d.localValSets[d.lastTC].keyToPower
 
@@ -167,7 +180,7 @@ func (d *Driver) checkProperties() {
 		   with i < j and i is matured, then the foreign key is deleted
 		   from storage. (Garbage collection property).
 	*/
-	queriesAndGarbageCollection := func() {
+	queriesAndCorrectPruning := func() {
 		expectQueryable := map[FK]bool{}
 		// If the foreign key was used in [TimeMaturity + 1, TimeConsumer]
 		// it must be queryable.
@@ -190,7 +203,7 @@ func (d *Driver) checkProperties() {
 	}
 
 	validatorSetReplication()
-	queriesAndGarbageCollection()
+	queriesAndCorrectPruning()
 
 }
 
@@ -301,7 +314,7 @@ func TestPrototype(t *testing.T) {
 		d.mappings = []map[LK]FK{}
 		d.foreignUpdates = [][]update{}
 		d.localValSets = []ValSet{}
-		d.foreignValSet = MakeValSet()
+		d.foreignValSets = []ValSet{}
 		d.runTrace()
 	}
 }
