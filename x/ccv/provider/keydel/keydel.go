@@ -26,18 +26,9 @@ type lastUpdate struct {
 // 3. integrate with create/destroy validator
 
 type KeyDel struct {
-	// A new key is added on staking::CreateValidator
-	// the key is deleted at earliest after sending an update corresponding
-	// to a call to staking::DeleteValidator
-	// At most one local key can map to a given foreign key
-	lkToFk map[LK]FK
-	// Is the foreign key mapped to in localToForeign?
-	fkInUse map[FK]bool
-	//TODO:
-	fkToUpdate map[FK]lastUpdate
-	// A new key is added when a relevant update is returned by ComputeUpdates
-	// the key is deleted at earliest after sending an update corresponding
-	// to a call to staking::DeleteValidator
+	lkToFk             map[LK]FK
+	fkInUse            map[FK]bool
+	fkToUpdate         map[FK]lastUpdate
 	lkToPositiveUpdate map[LK]update
 }
 
