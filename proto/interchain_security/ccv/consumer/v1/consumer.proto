@@ -13,6 +13,8 @@ import "cosmos_proto/cosmos.proto";
 
 // Params defines the parameters for CCV consumer module
 message Params {
+  // TODO: Remove enabled flag and find a better way to setup e2e tests
+  // See: https://github.com/cosmos/interchain-security/issues/339
   bool enabled = 1;
 
   ///////////////////////
