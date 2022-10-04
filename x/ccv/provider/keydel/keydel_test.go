@@ -318,15 +318,3 @@ func TestPrototype(t *testing.T) {
 		d.runTrace()
 	}
 }
-
-func TestActual(t *testing.T) {
-	/*
-		traces := [][]TraceState{}
-		for _, trace := range traces {
-			d := Driver{}
-			d.trace = trace
-			d.t = t
-			d.runTrace()
-		}
-	*/
-}
