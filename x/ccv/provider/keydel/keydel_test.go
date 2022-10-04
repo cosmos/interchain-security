@@ -152,29 +152,33 @@ func (d *Driver) runTrace() {
 func (d *Driver) checkProperties() {
 
 	/*
-		A consumer who receives vscid i must have a validator set
-		equal to the validator set on the provider at vscid id mapped
-		through the key delegation.
+		When a consumer receives and processes up to VSCID i,
+		it must have a validator set equal to that on the provider at i
+		mapped through the key mapping that was on the provider when i
+		was sent.
 	*/
 	validatorSetReplication := func() {
 
-		// Get the current consumer val set
+		// Get the current consumer val set.
 		foreignSet := d.foreignValSets[d.lastTC].keyToPower
-		// Get the provider set at the relevant time
+		// Get the provider set at the corresponding time.
 		localSet := d.localValSets[d.lastTC].keyToPower
 
-		// Map the consumer set back through the inverse key mapping
-		mapping := d.mappings[d.lastTC]
-		inverseMapping := map[FK]LK{}
-		for lk, fk := range mapping {
-			inverseMapping[fk] = lk
-		}
+		// Compute a lookup mapping consumer powers
+		// back to provider powers, to enable comparison.
 		foreignSetAsLocal := map[LK]int{}
-		for fk, power := range foreignSet {
-			foreignSetAsLocal[inverseMapping[fk]] = power
+		{
+			mapping := d.mappings[d.lastTC]
+			inverseMapping := map[FK]LK{}
+			for lk, fk := range mapping {
+				inverseMapping[fk] = lk
+			}
+			for fk, power := range foreignSet {
+				foreignSetAsLocal[inverseMapping[fk]] = power
+			}
 		}
 
-		// Ensure that the validator sets match exactly
+		// Ensure that the sets match exactly
 		for lk, expectedPower := range localSet {
 			actualPower := foreignSetAsLocal[lk]
 			require.Equal(d.t, expectedPower, actualPower)
