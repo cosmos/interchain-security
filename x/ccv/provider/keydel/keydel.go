@@ -16,6 +16,14 @@ type update struct {
 // 2. integrate into Provider::EndBlock,
 // 3. integrate with create/destroy validator
 
+/*
+TODO: there is a scenario which invalidates the current design of the system.
+
+A vsc packet is sent whenever there is an unbonding op of any kind, or val power changes.
+It is possible for a validator to be sent with positive power, and the maturity to be received.
+This will delete the local key lookup, but it must be kept around.
+*/
+
 type KeyDel struct {
 	// A new key is added on staking::CreateValidator
 	// the key is deleted at earliest after sending an update corresponding
