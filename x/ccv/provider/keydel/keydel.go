@@ -70,8 +70,7 @@ func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 }
 
 func (e *KeyDel) GetLocal(fk FK) (LK, error) {
-	// TODO: make it possible lookup local keys even
-	// when the foreign key has not yet been used?
+	// TODO: implement lookups via keys current key
 	if u, ok := e.fkToUpdate[fk]; ok {
 		return u.lk, nil
 	} else {
@@ -80,16 +79,15 @@ func (e *KeyDel) GetLocal(fk FK) (LK, error) {
 }
 
 func (e *KeyDel) Prune(vscid VSCID) {
-	toRemove := []FK{}
+	toDel := []FK{}
 	for _, u := range e.fkToUpdate {
-		// If the last update has matured, and that
-		// update was a deletion (0 power), pruning
-		// is possible.
-		if u.vscid <= vscid && u.power == 0 {
-			toRemove = append(toRemove, u.fk)
+		// If the last update was a deletion (0 power) and the update
+		// matured then pruning is possible.
+		if u.power == 0 && u.vscid <= vscid {
+			toDel = append(toDel, u.fk)
 		}
 	}
-	for _, fk := range toRemove {
+	for _, fk := range toDel {
 		delete(e.fkToUpdate, fk)
 	}
 }
