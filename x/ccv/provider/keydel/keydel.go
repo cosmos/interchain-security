@@ -142,12 +142,10 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 		lkTLPFU[lk] = u
 	}
 
-	// Iterate all local keys for which either the foreign key changed or there
-	// has been a power update.
+	// Iterate all local keys for which there was previously a positive update.
 	for _, lk := range lks {
 		if last, ok := e.localToLastPositiveForeignUpdate[lk]; ok {
-			// If the key has previously been shipped in an update
-			// delete it.
+			// Create a deletion update
 			foreignUpdates[last.key] = 0
 			delete(lkTLPFU, lk)
 			e.usedForeignToLocal[last.key] = lk
@@ -167,7 +165,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 		if newPower, ok := localUpdates[lk]; ok {
 			power = newPower
 		}
-		// Only ship positive powers.
+		// Only ship positive powers. Zero powers are accounted for above.
 		if 0 < power {
 			fk := e.localToForeign[lk]
 			foreignUpdates[fk] = power
