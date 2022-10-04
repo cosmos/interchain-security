@@ -12,20 +12,45 @@ import "tendermint/abci/types.proto";
 
 // GenesisState defines the CCV consumer chain genesis state
 message GenesisState {
-  Params params              = 1 [(gogoproto.nullable) = false];
-  string provider_client_id  = 2;  // empty for a completely new chain
-  string provider_channel_id = 3;  // empty for a completely new chain
-  bool   new_chain           = 4;  // true for new chain GenesisState, false for chain restart.
+  Params params = 1 [ (gogoproto.nullable) = false ];
+  string provider_client_id = 2;  // empty for a completely new chain
+  string provider_channel_id = 3; // empty for a completely new chain
+  bool new_chain = 4; // true for new chain GenesisState, false for chain restart.
   // ProviderClientState filled in on new chain, nil on restart.
   ibc.lightclients.tendermint.v1.ClientState provider_client_state = 5;
   // ProviderConsensusState filled in on new chain, nil on restart.
   ibc.lightclients.tendermint.v1.ConsensusState provider_consensus_state = 6;
-  repeated MaturingVSCPacket                    maturing_packets         = 7 [(gogoproto.nullable) = false];
-  repeated .tendermint.abci.ValidatorUpdate     initial_val_set          = 8 [(gogoproto.nullable) = false];
+  // MaturingPackets nil on new chain, filled on restart.
+  repeated MaturingVSCPacket maturing_packets = 7
+      [ (gogoproto.nullable) = false ];
+  // InitialValset filled in on new chain and on restart.
+  repeated .tendermint.abci.ValidatorUpdate initial_val_set = 8
+      [ (gogoproto.nullable) = false ];
+  // HeightToValsetUpdateId nil on new chain, filled on restart.
+  repeated HeightToValsetUpdateID height_to_valset_update_id = 9
+      [ (gogoproto.nullable) = false ];
+  // OutstandingDowntimes nil on new chain, filled on restart.
+  repeated OutstandingDowntime outstanding_downtime_slashing = 10
+      [ (gogoproto.nullable) = false ];
+  // PendingSlashRequests filled in on new chain, nil on restart.
+ interchain_security.ccv.consumer.v1.SlashRequests pending_slash_requests = 11
+ [ (gogoproto.nullable) = false ];
 }
 
-// UnbondingSequence defines the genesis information for each unbonding packet sequence.
+// MaturingVSCPacket defines the genesis information for the
+// unbonding VSC packet
 message MaturingVSCPacket {
-  uint64                     vscId          = 1;
-  uint64                     maturity_time = 2;
+  uint64 vscId = 1;
+  uint64 maturity_time = 2;
 }
+
+// HeightValsetUpdateID defines the genesis information for the mapping 
+// of each block height to a valset update id
+message HeightToValsetUpdateID {
+  uint64 height = 1;
+  uint64 valset_update_id = 2;
+}
+
+// OutstandingDowntime defines the genesis information for each validator
+// flagged with an outstanding downtime slashing.
+message OutstandingDowntime { string validator_consensus_address = 1; }

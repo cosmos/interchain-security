@@ -10,7 +10,6 @@ import "cosmos/staking/v1beta1/staking.proto";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 
-
 // Params defines the parameters for CCV consumer module
 message Params {
   bool enabled = 1;
@@ -27,22 +26,22 @@ message Params {
   // transfers over. These parameters is auto-set during the consumer <->
   // provider handshake procedure.
   string distribution_transmission_channel = 3;
-  string provider_fee_pool_addr_str        = 4;
+  string provider_fee_pool_addr_str = 4;
 }
 
 // LastTransmissionBlockHeight is the last time validator holding
 // pools were transmitted to the provider chain
-message LastTransmissionBlockHeight {
-  int64 height = 1;
-}
+message LastTransmissionBlockHeight { int64 height = 1; }
 
 // CrossChainValidator defines the validators for CCV consumer module
 message CrossChainValidator {
   bytes address = 1;
-  int64 power   = 2;
+  int64 power = 2;
   // pubkey is the consensus public key of the validator, as a Protobuf Any.
-  google.protobuf.Any pubkey = 3
-      [(cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey", (gogoproto.moretags) = "yaml:\"consensus_pubkey\""];
+  google.protobuf.Any pubkey = 3 [
+    (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey",
+    (gogoproto.moretags) = "yaml:\"consensus_pubkey\""
+  ];
 }
 
 // SlashRequest defines a slashing request for CCV consumer module
@@ -53,5 +52,6 @@ message SlashRequest {
 
 // SlashRequests is a list of slash requests for CCV consumer module
 message SlashRequests {
-  repeated SlashRequest requests = 1;
+  repeated SlashRequest requests = 1
+  [ (gogoproto.nullable) = false ];
 }
