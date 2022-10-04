@@ -27,8 +27,10 @@ type lastUpdate struct {
 
 /*
 There is a bug:
-You send a positive power update
-You send a 0 power update
+You send a positive power update at vsc 0
+You send a 0 power update at vsc 1
+Prune is called with vscid 1
+
 Prune is called with positive power vscid and succeeds because associated power is 0
 */
 
