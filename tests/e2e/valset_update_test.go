@@ -13,7 +13,7 @@ import (
 )
 
 // TestPacketRoundtrip tests a CCV packet roundtrip when tokens are bonded on provider
-func (s *ProviderTestSuite) TestPacketRoundtrip() {
+func (s *CCVTestSuite) TestPacketRoundtrip() {
 	s.SetupCCVChannel()
 
 	// Bond some tokens on provider to change validator powers

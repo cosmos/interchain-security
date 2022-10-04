@@ -12,7 +12,7 @@ import (
 )
 
 // Tests the functionality of stopping a consumer chain at a higher level than unit tests
-func (s *ProviderTestSuite) TestStopConsumerChain() {
+func (s *CCVTestSuite) TestStopConsumerChain() {
 
 	// default consumer chain ID
 	consumerChainID := s.consumerChain.ChainID
@@ -44,22 +44,22 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 	// 	- undelegate the shares in four consecutive blocks evenly; create UnbondigOp and UnbondingOpIndex entries for the consumer chain ID
 	// 	- set SlashAck and LockUnbondingOnTimeout states for the consumer chain ID
 	setupOperations := []struct {
-		fn func(suite *ProviderTestSuite) error
+		fn func(suite *CCVTestSuite) error
 	}{
 		{
-			func(suite *ProviderTestSuite) error {
+			func(suite *CCVTestSuite) error {
 				suite.SetupCCVChannel()
 				return nil
 			},
 		},
 		{
-			func(suite *ProviderTestSuite) error {
+			func(suite *CCVTestSuite) error {
 				testShares, err = s.providerChain.App.(*appProvider.App).StakingKeeper.Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
 				return err
 			},
 		},
 		{
-			func(suite *ProviderTestSuite) error {
+			func(suite *CCVTestSuite) error {
 				for i := 0; i < ubdOpsNum; i++ {
 					// undelegate one quarter of the shares
 					_, err := s.providerChain.App.(*appProvider.App).StakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, testShares.QuoInt64(int64(ubdOpsNum)))
@@ -73,7 +73,7 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 			},
 		},
 		{
-			func(suite *ProviderTestSuite) error {
+			func(suite *CCVTestSuite) error {
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetSlashAcks(s.providerCtx(), consumerChainID, []string{"validator-1", "validator-2", "validator-3"})
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetLockUnbondingOnTimeout(s.providerCtx(), consumerChainID)
 				s.providerChain.App.(*appProvider.App).ProviderKeeper.AppendPendingVSC(s.providerCtx(), consumerChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
@@ -96,7 +96,7 @@ func (s *ProviderTestSuite) TestStopConsumerChain() {
 }
 
 // TODO Simon: implement OnChanCloseConfirm in IBC-GO testing to close the consumer chain's channel end
-func (s *ProviderTestSuite) TestStopConsumerOnChannelClosed() {
+func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	// init the CCV channel states
 	s.SetupCCVChannel()
 	s.SendEmptyVSCPacket()
@@ -123,7 +123,7 @@ func (s *ProviderTestSuite) TestStopConsumerOnChannelClosed() {
 	// s.Require().False(found)
 }
 
-func (s *ProviderTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd bool) {
+func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd bool) {
 	channelID := s.path.EndpointB.ChannelID
 	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
 
@@ -171,7 +171,7 @@ func (s *ProviderTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd 
 // TODO Simon: duplicated from consumer/keeper_test.go; figure out how it can be refactored
 // SendEmptyVSCPacket sends a VSC packet with no valset changes
 // to ensure that the CCV channel gets established
-func (s *ProviderTestSuite) SendEmptyVSCPacket() {
+func (s *CCVTestSuite) SendEmptyVSCPacket() {
 	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
 
 	oldBlockTime := s.providerChain.GetContext().BlockTime()

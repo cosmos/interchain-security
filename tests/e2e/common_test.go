@@ -32,19 +32,19 @@ const (
 	Consumer
 )
 
-func (s *ProviderTestSuite) providerCtx() sdk.Context {
+func (s *CCVTestSuite) providerCtx() sdk.Context {
 	return s.providerChain.GetContext()
 }
 
-func (s *ProviderTestSuite) consumerCtx() sdk.Context {
+func (s *CCVTestSuite) consumerCtx() sdk.Context {
 	return s.consumerChain.GetContext()
 }
 
-func (s *ProviderTestSuite) providerBondDenom() string {
+func (s *CCVTestSuite) providerBondDenom() string {
 	return s.providerChain.App.(*appProvider.App).StakingKeeper.BondDenom(s.providerCtx())
 }
 
-func (s *ProviderTestSuite) getVal(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {
+func (s *CCVTestSuite) getVal(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {
 	// Choose a validator, and get its address and data structure into the correct types
 	tmValidator := s.providerChain.Vals.Validators[index]
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
@@ -55,13 +55,13 @@ func (s *ProviderTestSuite) getVal(index int) (validator stakingtypes.Validator,
 	return validator, valAddr
 }
 
-func getBalance(s *ProviderTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
+func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
 	return s.providerChain.App.(*appProvider.App).BankKeeper.GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
 
 // delegateAndUndelegate delegates bondAmt from delAddr to the first validator
 // and then immediately undelegates 1/shareDiv of that delegation
-func delegateAndUndelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, shareDiv int64) (initBalance sdk.Int, valsetUpdateId uint64) {
+func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, shareDiv int64) (initBalance sdk.Int, valsetUpdateId uint64) {
 	// delegate
 	initBalance, shares, valAddr := delegate(s, delAddr, bondAmt)
 
@@ -82,7 +82,7 @@ func delegateAndUndelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt
 //
 // Note: This function advances blocks in-between operations, where validator powers are
 // not checked, since they are checked in integration tests.
-func delegateAndRedelegate(s *ProviderTestSuite, delAddr sdk.AccAddress,
+func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
 	srcValAddr sdk.ValAddress, dstValAddr sdk.ValAddress, amount sdk.Int) {
 
 	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
@@ -115,7 +115,7 @@ func delegateAndRedelegate(s *ProviderTestSuite, delAddr sdk.AccAddress,
 }
 
 // delegate delegates bondAmt to the first validator
-func delegate(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBalance sdk.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
+func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBalance sdk.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
 	initBalance = getBalance(s, s.providerCtx(), delAddr)
 	// choose a validator
 	validator, valAddr := s.getVal(0)
@@ -135,7 +135,7 @@ func delegate(s *ProviderTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (in
 }
 
 // undelegate unbonds an amount of delegator shares from a given validator
-func undelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (valsetUpdateId uint64) {
+func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (valsetUpdateId uint64) {
 	_, err := s.providerChain.App.(*appProvider.App).StakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, sharesAmount)
 	s.Require().NoError(err)
 
@@ -147,7 +147,7 @@ func undelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAdd
 
 // Executes a BeginRedelegation (unbonding and redelegation) operation
 // on the provider chain using delegated funds from delAddr
-func redelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
+func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
 	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec) {
 	ctx := s.providerCtx()
 
@@ -179,7 +179,7 @@ func redelegate(s *ProviderTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.Val
 
 // relayAllCommittedPackets relays all committed packets from `srcChain` on `path`
 func relayAllCommittedPackets(
-	s *ProviderTestSuite,
+	s *CCVTestSuite,
 	srcChain *ibctesting.TestChain,
 	path *ibctesting.Path,
 	portID string,
@@ -212,7 +212,7 @@ func relayAllCommittedPackets(
 //
 // Note that it is expected for the provider unbonding period
 // to be one day larger than the consumer unbonding period.
-func incrementTimeByUnbondingPeriod(s *ProviderTestSuite, chainType ChainType) {
+func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	// Get unboding period from staking keeper
 	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
 	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
@@ -239,13 +239,13 @@ func incrementTimeByUnbondingPeriod(s *ProviderTestSuite, chainType ChainType) {
 	}
 }
 
-func checkStakingUnbondingOps(s *ProviderTestSuite, id uint64, found bool, onHold bool) {
+func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold bool) {
 	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerChain.App.(*appProvider.App).StakingKeeper, id)
 	s.Require().True(found == wasFound)
 	s.Require().True(onHold == (0 < stakingUnbondingOp.UnbondingOnHoldRefCount))
 }
 
-func checkCCVUnbondingOp(s *ProviderTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool) {
+func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool) {
 	entries, wasFound := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
 	s.Require().True(found == wasFound)
 	if found {
@@ -257,7 +257,7 @@ func checkCCVUnbondingOp(s *ProviderTestSuite, providerCtx sdk.Context, chainID 
 
 // Checks that an expected amount of redelegations exist for a delegator
 // via the staking keeper, then returns those redelegations.
-func checkRedelegations(s *ProviderTestSuite, delAddr sdk.AccAddress,
+func checkRedelegations(s *CCVTestSuite, delAddr sdk.AccAddress,
 	expect uint16) []stakingtypes.Redelegation {
 
 	redelegations := s.providerChain.App.(*appProvider.App).StakingKeeper.
@@ -269,7 +269,7 @@ func checkRedelegations(s *ProviderTestSuite, delAddr sdk.AccAddress,
 
 // Checks that a redelegation entry has a completion time equal to an expected time
 func checkRedelegationEntryCompletionTime(
-	s *ProviderTestSuite, entry stakingtypes.RedelegationEntry, expectedCompletion time.Time) {
+	s *CCVTestSuite, entry stakingtypes.RedelegationEntry, expectedCompletion time.Time) {
 	s.Require().Equal(expectedCompletion, entry.CompletionTime)
 }
 

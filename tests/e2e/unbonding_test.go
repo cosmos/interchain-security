@@ -11,7 +11,7 @@ import (
 
 // TestUndelegationProviderFirst checks that an unbonding operation completes
 // when the unbonding period elapses first on the provider chain
-func (s *ProviderTestSuite) TestUndelegationProviderFirst() {
+func (s *CCVTestSuite) TestUndelegationProviderFirst() {
 	s.SetupCCVChannel()
 
 	// delegate bondAmt and undelegate 1/2 of it
@@ -54,7 +54,7 @@ func (s *ProviderTestSuite) TestUndelegationProviderFirst() {
 
 // TestUndelegationConsumerFirst checks that an unbonding operation completes
 // when the unbonding period elapses first on the consumer chain
-func (s *ProviderTestSuite) TestUndelegationConsumerFirst() {
+func (s *CCVTestSuite) TestUndelegationConsumerFirst() {
 	s.SetupCCVChannel()
 
 	// delegate bondAmt and undelegate 1/2 of it
@@ -95,7 +95,7 @@ func (s *ProviderTestSuite) TestUndelegationConsumerFirst() {
 
 // TestUndelegationNoValsetChange checks that an unbonding operation completes
 // even when the validator set is not changed
-func (s *ProviderTestSuite) TestUndelegationNoValsetChange() {
+func (s *CCVTestSuite) TestUndelegationNoValsetChange() {
 	s.SetupCCVChannel()
 
 	// delegate bondAmt and undelegate all of it
@@ -137,7 +137,7 @@ func (s *ProviderTestSuite) TestUndelegationNoValsetChange() {
 // TestUndelegationDuringInit checks that before the CCV channel is established
 //   - no undelegations can complete, even if the provider unbonding period elapses
 //   - all the VSC packets are stored in state as pending
-func (s *ProviderTestSuite) TestUndelegationDuringInit() {
+func (s *CCVTestSuite) TestUndelegationDuringInit() {
 	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
@@ -200,7 +200,7 @@ func (s *ProviderTestSuite) TestUndelegationDuringInit() {
 // Check unbonding ops on both sides
 // Advance time so that provider's unbonding op completes
 // Check that unbonding has completed in provider staking
-func (s *ProviderTestSuite) TestUnbondingNoConsumer() {
+func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 	// remove the consumer chain, which was already registered during setup
 	s.providerChain.App.(*appProvider.App).ProviderKeeper.DeleteConsumerClientId(s.providerCtx(), s.consumerChain.ChainID)
 
@@ -231,7 +231,7 @@ func (s *ProviderTestSuite) TestUnbondingNoConsumer() {
 
 // TestRedelegationNoConsumer tests a redelegate transaction
 // submitted on a provider chain with no consumers
-func (s *ProviderTestSuite) TestRedelegationNoConsumer() {
+func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 
 	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
 	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
@@ -275,7 +275,7 @@ func (s *ProviderTestSuite) TestRedelegationNoConsumer() {
 
 // TestRedelegationWithConsumer tests a redelegate transaction submitted on a provider chain
 // when the unbonding period elapses first on the provider chain
-func (s *ProviderTestSuite) TestRedelegationProviderFirst() {
+func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 	s.SetupCCVChannel()
 
 	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
