@@ -26,11 +26,10 @@ type lastUpdate struct {
 // 3. integrate with create/destroy validator
 
 /*
-TODO: there is a scenario which invalidates the current design of the system.
-
-A vsc packet is sent whenever there is an unbonding op of any kind, or val power changes.
-It is possible for a validator to be sent with positive power, and the maturity to be received.
-This will delete the local key lookup, but it must be kept around.
+There is a bug:
+You send a positive power update
+You send a 0 power update
+Prune is called with positive power vscid and succeeds because associated power is 0
 */
 
 type KeyDel struct {
