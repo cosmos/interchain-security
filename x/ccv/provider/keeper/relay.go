@@ -122,7 +122,7 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	// get the validator updates from the staking module
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
-	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
+	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
 		// check whether there is an established CCV channel to this consumer chain
 		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
 			// Send pending VSC packets to consumer chain
