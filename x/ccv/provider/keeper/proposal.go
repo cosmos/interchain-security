@@ -300,7 +300,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 // and returns an ordered list of proposals to be executed, ie. consumer clients to be created.
 // A prop is included in the returned list if its proposed spawn time has passed.
 //
-// Note: this method is split out from IteratePendingConsumerAdditionProposals to be easily unit tested.
+// Note: this method is split out from BeginBlockInit to be easily unit tested.
 func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.ConsumerAdditionProposal {
 
 	// store the (to be) executed proposals in order
@@ -395,7 +395,7 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 // ie. consumer chains to be stopped and removed from the provider chain.
 // A prop is included in the returned list if its proposed stop time has passed.
 //
-// Note: this method is split out from IteratePendingConsumerRemovalProps to be easily unit tested.
+// Note: this method is split out from BeginBlockCCR to be easily unit tested.
 func (k Keeper) ConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerRemovalProposal {
 
 	// store the (to be) executed consumer removal proposals in order
