@@ -289,7 +289,7 @@ func getStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper,
 
 // SendEmptyVSCPacket sends a VSC packet without any changes
 // to ensure that the channel gets established
-func (suite *ConsumerKeeperTestSuite) SendEmptyVSCPacket() {
+func (suite *CCVTestSuite) SendEmptyVSCPacket() {
 	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 
 	oldBlockTime := suite.providerChain.GetContext().BlockTime()
@@ -318,7 +318,7 @@ func (suite *ConsumerKeeperTestSuite) SendEmptyVSCPacket() {
 
 // commitSlashPacket returns a commit hash for the given slash packet data
 // Note that it must be called before sending the embedding IBC packet.
-func (suite *ConsumerKeeperTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.SlashPacketData) []byte {
+func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.SlashPacketData) []byte {
 	oldBlockTime := ctx.BlockTime()
 	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
 
@@ -329,7 +329,7 @@ func (suite *ConsumerKeeperTestSuite) commitSlashPacket(ctx sdk.Context, packetD
 }
 
 // incrementTimeBy increments the overall time by jumpPeriod
-func incrementTimeBy(s *ConsumerKeeperTestSuite, jumpPeriod time.Duration) {
+func incrementTimeBy(s *CCVTestSuite, jumpPeriod time.Duration) {
 	// Get unboding period from staking keeper
 	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerChain.GetContext())
 	s.Require().True(found)
@@ -356,7 +356,7 @@ func incrementTimeBy(s *ConsumerKeeperTestSuite, jumpPeriod time.Duration) {
 // using the given unbonding period.
 // It will update the clientID for the endpoint if the message
 // is successfully executed.
-func (suite *ConsumerKeeperTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) {
+func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unbondingPeriod time.Duration) {
 	// ensure counterparty has committed state
 	endpoint.Chain.Coordinator.CommitBlock(endpoint.Counterparty.Chain)
 

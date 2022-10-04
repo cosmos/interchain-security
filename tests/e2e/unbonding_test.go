@@ -13,6 +13,7 @@ import (
 // when the unbonding period elapses first on the provider chain
 func (s *CCVTestSuite) TestUndelegationProviderFirst() {
 	s.SetupCCVChannel()
+	s.SetupTransferChannel()
 
 	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
@@ -56,6 +57,7 @@ func (s *CCVTestSuite) TestUndelegationProviderFirst() {
 // when the unbonding period elapses first on the consumer chain
 func (s *CCVTestSuite) TestUndelegationConsumerFirst() {
 	s.SetupCCVChannel()
+	s.SetupTransferChannel()
 
 	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
@@ -97,6 +99,7 @@ func (s *CCVTestSuite) TestUndelegationConsumerFirst() {
 // even when the validator set is not changed
 func (s *CCVTestSuite) TestUndelegationNoValsetChange() {
 	s.SetupCCVChannel()
+	s.SetupTransferChannel()
 
 	// delegate bondAmt and undelegate all of it
 	bondAmt := sdk.NewInt(10000000)
@@ -175,6 +178,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 
 	// complete CCV channel setup
 	s.SetupCCVChannel()
+	s.SetupTransferChannel()
 
 	// relay VSC packets from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 2)
@@ -277,6 +281,7 @@ func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 // when the unbonding period elapses first on the provider chain
 func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 	s.SetupCCVChannel()
+	s.SetupTransferChannel()
 
 	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
 	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper

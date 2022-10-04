@@ -8,7 +8,7 @@ import (
 )
 
 // Tests the tracking of historical info in the context of new blocks being committed
-func (k ConsumerKeeperTestSuite) TestTrackHistoricalInfo() {
+func (k CCVTestSuite) TestTrackHistoricalInfo() {
 	consumerKeeper := k.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	cCtx := k.consumerChain.GetContext
 
@@ -19,7 +19,7 @@ func (k ConsumerKeeperTestSuite) TestTrackHistoricalInfo() {
 
 	// define an utility function that creates a new cross-chain validator
 	// and then call track historical info in the next block
-	createVal := func(k ConsumerKeeperTestSuite) {
+	createVal := func(k CCVTestSuite) {
 		// add new validator to consumer states
 		pk := ed25519.GenPrivKey().PubKey()
 		cVal, err := types.NewCCValidator(pk.Address(), int64(1), pk)
@@ -35,10 +35,10 @@ func (k ConsumerKeeperTestSuite) TestTrackHistoricalInfo() {
 	// increased by HistoricalEntries in order to prune the historical info less or equal to the current block height
 	// Note that historical info containing the created validators are stored during the next block BeginBlocker
 	// and thus are indexed with the respective block heights InitHeight+1 and InitHeight+2
-	testSetup := []func(ConsumerKeeperTestSuite){
+	testSetup := []func(CCVTestSuite){
 		createVal,
 		createVal,
-		func(k ConsumerKeeperTestSuite) {
+		func(k CCVTestSuite) {
 			newHeight := k.consumerChain.GetContext().BlockHeight() + int64(types.HistoricalEntries)
 			header := tmproto.Header{
 				ChainID: "HelloChain",
