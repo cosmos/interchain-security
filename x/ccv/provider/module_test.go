@@ -95,7 +95,15 @@ func TestInitGenesis(t *testing.T) {
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 
 		appModule := provider.NewAppModule(&providerKeeper)
-		genState := types.NewGenesisState(tc.consumerStates, types.DefaultParams())
+		genState := types.NewGenesisState(
+			providerKeeper.GetValidatorSetUpdateId(ctx),
+			nil,
+			tc.consumerStates,
+			nil,
+			nil,
+			nil,
+			nil, types.DefaultParams(),
+		)
 
 		cdc := keeperParams.Cdc
 		jsonBytes := cdc.MustMarshalJSON(genState)
