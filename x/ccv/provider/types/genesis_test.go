@@ -22,7 +22,13 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"valid initializing provider genesis with nil updates",
 			types.NewGenesisState(
-				[]types.ConsumerState{{"chainid-1", "channelid"}},
+				0,
+				nil,
+				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid"}},
+				nil,
+				nil,
+				nil,
+				nil,
 				types.DefaultParams(),
 			),
 			true,
@@ -30,7 +36,13 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"valid validating provider genesis with nil updates",
 			types.NewGenesisState(
-				[]types.ConsumerState{{"chainid-1", "channelid"}},
+				0,
+				nil,
+				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid"}},
+				nil,
+				nil,
+				nil,
+				nil,
 				types.DefaultParams(),
 			),
 			true,
@@ -38,12 +50,18 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"valid multiple provider genesis with multiple consumer chains",
 			types.NewGenesisState(
+				0,
+				nil,
 				[]types.ConsumerState{
-					{"chainid-1", "channelid"},
-					{"chainid-2", "channelid2"},
-					{"chainid-3", "channelid3"},
-					{"chainid-4", "channelid4"},
+					{ChainId: "chainid-1", ChannelId: "channelid1"},
+					{ChainId: "chainid-2", ChannelId: "channelid2"},
+					{ChainId: "chainid-3", ChannelId: "channelid3"},
+					{ChainId: "chainid-4", ChannelId: "channelid4"},
 				},
+				nil,
+				nil,
+				nil,
+				nil,
 				types.DefaultParams(),
 			),
 			true,
@@ -51,7 +69,13 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"valid provider genesis with custom params",
 			types.NewGenesisState(
-				[]types.ConsumerState{{"chainid-1", "channelid"}},
+				0,
+				nil,
+				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid"}},
+				nil,
+				nil,
+				nil,
+				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false)),
 			),
@@ -60,7 +84,13 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"invalid params",
 			types.NewGenesisState(
-				[]types.ConsumerState{{"chainid-1", "channelid"}},
+				0,
+				nil,
+				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid"}},
+				nil,
+				nil,
+				nil,
+				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					0, clienttypes.Height{}, nil, []string{"ibc", "upgradedIBCState"}, true, false)),
 			),
@@ -69,7 +99,13 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"invalid chain id",
 			types.NewGenesisState(
-				[]types.ConsumerState{{" ", "channelid"}},
+				0,
+				nil,
+				[]types.ConsumerState{{ChainId: "", ChannelId: "channelid"}},
+				nil,
+				nil,
+				nil,
+				nil,
 				types.DefaultParams(),
 			),
 			false,
@@ -77,7 +113,13 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"invalid channel id",
 			types.NewGenesisState(
-				[]types.ConsumerState{{"chainid", "invalidchannel{}"}},
+				0,
+				nil,
+				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "ivnalidChannel{}"}},
+				nil,
+				nil,
+				nil,
+				nil,
 				types.DefaultParams(),
 			),
 			false,
