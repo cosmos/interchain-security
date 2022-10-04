@@ -119,10 +119,10 @@ func (d *Driver) runTrace() {
 	require.Len(d.t, d.foreignValSets, 1)
 
 	// Check properties for each state after the initial
-	deb := 1
+	deb := 0
 	for _, s := range d.trace[1:] {
-		fmt.Println("deb:", deb)
-		deb += 1
+		fmt.Println(deb)
+		deb++
 
 		if d.lastTP < s.TP {
 			// Provider time increment:
@@ -235,12 +235,13 @@ func (d *Driver) checkProperties() {
 
 		// Simply check every foreign key for the correct queryable-ness.
 		for fk := 0; fk < NUM_FKS; fk++ {
-			_, expect := expectQueryable[fk]
-
-			// Chech that lookup is available
-			_, actual := d.e.foreignToLastUpdate[fk]
-
-			require.Equal(d.t, expect, actual)
+			_, err := d.e.GetLocal(fk)
+			actualQueryable := err == nil
+			if expect, found := expectQueryable[fk]; found && expect {
+				require.True(d.t, actualQueryable)
+			} else {
+				require.False(d.t, actualQueryable)
+			}
 		}
 	}
 
@@ -371,14 +372,13 @@ func getTrace(t *testing.T) []TraceState {
 }
 
 func TestPrototype(t *testing.T) {
+	rand.Seed(8)
 	for i := 0; i < 1000; i++ {
-		rand.Seed(int64(i))
 		trace := []TraceState{}
 		for len(trace) < 2 {
 			trace = getTrace(t)
 		}
 		d := MakeDriver(t, trace)
-		fmt.Println(i)
 		d.runTrace()
 
 	}

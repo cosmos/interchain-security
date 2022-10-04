@@ -90,9 +90,9 @@ func (e *KeyDel) GetLocal(fk FK) (LK, error) {
 
 func (e *KeyDel) Prune(vscid VSCID) {
 	toRemove := []FK{}
-	for fk, u := range e.foreignToLastUpdate {
+	for _, u := range e.foreignToLastUpdate {
 		if u.vscid <= vscid && u.power == 0 {
-			toRemove = append(toRemove, fk)
+			toRemove = append(toRemove, u.fk)
 		}
 	}
 	for _, fk := range toRemove {
@@ -177,7 +177,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	}
 
 	// TODO: I can replace RHS with some logic which does addition/deletion based on
-	// power in e.usedForeignToLastUpdate
+	// power in e.usedForeignToLastUpdate??
 	e.localToLastPositiveForeignUpdate = lkTLPFU
 
 	return foreignUpdates
