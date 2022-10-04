@@ -1,6 +1,8 @@
 package keydel
 
-import "errors"
+import (
+	"errors"
+)
 
 type LK = int
 type FK = int

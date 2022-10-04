@@ -8,7 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const TRACE_LEN = 1000
+const NUM_TRACES = 100000
+const TRACE_LEN = 5
 const NUM_VALS = 4
 const NUM_FKS = 50
 
@@ -372,8 +373,11 @@ func getTrace(t *testing.T) []TraceState {
 }
 
 func TestPrototype(t *testing.T) {
-	rand.Seed(8)
-	for i := 0; i < 1000; i++ {
+	rand.Seed(7337)
+	for i := 0; i < NUM_TRACES; i++ {
+		// rand.Seed(int64(i))
+		fmt.Println(i)
+
 		trace := []TraceState{}
 		for len(trace) < 2 {
 			trace = getTrace(t)
