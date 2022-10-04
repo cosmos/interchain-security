@@ -91,7 +91,7 @@ func (e *KeyDel) GetLocal(fk FK) (LK, error) {
 func (e *KeyDel) Prune(mostRecentlyMaturedVscid VSCID) {
 	toRemove := []FK{}
 	for fk, u := range e.usedForeignToLastUpdate {
-		if u.vscid <= mostRecentlyMaturedVscid {
+		if u.vscid <= mostRecentlyMaturedVscid && u.power == 0 {
 			toRemove = append(toRemove, fk)
 		}
 	}

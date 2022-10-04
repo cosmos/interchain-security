@@ -206,6 +206,7 @@ func (d *Driver) checkProperties() {
 	/*
 		Two more properties which must be satisfied by KeyDel when
 		used correctly inside a wider system:
+		TODO: fix this description
 
 		1. If a foreign key IS used in an update for the consumer, with a positive
 		   power, at VSCID i, then the local key associated to it must be queryable
@@ -221,14 +222,15 @@ func (d *Driver) checkProperties() {
 	pruning := func() {
 		expectQueryable := map[FK]bool{}
 
+		for i := 0; i <= d.lastTM; i++ {
+			for _, u := range d.foreignUpdates[i] {
+				expectQueryable[u.key] = 0 < u.power
+			}
+		}
 		for i := d.lastTM + 1; i <= d.lastTP; i++ {
-			// If the foreign key was used, recently, and did not mature
-			/// then we expect it to be queryable (for slashing).
 			for _, u := range d.foreignUpdates[i] {
 				expectQueryable[u.key] = true
 			}
-			// Otherwise, it was not used, or was used a long time ago
-			// (after maturity). Then we expect it to be pruned.
 		}
 
 		// Simply check every foreign key for the correct queryable-ness.
