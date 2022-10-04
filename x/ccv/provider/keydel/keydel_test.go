@@ -39,6 +39,22 @@ type Driver struct {
 	foreignValSets []ValSet
 }
 
+func MakeDriver(t *testing.T, trace []TraceState) Driver {
+	d := Driver{}
+	d.t = t
+	e := MakeKeyDel()
+	d.e = &e
+	d.trace = trace
+	d.lastTP = 0
+	d.lastTC = 0
+	d.lastTM = 0
+	d.mappings = []map[LK]FK{}
+	d.foreignUpdates = [][]update{}
+	d.localValSets = []ValSet{}
+	d.foreignValSets = []ValSet{}
+	return d
+}
+
 type ValSet struct {
 	keyToPower map[int]int
 }
@@ -92,10 +108,13 @@ func (d *Driver) runTrace() {
 		d.e.Prune(init.TM)
 	}
 
+	// Sanity check the initial state
 	require.Len(d.t, d.mappings, 1)
 	require.Len(d.t, d.foreignUpdates, 1)
 	require.Len(d.t, d.localValSets, 1)
+	require.Len(d.t, d.foreignValSets, 1)
 
+	// Check properties for each state after the initial
 	for _, s := range d.trace[1:] {
 		if d.lastTP < s.TP {
 			// Provider time increment:
@@ -202,8 +221,18 @@ func (d *Driver) checkProperties() {
 		}
 	}
 
+	/*
+		For a given foreign key: if a local key lookup is successful, the
+		local key returned is the unique local key which was known to the
+		consumer
+	*/
+	correctSlashing := func() {
+
+	}
+
 	validatorSetReplication()
 	queriesAndCorrectPruning()
+	correctSlashing()
 
 }
 
@@ -303,18 +332,7 @@ func TestPrototype(t *testing.T) {
 		for len(trace) < 2 {
 			trace = getTrace(t)
 		}
-		d := Driver{}
-		d.t = t
-		e := MakeKeyDel()
-		d.e = &e
-		d.trace = trace
-		d.lastTP = 0
-		d.lastTC = 0
-		d.lastTM = 0
-		d.mappings = []map[LK]FK{}
-		d.foreignUpdates = [][]update{}
-		d.localValSets = []ValSet{}
-		d.foreignValSets = []ValSet{}
+		d := MakeDriver(t, trace)
 		d.runTrace()
 	}
 }
