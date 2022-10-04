@@ -1,15 +1,14 @@
 package keydel
 
 import (
-	"fmt"
 	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-const NUM_TRACES = 100000
-const TRACE_LEN = 5
+const NUM_TRACES = 4000
+const TRACE_LEN = 1000
 const NUM_VALS = 4
 const NUM_FKS = 50
 
@@ -37,8 +36,7 @@ type Driver struct {
 	mappings       []map[LK]FK
 	foreignUpdates [][]update
 	localValSets   []ValSet
-	foreignValSets []ValSet
-	foreignValSetT []int
+	foreignValSet  ValSet
 }
 
 func MakeDriver(t *testing.T, trace []TraceState) Driver {
@@ -53,8 +51,7 @@ func MakeDriver(t *testing.T, trace []TraceState) Driver {
 	d.mappings = []map[LK]FK{}
 	d.foreignUpdates = [][]update{}
 	d.localValSets = []ValSet{}
-	d.foreignValSets = []ValSet{}
-	d.foreignValSetT = []int{}
+	d.foreignValSet = ValSet{}
 	return d
 }
 
@@ -107,9 +104,8 @@ func (d *Driver) runTrace() {
 		// Set the initial foreign set
 		d.foreignUpdates = append(d.foreignUpdates, d.e.ComputeUpdates(init.TP, init.LocalUpdates))
 		// The first foreign set equal to the local set at time 0
-		d.foreignValSetT = append(d.foreignValSetT, 0)
-		d.foreignValSets = append(d.foreignValSets, MakeValSet())
-		d.foreignValSets[init.TC].applyUpdates(d.foreignUpdates[init.TC])
+		d.foreignValSet = MakeValSet()
+		d.foreignValSet.applyUpdates(d.foreignUpdates[init.TC])
 		d.e.Prune(init.TM)
 	}
 
@@ -117,14 +113,9 @@ func (d *Driver) runTrace() {
 	require.Len(d.t, d.mappings, 1)
 	require.Len(d.t, d.foreignUpdates, 1)
 	require.Len(d.t, d.localValSets, 1)
-	require.Len(d.t, d.foreignValSets, 1)
 
 	// Check properties for each state after the initial
-	deb := 0
 	for _, s := range d.trace[1:] {
-		fmt.Println(deb)
-		deb++
-
 		if d.lastTP < s.TP {
 			// Provider time increment:
 			// Apply some key mappings and create some new validator power updates
@@ -134,23 +125,8 @@ func (d *Driver) runTrace() {
 			d.lastTP = s.TP
 		}
 		if d.lastTC < s.TC {
-			// Duplicate the valSet known at lastTC
-			for j := d.lastTC + 1; j < s.TC; j++ {
-				d.foreignValSetT = append(d.foreignValSetT, d.lastTC)
-				d.foreignValSets = append(d.foreignValSets, MakeValSet())
-				for fk, power := range d.foreignValSets[d.lastTC].keyToPower {
-					d.foreignValSets[j].keyToPower[fk] = power
-				}
-			}
-			// Apply the updates since lastTC ONLY TO s.TC
-			// This models the consumer receiving updates from several blocks at once
-			d.foreignValSetT = append(d.foreignValSetT, s.TC)
-			d.foreignValSets = append(d.foreignValSets, MakeValSet())
-			for fk, power := range d.foreignValSets[d.lastTC].keyToPower {
-				d.foreignValSets[s.TC].keyToPower[fk] = power
-			}
 			for j := d.lastTC + 1; j <= s.TC; j++ {
-				d.foreignValSets[s.TC].applyUpdates(d.foreignUpdates[j])
+				d.foreignValSet.applyUpdates(d.foreignUpdates[j])
 			}
 			d.lastTC = s.TC
 		}
@@ -175,7 +151,7 @@ func (d *Driver) checkProperties() {
 	validatorSetReplication := func() {
 
 		// Get the current consumer val set.
-		foreignSet := d.foreignValSets[d.lastTC].keyToPower
+		foreignSet := d.foreignValSet.keyToPower
 		// Get the provider set at the corresponding time.
 		localSet := d.localValSets[d.lastTC].keyToPower
 
@@ -207,18 +183,17 @@ func (d *Driver) checkProperties() {
 	/*
 		Two more properties which must be satisfied by KeyDel when
 		used correctly inside a wider system:
-		TODO: fix this description
 
-		1. If a foreign key IS used in an update for the consumer, with a positive
-		   power, at VSCID i, then the local key associated to it must be queryable
-		   until i is matured. (Consumer Initiated Slashing Property). Phrased another
-		   way: foreign keys which are known to the consumer may be useable for slashing
-		   until the corresponding maturity is received. Thus they must be queryable.
-		2. If a foreign key IS NOT used in an update for a consumer for a VSCID j
-		   with i < j, and i is matured, then the foreign key is deleted from storage.
-		   (Pruning property). Phrased another way: i matured, and there was no update
-		   after i that references the foreign key. The foreign key cannot be used
-		   for slashing anymore, so it can and should be pruned.
+		1. (Consumer Initiated Slashing Property) If a foreign key IS used in an update
+		   for the consumer, with a positive power, at VSCID i, and no 0 power update
+		   follows, then the local key associated to it must be queryable.
+		   Phrased another way: foreign keys which are known to the consumer must be
+		   useable for slashing indefinitely.
+		2. (Pruning) If a foreign key IS NOT used in an update for a VSCID j with i < j,
+		   and i is a 0 power update and has matured, then the foreign key is deleted
+		   from storage.
+		   Phrased another way: if the last 0 power update has matured, the key should
+		   be pruned.
 	*/
 	pruning := func() {
 		expectQueryable := map[FK]bool{}
@@ -249,30 +224,27 @@ func (d *Driver) checkProperties() {
 	/*
 	 */
 	queries := func() {
-		// For each possible validator set on the consumer, since the latest
-		// maturity.
-		for i := d.lastTM + 1; i <= d.lastTC; i++ {
-			for consumerFK := range d.foreignValSets[i].keyToPower {
-				queriedLK, err := d.e.GetLocal(consumerFK)
-				// There must be a corresponding local key
-				require.Nil(d.t, err)
-				providerFKs := map[FK]bool{}
-				// Check that the local key was indeed the key used at the time
-				// corresponding to the foreign set.
-				mapping := d.mappings[d.foreignValSetT[i]]
-				for providerLK, providerFK := range mapping {
-					require.Falsef(d.t, providerFKs[providerFK], "two local keys map to the same foreign key")
-					providerFKs[providerFK] = true
-					if consumerFK == providerFK {
-						// A mapping to the consumer FK was found
-						// The corresponding LK must be the one queried.
-						require.Equal(d.t, providerLK, queriedLK)
-					}
+		// For each fk known to the consumer
+		for consumerFK := range d.foreignValSet.keyToPower {
+			queriedLK, err := d.e.GetLocal(consumerFK)
+			// There must be a corresponding local key
+			require.Nil(d.t, err)
+			providerFKs := map[FK]bool{}
+			// The local key must be the one that was actually referenced
+			// in the latest mapping used to compute updates sent to the
+			// consumer.
+			mapping := d.mappings[d.lastTC]
+			for providerLK, providerFK := range mapping {
+				require.Falsef(d.t, providerFKs[providerFK], "two local keys map to the same foreign key")
+				providerFKs[providerFK] = true
+				if consumerFK == providerFK {
+					// A mapping to the consumer FK was found
+					// The corresponding LK must be the one queried.
+					require.Equal(d.t, providerLK, queriedLK)
 				}
-				// Check that the comparison was actually made!
-				require.Truef(d.t, providerFKs[consumerFK], "no mapping found for foreign key")
 			}
-
+			// Check that the comparison was actually made!
+			require.Truef(d.t, providerFKs[consumerFK], "no mapping found for foreign key")
 		}
 	}
 
@@ -373,11 +345,7 @@ func getTrace(t *testing.T) []TraceState {
 }
 
 func TestPrototype(t *testing.T) {
-	rand.Seed(7337)
 	for i := 0; i < NUM_TRACES; i++ {
-		// rand.Seed(int64(i))
-		fmt.Println(i)
-
 		trace := []TraceState{}
 		for len(trace) < 2 {
 			trace = getTrace(t)

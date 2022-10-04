@@ -25,15 +25,6 @@ type lastUpdate struct {
 // 2. integrate into Provider::EndBlock,
 // 3. integrate with create/destroy validator
 
-/*
-There is a bug:
-You send a positive power update at vsc 0
-You send a 0 power update at vsc 1
-Prune is called with vscid 1
-
-Prune is called with positive power vscid and succeeds because associated power is 0
-*/
-
 type KeyDel struct {
 	// A new key is added on staking::CreateValidator
 	// the key is deleted at earliest after sending an update corresponding
@@ -52,9 +43,10 @@ type KeyDel struct {
 
 func MakeKeyDel() KeyDel {
 	return KeyDel{
-		localToForeign:                   map[LK]FK{},
-		foreignIsMappedTo:                map[FK]bool{},
-		foreignToLastUpdate:              map[FK]lastUpdate{},
+		localToForeign:      map[LK]FK{},
+		foreignIsMappedTo:   map[FK]bool{},
+		foreignToLastUpdate: map[FK]lastUpdate{},
+		// TODO: can compute necessary logic from this field from foreignToLastUpdate
 		localToLastPositiveForeignUpdate: map[LK]update{},
 	}
 }
@@ -94,6 +86,9 @@ func (e *KeyDel) GetLocal(fk FK) (LK, error) {
 func (e *KeyDel) Prune(vscid VSCID) {
 	toRemove := []FK{}
 	for _, u := range e.foreignToLastUpdate {
+		// If the last update has matured, and that
+		// update was a deletion (0 power), pruning
+		// is possible.
 		if u.vscid <= vscid && u.power == 0 {
 			toRemove = append(toRemove, u.fk)
 		}
