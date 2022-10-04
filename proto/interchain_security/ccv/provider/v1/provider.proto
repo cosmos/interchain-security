@@ -62,7 +62,7 @@ message Params {
 
 message HandshakeMetadata {
   string provider_fee_pool_addr = 1;
-  string version                = 2;
+  string version = 2;
 }
 
 // SlashAcks contains addesses of consumer chain validators

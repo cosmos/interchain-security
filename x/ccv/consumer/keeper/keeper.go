@@ -320,6 +320,24 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 	store.Delete(types.HeightValsetUpdateIDKey(height))
 }
 
+// IterateHeightToValsetUpdateID iterates over the block height to valset update ID mapping in store
+func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		heightBytes := iterator.Key()[1:]
+		height := binary.BigEndian.Uint64(heightBytes)
+
+		vscID := binary.BigEndian.Uint64(iterator.Value())
+
+		if !cb(height, vscID) {
+			break
+		}
+	}
+}
+
 // OutstandingDowntime returns the outstanding downtime flag for a given validator
 func (k Keeper) OutstandingDowntime(ctx sdk.Context, address sdk.ConsAddress) bool {
 	store := ctx.KVStore(k.storeKey)
@@ -341,6 +359,21 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 	}
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.OutstandingDowntimeKey(consAddr))
+}
+
+// IterateOutstandingDowntime iterates over the validator addresses of outstanding downtime flags
+func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address string) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		addrBytes := iterator.Key()[1:]
+		addr := sdk.ConsAddress(addrBytes).String()
+		if !cb(addr) {
+			break
+		}
+	}
 }
 
 // SetCCValidator sets a cross-chain validator under its validator address
@@ -386,13 +419,9 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 }
 
 // SetPendingSlashRequests sets the pending slash requests in store
-func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests []*types.SlashRequest) {
+func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests types.SlashRequests) {
 	store := ctx.KVStore(k.storeKey)
-
-	sr := types.SlashRequests{
-		Requests: requests,
-	}
-	bz, err := sr.Marshal()
+	bz, err := requests.Marshal()
 	if err != nil {
 		panic(fmt.Errorf("failed to encode slash request json: %w", err))
 	}
@@ -400,11 +429,11 @@ func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests []*types.Slash
 }
 
 // GetPendingSlashRequest returns the pending slash requests in store
-func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) []*types.SlashRequest {
+func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) types.SlashRequests {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get([]byte{types.PendingSlashRequestsBytePrefix})
 	if bz == nil {
-		return []*types.SlashRequest{}
+		return types.SlashRequests{}
 	}
 
 	var sr types.SlashRequests
@@ -413,7 +442,7 @@ func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) []*types.SlashRequest {
 		panic(fmt.Errorf("failed to decode slash request json: %w", err))
 	}
 
-	return sr.GetRequests()
+	return sr
 }
 
 // ClearPendingSlashRequests clears the pending slash requests in store
@@ -424,7 +453,8 @@ func (k Keeper) DeletePendingSlashRequests(ctx sdk.Context) {
 
 // AppendPendingSlashRequests appends the given slash request to the pending slash requests in store
 func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashRequest) {
-	requests := k.GetPendingSlashRequests(ctx)
-	requests = append(requests, &req)
-	k.SetPendingSlashRequests(ctx, requests)
+	sr := k.GetPendingSlashRequests(ctx)
+	srArray := sr.GetRequests()
+	srArray = append(srArray, req)
+	k.SetPendingSlashRequests(ctx, types.SlashRequests{Requests: srArray})
 }
