@@ -224,7 +224,7 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 	ctx = ctx.WithBlockTime(time.Now().UTC())
 
 	propsToExecute := providerKeeper.ConsumerAdditionPropsToExecute(ctx)
-	// Delete consumer addition proposals, same as what would be done by IteratePendingConsumerAdditionProps
+	// Delete consumer addition proposals, same as what would be done by BeginBlockInit
 	providerKeeper.DeletePendingConsumerAdditionProps(ctx, propsToExecute...)
 	numDeleted := 0
 	for _, tc := range testCases {
@@ -496,7 +496,7 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 	ctx = ctx.WithBlockTime(time.Now().UTC())
 
 	propsToExecute := providerKeeper.ConsumerRemovalPropsToExecute(ctx)
-	// Delete consumer removal proposals, same as what would be done by IterateMatureConsumerRemovalProps
+	// Delete consumer removal proposals, same as what would be done by BeginBlockCCR
 	providerKeeper.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
 	numDeleted := 0
 	for _, tc := range testCases {
