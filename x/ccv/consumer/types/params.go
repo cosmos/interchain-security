@@ -10,7 +10,6 @@ import (
 const DefaultBlocksPerDistributionTransmission = 1000
 
 var (
-	KeyEnabled                           = []byte("Enabled")
 	KeyBlocksPerDistributionTransmission = []byte("BlocksPerDistributionTransmission")
 	KeyDistributionTransmissionChannel   = []byte("DistributionTransmissionChannel")
 	KeyProviderFeePoolAddrStr            = []byte("ProviderFeePoolAddrStr")
@@ -22,10 +21,9 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates new consumer parameters with provided arguments
-func NewParams(enabled bool, blocksPerDistributionTransmission int64,
+func NewParams(blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string) Params {
 	return Params{
-		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
 		DistributionTransmissionChannel:   distributionTransmissionChannel,
 		ProviderFeePoolAddrStr:            providerFeePoolAddrStr,
@@ -35,7 +33,6 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 // DefaultParams is the default params for the consumer module
 func DefaultParams() Params {
 	return NewParams(
-		false,
 		DefaultBlocksPerDistributionTransmission,
 		"",
 		"",
@@ -50,7 +47,6 @@ func (p Params) Validate() error {
 // ParamSetPairs implements params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, validateBool),
 		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,
 			p.BlocksPerDistributionTransmission, validateInt64),
 		paramtypes.NewParamSetPair(KeyDistributionTransmissionChannel,
@@ -60,12 +56,12 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	}
 }
 
-func validateBool(i interface{}) error {
-	if _, ok := i.(bool); !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	return nil
-}
+// func validateBool(i interface{}) error {
+// 	if _, ok := i.(bool); !ok {
+// 		return fmt.Errorf("invalid parameter type: %T", i)
+// 	}
+// 	return nil
+// }
 
 func validateInt64(i interface{}) error {
 	if _, ok := i.(int64); !ok {

@@ -9,7 +9,6 @@ import (
 // GetParams returns the paramset for the consumer module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
-		k.GetEnabled(ctx),
 		k.GetBlocksPerDistributionTransmission(ctx),
 		k.GetDistributionTransmissionChannel(ctx),
 		k.GetProviderFeePoolAddrStr(ctx),
@@ -19,13 +18,6 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 // SetParams sets the paramset for the consumer module
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramStore.SetParamSet(ctx, &params)
-}
-
-// GetEnabled returns the enabled flag for the consumer module
-func (k Keeper) GetEnabled(ctx sdk.Context) bool {
-	var enabled bool
-	k.paramStore.Get(ctx, types.KeyEnabled, &enabled)
-	return enabled
 }
 
 func (k Keeper) GetBlocksPerDistributionTransmission(ctx sdk.Context) int64 {

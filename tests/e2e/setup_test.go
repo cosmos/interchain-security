@@ -41,6 +41,9 @@ func TestProviderTestSuite(t *testing.T) {
 	suite.Run(t, new(ProviderTestSuite))
 }
 
+// Setup executed before every e2e test using the ProviderTestSuite
+//
+// TODO: consolidation of this file in this PR?
 func (suite *ProviderTestSuite) SetupTest() {
 	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
 

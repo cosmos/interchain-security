@@ -50,9 +50,6 @@ func DefaultGenesisState() *GenesisState {
 
 // Validate performs basic genesis state validation returning an error upon any failure.
 func (gs GenesisState) Validate() error {
-	if !gs.Params.Enabled {
-		return nil
-	}
 	if len(gs.InitialValSet) == 0 {
 		return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "initial validator set is empty")
 	}

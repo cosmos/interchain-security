@@ -125,6 +125,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 // InitGenesis performs genesis initialization for the consumer module. It returns
 // no validator updates.
+// TODO: Unit test for this method, similar to provider.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState consumertypes.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)

@@ -46,7 +46,6 @@ func TestValidateInitialGenesisState(t *testing.T) {
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash[:])
 
 	params := types.DefaultParams()
-	params.Enabled = true
 
 	cases := []struct {
 		name     string
@@ -164,7 +163,6 @@ func TestValidateRestartGenesisState(t *testing.T) {
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash[:])
 
 	params := types.DefaultParams()
-	params.Enabled = true
 
 	cases := []struct {
 		name     string

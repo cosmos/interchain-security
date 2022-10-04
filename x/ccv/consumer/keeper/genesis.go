@@ -17,10 +17,6 @@ import (
 // InitGenesis initializes the CCV consumer state and binds to PortID.
 func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) []abci.ValidatorUpdate {
 	k.SetParams(ctx, state.Params)
-	if !state.Params.Enabled {
-		return nil
-	}
-
 	k.SetPort(ctx, ccv.ConsumerPortID)
 
 	// Only try to bind to port if it is not already bound, since we may already own
@@ -106,9 +102,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 // provider chain. Otherwise, this is still considered a new chain and we export latest client state.
 func (k Keeper) ExportGenesis(ctx sdk.Context) *consumertypes.GenesisState {
 	params := k.GetParams(ctx)
-	if !params.Enabled {
-		return consumertypes.DefaultGenesisState()
-	}
 
 	if channelID, ok := k.GetProviderChannel(ctx); ok {
 		clientID, ok := k.GetProviderClientID(ctx)

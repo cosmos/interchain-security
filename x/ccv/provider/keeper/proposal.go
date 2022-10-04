@@ -206,7 +206,6 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 
 	gen = *consumertypes.DefaultGenesisState()
 
-	gen.Params.Enabled = true
 	gen.NewChain = true
 	gen.ProviderClientState = clientState
 	gen.ProviderConsensusState = consState.(*ibctmtypes.ConsensusState)

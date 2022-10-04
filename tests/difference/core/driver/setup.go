@@ -472,7 +472,6 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 	// Create Consumer genesis
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.providerChain().Vals)
 	params := consumertypes.NewParams(
-		true,
 		1000, // ignore distribution
 		"",   // ignore distribution
 		"",   // ignore distribution
