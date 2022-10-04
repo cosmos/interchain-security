@@ -272,6 +272,7 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 	return prop, true
 }
 
+// PendingConsumerAdditionPropIterator returns an iterator for iterating through pending consumer addition proposals
 func (k Keeper) PendingConsumerAdditionPropIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
@@ -333,7 +334,8 @@ func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.Consumer
 	return propsToExecute
 }
 
-// DeletePendingConsumerAdditionProps deletes the given consumer addition proposals
+// DeletePendingConsumerAdditionProps deletes the given consumer addition proposals.
+// This method should be called once the proposal has been acted upon.
 func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ...types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -357,7 +359,8 @@ func (k Keeper) GetPendingConsumerRemovalProp(ctx sdk.Context, chainID string, t
 	return bz != nil
 }
 
-// DeletePendingConsumerRemovalProps deletes the given consumer removal proposals
+// DeletePendingConsumerRemovalProps deletes the given pending consumer removal proposals.
+// This method should be called once the proposal has been acted upon.
 func (k Keeper) DeletePendingConsumerRemovalProps(ctx sdk.Context, proposals ...types.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -366,6 +369,7 @@ func (k Keeper) DeletePendingConsumerRemovalProps(ctx sdk.Context, proposals ...
 	}
 }
 
+// PendingConsumerRemovalPropIterator returns an iterator for iterating through pending consumer removal proposals
 func (k Keeper) PendingConsumerRemovalPropIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
