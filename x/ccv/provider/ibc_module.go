@@ -16,6 +16,9 @@ import (
 )
 
 // OnChanOpenInit implements the IBCModule interface
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coinit1
+// Spec Tag: [CCV-PCF-COINIT.1]
 func (am AppModule) OnChanOpenInit(
 	ctx sdk.Context,
 	order channeltypes.Order,
@@ -30,6 +33,10 @@ func (am AppModule) OnChanOpenInit(
 }
 
 // OnChanOpenTry implements the IBCModule interface
+//
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-cotry1
+// Spec tag: [CCV-PCF-COTRY.1]
 func (am AppModule) OnChanOpenTry(
 	ctx sdk.Context,
 	order channeltypes.Order,
@@ -110,6 +117,9 @@ func validateCCVChannelParams(
 }
 
 // OnChanOpenAck implements the IBCModule interface
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coack1
+// Spec tag: [CCV-PCF-COACK.1]
 func (am AppModule) OnChanOpenAck(
 	ctx sdk.Context,
 	portID,
@@ -121,6 +131,9 @@ func (am AppModule) OnChanOpenAck(
 }
 
 // OnChanOpenConfirm implements the IBCModule interface
+//
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coconfirm1
+// Spec tag: [CCV-PCF-COCONFIRM.1]
 func (am AppModule) OnChanOpenConfirm(
 	ctx sdk.Context,
 	portID,
@@ -153,7 +166,7 @@ func (am AppModule) OnChanCloseConfirm(
 }
 
 // OnRecvPacket implements the IBCModule interface. A successful acknowledgement
-// is returned if the packet data is succesfully decoded and the receive application
+// is returned if the packet data is successfully decoded and the receive application
 // logic returns without error.
 func (am AppModule) OnRecvPacket(
 	ctx sdk.Context,

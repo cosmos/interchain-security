@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -18,7 +20,7 @@ import (
 // TestUnbondingTime tests getter and setter functionality for the unbonding period of a consumer chain
 func TestUnbondingTime(t *testing.T) {
 
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	_, ok := consumerKeeper.GetUnbondingTime(ctx)
@@ -33,7 +35,7 @@ func TestUnbondingTime(t *testing.T) {
 // TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper
 func TestProviderClientID(t *testing.T) {
 
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	_, ok := consumerKeeper.GetProviderClientID(ctx)
@@ -47,7 +49,7 @@ func TestProviderClientID(t *testing.T) {
 // TestProviderChannel tests getter and setter functionality for the channel ID stored on consumer keeper
 func TestProviderChannel(t *testing.T) {
 
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	_, ok := consumerKeeper.GetProviderChannel(ctx)
@@ -80,7 +82,7 @@ func TestPendingChanges(t *testing.T) {
 		nil,
 	)
 
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	err = consumerKeeper.SetPendingChanges(ctx, pd)
@@ -97,7 +99,7 @@ func TestPendingChanges(t *testing.T) {
 // TestPacketMaturityTime tests getter, setter, and iterator functionality for the packet maturity time of a received VSC packet
 func TestPacketMaturityTime(t *testing.T) {
 
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	consumerKeeper.SetPacketMaturityTime(ctx, 1, 10)
@@ -128,14 +130,11 @@ func TestPacketMaturityTime(t *testing.T) {
 // TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records
 func TestCrossChainValidator(t *testing.T) {
 
-	// Construct a keeper with a custom codec
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	// Explicitly register public key interface
-	testkeeper.RegisterSdkCryptoCodecInterfaces(&keeperParams)
-	ctrl := gomock.NewController(t)
+	// Explicitly register codec with public key interface
+	keeperParams.RegisterSdkCryptoCodecInterfaces()
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
-	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, testkeeper.NewMockedKeepers(ctrl))
-	ctx := keeperParams.Ctx
 
 	// should return false
 	_, found := consumerKeeper.GetCCValidator(ctx, ed25519.GenPrivKey().PubKey().Address())
@@ -173,7 +172,7 @@ func TestCrossChainValidator(t *testing.T) {
 // TestPendingSlashRequests tests the getter, setter, appending method, and deletion method for pending slash requests
 func TestPendingSlashRequests(t *testing.T) {
 
-	consumerKeeper, ctx, ctrl := testkeeper.GetConsumerKeeperAndCtx(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// prepare test setup by storing 10 pending slash requests
@@ -203,5 +202,88 @@ func TestPendingSlashRequests(t *testing.T) {
 		tc.operation()
 		requests := consumerKeeper.GetPendingSlashRequests(ctx)
 		require.Len(t, requests, tc.expLen)
+	}
+}
+
+// TestVerifyProviderChain tests the VerifyProviderChain method for the consumer keeper
+func TestVerifyProviderChain(t *testing.T) {
+
+	testCases := []struct {
+		name string
+		// State-mutating setup specific to this test case
+		mockSetup      func(sdk.Context, testkeeper.MockedKeepers)
+		connectionHops []string
+		expError       bool
+	}{
+		{
+			name: "success",
+			mockSetup: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockConnectionKeeper.EXPECT().GetConnection(
+						ctx, "connectionID",
+					).Return(conntypes.ConnectionEnd{ClientId: "clientID"}, true).Times(1),
+				)
+			},
+			connectionHops: []string{"connectionID"},
+			expError:       false,
+		},
+		{
+			name: "connection hops is not length 1",
+			mockSetup: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+				// Expect no calls to GetConnection(), VerifyProviderChain will return from first step.
+				gomock.InAnyOrder(
+					mocks.MockConnectionKeeper.EXPECT().GetConnection(gomock.Any(), gomock.Any()).Times(0),
+				)
+			},
+			connectionHops: []string{"connectionID", "otherConnID"},
+			expError:       true,
+		},
+		{
+			name: "connection does not exist",
+			mockSetup: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockConnectionKeeper.EXPECT().GetConnection(
+						ctx, "connectionID").Return(conntypes.ConnectionEnd{},
+						false, // Found is returned as false
+					).Times(1),
+				)
+			},
+			connectionHops: []string{"connectionID"},
+			expError:       true,
+		},
+		{
+			name: "found clientID does not match expectation",
+			mockSetup: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockConnectionKeeper.EXPECT().GetConnection(
+						ctx, "connectionID").Return(
+						conntypes.ConnectionEnd{ClientId: "unexpectedClientID"}, true,
+					).Times(1),
+				)
+			},
+			connectionHops: []string{"connectionID"},
+			expError:       true,
+		},
+	}
+
+	for _, tc := range testCases {
+
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+
+		// Common setup
+		consumerKeeper.SetProviderClientID(ctx, "clientID") // Set expected provider clientID
+
+		// Specific mock setup
+		tc.mockSetup(ctx, mocks)
+
+		err := consumerKeeper.VerifyProviderChain(ctx, tc.connectionHops)
+
+		if tc.expError {
+			require.Error(t, err, "invalid case did not return error")
+		} else {
+			require.NoError(t, err, "valid case returned error")
+		}
+		ctrl.Finish()
 	}
 }
