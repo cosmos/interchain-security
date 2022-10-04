@@ -72,7 +72,7 @@ func (e *KeyDel) GetLocal(fk FK) (LK, error) {
 	if lk, ok := e.usedForeignToLocal[fk]; ok {
 		return lk, nil
 	} else {
-		return -1, errors.New("Nope")
+		return -1, errors.New("local key not found for foreign key")
 	}
 }
 
