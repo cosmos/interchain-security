@@ -77,7 +77,7 @@ func (d *Driver) applyMapInstructions(instructions []mapInstruction) {
 		_ = d.e.SetLocalToForeign(instruction.lk, instruction.fk)
 	}
 	copy := map[LK]FK{}
-	for lk, fk := range d.e.lkToCurrFk {
+	for lk, fk := range d.e.localToForeign {
 		copy[lk] = fk
 	}
 	d.mappings = append(d.mappings, copy)
