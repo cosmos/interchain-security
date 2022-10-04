@@ -131,11 +131,9 @@ func (d *Driver) runTrace() {
 				for fk, power := range d.foreignValSets[d.lastTC].keyToPower {
 					d.foreignValSets[j].keyToPower[fk] = power
 				}
-			}
-			// Apply the updates since lastTC ONLY TO s.TC
-			// This models the consumer receiving updates from several blocks at once
-			for j := d.lastTC + 1; j <= s.TC; j++ {
-				d.foreignValSets[s.TC].applyUpdates(d.foreignUpdates[j])
+				for k := d.lastTC + 1; k <= j; k++ {
+					d.foreignValSets[j].applyUpdates(d.foreignUpdates[k])
+				}
 			}
 			d.lastTC = s.TC
 		}
@@ -251,8 +249,9 @@ func (d *Driver) checkProperties() {
 						require.Equal(d.t, providerLK, queriedLK)
 					}
 				}
+				good := providerFKs[consumerFK]
 				// Check that the comparison was actually made!
-				require.Truef(d.t, providerFKs[consumerFK], "no mapping found for foreign key")
+				require.Truef(d.t, good, "no mapping found for foreign key")
 			}
 
 		}
