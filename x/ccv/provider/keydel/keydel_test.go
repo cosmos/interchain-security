@@ -198,7 +198,7 @@ func (d *Driver) checkProperties() {
 		   with i < j, and i is matured, then the foreign key is deleted from storage.
 		   (Pruning property). Phrased another way: i matured, and there was no update
 		   after i that references the foreign key. The foreign key cannot be used
-		   for slashing anymore, so it can and should be garbage collected.
+		   for slashing anymore, so it can and should be pruned.
 	*/
 	queriesAndCorrectPruning := func() {
 		expectQueryable := map[FK]bool{}
@@ -210,7 +210,7 @@ func (d *Driver) checkProperties() {
 				expectQueryable[u.key] = true
 			}
 			// Otherwise, it was not used, or was used a long time ago
-			// (after maturity). Then we expect it to be garbage collected.
+			// (after maturity). Then we expect it to be pruned.
 		}
 
 		// Simply check every foreign key for the correct queryable-ness.
