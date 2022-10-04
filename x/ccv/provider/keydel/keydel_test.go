@@ -1,6 +1,7 @@
 package keydel
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 
@@ -104,10 +105,10 @@ func (d *Driver) runTrace() {
 		d.localValSets[init.TP].applyUpdates(init.LocalUpdates)
 		// Set the initial foreign set
 		d.foreignUpdates = append(d.foreignUpdates, d.e.ComputeUpdates(init.TP, init.LocalUpdates))
-		d.foreignValSets = append(d.foreignValSets, MakeValSet())
-		d.foreignValSets[init.TC].applyUpdates(d.foreignUpdates[init.TC])
 		// The first foreign set equal to the local set at time 0
 		d.foreignValSetT = append(d.foreignValSetT, 0)
+		d.foreignValSets = append(d.foreignValSets, MakeValSet())
+		d.foreignValSets[init.TC].applyUpdates(d.foreignUpdates[init.TC])
 		d.e.Prune(init.TM)
 	}
 
@@ -118,7 +119,11 @@ func (d *Driver) runTrace() {
 	require.Len(d.t, d.foreignValSets, 1)
 
 	// Check properties for each state after the initial
+	deb := 1
 	for _, s := range d.trace[1:] {
+		fmt.Println("deb:", deb)
+		deb += 1
+
 		if d.lastTP < s.TP {
 			// Provider time increment:
 			// Apply some key mappings and create some new validator power updates
@@ -368,11 +373,14 @@ func getTrace(t *testing.T) []TraceState {
 
 func TestPrototype(t *testing.T) {
 	for i := 0; i < 1000; i++ {
+		rand.Seed(int64(i))
 		trace := []TraceState{}
 		for len(trace) < 2 {
 			trace = getTrace(t)
 		}
 		d := MakeDriver(t, trace)
+		fmt.Println(i)
 		d.runTrace()
+
 	}
 }
