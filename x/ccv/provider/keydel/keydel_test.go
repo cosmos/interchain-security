@@ -17,7 +17,7 @@ type keyMapEntry struct {
 	fk FK
 }
 
-type traceState struct {
+type traceStep struct {
 	mapInstructions []keyMapEntry
 	localUpdates    []update
 	tp              int
@@ -28,7 +28,7 @@ type traceState struct {
 type driver struct {
 	t      *testing.T
 	kd     *KeyDel
-	trace  []traceState
+	trace  []traceStep
 	lastTP int
 	lastTC int
 	lastTM int
@@ -41,7 +41,7 @@ type driver struct {
 	foreignValSet valSet
 }
 
-func makeDriver(t *testing.T, trace []traceState) driver {
+func makeDriver(t *testing.T, trace []traceStep) driver {
 	d := driver{}
 	d.t = t
 	e := MakeKeyDel()
@@ -145,14 +145,12 @@ func (d *driver) run() {
 func (d *driver) checkProperties() {
 
 	/*
-		When a consumer receives and processes up to VSCID i,
-		it must have a validator set equal to that on the provider at i
-		mapped through the key mapping that was on the provider when i
-		was sent.
+		For a consumer who has received updates up to VSCID i, its
+		local validator set must be equal to the set on the provider
+		when i was sent, mapped through the mapping at that time.
 	*/
 	validatorSetReplication := func() {
 
-		// Get the current consumer val set.
 		foreignSet := d.foreignValSet.keyToPower
 		// Get the provider set at the corresponding time.
 		localSet := d.localValSets[d.lastTC].keyToPower
@@ -260,7 +258,9 @@ func (d *driver) checkProperties() {
 
 }
 
-func getTrace(t *testing.T) []traceState {
+// Return a randomly generated list of steps
+// which can be used to execute actions for testing.
+func getTrace(t *testing.T) []traceStep {
 
 	mappings := func() []keyMapEntry {
 		ret := []keyMapEntry{}
@@ -290,7 +290,7 @@ func getTrace(t *testing.T) []traceState {
 		initialMappings = append(initialMappings, keyMapEntry{i, i})
 	}
 
-	ret := []traceState{
+	ret := []traceStep{
 		{
 			// Hard code initial mapping
 			mapInstructions: initialMappings,
@@ -305,7 +305,7 @@ func getTrace(t *testing.T) []traceState {
 		choice := rand.Intn(3)
 		last := ret[len(ret)-1]
 		if choice == 0 {
-			ret = append(ret, traceState{
+			ret = append(ret, traceStep{
 				mapInstructions: mappings(),
 				localUpdates:    localUpdates(),
 				tp:              last.tp + 1,
@@ -322,7 +322,7 @@ func getTrace(t *testing.T) []traceState {
 				// bound is [0, limInclusive - curr)
 				newTC := rand.Intn(limInclusive-curr) + curr + 1
 				require.True(t, curr < newTC && curr <= limInclusive)
-				ret = append(ret, traceState{
+				ret = append(ret, traceStep{
 					mapInstructions: nil,
 					localUpdates:    nil,
 					tp:              last.tp,
@@ -337,7 +337,7 @@ func getTrace(t *testing.T) []traceState {
 			if curr < limInclusive {
 				newTM := rand.Intn(limInclusive-curr) + curr + 1
 				require.True(t, curr < newTM && curr <= limInclusive)
-				ret = append(ret, traceState{
+				ret = append(ret, traceStep{
 					mapInstructions: nil,
 					localUpdates:    nil,
 					tp:              last.tp,
@@ -350,9 +350,12 @@ func getTrace(t *testing.T) []traceState {
 	return ret
 }
 
-func TestRandomHeuristic(t *testing.T) {
+// Execute randomly generated traces (lists of actions)
+// against new instances of the class, checking properties
+// after each action is done.
+func TestPropertiesRandomlyHeuristically(t *testing.T) {
 	for i := 0; i < NUM_TRACES; i++ {
-		trace := []traceState{}
+		trace := []traceStep{}
 		for len(trace) < 2 {
 			trace = getTrace(t)
 		}
