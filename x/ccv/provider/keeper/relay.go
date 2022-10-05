@@ -116,8 +116,8 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 	return k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID), false)
 }
 
-// SendValidatorUpdates sends latest validator updates to every registered consumer chain
-func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
+// TrySendValidatorUpdates tries to send latest validator updates to every registered consumer chain
+func (k Keeper) TrySendValidatorUpdates(ctx sdk.Context) {
 	// get current ValidatorSetUpdateId
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	// get the validator updates from the staking module
