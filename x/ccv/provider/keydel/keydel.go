@@ -167,6 +167,14 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 // Returns true iff internal invariants hold
 func (e *KeyDel) internalInvariants() bool {
 
+	// If an update is stored in positive update, the last update
+	// for the foreign key was not 0
+	for _, u := range e.lkToPositiveUpdate {
+		if e.fkToUpdate[u.key].power == 0 {
+			return false
+		}
+	}
+
 	// No two local keys can map to the same foreign key
 	seen := map[FK]bool{}
 	for _, fk := range e.lkToFk {
