@@ -29,8 +29,6 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
 // Parameters needed to instantiate an in-memory keeper
@@ -61,7 +59,6 @@ func NewInMemKeeperParams(t testing.TB) InMemKeeperParams {
 		memStoreKey,
 		paramstypes.ModuleName,
 	)
-	// TODO: Find way to use key table from keeper constructor
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
 	return InMemKeeperParams{
@@ -166,20 +163,6 @@ func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
 	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
-}
-
-// TODO These will be removed and done by constructor of keeper
-
-// Sets the params subspace key table with params registered for provider
-func (params *InMemKeeperParams) SetProviderKeyTable() {
-	newSubspace := params.ParamsSubspace.WithKeyTable(providertypes.ParamKeyTable())
-	params.ParamsSubspace = &newSubspace
-}
-
-// Sets the params subspace key table with params registered for consumer
-func (params *InMemKeeperParams) SetConsumerKeyTable() {
-	newSubspace := params.ParamsSubspace.WithKeyTable(consumertypes.ParamKeyTable())
-	params.ParamsSubspace = &newSubspace
 }
 
 // Registers proto interfaces for params.Cdc

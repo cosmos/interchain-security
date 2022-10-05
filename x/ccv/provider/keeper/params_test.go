@@ -15,14 +15,13 @@ import (
 
 // TestParams tests the getting/setting of provider ccv module params.
 func TestParams(t *testing.T) {
-	defaultParams := types.DefaultParams()
 
 	// Construct an in-mem keeper with registered key table
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	keeperParams.SetProviderKeyTable()
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
+	defaultParams := types.DefaultParams()
 	providerKeeper.SetParams(ctx, defaultParams)
 	params := providerKeeper.GetParams(ctx)
 	require.Equal(t, defaultParams, params)
