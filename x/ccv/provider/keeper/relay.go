@@ -165,7 +165,12 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 // Sends all pending ValidatorSetChangePackets to the specified chain
 func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string) {
 	pendingPackets := k.EmptyPendingVSC(ctx, chainID)
-	for _, data := range pendingPackets {
+	k.SendVSCPackets(ctx, chainID, channelID, pendingPackets)
+}
+
+// Sends all pending ValidatorSetChangePackets to the specified chain
+func (k Keeper) SendVSCPackets(ctx sdk.Context, chainID, channelID string, packets []ccv.ValidatorSetChangePacketData) {
+	for _, data := range packets {
 		// send packet over IBC
 		err := utils.SendIBCPacket(
 			ctx,
