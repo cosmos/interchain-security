@@ -349,10 +349,6 @@ func (k Keeper) GetAllConsumerAdditionProps(ctx sdk.Context) types.ConsumerAddit
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
 	defer iterator.Close()
 
-	if !iterator.Valid() {
-		return props
-	}
-
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()
 		spawnTime, _, err := types.ParsePendingCAPKey(key)
@@ -480,10 +476,6 @@ func (k Keeper) GetAllConsumerRemovalProps(ctx sdk.Context) types.ConsumerRemova
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
 	defer iterator.Close()
-
-	if !iterator.Valid() {
-		return props
-	}
 
 	for ; iterator.Valid(); iterator.Next() {
 		key := iterator.Key()
