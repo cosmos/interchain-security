@@ -14,10 +14,11 @@ import (
 )
 
 //This test is valid for minimal viable consumer chain
-func (s *ProviderTestSuite) TestRewardsDistribution() {
+func (s *CCVTestSuite) TestRewardsDistribution() {
 
 	//set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
 	s.SetupCCVChannel()
+	s.SetupTransferChannel()
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
