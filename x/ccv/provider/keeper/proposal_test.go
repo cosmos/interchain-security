@@ -781,17 +781,15 @@ func TestGetAllConsumerAdditionProps(t *testing.T) {
 	now := time.Now().UTC()
 
 	props := []types.ConsumerAdditionProposal{
-		// matured proposal
-		{ChainId: "1", SpawnTime: now},
-
-		// pending proposals
-		{ChainId: "2", SpawnTime: now.Add(1 * time.Hour)},
-		{ChainId: "3", SpawnTime: now.Add(2 * time.Hour)},
-		{ChainId: "4", SpawnTime: now.Add(3 * time.Hour)},
-		{ChainId: "5", SpawnTime: now.Add(4 * time.Hour)},
+		{ChainId: "1", SpawnTime: now.Add(1 * time.Hour)},
+		{ChainId: "2", SpawnTime: now.Add(2 * time.Hour)},
+		{ChainId: "3", SpawnTime: now.Add(3 * time.Hour)},
+		{ChainId: "4", SpawnTime: now.Add(4 * time.Hour)},
 	}
 
-	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeperParams.SetTemplateClientState(nil)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
 	for _, prop := range props {
@@ -804,11 +802,8 @@ func TestGetAllConsumerAdditionProps(t *testing.T) {
 	ctx = ctx.WithBlockTime(now.Add(time.Minute))
 	res := providerKeeper.GetAllConsumerAdditionProps(ctx)
 	require.NotEmpty(t, res, "GetAllConsumerAdditionProps returned empty result")
-	require.Len(t, res.Matured, 1, "wrong len for matured addition props")
 	require.Len(t, res.Pending, 4, "wrong len for pending addition props")
-
-	require.Equal(t, props[0].ChainId, res.Matured[0].ChainId, "wrong chain ID for matured addition prop")
-	require.Equal(t, props[1].ChainId, res.Pending[0].ChainId, "wrong chain ID for pending addition prop")
+	require.Equal(t, props[0].ChainId, res.Pending[0].ChainId, "wrong chain ID for pending addition prop")
 }
 
 // Test getting both matured and pending consumer removal proposals
@@ -816,17 +811,15 @@ func TestGetAllConsumerRemovalProps(t *testing.T) {
 	now := time.Now().UTC()
 
 	props := []types.ConsumerRemovalProposal{
-		// matured proposal
-		{ChainId: "1", StopTime: now},
-
-		// pending proposals
-		{ChainId: "2", StopTime: now.Add(1 * time.Hour)},
-		{ChainId: "3", StopTime: now.Add(2 * time.Hour)},
-		{ChainId: "4", StopTime: now.Add(3 * time.Hour)},
-		{ChainId: "5", StopTime: now.Add(4 * time.Hour)},
+		{ChainId: "1", StopTime: now.Add(1 * time.Hour)},
+		{ChainId: "2", StopTime: now.Add(2 * time.Hour)},
+		{ChainId: "3", StopTime: now.Add(3 * time.Hour)},
+		{ChainId: "4", StopTime: now.Add(4 * time.Hour)},
 	}
 
-	providerKeeper, ctx, ctrl := testkeeper.GetProviderKeeperAndCtx(t)
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	keeperParams.SetTemplateClientState(nil)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
 	for _, prop := range props {
@@ -837,9 +830,6 @@ func TestGetAllConsumerRemovalProps(t *testing.T) {
 	ctx = ctx.WithBlockTime(now.Add(time.Minute))
 	res := providerKeeper.GetAllConsumerRemovalProps(ctx)
 	require.NotEmpty(t, res, "GetAllConsumerRemovalProps returned empty result")
-	require.Len(t, res.Matured, 1, "wrong len for matured removal props")
 	require.Len(t, res.Pending, 4, "wrong len for pending removal props")
-
-	require.Equal(t, props[0].ChainId, res.Matured[0].ChainId, "wrong chain ID for matured removal prop")
-	require.Equal(t, props[1].ChainId, res.Pending[0].ChainId, "wrong chain ID for pending removal prop")
+	require.Equal(t, props[0].ChainId, res.Pending[0].ChainId, "wrong chain ID for pending removal prop")
 }

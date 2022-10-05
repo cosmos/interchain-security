@@ -38,7 +38,7 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	chains := []string{}
-	cb := func(ctx sdk.Context, chainID string) bool {
+	cb := func(ctx sdk.Context, chainID, clientID string) bool {
 		chains = append(chains, chainID)
 		return false
 	}
