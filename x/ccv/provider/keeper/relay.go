@@ -147,6 +147,7 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 					channelID,          // source channel id
 					ccv.ProviderPortID, // source port id
 					packetData.GetBytes(),
+					k.GetParams(ctx).CcvTimeoutPeriod,
 				)
 				if err != nil {
 					panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
@@ -174,6 +175,7 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 			channelID,          // source channel id
 			ccv.ProviderPortID, // source port id
 			data.GetBytes(),
+			k.GetParams(ctx).CcvTimeoutPeriod,
 		)
 		if err != nil {
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))

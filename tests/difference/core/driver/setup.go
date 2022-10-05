@@ -476,6 +476,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		1000, // ignore distribution
 		"",   // ignore distribution
 		"",   // ignore distribution
+		ccv.DefaultCCVTimeoutPeriod,
 	)
 	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, consumertypes.SlashRequests{}, params)
 }
@@ -534,7 +535,7 @@ func (b *Builder) doIBCHandshake() {
 func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 	vscID := b.providerKeeper().GetValidatorSetUpdateId(b.providerChain().GetContext())
 
-	timeout := uint64(types.GetTimeoutTimestamp(b.chain(P).CurrentHeader.Time).UnixNano())
+	timeout := uint64(b.chain(P).CurrentHeader.Time.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 
 	pd := types.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{},

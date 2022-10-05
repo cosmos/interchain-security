@@ -29,6 +29,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
@@ -60,6 +61,7 @@ func NewInMemKeeperParams(t testing.TB) InMemKeeperParams {
 		memStoreKey,
 		paramstypes.ModuleName,
 	)
+	// TODO: Find way to use key table from keeper constructor
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
 	return InMemKeeperParams{
@@ -166,25 +168,18 @@ func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
 }
 
-// Sets a template client state for a params subspace so that the provider's
-// GetTemplateClient method will be satisfied.
-func (params *InMemKeeperParams) SetTemplateClientState(customState *ibctmtypes.ClientState) {
+// TODO These will be removed and done by constructor of keeper
 
-	keyTable := paramstypes.NewKeyTable(paramstypes.NewParamSetPair(
-		providertypes.KeyTemplateClient, &ibctmtypes.ClientState{},
-		func(value interface{}) error { return nil }))
-
-	newSubspace := params.ParamsSubspace.WithKeyTable(keyTable)
+// Sets the params subspace key table with params registered for provider
+func (params *InMemKeeperParams) SetProviderKeyTable() {
+	newSubspace := params.ParamsSubspace.WithKeyTable(providertypes.ParamKeyTable())
 	params.ParamsSubspace = &newSubspace
+}
 
-	// Default template client state if none provided
-	if customState == nil {
-		customState = ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			time.Second*10, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(),
-			[]string{"upgrade", "upgradedIBCState"}, true, true)
-	}
-
-	params.ParamsSubspace.Set(params.Ctx, providertypes.KeyTemplateClient, customState)
+// Sets the params subspace key table with params registered for consumer
+func (params *InMemKeeperParams) SetConsumerKeyTable() {
+	newSubspace := params.ParamsSubspace.WithKeyTable(consumertypes.ParamKeyTable())
+	params.ParamsSubspace = &newSubspace
 }
 
 // Registers proto interfaces for params.Cdc

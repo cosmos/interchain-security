@@ -8,6 +8,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 const (
@@ -22,19 +23,21 @@ const (
 	DefaultMaxClockDrift = 10 * time.Second
 )
 
+// Reflection based keys for params subspace
 var (
 	KeyTemplateClient = []byte("TemplateClient")
 )
 
-// ParamKeyTable type declaration for parameters
+// ParamKeyTable returns a key table with the necessary registered provider params
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
 }
 
 // NewParams creates new provider parameters with provided arguments
-func NewParams(cs *ibctmtypes.ClientState) Params {
+func NewParams(cs *ibctmtypes.ClientState, ccvTimeoutPeriod time.Duration) Params {
 	return Params{
-		TemplateClient: cs,
+		TemplateClient:   cs,
+		CcvTimeoutPeriod: ccvTimeoutPeriod,
 	}
 }
 
@@ -45,13 +48,17 @@ func DefaultParams() Params {
 	return NewParams(
 		ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 			DefaultMaxClockDrift, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, true, true),
+		ccvtypes.DefaultCCVTimeoutPeriod,
 	)
 }
 
 // Validate all ccv-provider module parameters
 func (p Params) Validate() error {
 	if p.TemplateClient == nil {
-		return fmt.Errorf("Template client is nil")
+		return fmt.Errorf("template client is nil")
+	}
+	if ccvtypes.ValidateCCVTimeoutPeriod(p.CcvTimeoutPeriod) != nil {
+		return fmt.Errorf("ccv timeout period is invalid")
 	}
 	return validateTemplateClient(*p.TemplateClient)
 }
@@ -60,6 +67,7 @@ func (p Params) Validate() error {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyTemplateClient, p.TemplateClient, validateTemplateClient),
+		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateCCVTimeoutPeriod),
 	}
 }
 
