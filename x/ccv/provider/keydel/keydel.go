@@ -26,42 +26,43 @@ type updateMemo struct {
 // 3. integrate with create/destroy validator
 
 type KeyDel struct {
-	lkToFk     map[LK]FK
-	fkInUse    map[FK]bool
-	fkToUpdate map[FK]updateMemo
+	lkToFk   map[LK]FK
+	fkToLk   map[FK]LK
+	fkToMemo map[FK]updateMemo
 }
 
 func MakeKeyDel() KeyDel {
 	return KeyDel{
-		lkToFk:     map[LK]FK{},
-		fkInUse:    map[FK]bool{},
-		fkToUpdate: map[FK]updateMemo{},
+		lkToFk:   map[LK]FK{},
+		fkToLk:   map[FK]LK{},
+		fkToMemo: map[FK]updateMemo{},
 	}
 }
 
 func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 	inUse := false
-	if _, ok := e.fkInUse[fk]; ok {
+	if _, ok := e.fkToLk[fk]; ok {
 		inUse = true
 	}
-	if _, ok := e.fkToUpdate[fk]; ok {
+	if _, ok := e.fkToMemo[fk]; ok {
 		inUse = true
 	}
 	if inUse {
 		return errors.New(`cannot reuse foreign key which is currently being used for lookups`)
 	}
 	if oldFk, ok := e.lkToFk[lk]; ok {
-		delete(e.fkInUse, oldFk)
+		delete(e.fkToLk, oldFk)
 	}
 	e.lkToFk[lk] = fk
-	e.fkInUse[fk] = true
+	e.fkToLk[fk] = lk
 	return nil
 }
 
 func (e *KeyDel) GetLocal(fk FK) (LK, error) {
-	// TODO: implement lookups via keys current key
-	if u, ok := e.fkToUpdate[fk]; ok {
+	if u, ok := e.fkToMemo[fk]; ok {
 		return u.lk, nil
+	} else if lk, ok := e.fkToLk[fk]; ok {
+		return lk, nil
 	} else {
 		return -1, errors.New("local key not found for foreign key")
 	}
@@ -69,7 +70,7 @@ func (e *KeyDel) GetLocal(fk FK) (LK, error) {
 
 func (e *KeyDel) Prune(vscid VSCID) {
 	toDel := []FK{}
-	for _, u := range e.fkToUpdate {
+	for _, u := range e.fkToMemo {
 		// If the last update was a deletion (0 power) and the update
 		// matured then pruning is possible.
 		if u.power == 0 && u.vscid <= vscid {
@@ -77,7 +78,7 @@ func (e *KeyDel) Prune(vscid VSCID) {
 		}
 	}
 	for _, fk := range toDel {
-		delete(e.fkToUpdate, fk)
+		delete(e.fkToMemo, fk)
 	}
 }
 
@@ -105,7 +106,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	lks := []LK{}
 
 	// Grab lks for which fk changed
-	for oldFk, u := range e.fkToUpdate {
+	for oldFk, u := range e.fkToMemo {
 		if newFk, ok := e.lkToFk[u.lk]; ok {
 			if oldFk != newFk && 0 < u.power {
 				lks = append(lks, u.lk)
@@ -120,7 +121,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	ret := map[FK]int{}
 
 	fkToUpdateClone := map[FK]updateMemo{}
-	for k, v := range e.fkToUpdate {
+	for k, v := range e.fkToMemo {
 		fkToUpdateClone[k] = v
 	}
 
@@ -128,7 +129,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	for _, lk := range lks {
 		for _, u := range fkToUpdateClone {
 			if u.lk == lk && 0 < u.power {
-				e.fkToUpdate[u.fk] = updateMemo{fk: u.fk, lk: lk, vscid: vscid, power: 0}
+				e.fkToMemo[u.fk] = updateMemo{fk: u.fk, lk: lk, vscid: vscid, power: 0}
 				ret[u.fk] = 0
 			}
 		}
@@ -150,7 +151,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 		// Only ship positive powers. Zero powers are accounted for above.
 		if 0 < power {
 			fk := e.lkToFk[lk]
-			e.fkToUpdate[fk] = updateMemo{fk: fk, lk: lk, vscid: vscid, power: power}
+			e.fkToMemo[fk] = updateMemo{fk: fk, lk: lk, vscid: vscid, power: power}
 			ret[fk] = power
 		}
 	}
@@ -172,13 +173,13 @@ func (e *KeyDel) internalInvariants() bool {
 
 	// All foreign keys mapped to by local keys are noted
 	for _, fk := range e.lkToFk {
-		if _, ok := e.fkInUse[fk]; !ok {
+		if _, ok := e.fkToLk[fk]; !ok {
 			return false
 		}
 	}
 
 	// All mapped to foreign keys are actually mapped to
-	for fk := range e.fkInUse {
+	for fk := range e.fkToLk {
 		good := false
 		for _, candidateFk := range e.lkToFk {
 			if candidateFk == fk {
@@ -188,6 +189,16 @@ func (e *KeyDel) internalInvariants() bool {
 		}
 		if !good {
 			return false
+		}
+	}
+
+	// If a foreign key is directly mapped to a local key
+	// there is no disagreeing on the local key.
+	for fk, lk := range e.fkToLk {
+		if u, ok := e.fkToMemo[fk]; ok {
+			if lk != u.lk {
+				return false
+			}
 		}
 	}
 

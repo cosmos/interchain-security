@@ -208,6 +208,9 @@ func (d *Driver) checkProperties() {
 				expectQueryable[u.key] = true
 			}
 		}
+		for _, fk := range d.e.lkToFk {
+			expectQueryable[fk] = true
+		}
 
 		// Simply check every foreign key for the correct queryable-ness.
 		for fk := 0; fk < NUM_FKS; fk++ {
