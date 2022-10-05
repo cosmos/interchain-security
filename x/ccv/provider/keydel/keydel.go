@@ -163,6 +163,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 func (e *KeyDel) internalInvariants() bool {
 
 	// No two local keys can map to the same foreign key
+	// (lkToFk is sane)
 	seen := map[FK]bool{}
 	for _, fk := range e.lkToFk {
 		if seen[fk] {
@@ -171,14 +172,17 @@ func (e *KeyDel) internalInvariants() bool {
 		seen[fk] = true
 	}
 
-	// All foreign keys mapped to by local keys are noted
+	// all values of lkToFk is a key of fkToLk
+	// (reverse lookup is always possible)
 	for _, fk := range e.lkToFk {
 		if _, ok := e.fkToLk[fk]; !ok {
 			return false
 		}
 	}
 
-	// All mapped to foreign keys are actually mapped to
+	// All foreign keys mapping to local keys are actually
+	// mapped to by the local key.
+	// (fkToLk is sane)
 	for fk := range e.fkToLk {
 		good := false
 		for _, candidateFk := range e.lkToFk {
@@ -192,8 +196,10 @@ func (e *KeyDel) internalInvariants() bool {
 		}
 	}
 
-	// If a foreign key is directly mapped to a local key
-	// there is no disagreeing on the local key.
+	// If a foreign key is mapped to a local key (currently)
+	// any memo containing the same foreign key has the same
+	// mapping.
+	// (Ensures lookups are correct)
 	for fk, lk := range e.fkToLk {
 		if u, ok := e.fkToMemo[fk]; ok {
 			if lk != u.lk {
