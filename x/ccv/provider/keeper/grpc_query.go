@@ -12,7 +12,7 @@ import (
 
 var _ types.QueryServer = Keeper{}
 
-func (k Keeper) ConsumerGenesis(c context.Context, req *types.QueryConsumerGenesisRequest) (*types.QueryConsumerGenesisResponse, error) {
+func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumerGenesisRequest) (*types.QueryConsumerGenesisResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
 	if req == nil {
@@ -31,7 +31,7 @@ func (k Keeper) ConsumerGenesis(c context.Context, req *types.QueryConsumerGenes
 	return &types.QueryConsumerGenesisResponse{GenesisState: gen}, nil
 }
 
-func (k Keeper) ConsumerChains(goCtx context.Context, req *types.QueryConsumerChainsRequest) (*types.QueryConsumerChainsResponse, error) {
+func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsumerChainsRequest) (*types.QueryConsumerChainsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}

@@ -18,7 +18,7 @@ func NewQueryCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	cmd.AddCommand(NewQueryConsumerGenesisCmd())
+	cmd.AddCommand(CmdConsumerGenesis())
 	cmd.AddCommand(CmdConsumerChains())
 	cmd.AddCommand(CmdConsumerStartProposals())
 	cmd.AddCommand(CmdConsumerStopProposals())
@@ -28,7 +28,7 @@ func NewQueryCmd() *cobra.Command {
 
 // NewQuerySubspaceParamsCmd returns a CLI command handler for querying subspace
 // parameters managed by the x/params module.
-func NewQueryConsumerGenesisCmd() *cobra.Command {
+func CmdConsumerGenesis() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "consumer-genesis [chainid]",
 		Short: "Query for consumer chain genesis state by chain id",
@@ -41,7 +41,7 @@ func NewQueryConsumerGenesisCmd() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			req := types.QueryConsumerGenesisRequest{ChainId: args[0]}
-			res, err := queryClient.ConsumerGenesis(cmd.Context(), &req)
+			res, err := queryClient.QueryConsumerGenesis(cmd.Context(), &req)
 			if err != nil {
 				return err
 			}
@@ -68,7 +68,7 @@ func CmdConsumerChains() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			req := &types.QueryConsumerChainsRequest{}
-			res, err := queryClient.ConsumerChains(cmd.Context(), req)
+			res, err := queryClient.QueryConsumerChains(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
