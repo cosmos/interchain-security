@@ -13,8 +13,9 @@ import (
 )
 
 // TestPacketRoundtrip tests a CCV packet roundtrip when tokens are bonded on provider
-func (s *ProviderTestSuite) TestPacketRoundtrip() {
+func (s *CCVTestSuite) TestPacketRoundtrip() {
 	s.SetupCCVChannel()
+	s.SetupTransferChannel()
 
 	// Bond some tokens on provider to change validator powers
 	bondAmt := sdk.NewInt(1000000)
@@ -35,7 +36,7 @@ func (s *ProviderTestSuite) TestPacketRoundtrip() {
 }
 
 // TestSendVSCMaturedPackets tests the behavior of SendVSCMaturedPackets and related state checks
-func (suite *ConsumerKeeperTestSuite) TestSendVSCMaturedPackets() {
+func (suite *CCVTestSuite) TestSendVSCMaturedPackets() {
 	// setup CCV channel
 	suite.SetupCCVChannel()
 
