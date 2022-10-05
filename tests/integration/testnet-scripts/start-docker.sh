@@ -36,5 +36,4 @@ rm -rf ./cosmos-sdk/
 # Run new test container instance with extended privileges.
 # Extended privileges are granted to the container here to allow for network namespace manipulation (bringing a node up/down) 
 # See: https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities
-docker run --name "$INSTANCE_NAME" --cap-add=NET_ADMIN --privileged "$CONTAINER_NAME" /bin/bash /testnet-scripts/beacon.sh
-`
+docker run --name "$INSTANCE_NAME" --cap-add=NET_ADMIN --privileged "$CONTAINER_NAME" /bin/bash /testnet-scripts/beacon.sh &
