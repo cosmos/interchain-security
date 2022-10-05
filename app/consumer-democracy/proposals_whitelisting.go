@@ -14,7 +14,7 @@ func IsProposalWhitelisted(content govtypes.Content) bool {
 
 	switch c := content.(type) {
 	case *proposal.ParameterChangeProposal:
-		return isParamProposalWhitelisted(c.Changes)
+		return isParamChangeWhitelisted(c.Changes)
 
 	default:
 		return false
@@ -22,7 +22,7 @@ func IsProposalWhitelisted(content govtypes.Content) bool {
 
 }
 
-func isParamProposalWhitelisted(paramChanges []proposal.ParamChange) bool {
+func isParamChangeWhitelisted(paramChanges []proposal.ParamChange) bool {
 	for _, paramChange := range paramChanges {
 		_, found := WhitelistedParams[paramChangeKey{Subspace: paramChange.Subspace, Key: paramChange.Key}]
 		if !found {
@@ -64,5 +64,5 @@ var WhitelistedParams = map[paramChangeKey]struct{}{
 	//ibc transfer
 	{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled"}:    {},
 	{Subspace: ibctransfertypes.ModuleName, Key: "ReceiveEnabled"}: {},
-	//TODO: interchain accounts are listed in spec but app does not include the module - check if something should be done
+	//add interchain account params(HostEnabled, AllowedMessages) once the module is added to the consumer app
 }

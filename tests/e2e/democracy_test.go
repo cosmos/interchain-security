@@ -336,16 +336,6 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
-func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelistingKeys() {
-	paramKeeper := s.consumerChain.App.(*appConsumer.App).ParamsKeeper
-	for paramKey := range appConsumer.WhitelistedParams {
-		ss, ok := paramKeeper.GetSubspace(paramKey.Subspace)
-		s.Assert().True(ok)
-		hasKey := ss.Has(s.consumerCtx(), []byte(paramKey.Key))
-		s.Assert().True(hasKey, "Invalid key %s for subspace %s", paramKey.Key, paramKey.Subspace)
-	}
-}
-
 func submitProposalWithDepositAndVote(govKeeper govkeeper.Keeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
 	accounts []ibctesting.SenderAccount, depositAmount sdk.Coins) error {
 	proposal, err := govKeeper.SubmitProposal(ctx, &paramChange)
