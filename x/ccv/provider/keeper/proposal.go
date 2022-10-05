@@ -350,20 +350,10 @@ func (k Keeper) GetAllConsumerAdditionProps(ctx sdk.Context) types.ConsumerAddit
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		key := iterator.Key()
-		spawnTime, _, err := types.ParsePendingCAPKey(key)
-		if err != nil {
-			panic(fmt.Errorf("failed to parse pending client key: %w", err))
-		}
-
 		var prop types.ConsumerAdditionProposal
 		k.cdc.MustUnmarshal(iterator.Value(), &prop)
 
-		if !ctx.BlockTime().Before(spawnTime) {
-			props.Matured = append(props.Pending, &prop)
-		} else {
-			props.Pending = append(props.Pending, &prop)
-		}
+		props.Pending = append(props.Pending, &prop)
 	}
 	return props
 }
@@ -484,13 +474,8 @@ func (k Keeper) GetAllConsumerRemovalProps(ctx sdk.Context) types.ConsumerRemova
 			panic(fmt.Errorf("failed to parse pending consumer removal proposal key: %w", err))
 		}
 
-		if !ctx.BlockTime().Before(stopTime) {
-			props.Matured = append(props.Matured,
-				&types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime})
-		} else {
-			props.Pending = append(props.Pending,
-				&types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime})
-		}
+		props.Pending = append(props.Pending,
+			&types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime})
 	}
 
 	return props

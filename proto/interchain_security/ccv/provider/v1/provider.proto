@@ -74,18 +74,14 @@ message SlashAcks {
   repeated string addresses = 1;
 }
 
-// ConsumerAdditionProposals holds matured and pending governance proposals on the provider chain to spawn a new chain.
+// ConsumerAdditionProposals holds pending governance proposals on the provider chain to spawn a new chain.
 message ConsumerAdditionProposals {
-  // proposals to be executed on the next block (spawn_time has passed)
-  repeated ConsumerAdditionProposal matured = 1;
   // proposals waiting for spawn_time to pass
-  repeated ConsumerAdditionProposal pending = 2;
+  repeated ConsumerAdditionProposal pending = 1;
 }
 
-// ConsumerRemovalProposals holds matured and pending governance proposals on the provider chain to remove (and stop) a consumer chain.
+// ConsumerRemovalProposals holds pending governance proposals on the provider chain to remove (and stop) a consumer chain.
 message ConsumerRemovalProposals {
-  // proposals to be executed on the next block (stop_time has passed)
-  repeated ConsumerRemovalProposal matured = 1;
   // proposals waiting for stop_time to pass
-  repeated ConsumerRemovalProposal pending = 2;
+  repeated ConsumerRemovalProposal pending = 1;
 }
