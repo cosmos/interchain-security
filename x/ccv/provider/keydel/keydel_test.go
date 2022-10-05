@@ -337,7 +337,6 @@ func (d *driver) externalInvariants() {
 // Return a randomly generated list of steps
 // which can be used to execute actions for testing.
 func getTrace(t *testing.T) []traceStep {
-	// TODO: check the hardcoded numbers
 
 	keyMappings := func() []keyMapEntry {
 		ret := []keyMapEntry{}
@@ -459,3 +458,30 @@ func TestPropertiesRandomlyHeuristically(t *testing.T) {
 		d.run()
 	}
 }
+
+// Setting should enable a reverse query
+func TestXSetReverseQuery(t *testing.T) {
+	kd := MakeKeyDel()
+	kd.SetProviderKeyToConsumerKey(42, 43)
+	actual, err := kd.GetProviderKey(43) // Queryable
+	require.Nil(t, err)
+	require.Equal(t, 42, actual)
+}
+
+// Not setting should not enable a reverse query
+func TestNoSetReverseQuery(t *testing.T) {
+	kd := MakeKeyDel()
+	_, err := kd.GetProviderKey(43) // Not queryable
+	require.NotNil(t, err)
+}
+
+// Setting and replacing should no allow earlier reverse query
+func TestXSetUnsetReverseQuery(t *testing.T) {
+	kd := MakeKeyDel()
+	kd.SetProviderKeyToConsumerKey(42, 43)
+	kd.SetProviderKeyToConsumerKey(42, 44) // Set to different value
+	_, err := kd.GetProviderKey(43)        // Ealier value not queryable
+	require.NotNil(t, err)
+}
+
+// TODO: add more of these..
