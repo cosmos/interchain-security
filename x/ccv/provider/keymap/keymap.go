@@ -48,8 +48,27 @@ func MakeKeyMap(store Store) KeyMap {
 	}
 }
 
+// GetAll reads all data from store
+// The granularity of store access can be changed if needed for
+// performance reasons.
+func (e *KeyMap) GetAll() {
+	e.pkToCk = e.store.getPkToCk()
+	e.ckToPk = e.store.getCkToPk()
+	e.ckToMemo = e.store.getCkToMemo()
+}
+
+// SetAll write all data to store
+// The granularity of store access can be changed if needed for
+// performance reasons.
+func (e *KeyMap) SetAll() {
+	e.store.setPkToCk(e.pkToCk)
+	e.store.setCkToPk(e.ckToPk)
+	e.store.setCkToMemo(e.ckToMemo)
+}
+
 // TODO:
 func (e *KeyMap) SetProviderKeyToConsumerKey(pk PK, ck CK) error {
+	e.GetAll()
 	if _, ok := e.ckToPk[ck]; ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
@@ -61,11 +80,13 @@ func (e *KeyMap) SetProviderKeyToConsumerKey(pk PK, ck CK) error {
 	}
 	e.pkToCk[pk] = ck
 	e.ckToPk[ck] = pk
+	e.SetAll() // TODO: Try with defer
 	return nil
 }
 
 // TODO:
 func (e *KeyMap) GetProviderKey(ck CK) (PK, error) {
+	e.GetAll()
 	if u, ok := e.ckToMemo[ck]; ok {
 		return u.pk, nil
 	} else if pk, ok := e.ckToPk[ck]; ok {
@@ -77,6 +98,7 @@ func (e *KeyMap) GetProviderKey(ck CK) (PK, error) {
 
 // TODO:
 func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
+	e.GetAll()
 	toDel := []CK{}
 	for _, u := range e.ckToMemo {
 		// If the last update was a deletion (0 power) and the update
@@ -88,10 +110,13 @@ func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 	for _, ck := range toDel {
 		delete(e.ckToMemo, ck)
 	}
+	e.SetAll()
 }
 
 // TODO:
 func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []update) (consumerUpdates []update) {
+
+	e.GetAll()
 
 	updates := map[PK]int{}
 
@@ -107,6 +132,7 @@ func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []update) (consumer
 		consumerUpdates = append(consumerUpdates, update{key: ck, power: power})
 	}
 
+	e.SetAll()
 	return consumerUpdates
 }
 
@@ -179,6 +205,8 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 
 // Returns true iff internal invariants hold
 func (e *KeyMap) internalInvariants() bool {
+
+	e.GetAll()
 
 	// No two provider keys can map to the same consumer key
 	// (pkToCk is sane)
