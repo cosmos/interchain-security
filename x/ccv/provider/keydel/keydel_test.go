@@ -16,9 +16,9 @@ const TRACE_LEN = 1000
 // Number of validators to simulate
 const NUM_VALS = 4
 
-// Number of foreign keys in the universe
+// Number of consumer keys in the universe
 // (This is constrained to ensure overlap edge cases are tested)
-const NUM_FKS = 50
+const NUM_CKS = 50
 
 type keyMapEntry struct {
 	pk PK
@@ -45,10 +45,10 @@ type driver struct {
 	// indexed by time (starting at 0)
 	consumerUpdates [][]update
 	// indexed by time (starting at 0)
-	localValSets []valSet
+	providerValsets []valset
 	// The validator set from the perspective of
 	// the consumer chain.
-	foreignValSet valSet
+	consumerValsets valset
 }
 
 func makeDriver(t *testing.T, trace []traceStep) driver {
@@ -62,22 +62,22 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 	d.lastTimeMaturity = 0
 	d.mappings = []map[PK]CK{}
 	d.consumerUpdates = [][]update{}
-	d.localValSets = []valSet{}
-	d.foreignValSet = valSet{}
+	d.providerValsets = []valset{}
+	d.consumerValsets = valset{}
 	return d
 }
 
 // Utility struct to make simulating a validator set easier.
-type valSet struct {
+type valset struct {
 	keyToPower map[int]int
 }
 
-func makeValSet() valSet {
-	return valSet{keyToPower: map[int]int{}}
+func makeValset() valset {
+	return valset{keyToPower: map[int]int{}}
 }
 
 // Apply a batch of (key, power) updates to the known validator set.
-func (vs *valSet) applyUpdates(updates []update) {
+func (vs *valset) applyUpdates(updates []update) {
 	for _, u := range updates {
 		delete(vs.keyToPower, u.key)
 		if 0 < u.power {
@@ -105,12 +105,12 @@ func (d *driver) applyKeyMapEntries(entries []keyMapEntry) {
 func (d *driver) applyProviderUpdates(providerUPdates []update) {
 	// Duplicate the previous valSet so that it can be referenced
 	// later in tests.
-	valSet := makeValSet()
-	for pk, power := range d.localValSets[d.lastTimeProvider].keyToPower {
+	valSet := makeValset()
+	for pk, power := range d.providerValsets[d.lastTimeProvider].keyToPower {
 		valSet.keyToPower[pk] = power
 	}
 	valSet.applyUpdates(providerUPdates)
-	d.localValSets = append(d.localValSets, valSet)
+	d.providerValsets = append(d.providerValsets, valSet)
 }
 
 // Run a trace
@@ -125,21 +125,21 @@ func (d *driver) run() {
 		init := d.trace[0]
 		// Set the initial map
 		d.applyKeyMapEntries(init.keyMapEntries)
-		// Set the initial local set
-		d.localValSets = append(d.localValSets, makeValSet())
-		d.localValSets[init.timeProvider].applyUpdates(init.providerUpdates)
-		// Set the initial foreign set
+		// Set the initial provider set
+		d.providerValsets = append(d.providerValsets, makeValset())
+		d.providerValsets[init.timeProvider].applyUpdates(init.providerUpdates)
+		// Set the initial consumer set
 		d.consumerUpdates = append(d.consumerUpdates, d.kd.ComputeUpdates(init.timeProvider, init.providerUpdates))
-		// The first foreign set equal to the local set at time 0
-		d.foreignValSet = makeValSet()
-		d.foreignValSet.applyUpdates(d.consumerUpdates[init.timeConsumer])
+		// The first consumer set equal to the provider set at time 0
+		d.consumerValsets = makeValset()
+		d.consumerValsets.applyUpdates(d.consumerUpdates[init.timeConsumer])
 		d.kd.PruneUnusedKeys(init.timeMaturity)
 	}
 
 	// Sanity check the initial state
 	require.Len(d.t, d.mappings, 1)
 	require.Len(d.t, d.consumerUpdates, 1)
-	require.Len(d.t, d.localValSets, 1)
+	require.Len(d.t, d.providerValsets, 1)
 
 	// Check properties for each step after the initial one
 	for _, s := range d.trace[1:] {
@@ -158,7 +158,7 @@ func (d *driver) run() {
 			// For each unit of time that has passed since the last increase, apply
 			// any updates which have been 'emitted' by a provider time increase step.
 			for j := d.lastTimeConsumer + 1; j <= s.timeConsumer; j++ {
-				d.foreignValSet.applyUpdates(d.consumerUpdates[j])
+				d.consumerValsets.applyUpdates(d.consumerUpdates[j])
 			}
 			d.lastTimeConsumer = s.timeConsumer
 		}
@@ -198,15 +198,15 @@ func (d *driver) externalInvariants() {
 
 	/*
 		For a consumer who has received updates up to vscid i, its
-		local validator set must be equal to the set on the provider
+		provider validator set must be equal to the set on the provider
 		when i was sent, mapped through the mapping at that time.
 	*/
 	validatorSetReplication := func() {
 
 		// Get the consumer set.
-		cSet := d.foreignValSet.keyToPower
+		cSet := d.consumerValsets.keyToPower
 		// Get the provider set - at the corresponding time.
-		pSet := d.localValSets[d.lastTimeConsumer].keyToPower
+		pSet := d.providerValsets[d.lastTimeConsumer].keyToPower
 
 		// Compute a reverse lookup allowing comparison
 		// of the two sets.
@@ -234,70 +234,93 @@ func (d *driver) externalInvariants() {
 	}
 
 	/*
-		TODO:
+		For any key that the consumer is aware of, because it has
+		received that key at some time in the past, and has not yet
+		returned the maturity vscid for its removal:
+		the key is useable as a query parameter to lookup the key
+		of the validator which should be slashed for misbehavior.
 	*/
 	queries := func() {
-		// For each fk known to the consumer
-		for consumerFK := range d.foreignValSet.keyToPower {
-			queriedLK, err := d.kd.GetProviderKey(consumerFK)
-			// There must be a corresponding local key
+		// For each key known to the consumer
+		for ck := range d.consumerValsets.keyToPower {
+
+			// The query must return a result
+			pkQueried, err := d.kd.GetProviderKey(ck)
 			require.Nil(d.t, err)
-			providerFKs := map[CK]bool{}
-			// The local key must be the one that was actually referenced
-			// in the latest mapping used to compute updates sent to the
+
+			// The provider key must be the one that was actually referenced
+			// in the latest trueMapping used to compute updates sent to the
 			// consumer.
-			mapping := d.mappings[d.lastTimeConsumer]
-			for providerLK, providerFK := range mapping {
-				require.Falsef(d.t, providerFKs[providerFK], "two local keys map to the same foreign key")
-				providerFKs[providerFK] = true
-				if consumerFK == providerFK {
-					// A mapping to the consumer FK was found
-					// The corresponding LK must be the one queried.
-					require.Equal(d.t, providerLK, queriedLK)
+			cks_TRUE := map[CK]bool{}
+			trueMapping := d.mappings[d.lastTimeConsumer]
+			for pk_TRUE, ck_TRUE := range trueMapping {
+
+				// Sanity check: no two provider keys should map to the same consumer key
+				require.Falsef(d.t, cks_TRUE[ck_TRUE], "two provider keys map to the same consumer key")
+
+				// Record that this consumer key was indeed mapped to by some provider key
+				// at time lastTimeConsumer
+				cks_TRUE[ck_TRUE] = true
+
+				// If the consumer key is the one used as a query param
+				if ck == ck_TRUE {
+					// Then the provider key returned by the query must be exactly
+					// the same one as was actually mapped to.
+					require.Equal(d.t, pk_TRUE, pkQueried)
 				}
 			}
-			// Check that the comparison was actually made!
-			require.Truef(d.t, providerFKs[consumerFK], "no mapping found for foreign key")
+			// Check that the comparison was actually made, and that the test
+			// actually did something.
+			require.Truef(d.t, cks_TRUE[ck], "no mapping found for consumer key")
 		}
 	}
 
 	/*
-		Two more properties which must be satisfied by KeyDel when
-		used correctly inside a wider system:
-
-		1. (Consumer Initiated Slashing Property) If a foreign key IS used in an update
-		   for the consumer, with a positive power, at VSCID i, and no 0 power update
-		   follows, then the local key associated to it must be queryable.
-		   Phrased another way: foreign keys which are known to the consumer must be
-		   useable for slashing indefinitely.
-		2. (Pruning) If a foreign key IS NOT used in an update for a VSCID j with i < j,
-		   and i is a 0 power update and has matured, then the foreign key is deleted
-		   from storage.
-		   Phrased another way: if the last 0 power update has matured, the key should
-		   be pruned.
+		All keys that the consumer definitely cannot use as a parameter in
+		a slash request must eventually be pruned from state.
+		A consumer can still reference a key if the last update it received
+		for the key had a positive power associated to it, OR the last update
+		had a 0 power associated (deletion) but the maturity period for that
+		update has not yet elapsed (and the maturity was not yet received
+		on the provider chain).
 	*/
 	pruning := func() {
+
+		// Do we expect to be able to query the provider key for a given consumer
+		// key?
 		expectQueryable := map[CK]bool{}
 
 		for i := 0; i <= d.lastTimeMaturity; i++ {
 			for _, u := range d.consumerUpdates[i] {
+				// If the latest update for a given consumer key was dispatched
+				// AND also matured since the last maturity, then
+				// 1) if that update was a positive power update then no subsequent
+				//    zero power update can have matured. Thus the key should be
+				//    queryable.
+				// 2) if that update was a zero positive power update then the
+				//    key should not be queryable unless it was used in a subsquent
+				//    update (see next block).
 				expectQueryable[u.key] = 0 < u.power
 			}
 		}
 		for i := d.lastTimeMaturity + 1; i <= d.lastTimeProvider; i++ {
 			for _, u := range d.consumerUpdates[i] {
+				// If a positive OR zero power update was RECENTLY received
+				// for the consumer, then the key must be queryable.
 				expectQueryable[u.key] = true
 			}
 		}
-		for _, fk := range d.kd.pkToCk {
-			expectQueryable[fk] = true
+		// If a consumer key is CURRENTLY mapped to by a provider key, it
+		// must be queryable.
+		for _, ck := range d.kd.pkToCk {
+			expectQueryable[ck] = true
 		}
 
-		// Simply check every foreign key for the correct queryable-ness.
-		for fk := 0; fk < NUM_FKS; fk++ {
-			_, err := d.kd.GetProviderKey(fk)
+		// Simply check every consumer key for the correct queryable-ness.
+		for ck := 0; ck < NUM_CKS; ck++ {
+			_, err := d.kd.GetProviderKey(ck)
 			actualQueryable := err == nil
-			if expect, found := expectQueryable[fk]; found && expect {
+			if expect, found := expectQueryable[ck]; found && expect {
 				require.True(d.t, actualQueryable)
 			} else {
 				require.False(d.t, actualQueryable)
@@ -314,6 +337,7 @@ func (d *driver) externalInvariants() {
 // Return a randomly generated list of steps
 // which can be used to execute actions for testing.
 func getTrace(t *testing.T) []traceStep {
+	// TODO: check the hardcoded numbers
 
 	mappings := func() []keyMapEntry {
 		ret := []keyMapEntry{}
@@ -322,13 +346,13 @@ func getTrace(t *testing.T) []traceStep {
 			// include 0 to all validators
 			include := rand.Intn(NUM_VALS + 1)
 			for _, lk := range rand.Perm(NUM_VALS)[0:include] {
-				ret = append(ret, keyMapEntry{lk, rand.Intn(NUM_FKS)})
+				ret = append(ret, keyMapEntry{lk, rand.Intn(NUM_CKS)})
 			}
 		}
 		return ret
 	}
 
-	localUpdates := func() []update {
+	providerUpdates := func() []update {
 		ret := []update{}
 		// include 0 to all validators
 		include := rand.Intn(NUM_VALS + 1)
@@ -347,7 +371,7 @@ func getTrace(t *testing.T) []traceStep {
 		{
 			// Hard code initial mapping
 			keyMapEntries:   initialMappings,
-			providerUpdates: localUpdates(),
+			providerUpdates: providerUpdates(),
 			timeProvider:    0,
 			timeConsumer:    0,
 			timeMaturity:    0,
@@ -360,7 +384,7 @@ func getTrace(t *testing.T) []traceStep {
 		if choice == 0 {
 			ret = append(ret, traceStep{
 				keyMapEntries:   mappings(),
-				providerUpdates: localUpdates(),
+				providerUpdates: providerUpdates(),
 				timeProvider:    last.timeProvider + 1,
 				timeConsumer:    last.timeConsumer,
 				timeMaturity:    last.timeMaturity,

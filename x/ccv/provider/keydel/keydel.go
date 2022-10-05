@@ -67,7 +67,7 @@ func (e *KeyDel) GetProviderKey(fk CK) (PK, error) {
 	} else if lk, ok := e.CkToPk[fk]; ok {
 		return lk, nil
 	} else {
-		return -1, errors.New("local key not found for foreign key")
+		return -1, errors.New("provider key not found for consumer key")
 	}
 }
 
@@ -95,11 +95,11 @@ func (e *KeyDel) ComputeUpdates(vscid VSCID, providerUpdates []update) (consumer
 		updates[u.key] = u.power
 	}
 
-	foreign := e.inner(vscid, updates)
+	updates = e.inner(vscid, updates)
 
 	consumerUpdates = []update{}
 
-	for fk, power := range foreign {
+	for fk, power := range updates {
 		consumerUpdates = append(consumerUpdates, update{key: fk, power: power})
 	}
 
@@ -176,7 +176,7 @@ func (e *KeyDel) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 // Returns true iff internal invariants hold
 func (e *KeyDel) internalInvariants() bool {
 
-	// No two local keys can map to the same foreign key
+	// No two provider keys can map to the same consumer key
 	// (lkToFk is sane)
 	seen := map[CK]bool{}
 	for _, fk := range e.pkToCk {
@@ -194,8 +194,8 @@ func (e *KeyDel) internalInvariants() bool {
 		}
 	}
 
-	// All foreign keys mapping to local keys are actually
-	// mapped to by the local key.
+	// All consumer keys mapping to provider keys are actually
+	// mapped to by the provider key.
 	// (fkToLk is sane)
 	for fk := range e.CkToPk {
 		good := false
@@ -210,8 +210,8 @@ func (e *KeyDel) internalInvariants() bool {
 		}
 	}
 
-	// If a foreign key is mapped to a local key (currently)
-	// any memo containing the same foreign key has the same
+	// If a consumer key is mapped to a provider key (currently)
+	// any memo containing the same consumer key has the same
 	// mapping.
 	// (Ensures lookups are correct)
 	for fk, lk := range e.CkToPk {
