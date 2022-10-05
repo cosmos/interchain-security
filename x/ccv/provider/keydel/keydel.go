@@ -122,6 +122,9 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	lkToLastPositiveUpdate := map[LK]update{}
 	for _, u := range e.fkToUpdate {
 		if 0 < u.power {
+			if _, ok := lkToLastPositiveUpdate[u.lk]; ok {
+				panic("Already have positive update for lk")
+			}
 			lkToLastPositiveUpdate[u.lk] = update{key: u.fk, power: u.power}
 		}
 	}
