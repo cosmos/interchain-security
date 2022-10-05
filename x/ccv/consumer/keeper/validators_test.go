@@ -3,8 +3,6 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -19,19 +17,12 @@ import (
 
 // TestApplyCCValidatorChanges tests the ApplyCCValidatorChanges method for a consumer keeper
 func TestApplyCCValidatorChanges(t *testing.T) {
-	// Construct a keeper with a custom codec
-	_, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
-	ir := codectypes.NewInterfaceRegistry()
 
-	// Public key implementation must be registered
-	cryptocodec.RegisterInterfaces(ir)
-	cdc := codec.NewProtoCodec(ir)
-
-	consumerKeeper := testkeeper.GetCustomConsumerKeeper(
-		cdc,
-		storeKey,
-		paramsSubspace,
-	)
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	// Explicitly register cdc with public key interface
+	keeperParams.RegisterSdkCryptoCodecInterfaces()
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+	defer ctrl.Finish()
 
 	// utility functions
 	getCCVals := func() (vals []types.CrossChainValidator) {
@@ -116,20 +107,11 @@ func TestApplyCCValidatorChanges(t *testing.T) {
 // Tests the getter and setter behavior for historical info
 func TestHistoricalInfo(t *testing.T) {
 
-	// Construct a keeper with a custom codec
-	_, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
-	ir := codectypes.NewInterfaceRegistry()
-
-	// Public key implementation must be registered
-	cryptocodec.RegisterInterfaces(ir)
-	cdc := codec.NewProtoCodec(ir)
-
-	consumerKeeper := testkeeper.GetCustomConsumerKeeper(
-		cdc,
-		storeKey,
-		paramsSubspace,
-	)
-
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	// Explicitly register cdc with public key interface
+	keeperParams.RegisterSdkCryptoCodecInterfaces()
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+	defer ctrl.Finish()
 	ctx = ctx.WithBlockHeight(15)
 
 	// Generate test validators, save them to store, and retrieve stored records

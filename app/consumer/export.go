@@ -12,8 +12,8 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// ExportAppStateAndValidators exports the state of the application for a genesis
-// file.
+// ExportAppStateAndValidators implements the simapp app interface
+// by exporting the state of the application
 func (app *App) ExportAppStateAndValidators(
 	forZeroHeight bool, jailAllowedAddrs []string,
 ) (servertypes.ExportedApp, error) {
@@ -39,17 +39,19 @@ func (app *App) ExportAppStateAndValidators(
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}
+
 	return servertypes.ExportedApp{
 		AppState:        appState,
-		Validators:      validators,
 		Height:          height,
+		Validators:      validators,
 		ConsensusParams: app.BaseApp.GetConsensusParams(ctx),
 	}, nil
 }
 
 // prepare for fresh start at zero height
 // NOTE zero height genesis is a temporary feature which will be deprecated
-//      in favour of export at a block height
+//
+//	in favour of export at a block height
 func (app *App) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []string) {
 
 	/* Just to be safe, assert the invariants on current state. */

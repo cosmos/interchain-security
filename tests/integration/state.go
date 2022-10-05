@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
 )
@@ -17,9 +17,12 @@ import (
 type State map[chainID]ChainState
 
 type ChainState struct {
-	ValBalances *map[validatorID]uint
-	Proposals   *map[uint]Proposal
-	ValPowers   *map[validatorID]uint
+	ValBalances          *map[validatorID]uint
+	Proposals            *map[uint]Proposal
+	ValPowers            *map[validatorID]uint
+	RepresentativePowers *map[validatorID]uint
+	Params               *[]Param
+	Rewards              *Rewards
 }
 
 type Proposal interface {
@@ -42,7 +45,33 @@ type ConsumerProposal struct {
 	Status        string
 }
 
+type Rewards struct {
+	IsRewarded map[validatorID]bool
+	//if true it will calculate if the validator/delegator is rewarded between 2 successive blocks,
+	//otherwise it will calculate if it received any rewards since the 1st block
+	IsIncrementalReward bool
+	//if true checks rewards for "stake" token, otherwise checks rewards from
+	//other chains (e.g. false is used to check if provider received rewards from a consumer chain)
+	IsNativeDenom bool
+}
+
 func (p ConsumerProposal) isProposal() {}
+
+type ParamsProposal struct {
+	Deposit  uint
+	Status   string
+	Subspace string
+	Key      string
+	Value    string
+}
+
+func (p ParamsProposal) isProposal() {}
+
+type Param struct {
+	Subspace string
+	Key      string
+	Value    string
+}
 
 func (tr TestRun) getState(modelState State) State {
 	systemState := State{}
@@ -70,6 +99,21 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 		tr.waitBlocks(chain, 1, 10*time.Second)
 		powers := tr.getValPowers(chain, *modelState.ValPowers)
 		chainState.ValPowers = &powers
+	}
+
+	if modelState.RepresentativePowers != nil {
+		representPowers := tr.getRepresentativePowers(chain, *modelState.RepresentativePowers)
+		chainState.RepresentativePowers = &representPowers
+	}
+
+	if modelState.Params != nil {
+		params := tr.getParams(chain, *modelState.Params)
+		chainState.Params = &params
+	}
+
+	if modelState.Rewards != nil {
+		rewards := tr.getRewards(chain, *modelState.Rewards)
+		chainState.Rewards = &rewards
 	}
 
 	return chainState
@@ -141,6 +185,66 @@ func (tr TestRun) getValPowers(chain chainID, modelState map[validatorID]uint) m
 	return actualState
 }
 
+func (tr TestRun) getRepresentativePowers(chain chainID, modelState map[validatorID]uint) map[validatorID]uint {
+	actualState := map[validatorID]uint{}
+	for k := range modelState {
+		actualState[k] = tr.getRepresentativePower(chain, k)
+	}
+
+	return actualState
+}
+
+func (tr TestRun) getParams(chain chainID, modelState []Param) []Param {
+	actualState := []Param{}
+	for _, p := range modelState {
+		actualState = append(actualState, Param{Subspace: p.Subspace, Key: p.Key, Value: tr.getParam(chain, p)})
+	}
+
+	return actualState
+}
+
+func (tr TestRun) getRewards(chain chainID, modelState Rewards) Rewards {
+	receivedRewards := map[validatorID]bool{}
+
+	currentBlock := tr.getBlockHeight(chain)
+	tr.waitBlocks(chain, 1, 10*time.Second)
+	nextBlock := tr.getBlockHeight(chain)
+	tr.waitBlocks(chain, 1, 10*time.Second)
+
+	if !modelState.IsIncrementalReward {
+		currentBlock = 1
+	}
+	for k := range modelState.IsRewarded {
+		receivedRewards[k] = tr.getReward(chain, k, nextBlock, modelState.IsNativeDenom) > tr.getReward(chain, k, currentBlock, modelState.IsNativeDenom)
+	}
+
+	return Rewards{IsRewarded: receivedRewards, IsIncrementalReward: modelState.IsIncrementalReward, IsNativeDenom: modelState.IsNativeDenom}
+}
+
+func (tr TestRun) getReward(chain chainID, validator validatorID, blockHeight uint, isNativeDenom bool) float64 {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+
+		"query", "distribution", "rewards",
+		tr.validatorConfigs[validator].delAddress,
+
+		`--height`, fmt.Sprint(blockHeight),
+		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
+		`-o`, `json`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	denomCondition := `total.#(denom!="stake").amount`
+	if isNativeDenom {
+		denomCondition = `total.#(denom=="stake").amount`
+	}
+
+	return gjson.Get(string(bz), denomCondition).Float()
+}
+
 func (tr TestRun) getBalance(chain chainID, validator validatorID) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
@@ -200,7 +304,7 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			Title:       title,
 			Description: description,
 		}
-	case "/interchain_security.ccv.provider.v1.CreateConsumerChainProposal":
+	case "/interchain_security.ccv.provider.v1.ConsumerAdditionProposal":
 		chainId := gjson.Get(string(bz), `content.chain_id`).String()
 		spawnTime := gjson.Get(string(bz), `content.spawn_time`).Time().Sub(tr.containerConfig.now)
 
@@ -222,7 +326,14 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 				RevisionHeight: gjson.Get(string(bz), `content.initial_height.revision_height`).Uint(),
 			},
 		}
-
+	case "/cosmos.params.v1beta1.ParameterChangeProposal":
+		return ParamsProposal{
+			Deposit:  uint(deposit),
+			Status:   status,
+			Subspace: gjson.Get(string(bz), `content.changes.0.subspace`).String(),
+			Key:      gjson.Get(string(bz), `content.changes.0.key`).String(),
+			Value:    gjson.Get(string(bz), `content.changes.0.value`).String(),
+		}
 	}
 
 	log.Fatal("unknown proposal type", string(bz))
@@ -286,6 +397,47 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 
 	// Validator not in set, its validator power is zero.
 	return 0
+}
+
+func (tr TestRun) getRepresentativePower(chain chainID, validator validatorID) uint {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+
+		"query", "staking", "validator",
+		tr.validatorConfigs[validator].valoperAddress,
+
+		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
+		`-o`, `json`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	amount := gjson.Get(string(bz), `tokens`)
+
+	return uint(amount.Uint())
+}
+
+func (tr TestRun) getParam(chain chainID, param Param) string {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+
+		"query", "params", "subspace",
+		param.Subspace,
+		param.Key,
+
+		`--node`, tr.getValidatorNode(chain, tr.getDefaultValidator(chain)),
+		`-o`, `json`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	value := gjson.Get(string(bz), `value`)
+
+	return value.String()
 }
 
 // Gets a default validator for txs and queries using the first subdirectory

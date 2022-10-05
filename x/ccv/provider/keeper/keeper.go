@@ -77,26 +77,26 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+host.ModuleName+"-"+types.ModuleName)
 }
 
-// IsBound checks if the transfer module is already bound to the desired port
+// IsBound checks if the CCV module is already bound to the desired port
 func (k Keeper) IsBound(ctx sdk.Context, portID string) bool {
 	_, ok := k.scopedKeeper.GetCapability(ctx, host.PortPath(portID))
 	return ok
 }
 
-// BindPort defines a wrapper function for the ort Keeper's function in
+// BindPort defines a wrapper function for the port Keeper's function in
 // order to expose it to module's InitGenesis function
 func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
 	cap := k.portKeeper.BindPort(ctx, portID)
 	return k.ClaimCapability(ctx, cap, host.PortPath(portID))
 }
 
-// GetPort returns the portID for the transfer module. Used in ExportGenesis
+// GetPort returns the portID for the CCV module. Used in ExportGenesis
 func (k Keeper) GetPort(ctx sdk.Context) string {
 	store := ctx.KVStore(k.storeKey)
 	return string(store.Get(types.PortKey()))
 }
 
-// SetPort sets the portID for the transfer module. Used in InitGenesis
+// SetPort sets the portID for the CCV module. Used in InitGenesis
 func (k Keeper) SetPort(ctx sdk.Context, portID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.PortKey(), []byte(portID))
@@ -135,10 +135,10 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 	store.Delete(types.ChainToChannelKey(chainID))
 }
 
-// IterateConsumerChains iterates over all of the consumer chains that the provider module controls.
-// It calls the provided callback function which takes in a chainID and returns
+// IterateConsumerChains iterates over all of the consumer chains that the provider module controls
+// It calls the provided callback function which takes in a chainID and client ID to return
 // a stop boolean which will stop the iteration.
-func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID string) (stop bool)) {
+func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID, clientID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
 	defer iterator.Close()
@@ -150,9 +150,9 @@ func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, 
 	for ; iterator.Valid(); iterator.Next() {
 		// remove 1 byte prefix from key to retrieve chainID
 		chainID := string(iterator.Key()[1:])
+		clientID := string(iterator.Value())
 
-		stop := cb(ctx, chainID)
-		if stop {
+		if !cb(ctx, chainID, clientID) {
 			return
 		}
 	}
@@ -228,6 +228,11 @@ func (k Keeper) GetConsumerGenesis(ctx sdk.Context, chainID string) (consumertyp
 	return data, true
 }
 
+func (k Keeper) DeleteConsumerGenesis(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerGenesisKey(chainID))
+}
+
 // VerifyConsumerChain verifies that the chain trying to connect on the channel handshake
 // is the expected consumer chain.
 func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectionHops []string) error {
@@ -266,14 +271,14 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
 	}
 	connectionID := channel.ConnectionHops[0]
-	chainID, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
+	_, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
 	if err != nil {
 		return err
 	}
 	// Verify that there isn't already a CCV channel for the consumer chain
-	// If there is, then close the channel.
-	if prevChannel, ok := k.GetChannelToChain(ctx, chainID); ok {
-		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannel, chainID)
+	chainID := tmClient.ChainId
+	if prevChannelID, ok := k.GetChainToChannel(ctx, chainID); ok {
+		return sdkerrors.Wrapf(ccv.ErrDuplicateChannel, "CCV channel with ID: %s already created for consumer chain %s", prevChannelID, chainID)
 	}
 
 	// the CCV channel is established:
@@ -312,13 +317,35 @@ func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 	store.Delete(types.UnbondingOpKey(id))
 }
 
+func (k Keeper) IterateOverUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdOp ccv.UnbondingOp) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.UnbondingOpBytePrefix})
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		id := binary.BigEndian.Uint64(iterator.Key()[1:])
+		bz := iterator.Value()
+		if bz == nil {
+			panic(fmt.Errorf("unbonding operation is nil for id %d", id))
+		}
+		ubdOp := types.MustUnmarshalUnbondingOp(k.cdc, bz)
+
+		if !cb(id, ubdOp) {
+			break
+		}
+	}
+}
+
 // This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
 func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, IDs []uint64) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz, err := json.Marshal(IDs)
+	index := ccv.UnbondingOpsIndex{
+		Ids: IDs,
+	}
+	bz, err := index.Marshal()
 	if err != nil {
-		panic("Failed to JSON marshal")
+		panic("Failed to marshal UnbondingOpsIndex")
 	}
 
 	store.Set(types.UnbondingOpIndexKey(chainID, valsetUpdateID), bz)
@@ -340,13 +367,12 @@ func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb 
 		}
 		vscID = binary.BigEndian.Uint64(vscBytes)
 
-		var ids []uint64
-		err = json.Unmarshal(iterator.Value(), &ids)
-		if err != nil {
+		var index ccv.UnbondingOpsIndex
+		if err = index.Unmarshal(iterator.Value()); err != nil {
 			panic("Failed to unmarshal JSON")
 		}
 
-		if !cb(vscID, ids) {
+		if !cb(vscID, index.GetIds()) {
 			return
 		}
 	}
@@ -361,13 +387,12 @@ func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 		return []uint64{}, false
 	}
 
-	var ids []uint64
-	err := json.Unmarshal(bz, &ids)
-	if err != nil {
-		panic("Failed to JSON unmarshal")
+	var idx ccv.UnbondingOpsIndex
+	if err := idx.Unmarshal(bz); err != nil {
+		panic("Failed to unmarshal UnbondingOpsIndex")
 	}
 
-	return ids, true
+	return idx.GetIds(), true
 }
 
 // This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
@@ -401,11 +426,12 @@ func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64, err error
 	if bz == nil {
 		return nil, nil
 	}
-	err = json.Unmarshal(bz, &ids)
-	if err != nil {
+
+	var ops ccv.MaturedUnbondingOps
+	if err := ops.Unmarshal(bz); err != nil {
 		return nil, err
 	}
-	return ids, nil
+	return ops.GetIds(), nil
 }
 
 // AppendMaturedUnbondingOps adds a list of ids to the list of matured unbonding operation ids
@@ -417,11 +443,13 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) error {
 	if err != nil {
 		return err
 	}
-	// append works also on a nil list
-	existingIds = append(existingIds, ids...)
+
+	maturedOps := ccv.MaturedUnbondingOps{
+		Ids: append(existingIds, ids...),
+	}
 
 	store := ctx.KVStore(k.storeKey)
-	bz, err := json.Marshal(existingIds)
+	bz, err := maturedOps.Marshal()
 	if err != nil {
 		return err
 	}
@@ -440,21 +468,27 @@ func (k Keeper) EmptyMaturedUnbondingOps(ctx sdk.Context) ([]uint64, error) {
 	return ids, nil
 }
 
-func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (string, *ibctmtypes.ClientState, error) {
-	// Retrieve the underlying client state.
+// Retrieves the underlying client state corresponding to a connection ID.
+func (k Keeper) getUnderlyingClient(ctx sdk.Context, connectionID string) (
+	clientID string, tmClient *ibctmtypes.ClientState, err error) {
+
 	conn, ok := k.connectionKeeper.GetConnection(ctx, connectionID)
 	if !ok {
-		return "", nil, sdkerrors.Wrapf(conntypes.ErrConnectionNotFound, "connection not found for connection ID: %s", connectionID)
+		return "", nil, sdkerrors.Wrapf(conntypes.ErrConnectionNotFound,
+			"connection not found for connection ID: %s", connectionID)
 	}
-	client, ok := k.clientKeeper.GetClientState(ctx, conn.ClientId)
+	clientID = conn.ClientId
+	clientState, ok := k.clientKeeper.GetClientState(ctx, clientID)
 	if !ok {
-		return "", nil, sdkerrors.Wrapf(clienttypes.ErrClientNotFound, "client not found for client ID: %s", conn.ClientId)
+		return "", nil, sdkerrors.Wrapf(clienttypes.ErrClientNotFound,
+			"client not found for client ID: %s", conn.ClientId)
 	}
-	tmClient, ok := client.(*ibctmtypes.ClientState)
+	tmClient, ok = clientState.(*ibctmtypes.ClientState)
 	if !ok {
-		return "", nil, sdkerrors.Wrapf(clienttypes.ErrInvalidClientType, "invalid client type. expected %s, got %s", ibcexported.Tendermint, client.ClientType())
+		return "", nil, sdkerrors.Wrapf(clienttypes.ErrInvalidClientType,
+			"invalid client type. expected %s, got %s", ibcexported.Tendermint, clientState.ClientType())
 	}
-	return conn.ClientId, tmClient, nil
+	return clientID, tmClient, nil
 }
 
 // chanCloseInit defines a wrapper function for the channel Keeper's function
@@ -521,7 +555,7 @@ func (k *Keeper) Hooks() StakingHooks {
 func (h StakingHooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
 	var consumerChainIDS []string
 
-	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string) (stop bool) {
+	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
 		consumerChainIDS = append(consumerChainIDS, chainID)
 		return false
 	})
@@ -571,6 +605,23 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint6
 	return binary.BigEndian.Uint64(bz), true
 }
 
+// IterateSlashAcks iterates through the slash acks set in the store
+func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(valsetUpdateId, height uint64) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+
+		valsetUpdateId := binary.BigEndian.Uint64(iterator.Key()[1:])
+		height := binary.BigEndian.Uint64(iterator.Value())
+
+		if !cb(valsetUpdateId, height) {
+			return
+		}
+	}
+}
+
 // DeleteValsetUpdateBlockHeight deletes the block height value for a given vaset update id
 func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) {
 	store := ctx.KVStore(k.storeKey)
@@ -580,12 +631,15 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 // SetSlashAcks sets the slash acks under the given chain ID
 func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	store := ctx.KVStore(k.storeKey)
-	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(acks)
-	if err != nil {
-		panic("failed to encode json")
+
+	sa := types.SlashAcks{
+		Addresses: acks,
 	}
-	store.Set(types.SlashAcksKey(chainID), buf.Bytes())
+	bz, err := sa.Marshal()
+	if err != nil {
+		panic("failed to marshal SlashAcks")
+	}
+	store.Set(types.SlashAcksKey(chainID), bz)
 }
 
 // GetSlashAcks returns the slash acks stored under the given chain ID
@@ -595,15 +649,12 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	if bz == nil {
 		return nil
 	}
-	var acks []string
-	buf := bytes.NewBuffer(bz)
-
-	err := json.NewDecoder(buf).Decode(&acks)
-	if err != nil {
+	var acks types.SlashAcks
+	if err := acks.Unmarshal(bz); err != nil {
 		panic(fmt.Errorf("failed to decode json: %w", err))
 	}
 
-	return acks
+	return acks.GetAddresses()
 }
 
 // EmptySlashAcks empties and returns the slash acks for a given chain ID
@@ -627,15 +678,13 @@ func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks [
 
 		chainID := string(iterator.Key()[1:])
 
-		var data []string
-		buf := bytes.NewBuffer(iterator.Value())
-
-		err := json.NewDecoder(buf).Decode(&data)
+		var sa types.SlashAcks
+		err := sa.Unmarshal(iterator.Value())
 		if err != nil {
-			panic(fmt.Errorf("failed to decode json: %w", err))
+			panic(fmt.Errorf("failed to unmarshal SlashAcks: %w", err))
 		}
 
-		if !cb(chainID, data) {
+		if !cb(chainID, sa.GetAddresses()) {
 			return
 		}
 	}

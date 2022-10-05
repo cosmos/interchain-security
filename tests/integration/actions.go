@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	"github.com/cosmos/interchain-security/x/ccv/provider/client"
 )
 
 type SendTokensAction struct {
@@ -191,25 +193,13 @@ type submitConsumerProposalAction struct {
 	initialHeight clienttypes.Height
 }
 
-// TODO: import this directly from the module once it is merged
-type createConsumerChainProposalJSON struct {
-	Title         string             `json:"title"`
-	Description   string             `json:"description"`
-	ChainId       string             `json:"chain_id"`
-	InitialHeight clienttypes.Height `json:"initial_height"`
-	GenesisHash   []byte             `json:"genesis_hash"`
-	BinaryHash    []byte             `json:"binary_hash"`
-	SpawnTime     time.Time          `json:"spawn_time"`
-	Deposit       string             `json:"deposit"`
-}
-
-func (tr TestRun) submitConsumerProposal(
+func (tr TestRun) submitConsumerAdditionProposal(
 	action submitConsumerProposalAction,
 	verbose bool,
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
-	prop := createConsumerChainProposalJSON{
-		Title:         "Create a chain",
+	prop := client.ConsumerAdditionProposalJSON{
+		Title:         "Propose the addition of a new chain",
 		Description:   "Gonna be a great chain",
 		ChainId:       string(tr.chainConfigs[action.consumerChain].chainId),
 		InitialHeight: action.initialHeight,
@@ -240,8 +230,79 @@ func (tr TestRun) submitConsumerProposal(
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
-		"tx", "gov", "submit-proposal", "create-consumer-chain",
+		"tx", "gov", "submit-proposal", "consumer-addition",
 		"/temp-proposal.json",
+
+		`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--home`, tr.getValidatorHome(action.chain, action.from),
+		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
+type submitParamChangeProposalAction struct {
+	chain    chainID
+	from     validatorID
+	deposit  uint
+	subspace string
+	key      string
+	value    interface{}
+}
+
+type paramChangeProposalJSON struct {
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	Changes     []paramChangeJSON `json:"changes"`
+	Deposit     string            `json:"deposit"`
+}
+
+type paramChangeJSON struct {
+	Subspace string      `json:"subspace"`
+	Key      string      `json:"key"`
+	Value    interface{} `json:"value"`
+}
+
+func (tr TestRun) submitParamChangeProposal(
+	action submitParamChangeProposalAction,
+	verbose bool,
+) {
+	prop := paramChangeProposalJSON{
+		Title:       "Param change",
+		Description: "Changing module params",
+		Changes:     []paramChangeJSON{{Subspace: action.subspace, Key: action.key, Value: action.value}},
+		Deposit:     fmt.Sprint(action.deposit) + `stake`,
+	}
+
+	bz, err := json.Marshal(prop)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	jsonStr := string(bz)
+	if strings.Contains(jsonStr, "'") {
+		log.Fatal("prop json contains single quote")
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName,
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/params-proposal.json")).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+
+		"tx", "gov", "submit-proposal", "param-change",
+		"/params-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
@@ -300,9 +361,10 @@ func (tr TestRun) voteGovProposal(
 }
 
 type startConsumerChainAction struct {
-	consumerChain chainID
-	providerChain chainID
-	validators    []StartChainValidator
+	consumerChain  chainID
+	providerChain  chainID
+	genesisChanges string
+	validators     []StartChainValidator
 }
 
 func (tr TestRun) startConsumerChain(
@@ -329,10 +391,15 @@ func (tr TestRun) startConsumerChain(
 		log.Fatal(err, "\n", string(bz))
 	}
 
+	genesisChanges := ".app_state.ccvconsumer = " + string(bz)
+	if action.genesisChanges != "" {
+		genesisChanges = genesisChanges + " | " + action.genesisChanges
+	}
+
 	tr.startChain(StartChainAction{
 		chain:          action.consumerChain,
 		validators:     action.validators,
-		genesisChanges: ".app_state.ccvconsumer = " + string(bz),
+		genesisChanges: genesisChanges,
 		skipGentx:      true,
 	}, verbose)
 }
@@ -518,6 +585,88 @@ func (tr TestRun) addIbcChannel(
 	}
 }
 
+type transferChannelCompleteAction struct {
+	chainA      chainID
+	chainB      chainID
+	connectionA uint
+	portA       string
+	portB       string
+	order       string
+	channelA    uint
+	channelB    uint
+}
+
+func (tr TestRun) transferChannelComplete(
+	action transferChannelCompleteAction,
+	verbose bool,
+) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenTryCmd arguments.
+	chanOpenTryCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
+		"tx", "chan-open-try",
+		"--dst-chain", string(tr.chainConfigs[action.chainB].chainId),
+		"--src-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--dst-connection", "connection-"+fmt.Sprint(action.connectionA),
+		"--dst-port", action.portB,
+		"--src-port", action.portA,
+		"--src-channel", "channel-"+fmt.Sprint(action.channelA),
+	)
+	executeCommand(chanOpenTryCmd, "transferChanOpenTry")
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenAckCmd arguments.
+	chanOpenAckCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
+		"tx", "chan-open-ack",
+		"--dst-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--src-chain", string(tr.chainConfigs[action.chainB].chainId),
+		"--dst-connection", "connection-"+fmt.Sprint(action.connectionA),
+		"--dst-port", action.portA,
+		"--src-port", action.portB,
+		"--dst-channel", "channel-"+fmt.Sprint(action.channelA),
+		"--src-channel", "channel-"+fmt.Sprint(action.channelB),
+	)
+	executeCommand(chanOpenAckCmd, "transferChanOpenAck")
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with chanOpenConfirmCmd arguments.
+	chanOpenConfirmCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
+		"tx", "chan-open-confirm",
+		"--dst-chain", string(tr.chainConfigs[action.chainB].chainId),
+		"--src-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--dst-connection", "connection-"+fmt.Sprint(action.connectionA),
+		"--dst-port", action.portB,
+		"--src-port", action.portA,
+		"--dst-channel", "channel-"+fmt.Sprint(action.channelB),
+		"--src-channel", "channel-"+fmt.Sprint(action.channelA),
+	)
+	executeCommand(chanOpenConfirmCmd, "transferChanOpenConfirm")
+}
+
+func executeCommand(cmd *exec.Cmd, cmdName string) {
+	if verbose {
+		fmt.Println(cmdName+" cmd:", cmd.String())
+	}
+
+	cmdReader, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
+	cmd.Stderr = cmd.Stdout
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(cmdReader)
+
+	for scanner.Scan() {
+		out := scanner.Text()
+		if verbose {
+			fmt.Println(cmdName + ": " + out)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+}
+
 type relayPacketsAction struct {
 	chain   chainID
 	port    string
@@ -543,6 +692,27 @@ func (tr TestRun) relayPackets(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+}
+
+type relayRewardPacketsToProviderAction struct {
+	consumerChain chainID
+	providerChain chainID
+	port          string
+	channel       uint
+}
+
+func (tr TestRun) relayRewardPacketsToProvider(
+	action relayRewardPacketsToProviderAction,
+	verbose bool,
+) {
+	blockPerDistribution, _ := strconv.ParseUint(strings.Trim(tr.getParam(action.consumerChain, Param{Subspace: "ccvconsumer", Key: "BlocksPerDistributionTransmission"}), "\""), 10, 64)
+	currentBlock := uint64(tr.getBlockHeight(action.consumerChain))
+	if currentBlock <= blockPerDistribution {
+		tr.waitBlocks(action.consumerChain, uint(blockPerDistribution-currentBlock+1), 60*time.Second)
+	}
+
+	tr.relayPackets(relayPacketsAction{chain: action.consumerChain, port: action.port, channel: action.channel}, verbose)
+	tr.waitBlocks(action.providerChain, 1, 10*time.Second)
 }
 
 type delegateTokensAction struct {
@@ -735,4 +905,60 @@ func (tr TestRun) unjailValidator(action unjailValidatorAction, verbose bool) {
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+}
+
+type registerRepresentativeAction struct {
+	chain           chainID
+	representatives []validatorID
+	stakes          []uint
+}
+
+func (tr TestRun) registerRepresentative(
+	action registerRepresentativeAction,
+	verbose bool,
+) {
+	var wg sync.WaitGroup
+	for i, val := range action.representatives {
+		wg.Add(1)
+		stake := action.stakes[i]
+		go func(val validatorID, stake uint) {
+			defer wg.Done()
+
+			//#nosec G204 -- Bypass linter warning for spawning subprocess with pubKeycmd arguments.
+			pubKeycmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+				"tendermint", "show-validator",
+				`--home`, tr.getValidatorHome(action.chain, val),
+			)
+
+			bzPubKey, err := pubKeycmd.CombinedOutput()
+			if err != nil {
+				log.Fatal(err, "\n", string(bzPubKey))
+			}
+
+			//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+			bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+				"tx", "staking", "create-validator",
+				`--amount`, fmt.Sprint(stake)+"stake",
+				`--pubkey`, string(bzPubKey),
+				`--moniker`, fmt.Sprint(val),
+				`--commission-rate`, "0.1",
+				`--commission-max-rate`, "0.2",
+				`--commission-max-change-rate`, "0.01",
+				`--min-self-delegation`, "1",
+				`--from`, `validator`+fmt.Sprint(val),
+				`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+				`--home`, tr.getValidatorHome(action.chain, val),
+				`--node`, tr.getValidatorNode(action.chain, val),
+				`--keyring-backend`, `test`,
+				`-b`, `block`,
+				`-y`,
+			).CombinedOutput()
+
+			if err != nil {
+				log.Fatal(err, "\n", string(bz))
+			}
+		}(val, stake)
+	}
+
+	wg.Wait()
 }

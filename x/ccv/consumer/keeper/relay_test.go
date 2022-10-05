@@ -109,29 +109,8 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		},
 	}
 
-	// Instantiate custom keeper with mocks
-	ctrl := gomock.NewController(t)
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
-	cdc, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
-
-	mockScopedKeeper := testkeeper.NewMockScopedKeeper(ctrl)
-	mockChannelKeeper := testkeeper.NewMockChannelKeeper(ctrl)
-
-	consumerKeeper := testkeeper.GetCustomConsumerKeeperWithMocks(
-		cdc,
-		storeKey,
-		paramsSubspace,
-		mockScopedKeeper,
-		mockChannelKeeper,
-		testkeeper.NewMockPortKeeper(ctrl),
-		testkeeper.NewMockConnectionKeeper(ctrl),
-		testkeeper.NewMockClientKeeper(ctrl),
-		testkeeper.NewMockSlashingKeeper(ctrl),
-		testkeeper.NewMockBankKeeper(ctrl),
-		testkeeper.NewMockAccountKeeper(ctrl),
-		testkeeper.NewMockIBCTransferKeeper(ctrl),
-		testkeeper.NewMockIBCCoreKeeper(ctrl),
-	)
 
 	// Set channel to provider, still in context of consumer chain
 	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
@@ -181,29 +160,13 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	// Channel ID on destination (counter party) chain
 	channelIDOnDest := "ChannelIDOnDest"
 
-	// Instantiate custom keeper with mocks
+	// Instantiate in-mem keeper with mocks
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	cdc, storeKey, paramsSubspace, ctx := testkeeper.SetupInMemKeeper(t)
-
-	mockScopedKeeper := testkeeper.NewMockScopedKeeper(ctrl)
-	mockChannelKeeper := testkeeper.NewMockChannelKeeper(ctrl)
-
-	consumerKeeper := testkeeper.GetCustomConsumerKeeperWithMocks(
-		cdc,
-		storeKey,
-		paramsSubspace,
-		mockScopedKeeper,
-		mockChannelKeeper,
-		testkeeper.NewMockPortKeeper(ctrl),
-		testkeeper.NewMockConnectionKeeper(ctrl),
-		testkeeper.NewMockClientKeeper(ctrl),
-		testkeeper.NewMockSlashingKeeper(ctrl),
-		testkeeper.NewMockBankKeeper(ctrl),
-		testkeeper.NewMockAccountKeeper(ctrl),
-		testkeeper.NewMockIBCTransferKeeper(ctrl),
-		testkeeper.NewMockIBCCoreKeeper(ctrl),
-	)
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	mocks := testkeeper.NewMockedKeepers(ctrl)
+	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
+	ctx := keeperParams.Ctx
 
 	// Set an established provider channel for later in test
 	consumerKeeper.SetProviderChannel(ctx, channelIDToProvider)
@@ -235,20 +198,20 @@ func TestOnAcknowledgementPacket(t *testing.T) {
 	dummyCap := &capabilitytypes.Capability{}
 	gomock.InOrder(
 
-		mockScopedKeeper.EXPECT().GetCapability(
+		mocks.MockScopedKeeper.EXPECT().GetCapability(
 			ctx, host.ChannelCapabilityPath(ccv.ConsumerPortID, channelIDToDestChain),
 		).Return(dummyCap, true).Times(1),
 		// Due to input error ack, ChanCloseInit is called on channel to destination chain
-		mockChannelKeeper.EXPECT().ChanCloseInit(
+		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
 			ctx, ccv.ConsumerPortID, channelIDToDestChain, dummyCap,
 		).Return(nil).Times(1),
 
-		mockScopedKeeper.EXPECT().GetCapability(
+		mocks.MockScopedKeeper.EXPECT().GetCapability(
 			ctx, host.ChannelCapabilityPath(ccv.ConsumerPortID, channelIDToProvider),
 		).Return(dummyCap, true).Times(1),
 		// Due to input error ack and existence of established channel to provider,
 		// ChanCloseInit is called on channel to provider
-		mockChannelKeeper.EXPECT().ChanCloseInit(
+		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(
 			ctx, ccv.ConsumerPortID, channelIDToProvider, dummyCap,
 		).Return(nil).Times(1),
 	)
