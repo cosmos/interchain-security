@@ -18,7 +18,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
-func (suite *ConsumerKeeperTestSuite) TestConsumerGenesis() {
+func (suite *CCVTestSuite) TestConsumerGenesis() {
 	genesis := suite.consumerChain.App.(*app.App).ConsumerKeeper.ExportGenesis(suite.consumerChain.GetContext())
 
 	suite.Require().Equal(suite.providerClient, genesis.ProviderClientState)
@@ -67,19 +67,16 @@ func (suite *ConsumerKeeperTestSuite) TestConsumerGenesis() {
 		ccv.ConsumerPortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
 	suite.consumerChain.App.(*app.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
-
-	// mocking the fact that consumer chain validators should be provider chain validators
-	// TODO: Fix testing suite so we can initialize both chains with the same validator set
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
 
 	restartGenesis := suite.consumerChain.App.(*app.App).ConsumerKeeper.ExportGenesis(suite.consumerChain.GetContext())
-	restartGenesis.InitialValSet = valUpdates
+	suite.Require().Equal(valUpdates, restartGenesis.InitialValSet)
 
 	// ensure reset genesis is set correctly
 	providerChannel := suite.path.EndpointA.ChannelID
 	suite.Require().Equal(providerChannel, restartGenesis.ProviderChannelId)
 	maturityTime := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 1)
-	unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.ctx)
+	unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.consumerCtx())
 	suite.Require().True(found)
 	suite.Require().Equal(uint64(origTime.Add(unbondingPeriod).UnixNano()), maturityTime, "maturity time is not set correctly in genesis")
 
@@ -89,10 +86,10 @@ func (suite *ConsumerKeeperTestSuite) TestConsumerGenesis() {
 }
 
 // TestProviderClientMatches tests that the provider client managed by the consumer keeper matches the client keeper's client state
-func (suite *ConsumerKeeperTestSuite) TestProviderClientMatches() {
-	providerClientID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.ctx)
+func (suite *CCVTestSuite) TestProviderClientMatches() {
+	providerClientID, ok := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.consumerCtx())
 	suite.Require().True(ok)
 
-	clientState, _ := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.ctx, providerClientID)
+	clientState, _ := suite.consumerChain.App.GetIBCKeeper().ClientKeeper.GetClientState(suite.consumerCtx(), providerClientID)
 	suite.Require().Equal(suite.providerClient, clientState, "stored client state does not match genesis provider client")
 }

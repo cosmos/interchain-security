@@ -477,7 +477,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		"",   // ignore distribution
 		"",   // ignore distribution
 	)
-	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, params)
+	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, consumertypes.SlashRequests{}, params)
 }
 
 func (b *Builder) createLink() {

@@ -176,10 +176,10 @@ func TestPendingSlashRequests(t *testing.T) {
 	defer ctrl.Finish()
 
 	// prepare test setup by storing 10 pending slash requests
-	request := []*types.SlashRequest{}
+	requests := []types.SlashRequest{}
 	for i := 0; i < 10; i++ {
-		request = append(request, &types.SlashRequest{})
-		consumerKeeper.SetPendingSlashRequests(ctx, request)
+		requests = append(requests, types.SlashRequest{})
+		consumerKeeper.SetPendingSlashRequests(ctx, types.SlashRequests{Requests: requests})
 	}
 
 	// test set, append and clear operations
@@ -201,7 +201,7 @@ func TestPendingSlashRequests(t *testing.T) {
 	for _, tc := range testCases {
 		tc.operation()
 		requests := consumerKeeper.GetPendingSlashRequests(ctx)
-		require.Len(t, requests, tc.expLen)
+		require.Len(t, requests.Requests, tc.expLen)
 	}
 }
 
