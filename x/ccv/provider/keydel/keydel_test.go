@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const NUM_TRACES = 4000
+const NUM_TRACES = 1000
 const TRACE_LEN = 1000
 const NUM_VALS = 4
 const NUM_FKS = 50
