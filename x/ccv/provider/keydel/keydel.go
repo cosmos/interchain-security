@@ -26,18 +26,16 @@ type lastUpdate struct {
 // 3. integrate with create/destroy validator
 
 type KeyDel struct {
-	lkToFk             map[LK]FK
-	fkInUse            map[FK]bool
-	fkToUpdate         map[FK]lastUpdate
-	lkToPositiveUpdate map[LK]update
+	lkToFk     map[LK]FK
+	fkInUse    map[FK]bool
+	fkToUpdate map[FK]lastUpdate
 }
 
 func MakeKeyDel() KeyDel {
 	return KeyDel{
-		lkToFk:             map[LK]FK{},
-		fkInUse:            map[FK]bool{},
-		fkToUpdate:         map[FK]lastUpdate{},
-		lkToPositiveUpdate: map[LK]update{},
+		lkToFk:     map[LK]FK{},
+		fkInUse:    map[FK]bool{},
+		fkToUpdate: map[FK]lastUpdate{},
 	}
 }
 
@@ -106,9 +104,16 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 
 	lks := []LK{}
 
+	lkToPositiveUpdate := map[LK]update{}
+	for _, u := range e.fkToUpdate {
+		if 0 < u.power {
+			lkToPositiveUpdate[u.lk] = update{key: u.fk, power: u.power}
+		}
+	}
+
 	// Key changes
 	for lk, newFk := range e.lkToFk {
-		if u, ok := e.lkToPositiveUpdate[lk]; ok {
+		if u, ok := lkToPositiveUpdate[lk]; ok {
 			oldFk := u.key
 			if oldFk != newFk {
 				lks = append(lks, lk)
@@ -124,7 +129,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 
 	// Iterate all local keys for which there was previously a positive update.
 	for _, lk := range lks {
-		if last, ok := e.lkToPositiveUpdate[lk]; ok {
+		if last, ok := lkToPositiveUpdate[lk]; ok {
 			// Create a deletion update
 			foreignUpdates[last.key] = 0
 			e.fkToUpdate[last.key] = lastUpdate{fk: last.key, lk: lk, vscid: vscid, power: 0}
@@ -135,7 +140,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	// has been a power update.
 	for _, lk := range lks {
 		power := 0
-		if last, ok := e.lkToPositiveUpdate[lk]; ok {
+		if last, ok := lkToPositiveUpdate[lk]; ok {
 			// If there was a positive power before, use it.
 			power = last.power
 		}
@@ -151,26 +156,11 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 		}
 	}
 
-	e.lkToPositiveUpdate = map[LK]update{}
-	for _, u := range e.fkToUpdate {
-		if 0 < u.power {
-			e.lkToPositiveUpdate[u.lk] = update{key: u.fk, power: u.power}
-		}
-	}
-
 	return foreignUpdates
 }
 
 // Returns true iff internal invariants hold
 func (e *KeyDel) internalInvariants() bool {
-
-	// If an update is stored in positive update, the last update
-	// for the foreign key was not 0
-	for _, u := range e.lkToPositiveUpdate {
-		if e.fkToUpdate[u.key].power == 0 {
-			return false
-		}
-	}
 
 	// No two local keys can map to the same foreign key
 	seen := map[FK]bool{}
