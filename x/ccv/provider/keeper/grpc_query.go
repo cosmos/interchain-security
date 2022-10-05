@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -39,7 +40,7 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	chains := []string{}
 	cb := func(ctx sdk.Context, chainID, clientID string) bool {
-		chains = append(chains, chainID)
+		chains = append(chains, fmt.Sprintf("%s (%s)", chainID, clientID))
 		return false
 	}
 	k.IterateConsumerChains(ctx, cb)
