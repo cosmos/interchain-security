@@ -158,7 +158,11 @@ func (s *TestRun) ValidateStringLiterals() {
 			panic(fmt.Sprintf("ip suffix must be an int: %v\n", err))
 		}
 
-		if ipSuffix < 1 || ipSuffix > 253 {
+		if ipSuffix == 253 {
+			panic("ip suffix 253 is reserved for query node")
+		}
+
+		if ipSuffix < 1 || ipSuffix > 252 {
 			panic("ip suffix out of range, need to change config")
 		}
 	}
