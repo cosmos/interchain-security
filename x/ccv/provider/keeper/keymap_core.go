@@ -84,6 +84,8 @@ func (e *KeyMap) SetProviderKeyToConsumerKey(pk PK, ck CK) error {
 	return nil
 }
 
+// TODO: do regular query (CK for PK)
+
 // TODO:
 func (e *KeyMap) GetProviderKey(ck CK) (PK, error) {
 	e.GetAll()
