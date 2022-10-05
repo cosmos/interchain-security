@@ -225,7 +225,8 @@ func (d *Driver) checkProperties() {
 	}
 
 	/*
-	 */
+		TODO:
+	*/
 	queries := func() {
 		// For each fk known to the consumer
 		for consumerFK := range d.foreignValSet.keyToPower {
