@@ -339,14 +339,18 @@ func (d *driver) externalInvariants() {
 func getTrace(t *testing.T) []traceStep {
 	// TODO: check the hardcoded numbers
 
-	mappings := func() []keyMapEntry {
+	keyMappings := func() []keyMapEntry {
 		ret := []keyMapEntry{}
-		// Go several times to have overlapping validator updates
-		for i := 0; i < 2; i++ {
-			// include 0 to all validators
-			include := rand.Intn(NUM_VALS + 1)
-			for _, lk := range rand.Perm(NUM_VALS)[0:include] {
-				ret = append(ret, keyMapEntry{lk, rand.Intn(NUM_CKS)})
+
+		const NUM_ITS = 2 // Chosen arbitrarily/heuristically
+		// Do this NUM_ITS times, to be able to generate conflicting mappings.
+		// This is allowed by the KeyDel API, so it must be tested.
+		for i := 0; i < NUM_ITS; i++ {
+			// include none (to) all validators
+			pks := rand.Perm(NUM_VALS)[0:rand.Intn(NUM_VALS+1)]
+			for _, pk := range pks {
+				ck := rand.Intn(NUM_CKS)
+				ret = append(ret, keyMapEntry{pk, ck})
 			}
 		}
 		return ret
@@ -354,14 +358,22 @@ func getTrace(t *testing.T) []traceStep {
 
 	providerUpdates := func() []update {
 		ret := []update{}
-		// include 0 to all validators
-		include := rand.Intn(NUM_VALS + 1)
-		for _, lk := range rand.Perm(NUM_VALS)[0:include] {
-			ret = append(ret, update{key: lk, power: rand.Intn(3)})
+
+		// include none (to) all validators
+		pks := rand.Perm(NUM_VALS)[0:rand.Intn(NUM_VALS+1)]
+		for _, pk := range pks {
+			// Only three values are interesting
+			// 0: deletion
+			// 1: positive
+			// 2: positive (change)
+			power := rand.Intn(3)
+			ret = append(ret, update{key: pk, power: power})
 		}
 		return ret
 	}
 
+	// Get an initial key mapping.
+	// The real system may use some manual set defaults.
 	initialMappings := []keyMapEntry{}
 	for i := 0; i < NUM_VALS; i++ {
 		initialMappings = append(initialMappings, keyMapEntry{i, i})
@@ -382,8 +394,10 @@ func getTrace(t *testing.T) []traceStep {
 		choice := rand.Intn(3)
 		last := ret[len(ret)-1]
 		if choice == 0 {
+			// Increment provider time, and generate
+			// new key mappings and validator updates.
 			ret = append(ret, traceStep{
-				keyMapEntries:   mappings(),
+				keyMapEntries:   keyMappings(),
 				providerUpdates: providerUpdates(),
 				timeProvider:    last.timeProvider + 1,
 				timeConsumer:    last.timeConsumer,
@@ -391,6 +405,8 @@ func getTrace(t *testing.T) []traceStep {
 			})
 		}
 		if choice == 1 {
+			// If possible, increase consumer time.
+			// This models receiving VSC packets on the consumer.
 			curr := last.timeConsumer
 			limInclusive := last.timeProvider
 			if curr < limInclusive {
@@ -398,7 +414,7 @@ func getTrace(t *testing.T) []traceStep {
 				// rand in [0, limInclusive - curr - 1]
 				// bound is [0, limInclusive - curr)
 				newTC := rand.Intn(limInclusive-curr) + curr + 1
-				require.True(t, curr < newTC && curr <= limInclusive)
+				require.True(t, curr < newTC && newTC <= limInclusive)
 				ret = append(ret, traceStep{
 					keyMapEntries:   nil,
 					providerUpdates: nil,
@@ -409,11 +425,14 @@ func getTrace(t *testing.T) []traceStep {
 			}
 		}
 		if choice == 2 {
+			// If possible, increase maturity time.
+			// This models sending maturities on the consumer (and also
+			// receiving them on the provider).
 			curr := last.timeMaturity
 			limInclusive := last.timeConsumer
 			if curr < limInclusive {
 				newTM := rand.Intn(limInclusive-curr) + curr + 1
-				require.True(t, curr < newTM && curr <= limInclusive)
+				require.True(t, curr < newTM && newTM <= limInclusive)
 				ret = append(ret, traceStep{
 					keyMapEntries:   nil,
 					providerUpdates: nil,
