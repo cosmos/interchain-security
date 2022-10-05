@@ -27,16 +27,24 @@ type memo struct {
 // 4. TODO: document this file
 
 type KeyMap struct {
+	store    Store
 	pkToCk   map[PK]CK
 	ckToPk   map[CK]PK
 	ckToMemo map[CK]memo
 }
 
-func MakeKeyMap() KeyMap {
+type Store interface {
+	getPkToCk() map[PK]CK
+	getCkToPk() map[CK]PK
+	getCkToMemo() map[CK]memo
+	setPkToCk(map[PK]CK)
+	setCkToPk(map[CK]PK)
+	setCkToMemo(map[CK]memo)
+}
+
+func MakeKeyMap(store Store) KeyMap {
 	return KeyMap{
-		pkToCk:   map[PK]CK{},
-		ckToPk:   map[CK]PK{},
-		ckToMemo: map[CK]memo{},
+		store: store,
 	}
 }
 

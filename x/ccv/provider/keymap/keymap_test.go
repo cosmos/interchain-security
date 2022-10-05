@@ -20,6 +20,38 @@ const NUM_VALS = 4
 // (This is constrained to ensure overlap edge cases are tested)
 const NUM_CKS = 50
 
+type store struct {
+	pkToCk   map[PK]CK
+	ckToPk   map[CK]PK
+	ckToMemo map[CK]memo
+}
+
+func makeStore() store {
+	return store{
+		pkToCk:   map[PK]CK{},
+		ckToPk:   map[CK]PK{},
+		ckToMemo: map[CK]memo{},
+	}
+}
+func (s *store) getPkToCk() map[PK]CK {
+	return s.pkToCk
+}
+func (s *store) getCkToPk() map[CK]PK {
+	return s.ckToPk
+}
+func (s *store) getCkToMemo() map[CK]memo {
+	return s.ckToMemo
+}
+func (s *store) setPkToCk(e map[PK]CK) {
+	s.pkToCk = e
+}
+func (s *store) setCkToPk(e map[CK]PK) {
+	s.ckToPk = e
+}
+func (s *store) setCkToMemo(e map[CK]memo) {
+	s.ckToMemo = e
+}
+
 type keyMapEntry struct {
 	pk PK
 	ck CK
@@ -54,7 +86,9 @@ type driver struct {
 func makeDriver(t *testing.T, trace []traceStep) driver {
 	d := driver{}
 	d.t = t
-	kd := MakeKeyMap()
+	s := makeStore()
+	require.NotNil(t, s.ckToMemo)
+	kd := MakeKeyMap(&s)
 	d.km = &kd
 	d.trace = trace
 	d.lastTimeProvider = 0
@@ -461,7 +495,8 @@ func TestPropertiesRandomlyHeuristically(t *testing.T) {
 
 // Setting should enable a reverse query
 func TestXSetReverseQuery(t *testing.T) {
-	kd := MakeKeyMap()
+	s := makeStore()
+	kd := MakeKeyMap(&s)
 	kd.SetProviderKeyToConsumerKey(42, 43)
 	actual, err := kd.GetProviderKey(43) // Queryable
 	require.Nil(t, err)
@@ -470,14 +505,16 @@ func TestXSetReverseQuery(t *testing.T) {
 
 // Not setting should not enable a reverse query
 func TestNoSetReverseQuery(t *testing.T) {
-	kd := MakeKeyMap()
+	s := makeStore()
+	kd := MakeKeyMap(&s)
 	_, err := kd.GetProviderKey(43) // Not queryable
 	require.NotNil(t, err)
 }
 
 // Setting and replacing should no allow earlier reverse query
 func TestXSetUnsetReverseQuery(t *testing.T) {
-	kd := MakeKeyMap()
+	s := makeStore()
+	kd := MakeKeyMap(&s)
 	kd.SetProviderKeyToConsumerKey(42, 43)
 	kd.SetProviderKeyToConsumerKey(42, 44) // Set to different value
 	_, err := kd.GetProviderKey(43)        // Ealier value not queryable
