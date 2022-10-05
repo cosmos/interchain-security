@@ -117,24 +117,20 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 		lks = append(lks, lk)
 	}
 
-	foreignUpdates := map[FK]int{}
+	ret := map[FK]int{}
 
-	lkToLastPositiveUpdate := map[LK]update{}
-	for _, u := range e.fkToUpdate {
-		if 0 < u.power {
-			if _, ok := lkToLastPositiveUpdate[u.lk]; ok {
-				panic("Already have positive update for lk")
-			}
-			lkToLastPositiveUpdate[u.lk] = update{key: u.fk, power: u.power}
-		}
+	fkToUpdateClone := map[FK]lastUpdate{}
+	for k, v := range e.fkToUpdate {
+		fkToUpdateClone[k] = v
 	}
 
 	// Iterate all local keys for which there was previously a positive update.
 	for _, lk := range lks {
-		if u, ok := lkToLastPositiveUpdate[lk]; ok {
-			// Create a deletion update
-			foreignUpdates[u.key] = 0
-			e.fkToUpdate[u.key] = lastUpdate{fk: u.key, lk: lk, vscid: vscid, power: 0}
+		for _, u := range fkToUpdateClone {
+			if u.lk == lk && 0 < u.power {
+				e.fkToUpdate[u.fk] = lastUpdate{fk: u.fk, lk: lk, vscid: vscid, power: 0}
+				ret[u.fk] = 0
+			}
 		}
 	}
 
@@ -142,9 +138,10 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	// has been a power update.
 	for _, lk := range lks {
 		power := 0
-		if u, ok := lkToLastPositiveUpdate[lk]; ok {
-			// If there was a positive power before, use it.
-			power = u.power
+		for _, u := range fkToUpdateClone {
+			if u.lk == lk && 0 < u.power {
+				power = u.power
+			}
 		}
 		// If there is a new power use it.
 		if newPower, ok := localUpdates[lk]; ok {
@@ -153,12 +150,12 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 		// Only ship positive powers. Zero powers are accounted for above.
 		if 0 < power {
 			fk := e.lkToFk[lk]
-			foreignUpdates[fk] = power
 			e.fkToUpdate[fk] = lastUpdate{fk: fk, lk: lk, vscid: vscid, power: power}
+			ret[fk] = power
 		}
 	}
 
-	return foreignUpdates
+	return ret
 }
 
 // Returns true iff internal invariants hold
