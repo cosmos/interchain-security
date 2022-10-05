@@ -42,14 +42,10 @@ func MakeKeyMap() KeyMap {
 
 // TODO:
 func (e *KeyMap) SetProviderKeyToConsumerKey(pk PK, ck CK) error {
-	inUse := false
 	if _, ok := e.ckToPk[ck]; ok {
-		inUse = true
+		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
 	if _, ok := e.ckToMemo[ck]; ok {
-		inUse = true
-	}
-	if inUse {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
 	if oldCk, ok := e.pkToCk[pk]; ok {
