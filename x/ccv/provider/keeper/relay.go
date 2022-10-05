@@ -131,8 +131,15 @@ func (k Keeper) TrySendValidatorUpdates(ctx sdk.Context) {
 		// w/o changes in the voting power of the validators in the validator set
 		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
-			// construct validator set change packet data
-			packets = append(packets, ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.EmptySlashAcks(ctx, chainID)))
+
+			// Map the updates through any key transformations
+			// updatesToSend := k.keymap.ComputeUpdates(valUpdateID, valUpdates)
+			updatesToSend := valUpdates
+
+			packets = append(
+				packets,
+				ccv.NewValidatorSetChangePacketData(updatesToSend, valUpdateID, k.EmptySlashAcks(ctx, chainID))
+			)
 		}
 
 		// check whether there is an established CCV channel to this consumer chain
