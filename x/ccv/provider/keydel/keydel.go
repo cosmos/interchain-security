@@ -13,7 +13,7 @@ type update struct {
 	power int
 }
 
-type lastUpdate struct {
+type updateMemo struct {
 	fk    FK
 	lk    LK
 	vscid int
@@ -28,14 +28,14 @@ type lastUpdate struct {
 type KeyDel struct {
 	lkToFk     map[LK]FK
 	fkInUse    map[FK]bool
-	fkToUpdate map[FK]lastUpdate
+	fkToUpdate map[FK]updateMemo
 }
 
 func MakeKeyDel() KeyDel {
 	return KeyDel{
 		lkToFk:     map[LK]FK{},
 		fkInUse:    map[FK]bool{},
-		fkToUpdate: map[FK]lastUpdate{},
+		fkToUpdate: map[FK]updateMemo{},
 	}
 }
 
@@ -119,7 +119,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 
 	ret := map[FK]int{}
 
-	fkToUpdateClone := map[FK]lastUpdate{}
+	fkToUpdateClone := map[FK]updateMemo{}
 	for k, v := range e.fkToUpdate {
 		fkToUpdateClone[k] = v
 	}
@@ -128,7 +128,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	for _, lk := range lks {
 		for _, u := range fkToUpdateClone {
 			if u.lk == lk && 0 < u.power {
-				e.fkToUpdate[u.fk] = lastUpdate{fk: u.fk, lk: lk, vscid: vscid, power: 0}
+				e.fkToUpdate[u.fk] = updateMemo{fk: u.fk, lk: lk, vscid: vscid, power: 0}
 				ret[u.fk] = 0
 			}
 		}
@@ -150,7 +150,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 		// Only ship positive powers. Zero powers are accounted for above.
 		if 0 < power {
 			fk := e.lkToFk[lk]
-			e.fkToUpdate[fk] = lastUpdate{fk: fk, lk: lk, vscid: vscid, power: power}
+			e.fkToUpdate[fk] = updateMemo{fk: fk, lk: lk, vscid: vscid, power: power}
 			ret[fk] = power
 		}
 	}
