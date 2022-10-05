@@ -104,32 +104,31 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 
 	lks := []LK{}
 
-	lkToPositiveUpdate := map[LK]update{}
-	for _, u := range e.fkToUpdate {
-		if 0 < u.power {
-			lkToPositiveUpdate[u.lk] = update{key: u.fk, power: u.power}
-		}
-	}
-
-	// Key changes
-	for lk, newFk := range e.lkToFk {
-		if u, ok := lkToPositiveUpdate[lk]; ok {
-			oldFk := u.key
-			if oldFk != newFk {
-				lks = append(lks, lk)
+	// Grab lks for which fk changed
+	for oldFk, u := range e.fkToUpdate {
+		if newFk, ok := e.lkToFk[u.lk]; ok {
+			if oldFk != newFk && 0 < u.power {
+				lks = append(lks, u.lk)
 			}
 		}
 	}
-	// Power changes
+	// Grab lks for which power changed
 	for lk := range localUpdates {
 		lks = append(lks, lk)
 	}
 
 	foreignUpdates := map[FK]int{}
 
+	lkToLastPositiveUpdate := map[LK]update{}
+	for _, u := range e.fkToUpdate {
+		if 0 < u.power {
+			lkToLastPositiveUpdate[u.lk] = update{key: u.fk, power: u.power}
+		}
+	}
+
 	// Iterate all local keys for which there was previously a positive update.
 	for _, lk := range lks {
-		if last, ok := lkToPositiveUpdate[lk]; ok {
+		if last, ok := lkToLastPositiveUpdate[lk]; ok {
 			// Create a deletion update
 			foreignUpdates[last.key] = 0
 			e.fkToUpdate[last.key] = lastUpdate{fk: last.key, lk: lk, vscid: vscid, power: 0}
@@ -140,7 +139,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	// has been a power update.
 	for _, lk := range lks {
 		power := 0
-		if last, ok := lkToPositiveUpdate[lk]; ok {
+		if last, ok := lkToLastPositiveUpdate[lk]; ok {
 			// If there was a positive power before, use it.
 			power = last.power
 		}
