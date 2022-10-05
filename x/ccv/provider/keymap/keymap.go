@@ -1,4 +1,4 @@
-package keydel
+package keymap
 
 import (
 	"errors"
@@ -26,14 +26,14 @@ type memo struct {
 // 3. integrate with create/destroy validator
 // 4. TODO: document this file
 
-type KeyDel struct {
+type KeyMap struct {
 	pkToCk   map[PK]CK
 	ckToPk   map[CK]PK
 	ckToMemo map[CK]memo
 }
 
-func MakeKeyDel() KeyDel {
-	return KeyDel{
+func MakeKeyMap() KeyMap {
+	return KeyMap{
 		pkToCk:   map[PK]CK{},
 		ckToPk:   map[CK]PK{},
 		ckToMemo: map[CK]memo{},
@@ -41,7 +41,7 @@ func MakeKeyDel() KeyDel {
 }
 
 // TODO:
-func (e *KeyDel) SetProviderKeyToConsumerKey(pk PK, ck CK) error {
+func (e *KeyMap) SetProviderKeyToConsumerKey(pk PK, ck CK) error {
 	inUse := false
 	if _, ok := e.ckToPk[ck]; ok {
 		inUse = true
@@ -61,7 +61,7 @@ func (e *KeyDel) SetProviderKeyToConsumerKey(pk PK, ck CK) error {
 }
 
 // TODO:
-func (e *KeyDel) GetProviderKey(ck CK) (PK, error) {
+func (e *KeyMap) GetProviderKey(ck CK) (PK, error) {
 	if u, ok := e.ckToMemo[ck]; ok {
 		return u.pk, nil
 	} else if pk, ok := e.ckToPk[ck]; ok {
@@ -72,7 +72,7 @@ func (e *KeyDel) GetProviderKey(ck CK) (PK, error) {
 }
 
 // TODO:
-func (e *KeyDel) PruneUnusedKeys(latestVscid VSCID) {
+func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 	toDel := []CK{}
 	for _, u := range e.ckToMemo {
 		// If the last update was a deletion (0 power) and the update
@@ -87,7 +87,7 @@ func (e *KeyDel) PruneUnusedKeys(latestVscid VSCID) {
 }
 
 // TODO:
-func (e *KeyDel) ComputeUpdates(vscid VSCID, providerUpdates []update) (consumerUpdates []update) {
+func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []update) (consumerUpdates []update) {
 
 	updates := map[PK]int{}
 
@@ -107,7 +107,7 @@ func (e *KeyDel) ComputeUpdates(vscid VSCID, providerUpdates []update) (consumer
 }
 
 // do inner work as part of ComputeUpdates
-func (e *KeyDel) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
+func (e *KeyMap) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 
 	pks := []PK{}
 
@@ -174,7 +174,7 @@ func (e *KeyDel) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 }
 
 // Returns true iff internal invariants hold
-func (e *KeyDel) internalInvariants() bool {
+func (e *KeyMap) internalInvariants() bool {
 
 	// No two provider keys can map to the same consumer key
 	// (pkToCk is sane)

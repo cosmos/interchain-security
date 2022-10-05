@@ -1,4 +1,4 @@
-package keydel
+package keymap
 
 import (
 	"math/rand"
@@ -35,7 +35,7 @@ type traceStep struct {
 
 type driver struct {
 	t                *testing.T
-	kd               *KeyDel
+	km               *KeyMap
 	trace            []traceStep
 	lastTimeProvider int
 	lastTimeConsumer int
@@ -54,8 +54,8 @@ type driver struct {
 func makeDriver(t *testing.T, trace []traceStep) driver {
 	d := driver{}
 	d.t = t
-	kd := MakeKeyDel()
-	d.kd = &kd
+	kd := MakeKeyMap()
+	d.km = &kd
 	d.trace = trace
 	d.lastTimeProvider = 0
 	d.lastTimeConsumer = 0
@@ -91,11 +91,11 @@ func (d *driver) applyKeyMapEntries(entries []keyMapEntry) {
 	for _, e := range entries {
 		// TRY to map provider key pk to consumer key ck.
 		// (May fail due to API constraints, this is correct)
-		_ = d.kd.SetProviderKeyToConsumerKey(e.pk, e.ck)
+		_ = d.km.SetProviderKeyToConsumerKey(e.pk, e.ck)
 	}
 	// Duplicate the mapping for referencing later in tests.
 	copy := map[PK]CK{}
-	for lk, fk := range d.kd.pkToCk {
+	for lk, fk := range d.km.pkToCk {
 		copy[lk] = fk
 	}
 	d.mappings = append(d.mappings, copy)
@@ -129,11 +129,11 @@ func (d *driver) run() {
 		d.providerValsets = append(d.providerValsets, makeValset())
 		d.providerValsets[init.timeProvider].applyUpdates(init.providerUpdates)
 		// Set the initial consumer set
-		d.consumerUpdates = append(d.consumerUpdates, d.kd.ComputeUpdates(init.timeProvider, init.providerUpdates))
+		d.consumerUpdates = append(d.consumerUpdates, d.km.ComputeUpdates(init.timeProvider, init.providerUpdates))
 		// The first consumer set equal to the provider set at time 0
 		d.consumerValsets = makeValset()
 		d.consumerValsets.applyUpdates(d.consumerUpdates[init.timeConsumer])
-		d.kd.PruneUnusedKeys(init.timeMaturity)
+		d.km.PruneUnusedKeys(init.timeMaturity)
 	}
 
 	// Sanity check the initial state
@@ -150,7 +150,7 @@ func (d *driver) run() {
 			d.applyKeyMapEntries(s.keyMapEntries)
 			d.applyProviderUpdates(s.providerUpdates)
 			// Store the updates, to reference later in tests.
-			d.consumerUpdates = append(d.consumerUpdates, d.kd.ComputeUpdates(s.timeProvider, s.providerUpdates))
+			d.consumerUpdates = append(d.consumerUpdates, d.km.ComputeUpdates(s.timeProvider, s.providerUpdates))
 			d.lastTimeProvider = s.timeProvider
 		}
 		if d.lastTimeConsumer < s.timeConsumer {
@@ -166,12 +166,12 @@ func (d *driver) run() {
 			// Maturity time increase:
 			// For each unit of time that has passed since the last increase,
 			// a maturity is 'available'. We test batch maturity.
-			d.kd.PruneUnusedKeys(s.timeMaturity)
+			d.km.PruneUnusedKeys(s.timeMaturity)
 			d.lastTimeMaturity = s.timeMaturity
 		}
 
 		// Do checks
-		require.True(d.t, d.kd.internalInvariants())
+		require.True(d.t, d.km.internalInvariants())
 		d.externalInvariants()
 	}
 }
@@ -245,7 +245,7 @@ func (d *driver) externalInvariants() {
 		for ck := range d.consumerValsets.keyToPower {
 
 			// The query must return a result
-			pkQueried, err := d.kd.GetProviderKey(ck)
+			pkQueried, err := d.km.GetProviderKey(ck)
 			require.Nil(d.t, err)
 
 			// The provider key must be the one that was actually referenced
@@ -312,13 +312,13 @@ func (d *driver) externalInvariants() {
 		}
 		// If a consumer key is CURRENTLY mapped to by a provider key, it
 		// must be queryable.
-		for _, ck := range d.kd.pkToCk {
+		for _, ck := range d.km.pkToCk {
 			expectQueryable[ck] = true
 		}
 
 		// Simply check every consumer key for the correct queryable-ness.
 		for ck := 0; ck < NUM_CKS; ck++ {
-			_, err := d.kd.GetProviderKey(ck)
+			_, err := d.km.GetProviderKey(ck)
 			actualQueryable := err == nil
 			if expect, found := expectQueryable[ck]; found && expect {
 				require.True(d.t, actualQueryable)
@@ -461,7 +461,7 @@ func TestPropertiesRandomlyHeuristically(t *testing.T) {
 
 // Setting should enable a reverse query
 func TestXSetReverseQuery(t *testing.T) {
-	kd := MakeKeyDel()
+	kd := MakeKeyMap()
 	kd.SetProviderKeyToConsumerKey(42, 43)
 	actual, err := kd.GetProviderKey(43) // Queryable
 	require.Nil(t, err)
@@ -470,14 +470,14 @@ func TestXSetReverseQuery(t *testing.T) {
 
 // Not setting should not enable a reverse query
 func TestNoSetReverseQuery(t *testing.T) {
-	kd := MakeKeyDel()
+	kd := MakeKeyMap()
 	_, err := kd.GetProviderKey(43) // Not queryable
 	require.NotNil(t, err)
 }
 
 // Setting and replacing should no allow earlier reverse query
 func TestXSetUnsetReverseQuery(t *testing.T) {
-	kd := MakeKeyDel()
+	kd := MakeKeyMap()
 	kd.SetProviderKeyToConsumerKey(42, 43)
 	kd.SetProviderKeyToConsumerKey(42, 44) // Set to different value
 	_, err := kd.GetProviderKey(43)        // Ealier value not queryable
