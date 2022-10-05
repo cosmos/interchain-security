@@ -1,4 +1,4 @@
-package keymap
+package keeper
 
 import (
 	"math/rand"

@@ -138,7 +138,7 @@ func (k Keeper) TrySendValidatorUpdates(ctx sdk.Context) {
 
 			packets = append(
 				packets,
-				ccv.NewValidatorSetChangePacketData(updatesToSend, valUpdateID, k.EmptySlashAcks(ctx, chainID))
+				ccv.NewValidatorSetChangePacketData(updatesToSend, valUpdateID, k.EmptySlashAcks(ctx, chainID)),
 			)
 		}
 
