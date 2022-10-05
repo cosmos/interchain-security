@@ -4,8 +4,8 @@ import (
 	"errors"
 )
 
-type LK = int
-type FK = int
+type PK = int
+type CK = int
 type VSCID = int
 
 type update struct {
@@ -14,8 +14,8 @@ type update struct {
 }
 
 type memo struct {
-	fk    FK
-	lk    LK
+	ck    CK
+	pk    PK
 	vscid int
 	power int
 }
@@ -24,135 +24,149 @@ type memo struct {
 // 1. Integrate into kv store.
 // 2. integrate into Provider::EndBlock,
 // 3. integrate with create/destroy validator
+// 4. TODO: document this file
 
 type KeyDel struct {
-	lkToFk   map[LK]FK
-	fkToLk   map[FK]LK
-	fkToMemo map[FK]memo
+	pkToCk   map[PK]CK
+	CkToPk   map[CK]PK
+	CkToMemo map[CK]memo
 }
 
 func MakeKeyDel() KeyDel {
 	return KeyDel{
-		lkToFk:   map[LK]FK{},
-		fkToLk:   map[FK]LK{},
-		fkToMemo: map[FK]memo{},
+		pkToCk:   map[PK]CK{},
+		CkToPk:   map[CK]PK{},
+		CkToMemo: map[CK]memo{},
 	}
 }
 
-func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
+// TODO:
+func (e *KeyDel) SetProviderKeyToConsumerKey(lk PK, fk CK) error {
 	inUse := false
-	if _, ok := e.fkToLk[fk]; ok {
+	if _, ok := e.CkToPk[fk]; ok {
 		inUse = true
 	}
-	if _, ok := e.fkToMemo[fk]; ok {
+	if _, ok := e.CkToMemo[fk]; ok {
 		inUse = true
 	}
 	if inUse {
-		return errors.New(`cannot reuse foreign key which is currently or recently in use`)
+		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
-	if oldFk, ok := e.lkToFk[lk]; ok {
-		delete(e.fkToLk, oldFk)
+	if oldFk, ok := e.pkToCk[lk]; ok {
+		delete(e.CkToPk, oldFk)
 	}
-	e.lkToFk[lk] = fk
-	e.fkToLk[fk] = lk
+	e.pkToCk[lk] = fk
+	e.CkToPk[fk] = lk
 	return nil
 }
 
-func (e *KeyDel) GetLocal(fk FK) (LK, error) {
-	if u, ok := e.fkToMemo[fk]; ok {
-		return u.lk, nil
-	} else if lk, ok := e.fkToLk[fk]; ok {
+// TODO:
+func (e *KeyDel) GetProviderKey(fk CK) (PK, error) {
+	if u, ok := e.CkToMemo[fk]; ok {
+		return u.pk, nil
+	} else if lk, ok := e.CkToPk[fk]; ok {
 		return lk, nil
 	} else {
 		return -1, errors.New("local key not found for foreign key")
 	}
 }
 
-func (e *KeyDel) Prune(vscid VSCID) {
-	toDel := []FK{}
-	for _, u := range e.fkToMemo {
+// TODO:
+func (e *KeyDel) PruneUnusedKeys(latestVscid VSCID) {
+	toDel := []CK{}
+	for _, u := range e.CkToMemo {
 		// If the last update was a deletion (0 power) and the update
 		// matured then pruning is possible.
-		if u.power == 0 && u.vscid <= vscid {
-			toDel = append(toDel, u.fk)
+		if u.power == 0 && u.vscid <= latestVscid {
+			toDel = append(toDel, u.ck)
 		}
 	}
 	for _, fk := range toDel {
-		delete(e.fkToMemo, fk)
+		delete(e.CkToMemo, fk)
 	}
 }
 
-func (e *KeyDel) ComputeUpdates(vscid VSCID, localUpdates []update) (foreignUpdates []update) {
+// TODO:
+func (e *KeyDel) ComputeUpdates(vscid VSCID, providerUpdates []update) (consumerUpdates []update) {
 
-	local := map[LK]int{}
+	updates := map[PK]int{}
 
-	for _, u := range localUpdates {
-		local[u.key] = u.power
+	for _, u := range providerUpdates {
+		updates[u.key] = u.power
 	}
 
-	foreign := e.inner(vscid, local)
+	foreign := e.inner(vscid, updates)
 
-	foreignUpdates = []update{}
+	consumerUpdates = []update{}
 
 	for fk, power := range foreign {
-		foreignUpdates = append(foreignUpdates, update{key: fk, power: power})
+		consumerUpdates = append(consumerUpdates, update{key: fk, power: power})
 	}
 
-	return foreignUpdates
+	return consumerUpdates
 }
 
-func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
+// do inner work as part of ComputeUpdates
+func (e *KeyDel) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 
-	lks := []LK{}
+	pks := []PK{}
 
-	// Grab lks for which fk changed
-	for oldFk, u := range e.fkToMemo {
-		if newFk, ok := e.lkToFk[u.lk]; ok {
-			if oldFk != newFk && 0 < u.power {
-				lks = append(lks, u.lk)
+	// Grab provider keys where the assigned consumer key has changed
+	for oldCk, u := range e.CkToMemo {
+		if newCk, ok := e.pkToCk[u.pk]; ok {
+			if oldCk != newCk && 0 < u.power {
+				pks = append(pks, u.pk)
 			}
 		}
 	}
-	// Grab lks for which power changed
-	for lk := range localUpdates {
-		lks = append(lks, lk)
+	// Grab provider keys where the validator power has changed
+	for pk := range providerUpdates {
+		pks = append(pks, pk)
 	}
 
-	ret := map[FK]int{}
+	ret := map[CK]int{}
 
-	fkToMemoClone := map[FK]memo{}
-	for k, v := range e.fkToMemo {
-		fkToMemoClone[k] = v
+	// Create a read only copy, so that we can query while writing
+	// updates to the old version.
+	ckToMemo_READ_ONLY := map[CK]memo{}
+	for ck, memo := range e.CkToMemo {
+		ckToMemo_READ_ONLY[ck] = memo
 	}
 
-	// Iterate all local keys for which there was previously a positive update.
-	for _, lk := range lks {
-		for _, u := range fkToMemoClone {
-			if u.lk == lk && 0 < u.power {
-				e.fkToMemo[u.fk] = memo{fk: u.fk, lk: lk, vscid: vscid, power: 0}
-				ret[u.fk] = 0
+	for _, pk := range pks {
+		for _, u := range ckToMemo_READ_ONLY {
+			if u.pk == pk && 0 < u.power {
+				// For each provider key for which there was already a positive update
+				// create a deletion update for the associated consumer key.
+				e.CkToMemo[u.ck] = memo{ck: u.ck, pk: pk, vscid: vscid, power: 0}
+				ret[u.ck] = 0
 			}
 		}
 	}
 
-	// Iterate all local keys for which either the foreign key changed or there
-	// has been a power update.
-	for _, lk := range lks {
+	for _, pk := range pks {
+		// For each provider key where there was either
+		// 1) already a positive power update
+		// 2) the validator power has changed (and is still positive)
+		// create a change update for the associated consumer key.
+
 		power := 0
-		for _, u := range fkToMemoClone {
-			if u.lk == lk && 0 < u.power {
+		for _, u := range ckToMemo_READ_ONLY {
+			if u.pk == pk && 0 < u.power {
+				// There was previously a positive power update: copy it.
 				power = u.power
 			}
 		}
-		// If there is a new power use it.
-		if newPower, ok := localUpdates[lk]; ok {
+		// There is a new validator power: use it.
+		if newPower, ok := providerUpdates[pk]; ok {
 			power = newPower
 		}
-		// Only ship positive powers. Zero powers are accounted for above.
+		// Only ship update with positive powers. Zero power updates (deletions)
+		// are handled in earlier block.
 		if 0 < power {
-			fk := e.lkToFk[lk]
-			e.fkToMemo[fk] = memo{fk: fk, lk: lk, vscid: vscid, power: power}
-			ret[fk] = power
+			ck := e.pkToCk[pk]
+			e.CkToMemo[ck] = memo{ck: ck, pk: pk, vscid: vscid, power: power}
+			ret[ck] = power
 		}
 	}
 
@@ -164,8 +178,8 @@ func (e *KeyDel) internalInvariants() bool {
 
 	// No two local keys can map to the same foreign key
 	// (lkToFk is sane)
-	seen := map[FK]bool{}
-	for _, fk := range e.lkToFk {
+	seen := map[CK]bool{}
+	for _, fk := range e.pkToCk {
 		if seen[fk] {
 			return false
 		}
@@ -174,8 +188,8 @@ func (e *KeyDel) internalInvariants() bool {
 
 	// all values of lkToFk is a key of fkToLk
 	// (reverse lookup is always possible)
-	for _, fk := range e.lkToFk {
-		if _, ok := e.fkToLk[fk]; !ok {
+	for _, fk := range e.pkToCk {
+		if _, ok := e.CkToPk[fk]; !ok {
 			return false
 		}
 	}
@@ -183,9 +197,9 @@ func (e *KeyDel) internalInvariants() bool {
 	// All foreign keys mapping to local keys are actually
 	// mapped to by the local key.
 	// (fkToLk is sane)
-	for fk := range e.fkToLk {
+	for fk := range e.CkToPk {
 		good := false
-		for _, candidateFk := range e.lkToFk {
+		for _, candidateFk := range e.pkToCk {
 			if candidateFk == fk {
 				good = true
 				break
@@ -200,9 +214,9 @@ func (e *KeyDel) internalInvariants() bool {
 	// any memo containing the same foreign key has the same
 	// mapping.
 	// (Ensures lookups are correct)
-	for fk, lk := range e.fkToLk {
-		if u, ok := e.fkToMemo[fk]; ok {
-			if lk != u.lk {
+	for fk, lk := range e.CkToPk {
+		if u, ok := e.CkToMemo[fk]; ok {
+			if lk != u.pk {
 				return false
 			}
 		}

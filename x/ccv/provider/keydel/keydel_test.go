@@ -13,8 +13,8 @@ const NUM_VALS = 4
 const NUM_FKS = 50
 
 type keyMapEntry struct {
-	lk LK
-	fk FK
+	lk PK
+	fk CK
 }
 
 type traceStep struct {
@@ -33,7 +33,7 @@ type driver struct {
 	lastTC int
 	lastTM int
 	// indexed by time (starting at 0)
-	mappings []map[LK]FK
+	mappings []map[PK]CK
 	// indexed by time (starting at 0)
 	foreignUpdates [][]update
 	// indexed by time (starting at 0)
@@ -50,7 +50,7 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 	d.lastTP = 0
 	d.lastTC = 0
 	d.lastTM = 0
-	d.mappings = []map[LK]FK{}
+	d.mappings = []map[PK]CK{}
 	d.foreignUpdates = [][]update{}
 	d.localValSets = []valSet{}
 	d.foreignValSet = valSet{}
@@ -76,10 +76,10 @@ func (vs *valSet) applyUpdates(updates []update) {
 
 func (d *driver) applyMapInstructions(instructions []keyMapEntry) {
 	for _, instruction := range instructions {
-		_ = d.kd.SetLocalToForeign(instruction.lk, instruction.fk)
+		_ = d.kd.SetProviderKeyToConsumerKey(instruction.lk, instruction.fk)
 	}
-	copy := map[LK]FK{}
-	for lk, fk := range d.kd.lkToFk {
+	copy := map[PK]CK{}
+	for lk, fk := range d.kd.pkToCk {
 		copy[lk] = fk
 	}
 	d.mappings = append(d.mappings, copy)
@@ -108,7 +108,7 @@ func (d *driver) run() {
 		// The first foreign set equal to the local set at time 0
 		d.foreignValSet = makeValSet()
 		d.foreignValSet.applyUpdates(d.foreignUpdates[init.tc])
-		d.kd.Prune(init.tm)
+		d.kd.PruneUnusedKeys(init.tm)
 	}
 
 	// Sanity check the initial state
@@ -134,7 +134,7 @@ func (d *driver) run() {
 		}
 		if d.lastTM < s.tm {
 			// Models maturations being received on the provider.
-			d.kd.Prune(s.tm)
+			d.kd.PruneUnusedKeys(s.tm)
 			d.lastTM = s.tm
 		}
 		require.True(d.t, d.kd.internalInvariants())
@@ -157,10 +157,10 @@ func (d *driver) checkProperties() {
 
 		// Compute a lookup mapping consumer powers
 		// back to provider powers, to enable comparison.
-		foreignSetAsLocal := map[LK]int{}
+		foreignSetAsLocal := map[PK]int{}
 		{
 			mapping := d.mappings[d.lastTC]
-			inverseMapping := map[FK]LK{}
+			inverseMapping := map[CK]PK{}
 			for lk, fk := range mapping {
 				inverseMapping[fk] = lk
 			}
@@ -196,7 +196,7 @@ func (d *driver) checkProperties() {
 		   be pruned.
 	*/
 	pruning := func() {
-		expectQueryable := map[FK]bool{}
+		expectQueryable := map[CK]bool{}
 
 		for i := 0; i <= d.lastTM; i++ {
 			for _, u := range d.foreignUpdates[i] {
@@ -208,13 +208,13 @@ func (d *driver) checkProperties() {
 				expectQueryable[u.key] = true
 			}
 		}
-		for _, fk := range d.kd.lkToFk {
+		for _, fk := range d.kd.pkToCk {
 			expectQueryable[fk] = true
 		}
 
 		// Simply check every foreign key for the correct queryable-ness.
 		for fk := 0; fk < NUM_FKS; fk++ {
-			_, err := d.kd.GetLocal(fk)
+			_, err := d.kd.GetProviderKey(fk)
 			actualQueryable := err == nil
 			if expect, found := expectQueryable[fk]; found && expect {
 				require.True(d.t, actualQueryable)
@@ -230,10 +230,10 @@ func (d *driver) checkProperties() {
 	queries := func() {
 		// For each fk known to the consumer
 		for consumerFK := range d.foreignValSet.keyToPower {
-			queriedLK, err := d.kd.GetLocal(consumerFK)
+			queriedLK, err := d.kd.GetProviderKey(consumerFK)
 			// There must be a corresponding local key
 			require.Nil(d.t, err)
-			providerFKs := map[FK]bool{}
+			providerFKs := map[CK]bool{}
 			// The local key must be the one that was actually referenced
 			// in the latest mapping used to compute updates sent to the
 			// consumer.
