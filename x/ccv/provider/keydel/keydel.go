@@ -48,7 +48,7 @@ func (e *KeyDel) SetLocalToForeign(lk LK, fk FK) error {
 		inUse = true
 	}
 	if inUse {
-		return errors.New(`cannot reuse foreign key which is currently being used for lookups`)
+		return errors.New(`cannot reuse foreign key which is currently or recently in use`)
 	}
 	if oldFk, ok := e.lkToFk[lk]; ok {
 		delete(e.fkToLk, oldFk)

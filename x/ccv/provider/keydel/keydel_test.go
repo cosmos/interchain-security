@@ -12,58 +12,60 @@ const TRACE_LEN = 1000
 const NUM_VALS = 4
 const NUM_FKS = 50
 
-type mapInstruction struct {
+type keyMapEntry struct {
 	lk LK
 	fk FK
 }
 
-type TraceState struct {
-	MapInstructions []mapInstruction
-	LocalUpdates    []update
-	TP              int
-	TC              int
-	TM              int
+type traceState struct {
+	mapInstructions []keyMapEntry
+	localUpdates    []update
+	tp              int
+	tc              int
+	tm              int
 }
 
-type Driver struct {
+type driver struct {
 	t      *testing.T
-	e      *KeyDel
-	trace  []TraceState
+	kd     *KeyDel
+	trace  []traceState
 	lastTP int
 	lastTC int
 	lastTM int
 	// indexed by time (starting at 0)
-	mappings       []map[LK]FK
+	mappings []map[LK]FK
+	// indexed by time (starting at 0)
 	foreignUpdates [][]update
-	localValSets   []ValSet
-	foreignValSet  ValSet
+	// indexed by time (starting at 0)
+	localValSets  []valSet
+	foreignValSet valSet
 }
 
-func MakeDriver(t *testing.T, trace []TraceState) Driver {
-	d := Driver{}
+func makeDriver(t *testing.T, trace []traceState) driver {
+	d := driver{}
 	d.t = t
 	e := MakeKeyDel()
-	d.e = &e
+	d.kd = &e
 	d.trace = trace
 	d.lastTP = 0
 	d.lastTC = 0
 	d.lastTM = 0
 	d.mappings = []map[LK]FK{}
 	d.foreignUpdates = [][]update{}
-	d.localValSets = []ValSet{}
-	d.foreignValSet = ValSet{}
+	d.localValSets = []valSet{}
+	d.foreignValSet = valSet{}
 	return d
 }
 
-type ValSet struct {
+type valSet struct {
 	keyToPower map[int]int
 }
 
-func MakeValSet() ValSet {
-	return ValSet{keyToPower: map[int]int{}}
+func makeValSet() valSet {
+	return valSet{keyToPower: map[int]int{}}
 }
 
-func (vs *ValSet) applyUpdates(updates []update) {
+func (vs *valSet) applyUpdates(updates []update) {
 	for _, u := range updates {
 		delete(vs.keyToPower, u.key)
 		if 0 < u.power {
@@ -72,19 +74,19 @@ func (vs *ValSet) applyUpdates(updates []update) {
 	}
 }
 
-func (d *Driver) applyMapInstructions(instructions []mapInstruction) {
+func (d *driver) applyMapInstructions(instructions []keyMapEntry) {
 	for _, instruction := range instructions {
-		_ = d.e.SetLocalToForeign(instruction.lk, instruction.fk)
+		_ = d.kd.SetLocalToForeign(instruction.lk, instruction.fk)
 	}
 	copy := map[LK]FK{}
-	for lk, fk := range d.e.lkToFk {
+	for lk, fk := range d.kd.lkToFk {
 		copy[lk] = fk
 	}
 	d.mappings = append(d.mappings, copy)
 }
 
-func (d *Driver) applyLocalUpdates(localUpdates []update) {
-	valSet := MakeValSet()
+func (d *driver) applyLocalUpdates(localUpdates []update) {
+	valSet := makeValSet()
 	for lk, power := range d.localValSets[d.lastTP].keyToPower {
 		valSet.keyToPower[lk] = power
 	}
@@ -92,21 +94,21 @@ func (d *Driver) applyLocalUpdates(localUpdates []update) {
 	d.localValSets = append(d.localValSets, valSet)
 }
 
-func (d *Driver) runTrace() {
+func (d *driver) run() {
 
 	{
 		init := d.trace[0]
 		// Set the initial map
-		d.applyMapInstructions(init.MapInstructions)
+		d.applyMapInstructions(init.mapInstructions)
 		// Set the initial local set
-		d.localValSets = append(d.localValSets, MakeValSet())
-		d.localValSets[init.TP].applyUpdates(init.LocalUpdates)
+		d.localValSets = append(d.localValSets, makeValSet())
+		d.localValSets[init.tp].applyUpdates(init.localUpdates)
 		// Set the initial foreign set
-		d.foreignUpdates = append(d.foreignUpdates, d.e.ComputeUpdates(init.TP, init.LocalUpdates))
+		d.foreignUpdates = append(d.foreignUpdates, d.kd.ComputeUpdates(init.tp, init.localUpdates))
 		// The first foreign set equal to the local set at time 0
-		d.foreignValSet = MakeValSet()
-		d.foreignValSet.applyUpdates(d.foreignUpdates[init.TC])
-		d.e.Prune(init.TM)
+		d.foreignValSet = makeValSet()
+		d.foreignValSet.applyUpdates(d.foreignUpdates[init.tc])
+		d.kd.Prune(init.tm)
 	}
 
 	// Sanity check the initial state
@@ -116,31 +118,31 @@ func (d *Driver) runTrace() {
 
 	// Check properties for each state after the initial
 	for _, s := range d.trace[1:] {
-		if d.lastTP < s.TP {
+		if d.lastTP < s.tp {
 			// Provider time increment:
 			// Apply some key mappings and create some new validator power updates
-			d.applyMapInstructions(s.MapInstructions)
-			d.applyLocalUpdates(s.LocalUpdates)
-			d.foreignUpdates = append(d.foreignUpdates, d.e.ComputeUpdates(s.TP, s.LocalUpdates))
-			d.lastTP = s.TP
+			d.applyMapInstructions(s.mapInstructions)
+			d.applyLocalUpdates(s.localUpdates)
+			d.foreignUpdates = append(d.foreignUpdates, d.kd.ComputeUpdates(s.tp, s.localUpdates))
+			d.lastTP = s.tp
 		}
-		if d.lastTC < s.TC {
-			for j := d.lastTC + 1; j <= s.TC; j++ {
+		if d.lastTC < s.tc {
+			for j := d.lastTC + 1; j <= s.tc; j++ {
 				d.foreignValSet.applyUpdates(d.foreignUpdates[j])
 			}
-			d.lastTC = s.TC
+			d.lastTC = s.tc
 		}
-		if d.lastTM < s.TM {
+		if d.lastTM < s.tm {
 			// Models maturations being received on the provider.
-			d.e.Prune(s.TM)
-			d.lastTM = s.TM
+			d.kd.Prune(s.tm)
+			d.lastTM = s.tm
 		}
-		require.True(d.t, d.e.internalInvariants())
+		require.True(d.t, d.kd.internalInvariants())
 		d.checkProperties()
 	}
 }
 
-func (d *Driver) checkProperties() {
+func (d *driver) checkProperties() {
 
 	/*
 		When a consumer receives and processes up to VSCID i,
@@ -208,13 +210,13 @@ func (d *Driver) checkProperties() {
 				expectQueryable[u.key] = true
 			}
 		}
-		for _, fk := range d.e.lkToFk {
+		for _, fk := range d.kd.lkToFk {
 			expectQueryable[fk] = true
 		}
 
 		// Simply check every foreign key for the correct queryable-ness.
 		for fk := 0; fk < NUM_FKS; fk++ {
-			_, err := d.e.GetLocal(fk)
+			_, err := d.kd.GetLocal(fk)
 			actualQueryable := err == nil
 			if expect, found := expectQueryable[fk]; found && expect {
 				require.True(d.t, actualQueryable)
@@ -230,7 +232,7 @@ func (d *Driver) checkProperties() {
 	queries := func() {
 		// For each fk known to the consumer
 		for consumerFK := range d.foreignValSet.keyToPower {
-			queriedLK, err := d.e.GetLocal(consumerFK)
+			queriedLK, err := d.kd.GetLocal(consumerFK)
 			// There must be a corresponding local key
 			require.Nil(d.t, err)
 			providerFKs := map[FK]bool{}
@@ -258,16 +260,16 @@ func (d *Driver) checkProperties() {
 
 }
 
-func getTrace(t *testing.T) []TraceState {
+func getTrace(t *testing.T) []traceState {
 
-	mappings := func() []mapInstruction {
-		ret := []mapInstruction{}
+	mappings := func() []keyMapEntry {
+		ret := []keyMapEntry{}
 		// Go several times to have overlapping validator updates
 		for i := 0; i < 2; i++ {
 			// include 0 to all validators
 			include := rand.Intn(NUM_VALS + 1)
 			for _, lk := range rand.Perm(NUM_VALS)[0:include] {
-				ret = append(ret, mapInstruction{lk, rand.Intn(NUM_FKS)})
+				ret = append(ret, keyMapEntry{lk, rand.Intn(NUM_FKS)})
 			}
 		}
 		return ret
@@ -283,19 +285,19 @@ func getTrace(t *testing.T) []TraceState {
 		return ret
 	}
 
-	initialMappings := []mapInstruction{}
+	initialMappings := []keyMapEntry{}
 	for i := 0; i < NUM_VALS; i++ {
-		initialMappings = append(initialMappings, mapInstruction{i, i})
+		initialMappings = append(initialMappings, keyMapEntry{i, i})
 	}
 
-	ret := []TraceState{
+	ret := []traceState{
 		{
 			// Hard code initial mapping
-			MapInstructions: initialMappings,
-			LocalUpdates:    localUpdates(),
-			TP:              0,
-			TC:              0,
-			TM:              0,
+			mapInstructions: initialMappings,
+			localUpdates:    localUpdates(),
+			tp:              0,
+			tc:              0,
+			tm:              0,
 		},
 	}
 
@@ -303,44 +305,44 @@ func getTrace(t *testing.T) []TraceState {
 		choice := rand.Intn(3)
 		last := ret[len(ret)-1]
 		if choice == 0 {
-			ret = append(ret, TraceState{
-				MapInstructions: mappings(),
-				LocalUpdates:    localUpdates(),
-				TP:              last.TP + 1,
-				TC:              last.TC,
-				TM:              last.TM,
+			ret = append(ret, traceState{
+				mapInstructions: mappings(),
+				localUpdates:    localUpdates(),
+				tp:              last.tp + 1,
+				tc:              last.tc,
+				tm:              last.tm,
 			})
 		}
 		if choice == 1 {
-			curr := last.TC
-			limInclusive := last.TP
+			curr := last.tc
+			limInclusive := last.tp
 			if curr < limInclusive {
 				// add in [1, limInclusive - curr]
 				// rand in [0, limInclusive - curr - 1]
 				// bound is [0, limInclusive - curr)
 				newTC := rand.Intn(limInclusive-curr) + curr + 1
 				require.True(t, curr < newTC && curr <= limInclusive)
-				ret = append(ret, TraceState{
-					MapInstructions: nil,
-					LocalUpdates:    nil,
-					TP:              last.TP,
-					TC:              newTC,
-					TM:              last.TM,
+				ret = append(ret, traceState{
+					mapInstructions: nil,
+					localUpdates:    nil,
+					tp:              last.tp,
+					tc:              newTC,
+					tm:              last.tm,
 				})
 			}
 		}
 		if choice == 2 {
-			curr := last.TM
-			limInclusive := last.TC
+			curr := last.tm
+			limInclusive := last.tc
 			if curr < limInclusive {
 				newTM := rand.Intn(limInclusive-curr) + curr + 1
 				require.True(t, curr < newTM && curr <= limInclusive)
-				ret = append(ret, TraceState{
-					MapInstructions: nil,
-					LocalUpdates:    nil,
-					TP:              last.TP,
-					TC:              last.TC,
-					TM:              newTM,
+				ret = append(ret, traceState{
+					mapInstructions: nil,
+					localUpdates:    nil,
+					tp:              last.tp,
+					tc:              last.tc,
+					tm:              newTM,
 				})
 			}
 		}
@@ -348,14 +350,13 @@ func getTrace(t *testing.T) []TraceState {
 	return ret
 }
 
-func TestPrototype(t *testing.T) {
+func TestRandomHeuristic(t *testing.T) {
 	for i := 0; i < NUM_TRACES; i++ {
-		trace := []TraceState{}
+		trace := []traceState{}
 		for len(trace) < 2 {
 			trace = getTrace(t)
 		}
-		d := MakeDriver(t, trace)
-		d.runTrace()
-
+		d := makeDriver(t, trace)
+		d.run()
 	}
 }
