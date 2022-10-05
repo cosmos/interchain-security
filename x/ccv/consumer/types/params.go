@@ -11,9 +11,6 @@ import (
 const (
 	// about 2 hr at 7.6 seconds per blocks
 	DefaultBlocksPerDistributionTransmission = 1000
-
-	// Default timeout period is 4 weeks to ensure channel doesn't close on timeout
-	DefaultCCVTimeoutPeriod = 4 * 7 * 24 * time.Hour
 )
 
 // Reflection based keys for params subspace
@@ -49,7 +46,7 @@ func DefaultParams() Params {
 		DefaultBlocksPerDistributionTransmission,
 		"",
 		"",
-		DefaultCCVTimeoutPeriod,
+		ccvtypes.DefaultCCVTimeoutPeriod,
 	)
 }
 
