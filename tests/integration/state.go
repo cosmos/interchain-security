@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -440,28 +439,6 @@ func (tr TestRun) getParam(chain chainID, param Param) string {
 	return value.String()
 }
 
-// Gets a default validator for input chain by parsing node home directories.
-//lint:ignore U1000 Ignore unused function temporarily for debugging
-func (s TestRun) getDefaultValidator(chain chainID) validatorID {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec", s.containerConfig.instanceName, "bash", "-c",
-		`cd /`+string(s.chainConfigs[chain].chainId)+
-			`; ls -d */ | awk '/validator/{print $1}' | head -n 1`).CombinedOutput()
-
-	if err != nil {
-		log.Fatal(err, "\n", string(bz))
-	}
-
-	// Returned string will be of format: "validator<valID literal>/"
-	bzPrefixTrimmed := strings.TrimPrefix(string(bz), "validator")
-	bzFullyTrimmed := bzPrefixTrimmed[:len(bzPrefixTrimmed)-2]
-	if bzPrefixTrimmed == string(bz) || bzFullyTrimmed == string(bz) {
-		log.Fatalf("unexpected validator subdirectory name: %s ", bz)
-	}
-
-	return validatorID(bzFullyTrimmed)
-}
-
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {
 	return "tcp://" + tr.getValidatorIP(chain, validator) + ":26658"
 }
@@ -484,8 +461,3 @@ func (tr TestRun) getQueryNode(chain chainID) string {
 func (tr TestRun) getQueryNodeIP(chain chainID) string {
 	return fmt.Sprintf("%s.253", tr.chainConfigs[chain].ipPrefix)
 }
-
-// getQueryNodeHome returns query node home on chain.
-// func (tr TestRun) getQueryNodeHome(chain chainID) string {
-// 	return fmt.Sprintf("/%s/query", tr.chainConfigs[chain].chainId)
-// }
