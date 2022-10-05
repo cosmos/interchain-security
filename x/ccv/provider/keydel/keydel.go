@@ -28,44 +28,44 @@ type memo struct {
 
 type KeyDel struct {
 	pkToCk   map[PK]CK
-	CkToPk   map[CK]PK
-	CkToMemo map[CK]memo
+	ckToPk   map[CK]PK
+	ckToMemo map[CK]memo
 }
 
 func MakeKeyDel() KeyDel {
 	return KeyDel{
 		pkToCk:   map[PK]CK{},
-		CkToPk:   map[CK]PK{},
-		CkToMemo: map[CK]memo{},
+		ckToPk:   map[CK]PK{},
+		ckToMemo: map[CK]memo{},
 	}
 }
 
 // TODO:
-func (e *KeyDel) SetProviderKeyToConsumerKey(lk PK, fk CK) error {
+func (e *KeyDel) SetProviderKeyToConsumerKey(pk PK, ck CK) error {
 	inUse := false
-	if _, ok := e.CkToPk[fk]; ok {
+	if _, ok := e.ckToPk[ck]; ok {
 		inUse = true
 	}
-	if _, ok := e.CkToMemo[fk]; ok {
+	if _, ok := e.ckToMemo[ck]; ok {
 		inUse = true
 	}
 	if inUse {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
-	if oldFk, ok := e.pkToCk[lk]; ok {
-		delete(e.CkToPk, oldFk)
+	if oldCk, ok := e.pkToCk[pk]; ok {
+		delete(e.ckToPk, oldCk)
 	}
-	e.pkToCk[lk] = fk
-	e.CkToPk[fk] = lk
+	e.pkToCk[pk] = ck
+	e.ckToPk[ck] = pk
 	return nil
 }
 
 // TODO:
-func (e *KeyDel) GetProviderKey(fk CK) (PK, error) {
-	if u, ok := e.CkToMemo[fk]; ok {
+func (e *KeyDel) GetProviderKey(ck CK) (PK, error) {
+	if u, ok := e.ckToMemo[ck]; ok {
 		return u.pk, nil
-	} else if lk, ok := e.CkToPk[fk]; ok {
-		return lk, nil
+	} else if pk, ok := e.ckToPk[ck]; ok {
+		return pk, nil
 	} else {
 		return -1, errors.New("provider key not found for consumer key")
 	}
@@ -74,15 +74,15 @@ func (e *KeyDel) GetProviderKey(fk CK) (PK, error) {
 // TODO:
 func (e *KeyDel) PruneUnusedKeys(latestVscid VSCID) {
 	toDel := []CK{}
-	for _, u := range e.CkToMemo {
+	for _, u := range e.ckToMemo {
 		// If the last update was a deletion (0 power) and the update
 		// matured then pruning is possible.
 		if u.power == 0 && u.vscid <= latestVscid {
 			toDel = append(toDel, u.ck)
 		}
 	}
-	for _, fk := range toDel {
-		delete(e.CkToMemo, fk)
+	for _, ck := range toDel {
+		delete(e.ckToMemo, ck)
 	}
 }
 
@@ -99,8 +99,8 @@ func (e *KeyDel) ComputeUpdates(vscid VSCID, providerUpdates []update) (consumer
 
 	consumerUpdates = []update{}
 
-	for fk, power := range updates {
-		consumerUpdates = append(consumerUpdates, update{key: fk, power: power})
+	for ck, power := range updates {
+		consumerUpdates = append(consumerUpdates, update{key: ck, power: power})
 	}
 
 	return consumerUpdates
@@ -112,7 +112,7 @@ func (e *KeyDel) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 	pks := []PK{}
 
 	// Grab provider keys where the assigned consumer key has changed
-	for oldCk, u := range e.CkToMemo {
+	for oldCk, u := range e.ckToMemo {
 		if newCk, ok := e.pkToCk[u.pk]; ok {
 			if oldCk != newCk && 0 < u.power {
 				pks = append(pks, u.pk)
@@ -129,7 +129,7 @@ func (e *KeyDel) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 	// Create a read only copy, so that we can query while writing
 	// updates to the old version.
 	ckToMemo_READ_ONLY := map[CK]memo{}
-	for ck, memo := range e.CkToMemo {
+	for ck, memo := range e.ckToMemo {
 		ckToMemo_READ_ONLY[ck] = memo
 	}
 
@@ -138,7 +138,7 @@ func (e *KeyDel) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 			if u.pk == pk && 0 < u.power {
 				// For each provider key for which there was already a positive update
 				// create a deletion update for the associated consumer key.
-				e.CkToMemo[u.ck] = memo{ck: u.ck, pk: pk, vscid: vscid, power: 0}
+				e.ckToMemo[u.ck] = memo{ck: u.ck, pk: pk, vscid: vscid, power: 0}
 				ret[u.ck] = 0
 			}
 		}
@@ -165,7 +165,7 @@ func (e *KeyDel) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 		// are handled in earlier block.
 		if 0 < power {
 			ck := e.pkToCk[pk]
-			e.CkToMemo[ck] = memo{ck: ck, pk: pk, vscid: vscid, power: power}
+			e.ckToMemo[ck] = memo{ck: ck, pk: pk, vscid: vscid, power: power}
 			ret[ck] = power
 		}
 	}
@@ -177,30 +177,30 @@ func (e *KeyDel) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 func (e *KeyDel) internalInvariants() bool {
 
 	// No two provider keys can map to the same consumer key
-	// (lkToFk is sane)
+	// (pkToCk is sane)
 	seen := map[CK]bool{}
-	for _, fk := range e.pkToCk {
-		if seen[fk] {
+	for _, ck := range e.pkToCk {
+		if seen[ck] {
 			return false
 		}
-		seen[fk] = true
+		seen[ck] = true
 	}
 
-	// all values of lkToFk is a key of fkToLk
+	// all values of pkToCk is a key of ckToPk
 	// (reverse lookup is always possible)
-	for _, fk := range e.pkToCk {
-		if _, ok := e.CkToPk[fk]; !ok {
+	for _, ck := range e.pkToCk {
+		if _, ok := e.ckToPk[ck]; !ok {
 			return false
 		}
 	}
 
 	// All consumer keys mapping to provider keys are actually
 	// mapped to by the provider key.
-	// (fkToLk is sane)
-	for fk := range e.CkToPk {
+	// (ckToPk is sane)
+	for ck := range e.ckToPk {
 		good := false
-		for _, candidateFk := range e.pkToCk {
-			if candidateFk == fk {
+		for _, candidateCk := range e.pkToCk {
+			if candidateCk == ck {
 				good = true
 				break
 			}
@@ -214,9 +214,9 @@ func (e *KeyDel) internalInvariants() bool {
 	// any memo containing the same consumer key has the same
 	// mapping.
 	// (Ensures lookups are correct)
-	for fk, lk := range e.CkToPk {
-		if u, ok := e.CkToMemo[fk]; ok {
-			if lk != u.pk {
+	for ck, pk := range e.ckToPk {
+		if u, ok := e.ckToMemo[ck]; ok {
+			if pk != u.pk {
 				return false
 			}
 		}
