@@ -120,14 +120,14 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 
 	ret := map[FK]int{}
 
-	fkToUpdateClone := map[FK]memo{}
+	fkToMemoClone := map[FK]memo{}
 	for k, v := range e.fkToMemo {
-		fkToUpdateClone[k] = v
+		fkToMemoClone[k] = v
 	}
 
 	// Iterate all local keys for which there was previously a positive update.
 	for _, lk := range lks {
-		for _, u := range fkToUpdateClone {
+		for _, u := range fkToMemoClone {
 			if u.lk == lk && 0 < u.power {
 				e.fkToMemo[u.fk] = memo{fk: u.fk, lk: lk, vscid: vscid, power: 0}
 				ret[u.fk] = 0
@@ -139,7 +139,7 @@ func (e *KeyDel) inner(vscid VSCID, localUpdates map[LK]int) map[FK]int {
 	// has been a power update.
 	for _, lk := range lks {
 		power := 0
-		for _, u := range fkToUpdateClone {
+		for _, u := range fkToMemoClone {
 			if u.lk == lk && 0 < u.power {
 				power = u.power
 			}
