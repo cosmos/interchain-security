@@ -72,7 +72,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 
 // CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
 func (k Keeper) CompleteMaturedUnbondingOps(ctx sdk.Context) {
-	ids, err := k.EmptyMaturedUnbondingOps(ctx)
+	ids, err := k.ConsumeMaturedUnbondingOps(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("could not get the list of matured unbonding ops: %s", err.Error()))
 	}
@@ -135,7 +135,7 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			// construct validator set change packet data
-			packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.EmptySlashAcks(ctx, chainID))
+			packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
 
 			// check whether there is an established CCV channel to this consumer chain
 			if channelID, found := k.GetChainToChannel(ctx, chainID); found {
@@ -165,7 +165,7 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 
 // Sends all pending ValidatorSetChangePackets to the specified chain
 func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string) {
-	pendingPackets := k.EmptyPendingVSC(ctx, chainID)
+	pendingPackets := k.ConsumePendingVSCs(ctx, chainID)
 	for _, data := range pendingPackets {
 		// send packet over IBC
 		err := utils.SendIBCPacket(
