@@ -136,8 +136,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	}
 
 	k.DeleteInitChainHeight(ctx, chainID)
-	k.EmptySlashAcks(ctx, chainID)
-	k.EmptyPendingVSC(ctx, chainID)
+	k.ConsumeSlashAcks(ctx, chainID)
+	k.ConsumePendingVSCs(ctx, chainID)
 
 	// release unbonding operations if they aren't locked
 	var vscIDs []uint64
@@ -272,6 +272,7 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 	return prop, true
 }
 
+// PendingConsumerAdditionPropIterator returns an iterator for iterating through pending consumer addition proposals
 func (k Keeper) PendingConsumerAdditionPropIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
@@ -300,7 +301,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 // and returns an ordered list of proposals to be executed, ie. consumer clients to be created.
 // A prop is included in the returned list if its proposed spawn time has passed.
 //
-// Note: this method is split out from IteratePendingConsumerAdditionProposals to be easily unit tested.
+// Note: this method is split out from BeginBlockInit to be easily unit tested.
 func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.ConsumerAdditionProposal {
 
 	// store the (to be) executed proposals in order
@@ -340,7 +341,8 @@ func (k Keeper) IteratePendingConsumerAdditionProps(ctx sdk.Context, cb func(spa
 	}
 }
 
-// DeletePendingConsumerAdditionProps deletes the given consumer addition proposals
+// DeletePendingConsumerAdditionProps deletes the given consumer addition proposals.
+// This method should be called once the proposal has been acted upon.
 func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ...types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -364,7 +366,8 @@ func (k Keeper) GetPendingConsumerRemovalProp(ctx sdk.Context, chainID string, t
 	return bz != nil
 }
 
-// DeletePendingConsumerRemovalProps deletes the given consumer removal proposals
+// DeletePendingConsumerRemovalProps deletes the given pending consumer removal proposals.
+// This method should be called once the proposal has been acted upon.
 func (k Keeper) DeletePendingConsumerRemovalProps(ctx sdk.Context, proposals ...types.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -373,6 +376,7 @@ func (k Keeper) DeletePendingConsumerRemovalProps(ctx sdk.Context, proposals ...
 	}
 }
 
+// PendingConsumerRemovalPropIterator returns an iterator for iterating through pending consumer removal proposals
 func (k Keeper) PendingConsumerRemovalPropIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})

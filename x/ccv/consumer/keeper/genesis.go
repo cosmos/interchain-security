@@ -18,6 +18,8 @@ import (
 // InitGenesis initializes the CCV consumer state and binds to PortID.
 func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) []abci.ValidatorUpdate {
 	k.SetParams(ctx, state.Params)
+	// TODO: Remove enabled flag and find a better way to setup e2e tests
+	// See: https://github.com/cosmos/interchain-security/issues/339
 	if !state.Params.Enabled {
 		return nil
 	}

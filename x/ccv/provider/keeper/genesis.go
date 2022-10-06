@@ -36,7 +36,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 	}
 	for _, prop := range genState.ConsumerRemovalProposals {
-		k.SetPendingConsumerRemovalProp(ctx, prop.ChainId, sccp.StopTime)
+		k.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
 	}
 	for _, ubdOp := range genState.UnbondingOps {
 		if err := k.SetUnbondingOp(ctx, ubdOp); err != nil {
