@@ -5,6 +5,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -58,8 +60,8 @@ func init() {
 		InitialDelegatorTokens: 10000000000000,
 		SlashDoublesign:        sdk.NewDec(0),
 		SlashDowntime:          sdk.NewDec(0),
-		UnbondingP:             time.Second * 70,
-		UnbondingC:             time.Second * 50,
+		UnbondingP:             providertypes.DefaultProviderUnbondingPeriod,
+		UnbondingC:             consumertypes.DefaultConsumerUnbondingPeriod,
 		Trusting:               time.Second * 49,
 		MaxClockDrift:          time.Second * 10000,
 		BlockSeconds:           time.Second * 6,

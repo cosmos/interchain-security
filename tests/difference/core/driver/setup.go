@@ -476,8 +476,8 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		1000, // ignore distribution
 		"",   // ignore distribution
 		"",   // ignore distribution
-		time.Hour,
-		time.Hour,
+		ccv.DefaultCCVTimeoutPeriod,
+		consumertypes.DefaultConsumerUnbondingPeriod,
 	)
 	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, consumertypes.SlashRequests{}, params)
 }
@@ -516,7 +516,9 @@ func (b *Builder) doIBCHandshake() {
 	tmConfig := b.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
 	// TODO: This is intentionally set to unbonding period for P (provider)
 	// TODO: Not sure why it breaks without this.
-	tmConfig.UnbondingPeriod = b.initState.UnbondingP
+	tmConfig.UnbondingPeriod = b.initState.UnbondingC
+	// ^ I beleive this is suppossed to be the unbonding period for the counterparty
+	// (consumer) chain. Correct me if I'm wrong, but this fixed some errors
 	tmConfig.TrustingPeriod = b.initState.Trusting
 	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
 	err = b.path.EndpointB.CreateClient()
