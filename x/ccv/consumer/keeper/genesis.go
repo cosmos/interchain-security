@@ -118,7 +118,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 	}
 
 	// export the current validator set
-	valset, err := k.GetValidatorUpdates(ctx)
+	valset, err := k.GetCurrentValidatorsAsABCIpdates(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("fail to retrieve the validator set: %s", err))
 	}

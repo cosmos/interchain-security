@@ -402,7 +402,7 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 // ie. consumer chains to be stopped and removed from the provider chain.
 // A prop is included in the returned list if its proposed stop time has passed.
 //
-// Note: this method is split out from IterateMatureConsumerRemovalProps to be easily unit tested.
+// Note: this method is split out from BeginBlockCCR to be easily unit tested.
 func (k Keeper) ConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerRemovalProposal {
 
 	// store the (to be) executed consumer removal proposals in order

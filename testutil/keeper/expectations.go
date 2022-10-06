@@ -11,6 +11,7 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/golang/mock/gomock"
 
+	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	extra "github.com/oxyno-zeta/gomock-extra-matcher"
@@ -90,4 +91,24 @@ func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomo
 		mocks.MockScopedKeeper.EXPECT().GetCapability(ctx, gomock.Any()).Return(dummyCap, true).Times(1),
 		mocks.MockChannelKeeper.EXPECT().ChanCloseInit(ctx, ccv.ProviderPortID, "channelID", dummyCap).Times(1),
 	}
+}
+
+func ExpectLatestConsensusStateMock(ctx sdk.Context, mocks MockedKeepers, clientID string, consState *ibctmtypes.ConsensusState) *gomock.Call {
+	return mocks.MockClientKeeper.EXPECT().
+		GetLatestClientConsensusState(ctx, clientID).Return(consState, true).Times(1)
+}
+
+func ExpectGetClientStateMock(ctx sdk.Context, mocks MockedKeepers, clientID string, clientState *ibctmtypes.ClientState) *gomock.Call {
+	return mocks.MockClientKeeper.EXPECT().GetClientState(ctx, clientID).Return(clientState, true).Times(1)
+}
+
+func ExpectCreateClientMock(ctx sdk.Context, mocks MockedKeepers, clientID string, clientState *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState) *gomock.Call {
+
+	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, clientState, consState).Return(clientID, nil).Times(1)
+}
+
+func ExpectGetCapabilityMock(ctx sdk.Context, mocks MockedKeepers) *gomock.Call {
+	return mocks.MockScopedKeeper.EXPECT().GetCapability(
+		ctx, host.PortPath(ccv.ConsumerPortID),
+	).Return(nil, true).Times(1)
 }

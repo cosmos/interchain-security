@@ -38,7 +38,7 @@ message GenesisState {
   [ (gogoproto.nullable) = false ];
 }
 
-// consumer chain
+// ConsumerState defines the state that the provider chain stores for each consumer chain
 message ConsumerState {
   // ChannelID defines the chain ID for the consumer chain
   string chain_id = 1;

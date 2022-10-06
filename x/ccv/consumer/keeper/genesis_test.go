@@ -6,11 +6,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -23,24 +26,39 @@ import (
 	testutil "github.com/cosmos/interchain-security/testutil/keeper"
 )
 
+// TestInitGenesis tests that a consumer chain is correctly initialised from genesis.
+// It covers the cases where a chain is new or restarted which means that
+// its CCV channel is already established.
 func TestInitGenesis(t *testing.T) {
+	// create states to initialise a consumer chain from genesis
 
-	// store consumer chain states in variables
-
-	// create channel and client IDs for the consumer
-	channelID := "channelID"
-	clientID := "tendermint-07"
-
+	// create provider channel and client ids
+	provChannelID := "ChannelID"
+	provClientID := "tendermint-07"
 	// generate validator public key
 	pubKey, err := testutil.GenPubKey()
 	require.NoError(t, err)
-
 	// create validator set with single validator
 	validator := tmtypes.NewValidator(pubKey, 1)
-
-	// create consensus state using a single validator
-	consensusState := testutil.GetConsensusState(clientID, time.Time{}, validator)
-
+	// create a provider consensus state using a single validator
+	provConsState := ibctmtypes.NewConsensusState(
+		time.Time{},
+		commitmenttypes.NewMerkleRoot([]byte("apphash")),
+		tmtypes.NewValidatorSet([]*tmtypes.Validator{validator}).Hash()[:],
+	)
+	// create a provider client state
+	provClientState := ibctmtypes.NewClientState(
+		"provider",
+		ibctmtypes.DefaultTrustLevel,
+		0,
+		stakingtypes.DefaultUnbondingTime,
+		time.Second*10,
+		clienttypes.Height{},
+		commitmenttypes.GetSDKSpecs(),
+		[]string{"upgrade", "upgradedIBCState"},
+		true,
+		true,
+	)
 	slashRequests := consumertypes.SlashRequests{
 		Requests: []consumertypes.SlashRequest{{Infraction: stakingtypes.Downtime}},
 	}
@@ -52,6 +70,8 @@ func TestInitGenesis(t *testing.T) {
 	// create paramameters for a new chain
 	params := types.NewParams(true, types.DefaultBlocksPerDistributionTransmission, "", "")
 
+	// define two test cases which respectively create a genesis struct, use it to call InitGenesis
+	// and finally check that the genesis states are imported in the consumer keeper stores
 	testCases := []struct {
 		name         string
 		malleate     func(sdk.Context, testutil.MockedKeepers)
@@ -62,50 +82,72 @@ func TestInitGenesis(t *testing.T) {
 			name: "restart a new chain",
 			malleate: func(ctx sdk.Context, mocks testutil.MockedKeepers) {
 				gomock.InOrder(
-					expectGetCapabilityMock(ctx, mocks),
-					expectCreateClientMock(ctx, mocks, "", clientID, validator),
+					testkeeper.ExpectGetCapabilityMock(ctx, mocks),
+					testkeeper.ExpectCreateClientMock(ctx, mocks, provClientID, provClientState, provConsState),
 				)
 			},
-			genesis: consumertypes.NewInitialGenesisState(testutil.GetClientState(""), consensusState,
-				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}, slashRequests, params),
+			// create a genesis for a new chain
+			genesis: consumertypes.NewInitialGenesisState(
+				provClientState,
+				provConsState,
+				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)},
+				slashRequests,
+				params,
+			),
 
 			assertStates: func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
 				require.Equal(t, ccv.ConsumerPortID, ck.GetPort(ctx))
 
-				ubdTime, found := ck.GetUnbondingTime(ctx)
+				// compute the consumer unbonding period as done in InitGenesis (x/ccv/consumer/keeper/genesis.go)
+				expectedUbdPeriod := utils.ComputeConsumerUnbondingPeriod(gs.ProviderClientState.UnbondingPeriod)
+				gotUbdPeriod, found := ck.GetUnbondingTime(ctx)
+
 				require.True(t, found)
-				require.Equal(t, gs.ProviderClientState.UnbondingPeriod, ubdTime)
+				require.Equal(t, expectedUbdPeriod, gotUbdPeriod)
 
 				require.Zero(t, ck.GetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())))
 
 				cid, ok := ck.GetProviderClientID(ctx)
 				require.True(t, ok)
-				require.Equal(t, clientID, cid)
+				require.Equal(t, provClientID, cid)
 			},
 		}, {
 			name: "restart a chain with an already established channel",
 			malleate: func(ctx sdk.Context, mocks testutil.MockedKeepers) {
 				gomock.InOrder(
-					expectGetCapabilityMock(ctx, mocks),
-					expectLatestConsensusStateMock(ctx, mocks, clientID, validator),
-					expectGetClientStateMock(ctx, mocks, "", clientID),
+					testkeeper.ExpectGetCapabilityMock(ctx, mocks),
+					testkeeper.ExpectLatestConsensusStateMock(ctx, mocks, provClientID, provConsState),
+					testkeeper.ExpectGetClientStateMock(ctx, mocks, provClientID, provClientState),
 				)
 			},
-			genesis: consumertypes.NewRestartGenesisState(clientID, channelID,
-				[]consumertypes.MaturingVSCPacket{matPacket},
-				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)},
-				[]consumertypes.HeightToValsetUpdateID{{ValsetUpdateId: matPacket.VscId, Height: uint64(0)}},
-				[]consumertypes.OutstandingDowntime{{ValidatorConsensusAddress: sdk.ConsAddress(validator.Bytes()).String()}},
-				params,
-			),
+			// create a genesis for a restarted chain
+			genesis: &consumertypes.GenesisState{
+				ProviderClientId:       provClientID,
+				ProviderChannelId:      provChannelID,
+				Params:                 params,
+				NewChain:               false,
+				ProviderClientState:    provClientState,
+				ProviderConsensusState: provConsState,
+				InitialValSet:          []abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)},
+				OutstandingDowntimeSlashing: []consumertypes.OutstandingDowntime{
+					{ValidatorConsensusAddress: sdk.ConsAddress(validator.Bytes()).String()},
+				},
+				HeightToValsetUpdateId: []consumertypes.HeightToValsetUpdateID{
+					{ValsetUpdateId: matPacket.VscId, Height: uint64(0)},
+				},
+				MaturingPackets: []consumertypes.MaturingVSCPacket{matPacket},
+			},
 			assertStates: func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
 				require.Equal(t, ccv.ConsumerPortID, ck.GetPort(ctx))
 
-				ubdTime, found := ck.GetUnbondingTime(ctx)
+				// compute the consumer unbonding period as done in InitGenesis (x/ccv/consumer/keeper/genesis.go)
+				expectedUbdPeriod := utils.ComputeConsumerUnbondingPeriod(gs.ProviderClientState.UnbondingPeriod)
+				gotUbdPeriod, found := ck.GetUnbondingTime(ctx)
+
 				require.True(t, found)
-				require.Equal(t, testutil.GetClientState("").UnbondingPeriod, ubdTime)
+				require.Equal(t, expectedUbdPeriod, gotUbdPeriod)
 
 				// export states to genesis
 				require.Equal(t, matPacket.VscId, ck.GetHeightValsetUpdateID(ctx, uint64(0)))
@@ -128,21 +170,23 @@ func TestInitGenesis(t *testing.T) {
 			// test setup
 			tc.malleate(ctx, mocks)
 
-			// init the chain states using a genesis
+			// init chain states
 			consumerKeeper.InitGenesis(ctx, tc.genesis)
 
-			// assert states
+			// assert consumer keeper states
 			tc.assertStates(ctx, consumerKeeper, tc.genesis)
 		})
 	}
 }
 
+// TestExportGenesis tests that a consumer chain genesis is correctly exported to genesis
+// It covers the cases where the chain's CCV channel is or isn't established
 func TestExportGenesis(t *testing.T) {
+	// create consumer chain states to be stored and exported to genesis
 
-	clientID := "tendermint-07"
-	channelID := "channelID"
-
-	// define the states exported into genesis
+	// create provider channel and client ids
+	provClientID := "tendermint-07"
+	provChannelID := "provChannelID"
 	slashRequests := consumertypes.SlashRequests{
 		Requests: []consumertypes.SlashRequest{{Infraction: stakingtypes.Downtime}},
 	}
@@ -151,18 +195,36 @@ func TestExportGenesis(t *testing.T) {
 		VscId:        uint64(1),
 		MaturityTime: uint64(time.Now().UnixNano()),
 	}
-
-	params := types.NewParams(true, types.DefaultBlocksPerDistributionTransmission, "", "")
-
 	// create a single validator
 	pubKey := ed25519.GenPrivKey().PubKey()
 	tmPK, err := cryptocodec.ToTmPubKeyInterface(pubKey)
 	require.NoError(t, err)
 	validator := tmtypes.NewValidator(tmPK, 1)
+	// create a provider consensus state using a single validator
+	provConsState := ibctmtypes.NewConsensusState(
+		time.Time{},
+		commitmenttypes.NewMerkleRoot([]byte("apphash")),
+		tmtypes.NewValidatorSet([]*tmtypes.Validator{validator}).Hash()[:],
+	)
+	// create a provider client state
+	provClientState := ibctmtypes.NewClientState(
+		"provider",
+		ibctmtypes.DefaultTrustLevel,
+		0,
+		stakingtypes.DefaultUnbondingTime,
+		time.Second*10,
+		clienttypes.Height{},
+		commitmenttypes.GetSDKSpecs(),
+		[]string{"upgrade", "upgradedIBCState"},
+		true,
+		true,
+	)
+	// create paramameters for an enabled consumer chain
+	params := types.NewParams(true, types.DefaultBlocksPerDistributionTransmission, "", "")
 
-	// create consensus state using a single validator
-	consensusState := testutil.GetConsensusState(clientID, time.Time{}, validator)
-
+	// define two test cases which respectively populate the consumer chain store
+	// using the states declared above then call ExportGenesis to finally check
+	// that the resulting genesis struct stores this same states
 	testCases := []struct {
 		name       string
 		malleate   func(sdk.Context, consumerkeeper.Keeper, testutil.MockedKeepers)
@@ -175,7 +237,7 @@ func TestExportGenesis(t *testing.T) {
 				cVal, err := consumertypes.NewCCValidator(validator.Address.Bytes(), 1, pubKey)
 				require.NoError(t, err)
 				ck.SetCCValidator(ctx, cVal)
-				ck.SetProviderClientID(ctx, clientID)
+				ck.SetProviderClientID(ctx, provClientID)
 				ck.SetPendingSlashRequests(
 					ctx,
 					slashRequests,
@@ -183,32 +245,31 @@ func TestExportGenesis(t *testing.T) {
 
 				// set the mock calls executed during the export
 				gomock.InOrder(
-					expectGetClientStateMock(ctx, mocks, "", clientID),
-					expectLatestConsensusStateMock(ctx, mocks, clientID, validator),
+					testkeeper.ExpectGetClientStateMock(ctx, mocks, provClientID, provClientState),
+					testkeeper.ExpectLatestConsensusStateMock(ctx, mocks, provClientID, provConsState),
 				)
 			},
 
-			expGenesis: consumertypes.NewInitialGenesisState(testutil.GetClientState(""), consensusState,
+			expGenesis: consumertypes.NewInitialGenesisState(provClientState, provConsState,
 				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}, slashRequests, params),
 		},
 		{
 			name: "export a chain that has an established CCV channel",
 			malleate: func(ctx sdk.Context, ck consumerkeeper.Keeper, mocks testutil.MockedKeepers) {
-				// populate the states used by a running chain
+				// populate the states used by a restarted chain
 				cVal, err := consumertypes.NewCCValidator(validator.Address.Bytes(), 1, pubKey)
 				require.NoError(t, err)
 				ck.SetCCValidator(ctx, cVal)
 				ck.SetOutstandingDowntime(ctx, sdk.ConsAddress(validator.Address.Bytes()))
-
-				// populate the required states to simulate a completed handshake
-				ck.SetProviderClientID(ctx, clientID)
-				ck.SetProviderChannel(ctx, channelID)
+				// populate the required states for an established CCV channel
+				ck.SetProviderClientID(ctx, provClientID)
+				ck.SetProviderChannel(ctx, provChannelID)
 				ck.SetHeightValsetUpdateID(ctx, restartHeight, matPacket.VscId)
 				ck.SetPacketMaturityTime(ctx, matPacket.VscId, matPacket.MaturityTime)
 			},
 			expGenesis: consumertypes.NewRestartGenesisState(
-				clientID,
-				channelID,
+				provClientID,
+				provChannelID,
 				[]consumertypes.MaturingVSCPacket{matPacket},
 				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)},
 				[]types.HeightToValsetUpdateID{{Height: restartHeight, ValsetUpdateId: matPacket.VscId}},
@@ -231,35 +292,11 @@ func TestExportGenesis(t *testing.T) {
 			// test setup
 			tc.malleate(ctx, consumerKeeper, mocks)
 
-			// export staet to genesis
+			// export states to genesis
 			gotGen := consumerKeeper.ExportGenesis(ctx)
 
-			// check the obtained genesis
+			// check obtained genesis
 			require.EqualValues(t, tc.expGenesis, gotGen)
 		})
 	}
-}
-
-func expectLatestConsensusStateMock(ctx sdk.Context, mocks testutil.MockedKeepers, clientID string, vals ...*tmtypes.Validator) *gomock.Call {
-	consState := testutil.GetConsensusState(clientID, time.Time{}, vals...)
-	return mocks.MockClientKeeper.EXPECT().
-		GetLatestClientConsensusState(ctx, clientID).Return(consState, true).Times(1)
-}
-
-func expectGetClientStateMock(ctx sdk.Context, mocks testutil.MockedKeepers, chainID, clientID string) *gomock.Call {
-	cs := testutil.GetClientState(chainID)
-	return mocks.MockClientKeeper.EXPECT().GetClientState(ctx, clientID).Return(cs, true).Times(1)
-}
-
-func expectCreateClientMock(ctx sdk.Context, mocks testutil.MockedKeepers, chainID, clientID string, vals ...*tmtypes.Validator) *gomock.Call {
-	cs := testutil.GetClientState(chainID)
-	consState := testutil.GetConsensusState(clientID, time.Time{}, vals...)
-
-	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, cs, consState).Return(clientID, nil).Times(1)
-}
-
-func expectGetCapabilityMock(ctx sdk.Context, mocks testutil.MockedKeepers) *gomock.Call {
-	return mocks.MockScopedKeeper.EXPECT().GetCapability(
-		ctx, host.PortPath(ccv.ConsumerPortID),
-	).Return(nil, true).Times(1)
 }

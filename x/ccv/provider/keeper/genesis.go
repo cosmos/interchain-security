@@ -28,15 +28,15 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		k.SetValsetUpdateBlockHeight(ctx, v2h.ValsetUpdateId, v2h.Height)
 	}
 
-	for _, cccp := range genState.ConsumerAdditionProposals {
+	for _, prop := range genState.ConsumerAdditionProposals {
 		// prevent implicit memory aliasing
-		cccp := cccp
-		if err := k.SetPendingConsumerAdditionProp(ctx, &cccp); err != nil {
+		prop := prop
+		if err := k.SetPendingConsumerAdditionProp(ctx, &prop); err != nil {
 			panic(fmt.Errorf("pending create consumer chain proposal could not be persisted: %w", err))
 		}
 	}
-	for _, sccp := range genState.ConsumerRemovalProposals {
-		k.SetPendingConsumerRemovalProp(ctx, sccp.ChainId, sccp.StopTime)
+	for _, prop := range genState.ConsumerRemovalProposals {
+		k.SetPendingConsumerRemovalProp(ctx, prop.ChainId, sccp.StopTime)
 	}
 	for _, ubdOp := range genState.UnbondingOps {
 		if err := k.SetUnbondingOp(ctx, ubdOp); err != nil {

@@ -17,7 +17,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIniAndExportGenesis(t *testing.T) {
+// TestInitAndExportGenesis tests that the export and the initialisation of a provider chain genesis
+// cover all the states especially consumer chain states with their associated client and channel.
+func TestInitAndExportGenesis(t *testing.T) {
 	// create a provider chain genesis populated with two consumer chains
 	cChainIDs := []string{"c0", "c1"}
 	expClientID := "client"
