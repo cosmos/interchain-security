@@ -48,8 +48,8 @@ func TestValidateBasic(t *testing.T) {
 		{
 			"initial height is zero",
 			types.NewConsumerAdditionProposal("title", "description", "chainID",
-				clienttypes.Height{0, 0}, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
-				24*7*3*time.Hour),
+				clienttypes.Height{RevisionNumber: 0, RevisionHeight: 0},
+				[]byte("gen_hash"), []byte("bin_hash"), time.Now(), 24*7*3*time.Hour),
 			false,
 		},
 		{
