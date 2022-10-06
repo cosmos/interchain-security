@@ -62,6 +62,7 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.consumerChain.ChainID,
 		suite.consumerChain.LastHeader.GetHeight().(clienttypes.Height),
 		false,
+		consumertypes.DefaultConsumerUnbondingPeriod,
 	)
 	suite.Require().NoError(err)
 	// move provider to next block to commit the state

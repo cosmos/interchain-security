@@ -163,7 +163,8 @@ func TestCreateConsumerClient(t *testing.T) {
 
 		// Call method with same arbitrary values as defined above in mock expectations.
 		err := providerKeeper.CreateConsumerClient(
-			ctx, "chainID", clienttypes.NewHeight(4, 5), false) // LockUbdOnTimeout always false for now
+			ctx, "chainID", clienttypes.NewHeight(4, 5), false, // LockUbdOnTimeout always false for now
+			consumertypes.DefaultConsumerUnbondingPeriod)
 
 		require.NoError(t, err)
 
@@ -751,7 +752,9 @@ func TestBeginBlockCCR(t *testing.T) {
 	//
 	for _, prop := range pendingProps {
 		// Setup a valid consumer chain for each prop
-		err := providerKeeper.CreateConsumerClient(ctx, prop.ChainId, clienttypes.NewHeight(2, 3), false)
+		err := providerKeeper.CreateConsumerClient(
+			ctx, prop.ChainId, clienttypes.NewHeight(2, 3), false,
+			consumertypes.DefaultConsumerUnbondingPeriod)
 		require.NoError(t, err)
 		err = providerKeeper.SetConsumerChain(ctx, "channelID")
 		require.NoError(t, err)

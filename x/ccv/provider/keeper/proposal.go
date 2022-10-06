@@ -30,7 +30,7 @@ import (
 func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
 	if !ctx.BlockTime().Before(p.SpawnTime) {
 		// lockUbdOnTimeout is set to be false, regardless of what the proposal says, until we can specify and test issues around this use case more thoroughly
-		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, false)
+		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, false, p.ConsumerUnbondingPeriod)
 	}
 
 	err := k.SetPendingConsumerAdditionProp(ctx, p)
@@ -46,21 +46,21 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 //
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
 // Spec tag: [CCV-PCF-CRCLIENT.1]
-func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
+func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
+	initialHeight clienttypes.Height, lockUbdOnTimeout bool,
+	consumerUnbondingPeriod time.Duration) error {
 	// check that a client for this chain does not exist
 	if _, found := k.GetConsumerClientId(ctx, chainID); found {
 		// drop the proposal
 		return nil
 	}
 
-	unbondingPeriod := consumertypes.DefaultConsumerUnbondingPeriod // TODO: Take value from consumer addition prop
-
 	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = chainID
 	clientState.LatestHeight = initialHeight
-	clientState.TrustingPeriod = unbondingPeriod / utils.TrustingPeriodFraction
-	clientState.UnbondingPeriod = unbondingPeriod
+	clientState.TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
+	clientState.UnbondingPeriod = consumerUnbondingPeriod
 
 	// TODO: Allow for current validators to set different keys
 	consensusState := ibctmtypes.NewConsensusState(
@@ -287,7 +287,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 
 	for _, prop := range propsToExecute {
 		// lockUbdOnTimeout is set to be false, regardless of what the proposal says, until we can specify and test issues around this use case more thoroughly
-		err := k.CreateConsumerClient(ctx, prop.ChainId, prop.InitialHeight, false)
+		err := k.CreateConsumerClient(ctx, prop.ChainId, prop.InitialHeight, false, prop.ConsumerUnbondingPeriod)
 		if err != nil {
 			panic(fmt.Errorf("consumer client could not be created: %w", err))
 		}

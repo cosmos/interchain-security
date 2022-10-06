@@ -13,6 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
@@ -210,7 +211,7 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 
 	gomock.InOrder(expectations...)
 
-	err := providerKeeper.CreateConsumerClient(ctx, "chainID", clienttypes.NewHeight(2, 3), false)
+	err := providerKeeper.CreateConsumerClient(ctx, "chainID", clienttypes.NewHeight(2, 3), false, consumertypes.DefaultConsumerUnbondingPeriod)
 	require.NoError(t, err)
 	err = providerKeeper.SetConsumerChain(ctx, "channelID")
 	require.NoError(t, err)

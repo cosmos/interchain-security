@@ -72,6 +72,7 @@ func (s *ConsumerDemocracyTestSuite) SetupTest() {
 		s.consumerChain.ChainID,
 		s.consumerChain.LastHeader.GetHeight().(clienttypes.Height),
 		false,
+		consumertypes.DefaultConsumerUnbondingPeriod,
 	)
 	s.Require().NoError(err)
 
