@@ -17,6 +17,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetDistributionTransmissionChannel(ctx),
 		k.GetProviderFeePoolAddrStr(ctx),
 		k.GetCCVTimeoutPeriod(ctx),
+		k.GetTransferTimeoutPeriod(ctx),
 	)
 }
 
@@ -62,9 +63,16 @@ func (k Keeper) SetProviderFeePoolAddrStr(ctx sdk.Context, addr string) {
 	k.paramStore.Set(ctx, types.KeyProviderFeePoolAddrStr, addr)
 }
 
-// GetCCVTimeoutPeriod returns the timeout period for sent ibc packets
+// GetCCVTimeoutPeriod returns the timeout period for sent ccv related ibc packets
 func (k Keeper) GetCCVTimeoutPeriod(ctx sdk.Context) time.Duration {
 	var p time.Duration
 	k.paramStore.Get(ctx, ccvtypes.KeyCCVTimeoutPeriod, &p)
+	return p
+}
+
+// GetTransferTimeoutPeriod returns the timeout period for sent transfer related ibc packets
+func (k Keeper) GetTransferTimeoutPeriod(ctx sdk.Context) time.Duration {
+	var p time.Duration
+	k.paramStore.Get(ctx, types.KeyTransferTimeoutPeriod, &p)
 	return p
 }

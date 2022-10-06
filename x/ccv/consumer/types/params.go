@@ -11,6 +11,8 @@ import (
 const (
 	// about 2 hr at 7.6 seconds per blocks
 	DefaultBlocksPerDistributionTransmission = 1000
+
+	DefaultTransferTimeoutPeriod = 1 * 7 * 24 * time.Hour // 1 week
 )
 
 // Reflection based keys for params subspace
@@ -19,6 +21,7 @@ var (
 	KeyBlocksPerDistributionTransmission = []byte("BlocksPerDistributionTransmission")
 	KeyDistributionTransmissionChannel   = []byte("DistributionTransmissionChannel")
 	KeyProviderFeePoolAddrStr            = []byte("ProviderFeePoolAddrStr")
+	KeyTransferTimeoutPeriod             = []byte("TransferTimeoutPeriod")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -29,13 +32,14 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates new consumer parameters with provided arguments
 func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
-	ccvTimeoutPeriod time.Duration) Params {
+	ccvTimeoutPeriod time.Duration, transferTimeoutPeriod time.Duration) Params {
 	return Params{
 		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
 		DistributionTransmissionChannel:   distributionTransmissionChannel,
 		ProviderFeePoolAddrStr:            providerFeePoolAddrStr,
 		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
+		TransferTimeoutPeriod:             transferTimeoutPeriod,
 	}
 }
 
@@ -47,6 +51,7 @@ func DefaultParams() Params {
 		"",
 		"",
 		ccvtypes.DefaultCCVTimeoutPeriod,
+		DefaultTransferTimeoutPeriod,
 	)
 }
 
@@ -67,6 +72,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.ProviderFeePoolAddrStr, validateString),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod,
 			p.CcvTimeoutPeriod, ccvtypes.ValidateCCVTimeoutPeriod),
+		paramtypes.NewParamSetPair(KeyTransferTimeoutPeriod,
+			p.TransferTimeoutPeriod, validateTransferTimeoutPeriod),
 	}
 }
 
@@ -87,6 +94,17 @@ func validateInt64(i interface{}) error {
 func validateString(i interface{}) error {
 	if _, ok := i.(string); !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	return nil
+}
+
+func validateTransferTimeoutPeriod(i interface{}) error {
+	period, ok := i.(time.Duration)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	if period <= time.Duration(0) {
+		return fmt.Errorf("ibc timeout period for transfers is not positive")
 	}
 	return nil
 }

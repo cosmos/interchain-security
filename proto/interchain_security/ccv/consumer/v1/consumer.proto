@@ -30,8 +30,12 @@ message Params {
   // provider handshake procedure.
   string distribution_transmission_channel = 3;
   string provider_fee_pool_addr_str = 4;
-  // Sent IBC packets will timeout after this duration
+  // Sent CCV related IBC packets will timeout after this duration
   google.protobuf.Duration ccv_timeout_period = 5
+      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // Sent transfer related IBC packets will timeout after this duration
+  google.protobuf.Duration transfer_timeout_period = 6
       [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 }
 

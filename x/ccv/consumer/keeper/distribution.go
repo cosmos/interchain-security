@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"time"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -13,8 +11,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
-
-const TransferTimeDelay = 1 * 7 * 24 * time.Hour // 1 weeks
 
 // The fraction of tokens allocated to the consumer redistribution address
 // during distribution events. The fraction is a string representing a
@@ -76,7 +72,8 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		tstProviderTokens := k.bankKeeper.GetAllBalances(ctx, tstProviderAddr)
 		providerAddr := k.GetProviderFeePoolAddrStr(ctx)
 		timeoutHeight := clienttypes.ZeroHeight()
-		timeoutTimestamp := uint64(ctx.BlockTime().Add(TransferTimeDelay).UnixNano())
+		transferTimeoutPeriod := k.GetTransferTimeoutPeriod(ctx)
+		timeoutTimestamp := uint64(ctx.BlockTime().Add(transferTimeoutPeriod).UnixNano())
 		for _, token := range tstProviderTokens {
 			err := k.ibcTransferKeeper.SendTransfer(ctx,
 				transfertypes.PortID,
