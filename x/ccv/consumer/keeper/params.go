@@ -41,10 +41,6 @@ func (k Keeper) GetBlocksPerDistributionTransmission(ctx sdk.Context) int64 {
 	return bpdt
 }
 
-func (k Keeper) SetBlocksPerDistributionTransmission(ctx sdk.Context, bpdt int64) {
-	k.paramStore.Set(ctx, types.KeyBlocksPerDistributionTransmission, bpdt)
-}
-
 func (k Keeper) GetDistributionTransmissionChannel(ctx sdk.Context) string {
 	var s string
 	k.paramStore.Get(ctx, types.KeyDistributionTransmissionChannel, &s)
