@@ -5,9 +5,7 @@ func stepsDowntime(consumerName string) []Step {
 	return []Step{
 		{
 			action: downtimeSlashAction{
-				chain: chainID(consumerName),
-				// TODO: First validator cannot be brought down until this issue is resolved:
-				// https://github.com/cosmos/interchain-security/issues/263
+				chain:     chainID(consumerName),
 				validator: validatorID("bob"),
 			},
 			state: State{

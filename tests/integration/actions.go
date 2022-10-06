@@ -392,8 +392,9 @@ func (tr TestRun) startConsumerChain(
 	}
 
 	genesisChanges := ".app_state.ccvconsumer = " + string(bz)
-	if action.genesisChanges != "" {
-		genesisChanges = genesisChanges + " | " + action.genesisChanges
+	consumerGenesisChanges := tr.chainConfigs[action.consumerChain].genesisChanges
+	if consumerGenesisChanges != "" {
+		genesisChanges = genesisChanges + " | " + consumerGenesisChanges
 	}
 
 	tr.startChain(StartChainAction{

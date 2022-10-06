@@ -14,7 +14,7 @@ func concatSteps(steps ...[]Step) []Step {
 }
 
 var happyPathSteps = concatSteps(
-	stepsStartChains("consu", "", false),
+	stepsStartChains("consu", false),
 	stepsDelegate("consu"),
 	stepsUnbondRedelegate("consu"),
 	stepsDowntime("consu"),
@@ -22,7 +22,7 @@ var happyPathSteps = concatSteps(
 
 var democracySteps = concatSteps(
 	// democracySteps requires a transfer channel and overrides genesis
-	stepsStartChains("democ", ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"10\"", true),
+	stepsStartChains("democ", true),
 	stepsDelegate("democ"),
 	stepsDemocracy("democ"),
 )

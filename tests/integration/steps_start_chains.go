@@ -7,7 +7,7 @@ import (
 // starts provider and single consumer chain
 // * genesisParams overrides consumer genesis params
 // * setupTransferChan creates a transfer channel between provider and consumer
-func stepsStartChains(consumerName, consumerGenesisParams string, setupTransferChan bool) []Step {
+func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
 	s := []Step{
 		{
 			action: StartChainAction{
@@ -99,9 +99,9 @@ func stepsStartChains(consumerName, consumerGenesisParams string, setupTransferC
 		},
 		{
 			action: startConsumerChainAction{
-				consumerChain:  chainID(consumerName),
-				providerChain:  chainID("provi"),
-				genesisChanges: consumerGenesisParams,
+				consumerChain: chainID(consumerName),
+				providerChain: chainID("provi"),
+				// genesisChanges: consumerGenesisParams,
 				validators: []StartChainValidator{
 					{id: validatorID("carol"), stake: 500000000, allocation: 10000000000},
 					{id: validatorID("alice"), stake: 500000000, allocation: 10000000000},

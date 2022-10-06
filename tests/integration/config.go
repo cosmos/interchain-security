@@ -150,7 +150,8 @@ func DemocracyTestRun() TestRun {
 				binaryName:     "interchain-security-cdd",
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
+				genesisChanges: ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"10\" | " +
+					".app_state.gov.voting_params.voting_period = \"10s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
@@ -162,9 +163,9 @@ func DemocracyTestRun() TestRun {
 
 func (s *TestRun) SetLocalSDKPath(path string) {
 	if path != "" {
-		fmt.Println("USING LOCAL SDK", s.localSdkPath)
+		fmt.Println("USING LOCAL SDK", path)
 	}
-	s.localSdkPath = *localSdkPath
+	s.localSdkPath = path
 }
 
 // ValidateStringLiterals enforces that configs follow the constraints
