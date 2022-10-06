@@ -2,9 +2,12 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"reflect"
 	"sync"
@@ -43,7 +46,7 @@ func main() {
 }
 
 func (tr TestRun) runStep(step Step, verbose bool) {
-	fmt.Printf("%#v\n", step.action)
+	tr.logger.Printf("%#v\n", step.action)
 	switch action := step.action.(type) {
 	case StartChainAction:
 		tr.startChain(action, verbose)
@@ -84,7 +87,7 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 	case registerRepresentativeAction:
 		tr.registerRepresentative(action, verbose)
 	default:
-		log.Fatalf(fmt.Sprintf(`unknown action: %#v`, action))
+		tr.logger.Fatalf(fmt.Sprintf(`unknown action: %#v`, action))
 	}
 
 	modelState := step.state
@@ -92,17 +95,37 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
-		pretty.Print("actual state", actualState)
-		pretty.Print("model state", modelState)
-		log.Fatal(`actual state (-) not equal to model state (+): ` + pretty.Compare(actualState, modelState))
+		pretty.Fprint(tr.logger.Writer(), "actual state", actualState)
+		pretty.Fprint(tr.logger.Writer(), "model state", modelState)
+		// pretty.Print("model state", modelState)
+		tr.logger.Fatalf(`actual state (-) not equal to model state (+): %s` + pretty.Compare(actualState, modelState))
 	}
 
-	pretty.Print(actualState)
+	// pretty.Print(actualState)
+	buf, _ := json.Marshal(actualState)
+	tr.logger.Println(string(buf))
+	// pretty.Fprint(tr.logger.Writer(), actualState)
 }
 
 // Starts docker container and sequentially runs steps
 func (tr TestRun) ExecuteSteps(wg *sync.WaitGroup, name string, steps []Step) {
 	defer wg.Done()
+
+	// save logs to file
+	if _, err := os.Stat("./logs"); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir("./logs", os.ModePerm)
+		if !errors.Is(err, os.ErrExist) {
+			panic(fmt.Sprintf("could not create log dir: %s", err))
+		}
+	}
+	f, err := os.Create(fmt.Sprintf("./logs/%d_%s.log", time.Now().Unix(), tr.name))
+	if err != nil {
+		panic(fmt.Sprintf("could not create logfile: %s", err))
+	}
+	defer f.Close()
+
+	tr.logger = log.New(f, "", log.Ldate|log.Ltime)
+
 	fmt.Printf("============================================ start %s tests ============================================\n", name)
 
 	start := time.Now()
