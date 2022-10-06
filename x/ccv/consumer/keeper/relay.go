@@ -54,11 +54,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	}
 
 	// Save maturity time and packet
-	unbondingPeriod, found := k.GetUnbondingTime(ctx)
-	if !found {
-		panic("the unbonding period is not set on the consumer chain")
-	}
-	maturityTime := ctx.BlockTime().Add(unbondingPeriod)
+	maturityTime := ctx.BlockTime().Add(k.GetUnbondingPeriod(ctx))
 	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, uint64(maturityTime.UnixNano()))
 
 	// set height to VSC id mapping

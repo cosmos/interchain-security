@@ -15,8 +15,8 @@ const (
 	// the LastestTimestamp during which the submitted headers are valid for upgrade
 	DefaultTrustingPeriod = 3 * 7 * 24 * time.Hour
 
-	// DefaultUnbondingPeriod of the staking unbonding period
-	DefaultUnbondingPeriod = 4 * 7 * 24 * time.Hour
+	// Default unbonding period for the provider chain, typically more than consumers
+	DefaultProviderUnbondingPeriod = 4 * 7 * 24 * time.Hour
 
 	// DefaultMaxClockDrift defines how much new (untrusted) header's Time can drift into the future.
 	DefaultMaxClockDrift = 10 * time.Second
@@ -75,7 +75,7 @@ func validateTemplateClient(i interface{}) error {
 	// populate zeroed fields with valid fields
 	copiedClient.ChainId = "chainid"
 	copiedClient.TrustingPeriod = DefaultTrustingPeriod
-	copiedClient.UnbondingPeriod = DefaultUnbondingPeriod
+	copiedClient.UnbondingPeriod = DefaultProviderUnbondingPeriod
 	copiedClient.LatestHeight = clienttypes.NewHeight(0, 1)
 
 	if err := copiedClient.Validate(); err != nil {

@@ -50,7 +50,7 @@ func TestInitGenesis(t *testing.T) {
 	}
 
 	// create paramameters for a new chain
-	params := types.NewParams(true, types.DefaultBlocksPerDistributionTransmission, "", "")
+	params := types.NewParams(true, types.DefaultBlocksPerDistributionTransmission, "", "", types.DefaultConsumerUnbondingPeriod)
 
 	testCases := []struct {
 		name         string
@@ -73,9 +73,8 @@ func TestInitGenesis(t *testing.T) {
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
 				require.Equal(t, ccv.ConsumerPortID, ck.GetPort(ctx))
 
-				ubdTime, found := ck.GetUnbondingTime(ctx)
-				require.True(t, found)
-				require.Equal(t, gs.ProviderClientState.UnbondingPeriod, ubdTime)
+				ubdTime := ck.GetUnbondingPeriod(ctx)
+				require.Equal(t, consumertypes.DefaultConsumerUnbondingPeriod, ubdTime)
 
 				require.Zero(t, ck.GetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())))
 
@@ -89,7 +88,6 @@ func TestInitGenesis(t *testing.T) {
 				gomock.InOrder(
 					expectGetCapabilityMock(ctx, mocks),
 					expectLatestConsensusStateMock(ctx, mocks, clientID, validator),
-					expectGetClientStateMock(ctx, mocks, "", clientID),
 				)
 			},
 			genesis: consumertypes.NewRestartGenesisState(clientID, channelID,
@@ -103,9 +101,8 @@ func TestInitGenesis(t *testing.T) {
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
 				require.Equal(t, ccv.ConsumerPortID, ck.GetPort(ctx))
 
-				ubdTime, found := ck.GetUnbondingTime(ctx)
-				require.True(t, found)
-				require.Equal(t, testutil.GetClientState("").UnbondingPeriod, ubdTime)
+				ubdTime := ck.GetUnbondingPeriod(ctx)
+				require.Equal(t, consumertypes.DefaultConsumerUnbondingPeriod, ubdTime)
 
 				// export states to genesis
 				require.Equal(t, matPacket.VscId, ck.GetHeightValsetUpdateID(ctx, uint64(0)))
@@ -152,7 +149,7 @@ func TestExportGenesis(t *testing.T) {
 		MaturityTime: uint64(time.Now().UnixNano()),
 	}
 
-	params := types.NewParams(true, types.DefaultBlocksPerDistributionTransmission, "", "")
+	params := types.NewParams(true, types.DefaultBlocksPerDistributionTransmission, "", "", types.DefaultConsumerUnbondingPeriod)
 
 	// create a single validator
 	pubKey := ed25519.GenPrivKey().PubKey()

@@ -27,9 +27,6 @@ func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 	expectedChainID string, expectedLatestHeight clienttypes.Height) []*gomock.Call {
 
 	expectations := []*gomock.Call{
-		mocks.MockStakingKeeper.EXPECT().UnbondingTime(ctx).Return(time.Hour).Times(
-			1, // called once in CreateConsumerClient
-		),
 
 		mocks.MockClientKeeper.EXPECT().CreateClient(
 			ctx,

@@ -76,8 +76,7 @@ func (suite *CCVTestSuite) TestConsumerGenesis() {
 	providerChannel := suite.path.EndpointA.ChannelID
 	suite.Require().Equal(providerChannel, restartGenesis.ProviderChannelId)
 	maturityTime := suite.consumerChain.App.(*app.App).ConsumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 1)
-	unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.consumerCtx())
-	suite.Require().True(found)
+	unbondingPeriod := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingPeriod(suite.consumerCtx())
 	suite.Require().Equal(uint64(origTime.Add(unbondingPeriod).UnixNano()), maturityTime, "maturity time is not set correctly in genesis")
 
 	suite.Require().NotPanics(func() {

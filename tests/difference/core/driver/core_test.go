@@ -321,7 +321,7 @@ func (s *CoreSuite) TestAssumptions() {
 	stakeParams := s.providerStakingKeeper().GetParams(s.ctx(P))
 	s.Require().Equal(stakeParams.UnbondingTime, initState.UnbondingP)
 	// Consumer unbonding period is correct
-	s.Require().Equal(s.consumerKeeper().UnbondingTime(s.ctx(C)), initState.UnbondingC)
+	s.Require().Equal(s.consumerKeeper().GetUnbondingPeriod(s.ctx(C)), initState.UnbondingC)
 
 	// Each validator has signing info
 	for i := 0; i < len(initState.ValStates.Tokens); i++ {

@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -13,8 +15,11 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetBlocksPerDistributionTransmission(ctx),
 		k.GetDistributionTransmissionChannel(ctx),
 		k.GetProviderFeePoolAddrStr(ctx),
+		k.GetUnbondingPeriod(ctx),
 	)
 }
+
+// TODO: make sure consumer unbonding period is validated
 
 // SetParams sets the paramset for the consumer module
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
@@ -56,4 +61,10 @@ func (k Keeper) GetProviderFeePoolAddrStr(ctx sdk.Context) string {
 
 func (k Keeper) SetProviderFeePoolAddrStr(ctx sdk.Context, addr string) {
 	k.paramStore.Set(ctx, types.KeyProviderFeePoolAddrStr, addr)
+}
+
+func (k Keeper) GetUnbondingPeriod(ctx sdk.Context) time.Duration {
+	var period time.Duration
+	k.paramStore.Get(ctx, types.KeyConsumerUnbondingPeriod, &period)
+	return period
 }

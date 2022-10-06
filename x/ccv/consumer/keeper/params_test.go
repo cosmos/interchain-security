@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -14,12 +15,12 @@ func TestParams(t *testing.T) {
 	defer ctrl.Finish()
 	consumerKeeper.SetParams(ctx, types.DefaultParams())
 
-	expParams := types.NewParams(false, 1000, "", "") // these are the default params, IBC suite independently sets enabled=true
+	expParams := types.NewParams(false, 1000, "", "", 27*24*time.Hour) // these are the default params, IBC suite independently sets enabled=true
 
 	params := consumerKeeper.GetParams(ctx)
 	require.Equal(t, expParams, params)
 
-	newParams := types.NewParams(false, 1000, "abc", "def")
+	newParams := types.NewParams(false, 1000, "abc", "def", time.Hour)
 	consumerKeeper.SetParams(ctx, newParams)
 	params = consumerKeeper.GetParams(ctx)
 	require.Equal(t, newParams, params)

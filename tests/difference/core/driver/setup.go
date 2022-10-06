@@ -476,6 +476,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		1000, // ignore distribution
 		"",   // ignore distribution
 		"",   // ignore distribution
+		time.Hour,
 	)
 	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, consumertypes.SlashRequests{}, params)
 }
@@ -696,7 +697,9 @@ func (b *Builder) build() {
 	b.doIBCHandshake()
 
 	// Set the unbonding time on the consumer to the model value
-	b.consumerKeeper().SetUnbondingTime(b.ctx(C), b.initState.UnbondingC)
+	moduleParams := consumertypes.DefaultParams()
+	moduleParams.UnbondingPeriod = b.initState.UnbondingC
+	b.consumerKeeper().SetParams(b.ctx(C), moduleParams)
 
 	// Send an empty VSC packet from the provider to the consumer to finish
 	// the handshake. This is necessary because the model starts from a

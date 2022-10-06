@@ -53,8 +53,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHei
 		return nil
 	}
 
-	// Use the unbonding period on the provider to compute the unbonding period on the consumer
-	unbondingPeriod := utils.ComputeConsumerUnbondingPeriod(k.stakingKeeper.UnbondingTime(ctx))
+	unbondingPeriod := consumertypes.DefaultConsumerUnbondingPeriod // TODO: Take value from consumer addition prop
 
 	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
 	clientState := k.GetTemplateClient(ctx)

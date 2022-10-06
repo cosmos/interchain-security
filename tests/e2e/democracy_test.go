@@ -95,7 +95,7 @@ func (s *ConsumerDemocracyTestSuite) SetupTest() {
 	providerUnbondingPeriod := s.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(s.providerCtx())
 	s.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = providerUnbondingPeriod
 	s.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / utils.TrustingPeriodFraction
-	consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
+	consumerUnbondingPeriod := consumertypes.DefaultConsumerUnbondingPeriod
 	s.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
 	s.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
 	// - channel config

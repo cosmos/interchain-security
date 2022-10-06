@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
@@ -215,9 +216,8 @@ func relayAllCommittedPackets(
 func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	// Get unboding period from staking keeper
 	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
-	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
-	s.Require().True(found)
-	expectedUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
+	consumerUnbondingPeriod := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingPeriod(s.consumerCtx())
+	expectedUnbondingPeriod := consumertypes.DefaultConsumerUnbondingPeriod
 	s.Require().Equal(expectedUnbondingPeriod+24*time.Hour, providerUnbondingPeriod, "unexpected provider unbonding period")
 	s.Require().Equal(expectedUnbondingPeriod, consumerUnbondingPeriod, "unexpected consumer unbonding period")
 	var jumpPeriod time.Duration
@@ -331,8 +331,7 @@ func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.Sla
 // incrementTimeBy increments the overall time by jumpPeriod
 func incrementTimeBy(s *CCVTestSuite, jumpPeriod time.Duration) {
 	// Get unboding period from staking keeper
-	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerChain.GetContext())
-	s.Require().True(found)
+	consumerUnbondingPeriod := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingPeriod(s.consumerChain.GetContext())
 	split := 1
 	if jumpPeriod > consumerUnbondingPeriod/utils.TrustingPeriodFraction {
 		// Make sure the clients do not expire
