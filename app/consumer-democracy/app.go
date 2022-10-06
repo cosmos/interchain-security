@@ -90,9 +90,10 @@ import (
 	ccvstakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ccvstaking "github.com/cosmos/interchain-security/x/ccv/democracy/staking"
 
-	ccvgov "github.com/cosmos/cosmos-sdk/x/gov"
+	gov "github.com/cosmos/cosmos-sdk/x/gov"
 	ccvgovkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	ccvgovtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	ccvgov "github.com/cosmos/interchain-security/x/ccv/democracy/governance"
 
 	// add mint
 	ccvmint "github.com/cosmos/cosmos-sdk/x/mint"
@@ -129,7 +130,7 @@ var (
 		ccvstaking.AppModuleBasic{},
 		ccvmint.AppModuleBasic{},
 		ccvdistr.AppModuleBasic{},
-		ccvgov.NewAppModuleBasic(
+		gov.NewAppModuleBasic(
 			// TODO: eventually remove upgrade proposal handler and cancel proposal handler
 			paramsclient.ProposalHandler, ccvdistrclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
 		),
@@ -477,7 +478,7 @@ func New(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
-		ccvgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
+		ccvgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, IsProposalWhitelisted),
 		ccvmint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.ConsumerKeeper),
 		ccvdistr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, authtypes.FeeCollectorName),
@@ -580,7 +581,7 @@ func New(
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
-		ccvgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
+		ccvgov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper, IsProposalWhitelisted),
 		ccvmint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
 		ccvstaking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		ccvdistr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, authtypes.FeeCollectorName),

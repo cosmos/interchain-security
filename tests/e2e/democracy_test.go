@@ -2,7 +2,10 @@ package e2e_test
 
 import (
 	"bytes"
+	"fmt"
+	"strconv"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
@@ -11,6 +14,13 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
@@ -251,6 +261,109 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
 		powerFraction := sdk.NewDecFromInt(representativeTokens).QuoTruncate(sdk.NewDecFromInt(totalRepresentativePower))
 		s.Require().Equal(powerFraction, representativeDifference[key].Quo(consumerRedistributeDifference.Sub(communityPoolDifference)))
 	}
+}
+
+func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
+	govKeeper := s.consumerChain.App.(*appConsumer.App).GovKeeper
+	stakingKeeper := s.consumerChain.App.(*appConsumer.App).StakingKeeper
+	bankKeeper := s.consumerChain.App.(*appConsumer.App).BankKeeper
+	authKeeper := s.consumerChain.App.(*appConsumer.App).AccountKeeper
+	mintKeeper := s.consumerChain.App.(*appConsumer.App).MintKeeper
+	newAuthParamValue := uint64(128)
+	newMintParamValue := sdk.NewDecWithPrec(1, 1) // "0.100000000000000000"
+	allowedChange := proposal.ParamChange{Subspace: minttypes.ModuleName, Key: "InflationMax", Value: fmt.Sprintf("\"%s\"", newMintParamValue)}
+	forbiddenChange := proposal.ParamChange{Subspace: authtypes.ModuleName, Key: "MaxMemoCharacters", Value: fmt.Sprintf("\"%s\"", strconv.FormatUint(newAuthParamValue, 10))}
+	votingAccounts := s.consumerChain.SenderAccounts
+	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
+	depositAmount := govKeeper.GetDepositParams(s.consumerCtx()).MinDeposit
+	votingParams := govKeeper.GetVotingParams(s.consumerCtx())
+	votingParams.VotingPeriod = 3 * time.Second
+	govKeeper.SetVotingParams(s.consumerCtx(), votingParams)
+	s.consumerChain.NextBlock()
+	votersOldBalances := getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts)
+
+	//submit proposal with forbidden and allowed changes
+	paramChange := proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{allowedChange, forbiddenChange}}
+	err := submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, depositAmount)
+	s.Assert().NoError(err)
+	//set current header time to be equal or later than voting end time in order to process proposal from active queue,
+	//once the proposal is added to the chain
+	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(votingParams.VotingPeriod)
+	s.consumerChain.NextBlock()
+	//at this moment, proposal is added, but not yet executed. we are saving old param values for comparison
+	oldAuthParamValue := authKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
+	oldMintParamValue := mintKeeper.GetParams(s.consumerCtx()).InflationMax
+	s.consumerChain.NextBlock()
+	//at this moment, proposal is executed or deleted if forbidden
+	currentAuthParamValue := authKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
+	currentMintParamValue := mintKeeper.GetParams(s.consumerCtx()).InflationMax
+	//check that parameters are not changed, since the proposal contained both forbidden and allowed changes
+	s.Assert().Equal(oldAuthParamValue, currentAuthParamValue)
+	s.Assert().NotEqual(newAuthParamValue, currentAuthParamValue)
+	s.Assert().Equal(oldMintParamValue, currentMintParamValue)
+	s.Assert().NotEqual(newMintParamValue, currentMintParamValue)
+	//deposit is refunded
+	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
+
+	//submit proposal with allowed changes
+	paramChange = proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{allowedChange}}
+	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, depositAmount)
+	s.Assert().NoError(err)
+	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(votingParams.VotingPeriod)
+	s.consumerChain.NextBlock()
+	oldMintParamValue = mintKeeper.GetParams(s.consumerCtx()).InflationMax
+	s.consumerChain.NextBlock()
+	currentMintParamValue = mintKeeper.GetParams(s.consumerCtx()).InflationMax
+	//check that parameters are changed, since the proposal contained only allowed changes
+	s.Assert().Equal(newMintParamValue, currentMintParamValue)
+	s.Assert().NotEqual(oldMintParamValue, currentMintParamValue)
+	//deposit is refunded
+	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
+
+	//submit proposal with forbidden changes
+	paramChange = proposaltypes.ParameterChangeProposal{Changes: []proposaltypes.ParamChange{forbiddenChange}}
+	err = submitProposalWithDepositAndVote(govKeeper, s.consumerCtx(), paramChange, votingAccounts, depositAmount)
+	s.Assert().NoError(err)
+	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(votingParams.VotingPeriod)
+	s.consumerChain.NextBlock()
+	oldAuthParamValue = authKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
+	s.consumerChain.NextBlock()
+	currentAuthParamValue = authKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
+	//check that parameters are not changed, since the proposal contained forbidden changes
+	s.Assert().Equal(oldAuthParamValue, currentAuthParamValue)
+	s.Assert().NotEqual(newAuthParamValue, currentAuthParamValue)
+	//deposit is refunded
+	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
+}
+
+func submitProposalWithDepositAndVote(govKeeper govkeeper.Keeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
+	accounts []ibctesting.SenderAccount, depositAmount sdk.Coins) error {
+	proposal, err := govKeeper.SubmitProposal(ctx, &paramChange)
+	if err != nil {
+		return err
+	}
+	_, err = govKeeper.AddDeposit(ctx, proposal.ProposalId, accounts[0].SenderAccount.GetAddress(), depositAmount) //proposal becomes active
+	if err != nil {
+		return err
+	}
+
+	for _, account := range accounts {
+		err = govKeeper.AddVote(ctx, proposal.ProposalId, account.SenderAccount.GetAddress(), govtypes.NewNonSplitVoteOption(govtypes.OptionYes))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getAccountsBalances(ctx sdk.Context, bankKeeper bankkeeper.Keeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]sdk.Int {
+	accountsBalances := map[string]sdk.Int{}
+	for _, acc := range accounts {
+		accountsBalances[string(acc.SenderAccount.GetAddress())] =
+			bankKeeper.GetBalance(ctx, acc.SenderAccount.GetAddress(), bondDenom).Amount
+	}
+
+	return accountsBalances
 }
 
 func (s *ConsumerDemocracyTestSuite) providerCtx() sdk.Context {
