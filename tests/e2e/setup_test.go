@@ -1,10 +1,12 @@
 package e2e_test
 
 import (
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-
 	"bytes"
 	"testing"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
@@ -15,9 +17,11 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	appconsumerdemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 
+	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/stretchr/testify/suite"
@@ -40,6 +44,24 @@ func TestCCVTestSuite(t *testing.T) {
 
 func (suite *CCVTestSuite) SetupTest() {
 	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
+	CommonSetup(suite, false)
+}
+
+// Interface for democracy suite to use CommonSetup
+type consumerKeeper interface {
+	InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) []abci.ValidatorUpdate
+	GetProviderClientID(ctx sdk.Context) (string, bool)
+}
+
+// CommonSetup sets up a test suite, with the option to cast the consumer keeper to a democracy consumer
+func CommonSetup(suite *CCVTestSuite, isDemocracyTest bool) {
+
+	var consumerKeeper consumerKeeper
+	if isDemocracyTest {
+		consumerKeeper = suite.consumerChain.App.(*appconsumerdemocracy.App).ConsumerKeeper
+	} else {
+		consumerKeeper = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	}
 
 	// valsets must match
 	providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
@@ -72,7 +94,7 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.consumerChain.ChainID,
 	)
 	suite.Require().True(found, "consumer genesis not found")
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
+	consumerKeeper.InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
 	suite.providerClient = consumerGenesis.ProviderClientState
 	suite.providerConsState = consumerGenesis.ProviderConsensusState
 
@@ -89,7 +111,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.Require().True(found, "consumer client not found")
 	suite.path.EndpointB.ClientID = consumerClient
 	// - set consumer endpoint's clientID
-	providerClient, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
+	providerClient, found := consumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
 	suite.Require().True(found, "provider client not found")
 	suite.path.EndpointA.ClientID = providerClient
 	// - client config
