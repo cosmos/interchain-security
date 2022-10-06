@@ -15,7 +15,7 @@ func TestParams(t *testing.T) {
 	defer ctrl.Finish()
 	consumerKeeper.SetParams(ctx, types.DefaultParams())
 
-	expParams := types.NewParams(false, 1000, "", "", 27*24*time.Hour) // these are the default params, IBC suite independently sets enabled=true
+	expParams := types.NewParams(false, 1000, "", "", 20*24*time.Hour) // these are the default params, IBC suite independently sets enabled=true
 
 	params := consumerKeeper.GetParams(ctx)
 	require.Equal(t, expParams, params)

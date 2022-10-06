@@ -217,9 +217,9 @@ func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	// Get unboding period from staking keeper
 	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
 	consumerUnbondingPeriod := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingPeriod(s.consumerCtx())
-	expectedUnbondingPeriod := consumertypes.DefaultConsumerUnbondingPeriod
-	s.Require().Equal(expectedUnbondingPeriod+24*time.Hour, providerUnbondingPeriod, "unexpected provider unbonding period")
-	s.Require().Equal(expectedUnbondingPeriod, consumerUnbondingPeriod, "unexpected consumer unbonding period")
+	expectedConsumerUnbondingPeriod := consumertypes.DefaultConsumerUnbondingPeriod
+	s.Require().Equal(expectedConsumerUnbondingPeriod+24*time.Hour, providerUnbondingPeriod, "unexpected provider unbonding period")
+	s.Require().Equal(expectedConsumerUnbondingPeriod, consumerUnbondingPeriod, "unexpected consumer unbonding period")
 	var jumpPeriod time.Duration
 	if chainType == Provider {
 		jumpPeriod = providerUnbondingPeriod

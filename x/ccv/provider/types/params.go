@@ -5,6 +5,7 @@ import (
 	"time"
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
@@ -12,11 +13,15 @@ import (
 
 const (
 	// DefaultTrustingPeriod is duration of the period since
-	// the LastestTimestamp during which the submitted headers are valid for upgrade
-	DefaultTrustingPeriod = 3 * 7 * 24 * time.Hour
+	// the LastestTimestamp during which the submitted headers are valid for upgrade.
+	// Trusting period must be less than unbonding period.
+	DefaultTrustingPeriod = 2 * 7 * 24 * time.Hour
 
-	// Default unbonding period for the provider chain, typically more than consumers
-	DefaultProviderUnbondingPeriod = 4 * 7 * 24 * time.Hour
+	// Default unbonding period for the provider chain is inherited from staking module default,
+	// this value should be larger than the consumer unbonding period
+	// Note: It's needed to use the staking module default since e2e tests do not have
+	// a way to easily set the unbonding period from the staking module.
+	DefaultProviderUnbondingPeriod = stakingtypes.DefaultUnbondingTime
 
 	// DefaultMaxClockDrift defines how much new (untrusted) header's Time can drift into the future.
 	DefaultMaxClockDrift = 10 * time.Second

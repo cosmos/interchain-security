@@ -5,14 +5,15 @@ import (
 	"time"
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 const (
 	// about 2 hr at 7.6 seconds per blocks
 	DefaultBlocksPerDistributionTransmission = 1000
 	// In general, the unbonding period on the consumer is one day less
-	// than the unbonding period on the provider. By default: 4 weeks minus 1 day.
-	DefaultConsumerUnbondingPeriod = 27 * 24 * time.Hour
+	// than the unbonding period on the provider. By default: 3 weeks minus 1 day.
+	DefaultConsumerUnbondingPeriod = stakingtypes.DefaultUnbondingTime - 24*time.Hour
 )
 
 var (
