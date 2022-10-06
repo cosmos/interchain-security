@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	"time"
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -63,48 +62,16 @@ func (p Params) Validate() error {
 // ParamSetPairs implements params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, validateBool),
+		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, ccvtypes.ValidateBool),
 		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,
-			p.BlocksPerDistributionTransmission, validateInt64),
+			p.BlocksPerDistributionTransmission, ccvtypes.ValidateInt64),
 		paramtypes.NewParamSetPair(KeyDistributionTransmissionChannel,
-			p.DistributionTransmissionChannel, validateString),
+			p.DistributionTransmissionChannel, ccvtypes.ValidateString),
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
-			p.ProviderFeePoolAddrStr, validateString),
+			p.ProviderFeePoolAddrStr, ccvtypes.ValidateString),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod,
-			p.CcvTimeoutPeriod, ccvtypes.ValidateCCVTimeoutPeriod),
+			p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyTransferTimeoutPeriod,
-			p.TransferTimeoutPeriod, validateTransferTimeoutPeriod),
+			p.TransferTimeoutPeriod, ccvtypes.ValidateDuration),
 	}
-}
-
-func validateBool(i interface{}) error {
-	if _, ok := i.(bool); !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	return nil
-}
-
-func validateInt64(i interface{}) error {
-	if _, ok := i.(int64); !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	return nil
-}
-
-func validateString(i interface{}) error {
-	if _, ok := i.(string); !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	return nil
-}
-
-func validateTransferTimeoutPeriod(i interface{}) error {
-	period, ok := i.(time.Duration)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	if period <= time.Duration(0) {
-		return fmt.Errorf("ibc timeout period for transfers is not positive")
-	}
-	return nil
 }

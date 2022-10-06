@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
@@ -117,10 +118,10 @@ func CommonSetup(suite *CCVTestSuite, isDemocracyTest bool) {
 	// - client config
 	providerUnbondingPeriod := suite.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(suite.providerCtx())
 	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = providerUnbondingPeriod
-	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / utils.TrustingPeriodFraction
+	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / providertypes.DefaultTrustingPeriodFraction
 	consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
-	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
+	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / providertypes.DefaultTrustingPeriodFraction
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
 	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID

@@ -571,9 +571,9 @@ func TestPendingConsumerRemovalPropOrder(t *testing.T) {
 	}
 }
 
-// TestMakeConsumerGenesis tests the MakeConsumerGenesis keeper method
-//
-// Note: the initial intention of this test wasn't very clear, it was migrated with best effort
+// TestMakeConsumerGenesis tests the MakeConsumerGenesis keeper method.
+// An expected genesis state is hardcoded in json, unmarshaled, and compared
+// against an actual consumer genesis state constructed by a provider keeper.
 func TestMakeConsumerGenesis(t *testing.T) {
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
@@ -623,7 +623,10 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			AllowUpdateAfterExpiry:       true,
 			AllowUpdateAfterMisbehaviour: true,
 		},
-		CcvTimeoutPeriod: ccvtypes.DefaultCCVTimeoutPeriod,
+		// Note these are unused provider parameters for this test, and not actually asserted against
+		// They must be populated with reasonable values to satisfy SetParams though.
+		CcvTimeoutPeriod:       ccvtypes.DefaultCCVTimeoutPeriod,
+		TrustingPeriodFraction: providertypes.DefaultTrustingPeriodFraction,
 	}
 	providerKeeper.SetParams(ctx, moduleParams)
 	defer ctrl.Finish()
