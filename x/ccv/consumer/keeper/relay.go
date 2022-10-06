@@ -104,6 +104,7 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 				channelID,          // source channel id
 				ccv.ConsumerPortID, // source port id
 				packetData.GetBytes(),
+				k.GetParams(ctx).CcvTimeoutPeriod,
 			)
 			if err != nil {
 				return err
@@ -149,6 +150,7 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 		channelID,          // source channel id
 		ccv.ConsumerPortID, // source port id
 		packetData.GetBytes(),
+		k.GetParams(ctx).CcvTimeoutPeriod,
 	)
 	if err != nil {
 		panic(err)
@@ -185,6 +187,7 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 				channelID,          // source channel id
 				ccv.ConsumerPortID, // source port id
 				slashReq.Packet.GetBytes(),
+				k.GetParams(ctx).CcvTimeoutPeriod,
 			)
 			if err != nil {
 				panic(err)

@@ -64,7 +64,7 @@ func (s *CCVTestSuite) TestSendSlashPacketDowntime() {
 	oldBlockTime := s.consumerCtx().BlockTime()
 	slashFraction := int64(100)
 	packetData := types.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.Downtime)
-	timeout := uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
 		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
@@ -77,7 +77,7 @@ func (s *CCVTestSuite) TestSendSlashPacketDowntime() {
 
 	// save next VSC packet info
 	oldBlockTime = s.providerCtx().BlockTime()
-	timeout = uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	timeout = uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 	valsetUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the downtime packet on the provider chain;
@@ -184,7 +184,7 @@ func (s *CCVTestSuite) TestSendSlashPacketDoubleSign() {
 	oldBlockTime := s.consumerCtx().BlockTime()
 	packetData := types.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.DoubleSign)
 
-	timeout := uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
 		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
@@ -194,7 +194,7 @@ func (s *CCVTestSuite) TestSendSlashPacketDoubleSign() {
 
 	// save next VSC packet info
 	oldBlockTime = s.providerCtx().BlockTime()
-	timeout = uint64(types.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	timeout = uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 	valsetUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the downtime packet on the provider chain;

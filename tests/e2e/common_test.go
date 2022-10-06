@@ -293,7 +293,7 @@ func (suite *CCVTestSuite) SendEmptyVSCPacket() {
 	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
 
 	oldBlockTime := suite.providerChain.GetContext().BlockTime()
-	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 
 	valUpdateID := providerKeeper.GetValidatorSetUpdateId(suite.providerChain.GetContext())
 
@@ -320,7 +320,7 @@ func (suite *CCVTestSuite) SendEmptyVSCPacket() {
 // Note that it must be called before sending the embedding IBC packet.
 func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.SlashPacketData) []byte {
 	oldBlockTime := ctx.BlockTime()
-	timeout := uint64(ccv.GetTimeoutTimestamp(oldBlockTime).UnixNano())
+	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID, suite.path.EndpointA.ChannelID,
 		ccv.ProviderPortID, suite.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)

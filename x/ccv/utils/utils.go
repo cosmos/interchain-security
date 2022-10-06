@@ -52,6 +52,7 @@ func SendIBCPacket(
 	channelID string,
 	portID string,
 	packetData []byte,
+	timeoutPeriod time.Duration,
 ) error {
 	channel, ok := channelKeeper.GetChannel(ctx, portID, channelID)
 	if !ok {
@@ -74,7 +75,7 @@ func SendIBCPacket(
 		packetData, sequence,
 		portID, channelID,
 		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
-		clienttypes.Height{}, uint64(ccv.GetTimeoutTimestamp(ctx.BlockTime()).UnixNano()),
+		clienttypes.Height{}, uint64(ctx.BlockTime().Add(timeoutPeriod).UnixNano()),
 	)
 	return channelKeeper.SendPacket(ctx, channelCap, packet)
 }

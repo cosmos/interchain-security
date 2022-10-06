@@ -6,6 +6,7 @@ import (
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 const (
@@ -16,6 +17,7 @@ const (
 	DefaultConsumerUnbondingPeriod = stakingtypes.DefaultUnbondingTime - 24*time.Hour
 )
 
+// Reflection based keys for params subspace
 var (
 	KeyEnabled                           = []byte("Enabled")
 	KeyBlocksPerDistributionTransmission = []byte("BlocksPerDistributionTransmission")
@@ -32,12 +34,13 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates new consumer parameters with provided arguments
 func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
-	unbondingPeriod time.Duration) Params {
+	ccvTimeoutPeriod time.Duration, unbondingPeriod time.Duration) Params {
 	return Params{
 		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
 		DistributionTransmissionChannel:   distributionTransmissionChannel,
 		ProviderFeePoolAddrStr:            providerFeePoolAddrStr,
+		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
 		UnbondingPeriod:                   unbondingPeriod,
 	}
 }
@@ -49,6 +52,7 @@ func DefaultParams() Params {
 		DefaultBlocksPerDistributionTransmission,
 		"",
 		"",
+		ccvtypes.DefaultCCVTimeoutPeriod,
 		DefaultConsumerUnbondingPeriod,
 	)
 }
@@ -68,6 +72,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.DistributionTransmissionChannel, validateString),
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
 			p.ProviderFeePoolAddrStr, validateString),
+		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod,
+			p.CcvTimeoutPeriod, ccvtypes.ValidateCCVTimeoutPeriod),
 		paramtypes.NewParamSetPair(KeyConsumerUnbondingPeriod,
 			p.UnbondingPeriod, validateUnbondingPeriod),
 	}
