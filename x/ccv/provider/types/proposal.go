@@ -24,15 +24,18 @@ func init() {
 }
 
 // NewConsumerAdditionProposal creates a new consumer addition proposal.
-func NewConsumerAdditionProposal(title, description, chainID string, initialHeight clienttypes.Height, genesisHash, binaryHash []byte, spawnTime time.Time) govtypes.Content {
+func NewConsumerAdditionProposal(title, description, chainID string,
+	initialHeight clienttypes.Height, genesisHash, binaryHash []byte,
+	spawnTime time.Time, consumerUnbondingPeriod time.Duration) govtypes.Content {
 	return &ConsumerAdditionProposal{
-		Title:         title,
-		Description:   description,
-		ChainId:       chainID,
-		InitialHeight: initialHeight,
-		GenesisHash:   genesisHash,
-		BinaryHash:    binaryHash,
-		SpawnTime:     spawnTime,
+		Title:                   title,
+		Description:             description,
+		ChainId:                 chainID,
+		InitialHeight:           initialHeight,
+		GenesisHash:             genesisHash,
+		BinaryHash:              binaryHash,
+		SpawnTime:               spawnTime,
+		ConsumerUnbondingPeriod: consumerUnbondingPeriod,
 	}
 }
 

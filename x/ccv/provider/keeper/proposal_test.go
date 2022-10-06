@@ -55,6 +55,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				[]byte("gen_hash"),
 				[]byte("bin_hash"),
 				now, // Spawn time
+				consumertypes.DefaultConsumerUnbondingPeriod,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:        hourFromNow,
 			expCreatedClient: true,
@@ -70,6 +71,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				[]byte("gen_hash"),
 				[]byte("bin_hash"),
 				hourFromNow, // Spawn time
+				consumertypes.DefaultConsumerUnbondingPeriod,
 			).(*types.ConsumerAdditionProposal),
 			blockTime:        now,
 			expCreatedClient: false,
@@ -672,13 +674,13 @@ func TestBeginBlockInit(t *testing.T) {
 	pendingProps := []*providertypes.ConsumerAdditionProposal{
 		providertypes.NewConsumerAdditionProposal(
 			"title", "description", "chain1", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.Add(-time.Hour).UTC()).(*providertypes.ConsumerAdditionProposal),
+			now.Add(-time.Hour).UTC(), consumertypes.DefaultConsumerUnbondingPeriod).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "description", "chain2", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.UTC()).(*providertypes.ConsumerAdditionProposal),
+			now.UTC(), consumertypes.DefaultConsumerUnbondingPeriod).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "description", "chain3", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.Add(time.Hour).UTC()).(*providertypes.ConsumerAdditionProposal),
+			now.Add(time.Hour).UTC(), consumertypes.DefaultConsumerUnbondingPeriod).(*providertypes.ConsumerAdditionProposal),
 	}
 
 	gomock.InOrder(

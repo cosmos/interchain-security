@@ -51,6 +51,7 @@ Where proposal.json contains:
     "binary_hash": "YmluYXJ5IGhhc2g=",
     "spawn_time": "2022-01-27T15:59:50.121607-08:00",
     "deposit": "10000stake"
+	"consumer_unbonding_period": 1728000000000000,
 }
 		`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -66,7 +67,7 @@ Where proposal.json contains:
 
 			content := types.NewConsumerAdditionProposal(
 				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
-				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime)
+				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime, proposal.ConsumerUnbondingPeriod)
 
 			from := clientCtx.GetFromAddress()
 
@@ -86,28 +87,30 @@ Where proposal.json contains:
 }
 
 type ConsumerAdditionProposalJSON struct {
-	Title         string             `json:"title"`
-	Description   string             `json:"description"`
-	ChainId       string             `json:"chain_id"`
-	InitialHeight clienttypes.Height `json:"initial_height"`
-	GenesisHash   []byte             `json:"genesis_hash"`
-	BinaryHash    []byte             `json:"binary_hash"`
-	SpawnTime     time.Time          `json:"spawn_time"`
-	Deposit       string             `json:"deposit"`
+	Title                   string             `json:"title"`
+	Description             string             `json:"description"`
+	ChainId                 string             `json:"chain_id"`
+	InitialHeight           clienttypes.Height `json:"initial_height"`
+	GenesisHash             []byte             `json:"genesis_hash"`
+	BinaryHash              []byte             `json:"binary_hash"`
+	SpawnTime               time.Time          `json:"spawn_time"`
+	Deposit                 string             `json:"deposit"`
+	ConsumerUnbondingPeriod time.Duration      `json:"consumer_unbonding_period"`
 }
 
 type ConsumerAdditionProposalReq struct {
 	BaseReq  rest.BaseReq   `json:"base_req"`
 	Proposer sdk.AccAddress `json:"proposer"`
 
-	Title         string             `json:"title"`
-	Description   string             `json:"description"`
-	ChainId       string             `json:"chainId"`
-	InitialHeight clienttypes.Height `json:"initialHeight"`
-	GenesisHash   []byte             `json:"genesisHash"`
-	BinaryHash    []byte             `json:"binaryHash"`
-	SpawnTime     time.Time          `json:"spawnTime"`
-	Deposit       sdk.Coins          `json:"deposit"`
+	Title                   string             `json:"title"`
+	Description             string             `json:"description"`
+	ChainId                 string             `json:"chainId"`
+	InitialHeight           clienttypes.Height `json:"initialHeight"`
+	GenesisHash             []byte             `json:"genesisHash"`
+	BinaryHash              []byte             `json:"binaryHash"`
+	SpawnTime               time.Time          `json:"spawnTime"`
+	Deposit                 sdk.Coins          `json:"deposit"`
+	ConsumerUnbondingPeriod time.Duration      `json:"consumer_unbonding_period"`
 }
 
 func ParseConsumerAdditionProposalJSON(proposalFile string) (ConsumerAdditionProposalJSON, error) {
@@ -148,7 +151,7 @@ func postProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
 
 		content := types.NewConsumerAdditionProposal(
 			req.Title, req.Description, req.ChainId, req.InitialHeight,
-			req.GenesisHash, req.BinaryHash, req.SpawnTime)
+			req.GenesisHash, req.BinaryHash, req.SpawnTime, req.ConsumerUnbondingPeriod)
 
 		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
 		if rest.CheckBadRequestError(w, err) {

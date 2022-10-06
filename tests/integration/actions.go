@@ -12,6 +12,7 @@ import (
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/client"
 )
 
@@ -199,14 +200,15 @@ func (tr TestRun) submitConsumerAdditionProposal(
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
 	prop := client.ConsumerAdditionProposalJSON{
-		Title:         "Propose the addition of a new chain",
-		Description:   "Gonna be a great chain",
-		ChainId:       string(tr.chainConfigs[action.consumerChain].chainId),
-		InitialHeight: action.initialHeight,
-		GenesisHash:   []byte("gen_hash"),
-		BinaryHash:    []byte("bin_hash"),
-		SpawnTime:     spawnTime,
-		Deposit:       fmt.Sprint(action.deposit) + `stake`,
+		Title:                   "Propose the addition of a new chain",
+		Description:             "Gonna be a great chain",
+		ChainId:                 string(tr.chainConfigs[action.consumerChain].chainId),
+		InitialHeight:           action.initialHeight,
+		GenesisHash:             []byte("gen_hash"),
+		BinaryHash:              []byte("bin_hash"),
+		SpawnTime:               spawnTime,
+		Deposit:                 fmt.Sprint(action.deposit) + `stake`,
+		ConsumerUnbondingPeriod: consumertypes.DefaultConsumerUnbondingPeriod,
 	}
 
 	bz, err := json.Marshal(prop)

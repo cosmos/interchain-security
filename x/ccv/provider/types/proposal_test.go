@@ -27,45 +27,47 @@ func TestValidateBasic(t *testing.T) {
 	}{
 		{
 			"success",
-			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now()),
+			types.NewConsumerAdditionProposal("title", "description", "chainID",
+				initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
+				24*7*3*time.Hour),
 			true,
 		},
 		{
 			"fails validate abstract - empty title",
-			types.NewConsumerAdditionProposal(" ", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now()),
+			types.NewConsumerAdditionProposal(" ", "description", "chainID",
+				initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
+				24*7*3*time.Hour),
 			false,
 		},
 		{
 			"chainID is empty",
-			types.NewConsumerAdditionProposal("title", "description", " ", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now()),
+			types.NewConsumerAdditionProposal("title", "description", " ", initialHeight,
+				[]byte("gen_hash"), []byte("bin_hash"), time.Now(), 24*7*3*time.Hour),
 			false,
 		},
 		{
 			"initial height is zero",
-			&types.ConsumerAdditionProposal{
-				Title:         "title",
-				Description:   "description",
-				ChainId:       "chainID",
-				InitialHeight: clienttypes.Height{},
-				GenesisHash:   []byte("gen_hash"),
-				BinaryHash:    []byte("bin_hash"),
-				SpawnTime:     time.Now(),
-			},
+			types.NewConsumerAdditionProposal("title", "description", "chainID",
+				clienttypes.Height{0, 0}, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
+				24*7*3*time.Hour),
 			false,
 		},
 		{
 			"genesis hash is empty",
-			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte(""), []byte("bin_hash"), time.Now()),
+			types.NewConsumerAdditionProposal("title", "description", "chainID",
+				initialHeight, []byte(""), []byte("bin_hash"), time.Now(), 24*7*3*time.Hour),
 			false,
 		},
 		{
 			"binary hash is empty",
-			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte(""), time.Now()),
+			types.NewConsumerAdditionProposal("title", "description", "chainID",
+				initialHeight, []byte("gen_hash"), []byte(""), time.Now(), 24*7*3*time.Hour),
 			false,
 		},
 		{
 			"time is zero",
-			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Time{}),
+			types.NewConsumerAdditionProposal("title", "description", "chainID",
+				initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Time{}, 24*7*3*time.Hour),
 			false,
 		},
 	}
@@ -82,7 +84,9 @@ func TestValidateBasic(t *testing.T) {
 }
 
 func TestMarshalConsumerAdditionProposal(t *testing.T) {
-	content := types.NewConsumerAdditionProposal("title", "description", "chainID", clienttypes.NewHeight(0, 1), []byte("gen_hash"), []byte("bin_hash"), time.Now().UTC())
+	content := types.NewConsumerAdditionProposal("title", "description", "chainID",
+		clienttypes.NewHeight(0, 1), []byte("gen_hash"), []byte("bin_hash"),
+		time.Now().UTC(), 24*7*3*time.Hour)
 
 	cccp, ok := content.(*types.ConsumerAdditionProposal)
 	require.True(t, ok)
@@ -110,7 +114,8 @@ func TestMarshalConsumerAdditionProposal(t *testing.T) {
 func TestConsumerAdditionProposalString(t *testing.T) {
 	initialHeight := clienttypes.NewHeight(2, 3)
 	spawnTime := time.Now()
-	proposal := types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), spawnTime)
+	proposal := types.NewConsumerAdditionProposal("title", "description", "chainID",
+		initialHeight, []byte("gen_hash"), []byte("bin_hash"), spawnTime, 24*7*3*time.Hour)
 
 	expect := fmt.Sprintf(`CreateConsumerChain Proposal
 	Title: title
