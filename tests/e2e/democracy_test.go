@@ -32,7 +32,7 @@ type ConsumerDemocracyTestSuite struct {
 	suite.Suite
 }
 
-// SetupTest is a shim for the democracy suite to use code for the ccv suite
+// SetupTest is a shim for the democracy suite to share setup code with the ccv suite
 func (democSuite *ConsumerDemocracyTestSuite) SetupTest() {
 	ccvSuite := CCVTestSuite{}
 	ccvSuite.SetT(democSuite.T())
