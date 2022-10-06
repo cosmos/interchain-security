@@ -16,7 +16,7 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-var verbose = false
+var verbose = flag.Bool("verbose", false, "turn verbose logging on/off")
 var localSdkPath = flag.String("local-sdk-path", "",
 	"path of a local sdk version to build and reference in integration tests")
 
@@ -132,7 +132,7 @@ func (tr TestRun) ExecuteSteps(wg *sync.WaitGroup, name string, steps []Step) {
 	tr.startDocker()
 
 	for _, step := range steps {
-		tr.runStep(step, verbose)
+		tr.runStep(step, *verbose)
 	}
 
 	fmt.Printf("\n\ntime elapsed for %s: %v\n", name, time.Since(start))
@@ -162,7 +162,7 @@ func (tr TestRun) startDocker() {
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		if verbose {
+		if verbose != nil && *verbose {
 			fmt.Println("startDocker: " + out)
 		}
 		if out == "beacon!!!!!!!!!!" {
