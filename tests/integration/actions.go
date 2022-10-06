@@ -361,10 +361,9 @@ func (tr TestRun) voteGovProposal(
 }
 
 type startConsumerChainAction struct {
-	consumerChain  chainID
-	providerChain  chainID
-	genesisChanges string
-	validators     []StartChainValidator
+	consumerChain chainID
+	providerChain chainID
+	validators    []StartChainValidator
 }
 
 func (tr TestRun) startConsumerChain(
