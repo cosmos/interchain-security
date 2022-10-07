@@ -46,8 +46,8 @@ IBC packets:
 | 2.01 | Create IBC clients | `Scheduled` (ibc-go team) | `Done` (TODO: link) | `??` | `Future work` | `Scheduled` | 
 | 2.02 | Create CCV channel (handshake) | `Scheduled` (ibc-go team) | `Done` [provider](../x/ccv/provider/ibc_module_test.go) and [consumer](../x/ccv/consumer/ibc_module_test.go) | `NA` | `Future work` | `Scheduled` | 
 | 2.03 | Sending IBC packets <br /> - see `x/ccv/utils/utils.go:SendIBCPacket()` | `Scheduled` (ibc-go team) | `??` | `Done` (TODO: link) | `Done` | `Scheduled` |
-| 2.04 | Handling acknowledgments | `Scheduled` (ibc-go team) | `Partial Coverage` (TODO: link) | `Partial coverage` (TODO: link) | `Scheduled` | `Scheduled` |
-| 2.05 | Handling timeouts | `Scheduled` (ibc-go team) | `??` |`??` | `Future work` | `Scheduled` |
+| 2.04 | Handling acknowledgments | `Scheduled` (ibc-go team) | `Partial Coverage` [need more coverage](https://github.com/cosmos/interchain-security/issues/362) | `Partial coverage` (TODO: link) | `Scheduled` | `Scheduled` |
+| 2.05 | Handling timeouts | `Scheduled` (ibc-go team) | [need more coverage](https://github.com/cosmos/interchain-security/issues/362) |`??` | `Future work` | `Scheduled` |
 | 2.06 | **Handling IBC client expiration** | `Scheduled` (ibc-go team) <br /> high priority | `??` | `??` | `Future work` | `Scheduled` |
 | 2.07 | ICS-20 channel creation | `Scheduled` (ibc-go team) | `??` | `??` |`Future work` | `Scheduled` | 
 | 2.08 | ICS-20 transfer | `Scheduled` (ibc-go team) | `??` | `??` | `NA` | `Scheduled` | 
