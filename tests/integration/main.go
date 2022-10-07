@@ -20,6 +20,9 @@ var verbose = flag.Bool("verbose", false, "turn verbose logging on/off")
 var localSdkPath = flag.String("local-sdk-path", "",
 	"path of a local sdk version to build and reference in integration tests")
 
+// runs integration tests
+// all docker containers are built sequentially to avoid race conditions when using local cosmos-sdk
+// after building docker containers, all tests are run in parallel using their respective docker containers
 func main() {
 	flag.Parse()
 
@@ -30,10 +33,12 @@ func main() {
 	tr := DefaultTestRun()
 	tr.SetLocalSDKPath(*localSdkPath)
 	tr.ValidateStringLiterals()
+	tr.startDocker()
 
 	dmc := DemocracyTestRun()
 	dmc.SetLocalSDKPath(*localSdkPath)
 	dmc.ValidateStringLiterals()
+	dmc.startDocker()
 
 	wg.Add(1)
 	go tr.ExecuteSteps(&wg, "default", happyPathSteps)
@@ -45,7 +50,7 @@ func main() {
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
 }
 
-func (tr TestRun) runStep(step Step, verbose bool) {
+func (tr *TestRun) runStep(step Step, verbose bool) {
 	tr.logger.Printf("%#v\n", step.action)
 	switch action := step.action.(type) {
 	case StartChainAction:
@@ -108,13 +113,13 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 }
 
 // Starts docker container and sequentially runs steps
-func (tr TestRun) ExecuteSteps(wg *sync.WaitGroup, name string, steps []Step) {
+func (tr *TestRun) ExecuteSteps(wg *sync.WaitGroup, name string, steps []Step) {
 	defer wg.Done()
 
 	// save logs to file
 	if _, err := os.Stat("./logs"); errors.Is(err, os.ErrNotExist) {
 		err := os.Mkdir("./logs", os.ModePerm)
-		if !errors.Is(err, os.ErrExist) {
+		if err != nil && !errors.Is(err, os.ErrExist) {
 			panic(fmt.Sprintf("could not create log dir: %s", err))
 		}
 	}
@@ -125,11 +130,9 @@ func (tr TestRun) ExecuteSteps(wg *sync.WaitGroup, name string, steps []Step) {
 	defer f.Close()
 
 	tr.logger = log.New(f, "", log.Ldate|log.Ltime)
-
 	fmt.Printf("============================================ start %s tests ============================================\n", name)
 
 	start := time.Now()
-	tr.startDocker()
 
 	for _, step := range steps {
 		tr.runStep(step, *verbose)
@@ -139,7 +142,7 @@ func (tr TestRun) ExecuteSteps(wg *sync.WaitGroup, name string, steps []Step) {
 	fmt.Printf("============================================ end %s tests ============================================\n", name)
 }
 
-func (tr TestRun) startDocker() {
+func (tr *TestRun) startDocker() {
 	scriptStr := "tests/integration/testnet-scripts/start-docker.sh " +
 		tr.containerConfig.containerName + " " +
 		tr.containerConfig.instanceName + " " +
