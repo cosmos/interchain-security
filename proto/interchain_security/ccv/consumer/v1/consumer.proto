@@ -37,6 +37,14 @@ message Params {
   // Sent transfer related IBC packets will timeout after this duration
   google.protobuf.Duration transfer_timeout_period = 6
       [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // The fraction of tokens allocated to the consumer redistribution address
+  // during distribution events. The fraction is a string representing a
+  // decimal number. For example "0.75" would represent 75%.
+  string consumer_redistribution_fraction = 7;
+
+  // The number of historical info entries to persist in store
+  int64 num_historial_entries = 8;
 }
 
 // LastTransmissionBlockHeight is the last time validator holding
