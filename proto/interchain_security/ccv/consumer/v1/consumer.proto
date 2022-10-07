@@ -44,7 +44,7 @@ message Params {
   string consumer_redistribution_fraction = 7;
 
   // The number of historical info entries to persist in store
-  int64 num_historial_entries = 8;
+  int64 num_historical_entries = 8;
 }
 
 // LastTransmissionBlockHeight is the last time validator holding

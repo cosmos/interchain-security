@@ -9,7 +9,7 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-// GetParams returns the paramset for the consumer module
+// GetParams returns the params for the consumer ccv module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.GetEnabled(ctx),
@@ -18,6 +18,8 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetProviderFeePoolAddrStr(ctx),
 		k.GetCCVTimeoutPeriod(ctx),
 		k.GetTransferTimeoutPeriod(ctx),
+		k.GetConsumerRedistributionFrac(ctx),
+		k.GetNumHistoricalEntries(ctx),
 	)
 }
 
@@ -75,4 +77,16 @@ func (k Keeper) GetTransferTimeoutPeriod(ctx sdk.Context) time.Duration {
 	var p time.Duration
 	k.paramStore.Get(ctx, types.KeyTransferTimeoutPeriod, &p)
 	return p
+}
+
+func (k Keeper) GetConsumerRedistributionFrac(ctx sdk.Context) string {
+	var str string
+	k.paramStore.Get(ctx, types.KeyConsumerRedistributionFrac, &str)
+	return str
+}
+
+func (k Keeper) GetNumHistoricalEntries(ctx sdk.Context) int64 {
+	var n int64
+	k.paramStore.Get(ctx, types.KeyNumHistoricalEntries, &n)
+	return n
 }

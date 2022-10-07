@@ -1,8 +1,10 @@
 package types
 
 import (
+	fmt "fmt"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
@@ -11,7 +13,16 @@ const (
 	// about 2 hr at 7.6 seconds per blocks
 	DefaultBlocksPerDistributionTransmission = 1000
 
-	DefaultTransferTimeoutPeriod = 1 * 7 * 24 * time.Hour // 1 week
+	// 1 week
+	DefaultTransferTimeoutPeriod = 1 * 7 * 24 * time.Hour
+
+	// The fraction of tokens allocated to the consumer redistribution address
+	// during distribution events. The fraction is a string representing a
+	// decimal number. For example "0.75" would represent 75%.
+	DefaultConsumerRedistributeFrac = "0.75"
+
+	// Default number of historical info entries to persist in store
+	DefaultNumHistoricalEntries = 10000
 )
 
 // Reflection based keys for params subspace
@@ -21,6 +32,8 @@ var (
 	KeyDistributionTransmissionChannel   = []byte("DistributionTransmissionChannel")
 	KeyProviderFeePoolAddrStr            = []byte("ProviderFeePoolAddrStr")
 	KeyTransferTimeoutPeriod             = []byte("TransferTimeoutPeriod")
+	KeyConsumerRedistributionFrac        = []byte("ConsumerRedistributionFraction")
+	KeyNumHistoricalEntries              = []byte("NumHistoricalEntries")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -31,7 +44,8 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates new consumer parameters with provided arguments
 func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
-	ccvTimeoutPeriod time.Duration, transferTimeoutPeriod time.Duration) Params {
+	ccvTimeoutPeriod time.Duration, transferTimeoutPeriod time.Duration,
+	consumerRedistributionFraction string, numHistoricalEntries int64) Params {
 	return Params{
 		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
@@ -39,6 +53,9 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		ProviderFeePoolAddrStr:            providerFeePoolAddrStr,
 		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
 		TransferTimeoutPeriod:             transferTimeoutPeriod,
+		// TODO: Find a way to make sure fraction is valid, or don't do that here?
+		ConsumerRedistributionFraction: consumerRedistributionFraction,
+		NumHistoricalEntries:           numHistoricalEntries,
 	}
 }
 
@@ -51,11 +68,32 @@ func DefaultParams() Params {
 		"",
 		ccvtypes.DefaultCCVTimeoutPeriod,
 		DefaultTransferTimeoutPeriod,
+		DefaultConsumerRedistributeFrac,
+		DefaultNumHistoricalEntries,
 	)
 }
 
+// TODO: Can this be removed?
 // Validate all ccv-consumer module parameters
 func (p Params) Validate() error {
+	return nil
+}
+
+func validateConsumerRedistributionFraction(i interface{}) error {
+	str, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	dec, err := sdk.NewDecFromStr(str)
+	if err != nil {
+		return err
+	}
+	if !dec.IsPositive() {
+		return fmt.Errorf("consumer redistribution fraction is not positive")
+	}
+	if dec.Sub(sdk.NewDec(1)).IsPositive() {
+		return fmt.Errorf("consumer redistribution fraction cannot be above 1.0")
+	}
 	return nil
 }
 
@@ -73,5 +111,9 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyTransferTimeoutPeriod,
 			p.TransferTimeoutPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(KeyConsumerRedistributionFrac,
+			p.ConsumerRedistributionFraction, validateConsumerRedistributionFraction),
+		paramtypes.NewParamSetPair(KeyNumHistoricalEntries,
+			p.NumHistoricalEntries, ccvtypes.ValidatePositiveInt64),
 	}
 }

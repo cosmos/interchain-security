@@ -12,11 +12,6 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-// The fraction of tokens allocated to the consumer redistribution address
-// during distribution events. The fraction is a string representing a
-// decimal number. For example "0.75" would represent 75%.
-const ConsumerRedistributeFrac = "0.75"
-
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
 func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
@@ -30,7 +25,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 
 	// split the fee pool, send the consumer's fraction to the consumer redistribution address
-	frac, err := sdk.NewDecFromStr(ConsumerRedistributeFrac)
+	frac, err := sdk.NewDecFromStr(k.GetConsumerRedistributionFrac(ctx))
 	if err != nil {
 		return err
 	}

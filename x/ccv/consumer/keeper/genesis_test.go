@@ -56,6 +56,8 @@ func TestInitGenesis(t *testing.T) {
 		"",
 		ccv.DefaultCCVTimeoutPeriod,
 		consumertypes.DefaultTransferTimeoutPeriod,
+		consumertypes.DefaultConsumerRedistributeFrac,
+		consumertypes.DefaultNumHistoricalEntries,
 	)
 
 	testCases := []struct {
@@ -165,6 +167,8 @@ func TestExportGenesis(t *testing.T) {
 		"",
 		ccv.DefaultCCVTimeoutPeriod,
 		consumertypes.DefaultTransferTimeoutPeriod,
+		consumertypes.DefaultConsumerRedistributeFrac,
+		consumertypes.DefaultNumHistoricalEntries,
 	)
 
 	// create a single validator

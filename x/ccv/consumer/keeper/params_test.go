@@ -24,12 +24,15 @@ func TestParams(t *testing.T) {
 		"",
 		ccv.DefaultCCVTimeoutPeriod,
 		consumertypes.DefaultTransferTimeoutPeriod,
+		consumertypes.DefaultConsumerRedistributeFrac,
+		consumertypes.DefaultNumHistoricalEntries,
 	) // these are the default params, IBC suite independently sets enabled=true
 
 	params := consumerKeeper.GetParams(ctx)
 	require.Equal(t, expParams, params)
 
-	newParams := types.NewParams(false, 1000, "abc", "def", 7*24*time.Hour, 25*time.Hour)
+	newParams := types.NewParams(
+		false, 1000, "abc", "def", 7*24*time.Hour, 25*time.Hour, "0.5", 500)
 	consumerKeeper.SetParams(ctx, newParams)
 	params = consumerKeeper.GetParams(ctx)
 	require.Equal(t, newParams, params)
