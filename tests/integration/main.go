@@ -2,44 +2,52 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"os/exec"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/kylelemons/godebug/pretty"
 )
 
-var verbose = false
+var verbose = flag.Bool("verbose", false, "turn verbose logging on/off")
+var localSdkPath = flag.String("local-sdk-path", "",
+	"path of a local sdk version to build and reference in integration tests")
 
+// runs integration tests
+// all docker containers are built sequentially to avoid race conditions when using local cosmos-sdk
+// after building docker containers, all tests are run in parallel using their respective docker containers
 func main() {
-	fmt.Println("============================================ start happy path tests ============================================")
+	flag.Parse()
+
+	// wg waits for all runners to complete
+	var wg sync.WaitGroup
+
 	start := time.Now()
 	tr := DefaultTestRun()
-	tr.ParseCLIFlags()
+	tr.SetLocalSDKPath(*localSdkPath)
 	tr.ValidateStringLiterals()
 	tr.startDocker()
 
-	for _, step := range happyPathSteps {
-		tr.runStep(step, verbose)
-	}
+	dmc := DemocracyTestRun()
+	dmc.SetLocalSDKPath(*localSdkPath)
+	dmc.ValidateStringLiterals()
+	dmc.startDocker()
 
-	fmt.Printf("happy path tests successful - time elapsed %v\n", time.Since(start))
+	wg.Add(1)
+	go tr.ExecuteSteps(&wg, happyPathSteps)
 
-	fmt.Println("============================================ start democracy tests ============================================")
-	start = time.Now()
-	tr.startDocker()
+	wg.Add(1)
+	go dmc.ExecuteSteps(&wg, democracySteps)
 
-	for _, step := range democracySteps {
-		tr.runStep(step, verbose)
-	}
-
-	fmt.Printf("democracy tests successful - time elapsed %v\n", time.Since(start))
+	wg.Wait()
+	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
 }
 
-func (tr TestRun) runStep(step Step, verbose bool) {
-	fmt.Printf("%#v\n", step.action)
+func (tr *TestRun) runStep(step Step, verbose bool) {
 	switch action := step.action.(type) {
 	case StartChainAction:
 		tr.startChain(action, verbose)
@@ -80,7 +88,7 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 	case registerRepresentativeAction:
 		tr.registerRepresentative(action, verbose)
 	default:
-		log.Fatalf(fmt.Sprintf(`unknown action: %#v`, action))
+		log.Fatalf(fmt.Sprintf(`unknown action in testRun %s: %#v`, tr.name, action))
 	}
 
 	modelState := step.state
@@ -92,16 +100,31 @@ func (tr TestRun) runStep(step Step, verbose bool) {
 		pretty.Print("model state", modelState)
 		log.Fatal(`actual state (-) not equal to model state (+): ` + pretty.Compare(actualState, modelState))
 	}
-
-	pretty.Print(actualState)
 }
 
-func (tr TestRun) startDocker() {
+// Starts docker container and sequentially runs steps
+func (tr *TestRun) ExecuteSteps(wg *sync.WaitGroup, steps []Step) {
+	defer wg.Done()
+	fmt.Printf("=============== started %s tests ===============\n", tr.name)
+
+	start := time.Now()
+	for i, step := range steps {
+		// print something the show the test is alive
+		if i%10 == 0 {
+			fmt.Printf("running %s: step %d\n", tr.name, i+1)
+		}
+		tr.runStep(step, *verbose)
+	}
+
+	fmt.Printf("=============== finished %s tests in %v ===============\n", tr.name, time.Since(start))
+}
+
+func (tr *TestRun) startDocker() {
+	fmt.Printf("=============== building %s testRun ===============\n", tr.name)
 	scriptStr := "tests/integration/testnet-scripts/start-docker.sh " +
 		tr.containerConfig.containerName + " " +
 		tr.containerConfig.instanceName + " " +
 		tr.localSdkPath
-
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("/bin/bash", "-c", scriptStr)
 
@@ -119,7 +142,7 @@ func (tr TestRun) startDocker() {
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		if verbose {
+		if verbose != nil && *verbose {
 			fmt.Println("startDocker: " + out)
 		}
 		if out == "beacon!!!!!!!!!!" {
