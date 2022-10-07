@@ -4,8 +4,6 @@ import (
 	"testing"
 	time "time"
 
-	tmtypes "github.com/tendermint/tendermint/types"
-
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/store"
@@ -207,17 +205,6 @@ type PrivateKey struct {
 func GenPubKey() (crypto.PubKey, error) {
 	privKey := PrivateKey{ed25519.GenPrivKey()}
 	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
-}
-
-func GetClientState(chainID string) *ibctmtypes.ClientState {
-	return ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, 0, 0,
-		time.Second*10, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(),
-		[]string{"upgrade", "upgradedIBCState"}, true, true)
-}
-
-func GetConsensusState(clientID string, timestamp time.Time, vals ...*tmtypes.Validator) *ibctmtypes.ConsensusState {
-	return ibctmtypes.NewConsensusState(timestamp, commitmenttypes.NewMerkleRoot([]byte("apphash")),
-		tmtypes.NewValidatorSet(vals).Hash()[:])
 }
 
 // SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
