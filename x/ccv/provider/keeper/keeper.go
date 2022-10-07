@@ -457,8 +457,8 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) error {
 	return nil
 }
 
-// EmptyMaturedUnbondingOps empties and returns list of matured unbonding operation ids (if it exists)
-func (k Keeper) EmptyMaturedUnbondingOps(ctx sdk.Context) ([]uint64, error) {
+// ConsumeMaturedUnbondingOps empties and returns list of matured unbonding operation ids (if it exists)
+func (k Keeper) ConsumeMaturedUnbondingOps(ctx sdk.Context) ([]uint64, error) {
 	ids, err := k.GetMaturedUnbondingOps(ctx)
 	if err != nil {
 		return nil, err
@@ -657,8 +657,8 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	return acks.GetAddresses()
 }
 
-// EmptySlashAcks empties and returns the slash acks for a given chain ID
-func (k Keeper) EmptySlashAcks(ctx sdk.Context, chainID string) (acks []string) {
+// ConsumeSlashAcks empties and returns the slash acks for a given chain ID
+func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []string) {
 	acks = k.GetSlashAcks(ctx, chainID)
 	if len(acks) < 1 {
 		return
@@ -773,8 +773,8 @@ func (k Keeper) AppendPendingVSC(ctx sdk.Context, chainID string, packet ccv.Val
 	store.Set(types.PendingVSCsKey(chainID), buf.Bytes())
 }
 
-// EmptyPendingVSC empties and returns the list of pending ValidatorSetChange packets for chain ID (if it exists)
-func (k Keeper) EmptyPendingVSC(ctx sdk.Context, chainID string) (packets []ccv.ValidatorSetChangePacketData) {
+// ConsumePendingVSCs empties and returns the list of pending ValidatorSetChange packets for chain ID (if it exists)
+func (k Keeper) ConsumePendingVSCs(ctx sdk.Context, chainID string) (packets []ccv.ValidatorSetChangePacketData) {
 	packets, found := k.GetPendingVSCs(ctx, chainID)
 	if !found {
 		// there is no list of pending ValidatorSetChange packets
