@@ -74,8 +74,8 @@ func TestSlashAcks(t *testing.T) {
 	require.NotNil(t, acks)
 
 	require.Len(t, acks, 3)
-	emptied := providerKeeper.EmptySlashAcks(ctx, chainID)
-	require.Len(t, emptied, 3)
+	slashAcks := providerKeeper.ConsumeSlashAcks(ctx, chainID)
+	require.Len(t, slashAcks, 3)
 
 	acks = providerKeeper.GetSlashAcks(ctx, chainID)
 	require.Nil(t, acks)
@@ -156,10 +156,10 @@ func TestPendingVSCs(t *testing.T) {
 		ValsetUpdateId: 3,
 	}
 	providerKeeper.AppendPendingVSC(ctx, chainID, newPacket)
-	emptied := providerKeeper.EmptyPendingVSC(ctx, chainID)
-	require.Len(t, emptied, 3)
-	require.True(t, emptied[len(emptied)-1].ValsetUpdateId == 3)
-	require.True(t, emptied[len(emptied)-1].GetValidatorUpdates()[0].PubKey.String() == ppks[3].String())
+	vscs := providerKeeper.ConsumePendingVSCs(ctx, chainID)
+	require.Len(t, vscs, 3)
+	require.True(t, vscs[len(vscs)-1].ValsetUpdateId == 3)
+	require.True(t, vscs[len(vscs)-1].GetValidatorUpdates()[0].PubKey.String() == ppks[3].String())
 
 	_, found = providerKeeper.GetPendingVSCs(ctx, chainID)
 	require.False(t, found)
@@ -289,7 +289,7 @@ func TestMaturedUnbondingOps(t *testing.T) {
 	err = providerKeeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
 	require.NoError(t, err)
 
-	ids, err = providerKeeper.EmptyMaturedUnbondingOps(ctx)
+	ids, err = providerKeeper.ConsumeMaturedUnbondingOps(ctx)
 	require.NoError(t, err)
 	require.Equal(t, len(unbondingOpIds), len(ids))
 	for i := 0; i < len(unbondingOpIds); i++ {
