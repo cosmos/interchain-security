@@ -361,10 +361,9 @@ func (tr TestRun) voteGovProposal(
 }
 
 type startConsumerChainAction struct {
-	consumerChain  chainID
-	providerChain  chainID
-	genesisChanges string
-	validators     []StartChainValidator
+	consumerChain chainID
+	providerChain chainID
+	validators    []StartChainValidator
 }
 
 func (tr TestRun) startConsumerChain(
@@ -391,15 +390,16 @@ func (tr TestRun) startConsumerChain(
 		log.Fatal(err, "\n", string(bz))
 	}
 
-	genesisChanges := ".app_state.ccvconsumer = " + string(bz)
-	if action.genesisChanges != "" {
-		genesisChanges = genesisChanges + " | " + action.genesisChanges
+	consumerGenesis := ".app_state.ccvconsumer = " + string(bz)
+	consumerGenesisChanges := tr.chainConfigs[action.consumerChain].genesisChanges
+	if consumerGenesisChanges != "" {
+		consumerGenesis = consumerGenesis + " | " + consumerGenesisChanges
 	}
 
 	tr.startChain(StartChainAction{
 		chain:          action.consumerChain,
 		validators:     action.validators,
-		genesisChanges: genesisChanges,
+		genesisChanges: consumerGenesis,
 		skipGentx:      true,
 	}, verbose)
 }
@@ -640,7 +640,7 @@ func (tr TestRun) transferChannelComplete(
 }
 
 func executeCommand(cmd *exec.Cmd, cmdName string) {
-	if verbose {
+	if verbose != nil && *verbose {
 		fmt.Println(cmdName+" cmd:", cmd.String())
 	}
 
@@ -658,7 +658,7 @@ func executeCommand(cmd *exec.Cmd, cmdName string) {
 
 	for scanner.Scan() {
 		out := scanner.Text()
-		if verbose {
+		if verbose != nil && *verbose {
 			fmt.Println(cmdName + ": " + out)
 		}
 	}

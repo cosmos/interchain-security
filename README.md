@@ -105,6 +105,8 @@ go run ./tests/integration/...
 go run ./tests/integration/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/"
 # run golang native fuzz tests (https://go.dev/doc/tutorial/fuzz)
 go test -fuzz=<regex-to-match-test-name>
+# run verbose integration tests
+go run ./tests/integration/... --local-sdk-path "/Users/bob/Documents/cosmos-sdk/" --verbose
 ```
 
 ### Linters and Static Analysis
