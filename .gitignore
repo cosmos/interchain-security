@@ -6,4 +6,3 @@ docs/tla/states/
 *.out
 vendor/
 .vscode
-logs
