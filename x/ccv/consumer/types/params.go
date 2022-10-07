@@ -73,9 +73,35 @@ func DefaultParams() Params {
 	)
 }
 
-// TODO: Can this be removed?
 // Validate all ccv-consumer module parameters
+// TODO: Unit tests similar to provider
 func (p Params) Validate() error {
+	if err := ccvtypes.ValidateBool(p.Enabled); err != nil {
+		return err
+	}
+	if err := ccvtypes.ValidatePositiveInt64(p.BlocksPerDistributionTransmission); err != nil {
+		return err
+	}
+	// TODO: Is it acceptable if string is empty? Defaults say yes
+	if err := ccvtypes.ValidateString(p.DistributionTransmissionChannel); err != nil {
+		return err
+	}
+	// TODO: Is it acceptable if string is empty? Defaults say yes
+	if err := ccvtypes.ValidateString(p.ProviderFeePoolAddrStr); err != nil {
+		return err
+	}
+	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
+		return err
+	}
+	if err := ccvtypes.ValidateDuration(p.TransferTimeoutPeriod); err != nil {
+		return err
+	}
+	if err := validateConsumerRedistributionFraction(p.ConsumerRedistributionFraction); err != nil {
+		return err
+	}
+	if err := ccvtypes.ValidatePositiveInt64(p.NumHistoricalEntries); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -102,7 +128,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, ccvtypes.ValidateBool),
 		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,
-			p.BlocksPerDistributionTransmission, ccvtypes.ValidateInt64),
+			p.BlocksPerDistributionTransmission, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyDistributionTransmissionChannel,
 			p.DistributionTransmissionChannel, ccvtypes.ValidateString),
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,

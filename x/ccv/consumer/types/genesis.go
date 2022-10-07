@@ -62,6 +62,9 @@ func (gs GenesisState) Validate() error {
 	if len(gs.InitialValSet) == 0 {
 		return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "initial validator set is empty")
 	}
+	if err := gs.Params.Validate(); err != nil {
+		return err
+	}
 
 	if gs.NewChain {
 		if gs.ProviderClientState == nil {
