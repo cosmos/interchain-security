@@ -2,12 +2,9 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
-	"os"
 	"os/exec"
 	"reflect"
 	"sync"
@@ -41,17 +38,16 @@ func main() {
 	dmc.startDocker()
 
 	wg.Add(1)
-	go tr.ExecuteSteps(&wg, "default", happyPathSteps)
+	go tr.ExecuteSteps(&wg, happyPathSteps)
 
 	wg.Add(1)
-	go dmc.ExecuteSteps(&wg, "democracy", democracySteps)
+	go dmc.ExecuteSteps(&wg, democracySteps)
 
 	wg.Wait()
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
 }
 
 func (tr *TestRun) runStep(step Step, verbose bool) {
-	tr.logger.Printf("%#v\n", step.action)
 	switch action := step.action.(type) {
 	case StartChainAction:
 		tr.startChain(action, verbose)
@@ -92,7 +88,7 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 	case registerRepresentativeAction:
 		tr.registerRepresentative(action, verbose)
 	default:
-		tr.logger.Fatalf(fmt.Sprintf(`unknown action: %#v`, action))
+		log.Fatalf(fmt.Sprintf(`unknown action in testRun %s: %#v`, tr.name, action))
 	}
 
 	modelState := step.state
@@ -100,54 +96,35 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
-		pretty.Fprint(tr.logger.Writer(), "actual state", actualState)
-		pretty.Fprint(tr.logger.Writer(), "model state", modelState)
-		// pretty.Print("model state", modelState)
-		tr.logger.Fatalf(`actual state (-) not equal to model state (+): %s` + pretty.Compare(actualState, modelState))
+		pretty.Print("actual state", actualState)
+		pretty.Print("model state", modelState)
+		log.Fatal(`actual state (-) not equal to model state (+): ` + pretty.Compare(actualState, modelState))
 	}
-
-	// pretty.Print(actualState)
-	buf, _ := json.Marshal(actualState)
-	tr.logger.Println(string(buf))
-	// pretty.Fprint(tr.logger.Writer(), actualState)
 }
 
 // Starts docker container and sequentially runs steps
-func (tr *TestRun) ExecuteSteps(wg *sync.WaitGroup, name string, steps []Step) {
+func (tr *TestRun) ExecuteSteps(wg *sync.WaitGroup, steps []Step) {
 	defer wg.Done()
-
-	// save logs to file
-	if _, err := os.Stat("./logs"); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir("./logs", os.ModePerm)
-		if err != nil && !errors.Is(err, os.ErrExist) {
-			panic(fmt.Sprintf("could not create log dir: %s", err))
-		}
-	}
-	f, err := os.Create(fmt.Sprintf("./logs/%d_%s.log", time.Now().Unix(), tr.name))
-	if err != nil {
-		panic(fmt.Sprintf("could not create logfile: %s", err))
-	}
-	defer f.Close()
-
-	tr.logger = log.New(f, "", log.Ldate|log.Ltime)
-	fmt.Printf("============================================ start %s tests ============================================\n", name)
+	fmt.Printf("=============== started %s tests ===============\n", tr.name)
 
 	start := time.Now()
-
-	for _, step := range steps {
+	for i, step := range steps {
+		// print something the show the test is alive
+		if i%10 == 0 {
+			fmt.Printf("running %s: step %d\n", tr.name, i+1)
+		}
 		tr.runStep(step, *verbose)
 	}
 
-	fmt.Printf("\n\ntime elapsed for %s: %v\n", name, time.Since(start))
-	fmt.Printf("============================================ end %s tests ============================================\n", name)
+	fmt.Printf("=============== finished %s tests in %v ===============\n", tr.name, time.Since(start))
 }
 
 func (tr *TestRun) startDocker() {
+	fmt.Printf("=============== building %s testRun ===============\n", tr.name)
 	scriptStr := "tests/integration/testnet-scripts/start-docker.sh " +
 		tr.containerConfig.containerName + " " +
 		tr.containerConfig.instanceName + " " +
 		tr.localSdkPath
-
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("/bin/bash", "-c", scriptStr)
 

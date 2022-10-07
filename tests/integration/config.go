@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 )
@@ -53,8 +52,7 @@ type TestRun struct {
 	chainConfigs     map[chainID]ChainConfig
 	localSdkPath     string
 
-	name   string
-	logger *log.Logger
+	name string
 }
 
 func getDefaultValidators() map[validatorID]ValidatorConfig {

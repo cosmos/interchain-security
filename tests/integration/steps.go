@@ -21,7 +21,7 @@ var happyPathSteps = concatSteps(
 )
 
 var democracySteps = concatSteps(
-	// democracySteps requires a transfer channel and overrides genesis
+	// democracySteps requires a transfer channel
 	stepsStartChains("democ", true),
 	stepsDelegate("democ"),
 	stepsDemocracy("democ"),
