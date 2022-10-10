@@ -788,7 +788,6 @@ func TestGetAllConsumerAdditionProps(t *testing.T) {
 	}
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	keeperParams.SetTemplateClientState(nil)
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
@@ -818,7 +817,6 @@ func TestGetAllConsumerRemovalProps(t *testing.T) {
 	}
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	keeperParams.SetTemplateClientState(nil)
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
