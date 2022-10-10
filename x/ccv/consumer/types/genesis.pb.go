@@ -38,7 +38,7 @@ type GenesisState struct {
 	ProviderConsensusState *types.ConsensusState `protobuf:"bytes,6,opt,name=provider_consensus_state,json=providerConsensusState,proto3" json:"provider_consensus_state,omitempty"`
 	// MaturingPackets nil on new chain, filled on restart.
 	MaturingPackets []MaturingVSCPacket `protobuf:"bytes,7,rep,name=maturing_packets,json=maturingPackets,proto3" json:"maturing_packets"`
-	// InitialValset filled in on new chain, manually filled in on restart.
+	// InitialValset filled in on new chain and on restart.
 	InitialValSet []types1.ValidatorUpdate `protobuf:"bytes,8,rep,name=initial_val_set,json=initialValSet,proto3" json:"initial_val_set"`
 	// HeightToValsetUpdateId nil on new chain, filled on restart.
 	HeightToValsetUpdateId []HeightToValsetUpdateID `protobuf:"bytes,9,rep,name=height_to_valset_update_id,json=heightToValsetUpdateId,proto3" json:"height_to_valset_update_id"`
@@ -158,8 +158,8 @@ func (m *GenesisState) GetPendingSlashRequests() SlashRequests {
 	return SlashRequests{}
 }
 
-// UnbondingSequence defines the genesis information for each unbonding packet
-// sequence.
+// MaturingVSCPacket defines the genesis information for the
+// unbonding VSC packet
 type MaturingVSCPacket struct {
 	VscId        uint64 `protobuf:"varint,1,opt,name=vscId,proto3" json:"vscId,omitempty"`
 	MaturityTime uint64 `protobuf:"varint,2,opt,name=maturity_time,json=maturityTime,proto3" json:"maturity_time,omitempty"`
