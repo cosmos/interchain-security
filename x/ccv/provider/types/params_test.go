@@ -13,6 +13,7 @@ import (
 )
 
 func TestValidateParams(t *testing.T) {
+
 	testCases := []struct {
 		name    string
 		params  types.Params
@@ -20,11 +21,17 @@ func TestValidateParams(t *testing.T) {
 	}{
 		{"default params", types.DefaultParams(), true},
 		{"custom valid params", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false)), true},
+			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
+			2*7*24*time.Hour), true},
 		{"custom invalid params", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			0, clienttypes.Height{}, nil, []string{"ibc", "upgradedIBCState"}, true, false)), false},
-		{"blank client", types.NewParams(&ibctmtypes.ClientState{}), false},
-		{"nil client", types.NewParams(nil), false},
+			0, clienttypes.Height{}, nil, []string{"ibc", "upgradedIBCState"}, true, false),
+			2*7*24*time.Hour), false},
+		{"blank client", types.NewParams(&ibctmtypes.ClientState{},
+			2*7*24*time.Hour), false},
+		{"nil client", types.NewParams(nil, 2*7*24*time.Hour), false},
+		{"0 ccv timeout period", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
+			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
+			0), false},
 	}
 
 	for _, tc := range testCases {
