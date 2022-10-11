@@ -8,6 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -18,6 +19,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer-democracy"
+	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -28,47 +30,58 @@ import (
 var consumerFraction, _ = sdk.NewDecFromStr(consumerkeeper.ConsumerRedistributeFrac)
 
 type ConsumerDemocracyTestSuite struct {
-	underlyingSuite CCVTestSuite
 	suite.Suite
+	coordinator       *ibctesting.Coordinator
+	providerChain     *ibctesting.TestChain
+	consumerChain     *ibctesting.TestChain
+	providerClient    *ibctmtypes.ClientState
+	providerConsState *ibctmtypes.ConsensusState
+	path              *ibctesting.Path
+	transferPath      *ibctesting.Path
 }
 
-// SetupTest is a shim for the democracy suite to share setup code with the ccv suite
+// SetupTest sets up in-mem state for the group of tests relevant to ccv with a democracy consumer
+// TODO: Make this method more generalizable to be called by any provider/consumer implementation
 func (democSuite *ConsumerDemocracyTestSuite) SetupTest() {
-	ccvSuite := CCVTestSuite{}
-	ccvSuite.SetT(democSuite.T())
-	ccvSuite.coordinator, ccvSuite.providerChain,
-		ccvSuite.consumerChain = simapp.NewProviderConsumerDemocracyCoordinator(democSuite.T())
-	CommonSetup(&ccvSuite, true)
-	democSuite.underlyingSuite = ccvSuite
+	democSuite.coordinator, democSuite.providerChain,
+		democSuite.consumerChain = simapp.NewProviderConsumerDemocracyCoordinator(democSuite.T())
+
+	democSuite.providerClient, democSuite.providerConsState,
+		democSuite.path, democSuite.transferPath = CommonSetup(
+
+		democSuite.Suite,
+		&democSuite.providerChain.App.(*appProvider.App).ProviderKeeper,
+		&democSuite.consumerChain.App.(*appConsumer.App).ConsumerKeeper,
+		democSuite.providerChain,
+		democSuite.consumerChain,
+	)
 }
 
 func TestConsumerDemocracyTestSuite(t *testing.T) {
 	suite.Run(t, new(ConsumerDemocracyTestSuite))
 }
 
-func (suite *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
-
-	s := suite.underlyingSuite
+func (s *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
 
 	s.consumerChain.NextBlock()
 	stakingKeeper := s.consumerChain.App.(*appConsumer.App).StakingKeeper
 	authKeeper := s.consumerChain.App.(*appConsumer.App).AccountKeeper
 	distrKeeper := s.consumerChain.App.(*appConsumer.App).DistrKeeper
 	bankKeeper := s.consumerChain.App.(*appConsumer.App).BankKeeper
-	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
+	bondDenom := stakingKeeper.BondDenom(s.consumerChain.GetContext())
 
 	currentRepresentativesRewards := map[string]sdk.Dec{}
 	nextRepresentativesRewards := map[string]sdk.Dec{}
 	representativesTokens := map[string]sdk.Int{}
 
-	for _, representative := range stakingKeeper.GetAllValidators(s.consumerCtx()) {
+	for _, representative := range stakingKeeper.GetAllValidators(s.consumerChain.GetContext()) {
 		currentRepresentativesRewards[representative.OperatorAddress] = sdk.NewDec(0)
 		nextRepresentativesRewards[representative.OperatorAddress] = sdk.NewDec(0)
 		representativesTokens[representative.OperatorAddress] = representative.GetTokens()
 	}
 
-	distrModuleAccount := distrKeeper.GetDistributionAccount(s.consumerCtx())
-	providerRedistributeAccount := authKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName)
+	distrModuleAccount := distrKeeper.GetDistributionAccount(s.consumerChain.GetContext())
+	providerRedistributeAccount := authKeeper.GetModuleAccount(s.consumerChain.GetContext(), consumertypes.ConsumerToSendToProviderName)
 	//balance of consumer redistribute address will always be 0 when checked between 2 NextBlock() calls
 
 	currentDistrModuleAccountBalance := sdk.NewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
@@ -120,8 +133,7 @@ func (suite *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
 	}
 }
 
-func (suite *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
-	s := suite.underlyingSuite
+func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 
 	govKeeper := s.consumerChain.App.(*appConsumer.App).GovKeeper
 	stakingKeeper := s.consumerChain.App.(*appConsumer.App).StakingKeeper
@@ -223,4 +235,12 @@ func getAccountsBalances(ctx sdk.Context, bankKeeper bankkeeper.Keeper, bondDeno
 	}
 
 	return accountsBalances
+}
+
+func (s *ConsumerDemocracyTestSuite) providerCtx() sdk.Context {
+	return s.providerChain.GetContext()
+}
+
+func (s *ConsumerDemocracyTestSuite) consumerCtx() sdk.Context {
+	return s.consumerChain.GetContext()
 }
