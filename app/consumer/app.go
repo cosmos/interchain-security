@@ -67,6 +67,7 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -649,6 +650,11 @@ func (app *App) GetSubspace(moduleName string) paramstypes.Subspace {
 // SimulationManager implements the SimulationApp interface
 func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
+}
+
+// GetProviderKeeper implements the ConsumerApp interface.
+func (app *App) GetConsumerKeeper() keepertestutil.ConsumerKeeper {
+	return app.ConsumerKeeper
 }
 
 // TestingApp functions

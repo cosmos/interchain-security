@@ -7,8 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/stretchr/testify/require"
@@ -32,34 +30,6 @@ const (
 	Provider ChainType = iota
 	Consumer
 )
-
-// The interface that any consumer keeper must implement to be compatible with e2e tests
-type ConsumerKeeper interface {
-	InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) []abci.ValidatorUpdate
-	GetProviderClientID(ctx sdk.Context) (string, bool)
-	// TODO: Expand this interface to be referenced by all e2e tests
-}
-
-// The interface that any provider keeper must implement to be compatible with e2e tests
-type ProviderKeeper interface {
-	CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error
-	GetConsumerGenesis(ctx sdk.Context, chainID string) (consumertypes.GenesisState, bool)
-	GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool)
-	// TODO: Expand this interface to be referenced by all e2e tests
-}
-
-func (suite CCVTestSuite) GetProviderChain() *ibctesting.TestChain {
-	return suite.providerChain
-}
-func (suite CCVTestSuite) GetConsumerChain() *ibctesting.TestChain {
-	return suite.consumerChain
-}
-func (suite CCVTestSuite) getProviderKeeper() ProviderKeeper {
-	return suite.providerKeeperGetter(suite)
-}
-func (suite CCVTestSuite) getConsumerKeeper() ConsumerKeeper {
-	return suite.consumerKeeperGetter(suite)
-}
 
 func (s *CCVTestSuite) providerCtx() sdk.Context {
 	return s.providerChain.GetContext()

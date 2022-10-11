@@ -3,9 +3,11 @@ package e2e_test
 import (
 	"testing"
 
+	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/tests/e2e"
+	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/stretchr/testify/suite"
 )
@@ -13,16 +15,17 @@ import (
 // TODO: explanation of this file.
 
 func TestCCVTestSuite(t *testing.T) {
-	ccvSuite := e2e.NewCCVTestSuite(
-		// TODO: Make this shiz below better
-		simapp.NewProviderConsumerCoordinator,
-		func(suite e2e.CCVTestSuite) e2e.ProviderKeeper {
-			return &suite.GetProviderChain().App.(*appProvider.App).ProviderKeeper
-		},
-		func(suite e2e.CCVTestSuite) e2e.ConsumerKeeper {
-			return &suite.GetConsumerChain().App.(*appConsumer.App).ConsumerKeeper
-		},
-	)
+
+	ccvSuite := e2e.NewCCVTestSuite(func(t *testing.T) (
+		*ibctesting.Coordinator,
+		*ibctesting.TestChain,
+		*ibctesting.TestChain,
+		keepertestutil.ProviderApp,
+		keepertestutil.ConsumerApp,
+	) {
+		coord, prov, cons := simapp.NewProviderConsumerCoordinator(t)
+		return coord, prov, cons, prov.App.(*appProvider.App), cons.App.(*appConsumer.App)
+	})
 	suite.Run(t, ccvSuite)
 }
 

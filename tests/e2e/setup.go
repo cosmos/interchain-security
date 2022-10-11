@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"testing"
 
+	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
+
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 
@@ -15,7 +17,6 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
 
 	tmtypes "github.com/tendermint/tendermint/types"
 
@@ -30,47 +31,50 @@ type CCVTestSuite struct {
 	coordinator       *ibctesting.Coordinator
 	providerChain     *ibctesting.TestChain
 	consumerChain     *ibctesting.TestChain
+	providerApp       keepertestutil.ProviderApp
+	consumerApp       keepertestutil.ConsumerApp
 	providerClient    *ibctmtypes.ClientState
 	providerConsState *ibctmtypes.ConsensusState
 	path              *ibctesting.Path
 	transferPath      *ibctesting.Path
 
 	// Callback for returning a new coordinator and provider/consumer pair
-	setupCoordinatorAndChains func(t *testing.T) (coord *ibctesting.Coordinator,
-		providerChain *ibctesting.TestChain, consumerChain *ibctesting.TestChain)
-	// Callback for returning a provider keeper, casted to the correct concrete type
-	providerKeeperGetter func(CCVTestSuite) ProviderKeeper
-	// Callback for returning a consumer keeper, casted to the correct concrete type
-	consumerKeeperGetter func(CCVTestSuite) ConsumerKeeper
+	setupCoordinatorAndChains func(t *testing.T) (
+		coord *ibctesting.Coordinator,
+		providerChain *ibctesting.TestChain,
+		consumerChain *ibctesting.TestChain,
+		providerApp keepertestutil.ProviderApp,
+		conssumerApp keepertestutil.ConsumerApp,
+	)
 }
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against
 // using suite.Run().
 func NewCCVTestSuite(
 	// Callback for returning a new coordinator and provider/consumer pair
-	setupCoordinatorAndChains func(t *testing.T) (coord *ibctesting.Coordinator,
-		providerChain *ibctesting.TestChain, consumerChain *ibctesting.TestChain),
-	// Callback for returning a provider keeper, casted to the correct concrete type
-	providerKeeperGetter func(CCVTestSuite) ProviderKeeper,
-	// Callback for returning a consumer keeper, casted to the correct concrete type
-	consumerKeeperGetter func(CCVTestSuite) ConsumerKeeper,
+	setupCoordinatorAndChains func(t *testing.T) (
+		coord *ibctesting.Coordinator,
+		providerChain *ibctesting.TestChain,
+		consumerChain *ibctesting.TestChain,
+		providerApp keepertestutil.ProviderApp,
+		conssumerApp keepertestutil.ConsumerApp,
+	),
 ) *CCVTestSuite {
 	ccvSuite := new(CCVTestSuite)
 	ccvSuite.setupCoordinatorAndChains = setupCoordinatorAndChains
-	ccvSuite.providerKeeperGetter = providerKeeperGetter
-	ccvSuite.consumerKeeperGetter = consumerKeeperGetter
 	return ccvSuite
 }
 
 // SetupTest sets up in-mem state before every test
 func (suite *CCVTestSuite) SetupTest() {
 
-	// Instantiate new coordinator, provider, and consumer using custom callback
+	// Instantiate new test utils using callback
 	suite.coordinator, suite.providerChain,
-		suite.consumerChain = suite.setupCoordinatorAndChains(suite.T())
+		suite.consumerChain, suite.providerApp,
+		suite.consumerApp = suite.setupCoordinatorAndChains(suite.T())
 
-	providerKeeper := suite.getProviderKeeper()
-	consumerKeeper := suite.getConsumerKeeper()
+	providerKeeper := suite.providerApp.GetProviderKeeper()
+	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 
 	// valsets must match
 	providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
@@ -103,7 +107,7 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.consumerChain.ChainID,
 	)
 	suite.Require().True(found, "consumer genesis not found")
-	consumerKeeper.InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
+	consumerKeeper.InitGenesis(suite.consumerCtx(), &consumerGenesis)
 	suite.providerClient = consumerGenesis.ProviderClientState
 	suite.providerConsState = consumerGenesis.ProviderConsensusState
 
@@ -125,9 +129,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.path.EndpointA.ClientID = providerClient
 	// - client config
 
-	// TODO: Need an app type for provider
-
-	providerUnbondingPeriod := suite.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(suite.providerCtx())
+	providerUnbondingPeriod := suite.providerApp.GetStakingKeeper().UnbondingTime(suite.providerCtx())
 	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = providerUnbondingPeriod
 	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / utils.TrustingPeriodFraction
 	consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
