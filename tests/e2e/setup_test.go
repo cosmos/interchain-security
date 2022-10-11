@@ -16,7 +16,6 @@ import (
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
-	"github.com/cosmos/interchain-security/testutil/simapp"
 
 	tmtypes "github.com/tendermint/tendermint/types"
 
@@ -61,20 +60,6 @@ func NewCCVTestSuite(
 	ccvSuite.providerKeeperGetter = providerKeeperGetter
 	ccvSuite.consumerKeeperGetter = consumerKeeperGetter
 	return ccvSuite
-}
-
-// To be moved to indep file
-func TestCCVTestSuite(t *testing.T) {
-	ccvSuite := NewCCVTestSuite(
-		simapp.NewProviderConsumerCoordinator,
-		func(suite CCVTestSuite) providerKeeper {
-			return &suite.providerChain.App.(*appProvider.App).ProviderKeeper
-		},
-		func(suite CCVTestSuite) consumerKeeper {
-			return &suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper
-		},
-	)
-	suite.Run(t, ccvSuite)
 }
 
 // SetupTest sets up in-mem state before every test

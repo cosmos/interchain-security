@@ -18,7 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer-democracy"
-	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
@@ -27,22 +26,37 @@ import (
 
 var consumerFraction, _ = sdk.NewDecFromStr(consumerkeeper.ConsumerRedistributeFrac)
 
+// TODO: Comments
 type ConsumerDemocracyTestSuite struct {
 	suite.Suite
 	coordinator   *ibctesting.Coordinator
 	providerChain *ibctesting.TestChain
 	consumerChain *ibctesting.TestChain
+
+	// Callback for returning a new coordinator and provider/consumer pair
+	setupCoordinatorAndChains func(t *testing.T) (coord *ibctesting.Coordinator,
+		providerChain *ibctesting.TestChain, consumerChain *ibctesting.TestChain)
 }
 
-// SetupTest sets up in-mem state for the group of tests relevant to ccv with a democracy consumer
-// TODO: Make this method more generalizable to be called by any provider/consumer implementation
+// NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite, ready to be tested against
+// using suite.Run().
+func NewConsumerDemocracyTestSuite(
+	// Callback for returning a new coordinator and provider/consumer pair
+	setupCoordinatorAndChains func(t *testing.T) (coord *ibctesting.Coordinator,
+		providerChain *ibctesting.TestChain, consumerChain *ibctesting.TestChain),
+
+	// TODO: Prob need to pass in an App type with proper interface defined,
+	// TODO: Then can use interface for tests below.
+) *ConsumerDemocracyTestSuite {
+	democSuite := new(ConsumerDemocracyTestSuite)
+	democSuite.setupCoordinatorAndChains = setupCoordinatorAndChains
+	return democSuite
+}
+
+// SetupTest sets up in-mem state before every test relevant to ccv with a democracy consumer
 func (democSuite *ConsumerDemocracyTestSuite) SetupTest() {
 	democSuite.coordinator, democSuite.providerChain,
-		democSuite.consumerChain = simapp.NewProviderConsumerDemocracyCoordinator(democSuite.T())
-}
-
-func TestConsumerDemocracyTestSuite(t *testing.T) {
-	suite.Run(t, new(ConsumerDemocracyTestSuite))
+		democSuite.consumerChain = democSuite.setupCoordinatorAndChains(democSuite.T())
 }
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
