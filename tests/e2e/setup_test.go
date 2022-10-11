@@ -23,6 +23,9 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+// CCVTestSuite is an in-mem test suite which implements the standard group of tests validating
+// the e2e functionality of ccv enabled chains.
+// Any method implemented for this struct will be ran when suite.Run() is called.
 type CCVTestSuite struct {
 	suite.Suite
 	coordinator       *ibctesting.Coordinator
@@ -32,25 +35,61 @@ type CCVTestSuite struct {
 	providerConsState *ibctmtypes.ConsensusState
 	path              *ibctesting.Path
 	transferPath      *ibctesting.Path
+
+	// Callback for returning a new coordinator and provider/consumer pair
+	setupCoordinatorAndChains func(t *testing.T) (coord *ibctesting.Coordinator,
+		providerChain *ibctesting.TestChain, consumerChain *ibctesting.TestChain)
+	// Callback for returning a provider keeper, casted to the correct concrete type
+	providerKeeperGetter func(CCVTestSuite) providerKeeper
+	// Callback for returning a consumer keeper, casted to the correct concrete type
+	consumerKeeperGetter func(CCVTestSuite) consumerKeeper
 }
 
+// NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against
+// using suite.Run().
+func NewCCVTestSuite(
+	// Callback for returning a new coordinator and provider/consumer pair
+	setupCoordinatorAndChains func(t *testing.T) (coord *ibctesting.Coordinator,
+		providerChain *ibctesting.TestChain, consumerChain *ibctesting.TestChain),
+	// Callback for returning a provider keeper, casted to the correct concrete type
+	providerKeeperGetter func(CCVTestSuite) providerKeeper,
+	// Callback for returning a consumer keeper, casted to the correct concrete type
+	consumerKeeperGetter func(CCVTestSuite) consumerKeeper,
+) *CCVTestSuite {
+	ccvSuite := new(CCVTestSuite)
+	ccvSuite.setupCoordinatorAndChains = setupCoordinatorAndChains
+	ccvSuite.providerKeeperGetter = providerKeeperGetter
+	ccvSuite.consumerKeeperGetter = consumerKeeperGetter
+	return ccvSuite
+}
+
+// To be moved to indep file
 func TestCCVTestSuite(t *testing.T) {
-	suite.Run(t, new(CCVTestSuite))
+	ccvSuite := NewCCVTestSuite(
+		simapp.NewProviderConsumerCoordinator,
+		func(suite CCVTestSuite) providerKeeper {
+			return &suite.providerChain.App.(*appProvider.App).ProviderKeeper
+		},
+		func(suite CCVTestSuite) consumerKeeper {
+			return &suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+		},
+	)
+	suite.Run(t, ccvSuite)
 }
 
-// SetupTest sets up in-mem state for the standard group of tests validating chains which implement the ccv modules
-// TODO: Make this method more generalizable to be called by any provider/consumer implementation
+// SetupTest sets up in-mem state before every test
 func (ccvSuite *CCVTestSuite) SetupTest() {
-	ccvSuite.coordinator, ccvSuite.providerChain,
-		ccvSuite.consumerChain = simapp.NewProviderConsumerCoordinator(ccvSuite.T())
 
+	// Instantiate new coordinator, provider, and consumer using custom callback
+	ccvSuite.coordinator, ccvSuite.providerChain,
+		ccvSuite.consumerChain = ccvSuite.setupCoordinatorAndChains(ccvSuite.T())
+
+	// run common setup using custom keeper getter callbacks
 	ccvSuite.providerClient, ccvSuite.providerConsState,
 		ccvSuite.path, ccvSuite.transferPath = CommonSetup(
-
 		ccvSuite.Suite,
-		// Pointers to provider/consumer keeper implementations are passed as interfaces here
-		&ccvSuite.providerChain.App.(*appProvider.App).ProviderKeeper,
-		&ccvSuite.consumerChain.App.(*appConsumer.App).ConsumerKeeper,
+		ccvSuite.providerKeeperGetter(*ccvSuite),
+		ccvSuite.consumerKeeperGetter(*ccvSuite),
 		ccvSuite.providerChain,
 		ccvSuite.consumerChain,
 	)
