@@ -68,20 +68,20 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
 	authKeeper := s.consumerChain.App.(*appConsumer.App).AccountKeeper
 	distrKeeper := s.consumerChain.App.(*appConsumer.App).DistrKeeper
 	bankKeeper := s.consumerChain.App.(*appConsumer.App).BankKeeper
-	bondDenom := stakingKeeper.BondDenom(s.consumerChain.GetContext())
+	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
 
 	currentRepresentativesRewards := map[string]sdk.Dec{}
 	nextRepresentativesRewards := map[string]sdk.Dec{}
 	representativesTokens := map[string]sdk.Int{}
 
-	for _, representative := range stakingKeeper.GetAllValidators(s.consumerChain.GetContext()) {
+	for _, representative := range stakingKeeper.GetAllValidators(s.consumerCtx()) {
 		currentRepresentativesRewards[representative.OperatorAddress] = sdk.NewDec(0)
 		nextRepresentativesRewards[representative.OperatorAddress] = sdk.NewDec(0)
 		representativesTokens[representative.OperatorAddress] = representative.GetTokens()
 	}
 
-	distrModuleAccount := distrKeeper.GetDistributionAccount(s.consumerChain.GetContext())
-	providerRedistributeAccount := authKeeper.GetModuleAccount(s.consumerChain.GetContext(), consumertypes.ConsumerToSendToProviderName)
+	distrModuleAccount := distrKeeper.GetDistributionAccount(s.consumerCtx())
+	providerRedistributeAccount := authKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName)
 	//balance of consumer redistribute address will always be 0 when checked between 2 NextBlock() calls
 
 	currentDistrModuleAccountBalance := sdk.NewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
@@ -134,7 +134,6 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
 }
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
-
 	govKeeper := s.consumerChain.App.(*appConsumer.App).GovKeeper
 	stakingKeeper := s.consumerChain.App.(*appConsumer.App).StakingKeeper
 	bankKeeper := s.consumerChain.App.(*appConsumer.App).BankKeeper
