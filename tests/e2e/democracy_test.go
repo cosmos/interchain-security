@@ -236,10 +236,6 @@ func getAccountsBalances(ctx sdk.Context, bankKeeper bankkeeper.Keeper, bondDeno
 	return accountsBalances
 }
 
-func (s *ConsumerDemocracyTestSuite) providerCtx() sdk.Context {
-	return s.providerChain.GetContext()
-}
-
 func (s *ConsumerDemocracyTestSuite) consumerCtx() sdk.Context {
 	return s.consumerChain.GetContext()
 }
