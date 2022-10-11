@@ -1,4 +1,4 @@
-package e2e_test
+package e2e
 
 import (
 	"strings"
@@ -34,14 +34,14 @@ const (
 )
 
 // The interface that any consumer keeper must implement to be compatible with e2e tests
-type consumerKeeper interface {
+type ConsumerKeeper interface {
 	InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) []abci.ValidatorUpdate
 	GetProviderClientID(ctx sdk.Context) (string, bool)
 	// TODO: Expand this interface to be referenced by all e2e tests
 }
 
 // The interface that any provider keeper must implement to be compatible with e2e tests
-type providerKeeper interface {
+type ProviderKeeper interface {
 	CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error
 	GetConsumerGenesis(ctx sdk.Context, chainID string) (consumertypes.GenesisState, bool)
 	// TODO: Expand this interface to be referenced by all e2e tests

@@ -1,4 +1,4 @@
-package e2e_test
+package e2e
 
 import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
@@ -8,7 +8,7 @@ import (
 )
 
 // Tests the tracking of historical info in the context of new blocks being committed
-func (k CCVTestSuite) TestTrackHistoricalInfo() {
+func (k CCVTestSuite) TestHistoricalInfo() {
 	consumerKeeper := k.consumerChain.App.(*appConsumer.App).ConsumerKeeper
 	cCtx := k.consumerChain.GetContext
 

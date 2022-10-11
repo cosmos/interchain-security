@@ -1,4 +1,4 @@
-package e2e_test
+package e2e
 
 import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
@@ -39,9 +39,16 @@ type CCVTestSuite struct {
 	setupCoordinatorAndChains func(t *testing.T) (coord *ibctesting.Coordinator,
 		providerChain *ibctesting.TestChain, consumerChain *ibctesting.TestChain)
 	// Callback for returning a provider keeper, casted to the correct concrete type
-	providerKeeperGetter func(CCVTestSuite) providerKeeper
+	providerKeeperGetter func(CCVTestSuite) ProviderKeeper
 	// Callback for returning a consumer keeper, casted to the correct concrete type
-	consumerKeeperGetter func(CCVTestSuite) consumerKeeper
+	consumerKeeperGetter func(CCVTestSuite) ConsumerKeeper
+}
+
+func (suite CCVTestSuite) GetProviderChain() *ibctesting.TestChain {
+	return suite.providerChain
+}
+func (suite CCVTestSuite) GetConsumerChain() *ibctesting.TestChain {
+	return suite.consumerChain
 }
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against
@@ -51,9 +58,9 @@ func NewCCVTestSuite(
 	setupCoordinatorAndChains func(t *testing.T) (coord *ibctesting.Coordinator,
 		providerChain *ibctesting.TestChain, consumerChain *ibctesting.TestChain),
 	// Callback for returning a provider keeper, casted to the correct concrete type
-	providerKeeperGetter func(CCVTestSuite) providerKeeper,
+	providerKeeperGetter func(CCVTestSuite) ProviderKeeper,
 	// Callback for returning a consumer keeper, casted to the correct concrete type
-	consumerKeeperGetter func(CCVTestSuite) consumerKeeper,
+	consumerKeeperGetter func(CCVTestSuite) ConsumerKeeper,
 ) *CCVTestSuite {
 	ccvSuite := new(CCVTestSuite)
 	ccvSuite.setupCoordinatorAndChains = setupCoordinatorAndChains

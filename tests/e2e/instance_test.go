@@ -5,6 +5,7 @@ import (
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
+	"github.com/cosmos/interchain-security/tests/e2e"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/stretchr/testify/suite"
 )
@@ -12,22 +13,23 @@ import (
 // TODO: explanation of this file.
 
 func TestCCVTestSuite(t *testing.T) {
-	ccvSuite := NewCCVTestSuite(
+	ccvSuite := e2e.NewCCVTestSuite(
 		// TODO: Make this shiz below better
 		simapp.NewProviderConsumerCoordinator,
-		func(suite CCVTestSuite) providerKeeper {
-			return &suite.providerChain.App.(*appProvider.App).ProviderKeeper
+		func(suite e2e.CCVTestSuite) e2e.ProviderKeeper {
+			return &suite.GetProviderChain().App.(*appProvider.App).ProviderKeeper
 		},
-		func(suite CCVTestSuite) consumerKeeper {
-			return &suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+		func(suite e2e.CCVTestSuite) e2e.ConsumerKeeper {
+			return &suite.GetConsumerChain().App.(*appConsumer.App).ConsumerKeeper
 		},
 	)
 	suite.Run(t, ccvSuite)
 }
 
 func TestConsumerDemocracyTestSuite(t *testing.T) {
-	democSuite := NewConsumerDemocracyTestSuite(
+	democSuite := e2e.NewConsumerDemocracyTestSuite(
 		// TODO: Also make this shiz better
-		simapp.NewProviderConsumerDemocracyCoordinator)
+		simapp.NewProviderConsumerDemocracyCoordinator,
+	)
 	suite.Run(t, democSuite)
 }

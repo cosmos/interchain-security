@@ -1,4 +1,4 @@
-package e2e_test
+package e2e
 
 import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
