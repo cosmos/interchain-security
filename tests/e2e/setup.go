@@ -44,13 +44,6 @@ type CCVTestSuite struct {
 	consumerKeeperGetter func(CCVTestSuite) ConsumerKeeper
 }
 
-func (suite CCVTestSuite) GetProviderChain() *ibctesting.TestChain {
-	return suite.providerChain
-}
-func (suite CCVTestSuite) GetConsumerChain() *ibctesting.TestChain {
-	return suite.consumerChain
-}
-
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against
 // using suite.Run().
 func NewCCVTestSuite(
@@ -76,6 +69,9 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.coordinator, suite.providerChain,
 		suite.consumerChain = suite.setupCoordinatorAndChains(suite.T())
 
+	providerKeeper := suite.getProviderKeeper()
+	consumerKeeper := suite.getConsumerKeeper()
+
 	// valsets must match
 	providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
 	consumerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.consumerChain.Vals)
@@ -91,7 +87,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.consumerChain.NextBlock()
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
-	err := suite.providerChain.App.(*appProvider.App).ProviderKeeper.CreateConsumerClient(
+	err := providerKeeper.CreateConsumerClient(
 		suite.providerCtx(),
 		suite.consumerChain.ChainID,
 		suite.consumerChain.LastHeader.GetHeight().(clienttypes.Height),
@@ -102,12 +98,12 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.providerChain.NextBlock()
 
 	// initialize the consumer chain with the genesis state stored on the provider
-	consumerGenesis, found := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerGenesis(
+	consumerGenesis, found := providerKeeper.GetConsumerGenesis(
 		suite.providerCtx(),
 		suite.consumerChain.ChainID,
 	)
 	suite.Require().True(found, "consumer genesis not found")
-	suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
+	consumerKeeper.InitGenesis(suite.consumerChain.GetContext(), &consumerGenesis)
 	suite.providerClient = consumerGenesis.ProviderClientState
 	suite.providerConsState = consumerGenesis.ProviderConsensusState
 
@@ -116,7 +112,7 @@ func (suite *CCVTestSuite) SetupTest() {
 
 	// update CCV path with correct info
 	// - set provider endpoint's clientID
-	consumerClient, found := suite.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClientId(
+	consumerClient, found := providerKeeper.GetConsumerClientId(
 		suite.providerCtx(),
 		suite.consumerChain.ChainID,
 	)
@@ -124,10 +120,13 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.Require().True(found, "consumer client not found")
 	suite.path.EndpointB.ClientID = consumerClient
 	// - set consumer endpoint's clientID
-	providerClient, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
+	providerClient, found := consumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
 	suite.Require().True(found, "provider client not found")
 	suite.path.EndpointA.ClientID = providerClient
 	// - client config
+
+	// TODO: Need an app type for provider
+
 	providerUnbondingPeriod := suite.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(suite.providerCtx())
 	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = providerUnbondingPeriod
 	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / utils.TrustingPeriodFraction

@@ -26,6 +26,11 @@ func TestCCVTestSuite(t *testing.T) {
 	suite.Run(t, ccvSuite)
 }
 
+// TODO: Run the gov enabled consumer against the standard suite of tests to make sure it
+// sill passes
+
+// TODO: Move stuff away from simapp package.
+
 func TestConsumerDemocracyTestSuite(t *testing.T) {
 	democSuite := e2e.NewConsumerDemocracyTestSuite(
 		// TODO: Also make this shiz better

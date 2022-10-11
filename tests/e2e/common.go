@@ -44,7 +44,21 @@ type ConsumerKeeper interface {
 type ProviderKeeper interface {
 	CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error
 	GetConsumerGenesis(ctx sdk.Context, chainID string) (consumertypes.GenesisState, bool)
+	GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool)
 	// TODO: Expand this interface to be referenced by all e2e tests
+}
+
+func (suite CCVTestSuite) GetProviderChain() *ibctesting.TestChain {
+	return suite.providerChain
+}
+func (suite CCVTestSuite) GetConsumerChain() *ibctesting.TestChain {
+	return suite.consumerChain
+}
+func (suite CCVTestSuite) getProviderKeeper() ProviderKeeper {
+	return suite.providerKeeperGetter(suite)
+}
+func (suite CCVTestSuite) getConsumerKeeper() ConsumerKeeper {
+	return suite.consumerKeeperGetter(suite)
 }
 
 func (s *CCVTestSuite) providerCtx() sdk.Context {
