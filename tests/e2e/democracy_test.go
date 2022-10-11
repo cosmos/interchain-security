@@ -8,7 +8,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -19,7 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer-democracy"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -31,13 +29,9 @@ var consumerFraction, _ = sdk.NewDecFromStr(consumerkeeper.ConsumerRedistributeF
 
 type ConsumerDemocracyTestSuite struct {
 	suite.Suite
-	coordinator       *ibctesting.Coordinator
-	providerChain     *ibctesting.TestChain
-	consumerChain     *ibctesting.TestChain
-	providerClient    *ibctmtypes.ClientState
-	providerConsState *ibctmtypes.ConsensusState
-	path              *ibctesting.Path
-	transferPath      *ibctesting.Path
+	coordinator   *ibctesting.Coordinator
+	providerChain *ibctesting.TestChain
+	consumerChain *ibctesting.TestChain
 }
 
 // SetupTest sets up in-mem state for the group of tests relevant to ccv with a democracy consumer
@@ -45,23 +39,13 @@ type ConsumerDemocracyTestSuite struct {
 func (democSuite *ConsumerDemocracyTestSuite) SetupTest() {
 	democSuite.coordinator, democSuite.providerChain,
 		democSuite.consumerChain = simapp.NewProviderConsumerDemocracyCoordinator(democSuite.T())
-
-	democSuite.providerClient, democSuite.providerConsState,
-		democSuite.path, democSuite.transferPath = CommonSetup(
-
-		democSuite.Suite,
-		&democSuite.providerChain.App.(*appProvider.App).ProviderKeeper,
-		&democSuite.consumerChain.App.(*appConsumer.App).ConsumerKeeper,
-		democSuite.providerChain,
-		democSuite.consumerChain,
-	)
 }
 
 func TestConsumerDemocracyTestSuite(t *testing.T) {
 	suite.Run(t, new(ConsumerDemocracyTestSuite))
 }
 
-func (s *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
+func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 
 	s.consumerChain.NextBlock()
 	stakingKeeper := s.consumerChain.App.(*appConsumer.App).StakingKeeper
