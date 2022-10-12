@@ -67,7 +67,6 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -653,7 +652,7 @@ func (app *App) SimulationManager() *module.SimulationManager {
 }
 
 // GetProviderKeeper implements the ConsumerApp interface.
-func (app *App) GetConsumerKeeper() keepertestutil.ConsumerKeeper {
+func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 

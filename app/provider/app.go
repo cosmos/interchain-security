@@ -88,7 +88,6 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
 
 	"github.com/gorilla/mux"
 	"github.com/gravity-devs/liquidity/x/liquidity"
@@ -798,7 +797,7 @@ func (app *App) SimulationManager() *module.SimulationManager {
 }
 
 // GetProviderKeeper implements the ProviderApp interface.
-func (app *App) GetProviderKeeper() keepertestutil.ProviderKeeper {
+func (app *App) GetProviderKeeper() ibcproviderkeeper.Keeper {
 	return app.ProviderKeeper
 }
 
