@@ -1,10 +1,12 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	"github.com/gogo/protobuf/proto"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -17,7 +19,13 @@ import (
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+	adminmodulemoduletypes "github.com/cosmos/interchain-security/x/ccv/adminmodule/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	icamauthtypes "github.com/cosmos/interchain-security/x/ccv/icamauth/types"
 )
 
 // HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
@@ -105,6 +113,59 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 	}
 
 	k.SetPendingConsumerRemovalProp(ctx, p.ChainId, p.StopTime)
+	return nil
+}
+
+func (k Keeper) HandleConsumerGovernanceProposal(ctx sdk.Context, p *types.ConsumerGovernanceProposal) error {
+	govAddress := k.accountKeeper.GetModuleAddress(govtypes.ModuleName).String()
+	portID, err := icatypes.NewControllerPortID(govAddress)
+	if err != nil {
+		return err
+	}
+
+	govICAAccount, found := k.icaControllerKeeper.GetInterchainAccountAddress(ctx, p.ConnectionId, portID)
+	if !found {
+		return errors.New(fmt.Sprintf("governance module interchain account for port id %s doesn't exist", portID))
+	}
+
+	if p.Content.TypeUrl != "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal" {
+		return errors.New("consumer governance content must be software upgrade proposal")
+	}
+
+	var upgradeProposal upgradetypes.SoftwareUpgradeProposal
+	err = proto.Unmarshal(p.Content.Value, &upgradeProposal)
+	if err != nil {
+		return errors.New("consumer governance content must be software upgrade proposal")
+	}
+
+	msg := adminmodulemoduletypes.MsgSubmitProposal{
+		Content:  p.Content,
+		Proposer: govICAAccount,
+	}
+
+	anyMsg, err := codectypes.NewAnyWithValue(&msg)
+	if err != nil {
+		return err
+	}
+
+	icaMsg := icamauthtypes.MsgSubmitTx{
+		Owner:        govAddress,
+		ConnectionId: p.ConnectionId,
+		Msg:          anyMsg,
+	}
+
+	handler := k.router.Handler(&icaMsg)
+	if handler == nil {
+		return sdkerrors.Wrap(govtypes.ErrNoProposalHandlerExists, sdk.MsgTypeURL(&icaMsg))
+	}
+	res, err := handler(ctx, &icaMsg)
+	if err != nil {
+		return err
+	}
+
+	// NOTE: The sdk msg handler creates a new EventManager, so events must be correctly propagated back to the current context
+	ctx.EventManager().EmitEvents(res.GetEvents())
+
 	return nil
 }
 

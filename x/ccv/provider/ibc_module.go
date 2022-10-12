@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
@@ -143,6 +144,18 @@ func (am AppModule) OnChanOpenConfirm(
 	if err != nil {
 		return err
 	}
+
+	connHops, err := am.keeper.GetConnectionHops(ctx, portID, channelID)
+	if err != nil {
+		return err
+	}
+
+	govAddress := am.accountKeeper.GetModuleAddress(govtypes.ModuleName)
+	err = am.icaControllerKeeper.RegisterInterchainAccount(ctx, connHops[0], govAddress.String())
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

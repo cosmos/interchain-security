@@ -15,7 +15,8 @@ message GenesisState {
   Params params = 1 [ (gogoproto.nullable) = false ];
   string provider_client_id = 2;  // empty for a completely new chain
   string provider_channel_id = 3; // empty for a completely new chain
-  bool new_chain = 4; // true for new chain GenesisState, false for chain restart.
+  bool new_chain =
+      4; // true for new chain GenesisState, false for chain restart.
   // ProviderClientState filled in on new chain, nil on restart.
   ibc.lightclients.tendermint.v1.ClientState provider_client_state = 5;
   // ProviderConsensusState filled in on new chain, nil on restart.
@@ -33,8 +34,8 @@ message GenesisState {
   repeated OutstandingDowntime outstanding_downtime_slashing = 10
       [ (gogoproto.nullable) = false ];
   // PendingSlashRequests filled in on new chain, nil on restart.
- interchain_security.ccv.consumer.v1.SlashRequests pending_slash_requests = 11
- [ (gogoproto.nullable) = false ];
+  interchain_security.ccv.consumer.v1.SlashRequests pending_slash_requests = 11
+      [ (gogoproto.nullable) = false ];
 }
 
 // MaturingVSCPacket defines the genesis information for the
@@ -44,7 +45,7 @@ message MaturingVSCPacket {
   uint64 maturity_time = 2;
 }
 
-// HeightValsetUpdateID defines the genesis information for the mapping 
+// HeightValsetUpdateID defines the genesis information for the mapping
 // of each block height to a valset update id
 message HeightToValsetUpdateID {
   uint64 height = 1;

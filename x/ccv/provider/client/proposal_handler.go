@@ -10,11 +10,14 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/rest"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
+	"github.com/cosmos/cosmos-sdk/x/gov/client/cli"
 	govrest "github.com/cosmos/cosmos-sdk/x/gov/client/rest"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/spf13/cobra"
@@ -22,6 +25,12 @@ import (
 
 // ProposalHandler is the param change proposal handler.
 var ProposalHandler = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd, ProposalRESTHandler)
+var ConsumerGovernanceHandler = govclient.NewProposalHandler(SubmitConsumerGovernancePropTxCmd, ConsumerGovernanceProposalRESTHandler)
+
+const (
+	FlagUpgradeHeight = "upgrade-height"
+	FlagUpgradeInfo   = "upgrade-info"
+)
 
 // SubmitConsumerAdditionPropTxCmd returns a CLI command handler for submitting
 // a consumer addition proposal via a transaction.
@@ -161,4 +170,110 @@ func postProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
 
 		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
 	}
+}
+
+// SubmitConsumerGovernancePropTxCmd returns a CLI command handler for submitting
+// a consumer governance proposal via a transaction.
+func SubmitConsumerGovernancePropTxCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "consumer-software-upgrade [connection-id] [plan] (--upgrade-height [height]) (--upgrade-info [info]) [flags]",
+		Args:  cobra.ExactArgs(2),
+		Short: "Submit a consumer chain governance proposal",
+		Long: `
+Submit a consumer chain governance proposal along with an initial deposit.
+
+Example:
+$ interchain-security-pd tx gov submit-proposal consumer-software-upgrade connection-0 upgrade-name [flags] --from=<key_or_address>`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			connectionId := args[0]
+			name := args[1]
+			content, err := parseArgsToContent(cmd, name)
+			if err != nil {
+				return err
+			}
+
+			any, err := codectypes.NewAnyWithValue(content)
+			if err != nil {
+				return err
+			}
+
+			consumerProposal := types.ConsumerGovernanceProposal{
+				ConnectionId: connectionId,
+				Content:      any,
+			}
+
+			depositStr, err := cmd.Flags().GetString(cli.FlagDeposit)
+			if err != nil {
+				return err
+			}
+			deposit, err := sdk.ParseCoinsNormalized(depositStr)
+			if err != nil {
+				return err
+			}
+
+			msg, err := govtypes.NewMsgSubmitProposal(&consumerProposal, deposit, clientCtx.GetFromAddress())
+			if err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
+	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
+	cmd.Flags().String(cli.FlagDeposit, "", "deposit of proposal")
+	cmd.Flags().Int64(FlagUpgradeHeight, 0, "The height at which the upgrade must happen")
+	cmd.Flags().String(FlagUpgradeInfo, "", "Optional info for the planned upgrade such as commit hash, etc.")
+
+	return cmd
+}
+
+func ConsumerGovernanceProposalRESTHandler(clientCtx client.Context) govrest.ProposalRESTHandler {
+	return govrest.ProposalRESTHandler{
+		SubRoute: "propose_consumer_governance",
+		Handler:  postProposalGovernanceHandlerFn(clientCtx),
+	}
+}
+
+func postProposalGovernanceHandlerFn(clientCtx client.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// TODO Ethernal
+	}
+}
+
+func parseArgsToContent(cmd *cobra.Command, name string) (*upgradetypes.SoftwareUpgradeProposal, error) {
+	title, err := cmd.Flags().GetString(cli.FlagTitle)
+	if err != nil {
+		return nil, err
+	}
+
+	description, err := cmd.Flags().GetString(cli.FlagDescription)
+	if err != nil {
+		return nil, err
+	}
+
+	height, err := cmd.Flags().GetInt64(FlagUpgradeHeight)
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := cmd.Flags().GetString(FlagUpgradeInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	plan := upgradetypes.Plan{Name: name, Height: height, Info: info}
+
+	content := upgradetypes.SoftwareUpgradeProposal{
+		Title:       title,
+		Description: description,
+		Plan:        plan}
+
+	return &content, nil
 }

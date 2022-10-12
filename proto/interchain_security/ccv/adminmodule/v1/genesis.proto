@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package interchain_security.ccv.adminmodule.v1;
+
+import "gogoproto/gogo.proto";
+
+// this line is used by starport scaffolding # genesis/proto/import
+
+option go_package = "github.com/cosmos/interchain-security/x/ccv/adminmodule/types";
+
+// GenesisState defines the adminmodule module's genesis state.
+message GenesisState { repeated string admins = 1; }

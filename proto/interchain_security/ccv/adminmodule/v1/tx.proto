@@ -1,0 +1,54 @@
+syntax = "proto3";
+package interchain_security.ccv.adminmodule.v1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "cosmos_proto/cosmos.proto";
+
+// this line is used by starport scaffolding # proto/tx/import
+
+option go_package = "github.com/cosmos/interchain-security/x/ccv/adminmodule/types";
+
+// Msg defines the Msg service.
+service Msg {
+  rpc DeleteAdmin(MsgDeleteAdmin) returns (MsgDeleteAdminResponse);
+  rpc AddAdmin(MsgAddAdmin) returns (MsgAddAdminResponse);
+  rpc SubmitProposal(MsgSubmitProposal) returns (MsgSubmitProposalResponse);
+  // this line is used by starport scaffolding # proto/tx/rpc
+}
+
+// this line is used by starport scaffolding # proto/tx/message
+message MsgDeleteAdmin {
+  string creator = 1;
+  string admin = 2;
+}
+
+message MsgDeleteAdminResponse {}
+
+message MsgAddAdmin {
+  string creator = 1;
+  string admin = 2;
+}
+
+message MsgAddAdminResponse {}
+
+// MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
+// proposal Content.
+message MsgSubmitProposal {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_stringer) = false;
+  option (gogoproto.stringer) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  google.protobuf.Any content = 1
+      [ (cosmos_proto.accepts_interface) = "Content" ];
+  string proposer = 2;
+}
+
+// MsgSubmitProposalResponse defines the Msg/SubmitProposal response type.
+message MsgSubmitProposalResponse {
+  uint64 proposal_id = 1 [
+    (gogoproto.jsontag) = "proposal_id",
+    (gogoproto.moretags) = "yaml:\"proposal_id\""
+  ];
+}

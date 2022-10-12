@@ -7,20 +7,25 @@ import (
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	upgradeTypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	"github.com/gogo/protobuf/proto"
 )
 
 const (
-	ProposalTypeConsumerAddition = "ConsumerAddition"
-	ProposalTypeConsumerRemoval  = "ConsumerRemoval"
+	ProposalTypeConsumerAddition   = "ConsumerAddition"
+	ProposalTypeConsumerRemoval    = "ConsumerRemoval"
+	ProposalTypeConsumerGovernance = "ConsumerGovernance"
 )
 
 var (
 	_ govtypes.Content = &ConsumerAdditionProposal{}
+	_ govtypes.Content = &ConsumerGovernanceProposal{}
 )
 
 func init() {
 	govtypes.RegisterProposalType(ProposalTypeConsumerAddition)
+	govtypes.RegisterProposalType(ProposalTypeConsumerGovernance)
 }
 
 // NewConsumerAdditionProposal creates a new consumer addition proposal.
@@ -118,5 +123,63 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 	if sccp.StopTime.IsZero() {
 		return sdkerrors.Wrap(ErrInvalidConsumerRemovalProp, "spawn time cannot be zero")
 	}
+	return nil
+}
+
+// GetTitle returns the title of a consumer governance proposal.
+func (cgp *ConsumerGovernanceProposal) GetTitle() string {
+	content := cgp.GetGovContent()
+	if content != nil {
+		return content.GetTitle()
+	}
+
+	return ""
+}
+
+// GetDescription returns the description of a consumer governance proposal.
+func (cgp *ConsumerGovernanceProposal) GetDescription() string {
+	content := cgp.GetGovContent()
+	if content != nil {
+		return content.GetDescription()
+	}
+
+	return ""
+}
+
+// ProposalRoute returns the routing key of a consumer governance proposal.
+func (cgp *ConsumerGovernanceProposal) ProposalRoute() string { return RouterKey }
+
+// ProposalType returns the type of a consumer governance proposal.
+func (cgp *ConsumerGovernanceProposal) ProposalType() string {
+	return ProposalTypeConsumerGovernance
+}
+
+// ValidateBasic runs basic stateless validity checks
+func (cgp *ConsumerGovernanceProposal) ValidateBasic() error {
+	if err := govtypes.ValidateAbstract(cgp); err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(cgp.ConnectionId) == "" {
+		return sdkerrors.Wrap(ErrInvalidConsumerConnectionId, "consumer connection id must not be blank")
+	}
+
+	if !strings.HasPrefix(strings.TrimSpace(cgp.ConnectionId), "connection-") {
+		return sdkerrors.Wrap(ErrInvalidConsumerConnectionId, "consumer connection id must start with 'connection-'")
+	}
+
+	return nil
+}
+
+func (m *ConsumerGovernanceProposal) GetGovContent() govtypes.Content {
+	var err error
+	if m.Content.TypeUrl == "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal" {
+		var upgradeProposal upgradeTypes.SoftwareUpgradeProposal
+		err = proto.Unmarshal(m.Content.Value, &upgradeProposal)
+		if err == nil {
+			return &upgradeProposal
+		}
+	}
+
 	return nil
 }
