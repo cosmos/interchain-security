@@ -26,10 +26,12 @@ import (
 // Any method implemented for this struct will be ran when suite.Run() is called.
 type CCVTestSuite struct {
 	suite.Suite
-	coordinator       *ibctesting.Coordinator
-	providerChain     *ibctesting.TestChain
-	consumerChain     *ibctesting.TestChain
-	providerApp       keepertestutil.ProviderApp
+	coordinator   *ibctesting.Coordinator
+	providerChain *ibctesting.TestChain
+	consumerChain *ibctesting.TestChain
+	// An extension to a generic ibc testing app
+	providerApp keepertestutil.ProviderApp
+	// An extension to a generic ibc testing app
 	consumerApp       keepertestutil.ConsumerApp
 	providerClient    *ibctmtypes.ClientState
 	providerConsState *ibctmtypes.ConsensusState
