@@ -24,6 +24,7 @@ type ConsumerApp interface {
 type ConsumerKeeper interface {
 	InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) []abci.ValidatorUpdate
 	GetProviderClientID(ctx sdk.Context) (string, bool)
+	GetDistributionTransmissionChannel(ctx sdk.Context) string
 	// TODO: Expand this interface to be referenced by all e2e tests
 }
 

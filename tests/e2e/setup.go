@@ -16,8 +16,6 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/stretchr/testify/suite"
@@ -195,8 +193,9 @@ func (suite *CCVTestSuite) SetupTransferChannel() {
 
 	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
 	// so transfer channel will be on stage INIT when CompleteSetupCCVChannel returns.
-	suite.transferPath.EndpointA.ChannelID = suite.consumerChain.App.(*appConsumer.App).
-		ConsumerKeeper.GetDistributionTransmissionChannel(suite.consumerChain.GetContext())
+	suite.transferPath.EndpointA.ChannelID =
+		suite.consumerApp.GetConsumerKeeper().GetDistributionTransmissionChannel(
+			suite.consumerChain.GetContext())
 
 	// Complete TRY, ACK, CONFIRM for transfer path
 	err := suite.transferPath.EndpointB.ChanOpenTry()

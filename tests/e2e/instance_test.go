@@ -23,6 +23,9 @@ func TestCCVTestSuite(t *testing.T) {
 		keepertestutil.ProviderApp,
 		keepertestutil.ConsumerApp,
 	) {
+		// Here we pass the concrete types that must implement the necessary interfaces
+		// to be ran with e2e tests.
+		// TODO: Move stuff away from simapp package.
 		coord, prov, cons := simapp.NewProviderConsumerCoordinator(t)
 		return coord, prov, cons, prov.App.(*appProvider.App), cons.App.(*appConsumer.App)
 	})
@@ -31,8 +34,6 @@ func TestCCVTestSuite(t *testing.T) {
 
 // TODO: Run the gov enabled consumer against the standard suite of tests to make sure it
 // sill passes
-
-// TODO: Move stuff away from simapp package.
 
 func TestConsumerDemocracyTestSuite(t *testing.T) {
 	democSuite := e2e.NewConsumerDemocracyTestSuite(
