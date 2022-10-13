@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	app "github.com/cosmos/interchain-security/app/consumer"
 	providerApp "github.com/cosmos/interchain-security/app/provider"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -28,12 +27,12 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
 	//reward for the provider chain will be sent after each 2 blocks
-	consumerParams := s.consumerChain.App.(*app.App).GetSubspace(consumertypes.ModuleName)
+	consumerParams := s.consumerApp.GetSubspace(consumertypes.ModuleName)
 	consumerParams.Set(s.consumerCtx(), consumertypes.KeyBlocksPerDistributionTransmission, int64(2))
 	s.consumerChain.NextBlock()
 
-	consumerAccountKeeper := s.consumerChain.App.(*app.App).AccountKeeper
-	consumerBankKeeper := s.consumerChain.App.(*app.App).BankKeeper
+	consumerAccountKeeper := s.consumerApp.GetE2eAccountKeeper()
+	consumerBankKeeper := s.consumerApp.GetE2eBankKeeper()
 
 	//send coins to the fee pool which is used for reward distribution
 	consumerFeePoolAddr := consumerAccountKeeper.GetModuleAccount(s.consumerCtx(), authtypes.FeeCollectorName).GetAddress()

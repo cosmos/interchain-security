@@ -77,6 +77,7 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
+	"github.com/cosmos/interchain-security/testutil/e2e"
 	ibcconsumer "github.com/cosmos/interchain-security/x/ccv/consumer"
 	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	ibcconsumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -651,9 +652,21 @@ func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
 }
 
+// ConsumerApp interface implementations for e2e tests
+
 // GetProviderKeeper implements the ConsumerApp interface.
 func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
 	return app.ConsumerKeeper
+}
+
+// GetE2eAccountKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
+	return app.BankKeeper
+}
+
+// GetE2eAccountKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
+	return app.AccountKeeper
 }
 
 // TestingApp functions

@@ -27,6 +27,7 @@ func TestCCVTestSuite(t *testing.T) {
 		// to be ran with e2e tests.
 		// TODO: Move stuff away from simapp package.
 		coord, prov, cons := simapp.NewProviderConsumerCoordinator(t)
+		// TODO: search whole repo for casts to concrete app type after those have suppossedly been removed.
 		return coord, prov, cons, prov.App.(*appProvider.App), cons.App.(*appConsumer.App)
 	})
 	suite.Run(t, ccvSuite)

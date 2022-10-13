@@ -4,6 +4,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
@@ -27,6 +28,11 @@ type ProviderApp interface {
 type ConsumerApp interface {
 	ibctesting.TestingApp
 	GetConsumerKeeper() consumerkeeper.Keeper
+	GetSubspace(moduleName string) paramstypes.Subspace
+	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
+	GetE2eBankKeeper() E2eBankKeeper
+	// Returns an account keeper interface with more capabilities than the expected_keepers interface
+	GetE2eAccountKeeper() E2eAccountKeeper
 }
 
 type E2eStakingKeeper interface {
@@ -46,5 +52,11 @@ type E2eStakingKeeper interface {
 
 type E2eBankKeeper interface {
 	ccvtypes.BankKeeper
-	// mas, or is this not needed?
+	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress,
+		recipientModule string, amt sdk.Coins) error
+}
+
+type E2eAccountKeeper interface {
+	// Might just be the expected interface but defined here for consistency since only used in e2e
+	ccvtypes.AccountKeeper
 }
