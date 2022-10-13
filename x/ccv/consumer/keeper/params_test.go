@@ -50,5 +50,3 @@ func TestParams(t *testing.T) {
 		GetProviderFeePoolAddrStr(ctx)
 	require.Equal(t, gotAddr, "foobar")
 }
-
-// TODO: Test invalid params
