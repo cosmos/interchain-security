@@ -40,7 +40,7 @@ func (s *CCVTestSuite) consumerCtx() sdk.Context {
 }
 
 func (s *CCVTestSuite) providerBondDenom() string {
-	return s.providerChain.App.(*appProvider.App).StakingKeeper.BondDenom(s.providerCtx())
+	return s.providerApp.GetCCVStakingKeeper().BondDenom(s.providerCtx())
 }
 
 func (s *CCVTestSuite) getVal(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {

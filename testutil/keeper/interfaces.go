@@ -4,12 +4,15 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // The interface that any provider app must implement to be compatible with e2e tests
 type ProviderApp interface {
 	ibctesting.TestingApp
 	GetProviderKeeper() providerkeeper.Keeper
+	// Returns the staking keeper that the ccv module expects
+	GetCCVStakingKeeper() ccvtypes.StakingKeeper
 }
 
 // The interface that any consumer app must implement to be compatible with e2e tests
