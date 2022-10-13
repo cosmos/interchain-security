@@ -26,6 +26,8 @@ import (
 
 var consumerFraction, _ = sdk.NewDecFromStr(consumerkeeper.ConsumerRedistributeFrac)
 
+// TODO: run democ consumer against normal test suite (for good measure)
+
 // TODO: Comments
 type ConsumerDemocracyTestSuite struct {
 	suite.Suite
