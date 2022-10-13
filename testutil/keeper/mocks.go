@@ -180,20 +180,6 @@ func (mr *MockStakingKeeperMockRecorder) UnbondingTime(ctx interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnbondingTime", reflect.TypeOf((*MockStakingKeeper)(nil).UnbondingTime), ctx)
 }
 
-// BondDenom mocks base method.
-func (m *MockStakingKeeper) BondDenom(ctx types.Context) string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BondDenom", ctx)
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// BondDenom indicates an expected call of BondDenom.
-func (mr *MockStakingKeeperMockRecorder) BondDenom(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BondDenom", reflect.TypeOf((*MockStakingKeeper)(nil).BondDenom), ctx)
-}
-
 // MockSlashingKeeper is a mock of SlashingKeeper interface.
 type MockSlashingKeeper struct {
 	ctrl     *gomock.Controller
