@@ -7,15 +7,19 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-// The interface that any provider app must implement to be compatible with e2e tests
+// The interface that any provider app must implement to be compatible with ccv e2e tests.
+// This is a wrapper around the ibc testing app interface with additional constraints.
 type ProviderApp interface {
 	ibctesting.TestingApp
 	GetProviderKeeper() providerkeeper.Keeper
 	// Returns the staking keeper that the ccv module expects
 	GetCCVStakingKeeper() ccvtypes.StakingKeeper
+	// Returns the bank keeper that the ccv module expects
+	GetCCVBankKeeper() ccvtypes.BankKeeper
 }
 
 // The interface that any consumer app must implement to be compatible with e2e tests
+// This is a wrapper around the ibc testing app interface with additional constraints.
 type ConsumerApp interface {
 	ibctesting.TestingApp
 	GetConsumerKeeper() consumerkeeper.Keeper

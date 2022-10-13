@@ -43,19 +43,22 @@ func (s *CCVTestSuite) providerBondDenom() string {
 	return s.providerApp.GetCCVStakingKeeper().BondDenom(s.providerCtx())
 }
 
-func (s *CCVTestSuite) getVal(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {
+func (s *CCVTestSuite) getValByIdx(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {
 	// Choose a validator, and get its address and data structure into the correct types
 	tmValidator := s.providerChain.Vals.Validators[index]
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
 	s.Require().NoError(err)
-	validator, found := s.providerChain.App.(*appProvider.App).StakingKeeper.GetValidator(s.providerCtx(), valAddr)
-	s.Require().True(found)
+	return s.getVal(s.providerCtx(), valAddr), valAddr
+}
 
-	return validator, valAddr
+func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingtypes.Validator {
+	validator, found := s.providerApp.GetCCVStakingKeeper().GetValidator(s.providerCtx(), valAddr)
+	s.Require().True(found)
+	return validator
 }
 
 func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
-	return s.providerChain.App.(*appProvider.App).BankKeeper.GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
+	return s.providerApp.GetCCVBankKeeper().GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
 
 // delegateAndUndelegate delegates bondAmt from delAddr to the first validator
@@ -84,19 +87,17 @@ func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.
 func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
 	srcValAddr sdk.ValAddress, dstValAddr sdk.ValAddress, amount sdk.Int) {
 
-	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
-
 	// Delegate to src validator
-	srcValTokensBefore := stakingKeeper.Validator(s.providerCtx(), srcValAddr).GetBondedTokens()
+	srcValTokensBefore := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
 	_, sharesDelegated, _ := delegate(s, delAddr, amount)
 
 	// Assert expected amount was bonded to src validator
-	srcValTokensAfter := stakingKeeper.Validator(s.providerCtx(), srcValAddr).GetBondedTokens()
+	srcValTokensAfter := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
 	s.Require().Equal(srcValTokensAfter.Sub(srcValTokensBefore), amount)
 
 	s.providerChain.NextBlock()
 
-	dstValTokensBefore := stakingKeeper.Validator(s.providerCtx(), dstValAddr).GetBondedTokens()
+	dstValTokensBefore := s.getVal(s.providerCtx(), dstValAddr).GetBondedTokens()
 
 	// redelegate shares from src to dst validators
 	redelegate(s, delAddr,
@@ -106,18 +107,18 @@ func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
 	)
 
 	// Assert expected amount was delegated to dst val
-	dstValTokensAfter := stakingKeeper.Validator(s.providerCtx(), dstValAddr).GetBondedTokens()
+	dstValTokensAfter := s.getVal(s.providerCtx(), dstValAddr).GetBondedTokens()
 	s.Require().Equal(dstValTokensAfter.Sub(dstValTokensBefore), amount)
 
 	// Assert delegated tokens amount returned to original value for src validator
-	s.Require().Equal(srcValTokensBefore, stakingKeeper.Validator(s.providerCtx(), srcValAddr).GetBondedTokens())
+	s.Require().Equal(srcValTokensBefore, s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens())
 }
 
 // delegate delegates bondAmt to the first validator
 func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBalance sdk.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
 	initBalance = getBalance(s, s.providerCtx(), delAddr)
 	// choose a validator
-	validator, valAddr := s.getVal(0)
+	validator, valAddr := s.getValByIdx(0)
 	// delegate bondAmt tokens on provider to change validator powers
 	shares, err := s.providerChain.App.(*appProvider.App).StakingKeeper.Delegate(
 		s.providerCtx(),

@@ -246,8 +246,8 @@ func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 	// Setup delegator, bond amount, and src/dst validators
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
-	_, srcVal := s.getVal(0)
-	_, dstVal := s.getVal(1)
+	_, srcVal := s.getValByIdx(0)
+	_, dstVal := s.getValByIdx(1)
 
 	delegateAndRedelegate(
 		s,
@@ -289,8 +289,8 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 	// Setup delegator, bond amount, and src/dst validators
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
-	_, srcVal := s.getVal(0)
-	_, dstVal := s.getVal(1)
+	_, srcVal := s.getValByIdx(0)
+	_, dstVal := s.getValByIdx(1)
 
 	delegateAndRedelegate(
 		s,

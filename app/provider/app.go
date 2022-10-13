@@ -804,9 +804,14 @@ func (app *App) GetProviderKeeper() ibcproviderkeeper.Keeper {
 	return app.ProviderKeeper
 }
 
-// GetProviderKeeper implements the ProviderApp interface.
+// GetCCVStakingKeeper implements the ProviderApp interface.
 func (app *App) GetCCVStakingKeeper() ccvtypes.StakingKeeper {
 	return app.StakingKeeper
+}
+
+// GetCCVBankKeeper implements the ProviderApp interface.
+func (app *App) GetCCVBankKeeper() ccvtypes.BankKeeper {
+	return app.BankKeeper
 }
 
 // TestingApp functions
