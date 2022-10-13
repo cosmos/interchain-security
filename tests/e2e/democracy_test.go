@@ -24,30 +24,27 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-var defaultConsumerFraction, _ = sdk.NewDecFromStr(consumertypes.DefaultConsumerRedistributeFrac)
+var consumerFraction, _ = sdk.NewDecFromStr(consumertypes.DefaultConsumerRedistributeFrac)
 
 type ConsumerDemocracyTestSuite struct {
-	underlyingSuite CCVTestSuite
 	suite.Suite
+	coordinator   *ibctesting.Coordinator
+	providerChain *ibctesting.TestChain
+	consumerChain *ibctesting.TestChain
 }
 
-// SetupTest is a shim for the democracy suite to share setup code with the ccv suite
+// SetupTest sets up in-mem state for the group of tests relevant to ccv with a democracy consumer
+// TODO: Make this method more generalizable to be called by any provider/consumer implementation
 func (democSuite *ConsumerDemocracyTestSuite) SetupTest() {
-	ccvSuite := CCVTestSuite{}
-	ccvSuite.SetT(democSuite.T())
-	ccvSuite.coordinator, ccvSuite.providerChain,
-		ccvSuite.consumerChain = simapp.NewProviderConsumerDemocracyCoordinator(democSuite.T())
-	CommonSetup(&ccvSuite, true)
-	democSuite.underlyingSuite = ccvSuite
+	democSuite.coordinator, democSuite.providerChain,
+		democSuite.consumerChain = simapp.NewProviderConsumerDemocracyCoordinator(democSuite.T())
 }
 
 func TestConsumerDemocracyTestSuite(t *testing.T) {
 	suite.Run(t, new(ConsumerDemocracyTestSuite))
 }
 
-func (suite *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
-
-	s := suite.underlyingSuite
+func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 
 	s.consumerChain.NextBlock()
 	stakingKeeper := s.consumerChain.App.(*appConsumer.App).StakingKeeper
@@ -106,9 +103,9 @@ func (suite *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
 	//confirm that the percentage given to the community pool is equal to the configured community tax percentage.
 	s.Require().Equal(communityPoolDifference.Quo(consumerRedistributeDifference), distrKeeper.GetCommunityTax(s.consumerCtx()))
 	//check that the fraction actually kept by the consumer is the correct fraction. using InEpsilon because the math code uses truncations
-	s.Require().InEpsilon(distrModuleDifference.Quo(providerDifference.Add(distrModuleDifference)).MustFloat64(), defaultConsumerFraction.MustFloat64(), float64(0.0001))
+	s.Require().InEpsilon(distrModuleDifference.Quo(providerDifference.Add(distrModuleDifference)).MustFloat64(), consumerFraction.MustFloat64(), float64(0.0001))
 	//check that the fraction actually kept by the provider is the correct fraction. using InEpsilon because the math code uses truncations
-	s.Require().InEpsilon(providerDifference.Quo(providerDifference.Add(distrModuleDifference)).MustFloat64(), sdk.NewDec(1).Sub(defaultConsumerFraction).MustFloat64(), float64(0.0001))
+	s.Require().InEpsilon(providerDifference.Quo(providerDifference.Add(distrModuleDifference)).MustFloat64(), sdk.NewDec(1).Sub(consumerFraction).MustFloat64(), float64(0.0001))
 
 	totalRepresentativePower := stakingKeeper.GetValidatorSet().TotalBondedTokens(s.consumerCtx())
 
@@ -119,9 +116,7 @@ func (suite *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
 	}
 }
 
-func (suite *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
-	s := suite.underlyingSuite
-
+func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	govKeeper := s.consumerChain.App.(*appConsumer.App).GovKeeper
 	stakingKeeper := s.consumerChain.App.(*appConsumer.App).StakingKeeper
 	bankKeeper := s.consumerChain.App.(*appConsumer.App).BankKeeper
@@ -222,4 +217,8 @@ func getAccountsBalances(ctx sdk.Context, bankKeeper bankkeeper.Keeper, bondDeno
 	}
 
 	return accountsBalances
+}
+
+func (s *ConsumerDemocracyTestSuite) consumerCtx() sdk.Context {
+	return s.consumerChain.GetContext()
 }
