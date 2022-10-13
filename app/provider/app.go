@@ -815,6 +815,11 @@ func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
 	return app.BankKeeper
 }
 
+// GetE2eSlashingKeeper implements the ProviderApp interface.
+func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
+	return app.SlashingKeeper
+}
+
 // TestingApp functions
 
 // GetBaseApp implements the TestingApp interface.

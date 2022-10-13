@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
@@ -21,6 +22,8 @@ type ProviderApp interface {
 	GetE2eStakingKeeper() E2eStakingKeeper
 	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
 	GetE2eBankKeeper() E2eBankKeeper
+	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
+	GetE2eSlashingKeeper() E2eSlashingKeeper
 }
 
 // The interface that any consumer app must implement to be compatible with e2e tests
@@ -48,6 +51,7 @@ type E2eStakingKeeper interface {
 	GetRedelegations(ctx sdk.Context, delegator sdk.AccAddress,
 		maxRetrieve uint16) (redelegations []types.Redelegation)
 	BondDenom(ctx sdk.Context) (res string)
+	IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool
 }
 
 type E2eBankKeeper interface {
@@ -59,4 +63,10 @@ type E2eBankKeeper interface {
 type E2eAccountKeeper interface {
 	// Might just be the expected interface but defined here for consistency since only used in e2e
 	ccvtypes.AccountKeeper
+}
+
+type E2eSlashingKeeper interface {
+	ccvtypes.SlashingKeeper
+	SetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress,
+		info slashingtypes.ValidatorSigningInfo)
 }

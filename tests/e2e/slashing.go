@@ -28,10 +28,10 @@ func (s *CCVTestSuite) TestSendSlashPacketDowntime() {
 	s.SetupTransferChannel()
 	validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
-	providerStakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
-	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
-
-	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
+	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	// get a cross-chain validator address, pubkey and balance
 	tmVals := s.consumerChain.Vals.Validators
@@ -52,7 +52,8 @@ func (s *CCVTestSuite) TestSendSlashPacketDowntime() {
 	providerSlashingKeeper.SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
 
 	// get valseUpdateId for current block height
-	valsetUpdateId := consumerKeeper.GetHeightValsetUpdateID(s.consumerCtx(), uint64(s.consumerCtx().BlockHeight()))
+	valsetUpdateId := consumerKeeper.GetHeightValsetUpdateID(s.consumerCtx(),
+		uint64(s.consumerCtx().BlockHeight()))
 
 	// construct the downtime packet with the validator address and power along
 	// with the slashing and jailing parameters
@@ -65,20 +66,21 @@ func (s *CCVTestSuite) TestSendSlashPacketDowntime() {
 	slashFraction := int64(100)
 	packetData := types.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.Downtime)
 	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
-		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
+	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID,
+		s.path.EndpointA.ChannelID, ccv.ProviderPortID, s.path.EndpointB.ChannelID,
+		clienttypes.Height{}, timeout)
 
 	// Send the downtime packet through CCV
 	err = s.path.EndpointA.SendPacket(packet)
 	s.Require().NoError(err)
 
 	// Set outstanding slashing flag
-	s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consAddr)
+	consumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consAddr)
 
 	// save next VSC packet info
 	oldBlockTime = s.providerCtx().BlockTime()
 	timeout = uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
-	valsetUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	valsetUpdateID := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the downtime packet on the provider chain;
 	// RecvPacket() calls the provider endblocker thus sends a VSC packet to the consumer
@@ -119,7 +121,7 @@ func (s *CCVTestSuite) TestSendSlashPacketDowntime() {
 
 	// check that the validator is successfully jailed on provider
 
-	validatorJailed, ok := s.providerChain.App.(*appProvider.App).StakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
+	validatorJailed, ok := s.providerApp.GetE2eStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
 	s.Require().True(ok)
 	s.Require().True(validatorJailed.Jailed)
 	s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
@@ -135,7 +137,7 @@ func (s *CCVTestSuite) TestSendSlashPacketDowntime() {
 	s.Require().True(valSignInfo.JailedUntil.After(s.providerCtx().BlockHeader().Time))
 
 	// check that the outstanding slashing flag is reset on the consumer
-	pFlag := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OutstandingDowntime(s.consumerCtx(), consAddr)
+	pFlag := consumerKeeper.OutstandingDowntime(s.consumerCtx(), consAddr)
 	s.Require().False(pFlag)
 
 	// check that slashing packet gets acknowledged
@@ -149,9 +151,10 @@ func (s *CCVTestSuite) TestSendSlashPacketDoubleSign() {
 	s.SetupTransferChannel()
 	validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
-	providerStakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
-	providerSlashingKeeper := s.providerChain.App.(*appProvider.App).SlashingKeeper
-	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
 	// get a cross-chain validator address, pubkey and balance
 	tmVals := s.consumerChain.Vals.Validators
@@ -195,7 +198,7 @@ func (s *CCVTestSuite) TestSendSlashPacketDoubleSign() {
 	// save next VSC packet info
 	oldBlockTime = s.providerCtx().BlockTime()
 	timeout = uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
-	valsetUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	valsetUpdateID := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 	// receive the downtime packet on the provider chain;
 	// RecvPacket() calls the provider endblocker and thus sends a VSC packet to the consumer
@@ -235,7 +238,7 @@ func (s *CCVTestSuite) TestSendSlashPacketDoubleSign() {
 	s.Require().NoError(err)
 
 	// check that the validator is successfully jailed on provider
-	validatorJailed, ok := s.providerChain.App.(*appProvider.App).StakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
+	validatorJailed, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
 	s.Require().True(ok)
 	s.Require().True(validatorJailed.Jailed)
 	s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
@@ -256,8 +259,8 @@ func (s *CCVTestSuite) TestSendSlashPacketDoubleSign() {
 }
 
 func (s *CCVTestSuite) TestSlashPacketAcknowldgement() {
-	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
-	consumerKeeper := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
 	s.SetupCCVChannel()
 	s.SetupTransferChannel()
@@ -277,9 +280,9 @@ func (s *CCVTestSuite) TestSlashPacketAcknowldgement() {
 
 // TestHandleSlashPacketDoubleSigning tests the handling of a double-signing related slash packet, with e2e tests
 func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
-	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
-	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
-	providerStakingKeeper := suite.providerChain.App.(*appProvider.App).StakingKeeper
+	providerKeeper := suite.providerApp.GetProviderKeeper()
+	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
+	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
 
 	tmVal := suite.providerChain.Vals.Validators[0]
 	consAddr := sdk.ConsAddress(tmVal.Address)
@@ -308,7 +311,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 	)
 	suite.NoError(err)
 
-	// verify that validator is jailed in the staking and slashing mdodules' states
+	// verify that validator is jailed in the staking and slashing modules' states
 	suite.Require().True(providerStakingKeeper.IsValidatorJailed(suite.providerCtx(), consAddr))
 
 	signingInfo, _ := providerSlashingKeeper.GetValidatorSigningInfo(suite.providerCtx(), consAddr)
@@ -318,9 +321,9 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 
 // TestHandleSlashPacketErrors tests errors for the HandleSlashPacket method in an e2e testing setting
 func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
-	providerStakingKeeper := suite.providerChain.App.(*appProvider.App).StakingKeeper
-	ProviderKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
-	providerSlashingKeeper := suite.providerChain.App.(*appProvider.App).SlashingKeeper
+	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
+	ProviderKeeper := suite.providerApp.GetProviderKeeper()
+	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
 	consumerChainID := suite.consumerChain.ChainID
 
 	// sync contexts block height
