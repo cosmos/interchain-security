@@ -136,11 +136,11 @@ func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBal
 
 // undelegate unbonds an amount of delegator shares from a given validator
 func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (valsetUpdateId uint64) {
-	_, err := s.providerChain.App.(*appProvider.App).StakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, sharesAmount)
+	_, err := s.providerApp.GetE2eStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, sharesAmount)
 	s.Require().NoError(err)
 
 	// save the current valset update ID
-	valsetUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	valsetUpdateID := s.providerApp.GetProviderKeeper().GetValidatorSetUpdateId(s.providerCtx())
 
 	return valsetUpdateID
 }
@@ -149,10 +149,12 @@ func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 // on the provider chain using delegated funds from delAddr
 func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
 	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec) {
+
+	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
 	ctx := s.providerCtx()
 
 	// delegate bondAmt tokens on provider to change validator powers
-	completionTime, err := s.providerChain.App.(*appProvider.App).StakingKeeper.BeginRedelegation(
+	completionTime, err := stakingKeeper.BeginRedelegation(
 		ctx,
 		delAddr,
 		valSrcAddr,
@@ -161,7 +163,6 @@ func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddre
 	)
 	s.Require().NoError(err)
 
-	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
 	providerUnbondingPeriod := stakingKeeper.UnbondingTime(ctx)
 
 	valSrc, found := stakingKeeper.GetValidator(ctx, valSrcAddr)

@@ -1,6 +1,8 @@
 package e2e
 
 import (
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
@@ -31,6 +33,10 @@ type E2eStakingKeeper interface {
 	ccvtypes.StakingKeeper
 	Delegate(ctx sdk.Context, delAddr sdk.AccAddress, bondAmt sdk.Int, tokenSrc types.BondStatus,
 		validator types.Validator, subtractAccount bool) (newShares sdk.Dec, err error)
+	Undelegate(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec,
+	) (time.Time, error)
+	BeginRedelegation(ctx sdk.Context, delAddr sdk.AccAddress, valSrcAddr, valDstAddr sdk.ValAddress,
+		sharesAmount sdk.Dec) (completionTime time.Time, err error)
 	BondDenom(ctx sdk.Context) (res string)
 }
 
