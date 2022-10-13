@@ -5,8 +5,8 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/cosmos/interchain-security/testutil/e2e"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/stretchr/testify/require"
@@ -18,9 +18,6 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
 )
 
 // ChainType defines the type of chain (either provider or consumer)
@@ -215,8 +212,8 @@ func relayAllCommittedPackets(
 // to be one day larger than the consumer unbonding period.
 func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	// Get unboding period from staking keeper
-	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
-	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
+	providerUnbondingPeriod := s.providerApp.GetStakingKeeper().UnbondingTime(s.providerCtx())
+	consumerUnbondingPeriod, found := s.consumerApp.GetConsumerKeeper().GetUnbondingTime(s.consumerCtx())
 	s.Require().True(found)
 	expectedUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
 	s.Require().Equal(expectedUnbondingPeriod+24*time.Hour, providerUnbondingPeriod, "unexpected provider unbonding period")
@@ -241,13 +238,13 @@ func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 }
 
 func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold bool) {
-	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerChain.App.(*appProvider.App).StakingKeeper, id)
+	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerApp.GetE2eStakingKeeper(), id)
 	s.Require().True(found == wasFound)
 	s.Require().True(onHold == (0 < stakingUnbondingOp.UnbondingOnHoldRefCount))
 }
 
 func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool) {
-	entries, wasFound := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
+	entries, wasFound := s.providerApp.GetProviderKeeper().GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
 	s.Require().True(found == wasFound)
 	if found {
 		s.Require().True(len(entries) > 0, "No unbonding ops found")
@@ -261,8 +258,7 @@ func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID strin
 func checkRedelegations(s *CCVTestSuite, delAddr sdk.AccAddress,
 	expect uint16) []stakingtypes.Redelegation {
 
-	redelegations := s.providerChain.App.(*appProvider.App).StakingKeeper.
-		GetRedelegations(s.providerCtx(), delAddr, 2)
+	redelegations := s.providerApp.GetE2eStakingKeeper().GetRedelegations(s.providerCtx(), delAddr, 2)
 
 	s.Require().Len(redelegations, int(expect))
 	return redelegations
@@ -274,7 +270,7 @@ func checkRedelegationEntryCompletionTime(
 	s.Require().Equal(expectedCompletion, entry.CompletionTime)
 }
 
-func getStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
+func getStakingUnbondingDelegationEntry(ctx sdk.Context, k e2e.E2eStakingKeeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
 	stakingUbd, found := k.GetUnbondingDelegationByUnbondingId(ctx, id)
 
 	for _, entry := range stakingUbd.Entries {
@@ -291,7 +287,7 @@ func getStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper,
 // SendEmptyVSCPacket sends a VSC packet without any changes
 // to ensure that the channel gets established
 func (suite *CCVTestSuite) SendEmptyVSCPacket() {
-	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
+	providerKeeper := suite.providerApp.GetProviderKeeper()
 
 	oldBlockTime := suite.providerChain.GetContext().BlockTime()
 	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
@@ -304,7 +300,7 @@ func (suite *CCVTestSuite) SendEmptyVSCPacket() {
 		nil,
 	)
 
-	seq, ok := suite.providerChain.App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
+	seq, ok := suite.providerApp.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
 		suite.providerChain.GetContext(), ccv.ProviderPortID, suite.path.EndpointB.ChannelID)
 	suite.Require().True(ok)
 
@@ -332,7 +328,7 @@ func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.Sla
 // incrementTimeBy increments the overall time by jumpPeriod
 func incrementTimeBy(s *CCVTestSuite, jumpPeriod time.Duration) {
 	// Get unboding period from staking keeper
-	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerChain.GetContext())
+	consumerUnbondingPeriod, found := s.consumerApp.GetConsumerKeeper().GetUnbondingTime(s.consumerChain.GetContext())
 	s.Require().True(found)
 	split := 1
 	if jumpPeriod > consumerUnbondingPeriod/utils.TrustingPeriodFraction {
@@ -350,8 +346,6 @@ func incrementTimeBy(s *CCVTestSuite, jumpPeriod time.Duration) {
 		s.Require().NoError(err)
 	}
 }
-
-// TODO: The two CreateCustomClient methods below can be consolidated when test suite structures are consolidated
 
 // CreateCustomClient creates an IBC client on the endpoint
 // using the given unbonding period.
