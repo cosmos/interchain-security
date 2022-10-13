@@ -20,7 +20,7 @@ func ValidateDuration(i interface{}) error {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 	if period <= time.Duration(0) {
-		return fmt.Errorf("ibc timeout period is not positive")
+		return fmt.Errorf("duration must be positive")
 	}
 	return nil
 }
