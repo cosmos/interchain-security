@@ -16,7 +16,7 @@ const (
 	// 1 week
 	DefaultTransferTimeoutPeriod = 1 * 7 * 24 * time.Hour
 
-	// The fraction of tokens allocated to the consumer redistribution address
+	// The default fraction of tokens allocated to the consumer redistribution address
 	// during distribution events. The fraction is a string representing a
 	// decimal number. For example "0.75" would represent 75%.
 	DefaultConsumerRedistributeFrac = "0.75"
@@ -53,9 +53,8 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		ProviderFeePoolAddrStr:            providerFeePoolAddrStr,
 		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
 		TransferTimeoutPeriod:             transferTimeoutPeriod,
-		// TODO: Find a way to make sure fraction is valid, or don't do that here?
-		ConsumerRedistributionFraction: consumerRedistributionFraction,
-		NumHistoricalEntries:           numHistoricalEntries,
+		ConsumerRedistributionFraction:    consumerRedistributionFraction,
+		NumHistoricalEntries:              numHistoricalEntries,
 	}
 }
 
@@ -74,7 +73,6 @@ func DefaultParams() Params {
 }
 
 // Validate all ccv-consumer module parameters
-// TODO: Unit tests similar to provider
 func (p Params) Validate() error {
 	if err := ccvtypes.ValidateBool(p.Enabled); err != nil {
 		return err
@@ -82,11 +80,9 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidatePositiveInt64(p.BlocksPerDistributionTransmission); err != nil {
 		return err
 	}
-	// TODO: Is it acceptable if string is empty? Defaults say yes
 	if err := ccvtypes.ValidateString(p.DistributionTransmissionChannel); err != nil {
 		return err
 	}
-	// TODO: Is it acceptable if string is empty? Defaults say yes
 	if err := ccvtypes.ValidateString(p.ProviderFeePoolAddrStr); err != nil {
 		return err
 	}

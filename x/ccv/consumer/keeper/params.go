@@ -79,12 +79,16 @@ func (k Keeper) GetTransferTimeoutPeriod(ctx sdk.Context) time.Duration {
 	return p
 }
 
+// GetConsumerRedistributionFrac returns the fraction of tokens allocated to the consumer redistribution
+// address during distribution events. The fraction is a string representing a
+// decimal number. For example "0.75" would represent 75%.
 func (k Keeper) GetConsumerRedistributionFrac(ctx sdk.Context) string {
 	var str string
 	k.paramStore.Get(ctx, types.KeyConsumerRedistributionFrac, &str)
 	return str
 }
 
+// GetNumHistoricalEntries returns the number of historical info entries to persist in store
 func (k Keeper) GetNumHistoricalEntries(ctx sdk.Context) int64 {
 	var n int64
 	k.paramStore.Get(ctx, types.KeyNumHistoricalEntries, &n)
