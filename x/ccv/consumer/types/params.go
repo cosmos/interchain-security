@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	"time"
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -52,41 +51,35 @@ func DefaultParams() Params {
 
 // Validate all ccv-consumer module parameters
 func (p Params) Validate() error {
+	if err := ccvtypes.ValidateBool(p.Enabled); err != nil {
+		return err
+	}
+	if err := ccvtypes.ValidatePositiveInt64(p.BlocksPerDistributionTransmission); err != nil {
+		return err
+	}
+	if err := ccvtypes.ValidateString(p.DistributionTransmissionChannel); err != nil {
+		return err
+	}
+	if err := ccvtypes.ValidateString(p.ProviderFeePoolAddrStr); err != nil {
+		return err
+	}
+	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
+		return err
+	}
 	return nil
 }
 
 // ParamSetPairs implements params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, validateBool),
+		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, ccvtypes.ValidateBool),
 		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,
-			p.BlocksPerDistributionTransmission, validateInt64),
+			p.BlocksPerDistributionTransmission, ccvtypes.ValidateInt64),
 		paramtypes.NewParamSetPair(KeyDistributionTransmissionChannel,
-			p.DistributionTransmissionChannel, validateString),
+			p.DistributionTransmissionChannel, ccvtypes.ValidateString),
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
-			p.ProviderFeePoolAddrStr, validateString),
+			p.ProviderFeePoolAddrStr, ccvtypes.ValidateString),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod,
-			p.CcvTimeoutPeriod, ccvtypes.ValidateCCVTimeoutPeriod),
+			p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 	}
-}
-
-func validateBool(i interface{}) error {
-	if _, ok := i.(bool); !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	return nil
-}
-
-func validateInt64(i interface{}) error {
-	if _, ok := i.(int64); !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	return nil
-}
-
-func validateString(i interface{}) error {
-	if _, ok := i.(string); !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	return nil
 }
