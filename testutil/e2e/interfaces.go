@@ -3,6 +3,7 @@ package e2e
 import (
 	"time"
 
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -36,6 +37,8 @@ type ConsumerApp interface {
 	GetE2eBankKeeper() E2eBankKeeper
 	// Returns an account keeper interface with more capabilities than the expected_keepers interface
 	GetE2eAccountKeeper() E2eAccountKeeper
+	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
+	GetE2eSlashingKeeper() E2eSlashingKeeper
 }
 
 type E2eStakingKeeper interface {
@@ -52,6 +55,8 @@ type E2eStakingKeeper interface {
 		maxRetrieve uint16) (redelegations []types.Redelegation)
 	BondDenom(ctx sdk.Context) (res string)
 	IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool
+	GetUnbondingDelegation(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
+	) (ubd types.UnbondingDelegation, found bool)
 }
 
 type E2eBankKeeper interface {
@@ -69,4 +74,9 @@ type E2eSlashingKeeper interface {
 	ccvtypes.SlashingKeeper
 	SetValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress,
 		info slashingtypes.ValidatorSigningInfo)
+	SignedBlocksWindow(ctx sdk.Context) (res int64)
+	HandleValidatorSignature(ctx sdk.Context, addr cryptotypes.Address, power int64, signed bool)
+	MinSignedPerWindow(ctx sdk.Context) int64
+	IterateValidatorMissedBlockBitArray(ctx sdk.Context,
+		address sdk.ConsAddress, handler func(index int64, missed bool) (stop bool))
 }
