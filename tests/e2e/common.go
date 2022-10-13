@@ -40,7 +40,7 @@ func (s *CCVTestSuite) consumerCtx() sdk.Context {
 }
 
 func (s *CCVTestSuite) providerBondDenom() string {
-	return s.providerApp.GetCCVStakingKeeper().BondDenom(s.providerCtx())
+	return s.providerApp.GetE2eStakingKeeper().BondDenom(s.providerCtx())
 }
 
 func (s *CCVTestSuite) getValByIdx(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {
@@ -52,13 +52,13 @@ func (s *CCVTestSuite) getValByIdx(index int) (validator stakingtypes.Validator,
 }
 
 func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingtypes.Validator {
-	validator, found := s.providerApp.GetCCVStakingKeeper().GetValidator(s.providerCtx(), valAddr)
+	validator, found := s.providerApp.GetE2eStakingKeeper().GetValidator(s.providerCtx(), valAddr)
 	s.Require().True(found)
 	return validator
 }
 
 func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
-	return s.providerApp.GetCCVBankKeeper().GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
+	return s.providerApp.GetE2eBankKeeper().GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
 
 // delegateAndUndelegate delegates bondAmt from delAddr to the first validator
@@ -120,7 +120,7 @@ func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBal
 	// choose a validator
 	validator, valAddr := s.getValByIdx(0)
 	// delegate bondAmt tokens on provider to change validator powers
-	shares, err := s.providerChain.App.(*appProvider.App).StakingKeeper.Delegate(
+	shares, err := s.providerApp.GetE2eStakingKeeper().Delegate(
 		s.providerCtx(),
 		delAddr,
 		bondAmt,

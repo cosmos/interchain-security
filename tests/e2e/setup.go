@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"testing"
 
-	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
+	e2e "github.com/cosmos/interchain-security/testutil/e2e"
 
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
@@ -30,9 +30,9 @@ type CCVTestSuite struct {
 	providerChain *ibctesting.TestChain
 	consumerChain *ibctesting.TestChain
 	// An extension to a generic ibc testing app
-	providerApp keepertestutil.ProviderApp
+	providerApp e2e.ProviderApp
 	// An extension to a generic ibc testing app
-	consumerApp       keepertestutil.ConsumerApp
+	consumerApp       e2e.ConsumerApp
 	providerClient    *ibctmtypes.ClientState
 	providerConsState *ibctmtypes.ConsensusState
 	path              *ibctesting.Path
@@ -43,8 +43,8 @@ type CCVTestSuite struct {
 		coord *ibctesting.Coordinator,
 		providerChain *ibctesting.TestChain,
 		consumerChain *ibctesting.TestChain,
-		providerApp keepertestutil.ProviderApp,
-		conssumerApp keepertestutil.ConsumerApp,
+		providerApp e2e.ProviderApp,
+		conssumerApp e2e.ConsumerApp,
 	)
 }
 
@@ -56,8 +56,8 @@ func NewCCVTestSuite(
 		coord *ibctesting.Coordinator,
 		providerChain *ibctesting.TestChain,
 		consumerChain *ibctesting.TestChain,
-		providerApp keepertestutil.ProviderApp,
-		conssumerApp keepertestutil.ConsumerApp,
+		providerApp e2e.ProviderApp,
+		conssumerApp e2e.ConsumerApp,
 	),
 ) *CCVTestSuite {
 	ccvSuite := new(CCVTestSuite)

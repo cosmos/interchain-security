@@ -105,7 +105,8 @@ import (
 	ibcproviderclient "github.com/cosmos/interchain-security/x/ccv/provider/client"
 	ibcproviderkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+
+	e2e "github.com/cosmos/interchain-security/testutil/e2e"
 
 	"github.com/tendermint/spm/cosmoscmd"
 
@@ -804,13 +805,13 @@ func (app *App) GetProviderKeeper() ibcproviderkeeper.Keeper {
 	return app.ProviderKeeper
 }
 
-// GetCCVStakingKeeper implements the ProviderApp interface.
-func (app *App) GetCCVStakingKeeper() ccvtypes.StakingKeeper {
+// GetE2eStakingKeeper implements the ProviderApp interface.
+func (app *App) GetE2eStakingKeeper() e2e.E2eStakingKeeper {
 	return app.StakingKeeper
 }
 
-// GetCCVBankKeeper implements the ProviderApp interface.
-func (app *App) GetCCVBankKeeper() ccvtypes.BankKeeper {
+// GetE2eBankKeeper implements the ProviderApp interface.
+func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
 	return app.BankKeeper
 }
 

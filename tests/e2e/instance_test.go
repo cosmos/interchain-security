@@ -7,7 +7,7 @@ import (
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/tests/e2e"
-	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
+	e2etestutil "github.com/cosmos/interchain-security/testutil/e2e"
 	"github.com/cosmos/interchain-security/testutil/simapp"
 	"github.com/stretchr/testify/suite"
 )
@@ -20,8 +20,8 @@ func TestCCVTestSuite(t *testing.T) {
 		*ibctesting.Coordinator,
 		*ibctesting.TestChain,
 		*ibctesting.TestChain,
-		keepertestutil.ProviderApp,
-		keepertestutil.ConsumerApp,
+		e2etestutil.ProviderApp,
+		e2etestutil.ConsumerApp,
 	) {
 		// Here we pass the concrete types that must implement the necessary interfaces
 		// to be ran with e2e tests.
