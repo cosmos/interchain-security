@@ -154,7 +154,7 @@ func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
 // heights that are below pruning height
 func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 
-	entryNum := types.HistoricalEntries
+	entryNum := types.DefaultNumHistoricalEntries
 
 	// Prune store to ensure we only have parameter-defined historical entries.
 	// In most cases, this will involve removing a single historical entry.

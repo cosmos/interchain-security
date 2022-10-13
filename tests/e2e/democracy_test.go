@@ -19,13 +19,12 @@ import (
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer-democracy"
 	"github.com/cosmos/interchain-security/testutil/simapp"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
 	"github.com/stretchr/testify/suite"
 )
 
-var consumerFraction, _ = sdk.NewDecFromStr(consumerkeeper.ConsumerRedistributeFrac)
+var consumerFraction, _ = sdk.NewDecFromStr(consumertypes.DefaultConsumerRedistributeFrac)
 
 type ConsumerDemocracyTestSuite struct {
 	suite.Suite

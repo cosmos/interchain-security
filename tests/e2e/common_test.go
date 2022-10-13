@@ -8,6 +8,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/stretchr/testify/require"
@@ -334,7 +335,7 @@ func incrementTimeBy(s *CCVTestSuite, jumpPeriod time.Duration) {
 	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerChain.GetContext())
 	s.Require().True(found)
 	split := 1
-	if jumpPeriod > consumerUnbondingPeriod/utils.TrustingPeriodFraction {
+	if jumpPeriod > consumerUnbondingPeriod/providertypes.DefaultTrustingPeriodFraction {
 		// Make sure the clients do not expire
 		split = 4
 		jumpPeriod = jumpPeriod / 4
@@ -365,7 +366,7 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	tmConfig, ok := endpoint.ClientConfig.(*ibctesting.TendermintConfig)
 	require.True(endpoint.Chain.T, ok)
 	tmConfig.UnbondingPeriod = unbondingPeriod
-	tmConfig.TrustingPeriod = unbondingPeriod / utils.TrustingPeriodFraction
+	tmConfig.TrustingPeriod = unbondingPeriod / providertypes.DefaultTrustingPeriodFraction
 
 	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}

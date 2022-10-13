@@ -50,7 +50,15 @@ func TestInitGenesis(t *testing.T) {
 	}
 
 	// create parameters for a new chain
-	params := types.NewParams(true, types.DefaultBlocksPerDistributionTransmission, "", "", ccv.DefaultCCVTimeoutPeriod)
+	params := types.NewParams(true,
+		types.DefaultBlocksPerDistributionTransmission,
+		"",
+		"",
+		ccv.DefaultCCVTimeoutPeriod,
+		consumertypes.DefaultTransferTimeoutPeriod,
+		consumertypes.DefaultConsumerRedistributeFrac,
+		consumertypes.DefaultNumHistoricalEntries,
+	)
 
 	testCases := []struct {
 		name         string
@@ -152,7 +160,16 @@ func TestExportGenesis(t *testing.T) {
 		MaturityTime: uint64(time.Now().UnixNano()),
 	}
 
-	params := types.NewParams(true, types.DefaultBlocksPerDistributionTransmission, "", "", ccv.DefaultCCVTimeoutPeriod)
+	params := types.NewParams(
+		true,
+		types.DefaultBlocksPerDistributionTransmission,
+		"",
+		"",
+		ccv.DefaultCCVTimeoutPeriod,
+		consumertypes.DefaultTransferTimeoutPeriod,
+		consumertypes.DefaultConsumerRedistributeFrac,
+		consumertypes.DefaultNumHistoricalEntries,
+	)
 
 	// create a single validator
 	pubKey := ed25519.GenPrivKey().PubKey()
