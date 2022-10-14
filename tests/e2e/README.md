@@ -1,7 +1,5 @@
 ## End To End Testing
 
-## TODO documentation here
-
 E2e tests are categorized into files as follows:
 
 - `setup_test.go` - setup for the e2e tests
@@ -13,3 +11,5 @@ E2e tests are categorized into files as follows:
 - `distribution_test.go` - e2e tests for the _Reward Distribution_ sub-protocol
 - `stop_consumer_test.go` - e2e tests for the _Consumer Chain Removal_ sub-protocol
 - `normal_operations_test.go` - e2e tests for _normal operations_ of ICS enabled chains 
+
+To run the e2e tests defined in this repo on any arbitrary consumer and provider implementation, copy the pattern exemplified in `instance_test.go`

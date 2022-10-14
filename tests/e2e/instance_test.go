@@ -12,8 +12,12 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// TODO: explanation of this file.
+// This file can be used as an example e2e testing instance for a particular application.
+// In the case of this repo, we're testing the dummy provider/consumer applications,
+// but to test any arbitrary app, you only need to replicate this file, and pass in the
+// appropriate callback to the testing suites.
 
+// Executes the standard group of ccv tests against an app.go implementation.
 func TestCCVTestSuite(t *testing.T) {
 
 	ccvSuite := e2e.NewCCVTestSuite(func(t *testing.T) (
