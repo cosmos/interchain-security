@@ -13,6 +13,7 @@ import (
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // The interface that any provider app must implement to be compatible with ccv e2e tests.
@@ -34,6 +35,7 @@ type ProviderApp interface {
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ConsumerApp interface {
 	ibctesting.TestingApp
+	BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock
 	GetConsumerKeeper() consumerkeeper.Keeper
 	GetSubspace(moduleName string) paramstypes.Subspace
 	// Returns a bank keeper interface with more capabilities than the expected_keepers interface

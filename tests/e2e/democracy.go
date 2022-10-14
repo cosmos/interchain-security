@@ -64,6 +64,7 @@ func (democSuite *ConsumerDemocracyTestSuite) SetupTest() {
 func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 
 	s.consumerChain.NextBlock()
+	// TODO fix all the shit in this file
 	stakingKeeper := s.consumerChain.App.(*appConsumer.App).StakingKeeper
 	authKeeper := s.consumerChain.App.(*appConsumer.App).AccountKeeper
 	distrKeeper := s.consumerChain.App.(*appConsumer.App).DistrKeeper
