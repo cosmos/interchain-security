@@ -57,13 +57,13 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidatePositiveInt64(p.BlocksPerDistributionTransmission); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateString(p.DistributionTransmissionChannel); err != nil {
+	if err := validateDistributionTransmissionChannel(p.DistributionTransmissionChannel); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateString(p.ProviderFeePoolAddrStr); err != nil {
+	if err := validateProviderFeePoolAddrStr(p.ProviderFeePoolAddrStr); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
+	if err := ccvtypes.ValidateCCVTimeoutPeriod(p.CcvTimeoutPeriod); err != nil {
 		return err
 	}
 	return nil
@@ -74,12 +74,30 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyEnabled, p.Enabled, ccvtypes.ValidateBool),
 		paramtypes.NewParamSetPair(KeyBlocksPerDistributionTransmission,
-			p.BlocksPerDistributionTransmission, ccvtypes.ValidateInt64),
+			p.BlocksPerDistributionTransmission, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyDistributionTransmissionChannel,
-			p.DistributionTransmissionChannel, ccvtypes.ValidateString),
+			p.DistributionTransmissionChannel, validateDistributionTransmissionChannel),
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
-			p.ProviderFeePoolAddrStr, ccvtypes.ValidateString),
+			p.ProviderFeePoolAddrStr, validateProviderFeePoolAddrStr),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod,
-			p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
+			p.CcvTimeoutPeriod, ccvtypes.ValidateCCVTimeoutPeriod),
 	}
+}
+
+func validateDistributionTransmissionChannel(i interface{}) error {
+	// Accept empty string as valid, since this will be the default value on genesis
+	if i == "" {
+		return nil
+	}
+	// Otherwise validate as usual for a channelID
+	return ccvtypes.ValidateChannelIdentifier(i)
+}
+
+func validateProviderFeePoolAddrStr(i interface{}) error {
+	// Accept empty string as valid, since this will be the default value on genesis
+	if i == "" {
+		return nil
+	}
+	// Otherwise validate as usual for a bech32 address
+	return ccvtypes.ValidateBech32(i)
 }
