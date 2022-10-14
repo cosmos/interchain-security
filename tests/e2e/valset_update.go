@@ -7,7 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
@@ -37,6 +36,9 @@ func (s *CCVTestSuite) TestPacketRoundtrip() {
 
 // TestSendVSCMaturedPackets tests the behavior of SendVSCMaturedPackets and related state checks
 func (suite *CCVTestSuite) TestSendVSCMaturedPackets() {
+
+	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
+
 	// setup CCV channel
 	suite.SetupCCVChannel()
 
@@ -68,7 +70,7 @@ func (suite *CCVTestSuite) TestSendVSCMaturedPackets() {
 	// send first packet
 	packet := channeltypes.NewPacket(pd.GetBytes(), 1, ccv.ProviderPortID, suite.path.EndpointB.ChannelID, ccv.ConsumerPortID, suite.path.EndpointA.ChannelID,
 		clienttypes.NewHeight(1, 0), 0)
-	ack := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
+	ack := consumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
 	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
@@ -80,7 +82,7 @@ func (suite *CCVTestSuite) TestSendVSCMaturedPackets() {
 	pd.ValsetUpdateId = 2
 	packet.Data = pd.GetBytes()
 	packet.Sequence = 2
-	ack = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
+	ack = consumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
 	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
@@ -92,31 +94,31 @@ func (suite *CCVTestSuite) TestSendVSCMaturedPackets() {
 	pd.ValsetUpdateId = 3
 	packet.Data = pd.GetBytes()
 	packet.Sequence = 3
-	ack = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
+	ack = consumerKeeper.OnRecvVSCPacket(suite.consumerChain.GetContext(), packet, pd)
 	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
 	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
 	// increase time such that first two packets are unbonded but third is not.
-	unbondingPeriod, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(suite.consumerChain.GetContext())
+	unbondingPeriod, found := consumerKeeper.GetUnbondingTime(suite.consumerChain.GetContext())
 	suite.Require().True(found)
 	// increase time
 	incrementTimeBy(suite, unbondingPeriod-time.Hour)
 
-	err = suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.SendVSCMaturedPackets(suite.consumerChain.GetContext())
+	err = consumerKeeper.SendVSCMaturedPackets(suite.consumerChain.GetContext())
 	suite.Require().NoError(err)
 
 	// ensure first two packets are unbonded and VSCMatured packets are sent
 	// unbonded time is deleted
-	time1 := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 1)
-	time2 := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 2)
+	time1 := consumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 1)
+	time2 := consumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 2)
 	suite.Require().Equal(uint64(0), time1, "maturity time not deleted for mature packet 1")
 	suite.Require().Equal(uint64(0), time2, "maturity time not deleted for mature packet 2")
 	// ensure that third packet did not get unbonded and is still in store
-	time3 := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 3)
+	time3 := consumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 3)
 	suite.Require().True(time3 > uint64(suite.consumerChain.GetContext().BlockTime().UnixNano()), "maturity time for packet 3 is not after current time")
 
 	// check that the packets are committed in state
-	commitments := suite.consumerChain.App.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
+	commitments := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
 		suite.consumerChain.GetContext(),
 		ccv.ConsumerPortID,
 		suite.path.EndpointA.ChannelID,
