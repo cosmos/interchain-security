@@ -5,6 +5,7 @@ import (
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -39,6 +40,8 @@ type ConsumerApp interface {
 	GetE2eAccountKeeper() E2eAccountKeeper
 	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
 	GetE2eSlashingKeeper() E2eSlashingKeeper
+	// Returns an evidence keeper interface with more capabilities than the expected_keepers interface
+	GetE2eEvidenceKeeper() E2eEvidenceKeeper
 }
 
 type E2eStakingKeeper interface {
@@ -79,4 +82,8 @@ type E2eSlashingKeeper interface {
 	MinSignedPerWindow(ctx sdk.Context) int64
 	IterateValidatorMissedBlockBitArray(ctx sdk.Context,
 		address sdk.ConsAddress, handler func(index int64, missed bool) (stop bool))
+}
+
+type E2eEvidenceKeeper interface {
+	HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
 }

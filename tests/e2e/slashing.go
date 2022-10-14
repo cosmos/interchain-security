@@ -14,7 +14,6 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 
@@ -603,7 +602,6 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	// sync suite context after CCV channel is established
 	ctx := suite.consumerCtx()
 
-	app := suite.consumerChain.App.(*appConsumer.App)
 	channelID := suite.path.EndpointA.ChannelID
 
 	// create a validator pubkey and address
@@ -624,29 +622,29 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	}
 
 	// add validator signing-info to the store
-	app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, slashingtypes.ValidatorSigningInfo{
+	suite.consumerApp.GetE2eSlashingKeeper().SetValidatorSigningInfo(ctx, consAddr, slashingtypes.ValidatorSigningInfo{
 		Address:    consAddr.String(),
 		Tombstoned: false,
 	})
 
 	// save next sequence before sending a slash packet
-	seq, ok := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, ccv.ConsumerPortID, channelID)
+	seq, ok := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, ccv.ConsumerPortID, channelID)
 	suite.Require().True(ok)
 
 	// construct slash packet data and get the expcted commit hash
 	packetData := ccv.NewSlashPacketData(
 		abci.Validator{Address: consAddr.Bytes(), Power: power},
 		// get VSC ID mapping to the infraction height with the TM delay substracted
-		app.ConsumerKeeper.GetHeightValsetUpdateID(ctx, uint64(infractionHeight-sdk.ValidatorUpdateDelay)),
+		suite.consumerApp.GetConsumerKeeper().GetHeightValsetUpdateID(ctx, uint64(infractionHeight-sdk.ValidatorUpdateDelay)),
 		stakingtypes.DoubleSign,
 	)
 	expCommit := suite.commitSlashPacket(ctx, packetData)
 
 	// expect to send slash packet when handling double-sign evidence
-	app.EvidenceKeeper.HandleEquivocationEvidence(ctx, e)
+	suite.consumerApp.GetE2eEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
 
 	// check that slash packet is sent
-	gotCommit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq)
+	gotCommit := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq)
 	suite.NotNil(gotCommit)
 
 	suite.Require().EqualValues(expCommit, gotCommit)
@@ -656,12 +654,14 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 func (suite *CCVTestSuite) TestSendSlashPacket() {
 	suite.SetupCCVChannel()
 
-	app := suite.consumerChain.App.(*appConsumer.App)
+	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
+	consumerIBCKeeper := suite.consumerApp.GetIBCKeeper()
+
 	ctx := suite.consumerChain.GetContext()
 	channelID := suite.path.EndpointA.ChannelID
 
 	// check that CCV channel isn't established
-	_, ok := app.ConsumerKeeper.GetProviderChannel(ctx)
+	_, ok := consumerKeeper.GetProviderChannel(ctx)
 	suite.Require().False(ok)
 
 	// expect to store 4 slash requests for downtime
@@ -678,7 +678,7 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 			addr := ed25519.GenPrivKey().PubKey().Address()
 			val := abci.Validator{
 				Address: addr}
-			app.ConsumerKeeper.SendSlashPacket(ctx, val, 0, infraction)
+			consumerKeeper.SendSlashPacket(ctx, val, 0, infraction)
 			slashedVals = append(slashedVals, slashedVal{validator: val, infraction: infraction})
 		}
 		infraction = stakingtypes.DoubleSign
@@ -687,15 +687,15 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 	// expect to store a duplicate for each slash request
 	// in order to test the outstanding downtime logic
 	for _, sv := range slashedVals {
-		app.ConsumerKeeper.SendSlashPacket(ctx, sv.validator, 0, sv.infraction)
+		consumerKeeper.SendSlashPacket(ctx, sv.validator, 0, sv.infraction)
 	}
 
 	// verify that all requests are stored
-	requests := app.ConsumerKeeper.GetPendingSlashRequests(ctx)
+	requests := consumerKeeper.GetPendingSlashRequests(ctx)
 	suite.Require().Len(requests.GetRequests(), 16)
 
 	// save consumer next sequence
-	seq, _ := app.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, ccv.ConsumerPortID, channelID)
+	seq, _ := consumerIBCKeeper.ChannelKeeper.GetNextSequenceSend(ctx, ccv.ConsumerPortID, channelID)
 
 	// establish ccv channel by sending an empty VSC packet to consumer endpoint
 	suite.SendEmptyVSCPacket()
@@ -703,7 +703,7 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 	// check that each pending slash requests is sent once
 	// and that the downtime slash request duplicates are skipped (due to the outstanding downtime flag)
 	for i := 0; i < 16; i++ {
-		commit := app.IBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq+uint64(i))
+		commit := consumerIBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq+uint64(i))
 		if i > 11 {
 			suite.Require().Nil(commit)
 			continue
@@ -717,18 +717,18 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 		downtime := r.Infraction == stakingtypes.Downtime
 		if downtime {
 			consAddr := sdk.ConsAddress(r.Packet.Validator.Address)
-			suite.Require().True(app.ConsumerKeeper.OutstandingDowntime(ctx, consAddr))
+			suite.Require().True(consumerKeeper.OutstandingDowntime(ctx, consAddr))
 		}
 	}
 
 	// check that pending slash requests get cleared after being sent
-	requests = app.ConsumerKeeper.GetPendingSlashRequests(ctx)
+	requests = consumerKeeper.GetPendingSlashRequests(ctx)
 	suite.Require().Len(requests.GetRequests(), 0)
 
 	// check that slash requests aren't stored when channel is established
-	app.ConsumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.Downtime)
-	app.ConsumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.DoubleSign)
+	consumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.Downtime)
+	consumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.DoubleSign)
 
-	requests = app.ConsumerKeeper.GetPendingSlashRequests(ctx)
+	requests = consumerKeeper.GetPendingSlashRequests(ctx)
 	suite.Require().Len(requests.GetRequests(), 0)
 }

@@ -669,9 +669,14 @@ func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
 	return app.AccountKeeper
 }
 
-// GetE2eSlashingKeeper implements the ProviderApp interface.
+// GetE2eSlashingKeeper implements the ConsumerApp interface.
 func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
 	return app.SlashingKeeper
+}
+
+// GetE2eEvidenceKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
+	return app.EvidenceKeeper
 }
 
 // TestingApp functions
