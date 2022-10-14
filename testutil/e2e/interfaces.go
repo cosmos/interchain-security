@@ -20,6 +20,11 @@ import (
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ProviderApp interface {
 	ibctesting.TestingApp
+
+	//
+	// Keeper getters
+	//
+
 	GetProviderKeeper() providerkeeper.Keeper
 	// Returns a staking keeper interface with more capabilities than the expected_keepers interface
 	GetE2eStakingKeeper() E2eStakingKeeper
@@ -35,9 +40,15 @@ type ProviderApp interface {
 // This is a wrapper around the ibc testing app interface with additional constraints.
 type ConsumerApp interface {
 	ibctesting.TestingApp
+
 	BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock
 	GetConsumerKeeper() consumerkeeper.Keeper
 	GetSubspace(moduleName string) paramstypes.Subspace
+
+	//
+	// Keeper getters
+	//
+
 	// Returns a bank keeper interface with more capabilities than the expected_keepers interface
 	GetE2eBankKeeper() E2eBankKeeper
 	// Returns an account keeper interface with more capabilities than the expected_keepers interface
@@ -47,6 +58,11 @@ type ConsumerApp interface {
 	// Returns an evidence keeper interface with more capabilities than the expected_keepers interface
 	GetE2eEvidenceKeeper() E2eEvidenceKeeper
 }
+
+//
+// The following keeper interfaces are wrappers around the expected keepers for ccv modules,
+// since e2e tests require extra functionality from external keepers.
+//
 
 type E2eStakingKeeper interface {
 	ccvtypes.StakingKeeper
@@ -73,7 +89,6 @@ type E2eBankKeeper interface {
 }
 
 type E2eAccountKeeper interface {
-	// Might just be the expected interface but defined here for consistency since only used in e2e
 	ccvtypes.AccountKeeper
 }
 

@@ -3,7 +3,6 @@ package e2e
 import (
 	"fmt"
 	"strconv"
-	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -18,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer-democracy"
+	"github.com/cosmos/interchain-security/testutil/e2e"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
@@ -26,39 +26,30 @@ import (
 
 var consumerFraction, _ = sdk.NewDecFromStr(consumerkeeper.ConsumerRedistributeFrac)
 
-// TODO: run democ consumer against normal test suite (for good measure)
-
-// TODO: Comments
 type ConsumerDemocracyTestSuite struct {
 	suite.Suite
 	coordinator   *ibctesting.Coordinator
 	providerChain *ibctesting.TestChain
 	consumerChain *ibctesting.TestChain
-
-	// Callback for returning a new coordinator and provider/consumer pair
-	setupCoordinatorAndChains func(t *testing.T) (coord *ibctesting.Coordinator,
-		providerChain *ibctesting.TestChain, consumerChain *ibctesting.TestChain)
+	providerApp   e2e.ProviderApp
+	consumerApp   e2e.ConsumerApp
+	setupCallback SetupCallback
 }
 
-// NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite, ready to be tested against
-// using suite.Run().
-func NewConsumerDemocracyTestSuite(
-	// Callback for returning a new coordinator and provider/consumer pair
-	setupCoordinatorAndChains func(t *testing.T) (coord *ibctesting.Coordinator,
-		providerChain *ibctesting.TestChain, consumerChain *ibctesting.TestChain),
-
-	// TODO: Prob need to pass in an App type with proper interface defined,
-	// TODO: Then can use interface for tests below.
-) *ConsumerDemocracyTestSuite {
+// NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite,
+// ready to be tested against using suite.Run().
+func NewConsumerDemocracyTestSuite(setupCallback SetupCallback) *ConsumerDemocracyTestSuite {
 	democSuite := new(ConsumerDemocracyTestSuite)
-	democSuite.setupCoordinatorAndChains = setupCoordinatorAndChains
+	democSuite.setupCallback = setupCallback
 	return democSuite
 }
 
 // SetupTest sets up in-mem state before every test relevant to ccv with a democracy consumer
-func (democSuite *ConsumerDemocracyTestSuite) SetupTest() {
-	democSuite.coordinator, democSuite.providerChain,
-		democSuite.consumerChain = democSuite.setupCoordinatorAndChains(democSuite.T())
+func (suite *ConsumerDemocracyTestSuite) SetupTest() {
+	// Instantiate new test utils using callback
+	suite.coordinator, suite.providerChain,
+		suite.consumerChain, suite.providerApp,
+		suite.consumerApp = suite.setupCallback(suite.T())
 }
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
