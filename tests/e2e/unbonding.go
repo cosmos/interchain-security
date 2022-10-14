@@ -5,7 +5,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	appProvider "github.com/cosmos/interchain-security/app/provider"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -141,6 +140,9 @@ func (s *CCVTestSuite) TestUndelegationNoValsetChange() {
 //   - no undelegations can complete, even if the provider unbonding period elapses
 //   - all the VSC packets are stored in state as pending
 func (s *CCVTestSuite) TestUndelegationDuringInit() {
+
+	providerKeeper := s.providerApp.GetProviderKeeper()
+
 	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
@@ -154,7 +156,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 	s.providerChain.NextBlock()
 
 	// check that the VSC packet is stored in state as pending
-	pendingVSCs, _ := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+	pendingVSCs, _ := providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().True(len(pendingVSCs) == 1, "no pending VSC packet found")
 
 	// delegate again to create another VSC packet
@@ -164,7 +166,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 	s.providerChain.NextBlock()
 
 	// check that the VSC packet is stored in state as pending
-	pendingVSCs, _ = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+	pendingVSCs, _ = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().True(len(pendingVSCs) == 2, "only one pending VSC packet found")
 
 	// increment time so that the unbonding period ends on the provider
@@ -205,8 +207,12 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 // Advance time so that provider's unbonding op completes
 // Check that unbonding has completed in provider staking
 func (s *CCVTestSuite) TestUnbondingNoConsumer() {
+
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+
 	// remove the consumer chain, which was already registered during setup
-	s.providerChain.App.(*appProvider.App).ProviderKeeper.DeleteConsumerClientId(s.providerCtx(), s.consumerChain.ChainID)
+	providerKeeper.DeleteConsumerClientId(s.providerCtx(), s.consumerChain.ChainID)
 
 	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
@@ -220,7 +226,7 @@ func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 	// increment time so that the unbonding period ends on the provider;
 	// cannot use incrementTimeByUnbondingPeriod() since it tries
 	// to also update the provider's client on the consumer
-	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
+	providerUnbondingPeriod := providerStakingKeeper.UnbondingTime(s.providerCtx())
 	s.coordinator.IncrementTimeBy(providerUnbondingPeriod + time.Hour)
 
 	// call NextBlock on the provider (which increments the height)
@@ -237,8 +243,8 @@ func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 // submitted on a provider chain with no consumers
 func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 
-	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
-	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
 	// remove the consumer chain, which was already registered during setup
 	providerKeeper.DeleteConsumerClientId(s.providerCtx(), s.consumerChain.ChainID)
@@ -283,8 +289,8 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 	s.SetupCCVChannel()
 	s.SetupTransferChannel()
 
-	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
-	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
 	// Setup delegator, bond amount, and src/dst validators
 	bondAmt := sdk.NewInt(10000000)
