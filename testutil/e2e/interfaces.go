@@ -26,6 +26,8 @@ type ProviderApp interface {
 	GetE2eBankKeeper() E2eBankKeeper
 	// Returns a slashing keeper interface with more capabilities than the expected_keepers interface
 	GetE2eSlashingKeeper() E2eSlashingKeeper
+	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
+	GetE2eDistributionKeeper() E2eDistributionKeeper
 }
 
 // The interface that any consumer app must implement to be compatible with e2e tests
@@ -86,4 +88,8 @@ type E2eSlashingKeeper interface {
 
 type E2eEvidenceKeeper interface {
 	HandleEquivocationEvidence(ctx sdk.Context, evidence *evidencetypes.Equivocation)
+}
+
+type E2eDistributionKeeper interface {
+	GetFeePoolCommunityCoins(ctx sdk.Context) sdk.DecCoins
 }

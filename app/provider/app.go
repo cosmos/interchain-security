@@ -820,6 +820,11 @@ func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
 	return app.SlashingKeeper
 }
 
+// GetE2eDistributionKeeper implements the ProviderApp interface.
+func (app *App) GetE2eDistributionKeeper() e2e.E2eDistributionKeeper {
+	return app.DistrKeeper
+}
+
 // TestingApp functions
 
 // GetBaseApp implements the TestingApp interface.

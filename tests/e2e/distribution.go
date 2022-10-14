@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	providerApp "github.com/cosmos/interchain-security/app/provider"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -67,7 +66,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 
 	relayAllCommittedPackets(s, s.consumerChain, s.transferPath, transfertypes.PortID, s.transferPath.EndpointA.ChannelID, 1)
 	s.providerChain.NextBlock()
-	communityCoins := s.providerChain.App.(*providerApp.App).DistrKeeper.GetFeePoolCommunityCoins(s.providerCtx())
+	communityCoins := s.providerApp.GetE2eDistributionKeeper().GetFeePoolCommunityCoins(s.providerCtx())
 	ibcCoinIndex := -1
 	for i, coin := range communityCoins {
 		if strings.HasPrefix(coin.Denom, "ibc") {

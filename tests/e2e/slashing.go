@@ -14,7 +14,6 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
-	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -404,8 +403,9 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 // by varying the slash packet VSC ID mapping to infraction heights
 // lesser, equal or greater than the undelegation entry creation height
 func (suite *CCVTestSuite) TestHandleSlashPacketDistribution() {
-	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
 	providerKeeper := suite.providerApp.GetProviderKeeper()
+	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
+	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
 
 	// choose a validator
 	tmValidator := suite.providerChain.Vals.Validators[0]
@@ -457,7 +457,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDistribution() {
 	}
 
 	// create validator signing info to test slashing
-	suite.providerChain.App.(*appProvider.App).SlashingKeeper.SetValidatorSigningInfo(
+	providerSlashingKeeper.SetValidatorSigningInfo(
 		suite.providerChain.GetContext(),
 		sdk.ConsAddress(tmValidator.Address),
 		slashingtypes.ValidatorSigningInfo{Address: tmValidator.Address.String()},
