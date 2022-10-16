@@ -5,6 +5,8 @@ import (
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -59,6 +61,14 @@ type ConsumerApp interface {
 	GetE2eEvidenceKeeper() E2eEvidenceKeeper
 }
 
+type DemocConsumerApp interface {
+	ConsumerApp
+	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
+	GetE2eDistributionKeeper() E2eDistributionKeeper
+	// Returns an staking keeper interface with more capabilities than the expected_keepers interface
+	GetE2eStakingKeeper() E2eStakingKeeper
+}
+
 //
 // The following keeper interfaces are wrappers around the expected keepers for ccv modules,
 // since e2e tests require extra functionality from external keepers.
@@ -80,6 +90,8 @@ type E2eStakingKeeper interface {
 	IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool
 	GetUnbondingDelegation(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 	) (ubd types.UnbondingDelegation, found bool)
+	GetAllValidators(ctx sdk.Context) (validators []types.Validator)
+	GetValidatorSet() types.ValidatorSet
 }
 
 type E2eBankKeeper interface {
@@ -109,4 +121,8 @@ type E2eEvidenceKeeper interface {
 
 type E2eDistributionKeeper interface {
 	GetFeePoolCommunityCoins(ctx sdk.Context) sdk.DecCoins
+	GetDistributionAccount(ctx sdk.Context) authtypes.ModuleAccountI
+	GetValidatorOutstandingRewards(ctx sdk.Context,
+		val sdk.ValAddress) (rewards distributiontypes.ValidatorOutstandingRewards)
+	GetCommunityTax(ctx sdk.Context) (percent sdk.Dec)
 }

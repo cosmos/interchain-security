@@ -47,14 +47,12 @@ func TestConsumerDemocracyTestSuite(t *testing.T) {
 		func(t *testing.T) (
 			*ibctesting.Coordinator,
 			*ibctesting.TestChain,
-			*ibctesting.TestChain,
-			e2etestutil.ProviderApp,
-			e2etestutil.ConsumerApp,
+			e2etestutil.DemocConsumerApp,
 		) {
 			// Here we pass the concrete types that must implement the necessary interfaces
 			// to be ran with e2e tests.
-			coord, prov, cons := simapp.NewProviderConsumerDemocracyCoordinator(t)
-			return coord, prov, cons, prov.App.(*appProvider.App), cons.App.(*appConsumerDemocracy.App)
+			coord, _, cons := simapp.NewProviderConsumerDemocracyCoordinator(t)
+			return coord, cons, cons.App.(*appConsumerDemocracy.App)
 		},
 	)
 	suite.Run(t, democSuite)

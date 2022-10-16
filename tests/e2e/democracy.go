@@ -3,6 +3,7 @@ package e2e
 import (
 	"fmt"
 	"strconv"
+	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -29,37 +30,41 @@ var consumerFraction, _ = sdk.NewDecFromStr(consumerkeeper.ConsumerRedistributeF
 type ConsumerDemocracyTestSuite struct {
 	suite.Suite
 	coordinator   *ibctesting.Coordinator
-	providerChain *ibctesting.TestChain
 	consumerChain *ibctesting.TestChain
-	providerApp   e2e.ProviderApp
-	consumerApp   e2e.ConsumerApp
-	setupCallback SetupCallback
+	consumerApp   e2e.DemocConsumerApp
+	setupCallback DemocSetupCallback
 }
 
 // NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite,
 // ready to be tested against using suite.Run().
-func NewConsumerDemocracyTestSuite(setupCallback SetupCallback) *ConsumerDemocracyTestSuite {
+func NewConsumerDemocracyTestSuite(setupCallback DemocSetupCallback) *ConsumerDemocracyTestSuite {
 	democSuite := new(ConsumerDemocracyTestSuite)
 	democSuite.setupCallback = setupCallback
 	return democSuite
 }
 
+// Callback for instantiating a new coordinator, provider/consumer test chains, and provider/consumer app
+// before every test defined on the suite.
+type DemocSetupCallback func(t *testing.T) (
+	coord *ibctesting.Coordinator,
+	consumerChain *ibctesting.TestChain,
+	consumerApp e2e.DemocConsumerApp,
+)
+
 // SetupTest sets up in-mem state before every test relevant to ccv with a democracy consumer
 func (suite *ConsumerDemocracyTestSuite) SetupTest() {
 	// Instantiate new test utils using callback
-	suite.coordinator, suite.providerChain,
-		suite.consumerChain, suite.providerApp,
+	suite.coordinator, suite.consumerChain,
 		suite.consumerApp = suite.setupCallback(suite.T())
 }
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 
 	s.consumerChain.NextBlock()
-	// TODO fix all the shit in this file
-	stakingKeeper := s.consumerChain.App.(*appConsumer.App).StakingKeeper
-	authKeeper := s.consumerChain.App.(*appConsumer.App).AccountKeeper
-	distrKeeper := s.consumerChain.App.(*appConsumer.App).DistrKeeper
-	bankKeeper := s.consumerChain.App.(*appConsumer.App).BankKeeper
+	stakingKeeper := s.consumerApp.GetE2eStakingKeeper()
+	accountKeeper := s.consumerApp.GetE2eAccountKeeper()
+	distrKeeper := s.consumerApp.GetE2eDistributionKeeper()
+	bankKeeper := s.consumerApp.GetE2eBankKeeper()
 	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
 
 	currentRepresentativesRewards := map[string]sdk.Dec{}
@@ -73,7 +78,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	}
 
 	distrModuleAccount := distrKeeper.GetDistributionAccount(s.consumerCtx())
-	providerRedistributeAccount := authKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName)
+	providerRedistributeAccount := accountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName)
 	//balance of consumer redistribute address will always be 0 when checked between 2 NextBlock() calls
 
 	currentDistrModuleAccountBalance := sdk.NewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
