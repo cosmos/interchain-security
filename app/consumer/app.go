@@ -654,12 +654,12 @@ func (app *App) SimulationManager() *module.SimulationManager {
 
 // ConsumerApp interface implementations for e2e tests
 
-// GetProviderKeeper implements the ConsumerApp interface.
+// GetConsumerKeeper implements the ConsumerApp interface.
 func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 
-// GetE2eAccountKeeper implements the ConsumerApp interface.
+// GetE2eBankKeeper implements the ConsumerApp interface.
 func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
 	return app.BankKeeper
 }

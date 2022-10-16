@@ -760,12 +760,12 @@ func (app *App) SimulationManager() *module.SimulationManager {
 
 // ConsumerApp interface implementations for e2e tests
 
-// GetProviderKeeper implements the ConsumerApp interface.
+// GetConsumerKeeper implements the ConsumerApp interface.
 func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 
-// GetE2eAccountKeeper implements the ConsumerApp interface.
+// GetE2eBankKeeper implements the ConsumerApp interface.
 func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
 	return app.BankKeeper
 }
@@ -783,6 +783,16 @@ func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
 // GetE2eEvidenceKeeper implements the ConsumerApp interface.
 func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
 	return app.EvidenceKeeper
+}
+
+// GetE2eStakingKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eStakingKeeper() e2e.E2eStakingKeeper {
+	return app.StakingKeeper
+}
+
+// GetE2eDistributionKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eDistributionKeeper() e2e.E2eDistributionKeeper {
+	return app.DistrKeeper
 }
 
 // TestingApp functions
