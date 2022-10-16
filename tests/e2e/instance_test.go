@@ -23,7 +23,6 @@ import (
 func TestCCVTestSuite(t *testing.T) {
 
 	ccvSuite := e2e.NewCCVTestSuite(
-		// Pass callback
 		func(t *testing.T) (
 			*ibctesting.Coordinator,
 			*ibctesting.TestChain,
@@ -45,7 +44,6 @@ func TestCCVTestSuite(t *testing.T) {
 // Executes a specialized group of tests, specific to a democracy consumer against an example implementation.
 func TestConsumerDemocracyTestSuite(t *testing.T) {
 	democSuite := e2e.NewConsumerDemocracyTestSuite(
-		// Pass callback
 		func(t *testing.T) (
 			*ibctesting.Coordinator,
 			*ibctesting.TestChain,
