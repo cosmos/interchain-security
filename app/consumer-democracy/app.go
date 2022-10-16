@@ -795,6 +795,16 @@ func (app *App) GetE2eDistributionKeeper() e2e.E2eDistributionKeeper {
 	return app.DistrKeeper
 }
 
+// GetE2eMintKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eMintKeeper() e2e.E2eMintKeeper {
+	return app.MintKeeper
+}
+
+// GetE2eGovKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eGovKeeper() e2e.E2eGovKeeper {
+	return app.GovKeeper
+}
+
 // TestingApp functions
 
 // GetBaseApp implements the TestingApp interface.

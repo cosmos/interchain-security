@@ -8,6 +8,8 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -65,8 +67,12 @@ type DemocConsumerApp interface {
 	ConsumerApp
 	// Returns a distribution keeper interface with more capabilities than the expected_keepers interface
 	GetE2eDistributionKeeper() E2eDistributionKeeper
-	// Returns an staking keeper interface with more capabilities than the expected_keepers interface
+	// Returns a staking keeper interface with more capabilities than the expected_keepers interface
 	GetE2eStakingKeeper() E2eStakingKeeper
+	// Returns a mint keeper interface with more capabilities than the expected_keepers interface
+	GetE2eMintKeeper() E2eMintKeeper
+	// Returns a gov keeper interface with more capabilities than the expected_keepers interface
+	GetE2eGovKeeper() E2eGovKeeper
 }
 
 //
@@ -102,6 +108,7 @@ type E2eBankKeeper interface {
 
 type E2eAccountKeeper interface {
 	ccvtypes.AccountKeeper
+	GetParams(sdk.Context) authtypes.Params
 }
 
 type E2eSlashingKeeper interface {
@@ -125,4 +132,17 @@ type E2eDistributionKeeper interface {
 	GetValidatorOutstandingRewards(ctx sdk.Context,
 		val sdk.ValAddress) (rewards distributiontypes.ValidatorOutstandingRewards)
 	GetCommunityTax(ctx sdk.Context) (percent sdk.Dec)
+}
+
+type E2eMintKeeper interface {
+	GetParams(ctx sdk.Context) (params minttypes.Params)
+}
+
+type E2eGovKeeper interface {
+	GetDepositParams(ctx sdk.Context) govtypes.DepositParams
+	GetVotingParams(ctx sdk.Context) govtypes.VotingParams
+	SetVotingParams(ctx sdk.Context, votingParams govtypes.VotingParams)
+	SubmitProposal(ctx sdk.Context, content govtypes.Content) (govtypes.Proposal, error)
+	AddDeposit(ctx sdk.Context, proposalID uint64, depositorAddr sdk.AccAddress, depositAmount sdk.Coins) (bool, error)
+	AddVote(ctx sdk.Context, proposalID uint64, voterAddr sdk.AccAddress, options govtypes.WeightedVoteOptions) error
 }
