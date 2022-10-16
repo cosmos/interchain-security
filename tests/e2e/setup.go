@@ -52,7 +52,7 @@ type SetupCallback func(t *testing.T) (
 	providerChain *ibctesting.TestChain,
 	consumerChain *ibctesting.TestChain,
 	providerApp e2e.ProviderApp,
-	conssumerApp e2e.ConsumerApp,
+	consumerApp e2e.ConsumerApp,
 )
 
 // SetupTest sets up in-mem state before every test
