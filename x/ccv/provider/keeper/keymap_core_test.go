@@ -80,7 +80,7 @@ type driver struct {
 	providerValsets []valset
 	// The validator set from the perspective of
 	// the consumer chain.
-	consumerValsets valset
+	consumerValset valset
 }
 
 func makeDriver(t *testing.T, trace []traceStep) driver {
@@ -97,7 +97,7 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 	d.mappings = []map[PK]CK{}
 	d.consumerUpdates = [][]update{}
 	d.providerValsets = []valset{}
-	d.consumerValsets = valset{}
+	d.consumerValset = valset{}
 	return d
 }
 
@@ -165,8 +165,8 @@ func (d *driver) run() {
 		// Set the initial consumer set
 		d.consumerUpdates = append(d.consumerUpdates, d.km.ComputeUpdates(init.timeProvider, init.providerUpdates))
 		// The first consumer set equal to the provider set at time 0
-		d.consumerValsets = makeValset()
-		d.consumerValsets.applyUpdates(d.consumerUpdates[init.timeConsumer])
+		d.consumerValset = makeValset()
+		d.consumerValset.applyUpdates(d.consumerUpdates[init.timeConsumer])
 		d.km.PruneUnusedKeys(init.timeMaturity)
 	}
 
@@ -192,7 +192,7 @@ func (d *driver) run() {
 			// For each unit of time that has passed since the last increase, apply
 			// any updates which have been 'emitted' by a provider time increase step.
 			for j := d.lastTimeConsumer + 1; j <= s.timeConsumer; j++ {
-				d.consumerValsets.applyUpdates(d.consumerUpdates[j])
+				d.consumerValset.applyUpdates(d.consumerUpdates[j])
 			}
 			d.lastTimeConsumer = s.timeConsumer
 		}
@@ -238,7 +238,7 @@ func (d *driver) externalInvariants() {
 	validatorSetReplication := func() {
 
 		// Get the consumer set.
-		cSet := d.consumerValsets.keyToPower
+		cSet := d.consumerValset.keyToPower
 		// Get the provider set - at the corresponding time.
 		pSet := d.providerValsets[d.lastTimeConsumer].keyToPower
 
@@ -276,7 +276,7 @@ func (d *driver) externalInvariants() {
 	*/
 	queries := func() {
 		// For each key known to the consumer
-		for ck := range d.consumerValsets.keyToPower {
+		for ck := range d.consumerValset.keyToPower {
 
 			// The query must return a result
 			pkQueried, err := d.km.GetProviderKey(ck)
