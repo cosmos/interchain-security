@@ -33,22 +33,22 @@ func makeStore() store {
 		ckToMemo: map[CK]Memo{},
 	}
 }
-func (s *store) getPkToCk() map[PK]CK {
+func (s *store) GetPkToCk() map[PK]CK {
 	return s.pkToCk
 }
-func (s *store) getCkToPk() map[CK]PK {
+func (s *store) GetCkToPk() map[CK]PK {
 	return s.ckToPk
 }
-func (s *store) getCkToMemo() map[CK]Memo {
+func (s *store) GetCkToMemo() map[CK]Memo {
 	return s.ckToMemo
 }
-func (s *store) setPkToCk(e map[PK]CK) {
+func (s *store) SetPkToCk(e map[PK]CK) {
 	s.pkToCk = e
 }
-func (s *store) setCkToPk(e map[CK]PK) {
+func (s *store) SetCkToPk(e map[CK]PK) {
 	s.ckToPk = e
 }
-func (s *store) setCkToMemo(e map[CK]Memo) {
+func (s *store) SetCkToMemo(e map[CK]Memo) {
 	s.ckToMemo = e
 }
 

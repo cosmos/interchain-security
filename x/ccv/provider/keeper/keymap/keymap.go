@@ -50,12 +50,12 @@ type KeyMap struct {
 }
 
 type Store interface {
-	getPkToCk() map[PK]CK
-	getCkToPk() map[CK]PK
-	getCkToMemo() map[CK]Memo
-	setPkToCk(map[PK]CK)
-	setCkToPk(map[CK]PK)
-	setCkToMemo(map[CK]Memo)
+	GetPkToCk() map[PK]CK
+	GetCkToPk() map[CK]PK
+	GetCkToMemo() map[CK]Memo
+	SetPkToCk(map[PK]CK)
+	SetCkToPk(map[CK]PK)
+	SetCkToMemo(map[CK]Memo)
 }
 
 func MakeKeyMap(store Store) KeyMap {
@@ -68,18 +68,18 @@ func MakeKeyMap(store Store) KeyMap {
 // The granularity of store access can be changed if needed for
 // performance reasons.
 func (e *KeyMap) GetAll() {
-	e.pkToCk = e.store.getPkToCk()
-	e.ckToPk = e.store.getCkToPk()
-	e.ckToMemo = e.store.getCkToMemo()
+	e.pkToCk = e.store.GetPkToCk()
+	e.ckToPk = e.store.GetCkToPk()
+	e.ckToMemo = e.store.GetCkToMemo()
 }
 
 // SetAll write all data to store
 // The granularity of store access can be changed if needed for
 // performance reasons.
 func (e *KeyMap) SetAll() {
-	e.store.setPkToCk(e.pkToCk)
-	e.store.setCkToPk(e.ckToPk)
-	e.store.setCkToMemo(e.ckToMemo)
+	e.store.SetPkToCk(e.pkToCk)
+	e.store.SetCkToPk(e.ckToPk)
+	e.store.SetCkToMemo(e.ckToMemo)
 }
 
 // TODO:

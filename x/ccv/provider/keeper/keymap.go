@@ -9,40 +9,20 @@ type KeyMapStore struct {
 	chainID ChainID
 }
 
-func (s KeyMapStore) getPkToCk() map[keymap.PK]keymap.CK {
-	_ = s
-	// TODO: implement
-	panic("not implemented")
+func (s *KeyMapStore) GetCkToMemo() map[keymap.CK]keymap.Memo {
+	return map[keymap.CK]keymap.Memo{}
 }
-
-func (s KeyMapStore) getCkToPk() map[keymap.CK]keymap.PK {
-	_ = s
-	// TODO: implement
-	panic("not implemented")
+func (s *KeyMapStore) GetPkToCk() map[keymap.PK]keymap.CK {
+	return map[keymap.PK]keymap.CK{}
 }
-
-func (s KeyMapStore) getCkToMemo() map[keymap.CK]keymap.Memo {
-	_ = s
-	// TODO: implement
-	panic("not implemented")
+func (s *KeyMapStore) GetCkToPk() map[keymap.CK]keymap.PK {
+	return map[keymap.CK]keymap.PK{}
 }
-
-func (s KeyMapStore) setPkToCk(e map[keymap.PK]keymap.CK) {
-	_ = s
-	// TODO: implement
-	panic("not implemented")
+func (s *KeyMapStore) SetPkToCk(e map[keymap.PK]keymap.CK) {
 }
-
-func (s KeyMapStore) setCkToPk(e map[keymap.CK]keymap.PK) {
-	_ = s
-	// TODO: implement
-	panic("not implemented")
+func (s *KeyMapStore) SetCkToPk(e map[keymap.CK]keymap.PK) {
 }
-
-func (s KeyMapStore) setCkToMemo(e map[keymap.CK]keymap.Memo) {
-	_ = s
-	// TODO: implement
-	panic("not implemented")
+func (s *KeyMapStore) SetCkToMemo(e map[keymap.CK]keymap.Memo) {
 }
 
 func (k Keeper) addKeyMapForConsumer(chainID ChainID) {
@@ -56,9 +36,9 @@ func (k Keeper) delKeyMapForConsumer(chainID ChainID) {
 func (k Keeper) loadKeyMaps(ctx sdk.Context) {
 
 	k.keymaps = map[ChainID]keymap.KeyMap{}
-	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
+	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, _ string) (stop bool) {
 		store := KeyMapStore{chainID}
-		k.keymaps[chainID] = keymap.MakeKeyMap(store)
+		k.keymaps[chainID] = keymap.MakeKeyMap(&store)
 		return false
 	})
 
