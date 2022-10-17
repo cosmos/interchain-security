@@ -9,6 +9,7 @@ import "google/protobuf/any.proto";
 import "cosmos/staking/v1beta1/staking.proto";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
+import "google/protobuf/duration.proto";
 
 // Params defines the parameters for CCV consumer module
 message Params {
@@ -29,6 +30,9 @@ message Params {
   // provider handshake procedure.
   string distribution_transmission_channel = 3;
   string provider_fee_pool_addr_str = 4;
+  // Sent IBC packets will timeout after this duration
+  google.protobuf.Duration ccv_timeout_period = 5
+      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 }
 
 // LastTransmissionBlockHeight is the last time validator holding

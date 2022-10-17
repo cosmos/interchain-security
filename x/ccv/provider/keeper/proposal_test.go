@@ -19,6 +19,7 @@ import (
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 //
@@ -78,8 +79,8 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 	for _, tc := range tests {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		keeperParams.SetTemplateClientState(nil)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		if tc.expCreatedClient {
@@ -154,8 +155,8 @@ func TestCreateConsumerClient(t *testing.T) {
 	for _, tc := range tests {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		keeperParams.SetTemplateClientState(nil)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 		// Test specific setup
 		tc.setup(&providerKeeper, ctx, &mocks)
@@ -355,8 +356,8 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		keeperParams.SetTemplateClientState(nil)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		// Mock expectations and setup for stopping the consumer chain, if applicable
@@ -431,8 +432,8 @@ func TestStopConsumerChain(t *testing.T) {
 
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		keeperParams.SetTemplateClientState(nil)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 		// Setup specific to test case
 		tc.setup(ctx, &providerKeeper, mocks)
@@ -576,8 +577,9 @@ func TestPendingConsumerRemovalPropOrder(t *testing.T) {
 func TestMakeConsumerGenesis(t *testing.T) {
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	keeperParams.SetTemplateClientState(
-		&ibctmtypes.ClientState{
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	moduleParams := providertypes.Params{
+		TemplateClient: &ibctmtypes.ClientState{
 			TrustLevel:    ibctmtypes.DefaultTrustLevel,
 			MaxClockDrift: 10000000000,
 			ProofSpecs: []*_go.ProofSpec{
@@ -621,8 +623,9 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			AllowUpdateAfterExpiry:       true,
 			AllowUpdateAfterMisbehaviour: true,
 		},
-	)
-	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		CcvTimeoutPeriod: ccvtypes.DefaultCCVTimeoutPeriod,
+	}
+	providerKeeper.SetParams(ctx, moduleParams)
 	defer ctrl.Finish()
 
 	//
@@ -635,7 +638,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	actualGenesis, err := providerKeeper.MakeConsumerGenesis(ctx)
 	require.NoError(t, err)
 
-	jsonString := `{"params":{"enabled":true, "blocks_per_distribution_transmission":1000, "lock_unbonding_on_timeout": false},"new_chain":true,"provider_client_state":{"chain_id":"testchain1","trust_level":{"numerator":1,"denominator":3},"trusting_period":907200000000000,"unbonding_period":1814400000000000,"max_clock_drift":10000000000,"frozen_height":{},"latest_height":{"revision_height":5},"proof_specs":[{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":33,"min_prefix_length":4,"max_prefix_length":12,"hash":1}},{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":32,"min_prefix_length":1,"max_prefix_length":1,"hash":1}}],"upgrade_path":["upgrade","upgradedIBCState"],"allow_update_after_expiry":true,"allow_update_after_misbehaviour":true},"provider_consensus_state":{"timestamp":"2020-01-02T00:00:10Z","root":{"hash":"LpGpeyQVLUo9HpdsgJr12NP2eCICspcULiWa5u9udOA="},"next_validators_hash":"E30CE736441FB9101FADDAF7E578ABBE6DFDB67207112350A9A904D554E1F5BE"},"unbonding_sequences":null,"initial_val_set":[{"pub_key":{"type":"tendermint/PubKeyEd25519","value":"dcASx5/LIKZqagJWN0frOlFtcvz91frYmj/zmoZRWro="},"power":1}]}`
+	jsonString := `{"params":{"enabled":true, "blocks_per_distribution_transmission":1000, "ccv_timeout_period":2419200000000000},"new_chain":true,"provider_client_state":{"chain_id":"testchain1","trust_level":{"numerator":1,"denominator":3},"trusting_period":907200000000000,"unbonding_period":1814400000000000,"max_clock_drift":10000000000,"frozen_height":{},"latest_height":{"revision_height":5},"proof_specs":[{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":33,"min_prefix_length":4,"max_prefix_length":12,"hash":1}},{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":32,"min_prefix_length":1,"max_prefix_length":1,"hash":1}}],"upgrade_path":["upgrade","upgradedIBCState"],"allow_update_after_expiry":true,"allow_update_after_misbehaviour":true},"provider_consensus_state":{"timestamp":"2020-01-02T00:00:10Z","root":{"hash":"LpGpeyQVLUo9HpdsgJr12NP2eCICspcULiWa5u9udOA="},"next_validators_hash":"E30CE736441FB9101FADDAF7E578ABBE6DFDB67207112350A9A904D554E1F5BE"},"unbonding_sequences":null,"initial_val_set":[{"pub_key":{"type":"tendermint/PubKeyEd25519","value":"dcASx5/LIKZqagJWN0frOlFtcvz91frYmj/zmoZRWro="},"power":1}]}`
 
 	var expectedGenesis consumertypes.GenesisState
 	err = json.Unmarshal([]byte(jsonString), &expectedGenesis)
@@ -647,7 +650,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	actualGenesis.ProviderConsensusState = &ibctmtypes.ConsensusState{}
 	expectedGenesis.ProviderConsensusState = &ibctmtypes.ConsensusState{}
 
-	require.Equal(t, actualGenesis, expectedGenesis, "consumer chain genesis created incorrectly")
+	require.Equal(t, expectedGenesis, actualGenesis, "consumer chain genesis created incorrectly")
 }
 
 // TestBeginBlockInit directly tests BeginBlockInit against the spec using helpers defined above.
@@ -659,8 +662,8 @@ func TestBeginBlockInit(t *testing.T) {
 	now := time.Now().UTC()
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	keeperParams.SetTemplateClientState(nil)
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockTime(now)
 
@@ -709,8 +712,8 @@ func TestBeginBlockCCR(t *testing.T) {
 	now := time.Now().UTC()
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	keeperParams.SetTemplateClientState(nil)
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockTime(now)
 
