@@ -4,9 +4,11 @@ import (
 	"math/rand"
 	"testing"
 
-	"cosmossdk.io/api/tendermint/abci"
-	"github.com/cosmos/cosmos-sdk/api/tendermint/abci"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
+	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 // Num traces to run for heuristic testing
@@ -21,6 +23,24 @@ const NUM_VALS = 4
 // Number of consumer keys in the universe
 // (This is constrained to ensure overlap edge cases are tested)
 const NUM_CKS = 50
+
+var testingKeys []crypto.PublicKey
+
+func init() {
+	totalNumKeys := NUM_VALS + NUM_CKS
+	keys := simapp.CreateTestPubKeys(totalNumKeys)
+	for i := 0; i < totalNumKeys; i++ {
+		k, err := cryptocodec.ToTmProtoPublicKey(keys[i])
+		if err != nil {
+			panic("could not create tendermint test keys")
+		}
+		testingKeys = append(testingKeys, k)
+	}
+}
+
+func key(i int) crypto.PublicKey {
+	return testingKeys[i]
+}
 
 type store struct {
 	pkToCk   map[PK]CK
@@ -97,7 +117,7 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 	d.lastTimeConsumer = 0
 	d.lastTimeMaturity = 0
 	d.mappings = []map[PK]CK{}
-	d.consumerUpdates = [][]update{}
+	d.consumerUpdates = [][]abci.ValidatorUpdate{}
 	d.providerValsets = []valset{}
 	d.consumerValset = valset{}
 	return d
@@ -105,19 +125,19 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 
 // Utility struct to make simulating a validator set easier.
 type valset struct {
-	keyToPower map[int]int
+	keyToPower map[crypto.PublicKey]int64
 }
 
 func makeValset() valset {
-	return valset{keyToPower: map[int]int{}}
+	return valset{keyToPower: map[crypto.PublicKey]int64{}}
 }
 
 // Apply a batch of (key, power) updates to the known validator set.
-func (vs *valset) applyUpdates(updates []update) {
+func (vs *valset) applyUpdates(updates []abci.ValidatorUpdate) {
 	for _, u := range updates {
-		delete(vs.keyToPower, u.key)
-		if 0 < u.power {
-			vs.keyToPower[u.key] = u.power
+		delete(vs.keyToPower, u.PubKey)
+		if 0 < u.Power {
+			vs.keyToPower[u.PubKey] = u.Power
 		}
 	}
 }
@@ -138,7 +158,7 @@ func (d *driver) applyKeyMapEntries(entries []keyMapEntry) {
 }
 
 // Apply a list of provider validator power updates
-func (d *driver) applyProviderUpdates(providerUPdates []update) {
+func (d *driver) applyProviderUpdates(providerUPdates []abci.ValidatorUpdate) {
 	// Duplicate the previous valSet so that it can be referenced
 	// later in tests.
 	valSet := makeValset()
@@ -246,7 +266,7 @@ func (d *driver) externalInvariants() {
 
 		// Compute a reverse lookup allowing comparison
 		// of the two sets.
-		cSetLikePSet := map[PK]int{}
+		cSetLikePSet := map[PK]int64{}
 		{
 			mapping := d.mappings[d.lastTimeConsumer]
 			inverseMapping := map[CK]PK{}
@@ -314,10 +334,10 @@ func (d *driver) externalInvariants() {
 	/*
 		All keys that the consumer definitely cannot use as a parameter in
 		a slash request must eventually be pruned from state.
-		A consumer can still reference a key if the last update it received
-		for the key had a positive power associated to it, OR the last update
+		A consumer can still reference a key if the last abci.ValidatorUpdate it received
+		for the key had a positive power associated to it, OR the last abci.ValidatorUpdate
 		had a 0 power associated (deletion) but the maturity period for that
-		update has not yet elapsed (and the maturity was not yet received
+		abci.ValidatorUpdate has not yet elapsed (and the maturity was not yet received
 		on the provider chain).
 	*/
 	pruning := func() {
@@ -328,22 +348,22 @@ func (d *driver) externalInvariants() {
 
 		for i := 0; i <= d.lastTimeMaturity; i++ {
 			for _, u := range d.consumerUpdates[i] {
-				// If the latest update for a given consumer key was dispatched
+				// If the latest abci.ValidatorUpdate for a given consumer key was dispatched
 				// AND also matured since the last maturity, then
-				// 1) if that update was a positive power update then no subsequent
-				//    zero power update can have matured. Thus the key should be
+				// 1) if that abci.ValidatorUpdate was a positive power abci.ValidatorUpdate then no subsequent
+				//    zero power abci.ValidatorUpdate can have matured. Thus the key should be
 				//    queryable.
-				// 2) if that update was a zero positive power update then the
+				// 2) if that abci.ValidatorUpdate was a zero positive power abci.ValidatorUpdate then the
 				//    key should not be queryable unless it was used in a subsquent
-				//    update (see next block).
-				expectQueryable[u.key] = 0 < u.power
+				//    abci.ValidatorUpdate (see next block).
+				expectQueryable[u.PubKey] = 0 < u.Power
 			}
 		}
 		for i := d.lastTimeMaturity + 1; i <= d.lastTimeProvider; i++ {
 			for _, u := range d.consumerUpdates[i] {
-				// If a positive OR zero power update was RECENTLY received
+				// If a positive OR zero power abci.ValidatorUpdate was RECENTLY received
 				// for the consumer, then the key must be queryable.
-				expectQueryable[u.key] = true
+				expectQueryable[u.PubKey] = true
 			}
 		}
 		// If a consumer key is CURRENTLY mapped to by a provider key, it
@@ -391,8 +411,8 @@ func getTrace(t *testing.T) []traceStep {
 		return ret
 	}
 
-	providerUpdates := func() []update {
-		ret := []update{}
+	providerUpdates := func() []abci.ValidatorUpdate {
+		ret := []abci.ValidatorUpdate{}
 
 		// include none (to) all validators
 		pks := rand.Perm(NUM_VALS)[0:rand.Intn(NUM_VALS+1)]
@@ -402,7 +422,7 @@ func getTrace(t *testing.T) []traceStep {
 			// 1: positive
 			// 2: positive (change)
 			power := rand.Intn(3)
-			ret = append(ret, update{key: pk, power: power})
+			ret = append(ret, abci.ValidatorUpdate{PubKey: pk, Power: power})
 		}
 		return ret
 	}
