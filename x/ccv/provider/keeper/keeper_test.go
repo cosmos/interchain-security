@@ -296,3 +296,34 @@ func TestMaturedUnbondingOps(t *testing.T) {
 		require.Equal(t, unbondingOpIds[i], ids[i])
 	}
 }
+
+func TestInitTimeoutTimestamp(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	tc := []struct {
+		chainID  string
+		expected uint64
+	}{
+		{expected: 5, chainID: "chain"},
+		{expected: 10, chainID: "chain1"},
+		{expected: 12, chainID: "chain2"},
+	}
+
+	_, found := providerKeeper.GetInitTimeoutTimestamp(ctx, tc[0].chainID)
+	require.False(t, found)
+
+	providerKeeper.SetInitTimeoutTimestamp(ctx, tc[0].chainID, tc[0].expected)
+	providerKeeper.SetInitTimeoutTimestamp(ctx, tc[1].chainID, tc[1].expected)
+	providerKeeper.SetInitTimeoutTimestamp(ctx, tc[2].chainID, tc[2].expected)
+
+	for _, tc := range tc {
+		ts, found := providerKeeper.GetInitTimeoutTimestamp(ctx, tc.chainID)
+		require.True(t, found)
+		require.Equal(t, tc.expected, ts)
+	}
+
+	providerKeeper.DeleteInitTimeoutTimestamp(ctx, tc[1].chainID)
+	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, tc[1].chainID)
+	require.False(t, found)
+}

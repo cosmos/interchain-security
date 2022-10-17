@@ -49,8 +49,12 @@ const (
 	// from the CCV channel ID to the consumer chain ID.
 	ChannelToChainBytePrefix
 
-	// ChainToClientBytePrefix is the byte prefix for storing the consumer chainID for a given consumer clientid.
+	// ChainToClientBytePrefix is the byte prefix for storing the client ID for a given consumer chainID.
 	ChainToClientBytePrefix
+
+	// InitTimeoutTimestampBytePrefix is the byte prefix for storing
+	// the init timeout timestamp for a given consumer chainID.
+	InitTimeoutTimestampBytePrefix
 
 	// PendingCAPBytePrefix is the byte prefix for storing pending consumer addition proposals before the spawn time occurs.
 	// The key includes the BigEndian timestamp to allow for efficient chronological iteration
@@ -121,6 +125,11 @@ func ChannelToChainKey(channelID string) []byte {
 // ChainToClientKey returns the key under which the clientID for the given chainID is stored.
 func ChainToClientKey(chainID string) []byte {
 	return append([]byte{ChainToClientBytePrefix}, []byte(chainID)...)
+}
+
+// InitTimeoutTimestampKey returns the key under which the init timeout timestamp for the given chainID is stored.
+func InitTimeoutTimestampKey(chainID string) []byte {
+	return append([]byte{InitTimeoutTimestampBytePrefix}, []byte(chainID)...)
 }
 
 // PendingCAPKey returns the key under which a pending consumer addition proposal is stored

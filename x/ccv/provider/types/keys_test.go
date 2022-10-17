@@ -43,6 +43,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{ChainToChannelBytePrefix}, i+1
 	keys[i], i = []byte{ChannelToChainBytePrefix}, i+1
 	keys[i], i = []byte{ChainToClientBytePrefix}, i+1
+	keys[i], i = []byte{InitTimeoutTimestampBytePrefix}, i+1
 	keys[i], i = []byte{PendingCAPBytePrefix}, i+1
 	keys[i], i = []byte{PendingCRPBytePrefix}, i+1
 	keys[i], i = []byte{UnbondingOpBytePrefix}, i+1
@@ -138,6 +139,7 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 		ChainToChannelKey,
 		ChannelToChainKey,
 		ChainToClientKey,
+		InitTimeoutTimestampKey,
 		ConsumerGenesisKey,
 		SlashAcksKey,
 		InitChainHeightKey,
@@ -149,6 +151,7 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 		ChainToChannelBytePrefix,
 		ChannelToChainBytePrefix,
 		ChainToClientBytePrefix,
+		InitTimeoutTimestampBytePrefix,
 		ConsumerGenesisBytePrefix,
 		SlashAcksBytePrefix,
 		InitChainHeightBytePrefix,
