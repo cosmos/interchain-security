@@ -760,7 +760,11 @@ func (k Keeper) AppendPendingVSC(ctx sdk.Context, chainID string, packet ccv.Val
 	packets, _ := k.GetPendingVSCs(ctx, chainID)
 	// append works also on a nil list
 	packets = append(packets, packet)
+	k.SetPendingVSCs(ctx, chainID, packets)
+}
 
+// SetPendingVSCs writes a list of VSCs to store associated to chainID
+func (k Keeper) SetPendingVSCs(ctx sdk.Context, chainID string, packets []ccv.ValidatorSetChangePacketData) {
 	store := ctx.KVStore(k.storeKey)
 	var data [][]byte
 	for _, p := range packets {
@@ -778,15 +782,14 @@ func (k Keeper) AppendPendingVSC(ctx sdk.Context, chainID string, packet ccv.Val
 	store.Set(types.PendingVSCsKey(chainID), buf.Bytes())
 }
 
-// ConsumePendingVSCs empties and returns the list of pending ValidatorSetChange packets for chain ID (if it exists)
+// ConsumePendingVSCs empties and returns a list of pending ValidatorSetChange packets for chainID
 func (k Keeper) ConsumePendingVSCs(ctx sdk.Context, chainID string) (packets []ccv.ValidatorSetChangePacketData) {
-	packets, found := k.GetPendingVSCs(ctx, chainID)
-	if !found {
-		// there is no list of pending ValidatorSetChange packets
-		return nil
+	existing, found := k.GetPendingVSCs(ctx, chainID)
+	if found {
+		packets = existing
+		store := ctx.KVStore(k.storeKey)
+		store.Delete(types.PendingVSCsKey(chainID))
 	}
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.PendingVSCsKey(chainID))
 	return packets
 }
 

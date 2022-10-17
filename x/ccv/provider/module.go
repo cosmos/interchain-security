@@ -167,7 +167,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	am.keeper.CompleteMaturedUnbondingOps(ctx)
 
 	// send validator updates to consumer chains
-	am.keeper.SendValidatorUpdates(ctx)
+	am.keeper.TrySendValidatorUpdates(ctx)
 	return []abci.ValidatorUpdate{}
 }
 

@@ -116,29 +116,35 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 	return k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID), false)
 }
 
-// SendValidatorUpdates sends latest validator updates to every registered consumer chain
-func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
+// TrySendValidatorUpdates tries to send latest validator updates to every registered consumer chain
+func (k Keeper) TrySendValidatorUpdates(ctx sdk.Context) {
 	// get current ValidatorSetUpdateId
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	// get the validator updates from the staking module
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		// check whether there is an established CCV channel to this consumer chain
-		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
-			// Send pending VSC packets to consumer chain
-			k.SendPendingVSCPackets(ctx, chainID, channelID)
-		}
+
+		packets := k.ConsumePendingVSCs(ctx, chainID)
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations
 		// w/o changes in the voting power of the validators in the validator set
 		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
-			// construct validator set change packet data
-			packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
 
-			// check whether there is an established CCV channel to this consumer chain
-			if channelID, found := k.GetChainToChannel(ctx, chainID); found {
+			// Map the updates through any key transformations
+			// updatesToSend := k.keymap.ComputeUpdates(valUpdateID, valUpdates)
+			updatesToSend := valUpdates
+
+			packets = append(
+				packets,
+				ccv.NewValidatorSetChangePacketData(updatesToSend, valUpdateID, k.ConsumeSlashAcks(ctx, chainID)),
+			)
+		}
+
+		// check whether there is an established CCV channel to this consumer chain
+		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
+			for _, data := range packets {
 				// send this validator set change packet data to the consumer chain
 				err := utils.SendIBCPacket(
 					ctx,
@@ -146,41 +152,21 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 					k.channelKeeper,
 					channelID,          // source channel id
 					ccv.ProviderPortID, // source port id
-					packetData.GetBytes(),
+					data.GetBytes(),
 					k.GetParams(ctx).CcvTimeoutPeriod,
 				)
 				if err != nil {
 					panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 				}
-			} else {
-				// store the packet data to be sent once the CCV channel is established
-				k.AppendPendingVSC(ctx, chainID, packetData)
 			}
+		} else {
+			// store the packet data to be sent once the CCV channel is established
+			k.SetPendingVSCs(ctx, chainID, packets)
 		}
 		return false // do not stop the iteration
 	})
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
 	k.IncrementValidatorSetUpdateId(ctx)
-}
-
-// Sends all pending ValidatorSetChangePackets to the specified chain
-func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string) {
-	pendingPackets := k.ConsumePendingVSCs(ctx, chainID)
-	for _, data := range pendingPackets {
-		// send packet over IBC
-		err := utils.SendIBCPacket(
-			ctx,
-			k.scopedKeeper,
-			k.channelKeeper,
-			channelID,          // source channel id
-			ccv.ProviderPortID, // source port id
-			data.GetBytes(),
-			k.GetParams(ctx).CcvTimeoutPeriod,
-		)
-		if err != nil {
-			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
-		}
-	}
 }
 
 // OnRecvSlashPacket slashes and jails the given validator in the packet data
