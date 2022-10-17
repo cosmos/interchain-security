@@ -189,11 +189,11 @@ func (d *driver) run() {
 		d.providerValsets = append(d.providerValsets, makeValset())
 		d.providerValsets[init.timeProvider].applyUpdates(init.providerUpdates)
 		// Set the initial consumer set
-		d.consumerUpdates = append(d.consumerUpdates, d.km.ComputeUpdates(init.timeProvider, init.providerUpdates))
+		d.consumerUpdates = append(d.consumerUpdates, d.km.ComputeUpdates(uint64(init.timeProvider), init.providerUpdates))
 		// The first consumer set equal to the provider set at time 0
 		d.consumerValset = makeValset()
 		d.consumerValset.applyUpdates(d.consumerUpdates[init.timeConsumer])
-		d.km.PruneUnusedKeys(init.timeMaturity)
+		d.km.PruneUnusedKeys(uint64(init.timeMaturity))
 	}
 
 	// Sanity check the initial state
@@ -210,7 +210,7 @@ func (d *driver) run() {
 			d.applyKeyMapEntries(s.keyMapEntries)
 			d.applyProviderUpdates(s.providerUpdates)
 			// Store the updates, to reference later in tests.
-			d.consumerUpdates = append(d.consumerUpdates, d.km.ComputeUpdates(s.timeProvider, s.providerUpdates))
+			d.consumerUpdates = append(d.consumerUpdates, d.km.ComputeUpdates(uint64(s.timeProvider), s.providerUpdates))
 			d.lastTimeProvider = s.timeProvider
 		}
 		if d.lastTimeConsumer < s.timeConsumer {
@@ -226,7 +226,7 @@ func (d *driver) run() {
 			// Maturity time increase:
 			// For each unit of time that has passed since the last increase,
 			// a maturity is 'available'. We test batch maturity.
-			d.km.PruneUnusedKeys(s.timeMaturity)
+			d.km.PruneUnusedKeys(uint64(s.timeMaturity))
 			d.lastTimeMaturity = s.timeMaturity
 		}
 

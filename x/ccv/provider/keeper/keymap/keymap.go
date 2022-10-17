@@ -31,12 +31,12 @@ import (
 
 type PK = crypto.PublicKey
 type CK = crypto.PublicKey
-type VSCID = int
+type VSCID = uint64
 
 type Memo struct {
 	ck    CK
 	pk    PK
-	vscid int
+	vscid VSCID
 	power int64
 }
 

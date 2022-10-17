@@ -133,7 +133,8 @@ func (k Keeper) TrySendValidatorUpdates(ctx sdk.Context) {
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 
 			// Map the updates through any key transformations
-			updatesToSend := k.keymaps[chainID].ComputeUpdates(valUpdateID, valUpdates)
+			// updatesToSend := k.keymaps[chainID].ComputeUpdates(valUpdateID, valUpdates)
+			updatesToSend := valUpdates
 
 			packets = append(
 				packets,
