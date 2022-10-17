@@ -20,12 +20,6 @@ type memo struct {
 	power int
 }
 
-// TODO:
-// 1. Integrate into kv store.
-// 2. integrate into Provider::EndBlock,
-// 3. integrate with create/destroy validator
-// 4. TODO: document this file
-
 type KeyMap struct {
 	store    Store
 	pkToCk   map[PK]CK
