@@ -45,7 +45,7 @@ type Keeper struct {
 	slashingKeeper   ccv.SlashingKeeper
 	feeCollectorName string
 	// A KeyMap or nil for each consumer chain
-	keymaps map[ChainID]keymap.KeyMap
+	keymaps map[ChainID]*keymap.KeyMap
 }
 
 // NewKeeper creates a new provider Keeper instance

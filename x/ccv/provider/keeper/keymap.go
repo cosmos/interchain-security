@@ -34,12 +34,11 @@ func (k Keeper) delKeyMap(chainID ChainID) {
 }
 
 func (k Keeper) loadKeyMaps(ctx sdk.Context) {
-
-	k.keymaps = map[ChainID]keymap.KeyMap{}
+	k.keymaps = map[ChainID]*keymap.KeyMap{}
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, _ string) (stop bool) {
 		store := KeyMapStore{chainID}
-		k.keymaps[chainID] = keymap.MakeKeyMap(&store)
+		km := keymap.MakeKeyMap(&store)
+		k.keymaps[chainID] = &km
 		return false
 	})
-
 }
