@@ -11,7 +11,7 @@ import (
 const NUM_TRACES = 1000
 
 // Len of trace for a single heuristic testing run
-const TRACE_LEN = 1001
+const TRACE_LEN = 1000
 
 // Number of validators to simulate
 const NUM_VALS = 4
