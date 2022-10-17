@@ -38,7 +38,11 @@ func init() {
 	}
 }
 
-func key(i int) crypto.PublicKey {
+func key(i int, isConsumerKey bool) crypto.PublicKey {
+	// Keys for the provider and consumer are stored in the same array
+	if isConsumerKey {
+		i += NUM_VALS
+	}
 	return testingKeys[i]
 }
 
@@ -374,9 +378,9 @@ func (d *driver) externalInvariants() {
 
 		// Simply check every consumer key for the correct queryable-ness.
 		for ck := 0; ck < NUM_CKS; ck++ {
-			_, err := d.km.GetProviderKey(ck)
+			_, err := d.km.GetProviderKey(key(ck, true))
 			actualQueryable := err == nil
-			if expect, found := expectQueryable[ck]; found && expect {
+			if expect, found := expectQueryable[key(ck, true)]; found && expect {
 				require.True(d.t, actualQueryable)
 			} else {
 				require.False(d.t, actualQueryable)
@@ -405,7 +409,7 @@ func getTrace(t *testing.T) []traceStep {
 			pks := rand.Perm(NUM_VALS)[0:rand.Intn(NUM_VALS+1)]
 			for _, pk := range pks {
 				ck := rand.Intn(NUM_CKS)
-				ret = append(ret, keyMapEntry{pk, ck})
+				ret = append(ret, keyMapEntry{key(pk, false), key(ck, true)})
 			}
 		}
 		return ret
@@ -421,8 +425,8 @@ func getTrace(t *testing.T) []traceStep {
 			// 0: deletion
 			// 1: positive
 			// 2: positive (change)
-			power := rand.Intn(3)
-			ret = append(ret, abci.ValidatorUpdate{PubKey: pk, Power: power})
+			power := int64(rand.Intn(3))
+			ret = append(ret, abci.ValidatorUpdate{PubKey: key(pk, false), Power: power})
 		}
 		return ret
 	}
@@ -431,7 +435,7 @@ func getTrace(t *testing.T) []traceStep {
 	// The real system may use some manual set defaults.
 	initialMappings := []keyMapEntry{}
 	for i := 0; i < NUM_VALS; i++ {
-		initialMappings = append(initialMappings, keyMapEntry{i, i})
+		initialMappings = append(initialMappings, keyMapEntry{key(i, false), key(i, true)})
 	}
 
 	ret := []traceStep{
@@ -519,17 +523,17 @@ func TestPropertiesRandomlyHeuristically(t *testing.T) {
 func TestXSetReverseQuery(t *testing.T) {
 	s := makeStore()
 	kd := MakeKeyMap(&s)
-	kd.SetProviderKeyToConsumerKey(42, 43)
-	actual, err := kd.GetProviderKey(43) // Queryable
+	kd.SetProviderKeyToConsumerKey(key(42, false), key(43, true))
+	actual, err := kd.GetProviderKey(key(43, true)) // Queryable
 	require.Nil(t, err)
-	require.Equal(t, 42, actual)
+	require.Equal(t, key(42, false), actual)
 }
 
 // Not setting should not enable a reverse query
 func TestNoSetReverseQuery(t *testing.T) {
 	s := makeStore()
 	kd := MakeKeyMap(&s)
-	_, err := kd.GetProviderKey(43) // Not queryable
+	_, err := kd.GetProviderKey(key(43, true)) // Not queryable
 	require.NotNil(t, err)
 }
 
@@ -537,9 +541,9 @@ func TestNoSetReverseQuery(t *testing.T) {
 func TestXSetUnsetReverseQuery(t *testing.T) {
 	s := makeStore()
 	kd := MakeKeyMap(&s)
-	kd.SetProviderKeyToConsumerKey(42, 43)
-	kd.SetProviderKeyToConsumerKey(42, 44) // Set to different value
-	_, err := kd.GetProviderKey(43)        // Ealier value not queryable
+	kd.SetProviderKeyToConsumerKey(key(42, false), key(43, true))
+	kd.SetProviderKeyToConsumerKey(key(42, false), key(44, true)) // Set to different value
+	_, err := kd.GetProviderKey(key(43, true))                    // Ealier value not queryable
 	require.NotNil(t, err)
 }
 
