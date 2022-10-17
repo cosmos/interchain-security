@@ -17,13 +17,6 @@ var (
 	KeyCCVTimeoutPeriod = []byte("CcvTimeoutPeriod")
 )
 
-func ValidateCCVTimeoutPeriod(i interface{}) error {
-	if period, ok := i.(time.Duration); ok && period < 7*24*time.Hour {
-		fmt.Println("A CCV timeout period of less than 1 week is not recommended!")
-	}
-	return ValidateDuration(i)
-}
-
 func ValidateDuration(i interface{}) error {
 	period, ok := i.(time.Duration)
 	if !ok {

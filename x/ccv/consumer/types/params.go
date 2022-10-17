@@ -63,7 +63,7 @@ func (p Params) Validate() error {
 	if err := validateProviderFeePoolAddrStr(p.ProviderFeePoolAddrStr); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateCCVTimeoutPeriod(p.CcvTimeoutPeriod); err != nil {
+	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
 		return err
 	}
 	return nil
@@ -80,7 +80,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyProviderFeePoolAddrStr,
 			p.ProviderFeePoolAddrStr, validateProviderFeePoolAddrStr),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod,
-			p.CcvTimeoutPeriod, ccvtypes.ValidateCCVTimeoutPeriod),
+			p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 	}
 }
 
