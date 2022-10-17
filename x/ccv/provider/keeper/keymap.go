@@ -1,59 +1,65 @@
 package keeper
 
-/*
-TODO: I think roughly, what I need to do, to drive this thing to completion is
+import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/interchain-security/x/ccv/provider/keeper/keymap"
+)
 
-- [ ] more unit tests
-- [ ] integration with SendValidatorUpdates
-- [ ] integration with Consumer Initiated Slashing (receive request)
-- [ ] integration with Consumer Initiated Slashing (send acks)
-- [ ] integration with Validator add / delete
-- [ ] integration with RPC queries
-- [ ] integration with msg server
-- [ ] integration with pending changes
-- [ ] include in diff test driver?
-- [ ] include in any existing tests?
+type KeyMapStore struct {
+	chainID ChainID
+}
 
-- Whenever a consumer chain is added or removed a new Keymap instance needs to be created
-with a store interface which handles all of its reading and writing.
-	- Need to figure out exactly where/when to add/delete consumer chain instance
-	- Need to figure out exactly where/when to add/remove validator instance (with default?)
-
-
-*/
-
-func (k Keeper) getPkToCk() map[PK]CK {
-	_ = k
+func (s KeyMapStore) getPkToCk() map[keymap.PK]keymap.CK {
+	_ = s
 	// TODO: implement
 	panic("not implemented")
 }
 
-func (k Keeper) getCkToPk() map[CK]PK {
-	_ = k
+func (s KeyMapStore) getCkToPk() map[keymap.CK]keymap.PK {
+	_ = s
 	// TODO: implement
 	panic("not implemented")
 }
 
-func (k Keeper) getCkToMemo() map[CK]memo {
-	_ = k
+func (s KeyMapStore) getCkToMemo() map[keymap.CK]keymap.Memo {
+	_ = s
 	// TODO: implement
 	panic("not implemented")
 }
 
-func (k Keeper) setPkToCk(e map[PK]CK) {
-	_ = k
+func (s KeyMapStore) setPkToCk(e map[keymap.PK]keymap.CK) {
+	_ = s
 	// TODO: implement
 	panic("not implemented")
 }
 
-func (k Keeper) setCkToPk(e map[CK]PK) {
-	_ = k
+func (s KeyMapStore) setCkToPk(e map[keymap.CK]keymap.PK) {
+	_ = s
 	// TODO: implement
 	panic("not implemented")
 }
 
-func (k Keeper) setCkToMemo(e map[CK]memo) {
-	_ = k
+func (s KeyMapStore) setCkToMemo(e map[keymap.CK]keymap.Memo) {
+	_ = s
 	// TODO: implement
 	panic("not implemented")
+}
+
+func (k Keeper) addKeyMapForConsumer(chainID ChainID) {
+
+}
+
+func (k Keeper) delKeyMapForConsumer(chainID ChainID) {
+
+}
+
+func (k Keeper) loadKeyMaps(ctx sdk.Context) {
+
+	k.keymaps = map[ChainID]keymap.KeyMap{}
+	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
+		store := KeyMapStore{chainID}
+		k.keymaps[chainID] = keymap.MakeKeyMap(store)
+		return false
+	})
+
 }

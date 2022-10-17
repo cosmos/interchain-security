@@ -1,4 +1,4 @@
-package keeper
+package keymap
 
 import (
 	"math/rand"
@@ -23,14 +23,14 @@ const NUM_CKS = 50
 type store struct {
 	pkToCk   map[PK]CK
 	ckToPk   map[CK]PK
-	ckToMemo map[CK]memo
+	ckToMemo map[CK]Memo
 }
 
 func makeStore() store {
 	return store{
 		pkToCk:   map[PK]CK{},
 		ckToPk:   map[CK]PK{},
-		ckToMemo: map[CK]memo{},
+		ckToMemo: map[CK]Memo{},
 	}
 }
 func (s *store) getPkToCk() map[PK]CK {
@@ -39,7 +39,7 @@ func (s *store) getPkToCk() map[PK]CK {
 func (s *store) getCkToPk() map[CK]PK {
 	return s.ckToPk
 }
-func (s *store) getCkToMemo() map[CK]memo {
+func (s *store) getCkToMemo() map[CK]Memo {
 	return s.ckToMemo
 }
 func (s *store) setPkToCk(e map[PK]CK) {
@@ -48,7 +48,7 @@ func (s *store) setPkToCk(e map[PK]CK) {
 func (s *store) setCkToPk(e map[CK]PK) {
 	s.ckToPk = e
 }
-func (s *store) setCkToMemo(e map[CK]memo) {
+func (s *store) setCkToMemo(e map[CK]Memo) {
 	s.ckToMemo = e
 }
 

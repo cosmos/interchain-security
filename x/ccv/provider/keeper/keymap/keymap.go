@@ -1,4 +1,26 @@
-package keeper
+package keymap
+
+/*
+TODO: I think roughly, what I need to do, to drive this thing to completion is
+
+- [ ] more unit tests
+- [ ] integration with SendValidatorUpdates
+- [ ] integration with Consumer Initiated Slashing (receive request)
+- [ ] integration with Consumer Initiated Slashing (send acks)
+- [ ] integration with Validator add / delete
+- [ ] integration with RPC queries
+- [ ] integration with msg server
+- [ ] integration with pending changes
+- [ ] include in diff test driver?
+- [ ] include in any existing tests?
+
+- Whenever a consumer chain is added or removed a new Keymap instance needs to be created
+with a store interface which handles all of its reading and writing.
+	- Need to figure out exactly where/when to add/delete consumer chain instance
+	- Need to figure out exactly where/when to add/remove validator instance (with default?)
+
+
+*/
 
 import (
 	"errors"
@@ -13,7 +35,7 @@ type update struct {
 	power int
 }
 
-type memo struct {
+type Memo struct {
 	ck    CK
 	pk    PK
 	vscid int
@@ -24,16 +46,16 @@ type KeyMap struct {
 	store    Store
 	pkToCk   map[PK]CK
 	ckToPk   map[CK]PK
-	ckToMemo map[CK]memo
+	ckToMemo map[CK]Memo
 }
 
 type Store interface {
 	getPkToCk() map[PK]CK
 	getCkToPk() map[CK]PK
-	getCkToMemo() map[CK]memo
+	getCkToMemo() map[CK]Memo
 	setPkToCk(map[PK]CK)
 	setCkToPk(map[CK]PK)
-	setCkToMemo(map[CK]memo)
+	setCkToMemo(map[CK]Memo)
 }
 
 func MakeKeyMap(store Store) KeyMap {
@@ -154,7 +176,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 
 	// Create a read only copy, so that we can query while writing
 	// updates to the old version.
-	ckToMemo_READ_ONLY := map[CK]memo{}
+	ckToMemo_READ_ONLY := map[CK]Memo{}
 	for ck, memo := range e.ckToMemo {
 		ckToMemo_READ_ONLY[ck] = memo
 	}
@@ -164,7 +186,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 			if u.pk == pk && 0 < u.power {
 				// For each provider key for which there was already a positive update
 				// create a deletion update for the associated consumer key.
-				e.ckToMemo[u.ck] = memo{ck: u.ck, pk: pk, vscid: vscid, power: 0}
+				e.ckToMemo[u.ck] = Memo{ck: u.ck, pk: pk, vscid: vscid, power: 0}
 				ret[u.ck] = 0
 			}
 		}
@@ -191,7 +213,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 		// are handled in earlier block.
 		if 0 < power {
 			ck := e.pkToCk[pk]
-			e.ckToMemo[ck] = memo{ck: ck, pk: pk, vscid: vscid, power: power}
+			e.ckToMemo[ck] = Memo{ck: ck, pk: pk, vscid: vscid, power: power}
 			ret[ck] = power
 		}
 	}

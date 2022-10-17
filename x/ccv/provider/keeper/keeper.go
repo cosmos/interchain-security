@@ -21,11 +21,14 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	"github.com/cosmos/interchain-security/x/ccv/provider/keeper/keymap"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	"github.com/tendermint/tendermint/libs/log"
 )
+
+type ChainID = string
 
 // Keeper defines the Cross-Chain Validation Provider Keeper
 type Keeper struct {
@@ -41,6 +44,8 @@ type Keeper struct {
 	stakingKeeper    ccv.StakingKeeper
 	slashingKeeper   ccv.SlashingKeeper
 	feeCollectorName string
+	// A KeyMap or nil for each consumer chain
+	keymaps map[ChainID]keymap.KeyMap
 }
 
 // NewKeeper creates a new provider Keeper instance
