@@ -60,6 +60,7 @@ func (p Params) Validate() error {
 	if ccvtypes.ValidateCCVTimeoutPeriod(p.CcvTimeoutPeriod) != nil {
 		return fmt.Errorf("ccv timeout period is invalid")
 	}
+	// TODO: validate p.InitTimeoutPeriod and p.VscTimeoutPeriod once https://github.com/cosmos/interchain-security/pull/394 is merged
 	return validateTemplateClient(*p.TemplateClient)
 }
 
