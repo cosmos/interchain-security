@@ -25,11 +25,11 @@ func (s *KeyMapStore) SetCkToPk(e map[keymap.CK]keymap.PK) {
 func (s *KeyMapStore) SetCkToMemo(e map[keymap.CK]keymap.Memo) {
 }
 
-func (k Keeper) addKeyMapForConsumer(chainID ChainID) {
+func (k Keeper) addKeyMap(chainID ChainID) {
 
 }
 
-func (k Keeper) delKeyMapForConsumer(chainID ChainID) {
+func (k Keeper) delKeyMap(chainID ChainID) {
 
 }
 
