@@ -7,6 +7,7 @@ TODO: I think roughly, what I need to do, to drive this thing to completion is
 - [ ] integration with SendValidatorUpdates
 - [ ] integration with Consumer Initiated Slashing (receive request)
 - [ ] integration with Consumer Initiated Slashing (send acks)
+- [ ] integration with maturation (pruning)
 - [ ] integration with Validator add / delete
 - [ ] integration with RPC queries
 - [ ] integration with msg server
