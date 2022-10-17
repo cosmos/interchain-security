@@ -6,16 +6,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	distrTypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+
+	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	paramChange "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	upgradeTypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	clientUpdate "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/gogo/protobuf/proto"
 	"gopkg.in/yaml.v2"
 )
 
-var _ sdk.Msg = &MsgSubmitProposal{}
+var (
+	_ sdk.Msg                          = &MsgSubmitProposal{}
+	_ cdctypes.UnpackInterfacesMessage = &MsgSubmitProposal{}
+)
 
 func NewMsgSubmitProposal(content govtypes.Content, proposer sdk.AccAddress) (*MsgSubmitProposal, error) {
 	m := &MsgSubmitProposal{
@@ -29,68 +30,12 @@ func NewMsgSubmitProposal(content govtypes.Content, proposer sdk.AccAddress) (*M
 	return m, nil
 }
 
-//func (m *MsgSubmitProposal) GetContent() govtypes.Content { // TODO m.Content.GetCachedValue() returns nil!
-//	content, ok := m.Content.GetCachedValue().(govtypes.Content)
-//	if !ok {
-//		return nil
-//	}
-//	return content
-//}
-
 func (m *MsgSubmitProposal) GetContent() govtypes.Content {
-	var err error
-	switch m.Content.TypeUrl {
-	case "/cosmos.gov.v1beta1.TextProposal":
-		{
-			var textProposal govtypes.TextProposal
-			err = proto.Unmarshal(m.Content.Value, &textProposal)
-			if err == nil {
-				return &textProposal
-			}
-		}
-	case "/cosmos.params.v1beta1.ParameterChangeProposal":
-		{
-			var paramChangeProposal paramChange.ParameterChangeProposal
-			err = proto.Unmarshal(m.Content.Value, &paramChangeProposal)
-			if err == nil {
-				return &paramChangeProposal
-			}
-		}
-	case "/cosmos.distribution.v1beta1.CommunityPoolSpendProposal":
-		{
-			var comPoolSpendProposal distrTypes.CommunityPoolSpendProposal
-			err = proto.Unmarshal(m.Content.Value, &comPoolSpendProposal)
-			if err == nil {
-				return &comPoolSpendProposal
-			}
-		}
-	case "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal":
-		{
-			var upgradeProposal upgradeTypes.SoftwareUpgradeProposal
-			err = proto.Unmarshal(m.Content.Value, &upgradeProposal)
-			if err == nil {
-				return &upgradeProposal
-			}
-		}
-	case "/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal":
-		{
-			var cancelUpgradeProposal upgradeTypes.CancelSoftwareUpgradeProposal
-			err = proto.Unmarshal(m.Content.Value, &cancelUpgradeProposal)
-			if err == nil {
-				return &cancelUpgradeProposal
-			}
-		}
-	case "/ibc.core.client.v1.ClientUpdateProposal":
-		{
-			var clientUpdateProposal clientUpdate.ClientUpdateProposal
-			err = proto.Unmarshal(m.Content.Value, &clientUpdateProposal)
-			if err == nil {
-				return &clientUpdateProposal
-			}
-		}
+	content, ok := m.Content.GetCachedValue().(govtypes.Content)
+	if !ok {
+		return nil
 	}
-
-	return nil
+	return content
 }
 
 func (m *MsgSubmitProposal) SetContent(content govtypes.Content) error {
@@ -151,4 +96,9 @@ func (m *MsgSubmitProposal) ValidateBasic() error {
 	}
 
 	return nil
+}
+
+func (m MsgSubmitProposal) UnpackInterfaces(unpacker cdctypes.AnyUnpacker) error {
+	var content govtypes.Content
+	return unpacker.UnpackAny(m.Content, &content)
 }

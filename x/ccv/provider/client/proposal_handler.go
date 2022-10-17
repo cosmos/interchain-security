@@ -4,22 +4,23 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 
 	"path/filepath"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	sdkcodec "github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/rest"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
-	"github.com/cosmos/cosmos-sdk/x/gov/client/cli"
 	govrest "github.com/cosmos/cosmos-sdk/x/gov/client/rest"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/golang/protobuf/proto"
 	"github.com/spf13/cobra"
 )
 
@@ -92,6 +93,22 @@ Where proposal.json contains:
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
+}
+
+// ConsumerGovernanceProposalJSON defines the new Msg-based proposal.
+type ConsumerGovernanceProposalJSON struct {
+	Content      json.RawMessage `json:"content"`
+	ConnectionId string          `json:"connection_id"`
+	Deposit      string          `json:"deposit"`
+}
+
+type ConsumerGovernanceProposalReq struct {
+	BaseReq  rest.BaseReq   `json:"base_req"`
+	Proposer sdk.AccAddress `json:"proposer"`
+
+	Content      json.RawMessage `json:"content"`
+	ConnectionId string          `json:"connection_id"`
+	Deposit      sdk.Coins       `json:"deposit"`
 }
 
 type ConsumerAdditionProposalJSON struct {
@@ -176,28 +193,27 @@ func postProposalHandlerFn(clientCtx client.Context) http.HandlerFunc {
 // a consumer governance proposal via a transaction.
 func SubmitConsumerGovernancePropTxCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "consumer-software-upgrade [connection-id] [plan] (--upgrade-height [height]) (--upgrade-info [info]) [flags]",
-		Args:  cobra.ExactArgs(2),
+		Use:   "consumer-governance path/to/proposal.json",
+		Args:  cobra.ExactArgs(1),
 		Short: "Submit a consumer chain governance proposal",
 		Long: `
 Submit a consumer chain governance proposal along with an initial deposit.
 
 Example:
-$ interchain-security-pd tx gov submit-proposal consumer-software-upgrade connection-0 upgrade-name [flags] --from=<key_or_address>`,
+$ interchain-security-pd tx gov submit-proposal consumer-governance path/to/proposal.json --from=<key_or_address>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
 
-			connectionId := args[0]
-			name := args[1]
-			content, err := parseArgsToContent(cmd, name)
+			proposalPath := args[0]
+			connectionId, content, deposit, err := parseSubmitProposal(clientCtx.Codec, proposalPath)
 			if err != nil {
 				return err
 			}
 
-			any, err := codectypes.NewAnyWithValue(content)
+			any, err := codectypes.NewAnyWithValue(content.(proto.Message))
 			if err != nil {
 				return err
 			}
@@ -205,15 +221,6 @@ $ interchain-security-pd tx gov submit-proposal consumer-software-upgrade connec
 			consumerProposal := types.ConsumerGovernanceProposal{
 				ConnectionId: connectionId,
 				Content:      any,
-			}
-
-			depositStr, err := cmd.Flags().GetString(cli.FlagDeposit)
-			if err != nil {
-				return err
-			}
-			deposit, err := sdk.ParseCoinsNormalized(depositStr)
-			if err != nil {
-				return err
 			}
 
 			msg, err := govtypes.NewMsgSubmitProposal(&consumerProposal, deposit, clientCtx.GetFromAddress())
@@ -224,12 +231,6 @@ $ interchain-security-pd tx gov submit-proposal consumer-software-upgrade connec
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
-
-	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
-	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
-	cmd.Flags().String(cli.FlagDeposit, "", "deposit of proposal")
-	cmd.Flags().Int64(FlagUpgradeHeight, 0, "The height at which the upgrade must happen")
-	cmd.Flags().String(FlagUpgradeInfo, "", "Optional info for the planned upgrade such as commit hash, etc.")
 
 	return cmd
 }
@@ -243,37 +244,66 @@ func ConsumerGovernanceProposalRESTHandler(clientCtx client.Context) govrest.Pro
 
 func postProposalGovernanceHandlerFn(clientCtx client.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO Ethernal
+		var req ConsumerGovernanceProposalReq
+		if !rest.ReadRESTReq(w, r, clientCtx.LegacyAmino, &req) {
+			return
+		}
+
+		req.BaseReq = req.BaseReq.Sanitize()
+		if !req.BaseReq.ValidateBasic(w) {
+			return
+		}
+
+		var content govtypes.Content
+		err := clientCtx.Codec.UnmarshalInterfaceJSON(req.Content, &content)
+		if err != nil {
+			return
+		}
+		any, err := codectypes.NewAnyWithValue(content.(proto.Message))
+		if err != nil {
+			return
+		}
+		consumerProposal := types.ConsumerGovernanceProposal{
+			ConnectionId: req.ConnectionId,
+			Content:      any,
+		}
+
+		msg, err := govtypes.NewMsgSubmitProposal(&consumerProposal, req.Deposit, req.Proposer)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
+
+		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
+			return
+		}
+
+		tx.WriteGeneratedTxResponse(clientCtx, w, req.BaseReq, msg)
 	}
 }
 
-func parseArgsToContent(cmd *cobra.Command, name string) (*upgradetypes.SoftwareUpgradeProposal, error) {
-	title, err := cmd.Flags().GetString(cli.FlagTitle)
+func parseSubmitProposal(cdc sdkcodec.Codec, path string) (string, govtypes.Content, sdk.Coins, error) {
+	var proposal ConsumerGovernanceProposalJSON
+
+	proposalJson, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return "", nil, nil, err
 	}
 
-	description, err := cmd.Flags().GetString(cli.FlagDescription)
+	err = json.Unmarshal(proposalJson, &proposal)
 	if err != nil {
-		return nil, err
+		return "", nil, nil, err
 	}
 
-	height, err := cmd.Flags().GetInt64(FlagUpgradeHeight)
+	var content govtypes.Content
+	err = cdc.UnmarshalInterfaceJSON(proposal.Content, &content)
 	if err != nil {
-		return nil, err
+		return "", nil, nil, err
 	}
 
-	info, err := cmd.Flags().GetString(FlagUpgradeInfo)
+	deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
 	if err != nil {
-		return nil, err
+		return "", nil, nil, err
 	}
 
-	plan := upgradetypes.Plan{Name: name, Height: height, Info: info}
-
-	content := upgradetypes.SoftwareUpgradeProposal{
-		Title:       title,
-		Description: description,
-		Plan:        plan}
-
-	return &content, nil
+	return proposal.ConnectionId, content, deposit, nil
 }

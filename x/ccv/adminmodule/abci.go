@@ -25,7 +25,7 @@ func EndBlocker(ctx sdk.Context, keeper keeper.Keeper, icahostkeeper icahostkeep
 
 	// fetch active proposals whose voting periods have ended (are passed the block time)
 	keeper.IterateActiveProposalsQueue(ctx, ctx.BlockHeader().Time, func(proposal govtypes.Proposal) bool {
-		var logMsg string
+		var logMsg, tagValue string
 
 		handler := keeper.Router().GetRoute(proposal.ProposalRoute())
 		cacheCtx, writeCache := ctx.CacheContext()
@@ -36,16 +36,25 @@ func EndBlocker(ctx sdk.Context, keeper keeper.Keeper, icahostkeeper icahostkeep
 		err := handler(cacheCtx, proposal.GetContent())
 		if err == nil {
 			logMsg = "passed"
+			proposal.Status = govtypes.StatusPassed
+			tagValue = govtypes.AttributeValueProposalPassed
+
+			// The cached context is created with a new EventManager. However, since
+			// the proposal handler execution was successful, we want to track/keep
+			// any events emitted, so we re-emit to "merge" the events into the
+			// original Context's EventManager.
+			ctx.EventManager().EmitEvents(cacheCtx.EventManager().Events())
+
 			// write state to the underlying multi-store
 			writeCache()
 		} else {
-			logMsg = fmt.Sprintf("passed, but failed on execution: %s", err)
+			proposal.Status = govtypes.StatusFailed
+			tagValue = govtypes.AttributeValueProposalFailed
+			logMsg = fmt.Sprintf("proposal failed on execution: %s", err)
 		}
 
-		proposal.Status = govtypes.StatusPassed
-
 		keeper.SetProposal(ctx, proposal)
-		keeper.RemoveFromActiveProposalQueue(ctx, proposal.ProposalId, proposal.SubmitTime.Add(2*time.Second)) // TODO hardcode
+		keeper.RemoveFromActiveProposalQueue(ctx, proposal.ProposalId, proposal.VotingEndTime)
 
 		keeper.AddToArchive(ctx, proposal)
 
@@ -56,7 +65,13 @@ func EndBlocker(ctx sdk.Context, keeper keeper.Keeper, icahostkeeper icahostkeep
 			"result", logMsg,
 		)
 
-		// TODO event?
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeAdminProposal,
+				sdk.NewAttribute(govtypes.AttributeKeyProposalID, fmt.Sprintf("%d", proposal.ProposalId)),
+				sdk.NewAttribute(govtypes.AttributeKeyProposalResult, tagValue),
+			),
+		)
 		return false
 	})
 }
@@ -76,8 +91,10 @@ func addGovernanceModuleAdmin(ctx sdk.Context, keeper keeper.Keeper, icahostkeep
 		return
 	}
 
-	// TODO Ethernal: should be read from consumerKeeper
-	providerGovModAddress := "cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn"
+	providerGovModAddress, found := consumerkeeper.GetProviderGovernanceAddress(ctx)
+	if !found {
+		return
+	}
 
 	portID, err := icatypes.NewControllerPortID(providerGovModAddress)
 	if err != nil {

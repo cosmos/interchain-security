@@ -336,9 +336,15 @@ func (m *SlashAcks) GetAddresses() []string {
 	return nil
 }
 
+// ConsumerGovernanceProposal contains a proposal that will be submitted to the
+// consumer chain if voting pass successfully on the provider side.
 type ConsumerGovernanceProposal struct {
-	ConnectionId string      `protobuf:"bytes,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
-	Content      *types2.Any `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	// IBC connection identifier of the consumer chain for which the proposal is
+	// submitted
+	ConnectionId string `protobuf:"bytes,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
+	// An arbitrary proposal content which satisfies Content interface of the
+	// governance module
+	Content *types2.Any `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
 }
 
 func (m *ConsumerGovernanceProposal) Reset()         { *m = ConsumerGovernanceProposal{} }

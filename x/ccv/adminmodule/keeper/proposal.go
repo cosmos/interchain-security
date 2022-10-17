@@ -27,18 +27,19 @@ func (k Keeper) SubmitProposal(ctx sdk.Context, content govtypes.Content) (govty
 		return govtypes.Proposal{}, err
 	}
 
-	submitTime := ctx.BlockHeader().Time
+	headerTime := ctx.BlockHeader().Time
 
-	proposal, err := govtypes.NewProposal(content, proposalID, submitTime, time.Now().Add(2*time.Hour))
+	// depositEndTime would not be used
+	proposal, err := govtypes.NewProposal(content, proposalID, headerTime, headerTime)
 	if err != nil {
 		return govtypes.Proposal{}, err
 	}
 
 	k.SetProposal(ctx, proposal)
-	k.InsertActiveProposalQueue(ctx, proposalID, submitTime.Add(2*time.Second)) // TODO hardcode
+	// entTime is set to headerTime, because the proposal should be processed right after it is submitted
+	// since there is no voting
+	k.InsertActiveProposalQueue(ctx, proposalID, headerTime)
 	k.SetProposalID(ctx, proposalID+1)
-
-	// TODO submit event?
 
 	return proposal, nil
 }

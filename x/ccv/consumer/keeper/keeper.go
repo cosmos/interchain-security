@@ -273,6 +273,22 @@ func (k Keeper) DeletePacketMaturityTime(ctx sdk.Context, vscId uint64) {
 	store.Delete(types.PacketMaturityTimeKey(vscId))
 }
 
+// SetProviderGovernanceAddress sets provider's governance module address
+func (k Keeper) SetProviderGovernanceAddress(ctx sdk.Context, providerGovAddr string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ProviderGovernanceAddressKey(), []byte(providerGovAddr))
+}
+
+// GetProviderGovernanceAddress gets provider's governance module address
+func (k Keeper) GetProviderGovernanceAddress(ctx sdk.Context) (string, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ProviderGovernanceAddressKey())
+	if len(bz) == 0 {
+		return "", false
+	}
+	return string(bz), true
+}
+
 // VerifyProviderChain verifies that the chain trying to connect on the channel handshake
 // is the expected provider chain.
 func (k Keeper) VerifyProviderChain(ctx sdk.Context, connectionHops []string) error {

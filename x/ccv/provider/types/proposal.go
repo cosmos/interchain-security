@@ -5,11 +5,10 @@ import (
 	"strings"
 	time "time"
 
+	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	upgradeTypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	"github.com/gogo/protobuf/proto"
 )
 
 const (
@@ -19,8 +18,9 @@ const (
 )
 
 var (
-	_ govtypes.Content = &ConsumerAdditionProposal{}
-	_ govtypes.Content = &ConsumerGovernanceProposal{}
+	_ govtypes.Content                 = &ConsumerAdditionProposal{}
+	_ govtypes.Content                 = &ConsumerGovernanceProposal{}
+	_ cdctypes.UnpackInterfacesMessage = &ConsumerGovernanceProposal{}
 )
 
 func init() {
@@ -128,7 +128,7 @@ func (sccp *ConsumerRemovalProposal) ValidateBasic() error {
 
 // GetTitle returns the title of a consumer governance proposal.
 func (cgp *ConsumerGovernanceProposal) GetTitle() string {
-	content := cgp.GetGovContent()
+	content := cgp.getInnerContent()
 	if content != nil {
 		return content.GetTitle()
 	}
@@ -138,7 +138,7 @@ func (cgp *ConsumerGovernanceProposal) GetTitle() string {
 
 // GetDescription returns the description of a consumer governance proposal.
 func (cgp *ConsumerGovernanceProposal) GetDescription() string {
-	content := cgp.GetGovContent()
+	content := cgp.getInnerContent()
 	if content != nil {
 		return content.GetDescription()
 	}
@@ -160,26 +160,34 @@ func (cgp *ConsumerGovernanceProposal) ValidateBasic() error {
 		return err
 	}
 
+	if cgp.Content == nil || cgp.Content.GetCachedValue() == nil {
+		return sdkerrors.Wrap(ErrInvalidConsumerGovernanceProposal, "content must be set")
+	}
+
+	if cgp.Content.GetCachedValue().(govtypes.Content) == nil {
+		return sdkerrors.Wrap(ErrInvalidConsumerGovernanceProposal, "content is not valid")
+	}
+
 	if strings.TrimSpace(cgp.ConnectionId) == "" {
-		return sdkerrors.Wrap(ErrInvalidConsumerConnectionId, "consumer connection id must not be blank")
+		return sdkerrors.Wrap(ErrInvalidConsumerGovernanceProposal, "consumer connection id must not be blank")
 	}
 
 	if !strings.HasPrefix(strings.TrimSpace(cgp.ConnectionId), "connection-") {
-		return sdkerrors.Wrap(ErrInvalidConsumerConnectionId, "consumer connection id must start with 'connection-'")
+		return sdkerrors.Wrap(ErrInvalidConsumerGovernanceProposal, "consumer connection id must start with 'connection-'")
 	}
 
 	return nil
 }
 
-func (m *ConsumerGovernanceProposal) GetGovContent() govtypes.Content {
-	var err error
-	if m.Content.TypeUrl == "/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal" {
-		var upgradeProposal upgradeTypes.SoftwareUpgradeProposal
-		err = proto.Unmarshal(m.Content.Value, &upgradeProposal)
-		if err == nil {
-			return &upgradeProposal
-		}
-	}
+func (cgp ConsumerGovernanceProposal) UnpackInterfaces(unpacker cdctypes.AnyUnpacker) error {
+	var content govtypes.Content
+	return unpacker.UnpackAny(cgp.Content, &content)
+}
 
-	return nil
+func (cgp *ConsumerGovernanceProposal) getInnerContent() govtypes.Content {
+	cachedValue := cgp.Content.GetCachedValue()
+	if cachedValue == nil {
+		return nil
+	}
+	return cachedValue.(govtypes.Content)
 }

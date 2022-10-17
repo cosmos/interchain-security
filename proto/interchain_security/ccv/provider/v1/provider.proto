@@ -86,8 +86,14 @@ message HandshakeMetadata {
 // successfully slashed on the provider chain
 message SlashAcks { repeated string addresses = 1; }
 
+// ConsumerGovernanceProposal contains a proposal that will be submitted to the
+// consumer chain if voting pass successfully on the provider side.
 message ConsumerGovernanceProposal {
+  // IBC connection identifier of the consumer chain for which the proposal is
+  // submitted
   string connection_id = 1;
+  // An arbitrary proposal content which satisfies Content interface of the
+  // governance module
   google.protobuf.Any content = 2
       [ (cosmos_proto.accepts_interface) = "Content" ];
 }

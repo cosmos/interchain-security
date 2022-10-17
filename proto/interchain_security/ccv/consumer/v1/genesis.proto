@@ -36,6 +36,8 @@ message GenesisState {
   // PendingSlashRequests filled in on new chain, nil on restart.
   interchain_security.ccv.consumer.v1.SlashRequests pending_slash_requests = 11
       [ (gogoproto.nullable) = false ];
+  // Address of the provider's governance module
+  string provider_governance_address = 12;
 }
 
 // MaturingVSCPacket defines the genesis information for the
