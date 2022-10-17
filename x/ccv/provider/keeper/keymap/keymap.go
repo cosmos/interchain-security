@@ -24,16 +24,14 @@ with a store interface which handles all of its reading and writing.
 
 import (
 	"errors"
+
+	abci "github.com/tendermint/tendermint/abci/types"
+	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
-type PK = int
-type CK = int
+type PK = crypto.PublicKey
+type CK = crypto.PublicKey
 type VSCID = int
-
-type update struct {
-	key   int
-	power int
-}
 
 type Memo struct {
 	ck    CK
@@ -132,7 +130,7 @@ func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 }
 
 // TODO:
-func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []update) (consumerUpdates []update) {
+func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpdate) (consumerUpdates []abci.ValidatorUpdate) {
 
 	e.GetAll()
 
@@ -144,10 +142,10 @@ func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []update) (consumer
 
 	updates = e.inner(vscid, updates)
 
-	consumerUpdates = []update{}
+	consumerUpdates = []abci.ValidatorUpdate{}
 
 	for ck, power := range updates {
-		consumerUpdates = append(consumerUpdates, update{key: ck, power: power})
+		consumerUpdates = append(consumerUpdates, abci.ValidatorUpdate{key: ck, power: power})
 	}
 
 	e.SetAll()
