@@ -40,6 +40,10 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
+	// It is now possible to delete keys from the keymap which the consumer chain
+	// is no longer able to reference in slash requests.
+	k.keymaps[chainID].PruneUnusedKeys(data.ValsetUpdateId)
+
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
 	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
 	var maturedIds []uint64
