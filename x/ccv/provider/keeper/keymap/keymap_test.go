@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"testing"
 
+	"cosmossdk.io/api/tendermint/abci"
+	"github.com/cosmos/cosmos-sdk/api/tendermint/abci"
 	"github.com/stretchr/testify/require"
 )
 
@@ -59,7 +61,7 @@ type keyMapEntry struct {
 
 type traceStep struct {
 	keyMapEntries   []keyMapEntry
-	providerUpdates []update
+	providerUpdates []abci.ValidatorUpdate
 	timeProvider    int
 	timeConsumer    int
 	timeMaturity    int
@@ -75,7 +77,7 @@ type driver struct {
 	// indexed by time (starting at 0)
 	mappings []map[PK]CK
 	// indexed by time (starting at 0)
-	consumerUpdates [][]update
+	consumerUpdates [][]abci.ValidatorUpdate
 	// indexed by time (starting at 0)
 	providerValsets []valset
 	// The validator set from the perspective of

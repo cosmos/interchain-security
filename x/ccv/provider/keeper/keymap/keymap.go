@@ -37,7 +37,7 @@ type Memo struct {
 	ck    CK
 	pk    PK
 	vscid int
-	power int
+	power int64
 }
 
 type KeyMap struct {
@@ -108,7 +108,7 @@ func (e *KeyMap) GetProviderKey(ck CK) (PK, error) {
 	} else if pk, ok := e.ckToPk[ck]; ok {
 		return pk, nil
 	} else {
-		return -1, errors.New("provider key not found for consumer key")
+		return crypto.PublicKey{}, errors.New("provider key not found for consumer key")
 	}
 }
 
@@ -134,10 +134,10 @@ func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpd
 
 	e.GetAll()
 
-	updates := map[PK]int{}
+	updates := map[PK]int64{}
 
 	for _, u := range providerUpdates {
-		updates[u.key] = u.power
+		updates[u.PubKey] = u.Power
 	}
 
 	updates = e.inner(vscid, updates)
@@ -145,7 +145,7 @@ func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpd
 	consumerUpdates = []abci.ValidatorUpdate{}
 
 	for ck, power := range updates {
-		consumerUpdates = append(consumerUpdates, abci.ValidatorUpdate{key: ck, power: power})
+		consumerUpdates = append(consumerUpdates, abci.ValidatorUpdate{PubKey: ck, Power: power})
 	}
 
 	e.SetAll()
@@ -153,7 +153,7 @@ func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpd
 }
 
 // do inner work as part of ComputeUpdates
-func (e *KeyMap) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
+func (e *KeyMap) inner(vscid VSCID, providerUpdates map[PK]int64) map[CK]int64 {
 
 	pks := []PK{}
 
@@ -170,7 +170,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 		pks = append(pks, pk)
 	}
 
-	ret := map[CK]int{}
+	ret := map[CK]int64{}
 
 	// Create a read only copy, so that we can query while writing
 	// updates to the old version.
@@ -196,7 +196,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[PK]int) map[CK]int {
 		// 2) the validator power has changed (and is still positive)
 		// create a change update for the associated consumer key.
 
-		power := 0
+		var power int64 = 0
 		for _, u := range ckToMemo_READ_ONLY {
 			if u.pk == pk && 0 < u.power {
 				// There was previously a positive power update: copy it.
