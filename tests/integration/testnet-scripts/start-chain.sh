@@ -175,7 +175,7 @@ done
 
 # COLLECT GENTXS IF WE ARE STARTING A NEW CHAIN
 
-if [ "$SKIP_GENTX" = "false" ] ; then 
+if [ "$SKIP_GENTX" = "false" ] ; then
     # make the final genesis.json
     $BIN collect-gentxs --home /$CHAIN_ID/validator$FIRST_VAL_ID
 
@@ -229,6 +229,26 @@ do
     ARGS="$GAIA_HOME $LISTEN_ADDRESS $RPC_ADDRESS $GRPC_ADDRESS $LOG_LEVEL $P2P_ADDRESS $ENABLE_WEBGRPC $PERSISTENT_PEERS"
     ip netns exec $NET_NAMESPACE_NAME $BIN $ARGS start &> /$CHAIN_ID/validator$VAL_ID/logs &
 done
+
+## SETUP DOUBLE SIGNING NODE NETWORK NAMESPACE
+# double signing node is started using cause-doublesign.sh
+# here we just allocate a network namespace so it can be used later
+SYBIL_NODE_ID="sybil"
+SYBIL_IP_SUFFIX="252"
+SYBIL_NET_NAMESPACE_NAME="$CHAIN_ID-$SYBIL_NODE_ID"
+SYBIL_IP_ADDR="$CHAIN_IP_PREFIX.$SYBIL_IP_SUFFIX/24"
+
+ip netns add $SYBIL_NET_NAMESPACE_NAME
+ip link add $SYBIL_NET_NAMESPACE_NAME-in type veth peer name $SYBIL_NET_NAMESPACE_NAME-out
+ip link set $SYBIL_NET_NAMESPACE_NAME-in netns $SYBIL_NET_NAMESPACE_NAME
+ip netns exec $SYBIL_NET_NAMESPACE_NAME ip addr add $SYBIL_IP_ADDR dev $SYBIL_NET_NAMESPACE_NAME-in
+ip link set $SYBIL_NET_NAMESPACE_NAME-out master virtual-bridge
+
+## DOUBLE SIGNING ENABLE DEVICE
+ip link set $SYBIL_NET_NAMESPACE_NAME-out up
+ip netns exec $SYBIL_NET_NAMESPACE_NAME ip link set dev $SYBIL_NET_NAMESPACE_NAME-in up
+ip netns exec $SYBIL_NET_NAMESPACE_NAME ip link set dev lo up
+## DONE DOUBLE SIGNING NODE ENABLE DEVICE
 
 ## SETUP QUERY NODE NETWORK NAMESPACE
 QUERY_NODE_ID="query"

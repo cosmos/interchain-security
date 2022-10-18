@@ -87,6 +87,46 @@ func getDefaultValidators() map[validatorID]ValidatorConfig {
 	}
 }
 
+func DoubleSignTestRun() TestRun {
+	return TestRun{
+		name: "double-sign",
+		containerConfig: ContainerConfig{
+			containerName: "interchain-security-container",
+			instanceName:  "interchain-security-instance",
+			ccvVersion:    "1",
+			now:           time.Now(),
+		},
+		validatorConfigs: getDefaultValidators(),
+		chainConfigs: map[chainID]ChainConfig{
+			chainID("provi"): {
+				chainId:        chainID("provi"),
+				binaryName:     "interchain-security-pd",
+				ipPrefix:       "7.7.7",
+				votingWaitTime: 5,
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\" | " +
+					// Custom slashing parameters for testing validator downtime functionality
+					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+					".app_state.slashing.params.slash_fraction_double_sign = \"0.100000000000000000\"",
+			},
+			chainID("consu"): {
+				chainId:        chainID("consu"),
+				binaryName:     "interchain-security-cd",
+				ipPrefix:       "7.7.8",
+				votingWaitTime: 10,
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+			},
+		},
+	}
+}
+
 func DefaultTestRun() TestRun {
 	return TestRun{
 		name: "default",
@@ -196,7 +236,11 @@ func (s *TestRun) ValidateStringLiterals() {
 			panic("ip suffix 253 is reserved for query node")
 		}
 
-		if ipSuffix < 1 || ipSuffix > 252 {
+		if ipSuffix == 252 {
+			panic("ip suffix 252 is reserved for double signing node")
+		}
+
+		if ipSuffix < 1 || ipSuffix > 251 {
 			panic("ip suffix out of range, need to change config")
 		}
 	}
