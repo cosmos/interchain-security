@@ -57,7 +57,7 @@ func (p Params) Validate() error {
 	if p.TemplateClient == nil {
 		return fmt.Errorf("template client is nil")
 	}
-	if ccvtypes.ValidateCCVTimeoutPeriod(p.CcvTimeoutPeriod) != nil {
+	if ccvtypes.ValidateDuration(p.CcvTimeoutPeriod) != nil {
 		return fmt.Errorf("ccv timeout period is invalid")
 	}
 	// TODO: validate p.InitTimeoutPeriod and p.VscTimeoutPeriod once https://github.com/cosmos/interchain-security/pull/394 is merged
@@ -68,7 +68,7 @@ func (p Params) Validate() error {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyTemplateClient, p.TemplateClient, validateTemplateClient),
-		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateCCVTimeoutPeriod),
+		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 	}
 }
 

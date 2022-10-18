@@ -11,3 +11,7 @@ assignees: ''
 
 
 # Closing criteria
+
+# TODOs
+- [ ] Labels have been added for issue
+- [ ] Issue has been added to the ICS project 
