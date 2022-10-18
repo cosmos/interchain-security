@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package interchain_security.ccv.provider.v1;
-
-option go_package = "github.com/cosmos/interchain-security/x/ccv/types";
-
-message FooBar { map<int32, int32> wiz = 1; }
