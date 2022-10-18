@@ -12,7 +12,7 @@ import (
 )
 
 // Num traces to run for heuristic testing
-const NUM_TRACES = 1000
+const NUM_TRACES = 4000
 
 // Len of trace for a single heuristic testing run
 const TRACE_LEN = 1000
