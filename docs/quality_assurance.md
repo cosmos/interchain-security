@@ -70,21 +70,20 @@ The main concern addressed in this section is the correctness of the provider ch
 - one single consumer chain;
 - multiple consumer chains.
 
-| ID | Concern | Code Review | Unit | E2e | Diff. Testing | Testnet | Protocol audit |
-| -- | ------- | ----------- | ---- | --- | ------------- | ------- | -------------- |
+| ID | Concern | Code Review | Unit Testing | E2e | Diff. Testing | Testnet | Protocol audit |
+| -- | ------- | ----------- | ------------ | --- | ------------- | ------- | -------------- |
 | 4.01 | Liveness of undelegations <br /> - unbonding delegation entries are eventually removed from `UnbondingDelegation` | `Scheduled` | `NA` | `Done` <br /> [unbonding_test.go](../tests/e2e/unbonding_test.go) | `Done` | `Scheduled` | `NA` |
 | 4.02 | Liveness of redelegations <br /> - redelegations entries are eventually removed from `Redelegations` | `Scheduled` | `NA` | `Scheduled` | `Scheduled` | `Scheduled` | `NA` |
 | 4.03 | Liveness of validator unbondings <br /> - unbonding validators with no delegations are eventually removed from `Validators` | `Scheduled` | `NA` | `NA` | `Done` | `Scheduled` | `NA` |
-| 4.04 | Unbonding operations (undelegations, redelegations, validator unbondings) should eventually complete even if the CCV channel is never established (due to error) <br /> - expected outcome: the pending VSC packets eventually timeout, which leads to the consumer chain removal <br /> - requires https://github.com/cosmos/interchain-security/issues/278 | `Scheduled` | `NA` | `Scheduled` | `Future work` | `Scheduled` | `Done` |
+| 4.04 | Unbonding operations (undelegations, redelegations, validator unbondings) should eventually complete even if the CCV channel is never established (due to error) <br /> - expected outcome: the channel initialization sub-protocol eventually times out, which leads to the consumer chain removal <br /> - requires https://github.com/cosmos/interchain-security/issues/278 | `Scheduled` | `NA` | `Scheduled` | `Future work` | `Scheduled` | `Done` |
 | 4.05 | Unbonding operations (undelegations, redelegations, validator unbondings) should eventually complete even if one of the clients expire <br /> - expected outcome: the pending VSC packets eventually timeout, which leads to the consumer chain removal <br /> - requires https://github.com/cosmos/interchain-security/issues/283 | `Scheduled` | `NA` | `Scheduled` | `Future work` | `Scheduled` | `NA` |
 | 4.06 | A validator cannot get slashed more than once for double signing, regardless of how many times it double signs on different chains (consumers or provider) | `Scheduled` | `NA` |`Done` <br /> [TestHandleSlashPacketErrors](../tests/e2e/slashing_test.go#L317) | `Done` | `Scheduled` | `NA` |
 | 4.07 | A validator cannot get slashed multiple times for downtime on the same consumer chain without requesting to `Unjail` itself on the provider chain in between | `Scheduled` | `NA` | `Partial coverage` <br /> [TestSendSlashPacket](../tests/e2e/slashing_test.go#L648) | `Partial coverage` | `Scheduled` | `NA` |
 | 4.08 | A validator can be slashed multiple times for downtime on different chains | `Scheduled` | `NA` | `Future work` | `NA` | `Scheduled` | `NA` |
 | 4.09 | The provider chain can easily be restarted with IS enabled <br /> - `ExportGenesis` & `InitGenesis`  <br /> - requires https://github.com/informalsystems/hermes/issues/1152| `Scheduled` | `Done` <br /> [TestInitAndExportGenesis](../x/ccv/provider/keeper/genesis_test.go#L20) | `Future work` | `Future work` | `Scheduled` | `NA` |
-| 4.10 | The provider chain's correctness is not affected by a consumer chain shutting down | `Scheduled` | `NA` (Simon?) | `Future work` (Simon?) | `Future work` | `Scheduled` | `NA` |
-| 4.11 | The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `??` (Simon?) | `Future work` (Simon?) | `Future work` | `Scheduled` | `NA` |
-| 4.12 | The provider chain can graciously handle a `ConsumerRemovalProposal` <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `Done` <br /> [TestHandleConsumerRemovalProposal](../x/ccv/provider/keeper/proposal_test.go#L313) | `NA` | `Future work` | `Scheduled` | `NA` |
-| 4.13 | The provider chain can graciously handle a `ConsumerAdditionProposal` <br /> - expected outcome: a consumer chain is registered and a client is created | `Scheduled` |`Done` <br /> [TestHandleConsumerAdditionProposal](../x/ccv/provider/keeper/proposal_test.go#L31) | `NA` | `Future work` | `Scheduled` | `NA` |
+| 4.10 | The provider chain can graciously handle a CCV packet timing out (without shuting down) <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `Scheduled` | `NA` | `Future work` | `Scheduled` | `NA` |
+| 4.11 | The provider chain can graciously handle a `ConsumerRemovalProposal` <br /> - expected outcome: consumer chain shuts down and its state in provider CCV module is removed | `Scheduled` | `Done` <br /> [TestHandleConsumerRemovalProposal](../x/ccv/provider/keeper/proposal_test.go#L313) | `NA` | `Future work` | `Scheduled` | `NA` |
+| 4.12 | The provider chain can graciously handle a `ConsumerAdditionProposal` <br /> - expected outcome: a consumer chain is registered and a client is created | `Scheduled` |`Done` <br /> [TestHandleConsumerAdditionProposal](../x/ccv/provider/keeper/proposal_test.go#L31) | `NA` | `Future work` | `Scheduled` | `NA` |
 
 ### Interchain Security Protocol Correctness
 
@@ -113,7 +112,7 @@ In addition, the implementation MUST guarantee the following [system properties]
 | -- | --------------------------------------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
 | 6.01 | Every validator set on any consumer chain MUST either be or have been a validator set on the provider chain. | `Scheduled` | `NA` | `NA` | `Done` | `Scheduled` | `Scheduled` |
 | 6.02 | Any update in the power of a validator `val` on the provider, as a result of <br /> - (increase) `Delegate()` / `Redelegate()` to `val` <br /> - (increase) `val` joining the provider validator set <br /> - (decrease) `Undelegate()` / `Redelegate()` from `val` <br /> - (decrease) `Slash(val)` <br /> - (decrease) `val` leaving the provider validator set <br /> MUST be present in a `ValidatorSetChangePacket` that is sent to all registered consumer chains | `Scheduled` | `NA` | `NA` | `Done` | `Scheduled` | `Scheduled` |
-| 6.03 | Every consumer chain receives the same sequence of `ValidatorSetChangePacket`s in the same order. | `Scheduled` | `NA` | `NA` | `NA` (Dan?) | `Scheduled` | `Scheduled` <br /> high priority |
+| 6.03 | Every consumer chain receives the same sequence of `ValidatorSetChangePacket`s in the same order. | `Scheduled` | `NA` | `NA` | `NA` | `Scheduled` | `Scheduled` <br /> high priority |
 
 ---
 
