@@ -758,7 +758,7 @@ func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
 }
 
-// ConsumerApp interface implementations for e2e tests
+// DemocConsumerApp interface implementations for e2e tests
 
 // GetConsumerKeeper implements the ConsumerApp interface.
 func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
