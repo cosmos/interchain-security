@@ -25,22 +25,6 @@ func stepsDoubleSign(consumerName, doubleSignChain, doubleSignValidator string) 
 			},
 		},
 		{
-			action: SendTokensAction{
-				chain:  chainID("provi"),
-				from:   validatorID("alice"),
-				to:     validatorID("bob"),
-				amount: 2,
-			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9499999998,
-						validatorID("bob"):   9500000002,
-					},
-				},
-			},
-		},
-		{
 			action: submitConsumerProposalAction{
 				chain:         chainID("provi"),
 				from:          validatorID("alice"),
@@ -52,8 +36,8 @@ func stepsDoubleSign(consumerName, doubleSignChain, doubleSignValidator string) 
 			state: State{
 				chainID("provi"): ChainState{
 					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9489999997,
-						validatorID("bob"):   9500000002,
+						validatorID("alice"): 9489999999,
+						validatorID("bob"):   9500000000,
 					},
 					Proposals: &map[uint]Proposal{
 						1: ConsumerProposal{
@@ -86,8 +70,8 @@ func stepsDoubleSign(consumerName, doubleSignChain, doubleSignValidator string) 
 						},
 					},
 					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9499999998,
-						validatorID("bob"):   9500000002,
+						validatorID("alice"): 9500000000,
+						validatorID("bob"):   9500000000,
 					},
 				},
 			},
@@ -105,28 +89,11 @@ func stepsDoubleSign(consumerName, doubleSignChain, doubleSignValidator string) 
 			state: State{
 				chainID("provi"): ChainState{
 					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9499999998,
-						validatorID("bob"):   9500000002,
+						validatorID("alice"): 9500000000,
+						validatorID("bob"):   9500000000,
 					},
 				},
 				chainID(consumerName): ChainState{
-					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 10000000000,
-						validatorID("bob"):   10000000000,
-					},
-				},
-			},
-		},
-		{
-			action: SendTokensAction{
-				chain:  chainID(consumerName),
-				from:   validatorID("alice"),
-				to:     validatorID("bob"),
-				amount: 1,
-			},
-			state: State{
-				chainID(consumerName): ChainState{
-					// Tx on consumer chain should not go through before ICS channel is setup
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 10000000000,
 						validatorID("bob"):   10000000000,
@@ -167,7 +134,7 @@ func stepsDoubleSign(consumerName, doubleSignChain, doubleSignValidator string) 
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 500,
 						validatorID("bob"):   500,
-						validatorID("carol"): 0,
+						validatorID("carol"): 500,
 					},
 				},
 				// not slashed on consumer yet
@@ -204,56 +171,22 @@ func stepsDoubleSign(consumerName, doubleSignChain, doubleSignValidator string) 
 				},
 			},
 		},
-		{
-			action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
-			},
-			state: State{
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 500,
-						// VSC now seen on consumer
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
-					},
-				},
-			},
-		},
-		{
-			action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
-			},
-			state: State{
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 500,
-						// VSC now seen on consumer
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
-					},
-				},
-			},
-		},
-		{
-			action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
-			},
-			state: State{
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 500,
-						// VSC now seen on consumer
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
-					},
-				},
-			},
-		},
+		// {
+		// 	action: relayPacketsAction{
+		// 		chain:   chainID("provi"),
+		// 		port:    "provider",
+		// 		channel: 0,
+		// 	},
+		// 	state: State{
+		// 		chainID(consumerName): ChainState{
+		// 			ValPowers: &map[validatorID]uint{
+		// 				validatorID("alice"): 500,
+		// 				// VSC now seen on consumer
+		// 				validatorID("bob"):   500,
+		// 				validatorID("carol"): 0,
+		// 			},
+		// 		},
+		// 	},
+		// },
 	}
 }
