@@ -305,7 +305,7 @@ func (d *driver) externalInvariants() {
 		for ck := range d.consumerValset.keyToPower {
 
 			// The query must return a result
-			pkQueried, err := d.km.GetProviderKey(ck)
+			pkQueried, err := d.km.GetProviderPubKeyFromConsumerPubKey(ck)
 			require.Nil(d.t, err)
 
 			// The provider key must be the one that was actually referenced
@@ -378,7 +378,7 @@ func (d *driver) externalInvariants() {
 
 		// Simply check every consumer key for the correct queryable-ness.
 		for ck := 0; ck < NUM_CKS; ck++ {
-			_, err := d.km.GetProviderKey(key(ck, true))
+			_, err := d.km.GetProviderPubKeyFromConsumerPubKey(key(ck, true))
 			actualQueryable := err == nil
 			if expect, found := expectQueryable[key(ck, true)]; found && expect {
 				require.True(d.t, actualQueryable)
@@ -524,7 +524,7 @@ func TestXSetReverseQuery(t *testing.T) {
 	s := makeStore()
 	kd := MakeKeyMap(&s)
 	kd.SetProviderKeyToConsumerKey(key(42, false), key(43, true))
-	actual, err := kd.GetProviderKey(key(43, true)) // Queryable
+	actual, err := kd.GetProviderPubKeyFromConsumerPubKey(key(43, true)) // Queryable
 	require.Nil(t, err)
 	require.Equal(t, key(42, false), actual)
 }
@@ -533,7 +533,7 @@ func TestXSetReverseQuery(t *testing.T) {
 func TestNoSetReverseQuery(t *testing.T) {
 	s := makeStore()
 	kd := MakeKeyMap(&s)
-	_, err := kd.GetProviderKey(key(43, true)) // Not queryable
+	_, err := kd.GetProviderPubKeyFromConsumerPubKey(key(43, true)) // Not queryable
 	require.NotNil(t, err)
 }
 
@@ -542,8 +542,8 @@ func TestXSetUnsetReverseQuery(t *testing.T) {
 	s := makeStore()
 	kd := MakeKeyMap(&s)
 	kd.SetProviderKeyToConsumerKey(key(42, false), key(43, true))
-	kd.SetProviderKeyToConsumerKey(key(42, false), key(44, true)) // Set to different value
-	_, err := kd.GetProviderKey(key(43, true))                    // Ealier value not queryable
+	kd.SetProviderKeyToConsumerKey(key(42, false), key(44, true))   // Set to different value
+	_, err := kd.GetProviderPubKeyFromConsumerPubKey(key(43, true)) // Ealier value not queryable
 	require.NotNil(t, err)
 }
 
