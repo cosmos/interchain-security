@@ -21,11 +21,19 @@ const (
 
 	// DefaultMaxClockDrift defines how much new (untrusted) header's Time can drift into the future.
 	DefaultMaxClockDrift = 10 * time.Second
+
+	// DafaultInitTimeoutPeriod defines the init timeout period
+	DafaultInitTimeoutPeriod = 7 * 24 * time.Hour
+
+	// DefaultVscTimeoutPeriod defines the VSC timeout period
+	DefaultVscTimeoutPeriod = 5 * 7 * 24 * time.Hour
 )
 
 // Reflection based keys for params subspace
 var (
-	KeyTemplateClient = []byte("TemplateClient")
+	KeyTemplateClient    = []byte("TemplateClient")
+	KeyInitTimeoutPeriod = []byte("InitTimeoutPeriod")
+	KeyVscTimeoutPeriod  = []byte("VscTimeoutPeriod")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -34,10 +42,17 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates new provider parameters with provided arguments
-func NewParams(cs *ibctmtypes.ClientState, ccvTimeoutPeriod time.Duration) Params {
+func NewParams(
+	cs *ibctmtypes.ClientState,
+	ccvTimeoutPeriod time.Duration,
+	initTimeoutPeriod time.Duration,
+	vscTimeoutPeriod time.Duration,
+) Params {
 	return Params{
-		TemplateClient:   cs,
-		CcvTimeoutPeriod: ccvTimeoutPeriod,
+		TemplateClient:    cs,
+		CcvTimeoutPeriod:  ccvTimeoutPeriod,
+		InitTimeoutPeriod: initTimeoutPeriod,
+		VscTimeoutPeriod:  vscTimeoutPeriod,
 	}
 }
 
@@ -49,6 +64,8 @@ func DefaultParams() Params {
 		ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 			DefaultMaxClockDrift, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, true, true),
 		ccvtypes.DefaultCCVTimeoutPeriod,
+		DafaultInitTimeoutPeriod,
+		DefaultVscTimeoutPeriod,
 	)
 }
 
@@ -60,7 +77,12 @@ func (p Params) Validate() error {
 	if ccvtypes.ValidateDuration(p.CcvTimeoutPeriod) != nil {
 		return fmt.Errorf("ccv timeout period is invalid")
 	}
-	// TODO: validate p.InitTimeoutPeriod and p.VscTimeoutPeriod once https://github.com/cosmos/interchain-security/pull/394 is merged
+	if ccvtypes.ValidateDuration(p.InitTimeoutPeriod) != nil {
+		return fmt.Errorf("init timeout period is invalid")
+	}
+	if ccvtypes.ValidateDuration(p.VscTimeoutPeriod) != nil {
+		return fmt.Errorf("vsc timeout period is invalid")
+	}
 	return validateTemplateClient(*p.TemplateClient)
 }
 
@@ -69,6 +91,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyTemplateClient, p.TemplateClient, validateTemplateClient),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(KeyInitTimeoutPeriod, p.InitTimeoutPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(KeyVscTimeoutPeriod, p.VscTimeoutPeriod, ccvtypes.ValidateDuration),
 	}
 }
 

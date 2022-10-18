@@ -303,12 +303,18 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	currentTime := uint64(ctx.BlockTime().UnixNano())
 
 	// iterate over initTimeoutTimestamps
+	var removedChainIds []string
 	k.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) bool {
 		if currentTime > ts {
 			// initTimeout expired:
 			// stop the consumer chain and unlock the unbonding
 			k.StopConsumerChain(ctx, chainID, false, true)
+			removedChainIds = append(removedChainIds, chainID)
 		}
 		return true
 	})
+	// remove the init timeout timestamps for the stopped consumers
+	for _, chainID := range removedChainIds {
+		k.DeleteInitTimeoutTimestamp(ctx, chainID)
+	}
 }

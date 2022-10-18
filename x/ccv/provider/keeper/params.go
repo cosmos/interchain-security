@@ -25,11 +25,27 @@ func (k Keeper) GetCCVTimeoutPeriod(ctx sdk.Context) time.Duration {
 	return p
 }
 
+// GetInitTimeoutPeriod returns the init timeout period
+func (k Keeper) GetInitTimeoutPeriod(ctx sdk.Context) time.Duration {
+	var p time.Duration
+	k.paramSpace.Get(ctx, types.KeyInitTimeoutPeriod, &p)
+	return p
+}
+
+// GetVscTimeoutPeriod returns the VSC timeout period
+func (k Keeper) GetVscTimeoutPeriod(ctx sdk.Context) time.Duration {
+	var p time.Duration
+	k.paramSpace.Get(ctx, types.KeyVscTimeoutPeriod, &p)
+	return p
+}
+
 // GetParams returns the paramset for the provider module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.GetTemplateClient(ctx),
 		k.GetCCVTimeoutPeriod(ctx),
+		k.GetInitTimeoutPeriod(ctx),
+		k.GetVscTimeoutPeriod(ctx),
 	)
 }
 

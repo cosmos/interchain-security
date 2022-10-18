@@ -141,6 +141,9 @@ func (s *CCVTestSuite) TestUndelegationNoValsetChange() {
 //   - no undelegations can complete, even if the provider unbonding period elapses
 //   - all the VSC packets are stored in state as pending
 func (s *CCVTestSuite) TestUndelegationDuringInit() {
+	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
+	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
+
 	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
@@ -150,11 +153,17 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 	// - check that CCV unbonding op was created
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true)
 
+	// change the init timeout timestamp for this consumer chain
+	// to make sure the chain is not removed
+	providerUnbondingPeriod := stakingKeeper.UnbondingTime(s.providerCtx())
+	ts := s.providerCtx().BlockTime().Add(providerUnbondingPeriod + 24*time.Hour)
+	providerKeeper.SetInitTimeoutTimestamp(s.providerCtx(), s.consumerChain.ChainID, uint64(ts.UnixNano()))
+
 	// call NextBlock on the provider (which increments the height)
 	s.providerChain.NextBlock()
 
 	// check that the VSC packet is stored in state as pending
-	pendingVSCs, _ := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+	pendingVSCs, _ := providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().True(len(pendingVSCs) == 1, "no pending VSC packet found")
 
 	// delegate again to create another VSC packet
@@ -164,7 +173,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 	s.providerChain.NextBlock()
 
 	// check that the VSC packet is stored in state as pending
-	pendingVSCs, _ = s.providerChain.App.(*appProvider.App).ProviderKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+	pendingVSCs, _ = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().True(len(pendingVSCs) == 2, "only one pending VSC packet found")
 
 	// increment time so that the unbonding period ends on the provider

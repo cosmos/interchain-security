@@ -623,7 +623,9 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			AllowUpdateAfterExpiry:       true,
 			AllowUpdateAfterMisbehaviour: true,
 		},
-		CcvTimeoutPeriod: ccvtypes.DefaultCCVTimeoutPeriod,
+		CcvTimeoutPeriod:  ccvtypes.DefaultCCVTimeoutPeriod,
+		InitTimeoutPeriod: types.DafaultInitTimeoutPeriod,
+		VscTimeoutPeriod:  types.DefaultVscTimeoutPeriod,
 	}
 	providerKeeper.SetParams(ctx, moduleParams)
 	defer ctrl.Finish()
