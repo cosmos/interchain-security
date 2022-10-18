@@ -92,7 +92,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	s.Require().NoError(err)
 
 	// check all states are removed and the unbonding operation released
-	s.checkConsumerChainIsRemoved(consumerChainID, false)
+	s.checkConsumerChainIsRemoved(consumerChainID, false, true)
 }
 
 // TODO Simon: implement OnChanCloseConfirm in IBC-GO testing to close the consumer chain's channel end
@@ -124,12 +124,14 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	// s.Require().False(found)
 }
 
-func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd bool) {
+func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd bool, checkChannel bool) {
 	channelID := s.path.EndpointB.ChannelID
 	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
 
-	// check channel's state is closed
-	s.Require().Equal(channeltypes.CLOSED, s.path.EndpointB.GetChannel().State)
+	if checkChannel {
+		// check channel's state is closed
+		s.Require().Equal(channeltypes.CLOSED, s.path.EndpointB.GetChannel().State)
+	}
 
 	// check UnbondingOps were deleted and undelegation entries aren't onHold
 	if !lockUbd {
