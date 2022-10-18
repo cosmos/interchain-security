@@ -47,40 +47,40 @@ func key(i int, isConsumerKey bool) crypto.PublicKey {
 }
 
 type store struct {
-	pkToCk   map[PK]CK
-	ckToPk   map[CK]PK
-	ckToMemo map[CK]Memo
+	pkToCk   map[ProviderPubKey]ConsumerPubKey
+	ckToPk   map[ConsumerPubKey]ProviderPubKey
+	ckToMemo map[ConsumerPubKey]Memo
 }
 
 func makeStore() store {
 	return store{
-		pkToCk:   map[PK]CK{},
-		ckToPk:   map[CK]PK{},
-		ckToMemo: map[CK]Memo{},
+		pkToCk:   map[ProviderPubKey]ConsumerPubKey{},
+		ckToPk:   map[ConsumerPubKey]ProviderPubKey{},
+		ckToMemo: map[ConsumerPubKey]Memo{},
 	}
 }
-func (s *store) GetPkToCk() map[PK]CK {
+func (s *store) GetPkToCk() map[ProviderPubKey]ConsumerPubKey {
 	return s.pkToCk
 }
-func (s *store) GetCkToPk() map[CK]PK {
+func (s *store) GetCkToPk() map[ConsumerPubKey]ProviderPubKey {
 	return s.ckToPk
 }
-func (s *store) GetCkToMemo() map[CK]Memo {
+func (s *store) GetCkToMemo() map[ConsumerPubKey]Memo {
 	return s.ckToMemo
 }
-func (s *store) SetPkToCk(e map[PK]CK) {
+func (s *store) SetPkToCk(e map[ProviderPubKey]ConsumerPubKey) {
 	s.pkToCk = e
 }
-func (s *store) SetCkToPk(e map[CK]PK) {
+func (s *store) SetCkToPk(e map[ConsumerPubKey]ProviderPubKey) {
 	s.ckToPk = e
 }
-func (s *store) SetCkToMemo(e map[CK]Memo) {
+func (s *store) SetCkToMemo(e map[ConsumerPubKey]Memo) {
 	s.ckToMemo = e
 }
 
 type keyMapEntry struct {
-	pk PK
-	ck CK
+	pk ProviderPubKey
+	ck ConsumerPubKey
 }
 
 type traceStep struct {
@@ -99,7 +99,7 @@ type driver struct {
 	lastTimeConsumer int
 	lastTimeMaturity int
 	// indexed by time (starting at 0)
-	mappings []map[PK]CK
+	mappings []map[ProviderPubKey]ConsumerPubKey
 	// indexed by time (starting at 0)
 	consumerUpdates [][]abci.ValidatorUpdate
 	// indexed by time (starting at 0)
@@ -120,7 +120,7 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 	d.lastTimeProvider = 0
 	d.lastTimeConsumer = 0
 	d.lastTimeMaturity = 0
-	d.mappings = []map[PK]CK{}
+	d.mappings = []map[ProviderPubKey]ConsumerPubKey{}
 	d.consumerUpdates = [][]abci.ValidatorUpdate{}
 	d.providerValsets = []valset{}
 	d.consumerValset = valset{}
@@ -154,7 +154,7 @@ func (d *driver) applyKeyMapEntries(entries []keyMapEntry) {
 		_ = d.km.SetProviderKeyToConsumerKey(e.pk, e.ck)
 	}
 	// Duplicate the mapping for referencing later in tests.
-	copy := map[PK]CK{}
+	copy := map[ProviderPubKey]ConsumerPubKey{}
 	for lk, fk := range d.km.pkToCk {
 		copy[lk] = fk
 	}
@@ -270,10 +270,10 @@ func (d *driver) externalInvariants() {
 
 		// Compute a reverse lookup allowing comparison
 		// of the two sets.
-		cSetLikePSet := map[PK]int64{}
+		cSetLikePSet := map[ProviderPubKey]int64{}
 		{
 			mapping := d.mappings[d.lastTimeConsumer]
-			inverseMapping := map[CK]PK{}
+			inverseMapping := map[ConsumerPubKey]ProviderPubKey{}
 			for pk, ck := range mapping {
 				inverseMapping[ck] = pk
 			}
@@ -311,7 +311,7 @@ func (d *driver) externalInvariants() {
 			// The provider key must be the one that was actually referenced
 			// in the latest trueMapping used to compute updates sent to the
 			// consumer.
-			cks_TRUE := map[CK]bool{}
+			cks_TRUE := map[ConsumerPubKey]bool{}
 			trueMapping := d.mappings[d.lastTimeConsumer]
 			for pk_TRUE, ck_TRUE := range trueMapping {
 
@@ -348,7 +348,7 @@ func (d *driver) externalInvariants() {
 
 		// Do we expect to be able to query the provider key for a given consumer
 		// key?
-		expectQueryable := map[CK]bool{}
+		expectQueryable := map[ConsumerPubKey]bool{}
 
 		for i := 0; i <= d.lastTimeMaturity; i++ {
 			for _, u := range d.consumerUpdates[i] {

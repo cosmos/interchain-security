@@ -30,31 +30,32 @@ import (
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
-type PK = crypto.PublicKey
-type CK = crypto.PublicKey
+type ProviderPubKey = crypto.PublicKey
+type ConsumerPubKey = crypto.PublicKey
 type VSCID = uint64
 
 type Memo struct {
-	ck    CK
-	pk    PK
+	ck ConsumerPubKey
+	pk ProviderPubKey
+
 	vscid VSCID
 	power int64
 }
 
 type KeyMap struct {
 	store    Store
-	pkToCk   map[PK]CK
-	ckToPk   map[CK]PK
-	ckToMemo map[CK]Memo
+	pkToCk   map[ProviderPubKey]ConsumerPubKey
+	ckToPk   map[ConsumerPubKey]ProviderPubKey
+	ckToMemo map[ConsumerPubKey]Memo
 }
 
 type Store interface {
-	GetPkToCk() map[PK]CK
-	GetCkToPk() map[CK]PK
-	GetCkToMemo() map[CK]Memo
-	SetPkToCk(map[PK]CK)
-	SetCkToPk(map[CK]PK)
-	SetCkToMemo(map[CK]Memo)
+	GetPkToCk() map[ProviderPubKey]ConsumerPubKey
+	GetCkToPk() map[ConsumerPubKey]ProviderPubKey
+	GetCkToMemo() map[ConsumerPubKey]Memo
+	SetPkToCk(map[ProviderPubKey]ConsumerPubKey)
+	SetCkToPk(map[ConsumerPubKey]ProviderPubKey)
+	SetCkToMemo(map[ConsumerPubKey]Memo)
 }
 
 func MakeKeyMap(store Store) KeyMap {
@@ -82,7 +83,7 @@ func (e *KeyMap) SetAll() {
 }
 
 // TODO:
-func (e *KeyMap) SetProviderKeyToConsumerKey(pk PK, ck CK) error {
+func (e *KeyMap) SetProviderKeyToConsumerKey(pk ProviderPubKey, ck ConsumerPubKey) error {
 	e.GetAll()
 	if _, ok := e.ckToPk[ck]; ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
@@ -102,7 +103,7 @@ func (e *KeyMap) SetProviderKeyToConsumerKey(pk PK, ck CK) error {
 // TODO: do regular query (CK for PK)
 
 // TODO: use found instead of error
-func (e *KeyMap) GetProviderKey(ck CK) (PK, error) {
+func (e *KeyMap) GetProviderKey(ck ConsumerPubKey) (ProviderPubKey, error) {
 	e.GetAll()
 	if u, ok := e.ckToMemo[ck]; ok {
 		return u.pk, nil
@@ -116,7 +117,7 @@ func (e *KeyMap) GetProviderKey(ck CK) (PK, error) {
 // TODO:
 func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 	e.GetAll()
-	toDel := []CK{}
+	toDel := []ConsumerPubKey{}
 	for _, u := range e.ckToMemo {
 		// If the last update was a deletion (0 power) and the update
 		// matured then pruning is possible.
@@ -135,7 +136,7 @@ func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpd
 
 	e.GetAll()
 
-	updates := map[PK]int64{}
+	updates := map[ProviderPubKey]int64{}
 
 	for _, u := range providerUpdates {
 		updates[u.PubKey] = u.Power
@@ -154,9 +155,9 @@ func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpd
 }
 
 // do inner work as part of ComputeUpdates
-func (e *KeyMap) inner(vscid VSCID, providerUpdates map[PK]int64) map[CK]int64 {
+func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) map[ConsumerPubKey]int64 {
 
-	pks := []PK{}
+	pks := []ProviderPubKey{}
 
 	// Grab provider keys where the assigned consumer key has changed
 	for oldCk, u := range e.ckToMemo {
@@ -171,11 +172,11 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[PK]int64) map[CK]int64 {
 		pks = append(pks, pk)
 	}
 
-	ret := map[CK]int64{}
+	ret := map[ConsumerPubKey]int64{}
 
 	// Create a read only copy, so that we can query while writing
 	// updates to the old version.
-	ckToMemo_READ_ONLY := map[CK]Memo{}
+	ckToMemo_READ_ONLY := map[ConsumerPubKey]Memo{}
 	for ck, memo := range e.ckToMemo {
 		ckToMemo_READ_ONLY[ck] = memo
 	}
@@ -227,7 +228,7 @@ func (e *KeyMap) internalInvariants() bool {
 
 	// No two provider keys can map to the same consumer key
 	// (pkToCk is sane)
-	seen := map[CK]bool{}
+	seen := map[ConsumerPubKey]bool{}
 	for _, ck := range e.pkToCk {
 		if seen[ck] {
 			return false
