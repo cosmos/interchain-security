@@ -2,16 +2,17 @@
 
 This document contains the overview of the quality assurance process necessary for the release of Interchain Security v1.
 
-The verification of Interchain Security is done using the following approaches:
+The quality assurance of Interchain Security is done using the following approaches:
 
 - code review
 - automatic software engineering tools (e.g., SonarCloud, gosec)
 - unit testing
+- integration tests
 - differential testing using heuristics
 - incentivized testnet
 - protocol audit (with the Apalache team from Informal Systems)
 
-The verification of Interchain Security is split across the following concerns:
+The quality assurance of Interchain Security is split across the following concerns:
 
 - Correct software engineering (e.g., error handling, serialization, deserialization).
 - The correct integration with IBC (i.e., [ibc-go](https://github.com/cosmos/ibc-go/tree/v3.0.0)).
@@ -49,7 +50,7 @@ IBC packets:
 | 2.01 | Create IBC clients | `Scheduled` (ibc-go team) | `Done` [TestCreateConsumerClient](../x/ccv/provider/keeper/proposal_test.go#117), [TestInitGenesis](../x/ccv/consumer/keeper/genesis_test.go#26) | `Done` [SetupTest](../tests/e2e/setup_test.go#39), [TestConsumerGenesis](../tests/e2e/channel_init_test.go#21) | `Future work` | `Scheduled` |
 | 2.02 | Create CCV channel (handshake) | `Scheduled` (ibc-go team) | `Done` [provider/ibc_module_test.go](../x/ccv/provider/ibc_module_test.go), [consumer/ibc_module_test.go](../x/ccv/consumer/ibc_module_test.go) | `Done` [SetupCCVChannel](../tests/e2e/setup_test.go#125) | `Future work` | `Scheduled` |
 | 2.03 | Sending IBC packets <br /> - `x/ccv/utils/utils.go:SendIBCPacket()` | `Scheduled` (ibc-go team) | `NA` | `Done` [TestSendVSCMaturedPackets](../tests/e2e/valset_update_test.go#39), [TestSendSlashPacket](../tests/e2e/slashing_test.go#648) | `Done` | `Scheduled` |
-| 2.04 | Handling acknowledgments | `Scheduled` (ibc-go team) | [Scheduled](https://github.com/cosmos/interchain-security/issues/362) | `Partial coverage` [TestOnAcknowledgementPacket](../x/ccv/consumer/keeper/relay_test.go#152), [TestSlashPacketAcknowldgement](../tests/e2e/slashing_test.go#258) | `Scheduled` | `Scheduled` |
+| 2.04 | Handling acknowledgments | `Scheduled` (ibc-go team) | [Scheduled](https://github.com/cosmos/interchain-security/issues/362) | `Partial coverage` [TestOnAcknowledgementPacket](../x/ccv/consumer/keeper/relay_test.go#152), [TestSlashPacketAcknowldgement](../tests/e2e/slashing_test.go#258) | `Done` | `Scheduled` |
 | 2.05 | Handling timeouts | `Scheduled` (ibc-go team) | [Scheduled](https://github.com/cosmos/interchain-security/issues/362) |`NA` | `Future work` | `Scheduled` |
 | 2.06 | Handling IBC client expiration <br /> - high priority| `Scheduled` (ibc-go team)  | `NA` | `NA` | `Future work` | `Scheduled` |
 | 2.07 | ICS-20 channel creation | `Scheduled` (ibc-go team) | `NA` | `Done` [SetupTransferChannel](../tests/e2e/setup_test.go#152) |`Future work` | `Scheduled` |
@@ -63,7 +64,7 @@ IBC packets:
 | ID | Concern | Code Review | Unit Testing | E2E Testing | Diff. Testing | Testnet |
 | -- | ------- | ----------- | ------------ | ----------- | ------------- | ------- |
 | 3.01 | Changes to staking module | `Done` | `Done` (Cosmos-SDK side) | `Partial coverage` <br /> [unbonding_test.go](../tests/e2e/unbonding_test.go) <br /> redelegation could be expanded, validator unbonding missing | `Partial coverage` | `Scheduled` |
-| 3.02 | Changes to slashing module | `Done` | `NA` | `Done` <br /> [TestValidatorDowntime](../tests/e2e/slashing_test.go#L502) <br />  | `NA` | `Scheduled` |
+| 3.02 | Changes to slashing module | `Done` | `NA` | `Done` <br /> [TestValidatorDowntime](../tests/e2e/slashing_test.go#L502) <br />  | `Partial coverage` | `Scheduled` |
 | 3.03 | Changes to evidence module | `Done` | `NA` | `Done` <br /> [TestValidatorDoubleSigning](../tests/e2e/slashing_test.go#L584) <br />  | `NA` | `Scheduled` |
 
 ### Provider Chain Correctness
