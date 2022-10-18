@@ -41,7 +41,7 @@ func TestCCVTestSuite(t *testing.T) {
 
 // TODO: Run the gov enabled consumer against the standard suite of tests: https://github.com/cosmos/interchain-security/issues/397
 
-// Executes a specialized group of tests, specific to a democracy consumer against an example implementation.
+// Executes a specialized group of tests specific to a democracy consumer, against a democracy consumer app.go implementation.
 func TestConsumerDemocracyTestSuite(t *testing.T) {
 	democSuite := e2e.NewConsumerDemocracyTestSuite(
 		func(t *testing.T) (
