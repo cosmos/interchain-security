@@ -9,26 +9,29 @@ type KeyMapStore struct {
 	chainID ChainID
 }
 
-func (s *KeyMapStore) GetCkToMemo() map[keymap.ConsumerPubKey]keymap.Memo {
-	// TODO:
-	return map[keymap.ConsumerPubKey]keymap.Memo{}
-}
 func (s *KeyMapStore) GetPkToCk() map[keymap.ProviderPubKey]keymap.ConsumerPubKey {
-	// TODO:
-	return map[keymap.ProviderPubKey]keymap.ConsumerPubKey{}
+	panic("no im")
 }
 func (s *KeyMapStore) GetCkToPk() map[keymap.ConsumerPubKey]keymap.ProviderPubKey {
-	// TODO:
-	return map[keymap.ConsumerPubKey]keymap.ProviderPubKey{}
+	panic("no im")
+}
+func (s *KeyMapStore) GetCkToMemo() map[keymap.ConsumerPubKey]keymap.Memo {
+	panic("no im")
+}
+func (s *KeyMapStore) GetCcaToCk() map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey {
+	panic("no im")
 }
 func (s *KeyMapStore) SetPkToCk(e map[keymap.ProviderPubKey]keymap.ConsumerPubKey) {
-	// TODO:
+	panic("no im")
 }
 func (s *KeyMapStore) SetCkToPk(e map[keymap.ConsumerPubKey]keymap.ProviderPubKey) {
-	// TODO:
+	panic("no im")
 }
 func (s *KeyMapStore) SetCkToMemo(e map[keymap.ConsumerPubKey]keymap.Memo) {
-	// TODO:
+	panic("no im")
+}
+func (s *KeyMapStore) SetCcaToCk(ccaToCk map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey) {
+	panic("no im")
 }
 
 func (k Keeper) addKeyMap(chainID ChainID) {

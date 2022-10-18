@@ -10,8 +10,9 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
+	"github.com/cosmos/interchain-security/x/ccv/provider/keeper/keymap"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
@@ -194,21 +195,19 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	return ack
 }
 
-// TODO: implement and refactor this and callsite
-func (k Keeper) GetValidatorToSlash(ctx sdk.Context, chainID string, consumerValidator abcitypes.Validator) (validator stakingtypes.Validator, found bool) {
-	// consAddr := sdk.ConsAddress(consumerValidator.Address)
-	// validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
-	// queryKey := consumerValidator.Address
-	// queryKey := cryptocodec.ToTmProtoPublicKey(consAddr)
-	// queryKey := consAddr
-	// lookup, err := k.keymaps[chainID].GetProviderKey(queryKey)
-	// TODO: handle error/found based on API
-
-	// toUse := sdk.ConsAddress(lookup)
-	// validator, found = k.stakingKeeper.GetValidatorByConsAddr(ctx, toUse)
-
-	// TODO: del this real solution
-	validator, found = k.stakingKeeper.GetValidatorByConsAddr(ctx, sdk.ConsAddress(consumerValidator.Address))
+// Beter name
+func GetValidatorConsAddr(keymap *keymap.KeyMap, consumerValidator abcitypes.Validator) (sdk.ConsAddress, error) {
+	consumerConsAddress := sdk.ConsAddress(consumerValidator.Address)
+	providerPublicKey, err := keymap.GetProviderPubKeyFromConsumerConsAddress(consumerConsAddress)
+	if err != nil {
+		// TODO: rework when client api changes
+		return []byte{}, err
+	}
+	pk, err := cryptocodec.FromTmProtoPublicKey(providerPublicKey)
+	if err != nil {
+		panic("could not get sdk public key from tendermint proto public key for slashing")
+	}
+	return sdk.GetConsAddress(pk), nil
 
 }
 
@@ -228,8 +227,12 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		return false, fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
-	consAddr := sdk.ConsAddress(data.Validator.Address)
-	validator, found := k.GetValidatorToSlash(ctx, chainID, data.Validator)
+	consAddr, err := GetValidatorConsAddr(k.keymaps[chainID], data.Validator)
+	if err != nil {
+		// TODO: better message/rework when call api changes
+		panic("could not do reverse lookup")
+	}
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
