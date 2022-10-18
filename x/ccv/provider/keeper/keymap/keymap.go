@@ -26,17 +26,21 @@ with a store interface which handles all of its reading and writing.
 import (
 	"errors"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 type ProviderPubKey = crypto.PublicKey
 type ConsumerPubKey = crypto.PublicKey
+type StringifiedConsumerConsAddr = string
+
 type VSCID = uint64
 
 type Memo struct {
-	ck ConsumerPubKey
-	pk ProviderPubKey
+	ck  ConsumerPubKey
+	pk  ProviderPubKey
+	cca StringifiedConsumerConsAddr
 
 	vscid VSCID
 	power int64
@@ -47,6 +51,7 @@ type KeyMap struct {
 	pkToCk   map[ProviderPubKey]ConsumerPubKey
 	ckToPk   map[ConsumerPubKey]ProviderPubKey
 	ckToMemo map[ConsumerPubKey]Memo
+	ccaToCk  map[StringifiedConsumerConsAddr]ConsumerPubKey
 }
 
 type Store interface {
@@ -103,7 +108,7 @@ func (e *KeyMap) SetProviderKeyToConsumerKey(pk ProviderPubKey, ck ConsumerPubKe
 // TODO: do regular query (CK for PK)
 
 // TODO: use found instead of error
-func (e *KeyMap) GetProviderKey(ck ConsumerPubKey) (ProviderPubKey, error) {
+func (e *KeyMap) GetProviderPubKeyFromConsumerPubKey(ck ConsumerPubKey) (ProviderPubKey, error) {
 	e.GetAll()
 	if u, ok := e.ckToMemo[ck]; ok {
 		return u.pk, nil
@@ -112,6 +117,13 @@ func (e *KeyMap) GetProviderKey(ck ConsumerPubKey) (ProviderPubKey, error) {
 	} else {
 		return crypto.PublicKey{}, errors.New("provider key not found for consumer key")
 	}
+}
+
+// TODO: use found instead of error
+func (e *KeyMap) GetProviderPubKeyFromConsumerConsAddress(cca sdk.ConsAddress) (ProviderPubKey, error) {
+	e.GetAll()
+	ck := e.ccaToCk[string(cca)]
+	return e.GetProviderPubKeyFromConsumerPubKey(ck)
 }
 
 // TODO:
@@ -226,47 +238,102 @@ func (e *KeyMap) internalInvariants() bool {
 
 	e.GetAll()
 
-	// No two provider keys can map to the same consumer key
-	// (pkToCk is sane)
-	seen := map[ConsumerPubKey]bool{}
-	for _, ck := range e.pkToCk {
-		if seen[ck] {
-			return false
-		}
-		seen[ck] = true
-	}
-
-	// all values of pkToCk is a key of ckToPk
-	// (reverse lookup is always possible)
-	for _, ck := range e.pkToCk {
-		if _, ok := e.ckToPk[ck]; !ok {
-			return false
+	{
+		// No two provider keys can map to the same consumer key
+		// (pkToCk is sane)
+		seen := map[ConsumerPubKey]bool{}
+		for _, ck := range e.pkToCk {
+			if seen[ck] {
+				return false
+			}
+			seen[ck] = true
 		}
 	}
 
-	// All consumer keys mapping to provider keys are actually
-	// mapped to by the provider key.
-	// (ckToPk is sane)
-	for ck := range e.ckToPk {
-		good := false
-		for _, candidateCk := range e.pkToCk {
-			if candidateCk == ck {
-				good = true
-				break
+	{
+		// all values of pkToCk is a key of ckToPk
+		// (reverse lookup is always possible)
+		for _, ck := range e.pkToCk {
+			if _, ok := e.ckToPk[ck]; !ok {
+				return false
 			}
 		}
-		if !good {
-			return false
+	}
+
+	{
+		// All consumer keys mapping to provider keys are actually
+		// mapped to by the provider key.
+		// (ckToPk is sane)
+		for ck := range e.ckToPk {
+			good := false
+			for _, candidateCk := range e.pkToCk {
+				if candidateCk == ck {
+					good = true
+					break
+				}
+			}
+			if !good {
+				return false
+			}
 		}
 	}
 
-	// If a consumer key is mapped to a provider key (currently)
-	// any memo containing the same consumer key has the same
-	// mapping.
-	// (Ensures lookups are correct)
-	for ck, pk := range e.ckToPk {
-		if u, ok := e.ckToMemo[ck]; ok {
-			if pk != u.pk {
+	{
+		// If a consumer key is mapped to a provider key (currently)
+		// any memo containing the same consumer key has the same
+		// mapping.
+		// (Ensures lookups are correct)
+		for ck, pk := range e.ckToPk {
+			if u, ok := e.ckToMemo[ck]; ok {
+				if pk != u.pk {
+					return false
+				}
+			}
+		}
+	}
+
+	{
+		// All entries in ckToMemo have a unique consumer consensus
+		// address
+		seen := map[StringifiedConsumerConsAddr]bool{}
+		for _, memo := range e.ckToMemo {
+			if _, found := seen[memo.cca]; found {
+				return false
+			}
+			seen[memo.cca] = true
+		}
+	}
+
+	{
+		// All entries in ckToMemo have a consumer consensus
+		// address which is a key in ccaToCk
+		for _, memo := range e.ckToMemo {
+			if _, found := e.ccaToCk[memo.cca]; !found {
+				return false
+			}
+		}
+	}
+
+	{
+		// All entries in ccaToCk have a unique consumer pub key
+		seen := map[ConsumerPubKey]bool{}
+		for _, ck := range e.ccaToCk {
+			if _, found := seen[ck]; found {
+				return false
+			}
+			seen[ck] = true
+		}
+	}
+
+	{
+		// All entries in ccaToCk have a consumer pub key
+		// which is a key of ckToMemo
+		for cca, ck := range e.ccaToCk {
+			memo, found := e.ckToMemo[ck]
+			if !found {
+				return false
+			}
+			if memo.cca != cca {
 				return false
 			}
 		}
