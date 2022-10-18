@@ -206,7 +206,16 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 				// For each provider key for which there was already a positive update
 				// create a deletion update for the associated consumer key.
 				cca := consumerPubKeyToStringifiedConsumerConsAddr(*u.Ck)
-				e.ckToMemo[*u.Ck] = ccvtypes.Memo{Ck: u.Ck, Pk: &pk, Vscid: vscid, Power: 0, Cca: cca}
+				bz, err := pk.Marshal()
+				if err != nil {
+					panic("woops0")
+				}
+				copy := crypto.PublicKey{}
+				err = copy.Unmarshal(bz)
+				if err != nil {
+					panic("woops1")
+				}
+				e.ckToMemo[*u.Ck] = ccvtypes.Memo{Ck: u.Ck, Pk: &copy, Vscid: vscid, Power: 0, Cca: cca}
 				e.ccaToCk[cca] = *u.Ck
 				ret[*u.Ck] = 0
 			}
@@ -235,7 +244,16 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 		if 0 < power {
 			ck := e.pkToCk[pk]
 			cca := consumerPubKeyToStringifiedConsumerConsAddr(ck)
-			e.ckToMemo[ck] = ccvtypes.Memo{Ck: &ck, Pk: &pk, Vscid: vscid, Power: power, Cca: cca}
+			bz, err := pk.Marshal()
+			if err != nil {
+				panic("woops0")
+			}
+			copy := crypto.PublicKey{}
+			err = copy.Unmarshal(bz)
+			if err != nil {
+				panic("woops1")
+			}
+			e.ckToMemo[ck] = ccvtypes.Memo{Ck: &ck, Pk: &copy, Vscid: vscid, Power: power, Cca: cca}
 			e.ccaToCk[cca] = ck
 			ret[ck] = power
 		}
