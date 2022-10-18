@@ -39,7 +39,7 @@ func NewConsumerDemocracyTestSuite(setupCallback DemocSetupCallback) *ConsumerDe
 	return democSuite
 }
 
-// Callback for instantiating a new coordinator, provider/consumer test chains, and provider/consumer app
+// Callback for instantiating a new coordinator, consumer test chain, and consumer app
 // before every test defined on the suite.
 type DemocSetupCallback func(t *testing.T) (
 	coord *ibctesting.Coordinator,
