@@ -16,7 +16,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
-	abcitypes "github.com/tendermint/tendermint/abci/types"
 )
 
 func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
@@ -196,8 +195,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 }
 
 // Beter name
-func GetValidatorConsAddr(keymap *keymap.KeyMap, consumerValidator abcitypes.Validator) (sdk.ConsAddress, error) {
-	consumerConsAddress := sdk.ConsAddress(consumerValidator.Address)
+func GetProviderConsAddr(keymap *keymap.KeyMap, consumerConsAddress sdk.ConsAddress) (sdk.ConsAddress, error) {
 	providerPublicKey, err := keymap.GetProviderPubKeyFromConsumerConsAddress(consumerConsAddress)
 	if err != nil {
 		// TODO: rework when client api changes
@@ -227,12 +225,14 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		return false, fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
-	consAddr, err := GetValidatorConsAddr(k.keymaps[chainID], data.Validator)
+	// TODO: document better
+	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
+	providerConsAddr, err := GetProviderConsAddr(k.keymaps[chainID], consumerConsAddr)
 	if err != nil {
 		// TODO: better message/rework when call api changes
 		panic("could not do reverse lookup")
 	}
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr)
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
@@ -243,7 +243,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	}
 
 	// tombstoned validators should not be slashed multiple times
-	if k.slashingKeeper.IsTombstoned(ctx, consAddr) {
+	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr) {
 		return false, nil
 	}
 
@@ -260,13 +260,13 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		// then append the validator address to the slash ack for its chain id
 		slashFraction = k.slashingKeeper.SlashFractionDowntime(ctx)
 		jailTime = ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
-		k.AppendSlashAck(ctx, chainID, consAddr.String())
+		k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
 	case stakingtypes.DoubleSign:
 		// set double-signing slash fraction and infinite jail duration
 		// then tombstone the validator
 		slashFraction = k.slashingKeeper.SlashFractionDoubleSign(ctx)
 		jailTime = evidencetypes.DoubleSignJailEndTime
-		k.slashingKeeper.Tombstone(ctx, consAddr)
+		k.slashingKeeper.Tombstone(ctx, providerConsAddr)
 	default:
 		return false, fmt.Errorf("invalid infraction type: %v", data.Infraction)
 	}
@@ -274,7 +274,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// slash validator
 	k.stakingKeeper.Slash(
 		ctx,
-		consAddr,
+		providerConsAddr,
 		int64(infractionHeight),
 		data.Validator.Power,
 		slashFraction,
@@ -283,9 +283,9 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// jail validator
 	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, consAddr)
+		k.stakingKeeper.Jail(ctx, providerConsAddr)
 	}
-	k.slashingKeeper.JailUntil(ctx, consAddr, jailTime)
+	k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
 
 	return true, nil
 }
