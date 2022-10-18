@@ -7,6 +7,8 @@ set -eux
 CONTAINER_NAME=$1
 INSTANCE_NAME=$2
 LOCAL_SDK_PATH=${3:-"default"} # Sets this var to default if null or unset
+PROVIDER_DIR_NAME=${4:-"default"}
+CONSUMER_DIR_NAME=${5:-"default"}
 
 # Remove existing container instance
 set +e
@@ -28,7 +30,18 @@ else
 fi
 
 # Build the Docker container
-docker build -t "$CONTAINER_NAME" .
+if [[ "$PROVIDER_DIR_NAME" != "default" ] && [ "$CONSUMER_DIR_NAME" != "default" ]]
+then
+    # TODO: Build docker with arguments being directory names
+    # TODO: Can "." argument be put in front like so? Before it was after flags  
+    docker build . -t "$CONTAINER_NAME" --build-arg PROVIDER_DIR_NAME=$PROVIDER_DIR_NAME --build-arg CONSUMER_DIR_NAME=$CONSUMER_DIR_NAME 
+    printf "\n\nUsing custom provider and consumer\n\n\n"
+else
+    # TODO: Can you still build the container without the arguments? they may not be optional.
+    # You can just pass empty strings if needed, and check for values within dockerfile 
+    docker build -t "$CONTAINER_NAME" .
+    printf "\n\nUsing default provider and consumer\n\n\n"
+fi
 
 # Remove copied sdk directory
 rm -rf ./cosmos-sdk/

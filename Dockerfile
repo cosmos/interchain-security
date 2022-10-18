@@ -11,6 +11,26 @@ ENV GOFLAGS="-buildvcs=false"
 
 WORKDIR /downloads
 
+ARG PROVIDER_DIR_NAME
+ARG CONSUMER_DIR_NAME
+
+# TODO: At this point you have the directory names of consumer and provider,
+# Their directories have been copied into the workdir. Lastly, you need to 
+# change directories into each of the consumer and provider and call "make install"
+# to install each binary within the container. Note that this puts constraints on
+# consumers and providers in that they have to implement a make install target
+# within their makefile, AND they must have a makefile inside each source code directory.
+#
+# Once you make install each binary, it looks like there might be some more setup below
+# to replicate for the custom directories.  
+
+## PSUEDOCDE
+# IF directory strings are empty
+# do the shit below as before
+
+# ELSE 
+# Do that same shit, but do it for the custom directories using the info above. 
+
 # Copy in the repo under test
 ADD . /interchain-security
 

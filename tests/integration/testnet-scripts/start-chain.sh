@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eux
 
-# The gaiad binary
+# The chain binary to start
 BIN=$1
 
 # JSON array of validator information

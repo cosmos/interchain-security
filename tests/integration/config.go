@@ -10,9 +10,24 @@ import (
 type chainID string
 type validatorID string
 
+// The only exported config structure, allowing external repos to test their provider/consumer
+// implementations against integration tests.
+type binaryConfig struct {
+	// Provider binary name, ex: "gaiad"
+	provBinName string
+	// Consumer binary name
+	consBinName string
+	// Democracy consumer binary name
+	democracyConsBinName string
+	// Provider directory name, ex: "gaia"
+	providerDirName string
+	// Consumer directory name
+	consumerDirName string
+}
+
 // Attributes that are unique to a validator. Allows us to map (part of)
 // the set of strings defined above to a set of viable validators
-type ValidatorConfig struct {
+type validatorConfig struct {
 	mnemonic         string
 	delAddress       string
 	valoperAddress   string
@@ -25,7 +40,7 @@ type ValidatorConfig struct {
 
 // Attributes that are unique to a chain. Allows us to map (part of)
 // the set of strings defined above to a set of viable chains
-type ChainConfig struct {
+type chainConfig struct {
 	chainId chainID
 	// Must be unique per chain
 	ipPrefix       string
@@ -36,7 +51,7 @@ type ChainConfig struct {
 	binaryName     string
 }
 
-type ContainerConfig struct {
+type containerConfig struct {
 	containerName string
 	instanceName  string
 	ccvVersion    string
@@ -47,16 +62,16 @@ type ContainerConfig struct {
 type TestRun struct {
 	// These are the non altered values during a typical test run, where multiple test runs can exist
 	// to validate different action sequences and corresponding state checks.
-	containerConfig  ContainerConfig
-	validatorConfigs map[validatorID]ValidatorConfig
-	chainConfigs     map[chainID]ChainConfig
+	containerConfig  containerConfig
+	validatorConfigs map[validatorID]validatorConfig
+	chainConfigs     map[chainID]chainConfig
 	localSdkPath     string
 
 	name string
 }
 
-func getDefaultValidators() map[validatorID]ValidatorConfig {
-	return map[validatorID]ValidatorConfig{
+func getDefaultValidators() map[validatorID]validatorConfig {
+	return map[validatorID]validatorConfig{
 		validatorID("alice"): {
 			mnemonic:         "pave immune ethics wrap gain ceiling always holiday employ earth tumble real ice engage false unable carbon equal fresh sick tattoo nature pupil nuclear",
 			delAddress:       "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
@@ -87,20 +102,20 @@ func getDefaultValidators() map[validatorID]ValidatorConfig {
 	}
 }
 
-func DefaultTestRun() TestRun {
+func DefaultTestRun(binConfig binaryConfig) TestRun {
 	return TestRun{
 		name: "default",
-		containerConfig: ContainerConfig{
+		containerConfig: containerConfig{
 			containerName: "interchain-security-container",
 			instanceName:  "interchain-security-instance",
 			ccvVersion:    "1",
 			now:           time.Now(),
 		},
 		validatorConfigs: getDefaultValidators(),
-		chainConfigs: map[chainID]ChainConfig{
+		chainConfigs: map[chainID]chainConfig{
 			chainID("provi"): {
 				chainId:        chainID("provi"),
-				binaryName:     "interchain-security-pd",
+				binaryName:     binConfig.provBinName,
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 5,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\" | " +
@@ -113,7 +128,7 @@ func DefaultTestRun() TestRun {
 			},
 			chainID("consu"): {
 				chainId:        chainID("consu"),
-				binaryName:     "interchain-security-cd",
+				binaryName:     binConfig.consBinName,
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 10,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
@@ -126,20 +141,20 @@ func DefaultTestRun() TestRun {
 	}
 }
 
-func DemocracyTestRun() TestRun {
+func DemocracyTestRun(binConfig binaryConfig) TestRun {
 	return TestRun{
 		name: "democracy",
-		containerConfig: ContainerConfig{
+		containerConfig: containerConfig{
 			containerName: "interchain-security-democ-container",
 			instanceName:  "interchain-security-democ-instance",
 			ccvVersion:    "1",
 			now:           time.Now(),
 		},
 		validatorConfigs: getDefaultValidators(),
-		chainConfigs: map[chainID]ChainConfig{
+		chainConfigs: map[chainID]chainConfig{
 			chainID("provi"): {
 				chainId:        chainID("provi"),
-				binaryName:     "interchain-security-pd",
+				binaryName:     binConfig.provBinName,
 				ipPrefix:       "7.7.7",
 				votingWaitTime: 5,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\" | " +
@@ -152,7 +167,7 @@ func DemocracyTestRun() TestRun {
 			},
 			chainID("democ"): {
 				chainId:        chainID("democ"),
-				binaryName:     "interchain-security-cdd",
+				binaryName:     binConfig.democracyConsBinName,
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 10,
 				genesisChanges: ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"10\" | " +
