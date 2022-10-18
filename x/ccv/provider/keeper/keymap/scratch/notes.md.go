@@ -11,3 +11,4 @@ consAddr := sdk.ConsAddress(addr)
 
 // in order to send updates, convert the output of the staking module
 // to the address using the above function
+// get the corresponding consumer address.. but then still need the consumer tendermint key...
