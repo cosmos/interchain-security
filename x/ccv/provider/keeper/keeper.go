@@ -283,10 +283,12 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 
 	// the CCV channel is established:
 	// - set channel mappings
-	k.SetChainToChannel(ctx, tmClient.ChainId, channelID)
-	k.SetChannelToChain(ctx, channelID, tmClient.ChainId)
+	k.SetChainToChannel(ctx, chainID, channelID)
+	k.SetChannelToChain(ctx, channelID, chainID)
 	// - set current block height for the consumer chain initialization
-	k.SetInitChainHeight(ctx, tmClient.ChainId, uint64(ctx.BlockHeight()))
+	k.SetInitChainHeight(ctx, chainID, uint64(ctx.BlockHeight()))
+	// - remove init timeout timestamp
+	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 	return nil
 }
 
@@ -851,4 +853,19 @@ func (k Keeper) GetInitTimeoutTimestamp(ctx sdk.Context, chainID string) (uint64
 func (k Keeper) DeleteInitTimeoutTimestamp(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.InitTimeoutTimestampKey(chainID))
+}
+
+// IterateInitTimeoutTimestamp iterates through the init timeout timestamps in the store
+func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID string, ts uint64) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.InitTimeoutTimestampBytePrefix})
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		chainID := string(iterator.Key()[1:])
+		ts := binary.BigEndian.Uint64(iterator.Value())
+		if !cb(chainID, ts) {
+			return
+		}
+	}
 }
