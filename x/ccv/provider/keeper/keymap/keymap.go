@@ -25,9 +25,11 @@ with a store interface which handles all of its reading and writing.
 
 import (
 	"errors"
+	"fmt"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
@@ -46,31 +48,22 @@ func consumerPubKeyToStringifiedConsumerConsAddr(ck ConsumerPubKey) StringifiedC
 
 type VSCID = uint64
 
-type Memo struct {
-	ck  ConsumerPubKey
-	pk  ProviderPubKey
-	cca StringifiedConsumerConsAddr
-
-	vscid VSCID
-	power int64
-}
-
 type KeyMap struct {
 	store    Store
 	pkToCk   map[ProviderPubKey]ConsumerPubKey
 	ckToPk   map[ConsumerPubKey]ProviderPubKey
-	ckToMemo map[ConsumerPubKey]Memo
+	ckToMemo map[ConsumerPubKey]ccvtypes.Memo
 	ccaToCk  map[StringifiedConsumerConsAddr]ConsumerPubKey
 }
 
 type Store interface {
 	GetPkToCk() map[ProviderPubKey]ConsumerPubKey
 	GetCkToPk() map[ConsumerPubKey]ProviderPubKey
-	GetCkToMemo() map[ConsumerPubKey]Memo
+	GetCkToMemo() map[ConsumerPubKey]ccvtypes.Memo
 	GetCcaToCk() map[StringifiedConsumerConsAddr]ConsumerPubKey
 	SetPkToCk(map[ProviderPubKey]ConsumerPubKey)
 	SetCkToPk(map[ConsumerPubKey]ProviderPubKey)
-	SetCkToMemo(map[ConsumerPubKey]Memo)
+	SetCkToMemo(map[ConsumerPubKey]ccvtypes.Memo)
 	SetCcaToCk(map[StringifiedConsumerConsAddr]ConsumerPubKey)
 }
 
@@ -124,7 +117,7 @@ func (e *KeyMap) SetProviderKeyToConsumerKey(pk ProviderPubKey, ck ConsumerPubKe
 func (e *KeyMap) GetProviderPubKeyFromConsumerPubKey(ck ConsumerPubKey) (ProviderPubKey, error) {
 	e.GetAll()
 	if u, ok := e.ckToMemo[ck]; ok {
-		return u.pk, nil
+		return *u.Pk, nil
 	} else if pk, ok := e.ckToPk[ck]; ok {
 		return pk, nil
 	} else {
@@ -146,12 +139,12 @@ func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 	for _, u := range e.ckToMemo {
 		// If the last update was a deletion (0 power) and the update
 		// matured then pruning is possible.
-		if u.power == 0 && u.vscid <= latestVscid {
-			toDel = append(toDel, u.ck)
+		if u.Power == 0 && u.Vscid <= latestVscid {
+			toDel = append(toDel, *u.Ck)
 		}
 	}
 	for _, ck := range toDel {
-		delete(e.ccaToCk, e.ckToMemo[ck].cca)
+		delete(e.ccaToCk, e.ckToMemo[ck].Cca)
 		delete(e.ckToMemo, ck)
 	}
 	e.SetAll()
@@ -187,9 +180,9 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 
 	// Grab provider keys where the assigned consumer key has changed
 	for oldCk, u := range e.ckToMemo {
-		if newCk, ok := e.pkToCk[u.pk]; ok {
-			if oldCk != newCk && 0 < u.power {
-				pks = append(pks, u.pk)
+		if newCk, ok := e.pkToCk[*u.Pk]; ok {
+			if oldCk != newCk && 0 < u.Power {
+				pks = append(pks, *u.Pk)
 			}
 		}
 	}
@@ -202,20 +195,20 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 
 	// Create a read only copy, so that we can query while writing
 	// updates to the old version.
-	ckToMemo_READ_ONLY := map[ConsumerPubKey]Memo{}
+	ckToMemo_READ_ONLY := map[ConsumerPubKey]ccvtypes.Memo{}
 	for ck, memo := range e.ckToMemo {
 		ckToMemo_READ_ONLY[ck] = memo
 	}
 
 	for _, pk := range pks {
 		for _, u := range ckToMemo_READ_ONLY {
-			if u.pk == pk && 0 < u.power {
+			if *u.Pk == pk && 0 < u.Power {
 				// For each provider key for which there was already a positive update
 				// create a deletion update for the associated consumer key.
-				cca := consumerPubKeyToStringifiedConsumerConsAddr(u.ck)
-				e.ckToMemo[u.ck] = Memo{ck: u.ck, pk: pk, vscid: vscid, power: 0, cca: cca}
-				e.ccaToCk[cca] = u.ck
-				ret[u.ck] = 0
+				cca := consumerPubKeyToStringifiedConsumerConsAddr(*u.Ck)
+				e.ckToMemo[*u.Ck] = ccvtypes.Memo{Ck: u.Ck, Pk: &pk, Vscid: vscid, Power: 0, Cca: cca}
+				e.ccaToCk[cca] = *u.Ck
+				ret[*u.Ck] = 0
 			}
 		}
 	}
@@ -228,9 +221,9 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 
 		var power int64 = 0
 		for _, u := range ckToMemo_READ_ONLY {
-			if u.pk == pk && 0 < u.power {
+			if *u.Pk == pk && 0 < u.Power {
 				// There was previously a positive power update: copy it.
-				power = u.power
+				power = u.Power
 			}
 		}
 		// There is a new validator power: use it.
@@ -242,7 +235,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 		if 0 < power {
 			ck := e.pkToCk[pk]
 			cca := consumerPubKeyToStringifiedConsumerConsAddr(ck)
-			e.ckToMemo[ck] = Memo{ck: ck, pk: pk, vscid: vscid, power: power, cca: cca}
+			e.ckToMemo[ck] = ccvtypes.Memo{Ck: &ck, Pk: &pk, Vscid: vscid, Power: power, Cca: cca}
 			e.ccaToCk[cca] = ck
 			ret[ck] = power
 		}
@@ -303,7 +296,9 @@ func (e *KeyMap) internalInvariants() bool {
 		// (Ensures lookups are correct)
 		for ck, pk := range e.ckToPk {
 			if u, ok := e.ckToMemo[ck]; ok {
-				if pk != u.pk {
+				if pk != *u.Pk {
+					fmt.Println("here")
+
 					return false
 				}
 			}
@@ -315,10 +310,10 @@ func (e *KeyMap) internalInvariants() bool {
 		// address
 		seen := map[StringifiedConsumerConsAddr]bool{}
 		for _, memo := range e.ckToMemo {
-			if _, found := seen[memo.cca]; found {
+			if _, found := seen[memo.Cca]; found {
 				return false
 			}
-			seen[memo.cca] = true
+			seen[memo.Cca] = true
 		}
 	}
 
@@ -326,7 +321,7 @@ func (e *KeyMap) internalInvariants() bool {
 		// All entries in ckToMemo have a consumer consensus
 		// address which is a key in ccaToCk
 		for _, memo := range e.ckToMemo {
-			if _, found := e.ccaToCk[memo.cca]; !found {
+			if _, found := e.ccaToCk[memo.Cca]; !found {
 				return false
 			}
 		}
@@ -351,7 +346,7 @@ func (e *KeyMap) internalInvariants() bool {
 			if !found {
 				return false
 			}
-			if memo.cca != cca {
+			if memo.Cca != cca {
 				return false
 			}
 		}

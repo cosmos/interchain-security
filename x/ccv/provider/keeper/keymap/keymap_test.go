@@ -6,6 +6,7 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/simapp"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
@@ -49,7 +50,7 @@ func key(i int, isConsumerKey bool) crypto.PublicKey {
 type store struct {
 	pkToCk   map[ProviderPubKey]ConsumerPubKey
 	ckToPk   map[ConsumerPubKey]ProviderPubKey
-	ckToMemo map[ConsumerPubKey]Memo
+	ckToMemo map[ConsumerPubKey]ccvtypes.Memo
 	ccaToCk  map[StringifiedConsumerConsAddr]ConsumerPubKey
 }
 
@@ -57,7 +58,7 @@ func makeStore() store {
 	return store{
 		pkToCk:   map[ProviderPubKey]ConsumerPubKey{},
 		ckToPk:   map[ConsumerPubKey]ProviderPubKey{},
-		ckToMemo: map[ConsumerPubKey]Memo{},
+		ckToMemo: map[ConsumerPubKey]ccvtypes.Memo{},
 		ccaToCk:  map[StringifiedConsumerConsAddr]ConsumerPubKey{},
 	}
 }
@@ -67,7 +68,7 @@ func (s *store) GetPkToCk() map[ProviderPubKey]ConsumerPubKey {
 func (s *store) GetCkToPk() map[ConsumerPubKey]ProviderPubKey {
 	return s.ckToPk
 }
-func (s *store) GetCkToMemo() map[ConsumerPubKey]Memo {
+func (s *store) GetCkToMemo() map[ConsumerPubKey]ccvtypes.Memo {
 	return s.ckToMemo
 }
 func (s *store) GetCcaToCk() map[StringifiedConsumerConsAddr]ConsumerPubKey {
@@ -79,7 +80,7 @@ func (s *store) SetPkToCk(e map[ProviderPubKey]ConsumerPubKey) {
 func (s *store) SetCkToPk(e map[ConsumerPubKey]ProviderPubKey) {
 	s.ckToPk = e
 }
-func (s *store) SetCkToMemo(e map[ConsumerPubKey]Memo) {
+func (s *store) SetCkToMemo(e map[ConsumerPubKey]ccvtypes.Memo) {
 	s.ckToMemo = e
 }
 func (s *store) SetCcaToCk(ccaToCk map[StringifiedConsumerConsAddr]ConsumerPubKey) {
