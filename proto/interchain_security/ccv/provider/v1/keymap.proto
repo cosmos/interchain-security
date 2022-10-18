@@ -7,30 +7,10 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/types";
 import "gogoproto/gogo.proto";
 import "tendermint/crypto/keys.proto";
 
-/*
-pkToCk   map[ProviderPubKey]ConsumerPubKey
-ckToPk   map[ConsumerPubKey]ProviderPubKey
-ckToMemo map[ConsumerPubKey]Memo
-ccaToCk  map[StringifiedConsumerConsAddr]ConsumerPubKey
-*/
-
-message PkToCk {
-  map<tendermint.crypto.PublicKey, tendermint.crypto.PublicKey> data = 1;
+message Memo {
+  tendermint.crypto.PublicKey ck = 1;
+  tendermint.crypto.PublicKey pk = 2;
+  string stringifiedConsumerConsAddr = 3;
+  uint64 vscid = 4;
+  int64 power = 5;
 }
-
-message CkToPk {
-  map<tendermint.crypto.PublicKey, tendermint.crypto.PublicKey> data = 1;
-}
-
-message CkToMemo {
-  message Memo {
-    tendermint.crypto.PublicKey ck = 1;
-    tendermint.crypto.PublicKey pk = 2;
-    string stringifiedConsumerConsAddr = 3;
-    uint64 vscid = 4;
-    int64 power = 5;
-  }
-  map<tendermint.crypto.PublicKey, Memo> data = 1;
-}
-
-message CcaToCk { map<string, tendermint.crypto.PublicKey> data = 1; }
