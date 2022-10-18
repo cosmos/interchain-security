@@ -26,6 +26,7 @@ with a store interface which handles all of its reading and writing.
 import (
 	"errors"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
@@ -34,6 +35,14 @@ import (
 type ProviderPubKey = crypto.PublicKey
 type ConsumerPubKey = crypto.PublicKey
 type StringifiedConsumerConsAddr = string
+
+func consumerPubKeyToStringifiedConsumerConsAddr(ck ConsumerPubKey) StringifiedConsumerConsAddr {
+	sdkCk, err := cryptocodec.FromTmProtoPublicKey(ck)
+	if err != nil {
+		panic("could not get public key from tm proto public key for keymap lookup")
+	}
+	return string(sdk.GetConsAddress(sdkCk))
+}
 
 type VSCID = uint64
 
@@ -58,9 +67,11 @@ type Store interface {
 	GetPkToCk() map[ProviderPubKey]ConsumerPubKey
 	GetCkToPk() map[ConsumerPubKey]ProviderPubKey
 	GetCkToMemo() map[ConsumerPubKey]Memo
+	GetCcaToCk() map[StringifiedConsumerConsAddr]ConsumerPubKey
 	SetPkToCk(map[ProviderPubKey]ConsumerPubKey)
 	SetCkToPk(map[ConsumerPubKey]ProviderPubKey)
 	SetCkToMemo(map[ConsumerPubKey]Memo)
+	SetCcaToCk(map[StringifiedConsumerConsAddr]ConsumerPubKey)
 }
 
 func MakeKeyMap(store Store) KeyMap {
@@ -76,6 +87,7 @@ func (e *KeyMap) GetAll() {
 	e.pkToCk = e.store.GetPkToCk()
 	e.ckToPk = e.store.GetCkToPk()
 	e.ckToMemo = e.store.GetCkToMemo()
+	e.ccaToCk = e.store.GetCcaToCk()
 }
 
 // SetAll write all data to store
@@ -85,6 +97,7 @@ func (e *KeyMap) SetAll() {
 	e.store.SetPkToCk(e.pkToCk)
 	e.store.SetCkToPk(e.ckToPk)
 	e.store.SetCkToMemo(e.ckToMemo)
+	e.store.SetCcaToCk(e.ccaToCk)
 }
 
 // TODO:
@@ -138,6 +151,7 @@ func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 		}
 	}
 	for _, ck := range toDel {
+		delete(e.ccaToCk, e.ckToMemo[ck].cca)
 		delete(e.ckToMemo, ck)
 	}
 	e.SetAll()
@@ -198,7 +212,9 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 			if u.pk == pk && 0 < u.power {
 				// For each provider key for which there was already a positive update
 				// create a deletion update for the associated consumer key.
-				e.ckToMemo[u.ck] = Memo{ck: u.ck, pk: pk, vscid: vscid, power: 0}
+				cca := consumerPubKeyToStringifiedConsumerConsAddr(u.ck)
+				e.ckToMemo[u.ck] = Memo{ck: u.ck, pk: pk, vscid: vscid, power: 0, cca: cca}
+				e.ccaToCk[cca] = u.ck
 				ret[u.ck] = 0
 			}
 		}
@@ -225,7 +241,9 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 		// are handled in earlier block.
 		if 0 < power {
 			ck := e.pkToCk[pk]
-			e.ckToMemo[ck] = Memo{ck: ck, pk: pk, vscid: vscid, power: power}
+			cca := consumerPubKeyToStringifiedConsumerConsAddr(ck)
+			e.ckToMemo[ck] = Memo{ck: ck, pk: pk, vscid: vscid, power: power, cca: cca}
+			e.ccaToCk[cca] = ck
 			ret[ck] = power
 		}
 	}

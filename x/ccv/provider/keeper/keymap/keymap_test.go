@@ -50,6 +50,7 @@ type store struct {
 	pkToCk   map[ProviderPubKey]ConsumerPubKey
 	ckToPk   map[ConsumerPubKey]ProviderPubKey
 	ckToMemo map[ConsumerPubKey]Memo
+	ccaToCk  map[StringifiedConsumerConsAddr]ConsumerPubKey
 }
 
 func makeStore() store {
@@ -57,6 +58,7 @@ func makeStore() store {
 		pkToCk:   map[ProviderPubKey]ConsumerPubKey{},
 		ckToPk:   map[ConsumerPubKey]ProviderPubKey{},
 		ckToMemo: map[ConsumerPubKey]Memo{},
+		ccaToCk:  map[StringifiedConsumerConsAddr]ConsumerPubKey{},
 	}
 }
 func (s *store) GetPkToCk() map[ProviderPubKey]ConsumerPubKey {
@@ -68,6 +70,9 @@ func (s *store) GetCkToPk() map[ConsumerPubKey]ProviderPubKey {
 func (s *store) GetCkToMemo() map[ConsumerPubKey]Memo {
 	return s.ckToMemo
 }
+func (s *store) GetCcaToCk() map[StringifiedConsumerConsAddr]ConsumerPubKey {
+	return s.ccaToCk
+}
 func (s *store) SetPkToCk(e map[ProviderPubKey]ConsumerPubKey) {
 	s.pkToCk = e
 }
@@ -76,6 +81,9 @@ func (s *store) SetCkToPk(e map[ConsumerPubKey]ProviderPubKey) {
 }
 func (s *store) SetCkToMemo(e map[ConsumerPubKey]Memo) {
 	s.ckToMemo = e
+}
+func (s *store) SetCcaToCk(ccaToCk map[StringifiedConsumerConsAddr]ConsumerPubKey) {
+	s.ccaToCk = ccaToCk
 }
 
 type keyMapEntry struct {
