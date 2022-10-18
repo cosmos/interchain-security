@@ -17,11 +17,9 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	icahostkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/adminmodule/client/cli"
 	"github.com/cosmos/interchain-security/x/ccv/adminmodule/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/adminmodule/types"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 
 	// this line is used by starport scaffolding # ibc/module/import
 	"context"
@@ -122,14 +120,14 @@ type AppModule struct {
 	AppModuleBasic
 
 	keeper         keeper.Keeper
-	consumerkeeper consumerkeeper.Keeper
-	icahostkeeper  icahostkeeper.Keeper
+	consumerkeeper types.ConsumerKeeper
+	icahostkeeper  types.ICAHostKeeper
 
 	cdc codec.Codec
 }
 
-func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, icahostkeeper icahostkeeper.Keeper,
-	consumerkeeper consumerkeeper.Keeper) AppModule {
+func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, icahostkeeper types.ICAHostKeeper,
+	consumerkeeper types.ConsumerKeeper) AppModule {
 	return AppModule{
 		AppModuleBasic: NewAppModuleBasic(),
 		keeper:         keeper,

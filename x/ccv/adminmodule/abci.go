@@ -7,16 +7,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	icahostkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/keeper"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	"github.com/cosmos/interchain-security/x/ccv/adminmodule/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/adminmodule/types"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // EndBlocker called every block, process inflation, update validator set.
-func EndBlocker(ctx sdk.Context, keeper keeper.Keeper, icahostkeeper icahostkeeper.Keeper, consumerkeeper consumerkeeper.Keeper) {
+func EndBlocker(ctx sdk.Context, keeper keeper.Keeper, icahostkeeper types.ICAHostKeeper, consumerkeeper types.ConsumerKeeper) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 
 	logger := keeper.Logger(ctx)
@@ -76,7 +74,7 @@ func EndBlocker(ctx sdk.Context, keeper keeper.Keeper, icahostkeeper icahostkeep
 	})
 }
 
-func addGovernanceModuleAdmin(ctx sdk.Context, keeper keeper.Keeper, icahostkeeper icahostkeeper.Keeper, consumerkeeper consumerkeeper.Keeper) {
+func addGovernanceModuleAdmin(ctx sdk.Context, keeper keeper.Keeper, icahostkeeper types.ICAHostKeeper, consumerkeeper types.ConsumerKeeper) {
 	if keeper.IsProviderGovernanceAdminSet {
 		return
 	}

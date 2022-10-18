@@ -21,7 +21,6 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 
-	icacontrollerkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -42,7 +41,7 @@ type Keeper struct {
 	clientKeeper        ccv.ClientKeeper
 	stakingKeeper       ccv.StakingKeeper
 	slashingKeeper      ccv.SlashingKeeper
-	icaControllerKeeper icacontrollerkeeper.Keeper
+	icaControllerKeeper ccv.ICAControllerKeeper
 	router              *baseapp.MsgServiceRouter
 	feeCollectorName    string
 }
@@ -53,7 +52,7 @@ func NewKeeper(
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
-	accountKeeper ccv.AccountKeeper, icaControllerKeeper icacontrollerkeeper.Keeper,
+	accountKeeper ccv.AccountKeeper, icaControllerKeeper ccv.ICAControllerKeeper,
 	router *baseapp.MsgServiceRouter, feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set

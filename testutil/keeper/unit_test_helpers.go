@@ -82,6 +82,7 @@ type MockedKeepers struct {
 	*MockBankKeeper
 	*MockIBCTransferKeeper
 	*MockIBCCoreKeeper
+	*MockICAControllerKeeper
 }
 
 // NewMockedKeepers instantiates a struct with pointers to properly instantiated mocked keepers.
@@ -116,6 +117,8 @@ func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) provi
 		mocks.MockStakingKeeper,
 		mocks.MockSlashingKeeper,
 		mocks.MockAccountKeeper,
+		mocks.MockICAControllerKeeper,
+		nil,
 		"",
 	)
 }

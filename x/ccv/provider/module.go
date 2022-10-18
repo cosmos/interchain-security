@@ -22,8 +22,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
-	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	icacontrollerkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/keeper"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 var (
@@ -96,12 +95,12 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 type AppModule struct {
 	AppModuleBasic
 	keeper              *keeper.Keeper
-	accountKeeper       authkeeper.AccountKeeper
-	icaControllerKeeper icacontrollerkeeper.Keeper
+	accountKeeper       ccv.AccountKeeper
+	icaControllerKeeper ccv.ICAControllerKeeper
 }
 
 // NewAppModule creates a new provider module
-func NewAppModule(k *keeper.Keeper, accountKeeper authkeeper.AccountKeeper, icaControllerKeeper icacontrollerkeeper.Keeper) AppModule {
+func NewAppModule(k *keeper.Keeper, accountKeeper ccv.AccountKeeper, icaControllerKeeper ccv.ICAControllerKeeper) AppModule {
 	return AppModule{
 		keeper:              k,
 		accountKeeper:       accountKeeper,

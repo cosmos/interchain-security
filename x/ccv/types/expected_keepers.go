@@ -121,3 +121,8 @@ type ScopedKeeper interface {
 	AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) bool
 	ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error
 }
+
+type ICAControllerKeeper interface {
+	GetInterchainAccountAddress(ctx sdk.Context, connectionID, portID string) (string, bool)
+	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error
+}
