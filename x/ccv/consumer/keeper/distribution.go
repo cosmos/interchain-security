@@ -170,7 +170,7 @@ func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) (types.NextFeeD
 		NextHeight:           nextH,
 		DistributionFraction: ConsumerRedistributeFrac,
 		Total:                totalTokens.String(),
-		Provider:             sdk.NewDecCoinsFromCoins(providerTokens...).String(),
-		Consumer:             sdk.NewDecCoinsFromCoins(consumerTokens...).String(),
+		ToProvider:           sdk.NewDecCoinsFromCoins(providerTokens...).String(),
+		ToConsumer:           sdk.NewDecCoinsFromCoins(consumerTokens...).String(),
 	}, nil
 }

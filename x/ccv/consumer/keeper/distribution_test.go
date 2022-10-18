@@ -56,8 +56,8 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 		CurrentHeight:        0,
 		DistributionFraction: keeper.ConsumerRedistributeFrac,
 		Total:                feeAmountDec.String(),
-		Provider:             sdk.NewDecCoinsFromCoins(providerTokens...).String(),
-		Consumer:             sdk.NewDecCoinsFromCoins(consumerTokens...).String(),
+		ToProvider:           sdk.NewDecCoinsFromCoins(providerTokens...).String(),
+		ToConsumer:           sdk.NewDecCoinsFromCoins(consumerTokens...).String(),
 	}
 
 	res, err := consumerKeeper.GetEstimatedNextFeeDistribution(ctx)
