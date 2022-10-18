@@ -112,12 +112,13 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-					0, providertypes.DefaultTrustingPeriodFraction),
+					0, // 0 ccv timeout here
+					providertypes.DefaultTrustingPeriodFraction),
 			),
 			false,
 		},
 		{
-			"invalid params, zero trusted period fraction",
+			"invalid params, zero trusting period fraction",
 			types.NewGenesisState(
 				0,
 				nil,
@@ -128,7 +129,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-					2*7*24*time.Hour, 0),
+					2*7*24*time.Hour,
+					0), // 0 trusting period fraction here
 			),
 			false,
 		},
