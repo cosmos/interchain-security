@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -38,14 +37,17 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	chains := []string{}
+	chains := []*types.Chain{}
 	cb := func(ctx sdk.Context, chainID, clientID string) bool {
-		chains = append(chains, fmt.Sprintf("%s (%s)", chainID, clientID))
+		chains = append(chains, &types.Chain{
+			ChainId:  chainID,
+			ClientId: clientID,
+		})
 		return false
 	}
 	k.IterateConsumerChains(ctx, cb)
 
-	return &types.QueryConsumerChainsResponse{ChainIds: chains}, nil
+	return &types.QueryConsumerChainsResponse{Chains: chains}, nil
 }
 
 func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.QueryConsumerChainStartProposalsRequest) (*types.QueryConsumerChainStartProposalsResponse, error) {

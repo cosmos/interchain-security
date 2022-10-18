@@ -50,7 +50,7 @@ message QueryConsumerGenesisResponse {
 
 message QueryConsumerChainsRequest {}
 
-message QueryConsumerChainsResponse { repeated string chain_ids = 1; }
+message QueryConsumerChainsResponse { repeated Chain chains = 1; }
 
 message QueryConsumerChainStartProposalsRequest {}
 
@@ -62,4 +62,9 @@ message QueryConsumerChainStopProposalsRequest {}
 
 message QueryConsumerChainStopProposalsResponse { 
   ConsumerRemovalProposals proposals = 1;
+}
+
+message Chain {
+  string chain_id = 1;
+  string client_id = 2;
 }
