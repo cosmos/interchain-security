@@ -33,3 +33,15 @@ func ToTmProtoPublicKey(pk cryptotypes.PubKey) (tmprotocrypto.PublicKey, error) 
 }
 
 // to get a tendermint PublicKey
+
+
+// Alternate:
+// I think I can use
+
+
+// get ConsAddress from pubkey
+func GetConsAddress(pubkey cryptotypes.PubKey) ConsAddress {
+	return ConsAddress(pubkey.Address())
+}
+
+// inside keymap to implement the reverse lookup
