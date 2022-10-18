@@ -4,7 +4,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper/keymap"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 type KeyMapStore struct {
@@ -13,19 +12,19 @@ type KeyMapStore struct {
 }
 
 func (s *KeyMapStore) GetPkToCk() map[keymap.ProviderPubKey]keymap.ConsumerPubKey {
-	// bz := s.store.Get(types.KeyMapPkToCkKey(s.chainID))
+	bz := s.store.Get(types.KeyMapPkToCkKey(s.chainID))
 	panic("no im")
 }
 func (s *KeyMapStore) GetCkToPk() map[keymap.ConsumerPubKey]keymap.ProviderPubKey {
-	// bz := s.store.Get(types.KeyMapCkToPkKey(s.chainID))
+	bz := s.store.Get(types.KeyMapCkToPkKey(s.chainID))
 	panic("no im")
 }
-func (s *KeyMapStore) GetCkToMemo() map[keymap.ConsumerPubKey]ccvtypes.Memo {
-	// bz := s.store.Get(types.KeyMapCkToMemoKey(s.chainID))
+func (s *KeyMapStore) GetCkToMemo() map[keymap.ConsumerPubKey]keymap.Memo {
+	bz := s.store.Get(types.KeyMapCkToMemoKey(s.chainID))
 	panic("no im")
 }
 func (s *KeyMapStore) GetCcaToCk() map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey {
-	// bz := s.store.Get(types.KeyMapCcaToCkKey(s.chainID))
+	bz := s.store.Get(types.KeyMapCcaToCkKey(s.chainID))
 	panic("no im")
 }
 func (s *KeyMapStore) SetPkToCk(e map[keymap.ProviderPubKey]keymap.ConsumerPubKey) {
@@ -38,7 +37,7 @@ func (s *KeyMapStore) SetCkToPk(e map[keymap.ConsumerPubKey]keymap.ProviderPubKe
 	s.store.Set(types.KeyMapCkToPkKey(s.chainID), bz)
 	panic("no im")
 }
-func (s *KeyMapStore) SetCkToMemo(e map[keymap.ConsumerPubKey]ccvtypes.Memo) {
+func (s *KeyMapStore) SetCkToMemo(e map[keymap.ConsumerPubKey]keymap.Memo) {
 	bz := []byte{}
 	s.store.Set(types.KeyMapCkToMemoKey(s.chainID), bz)
 	panic("no im")
@@ -68,7 +67,7 @@ func (k Keeper) delKeyMap(chainID ChainID) {
 func (k Keeper) loadKeyMaps(ctx sdk.Context) {
 	k.keymaps = map[ChainID]*keymap.KeyMap{}
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, _ string) (stop bool) {
-		store := KeyMapStore{ctx.KVStore(k.storeKey), chainID}
+		store := KeyMapStore{chainID}
 		km := keymap.MakeKeyMap(&store)
 		k.keymaps[chainID] = &km
 		return false

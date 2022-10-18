@@ -25,11 +25,9 @@ with a store interface which handles all of its reading and writing.
 
 import (
 	"errors"
-	"fmt"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
@@ -48,22 +46,31 @@ func consumerPubKeyToStringifiedConsumerConsAddr(ck ConsumerPubKey) StringifiedC
 
 type VSCID = uint64
 
+type Memo struct {
+	ck  ConsumerPubKey
+	pk  ProviderPubKey
+	cca StringifiedConsumerConsAddr
+
+	vscid VSCID
+	power int64
+}
+
 type KeyMap struct {
 	store    Store
 	pkToCk   map[ProviderPubKey]ConsumerPubKey
 	ckToPk   map[ConsumerPubKey]ProviderPubKey
-	ckToMemo map[ConsumerPubKey]ccvtypes.Memo
+	ckToMemo map[ConsumerPubKey]Memo
 	ccaToCk  map[StringifiedConsumerConsAddr]ConsumerPubKey
 }
 
 type Store interface {
 	GetPkToCk() map[ProviderPubKey]ConsumerPubKey
 	GetCkToPk() map[ConsumerPubKey]ProviderPubKey
-	GetCkToMemo() map[ConsumerPubKey]ccvtypes.Memo
+	GetCkToMemo() map[ConsumerPubKey]Memo
 	GetCcaToCk() map[StringifiedConsumerConsAddr]ConsumerPubKey
 	SetPkToCk(map[ProviderPubKey]ConsumerPubKey)
 	SetCkToPk(map[ConsumerPubKey]ProviderPubKey)
-	SetCkToMemo(map[ConsumerPubKey]ccvtypes.Memo)
+	SetCkToMemo(map[ConsumerPubKey]Memo)
 	SetCcaToCk(map[StringifiedConsumerConsAddr]ConsumerPubKey)
 }
 
@@ -117,7 +124,7 @@ func (e *KeyMap) SetProviderKeyToConsumerKey(pk ProviderPubKey, ck ConsumerPubKe
 func (e *KeyMap) GetProviderPubKeyFromConsumerPubKey(ck ConsumerPubKey) (ProviderPubKey, error) {
 	e.GetAll()
 	if u, ok := e.ckToMemo[ck]; ok {
-		return *u.Pk, nil
+		return u.pk, nil
 	} else if pk, ok := e.ckToPk[ck]; ok {
 		return pk, nil
 	} else {
@@ -139,12 +146,12 @@ func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 	for _, u := range e.ckToMemo {
 		// If the last update was a deletion (0 power) and the update
 		// matured then pruning is possible.
-		if u.Power == 0 && u.Vscid <= latestVscid {
-			toDel = append(toDel, *u.Ck)
+		if u.power == 0 && u.vscid <= latestVscid {
+			toDel = append(toDel, u.ck)
 		}
 	}
 	for _, ck := range toDel {
-		delete(e.ccaToCk, e.ckToMemo[ck].Cca)
+		delete(e.ccaToCk, e.ckToMemo[ck].cca)
 		delete(e.ckToMemo, ck)
 	}
 	e.SetAll()
@@ -180,9 +187,9 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 
 	// Grab provider keys where the assigned consumer key has changed
 	for oldCk, u := range e.ckToMemo {
-		if newCk, ok := e.pkToCk[*u.Pk]; ok {
-			if oldCk != newCk && 0 < u.Power {
-				pks = append(pks, *u.Pk)
+		if newCk, ok := e.pkToCk[u.pk]; ok {
+			if oldCk != newCk && 0 < u.power {
+				pks = append(pks, u.pk)
 			}
 		}
 	}
@@ -195,29 +202,20 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 
 	// Create a read only copy, so that we can query while writing
 	// updates to the old version.
-	ckToMemo_READ_ONLY := map[ConsumerPubKey]ccvtypes.Memo{}
+	ckToMemo_READ_ONLY := map[ConsumerPubKey]Memo{}
 	for ck, memo := range e.ckToMemo {
 		ckToMemo_READ_ONLY[ck] = memo
 	}
 
 	for _, pk := range pks {
 		for _, u := range ckToMemo_READ_ONLY {
-			if *u.Pk == pk && 0 < u.Power {
+			if u.pk == pk && 0 < u.power {
 				// For each provider key for which there was already a positive update
 				// create a deletion update for the associated consumer key.
-				cca := consumerPubKeyToStringifiedConsumerConsAddr(*u.Ck)
-				bz, err := pk.Marshal()
-				if err != nil {
-					panic("woops0")
-				}
-				copy := crypto.PublicKey{}
-				err = copy.Unmarshal(bz)
-				if err != nil {
-					panic("woops1")
-				}
-				e.ckToMemo[*u.Ck] = ccvtypes.Memo{Ck: u.Ck, Pk: &copy, Vscid: vscid, Power: 0, Cca: cca}
-				e.ccaToCk[cca] = *u.Ck
-				ret[*u.Ck] = 0
+				cca := consumerPubKeyToStringifiedConsumerConsAddr(u.ck)
+				e.ckToMemo[u.ck] = Memo{ck: u.ck, pk: pk, vscid: vscid, power: 0, cca: cca}
+				e.ccaToCk[cca] = u.ck
+				ret[u.ck] = 0
 			}
 		}
 	}
@@ -230,9 +228,9 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 
 		var power int64 = 0
 		for _, u := range ckToMemo_READ_ONLY {
-			if *u.Pk == pk && 0 < u.Power {
+			if u.pk == pk && 0 < u.power {
 				// There was previously a positive power update: copy it.
-				power = u.Power
+				power = u.power
 			}
 		}
 		// There is a new validator power: use it.
@@ -244,16 +242,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 		if 0 < power {
 			ck := e.pkToCk[pk]
 			cca := consumerPubKeyToStringifiedConsumerConsAddr(ck)
-			bz, err := pk.Marshal()
-			if err != nil {
-				panic("woops0")
-			}
-			copy := crypto.PublicKey{}
-			err = copy.Unmarshal(bz)
-			if err != nil {
-				panic("woops1")
-			}
-			e.ckToMemo[ck] = ccvtypes.Memo{Ck: &ck, Pk: &copy, Vscid: vscid, Power: power, Cca: cca}
+			e.ckToMemo[ck] = Memo{ck: ck, pk: pk, vscid: vscid, power: power, cca: cca}
 			e.ccaToCk[cca] = ck
 			ret[ck] = power
 		}
@@ -314,9 +303,7 @@ func (e *KeyMap) internalInvariants() bool {
 		// (Ensures lookups are correct)
 		for ck, pk := range e.ckToPk {
 			if u, ok := e.ckToMemo[ck]; ok {
-				if pk != *u.Pk {
-					fmt.Println("here")
-
+				if pk != u.pk {
 					return false
 				}
 			}
@@ -328,10 +315,10 @@ func (e *KeyMap) internalInvariants() bool {
 		// address
 		seen := map[StringifiedConsumerConsAddr]bool{}
 		for _, memo := range e.ckToMemo {
-			if _, found := seen[memo.Cca]; found {
+			if _, found := seen[memo.cca]; found {
 				return false
 			}
-			seen[memo.Cca] = true
+			seen[memo.cca] = true
 		}
 	}
 
@@ -339,7 +326,7 @@ func (e *KeyMap) internalInvariants() bool {
 		// All entries in ckToMemo have a consumer consensus
 		// address which is a key in ccaToCk
 		for _, memo := range e.ckToMemo {
-			if _, found := e.ccaToCk[memo.Cca]; !found {
+			if _, found := e.ccaToCk[memo.cca]; !found {
 				return false
 			}
 		}
@@ -364,7 +351,7 @@ func (e *KeyMap) internalInvariants() bool {
 			if !found {
 				return false
 			}
-			if memo.Cca != cca {
+			if memo.cca != cca {
 				return false
 			}
 		}
