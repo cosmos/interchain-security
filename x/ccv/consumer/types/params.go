@@ -2,7 +2,7 @@ package types
 
 import (
 	fmt "fmt"
-	"time"
+	time "time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -80,10 +80,10 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidatePositiveInt64(p.BlocksPerDistributionTransmission); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateString(p.DistributionTransmissionChannel); err != nil {
+	if err := validateDistributionTransmissionChannel(p.DistributionTransmissionChannel); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateString(p.ProviderFeePoolAddrStr); err != nil {
+	if err := validateProviderFeePoolAddrStr(p.ProviderFeePoolAddrStr); err != nil {
 		return err
 	}
 	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
@@ -97,24 +97,6 @@ func (p Params) Validate() error {
 	}
 	if err := ccvtypes.ValidatePositiveInt64(p.NumHistoricalEntries); err != nil {
 		return err
-	}
-	return nil
-}
-
-func validateConsumerRedistributionFraction(i interface{}) error {
-	str, ok := i.(string)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	dec, err := sdk.NewDecFromStr(str)
-	if err != nil {
-		return err
-	}
-	if !dec.IsPositive() {
-		return fmt.Errorf("consumer redistribution fraction is not positive")
-	}
-	if dec.Sub(sdk.NewDec(1)).IsPositive() {
-		return fmt.Errorf("consumer redistribution fraction cannot be above 1.0")
 	}
 	return nil
 }
@@ -138,4 +120,40 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyNumHistoricalEntries,
 			p.NumHistoricalEntries, ccvtypes.ValidatePositiveInt64),
 	}
+}
+
+func validateDistributionTransmissionChannel(i interface{}) error {
+	// Accept empty string as valid, since this will be the default value on genesis
+	if i == "" {
+		return nil
+	}
+	// Otherwise validate as usual for a channelID
+	return ccvtypes.ValidateChannelIdentifier(i)
+}
+
+func validateProviderFeePoolAddrStr(i interface{}) error {
+	// Accept empty string as valid, since this will be the default value on genesis
+	if i == "" {
+		return nil
+	}
+	// Otherwise validate as usual for a bech32 address
+	return ccvtypes.ValidateBech32(i)
+}
+
+func validateConsumerRedistributionFraction(i interface{}) error {
+	str, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	dec, err := sdk.NewDecFromStr(str)
+	if err != nil {
+		return err
+	}
+	if !dec.IsPositive() {
+		return fmt.Errorf("consumer redistribution fraction is not positive")
+	}
+	if dec.Sub(sdk.NewDec(1)).IsPositive() {
+		return fmt.Errorf("consumer redistribution fraction cannot be above 1.0")
+	}
+	return nil
 }

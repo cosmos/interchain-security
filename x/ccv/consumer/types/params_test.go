@@ -17,9 +17,14 @@ func TestValidateParams(t *testing.T) {
 		expPass bool
 	}{
 		{"default params", consumertypes.DefaultParams(), true},
-		{"custom valid params", consumertypes.NewParams(true, 5, "", "", 1004, 1005, "0.5", 1000), true},
+		{"custom valid params",
+			consumertypes.NewParams(true, 5, "", "", 1004, 1005, "0.5", 1000), true},
 		{"custom invalid params, block per dist transmission",
-			consumertypes.NewParams(true, -5, "", "", 1004, 1005, "0.5", 1000), false},
+			consumertypes.NewParams(true, -5, "", "", 5, 1005, "0.5", 1000), false},
+		{"custom invalid params, dist transmission channel",
+			consumertypes.NewParams(true, 5, "badchannel/", "", 5, 1005, "0.5", 1000), false},
+		{"custom invalid params, provider fee pool addr string",
+			consumertypes.NewParams(true, 5, "", "imabadaddress", 5, 1005, "0.5", 1000), false},
 		{"custom invalid params, ccv timeout",
 			consumertypes.NewParams(true, 5, "", "", -5, 1005, "0.5", 1000), false},
 		{"custom invalid params, transfer timeout",
@@ -28,10 +33,10 @@ func TestValidateParams(t *testing.T) {
 			consumertypes.NewParams(true, 5, "", "", 5, 1005, "-0.5", 1000), false},
 		{"custom invalid params, consumer redist fraction is over 1",
 			consumertypes.NewParams(true, 5, "", "", 5, 1005, "1.2", 1000), false},
-		{"custom invalid params, consumer redist fraction rubbish",
-			consumertypes.NewParams(true, 5, "", "", 5, 1005, "rubbish", 1000), false},
+		{"custom invalid params, bad consumer redist fraction ",
+			consumertypes.NewParams(true, 5, "", "", 5, 1005, "notFrac", 1000), false},
 		{"custom invalid params, negative num historical entries",
-			consumertypes.NewParams(true, 5, "", "", 5, 1005, "rubbish", -100), false},
+			consumertypes.NewParams(true, 5, "", "", 5, 1005, "0.5", -100), false},
 	}
 
 	for _, tc := range testCases {
