@@ -10,10 +10,12 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
+	abcitypes "github.com/tendermint/tendermint/abci/types"
 )
 
 func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
@@ -192,6 +194,24 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	return ack
 }
 
+// TODO: implement and refactor this and callsite
+func (k Keeper) GetValidatorToSlash(ctx sdk.Context, chainID string, consumerValidator abcitypes.Validator) (validator stakingtypes.Validator, found bool) {
+	// consAddr := sdk.ConsAddress(consumerValidator.Address)
+	// validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+	// queryKey := consumerValidator.Address
+	// queryKey := cryptocodec.ToTmProtoPublicKey(consAddr)
+	// queryKey := consAddr
+	// lookup, err := k.keymaps[chainID].GetProviderKey(queryKey)
+	// TODO: handle error/found based on API
+
+	// toUse := sdk.ConsAddress(lookup)
+	// validator, found = k.stakingKeeper.GetValidatorByConsAddr(ctx, toUse)
+
+	// TODO: del this real solution
+	validator, found = k.stakingKeeper.GetValidatorByConsAddr(ctx, sdk.ConsAddress(consumerValidator.Address))
+
+}
+
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
 	// map VSC ID to infraction height for the given chain ID
@@ -208,9 +228,8 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		return false, fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
-	// get the validator
 	consAddr := sdk.ConsAddress(data.Validator.Address)
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+	validator, found := k.GetValidatorToSlash(ctx, chainID, data.Validator)
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
