@@ -12,19 +12,19 @@ type KeyMapStore struct {
 }
 
 func (s *KeyMapStore) GetPkToCk() map[keymap.ProviderPubKey]keymap.ConsumerPubKey {
-	bz := s.store.Get(types.KeyMapPkToCkKey(s.chainID))
+	// bz := s.store.Get(types.KeyMapPkToCkKey(s.chainID))
 	panic("no im")
 }
 func (s *KeyMapStore) GetCkToPk() map[keymap.ConsumerPubKey]keymap.ProviderPubKey {
-	bz := s.store.Get(types.KeyMapCkToPkKey(s.chainID))
+	// bz := s.store.Get(types.KeyMapCkToPkKey(s.chainID))
 	panic("no im")
 }
 func (s *KeyMapStore) GetCkToMemo() map[keymap.ConsumerPubKey]keymap.Memo {
-	bz := s.store.Get(types.KeyMapCkToMemoKey(s.chainID))
+	// bz := s.store.Get(types.KeyMapCkToMemoKey(s.chainID))
 	panic("no im")
 }
 func (s *KeyMapStore) GetCcaToCk() map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey {
-	bz := s.store.Get(types.KeyMapCcaToCkKey(s.chainID))
+	// bz := s.store.Get(types.KeyMapCcaToCkKey(s.chainID))
 	panic("no im")
 }
 func (s *KeyMapStore) SetPkToCk(e map[keymap.ProviderPubKey]keymap.ConsumerPubKey) {
@@ -67,7 +67,7 @@ func (k Keeper) delKeyMap(chainID ChainID) {
 func (k Keeper) loadKeyMaps(ctx sdk.Context) {
 	k.keymaps = map[ChainID]*keymap.KeyMap{}
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, _ string) (stop bool) {
-		store := KeyMapStore{chainID}
+		store := KeyMapStore{ctx.KVStore(k.storeKey), chainID}
 		km := keymap.MakeKeyMap(&store)
 		k.keymaps[chainID] = &km
 		return false
