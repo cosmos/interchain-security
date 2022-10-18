@@ -20,7 +20,7 @@ func TestValidateParams(t *testing.T) {
 		{"custom valid params", consumertypes.NewParams(true, 5, "", "", 5), true},
 		{"custom invalid params, block per dist transmission", consumertypes.NewParams(true, -5, "", "", 5), false},
 		{"custom invalid params, dist transmission channel", consumertypes.NewParams(true, 5, "badchannel", "", 5), false},
-		{"custom invalid params, provider fee pool addr string", consumertypes.NewParams(true, -5, "", "imabadaddress", 5), false},
+		{"custom invalid params, provider fee pool addr string", consumertypes.NewParams(true, 5, "", "imabadaddress", 5), false},
 		{"custom invalid params, ccv timeout", consumertypes.NewParams(true, 5, "", "", -5), false},
 	}
 
