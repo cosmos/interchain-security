@@ -82,20 +82,20 @@ func MakeKeyMap(store Store) KeyMap {
 	}
 }
 
-// getAll reads all data from store
+// GetAll reads all data from store
 // The granularity of store access can be changed if needed for
-// performance reasons.
-func (e *KeyMap) getAll() {
+// performance reasons. TODO: privatize
+func (e *KeyMap) GetAll() {
 	e.PkToCk = e.store.GetPkToCk()
 	e.CkToPk = e.store.GetCkToPk()
 	e.CkToMemo = e.store.GetCkToMemo()
 	e.CcaToCk = e.store.GetCcaToCk()
 }
 
-// setAll write all data to store
+// SetAll write all data to store
 // The granularity of store access can be changed if needed for
-// performance reasons.
-func (e *KeyMap) setAll() {
+// performance reasons. TODO: privatize
+func (e *KeyMap) SetAll() {
 	e.store.SetPkToCk(e.PkToCk)
 	e.store.SetCkToPk(e.CkToPk)
 	e.store.SetCkToMemo(e.CkToMemo)
@@ -104,7 +104,7 @@ func (e *KeyMap) setAll() {
 
 // TODO:
 func (e *KeyMap) SetProviderKeyToConsumerKey(pk ProviderPubKey, ck ConsumerPubKey) error {
-	e.getAll()
+	e.GetAll()
 	if _, ok := e.CkToPk[ck]; ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
@@ -116,7 +116,7 @@ func (e *KeyMap) SetProviderKeyToConsumerKey(pk ProviderPubKey, ck ConsumerPubKe
 	}
 	e.PkToCk[pk] = ck
 	e.CkToPk[ck] = pk
-	e.setAll() // TODO: Try with defer
+	e.SetAll() // TODO: Try with defer
 	return nil
 }
 
@@ -124,7 +124,7 @@ func (e *KeyMap) SetProviderKeyToConsumerKey(pk ProviderPubKey, ck ConsumerPubKe
 
 // TODO: use found instead of error
 func (e *KeyMap) GetProviderPubKeyFromConsumerPubKey(ck ConsumerPubKey) (ProviderPubKey, error) {
-	e.getAll()
+	e.GetAll()
 	if u, ok := e.CkToMemo[ck]; ok {
 		return u.Pk, nil
 	} else if pk, ok := e.CkToPk[ck]; ok {
@@ -136,14 +136,14 @@ func (e *KeyMap) GetProviderPubKeyFromConsumerPubKey(ck ConsumerPubKey) (Provide
 
 // TODO: use found instead of error
 func (e *KeyMap) GetProviderPubKeyFromConsumerConsAddress(cca sdk.ConsAddress) (ProviderPubKey, error) {
-	e.getAll()
+	e.GetAll()
 	ck := e.CcaToCk[string(cca)]
 	return e.GetProviderPubKeyFromConsumerPubKey(ck)
 }
 
 // TODO:
 func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
-	e.getAll()
+	e.GetAll()
 	toDel := []ConsumerPubKey{}
 	for _, u := range e.CkToMemo {
 		// If the last update was a deletion (0 power) and the update
@@ -156,13 +156,13 @@ func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 		delete(e.CcaToCk, e.CkToMemo[ck].Cca)
 		delete(e.CkToMemo, ck)
 	}
-	e.setAll()
+	e.SetAll()
 }
 
 // TODO:
 func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpdate) (consumerUpdates []abci.ValidatorUpdate) {
 
-	e.getAll()
+	e.GetAll()
 
 	updates := map[ProviderPubKey]int64{}
 
@@ -178,7 +178,7 @@ func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpd
 		consumerUpdates = append(consumerUpdates, abci.ValidatorUpdate{PubKey: ck, Power: power})
 	}
 
-	e.setAll()
+	e.SetAll()
 	return consumerUpdates
 }
 
@@ -256,7 +256,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 // Returns true iff internal invariants hold
 func (e *KeyMap) internalInvariants() bool {
 
-	e.getAll()
+	e.GetAll()
 
 	{
 		// No two provider keys can map to the same consumer key
