@@ -4,6 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper/keymap"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 type KeyMapStore struct {
@@ -32,25 +33,48 @@ func (s *KeyMapStore) GetCcaToCk() map[keymap.StringifiedConsumerConsAddr]keymap
 	// bz := s.store.Get(types.KeyMapCcaToCkKey(s.chainID))
 	panic("no im")
 }
-func (s *KeyMapStore) SetPkToCk(e map[keymap.ProviderPubKey]keymap.ConsumerPubKey) {
-	bz := []byte{}
-	s.store.Set(types.KeyMapPkToCkKey(s.chainID), bz)
-	panic("no im")
+func (s *KeyMapStore) SetPkToCk(pkToCk map[keymap.ProviderPubKey]keymap.ConsumerPubKey) {
+	for k, v := range pkToCk {
+		bz, err := v.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		s.store.Set(types.KeyMapPkToCkKey(s.chainID, k), bz)
+	}
 }
-func (s *KeyMapStore) SetCkToPk(e map[keymap.ConsumerPubKey]keymap.ProviderPubKey) {
-	bz := []byte{}
-	s.store.Set(types.KeyMapCkToPkKey(s.chainID), bz)
-	panic("no im")
+func (s *KeyMapStore) SetCkToPk(ckToPk map[keymap.ConsumerPubKey]keymap.ProviderPubKey) {
+	for k, v := range ckToPk {
+		bz, err := v.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		s.store.Set(types.KeyMapCkToPkKey(s.chainID, k), bz)
+	}
 }
-func (s *KeyMapStore) SetCkToMemo(e map[keymap.ConsumerPubKey]keymap.Memo) {
-	bz := []byte{}
-	s.store.Set(types.KeyMapCkToMemoKey(s.chainID), bz)
-	panic("no im")
+func (s *KeyMapStore) SetCkToMemo(ckToMemo map[keymap.ConsumerPubKey]keymap.Memo) {
+	m := ccvtypes.Memo{}
+	for k, v := range ckToMemo {
+		// TODO: get rid of this hack. Not even sure if it works.
+		m.Ck = &v.Ck
+		m.Pk = &v.Pk
+		m.Cca = v.Cca
+		m.Vscid = v.Vscid
+		m.Power = v.Power
+		bz, err := m.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		s.store.Set(types.KeyMapCkToMemoKey(s.chainID, k), bz)
+	}
 }
 func (s *KeyMapStore) SetCcaToCk(ccaToCk map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey) {
-	bz := []byte{}
-	s.store.Set(types.KeyMapCcaToCkKey(s.chainID), bz)
-	panic("no im")
+	for k, v := range ccaToCk {
+		bz, err := v.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		s.store.Set(types.KeyMapCcaToCkKey(s.chainID, k), bz)
+	}
 }
 
 /*
