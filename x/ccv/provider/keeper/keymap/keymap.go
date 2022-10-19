@@ -15,6 +15,7 @@ TODO: I think roughly, what I need to do, to drive this thing to completion is
 - [ ] include in diff test driver?
 - [ ] include in any existing tests?
 - [ ] maybe use sdk.prefix.Store?
+- [ ] check the test excludes for coverage/static analysis ect. Need to make sure all tests are included!
 
 - Whenever a consumer chain is added or removed a new Keymap instance needs to be created
 with a store interface which handles all of its reading and writing.

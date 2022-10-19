@@ -1,59 +1,32 @@
 package keeper_test
 
 import (
-	"bytes"
 	"testing"
+
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/x/ccv/provider/keeper/keymap"
+	"github.com/stretchr/testify/require"
 )
 
-func TKeyMapSerializationAndDeserialization(t *testing.T) {
+func TestKeyMapSerializationAndDeserialization(t *testing.T) {
 }
 
-// FuzzPrivateKeys will generate strings that can be used to seed
-// new validator private keys, in a manner that ensures a strictly increasing
-// order as per the lexicographic ordering of the staking module.
-// This is needed to make sure that the lexicographic ordering is always
-// consistent between the model and the SUT.
-func FuzzPrivateKeys(f *testing.F) {
-	f.Fuzz(func(t *testing.T, bz []byte) {
-		k := cryptoEd25519.SeedSize
-		// Ensure 4 keys are generated
-		if len(bz) < 4*k {
-			t.Skip()
-		}
-		// Map each byte to 'a' or 'b' characters
-		for i, char := range bz {
-			bz[i] = byte(int(char)%2 + int('a'))
-		}
-		var keys [][]byte
-		// Get the staking module lexicographic bytes
-		for i := 0; i < 4; i++ {
-			keys = append(keys, getStakingKeyBytes(bz[i*k:i*k+k]))
-		}
-		good := true
-		// Check if the bytes are ordered strictly descending
-		for i := 0; i < 3; i++ {
-			// the execution is good if the keys are sorted in descending order
-			// Compare(a,b) === -1 IFF a > b
-			good = good && bytes.Compare(keys[i], keys[i+1]) == 1
-		}
-		// If the bytes are ordered strictly descending
-		// we can use them as validator key seeds for diff testing.
-		if good {
-			strings := make([]string, 4)
-			for i := 0; i < 4; i++ {
-				strings[i] = string(bz[i*k : i*k+k])
-			}
-			t.Errorf("[%s,\n%s,\n%s,\n%s]", strings[0], strings[1], strings[2], strings[3])
-		}
+func TestKeyMapLoadEmpty(t *testing.T) {
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	_, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	store := providerkeeper.KeyMapStore{ctx.KVStore(keeperParams.StoreKey), chainID}
+	km := keymap.MakeKeyMap(&store)
+	defer ctrl.Finish()
+	require.Zero(t, km.)
+}
+func FuzzKeyMapSerializationAndDeserialization(f *testing.F) {
+	f.Fuzz(func(t *testing.T, chainID string, bz []byte) {
+		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		_, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		store := providerkeeper.KeyMapStore{ctx.KVStore(keeperParams.StoreKey), chainID}
+		km := keymap.MakeKeyMap(&store)
+		defer ctrl.Finish()
+		// t.Skip()
 	})
-	/*
-		Will output something like
-			[
-			bbaaaababaabbaabababbaabbbbbbaaa,
-			abbbababbbabaaaaabaaabbbbababaab,
-			bbabaabaabbbbbabbbaababbbbabbbbb,
-			aabbbabaaaaababbbabaabaabbbbbbba
-			]
-		which can be used to generate validator private keys.
-	*/
 }
