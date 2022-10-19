@@ -70,52 +70,46 @@ func compareForEquality(t *testing.T,
 	}
 }
 
-// TODO: deduplicate with the function in seed gen test for diff driver
-func GetPV(seed []byte) mock.PV {
-	//lint:ignore SA1019 We don't care because this is only a test.
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
-}
-
-var testingKeys []crypto.PublicKey
-
-func init() {
-	totalNumKeys := NUM_VALS + NUM_CKS
-	keys := simapp.CreateTestPubKeys(totalNumKeys)
-	for i := 0; i < totalNumKeys; i++ {
-		k, err := cryptocodec.ToTmProtoPublicKey(keys[i])
-		if err != nil {
-			panic("could not create tendermint test keys")
-		}
-		testingKeys = append(testingKeys, k)
-	}
-}
-
-func TestKeyMapSerializationAndDeserialization(t *testing.T) {
-
+func checkCorrectSerializationAndDeserialization(t *testing.T,
+	chainID string, keys []crypto.PublicKey,
+	string0 string,
+	string1 string,
+	string2 string,
+	string3 string,
+	int64_0 int64,
+	int64_1 int64,
+	uint64_0 uint64,
+	uint64_1 uint64,
+) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	_, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
-	chainID := "foobar"
 	pkToCk := map[keymap.ProviderPubKey]keymap.ConsumerPubKey{}
 	ckToPk := map[keymap.ConsumerPubKey]keymap.ProviderPubKey{}
 	ckToMemo := map[keymap.ConsumerPubKey]keymap.Memo{}
 	ccaToCk := map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey{}
 
-	var testingKeys []crypto.PublicKey
-
-	{
-		// TODO: deduplicate with similar code in keymap/
-		totalNumKeys := 16
-		keys := simapp.CreateTestPubKeys(totalNumKeys)
-		for i := 0; i < totalNumKeys; i++ {
-			k, err := cryptocodec.ToTmProtoPublicKey(keys[i])
-			if err != nil {
-				panic("could not create tendermint test keys")
-			}
-			testingKeys = append(testingKeys, k)
-		}
+	pkToCk[keys[0]] = keys[1]
+	pkToCk[keys[2]] = keys[3]
+	ckToPk[keys[4]] = keys[5]
+	ckToPk[keys[6]] = keys[7]
+	ckToMemo[keys[8]] = keymap.Memo{
+		Ck:    keys[9],
+		Pk:    keys[10],
+		Cca:   string0,
+		Vscid: uint64_0,
+		Power: int64_0,
 	}
+	ckToMemo[keys[11]] = keymap.Memo{
+		Ck:    keys[12],
+		Pk:    keys[13],
+		Cca:   string1,
+		Vscid: uint64_1,
+		Power: int64_1,
+	}
+	ccaToCk[string2] = keys[14]
+	ccaToCk[string3] = keys[15]
 
 	{
 		// Use one KeyMap instance to serialize the data
@@ -136,6 +130,43 @@ func TestKeyMapSerializationAndDeserialization(t *testing.T) {
 	// Check that the data is the same
 
 	compareForEquality(t, km, pkToCk, ckToPk, ckToMemo, ccaToCk)
+}
+
+func TestKeyMapSerializationAndDeserialization(t *testing.T) {
+
+	chainID := "foobar"
+
+	getKeys := func() (ret []crypto.PublicKey) {
+		// TODO: deduplicate with similar code in keymap/
+		totalNumKeys := 16
+		keys := simapp.CreateTestPubKeys(totalNumKeys)
+		for i := 0; i < totalNumKeys; i++ {
+			k, err := cryptocodec.ToTmProtoPublicKey(keys[i])
+			if err != nil {
+				panic("could not create tendermint test keys")
+			}
+			ret = append(ret, k)
+		}
+		return ret
+	}
+
+	checkCorrectSerializationAndDeserialization(t, chainID, getKeys(),
+		"string0",
+		"string1",
+		"string2",
+		"string3",
+		42,
+		43,
+		44,
+		45,
+	)
+
+}
+
+// TODO: deduplicate with the function in seed gen test for diff driver
+func GetPV(seed []byte) mock.PV {
+	//lint:ignore SA1019 We don't care because this is only a test.
+	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 }
 
 func FuzzKeyMapSerializationAndDeserialization(f *testing.F) {
