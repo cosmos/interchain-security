@@ -9,6 +9,7 @@ import (
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper/keymap"
 	"github.com/stretchr/testify/require"
+	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 func TestKeyMapSerializationAndDeserialization(t *testing.T) {
@@ -55,7 +56,9 @@ func FuzzKeyMapSerializationAndDeserialization(f *testing.F) {
 		km := keymap.MakeKeyMap(&store)
 		_ = km
 
-		if len(bz) < 32 {
+		bytesPerKey := 32
+		numKeys := 16
+		if len(bz) < bytesPerKey*numKeys {
 			t.Skip()
 		}
 
@@ -64,44 +67,35 @@ func FuzzKeyMapSerializationAndDeserialization(f *testing.F) {
 		ckToMemo := map[keymap.ConsumerPubKey]keymap.Memo{}
 		ccaToCk := map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey{}
 
-		pk0, err := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		if err != nil {
-			t.Fatalf("%v", err)
+		keys := []crypto.PublicKey{}
+
+		for i := 0; i < numKeys; i++ {
+			pk, err := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[i*bytesPerKey : (i+1)*bytesPerKey]})
+			if err != nil {
+				t.Fatalf("%v", err)
+			}
+			keys = append(keys, pk)
 		}
-		pk1, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk2, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk3, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk4, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk5, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk6, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk7, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk8, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk9, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk10, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk11, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk12, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk13, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk14, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pk15, _ := cryptocodec.ToTmProtoPublicKey(&ed25519.PubKey{Key: bz[0:32]})
-		pkToCk[pk0] = pk1
-		pkToCk[pk2] = pk3
-		ckToPk[pk4] = pk5
-		ckToPk[pk6] = pk7
-		ckToMemo[pk8] = keymap.Memo{
-			Ck:    pk9,
-			Pk:    pk10,
+
+		pkToCk[keys[0]] = keys[1]
+		pkToCk[keys[2]] = keys[3]
+		ckToPk[keys[4]] = keys[5]
+		ckToPk[keys[6]] = keys[7]
+		ckToMemo[keys[8]] = keymap.Memo{
+			Ck:    keys[9],
+			Pk:    keys[10],
 			Cca:   string0,
 			Vscid: uint64_0,
 			Power: int64_0,
 		}
-		ckToMemo[pk11] = keymap.Memo{
-			Ck:    pk12,
-			Pk:    pk13,
+		ckToMemo[keys[11]] = keymap.Memo{
+			Ck:    keys[12],
+			Pk:    keys[13],
 			Cca:   string1,
 			Vscid: uint64_1,
 			Power: int64_1,
 		}
-		ccaToCk[string2] = pk14
-		ccaToCk[string3] = pk15
+		ccaToCk[string2] = keys[14]
+		ccaToCk[string3] = keys[15]
 	})
 }
