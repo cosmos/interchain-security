@@ -59,10 +59,10 @@ type Memo struct {
 
 type KeyMap struct {
 	store    Store
-	pkToCk   map[ProviderPubKey]ConsumerPubKey
-	ckToPk   map[ConsumerPubKey]ProviderPubKey
-	ckToMemo map[ConsumerPubKey]Memo
-	ccaToCk  map[StringifiedConsumerConsAddr]ConsumerPubKey
+	PkToCk   map[ProviderPubKey]ConsumerPubKey
+	CkToPk   map[ConsumerPubKey]ProviderPubKey
+	CkToMemo map[ConsumerPubKey]Memo
+	CcaToCk  map[StringifiedConsumerConsAddr]ConsumerPubKey
 }
 
 type Store interface {
@@ -82,41 +82,41 @@ func MakeKeyMap(store Store) KeyMap {
 	}
 }
 
-// GetAll reads all data from store
+// getAll reads all data from store
 // The granularity of store access can be changed if needed for
 // performance reasons.
-func (e *KeyMap) GetAll() {
-	e.pkToCk = e.store.GetPkToCk()
-	e.ckToPk = e.store.GetCkToPk()
-	e.ckToMemo = e.store.GetCkToMemo()
-	e.ccaToCk = e.store.GetCcaToCk()
+func (e *KeyMap) getAll() {
+	e.PkToCk = e.store.GetPkToCk()
+	e.CkToPk = e.store.GetCkToPk()
+	e.CkToMemo = e.store.GetCkToMemo()
+	e.CcaToCk = e.store.GetCcaToCk()
 }
 
-// SetAll write all data to store
+// setAll write all data to store
 // The granularity of store access can be changed if needed for
 // performance reasons.
-func (e *KeyMap) SetAll() {
-	e.store.SetPkToCk(e.pkToCk)
-	e.store.SetCkToPk(e.ckToPk)
-	e.store.SetCkToMemo(e.ckToMemo)
-	e.store.SetCcaToCk(e.ccaToCk)
+func (e *KeyMap) setAll() {
+	e.store.SetPkToCk(e.PkToCk)
+	e.store.SetCkToPk(e.CkToPk)
+	e.store.SetCkToMemo(e.CkToMemo)
+	e.store.SetCcaToCk(e.CcaToCk)
 }
 
 // TODO:
 func (e *KeyMap) SetProviderKeyToConsumerKey(pk ProviderPubKey, ck ConsumerPubKey) error {
-	e.GetAll()
-	if _, ok := e.ckToPk[ck]; ok {
+	e.getAll()
+	if _, ok := e.CkToPk[ck]; ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
-	if _, ok := e.ckToMemo[ck]; ok {
+	if _, ok := e.CkToMemo[ck]; ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
-	if oldCk, ok := e.pkToCk[pk]; ok {
-		delete(e.ckToPk, oldCk)
+	if oldCk, ok := e.PkToCk[pk]; ok {
+		delete(e.CkToPk, oldCk)
 	}
-	e.pkToCk[pk] = ck
-	e.ckToPk[ck] = pk
-	e.SetAll() // TODO: Try with defer
+	e.PkToCk[pk] = ck
+	e.CkToPk[ck] = pk
+	e.setAll() // TODO: Try with defer
 	return nil
 }
 
@@ -124,10 +124,10 @@ func (e *KeyMap) SetProviderKeyToConsumerKey(pk ProviderPubKey, ck ConsumerPubKe
 
 // TODO: use found instead of error
 func (e *KeyMap) GetProviderPubKeyFromConsumerPubKey(ck ConsumerPubKey) (ProviderPubKey, error) {
-	e.GetAll()
-	if u, ok := e.ckToMemo[ck]; ok {
+	e.getAll()
+	if u, ok := e.CkToMemo[ck]; ok {
 		return u.Pk, nil
-	} else if pk, ok := e.ckToPk[ck]; ok {
+	} else if pk, ok := e.CkToPk[ck]; ok {
 		return pk, nil
 	} else {
 		return crypto.PublicKey{}, errors.New("provider key not found for consumer key")
@@ -136,16 +136,16 @@ func (e *KeyMap) GetProviderPubKeyFromConsumerPubKey(ck ConsumerPubKey) (Provide
 
 // TODO: use found instead of error
 func (e *KeyMap) GetProviderPubKeyFromConsumerConsAddress(cca sdk.ConsAddress) (ProviderPubKey, error) {
-	e.GetAll()
-	ck := e.ccaToCk[string(cca)]
+	e.getAll()
+	ck := e.CcaToCk[string(cca)]
 	return e.GetProviderPubKeyFromConsumerPubKey(ck)
 }
 
 // TODO:
 func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
-	e.GetAll()
+	e.getAll()
 	toDel := []ConsumerPubKey{}
-	for _, u := range e.ckToMemo {
+	for _, u := range e.CkToMemo {
 		// If the last update was a deletion (0 power) and the update
 		// matured then pruning is possible.
 		if u.Power == 0 && u.Vscid <= latestVscid {
@@ -153,16 +153,16 @@ func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 		}
 	}
 	for _, ck := range toDel {
-		delete(e.ccaToCk, e.ckToMemo[ck].Cca)
-		delete(e.ckToMemo, ck)
+		delete(e.CcaToCk, e.CkToMemo[ck].Cca)
+		delete(e.CkToMemo, ck)
 	}
-	e.SetAll()
+	e.setAll()
 }
 
 // TODO:
 func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpdate) (consumerUpdates []abci.ValidatorUpdate) {
 
-	e.GetAll()
+	e.getAll()
 
 	updates := map[ProviderPubKey]int64{}
 
@@ -178,7 +178,7 @@ func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpd
 		consumerUpdates = append(consumerUpdates, abci.ValidatorUpdate{PubKey: ck, Power: power})
 	}
 
-	e.SetAll()
+	e.setAll()
 	return consumerUpdates
 }
 
@@ -188,8 +188,8 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 	pks := []ProviderPubKey{}
 
 	// Grab provider keys where the assigned consumer key has changed
-	for oldCk, u := range e.ckToMemo {
-		if newCk, ok := e.pkToCk[u.Pk]; ok {
+	for oldCk, u := range e.CkToMemo {
+		if newCk, ok := e.PkToCk[u.Pk]; ok {
 			if oldCk != newCk && 0 < u.Power {
 				pks = append(pks, u.Pk)
 			}
@@ -205,7 +205,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 	// Create a read only copy, so that we can query while writing
 	// updates to the old version.
 	ckToMemo_READ_ONLY := map[ConsumerPubKey]Memo{}
-	for ck, memo := range e.ckToMemo {
+	for ck, memo := range e.CkToMemo {
 		ckToMemo_READ_ONLY[ck] = memo
 	}
 
@@ -215,8 +215,8 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 				// For each provider key for which there was already a positive update
 				// create a deletion update for the associated consumer key.
 				cca := consumerPubKeyToStringifiedConsumerConsAddr(u.Ck)
-				e.ckToMemo[u.Ck] = Memo{Ck: u.Ck, Pk: pk, Vscid: vscid, Power: 0, Cca: cca}
-				e.ccaToCk[cca] = u.Ck
+				e.CkToMemo[u.Ck] = Memo{Ck: u.Ck, Pk: pk, Vscid: vscid, Power: 0, Cca: cca}
+				e.CcaToCk[cca] = u.Ck
 				ret[u.Ck] = 0
 			}
 		}
@@ -242,10 +242,10 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 		// Only ship update with positive powers. Zero power updates (deletions)
 		// are handled in earlier block.
 		if 0 < power {
-			ck := e.pkToCk[pk]
+			ck := e.PkToCk[pk]
 			cca := consumerPubKeyToStringifiedConsumerConsAddr(ck)
-			e.ckToMemo[ck] = Memo{Ck: ck, Pk: pk, Vscid: vscid, Power: power, Cca: cca}
-			e.ccaToCk[cca] = ck
+			e.CkToMemo[ck] = Memo{Ck: ck, Pk: pk, Vscid: vscid, Power: power, Cca: cca}
+			e.CcaToCk[cca] = ck
 			ret[ck] = power
 		}
 	}
@@ -256,13 +256,13 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 // Returns true iff internal invariants hold
 func (e *KeyMap) internalInvariants() bool {
 
-	e.GetAll()
+	e.getAll()
 
 	{
 		// No two provider keys can map to the same consumer key
 		// (pkToCk is sane)
 		seen := map[ConsumerPubKey]bool{}
-		for _, ck := range e.pkToCk {
+		for _, ck := range e.PkToCk {
 			if seen[ck] {
 				return false
 			}
@@ -273,8 +273,8 @@ func (e *KeyMap) internalInvariants() bool {
 	{
 		// all values of pkToCk is a key of ckToPk
 		// (reverse lookup is always possible)
-		for _, ck := range e.pkToCk {
-			if _, ok := e.ckToPk[ck]; !ok {
+		for _, ck := range e.PkToCk {
+			if _, ok := e.CkToPk[ck]; !ok {
 				return false
 			}
 		}
@@ -284,9 +284,9 @@ func (e *KeyMap) internalInvariants() bool {
 		// All consumer keys mapping to provider keys are actually
 		// mapped to by the provider key.
 		// (ckToPk is sane)
-		for ck := range e.ckToPk {
+		for ck := range e.CkToPk {
 			good := false
-			for _, candidateCk := range e.pkToCk {
+			for _, candidateCk := range e.PkToCk {
 				if candidateCk == ck {
 					good = true
 					break
@@ -303,8 +303,8 @@ func (e *KeyMap) internalInvariants() bool {
 		// any memo containing the same consumer key has the same
 		// mapping.
 		// (Ensures lookups are correct)
-		for ck, pk := range e.ckToPk {
-			if u, ok := e.ckToMemo[ck]; ok {
+		for ck, pk := range e.CkToPk {
+			if u, ok := e.CkToMemo[ck]; ok {
 				if pk != u.Pk {
 					return false
 				}
@@ -316,7 +316,7 @@ func (e *KeyMap) internalInvariants() bool {
 		// All entries in ckToMemo have a unique consumer consensus
 		// address
 		seen := map[StringifiedConsumerConsAddr]bool{}
-		for _, memo := range e.ckToMemo {
+		for _, memo := range e.CkToMemo {
 			if _, found := seen[memo.Cca]; found {
 				return false
 			}
@@ -327,8 +327,8 @@ func (e *KeyMap) internalInvariants() bool {
 	{
 		// All entries in ckToMemo have a consumer consensus
 		// address which is a key in ccaToCk
-		for _, memo := range e.ckToMemo {
-			if _, found := e.ccaToCk[memo.Cca]; !found {
+		for _, memo := range e.CkToMemo {
+			if _, found := e.CcaToCk[memo.Cca]; !found {
 				return false
 			}
 		}
@@ -337,7 +337,7 @@ func (e *KeyMap) internalInvariants() bool {
 	{
 		// All entries in ccaToCk have a unique consumer pub key
 		seen := map[ConsumerPubKey]bool{}
-		for _, ck := range e.ccaToCk {
+		for _, ck := range e.CcaToCk {
 			if _, found := seen[ck]; found {
 				return false
 			}
@@ -348,8 +348,8 @@ func (e *KeyMap) internalInvariants() bool {
 	{
 		// All entries in ccaToCk have a consumer pub key
 		// which is a key of ckToMemo
-		for cca, ck := range e.ccaToCk {
-			memo, found := e.ckToMemo[ck]
+		for cca, ck := range e.CcaToCk {
+			memo, found := e.CkToMemo[ck]
 			if !found {
 				return false
 			}

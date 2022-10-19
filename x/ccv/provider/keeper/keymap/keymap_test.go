@@ -163,7 +163,7 @@ func (d *driver) applyKeyMapEntries(entries []keyMapEntry) {
 	}
 	// Duplicate the mapping for referencing later in tests.
 	copy := map[ProviderPubKey]ConsumerPubKey{}
-	for lk, fk := range d.km.pkToCk {
+	for lk, fk := range d.km.PkToCk {
 		copy[lk] = fk
 	}
 	d.mappings = append(d.mappings, copy)
@@ -380,7 +380,7 @@ func (d *driver) externalInvariants() {
 		}
 		// If a consumer key is CURRENTLY mapped to by a provider key, it
 		// must be queryable.
-		for _, ck := range d.km.pkToCk {
+		for _, ck := range d.km.PkToCk {
 			expectQueryable[ck] = true
 		}
 
