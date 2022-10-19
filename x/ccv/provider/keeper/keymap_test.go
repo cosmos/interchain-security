@@ -9,6 +9,7 @@ import (
 	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/ibc-go/testing/mock"
+
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper/keymap"
