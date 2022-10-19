@@ -7,6 +7,7 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/ibc-go/testing/mock"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
@@ -14,9 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
-
-func TestKeyMapSerializationAndDeserialization(t *testing.T) {
-}
 
 func TestKeyMapLoadEmpty(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
@@ -41,9 +39,103 @@ func TestKeyMapLoadEmpty(t *testing.T) {
 	require.Zero(t, len(km.CcaToCk))
 }
 
+func compareForEquality(t *testing.T,
+	km keymap.KeyMap,
+	pkToCk map[keymap.ProviderPubKey]keymap.ConsumerPubKey,
+	ckToPk map[keymap.ConsumerPubKey]keymap.ProviderPubKey,
+	ckToMemo map[keymap.ConsumerPubKey]keymap.Memo,
+	ccaToCk map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey) {
+
+	require.Equal(t, len(pkToCk), len(km.PkToCk))
+	require.Equal(t, len(ckToPk), len(km.CkToPk))
+	require.Equal(t, len(ckToMemo), len(km.CkToMemo))
+	require.Equal(t, len(ccaToCk), len(km.CcaToCk))
+
+	for k, v := range pkToCk {
+		require.Equal(t, v, km.PkToCk[k])
+	}
+	for k, v := range ckToPk {
+		require.Equal(t, v, km.CkToPk[k])
+	}
+	for k, v := range ckToMemo {
+		m := km.CkToMemo[k]
+		require.Equal(t, v.Pk, m.Pk)
+		require.Equal(t, v.Ck, m.Ck)
+		require.Equal(t, v.Cca, m.Cca)
+		require.Equal(t, v.Vscid, m.Vscid)
+		require.Equal(t, v.Power, m.Power)
+	}
+	for k, v := range ccaToCk {
+		require.Equal(t, v, km.CcaToCk[k])
+	}
+}
+
+// TODO: deduplicate with the function in seed gen test for diff driver
 func GetPV(seed []byte) mock.PV {
 	//lint:ignore SA1019 We don't care because this is only a test.
 	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+}
+
+var testingKeys []crypto.PublicKey
+
+func init() {
+	totalNumKeys := NUM_VALS + NUM_CKS
+	keys := simapp.CreateTestPubKeys(totalNumKeys)
+	for i := 0; i < totalNumKeys; i++ {
+		k, err := cryptocodec.ToTmProtoPublicKey(keys[i])
+		if err != nil {
+			panic("could not create tendermint test keys")
+		}
+		testingKeys = append(testingKeys, k)
+	}
+}
+
+func TestKeyMapSerializationAndDeserialization(t *testing.T) {
+
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	_, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	defer ctrl.Finish()
+
+	chainID := "foobar"
+	pkToCk := map[keymap.ProviderPubKey]keymap.ConsumerPubKey{}
+	ckToPk := map[keymap.ConsumerPubKey]keymap.ProviderPubKey{}
+	ckToMemo := map[keymap.ConsumerPubKey]keymap.Memo{}
+	ccaToCk := map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey{}
+
+	var testingKeys []crypto.PublicKey
+
+	{
+		// TODO: deduplicate with similar code in keymap/
+		totalNumKeys := 16
+		keys := simapp.CreateTestPubKeys(totalNumKeys)
+		for i := 0; i < totalNumKeys; i++ {
+			k, err := cryptocodec.ToTmProtoPublicKey(keys[i])
+			if err != nil {
+				panic("could not create tendermint test keys")
+			}
+			testingKeys = append(testingKeys, k)
+		}
+	}
+
+	{
+		// Use one KeyMap instance to serialize the data
+		store := providerkeeper.KeyMapStore{ctx.KVStore(keeperParams.StoreKey), chainID}
+		km := keymap.MakeKeyMap(&store)
+		km.PkToCk = pkToCk
+		km.CkToPk = ckToPk
+		km.CkToMemo = ckToMemo
+		km.CcaToCk = ccaToCk
+		km.SetAll()
+	}
+
+	// Use another KeyMap instance to deserialize the data
+	store := providerkeeper.KeyMapStore{ctx.KVStore(keeperParams.StoreKey), chainID}
+	km := keymap.MakeKeyMap(&store)
+	km.GetAll()
+
+	// Check that the data is the same
+
+	compareForEquality(t, km, pkToCk, ckToPk, ckToMemo, ccaToCk)
 }
 
 func FuzzKeyMapSerializationAndDeserialization(f *testing.F) {
@@ -135,28 +227,7 @@ func FuzzKeyMapSerializationAndDeserialization(f *testing.F) {
 
 		// Check that the data is the same
 
-		require.Equal(t, len(pkToCk), len(km.PkToCk))
-		require.Equal(t, len(ckToPk), len(km.CkToPk))
-		require.Equal(t, len(ckToMemo), len(km.CkToMemo))
-		require.Equal(t, len(ccaToCk), len(km.CcaToCk))
-
-		for k, v := range pkToCk {
-			require.Equal(t, v, km.PkToCk[k])
-		}
-		for k, v := range ckToPk {
-			require.Equal(t, v, km.CkToPk[k])
-		}
-		for k, v := range ckToMemo {
-			m := km.CkToMemo[k]
-			require.Equal(t, v.Pk, m.Pk)
-			require.Equal(t, v.Ck, m.Ck)
-			require.Equal(t, v.Cca, m.Cca)
-			require.Equal(t, v.Vscid, m.Vscid)
-			require.Equal(t, v.Power, m.Power)
-		}
-		for k, v := range ccaToCk {
-			require.Equal(t, v, km.CcaToCk[k])
-		}
+		compareForEquality(t, km, pkToCk, ckToPk, ckToMemo, ccaToCk)
 
 	})
 }
