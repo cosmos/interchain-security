@@ -79,16 +79,11 @@ func FuzzKeyMapSerializationAndDeserialization(f *testing.F) {
 
 			for i := 0; i < numKeys; i++ {
 				seed := bz[i*bytesPerKey : (i+1)*bytesPerKey]
-				// privKey := cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}
 				privKey := GetPV(seed)
-				// privKey := cryptoEd25519.NewKeyFromSeed()
 				pubKey, err := privKey.GetPubKey()
-
 				if err != nil {
 					t.Fatalf("%v", err)
 				}
-				// pk := privKey.GetKey().Public()
-
 				sdkVer, err := cryptocodec.FromTmPubKeyInterface(pubKey)
 				if err != nil {
 					t.Fatalf("%v", err)
