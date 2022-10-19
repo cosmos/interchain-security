@@ -3,12 +3,8 @@ package keeper_test
 import (
 	"testing"
 
-	cryptoEd25519 "crypto/ed25519"
-
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/ibc-go/testing/mock"
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
@@ -164,7 +160,9 @@ func TestKeyMapSerializationAndDeserialization(t *testing.T) {
 
 }
 
+/*
 // TODO: another idea here would be to use the generation already used for business
+
 // logic testing in keymap/ , but the seeds there are less general.
 func FuzzKeyMapSerializationAndDeserialization(f *testing.F) {
 	f.Fuzz(func(t *testing.T, chainID string, bz []byte,
@@ -222,3 +220,5 @@ func FuzzKeyMapSerializationAndDeserialization(f *testing.F) {
 
 	})
 }
+
+*/
