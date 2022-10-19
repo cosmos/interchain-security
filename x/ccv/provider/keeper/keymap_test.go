@@ -163,12 +163,8 @@ func TestKeyMapSerializationAndDeserialization(t *testing.T) {
 
 }
 
-// TODO: deduplicate with the function in seed gen test for diff driver
-func GetPV(seed []byte) mock.PV {
-	//lint:ignore SA1019 We don't care because this is only a test.
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
-}
-
+// TODO: another idea here would be to use the generation already used for business
+// logic testing in keymap/ , but the seeds there are less general.
 func FuzzKeyMapSerializationAndDeserialization(f *testing.F) {
 	f.Fuzz(func(t *testing.T, chainID string, bz []byte,
 		string0 string,
@@ -180,9 +176,6 @@ func FuzzKeyMapSerializationAndDeserialization(f *testing.F) {
 		uint64_0 uint64,
 		uint64_1 uint64,
 	) {
-		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		_, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-		defer ctrl.Finish()
 
 		// Check viability
 		// If not viable: skip the test
@@ -192,17 +185,12 @@ func FuzzKeyMapSerializationAndDeserialization(f *testing.F) {
 			t.Skip()
 		}
 
-		pkToCk := map[keymap.ProviderPubKey]keymap.ConsumerPubKey{}
-		ckToPk := map[keymap.ConsumerPubKey]keymap.ProviderPubKey{}
-		ckToMemo := map[keymap.ConsumerPubKey]keymap.Memo{}
-		ccaToCk := map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey{}
-
-		{
-			keys := []crypto.PublicKey{}
-
+		getKeys := func() (ret []crypto.PublicKey) {
 			for i := 0; i < numKeys; i++ {
 				seed := bz[i*bytesPerKey : (i+1)*bytesPerKey]
-				privKey := GetPV(seed)
+				// TODO: deduplicate with the function in seed gen test for diff driver
+				//lint:ignore SA1019 We don't care because this is only a test.
+				privKey := mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 				pubKey, err := privKey.GetPubKey()
 				if err != nil {
 					t.Fatalf("%v", err)
@@ -215,50 +203,21 @@ func FuzzKeyMapSerializationAndDeserialization(f *testing.F) {
 				if err != nil {
 					t.Fatalf("%v", err)
 				}
-				keys = append(keys, pk)
+				ret = append(ret, pk)
 			}
-
-			pkToCk[keys[0]] = keys[1]
-			pkToCk[keys[2]] = keys[3]
-			ckToPk[keys[4]] = keys[5]
-			ckToPk[keys[6]] = keys[7]
-			ckToMemo[keys[8]] = keymap.Memo{
-				Ck:    keys[9],
-				Pk:    keys[10],
-				Cca:   string0,
-				Vscid: uint64_0,
-				Power: int64_0,
-			}
-			ckToMemo[keys[11]] = keymap.Memo{
-				Ck:    keys[12],
-				Pk:    keys[13],
-				Cca:   string1,
-				Vscid: uint64_1,
-				Power: int64_1,
-			}
-			ccaToCk[string2] = keys[14]
-			ccaToCk[string3] = keys[15]
+			return ret
 		}
 
-		{
-			// Use one KeyMap instance to serialize the data
-			store := providerkeeper.KeyMapStore{ctx.KVStore(keeperParams.StoreKey), chainID}
-			km := keymap.MakeKeyMap(&store)
-			km.PkToCk = pkToCk
-			km.CkToPk = ckToPk
-			km.CkToMemo = ckToMemo
-			km.CcaToCk = ccaToCk
-			km.SetAll()
-		}
-
-		// Use another KeyMap instance to deserialize the data
-		store := providerkeeper.KeyMapStore{ctx.KVStore(keeperParams.StoreKey), chainID}
-		km := keymap.MakeKeyMap(&store)
-		km.GetAll()
-
-		// Check that the data is the same
-
-		compareForEquality(t, km, pkToCk, ckToPk, ckToMemo, ccaToCk)
+		checkCorrectSerializationAndDeserialization(t, chainID, getKeys(),
+			string0,
+			string1,
+			string2,
+			string3,
+			int64_0,
+			int64_1,
+			uint64_0,
+			uint64_1,
+		)
 
 	})
 }
