@@ -18,7 +18,6 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -33,7 +32,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 
 	type testCase struct {
 		description string
-		prop        *providertypes.ConsumerAdditionProposal
+		prop        *types.ConsumerAdditionProposal
 		// Time when prop is handled
 		blockTime time.Time
 		// Whether it's expected that the spawn time has passed and client should be created
@@ -47,7 +46,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 	tests := []testCase{
 		{
 			description: "ctx block time is after proposal's spawn time, expected that client is created",
-			prop: providertypes.NewConsumerAdditionProposal(
+			prop: types.NewConsumerAdditionProposal(
 				"title",
 				"description",
 				"chainID",
@@ -55,14 +54,14 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				[]byte("gen_hash"),
 				[]byte("bin_hash"),
 				now, // Spawn time
-			).(*providertypes.ConsumerAdditionProposal),
+			).(*types.ConsumerAdditionProposal),
 			blockTime:        hourFromNow,
 			expCreatedClient: true,
 		},
 		{
 			description: `ctx block time is before proposal's spawn time,
 			 expected that no client is created and the proposal is persisted as pending`,
-			prop: providertypes.NewConsumerAdditionProposal(
+			prop: types.NewConsumerAdditionProposal(
 				"title",
 				"description",
 				"chainID",
@@ -80,7 +79,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+		providerKeeper.SetParams(ctx, types.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		if tc.expCreatedClient {
@@ -156,7 +155,7 @@ func TestCreateConsumerClient(t *testing.T) {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+		providerKeeper.SetParams(ctx, types.DefaultParams())
 
 		// Test specific setup
 		tc.setup(&providerKeeper, ctx, &mocks)
@@ -330,23 +329,23 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 	tests := []testCase{
 		{
 			description: "valid proposal: stop time reached",
-			prop: providertypes.NewConsumerRemovalProposal(
+			prop: types.NewConsumerRemovalProposal(
 				"title",
 				"description",
 				"chainID",
 				now,
-			).(*providertypes.ConsumerRemovalProposal),
+			).(*types.ConsumerRemovalProposal),
 			blockTime: hourFromNow, // After stop time.
 			expStop:   true,
 		},
 		{
 			description: "valid proposal: stop time has not yet been reached",
-			prop: providertypes.NewConsumerRemovalProposal(
+			prop: types.NewConsumerRemovalProposal(
 				"title",
 				"description",
 				"chainID",
 				hourFromNow,
-			).(*providertypes.ConsumerRemovalProposal),
+			).(*types.ConsumerRemovalProposal),
 			blockTime: now, // Before proposal's stop time
 			expStop:   false,
 		},
@@ -357,7 +356,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+		providerKeeper.SetParams(ctx, types.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		// Mock expectations and setup for stopping the consumer chain, if applicable
@@ -433,7 +432,7 @@ func TestStopConsumerChain(t *testing.T) {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+		providerKeeper.SetParams(ctx, types.DefaultParams())
 
 		// Setup specific to test case
 		tc.setup(ctx, &providerKeeper, mocks)
@@ -578,7 +577,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-	moduleParams := providertypes.Params{
+	moduleParams := types.Params{
 		TemplateClient: &ibctmtypes.ClientState{
 			TrustLevel:    ibctmtypes.DefaultTrustLevel,
 			MaxClockDrift: 10000000000,
@@ -663,20 +662,20 @@ func TestBeginBlockInit(t *testing.T) {
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+	providerKeeper.SetParams(ctx, types.DefaultParams())
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockTime(now)
 
-	pendingProps := []*providertypes.ConsumerAdditionProposal{
-		providertypes.NewConsumerAdditionProposal(
+	pendingProps := []*types.ConsumerAdditionProposal{
+		types.NewConsumerAdditionProposal(
 			"title", "description", "chain1", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.Add(-time.Hour).UTC()).(*providertypes.ConsumerAdditionProposal),
-		providertypes.NewConsumerAdditionProposal(
+			now.Add(-time.Hour).UTC()).(*types.ConsumerAdditionProposal),
+		types.NewConsumerAdditionProposal(
 			"title", "description", "chain2", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.UTC()).(*providertypes.ConsumerAdditionProposal),
-		providertypes.NewConsumerAdditionProposal(
+			now.UTC()).(*types.ConsumerAdditionProposal),
+		types.NewConsumerAdditionProposal(
 			"title", "description", "chain3", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.Add(time.Hour).UTC()).(*providertypes.ConsumerAdditionProposal),
+			now.Add(time.Hour).UTC()).(*types.ConsumerAdditionProposal),
 	}
 
 	gomock.InOrder(
@@ -713,20 +712,20 @@ func TestBeginBlockCCR(t *testing.T) {
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+	providerKeeper.SetParams(ctx, types.DefaultParams())
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockTime(now)
 
-	pendingProps := []*providertypes.ConsumerRemovalProposal{
-		providertypes.NewConsumerRemovalProposal(
+	pendingProps := []*types.ConsumerRemovalProposal{
+		types.NewConsumerRemovalProposal(
 			"title", "description", "chain1", now.Add(-time.Hour).UTC(),
-		).(*providertypes.ConsumerRemovalProposal),
-		providertypes.NewConsumerRemovalProposal(
+		).(*types.ConsumerRemovalProposal),
+		types.NewConsumerRemovalProposal(
 			"title", "description", "chain2", now,
-		).(*providertypes.ConsumerRemovalProposal),
-		providertypes.NewConsumerRemovalProposal(
+		).(*types.ConsumerRemovalProposal),
+		types.NewConsumerRemovalProposal(
 			"title", "description", "chain3", now.Add(time.Hour).UTC(),
-		).(*providertypes.ConsumerRemovalProposal),
+		).(*types.ConsumerRemovalProposal),
 	}
 
 	//
