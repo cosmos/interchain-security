@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"encoding/binary"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper/keymap"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -18,20 +20,34 @@ type KeyMapStore struct {
 // for the SET, will need to iterate over the map and just write everything
 
 func (s *KeyMapStore) GetPkToCk() map[keymap.ProviderPubKey]keymap.ConsumerPubKey {
-	// bz := s.store.Get(types.KeyMapPkToCkKey(s.chainID))
-	panic("no im")
+	ret := map[keymap.ProviderPubKey]keymap.ConsumerPubKey{}
+	iterator := sdk.KVStorePrefixIterator(s.store, []byte{types.KeyMapPkToCkPrefix})
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		// Extract bytes following the 1 byte prefix
+		seqBytes := iterator.Key()[1:]
+		seq := binary.BigEndian.Uint64(seqBytes)
+
+		timeNs := binary.BigEndian.Uint64(iterator.Value())
+
+		if cb(seq, timeNs) {
+			break
+		}
+	}
+	return ret
 }
 func (s *KeyMapStore) GetCkToPk() map[keymap.ConsumerPubKey]keymap.ProviderPubKey {
-	// bz := s.store.Get(types.KeyMapCkToPkKey(s.chainID))
-	panic("no im")
+	ret := map[keymap.ConsumerPubKey]keymap.ProviderPubKey{}
+	return ret
 }
 func (s *KeyMapStore) GetCkToMemo() map[keymap.ConsumerPubKey]keymap.Memo {
-	// bz := s.store.Get(types.KeyMapCkToMemoKey(s.chainID))
-	panic("no im")
+	ret := map[keymap.ConsumerPubKey]keymap.Memo{}
+	return ret
 }
 func (s *KeyMapStore) GetCcaToCk() map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey {
-	// bz := s.store.Get(types.KeyMapCcaToCkKey(s.chainID))
-	panic("no im")
+	ret := map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey{}
+	return ret
 }
 func (s *KeyMapStore) SetPkToCk(pkToCk map[keymap.ProviderPubKey]keymap.ConsumerPubKey) {
 	for k, v := range pkToCk {
