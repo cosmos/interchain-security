@@ -95,148 +95,99 @@ func (suite *CCVTestSuite) TestProviderClientMatches() {
 	suite.Require().Equal(suite.providerClient, clientState, "stored client state does not match genesis provider client")
 }
 
-// TestInitTimeoutNoInit tests the init timeout works when
-// the channel opening handshake didn't started yet
-func (suite *CCVTestSuite) TestInitTimeoutNoInit() {
-	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
-	initTimeout := providerKeeper.GetParams(suite.providerCtx()).InitTimeoutPeriod
-	chainID := suite.consumerChain.ChainID
+// TestInitTimeout tests the init timeout
+func (suite *CCVTestSuite) TestInitTimeout() {
+	testCases := []struct {
+		name      string
+		handshake func()
+		removed   bool
+	}{
+		{
+			"init times out before INIT", func() {}, true,
+		},
+		{
+			"init times out before TRY", func() {
+				// send ChanOpenInit
+				err := suite.path.EndpointA.ChanOpenInit()
+				suite.Require().NoError(err)
+			}, true,
+		},
+		{
+			"init times out before ACK", func() {
+				// send ChanOpenInit
+				err := suite.path.EndpointA.ChanOpenInit()
+				suite.Require().NoError(err)
+				// send ChanOpenTry
+				err = suite.path.EndpointB.ChanOpenTry()
+				suite.Require().NoError(err)
+			}, true,
+		},
+		{
+			"init times out before CONFIRM", func() {
+				// send ChanOpenInit
+				err := suite.path.EndpointA.ChanOpenInit()
+				suite.Require().NoError(err)
+				// send ChanOpenTry
+				err = suite.path.EndpointB.ChanOpenTry()
+				suite.Require().NoError(err)
+				// send ChanOpenAck
+				err = suite.path.EndpointA.ChanOpenAck()
+				suite.Require().NoError(err)
+			}, true,
+		},
+		{
+			"init completes before timeout", func() {
+				// send ChanOpenInit
+				err := suite.path.EndpointA.ChanOpenInit()
+				suite.Require().NoError(err)
+				// send ChanOpenTry
+				err = suite.path.EndpointB.ChanOpenTry()
+				suite.Require().NoError(err)
+				// send ChanOpenAck
+				err = suite.path.EndpointA.ChanOpenAck()
+				suite.Require().NoError(err)
+				// send ChanOpenConfirm
+				err = suite.path.EndpointB.ChanOpenConfirm()
+				suite.Require().NoError(err)
+			}, false,
+		},
+	}
 
-	// get init timeout timestamp
-	ts, found := providerKeeper.GetInitTimeoutTimestamp(suite.providerCtx(), chainID)
-	suite.Require().True(found)
-	expectedTs := suite.providerCtx().BlockTime().Add(initTimeout)
-	suite.Require().Equal(uint64(expectedTs.UnixNano()), ts)
+	for i, tc := range testCases {
+		providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
+		initTimeout := providerKeeper.GetParams(suite.providerCtx()).InitTimeoutPeriod
+		chainID := suite.consumerChain.ChainID
 
-	suite.coordinator.CreateConnections(suite.path)
+		// get init timeout timestamp
+		ts, found := providerKeeper.GetInitTimeoutTimestamp(suite.providerCtx(), chainID)
+		suite.Require().True(found, "cannot find init timeout timestamp; test: %s", tc.name)
+		expectedTs := suite.providerCtx().BlockTime().Add(initTimeout)
+		suite.Require().Equal(uint64(expectedTs.UnixNano()), ts, "unexpected init timeout timestamp; test: %s", tc.name)
 
-	// call NextBlock
-	suite.providerChain.NextBlock()
+		// create connection
+		suite.coordinator.CreateConnections(suite.path)
 
-	// increment time
-	incrementTimeBy(suite, initTimeout)
+		// channel opening handshake
+		tc.handshake()
 
-	// check if the chain was removed
-	suite.checkConsumerChainIsRemoved(chainID, false, false)
-}
+		// call NextBlock
+		suite.providerChain.NextBlock()
 
-// TestInitTimeoutNoTry tests the init timeout works when
-// the channel opening handshake started, but no ChanOpenTry was sent
-func (suite *CCVTestSuite) TestInitTimeoutNoTry() {
-	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
-	initTimeout := providerKeeper.GetParams(suite.providerCtx()).InitTimeoutPeriod
-	chainID := suite.consumerChain.ChainID
+		// increment time
+		incrementTimeBy(suite, initTimeout)
 
-	// get init timeout timestamp
-	ts, found := providerKeeper.GetInitTimeoutTimestamp(suite.providerCtx(), chainID)
-	suite.Require().True(found)
-	expectedTs := suite.providerCtx().BlockTime().Add(initTimeout)
-	suite.Require().Equal(uint64(expectedTs.UnixNano()), ts)
+		// check whether the chain was removed
+		_, found = providerKeeper.GetConsumerClientId(suite.providerCtx(), chainID)
+		suite.Require().Equal(!tc.removed, found, "unexpected outcome; test: %s", tc.name)
 
-	// send ChanOpenInit
-	suite.coordinator.CreateConnections(suite.path)
-	err := suite.path.EndpointA.ChanOpenInit()
-	suite.Require().NoError(err)
+		if tc.removed {
+			// check if the chain was properly removed
+			suite.checkConsumerChainIsRemoved(chainID, false, false)
+		}
 
-	// call NextBlock
-	suite.providerChain.NextBlock()
-
-	// increment time
-	incrementTimeBy(suite, initTimeout)
-
-	// check if the chain was removed
-	suite.checkConsumerChainIsRemoved(chainID, false, false)
-}
-
-// TestInitTimeoutNoAck tests the init timeout works when
-// the channel opening handshake started, but no ChanOpenAck was sent
-func (suite *CCVTestSuite) TestInitTimeoutNoAck() {
-	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
-	initTimeout := providerKeeper.GetParams(suite.providerCtx()).InitTimeoutPeriod
-	chainID := suite.consumerChain.ChainID
-
-	// get init timeout timestamp
-	ts, found := providerKeeper.GetInitTimeoutTimestamp(suite.providerCtx(), chainID)
-	suite.Require().True(found)
-	expectedTs := suite.providerCtx().BlockTime().Add(initTimeout)
-	suite.Require().Equal(uint64(expectedTs.UnixNano()), ts)
-
-	// send ChanOpenInit, ChanOpenTry
-	suite.coordinator.CreateConnections(suite.path)
-	err := suite.path.EndpointA.ChanOpenInit()
-	suite.Require().NoError(err)
-	err = suite.path.EndpointB.ChanOpenTry()
-	suite.Require().NoError(err)
-
-	// call NextBlock
-	suite.providerChain.NextBlock()
-
-	// increment time
-	incrementTimeBy(suite, initTimeout)
-
-	// check if the chain was removed
-	suite.checkConsumerChainIsRemoved(chainID, false, false)
-}
-
-// TestInitTimeoutNoConfirm tests the init timeout works when
-// the channel opening handshake started, but no ChanOpenConfirm was sent
-func (suite *CCVTestSuite) TestInitTimeoutNoConfirm() {
-	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
-	initTimeout := providerKeeper.GetParams(suite.providerCtx()).InitTimeoutPeriod
-	chainID := suite.consumerChain.ChainID
-
-	// get init timeout timestamp
-	ts, found := providerKeeper.GetInitTimeoutTimestamp(suite.providerCtx(), chainID)
-	suite.Require().True(found)
-	expectedTs := suite.providerCtx().BlockTime().Add(initTimeout)
-	suite.Require().Equal(uint64(expectedTs.UnixNano()), ts)
-
-	// send ChanOpenInit, ChanOpenTry, ChanOpenAck
-	suite.coordinator.CreateConnections(suite.path)
-	err := suite.path.EndpointA.ChanOpenInit()
-	suite.Require().NoError(err)
-	err = suite.path.EndpointB.ChanOpenTry()
-	suite.Require().NoError(err)
-	err = suite.path.EndpointA.ChanOpenAck()
-	suite.Require().NoError(err)
-
-	// call NextBlock
-	suite.providerChain.NextBlock()
-
-	// increment time
-	incrementTimeBy(suite, initTimeout)
-
-	// check if the chain was removed
-	suite.checkConsumerChainIsRemoved(chainID, false, false)
-}
-
-// TestInitTimeoutHandshakeCompleted tests the init timeout works when
-// the channel opening handshake completes
-func (suite *CCVTestSuite) TestInitTimeoutHandshakeCompleted() {
-	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
-	initTimeout := providerKeeper.GetParams(suite.providerCtx()).InitTimeoutPeriod
-	chainID := suite.consumerChain.ChainID
-
-	// get init timeout timestamp
-	ts, found := providerKeeper.GetInitTimeoutTimestamp(suite.providerCtx(), chainID)
-	suite.Require().True(found)
-	expectedTs := suite.providerCtx().BlockTime().Add(initTimeout)
-	suite.Require().Equal(uint64(expectedTs.UnixNano()), ts)
-
-	// complete CCV channel setup
-	suite.SetupCCVChannel()
-
-	// check that the init timeout timestamp was removed
-	_, found = providerKeeper.GetInitTimeoutTimestamp(suite.providerCtx(), chainID)
-	suite.Require().False(found)
-
-	// call NextBlock
-	suite.providerChain.NextBlock()
-
-	// increment time
-	incrementTimeBy(suite, initTimeout)
-
-	// check that the chain was not removed
-	_, found = providerKeeper.GetConsumerClientId(suite.providerCtx(), chainID)
-	suite.Require().True(found)
+		if i+1 < len(testCases) {
+			// reset suite to reset provider client
+			suite.SetupTest()
+		}
+	}
 }
