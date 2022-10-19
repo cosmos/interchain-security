@@ -14,6 +14,7 @@ TODO: I think roughly, what I need to do, to drive this thing to completion is
 - [ ] integration with pending changes
 - [ ] include in diff test driver?
 - [ ] include in any existing tests?
+- [ ] maybe use sdk.prefix.Store?
 
 - Whenever a consumer chain is added or removed a new Keymap instance needs to be created
 with a store interface which handles all of its reading and writing.

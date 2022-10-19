@@ -273,12 +273,32 @@ func LockUnbondingOnTimeoutKey(chainID string) []byte {
 }
 
 // TODO:
+func KeyMapPkToCkChainPrefix(chainID string) []byte {
+	return append([]byte{KeyMapPkToCkPrefix}, []byte(chainID)...)
+}
+
+// TODO:
+func KeyMapCkToPkChainPrefix(chainID string) []byte {
+	return append([]byte{KeyMapCkToPkPrefix}, []byte(chainID)...)
+}
+
+// TODO:
+func KeyMapCkToMemoChainPrefix(chainID string) []byte {
+	return append([]byte{KeyMapCkToMemoPrefix}, []byte(chainID)...)
+}
+
+// TODO:
+func KeyMapCcaToCkChainPrefix(chainID string) []byte {
+	return append([]byte{KeyMapCcaToCkPrefix}, []byte(chainID)...)
+}
+
+// TODO:
 func KeyMapPkToCkKey(chainID string, k keymap.ProviderPubKey) []byte {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
-	return AppendMany([]byte{KeyMapPkToCkPrefix}, []byte(chainID), kbz)
+	return append(KeyMapPkToCkChainPrefix(chainID), kbz...)
 }
 
 // TODO:
@@ -287,7 +307,7 @@ func KeyMapCkToPkKey(chainID string, k keymap.ConsumerPubKey) []byte {
 	if err != nil {
 		panic(err)
 	}
-	return AppendMany([]byte{KeyMapCkToPkPrefix}, []byte(chainID), kbz)
+	return append(KeyMapCkToPkChainPrefix(chainID), kbz...)
 }
 
 // TODO:
@@ -296,12 +316,12 @@ func KeyMapCkToMemoKey(chainID string, k keymap.ConsumerPubKey) []byte {
 	if err != nil {
 		panic(err)
 	}
-	return AppendMany([]byte{KeyMapCkToMemoPrefix}, []byte(chainID), kbz)
+	return append(KeyMapCkToMemoChainPrefix(chainID), kbz...)
 }
 
 // TODO:
 func KeyMapCcaToCkKey(chainID string, k keymap.StringifiedConsumerConsAddr) []byte {
-	return AppendMany([]byte{KeyMapCcaToCkPrefix}, []byte(chainID), []byte(k))
+	return append(KeyMapCcaToCkChainPrefix(chainID), []byte(k)...)
 }
 
 // AppendMany appends a variable number of byte slices together
