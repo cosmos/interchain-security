@@ -42,7 +42,7 @@ func (s *CCVTestSuite) TestRewardsDistribution() {
 	s.Require().Equal(sdk.NewInt(100).Add(feePoolTokensOld.AmountOf(sdk.DefaultBondDenom)), feePoolTokens.AmountOf(sdk.DefaultBondDenom))
 
 	//calculate the reward for consumer and provider chain. Consumer will receive ConsumerRedistributeFrac, the rest is going to provider
-	frac, err := sdk.NewDecFromStr(consumertypes.DefaultConsumerRedistributeFrac)
+	frac, err := sdk.NewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
 	s.Require().NoError(err)
 	consumerExpectedRewards, _ := sdk.NewDecCoinsFromCoins(feePoolTokens...).MulDec(frac).TruncateDecimal()
 	providerExpectedRewards := feePoolTokens.Sub(consumerExpectedRewards)
