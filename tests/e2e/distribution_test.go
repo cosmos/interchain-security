@@ -13,7 +13,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-//This test is valid for minimal viable consumer chain
+// This test is valid for minimal viable consumer chain
 func (s *CCVTestSuite) TestRewardsDistribution() {
 
 	//set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain

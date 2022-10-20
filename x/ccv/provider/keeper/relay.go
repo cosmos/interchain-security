@@ -308,7 +308,10 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 		if currentTime > ts {
 			// initTimeout expired:
 			// stop the consumer chain and unlock the unbonding
-			k.StopConsumerChain(ctx, chainID, false, true)
+			err := k.StopConsumerChain(ctx, chainID, false, true)
+			if err != nil {
+				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+			}
 			removedChainIds = append(removedChainIds, chainID)
 		}
 		return true
