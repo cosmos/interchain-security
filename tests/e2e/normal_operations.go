@@ -1,15 +1,14 @@
-package e2e_test
+package e2e
 
 import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 // Tests the tracking of historical info in the context of new blocks being committed
-func (k CCVTestSuite) TestTrackHistoricalInfo() {
-	consumerKeeper := k.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+func (k CCVTestSuite) TestHistoricalInfo() {
+	consumerKeeper := k.consumerApp.GetConsumerKeeper()
 	cCtx := k.consumerChain.GetContext
 
 	// save init consumer valset length
@@ -45,7 +44,7 @@ func (k CCVTestSuite) TestTrackHistoricalInfo() {
 				Height:  newHeight,
 			}
 			ctx := k.consumerChain.GetContext().WithBlockHeader(header)
-			k.consumerChain.App.(*appConsumer.App).ConsumerKeeper.TrackHistoricalInfo(ctx)
+			consumerKeeper.TrackHistoricalInfo(ctx)
 		},
 	}
 
