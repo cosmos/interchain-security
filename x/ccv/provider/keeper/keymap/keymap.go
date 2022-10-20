@@ -49,10 +49,9 @@ func consumerPubKeyToStringifiedConsumerConsAddr(ck ConsumerPubKey) StringifiedC
 type VSCID = uint64
 
 type Memo struct {
-	Ck  ConsumerPubKey
-	Pk  ProviderPubKey
-	Cca StringifiedConsumerConsAddr
-
+	Ck    ConsumerPubKey
+	Pk    ProviderPubKey
+	Cca   StringifiedConsumerConsAddr
 	Vscid VSCID
 	Power int64
 }
