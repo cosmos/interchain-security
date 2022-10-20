@@ -30,17 +30,15 @@ else
 fi
 
 # Build the Docker container
-if [[ "$PROVIDER_DIR_NAME" != "default" ] && [ "$CONSUMER_DIR_NAME" != "default" ]]
+if [ "$PROVIDER_DIR_NAME" != "default" ] && [ "$CONSUMER_DIR_NAME" != "default" ]
 then
-    # TODO: Build docker with arguments being directory names
+    printf "\n\nUsing custom provider and consumer\n\n\n"
     # TODO: Can "." argument be put in front like so? Before it was after flags  
     docker build . -t "$CONTAINER_NAME" --build-arg PROVIDER_DIR_NAME=$PROVIDER_DIR_NAME --build-arg CONSUMER_DIR_NAME=$CONSUMER_DIR_NAME 
-    printf "\n\nUsing custom provider and consumer\n\n\n"
 else
-    # TODO: Can you still build the container without the arguments? they may not be optional.
-    # You can just pass empty strings if needed, and check for values within dockerfile 
-    docker build -t "$CONTAINER_NAME" .
     printf "\n\nUsing default provider and consumer\n\n\n"
+    # TODO: Can you still build the container without the arguments? they may not be optional.
+    docker build -t "$CONTAINER_NAME" .
 fi
 
 # Remove copied sdk directory

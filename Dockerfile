@@ -14,6 +14,10 @@ WORKDIR /downloads
 ARG PROVIDER_DIR_NAME
 ARG CONSUMER_DIR_NAME
 
+# Args default to "." if not provided 
+RUN if [[ "$PROVIDER_DIR_NAME" != "." ]] ; then echo custom provider directory is $PROVIDER_DIR_NAME ; else echo using default provider directory; fi
+RUN if [[ "$CONSUMER_DIR_NAME" != "." ]] ; then echo custom consumer directory is $CONSUMER_DIR_NAME ; else echo using default consumer directory ; fi
+
 # TODO: At this point you have the directory names of consumer and provider,
 # Their directories have been copied into the workdir. Lastly, you need to 
 # change directories into each of the consumer and provider and call "make install"

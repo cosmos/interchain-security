@@ -18,9 +18,9 @@ var (
 	verbose      = flag.Bool("verbose", false, "turn verbose logging on/off")
 	localSdkPath = flag.String("local-sdk-path", "",
 		"path of a local sdk version to build and reference in integration tests")
-	providerDirLoc = flag.String("provider-dir-loc", "",
+	providerDirLoc = flag.String("prov-dir-loc", "",
 		"location to the provider directory with makefile included")
-	consumerDirLoc = flag.String("consumer-dir-loc", "",
+	consumerDirLoc = flag.String("cons-dir-loc", "",
 		"location to the consumer directory with makefile included")
 	provBinName = flag.String("prov-bin-name", "interchain-security-pd",
 		"name of provider binary")
@@ -35,9 +35,25 @@ var (
 // after building docker containers, all tests are run in parallel using their respective docker containers
 func main() {
 	flag.Parse()
+
+	// TODOs
+	// Confirm that running integration tests works without and without new flags
+	// Make sure that copied source code is eventually deleted
+
+	// Current cmd for testing:
+	// go run ./tests/integration/... --local-sdk-path "/Users/Shawn/Documents/cosmos-sdk/" --verbose --prov-dir-loc "/Users/Shawn/Documents/ibc-go" --cons-dir-loc "/Users/Shawn/Documents/ride"
+
+	// Remove!!
+	fmt.Println(*localSdkPath)
+	fmt.Println(*providerDirLoc)
+	fmt.Println(*consumerDirLoc)
+	fmt.Println(*provBinName)
+	fmt.Println(*consBinName)
+	fmt.Println(*democracyConsBinName)
+
 	binConfig := getBinConfigFromFlags()
-	copySourceCode(*providerDirLoc, binConfig.provBinName)
-	copySourceCode(*consumerDirLoc, binConfig.consBinName)
+	copySourceCode(*providerDirLoc, binConfig.providerDirName)
+	copySourceCode(*consumerDirLoc, binConfig.consumerDirName)
 
 	// wg waits for all runners to complete
 	var wg sync.WaitGroup
@@ -190,14 +206,14 @@ func getBinConfigFromFlags() binaryConfig {
 	}
 }
 
-// Copies custom source code for consumer and provider as specified
+// Copies custom source code for consumer and provider as specified into working dir
 func copySourceCode(dirLocation string, newDirName string) {
+	if dirLocation == "" {
+		return
+	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	bz, err := exec.Command("docker", "exec",
-		"cp", "-n", "-r",
-		dirLocation,
-		"./"+newDirName,
-	).CombinedOutput()
+	bz, err := exec.Command("cp", "-n", "-r", dirLocation, "./"+newDirName).CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
