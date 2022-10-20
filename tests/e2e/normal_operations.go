@@ -38,7 +38,8 @@ func (k CCVTestSuite) TestHistoricalInfo() {
 		createVal,
 		createVal,
 		func(k CCVTestSuite) {
-			newHeight := k.consumerChain.GetContext().BlockHeight() + int64(consumertypes.DefaultNumHistoricalEntries)
+			historicalEntries := k.consumerApp.GetConsumerKeeper().GetHistoricalEntries(k.consumerCtx())
+			newHeight := k.consumerChain.GetContext().BlockHeight() + historicalEntries
 			header := tmproto.Header{
 				ChainID: "HelloChain",
 				Height:  newHeight,
