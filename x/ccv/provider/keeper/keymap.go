@@ -141,10 +141,6 @@ func (s *KeyMapStore) GetCcaToCk() map[keymap.StringifiedConsumerConsAddr]keymap
 	return ret
 }
 
-func (k Keeper) addKeyMap(chainID ChainID) {
-
-}
-
 func (k Keeper) delKeyMap(chainID ChainID) {
 
 }
