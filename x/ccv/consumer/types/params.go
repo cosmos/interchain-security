@@ -6,6 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -21,8 +22,11 @@ const (
 	// decimal number. For example "0.75" would represent 75%.
 	DefaultConsumerRedistributeFrac = "0.75"
 
-	// Default number of historical info entries to persist in store
-	DefaultNumHistoricalEntries = 10000
+	// Default number of historical info entries to persist in store.
+	// We use the same default as the staking module, but use a signed integer
+	// so that negative values can be caught during parameter validation in a readable way,
+	// (and for consistency with other protobuf schemas defined for ccv).
+	DefaultHistoricalEntries = int64(stakingtypes.DefaultHistoricalEntries)
 )
 
 // Reflection based keys for params subspace
@@ -68,7 +72,7 @@ func DefaultParams() Params {
 		ccvtypes.DefaultCCVTimeoutPeriod,
 		DefaultTransferTimeoutPeriod,
 		DefaultConsumerRedistributeFrac,
-		DefaultNumHistoricalEntries,
+		DefaultHistoricalEntries,
 	)
 }
 

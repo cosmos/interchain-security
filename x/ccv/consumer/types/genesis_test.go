@@ -155,7 +155,7 @@ func TestValidateInitialGenesisState(t *testing.T) {
 					0, // CCV timeout period cannot be 0
 					types.DefaultTransferTimeoutPeriod,
 					types.DefaultConsumerRedistributeFrac,
-					types.DefaultNumHistoricalEntries,
+					types.DefaultHistoricalEntries,
 				)),
 			true,
 		},
@@ -283,7 +283,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 					0, // CCV timeout period cannot be 0
 					types.DefaultTransferTimeoutPeriod,
 					types.DefaultConsumerRedistributeFrac,
-					types.DefaultNumHistoricalEntries,
+					types.DefaultHistoricalEntries,
 				)),
 			true,
 		},
