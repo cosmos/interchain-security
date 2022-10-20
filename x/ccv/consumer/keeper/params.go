@@ -9,7 +9,7 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-// GetParams returns the paramset for the consumer module
+// GetParams returns the params for the consumer ccv module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.GetEnabled(ctx),
@@ -17,6 +17,9 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetDistributionTransmissionChannel(ctx),
 		k.GetProviderFeePoolAddrStr(ctx),
 		k.GetCCVTimeoutPeriod(ctx),
+		k.GetTransferTimeoutPeriod(ctx),
+		k.GetConsumerRedistributionFrac(ctx),
+		k.GetHistoricalEntries(ctx),
 	)
 }
 
@@ -62,9 +65,32 @@ func (k Keeper) SetProviderFeePoolAddrStr(ctx sdk.Context, addr string) {
 	k.paramStore.Set(ctx, types.KeyProviderFeePoolAddrStr, addr)
 }
 
-// GetCCVTimeoutPeriod returns the timeout period for sent ibc packets
+// GetCCVTimeoutPeriod returns the timeout period for sent ccv related ibc packets
 func (k Keeper) GetCCVTimeoutPeriod(ctx sdk.Context) time.Duration {
 	var p time.Duration
 	k.paramStore.Get(ctx, ccvtypes.KeyCCVTimeoutPeriod, &p)
 	return p
+}
+
+// GetTransferTimeoutPeriod returns the timeout period for sent transfer related ibc packets
+func (k Keeper) GetTransferTimeoutPeriod(ctx sdk.Context) time.Duration {
+	var p time.Duration
+	k.paramStore.Get(ctx, types.KeyTransferTimeoutPeriod, &p)
+	return p
+}
+
+// GetConsumerRedistributionFrac returns the fraction of tokens allocated to the consumer redistribution
+// address during distribution events. The fraction is a string representing a
+// decimal number. For example "0.75" would represent 75%.
+func (k Keeper) GetConsumerRedistributionFrac(ctx sdk.Context) string {
+	var str string
+	k.paramStore.Get(ctx, types.KeyConsumerRedistributionFrac, &str)
+	return str
+}
+
+// GetHistoricalEntries returns the number of historical info entries to persist in store
+func (k Keeper) GetHistoricalEntries(ctx sdk.Context) int64 {
+	var n int64
+	k.paramStore.Get(ctx, types.KeyHistoricalEntries, &n)
+	return n
 }

@@ -6,6 +6,7 @@ import (
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 )
@@ -16,13 +17,22 @@ func TestParams(t *testing.T) {
 	defer ctrl.Finish()
 	consumerKeeper.SetParams(ctx, types.DefaultParams())
 
-	expParams := types.NewParams(false, 1000, "", "", ccv.DefaultCCVTimeoutPeriod) // these are the default params, IBC suite independently sets enabled=true
+	expParams := types.NewParams(
+		false,
+		1000,
+		"",
+		"",
+		ccv.DefaultCCVTimeoutPeriod,
+		consumertypes.DefaultTransferTimeoutPeriod,
+		consumertypes.DefaultConsumerRedistributeFrac,
+		consumertypes.DefaultHistoricalEntries,
+	) // these are the default params, IBC suite independently sets enabled=true
 
 	params := consumerKeeper.GetParams(ctx)
 	require.Equal(t, expParams, params)
 
 	newParams := types.NewParams(false, 1000,
-		"channel-2", "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm", 7*24*time.Hour)
+		"channel-2", "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm", 7*24*time.Hour, 25*time.Hour, "0.5", 500)
 	consumerKeeper.SetParams(ctx, newParams)
 	params = consumerKeeper.GetParams(ctx)
 	require.Equal(t, newParams, params)
