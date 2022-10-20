@@ -40,6 +40,14 @@ type StringifiedProviderPubKey = string
 type StringifiedConsumerPubKey = string
 type StringifiedConsumerConsAddr = string
 
+func stringifyPubKey(k crypto.PublicKey) string {
+	bytes, err := k.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	return string(bytes)
+}
+
 func consumerPubKeyToStringifiedConsumerConsAddr(ck ConsumerPubKey) StringifiedConsumerConsAddr {
 	sdkCk, err := cryptocodec.FromTmProtoPublicKey(ck)
 	if err != nil {
@@ -106,17 +114,17 @@ func (e *KeyMap) SetAll() {
 // TODO:
 func (e *KeyMap) SetProviderKeyToConsumerKey(pk ProviderPubKey, ck ConsumerPubKey) error {
 	e.GetAll()
-	if _, ok := e.CkToPk[ck.String()]; ok {
+	if _, ok := e.CkToPk[stringifyPubKey(ck)]; ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
-	if _, ok := e.CkToMemo[ck.String()]; ok {
+	if _, ok := e.CkToMemo[stringifyPubKey(ck)]; ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
-	if oldCk, ok := e.PkToCk[pk.String()]; ok {
-		delete(e.CkToPk, oldCk.String())
+	if oldCk, ok := e.PkToCk[stringifyPubKey(pk)]; ok {
+		delete(e.CkToPk, stringifyPubKey(oldCk))
 	}
-	e.PkToCk[pk.String()] = ck
-	e.CkToPk[ck.String()] = pk
+	e.PkToCk[stringifyPubKey(pk)] = ck
+	e.CkToPk[stringifyPubKey(ck)] = pk
 	e.SetAll() // TODO: Try with defer
 	return nil
 }
@@ -126,9 +134,9 @@ func (e *KeyMap) SetProviderKeyToConsumerKey(pk ProviderPubKey, ck ConsumerPubKe
 // TODO: use found instead of error
 func (e *KeyMap) GetProviderPubKeyFromConsumerPubKey(ck ConsumerPubKey) (ProviderPubKey, error) {
 	e.GetAll()
-	if u, ok := e.CkToMemo[ck.String()]; ok {
+	if u, ok := e.CkToMemo[stringifyPubKey(ck)]; ok {
 		return u.Pk, nil
-	} else if pk, ok := e.CkToPk[ck.String()]; ok {
+	} else if pk, ok := e.CkToPk[stringifyPubKey(ck)]; ok {
 		return pk, nil
 	} else {
 		return crypto.PublicKey{}, errors.New("provider key not found for consumer key")
@@ -154,8 +162,8 @@ func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 		}
 	}
 	for _, ck := range toDel {
-		delete(e.CcaToCk, e.CkToMemo[ck.String()].Cca)
-		delete(e.CkToMemo, ck.String())
+		delete(e.CcaToCk, e.CkToMemo[stringifyPubKey(ck)].Cca)
+		delete(e.CkToMemo, stringifyPubKey(ck))
 	}
 	e.SetAll()
 }
@@ -190,8 +198,8 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 
 	// Grab provider keys where the assigned consumer key has changed
 	for oldCk, u := range e.CkToMemo {
-		if newCk, ok := e.PkToCk[u.Pk.String()]; ok {
-			if oldCk != newCk.String() && 0 < u.Power {
+		if newCk, ok := e.PkToCk[stringifyPubKey(u.Pk)]; ok {
+			if oldCk != stringifyPubKey(newCk) && 0 < u.Power {
 				pks = append(pks, u.Pk)
 			}
 		}
@@ -216,7 +224,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 				// For each provider key for which there was already a positive update
 				// create a deletion update for the associated consumer key.
 				cca := consumerPubKeyToStringifiedConsumerConsAddr(u.Ck)
-				e.CkToMemo[u.Ck.String()] = Memo{Ck: u.Ck, Pk: pk, Vscid: vscid, Power: 0, Cca: cca}
+				e.CkToMemo[stringifyPubKey(u.Ck)] = Memo{Ck: u.Ck, Pk: pk, Vscid: vscid, Power: 0, Cca: cca}
 				e.CcaToCk[cca] = u.Ck
 				ret[u.Ck] = 0
 			}
@@ -243,9 +251,9 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 		// Only ship update with positive powers. Zero power updates (deletions)
 		// are handled in earlier block.
 		if 0 < power {
-			ck := e.PkToCk[pk.String()]
+			ck := e.PkToCk[stringifyPubKey(pk)]
 			cca := consumerPubKeyToStringifiedConsumerConsAddr(ck)
-			e.CkToMemo[ck.String()] = Memo{Ck: ck, Pk: pk, Vscid: vscid, Power: power, Cca: cca}
+			e.CkToMemo[stringifyPubKey(ck)] = Memo{Ck: ck, Pk: pk, Vscid: vscid, Power: power, Cca: cca}
 			e.CcaToCk[cca] = ck
 			ret[ck] = power
 		}
@@ -275,7 +283,7 @@ func (e *KeyMap) internalInvariants() bool {
 		// all values of pkToCk is a key of ckToPk
 		// (reverse lookup is always possible)
 		for _, ck := range e.PkToCk {
-			if _, ok := e.CkToPk[ck.String()]; !ok {
+			if _, ok := e.CkToPk[stringifyPubKey(ck)]; !ok {
 				return false
 			}
 		}
@@ -288,7 +296,7 @@ func (e *KeyMap) internalInvariants() bool {
 		for ck := range e.CkToPk {
 			good := false
 			for _, candidateCk := range e.PkToCk {
-				if candidateCk.String() == ck {
+				if stringifyPubKey(candidateCk) == ck {
 					good = true
 					break
 				}
@@ -350,7 +358,7 @@ func (e *KeyMap) internalInvariants() bool {
 		// All entries in ccaToCk have a consumer pub key
 		// which is a key of ckToMemo
 		for cca, ck := range e.CcaToCk {
-			memo, found := e.CkToMemo[ck.String()]
+			memo, found := e.CkToMemo[stringifyPubKey(ck)]
 			if !found {
 				return false
 			}
