@@ -33,7 +33,7 @@ var (
 	KeyProviderFeePoolAddrStr            = []byte("ProviderFeePoolAddrStr")
 	KeyTransferTimeoutPeriod             = []byte("TransferTimeoutPeriod")
 	KeyConsumerRedistributionFrac        = []byte("ConsumerRedistributionFraction")
-	KeyNumHistoricalEntries              = []byte("NumHistoricalEntries")
+	KeyHistoricalEntries                 = []byte("HistoricalEntries")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -45,7 +45,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
 	ccvTimeoutPeriod time.Duration, transferTimeoutPeriod time.Duration,
-	consumerRedistributionFraction string, numHistoricalEntries int64) Params {
+	consumerRedistributionFraction string, historicalEntries int64) Params {
 	return Params{
 		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
@@ -54,7 +54,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
 		TransferTimeoutPeriod:             transferTimeoutPeriod,
 		ConsumerRedistributionFraction:    consumerRedistributionFraction,
-		NumHistoricalEntries:              numHistoricalEntries,
+		HistoricalEntries:                 historicalEntries,
 	}
 }
 
@@ -95,7 +95,7 @@ func (p Params) Validate() error {
 	if err := validateConsumerRedistributionFraction(p.ConsumerRedistributionFraction); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidatePositiveInt64(p.NumHistoricalEntries); err != nil {
+	if err := ccvtypes.ValidatePositiveInt64(p.HistoricalEntries); err != nil {
 		return err
 	}
 	return nil
@@ -117,8 +117,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.TransferTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyConsumerRedistributionFrac,
 			p.ConsumerRedistributionFraction, validateConsumerRedistributionFraction),
-		paramtypes.NewParamSetPair(KeyNumHistoricalEntries,
-			p.NumHistoricalEntries, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(KeyHistoricalEntries,
+			p.HistoricalEntries, ccvtypes.ValidatePositiveInt64),
 	}
 }
 

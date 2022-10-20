@@ -19,7 +19,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetCCVTimeoutPeriod(ctx),
 		k.GetTransferTimeoutPeriod(ctx),
 		k.GetConsumerRedistributionFrac(ctx),
-		k.GetNumHistoricalEntries(ctx),
+		k.GetHistoricalEntries(ctx),
 	)
 }
 
@@ -88,9 +88,9 @@ func (k Keeper) GetConsumerRedistributionFrac(ctx sdk.Context) string {
 	return str
 }
 
-// GetNumHistoricalEntries returns the number of historical info entries to persist in store
-func (k Keeper) GetNumHistoricalEntries(ctx sdk.Context) int64 {
+// GetHistoricalEntries returns the number of historical info entries to persist in store
+func (k Keeper) GetHistoricalEntries(ctx sdk.Context) int64 {
 	var n int64
-	k.paramStore.Get(ctx, types.KeyNumHistoricalEntries, &n)
+	k.paramStore.Get(ctx, types.KeyHistoricalEntries, &n)
 	return n
 }

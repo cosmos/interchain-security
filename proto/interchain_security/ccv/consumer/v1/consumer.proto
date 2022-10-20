@@ -43,8 +43,10 @@ message Params {
   // decimal number. For example "0.75" would represent 75%.
   string consumer_redistribution_fraction = 7;
 
-  // The number of historical info entries to persist in store
-  int64 num_historical_entries = 8;
+  // The number of historical info entries to persist in store.
+  // This param is a part of the cosmos sdk staking module. In the case of 
+  // a ccv enabled consumer chain, the ccv module acts as the staking module.
+  int64 historical_entries = 8;
 }
 
 // LastTransmissionBlockHeight is the last time validator holding
