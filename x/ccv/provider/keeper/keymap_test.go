@@ -14,16 +14,6 @@ import (
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
-func TestKeyMapLookupA(t *testing.T) {
-	keys := simapp.CreateTestPubKeys(1)
-	key, err := cryptocodec.ToTmProtoPublicKey(keys[0])
-	require.NoError(t, err)
-	m := map[crypto.PublicKey]int{}
-	m[key] = 42
-	_, ok := m[key]
-	require.True(t, ok)
-}
-
 func TestKeyMapLookupB(t *testing.T) {
 	keys := simapp.CreateTestPubKeys(1)
 	key, err := cryptocodec.ToTmProtoPublicKey(keys[0])
