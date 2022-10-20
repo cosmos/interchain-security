@@ -141,14 +141,6 @@ func (s *KeyMapStore) GetCcaToCk() map[keymap.StringifiedConsumerConsAddr]keymap
 	return ret
 }
 
-/*
-// SetPendingConsumerRemovalProp stores a pending proposal to remove and stop a consumer chain
-func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, chainID string, timestamp time.Time) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.PendingCRPKey(timestamp, chainID), []byte{})
-}
-*/
-
 func (k Keeper) addKeyMap(chainID ChainID) {
 
 }
