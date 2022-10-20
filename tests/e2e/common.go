@@ -1,13 +1,14 @@
-package e2e_test
+package e2e
 
 import (
 	"strings"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	"github.com/cosmos/interchain-security/testutil/e2e"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/stretchr/testify/require"
@@ -19,9 +20,6 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
 )
 
 // ChainType defines the type of chain (either provider or consumer)
@@ -41,22 +39,25 @@ func (s *CCVTestSuite) consumerCtx() sdk.Context {
 }
 
 func (s *CCVTestSuite) providerBondDenom() string {
-	return s.providerChain.App.(*appProvider.App).StakingKeeper.BondDenom(s.providerCtx())
+	return s.providerApp.GetE2eStakingKeeper().BondDenom(s.providerCtx())
 }
 
-func (s *CCVTestSuite) getVal(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {
+func (s *CCVTestSuite) getValByIdx(index int) (validator stakingtypes.Validator, valAddr sdk.ValAddress) {
 	// Choose a validator, and get its address and data structure into the correct types
 	tmValidator := s.providerChain.Vals.Validators[index]
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
 	s.Require().NoError(err)
-	validator, found := s.providerChain.App.(*appProvider.App).StakingKeeper.GetValidator(s.providerCtx(), valAddr)
-	s.Require().True(found)
+	return s.getVal(s.providerCtx(), valAddr), valAddr
+}
 
-	return validator, valAddr
+func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingtypes.Validator {
+	validator, found := s.providerApp.GetE2eStakingKeeper().GetValidator(s.providerCtx(), valAddr)
+	s.Require().True(found)
+	return validator
 }
 
 func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
-	return s.providerChain.App.(*appProvider.App).BankKeeper.GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
+	return s.providerApp.GetE2eBankKeeper().GetBalance(providerCtx, delAddr, s.providerBondDenom()).Amount
 }
 
 // delegateAndUndelegate delegates bondAmt from delAddr to the first validator
@@ -85,19 +86,17 @@ func delegateAndUndelegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.
 func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
 	srcValAddr sdk.ValAddress, dstValAddr sdk.ValAddress, amount sdk.Int) {
 
-	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
-
 	// Delegate to src validator
-	srcValTokensBefore := stakingKeeper.Validator(s.providerCtx(), srcValAddr).GetBondedTokens()
+	srcValTokensBefore := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
 	_, sharesDelegated, _ := delegate(s, delAddr, amount)
 
 	// Assert expected amount was bonded to src validator
-	srcValTokensAfter := stakingKeeper.Validator(s.providerCtx(), srcValAddr).GetBondedTokens()
+	srcValTokensAfter := s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens()
 	s.Require().Equal(srcValTokensAfter.Sub(srcValTokensBefore), amount)
 
 	s.providerChain.NextBlock()
 
-	dstValTokensBefore := stakingKeeper.Validator(s.providerCtx(), dstValAddr).GetBondedTokens()
+	dstValTokensBefore := s.getVal(s.providerCtx(), dstValAddr).GetBondedTokens()
 
 	// redelegate shares from src to dst validators
 	redelegate(s, delAddr,
@@ -107,20 +106,20 @@ func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
 	)
 
 	// Assert expected amount was delegated to dst val
-	dstValTokensAfter := stakingKeeper.Validator(s.providerCtx(), dstValAddr).GetBondedTokens()
+	dstValTokensAfter := s.getVal(s.providerCtx(), dstValAddr).GetBondedTokens()
 	s.Require().Equal(dstValTokensAfter.Sub(dstValTokensBefore), amount)
 
 	// Assert delegated tokens amount returned to original value for src validator
-	s.Require().Equal(srcValTokensBefore, stakingKeeper.Validator(s.providerCtx(), srcValAddr).GetBondedTokens())
+	s.Require().Equal(srcValTokensBefore, s.getVal(s.providerCtx(), srcValAddr).GetBondedTokens())
 }
 
 // delegate delegates bondAmt to the first validator
 func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBalance sdk.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
 	initBalance = getBalance(s, s.providerCtx(), delAddr)
 	// choose a validator
-	validator, valAddr := s.getVal(0)
+	validator, valAddr := s.getValByIdx(0)
 	// delegate bondAmt tokens on provider to change validator powers
-	shares, err := s.providerChain.App.(*appProvider.App).StakingKeeper.Delegate(
+	shares, err := s.providerApp.GetE2eStakingKeeper().Delegate(
 		s.providerCtx(),
 		delAddr,
 		bondAmt,
@@ -136,11 +135,11 @@ func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBal
 
 // undelegate unbonds an amount of delegator shares from a given validator
 func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (valsetUpdateId uint64) {
-	_, err := s.providerChain.App.(*appProvider.App).StakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, sharesAmount)
+	_, err := s.providerApp.GetE2eStakingKeeper().Undelegate(s.providerCtx(), delAddr, valAddr, sharesAmount)
 	s.Require().NoError(err)
 
 	// save the current valset update ID
-	valsetUpdateID := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	valsetUpdateID := s.providerApp.GetProviderKeeper().GetValidatorSetUpdateId(s.providerCtx())
 
 	return valsetUpdateID
 }
@@ -149,10 +148,12 @@ func undelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valAddr sdk.ValAddress,
 // on the provider chain using delegated funds from delAddr
 func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddress,
 	ValDstAddr sdk.ValAddress, sharesAmount sdk.Dec) {
+
+	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
 	ctx := s.providerCtx()
 
 	// delegate bondAmt tokens on provider to change validator powers
-	completionTime, err := s.providerChain.App.(*appProvider.App).StakingKeeper.BeginRedelegation(
+	completionTime, err := stakingKeeper.BeginRedelegation(
 		ctx,
 		delAddr,
 		valSrcAddr,
@@ -161,7 +162,6 @@ func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddre
 	)
 	s.Require().NoError(err)
 
-	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
 	providerUnbondingPeriod := stakingKeeper.UnbondingTime(ctx)
 
 	valSrc, found := stakingKeeper.GetValidator(ctx, valSrcAddr)
@@ -214,8 +214,8 @@ func relayAllCommittedPackets(
 // to be one day larger than the consumer unbonding period.
 func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	// Get unboding period from staking keeper
-	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
-	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerCtx())
+	providerUnbondingPeriod := s.providerApp.GetStakingKeeper().UnbondingTime(s.providerCtx())
+	consumerUnbondingPeriod, found := s.consumerApp.GetConsumerKeeper().GetUnbondingTime(s.consumerCtx())
 	s.Require().True(found)
 	expectedUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
 	s.Require().Equal(expectedUnbondingPeriod+24*time.Hour, providerUnbondingPeriod, "unexpected provider unbonding period")
@@ -240,13 +240,13 @@ func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 }
 
 func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold bool) {
-	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerChain.App.(*appProvider.App).StakingKeeper, id)
+	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerApp.GetE2eStakingKeeper(), id)
 	s.Require().True(found == wasFound)
 	s.Require().True(onHold == (0 < stakingUnbondingOp.UnbondingOnHoldRefCount))
 }
 
 func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool) {
-	entries, wasFound := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
+	entries, wasFound := s.providerApp.GetProviderKeeper().GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
 	s.Require().True(found == wasFound)
 	if found {
 		s.Require().True(len(entries) > 0, "No unbonding ops found")
@@ -260,8 +260,7 @@ func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID strin
 func checkRedelegations(s *CCVTestSuite, delAddr sdk.AccAddress,
 	expect uint16) []stakingtypes.Redelegation {
 
-	redelegations := s.providerChain.App.(*appProvider.App).StakingKeeper.
-		GetRedelegations(s.providerCtx(), delAddr, 2)
+	redelegations := s.providerApp.GetE2eStakingKeeper().GetRedelegations(s.providerCtx(), delAddr, 2)
 
 	s.Require().Len(redelegations, int(expect))
 	return redelegations
@@ -273,7 +272,7 @@ func checkRedelegationEntryCompletionTime(
 	s.Require().Equal(expectedCompletion, entry.CompletionTime)
 }
 
-func getStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
+func getStakingUnbondingDelegationEntry(ctx sdk.Context, k e2e.E2eStakingKeeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
 	stakingUbd, found := k.GetUnbondingDelegationByUnbondingId(ctx, id)
 
 	for _, entry := range stakingUbd.Entries {
@@ -290,7 +289,7 @@ func getStakingUnbondingDelegationEntry(ctx sdk.Context, k stakingkeeper.Keeper,
 // SendEmptyVSCPacket sends a VSC packet without any changes
 // to ensure that the channel gets established
 func (suite *CCVTestSuite) SendEmptyVSCPacket() {
-	providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
+	providerKeeper := suite.providerApp.GetProviderKeeper()
 
 	oldBlockTime := suite.providerChain.GetContext().BlockTime()
 	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
@@ -303,7 +302,7 @@ func (suite *CCVTestSuite) SendEmptyVSCPacket() {
 		nil,
 	)
 
-	seq, ok := suite.providerChain.App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
+	seq, ok := suite.providerApp.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
 		suite.providerChain.GetContext(), ccv.ProviderPortID, suite.path.EndpointB.ChannelID)
 	suite.Require().True(ok)
 
@@ -331,10 +330,11 @@ func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.Sla
 // incrementTimeBy increments the overall time by jumpPeriod
 func incrementTimeBy(s *CCVTestSuite, jumpPeriod time.Duration) {
 	// Get unboding period from staking keeper
-	consumerUnbondingPeriod, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetUnbondingTime(s.consumerChain.GetContext())
+	consumerUnbondingPeriod, found := s.consumerApp.GetConsumerKeeper().GetUnbondingTime(s.consumerChain.GetContext())
 	s.Require().True(found)
 	split := 1
-	if jumpPeriod > consumerUnbondingPeriod/utils.TrustingPeriodFraction {
+	trustingPeriodFraction := s.providerApp.GetProviderKeeper().GetTrustingPeriodFraction(s.providerCtx())
+	if jumpPeriod > consumerUnbondingPeriod/time.Duration(trustingPeriodFraction) {
 		// Make sure the clients do not expire
 		split = 4
 		jumpPeriod = jumpPeriod / 4
@@ -350,8 +350,6 @@ func incrementTimeBy(s *CCVTestSuite, jumpPeriod time.Duration) {
 	}
 }
 
-// TODO: The two CreateCustomClient methods below can be consolidated when test suite structures are consolidated
-
 // CreateCustomClient creates an IBC client on the endpoint
 // using the given unbonding period.
 // It will update the clientID for the endpoint if the message
@@ -365,7 +363,7 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	tmConfig, ok := endpoint.ClientConfig.(*ibctesting.TendermintConfig)
 	require.True(endpoint.Chain.T, ok)
 	tmConfig.UnbondingPeriod = unbondingPeriod
-	tmConfig.TrustingPeriod = unbondingPeriod / utils.TrustingPeriodFraction
+	tmConfig.TrustingPeriod = unbondingPeriod / providertypes.DefaultTrustingPeriodFraction
 
 	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}

@@ -1,15 +1,14 @@
-package e2e_test
+package e2e
 
 import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 // Tests the tracking of historical info in the context of new blocks being committed
-func (k CCVTestSuite) TestTrackHistoricalInfo() {
-	consumerKeeper := k.consumerChain.App.(*appConsumer.App).ConsumerKeeper
+func (k CCVTestSuite) TestHistoricalInfo() {
+	consumerKeeper := k.consumerApp.GetConsumerKeeper()
 	cCtx := k.consumerChain.GetContext
 
 	// save init consumer valset length
@@ -22,7 +21,7 @@ func (k CCVTestSuite) TestTrackHistoricalInfo() {
 	createVal := func(k CCVTestSuite) {
 		// add new validator to consumer states
 		pk := ed25519.GenPrivKey().PubKey()
-		cVal, err := types.NewCCValidator(pk.Address(), int64(1), pk)
+		cVal, err := consumertypes.NewCCValidator(pk.Address(), int64(1), pk)
 		k.Require().NoError(err)
 
 		consumerKeeper.SetCCValidator(k.consumerChain.GetContext(), cVal)
@@ -39,13 +38,14 @@ func (k CCVTestSuite) TestTrackHistoricalInfo() {
 		createVal,
 		createVal,
 		func(k CCVTestSuite) {
-			newHeight := k.consumerChain.GetContext().BlockHeight() + int64(types.HistoricalEntries)
+			historicalEntries := k.consumerApp.GetConsumerKeeper().GetHistoricalEntries(k.consumerCtx())
+			newHeight := k.consumerChain.GetContext().BlockHeight() + historicalEntries
 			header := tmproto.Header{
 				ChainID: "HelloChain",
 				Height:  newHeight,
 			}
 			ctx := k.consumerChain.GetContext().WithBlockHeader(header)
-			k.consumerChain.App.(*appConsumer.App).ConsumerKeeper.TrackHistoricalInfo(ctx)
+			consumerKeeper.TrackHistoricalInfo(ctx)
 		},
 	}
 
@@ -71,7 +71,7 @@ func (k CCVTestSuite) TestTrackHistoricalInfo() {
 			expLen: 0,
 		},
 		{
-			height: initHeight + int64(types.HistoricalEntries) + 2,
+			height: initHeight + int64(consumertypes.DefaultHistoricalEntries) + 2,
 			found:  true,
 			expLen: initValsetLen + 2,
 		},
