@@ -1,4 +1,4 @@
-package e2e_test
+package e2e
 
 import (
 	"fmt"
@@ -11,16 +11,12 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer-democracy"
-	"github.com/cosmos/interchain-security/testutil/simapp"
+	"github.com/cosmos/interchain-security/testutil/e2e"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-
 	"github.com/stretchr/testify/suite"
 )
 
@@ -29,28 +25,41 @@ var consumerFraction, _ = sdk.NewDecFromStr(consumertypes.DefaultConsumerRedistr
 type ConsumerDemocracyTestSuite struct {
 	suite.Suite
 	coordinator   *ibctesting.Coordinator
-	providerChain *ibctesting.TestChain
 	consumerChain *ibctesting.TestChain
+	consumerApp   e2e.DemocConsumerApp
+	setupCallback DemocSetupCallback
 }
 
-// SetupTest sets up in-mem state for the group of tests relevant to ccv with a democracy consumer
-// TODO: Make this method more generalizable to be called by any provider/consumer implementation
-func (democSuite *ConsumerDemocracyTestSuite) SetupTest() {
-	democSuite.coordinator, democSuite.providerChain,
-		democSuite.consumerChain = simapp.NewProviderConsumerDemocracyCoordinator(democSuite.T())
+// NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite,
+// ready to be tested against using suite.Run().
+func NewConsumerDemocracyTestSuite(setupCallback DemocSetupCallback) *ConsumerDemocracyTestSuite {
+	democSuite := new(ConsumerDemocracyTestSuite)
+	democSuite.setupCallback = setupCallback
+	return democSuite
 }
 
-func TestConsumerDemocracyTestSuite(t *testing.T) {
-	suite.Run(t, new(ConsumerDemocracyTestSuite))
+// Callback for instantiating a new coordinator, consumer test chain, and consumer app
+// before every test defined on the suite.
+type DemocSetupCallback func(t *testing.T) (
+	coord *ibctesting.Coordinator,
+	consumerChain *ibctesting.TestChain,
+	consumerApp e2e.DemocConsumerApp,
+)
+
+// SetupTest sets up in-mem state before every test relevant to ccv with a democracy consumer
+func (suite *ConsumerDemocracyTestSuite) SetupTest() {
+	// Instantiate new test utils using callback
+	suite.coordinator, suite.consumerChain,
+		suite.consumerApp = suite.setupCallback(suite.T())
 }
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 
 	s.consumerChain.NextBlock()
-	stakingKeeper := s.consumerChain.App.(*appConsumer.App).StakingKeeper
-	authKeeper := s.consumerChain.App.(*appConsumer.App).AccountKeeper
-	distrKeeper := s.consumerChain.App.(*appConsumer.App).DistrKeeper
-	bankKeeper := s.consumerChain.App.(*appConsumer.App).BankKeeper
+	stakingKeeper := s.consumerApp.GetE2eStakingKeeper()
+	accountKeeper := s.consumerApp.GetE2eAccountKeeper()
+	distrKeeper := s.consumerApp.GetE2eDistributionKeeper()
+	bankKeeper := s.consumerApp.GetE2eBankKeeper()
 	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
 
 	currentRepresentativesRewards := map[string]sdk.Dec{}
@@ -64,7 +73,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 	}
 
 	distrModuleAccount := distrKeeper.GetDistributionAccount(s.consumerCtx())
-	providerRedistributeAccount := authKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName)
+	providerRedistributeAccount := accountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName)
 	//balance of consumer redistribute address will always be 0 when checked between 2 NextBlock() calls
 
 	currentDistrModuleAccountBalance := sdk.NewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
@@ -117,11 +126,11 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 }
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
-	govKeeper := s.consumerChain.App.(*appConsumer.App).GovKeeper
-	stakingKeeper := s.consumerChain.App.(*appConsumer.App).StakingKeeper
-	bankKeeper := s.consumerChain.App.(*appConsumer.App).BankKeeper
-	authKeeper := s.consumerChain.App.(*appConsumer.App).AccountKeeper
-	mintKeeper := s.consumerChain.App.(*appConsumer.App).MintKeeper
+	govKeeper := s.consumerApp.GetE2eGovKeeper()
+	stakingKeeper := s.consumerApp.GetE2eStakingKeeper()
+	bankKeeper := s.consumerApp.GetE2eBankKeeper()
+	accountKeeper := s.consumerApp.GetE2eAccountKeeper()
+	mintKeeper := s.consumerApp.GetE2eMintKeeper()
 	newAuthParamValue := uint64(128)
 	newMintParamValue := sdk.NewDecWithPrec(1, 1) // "0.100000000000000000"
 	allowedChange := proposal.ParamChange{Subspace: minttypes.ModuleName, Key: "InflationMax", Value: fmt.Sprintf("\"%s\"", newMintParamValue)}
@@ -144,11 +153,11 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(votingParams.VotingPeriod)
 	s.consumerChain.NextBlock()
 	//at this moment, proposal is added, but not yet executed. we are saving old param values for comparison
-	oldAuthParamValue := authKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
+	oldAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
 	oldMintParamValue := mintKeeper.GetParams(s.consumerCtx()).InflationMax
 	s.consumerChain.NextBlock()
 	//at this moment, proposal is executed or deleted if forbidden
-	currentAuthParamValue := authKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
+	currentAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
 	currentMintParamValue := mintKeeper.GetParams(s.consumerCtx()).InflationMax
 	//check that parameters are not changed, since the proposal contained both forbidden and allowed changes
 	s.Assert().Equal(oldAuthParamValue, currentAuthParamValue)
@@ -179,9 +188,9 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().NoError(err)
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(votingParams.VotingPeriod)
 	s.consumerChain.NextBlock()
-	oldAuthParamValue = authKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
+	oldAuthParamValue = accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
 	s.consumerChain.NextBlock()
-	currentAuthParamValue = authKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
+	currentAuthParamValue = accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
 	//check that parameters are not changed, since the proposal contained forbidden changes
 	s.Assert().Equal(oldAuthParamValue, currentAuthParamValue)
 	s.Assert().NotEqual(newAuthParamValue, currentAuthParamValue)
@@ -189,7 +198,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
-func submitProposalWithDepositAndVote(govKeeper govkeeper.Keeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
+func submitProposalWithDepositAndVote(govKeeper e2e.E2eGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
 	accounts []ibctesting.SenderAccount, depositAmount sdk.Coins) error {
 	proposal, err := govKeeper.SubmitProposal(ctx, &paramChange)
 	if err != nil {
@@ -209,7 +218,7 @@ func submitProposalWithDepositAndVote(govKeeper govkeeper.Keeper, ctx sdk.Contex
 	return nil
 }
 
-func getAccountsBalances(ctx sdk.Context, bankKeeper bankkeeper.Keeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]sdk.Int {
+func getAccountsBalances(ctx sdk.Context, bankKeeper e2e.E2eBankKeeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]sdk.Int {
 	accountsBalances := map[string]sdk.Int{}
 	for _, acc := range accounts {
 		accountsBalances[string(acc.SenderAccount.GetAddress())] =
