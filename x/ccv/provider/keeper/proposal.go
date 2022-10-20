@@ -14,7 +14,6 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -46,22 +45,24 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 //
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
 // Spec tag: [CCV-PCF-CRCLIENT.1]
-func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
+func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
+	initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
+
 	// check that a client for this chain does not exist
 	if _, found := k.GetConsumerClientId(ctx, chainID); found {
 		// drop the proposal
 		return nil
 	}
 
-	// Use the unbonding period on the provider to compute the unbonding period on the consumer
-	unbondingPeriod := utils.ComputeConsumerUnbondingPeriod(k.stakingKeeper.UnbondingTime(ctx))
+	// Consumers always start out with the default unbonding period
+	consumerUnbondingPeriod := consumertypes.DefaultConsumerUnbondingPeriod
 
 	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = chainID
 	clientState.LatestHeight = initialHeight
-	clientState.TrustingPeriod = unbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
-	clientState.UnbondingPeriod = unbondingPeriod
+	clientState.TrustingPeriod = consumerUnbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
+	clientState.UnbondingPeriod = consumerUnbondingPeriod
 
 	// TODO: Allow for current validators to set different keys
 	consensusState := ibctmtypes.NewConsensusState(
@@ -190,14 +191,14 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 
 // MakeConsumerGenesis constructs a consumer genesis state.
 func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisState, err error) {
-	unbondingTime := k.stakingKeeper.UnbondingTime(ctx)
+	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
 
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = ctx.ChainID()
 	clientState.LatestHeight = height //(+-1???)
-	clientState.TrustingPeriod = unbondingTime / time.Duration(k.GetTrustingPeriodFraction(ctx))
-	clientState.UnbondingPeriod = unbondingTime
+	clientState.TrustingPeriod = providerUnbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
+	clientState.UnbondingPeriod = providerUnbondingPeriod
 
 	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
 	if err != nil {

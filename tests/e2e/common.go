@@ -215,8 +215,7 @@ func relayAllCommittedPackets(
 func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	// Get unboding period from staking keeper
 	providerUnbondingPeriod := s.providerApp.GetStakingKeeper().UnbondingTime(s.providerCtx())
-	consumerUnbondingPeriod, found := s.consumerApp.GetConsumerKeeper().GetUnbondingTime(s.consumerCtx())
-	s.Require().True(found)
+	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerCtx())
 	expectedUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
 	s.Require().Equal(expectedUnbondingPeriod+24*time.Hour, providerUnbondingPeriod, "unexpected provider unbonding period")
 	s.Require().Equal(expectedUnbondingPeriod, consumerUnbondingPeriod, "unexpected consumer unbonding period")
@@ -330,8 +329,7 @@ func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.Sla
 // incrementTimeBy increments the overall time by jumpPeriod
 func incrementTimeBy(s *CCVTestSuite, jumpPeriod time.Duration) {
 	// Get unboding period from staking keeper
-	consumerUnbondingPeriod, found := s.consumerApp.GetConsumerKeeper().GetUnbondingTime(s.consumerChain.GetContext())
-	s.Require().True(found)
+	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerChain.GetContext())
 	split := 1
 	trustingPeriodFraction := s.providerApp.GetProviderKeeper().GetTrustingPeriodFraction(s.providerCtx())
 	if jumpPeriod > consumerUnbondingPeriod/time.Duration(trustingPeriodFraction) {

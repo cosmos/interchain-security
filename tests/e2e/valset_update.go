@@ -99,8 +99,7 @@ func (suite *CCVTestSuite) TestSendVSCMaturedPackets() {
 	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
 	// increase time such that first two packets are unbonded but third is not.
-	unbondingPeriod, found := consumerKeeper.GetUnbondingTime(suite.consumerChain.GetContext())
-	suite.Require().True(found)
+	unbondingPeriod := consumerKeeper.GetUnbondingPeriod(suite.consumerChain.GetContext())
 	// increase time
 	incrementTimeBy(suite, unbondingPeriod-time.Hour)
 
