@@ -992,5 +992,5 @@ func (tr TestRun) invokeDoublesignSlash(
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
-	tr.waitBlocks("provi", 3, time.Minute)
+	tr.waitBlocks("provi", 6, time.Minute)
 }

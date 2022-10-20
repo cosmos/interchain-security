@@ -27,28 +27,21 @@ func main() {
 	var wg sync.WaitGroup
 
 	start := time.Now()
-	// tr := DoubleSignTestRun()
-	// tr.SetLocalSDKPath(*localSdkPath)
-	// tr.ValidateStringLiterals()
-	// tr.startDocker()
-
-	// wg.Add(1)
-	// tr.ExecuteSteps(&wg, doubleSignSteps)
 	tr := DefaultTestRun()
 	tr.SetLocalSDKPath(*localSdkPath)
 	tr.ValidateStringLiterals()
 	tr.startDocker()
 
-	// dmc := DemocracyTestRun()
-	// dmc.SetLocalSDKPath(*localSdkPath)
-	// dmc.ValidateStringLiterals()
-	// dmc.startDocker()
+	dmc := DemocracyTestRun()
+	dmc.SetLocalSDKPath(*localSdkPath)
+	dmc.ValidateStringLiterals()
+	dmc.startDocker()
 
 	wg.Add(1)
-	go tr.ExecuteSteps(&wg, stepsDoubleSign("consu", "provi", "carol"))
+	go tr.ExecuteSteps(&wg, happyPathSteps)
 
-	// wg.Add(1)
-	// go dmc.ExecuteSteps(&wg, democracySteps)
+	wg.Add(1)
+	go dmc.ExecuteSteps(&wg, democracySteps)
 
 	wg.Wait()
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
@@ -120,7 +113,8 @@ func (tr *TestRun) ExecuteSteps(wg *sync.WaitGroup, steps []Step) {
 	start := time.Now()
 	for i, step := range steps {
 		// print something the show the test is alive
-		fmt.Printf("running %s: step %d == %s \n", tr.name, i+1, reflect.TypeOf(step.action).Name())
+		fmt.Printf("running %s: step %d == %s \n",
+			tr.name, i+1, reflect.TypeOf(step.action).Name())
 		tr.runStep(step, *verbose)
 	}
 
