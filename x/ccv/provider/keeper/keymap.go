@@ -7,9 +7,67 @@ import (
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
+// TODO: use sdk prefix store instead
 type KeyMapStore struct {
 	Store   sdk.KVStore
 	ChainID ChainID
+}
+
+func (s *KeyMapStore) SetPkToCk(pkToCk map[keymap.ProviderPubKey]keymap.ConsumerPubKey) {
+	for k, v := range pkToCk {
+		kbz, err := k.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		vbz, err := v.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		s.Store.Set(types.KeyMapPkToCkKey(s.ChainID, kbz), vbz)
+	}
+}
+func (s *KeyMapStore) SetCkToPk(ckToPk map[keymap.ConsumerPubKey]keymap.ProviderPubKey) {
+	for k, v := range ckToPk {
+		kbz, err := k.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		bz, err := v.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		s.Store.Set(types.KeyMapCkToPkKey(s.ChainID, kbz), bz)
+	}
+}
+func (s *KeyMapStore) SetCkToMemo(ckToMemo map[keymap.ConsumerPubKey]keymap.Memo) {
+	m := ccvtypes.Memo{}
+	for k, v := range ckToMemo {
+		kbz, err := k.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		// TODO: get rid of this hack. Not even sure if it works.
+		m.Ck = &v.Ck
+		m.Pk = &v.Pk
+		m.Cca = v.Cca
+		m.Vscid = v.Vscid
+		m.Power = v.Power
+		vbz, err := m.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		s.Store.Set(types.KeyMapCkToMemoKey(s.ChainID, kbz), vbz)
+	}
+}
+func (s *KeyMapStore) SetCcaToCk(ccaToCk map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey) {
+	for k, v := range ccaToCk {
+		kbz := []byte(k)
+		bz, err := v.Marshal()
+		if err != nil {
+			panic(err)
+		}
+		s.Store.Set(types.KeyMapCcaToCkKey(s.ChainID, kbz), bz)
+	}
 }
 
 func (s *KeyMapStore) GetPkToCk() map[keymap.ProviderPubKey]keymap.ConsumerPubKey {
@@ -100,49 +158,6 @@ func (s *KeyMapStore) GetCcaToCk() map[keymap.StringifiedConsumerConsAddr]keymap
 
 	}
 	return ret
-}
-func (s *KeyMapStore) SetPkToCk(pkToCk map[keymap.ProviderPubKey]keymap.ConsumerPubKey) {
-	for k, v := range pkToCk {
-		bz, err := v.Marshal()
-		if err != nil {
-			panic(err)
-		}
-		s.Store.Set(types.KeyMapPkToCkKey(s.ChainID, k), bz)
-	}
-}
-func (s *KeyMapStore) SetCkToPk(ckToPk map[keymap.ConsumerPubKey]keymap.ProviderPubKey) {
-	for k, v := range ckToPk {
-		bz, err := v.Marshal()
-		if err != nil {
-			panic(err)
-		}
-		s.Store.Set(types.KeyMapCkToPkKey(s.ChainID, k), bz)
-	}
-}
-func (s *KeyMapStore) SetCkToMemo(ckToMemo map[keymap.ConsumerPubKey]keymap.Memo) {
-	m := ccvtypes.Memo{}
-	for k, v := range ckToMemo {
-		// TODO: get rid of this hack. Not even sure if it works.
-		m.Ck = &v.Ck
-		m.Pk = &v.Pk
-		m.Cca = v.Cca
-		m.Vscid = v.Vscid
-		m.Power = v.Power
-		bz, err := m.Marshal()
-		if err != nil {
-			panic(err)
-		}
-		s.Store.Set(types.KeyMapCkToMemoKey(s.ChainID, k), bz)
-	}
-}
-func (s *KeyMapStore) SetCcaToCk(ccaToCk map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey) {
-	for k, v := range ccaToCk {
-		bz, err := v.Marshal()
-		if err != nil {
-			panic(err)
-		}
-		s.Store.Set(types.KeyMapCcaToCkKey(s.ChainID, k), bz)
-	}
 }
 
 /*

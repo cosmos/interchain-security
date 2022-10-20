@@ -9,7 +9,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper/keymap"
 )
 
 type Status int
@@ -293,35 +292,23 @@ func KeyMapCcaToCkChainPrefix(chainID string) []byte {
 }
 
 // TODO:
-func KeyMapPkToCkKey(chainID string, k keymap.ProviderPubKey) []byte {
-	kbz, err := k.Marshal()
-	if err != nil {
-		panic(err)
-	}
+func KeyMapPkToCkKey(chainID string, kbz []byte) []byte {
 	return append(KeyMapPkToCkChainPrefix(chainID), kbz...)
 }
 
 // TODO:
-func KeyMapCkToPkKey(chainID string, k keymap.ConsumerPubKey) []byte {
-	kbz, err := k.Marshal()
-	if err != nil {
-		panic(err)
-	}
+func KeyMapCkToPkKey(chainID string, kbz []byte) []byte {
 	return append(KeyMapCkToPkChainPrefix(chainID), kbz...)
 }
 
 // TODO:
-func KeyMapCkToMemoKey(chainID string, k keymap.ConsumerPubKey) []byte {
-	kbz, err := k.Marshal()
-	if err != nil {
-		panic(err)
-	}
+func KeyMapCkToMemoKey(chainID string, kbz []byte) []byte {
 	return append(KeyMapCkToMemoChainPrefix(chainID), kbz...)
 }
 
 // TODO:
-func KeyMapCcaToCkKey(chainID string, k keymap.StringifiedConsumerConsAddr) []byte {
-	return append(KeyMapCcaToCkChainPrefix(chainID), []byte(k)...)
+func KeyMapCcaToCkKey(chainID string, kbz []byte) []byte {
+	return append(KeyMapCcaToCkChainPrefix(chainID), kbz...)
 }
 
 // AppendMany appends a variable number of byte slices together

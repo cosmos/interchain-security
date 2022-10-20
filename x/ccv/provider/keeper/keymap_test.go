@@ -13,6 +13,44 @@ import (
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
+func TestKeyBasic(t *testing.T) {
+	keys := simapp.CreateTestPubKeys(1)
+	kWrite, err := cryptocodec.ToTmProtoPublicKey(keys[0])
+	if err != nil {
+		panic("could not create tendermint test keys")
+	}
+	bz, err := kWrite.Marshal()
+	require.NoError(t, err)
+	kRead := crypto.PublicKey{}
+	err = kRead.Unmarshal(bz)
+	require.NoError(t, err)
+	require.Equal(t, kWrite, kRead)
+}
+
+func TestKeyBasicWithStore(t *testing.T) {
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	_, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	defer ctrl.Finish()
+	store := ctx.KVStore(keeperParams.StoreKey)
+
+	keys := simapp.CreateTestPubKeys(1)
+	kWrite, err := cryptocodec.ToTmProtoPublicKey(keys[0])
+	if err != nil {
+		panic("could not create tendermint test keys")
+	}
+	bzWrite, err := kWrite.Marshal()
+	require.NoError(t, err)
+
+	storeKey := []byte{42}
+	store.Set(storeKey, bzWrite)
+	bzRead := store.Get(storeKey)
+
+	kRead := crypto.PublicKey{}
+	err = kRead.Unmarshal(bzRead)
+	require.NoError(t, err)
+	require.Equal(t, kWrite, kRead)
+}
+
 func TestKeyMapLoadEmpty(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	_, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
