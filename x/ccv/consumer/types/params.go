@@ -14,7 +14,12 @@ const (
 	// about 2 hr at 7.6 seconds per blocks
 	DefaultBlocksPerDistributionTransmission = 1000
 
-	// 1 week
+	// Default transfer timeout period is 1 hour, less than the default blocks
+	// per dist transmission * average block time.
+	// Since IBC token transfers do not have to be in order, it could be easier
+	// to reason about the distribution protocol if the previous reward times out
+	// before sending the next one. Note that on timeout, the transferred funds are
+	// added back to the pool, so the next transfer will include them as well.
 	DefaultTransferTimeoutPeriod = time.Hour
 
 	// The default fraction of tokens allocated to the consumer redistribution address
