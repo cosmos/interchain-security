@@ -68,14 +68,9 @@ func (s *KeyMapStore) GetPkToCk() map[keymap.StringifiedProviderPubKey]keymap.Co
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-
-		k := keymap.ProviderPubKey{}
-		err := k.Unmarshal(iterator.Key()[len(prefix):])
-		if err != nil {
-			panic(err)
-		}
+		k := string(iterator.Key()[len(prefix):])
 		v := keymap.ConsumerPubKey{}
-		err = v.Unmarshal(iterator.Value())
+		err := v.Unmarshal(iterator.Value())
 		if err != nil {
 			panic(err)
 		}
@@ -91,14 +86,9 @@ func (s *KeyMapStore) GetCkToPk() map[keymap.StringifiedConsumerPubKey]keymap.Pr
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-
-		k := keymap.ConsumerPubKey{}
-		err := k.Unmarshal(iterator.Key()[len(prefix):])
-		if err != nil {
-			panic(err)
-		}
+		k := string(iterator.Key()[len(prefix):])
 		v := keymap.ConsumerPubKey{}
-		err = v.Unmarshal(iterator.Value())
+		err := v.Unmarshal(iterator.Value())
 		if err != nil {
 			panic(err)
 		}
@@ -115,14 +105,10 @@ func (s *KeyMapStore) GetCkToMemo() map[keymap.StringifiedConsumerPubKey]keymap.
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 
-		k := keymap.ConsumerPubKey{}
-		err := k.Unmarshal(iterator.Key()[len(prefix):])
-		if err != nil {
-			panic(err)
-		}
+		k := string(iterator.Key()[len(prefix):])
 		v := keymap.Memo{}
 		m := ccvtypes.Memo{}
-		err = m.Unmarshal(iterator.Value())
+		err := m.Unmarshal(iterator.Value())
 		if err != nil {
 			panic(err)
 		}

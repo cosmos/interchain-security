@@ -293,7 +293,7 @@ func (d *driver) externalInvariants() {
 		// Check that the two validator sets match exactly.
 		require.Equal(d.t, len(pSet), len(cSetLikePSet))
 		for pk, expectedPower := range pSet {
-			actualPower := cSetLikePSet[pk.String()]
+			actualPower := cSetLikePSet[stringifyPubKey(pk)]
 			require.Equal(d.t, expectedPower, actualPower)
 		}
 	}
@@ -331,7 +331,7 @@ func (d *driver) externalInvariants() {
 				if ck == ck_TRUE {
 					// Then the provider key returned by the query must be exactly
 					// the same one as was actually mapped to.
-					require.Equal(d.t, pk_TRUE, pkQueried)
+					require.Equal(d.t, pk_TRUE, stringifyPubKey(pkQueried))
 				}
 			}
 			// Check that the comparison was actually made, and that the test
