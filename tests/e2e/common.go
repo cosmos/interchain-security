@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/e2e"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
@@ -239,7 +238,8 @@ func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 }
 
 func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold bool, msgAndArgs ...interface{}) {
-	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerChain.App.(*appProvider.App).StakingKeeper, id)
+	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), providerStakingKeeper, id)
 	s.Require().Equal(
 		found,
 		wasFound,

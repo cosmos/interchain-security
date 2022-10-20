@@ -4,8 +4,6 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 
-	appProvider "github.com/cosmos/interchain-security/app/provider"
-
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -156,7 +154,7 @@ func (suite *CCVTestSuite) TestInitTimeout() {
 	}
 
 	for i, tc := range testCases {
-		providerKeeper := suite.providerChain.App.(*appProvider.App).ProviderKeeper
+		providerKeeper := suite.providerApp.GetProviderKeeper()
 		initTimeout := providerKeeper.GetParams(suite.providerCtx()).InitTimeoutPeriod
 		chainID := suite.consumerChain.ChainID
 
