@@ -159,7 +159,7 @@ func (d *driver) applyKeyMapEntries(entries []keyMapEntry) {
 	for _, e := range entries {
 		// TRY to map provider key pk to consumer key ck.
 		// (May fail due to API constraints, this is correct)
-		_ = d.km.SetProviderKeyToConsumerKey(e.pk, e.ck)
+		_ = d.km.SetProviderPubKeyToConsumerPubKey(e.pk, e.ck)
 	}
 	// Duplicate the mapping for referencing later in tests.
 	copy := map[StringifiedProviderPubKey]ConsumerPubKey{}
@@ -524,11 +524,38 @@ func TestPropertiesRandomlyHeuristically(t *testing.T) {
 	}
 }
 
-// Setting should enable a reverse query TODO: rename, improve
-func TestXSetReverseQuery(t *testing.T) {
+// TODO:
+func TestSetCurrentQueryWithIdenticalKey(t *testing.T) {
 	s := makeStore()
 	kd := MakeKeyMap(&s)
-	kd.SetProviderKeyToConsumerKey(key(42, false), key(43, true))
+	kd.SetProviderPubKeyToConsumerPubKey(key(42, false), key(43, true))
+	actual, _ := kd.GetCurrentConsumerPubKeyFromProviderPubKey(key(42, false)) // Queryable
+	require.Equal(t, key(43, true), actual)
+}
+
+// TODO:
+func TestSetCurrentQueryWithEqualKey(t *testing.T) {
+	s := makeStore()
+	kd := MakeKeyMap(&s)
+	k := key(42, false)
+	kd.SetProviderPubKeyToConsumerPubKey(k, key(43, true))
+
+	// TODO: comment why this is checked
+	kbz, err := k.Marshal()
+	require.Nil(t, err)
+	kEqual := crypto.PublicKey{}
+	err = kEqual.Unmarshal(kbz)
+	require.Nil(t, err)
+
+	actual, _ := kd.GetCurrentConsumerPubKeyFromProviderPubKey(kEqual) // Queryable
+	require.Equal(t, key(43, true), actual)
+}
+
+// Setting should enable a reverse query TODO: rename, improve
+func TestSetReverseQuery(t *testing.T) {
+	s := makeStore()
+	kd := MakeKeyMap(&s)
+	kd.SetProviderPubKeyToConsumerPubKey(key(42, false), key(43, true))
 	actual, err := kd.GetProviderPubKeyFromConsumerPubKey(key(43, true)) // Queryable
 	require.Nil(t, err)
 	require.Equal(t, key(42, false), actual)
@@ -543,12 +570,12 @@ func TestNoSetReverseQuery(t *testing.T) {
 }
 
 // Setting and replacing should no allow earlier reverse query TODO: rename, improve
-func TestXSetUnsetReverseQuery(t *testing.T) {
+func TestSetUnsetReverseQuery(t *testing.T) {
 	s := makeStore()
 	kd := MakeKeyMap(&s)
-	kd.SetProviderKeyToConsumerKey(key(42, false), key(43, true))
-	kd.SetProviderKeyToConsumerKey(key(42, false), key(44, true))   // Set to different value
-	_, err := kd.GetProviderPubKeyFromConsumerPubKey(key(43, true)) // Ealier value not queryable
+	kd.SetProviderPubKeyToConsumerPubKey(key(42, false), key(43, true))
+	kd.SetProviderPubKeyToConsumerPubKey(key(42, false), key(44, true)) // Set to different value
+	_, err := kd.GetProviderPubKeyFromConsumerPubKey(key(43, true))     // Ealier value not queryable
 	require.NotNil(t, err)
 }
 

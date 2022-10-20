@@ -71,7 +71,11 @@ type KeyMap struct {
 	PkToCk   map[StringifiedProviderPubKey]ConsumerPubKey
 	CkToPk   map[StringifiedConsumerPubKey]ProviderPubKey
 	CkToMemo map[StringifiedConsumerPubKey]Memo
-	CcaToCk  map[StringifiedConsumerConsAddr]ConsumerPubKey
+	// TODO: there's currently a slight asymmetry because
+	// a consAddr is only lookupable if it is in ckToMemo
+	// but ideally it should also be possible if the cpk
+	// is a value in pkToCk
+	CcaToCk map[StringifiedConsumerConsAddr]ConsumerPubKey
 }
 
 type Store interface {
@@ -112,7 +116,7 @@ func (e *KeyMap) SetAll() {
 }
 
 // TODO:
-func (e *KeyMap) SetProviderKeyToConsumerKey(pk ProviderPubKey, ck ConsumerPubKey) error {
+func (e *KeyMap) SetProviderPubKeyToConsumerPubKey(pk ProviderPubKey, ck ConsumerPubKey) error {
 	e.GetAll()
 	if _, ok := e.CkToPk[StringifyPubKey(ck)]; ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
@@ -129,7 +133,11 @@ func (e *KeyMap) SetProviderKeyToConsumerKey(pk ProviderPubKey, ck ConsumerPubKe
 	return nil
 }
 
-// TODO: do regular query (CK for PK)
+func (e *KeyMap) GetCurrentConsumerPubKeyFromProviderPubKey(pk ProviderPubKey) (ConsumerPubKey, bool) {
+	e.GetAll()
+	ck, found := e.PkToCk[StringifyPubKey(pk)]
+	return ck, found
+}
 
 // TODO: use found instead of error
 func (e *KeyMap) GetProviderPubKeyFromConsumerPubKey(ck ConsumerPubKey) (ProviderPubKey, error) {
