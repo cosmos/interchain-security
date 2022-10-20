@@ -145,7 +145,7 @@ func (k Keeper) delKeyMap(chainID ChainID) {
 
 }
 
-func (k Keeper) loadKeyMaps(ctx sdk.Context) {
+func (k Keeper) LoadKeyMaps(ctx sdk.Context) {
 	k.keymaps = map[ChainID]*keymap.KeyMap{}
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, _ string) (stop bool) {
 		store := KeyMapStore{ctx.KVStore(k.storeKey), chainID}
