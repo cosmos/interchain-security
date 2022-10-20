@@ -1,13 +1,14 @@
 package e2e
 
 import (
+	"time"
+
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 
 	"bytes"
 	"testing"
 
 	e2e "github.com/cosmos/interchain-security/testutil/e2e"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
@@ -120,12 +121,13 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.path.EndpointA.ClientID = providerClient
 	// - client config
 
+	trustingPeriodFraction := suite.providerApp.GetProviderKeeper().GetTrustingPeriodFraction(suite.providerCtx())
 	providerUnbondingPeriod := suite.providerApp.GetStakingKeeper().UnbondingTime(suite.providerCtx())
 	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = providerUnbondingPeriod
-	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / providertypes.DefaultTrustingPeriodFraction
+	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / time.Duration(trustingPeriodFraction)
 	consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
-	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / providertypes.DefaultTrustingPeriodFraction
+	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / time.Duration(trustingPeriodFraction)
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
 	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
