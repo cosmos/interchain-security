@@ -62,7 +62,7 @@ message Params {
   // Sent IBC packets will timeout after this duration
   google.protobuf.Duration ccv_timeout_period = 2
       [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
-  // TrustingPeriodFraction is used to compute the provider IBC client's TrustingPeriod
+  // TrustingPeriodFraction is used to compute the consumer and provider IBC client's TrustingPeriod
   int64 trusting_period_fraction = 3;
 }
 

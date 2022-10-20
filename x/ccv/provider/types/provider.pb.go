@@ -169,7 +169,7 @@ type Params struct {
 	TemplateClient *types1.ClientState `protobuf:"bytes,1,opt,name=template_client,json=templateClient,proto3" json:"template_client,omitempty"`
 	// Sent IBC packets will timeout after this duration
 	CcvTimeoutPeriod time.Duration `protobuf:"bytes,2,opt,name=ccv_timeout_period,json=ccvTimeoutPeriod,proto3,stdduration" json:"ccv_timeout_period"`
-	// TrustingPeriodFraction is used to compute the provider IBC client's TrustingPeriod
+	// TrustingPeriodFraction is used to compute the consumer and provider IBC client's TrustingPeriod
 	TrustingPeriodFraction int64 `protobuf:"varint,3,opt,name=trusting_period_fraction,json=trustingPeriodFraction,proto3" json:"trusting_period_fraction,omitempty"`
 }
 
