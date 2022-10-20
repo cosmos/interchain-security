@@ -2,7 +2,7 @@ package e2e
 
 import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
@@ -21,7 +21,7 @@ func (k CCVTestSuite) TestHistoricalInfo() {
 	createVal := func(k CCVTestSuite) {
 		// add new validator to consumer states
 		pk := ed25519.GenPrivKey().PubKey()
-		cVal, err := types.NewCCValidator(pk.Address(), int64(1), pk)
+		cVal, err := consumertypes.NewCCValidator(pk.Address(), int64(1), pk)
 		k.Require().NoError(err)
 
 		consumerKeeper.SetCCValidator(k.consumerChain.GetContext(), cVal)
@@ -38,7 +38,8 @@ func (k CCVTestSuite) TestHistoricalInfo() {
 		createVal,
 		createVal,
 		func(k CCVTestSuite) {
-			newHeight := k.consumerChain.GetContext().BlockHeight() + int64(types.HistoricalEntries)
+			historicalEntries := k.consumerApp.GetConsumerKeeper().GetHistoricalEntries(k.consumerCtx())
+			newHeight := k.consumerChain.GetContext().BlockHeight() + historicalEntries
 			header := tmproto.Header{
 				ChainID: "HelloChain",
 				Height:  newHeight,
@@ -70,7 +71,7 @@ func (k CCVTestSuite) TestHistoricalInfo() {
 			expLen: 0,
 		},
 		{
-			height: initHeight + int64(types.HistoricalEntries) + 2,
+			height: initHeight + int64(consumertypes.DefaultHistoricalEntries) + 2,
 			found:  true,
 			expLen: initValsetLen + 2,
 		},
