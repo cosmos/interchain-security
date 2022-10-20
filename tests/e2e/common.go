@@ -333,7 +333,8 @@ func incrementTimeBy(s *CCVTestSuite, jumpPeriod time.Duration) {
 	consumerUnbondingPeriod, found := s.consumerApp.GetConsumerKeeper().GetUnbondingTime(s.consumerChain.GetContext())
 	s.Require().True(found)
 	split := 1
-	if jumpPeriod > consumerUnbondingPeriod/providertypes.DefaultTrustingPeriodFraction {
+	trustingPeriodFraction := s.providerApp.GetProviderKeeper().GetTrustingPeriodFraction(s.providerCtx())
+	if jumpPeriod > consumerUnbondingPeriod/time.Duration(trustingPeriodFraction) {
 		// Make sure the clients do not expire
 		split = 4
 		jumpPeriod = jumpPeriod / 4
