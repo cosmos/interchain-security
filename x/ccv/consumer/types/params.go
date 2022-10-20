@@ -153,8 +153,8 @@ func validateConsumerRedistributionFraction(i interface{}) error {
 	if err != nil {
 		return err
 	}
-	if !dec.IsPositive() {
-		return fmt.Errorf("consumer redistribution fraction is not positive")
+	if dec.IsNegative() {
+		return fmt.Errorf("consumer redistribution fraction is negative")
 	}
 	if dec.Sub(sdk.NewDec(1)).IsPositive() {
 		return fmt.Errorf("consumer redistribution fraction cannot be above 1.0")
