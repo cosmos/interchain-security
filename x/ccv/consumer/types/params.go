@@ -14,7 +14,7 @@ const (
 	DefaultBlocksPerDistributionTransmission = 1000
 
 	// 1 week
-	DefaultTransferTimeoutPeriod = 1 * 7 * 24 * time.Hour
+	DefaultTransferTimeoutPeriod = time.Hour
 
 	// The default fraction of tokens allocated to the consumer redistribution address
 	// during distribution events. The fraction is a string representing a
