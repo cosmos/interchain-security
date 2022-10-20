@@ -14,6 +14,20 @@ import (
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
+func TestKeyMapLookup(t *testing.T) {
+	keys := simapp.CreateTestPubKeys(1)
+	key, err := cryptocodec.ToTmProtoPublicKey(keys[0])
+	require.NoError(t, err)
+	m := map[crypto.PublicKey]int{}
+	m[key] = 42
+	keys1 := simapp.CreateTestPubKeys(1)
+	key1, err := cryptocodec.ToTmProtoPublicKey(keys1[0])
+	require.Equal(t, key, key1)
+	require.NoError(t, err)
+	_, ok := m[key1]
+	require.True(t, ok)
+}
+
 func TestKeyBasic(t *testing.T) {
 	keys := simapp.CreateTestPubKeys(1)
 	kWrite, err := cryptocodec.ToTmProtoPublicKey(keys[0])
@@ -118,6 +132,9 @@ func compareForEquality(t *testing.T,
 	require.Equal(t, len(ckToMemo), len(km.CkToMemo))
 	require.Equal(t, len(ccaToCk), len(km.CcaToCk))
 
+	for k, v := range ccaToCk {
+		require.Equal(t, v, km.CcaToCk[k])
+	}
 	for k, v := range pkToCk {
 		require.Equal(t, v, km.PkToCk[k])
 	}
@@ -131,9 +148,6 @@ func compareForEquality(t *testing.T,
 		require.Equal(t, v.Cca, m.Cca)
 		require.Equal(t, v.Vscid, m.Vscid)
 		require.Equal(t, v.Power, m.Power)
-	}
-	for k, v := range ccaToCk {
-		require.Equal(t, v, km.CcaToCk[k])
 	}
 }
 
@@ -201,8 +215,6 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 
 func TestKeyMapSerializationAndDeserialization(t *testing.T) {
 
-	chainID := "foobar"
-
 	getKeys := func() (ret []crypto.PublicKey) {
 		// TODO: deduplicate with similar code in keymap/
 		totalNumKeys := 16
@@ -217,7 +229,7 @@ func TestKeyMapSerializationAndDeserialization(t *testing.T) {
 		return ret
 	}
 
-	checkCorrectSerializationAndDeserialization(t, chainID, getKeys(),
+	checkCorrectSerializationAndDeserialization(t, "foobar", getKeys(),
 		"string0",
 		"string1",
 		"string2",
