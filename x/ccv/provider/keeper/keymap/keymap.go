@@ -133,9 +133,9 @@ func (e *KeyMap) SetProviderPubKeyToConsumerPubKey(pk ProviderPubKey, ck Consume
 	return nil
 }
 
-func (e *KeyMap) GetCurrentConsumerPubKeyFromProviderPubKey(pk ProviderPubKey) (ConsumerPubKey, bool) {
+func (e *KeyMap) GetCurrentConsumerPubKeyFromProviderPubKey(pk ProviderPubKey) (ck ConsumerPubKey, found bool) {
 	e.GetAll()
-	ck, found := e.PkToCk[StringifyPubKey(pk)]
+	ck, found = e.PkToCk[StringifyPubKey(pk)]
 	return ck, found
 }
 

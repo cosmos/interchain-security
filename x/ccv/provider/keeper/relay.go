@@ -138,6 +138,14 @@ func (k Keeper) TrySendValidatorUpdates(ctx sdk.Context) {
 		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 
+			for _, u := range valUpdates {
+				if _, found := k.keymaps[chainID].GetCurrentConsumerPubKeyFromProviderPubKey(u.PubKey); !found {
+					// The provider has not designated a key to use for the consumer chain. Use the provider key
+					// by default.
+					k.keymaps[chainID].SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
+				}
+			}
+
 			// Map the updates through any key transformations
 			updatesToSend := k.keymaps[chainID].ComputeUpdates(valUpdateID, valUpdates)
 
