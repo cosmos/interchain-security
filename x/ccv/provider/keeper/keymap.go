@@ -13,7 +13,7 @@ type KeyMapStore struct {
 	ChainID ChainID
 }
 
-func (s *KeyMapStore) SetPkToCk(pkToCk map[keymap.ProviderPubKey]keymap.ConsumerPubKey) {
+func (s *KeyMapStore) SetPkToCk(pkToCk map[keymap.StringifiedProviderPubKey]keymap.ConsumerPubKey) {
 	for k, v := range pkToCk {
 		kbz, err := k.Marshal()
 		if err != nil {
@@ -26,7 +26,7 @@ func (s *KeyMapStore) SetPkToCk(pkToCk map[keymap.ProviderPubKey]keymap.Consumer
 		s.Store.Set(types.KeyMapPkToCkKey(s.ChainID, kbz), vbz)
 	}
 }
-func (s *KeyMapStore) SetCkToPk(ckToPk map[keymap.ConsumerPubKey]keymap.ProviderPubKey) {
+func (s *KeyMapStore) SetCkToPk(ckToPk map[keymap.StringifiedConsumerPubKey]keymap.ProviderPubKey) {
 	for k, v := range ckToPk {
 		kbz, err := k.Marshal()
 		if err != nil {
@@ -39,7 +39,7 @@ func (s *KeyMapStore) SetCkToPk(ckToPk map[keymap.ConsumerPubKey]keymap.Provider
 		s.Store.Set(types.KeyMapCkToPkKey(s.ChainID, kbz), bz)
 	}
 }
-func (s *KeyMapStore) SetCkToMemo(ckToMemo map[keymap.ConsumerPubKey]keymap.Memo) {
+func (s *KeyMapStore) SetCkToMemo(ckToMemo map[keymap.StringifiedConsumerPubKey]keymap.Memo) {
 	m := ccvtypes.Memo{}
 	for k, v := range ckToMemo {
 		kbz, err := k.Marshal()
@@ -70,8 +70,8 @@ func (s *KeyMapStore) SetCcaToCk(ccaToCk map[keymap.StringifiedConsumerConsAddr]
 	}
 }
 
-func (s *KeyMapStore) GetPkToCk() map[keymap.ProviderPubKey]keymap.ConsumerPubKey {
-	ret := map[keymap.ProviderPubKey]keymap.ConsumerPubKey{}
+func (s *KeyMapStore) GetPkToCk() map[keymap.StringifiedProviderPubKey]keymap.ConsumerPubKey {
+	ret := map[keymap.StringifiedProviderPubKey]keymap.ConsumerPubKey{}
 	prefix := types.KeyMapPkToCkChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 
@@ -93,8 +93,8 @@ func (s *KeyMapStore) GetPkToCk() map[keymap.ProviderPubKey]keymap.ConsumerPubKe
 	}
 	return ret
 }
-func (s *KeyMapStore) GetCkToPk() map[keymap.ConsumerPubKey]keymap.ProviderPubKey {
-	ret := map[keymap.ConsumerPubKey]keymap.ProviderPubKey{}
+func (s *KeyMapStore) GetCkToPk() map[keymap.StringifiedConsumerPubKey]keymap.ProviderPubKey {
+	ret := map[keymap.StringifiedConsumerPubKey]keymap.ProviderPubKey{}
 	prefix := types.KeyMapCkToPkChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 
@@ -116,8 +116,8 @@ func (s *KeyMapStore) GetCkToPk() map[keymap.ConsumerPubKey]keymap.ProviderPubKe
 	}
 	return ret
 }
-func (s *KeyMapStore) GetCkToMemo() map[keymap.ConsumerPubKey]keymap.Memo {
-	ret := map[keymap.ConsumerPubKey]keymap.Memo{}
+func (s *KeyMapStore) GetCkToMemo() map[keymap.StringifiedConsumerPubKey]keymap.Memo {
+	ret := map[keymap.StringifiedConsumerPubKey]keymap.Memo{}
 	prefix := types.KeyMapCkToMemoChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 

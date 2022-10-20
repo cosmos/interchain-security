@@ -47,39 +47,39 @@ func key(i int, isConsumerKey bool) crypto.PublicKey {
 }
 
 type store struct {
-	pkToCk   map[ProviderPubKey]ConsumerPubKey
-	ckToPk   map[ConsumerPubKey]ProviderPubKey
-	ckToMemo map[ConsumerPubKey]Memo
+	pkToCk   map[StringifiedProviderPubKey]ConsumerPubKey
+	ckToPk   map[StringifiedConsumerPubKey]ProviderPubKey
+	ckToMemo map[StringifiedConsumerPubKey]Memo
 	ccaToCk  map[StringifiedConsumerConsAddr]ConsumerPubKey
 }
 
 func makeStore() store {
 	return store{
-		pkToCk:   map[ProviderPubKey]ConsumerPubKey{},
-		ckToPk:   map[ConsumerPubKey]ProviderPubKey{},
-		ckToMemo: map[ConsumerPubKey]Memo{},
+		pkToCk:   map[StringifiedProviderPubKey]ConsumerPubKey{},
+		ckToPk:   map[StringifiedConsumerPubKey]ProviderPubKey{},
+		ckToMemo: map[StringifiedConsumerPubKey]Memo{},
 		ccaToCk:  map[StringifiedConsumerConsAddr]ConsumerPubKey{},
 	}
 }
-func (s *store) GetPkToCk() map[ProviderPubKey]ConsumerPubKey {
+func (s *store) GetPkToCk() map[StringifiedProviderPubKey]ConsumerPubKey {
 	return s.pkToCk
 }
-func (s *store) GetCkToPk() map[ConsumerPubKey]ProviderPubKey {
+func (s *store) GetCkToPk() map[StringifiedConsumerPubKey]ProviderPubKey {
 	return s.ckToPk
 }
-func (s *store) GetCkToMemo() map[ConsumerPubKey]Memo {
+func (s *store) GetCkToMemo() map[StringifiedConsumerPubKey]Memo {
 	return s.ckToMemo
 }
 func (s *store) GetCcaToCk() map[StringifiedConsumerConsAddr]ConsumerPubKey {
 	return s.ccaToCk
 }
-func (s *store) SetPkToCk(e map[ProviderPubKey]ConsumerPubKey) {
+func (s *store) SetPkToCk(e map[StringifiedProviderPubKey]ConsumerPubKey) {
 	s.pkToCk = e
 }
-func (s *store) SetCkToPk(e map[ConsumerPubKey]ProviderPubKey) {
+func (s *store) SetCkToPk(e map[StringifiedConsumerPubKey]ProviderPubKey) {
 	s.ckToPk = e
 }
-func (s *store) SetCkToMemo(e map[ConsumerPubKey]Memo) {
+func (s *store) SetCkToMemo(e map[StringifiedConsumerPubKey]Memo) {
 	s.ckToMemo = e
 }
 func (s *store) SetCcaToCk(ccaToCk map[StringifiedConsumerConsAddr]ConsumerPubKey) {
@@ -107,7 +107,7 @@ type driver struct {
 	lastTimeConsumer int
 	lastTimeMaturity int
 	// indexed by time (starting at 0)
-	mappings []map[ProviderPubKey]ConsumerPubKey
+	mappings []map[StringifiedProviderPubKey]ConsumerPubKey
 	// indexed by time (starting at 0)
 	consumerUpdates [][]abci.ValidatorUpdate
 	// indexed by time (starting at 0)
@@ -128,7 +128,7 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 	d.lastTimeProvider = 0
 	d.lastTimeConsumer = 0
 	d.lastTimeMaturity = 0
-	d.mappings = []map[ProviderPubKey]ConsumerPubKey{}
+	d.mappings = []map[StringifiedProviderPubKey]ConsumerPubKey{}
 	d.consumerUpdates = [][]abci.ValidatorUpdate{}
 	d.providerValsets = []valset{}
 	d.consumerValset = valset{}
@@ -162,9 +162,9 @@ func (d *driver) applyKeyMapEntries(entries []keyMapEntry) {
 		_ = d.km.SetProviderKeyToConsumerKey(e.pk, e.ck)
 	}
 	// Duplicate the mapping for referencing later in tests.
-	copy := map[ProviderPubKey]ConsumerPubKey{}
-	for lk, fk := range d.km.PkToCk {
-		copy[lk] = fk
+	copy := map[StringifiedProviderPubKey]ConsumerPubKey{}
+	for pk, ck := range d.km.PkToCk {
+		copy[pk] = ck
 	}
 	d.mappings = append(d.mappings, copy)
 }
@@ -278,10 +278,10 @@ func (d *driver) externalInvariants() {
 
 		// Compute a reverse lookup allowing comparison
 		// of the two sets.
-		cSetLikePSet := map[ProviderPubKey]int64{}
+		cSetLikePSet := map[StringifiedProviderPubKey]int64{}
 		{
 			mapping := d.mappings[d.lastTimeConsumer]
-			inverseMapping := map[ConsumerPubKey]ProviderPubKey{}
+			inverseMapping := map[ConsumerPubKey]StringifiedProviderPubKey{}
 			for pk, ck := range mapping {
 				inverseMapping[ck] = pk
 			}
@@ -291,12 +291,9 @@ func (d *driver) externalInvariants() {
 		}
 
 		// Check that the two validator sets match exactly.
+		require.Equal(d.t, len(pSet), len(cSetLikePSet))
 		for pk, expectedPower := range pSet {
-			actualPower := cSetLikePSet[pk]
-			require.Equal(d.t, expectedPower, actualPower)
-		}
-		for pk, actualPower := range cSetLikePSet {
-			expectedPower := pSet[pk]
+			actualPower := cSetLikePSet[pk.String()]
 			require.Equal(d.t, expectedPower, actualPower)
 		}
 	}
@@ -527,7 +524,7 @@ func TestPropertiesRandomlyHeuristically(t *testing.T) {
 	}
 }
 
-// Setting should enable a reverse query
+// Setting should enable a reverse query TODO: rename, improve
 func TestXSetReverseQuery(t *testing.T) {
 	s := makeStore()
 	kd := MakeKeyMap(&s)
@@ -537,7 +534,7 @@ func TestXSetReverseQuery(t *testing.T) {
 	require.Equal(t, key(42, false), actual)
 }
 
-// Not setting should not enable a reverse query
+// Not setting should not enable a reverse query TODO: rename, improve
 func TestNoSetReverseQuery(t *testing.T) {
 	s := makeStore()
 	kd := MakeKeyMap(&s)
@@ -545,7 +542,7 @@ func TestNoSetReverseQuery(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-// Setting and replacing should no allow earlier reverse query
+// Setting and replacing should no allow earlier reverse query TODO: rename, improve
 func TestXSetUnsetReverseQuery(t *testing.T) {
 	s := makeStore()
 	kd := MakeKeyMap(&s)
