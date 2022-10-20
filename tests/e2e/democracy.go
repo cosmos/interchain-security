@@ -16,12 +16,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/interchain-security/testutil/e2e"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/stretchr/testify/suite"
 )
-
-var consumerFraction, _ = sdk.NewDecFromStr(consumerkeeper.ConsumerRedistributeFrac)
 
 type ConsumerDemocracyTestSuite struct {
 	suite.Suite
@@ -108,14 +105,21 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 		consumerRedistributeDifference = consumerRedistributeDifference.Add(representativeDifference[key])
 	}
 
+	consumerRedistributionFraction := sdk.MustNewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
+
 	//confirm that the total amount given to the community pool plus all representatives is equal to the total amount taken out of distribution
 	s.Require().Equal(distrModuleDifference, consumerRedistributeDifference)
 	//confirm that the percentage given to the community pool is equal to the configured community tax percentage.
-	s.Require().Equal(communityPoolDifference.Quo(consumerRedistributeDifference), distrKeeper.GetCommunityTax(s.consumerCtx()))
+	s.Require().Equal(communityPoolDifference.Quo(consumerRedistributeDifference),
+		distrKeeper.GetCommunityTax(s.consumerCtx()))
 	//check that the fraction actually kept by the consumer is the correct fraction. using InEpsilon because the math code uses truncations
-	s.Require().InEpsilon(distrModuleDifference.Quo(providerDifference.Add(distrModuleDifference)).MustFloat64(), consumerFraction.MustFloat64(), float64(0.0001))
+	s.Require().InEpsilon(distrModuleDifference.Quo(
+		providerDifference.Add(distrModuleDifference)).MustFloat64(),
+		consumerRedistributionFraction.MustFloat64(), float64(0.0001))
 	//check that the fraction actually kept by the provider is the correct fraction. using InEpsilon because the math code uses truncations
-	s.Require().InEpsilon(providerDifference.Quo(providerDifference.Add(distrModuleDifference)).MustFloat64(), sdk.NewDec(1).Sub(consumerFraction).MustFloat64(), float64(0.0001))
+	s.Require().InEpsilon(providerDifference.Quo(
+		providerDifference.Add(distrModuleDifference)).MustFloat64(),
+		sdk.NewDec(1).Sub(consumerRedistributionFraction).MustFloat64(), float64(0.0001))
 
 	totalRepresentativePower := stakingKeeper.GetValidatorSet().TotalBondedTokens(s.consumerCtx())
 
