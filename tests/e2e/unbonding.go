@@ -1,11 +1,10 @@
-package e2e_test
+package e2e
 
 import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	appProvider "github.com/cosmos/interchain-security/app/provider"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
@@ -167,8 +166,8 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 	}
 
 	for i, tc := range testCases {
-		providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
-		stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
+		providerKeeper := s.providerApp.GetProviderKeeper()
+		stakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
 		// delegate bondAmt and undelegate 1/2 of it
 		bondAmt := sdk.NewInt(10000000)
@@ -255,8 +254,12 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 // Advance time so that provider's unbonding op completes
 // Check that unbonding has completed in provider staking
 func (s *CCVTestSuite) TestUnbondingNoConsumer() {
+
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+
 	// remove the consumer chain, which was already registered during setup
-	s.providerChain.App.(*appProvider.App).ProviderKeeper.DeleteConsumerClientId(s.providerCtx(), s.consumerChain.ChainID)
+	providerKeeper.DeleteConsumerClientId(s.providerCtx(), s.consumerChain.ChainID)
 
 	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
@@ -270,7 +273,7 @@ func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 	// increment time so that the unbonding period ends on the provider;
 	// cannot use incrementTimeByUnbondingPeriod() since it tries
 	// to also update the provider's client on the consumer
-	providerUnbondingPeriod := s.providerChain.App.GetStakingKeeper().UnbondingTime(s.providerCtx())
+	providerUnbondingPeriod := providerStakingKeeper.UnbondingTime(s.providerCtx())
 	s.coordinator.IncrementTimeBy(providerUnbondingPeriod + time.Hour)
 
 	// call NextBlock on the provider (which increments the height)
@@ -287,8 +290,8 @@ func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 // submitted on a provider chain with no consumers
 func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 
-	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
-	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
 	// remove the consumer chain, which was already registered during setup
 	providerKeeper.DeleteConsumerClientId(s.providerCtx(), s.consumerChain.ChainID)
@@ -296,8 +299,8 @@ func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 	// Setup delegator, bond amount, and src/dst validators
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
-	_, srcVal := s.getVal(0)
-	_, dstVal := s.getVal(1)
+	_, srcVal := s.getValByIdx(0)
+	_, dstVal := s.getValByIdx(1)
 
 	delegateAndRedelegate(
 		s,
@@ -333,14 +336,14 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 	s.SetupCCVChannel()
 	s.SetupTransferChannel()
 
-	stakingKeeper := s.providerChain.App.(*appProvider.App).StakingKeeper
-	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
 	// Setup delegator, bond amount, and src/dst validators
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()
-	_, srcVal := s.getVal(0)
-	_, dstVal := s.getVal(1)
+	_, srcVal := s.getValByIdx(0)
+	_, dstVal := s.getValByIdx(1)
 
 	delegateAndRedelegate(
 		s,
