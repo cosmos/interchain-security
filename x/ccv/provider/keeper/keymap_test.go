@@ -132,9 +132,9 @@ func TestKeyMapLoadEmpty(t *testing.T) {
 
 func compareForEquality(t *testing.T,
 	km keymap.KeyMap,
-	pkToCk map[keymap.ProviderPubKey]keymap.ConsumerPubKey,
-	ckToPk map[keymap.ConsumerPubKey]keymap.ProviderPubKey,
-	ckToMemo map[keymap.ConsumerPubKey]keymap.Memo,
+	pkToCk map[keymap.StringifiedProviderPubKey]keymap.ConsumerPubKey,
+	ckToPk map[keymap.StringifiedConsumerPubKey]keymap.ProviderPubKey,
+	ckToMemo map[keymap.StringifiedConsumerPubKey]keymap.Memo,
 	ccaToCk map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey) {
 
 	require.Equal(t, len(pkToCk), len(km.PkToCk))
@@ -176,23 +176,23 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 	_, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
-	pkToCk := map[keymap.ProviderPubKey]keymap.ConsumerPubKey{}
-	ckToPk := map[keymap.ConsumerPubKey]keymap.ProviderPubKey{}
-	ckToMemo := map[keymap.ConsumerPubKey]keymap.Memo{}
+	pkToCk := map[keymap.StringifiedProviderPubKey]keymap.ConsumerPubKey{}
+	ckToPk := map[keymap.StringifiedConsumerPubKey]keymap.ProviderPubKey{}
+	ckToMemo := map[keymap.StringifiedConsumerPubKey]keymap.Memo{}
 	ccaToCk := map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey{}
 
-	pkToCk[keys[0]] = keys[1]
-	pkToCk[keys[2]] = keys[3]
-	ckToPk[keys[4]] = keys[5]
-	ckToPk[keys[6]] = keys[7]
-	ckToMemo[keys[8]] = keymap.Memo{
+	pkToCk[keymap.StringifyPubKey(keys[0])] = keys[1]
+	pkToCk[keymap.StringifyPubKey(keys[2])] = keys[3]
+	ckToPk[keymap.StringifyPubKey(keys[4])] = keys[5]
+	ckToPk[keymap.StringifyPubKey(keys[6])] = keys[7]
+	ckToMemo[keymap.StringifyPubKey(keys[8])] = keymap.Memo{
 		Ck:    keys[9],
 		Pk:    keys[10],
 		Cca:   string0,
 		Vscid: uint64_0,
 		Power: int64_0,
 	}
-	ckToMemo[keys[11]] = keymap.Memo{
+	ckToMemo[keymap.StringifyPubKey(keys[11])] = keymap.Memo{
 		Ck:    keys[12],
 		Pk:    keys[13],
 		Cca:   string1,
