@@ -517,9 +517,7 @@ func (b *Builder) doIBCHandshake() {
 
 	// Configure and create the consumer Client
 	tmConfig := b.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
-	// TODO: This is intentionally set to unbonding period for P (provider)
-	// TODO: Not sure why it breaks without this.
-	tmConfig.UnbondingPeriod = b.initState.UnbondingP
+	tmConfig.UnbondingPeriod = b.initState.UnbondingC
 	tmConfig.TrustingPeriod = b.initState.Trusting
 	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
 	err = b.path.EndpointB.CreateClient()
@@ -697,11 +695,11 @@ func (b *Builder) build() {
 	// Create a simulated network link link
 	b.createLink()
 
-	// Establish connection, channel
-	b.doIBCHandshake()
-
 	// Set the unbonding time on the consumer to the model value
 	b.consumerKeeper().SetUnbondingPeriod(b.ctx(C), b.initState.UnbondingC)
+
+	// Establish connection, channel
+	b.doIBCHandshake()
 
 	// Send an empty VSC packet from the provider to the consumer to finish
 	// the handshake. This is necessary because the model starts from a
@@ -757,6 +755,10 @@ func (b *Builder) build() {
 	b.updateClient(b.chainID(C))
 }
 
+// The state of the data returned is equivalent to the state of two chains
+// after a full handshake, but the precise order of steps used to reach the
+// state does not necessarily mimic the order of steps that happen in a
+// live scenario.
 func GetZeroState(suite *suite.Suite, initState InitState) (
 	*ibctesting.Path, []sdk.ValAddress, int64, int64) {
 	b := Builder{initState: initState, suite: suite}
