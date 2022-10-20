@@ -41,6 +41,30 @@ of making the core logic much more testable.
 There are some loose ends with the core logic w.r.t reverse queries. This happened when I realised the consensus
 key was needed. This means the consensus key reverse map lookup doesn't have exactly the same semantics as the
 other reverse lookup. There's a comment on this, but I should fix it and add a test.
+The things I need to do are to continue working outwards, testing as necessary. Some things are not implemented at all,
+these are
+	- [ ] tx's
+	- [ ] queries
+	- [ ] consumer genesis
+		For this I think it is sufficient to map through any defaults, just as in SendValidatorUpdates
+		and call ComputeUpdates with a 0 vscid. This should allow future pruning.
+	- [ ] provider genesis / init from genesis
+	- [ ] consumer removal
+
+In terms of testing, the current status is
+
+x/ccv/provider/keeper/keymap :: go test ./...          | passes
+x/ccv/provider/keeper/       :: go test keymap_test.go | passes
+make test-diff                                         | fails
+	I think diff tests should be easy to make work with default mappings once I implement proper consumer genesis
+	I will also have to manually LoadKeyMaps somewhere in the driver setup
+	It would be a great extension to add random live mappings to diff tests
+make test-short										   | fails
+	At least FAIL: TestHandleSlashPacketDoubleSigning happens. This is to be expected
+	because some kind of reverse mapping knowledge needs to be added to the test
+
+I didn't check the other tests yet
+
 
 
 */
@@ -60,6 +84,9 @@ type StringifiedProviderPubKey = string
 type StringifiedConsumerPubKey = string
 type StringifiedConsumerConsAddr = string
 
+// TODO: document
+// It's necessary to get a string deterministically for use
+// in map lookups
 func StringifyPubKey(k crypto.PublicKey) string {
 	bytes, err := k.Marshal()
 	if err != nil {
@@ -68,6 +95,7 @@ func StringifyPubKey(k crypto.PublicKey) string {
 	return string(bytes)
 }
 
+// TODO:
 func consumerPubKeyToStringifiedConsumerConsAddr(ck ConsumerPubKey) StringifiedConsumerConsAddr {
 	sdkCk, err := cryptocodec.FromTmProtoPublicKey(ck)
 	if err != nil {
