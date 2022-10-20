@@ -12,11 +12,6 @@ type KeyMapStore struct {
 	ChainID ChainID
 }
 
-// TODO: pickup: write these methods,
-// will need to change the types...Key methods to accept more data
-// for the GET, will need to use a store iterator to read everything in
-// for the SET, will need to iterate over the map and just write everything
-
 func (s *KeyMapStore) GetPkToCk() map[keymap.ProviderPubKey]keymap.ConsumerPubKey {
 	ret := map[keymap.ProviderPubKey]keymap.ConsumerPubKey{}
 	iterator := sdk.KVStorePrefixIterator(s.Store, types.KeyMapPkToCkChainPrefix(s.ChainID))
