@@ -24,9 +24,6 @@ const (
 
 	// DafaultInitTimeoutPeriod defines the init timeout period
 	DafaultInitTimeoutPeriod = 7 * 24 * time.Hour
-
-	// DefaultVscTimeoutPeriod defines the VSC timeout period
-	DefaultVscTimeoutPeriod = 5 * 7 * 24 * time.Hour
 )
 
 // Reflection based keys for params subspace
@@ -46,13 +43,11 @@ func NewParams(
 	cs *ibctmtypes.ClientState,
 	ccvTimeoutPeriod time.Duration,
 	initTimeoutPeriod time.Duration,
-	vscTimeoutPeriod time.Duration,
 ) Params {
 	return Params{
 		TemplateClient:    cs,
 		CcvTimeoutPeriod:  ccvTimeoutPeriod,
 		InitTimeoutPeriod: initTimeoutPeriod,
-		VscTimeoutPeriod:  vscTimeoutPeriod,
 	}
 }
 
@@ -65,7 +60,6 @@ func DefaultParams() Params {
 			DefaultMaxClockDrift, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, true, true),
 		ccvtypes.DefaultCCVTimeoutPeriod,
 		DafaultInitTimeoutPeriod,
-		DefaultVscTimeoutPeriod,
 	)
 }
 
@@ -80,9 +74,6 @@ func (p Params) Validate() error {
 	if ccvtypes.ValidateDuration(p.InitTimeoutPeriod) != nil {
 		return fmt.Errorf("init timeout period is invalid")
 	}
-	if ccvtypes.ValidateDuration(p.VscTimeoutPeriod) != nil {
-		return fmt.Errorf("vsc timeout period is invalid")
-	}
 	return validateTemplateClient(*p.TemplateClient)
 }
 
@@ -92,7 +83,6 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyTemplateClient, p.TemplateClient, validateTemplateClient),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyInitTimeoutPeriod, p.InitTimeoutPeriod, ccvtypes.ValidateDuration),
-		paramtypes.NewParamSetPair(KeyVscTimeoutPeriod, p.VscTimeoutPeriod, ccvtypes.ValidateDuration),
 	}
 }
 

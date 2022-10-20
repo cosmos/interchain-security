@@ -625,7 +625,6 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		},
 		CcvTimeoutPeriod:  ccvtypes.DefaultCCVTimeoutPeriod,
 		InitTimeoutPeriod: types.DafaultInitTimeoutPeriod,
-		VscTimeoutPeriod:  types.DefaultVscTimeoutPeriod,
 	}
 	providerKeeper.SetParams(ctx, moduleParams)
 	defer ctrl.Finish()

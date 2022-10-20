@@ -45,7 +45,6 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetTemplateClient(ctx),
 		k.GetCCVTimeoutPeriod(ctx),
 		k.GetInitTimeoutPeriod(ctx),
-		k.GetVscTimeoutPeriod(ctx),
 	)
 }
 
