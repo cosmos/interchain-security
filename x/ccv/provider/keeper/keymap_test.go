@@ -5,7 +5,6 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
@@ -13,75 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
-
-func TestKeyBasic(t *testing.T) {
-	keys := simapp.CreateTestPubKeys(1)
-	kWrite, err := cryptocodec.ToTmProtoPublicKey(keys[0])
-	if err != nil {
-		panic("could not create tendermint test keys")
-	}
-	bz, err := kWrite.Marshal()
-	require.NoError(t, err)
-	kRead := crypto.PublicKey{}
-	err = kRead.Unmarshal(bz)
-	require.NoError(t, err)
-	require.Equal(t, kWrite, kRead)
-}
-
-func TestKeyBasicWithStore(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	_, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-	defer ctrl.Finish()
-	store := ctx.KVStore(keeperParams.StoreKey)
-
-	keys := simapp.CreateTestPubKeys(1)
-	kWrite, err := cryptocodec.ToTmProtoPublicKey(keys[0])
-	if err != nil {
-		panic("could not create tendermint test keys")
-	}
-	bzWrite, err := kWrite.Marshal()
-	require.NoError(t, err)
-
-	storeKey := []byte{42}
-	store.Set(storeKey, bzWrite)
-	bzRead := store.Get(storeKey)
-
-	kRead := crypto.PublicKey{}
-	err = kRead.Unmarshal(bzRead)
-	require.NoError(t, err)
-	require.Equal(t, kWrite, kRead)
-}
-
-func TestKeyBasicWithStorePrefixIterator(t *testing.T) {
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	_, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-	defer ctrl.Finish()
-	store := ctx.KVStore(keeperParams.StoreKey)
-
-	keys := simapp.CreateTestPubKeys(1)
-	kWrite, err := cryptocodec.ToTmProtoPublicKey(keys[0])
-	if err != nil {
-		panic("could not create tendermint test keys")
-	}
-	bzWrite, err := kWrite.Marshal()
-	require.NoError(t, err)
-
-	storePrefix := []byte{42}
-	store.Set(append(storePrefix, bzWrite...), []byte{})
-
-	iterator := sdk.KVStorePrefixIterator(store, storePrefix)
-
-	var bzRead []byte
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		bzRead = iterator.Key()[len(storePrefix):]
-	}
-
-	kRead := crypto.PublicKey{}
-	err = kRead.Unmarshal(bzRead)
-	require.NoError(t, err)
-	require.Equal(t, kWrite, kRead)
-}
 
 func TestKeyMapLoadEmpty(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
