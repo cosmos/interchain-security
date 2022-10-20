@@ -15,10 +15,7 @@ type KeyMapStore struct {
 
 func (s *KeyMapStore) SetPkToCk(pkToCk map[keymap.StringifiedProviderPubKey]keymap.ConsumerPubKey) {
 	for k, v := range pkToCk {
-		kbz, err := k.Marshal()
-		if err != nil {
-			panic(err)
-		}
+		kbz := []byte(k)
 		vbz, err := v.Marshal()
 		if err != nil {
 			panic(err)
@@ -28,24 +25,18 @@ func (s *KeyMapStore) SetPkToCk(pkToCk map[keymap.StringifiedProviderPubKey]keym
 }
 func (s *KeyMapStore) SetCkToPk(ckToPk map[keymap.StringifiedConsumerPubKey]keymap.ProviderPubKey) {
 	for k, v := range ckToPk {
-		kbz, err := k.Marshal()
+		kbz := []byte(k)
+		vbz, err := v.Marshal()
 		if err != nil {
 			panic(err)
 		}
-		bz, err := v.Marshal()
-		if err != nil {
-			panic(err)
-		}
-		s.Store.Set(types.KeyMapCkToPkKey(s.ChainID, kbz), bz)
+		s.Store.Set(types.KeyMapCkToPkKey(s.ChainID, kbz), vbz)
 	}
 }
 func (s *KeyMapStore) SetCkToMemo(ckToMemo map[keymap.StringifiedConsumerPubKey]keymap.Memo) {
 	m := ccvtypes.Memo{}
 	for k, v := range ckToMemo {
-		kbz, err := k.Marshal()
-		if err != nil {
-			panic(err)
-		}
+		kbz := []byte(k)
 		// TODO: get rid of this hack. Not even sure if it works.
 		m.Ck = &v.Ck
 		m.Pk = &v.Pk
@@ -62,11 +53,11 @@ func (s *KeyMapStore) SetCkToMemo(ckToMemo map[keymap.StringifiedConsumerPubKey]
 func (s *KeyMapStore) SetCcaToCk(ccaToCk map[keymap.StringifiedConsumerConsAddr]keymap.ConsumerPubKey) {
 	for k, v := range ccaToCk {
 		kbz := []byte(k)
-		bz, err := v.Marshal()
+		vbz, err := v.Marshal()
 		if err != nil {
 			panic(err)
 		}
-		s.Store.Set(types.KeyMapCcaToCkKey(s.ChainID, kbz), bz)
+		s.Store.Set(types.KeyMapCcaToCkKey(s.ChainID, kbz), vbz)
 	}
 }
 
