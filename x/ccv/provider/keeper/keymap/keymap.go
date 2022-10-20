@@ -1,26 +1,46 @@
 package keymap
 
 /*
-TODO: I think roughly, what I need to do, to drive this thing to completion is
 
-- [ ] more unit tests
-- [ ] integration with SendValidatorUpdates
-- [ ] integration with Consumer Initiated Slashing (receive request)
-- [ ] integration with Consumer Initiated Slashing (send acks)
-- [ ] integration with maturation (pruning)
-- [ ] integration with Validator add / delete
-- [ ] integration with RPC queries
-- [ ] integration with msg server
-- [ ] integration with pending changes
-- [ ] include in diff test driver?
-- [ ] include in any existing tests?
-- [ ] maybe use sdk.prefix.Store?
-- [ ] check the test excludes for coverage/static analysis ect. Need to make sure all tests are included!
+Rough thoughts
 
-- Whenever a consumer chain is added or removed a new Keymap instance needs to be created
-with a store interface which handles all of its reading and writing.
-	- Need to figure out exactly where/when to add/delete consumer chain instance
-	- Need to figure out exactly where/when to add/remove validator instance (with default?)
+## Feature list
+
+- [ ] sendUpdate must work
+- [ ] slash requests must work
+- [ ] slash acks must work
+- [ ] pruning must work
+- [ ] mappings must to be present whenever a consumer genesis is created
+- [ ] consumer mappings must be deleted whenever a consumer is stopped/deleted
+- [ ] all mappings must be saved whenever the provider genesis is created
+- [ ] all mappings must be loaded whenever the provider is started from genesis (check this)
+- [ ] default mapping should be inserted whenever a validator update goes out for a previously unseen validator
+- [ ] it must be possible to change a mapping via a tx submitted to the provider
+- [ ] it must be possible to query current mappings (via rpc? how?)
+
+## Quality list
+
+- [ ] check coverage
+- [ ] make sure all tests are included in coverage computation
+- [ ] make sure package org is sensible and things that should be
+- [ ] make sure private things are private
+- [ ] make sure public things are public
+- [ ] make sure diff tests (core) include a default mapping
+- [ ] ideally, use custom mappings in diff tests (core)
+- [ ] unit tests
+- [ ] fuzzing for serialization ?
+- [ ] use sdk idioms where appropriate
+	- [ ] PrefixStore
+- [ ] not too short var names
+- [ ] use 'KeyDesignation' as name?
+
+Memory trigger
+I have tackled a lot of the above but the integration points still aren't well tested. The serialization/
+deserialization approach is somewhat hacky but should have decent performance in practice. It has the benefit
+of making the core logic much more testable.
+There are some loose ends with the core logic w.r.t reverse queries. This happened when I realised the consensus
+key was needed. This means the consensus key reverse map lookup doesn't have exactly the same semantics as the
+other reverse lookup. There's a comment on this, but I should fix it and add a test.
 
 
 */
