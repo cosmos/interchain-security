@@ -75,7 +75,7 @@ func EndBlocker(ctx sdk.Context, keeper keeper.Keeper, icahostkeeper types.ICAHo
 }
 
 func addGovernanceModuleAdmin(ctx sdk.Context, keeper keeper.Keeper, icahostkeeper types.ICAHostKeeper, consumerkeeper types.ConsumerKeeper) {
-	if keeper.IsProviderGovernanceAdminSet {
+	if keeper.GetProviderICAAdmin(ctx) != "" {
 		return
 	}
 
@@ -105,5 +105,5 @@ func addGovernanceModuleAdmin(ctx sdk.Context, keeper keeper.Keeper, icahostkeep
 	}
 
 	keeper.SetAdmin(ctx, govModICAAddress)
-	keeper.IsProviderGovernanceAdminSet = true
+	keeper.SetProviderICAAdmin(ctx, govModICAAddress)
 }

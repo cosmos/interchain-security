@@ -532,6 +532,10 @@ func New(
 		keys[adminmodulemoduletypes.StoreKey],
 		keys[adminmodulemoduletypes.MemStoreKey],
 		adminRouter,
+		// this allows any type of proposal to be submitted to the admin module (everything is whitelisted)
+		// projects will implement their functions to define what is allowed for provider and consumer admins
+		func(ccvgovtypes.Content) bool { return true },
+		func(ccvgovtypes.Content) bool { return true },
 	)
 	adminModule := adminmodulemodule.NewAppModule(appCodec, app.AdminmoduleKeeper, app.ICAHostKeeper, app.ConsumerKeeper)
 

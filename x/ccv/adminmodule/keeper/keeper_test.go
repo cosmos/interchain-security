@@ -41,6 +41,8 @@ func setupKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		storeKey,
 		memStoreKey,
 		rtr,
+		func(govtypes.Content) bool { return true },
+		func(govtypes.Content) bool { return true },
 	)
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 	return k, ctx

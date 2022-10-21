@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"errors"
 
 	"fmt"
 
@@ -21,7 +22,18 @@ func (k msgServer) SubmitProposal(goCtx context.Context, msg *types.MsgSubmitPro
 		return nil, fmt.Errorf("proposer %s must be admin to submit proposals to admin-module", msg.Proposer)
 	}
 
-	proposal, err := k.Keeper.SubmitProposal(ctx, msg.GetContent())
+	content := msg.GetContent()
+	if msg.Proposer == k.Keeper.GetProviderICAAdmin(ctx) {
+		if !k.Keeper.IsWhitelistedForProvider(content) {
+			return nil, errors.New("proposal content is not whitelisted for the provider governance")
+		}
+	} else {
+		if !k.Keeper.IsWhitelistedForConsumer(content) {
+			return nil, errors.New("proposal content is not whitelisted for the consumer governance")
+		}
+	}
+
+	proposal, err := k.Keeper.SubmitProposal(ctx, content)
 	if err != nil {
 		return nil, err
 	}

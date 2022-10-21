@@ -37,3 +37,18 @@ func (k Keeper) RemoveAdmin(ctx sdk.Context, admin string) error {
 	store.Delete([]byte(admin))
 	return nil
 }
+
+func (k Keeper) SetProviderICAAdmin(ctx sdk.Context, providerICAAdmin string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set([]byte(types.ProviderICAAdminKey), []byte(providerICAAdmin))
+}
+
+func (k Keeper) GetProviderICAAdmin(ctx sdk.Context) string {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get([]byte(types.ProviderICAAdminKey))
+	if bz == nil {
+		return ""
+	}
+
+	return string(bz)
+}

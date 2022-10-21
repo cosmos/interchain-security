@@ -14,11 +14,12 @@ import (
 
 type (
 	Keeper struct {
-		cdc                          codec.Codec
-		storeKey                     sdk.StoreKey
-		memKey                       sdk.StoreKey
-		rtr                          govtypes.Router
-		IsProviderGovernanceAdminSet bool // indicates if the provider's gov module interchain account address is added as admin
+		cdc                      codec.Codec
+		storeKey                 sdk.StoreKey
+		memKey                   sdk.StoreKey
+		rtr                      govtypes.Router
+		IsWhitelistedForProvider func(govtypes.Content) bool
+		IsWhitelistedForConsumer func(govtypes.Content) bool
 		// this line is used by starport scaffolding # ibc/keeper/attribute
 	}
 )
@@ -28,13 +29,17 @@ func NewKeeper(
 	storeKey,
 	memKey sdk.StoreKey,
 	rtr govtypes.Router,
+	isWhitelistedForProvider func(govtypes.Content) bool,
+	isWhitelistedForConsumer func(govtypes.Content) bool,
 	// this line is used by starport scaffolding # ibc/keeper/parameter
 ) *Keeper {
 	return &Keeper{
-		cdc:      cdc,
-		storeKey: storeKey,
-		memKey:   memKey,
-		rtr:      rtr,
+		cdc:                      cdc,
+		storeKey:                 storeKey,
+		memKey:                   memKey,
+		rtr:                      rtr,
+		IsWhitelistedForProvider: isWhitelistedForProvider,
+		IsWhitelistedForConsumer: isWhitelistedForConsumer,
 		// this line is used by starport scaffolding # ibc/keeper/return
 	}
 }
