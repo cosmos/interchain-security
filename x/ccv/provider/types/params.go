@@ -22,15 +22,19 @@ const (
 	// DefaultMaxClockDrift defines how much new (untrusted) header's Time can drift into the future.
 	DefaultMaxClockDrift = 10 * time.Second
 
+	// DefaultTrustingPeriodFraction is the default fraction used to compute TrustingPeriod
+	// as UnbondingPeriod / TrustingPeriodFraction
+	DefaultTrustingPeriodFraction = 2
+
 	// DafaultInitTimeoutPeriod defines the init timeout period
 	DafaultInitTimeoutPeriod = 7 * 24 * time.Hour
 )
 
 // Reflection based keys for params subspace
 var (
-	KeyTemplateClient    = []byte("TemplateClient")
-	KeyInitTimeoutPeriod = []byte("InitTimeoutPeriod")
-	KeyVscTimeoutPeriod  = []byte("VscTimeoutPeriod")
+	KeyTemplateClient         = []byte("TemplateClient")
+	KeyTrustingPeriodFraction = []byte("TrustingPeriodFraction")
+	KeyInitTimeoutPeriod      = []byte("InitTimeoutPeriod")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -41,13 +45,15 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates new provider parameters with provided arguments
 func NewParams(
 	cs *ibctmtypes.ClientState,
+	trustingPeriodFraction int64,
 	ccvTimeoutPeriod time.Duration,
 	initTimeoutPeriod time.Duration,
 ) Params {
 	return Params{
-		TemplateClient:    cs,
-		CcvTimeoutPeriod:  ccvTimeoutPeriod,
-		InitTimeoutPeriod: initTimeoutPeriod,
+		TemplateClient:         cs,
+		TrustingPeriodFraction: trustingPeriodFraction,
+		CcvTimeoutPeriod:       ccvTimeoutPeriod,
+		InitTimeoutPeriod:      initTimeoutPeriod,
 	}
 }
 
@@ -58,6 +64,7 @@ func DefaultParams() Params {
 	return NewParams(
 		ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 			DefaultMaxClockDrift, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, true, true),
+		DefaultTrustingPeriodFraction,
 		ccvtypes.DefaultCCVTimeoutPeriod,
 		DafaultInitTimeoutPeriod,
 	)
@@ -68,19 +75,26 @@ func (p Params) Validate() error {
 	if p.TemplateClient == nil {
 		return fmt.Errorf("template client is nil")
 	}
-	if ccvtypes.ValidateDuration(p.CcvTimeoutPeriod) != nil {
-		return fmt.Errorf("ccv timeout period is invalid")
+	if err := validateTemplateClient(*p.TemplateClient); err != nil {
+		return err
 	}
-	if ccvtypes.ValidateDuration(p.InitTimeoutPeriod) != nil {
-		return fmt.Errorf("init timeout period is invalid")
+	if err := ccvtypes.ValidatePositiveInt64(p.TrustingPeriodFraction); err != nil {
+		return fmt.Errorf("trusting period fraction is invalid: %s", err)
 	}
-	return validateTemplateClient(*p.TemplateClient)
+	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
+		return fmt.Errorf("ccv timeout period is invalid: %s", err)
+	}
+	if err := ccvtypes.ValidateDuration(p.InitTimeoutPeriod); err != nil {
+		return fmt.Errorf("init timeout period is invalid: %s", err)
+	}
+	return nil
 }
 
 // ParamSetPairs implements params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyTemplateClient, p.TemplateClient, validateTemplateClient),
+		paramtypes.NewParamSetPair(KeyTrustingPeriodFraction, p.TrustingPeriodFraction, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyInitTimeoutPeriod, p.InitTimeoutPeriod, ccvtypes.ValidateDuration),
 	}
@@ -89,7 +103,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 func validateTemplateClient(i interface{}) error {
 	cs, ok := i.(ibctmtypes.ClientState)
 	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
+		return fmt.Errorf("invalid parameter type: %T, expected: %T", i, ibctmtypes.ClientState{})
 	}
 
 	// copy clientstate to prevent changing original pointer

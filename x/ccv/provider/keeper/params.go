@@ -18,6 +18,14 @@ func (k Keeper) GetTemplateClient(ctx sdk.Context) *ibctmtypes.ClientState {
 	return &cs
 }
 
+// GetTrustingPeriodFraction returns a TrustingPeriodFraction
+// used to compute the provider IBC client's TrustingPeriod as UnbondingPeriod / TrustingPeriodFraction
+func (k Keeper) GetTrustingPeriodFraction(ctx sdk.Context) int64 {
+	var i int64
+	k.paramSpace.Get(ctx, types.KeyTrustingPeriodFraction, &i)
+	return i
+}
+
 // GetCCVTimeoutPeriod returns the timeout period for sent ibc packets
 func (k Keeper) GetCCVTimeoutPeriod(ctx sdk.Context) time.Duration {
 	var p time.Duration
@@ -32,17 +40,11 @@ func (k Keeper) GetInitTimeoutPeriod(ctx sdk.Context) time.Duration {
 	return p
 }
 
-// GetVscTimeoutPeriod returns the VSC timeout period
-func (k Keeper) GetVscTimeoutPeriod(ctx sdk.Context) time.Duration {
-	var p time.Duration
-	k.paramSpace.Get(ctx, types.KeyVscTimeoutPeriod, &p)
-	return p
-}
-
 // GetParams returns the paramset for the provider module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.GetTemplateClient(ctx),
+		k.GetTrustingPeriodFraction(ctx),
 		k.GetCCVTimeoutPeriod(ctx),
 		k.GetInitTimeoutPeriod(ctx),
 	)
