@@ -8,7 +8,6 @@ import (
 
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/golang/mock/gomock"
 )
@@ -23,9 +22,12 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 	mocks := testkeeper.NewMockedKeepers(ctrl)
 	mockAccountKeeper := mocks.MockAccountKeeper
 	mockBankKeeper := mocks.MockBankKeeper
+	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
+	consumerKeeper.SetParams(ctx, types.DefaultParams())
 
 	// Setup mock account balance
-	fracDec, err := sdk.NewDecFromStr(keeper.ConsumerRedistributeFrac)
+	fracParam := consumerKeeper.GetConsumerRedistributionFrac(ctx)
+	fracDec, err := sdk.NewDecFromStr(fracParam)
 	require.NoError(t, err)
 	feeAmount := sdk.Coin{
 		Denom:  "MOCK",
@@ -47,14 +49,13 @@ func TestGetEstimatedNextFeeDistribution(t *testing.T) {
 			Times(1),
 	)
 
-	consumerKeeper := testkeeper.NewInMemConsumerKeeper(keeperParams, mocks)
 	// set next height to be 10 blocks from current
 	consumerKeeper.SetBlocksPerDistributionTransmission(ctx, 10)
 	expect := types.NextFeeDistributionEstimate{
 		NextHeight:           10,
 		LastHeight:           0,
 		CurrentHeight:        0,
-		DistributionFraction: keeper.ConsumerRedistributeFrac,
+		DistributionFraction: fracParam,
 		Total:                feeAmountDec.String(),
 		ToProvider:           sdk.NewDecCoinsFromCoins(providerTokens...).String(),
 		ToConsumer:           sdk.NewDecCoinsFromCoins(consumerTokens...).String(),
