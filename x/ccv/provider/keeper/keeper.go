@@ -840,6 +840,7 @@ func (k Keeper) SetInitTimeoutTimestamp(ctx sdk.Context, chainID string, ts uint
 }
 
 // GetInitTimeoutTimestamp returns the init timeout timestamp for the given chain ID.
+// This method is used only in testing.
 func (k Keeper) GetInitTimeoutTimestamp(ctx sdk.Context, chainID string) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.InitTimeoutTimestampKey(chainID))
