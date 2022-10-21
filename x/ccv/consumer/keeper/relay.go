@@ -54,7 +54,6 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	}
 
 	// Save maturity time and packet
-	// TODO: look into whether params can be kept unset
 	maturityTime := ctx.BlockTime().Add(k.GetUnbondingPeriod(ctx))
 	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, uint64(maturityTime.UnixNano()))
 

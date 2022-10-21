@@ -96,6 +96,7 @@ func (k Keeper) GetHistoricalEntries(ctx sdk.Context) int64 {
 	return n
 }
 
+// Only used to set an unbonding period in diff tests
 func (k Keeper) SetUnbondingPeriod(ctx sdk.Context, period time.Duration) {
 	k.paramStore.Set(ctx, types.KeyConsumerUnbondingPeriod, period)
 }
