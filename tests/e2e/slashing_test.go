@@ -299,7 +299,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 		slashingtypes.ValidatorSigningInfo{Address: consAddr.String()},
 	)
 
-	_, err := providerKeeper.HandleSlashPacket(suite.providerCtx(), suite.consumerChain.ChainID,
+	err := providerKeeper.HandleSlashPacket(suite.providerCtx(), suite.consumerChain.ChainID,
 		ccv.NewSlashPacketData(
 			abci.Validator{Address: tmVal.Address, Power: 0},
 			uint64(0),
@@ -327,7 +327,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 	ctx := suite.providerCtx()
 
 	// expect an error if initial block height isn't set for consumer chain
-	_, err := ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, ccv.SlashPacketData{})
+	err := ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, ccv.SlashPacketData{})
 	suite.Require().Error(err, "slash validator with invalid infraction height")
 
 	// save VSC ID
@@ -337,7 +337,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 	ProviderKeeper.DeleteValsetUpdateBlockHeight(ctx, vID)
 
 	// expect an error if block height mapping VSC ID is zero
-	_, err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, ccv.SlashPacketData{ValsetUpdateId: vID})
+	err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, ccv.SlashPacketData{ValsetUpdateId: vID})
 	suite.Require().Error(err, "slash with height mapping to zero")
 
 	// construct slashing packet with non existing validator
@@ -350,9 +350,8 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 	ProviderKeeper.SetInitChainHeight(ctx, consumerChainID, uint64(ctx.BlockHeight()))
 
 	// expect the slash to not succeed if validator doesn't exist
-	success, err := ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
-	suite.Require().NoError(err, "slashing an unknown validator should not result in error")
-	suite.Require().False(success, "did slash unknown validator")
+	err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
+	suite.Require().Error(err, "slashing unknown validator should result in an error")
 
 	// jail an existing validator
 	val := suite.providerChain.Vals.Validators[0]
@@ -374,7 +373,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 	slashingPkt.ValsetUpdateId = vID
 
 	// expect to slash and jail validator
-	_, err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
+	err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
 	suite.Require().NoError(err, "did slash jail validator")
 
 	// expect error when infraction type in unspecified
@@ -385,17 +384,17 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 	valInfo.Address = sdk.ConsAddress(tmAddr).String()
 	providerSlashingKeeper.SetValidatorSigningInfo(ctx, sdk.ConsAddress(tmAddr), valInfo)
 
-	_, err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
+	err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
 	suite.Require().EqualError(err, fmt.Sprintf("invalid infraction type: %v", stakingtypes.InfractionEmpty))
 
 	// expect to slash jail validator
 	slashingPkt.Infraction = stakingtypes.DoubleSign
-	_, err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
+	err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
 	suite.Require().NoError(err)
 
 	// expect the slash to not succeed when validator is tombstoned
-	success, _ = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
-	suite.Require().False(success)
+	err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
+	suite.Require().Error(err)
 }
 
 // TestHandleSlashPacketDistribution tests the slashing of an undelegation balance
@@ -485,7 +484,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDistribution() {
 		)
 
 		// slash
-		_, err := providerKeeper.HandleSlashPacket(suite.providerChain.GetContext(), suite.consumerChain.ChainID, slashPacket)
+		err := providerKeeper.HandleSlashPacket(suite.providerChain.GetContext(), suite.consumerChain.ChainID, slashPacket)
 		suite.Require().NoError(err)
 
 		ubd, found := providerStakingKeeper.GetUnbondingDelegation(suite.providerChain.GetContext(), delAddr, valAddr)

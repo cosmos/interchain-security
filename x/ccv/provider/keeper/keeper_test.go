@@ -7,7 +7,6 @@ import (
 	"github.com/golang/mock/gomock"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -16,6 +15,7 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	"github.com/stretchr/testify/require"
@@ -197,8 +197,28 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	ctx := keeperParams.Ctx
 
+	var pubKey tmprotocrypto.PublicKey
+	// {
+
+	// 	pks := ibcsimapp.CreateTestPubKeys(1)
+	// 	pk, err := cryptocodec.ToTmProtoPublicKey(pks[0])
+	// 	pubKey = pk
+	// 	require.NoError(t, err)
+	// }
+
+	pk := ed25519.GenPrivKey().PubKey()
+
+	sdkVer, err := cryptocodec.FromTmPubKeyInterface(pk)
+	if err != nil {
+		panic(err)
+	}
+	pubKey, err = cryptocodec.ToTmProtoPublicKey(sdkVer)
+	if err != nil {
+		panic(err)
+	}
+
 	slashPacket := ccv.NewSlashPacketData(
-		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
+		abci.Validator{Address: pk.Address(),
 			Power: int64(0)},
 		uint64(0),
 		stakingtypes.DoubleSign,
@@ -244,10 +264,10 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 	providerKeeper.SetInitChainHeight(ctx, chainId, uint64(infractionHeight))
+	providerKeeper.KeyMap(ctx, chainId).SetProviderPubKeyToConsumerPubKey(pubKey, pubKey)
 
-	success, err := providerKeeper.HandleSlashPacket(ctx, chainId, slashPacket)
-	require.NoError(t, err)
-	require.True(t, success)
+	err = providerKeeper.HandleSlashPacket(ctx, chainId, slashPacket)
+	require.Error(t, err)
 }
 
 func TestIterateOverUnbondingOpIndex(t *testing.T) {

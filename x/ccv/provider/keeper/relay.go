@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper/keymap"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
@@ -44,7 +44,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 
 	// It is now possible to delete keys from the keymap which the consumer chain
 	// is no longer able to reference in slash requests.
-	k.keymaps[chainID].PruneUnusedKeys(data.ValsetUpdateId)
+	k.KeyMap(ctx, chainID).PruneUnusedKeys(data.ValsetUpdateId)
 
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
 	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
@@ -139,15 +139,15 @@ func (k Keeper) TrySendValidatorUpdates(ctx sdk.Context) {
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 
 			for _, u := range valUpdates {
-				if _, found := k.keymaps[chainID].GetCurrentConsumerPubKeyFromProviderPubKey(u.PubKey); !found {
+				if _, found := k.KeyMap(ctx, chainID).GetCurrentConsumerPubKeyFromProviderPubKey(u.PubKey); !found {
 					// The provider has not designated a key to use for the consumer chain. Use the provider key
 					// by default.
-					k.keymaps[chainID].SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
+					k.KeyMap(ctx, chainID).SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
 				}
 			}
 
 			// Map the updates through any key transformations
-			updatesToSend := k.keymaps[chainID].ComputeUpdates(valUpdateID, valUpdates)
+			updatesToSend := k.KeyMap(ctx, chainID).ComputeUpdates(valUpdateID, valUpdates)
 
 			packets = append(
 				packets,
@@ -193,7 +193,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	}
 
 	// apply slashing
-	if _, err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
+	if err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
 		errAck := channeltypes.NewErrorAcknowledgement(err.Error())
 		return &errAck
 	}
@@ -202,12 +202,11 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	return ack
 }
 
-// Beter name
-func GetProviderConsAddr(keymap *keymap.KeyMap, consumerConsAddress sdk.ConsAddress) (sdk.ConsAddress, error) {
-	providerPublicKey, err := keymap.GetProviderPubKeyFromConsumerConsAddress(consumerConsAddress)
-	if err != nil {
-		// TODO: rework when client api changes
-		return []byte{}, err
+// TODO: should this be a panic or an error?
+func GetSlashingProviderConsAddr(keymap *KeyMap, consumerConsAddress sdk.ConsAddress) (sdk.ConsAddress, error) {
+	providerPublicKey, found := keymap.GetProviderPubKeyFromConsumerConsAddress(consumerConsAddress)
+	if !found {
+		return nil, errors.New("could not find provider address for slashing")
 	}
 	pk, err := cryptocodec.FromTmProtoPublicKey(providerPublicKey)
 	if err != nil {
@@ -218,7 +217,7 @@ func GetProviderConsAddr(keymap *keymap.KeyMap, consumerConsAddress sdk.ConsAddr
 }
 
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type
-func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
+func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) error {
 	// map VSC ID to infraction height for the given chain ID
 	var infractionHeight uint64
 	var found bool
@@ -230,29 +229,28 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// return error if we cannot find infraction height matching the validator update id
 	if !found {
-		return false, fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
+		return fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
 	// TODO: document better
 	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
-	providerConsAddr, err := GetProviderConsAddr(k.keymaps[chainID], consumerConsAddr)
+	providerConsAddr, err := GetSlashingProviderConsAddr(k.KeyMap(ctx, chainID), consumerConsAddr)
 	if err != nil {
-		// TODO: better message/rework when call api changes
-		panic("could not do reverse lookup")
+		return err
 	}
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr)
 
-	// make sure the validator is not yet unbonded;
-	// stakingKeeper.Slash() panics otherwise
-	if !found || validator.IsUnbonded() {
-		// TODO add warning log message
-		// fmt.Sprintf("consumer chain %s trying to slash unbonded validator %s", chainID, consAddr.String())
-		return false, nil
+	if !found {
+		return fmt.Errorf("cannot find validator by consAddr for slashing")
+	}
+
+	if validator.IsUnbonded() {
+		return fmt.Errorf("tried to slash unbonded validator [chainId:%s,consAddr:%s]", chainID, providerConsAddr.String())
 	}
 
 	// tombstoned validators should not be slashed multiple times
 	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr) {
-		return false, nil
+		return fmt.Errorf("tried to slash validator but it is tombstoned [consAddr:%s]", providerConsAddr.String())
 	}
 
 	// slash and jail validator according to their infraction type
@@ -276,7 +274,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		jailTime = evidencetypes.DoubleSignJailEndTime
 		k.slashingKeeper.Tombstone(ctx, providerConsAddr)
 	default:
-		return false, fmt.Errorf("invalid infraction type: %v", data.Infraction)
+		return fmt.Errorf("invalid infraction type: %v", data.Infraction)
 	}
 
 	// slash validator
@@ -295,5 +293,5 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	}
 	k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
 
-	return true, nil
+	return nil
 }

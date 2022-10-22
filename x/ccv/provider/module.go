@@ -159,7 +159,6 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	am.keeper.BeginBlockInit(ctx)
 	// Stop and remove state for any consumer chains that are due to be stopped via pending consumer removal proposals
 	am.keeper.BeginBlockCCR(ctx)
-	am.keeper.LoadKeyMaps(ctx)
 }
 
 // EndBlock implements the AppModule interface
