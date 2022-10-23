@@ -26,11 +26,19 @@ func TestInitAndExportGenesis(t *testing.T) {
 	initHeight, vscID := uint64(5), uint64(1)
 	ubdIndex := []uint64{0, 1, 2}
 	params := providertypes.DefaultParams()
-	keyMap := ccv.KeyMap{
-		PkToCk:   []ccv.KeyToKey{{From: &crypto.PublicKey{}, To: &crypto.PublicKey{}}},
-		CkToPk:   nil,
-		CkToMemo: nil,
-		CcaToCk:  nil,
+	keyMaps := []ccv.KeyMap{
+		{
+			PkToCk:   []ccv.KeyToKey{{From: &crypto.PublicKey{}, To: &crypto.PublicKey{}}},
+			CkToPk:   []ccv.KeyToKey{},
+			CkToMemo: []ccv.KeyToMemo{},
+			CcaToCk:  []ccv.ConsAddrToKey{},
+		},
+		{
+			PkToCk:   []ccv.KeyToKey{},
+			CkToPk:   []ccv.KeyToKey{},
+			CkToMemo: []ccv.KeyToMemo{},
+			CcaToCk:  []ccv.ConsAddrToKey{},
+		},
 	}
 
 	// create genesis struct
@@ -49,7 +57,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				},
 				nil,
 				[]string{"slashedValidatorConsAddress"},
-				&keyMap,
+				&keyMaps[0],
 			),
 			providertypes.NewConsumerStates(
 				cChainIDs[1],
@@ -61,7 +69,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				nil,
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
 				nil,
-				nil,
+				&keyMaps[1],
 			),
 		},
 		[]ccv.UnbondingOp{{

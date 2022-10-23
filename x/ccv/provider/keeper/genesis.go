@@ -154,15 +154,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 				km.CcaToCk = append(km.CcaToCk, ccv.ConsAddrToKey{ConsAddr: cca, Key: &ck})
 				return false
 			})
-			if 0 < len(km.PkToCk) ||
-				0 < len(km.CkToPk) ||
-				0 < len(km.CkToMemo) ||
-				0 < len(km.CcaToCk) {
-				return km
-			}
-			return nil
+			return km
 		}
+
 		cs.KeyMap = keyMap()
+
 		consumerStates = append(consumerStates, cs)
 		return true
 	})
