@@ -17,7 +17,7 @@ import (
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 )
 
-func SetupTestingappProvider() (ibctesting.TestingApp, map[string]json.RawMessage) {
+func SetupTestingAppProvider() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	db := tmdb.NewMemDB()
 	// encCdc := app.MakeTestEncodingConfig()
 	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
@@ -56,7 +56,7 @@ func NewBasicCoordinator(t *testing.T) *ibctesting.Coordinator {
 func NewProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain) {
 	coordinator := NewBasicCoordinator(t)
 	chainID := ibctesting.GetChainID(1)
-	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingappProvider, chainID)
+	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingAppProvider, chainID)
 	providerChain := coordinator.GetChain(chainID)
 	chainID = ibctesting.GetChainID(2)
 	coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(t, coordinator,
@@ -69,7 +69,7 @@ func NewProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibc
 func NewProviderConsumerDemocracyCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain) {
 	coordinator := NewBasicCoordinator(t)
 	chainID := ibctesting.GetChainID(1)
-	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingappProvider, chainID)
+	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingAppProvider, chainID)
 	providerChain := coordinator.GetChain(chainID)
 	chainID = ibctesting.GetChainID(2)
 	coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(t, coordinator,
