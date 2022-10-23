@@ -316,12 +316,12 @@ func (e *KeyMap) InternalInvariants() bool {
 	{
 		// No two provider keys can map to the same consumer key
 		// (pkToCk is sane)
-		seen := map[ConsumerPubKey]bool{}
+		seen := map[string]bool{}
 		e.Store.IteratePkToCk(func(_, ck ConsumerPubKey) bool {
-			if seen[ck] {
+			if seen[DeterministicStringify(ck)] {
 				good = false
 			}
-			seen[ck] = true
+			seen[DeterministicStringify(ck)] = true
 			return false
 		})
 	}
@@ -397,13 +397,12 @@ func (e *KeyMap) InternalInvariants() bool {
 
 	{
 		// All entries in ccaToCk have a unique consumer pub key
-		// TODO: not sure if this makes sense due to key type, might be others like this
-		seen := map[ConsumerPubKey]bool{}
+		seen := map[string]bool{}
 		e.Store.IterateCcaToCk(func(_ ConsumerConsAddr, ck ConsumerPubKey) bool {
-			if _, found := seen[ck]; found {
+			if _, found := seen[DeterministicStringify(ck)]; found {
 				good = false
 			}
-			seen[ck] = true
+			seen[DeterministicStringify(ck)] = true
 			return false
 		})
 	}
