@@ -263,7 +263,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 		pk := pks[i]
 		// For each provider key where there was either
 		// 1) already a positive power update
-		// 2) the validator power has changed (and is still positive)
+		// 2) the validator power has changed (and is positive)
 		// create a change update for the associated consumer key.
 
 		var power int64 = 0
