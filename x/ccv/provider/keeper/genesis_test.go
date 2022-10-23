@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
@@ -25,6 +26,12 @@ func TestInitAndExportGenesis(t *testing.T) {
 	initHeight, vscID := uint64(5), uint64(1)
 	ubdIndex := []uint64{0, 1, 2}
 	params := providertypes.DefaultParams()
+	keyMap := ccv.KeyMap{
+		PkToCk:   []ccv.KeyToKey{{From: &crypto.PublicKey{}, To: &crypto.PublicKey{}}},
+		CkToPk:   nil,
+		CkToMemo: nil,
+		CcaToCk:  nil,
+	}
 
 	// create genesis struct
 	pGenesis := providertypes.NewGenesisState(vscID,
@@ -42,6 +49,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				},
 				nil,
 				[]string{"slashedValidatorConsAddress"},
+				&keyMap,
 			),
 			providertypes.NewConsumerStates(
 				cChainIDs[1],
@@ -52,6 +60,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				*consumertypes.DefaultGenesisState(),
 				nil,
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
+				nil,
 				nil,
 			),
 		},
@@ -103,6 +112,10 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, pGenesis.ConsumerAdditionProposals[0], addProp)
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, pGenesis.Params, pk.GetParams(ctx))
+	_, found = pk.KeyMap(ctx, cChainIDs[0]).Store.GetPkToCkValue(crypto.PublicKey{})
+	require.True(t, found)
+	_, found = pk.KeyMap(ctx, cChainIDs[1]).Store.GetPkToCkValue(crypto.PublicKey{})
+	require.False(t, found)
 
 	// check provider chain's consumer chain states
 	assertConsumerChainStates(ctx, t, pk, pGenesis.ConsumerStates...)

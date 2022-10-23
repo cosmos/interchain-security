@@ -76,8 +76,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 			}
 		}
 		if cs.KeyMap != nil {
-			// TODO: think it's fine if nil??
-
 			for _, pkToCk := range cs.KeyMap.PkToCk {
 				k.KeyMap(ctx, cs.ChainId).Store.SetPkToCkValue(*pkToCk.From, *pkToCk.To)
 			}
@@ -134,27 +132,37 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			}
 		}
 
-		cs.KeyMap = &ccv.KeyMap{}
-		cs.KeyMap.PkToCk = []ccv.KeyToKey{}
-		cs.KeyMap.CkToPk = []ccv.KeyToKey{}
-		cs.KeyMap.CkToMemo = []ccv.KeyToMemo{}
-		cs.KeyMap.CcaToCk = []ccv.ConsAddrToKey{}
-		k.KeyMap(ctx, chainID).Store.IteratePkToCk(func(pk ProviderPubKey, ck ConsumerPubKey) bool {
-			cs.KeyMap.PkToCk = append(cs.KeyMap.PkToCk, ccv.KeyToKey{From: &pk, To: &ck})
-			return false
-		})
-		k.KeyMap(ctx, chainID).Store.IterateCkToPk(func(ck ConsumerPubKey, pk ProviderPubKey) bool {
-			cs.KeyMap.CkToPk = append(cs.KeyMap.CkToPk, ccv.KeyToKey{From: &ck, To: &pk})
-			return false
-		})
-		k.KeyMap(ctx, chainID).Store.IterateCkToMemo(func(ck ConsumerPubKey, m ccv.Memo) bool {
-			cs.KeyMap.CkToMemo = append(cs.KeyMap.CkToMemo, ccv.KeyToMemo{Key: &ck, Memo: &m})
-			return false
-		})
-		k.KeyMap(ctx, chainID).Store.IterateCcaToCk(func(cca ConsumerConsAddr, ck ConsumerPubKey) bool {
-			cs.KeyMap.CcaToCk = append(cs.KeyMap.CcaToCk, ccv.ConsAddrToKey{ConsAddr: cca, Key: &ck})
-			return false
-		})
+		keyMap := func() *ccv.KeyMap {
+			km := &ccv.KeyMap{}
+			km.PkToCk = []ccv.KeyToKey{}
+			km.CkToPk = []ccv.KeyToKey{}
+			km.CkToMemo = []ccv.KeyToMemo{}
+			km.CcaToCk = []ccv.ConsAddrToKey{}
+			k.KeyMap(ctx, chainID).Store.IteratePkToCk(func(pk ProviderPubKey, ck ConsumerPubKey) bool {
+				km.PkToCk = append(km.PkToCk, ccv.KeyToKey{From: &pk, To: &ck})
+				return false
+			})
+			k.KeyMap(ctx, chainID).Store.IterateCkToPk(func(ck ConsumerPubKey, pk ProviderPubKey) bool {
+				km.CkToPk = append(km.CkToPk, ccv.KeyToKey{From: &ck, To: &pk})
+				return false
+			})
+			k.KeyMap(ctx, chainID).Store.IterateCkToMemo(func(ck ConsumerPubKey, m ccv.Memo) bool {
+				km.CkToMemo = append(km.CkToMemo, ccv.KeyToMemo{Key: &ck, Memo: &m})
+				return false
+			})
+			k.KeyMap(ctx, chainID).Store.IterateCcaToCk(func(cca ConsumerConsAddr, ck ConsumerPubKey) bool {
+				km.CcaToCk = append(km.CcaToCk, ccv.ConsAddrToKey{ConsAddr: cca, Key: &ck})
+				return false
+			})
+			if 0 < len(km.PkToCk) ||
+				0 < len(km.CkToPk) ||
+				0 < len(km.CkToMemo) ||
+				0 < len(km.CcaToCk) {
+				return km
+			}
+			return nil
+		}
+		cs.KeyMap = keyMap()
 		consumerStates = append(consumerStates, cs)
 		return true
 	})
