@@ -193,7 +193,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	}
 
 	// apply slashing
-	if err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
+	if _, err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
 		errAck := channeltypes.NewErrorAcknowledgement(err.Error())
 		return &errAck
 	}
@@ -217,7 +217,7 @@ func GetSlashingProviderConsAddr(keymap *KeyMap, consumerConsAddress sdk.ConsAdd
 }
 
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type
-func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) error {
+func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
 	// map VSC ID to infraction height for the given chain ID
 	var infractionHeight uint64
 	var found bool
@@ -229,28 +229,28 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// return error if we cannot find infraction height matching the validator update id
 	if !found {
-		return fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
+		return false, fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
 	// TODO: document better
 	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
 	providerConsAddr, err := GetSlashingProviderConsAddr(k.KeyMap(ctx, chainID), consumerConsAddr)
 	if err != nil {
-		return err
+		return false, nil
 	}
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr)
 
-	if !found {
-		return fmt.Errorf("cannot find validator by consAddr for slashing")
-	}
-
-	if validator.IsUnbonded() {
-		return fmt.Errorf("tried to slash unbonded validator [chainId:%s,consAddr:%s]", chainID, providerConsAddr.String())
+	// make sure the validator is not yet unbonded;
+	// stakingKeeper.Slash() panics otherwise
+	if !found || validator.IsUnbonded() {
+		// TODO add warning log message
+		// fmt.Sprintf("consumer chain %s trying to slash unbonded validator %s", chainID, consAddr.String())
+		return false, nil
 	}
 
 	// tombstoned validators should not be slashed multiple times
 	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr) {
-		return fmt.Errorf("tried to slash validator but it is tombstoned [consAddr:%s]", providerConsAddr.String())
+		return false, nil
 	}
 
 	// slash and jail validator according to their infraction type
@@ -266,7 +266,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		// then append the validator address to the slash ack for its chain id
 		slashFraction = k.slashingKeeper.SlashFractionDowntime(ctx)
 		jailTime = ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
-		k.AppendSlashAck(ctx, chainID, consumerConsAddr.String())
+		k.AppendSlashAck(ctx, chainID, providerConsAddr.String())
 	case stakingtypes.DoubleSign:
 		// set double-signing slash fraction and infinite jail duration
 		// then tombstone the validator
@@ -274,7 +274,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		jailTime = evidencetypes.DoubleSignJailEndTime
 		k.slashingKeeper.Tombstone(ctx, providerConsAddr)
 	default:
-		return fmt.Errorf("invalid infraction type: %v", data.Infraction)
+		return false, fmt.Errorf("invalid infraction type: %v", data.Infraction)
 	}
 
 	// slash validator
@@ -293,5 +293,5 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	}
 	k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
 
-	return nil
+	return true, nil
 }

@@ -266,8 +266,9 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	providerKeeper.SetInitChainHeight(ctx, chainId, uint64(infractionHeight))
 	providerKeeper.KeyMap(ctx, chainId).SetProviderPubKeyToConsumerPubKey(pubKey, pubKey)
 
-	err = providerKeeper.HandleSlashPacket(ctx, chainId, slashPacket)
+	success, err := providerKeeper.HandleSlashPacket(ctx, chainId, slashPacket)
 	require.NoError(t, err)
+	require.True(t, success)
 }
 
 func TestIterateOverUnbondingOpIndex(t *testing.T) {
