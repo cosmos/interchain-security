@@ -481,6 +481,15 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		consumertypes.DefaultConsumerRedistributeFrac,
 		consumertypes.DefaultHistoricalEntries,
 	)
+
+	{
+		// TODO: this is a hack
+		for _, u := range valUpdates {
+			b.providerKeeper().KeyMap(b.ctx(P), b.chainID(C)).SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
+		}
+		b.providerKeeper().KeyMap(b.ctx(P), b.chainID(C)).ComputeUpdates(0, valUpdates)
+	}
+
 	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, consumertypes.SlashRequests{}, params)
 }
 
