@@ -14,3 +14,25 @@ message Memo {
   uint64 vscid = 4;
   int64 power = 5;
 }
+
+message KeyToKey {
+  tendermint.crypto.PublicKey from = 1;
+  tendermint.crypto.PublicKey to = 2;
+}
+
+message KeyToMemo {
+  tendermint.crypto.PublicKey key = 1;
+  Memo memo = 2;
+}
+
+message ConsAddrToKey {
+  bytes cons_addr = 1;
+  tendermint.crypto.PublicKey key = 2;
+}
+
+message KeyMap {
+  repeated KeyToKey pk_to_ck = 1 [ (gogoproto.nullable) = false ];
+  repeated KeyToKey ck_to_pk = 2 [ (gogoproto.nullable) = false ];
+  repeated KeyToMemo ck_to_memo = 3 [ (gogoproto.nullable) = false ];
+  repeated ConsAddrToKey cca_to_ck = 4 [ (gogoproto.nullable) = false ];
+}
