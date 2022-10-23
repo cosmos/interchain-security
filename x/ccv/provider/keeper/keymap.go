@@ -55,33 +55,23 @@ import (
    these are
    	- [ ] tx's
    	- [ ] queries
-   	- [ ] consumer genesis
+   	- [1/2] consumer genesis
    		For this I think it is sufficient to map through any defaults, just as in SendValidatorUpdates
    		and call ComputeUpdates with a 0 vscid. This should allow future pruning.
-   	- [ ] provider genesis / init from genesis
+		I think I've half completed this
+   	- [x] provider genesis / init from genesis
    	- [ ] consumer removal
+	- [ ] validator destruction (...?)
+	- [x] diff test basic
+	- [ ] diff test with random key assignments
+		-
 
-   In terms of testing, the current status is
-
-   x/ccv/provider/keeper/keymap :: go test ./...          | passes
-   x/ccv/provider/keeper/       :: go test keymap_test.go | passes
-   make test-diff                                         | fails
-   	I think diff tests should be easy to make work with default mappings once I implement proper consumer genesis
-   	I will also have to manually LoadKeyMaps somewhere in the driver setup
-   	It would be a great extension to add random live mappings to diff tests
-   make test-short										   | fails
-   	At least FAIL: TestHandleSlashPacketDoubleSigning happens. This is to be expected
-   	because some kind of reverse mapping knowledge needs to be added to the test
-
-   I didn't check the other tests yet
-
-
+Current testing status
+	All unit tests pass
+	diff tests pass
+	integration tests : ?
 
 */
-
-// TODO: for each of the logic method which would have change the content of one of the old maps,
-// e.g. when SetAll was called
-// I need to delete each old value and replace/add each new value
 
 type VSCID = uint64
 type ProviderPubKey = crypto.PublicKey
