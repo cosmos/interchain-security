@@ -31,7 +31,7 @@ import (
    - [ ] default mapping should be inserted whenever a validator update goes out for a previously unseen validator
    - [ ] it must be possible to change a mapping via a tx submitted to the provider
    - [ ] it must be possible to query current mappings (via rpc? how?)
-   - [ ] garbage collect pkToCk, ckToPk when validator is destroyed
+   - [ ] garbage collect pkToCk, ckToPk, ccaToCk if appropriate, when validator is destroyed
 
    ## Quality list
 
@@ -50,12 +50,7 @@ import (
    - [ ] use 'KeyDesignation' as name?
 
    Memory trigger
-   I have tackled a lot of the above but the integration points still aren't well tested. The serialization/
-   deserialization approach is somewhat hacky but should have decent performance in practice. It has the benefit
-   of making the core logic much more testable.
-   There are some loose ends with the core logic w.r.t reverse queries. This happened when I realised the consensus
-   key was needed. This means the consensus key reverse map lookup doesn't have exactly the same semantics as the
-   other reverse lookup. There's a comment on this, but I should fix it and add a test.
+   I have tackled a lot of the above but the integration points still aren't well tested.
    The things I need to do are to continue working outwards, testing as necessary. Some things are not implemented at all,
    these are
    	- [ ] tx's
