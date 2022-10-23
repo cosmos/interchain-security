@@ -106,6 +106,8 @@ import (
 	ibcproviderkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
+	e2e "github.com/cosmos/interchain-security/testutil/e2e"
+
 	"github.com/tendermint/spm/cosmoscmd"
 
 	// unnamed import of statik for swagger UI support
@@ -794,6 +796,33 @@ func (app *App) GetSubspace(moduleName string) paramstypes.Subspace {
 // SimulationManager implements the SimulationApp interface
 func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
+}
+
+// ProviderApp interface implementations for e2e tests
+
+// GetProviderKeeper implements the ProviderApp interface.
+func (app *App) GetProviderKeeper() ibcproviderkeeper.Keeper {
+	return app.ProviderKeeper
+}
+
+// GetE2eStakingKeeper implements the ProviderApp interface.
+func (app *App) GetE2eStakingKeeper() e2e.E2eStakingKeeper {
+	return app.StakingKeeper
+}
+
+// GetE2eBankKeeper implements the ProviderApp interface.
+func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
+	return app.BankKeeper
+}
+
+// GetE2eSlashingKeeper implements the ProviderApp interface.
+func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
+	return app.SlashingKeeper
+}
+
+// GetE2eDistributionKeeper implements the ProviderApp interface.
+func (app *App) GetE2eDistributionKeeper() e2e.E2eDistributionKeeper {
+	return app.DistrKeeper
 }
 
 // TestingApp functions

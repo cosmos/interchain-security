@@ -144,6 +144,21 @@ func TestValidateInitialGenesisState(t *testing.T) {
 				valUpdates, types.SlashRequests{}, params),
 			true,
 		},
+		{
+			"invalid new consumer genesis state: invalid params",
+			types.NewInitialGenesisState(cs, consensusState, valUpdates, types.SlashRequests{},
+				types.NewParams(
+					true,
+					types.DefaultBlocksPerDistributionTransmission,
+					"",
+					"",
+					0, // CCV timeout period cannot be 0
+					types.DefaultTransferTimeoutPeriod,
+					types.DefaultConsumerRedistributeFrac,
+					types.DefaultHistoricalEntries,
+				)),
+			true,
+		},
 	}
 
 	for _, c := range cases {
@@ -255,6 +270,21 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		{
 			"invalid restart consumer genesis state: nil initial validator set",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, nil, nil, nil, params),
+			true,
+		},
+		{
+			"invalid restart consumer genesis state: invalid params",
+			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, valUpdates, nil, nil,
+				types.NewParams(
+					true,
+					types.DefaultBlocksPerDistributionTransmission,
+					"",
+					"",
+					0, // CCV timeout period cannot be 0
+					types.DefaultTransferTimeoutPeriod,
+					types.DefaultConsumerRedistributeFrac,
+					types.DefaultHistoricalEntries,
+				)),
 			true,
 		},
 	}

@@ -19,9 +19,6 @@ const (
 	// QuerierRoute is the querier route for IBC consumer
 	QuerierRoute = ModuleName
 
-	// HistoricalEntries is set to 10000 like the staking module parameter DefaultHistoricalEntries
-	HistoricalEntries uint32 = 10000
-
 	// ConsumerRedistributeName the root string for the consumer-redistribution account address
 	ConsumerRedistributeName = "cons_redistribute"
 
