@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"errors"
-	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -364,7 +363,6 @@ func (e *KeyMap) InternalInvariants() bool {
 		e.Store.IterateCkToPk(func(ck, pk ProviderPubKey) bool {
 			if m, ok := e.Store.GetCkToMemoValue(ck); ok {
 				if !pk.Equal(m.Pk) {
-					fmt.Println("363")
 					good = false
 				}
 			}
