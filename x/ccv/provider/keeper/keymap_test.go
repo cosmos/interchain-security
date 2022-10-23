@@ -296,6 +296,9 @@ func (d *driver) externalInvariants() {
 			// The query must return a result
 			pkQueried, found := d.km.GetProviderPubKeyFromConsumerPubKey(ckOnConsumer)
 			require.True(d.t, found)
+			pkQueriedByConsAddr, found := d.km.GetProviderPubKeyFromConsumerConsAddress(keeper.ConsumerPubKeyToConsumerConsAddr(ckOnConsumer))
+			require.True(d.t, found)
+			require.Equal(d.t, pkQueried, pkQueriedByConsAddr)
 
 			// The provider key must be the one that was actually referenced
 			// in the latest trueMapping used to compute updates sent to the
@@ -375,7 +378,11 @@ func (d *driver) externalInvariants() {
 		// Simply check every consumer key for the correct queryable-ness.
 		for ck := uint64(0); ck < NUM_CKS; ck++ {
 			ck += 100 //TODO: fix with others
-			_, actualQueryable := d.km.GetProviderPubKeyFromConsumerPubKey(key(ck))
+			pk, actualQueryable := d.km.GetProviderPubKeyFromConsumerPubKey(key(ck))
+			cca := keeper.ConsumerPubKeyToConsumerConsAddr(key(ck))
+			pkByConsAddr, actualQueryableByConsAddr := d.km.GetProviderPubKeyFromConsumerConsAddress(cca)
+			require.Equal(d.t, pk, pkByConsAddr)
+			require.Equal(d.t, actualQueryable, actualQueryableByConsAddr)
 			if expect, found := expectQueryable[keeper.DeterministicStringify(key(ck))]; found && expect {
 				require.True(d.t, actualQueryable)
 			} else {
@@ -606,7 +613,6 @@ func TestKeyMapSetCurrentQueryWithEqualKey(t *testing.T) {
 	k := key(42)
 	km.SetProviderPubKeyToConsumerPubKey(k, key(43))
 
-	// TODO: comment why this is checked
 	kbz, err := k.Marshal()
 	require.Nil(t, err)
 	kEqual := crypto.PublicKey{}

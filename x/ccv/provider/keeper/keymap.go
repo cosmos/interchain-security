@@ -93,21 +93,20 @@ type ProviderPubKey = crypto.PublicKey
 type ConsumerPubKey = crypto.PublicKey
 type ConsumerConsAddr = sdk.ConsAddress
 
-// TODO:
-func consumerPubKeyToConsumerConsAddr(ck ConsumerPubKey) ConsumerConsAddr {
-	sdkCk, err := cryptocodec.FromTmProtoPublicKey(ck)
-	if err != nil {
-		panic("could not get public key from tm proto public key for keymap lookup")
-	}
-	return sdk.GetConsAddress(sdkCk)
-}
-
 func DeterministicStringify(k crypto.PublicKey) string {
 	bz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
 	return string(bz)
+}
+
+func ConsumerPubKeyToConsumerConsAddr(ck ConsumerPubKey) ConsumerConsAddr {
+	sdkCk, err := cryptocodec.FromTmProtoPublicKey(ck)
+	if err != nil {
+		panic("could not get public key from tm proto public key")
+	}
+	return sdk.GetConsAddress(sdkCk)
 }
 
 type Store interface {
@@ -131,10 +130,6 @@ type Store interface {
 
 type KeyMap struct {
 	Store Store
-	// TODO: there's currently a slight asymmetry because
-	// a consAddr is only lookupable if it is in ckToMemo
-	// but ideally it should also be possible if the cpk
-	// is a value in pkToCk
 }
 
 func MakeKeyMap(store Store) KeyMap {
@@ -155,9 +150,7 @@ func (e *KeyMap) SetProviderPubKeyToConsumerPubKey(pk ProviderPubKey, ck Consume
 	}
 	e.Store.SetPkToCkValue(pk, ck)
 	e.Store.SetCkToPkValue(ck, pk)
-	// TODO: fix the assymetry with cca reverse lookup
-	// it should be queryable even if it wasn't sent in a memo
-	// Then fix the tests
+	e.Store.SetCcaToCkValue(ConsumerPubKeyToConsumerConsAddr(ck), ck)
 	return nil
 }
 
@@ -193,8 +186,10 @@ func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 		if !found {
 			panic("must find memo for consumer key ck")
 		}
-		e.Store.DelCcaToCkKey(m.Cca)
 		e.Store.DelCkToMemoKey(ck)
+		if _, found := e.Store.GetCkToPkValue(ck); !found {
+			e.Store.DelCcaToCkKey(m.Cca)
+		}
 	}
 }
 
@@ -260,7 +255,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 			if u.Pk.Equal(pk) && 0 < u.Power {
 				// For each provider key for which there was already a positive update
 				// create a deletion update for the associated consumer key.
-				cca := consumerPubKeyToConsumerConsAddr(*u.Ck)
+				cca := ConsumerPubKeyToConsumerConsAddr(*u.Ck)
 				e.Store.SetCkToMemoValue(*u.Ck, ccvtypes.Memo{Ck: u.Ck, Pk: &pk, Vscid: vscid, Power: 0, Cca: cca})
 				e.Store.SetCcaToCkValue(cca, *u.Ck)
 				ret[*u.Ck] = 0
@@ -294,7 +289,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 			if !found {
 				panic("must find ck for pk")
 			}
-			cca := consumerPubKeyToConsumerConsAddr(ck)
+			cca := ConsumerPubKeyToConsumerConsAddr(ck)
 			e.Store.SetCkToMemoValue(ck, ccvtypes.Memo{Ck: &ck, Pk: &pk, Vscid: vscid, Power: power, Cca: cca})
 			e.Store.SetCcaToCkValue(cca, ck)
 			if k, found := canonicalKey[DeterministicStringify(ck)]; found {
@@ -317,7 +312,7 @@ func (e *KeyMap) InternalInvariants() bool {
 		// No two provider keys can map to the same consumer key
 		// (pkToCk is sane)
 		seen := map[string]bool{}
-		e.Store.IteratePkToCk(func(_, ck ConsumerPubKey) bool {
+		e.Store.IteratePkToCk(func(_ ProviderPubKey, ck ConsumerPubKey) bool {
 			if seen[DeterministicStringify(ck)] {
 				good = false
 			}
@@ -327,10 +322,29 @@ func (e *KeyMap) InternalInvariants() bool {
 	}
 
 	{
-		// all values of pkToCk is a key of ckToPk
+		// All values of pkToCk is a key of ckToPk
 		// (reverse lookup is always possible)
-		e.Store.IteratePkToCk(func(_, ck ConsumerPubKey) bool {
-			if _, ok := e.Store.GetCkToPkValue(ck); !ok {
+		e.Store.IteratePkToCk(func(pk ProviderPubKey, ck ConsumerPubKey) bool {
+			if pkQueried, ok := e.Store.GetCkToPkValue(ck); ok {
+				good = good && pkQueried.Equal(pk)
+			} else {
+				good = false
+			}
+			return false
+		})
+	}
+
+	{
+		// All values of pkToCk is a key of ccaToCk
+		// (reverse lookup is always possible, using consAddr)
+		e.Store.IteratePkToCk(func(pk ProviderPubKey, ck ConsumerPubKey) bool {
+			cca := ConsumerPubKeyToConsumerConsAddr(ck)
+			ckQueried, found := e.Store.GetCcaToCkValue(cca)
+			good = good && found
+
+			if pkQueried, ok := e.Store.GetCkToPkValue(ckQueried); ok {
+				good = good && pkQueried.Equal(pk)
+			} else {
 				good = false
 			}
 			return false
@@ -341,7 +355,7 @@ func (e *KeyMap) InternalInvariants() bool {
 		// All consumer keys mapping to provider keys are actually
 		// mapped to by the provider key.
 		// (ckToPk is sane)
-		e.Store.IterateCkToPk(func(ck, _ ProviderPubKey) bool {
+		e.Store.IterateCkToPk(func(ck ConsumerPubKey, _ ProviderPubKey) bool {
 			found := false
 			e.Store.IteratePkToCk(func(_, candidateCk ConsumerPubKey) bool {
 				if candidateCk.Equal(ck) {
@@ -360,7 +374,7 @@ func (e *KeyMap) InternalInvariants() bool {
 		// any memo containing the same consumer key has the same
 		// mapping.
 		// (Ensures lookups are correct)
-		e.Store.IterateCkToPk(func(ck, pk ProviderPubKey) bool {
+		e.Store.IterateCkToPk(func(ck ConsumerPubKey, pk ProviderPubKey) bool {
 			if m, ok := e.Store.GetCkToMemoValue(ck); ok {
 				if !pk.Equal(m.Pk) {
 					good = false
@@ -403,23 +417,6 @@ func (e *KeyMap) InternalInvariants() bool {
 				good = false
 			}
 			seen[DeterministicStringify(ck)] = true
-			return false
-		})
-	}
-
-	{
-		// All entries in ccaToCk have a consumer pub key
-		// which is a key of ckToMemo
-		e.Store.IterateCcaToCk(func(cca ConsumerConsAddr, ck ConsumerPubKey) bool {
-			m, found := e.Store.GetCkToMemoValue(ck)
-			if !found {
-				good = false
-			}
-			for i := range m.Cca {
-				if m.Cca[i] != cca[i] {
-					good = false
-				}
-			}
 			return false
 		})
 	}
