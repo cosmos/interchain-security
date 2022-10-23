@@ -525,7 +525,7 @@ func TestKeyMapPropertiesRandomlyHeuristically(t *testing.T) {
 	}
 }
 
-func TestMemo(t *testing.T) {
+func TestKeyMapMemo(t *testing.T) {
 	arr := []ccvtypes.Memo{
 		{}, {},
 	}
@@ -545,7 +545,7 @@ func TestMemo(t *testing.T) {
 	require.True(t, pk.Equal(key(0)))
 }
 
-func TestMemoLoopIteration(t *testing.T) {
+func TestKeyMapMemoLoopIteration(t *testing.T) {
 	m := ccvtypes.Memo{}
 	{
 		k0 := key(0)
