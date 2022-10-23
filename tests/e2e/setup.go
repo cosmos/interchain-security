@@ -78,11 +78,6 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.Require().True(bytes.Equal(addr1, addr2), "validator mismatch")
 	}
 
-	km := providerKeeper.KeyMap(suite.providerCtx(), suite.consumerChain.ChainID)
-	for _, update := range providerValUpdates {
-		km.SetProviderPubKeyToConsumerPubKey(update.PubKey, update.PubKey)
-	}
-
 	// move both chains to the next block
 	suite.providerChain.NextBlock()
 	suite.consumerChain.NextBlock()
@@ -94,7 +89,6 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.consumerChain.LastHeader.GetHeight().(clienttypes.Height),
 		false,
 	)
-
 	suite.Require().NoError(err)
 	// move provider to next block to commit the state
 	suite.providerChain.NextBlock()

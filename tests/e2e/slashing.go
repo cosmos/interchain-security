@@ -352,7 +352,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 
 	// expect the slash to not succeed if validator doesn't exist
 	err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
-	suite.Require().Error(err, "slashing unknown validator should result in an error")
+	suite.Require().Error(err, "slashing an unknown validator should result in error")
 
 	// jail an existing validator
 	val := suite.providerChain.Vals.Validators[0]
@@ -395,7 +395,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 
 	// expect the slash to not succeed when validator is tombstoned
 	err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
-	suite.Require().Error(err)
+	suite.Require().Error(err, "tried to slash tombstoned validator")
 }
 
 // TestHandleSlashPacketDistribution tests the slashing of an undelegation balance
