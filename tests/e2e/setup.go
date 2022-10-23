@@ -78,6 +78,13 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.Require().True(bytes.Equal(addr1, addr2), "validator mismatch")
 	}
 
+	// TODO: why does this cause a proof failure?
+	for _, update := range providerValUpdates {
+		providerKeeper.KeyMap(suite.providerCtx(), suite.consumerChain.ChainID).SetProviderPubKeyToConsumerPubKey(
+			update.PubKey, update.PubKey,
+		)
+	}
+
 	// move both chains to the next block
 	suite.providerChain.NextBlock()
 	suite.consumerChain.NextBlock()
