@@ -15,6 +15,7 @@ func NewConsumerStates(
 	unbondingOpsIndexes []UnbondingOpIndex,
 	pendingValsetChanges []ccv.ValidatorSetChangePacketData,
 	slashDowntimeAck []string,
+	keymap *ccv.KeyMap,
 ) ConsumerState {
 	return ConsumerState{
 		ChainId:                chainID,
@@ -26,5 +27,6 @@ func NewConsumerStates(
 		PendingValsetChanges:   pendingValsetChanges,
 		ConsumerGenesis:        genesis,
 		SlashDowntimeAck:       slashDowntimeAck,
+		KeyMap:                 keymap,
 	}
 }
