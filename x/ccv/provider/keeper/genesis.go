@@ -80,13 +80,13 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 				k.KeyMap(ctx, cs.ChainId).Store.SetPkToCk(*pkToCk.From, *pkToCk.To)
 			}
 			for _, ckToPk := range cs.KeyMap.CkToPk {
-				k.KeyMap(ctx, cs.ChainId).Store.SetCkToPkValue(*ckToPk.From, *ckToPk.To)
+				k.KeyMap(ctx, cs.ChainId).Store.SetCkToPk(*ckToPk.From, *ckToPk.To)
 			}
 			for _, ckToMemo := range cs.KeyMap.CkToMemo {
-				k.KeyMap(ctx, cs.ChainId).Store.SetCkToMemoValue(*ckToMemo.Key, *ckToMemo.Memo)
+				k.KeyMap(ctx, cs.ChainId).Store.SetCkToMemo(*ckToMemo.Key, *ckToMemo.Memo)
 			}
 			for _, ccaToCk := range cs.KeyMap.CcaToCk {
-				k.KeyMap(ctx, cs.ChainId).Store.SetCcaToCkValue(ccaToCk.ConsAddr, *ccaToCk.Key)
+				k.KeyMap(ctx, cs.ChainId).Store.SetCcaToCk(ccaToCk.ConsAddr, *ccaToCk.Key)
 			}
 		}
 	}

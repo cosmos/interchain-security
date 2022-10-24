@@ -733,17 +733,17 @@ func compareForEquality(t *testing.T,
 	require.Equal(t, len(ccaToCk), cnt)
 
 	for k, vExpect := range pkToCk {
-		vActual, found := km.Store.GetPkToCkValue(k)
+		vActual, found := km.Store.GetPkToCk(k)
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
 	for k, vExpect := range ckToPk {
-		vActual, found := km.Store.GetCkToPkValue(k)
+		vActual, found := km.Store.GetCkToPk(k)
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
 	for k, vExpect := range ckToMemo {
-		m, found := km.Store.GetCkToMemoValue(k)
+		m, found := km.Store.GetCkToMemo(k)
 		require.True(t, found)
 		require.Equal(t, vExpect.Pk, m.Pk)
 		require.Equal(t, vExpect.Ck, m.Ck)
@@ -752,7 +752,7 @@ func compareForEquality(t *testing.T,
 		require.Equal(t, vExpect.Power, m.Power)
 	}
 	for k, vExpect := range ccaToCk {
-		vActual, found := km.Store.GetCcaToCkValue(keeper.ConsumerConsAddr(k))
+		vActual, found := km.Store.GetCcaToCk(keeper.ConsumerConsAddr(k))
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
@@ -805,13 +805,13 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 			km.Store.SetPkToCk(k, v)
 		}
 		for k, v := range ckToPk {
-			km.Store.SetCkToPkValue(k, v)
+			km.Store.SetCkToPk(k, v)
 		}
 		for k, v := range ckToMemo {
-			km.Store.SetCkToMemoValue(k, v)
+			km.Store.SetCkToMemo(k, v)
 		}
 		for k, v := range ccaToCk {
-			km.Store.SetCcaToCkValue([]byte(k), v)
+			km.Store.SetCcaToCk([]byte(k), v)
 		}
 	}
 
