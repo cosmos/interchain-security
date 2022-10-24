@@ -77,7 +77,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 		if cs.KeyMap != nil {
 			for _, pkToCk := range cs.KeyMap.PkToCk {
-				k.KeyMap(ctx, cs.ChainId).Store.SetPkToCkValue(*pkToCk.From, *pkToCk.To)
+				k.KeyMap(ctx, cs.ChainId).Store.SetPkToCk(*pkToCk.From, *pkToCk.To)
 			}
 			for _, ckToPk := range cs.KeyMap.CkToPk {
 				k.KeyMap(ctx, cs.ChainId).Store.SetCkToPkValue(*ckToPk.From, *ckToPk.To)

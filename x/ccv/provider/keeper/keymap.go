@@ -95,7 +95,7 @@ func ConsumerPubKeyToConsumerConsAddr(ck ConsumerPubKey) ConsumerConsAddr {
 }
 
 type Store interface {
-	SetPkToCkValue(ProviderPubKey, ConsumerPubKey)
+	SetPkToCk(ProviderPubKey, ConsumerPubKey)
 	SetCkToPkValue(ConsumerPubKey, ProviderPubKey)
 	SetCkToMemoValue(ConsumerPubKey, ccvtypes.Memo)
 	SetCcaToCkValue(ConsumerConsAddr, ConsumerPubKey)
@@ -124,17 +124,20 @@ func MakeKeyMap(store Store) KeyMap {
 }
 
 func (e *KeyMap) SetProviderPubKeyToConsumerPubKey(pk ProviderPubKey, ck ConsumerPubKey) error {
+	// TODO: comment
 	if _, ok := e.Store.GetCkToPkValue(ck); ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
+	// TODO: comment
 	if _, ok := e.Store.GetCkToMemoValue(ck); ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
 	if oldCk, ok := e.Store.GetPkToCkValue(pk); ok {
 		e.Store.DelCkToPkKey(oldCk)
 	}
-	e.Store.SetPkToCkValue(pk, ck)
+	e.Store.SetPkToCk(pk, ck)
 	e.Store.SetCkToPkValue(ck, pk)
+	// TODO: check leak
 	e.Store.SetCcaToCkValue(ConsumerPubKeyToConsumerConsAddr(ck), ck)
 	return nil
 }
@@ -207,7 +210,8 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 	e.Store.IterateCkToMemo(func(oldCk ConsumerPubKey, m ccvtypes.Memo) bool {
 		if newCk, ok := e.Store.GetPkToCkValue(*m.Pk); ok {
 			str := DeterministicStringify(*m.Pk)
-			if !seen[str] && !oldCk.Equal(newCk) && 0 < m.Power {
+			// TODO: is !seen[str] needed?
+			if !seen[str] && !oldCk.Equal(newCk) && 0 < m.Power { // TODO: comment why 0 < needed
 				pks = append(pks, *m.Pk)
 				seen[str] = true
 			}
@@ -230,9 +234,12 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 	// updates to the old version.
 	ckToMemo_READ_ONLY := map[ConsumerPubKey]ccvtypes.Memo{}
 	e.Store.IterateCkToMemo(func(ck ConsumerPubKey, m ccvtypes.Memo) bool {
+		// TODO: use determinsitic map key
 		ckToMemo_READ_ONLY[ck] = m
 		return false
 	})
+
+	// TODO: comment what is this block for?
 
 	for i := range pks {
 		pk := pks[i]
@@ -248,6 +255,8 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 			}
 		}
 	}
+
+	// TODO: comment what is this block for?
 
 	for i := range pks {
 		pk := pks[i]
@@ -415,7 +424,7 @@ type KeyMapStore struct {
 	ChainID ChainID
 }
 
-func (s *KeyMapStore) SetPkToCkValue(k ProviderPubKey, v ConsumerPubKey) {
+func (s *KeyMapStore) SetPkToCk(k ProviderPubKey, v ConsumerPubKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -426,7 +435,7 @@ func (s *KeyMapStore) SetPkToCkValue(k ProviderPubKey, v ConsumerPubKey) {
 	}
 	s.Store.Set(types.KeyMapPkToCkKey(s.ChainID, kbz), vbz)
 }
-func (s *KeyMapStore) SetCkToPkValue(k ConsumerPubKey, v ProviderPubKey) {
+func (s *KeyMapStore) SetCkToPk(k ConsumerPubKey, v ProviderPubKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -437,7 +446,7 @@ func (s *KeyMapStore) SetCkToPkValue(k ConsumerPubKey, v ProviderPubKey) {
 	}
 	s.Store.Set(types.KeyMapCkToPkKey(s.ChainID, kbz), vbz)
 }
-func (s *KeyMapStore) SetCkToMemoValue(k ConsumerPubKey, v ccvtypes.Memo) {
+func (s *KeyMapStore) SetCkToMemo(k ConsumerPubKey, v ccvtypes.Memo) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -448,7 +457,7 @@ func (s *KeyMapStore) SetCkToMemoValue(k ConsumerPubKey, v ccvtypes.Memo) {
 	}
 	s.Store.Set(types.KeyMapCkToMemoKey(s.ChainID, kbz), vbz)
 }
-func (s *KeyMapStore) SetCcaToCkValue(k ConsumerConsAddr, v ConsumerPubKey) {
+func (s *KeyMapStore) SetCcaToCk(k ConsumerConsAddr, v ConsumerPubKey) {
 	kbz := []byte(k)
 	vbz, err := v.Marshal()
 	if err != nil {
@@ -456,7 +465,7 @@ func (s *KeyMapStore) SetCcaToCkValue(k ConsumerConsAddr, v ConsumerPubKey) {
 	}
 	s.Store.Set(types.KeyMapCcaToCkKey(s.ChainID, kbz), vbz)
 }
-func (s *KeyMapStore) GetPkToCkValue(k ProviderPubKey) (v ConsumerPubKey, found bool) {
+func (s *KeyMapStore) GetPkToCk(k ProviderPubKey) (v ConsumerPubKey, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -470,7 +479,7 @@ func (s *KeyMapStore) GetPkToCkValue(k ProviderPubKey) (v ConsumerPubKey, found 
 	}
 	return v, false
 }
-func (s *KeyMapStore) GetCkToPkValue(k ConsumerPubKey) (v ProviderPubKey, found bool) {
+func (s *KeyMapStore) GetCkToPk(k ConsumerPubKey) (v ProviderPubKey, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -484,7 +493,7 @@ func (s *KeyMapStore) GetCkToPkValue(k ConsumerPubKey) (v ProviderPubKey, found 
 	}
 	return v, false
 }
-func (s *KeyMapStore) GetCkToMemoValue(k ConsumerPubKey) (v ccvtypes.Memo, found bool) {
+func (s *KeyMapStore) GetCkToMemo(k ConsumerPubKey) (v ccvtypes.Memo, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -499,7 +508,7 @@ func (s *KeyMapStore) GetCkToMemoValue(k ConsumerPubKey) (v ccvtypes.Memo, found
 	}
 	return v, false
 }
-func (s *KeyMapStore) GetCcaToCkValue(k ConsumerConsAddr) (v ConsumerPubKey, found bool) {
+func (s *KeyMapStore) GetCcaToCk(k ConsumerConsAddr) (v ConsumerPubKey, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -514,28 +523,28 @@ func (s *KeyMapStore) GetCcaToCkValue(k ConsumerConsAddr) (v ConsumerPubKey, fou
 	return v, false
 }
 
-func (s *KeyMapStore) DelPkToCkKey(k ProviderPubKey) {
+func (s *KeyMapStore) DelPkToCk(k ProviderPubKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
 	s.Store.Delete(types.KeyMapPkToCkKey(s.ChainID, kbz))
 }
-func (s *KeyMapStore) DelCkToPkKey(k ConsumerPubKey) {
+func (s *KeyMapStore) DelCkToPk(k ConsumerPubKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
 	s.Store.Delete(types.KeyMapCkToPkKey(s.ChainID, kbz))
 }
-func (s *KeyMapStore) DelCkToMemoKey(k ConsumerPubKey) {
+func (s *KeyMapStore) DelCkToMemo(k ConsumerPubKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
 	s.Store.Delete(types.KeyMapCkToMemoKey(s.ChainID, kbz))
 }
-func (s *KeyMapStore) DelCcaToCkKey(k ConsumerConsAddr) {
+func (s *KeyMapStore) DelCcaToCk(k ConsumerConsAddr) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)

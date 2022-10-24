@@ -802,7 +802,7 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 		store := keeper.KeyMapStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
 		km := keeper.MakeKeyMap(&store)
 		for k, v := range pkToCk {
-			km.Store.SetPkToCkValue(k, v)
+			km.Store.SetPkToCk(k, v)
 		}
 		for k, v := range ckToPk {
 			km.Store.SetCkToPkValue(k, v)
