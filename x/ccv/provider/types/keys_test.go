@@ -53,55 +53,32 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{SlashAcksBytePrefix}, i+1
 	keys[i], i = []byte{InitChainHeightBytePrefix}, i+1
 	keys[i], i = []byte{PendingVSCsBytePrefix}, i+1
+	keys[i], i = []byte{VscTimeoutTimestampBytePrefix}, i+1
 	keys[i], i = []byte{LockUnbondingOnTimeoutBytePrefix}, i+1
 
 	return keys[:i]
 }
 
-// Tests the construction and parsing of keys for storing pending consumer addition proposals
-func TestPendingCAPKeyAndParse(t *testing.T) {
+// Tests the construction and parsing of TsAndChainId keys
+func TestTsAndChainIdKeyAndParse(t *testing.T) {
 	tests := []struct {
+		prefix    byte
 		timestamp time.Time
 		chainID   string
 	}{
-		{timestamp: time.Now(), chainID: "1"},
-		{timestamp: time.Date(
+		{prefix: 0x01, timestamp: time.Now(), chainID: "1"},
+		{prefix: 0x02, timestamp: time.Date(
 			2003, 11, 17, 20, 34, 58, 651387237, time.UTC), chainID: "some other ID"},
-		{timestamp: time.Now().Add(5000 * time.Hour), chainID: "some other other chain ID"},
+		{prefix: 0x03, timestamp: time.Now().Add(5000 * time.Hour), chainID: "some other other chain ID"},
 	}
 
 	for _, test := range tests {
-		key := PendingCAPKey(test.timestamp, test.chainID)
+		key := tsAndChainIdKey(test.prefix, test.timestamp, test.chainID)
 		require.NotEmpty(t, key)
 		// Expected bytes = prefix + time length + time bytes + length of chainID
-		expectedBytes := 1 + 8 + len(sdk.FormatTimeBytes(time.Time{})) + len(test.chainID)
-		require.Equal(t, expectedBytes, len(key))
-		parsedTime, parsedID, err := ParsePendingCAPKey(key)
-		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
-		require.Equal(t, test.chainID, parsedID)
-		require.NoError(t, err)
-	}
-}
-
-// Tests the construction and parsing of keys for storing pending consumer removal proposals
-func TestPendingCRPKeyAndParse(t *testing.T) {
-	tests := []struct {
-		timestamp time.Time
-		chainID   string
-	}{
-		{timestamp: time.Now(), chainID: "5"},
-		{timestamp: time.Date(
-			2003, 11, 17, 20, 34, 58, 651387237, time.UTC), chainID: "some other ID"},
-		{timestamp: time.Now().Add(5000 * time.Hour), chainID: "some other other chain ID"},
-	}
-
-	for _, test := range tests {
-		key := PendingCRPKey(test.timestamp, test.chainID)
-		require.NotEmpty(t, key)
-		// Expected bytes = prefix + time length + time bytes + length of chainID
-		expectedBytes := 1 + 8 + len(sdk.FormatTimeBytes(time.Time{})) + len(test.chainID)
-		require.Equal(t, expectedBytes, len(key))
-		parsedTime, parsedID, err := ParsePendingCRPKey(key)
+		expectedLen := 1 + 8 + len(sdk.FormatTimeBytes(time.Time{})) + len(test.chainID)
+		require.Equal(t, expectedLen, len(key))
+		parsedTime, parsedID, err := parseTsAndChainIdKey(test.prefix, key)
 		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
 		require.Equal(t, test.chainID, parsedID)
 		require.NoError(t, err)

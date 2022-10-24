@@ -88,6 +88,10 @@ const (
 	// PendingVSCsBytePrefix is the byte prefix that will store pending ValidatorSetChangePacket data
 	PendingVSCsBytePrefix
 
+	// VscTimeoutTimestampBytePrefix is the byte prefix for storing
+	// the list of VSC timeout timestamps for a given consumer chainID.
+	VscTimeoutTimestampBytePrefix
+
 	// LockUnbondingOnTimeoutBytePrefix is the byte prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
 	LockUnbondingOnTimeoutBytePrefix
 )
@@ -134,13 +138,19 @@ func InitTimeoutTimestampKey(chainID string) []byte {
 
 // PendingCAPKey returns the key under which a pending consumer addition proposal is stored
 func PendingCAPKey(timestamp time.Time, chainID string) []byte {
+	return tsAndChainIdKey(PendingCAPBytePrefix, timestamp, chainID)
+}
+
+// tsAndChainIdKey returns the key with the following format:
+// bytePrefix | len(timestamp) | timestamp | chainID
+func tsAndChainIdKey(prefix byte, timestamp time.Time, chainID string) []byte {
 	timeBz := sdk.FormatTimeBytes(timestamp)
 	timeBzL := len(timeBz)
-	prefixL := len([]byte{PendingCAPBytePrefix})
+	prefixL := len([]byte{prefix})
 
 	bz := make([]byte, prefixL+8+timeBzL+len(chainID))
 	// copy the prefix
-	copy(bz[:prefixL], []byte{PendingCAPBytePrefix})
+	copy(bz[:prefixL], []byte{prefix})
 	// copy the time length
 	copy(bz[prefixL:prefixL+8], sdk.Uint64ToBigEndian(uint64(timeBzL)))
 	// copy the time bytes
@@ -153,7 +163,12 @@ func PendingCAPKey(timestamp time.Time, chainID string) []byte {
 // ParsePendingCAPKey returns the time and chain ID for a pending consumer addition proposal key
 // or an error if unparsable
 func ParsePendingCAPKey(bz []byte) (time.Time, string, error) {
-	expectedPrefix := []byte{PendingCAPBytePrefix}
+	return parseTsAndChainIdKey(PendingCAPBytePrefix, bz)
+}
+
+// parseTsAndChainIdKey returns the time and chain ID for a TsAndChainId key
+func parseTsAndChainIdKey(prefix byte, bz []byte) (time.Time, string, error) {
+	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
 		return time.Time{}, "", fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
@@ -171,38 +186,12 @@ func ParsePendingCAPKey(bz []byte) (time.Time, string, error) {
 
 // PendingCRPKey returns the key under which pending consumer removal proposals are stored
 func PendingCRPKey(timestamp time.Time, chainID string) []byte {
-	timeBz := sdk.FormatTimeBytes(timestamp)
-	timeBzL := len(timeBz)
-	prefixL := len([]byte{PendingCRPBytePrefix})
-
-	bz := make([]byte, prefixL+8+timeBzL+len(chainID))
-	// copy the prefix
-	copy(bz[:prefixL], []byte{PendingCRPBytePrefix})
-	// copy the time length
-	copy(bz[prefixL:prefixL+8], sdk.Uint64ToBigEndian(uint64(timeBzL)))
-	// copy the time bytes
-	copy(bz[prefixL+8:prefixL+8+timeBzL], timeBz)
-	// copy the chainId
-	copy(bz[prefixL+8+timeBzL:], chainID)
-	return bz
+	return tsAndChainIdKey(PendingCRPBytePrefix, timestamp, chainID)
 }
 
 // ParsePendingCRPKey returns the time and chain ID for a pending consumer removal proposal key or an error if unparseable
 func ParsePendingCRPKey(bz []byte) (time.Time, string, error) {
-	expectedPrefix := []byte{PendingCRPBytePrefix}
-	prefixL := len(expectedPrefix)
-	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
-		return time.Time{}, "", fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
-	}
-
-	timeBzL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
-	timestamp, err := sdk.ParseTimeBytes(bz[prefixL+8 : prefixL+8+int(timeBzL)])
-	if err != nil {
-		return time.Time{}, "", err
-	}
-
-	chainID := string(bz[prefixL+8+int(timeBzL):])
-	return timestamp, chainID, nil
+	return parseTsAndChainIdKey(PendingCRPBytePrefix, bz)
 }
 
 // UnbondingOpIndexKey returns an unbonding op index key
@@ -260,6 +249,18 @@ func InitChainHeightKey(chainID string) []byte {
 // pending ValidatorSetChangePacket data is stored for a given chain ID
 func PendingVSCsKey(chainID string) []byte {
 	return append([]byte{PendingVSCsBytePrefix}, []byte(chainID)...)
+}
+
+// VscTimeoutTimestampKey returns the key under which the list of
+// VSC timeout timestamps for a given chain ID is stored
+func VscTimeoutTimestampKey(timestamp time.Time, chainID string) []byte {
+	return tsAndChainIdKey(VscTimeoutTimestampBytePrefix, timestamp, chainID)
+}
+
+// ParseVscTimeoutTimestampKey returns the time and chain ID
+// for a VscTimeoutTimestampKey or an error if unparsable
+func ParseVscTimeoutTimestampKey(bz []byte) (time.Time, string, error) {
+	return parseTsAndChainIdKey(VscTimeoutTimestampBytePrefix, bz)
 }
 
 // LockUnbondingOnTimeoutKey returns the key that will store the consumer chain id which unbonding operations are locked
