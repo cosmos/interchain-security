@@ -28,7 +28,7 @@ func TestParams(t *testing.T) {
 
 	newParams := types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
 		time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-		ccvtypes.DefaultCCVTimeoutPeriod, types.DafaultInitTimeoutPeriod, types.DefaultVscTimeoutPeriod)
+		types.DefaultTrustingPeriodFraction, ccvtypes.DefaultCCVTimeoutPeriod, types.DafaultInitTimeoutPeriod, types.DefaultVscTimeoutPeriod)
 	providerKeeper.SetParams(ctx, newParams)
 	params = providerKeeper.GetParams(ctx)
 	require.Equal(t, newParams, params)

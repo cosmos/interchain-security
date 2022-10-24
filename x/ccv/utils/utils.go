@@ -13,10 +13,6 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// TrustingPeriodFraction is used to compute the IBC clients TrustingPeriod
-// as UnbondingPeriod / TrustingPeriodFraction
-const TrustingPeriodFraction = 2
-
 func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci.ValidatorUpdate {
 	m := make(map[string]abci.ValidatorUpdate)
 

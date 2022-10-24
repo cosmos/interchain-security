@@ -60,7 +60,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHei
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = chainID
 	clientState.LatestHeight = initialHeight
-	clientState.TrustingPeriod = unbondingPeriod / utils.TrustingPeriodFraction
+	clientState.TrustingPeriod = unbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
 	clientState.UnbondingPeriod = unbondingPeriod
 
 	// TODO: Allow for current validators to set different keys
@@ -200,7 +200,7 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = ctx.ChainID()
 	clientState.LatestHeight = height //(+-1???)
-	clientState.TrustingPeriod = unbondingTime / utils.TrustingPeriodFraction
+	clientState.TrustingPeriod = unbondingTime / time.Duration(k.GetTrustingPeriodFraction(ctx))
 	clientState.UnbondingPeriod = unbondingTime
 
 	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
