@@ -69,7 +69,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 				nil,
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
 				nil,
-				&keyMaps[0],
+				&keyMaps[1],
 			),
 		},
 		[]ccv.UnbondingOp{{
