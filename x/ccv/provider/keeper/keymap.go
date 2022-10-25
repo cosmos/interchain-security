@@ -186,7 +186,6 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 
 	providerKeysToSendUpdateFor := []ProviderPubKey{}
 	keyInProviderKeysToSendUpdateFor := map[string]bool{}
-	providerKeysLastPositivePowerUpdate := map[string]ccvtypes.LastUpdateMemo{}
 
 	// Grab provider keys where the last update had positive power
 	// and where the assigned consumer key has changed
@@ -211,6 +210,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 		}
 	}
 
+	providerKeysLastPositivePowerUpdate := map[string]ccvtypes.LastUpdateMemo{}
 	canonicalKey := map[string]ConsumerPubKey{}
 	ret := map[ConsumerPubKey]int64{}
 
