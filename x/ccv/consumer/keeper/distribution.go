@@ -132,3 +132,38 @@ func (k Keeper) GetConnectionHops(ctx sdk.Context, srcPort, srcChan string) ([]s
 	}
 	return ch.ConnectionHops, nil
 }
+
+// GetEstimatedNextFeeDistribution returns data about next fee distribution. Data represents an estimation of
+// accumulated fees at the current block height.
+func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) (types.NextFeeDistributionEstimate, error) {
+	lastH, err := k.GetLastTransmissionBlockHeight(ctx)
+	if err != nil {
+		return types.NextFeeDistributionEstimate{}, err
+	}
+
+	nextH := lastH.GetHeight() + k.GetBlocksPerDistributionTransmission(ctx)
+
+	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
+	total := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
+
+	fracParam := k.GetConsumerRedistributionFrac(ctx)
+	frac, err := sdk.NewDecFromStr(fracParam)
+	if err != nil {
+		return types.NextFeeDistributionEstimate{}, err
+	}
+
+	totalTokens := sdk.NewDecCoinsFromCoins(total...)
+	// truncated decimals are implicitly added to provider
+	consumerTokens, _ := totalTokens.MulDec(frac).TruncateDecimal()
+	providerTokens := total.Sub(consumerTokens)
+
+	return types.NextFeeDistributionEstimate{
+		CurrentHeight:        ctx.BlockHeight(),
+		LastHeight:           lastH.GetHeight(),
+		NextHeight:           nextH,
+		DistributionFraction: fracParam,
+		Total:                totalTokens.String(),
+		ToProvider:           sdk.NewDecCoinsFromCoins(providerTokens...).String(),
+		ToConsumer:           sdk.NewDecCoinsFromCoins(consumerTokens...).String(),
+	}, nil
+}
