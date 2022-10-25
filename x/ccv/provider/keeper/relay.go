@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -39,6 +41,10 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		// this should never happen
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
+
+	// It is now possible to delete keys from the keymap which the consumer chain
+	// is no longer able to reference in slash requests.
+	k.KeyMap(ctx, chainID).PruneUnusedKeys(data.ValsetUpdateId)
 
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
 	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
@@ -123,22 +129,35 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 	// get the validator updates from the staking module
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		// check whether there is an established CCV channel to this consumer chain
-		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
-			// Send pending VSC packets to consumer chain
-			k.SendPendingVSCPackets(ctx, chainID, channelID)
-		}
+
+		packets := k.ConsumePendingVSCs(ctx, chainID)
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations
 		// w/o changes in the voting power of the validators in the validator set
 		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
-			// construct validator set change packet data
-			packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
 
-			// check whether there is an established CCV channel to this consumer chain
-			if channelID, found := k.GetChainToChannel(ctx, chainID); found {
+			for _, u := range valUpdates {
+				if _, found := k.KeyMap(ctx, chainID).GetCurrentConsumerPubKeyFromProviderPubKey(u.PubKey); !found {
+					// The provider has not designated a key to use for the consumer chain. Use the provider key
+					// by default.
+					k.KeyMap(ctx, chainID).SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
+				}
+			}
+
+			// Map the updates through any key transformations
+			updatesToSend := k.KeyMap(ctx, chainID).ComputeUpdates(valUpdateID, valUpdates)
+
+			packets = append(
+				packets,
+				ccv.NewValidatorSetChangePacketData(updatesToSend, valUpdateID, k.ConsumeSlashAcks(ctx, chainID)),
+			)
+		}
+
+		// check whether there is an established CCV channel to this consumer chain
+		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
+			for _, data := range packets {
 				// send this validator set change packet data to the consumer chain
 				err := utils.SendIBCPacket(
 					ctx,
@@ -146,41 +165,21 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 					k.channelKeeper,
 					channelID,          // source channel id
 					ccv.ProviderPortID, // source port id
-					packetData.GetBytes(),
+					data.GetBytes(),
 					k.GetParams(ctx).CcvTimeoutPeriod,
 				)
 				if err != nil {
 					panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 				}
-			} else {
-				// store the packet data to be sent once the CCV channel is established
-				k.AppendPendingVSC(ctx, chainID, packetData)
 			}
+		} else {
+			// store the packet data to be sent once the CCV channel is established
+			k.SetPendingVSCs(ctx, chainID, packets)
 		}
 		return false // do not stop the iteration
 	})
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
 	k.IncrementValidatorSetUpdateId(ctx)
-}
-
-// Sends all pending ValidatorSetChangePackets to the specified chain
-func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string) {
-	pendingPackets := k.ConsumePendingVSCs(ctx, chainID)
-	for _, data := range pendingPackets {
-		// send packet over IBC
-		err := utils.SendIBCPacket(
-			ctx,
-			k.scopedKeeper,
-			k.channelKeeper,
-			channelID,          // source channel id
-			ccv.ProviderPortID, // source port id
-			data.GetBytes(),
-			k.GetParams(ctx).CcvTimeoutPeriod,
-		)
-		if err != nil {
-			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
-		}
-	}
 }
 
 // OnRecvSlashPacket slashes and jails the given validator in the packet data
@@ -203,6 +202,20 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	return ack
 }
 
+// TODO: should this be a panic or an error?
+func GetSlashingProviderConsAddr(keymap *KeyMap, consumerConsAddress sdk.ConsAddress) (sdk.ConsAddress, error) {
+	providerPublicKey, found := keymap.GetProviderPubKeyFromConsumerConsAddress(consumerConsAddress)
+	if !found {
+		return nil, errors.New("could not find provider address for slashing")
+	}
+	pk, err := cryptocodec.FromTmProtoPublicKey(providerPublicKey)
+	if err != nil {
+		panic("could not get sdk public key from tendermint proto public key for slashing")
+	}
+	return sdk.GetConsAddress(pk), nil
+
+}
+
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
 	// map VSC ID to infraction height for the given chain ID
@@ -219,9 +232,13 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		return false, fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
-	// get the validator
-	consAddr := sdk.ConsAddress(data.Validator.Address)
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+	// TODO: document better
+	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
+	providerConsAddr, err := GetSlashingProviderConsAddr(k.KeyMap(ctx, chainID), consumerConsAddr)
+	if err != nil {
+		return false, nil
+	}
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr)
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
@@ -232,7 +249,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	}
 
 	// tombstoned validators should not be slashed multiple times
-	if k.slashingKeeper.IsTombstoned(ctx, consAddr) {
+	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr) {
 		return false, nil
 	}
 
@@ -249,13 +266,13 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		// then append the validator address to the slash ack for its chain id
 		slashFraction = k.slashingKeeper.SlashFractionDowntime(ctx)
 		jailTime = ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
-		k.AppendSlashAck(ctx, chainID, consAddr.String())
+		k.AppendSlashAck(ctx, chainID, providerConsAddr.String())
 	case stakingtypes.DoubleSign:
 		// set double-signing slash fraction and infinite jail duration
 		// then tombstone the validator
 		slashFraction = k.slashingKeeper.SlashFractionDoubleSign(ctx)
 		jailTime = evidencetypes.DoubleSignJailEndTime
-		k.slashingKeeper.Tombstone(ctx, consAddr)
+		k.slashingKeeper.Tombstone(ctx, providerConsAddr)
 	default:
 		return false, fmt.Errorf("invalid infraction type: %v", data.Infraction)
 	}
@@ -263,7 +280,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// slash validator
 	k.stakingKeeper.Slash(
 		ctx,
-		consAddr,
+		providerConsAddr,
 		int64(infractionHeight),
 		data.Validator.Power,
 		slashFraction,
@@ -272,9 +289,9 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// jail validator
 	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, consAddr)
+		k.stakingKeeper.Jail(ctx, providerConsAddr)
 	}
-	k.slashingKeeper.JailUntil(ctx, consAddr, jailTime)
+	k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
 
 	return true, nil
 }
