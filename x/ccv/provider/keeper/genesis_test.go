@@ -11,7 +11,6 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -25,41 +24,39 @@ func TestIniAndExportGenesis(t *testing.T) {
 	oneHourFromNow := time.Now().UTC().Add(time.Hour)
 	initHeight, vscID := uint64(5), uint64(1)
 	ubdIndex := []uint64{0, 1, 2}
-	params := providertypes.DefaultParams()
+	params := types.DefaultParams()
 	keyMaps := []ccv.KeyMap{
 		{
-			PkToCk:             []ccv.KeyToKey{{From: &crypto.PublicKey{}, To: &crypto.PublicKey{}}},
-			CkToPk:             []ccv.KeyToKey{},
-			CkToLastUpdateMemo: []ccv.KeyToLastUpdateMemo{},
-			CcaToCk:            []ccv.ConsAddrToKey{},
+			PkToCk:              []ccv.KeyToKey{{From: &crypto.PublicKey{}, To: &crypto.PublicKey{}}},
+			CkToPk:              []ccv.KeyToKey{},
+			CcaToLastUpdateMemo: []ccv.ConsAddrToLastUpdateMemo{},
 		},
 		{
-			PkToCk:             []ccv.KeyToKey{},
-			CkToPk:             []ccv.KeyToKey{},
-			CkToLastUpdateMemo: []ccv.KeyToLastUpdateMemo{},
-			CcaToCk:            []ccv.ConsAddrToKey{},
+			PkToCk:              []ccv.KeyToKey{},
+			CkToPk:              []ccv.KeyToKey{},
+			CcaToLastUpdateMemo: []ccv.ConsAddrToLastUpdateMemo{},
 		},
 	}
 
 	// create genesis struct
-	pGenesis := providertypes.NewGenesisState(vscID,
-		[]providertypes.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
-		[]providertypes.ConsumerState{
-			providertypes.NewConsumerStates(
+	pGenesis := types.NewGenesisState(vscID,
+		[]types.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
+		[]types.ConsumerState{
+			types.NewConsumerStates(
 				cChainIDs[0],
 				expClientID,
 				"channel",
 				initHeight,
 				true,
 				*consumertypes.DefaultGenesisState(),
-				[]providertypes.UnbondingOpIndex{
+				[]types.UnbondingOpIndex{
 					{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex},
 				},
 				nil,
 				[]string{"slashedValidatorConsAddress"},
 				&keyMaps[0],
 			),
-			providertypes.NewConsumerStates(
+			types.NewConsumerStates(
 				cChainIDs[1],
 				expClientID,
 				"",
@@ -77,11 +74,11 @@ func TestIniAndExportGenesis(t *testing.T) {
 			UnbondingConsumerChains: []string{cChainIDs[0]},
 		}},
 		&ccv.MaturedUnbondingOps{Ids: ubdIndex},
-		[]providertypes.ConsumerAdditionProposal{types.ConsumerAdditionProposal{
+		[]types.ConsumerAdditionProposal{types.ConsumerAdditionProposal{
 			ChainId:   cChainIDs[0],
 			SpawnTime: oneHourFromNow,
 		}},
-		[]providertypes.ConsumerRemovalProposal{types.ConsumerRemovalProposal{
+		[]types.ConsumerRemovalProposal{types.ConsumerRemovalProposal{
 			ChainId:  cChainIDs[0],
 			StopTime: oneHourFromNow,
 		}},
@@ -134,7 +131,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 
 }
 
-func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, consumerStates ...providertypes.ConsumerState) {
+func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, consumerStates ...types.ConsumerState) {
 	for _, cs := range consumerStates {
 		chainID := cs.ChainId
 		gen, found := pk.GetConsumerGenesis(ctx, chainID)

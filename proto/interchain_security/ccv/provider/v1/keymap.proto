@@ -19,20 +19,14 @@ message KeyToKey {
   tendermint.crypto.PublicKey to = 2;
 }
 
-message KeyToLastUpdateMemo {
-  tendermint.crypto.PublicKey key = 1;
-  LastUpdateMemo last_update_memo = 2;
-}
-
-message ConsAddrToKey {
+message ConsAddrToLastUpdateMemo {
   bytes cons_addr = 1;
-  tendermint.crypto.PublicKey key = 2;
+  LastUpdateMemo last_update_memo = 2;
 }
 
 message KeyMap {
   repeated KeyToKey pk_to_ck = 1 [ (gogoproto.nullable) = false ];
   repeated KeyToKey ck_to_pk = 2 [ (gogoproto.nullable) = false ];
-  repeated KeyToLastUpdateMemo ck_to_last_update_memo = 3
+  repeated ConsAddrToLastUpdateMemo cca_to_last_update_memo = 3
       [ (gogoproto.nullable) = false ];
-  repeated ConsAddrToKey cca_to_ck = 4 [ (gogoproto.nullable) = false ];
 }
