@@ -159,6 +159,7 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 		}
 		return false // do not stop the iteration
 	})
+	// Implements https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-eblock-cis1
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
 	k.IncrementValidatorSetUpdateId(ctx)
 }
@@ -193,11 +194,14 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
+	k.InsertPendingSlashPacket(ctx, chainID, data)
+
+	// TODO: Move this handling
 	// apply slashing
-	if _, err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement(err.Error())
-		return &errAck
-	}
+	// if _, err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
+	// 	errAck := channeltypes.NewErrorAcknowledgement(err.Error())
+	// 	return &errAck
+	// }
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
@@ -205,6 +209,11 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
+
+	// TODO: In spec, infraction height is computed when a slash packet is received.
+	// Change this, or change the spec. Although it's nice to find infraction height
+	// here, since it doesn't have to be persisted.
+
 	// map VSC ID to infraction height for the given chain ID
 	var infractionHeight uint64
 	var found bool

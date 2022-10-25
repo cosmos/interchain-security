@@ -163,6 +163,11 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 
 // EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+
+	// TODO: This is where new method will go which processes queue
+	// TODO: abide by spec here with EndBlockCIS, EndBlockVSU, etc.
+	// Or just make sure it's clear that this abides by spec in comments
+
 	// notify the staking module to complete all matured unbonding ops
 	am.keeper.CompleteMaturedUnbondingOps(ctx)
 

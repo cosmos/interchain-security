@@ -9,6 +9,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 type Status int
@@ -86,6 +87,9 @@ const (
 
 	// LockUnbondingOnTimeoutBytePrefix is the byte prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
 	LockUnbondingOnTimeoutBytePrefix
+
+	// PendingSlashPacketBytePrefix is the byte prefix that will store pending slash packet data
+	PendingSlashPacketBytePrefix
 )
 
 const (
@@ -259,6 +263,37 @@ func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return append([]byte{LockUnbondingOnTimeoutBytePrefix}, []byte(chainID)...)
 }
 
+// PendingSlashPacketKey returns the key under which pending slash packet data
+// is stored for a given timestamp, val address, and chainID.
+//
+// Note: It's not expected for a single consumer chain to send a slash packet for the
+// same validator more than once in the same block. Hence why this key should be
+// unique per slash packet.
+func PendingSlashPacketKey(recvTime time.Time, data ccv.SlashPacketData, chainID string) []byte {
+	timeBz := sdk.FormatTimeBytes(recvTime)
+	timeBzL := len(timeBz)
+	return AppendMany(
+		[]byte{PendingSlashPacketBytePrefix},
+		sdk.Uint64ToBigEndian(uint64(timeBzL)),
+		timeBz,
+		HashBytes(data.Validator.Address),
+		[]byte(chainID),
+	)
+}
+
+// ParsePendingSlashPacketKey returns the chain ID for a pending slash packet key
+func ParsePendingSlashPacketKey(bz []byte) string {
+	expectedPrefix := []byte{PendingSlashPacketBytePrefix}
+	prefixL := len(expectedPrefix)
+	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
+		panic(fmt.Sprintf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix))
+	}
+	timeBzL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	// ChainID is stored after 32 byte hashed validator address
+	chainID := string(bz[prefixL+8+int(timeBzL)+32:])
+	return chainID
+}
+
 // AppendMany appends a variable number of byte slices together
 func AppendMany(byteses ...[]byte) (out []byte) {
 	for _, bytes := range byteses {
@@ -269,6 +304,11 @@ func AppendMany(byteses ...[]byte) (out []byte) {
 
 // HashString outputs a fixed length 32 byte hash for any string
 func HashString(x string) []byte {
-	hash := sha256.Sum256([]byte(x))
+	return HashBytes([]byte(x))
+}
+
+// HashBytes outputs a fixed length 32 byte hash for any byte slice
+func HashBytes(x []byte) []byte {
+	hash := sha256.Sum256(x)
 	return hash[:]
 }

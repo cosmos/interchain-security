@@ -5,7 +5,9 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
+	"github.com/tendermint/tendermint/abci/types"
 )
 
 // Tests that all singular keys, or prefixes to fully resolves keys are a single byte long,
@@ -34,7 +36,7 @@ func TestNoDuplicates(t *testing.T) {
 // any of which should be a single, unique byte.
 func getSingleByteKeys() [][]byte {
 
-	keys := make([][]byte, 16)
+	keys := make([][]byte, 17)
 	i := 0
 
 	keys[i], i = PortKey(), i+1
@@ -52,7 +54,8 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{SlashAcksBytePrefix}, i+1
 	keys[i], i = []byte{InitChainHeightBytePrefix}, i+1
 	keys[i], i = []byte{PendingVSCsBytePrefix}, i+1
-	keys[i] = []byte{LockUnbondingOnTimeoutBytePrefix}
+	keys[i], i = []byte{LockUnbondingOnTimeoutBytePrefix}, i+1
+	keys[i] = []byte{PendingSlashPacketBytePrefix}
 
 	return keys
 }
@@ -128,6 +131,34 @@ func TestUnbondingOpIndexKeyAndParse(t *testing.T) {
 		asUint64 := sdk.BigEndianToUint64(parsedVSCID)
 		require.Equal(t, test.valsetUpdateID, asUint64)
 		require.NoError(t, err)
+	}
+}
+
+// Tests the construction and parsing of keys for pending slash packets
+func TestPendingSlashPacketKeyAndParse(t *testing.T) {
+	tests := []struct {
+		recvTime time.Time
+		data     ccv.SlashPacketData
+		chainID  string
+	}{
+		{
+			recvTime: time.Now(),
+			data: ccv.SlashPacketData{
+				Validator:      types.Validator{Address: []byte("some address"), Power: 100},
+				ValsetUpdateId: 55,
+				Infraction:     7,
+			},
+			chainID: "somechainID"},
+	}
+	for _, test := range tests {
+		key := PendingSlashPacketKey(test.recvTime, test.data, test.chainID)
+		require.NotEmpty(t, key)
+		timeBzL := len(sdk.FormatTimeBytes(test.recvTime))
+		// This key should be of set length: prefix + 8 + timeBzL + hashed valAddr + chainID
+		require.Equal(t, 1+8+timeBzL+32+len(test.chainID), len(key))
+		parsedChainID := ParsePendingSlashPacketKey(key)
+		require.NotEmpty(t, parsedChainID)
+		require.Equal(t, test.chainID, parsedChainID)
 	}
 }
 

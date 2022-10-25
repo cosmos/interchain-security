@@ -777,3 +777,29 @@ func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ChainToClientKey(chainID))
 }
+
+// InsertPendingSlashPacket inserts a slash packet into the pending slash packet queue
+// TODO: see what happens when two slash packets are appended for different chains at same timestamp
+func (k Keeper) InsertPendingSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
+	store := ctx.KVStore(k.storeKey)
+	dataBz := k.cdc.MustMarshal(&data)
+	store.Set(types.PendingSlashPacketKey(ctx.BlockTime(), data, chainID), dataBz)
+}
+
+// TODO: the below method will be used to handle slash packets as defined in spec
+// Use shim from this callback to handleSlashPacket
+
+// IteratePendingSlashPackets iterates over the pending slash packets queue and calls the provided callback
+func (k Keeper) IteratePendingSlashPackets(ctx sdk.Context, cb func(chainID string, data ccv.SlashPacketData) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingSlashPacketBytePrefix})
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		chainID := types.ParsePendingSlashPacketKey(iterator.Key())
+		var data ccv.SlashPacketData
+		k.cdc.MustUnmarshal(iterator.Value(), &data)
+		if cb(chainID, data) {
+			break
+		}
+	}
+}
