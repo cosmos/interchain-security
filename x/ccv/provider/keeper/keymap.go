@@ -235,7 +235,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 			// For each provider key for which there was already a positive update
 			// create a deletion update for the associated consumer key.
 			cca := ConsumerPubKeyToConsumerConsAddr(*u.Ck)
-			e.Store.SetCkToMemo(cca, ccvtypes.LastUpdateMemo{Ck: u.Ck, Pk: &pk, Vscid: vscid, Power: 0, Cca: cca})
+			e.Store.SetCkToMemo(cca, ccvtypes.LastUpdateMemo{Ck: u.Ck, Pk: &pk, Vscid: vscid, Power: 0})
 			ret[*u.Ck] = 0
 			canonicalKey[DeterministicStringify(*u.Ck)] = *u.Ck
 		}
@@ -265,7 +265,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 				panic("must find ck for pk")
 			}
 			cca := ConsumerPubKeyToConsumerConsAddr(ck)
-			e.Store.SetCkToMemo(cca, ccvtypes.LastUpdateMemo{Ck: &ck, Pk: &pk, Vscid: vscid, Power: power, Cca: cca})
+			e.Store.SetCkToMemo(cca, ccvtypes.LastUpdateMemo{Ck: &ck, Pk: &pk, Vscid: vscid, Power: power})
 			if k, found := canonicalKey[DeterministicStringify(ck)]; found {
 				ret[k] = power
 			} else {
@@ -332,7 +332,7 @@ func (e *KeyMap) InternalInvariants() bool {
 		// mapping.
 		// (Ensures lookups are correct)
 		e.Store.IterateCkToPk(func(ck ConsumerPubKey, pk ProviderPubKey) bool {
-			if m, ok := e.Store.GetCkToMemo(ck); ok {
+			if m, ok := e.Store.GetCkToMemo(ConsumerPubKeyToConsumerConsAddr(ck)); ok {
 				if !pk.Equal(m.Pk) {
 					good = false
 				}

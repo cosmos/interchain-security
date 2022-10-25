@@ -8,6 +8,7 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/ibc-go/v3/testing/mock"
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
@@ -716,8 +717,7 @@ func compareForEquality(t *testing.T,
 	km keeper.KeyMap,
 	pkToCk map[keeper.ProviderPubKey]keeper.ConsumerPubKey,
 	ckToPk map[keeper.ConsumerPubKey]keeper.ProviderPubKey,
-	ckToMemo map[keeper.ConsumerPubKey]ccvtypes.LastUpdateMemo,
-	ccaToCk map[string]keeper.ConsumerPubKey) {
+	ckToMemo map[string]ccvtypes.LastUpdateMemo) {
 
 	cnt := 0
 	km.Store.IteratePkToCk(func(_, _ keeper.ConsumerPubKey) bool {
@@ -734,18 +734,11 @@ func compareForEquality(t *testing.T,
 	require.Equal(t, len(ckToPk), cnt)
 
 	cnt = 0
-	km.Store.IterateCkToMemo(func(_ keeper.ConsumerPubKey, _ ccvtypes.LastUpdateMemo) bool {
+	km.Store.IterateCkToMemo(func(_ keeper.ConsumerConsAddr, _ ccvtypes.LastUpdateMemo) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(ckToMemo), cnt)
-
-	cnt = 0
-	km.Store.IterateCcaToCk(func(_ keeper.ConsumerConsAddr, _ keeper.ConsumerPubKey) bool {
-		cnt += 1
-		return false
-	})
-	require.Equal(t, len(ccaToCk), cnt)
 
 	for k, vExpect := range pkToCk {
 		vActual, found := km.Store.GetPkToCk(k)
@@ -758,19 +751,15 @@ func compareForEquality(t *testing.T,
 		require.Equal(t, vExpect, vActual)
 	}
 	for k, vExpect := range ckToMemo {
+		k := sdk.ConsAddress(k)
 		m, found := km.Store.GetCkToMemo(k)
 		require.True(t, found)
 		require.Equal(t, vExpect.Pk, m.Pk)
 		require.Equal(t, vExpect.Ck, m.Ck)
-		require.Equal(t, vExpect.Cca, m.Cca)
 		require.Equal(t, vExpect.Vscid, m.Vscid)
 		require.Equal(t, vExpect.Power, m.Power)
 	}
-	for k, vExpect := range ccaToCk {
-		vActual, found := km.Store.GetCcaToCk(keeper.ConsumerConsAddr(k))
-		require.True(t, found)
-		require.Equal(t, vExpect, vActual)
-	}
+
 }
 
 func checkCorrectSerializationAndDeserialization(t *testing.T,
@@ -788,29 +777,24 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 
 	pkToCk := map[keeper.ProviderPubKey]keeper.ConsumerPubKey{}
 	ckToPk := map[keeper.ConsumerPubKey]keeper.ProviderPubKey{}
-	ckToMemo := map[keeper.ConsumerPubKey]ccvtypes.LastUpdateMemo{}
-	ccaToCk := map[string]keeper.ConsumerPubKey{}
+	ckToMemo := map[string]ccvtypes.LastUpdateMemo{}
 
 	pkToCk[keys[0]] = keys[1]
 	pkToCk[keys[2]] = keys[3]
 	ckToPk[keys[4]] = keys[5]
 	ckToPk[keys[6]] = keys[7]
-	ckToMemo[keys[8]] = ccvtypes.LastUpdateMemo{
+	ckToMemo[string(keeper.ConsumerPubKeyToConsumerConsAddr(keys[8]))] = ccvtypes.LastUpdateMemo{
 		Ck:    &keys[9],
 		Pk:    &keys[10],
-		Cca:   []byte(string0),
 		Vscid: uint64_0,
 		Power: int64_0,
 	}
-	ckToMemo[keys[11]] = ccvtypes.LastUpdateMemo{
+	ckToMemo[string(keeper.ConsumerPubKeyToConsumerConsAddr(keys[11]))] = ccvtypes.LastUpdateMemo{
 		Ck:    &keys[12],
 		Pk:    &keys[13],
-		Cca:   []byte(string1),
 		Vscid: uint64_1,
 		Power: int64_1,
 	}
-	ccaToCk[string2] = keys[14]
-	ccaToCk[string3] = keys[15]
 
 	{
 		// Use one KeyMap instance to serialize the data
@@ -823,10 +807,7 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 			km.Store.SetCkToPk(k, v)
 		}
 		for k, v := range ckToMemo {
-			km.Store.SetCkToMemo(k, v)
-		}
-		for k, v := range ccaToCk {
-			km.Store.SetCcaToCk([]byte(k), v)
+			km.Store.SetCkToMemo(sdk.ConsAddress(k), v)
 		}
 	}
 
@@ -836,7 +817,7 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 
 	// Check that the data is the same
 
-	compareForEquality(t, km, pkToCk, ckToPk, ckToMemo, ccaToCk)
+	compareForEquality(t, km, pkToCk, ckToPk, ckToMemo)
 }
 
 func TestKeyMapSerializationAndDeserialization(t *testing.T) {
