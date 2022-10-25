@@ -31,7 +31,7 @@ import (
    - [ ] default mapping should be inserted whenever a validator update goes out for a previously unseen validator
    - [ ] it must be possible to change a mapping via a tx submitted to the provider
    - [ ] it must be possible to query current mappings (via rpc? how?)
-   - [ ] garbage collect pkToCk, ckToPk, ccaToCk if appropriate, when validator is destroyed
+   - [ ] garbage collect pkToCk, ckToPk if appropriate, when validator is destroyed
 
    ## Quality list
 
@@ -98,19 +98,15 @@ type Store interface {
 	SetPkToCk(ProviderPubKey, ConsumerPubKey)
 	SetCkToPk(ConsumerPubKey, ProviderPubKey)
 	SetCkToMemo(ConsumerConsAddr, ccvtypes.LastUpdateMemo)
-	// SetCcaToCk(ConsumerConsAddr, ConsumerPubKey)
 	GetPkToCk(ProviderPubKey) (ConsumerPubKey, bool)
 	GetCkToPk(ConsumerPubKey) (ProviderPubKey, bool)
 	GetCkToMemo(ConsumerConsAddr) (ccvtypes.LastUpdateMemo, bool)
-	// GetCcaToCk(ConsumerConsAddr) (ConsumerPubKey, bool)
 	DelPkToCk(ProviderPubKey)
 	DelCkToPk(ConsumerPubKey)
 	DelCkToMemo(ConsumerConsAddr)
-	// DelCcaToCk(ConsumerConsAddr)
 	IteratePkToCk(func(ProviderPubKey, ConsumerPubKey) bool)
 	IterateCkToPk(func(ConsumerPubKey, ProviderPubKey) bool)
 	IterateCkToMemo(func(ConsumerConsAddr, ccvtypes.LastUpdateMemo) bool)
-	// IterateCcaToCk(func(ConsumerConsAddr, ConsumerPubKey) bool)
 }
 
 type KeyMap struct {
@@ -399,14 +395,7 @@ func (s *KeyMapStore) SetCkToMemo(k ConsumerConsAddr, v ccvtypes.LastUpdateMemo)
 	}
 	s.Store.Set(types.KeyMapCkToMemoKey(s.ChainID, kbz), vbz)
 }
-func (s *KeyMapStore) SetCcaToCk(k ConsumerConsAddr, v ConsumerPubKey) {
-	kbz := []byte(k)
-	vbz, err := v.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	s.Store.Set(types.KeyMapCcaToCkKey(s.ChainID, kbz), vbz)
-}
+
 func (s *KeyMapStore) GetPkToCk(k ProviderPubKey) (v ConsumerPubKey, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
@@ -450,20 +439,6 @@ func (s *KeyMapStore) GetCkToMemo(k ConsumerConsAddr) (v ccvtypes.LastUpdateMemo
 	}
 	return v, false
 }
-func (s *KeyMapStore) GetCcaToCk(k ConsumerConsAddr) (v ConsumerPubKey, found bool) {
-	kbz, err := k.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	if vbz := s.Store.Get(types.KeyMapCcaToCkKey(s.ChainID, kbz)); vbz != nil {
-		err := v.Unmarshal(vbz)
-		if err != nil {
-			panic(err)
-		}
-		return v, true
-	}
-	return v, false
-}
 
 func (s *KeyMapStore) DelPkToCk(k ProviderPubKey) {
 	kbz, err := k.Marshal()
@@ -485,13 +460,6 @@ func (s *KeyMapStore) DelCkToMemo(k ConsumerConsAddr) {
 		panic(err)
 	}
 	s.Store.Delete(types.KeyMapCkToMemoKey(s.ChainID, kbz))
-}
-func (s *KeyMapStore) DelCcaToCk(k ConsumerConsAddr) {
-	kbz, err := k.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	s.Store.Delete(types.KeyMapCcaToCkKey(s.ChainID, kbz))
 }
 
 func (s *KeyMapStore) IteratePkToCk(cb func(ProviderPubKey, ConsumerPubKey) bool) {
@@ -547,22 +515,6 @@ func (s *KeyMapStore) IterateCkToMemo(cb func(ConsumerConsAddr, ccvtypes.LastUpd
 		}
 		v := ccvtypes.LastUpdateMemo{}
 		err = v.Unmarshal(iterator.Value())
-		if err != nil {
-			panic(err)
-		}
-		if cb(k, v) {
-			return
-		}
-	}
-}
-func (s *KeyMapStore) IterateCcaToCk(cb func(ConsumerConsAddr, ConsumerPubKey) bool) {
-	prefix := types.KeyMapCcaToCkChainPrefix(s.ChainID)
-	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		k := sdk.ConsAddress(iterator.Key()[len(prefix):])
-		v := ConsumerPubKey{}
-		err := v.Unmarshal(iterator.Value())
 		if err != nil {
 			panic(err)
 		}

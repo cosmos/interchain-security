@@ -95,9 +95,6 @@ const (
 
 	// TODO:
 	KeyMapCkToMemoPrefix
-
-	// TODO:
-	KeyMapCcaToCkPrefix
 )
 
 const (
@@ -287,11 +284,6 @@ func KeyMapCkToMemoChainPrefix(chainID string) []byte {
 }
 
 // TODO:
-func KeyMapCcaToCkChainPrefix(chainID string) []byte {
-	return append([]byte{KeyMapCcaToCkPrefix}, []byte(chainID)...)
-}
-
-// TODO:
 func KeyMapPkToCkKey(chainID string, kbz []byte) []byte {
 	return append(KeyMapPkToCkChainPrefix(chainID), kbz...)
 }
@@ -304,11 +296,6 @@ func KeyMapCkToPkKey(chainID string, kbz []byte) []byte {
 // TODO:
 func KeyMapCkToMemoKey(chainID string, kbz []byte) []byte {
 	return append(KeyMapCkToMemoChainPrefix(chainID), kbz...)
-}
-
-// TODO:
-func KeyMapCcaToCkKey(chainID string, kbz []byte) []byte {
-	return append(KeyMapCcaToCkChainPrefix(chainID), kbz...)
 }
 
 // AppendMany appends a variable number of byte slices together
