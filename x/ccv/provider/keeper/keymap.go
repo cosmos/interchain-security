@@ -162,27 +162,28 @@ func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 	}
 }
 
-func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpdate) (consumerUpdates []abci.ValidatorUpdate) {
-
-	updates := map[ProviderPubKey]int64{}
-
+func toMap(providerUpdates []abci.ValidatorUpdate) map[ProviderPubKey]int64 {
+	ret := map[ProviderPubKey]int64{}
 	for _, u := range providerUpdates {
-		updates[u.PubKey] = u.Power
+		ret[u.PubKey] = u.Power
 	}
+	return ret
+}
 
-	updates = e.inner(vscid, updates)
-
-	consumerUpdates = []abci.ValidatorUpdate{}
-
-	for ck, power := range updates {
-		consumerUpdates = append(consumerUpdates, abci.ValidatorUpdate{PubKey: ck, Power: power})
+func fromMap(consumerUpdates map[ConsumerPubKey]int64) []abci.ValidatorUpdate {
+	ret := []abci.ValidatorUpdate{}
+	for ck, power := range consumerUpdates {
+		ret = append(ret, abci.ValidatorUpdate{PubKey: ck, Power: power})
 	}
+	return ret
+}
 
-	return consumerUpdates
+func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpdate) (consumerUpdatesx []abci.ValidatorUpdate) {
+	return fromMap(e.getConsumerUpdates(vscid, toMap(providerUpdates)))
 }
 
 // do inner work as part of ComputeUpdates
-func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) map[ConsumerPubKey]int64 {
+func (e *KeyMap) getConsumerUpdates(vscid VSCID, providerUpdates map[ProviderPubKey]int64) (consumerUpdates map[ConsumerPubKey]int64) {
 
 	providerKeysToSendUpdateFor := []ProviderPubKey{}
 	keyInProviderKeysToSendUpdateFor := map[string]bool{}
@@ -212,7 +213,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 
 	providerKeysLastPositivePowerUpdate := map[string]ccvtypes.LastUpdateMemo{}
 	canonicalKey := map[string]ConsumerPubKey{}
-	ret := map[ConsumerPubKey]int64{}
+	consumerUpdates = map[ConsumerPubKey]int64{}
 
 	e.Store.IterateCcaToLastUpdateMemo(func(_ ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
 		str := DeterministicStringify(*m.Pk)
@@ -231,7 +232,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 			// create a deletion update for the associated consumer key.
 			cca := ConsumerPubKeyToConsumerConsAddr(*u.Ck)
 			e.Store.SetCcaToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{Ck: u.Ck, Pk: &pk, Vscid: vscid, Power: 0})
-			ret[*u.Ck] = 0
+			consumerUpdates[*u.Ck] = 0
 			canonicalKey[DeterministicStringify(*u.Ck)] = *u.Ck
 		}
 	}
@@ -262,14 +263,14 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 			cca := ConsumerPubKeyToConsumerConsAddr(ck)
 			e.Store.SetCcaToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{Ck: &ck, Pk: &pk, Vscid: vscid, Power: power})
 			if k, found := canonicalKey[DeterministicStringify(ck)]; found {
-				ret[k] = power
+				consumerUpdates[k] = power
 			} else {
-				ret[ck] = power
+				consumerUpdates[ck] = power
 			}
 		}
 	}
 
-	return ret
+	return consumerUpdates
 }
 
 // Returns true iff internal invariants hold
