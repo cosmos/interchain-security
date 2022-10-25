@@ -7,6 +7,7 @@ import (
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	icahosttypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 )
 
@@ -64,5 +65,7 @@ var WhitelistedParams = map[paramChangeKey]struct{}{
 	//ibc transfer
 	{Subspace: ibctransfertypes.ModuleName, Key: "SendEnabled"}:    {},
 	{Subspace: ibctransfertypes.ModuleName, Key: "ReceiveEnabled"}: {},
-	//add interchain account params(HostEnabled, AllowedMessages) once the module is added to the consumer app
+	//ica
+	{Subspace: icahosttypes.SubModuleName, Key: "HostEnabled"}:   {},
+	{Subspace: icahosttypes.SubModuleName, Key: "AllowMessages"}: {},
 }

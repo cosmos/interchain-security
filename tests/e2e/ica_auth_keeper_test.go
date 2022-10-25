@@ -1,7 +1,8 @@
-package e2e_test
+package e2e
 
 import (
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
@@ -35,14 +36,6 @@ var (
 	TestOwnerAddress = "cosmos17dtl0mjt3t77kpuhg2edqzjpszulwhgzuj9ljs"
 	// TestPortID defines a resuable port identifier for testing purposes
 	TestPortID, _ = icatypes.NewControllerPortID(TestOwnerAddress)
-	// TestVersion defines a reusable interchainaccounts version string for testing purposes
-	TestVersion = string(icatypes.ModuleCdc.MustMarshalJSON(&icatypes.Metadata{
-		Version:                icatypes.Version,
-		ControllerConnectionId: ibctesting.FirstConnectionID,
-		HostConnectionId:       ibctesting.FirstConnectionID,
-		Encoding:               icatypes.EncodingProtobuf,
-		TxType:                 icatypes.TxTypeSDKMultiMsg,
-	}))
 )
 
 type ICAAuthKeeperTestSuite struct {
@@ -119,12 +112,13 @@ func (suite *ICAAuthKeeperTestSuite) SetupTest() {
 	suite.Require().True(found, "provider client not found")
 	suite.path.EndpointA.ClientID = providerClient
 	// - client config
+	trustingPeriodFraction := suite.providerChain.App.(*appProvider.App).GetProviderKeeper().GetTrustingPeriodFraction(suite.providerCtx())
 	providerUnbondingPeriod := suite.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(suite.providerCtx())
 	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = providerUnbondingPeriod
-	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / utils.TrustingPeriodFraction
+	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / time.Duration(trustingPeriodFraction)
 	consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
-	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
+	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / time.Duration(trustingPeriodFraction)
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
 	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID

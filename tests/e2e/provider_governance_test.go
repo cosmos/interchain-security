@@ -1,4 +1,4 @@
-package e2e_test
+package e2e
 
 import (
 	"fmt"
@@ -17,8 +17,9 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-func (s *ProviderTestSuite) TestProviderGovernance() {
+func (s *CCVTestSuite) TestProviderGovernance() {
 	s.SetupCCVChannel()
+	s.SetupGovernanceICAChannel()
 
 	// Bond some tokens on provider to change validator powers
 	bondAmt := sdk.NewInt(1000000)

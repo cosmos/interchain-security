@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
@@ -25,10 +26,10 @@ import (
 // Spec Tag: [CCV-PCF-COINIT.1]
 func TestOnChanOpenInit(t *testing.T) {
 
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
 		t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
-	providerModule := provider.NewAppModule(&providerKeeper)
+	providerModule := provider.NewAppModule(&providerKeeper, mocks.MockAccountKeeper, mocks.MockICAControllerKeeper)
 
 	// OnChanOpenInit must error for provider even with correct arguments
 	err := providerModule.OnChanOpenInit(
@@ -116,7 +117,7 @@ func TestOnChanOpenTry(t *testing.T) {
 		// Setup
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
-		providerModule := provider.NewAppModule(&providerKeeper)
+		providerModule := provider.NewAppModule(&providerKeeper, mocks.MockAccountKeeper, mocks.MockICAControllerKeeper)
 
 		providerKeeper.SetPort(ctx, ccv.ProviderPortID)
 		providerKeeper.SetConsumerClientId(ctx, "consumerChainID", "clientIDToConsumer")
@@ -183,10 +184,10 @@ func TestOnChanOpenTry(t *testing.T) {
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-coack1
 // Spec tag: [CCV-PCF-COACK.1]
 func TestOnChanOpenAck(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
 		t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
-	providerModule := provider.NewAppModule(&providerKeeper)
+	providerModule := provider.NewAppModule(&providerKeeper, mocks.MockAccountKeeper, mocks.MockICAControllerKeeper)
 
 	// OnChanOpenAck must error for provider even with correct arguments
 	err := providerModule.OnChanOpenAck(
@@ -290,8 +291,16 @@ func TestOnChanOpenConfirm(t *testing.T) {
 		{
 			name: "success",
 			mockExpectations: func(ctx sdk.Context, mocks testkeeper.MockedKeepers) []*gomock.Call {
+				govModuleAddress := authtypes.NewModuleAddress(govtypes.ModuleName)
+				var chann channeltypes.Channel = channeltypes.Channel{
+					ConnectionHops: []string{"connection-0"},
+				}
+
 				// Full SetConsumerChain method should run without error, hitting all expected mocks
-				return testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, "consumerChainID")
+				return append(testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, "consumerChainID"),
+					mocks.MockChannelKeeper.EXPECT().GetChannel(ctx, "providerPortID", "channelID").Return(chann, true).Times(1),
+					mocks.MockAccountKeeper.EXPECT().GetModuleAddress(govtypes.ModuleName).Return(govModuleAddress).Times(1),
+					mocks.MockICAControllerKeeper.EXPECT().RegisterInterchainAccount(ctx, "connection-0", govModuleAddress.String()).Return(nil).Times(1))
 			},
 			expPass: true,
 		},
@@ -308,7 +317,7 @@ func TestOnChanOpenConfirm(t *testing.T) {
 			providerKeeper.SetChainToChannel(ctx, "consumerChainID", "existingChannelID")
 		}
 
-		providerModule := provider.NewAppModule(&providerKeeper)
+		providerModule := provider.NewAppModule(&providerKeeper, mocks.MockAccountKeeper, mocks.MockICAControllerKeeper)
 
 		err := providerModule.OnChanOpenConfirm(ctx, "providerPortID", "channelID")
 
