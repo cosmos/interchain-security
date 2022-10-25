@@ -121,6 +121,13 @@ func MakeKeyMap(store Store) KeyMap {
 	}
 }
 
+func (e *KeyMap) DeleteProviderKey(pk ProviderPubKey) error {
+	if ck, ok := e.Store.GetPkToCk(pk); ok {
+		e.Store.DelCkToPk(ck)
+	}
+	e.Store.DelPkToCk(pk)
+}
+
 func (e *KeyMap) SetProviderPubKeyToConsumerPubKey(pk ProviderPubKey, ck ConsumerPubKey) error {
 	if _, ok := e.Store.GetCkToPk(ck); ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
