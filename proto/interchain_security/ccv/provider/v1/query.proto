@@ -6,14 +6,38 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types"
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
 import "interchain_security/ccv/consumer/v1/genesis.proto";
+import "interchain_security/ccv/provider/v1/provider.proto";
+
 
 service Query {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
   // whose proposal has been accepted
-  rpc ConsumerGenesis(QueryConsumerGenesisRequest)
+  rpc QueryConsumerGenesis(QueryConsumerGenesisRequest)
       returns (QueryConsumerGenesisResponse) {
     option (google.api.http).get =
         "/interchain_security/ccv/provider/consumer_genesis/{chain_id}";
+  }
+
+  // ConsumerChains queries active consumer chains supported by the provider
+  // chain
+  rpc QueryConsumerChains(QueryConsumerChainsRequest)
+      returns (QueryConsumerChainsResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/provider/consumer_chains";
+  }
+
+  // QueryConsumerChainStarts queries consumer chain start proposals.
+  rpc QueryConsumerChainStarts(QueryConsumerChainStartProposalsRequest)
+      returns (QueryConsumerChainStartProposalsResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/provider/consumer_chain_start_proposals";
+  }
+
+  // QueryConsumerChainStops queries consumer chain stop proposals.
+  rpc QueryConsumerChainStops(QueryConsumerChainStopProposalsRequest)
+      returns (QueryConsumerChainStopProposalsResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/provider/consumer_chain_stop_proposals";
   }
 }
 
@@ -22,4 +46,25 @@ message QueryConsumerGenesisRequest { string chain_id = 1; }
 message QueryConsumerGenesisResponse {
   interchain_security.ccv.consumer.v1.GenesisState genesis_state = 1
       [ (gogoproto.nullable) = false ];
+}
+
+message QueryConsumerChainsRequest {}
+
+message QueryConsumerChainsResponse { repeated Chain chains = 1; }
+
+message QueryConsumerChainStartProposalsRequest {}
+
+message QueryConsumerChainStartProposalsResponse { 
+  ConsumerAdditionProposals proposals = 1;
+}
+
+message QueryConsumerChainStopProposalsRequest {}
+
+message QueryConsumerChainStopProposalsResponse { 
+  ConsumerRemovalProposals proposals = 1;
+}
+
+message Chain {
+  string chain_id = 1;
+  string client_id = 2;
 }
