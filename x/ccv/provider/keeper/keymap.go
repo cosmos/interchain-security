@@ -32,6 +32,8 @@ import (
    - [ ] it must be possible to change a mapping via a tx submitted to the provider
    - [ ] it must be possible to query current mappings (via rpc? how?)
    - [ ] garbage collect pkToCk, ckToPk if appropriate, when validator is destroyed
+   - [ ] when a validator is destroyed all the memos that refer to it must be destroyed
+
 
    ## Quality list
 
@@ -162,6 +164,121 @@ func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 	}
 }
 
+func (e *KeyMap) getProviderKeysForUpdate(stakingUpdates map[ProviderPubKey]int64) ([]ProviderPubKey, map[string]bool) {
+
+	// TODO: document
+	keys := []ProviderPubKey{}
+	included := map[string]bool{}
+
+	// Get provider keys which the consumer is aware of, because the
+	// last update sent to the consumer was a positive power update
+	// and the assigned key has changed since that update.
+	e.Store.IterateCcaToLastUpdateMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
+		if newCk, ok := e.Store.GetPkToCk(*m.Pk); ok { // TODO: do away with ok, should always be ok
+			oldCk := m.Ck
+			if !oldCk.Equal(newCk) && 0 < m.Power {
+				keys = append(keys, *m.Pk)
+				included[DeterministicStringify(*m.Pk)] = true
+			}
+		}
+		return false
+	})
+
+	// Get provider keys where the validator power has changed
+	for pk := range stakingUpdates {
+		s := DeterministicStringify(pk)
+		if !included[s] {
+			keys = append(keys, pk)
+			included[s] = true
+		}
+	}
+
+	return keys, included
+}
+
+func (e KeyMap) getProviderKeysLastPositiveUpdate(mustCreateUpdate map[string]bool) map[string]ccvtypes.LastUpdateMemo {
+	lastUpdate := map[string]ccvtypes.LastUpdateMemo{}
+	e.Store.IterateCcaToLastUpdateMemo(func(_ ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
+		s := DeterministicStringify(*m.Pk)
+		if 0 < m.Power {
+			if _, found := mustCreateUpdate[s]; found {
+				lastUpdate[s] = m
+			}
+		}
+		return false
+	})
+	return lastUpdate
+}
+
+// do inner work as part of ComputeUpdates
+func (e *KeyMap) getConsumerUpdates(vscid VSCID, stakingUpdates map[ProviderPubKey]int64) (consumerUpdates map[ConsumerPubKey]int64) {
+
+	// Init the return value
+	consumerUpdates = map[ConsumerPubKey]int64{}
+
+	providerKeysForUpdate, mustUpdate := e.getProviderKeysForUpdate(stakingUpdates)
+	providerKeysLastPositivePowerUpdate := e.getProviderKeysLastPositiveUpdate(mustUpdate)
+
+	canonicalConsumerKey := map[string]ConsumerPubKey{}
+
+	/*
+		Create a deletion (zero power) update for any consumer key known to the consumer
+		that is no longer in use, or for which the power has changed.
+	*/
+	for i := range providerKeysForUpdate {
+		// For each provider key for which there was already a positive update
+		// create a deletion update for the associated consumer key.
+		pk := providerKeysForUpdate[i]
+		if u, found := providerKeysLastPositivePowerUpdate[DeterministicStringify(pk)]; found {
+			s := DeterministicStringify(*u.Ck)
+			canonicalConsumerKey[s] = *u.Ck
+			consumerUpdates[*u.Ck] = 0
+			cca := ConsumerPubKeyToConsumerConsAddr(*u.Ck)
+			e.Store.SetCcaToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{Ck: u.Ck, Pk: &pk, Vscid: vscid, Power: 0})
+		}
+	}
+
+	/*
+		Create a positive power update for any consumer key which is in use.
+	*/
+	for i := range providerKeysForUpdate {
+		pk := providerKeysForUpdate[i]
+		// For each provider key where there was either
+		// 1) already a positive power update
+		// 2) the validator power has changed (and is positive)
+		// create a change update for the associated consumer key.
+
+		var power int64 = 0
+
+		if u, found := providerKeysLastPositivePowerUpdate[DeterministicStringify(pk)]; found {
+			// There was previously a positive power update: copy it.
+			power = u.Power
+		}
+
+		// There is a new validator power: use it. It takes precedence.
+		if newPower, ok := stakingUpdates[pk]; ok {
+			power = newPower
+		}
+
+		// Only ship update with positive powers.
+		if 0 < power {
+			ck, found := e.Store.GetPkToCk(pk)
+			if !found {
+				panic("must find ck for pk")
+			}
+			cca := ConsumerPubKeyToConsumerConsAddr(ck)
+			e.Store.SetCcaToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{Ck: &ck, Pk: &pk, Vscid: vscid, Power: power})
+			if k, found := canonicalConsumerKey[DeterministicStringify(ck)]; found {
+				consumerUpdates[k] = power
+			} else {
+				consumerUpdates[ck] = power
+			}
+		}
+	}
+
+	return consumerUpdates
+}
+
 func toMap(providerUpdates []abci.ValidatorUpdate) map[ProviderPubKey]int64 {
 	ret := map[ProviderPubKey]int64{}
 	for _, u := range providerUpdates {
@@ -178,99 +295,8 @@ func fromMap(consumerUpdates map[ConsumerPubKey]int64) []abci.ValidatorUpdate {
 	return ret
 }
 
-func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpdate) (consumerUpdatesx []abci.ValidatorUpdate) {
-	return fromMap(e.getConsumerUpdates(vscid, toMap(providerUpdates)))
-}
-
-// do inner work as part of ComputeUpdates
-func (e *KeyMap) getConsumerUpdates(vscid VSCID, providerUpdates map[ProviderPubKey]int64) (consumerUpdates map[ConsumerPubKey]int64) {
-
-	providerKeysToSendUpdateFor := []ProviderPubKey{}
-	keyInProviderKeysToSendUpdateFor := map[string]bool{}
-
-	// Grab provider keys where the last update had positive power
-	// and where the assigned consumer key has changed
-	e.Store.IterateCcaToLastUpdateMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
-		oldCk := m.Ck
-		if newCk, ok := e.Store.GetPkToCk(*m.Pk); ok { // TODO: do away with ok, should always be ok
-			// TODO: is !seen[str] needed?
-			if !oldCk.Equal(newCk) && 0 < m.Power {
-				providerKeysToSendUpdateFor = append(providerKeysToSendUpdateFor, *m.Pk)
-				keyInProviderKeysToSendUpdateFor[DeterministicStringify(*m.Pk)] = true
-			}
-		}
-		return false
-	})
-
-	// Grab provider keys where the validator power has changed
-	for pk := range providerUpdates {
-		str := DeterministicStringify(pk)
-		if !keyInProviderKeysToSendUpdateFor[str] {
-			providerKeysToSendUpdateFor = append(providerKeysToSendUpdateFor, pk)
-			keyInProviderKeysToSendUpdateFor[str] = true
-		}
-	}
-
-	providerKeysLastPositivePowerUpdate := map[string]ccvtypes.LastUpdateMemo{}
-	canonicalKey := map[string]ConsumerPubKey{}
-	consumerUpdates = map[ConsumerPubKey]int64{}
-
-	e.Store.IterateCcaToLastUpdateMemo(func(_ ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
-		str := DeterministicStringify(*m.Pk)
-		if 0 < m.Power {
-			if _, found := keyInProviderKeysToSendUpdateFor[str]; found {
-				providerKeysLastPositivePowerUpdate[str] = m
-			}
-		}
-		return false
-	})
-
-	for i := range providerKeysToSendUpdateFor {
-		pk := providerKeysToSendUpdateFor[i]
-		if u, found := providerKeysLastPositivePowerUpdate[DeterministicStringify(pk)]; found {
-			// For each provider key for which there was already a positive update
-			// create a deletion update for the associated consumer key.
-			cca := ConsumerPubKeyToConsumerConsAddr(*u.Ck)
-			e.Store.SetCcaToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{Ck: u.Ck, Pk: &pk, Vscid: vscid, Power: 0})
-			consumerUpdates[*u.Ck] = 0
-			canonicalKey[DeterministicStringify(*u.Ck)] = *u.Ck
-		}
-	}
-
-	for i := range providerKeysToSendUpdateFor {
-		pk := providerKeysToSendUpdateFor[i]
-		// For each provider key where there was either
-		// 1) already a positive power update
-		// 2) the validator power has changed (and is positive)
-		// create a change update for the associated consumer key.
-
-		var power int64 = 0
-		if u, found := providerKeysLastPositivePowerUpdate[DeterministicStringify(pk)]; found {
-			// There was previously a positive power update: copy it.
-			power = u.Power
-		}
-
-		// There is a new validator power: use it.
-		if newPower, ok := providerUpdates[pk]; ok {
-			power = newPower
-		}
-		// Only ship update with positive powers.
-		if 0 < power {
-			ck, found := e.Store.GetPkToCk(pk)
-			if !found {
-				panic("must find ck for pk")
-			}
-			cca := ConsumerPubKeyToConsumerConsAddr(ck)
-			e.Store.SetCcaToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{Ck: &ck, Pk: &pk, Vscid: vscid, Power: power})
-			if k, found := canonicalKey[DeterministicStringify(ck)]; found {
-				consumerUpdates[k] = power
-			} else {
-				consumerUpdates[ck] = power
-			}
-		}
-	}
-
-	return consumerUpdates
+func (e *KeyMap) ComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) (consumerUpdatesx []abci.ValidatorUpdate) {
+	return fromMap(e.getConsumerUpdates(vscid, toMap(stakingUpdates)))
 }
 
 // Returns true iff internal invariants hold
@@ -349,6 +375,23 @@ func (e *KeyMap) InternalInvariants() bool {
 				if cons[i] != cca[i] {
 					good = false
 				}
+			}
+			return false
+		})
+	}
+
+	{
+		// The set of all LastUpdateMemos with positive power
+		// has pairwise unique provider keys
+		seen := map[string]bool{}
+		e.Store.IterateCcaToLastUpdateMemo(func(_ ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
+			if 0 < m.Power {
+				s := DeterministicStringify(*m.Pk)
+				if _, ok := seen[s]; ok {
+					good = false
+				}
+				seen[s] = true
+
 			}
 			return false
 		})

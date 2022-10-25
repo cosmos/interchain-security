@@ -568,6 +568,17 @@ func TestKeyMapMemoLoopIteration(t *testing.T) {
 	require.True(t, m.Pk.Equal(arr[1]))
 }
 
+func TestKeyMapSameSeedDeterministicStringify(t *testing.T) {
+	// This doesn't prove anything
+	for i := uint64(0); i < 1000; i++ {
+		k0 := key(i)
+		k1 := key(i)
+		s0 := keeper.DeterministicStringify(k0)
+		s1 := keeper.DeterministicStringify(k1)
+		require.Equal(t, s0, s1)
+	}
+}
+
 func TestKeyMapSameSeedEquality(t *testing.T) {
 	k0 := key(0)
 	k1 := key(0)
