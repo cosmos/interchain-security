@@ -182,50 +182,58 @@ func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpd
 	return fromMap(e.getConsumerUpdates(vscid, toMap(providerUpdates)))
 }
 
+func (e *KeyMap) getProviderKeysToSendUpdatesFor(providerUpdates map[ProviderPubKey]int64)
+
 // do inner work as part of ComputeUpdates
 func (e *KeyMap) getConsumerUpdates(vscid VSCID, providerUpdates map[ProviderPubKey]int64) (consumerUpdates map[ConsumerPubKey]int64) {
 
-	providerKeysToSendUpdateFor := []ProviderPubKey{}
-	keyInProviderKeysToSendUpdateFor := map[string]bool{}
+	// Initialise return value
+	consumerUpdates = map[ConsumerPubKey]int64{}
 
-	// Grab provider keys where the last update had positive power
+	canonicalProviderKey := map[string]ProviderPubKey{}
+	canonicalConsumerKey := map[string]ConsumerPubKey{}
+
+	providerKeysToSendUpdateFor := map[ProviderPubKey]bool{}
+	providerKeysToLastPositivePowerUpdate := map[ProviderPubKey]ccvtypes.LastUpdateMemo{}
+
+	// Get provider keys where the last update had positive power
 	// and where the assigned consumer key has changed
 	e.Store.IterateCcaToLastUpdateMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
 		oldCk := m.Ck
 		if newCk, ok := e.Store.GetPkToCk(*m.Pk); ok { // TODO: do away with ok, should always be ok
-			// TODO: is !seen[str] needed?
 			if !oldCk.Equal(newCk) && 0 < m.Power {
-				providerKeysToSendUpdateFor = append(providerKeysToSendUpdateFor, *m.Pk)
-				keyInProviderKeysToSendUpdateFor[DeterministicStringify(*m.Pk)] = true
+				canonicalProviderKey[DeterministicStringify(*m.Pk)] = *m.Pk
+				providerKeysToSendUpdateFor[*m.Pk] = true
 			}
 		}
 		return false
 	})
 
-	// Grab provider keys where the validator power has changed
+	// Get provider keys where the validator power has changed
 	for pk := range providerUpdates {
-		str := DeterministicStringify(pk)
-		if !keyInProviderKeysToSendUpdateFor[str] {
-			providerKeysToSendUpdateFor = append(providerKeysToSendUpdateFor, pk)
-			keyInProviderKeysToSendUpdateFor[str] = true
+		canon, found := canonicalProviderKey[DeterministicStringify(pk)]
+		if !found {
+			canonicalProviderKey[DeterministicStringify(pk)] = pk
+			canon = pk
 		}
+		providerKeysToSendUpdateFor[canon] = true
 	}
 
-	providerKeysLastPositivePowerUpdate := map[string]ccvtypes.LastUpdateMemo{}
-	canonicalKey := map[string]ConsumerPubKey{}
-	consumerUpdates = map[ConsumerPubKey]int64{}
-
+	// For all provider keys which must be updated, get the power of the last update
+	// if the last update had positive power.
 	e.Store.IterateCcaToLastUpdateMemo(func(_ ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
-		str := DeterministicStringify(*m.Pk)
 		if 0 < m.Power {
-			if _, found := keyInProviderKeysToSendUpdateFor[str]; found {
-				providerKeysLastPositivePowerUpdate[str] = m
+			canon, found := canonicalProviderKey[DeterministicStringify(*m.Pk)]
+			if !found {
+				canonicalProviderKey[DeterministicStringify(*m.Pk)] = *m.Pk
+				canon = *m.Pk
 			}
+			providerKeysToLastPositivePowerUpdate[canon] = m
 		}
 		return false
 	})
 
-	for i := range providerKeysToSendUpdateFor {
+	for pk := range providerKeysToSendUpdateFor {
 		pk := providerKeysToSendUpdateFor[i]
 		if u, found := providerKeysLastPositivePowerUpdate[DeterministicStringify(pk)]; found {
 			// For each provider key for which there was already a positive update
@@ -233,7 +241,7 @@ func (e *KeyMap) getConsumerUpdates(vscid VSCID, providerUpdates map[ProviderPub
 			cca := ConsumerPubKeyToConsumerConsAddr(*u.Ck)
 			e.Store.SetCcaToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{Ck: u.Ck, Pk: &pk, Vscid: vscid, Power: 0})
 			consumerUpdates[*u.Ck] = 0
-			canonicalKey[DeterministicStringify(*u.Ck)] = *u.Ck
+			canonicalConsumerKey[DeterministicStringify(*u.Ck)] = *u.Ck
 		}
 	}
 
@@ -262,7 +270,7 @@ func (e *KeyMap) getConsumerUpdates(vscid VSCID, providerUpdates map[ProviderPub
 			}
 			cca := ConsumerPubKeyToConsumerConsAddr(ck)
 			e.Store.SetCcaToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{Ck: &ck, Pk: &pk, Vscid: vscid, Power: power})
-			if k, found := canonicalKey[DeterministicStringify(ck)]; found {
+			if k, found := canonicalConsumerKey[DeterministicStringify(ck)]; found {
 				consumerUpdates[k] = power
 			} else {
 				consumerUpdates[ck] = power
