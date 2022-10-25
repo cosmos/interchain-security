@@ -168,6 +168,8 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	// TODO: abide by spec here with EndBlockCIS, EndBlockVSU, etc.
 	// Or just make sure it's clear that this abides by spec in comments
 
+	// TODO: separate PR for the new params that'll be needed
+
 	// notify the staking module to complete all matured unbonding ops
 	am.keeper.CompleteMaturedUnbondingOps(ctx)
 
