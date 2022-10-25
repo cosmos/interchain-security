@@ -27,20 +27,19 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // GenesisState defines the CCV provider chain genesis state
 type GenesisState struct {
-	// empty for a completely new chain
+	// empty for a new chain
 	ValsetUpdateId uint64 `protobuf:"varint,1,opt,name=valset_update_id,json=valsetUpdateId,proto3" json:"valset_update_id,omitempty"`
-	// empty for a completely new chain
+	// empty for a new chain
 	ConsumerStates []ConsumerState `protobuf:"bytes,2,rep,name=consumer_states,json=consumerStates,proto3" json:"consumer_states" yaml:"consumer_states"`
-	// UnbondingOps defines the consumer chains that are still unbonding
-	// empty for a completely new chain
+	// empty for a new chain
 	UnbondingOps []types.UnbondingOp `protobuf:"bytes,3,rep,name=unbonding_ops,json=unbondingOps,proto3" json:"unbonding_ops"`
-	// empty for a completely new chain
+	// empty for a new chain
 	MatureUnbondingOps *types.MaturedUnbondingOps `protobuf:"bytes,4,opt,name=mature_unbonding_ops,json=matureUnbondingOps,proto3" json:"mature_unbonding_ops,omitempty"`
-	// empty for a completely new chain
+	// empty for a new chain
 	ValsetUpdateIdToHeight []ValsetUpdateIdToHeight `protobuf:"bytes,5,rep,name=valset_update_id_to_height,json=valsetUpdateIdToHeight,proto3" json:"valset_update_id_to_height"`
-	// empty for a completely new chain
+	// empty for a new chain
 	ConsumerAdditionProposals []ConsumerAdditionProposal `protobuf:"bytes,6,rep,name=consumer_addition_proposals,json=consumerAdditionProposals,proto3" json:"consumer_addition_proposals"`
-	// empty for a completely new chain
+	// empty for a new chain
 	ConsumerRemovalProposals []ConsumerRemovalProposal `protobuf:"bytes,7,rep,name=consumer_removal_proposals,json=consumerRemovalProposals,proto3" json:"consumer_removal_proposals"`
 	Params                   Params                    `protobuf:"bytes,8,opt,name=params,proto3" json:"params"`
 }
@@ -136,12 +135,13 @@ func (m *GenesisState) GetParams() Params {
 
 // consumer chain
 type ConsumerState struct {
-	// The provider's identifier for this consumer chain.
-	ChainId   string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	// The provider's channel identifier to this consumer chain.
+	// ChannelID defines the chain ID for the consumer chain
+	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// ChannelID defines the IBC channel ID for the consumer chain
 	ChannelId string `protobuf:"bytes,2,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	// ClientID defines the IBC client ID for the consumer chain
-	ClientId      string `protobuf:"bytes,3,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	ClientId string `protobuf:"bytes,3,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	// InitalHeight defines the initial block height for the consumer chain
 	InitialHeight uint64 `protobuf:"varint,4,opt,name=initial_height,json=initialHeight,proto3" json:"initial_height,omitempty"`
 	// LockUnbondingOnTimeout defines whether the unbonding funds should be released for this
 	// chain in case of a IBC channel timeout
