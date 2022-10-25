@@ -284,7 +284,7 @@ func postProposalGovernanceHandlerFn(clientCtx client.Context) http.HandlerFunc 
 func parseSubmitProposal(cdc sdkcodec.Codec, path string) (string, govtypes.Content, sdk.Coins, error) {
 	var proposal ConsumerGovernanceProposalJSON
 
-	proposalJson, err := os.ReadFile(path)
+	proposalJson, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return "", nil, nil, err
 	}

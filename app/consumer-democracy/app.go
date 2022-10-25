@@ -897,6 +897,11 @@ func (app *App) GetStakingKeeper() ibcclienttypes.StakingKeeper {
 	return app.ConsumerKeeper
 }
 
+// GetICAHostKeeper implements the TestingApp interface.
+func (app *App) GetICAHostKeeper() icahostkeeper.Keeper {
+	return app.ICAHostKeeper
+}
+
 // GetIBCKeeper implements the TestingApp interface.
 func (app *App) GetIBCKeeper() *ibckeeper.Keeper {
 	return app.IBCKeeper

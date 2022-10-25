@@ -37,12 +37,16 @@ func newAddAdminHandlerFn(clientCtx client.Context) http.HandlerFunc {
 		}
 
 		fromAddr, err := sdk.AccAddressFromBech32(req.BaseReq.From)
-		newAdmin, err := sdk.AccAddressFromBech32(req.Admin)
-
-		msg := types.NewMsgAddAdmin(fromAddr, newAdmin)
 		if rest.CheckBadRequestError(w, err) {
 			return
 		}
+
+		newAdmin, err := sdk.AccAddressFromBech32(req.Admin)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
+
+		msg := types.NewMsgAddAdmin(fromAddr, newAdmin)
 		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
 			return
 		}
@@ -64,12 +68,16 @@ func newDeleteAdminHandlerFn(clientCtx client.Context) http.HandlerFunc {
 		}
 
 		fromAddr, err := sdk.AccAddressFromBech32(req.BaseReq.From)
-		removeAdmin, err := sdk.AccAddressFromBech32(req.Admin)
-
-		msg := types.NewMsgDeleteAdmin(fromAddr, removeAdmin)
 		if rest.CheckBadRequestError(w, err) {
 			return
 		}
+
+		removeAdmin, err := sdk.AccAddressFromBech32(req.Admin)
+		if rest.CheckBadRequestError(w, err) {
+			return
+		}
+
+		msg := types.NewMsgDeleteAdmin(fromAddr, removeAdmin)
 		if rest.CheckBadRequestError(w, msg.ValidateBasic()) {
 			return
 		}

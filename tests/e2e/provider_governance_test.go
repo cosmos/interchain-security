@@ -1,4 +1,4 @@
-package e2e_test
+package e2e
 
 import (
 	"fmt"
@@ -17,8 +17,9 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-func (s *ProviderTestSuite) TestProviderGovernance() {
+func (s *CCVTestSuite) TestProviderGovernance() {
 	s.SetupCCVChannel()
+	s.SetupGovernanceICAChannel()
 
 	// Bond some tokens on provider to change validator powers
 	bondAmt := sdk.NewInt(1000000)
@@ -56,11 +57,12 @@ func (s *ProviderTestSuite) TestProviderGovernance() {
 		Content:      swUpgradeProposalAny,
 	}
 
-	plan, havePlan := s.consumerChain.App.(*appConsumer.App).UpgradeKeeper.GetUpgradePlan(s.consumerCtx())
+	_, havePlan := s.consumerChain.App.(*appConsumer.App).UpgradeKeeper.GetUpgradePlan(s.consumerCtx())
 	s.Assert().False(havePlan)
 
 	// submits consumer SW upgrade proposal to the provider chain
-	submitProposalAndVote(s.providerCtx(), govKeeper, consumerGovernanceProposal, s.providerChain.SenderAccounts, deposit)
+	err = submitProposalAndVote(s.providerCtx(), govKeeper, consumerGovernanceProposal, s.providerChain.SenderAccounts, deposit)
+	s.Require().NoError(err)
 	s.providerChain.NextBlock()
 	relayAllCommittedPackets(s, s.providerChain, s.icaPath, s.icaPath.EndpointB.ChannelConfig.PortID, s.icaPath.EndpointB.ChannelID, 1)
 	s.consumerChain.NextBlock()
@@ -70,7 +72,7 @@ func (s *ProviderTestSuite) TestProviderGovernance() {
 	s.Assert().Equal(govtypes.StatusPassed, archivedProposals[0].Status)
 
 	// check that upgrade plan is queued for execution
-	plan, havePlan = s.consumerChain.App.(*appConsumer.App).UpgradeKeeper.GetUpgradePlan(s.consumerCtx())
+	plan, havePlan := s.consumerChain.App.(*appConsumer.App).UpgradeKeeper.GetUpgradePlan(s.consumerCtx())
 	s.Assert().True(havePlan)
 	s.Assert().Equal(swUpgradeProposal.Plan.Name, plan.Name)
 	s.Assert().Equal(swUpgradeProposal.Plan.Height, plan.Height)
@@ -95,7 +97,8 @@ func (s *ProviderTestSuite) TestProviderGovernance() {
 	signedBlockWindowOld := s.consumerChain.App.(*appConsumer.App).SlashingKeeper.SignedBlocksWindow(s.consumerCtx())
 
 	// submits consumer param change proposal to the provider chain
-	submitProposalAndVote(s.providerCtx(), govKeeper, consumerGovernanceProposal, s.providerChain.SenderAccounts, deposit)
+	err = submitProposalAndVote(s.providerCtx(), govKeeper, consumerGovernanceProposal, s.providerChain.SenderAccounts, deposit)
+	s.Require().NoError(err)
 	s.providerChain.NextBlock()
 	relayAllCommittedPackets(s, s.providerChain, s.icaPath, s.icaPath.EndpointB.ChannelConfig.PortID, s.icaPath.EndpointB.ChannelID, 1)
 	s.consumerChain.NextBlock()

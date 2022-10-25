@@ -88,17 +88,18 @@ type MockedKeepers struct {
 // NewMockedKeepers instantiates a struct with pointers to properly instantiated mocked keepers.
 func NewMockedKeepers(ctrl *gomock.Controller) MockedKeepers {
 	return MockedKeepers{
-		MockScopedKeeper:      NewMockScopedKeeper(ctrl),
-		MockChannelKeeper:     NewMockChannelKeeper(ctrl),
-		MockPortKeeper:        NewMockPortKeeper(ctrl),
-		MockConnectionKeeper:  NewMockConnectionKeeper(ctrl),
-		MockClientKeeper:      NewMockClientKeeper(ctrl),
-		MockStakingKeeper:     NewMockStakingKeeper(ctrl),
-		MockSlashingKeeper:    NewMockSlashingKeeper(ctrl),
-		MockAccountKeeper:     NewMockAccountKeeper(ctrl),
-		MockBankKeeper:        NewMockBankKeeper(ctrl),
-		MockIBCTransferKeeper: NewMockIBCTransferKeeper(ctrl),
-		MockIBCCoreKeeper:     NewMockIBCCoreKeeper(ctrl),
+		MockScopedKeeper:        NewMockScopedKeeper(ctrl),
+		MockChannelKeeper:       NewMockChannelKeeper(ctrl),
+		MockPortKeeper:          NewMockPortKeeper(ctrl),
+		MockConnectionKeeper:    NewMockConnectionKeeper(ctrl),
+		MockClientKeeper:        NewMockClientKeeper(ctrl),
+		MockStakingKeeper:       NewMockStakingKeeper(ctrl),
+		MockSlashingKeeper:      NewMockSlashingKeeper(ctrl),
+		MockAccountKeeper:       NewMockAccountKeeper(ctrl),
+		MockBankKeeper:          NewMockBankKeeper(ctrl),
+		MockIBCTransferKeeper:   NewMockIBCTransferKeeper(ctrl),
+		MockIBCCoreKeeper:       NewMockIBCCoreKeeper(ctrl),
+		MockICAControllerKeeper: NewMockICAControllerKeeper(ctrl),
 	}
 }
 

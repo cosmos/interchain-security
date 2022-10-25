@@ -5,7 +5,10 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
@@ -21,6 +24,10 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
 	testutil "github.com/cosmos/interchain-security/testutil/keeper"
+)
+
+var (
+	providerGovAddr string = authtypes.NewModuleAddress(govtypes.ModuleName).String()
 )
 
 func TestInitGenesis(t *testing.T) {
@@ -75,7 +82,7 @@ func TestInitGenesis(t *testing.T) {
 				)
 			},
 			genesis: consumertypes.NewInitialGenesisState(testutil.GetClientState(""), consensusState,
-				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}, slashRequests, params),
+				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}, slashRequests, params, providerGovAddr),
 
 			assertStates: func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
@@ -105,7 +112,7 @@ func TestInitGenesis(t *testing.T) {
 				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)},
 				[]consumertypes.HeightToValsetUpdateID{{ValsetUpdateId: matPacket.VscId, Height: uint64(0)}},
 				[]consumertypes.OutstandingDowntime{{ValidatorConsensusAddress: sdk.ConsAddress(validator.Bytes()).String()}},
-				params,
+				params, providerGovAddr,
 			),
 			assertStates: func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
@@ -197,6 +204,7 @@ func TestExportGenesis(t *testing.T) {
 					ctx,
 					slashRequests,
 				)
+				ck.SetProviderGovernanceAddress(ctx, providerGovAddr)
 
 				// set the mock calls executed during the export
 				gomock.InOrder(
@@ -206,7 +214,7 @@ func TestExportGenesis(t *testing.T) {
 			},
 
 			expGenesis: consumertypes.NewInitialGenesisState(testutil.GetClientState(""), consensusState,
-				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}, slashRequests, params),
+				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}, slashRequests, params, providerGovAddr),
 		},
 		{
 			name: "export a chain that has an established CCV channel",
@@ -216,6 +224,7 @@ func TestExportGenesis(t *testing.T) {
 				require.NoError(t, err)
 				ck.SetCCValidator(ctx, cVal)
 				ck.SetOutstandingDowntime(ctx, sdk.ConsAddress(validator.Address.Bytes()))
+				ck.SetProviderGovernanceAddress(ctx, providerGovAddr)
 
 				// populate the required states to simulate a completed handshake
 				ck.SetProviderClientID(ctx, clientID)
@@ -230,7 +239,7 @@ func TestExportGenesis(t *testing.T) {
 				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)},
 				[]types.HeightToValsetUpdateID{{Height: restartHeight, ValsetUpdateId: matPacket.VscId}},
 				[]consumertypes.OutstandingDowntime{{ValidatorConsensusAddress: sdk.ConsAddress(validator.Address.Bytes()).String()}},
-				params,
+				params, providerGovAddr,
 			),
 		},
 	}

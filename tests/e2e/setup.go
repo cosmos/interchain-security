@@ -13,6 +13,10 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	icahostkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/keeper"
+	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -21,6 +25,17 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/stretchr/testify/suite"
+)
+
+var (
+	// TestVersion defines a reusable interchainaccounts version string for testing purposes
+	TestVersion = string(icatypes.ModuleCdc.MustMarshalJSON(&icatypes.Metadata{
+		Version:                icatypes.Version,
+		ControllerConnectionId: ibctesting.FirstConnectionID,
+		HostConnectionId:       ibctesting.FirstConnectionID,
+		Encoding:               icatypes.EncodingProtobuf,
+		TxType:                 icatypes.TxTypeSDKMultiMsg,
+	}))
 )
 
 // CCVTestSuite is an in-mem test suite which implements the standard group of tests validating
@@ -37,6 +52,7 @@ type CCVTestSuite struct {
 	providerConsState *ibctmtypes.ConsensusState
 	path              *ibctesting.Path
 	transferPath      *ibctesting.Path
+	icaPath           *ibctesting.Path
 	setupCallback     SetupCallback
 }
 
@@ -103,6 +119,11 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.providerClient = consumerGenesis.ProviderClientState
 	suite.providerConsState = consumerGenesis.ProviderConsensusState
 
+	// allow MsgSubmitProposal from admin module to be sent through ICA
+	hostICAGenesis := icatypes.DefaultHostGenesis()
+	hostICAGenesis.Params.AllowMessages = []string{"/interchain_security.ccv.adminmodule.v1.MsgSubmitProposal"}
+	icahostkeeper.InitGenesis(suite.consumerChain.GetContext(), suite.consumerApp.GetICAHostKeeper(), hostICAGenesis)
+
 	// create path for the CCV channel
 	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
 
@@ -149,6 +170,18 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.transferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
 	suite.transferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
 	suite.transferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
+
+	controllerPortID, err := icatypes.NewControllerPortID(authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	suite.Require().NoError(err)
+
+	// create path for the ica governance channel
+	suite.icaPath = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
+	suite.icaPath.EndpointA.ChannelConfig.PortID = icatypes.PortID
+	suite.icaPath.EndpointB.ChannelConfig.PortID = controllerPortID
+	suite.icaPath.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
+	suite.icaPath.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
+	suite.icaPath.EndpointA.ChannelConfig.Version = TestVersion
+	suite.icaPath.EndpointB.ChannelConfig.Version = TestVersion
 }
 
 func (suite *CCVTestSuite) SetupCCVChannel() {
@@ -204,5 +237,31 @@ func (suite *CCVTestSuite) SetupTransferChannel() {
 
 	// ensure counterparty is up to date
 	err = suite.transferPath.EndpointA.UpdateClient()
+	suite.Require().NoError(err)
+}
+
+func (suite *CCVTestSuite) SetupGovernanceICAChannel() {
+	// ica path will use the same connection as ccv path
+	suite.icaPath.EndpointA.ClientID = suite.path.EndpointA.ClientID
+	suite.icaPath.EndpointA.ConnectionID = suite.path.EndpointA.ConnectionID
+	suite.icaPath.EndpointB.ClientID = suite.path.EndpointB.ClientID
+	suite.icaPath.EndpointB.ConnectionID = suite.path.EndpointB.ConnectionID
+
+	// CCV channel handshake will automatically initiate ICA gov channel handshake on Confirm
+	// so ICA gov channel will be on stage INIT when CompleteSetupCCVChannel returns.
+	suite.icaPath.EndpointB.ChannelID = "channel-1"
+
+	// Complete TRY, ACK, CONFIRM for ICA path
+	err := suite.icaPath.EndpointA.ChanOpenTry()
+	suite.Require().NoError(err)
+
+	err = suite.icaPath.EndpointB.ChanOpenAck()
+	suite.Require().NoError(err)
+
+	err = suite.icaPath.EndpointA.ChanOpenConfirm()
+	suite.Require().NoError(err)
+
+	// ensure counterparty is up to date
+	err = suite.icaPath.EndpointB.UpdateClient()
 	suite.Require().NoError(err)
 }

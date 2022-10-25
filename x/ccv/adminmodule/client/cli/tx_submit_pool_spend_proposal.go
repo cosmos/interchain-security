@@ -2,9 +2,10 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
-	"io/ioutil"
+	"path/filepath"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -85,7 +86,7 @@ Where proposal.json contains:
 func ParseCommunityPoolSpendProposalWithDeposit(cdc codec.JSONCodec, proposalFile string) (distrtypes.CommunityPoolSpendProposalWithDeposit, error) {
 	proposal := distrtypes.CommunityPoolSpendProposalWithDeposit{}
 
-	contents, err := ioutil.ReadFile(proposalFile)
+	contents, err := os.ReadFile(filepath.Clean(proposalFile))
 	if err != nil {
 		return proposal, err
 	}
