@@ -76,7 +76,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHei
 	}
 	k.SetConsumerClientId(ctx, chainID, clientID)
 
-	consumerGen, err := k.MakeConsumerGenesis(ctx)
+	consumerGen, err := k.MakeConsumerGenesis(ctx, chainID)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 }
 
 // MakeConsumerGenesis constructs a consumer genesis state.
-func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisState, err error) {
+func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consumertypes.GenesisState, err error) {
 	unbondingTime := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
 
@@ -218,7 +218,7 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 		return false
 	})
 
-	updates := []abci.ValidatorUpdate{}
+	providerUpdates := []abci.ValidatorUpdate{}
 
 	for _, p := range lastPowers {
 		addr, err := sdk.ValAddressFromBech32(p.Address)
@@ -236,13 +236,28 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 			panic(err)
 		}
 
-		updates = append(updates, abci.ValidatorUpdate{
+		providerUpdates = append(providerUpdates, abci.ValidatorUpdate{
 			PubKey: tmProtoPk,
 			Power:  p.Power,
 		})
 	}
 
-	gen.InitialValSet = updates
+	// TODO: deduplicate these blocks
+	for _, u := range providerUpdates {
+		if _, found := k.KeyMap(ctx, chainID).GetCurrentConsumerPubKeyFromProviderPubKey(u.PubKey); !found {
+			// The provider has not designated a key to use for the consumer chain. Use the provider key
+			// by default.
+			k.KeyMap(ctx, chainID).SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
+		}
+	}
+
+	// Map the updates through any key transformations
+	// TODO: check vscid
+	consumerUpdates := k.KeyMap(ctx, chainID).ComputeUpdates(0, providerUpdates)
+
+	gen.InitialValSet = consumerUpdates
+
+	gen.InitialValSet = providerUpdates
 
 	return gen, nil
 }
