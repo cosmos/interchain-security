@@ -15,6 +15,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 func TestIniAndExportGenesis(t *testing.T) {
@@ -25,6 +26,20 @@ func TestIniAndExportGenesis(t *testing.T) {
 	initHeight, vscID := uint64(5), uint64(1)
 	ubdIndex := []uint64{0, 1, 2}
 	params := providertypes.DefaultParams()
+	keyMaps := []ccv.KeyMap{
+		{
+			PkToCk:             []ccv.KeyToKey{{From: &crypto.PublicKey{}, To: &crypto.PublicKey{}}},
+			CkToPk:             []ccv.KeyToKey{},
+			CkToLastUpdateMemo: []ccv.KeyToLastUpdateMemo{},
+			CcaToCk:            []ccv.ConsAddrToKey{},
+		},
+		{
+			PkToCk:             []ccv.KeyToKey{},
+			CkToPk:             []ccv.KeyToKey{},
+			CkToLastUpdateMemo: []ccv.KeyToLastUpdateMemo{},
+			CcaToCk:            []ccv.ConsAddrToKey{},
+		},
+	}
 
 	// create genesis struct
 	pGenesis := providertypes.NewGenesisState(vscID,
@@ -42,6 +57,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 				},
 				nil,
 				[]string{"slashedValidatorConsAddress"},
+				&keyMaps[0],
 			),
 			providertypes.NewConsumerStates(
 				cChainIDs[1],
@@ -53,6 +69,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 				nil,
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
 				nil,
+				&keyMaps[0],
 			),
 		},
 		[]ccv.UnbondingOp{{
@@ -103,6 +120,11 @@ func TestIniAndExportGenesis(t *testing.T) {
 	require.Equal(t, pGenesis.ConsumerAdditionProposals[0], addProp)
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, pGenesis.Params, pk.GetParams(ctx))
+
+	_, found = pk.KeyMap(ctx, cChainIDs[0]).Store.GetPkToCk(crypto.PublicKey{})
+	require.True(t, found)
+	_, found = pk.KeyMap(ctx, cChainIDs[1]).Store.GetPkToCk(crypto.PublicKey{})
+	require.False(t, found)
 
 	// check provider chain's consumer chain states
 	assertConsumerChainStates(ctx, t, pk, pGenesis.ConsumerStates...)

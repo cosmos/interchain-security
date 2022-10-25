@@ -77,6 +77,21 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 	}
 
+	if cs.KeyMap != nil {
+		for _, pkToCk := range cs.KeyMap.PkToCk {
+			k.KeyMap(ctx, cs.ChainId).Store.SetPkToCk(*pkToCk.From, *pkToCk.To)
+		}
+		for _, ckToPk := range cs.KeyMap.CkToPk {
+			k.KeyMap(ctx, cs.ChainId).Store.SetCkToPk(*ckToPk.From, *ckToPk.To)
+		}
+		for _, ckToMemo := range cs.KeyMap.CkToLastUpdateMemo {
+			k.KeyMap(ctx, cs.ChainId).Store.SetCkToMemo(*ckToMemo.Key, *ckToMemo.LastUpdateMemo)
+		}
+		for _, ccaToCk := range cs.KeyMap.CcaToCk {
+			k.KeyMap(ctx, cs.ChainId).Store.SetCcaToCk(ccaToCk.ConsAddr, *ccaToCk.Key)
+		}
+	}
+
 	k.SetParams(ctx, genState.Params)
 }
 
@@ -117,6 +132,33 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 				cs.PendingValsetChanges = pendingVSC
 			}
 		}
+
+		keyMap := func() *ccv.KeyMap {
+			km := &ccv.KeyMap{}
+			km.PkToCk = []ccv.KeyToKey{}
+			km.CkToPk = []ccv.KeyToKey{}
+			km.CkToLastUpdateMemo = []ccv.KeyToLastUpdateMemo{}
+			km.CcaToCk = []ccv.ConsAddrToKey{}
+			k.KeyMap(ctx, chainID).Store.IteratePkToCk(func(pk ProviderPubKey, ck ConsumerPubKey) bool {
+				km.PkToCk = append(km.PkToCk, ccv.KeyToKey{From: &pk, To: &ck})
+				return false
+			})
+			k.KeyMap(ctx, chainID).Store.IterateCkToPk(func(ck ConsumerPubKey, pk ProviderPubKey) bool {
+				km.CkToPk = append(km.CkToPk, ccv.KeyToKey{From: &ck, To: &pk})
+				return false
+			})
+			k.KeyMap(ctx, chainID).Store.IterateCkToMemo(func(ck ConsumerPubKey, m ccv.LastUpdateMemo) bool {
+				km.CkToLastUpdateMemo = append(km.CkToLastUpdateMemo, ccv.KeyToLastUpdateMemo{Key: &ck, LastUpdateMemo: &m})
+				return false
+			})
+			k.KeyMap(ctx, chainID).Store.IterateCcaToCk(func(cca ConsumerConsAddr, ck ConsumerPubKey) bool {
+				km.CcaToCk = append(km.CcaToCk, ccv.ConsAddrToKey{ConsAddr: cca, Key: &ck})
+				return false
+			})
+			return km
+		}
+
+		cs.KeyMap = keyMap()
 
 		consumerStates = append(consumerStates, cs)
 		return true
