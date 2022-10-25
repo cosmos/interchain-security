@@ -107,6 +107,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 
 	// populate cross chain validators states with initial valset
 	k.ApplyCCValidatorChanges(ctx, state.InitialValSet)
+	k.SetProviderGovernanceAddress(ctx, state.ProviderGovernanceAddress)
 
 	return state.InitialValSet
 }
@@ -123,6 +124,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 	valset, err := k.GetValidatorUpdates(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("fail to retrieve the validator set: %s", err))
+	}
+
+	providerGovAddr, found := k.GetProviderGovernanceAddress(ctx)
+	if !found {
+		panic("provider's governance module address is not set")
 	}
 
 	// export all the states created after a provider channel got established
@@ -169,6 +175,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			heightToVCIDs,
 			outstandingDowntimes,
 			params,
+			providerGovAddr,
 		)
 	} else {
 		clientID, ok := k.GetProviderClientID(ctx)
@@ -194,7 +201,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			panic("provider consensus state is not tendermint consensus state")
 		}
 		// export client states and pending slashing requests into a new chain genesis
-		genesis = consumertypes.NewInitialGenesisState(tmCs, tmConsState, valset, k.GetPendingSlashRequests(ctx), params)
+		genesis = consumertypes.NewInitialGenesisState(tmCs, tmConsState, valset, k.GetPendingSlashRequests(ctx), params, providerGovAddr)
 	}
 
 	return

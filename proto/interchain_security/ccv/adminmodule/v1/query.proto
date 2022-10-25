@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package interchain_security.ccv.adminmodule.v1;
+
+import "google/api/annotations.proto";
+import "cosmos/gov/v1beta1/gov.proto";
+// this line is used by starport scaffolding # 1
+
+option go_package = "github.com/cosmos/interchain-security/x/ccv/adminmodule/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // this line is used by starport scaffolding # 2
+
+  // Queries a list of admins items.
+  rpc Admins(QueryAdminsRequest) returns (QueryAdminsResponse) {
+    option (google.api.http).get =
+        "/interchain-security/ccv/adminmodule/admins";
+  }
+
+  // Queries a list of archived proposals.
+  rpc ArchivedProposals(QueryArchivedProposalsRequest)
+      returns (QueryArchivedProposalsResponse) {
+    option (google.api.http).get =
+        "/interchain-security/ccv/adminmodule/archivedproposals";
+  }
+}
+
+// this line is used by starport scaffolding # 3
+message QueryAdminsRequest {}
+
+message QueryAdminsResponse { repeated string admins = 1; }
+
+message QueryArchivedProposalsRequest {}
+
+message QueryArchivedProposalsResponse {
+  repeated cosmos.gov.v1beta1.Proposal proposals = 1;
+}

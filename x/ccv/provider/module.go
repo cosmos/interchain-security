@@ -21,6 +21,8 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/client/cli"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 var (
@@ -92,13 +94,17 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule represents the AppModule for this module
 type AppModule struct {
 	AppModuleBasic
-	keeper *keeper.Keeper
+	keeper              *keeper.Keeper
+	accountKeeper       ccv.AccountKeeper
+	icaControllerKeeper ccv.ICAControllerKeeper
 }
 
 // NewAppModule creates a new provider module
-func NewAppModule(k *keeper.Keeper) AppModule {
+func NewAppModule(k *keeper.Keeper, accountKeeper ccv.AccountKeeper, icaControllerKeeper ccv.ICAControllerKeeper) AppModule {
 	return AppModule{
-		keeper: k,
+		keeper:              k,
+		accountKeeper:       accountKeeper,
+		icaControllerKeeper: icaControllerKeeper,
 	}
 }
 

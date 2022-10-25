@@ -89,6 +89,7 @@ type BankKeeper interface {
 // AccountKeeper defines the expected account keeper used for simulations
 type AccountKeeper interface {
 	GetModuleAccount(ctx sdk.Context, name string) auth.ModuleAccountI
+	GetModuleAddress(moduleName string) sdk.AccAddress
 }
 
 // IBCTransferKeeper defines the expected interface needed for distribution transfer
@@ -119,4 +120,9 @@ type ScopedKeeper interface {
 	GetCapability(ctx sdk.Context, name string) (*capabilitytypes.Capability, bool)
 	AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) bool
 	ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error
+}
+
+type ICAControllerKeeper interface {
+	GetInterchainAccountAddress(ctx sdk.Context, connectionID, portID string) (string, bool)
+	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error
 }

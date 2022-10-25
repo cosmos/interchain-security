@@ -44,6 +44,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
@@ -481,7 +482,9 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		consumertypes.DefaultConsumerRedistributeFrac,
 		consumertypes.DefaultHistoricalEntries,
 	)
-	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, consumertypes.SlashRequests{}, params)
+
+	providerGovAddr := authtypes.NewModuleAddress(govtypes.ModuleName).String()
+	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, consumertypes.SlashRequests{}, params, providerGovAddr)
 }
 
 func (b *Builder) createLink() {

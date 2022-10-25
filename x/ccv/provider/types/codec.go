@@ -17,6 +17,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*govtypes.Content)(nil),
 		&ConsumerAdditionProposal{},
+		&ConsumerGovernanceProposal{},
 	)
 }
 

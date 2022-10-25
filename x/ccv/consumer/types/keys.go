@@ -65,6 +65,9 @@ const (
 
 	// CrossChainValidatorPrefix is the byte prefix that will store cross-chain validators by consensus address
 	CrossChainValidatorBytePrefix
+
+	// ProviderGovernanceAddressKey is the byte key that will store provider's governance module address
+	ProviderGovernanceAddressByteKey
 )
 
 // PortKey returns the key to the port ID in the store
@@ -125,6 +128,11 @@ func OutstandingDowntimeKey(address sdk.ConsAddress) []byte {
 // CrossChainValidatorKey returns the key to a cross chain validator by consensus address
 func CrossChainValidatorKey(addr []byte) []byte {
 	return append([]byte{CrossChainValidatorBytePrefix}, addr...)
+}
+
+// ProviderGovernanceAddressKey returns the key to the provider's governance module address
+func ProviderGovernanceAddressKey() []byte {
+	return []byte{ProviderGovernanceAddressByteKey}
 }
 
 // HistoricalInfoKey returns the key to historical info to a given block height

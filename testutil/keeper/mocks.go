@@ -688,6 +688,20 @@ func (mr *MockAccountKeeperMockRecorder) GetModuleAccount(ctx, name interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModuleAccount", reflect.TypeOf((*MockAccountKeeper)(nil).GetModuleAccount), ctx, name)
 }
 
+// GetModuleAddress mocks base method.
+func (m *MockAccountKeeper) GetModuleAddress(moduleName string) types.AccAddress {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetModuleAddress", moduleName)
+	ret0, _ := ret[0].(types.AccAddress)
+	return ret0
+}
+
+// GetModuleAddress indicates an expected call of GetModuleAddress.
+func (mr *MockAccountKeeperMockRecorder) GetModuleAddress(moduleName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModuleAddress", reflect.TypeOf((*MockAccountKeeper)(nil).GetModuleAddress), moduleName)
+}
+
 // MockIBCTransferKeeper is a mock of IBCTransferKeeper interface.
 type MockIBCTransferKeeper struct {
 	ctrl     *gomock.Controller
@@ -827,4 +841,56 @@ func (m *MockScopedKeeper) GetCapability(ctx types.Context, name string) (*types
 func (mr *MockScopedKeeperMockRecorder) GetCapability(ctx, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCapability", reflect.TypeOf((*MockScopedKeeper)(nil).GetCapability), ctx, name)
+}
+
+// MockICAControllerKeeper is a mock of ICAControllerKeeper interface.
+type MockICAControllerKeeper struct {
+	ctrl     *gomock.Controller
+	recorder *MockICAControllerKeeperMockRecorder
+}
+
+// MockICAControllerKeeperMockRecorder is the mock recorder for MockICAControllerKeeper.
+type MockICAControllerKeeperMockRecorder struct {
+	mock *MockICAControllerKeeper
+}
+
+// NewMockICAControllerKeeper creates a new mock instance.
+func NewMockICAControllerKeeper(ctrl *gomock.Controller) *MockICAControllerKeeper {
+	mock := &MockICAControllerKeeper{ctrl: ctrl}
+	mock.recorder = &MockICAControllerKeeperMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockICAControllerKeeper) EXPECT() *MockICAControllerKeeperMockRecorder {
+	return m.recorder
+}
+
+// GetInterchainAccountAddress mocks base method.
+func (m *MockICAControllerKeeper) GetInterchainAccountAddress(ctx types.Context, connectionID, portID string) (string, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetInterchainAccountAddress", ctx, connectionID, portID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetInterchainAccountAddress indicates an expected call of GetInterchainAccountAddress.
+func (mr *MockICAControllerKeeperMockRecorder) GetInterchainAccountAddress(ctx, connectionID, portID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInterchainAccountAddress", reflect.TypeOf((*MockICAControllerKeeper)(nil).GetInterchainAccountAddress), ctx, connectionID, portID)
+}
+
+// RegisterInterchainAccount mocks base method.
+func (m *MockICAControllerKeeper) RegisterInterchainAccount(ctx types.Context, connectionID, owner string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegisterInterchainAccount", ctx, connectionID, owner)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RegisterInterchainAccount indicates an expected call of RegisterInterchainAccount.
+func (mr *MockICAControllerKeeperMockRecorder) RegisterInterchainAccount(ctx, connectionID, owner interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterInterchainAccount", reflect.TypeOf((*MockICAControllerKeeper)(nil).RegisterInterchainAccount), ctx, connectionID, owner)
 }

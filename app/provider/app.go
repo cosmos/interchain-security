@@ -76,6 +76,11 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	ica "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts"
+	icacontroller "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller"
+	icacontrollerkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/keeper"
+	icacontrollertypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/types"
+	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	"github.com/cosmos/ibc-go/v3/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
@@ -88,6 +93,9 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	"github.com/cosmos/interchain-security/x/ccv/icamauth"
+	icamauthkeeper "github.com/cosmos/interchain-security/x/ccv/icamauth/keeper"
+	icamauthtypes "github.com/cosmos/interchain-security/x/ccv/icamauth/types"
 
 	"github.com/gorilla/mux"
 	"github.com/gravity-devs/liquidity/x/liquidity"
@@ -145,6 +153,7 @@ var (
 			ibcclientclient.UpdateClientProposalHandler,
 			ibcclientclient.UpgradeProposalHandler,
 			ibcproviderclient.ProposalHandler,
+			ibcproviderclient.ConsumerGovernanceHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
@@ -159,12 +168,15 @@ var (
 		liquidity.AppModuleBasic{},
 		//router.AppModuleBasic{},
 		ibcprovider.AppModuleBasic{},
+		ica.AppModuleBasic{},
+		icamauth.AppModuleBasic{},
 	)
 
 	// module account permissions
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName:     nil,
 		distrtypes.ModuleName:          nil,
+		icatypes.ModuleName:            nil,
 		minttypes.ModuleName:           {authtypes.Minter},
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
@@ -210,22 +222,26 @@ type App struct { // nolint: golint
 	// different fee-pool from the consumer chain ConsumerKeeper
 	DistrKeeper distrkeeper.Keeper
 
-	GovKeeper       govkeeper.Keeper
-	CrisisKeeper    crisiskeeper.Keeper
-	UpgradeKeeper   upgradekeeper.Keeper
-	ParamsKeeper    paramskeeper.Keeper
-	IBCKeeper       *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	EvidenceKeeper  evidencekeeper.Keeper
-	TransferKeeper  ibctransferkeeper.Keeper
-	FeeGrantKeeper  feegrantkeeper.Keeper
-	AuthzKeeper     authzkeeper.Keeper
-	LiquidityKeeper liquiditykeeper.Keeper
-	ProviderKeeper  ibcproviderkeeper.Keeper
+	GovKeeper           govkeeper.Keeper
+	CrisisKeeper        crisiskeeper.Keeper
+	UpgradeKeeper       upgradekeeper.Keeper
+	ParamsKeeper        paramskeeper.Keeper
+	IBCKeeper           *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
+	EvidenceKeeper      evidencekeeper.Keeper
+	TransferKeeper      ibctransferkeeper.Keeper
+	FeeGrantKeeper      feegrantkeeper.Keeper
+	AuthzKeeper         authzkeeper.Keeper
+	LiquidityKeeper     liquiditykeeper.Keeper
+	ProviderKeeper      ibcproviderkeeper.Keeper
+	ICAControllerKeeper icacontrollerkeeper.Keeper
+	ICAMauthKeeper      icamauthkeeper.Keeper
 
 	// make scoped keepers public for test purposes
-	ScopedIBCKeeper         capabilitykeeper.ScopedKeeper
-	ScopedTransferKeeper    capabilitykeeper.ScopedKeeper
-	ScopedIBCProviderKeeper capabilitykeeper.ScopedKeeper
+	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
+	ScopedTransferKeeper      capabilitykeeper.ScopedKeeper
+	ScopedIBCProviderKeeper   capabilitykeeper.ScopedKeeper
+	ScopedICAControllerKeeper capabilitykeeper.ScopedKeeper
+	ScopedICAMauthKeeper      capabilitykeeper.ScopedKeeper
 
 	// the module manager
 	MM *module.Manager
@@ -273,7 +289,7 @@ func New(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, liquiditytypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
-		providertypes.StoreKey,
+		providertypes.StoreKey, icacontrollertypes.StoreKey, icamauthtypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -311,6 +327,8 @@ func New(
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedIBCProviderKeeper := app.CapabilityKeeper.ScopeToModule(providertypes.ModuleName)
+	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
+	scopedICAMauthKeeper := app.CapabilityKeeper.ScopeToModule(icamauthtypes.ModuleName)
 	app.CapabilityKeeper.Seal()
 
 	// add keepers
@@ -419,6 +437,16 @@ func New(
 		scopedIBCKeeper,
 	)
 
+	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
+		appCodec, keys[icacontrollertypes.StoreKey],
+		app.GetSubspace(icacontrollertypes.SubModuleName),
+		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		scopedICAControllerKeeper,
+		app.MsgServiceRouter(),
+	)
+
 	app.ProviderKeeper = ibcproviderkeeper.NewKeeper(
 		appCodec,
 		keys[providertypes.StoreKey],
@@ -431,10 +459,12 @@ func New(
 		app.StakingKeeper,
 		app.SlashingKeeper,
 		app.AccountKeeper,
+		app.ICAControllerKeeper,
+		app.MsgServiceRouter(),
 		authtypes.FeeCollectorName,
 	)
 
-	providerModule := ibcprovider.NewAppModule(&app.ProviderKeeper)
+	providerModule := ibcprovider.NewAppModule(&app.ProviderKeeper, app.AccountKeeper, app.ICAControllerKeeper)
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
@@ -471,10 +501,25 @@ func New(
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
 	ibcmodule := transfer.NewIBCModule(app.TransferKeeper)
 
+	app.ICAMauthKeeper = icamauthkeeper.NewKeeper(
+		appCodec,
+		keys[icamauthtypes.StoreKey],
+		app.ICAControllerKeeper,
+		scopedICAMauthKeeper,
+	)
+
+	icaMauthModule := icamauth.NewAppModule(appCodec, app.ICAMauthKeeper)
+	icaMauthIBCModule := icamauth.NewIBCModule(app.ICAMauthKeeper)
+
+	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, nil)
+	icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, icaMauthIBCModule)
+
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcmodule)
 	ibcRouter.AddRoute(providertypes.ModuleName, providerModule)
+	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule)
+	ibcRouter.AddRoute(icamauthtypes.ModuleName, icaControllerIBCModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
@@ -517,6 +562,8 @@ func New(
 		liquidity.NewAppModule(appCodec, app.LiquidityKeeper, app.AccountKeeper, app.BankKeeper, app.DistrKeeper),
 		transferModule,
 		providerModule,
+		icaModule,
+		icaMauthModule,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -534,6 +581,8 @@ func New(
 		liquiditytypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
+		icatypes.ModuleName,
+		icamauthtypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
@@ -560,6 +609,8 @@ func New(
 		liquiditytypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
+		icatypes.ModuleName,
+		icamauthtypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
 		capabilitytypes.ModuleName,
@@ -592,6 +643,8 @@ func New(
 		minttypes.ModuleName,
 		crisistypes.ModuleName,
 		ibchost.ModuleName,
+		icatypes.ModuleName,
+		icamauthtypes.ModuleName,
 		evidencetypes.ModuleName,
 		liquiditytypes.ModuleName,
 		ibctransfertypes.ModuleName,
@@ -699,6 +752,8 @@ func New(
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	app.ScopedIBCProviderKeeper = scopedIBCProviderKeeper
+	app.ScopedICAControllerKeeper = scopedICAControllerKeeper
+	app.ScopedICAMauthKeeper = scopedICAMauthKeeper
 
 	return app
 }
@@ -920,6 +975,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(providertypes.ModuleName)
+	paramsKeeper.Subspace(icacontrollertypes.SubModuleName)
 
 	return paramsKeeper
 }

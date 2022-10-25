@@ -32,11 +32,11 @@ message Params {
   string provider_fee_pool_addr_str = 4;
   // Sent CCV related IBC packets will timeout after this duration
   google.protobuf.Duration ccv_timeout_period = 5
-      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
   // Sent transfer related IBC packets will timeout after this duration
   google.protobuf.Duration transfer_timeout_period = 6
-      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 
   // The fraction of tokens allocated to the consumer redistribution address
   // during distribution events. The fraction is a string representing a
@@ -44,7 +44,7 @@ message Params {
   string consumer_redistribution_fraction = 7;
 
   // The number of historical info entries to persist in store.
-  // This param is a part of the cosmos sdk staking module. In the case of 
+  // This param is a part of the cosmos sdk staking module. In the case of
   // a ccv enabled consumer chain, the ccv module acts as the staking module.
   int64 historical_entries = 8;
 }
@@ -66,12 +66,11 @@ message CrossChainValidator {
 
 // SlashRequest defines a slashing request for CCV consumer module
 message SlashRequest {
-    interchain_security.ccv.v1.SlashPacketData packet = 1;
-    cosmos.staking.v1beta1.InfractionType infraction = 2;
+  interchain_security.ccv.v1.SlashPacketData packet = 1;
+  cosmos.staking.v1beta1.InfractionType infraction = 2;
 }
 
 // SlashRequests is a list of slash requests for CCV consumer module
 message SlashRequests {
-  repeated SlashRequest requests = 1
-  [ (gogoproto.nullable) = false ];
+  repeated SlashRequest requests = 1 [ (gogoproto.nullable) = false ];
 }

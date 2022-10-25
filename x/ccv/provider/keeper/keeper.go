@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -29,18 +30,20 @@ import (
 
 // Keeper defines the Cross-Chain Validation Provider Keeper
 type Keeper struct {
-	storeKey         sdk.StoreKey
-	cdc              codec.BinaryCodec
-	paramSpace       paramtypes.Subspace
-	scopedKeeper     ccv.ScopedKeeper
-	channelKeeper    ccv.ChannelKeeper
-	portKeeper       ccv.PortKeeper
-	connectionKeeper ccv.ConnectionKeeper
-	accountKeeper    ccv.AccountKeeper
-	clientKeeper     ccv.ClientKeeper
-	stakingKeeper    ccv.StakingKeeper
-	slashingKeeper   ccv.SlashingKeeper
-	feeCollectorName string
+	storeKey            sdk.StoreKey
+	cdc                 codec.BinaryCodec
+	paramSpace          paramtypes.Subspace
+	scopedKeeper        ccv.ScopedKeeper
+	channelKeeper       ccv.ChannelKeeper
+	portKeeper          ccv.PortKeeper
+	connectionKeeper    ccv.ConnectionKeeper
+	accountKeeper       ccv.AccountKeeper
+	clientKeeper        ccv.ClientKeeper
+	stakingKeeper       ccv.StakingKeeper
+	slashingKeeper      ccv.SlashingKeeper
+	icaControllerKeeper ccv.ICAControllerKeeper
+	router              *baseapp.MsgServiceRouter
+	feeCollectorName    string
 }
 
 // NewKeeper creates a new provider Keeper instance
@@ -49,7 +52,8 @@ func NewKeeper(
 	channelKeeper ccv.ChannelKeeper, portKeeper ccv.PortKeeper,
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
-	accountKeeper ccv.AccountKeeper, feeCollectorName string,
+	accountKeeper ccv.AccountKeeper, icaControllerKeeper ccv.ICAControllerKeeper,
+	router *baseapp.MsgServiceRouter, feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -57,18 +61,20 @@ func NewKeeper(
 	}
 
 	return Keeper{
-		cdc:              cdc,
-		storeKey:         key,
-		paramSpace:       paramSpace,
-		scopedKeeper:     scopedKeeper,
-		channelKeeper:    channelKeeper,
-		portKeeper:       portKeeper,
-		connectionKeeper: connectionKeeper,
-		accountKeeper:    accountKeeper,
-		clientKeeper:     clientKeeper,
-		stakingKeeper:    stakingKeeper,
-		slashingKeeper:   slashingKeeper,
-		feeCollectorName: feeCollectorName,
+		cdc:                 cdc,
+		storeKey:            key,
+		paramSpace:          paramSpace,
+		scopedKeeper:        scopedKeeper,
+		channelKeeper:       channelKeeper,
+		portKeeper:          portKeeper,
+		connectionKeeper:    connectionKeeper,
+		accountKeeper:       accountKeeper,
+		clientKeeper:        clientKeeper,
+		stakingKeeper:       stakingKeeper,
+		slashingKeeper:      slashingKeeper,
+		icaControllerKeeper: icaControllerKeeper,
+		router:              router,
+		feeCollectorName:    feeCollectorName,
 	}
 }
 
@@ -825,4 +831,17 @@ func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bo
 func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ChainToClientKey(chainID))
+}
+
+func (k Keeper) GetConnectionHops(ctx sdk.Context, portID, channelID string) ([]string, error) {
+	channel, ok := k.channelKeeper.GetChannel(ctx, portID, channelID)
+	if !ok {
+		return []string{}, sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
+	}
+
+	if len(channel.ConnectionHops) == 0 {
+		return []string{}, sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "no connection hops")
+	}
+
+	return channel.ConnectionHops, nil
 }

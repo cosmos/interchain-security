@@ -53,11 +53,8 @@ message SlashPacketData {
 }
 
 // UnbondingOpsIndex defines a list of unbonding operation ids.
-message UnbondingOpsIndex {
-  repeated uint64 ids = 1;
-}
+message UnbondingOpsIndex { repeated uint64 ids = 1; }
 
-// MaturedUnbondingOps defines a list of ids corresponding to ids of matured unbonding operations. 
-message MaturedUnbondingOps {
-  repeated uint64 ids = 1;
-}
+// MaturedUnbondingOps defines a list of ids corresponding to ids of matured
+// unbonding operations.
+message MaturedUnbondingOps { repeated uint64 ids = 1; }

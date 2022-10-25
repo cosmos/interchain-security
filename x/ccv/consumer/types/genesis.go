@@ -13,15 +13,16 @@ import (
 
 // NewInitialGenesisState returns a consumer GenesisState for a completely new consumer chain.
 func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
-	initValSet []abci.ValidatorUpdate, slashRequests SlashRequests, params Params) *GenesisState {
+	initValSet []abci.ValidatorUpdate, slashRequests SlashRequests, params Params, providerGovAddr string) *GenesisState {
 
 	return &GenesisState{
-		Params:                 params,
-		NewChain:               true,
-		ProviderClientState:    cs,
-		ProviderConsensusState: consState,
-		InitialValSet:          initValSet,
-		PendingSlashRequests:   slashRequests,
+		Params:                    params,
+		NewChain:                  true,
+		ProviderClientState:       cs,
+		ProviderConsensusState:    consState,
+		InitialValSet:             initValSet,
+		PendingSlashRequests:      slashRequests,
+		ProviderGovernanceAddress: providerGovAddr,
 	}
 }
 
@@ -31,7 +32,7 @@ func NewRestartGenesisState(clientID, channelID string,
 	initValSet []abci.ValidatorUpdate,
 	heightToValsetUpdateIDs []HeightToValsetUpdateID,
 	outstandingDowntimes []OutstandingDowntime,
-	params Params,
+	params Params, providerGovAddr string,
 ) *GenesisState {
 
 	return &GenesisState{
@@ -43,6 +44,7 @@ func NewRestartGenesisState(clientID, channelID string,
 		InitialValSet:               initValSet,
 		HeightToValsetUpdateId:      heightToValsetUpdateIDs,
 		OutstandingDowntimeSlashing: outstandingDowntimes,
+		ProviderGovernanceAddress:   providerGovAddr,
 	}
 }
 
@@ -64,6 +66,9 @@ func (gs GenesisState) Validate() error {
 	}
 	if err := gs.Params.Validate(); err != nil {
 		return err
+	}
+	if gs.ProviderGovernanceAddress == "" {
+		return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider's governance module address is empty")
 	}
 
 	if gs.NewChain {

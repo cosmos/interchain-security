@@ -174,7 +174,7 @@ func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
 				portB:       "transfer",
 				order:       "unordered",
 				channelA:    1,
-				channelB:    1,
+				channelB:    2, // channel for governance module ica will use channel-1, since ChanOpenInit for it is called before transfer channel
 			},
 			state: State{},
 		})
