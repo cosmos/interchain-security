@@ -97,20 +97,20 @@ func ConsumerPubKeyToConsumerConsAddr(ck ConsumerPubKey) ConsumerConsAddr {
 type Store interface {
 	SetPkToCk(ProviderPubKey, ConsumerPubKey)
 	SetCkToPk(ConsumerPubKey, ProviderPubKey)
-	SetCkToMemo(ConsumerPubKey, ccvtypes.LastUpdateMemo)
-	SetCcaToCk(ConsumerConsAddr, ConsumerPubKey)
+	SetCkToMemo(ConsumerConsAddr, ccvtypes.LastUpdateMemo)
+	// SetCcaToCk(ConsumerConsAddr, ConsumerPubKey)
 	GetPkToCk(ProviderPubKey) (ConsumerPubKey, bool)
 	GetCkToPk(ConsumerPubKey) (ProviderPubKey, bool)
-	GetCkToMemo(ConsumerPubKey) (ccvtypes.LastUpdateMemo, bool)
-	GetCcaToCk(ConsumerConsAddr) (ConsumerPubKey, bool)
+	GetCkToMemo(ConsumerConsAddr) (ccvtypes.LastUpdateMemo, bool)
+	// GetCcaToCk(ConsumerConsAddr) (ConsumerPubKey, bool)
 	DelPkToCk(ProviderPubKey)
 	DelCkToPk(ConsumerPubKey)
-	DelCkToMemo(ConsumerPubKey)
-	DelCcaToCk(ConsumerConsAddr)
+	DelCkToMemo(ConsumerConsAddr)
+	// DelCcaToCk(ConsumerConsAddr)
 	IteratePkToCk(func(ProviderPubKey, ConsumerPubKey) bool)
 	IterateCkToPk(func(ConsumerPubKey, ProviderPubKey) bool)
-	IterateCkToMemo(func(ConsumerPubKey, ccvtypes.LastUpdateMemo) bool)
-	IterateCcaToCk(func(ConsumerConsAddr, ConsumerPubKey) bool)
+	IterateCkToMemo(func(ConsumerConsAddr, ccvtypes.LastUpdateMemo) bool)
+	// IterateCcaToCk(func(ConsumerConsAddr, ConsumerPubKey) bool)
 }
 
 type KeyMap struct {
@@ -124,12 +124,10 @@ func MakeKeyMap(store Store) KeyMap {
 }
 
 func (e *KeyMap) SetProviderPubKeyToConsumerPubKey(pk ProviderPubKey, ck ConsumerPubKey) error {
-	// TODO: comment
 	if _, ok := e.Store.GetCkToPk(ck); ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
-	// TODO: comment
-	if _, ok := e.Store.GetCkToMemo(ck); ok {
+	if _, ok := e.Store.GetCkToMemo(ConsumerPubKeyToConsumerConsAddr(ck)); ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
 	if oldCk, ok := e.Store.GetPkToCk(pk); ok {
@@ -137,8 +135,6 @@ func (e *KeyMap) SetProviderPubKeyToConsumerPubKey(pk ProviderPubKey, ck Consume
 	}
 	e.Store.SetPkToCk(pk, ck)
 	e.Store.SetCkToPk(ck, pk)
-	// TODO: check leak
-	e.Store.SetCcaToCk(ConsumerPubKeyToConsumerConsAddr(ck), ck)
 	return nil
 }
 
@@ -147,15 +143,12 @@ func (e *KeyMap) GetCurrentConsumerPubKeyFromProviderPubKey(pk ProviderPubKey) (
 }
 
 func (e *KeyMap) GetProviderPubKeyFromConsumerPubKey(ck ConsumerPubKey) (pk ProviderPubKey, found bool) {
-	if u, found := e.Store.GetCkToMemo(ck); found {
-		return *u.Pk, true
-	}
 	return e.Store.GetCkToPk(ck)
 }
 
 func (e *KeyMap) GetProviderPubKeyFromConsumerConsAddress(cca sdk.ConsAddress) (pk ProviderPubKey, found bool) {
-	if ck, found := e.Store.GetCcaToCk(cca); found {
-		return e.GetProviderPubKeyFromConsumerPubKey(ck)
+	if memo, found := e.Store.GetCkToMemo(cca); found {
+		return *memo.Pk, true
 	}
 	return pk, false
 }
@@ -163,21 +156,19 @@ func (e *KeyMap) GetProviderPubKeyFromConsumerConsAddress(cca sdk.ConsAddress) (
 func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 
 	toDel := []ConsumerPubKey{}
-	e.Store.IterateCkToMemo(func(cpk ConsumerPubKey, m ccvtypes.LastUpdateMemo) bool {
+	e.Store.IterateCkToMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
 		if m.Power == 0 && m.Vscid <= latestVscid {
 			toDel = append(toDel, *m.Ck)
 		}
 		return false
 	})
 	for _, ck := range toDel {
-		m, found := e.Store.GetCkToMemo(ck)
+		cca := ConsumerPubKeyToConsumerConsAddr(ck)
+		m, found := e.Store.GetCkToMemo(cca)
 		if !found {
 			panic("must find memo for consumer key ck")
 		}
-		e.Store.DelCkToMemo(ck)
-		if _, found := e.Store.GetCkToPk(ck); !found {
-			e.Store.DelCcaToCk(m.Cca)
-		}
+		e.Store.DelCkToMemo(cca)
 	}
 }
 
@@ -203,17 +194,20 @@ func (e *KeyMap) ComputeUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpd
 // do inner work as part of ComputeUpdates
 func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) map[ConsumerPubKey]int64 {
 
-	seen := map[string]bool{}
-	pks := []ProviderPubKey{}
+	providerKeysToSendUpdateFor := []ProviderPubKey{}
+	keyInProviderKeysToSendUpdateFor := map[string]bool{}
+	providerKeysLastPositivePowerUpdate := map[string]ccvtypes.LastUpdateMemo{}
 
-	// Grab provider keys where the assigned consumer key has changed
-	e.Store.IterateCkToMemo(func(oldCk ConsumerPubKey, m ccvtypes.LastUpdateMemo) bool {
+	// Grab provider keys where the last update had positive power
+	// and where the assigned consumer key has changed
+	e.Store.IterateCkToMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
+		oldCk := m.Ck
 		if newCk, ok := e.Store.GetPkToCk(*m.Pk); ok {
 			str := DeterministicStringify(*m.Pk)
 			// TODO: is !seen[str] needed?
-			if !seen[str] && !oldCk.Equal(newCk) && 0 < m.Power { // TODO: comment why 0 < needed
-				pks = append(pks, *m.Pk)
-				seen[str] = true
+			if !oldCk.Equal(newCk) && 0 < m.Power { // TODO: comment why 0 < needed
+				providerKeysToSendUpdateFor = append(providerKeysToSendUpdateFor, *m.Pk)
+				keyInProviderKeysToSendUpdateFor[str] = true
 			}
 		}
 		return false
@@ -222,44 +216,43 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 	// Grab provider keys where the validator power has changed
 	for pk := range providerUpdates {
 		str := DeterministicStringify(pk)
-		if !seen[str] {
-			pks = append(pks, pk)
+		if !keyInProviderKeysToSendUpdateFor[str] {
+			providerKeysToSendUpdateFor = append(providerKeysToSendUpdateFor, pk)
+			keyInProviderKeysToSendUpdateFor[str] = true
 		}
 	}
 
 	canonicalKey := map[string]ConsumerPubKey{}
 	ret := map[ConsumerPubKey]int64{}
 
-	// Create a read only copy, so that we can query while writing
-	// updates to the old version.
-	ckToMemo_READ_ONLY := map[ConsumerPubKey]ccvtypes.LastUpdateMemo{}
-	e.Store.IterateCkToMemo(func(ck ConsumerPubKey, m ccvtypes.LastUpdateMemo) bool {
-		// TODO: use determinsitic map key
-		ckToMemo_READ_ONLY[ck] = m
+	e.Store.IterateCkToMemo(func(_ ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
+		str := DeterministicStringify(*m.Pk)
+		if 0 < m.Power {
+			if _, found := keyInProviderKeysToSendUpdateFor[str]; found {
+				providerKeysLastPositivePowerUpdate[str] = m
+			}
+		}
 		return false
 	})
 
-	// TODO: add comment what is this block for?
+	// TODO: add comment what this block is for
 
-	for i := range pks {
-		pk := pks[i]
-		for _, u := range ckToMemo_READ_ONLY {
-			if u.Pk.Equal(pk) && 0 < u.Power {
-				// For each provider key for which there was already a positive update
-				// create a deletion update for the associated consumer key.
-				cca := ConsumerPubKeyToConsumerConsAddr(*u.Ck)
-				e.Store.SetCkToMemo(*u.Ck, ccvtypes.LastUpdateMemo{Ck: u.Ck, Pk: &pk, Vscid: vscid, Power: 0, Cca: cca})
-				e.Store.SetCcaToCk(cca, *u.Ck)
-				ret[*u.Ck] = 0
-				canonicalKey[DeterministicStringify(*u.Ck)] = *u.Ck
-			}
+	for i := range providerKeysToSendUpdateFor {
+		pk := providerKeysToSendUpdateFor[i]
+		if u, found := providerKeysLastPositivePowerUpdate[DeterministicStringify(pk)]; found {
+			// For each provider key for which there was already a positive update
+			// create a deletion update for the associated consumer key.
+			cca := ConsumerPubKeyToConsumerConsAddr(*u.Ck)
+			e.Store.SetCkToMemo(cca, ccvtypes.LastUpdateMemo{Ck: u.Ck, Pk: &pk, Vscid: vscid, Power: 0, Cca: cca})
+			ret[*u.Ck] = 0
+			canonicalKey[DeterministicStringify(*u.Ck)] = *u.Ck
 		}
 	}
 
 	// TODO: add comment what is this block for?
 
-	for i := range pks {
-		pk := pks[i]
+	for i := range providerKeysToSendUpdateFor {
+		pk := providerKeysToSendUpdateFor[i]
 		// For each provider key where there was either
 		// 1) already a positive power update
 		// 2) the validator power has changed (and is positive)
@@ -446,7 +439,7 @@ func (s *KeyMapStore) SetCkToPk(k ConsumerPubKey, v ProviderPubKey) {
 	}
 	s.Store.Set(types.KeyMapCkToPkKey(s.ChainID, kbz), vbz)
 }
-func (s *KeyMapStore) SetCkToMemo(k ConsumerPubKey, v ccvtypes.LastUpdateMemo) {
+func (s *KeyMapStore) SetCkToMemo(k ConsumerConsAddr, v ccvtypes.LastUpdateMemo) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -493,7 +486,7 @@ func (s *KeyMapStore) GetCkToPk(k ConsumerPubKey) (v ProviderPubKey, found bool)
 	}
 	return v, false
 }
-func (s *KeyMapStore) GetCkToMemo(k ConsumerPubKey) (v ccvtypes.LastUpdateMemo, found bool) {
+func (s *KeyMapStore) GetCkToMemo(k ConsumerConsAddr) (v ccvtypes.LastUpdateMemo, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -537,7 +530,7 @@ func (s *KeyMapStore) DelCkToPk(k ConsumerPubKey) {
 	}
 	s.Store.Delete(types.KeyMapCkToPkKey(s.ChainID, kbz))
 }
-func (s *KeyMapStore) DelCkToMemo(k ConsumerPubKey) {
+func (s *KeyMapStore) DelCkToMemo(k ConsumerConsAddr) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -592,12 +585,13 @@ func (s *KeyMapStore) IterateCkToPk(cb func(ConsumerPubKey, ProviderPubKey) bool
 		}
 	}
 }
-func (s *KeyMapStore) IterateCkToMemo(cb func(ConsumerPubKey, ccvtypes.LastUpdateMemo) bool) {
+func (s *KeyMapStore) IterateCkToMemo(cb func(ConsumerConsAddr, ccvtypes.LastUpdateMemo) bool) {
 	prefix := types.KeyMapCkToMemoChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		k := ConsumerPubKey{}
+		// k := ConsumerPubKey{}
+		k := ConsumerConsAddr{}
 		err := k.Unmarshal(iterator.Key()[len(prefix):])
 		if err != nil {
 			panic(err)
