@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package interchain_security.ccv.consumer.v1;
+option go_package = "github.com/cosmos/interchain-security/x/ccv/consumer/types";
+
+import "google/api/annotations.proto";
+
+
+service Query {
+  // ConsumerGenesis queries the genesis state needed to start a consumer chain
+  // whose proposal has been accepted
+  rpc QueryNextFeeDistribution(QueryNextFeeDistributionEstimateRequest)
+      returns (QueryNextFeeDistributionEstimateResponse) {
+    option (google.api.http).get =
+        "/interchain_security/ccv/consumer/next-fee-distribution";
+  }
+}
+
+// NextFeeDistributionEstimate holds information about next fee distribution
+message NextFeeDistributionEstimate {
+  // current block height at the time of querying
+  int64 currentHeight = 1;
+  // block height at which last distribution took place
+  int64 lastHeight = 2;
+  // block height at which next distribution will take place
+  int64 nextHeight = 3;
+  // ratio between consumer and provider fee distribution
+  string distribution_fraction = 4;
+  // total accruead fees at the time of querying
+  string total = 5;
+  // amount distibuted to provider chain
+  string toProvider = 6;
+  // amount distributed (kept) by consumer chain
+  string toConsumer = 7;
+}
+
+message QueryNextFeeDistributionEstimateRequest { }
+
+message QueryNextFeeDistributionEstimateResponse {
+  NextFeeDistributionEstimate data = 1;  
+}

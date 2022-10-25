@@ -12,7 +12,7 @@ import (
 
 var _ types.QueryServer = Keeper{}
 
-func (k Keeper) ConsumerGenesis(c context.Context, req *types.QueryConsumerGenesisRequest) (*types.QueryConsumerGenesisResponse, error) {
+func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumerGenesisRequest) (*types.QueryConsumerGenesisResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
 	if req == nil {
@@ -29,4 +29,45 @@ func (k Keeper) ConsumerGenesis(c context.Context, req *types.QueryConsumerGenes
 	}
 
 	return &types.QueryConsumerGenesisResponse{GenesisState: gen}, nil
+}
+
+func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsumerChainsRequest) (*types.QueryConsumerChainsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	chains := []*types.Chain{}
+	cb := func(ctx sdk.Context, chainID, clientID string) bool {
+		chains = append(chains, &types.Chain{
+			ChainId:  chainID,
+			ClientId: clientID,
+		})
+		return false
+	}
+	k.IterateConsumerChains(ctx, cb)
+
+	return &types.QueryConsumerChainsResponse{Chains: chains}, nil
+}
+
+func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.QueryConsumerChainStartProposalsRequest) (*types.QueryConsumerChainStartProposalsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	props := k.GetAllConsumerAdditionProps(ctx)
+
+	return &types.QueryConsumerChainStartProposalsResponse{Proposals: &props}, nil
+}
+
+func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryConsumerChainStopProposalsRequest) (*types.QueryConsumerChainStopProposalsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	props := k.GetAllConsumerRemovalProps(ctx)
+
+	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &props}, nil
 }
