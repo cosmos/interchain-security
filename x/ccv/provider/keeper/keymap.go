@@ -235,8 +235,6 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 		return false
 	})
 
-	// TODO: add comment what this block is for
-
 	for i := range providerKeysToSendUpdateFor {
 		pk := providerKeysToSendUpdateFor[i]
 		if u, found := providerKeysLastPositivePowerUpdate[DeterministicStringify(pk)]; found {
@@ -249,8 +247,6 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 		}
 	}
 
-	// TODO: add comment what is this block for?
-
 	for i := range providerKeysToSendUpdateFor {
 		pk := providerKeysToSendUpdateFor[i]
 		// For each provider key where there was either
@@ -259,26 +255,23 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 		// create a change update for the associated consumer key.
 
 		var power int64 = 0
-		for _, u := range ckToMemo_READ_ONLY {
-			if u.Pk.Equal(pk) && 0 < u.Power {
-				// There was previously a positive power update: copy it.
-				power = u.Power
-			}
+		if u, found := providerKeysLastPositivePowerUpdate[DeterministicStringify(pk)]; found {
+			// There was previously a positive power update: copy it.
+			power = u.Power
 		}
+
 		// There is a new validator power: use it.
 		if newPower, ok := providerUpdates[pk]; ok {
 			power = newPower
 		}
-		// Only ship update with positive powers. Zero power updates (deletions)
-		// are handled in earlier block.
+		// Only ship update with positive powers.
 		if 0 < power {
 			ck, found := e.Store.GetPkToCk(pk)
 			if !found {
 				panic("must find ck for pk")
 			}
 			cca := ConsumerPubKeyToConsumerConsAddr(ck)
-			e.Store.SetCkToMemo(ck, ccvtypes.LastUpdateMemo{Ck: &ck, Pk: &pk, Vscid: vscid, Power: power, Cca: cca})
-			e.Store.SetCcaToCk(cca, ck)
+			e.Store.SetCkToMemo(cca, ccvtypes.LastUpdateMemo{Ck: &ck, Pk: &pk, Vscid: vscid, Power: power, Cca: cca})
 			if k, found := canonicalKey[DeterministicStringify(ck)]; found {
 				ret[k] = power
 			} else {
