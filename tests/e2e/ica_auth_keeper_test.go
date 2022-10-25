@@ -1,4 +1,4 @@
-package keeper_test
+package e2e_test
 
 import (
 	"testing"
@@ -12,11 +12,14 @@ import (
 
 	"bytes"
 
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/testutil/simapp"
+	"github.com/cosmos/interchain-security/x/ccv/icamauth/keeper"
+	"github.com/cosmos/interchain-security/x/ccv/icamauth/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -42,7 +45,7 @@ var (
 	}))
 )
 
-type KeeperTestSuite struct {
+type ICAAuthKeeperTestSuite struct {
 	suite.Suite
 
 	coordinator *ibctesting.Coordinator
@@ -56,15 +59,15 @@ type KeeperTestSuite struct {
 	icaPath      *ibctesting.Path
 }
 
-func (s *KeeperTestSuite) providerCtx() sdk.Context {
+func (s *ICAAuthKeeperTestSuite) providerCtx() sdk.Context {
 	return s.providerChain.GetContext()
 }
 
-func (s *KeeperTestSuite) consumerCtx() sdk.Context {
+func (s *ICAAuthKeeperTestSuite) consumerCtx() sdk.Context {
 	return s.consumerChain.GetContext()
 }
 
-func (suite *KeeperTestSuite) SetupTest() {
+func (suite *ICAAuthKeeperTestSuite) SetupTest() {
 	suite.coordinator, suite.providerChain, suite.consumerChain = simapp.NewProviderConsumerCoordinator(suite.T())
 
 	// valsets must match
@@ -144,24 +147,27 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.transferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
 	suite.transferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
 
+	controllerPortID, err := icatypes.NewControllerPortID(TestOwnerAddress)
+	suite.Require().NoError(err)
+
 	// create path for the ica channel
-	suite.icaPath = ibctesting.NewPath(suite.providerChain, suite.consumerChain)
+	suite.icaPath = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
 	suite.icaPath.EndpointA.ChannelConfig.PortID = icatypes.PortID
-	suite.icaPath.EndpointB.ChannelConfig.PortID = icatypes.PortID
+	suite.icaPath.EndpointB.ChannelConfig.PortID = controllerPortID
 	suite.icaPath.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.icaPath.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 	suite.icaPath.EndpointA.ChannelConfig.Version = TestVersion
 	suite.icaPath.EndpointB.ChannelConfig.Version = TestVersion
 }
 
-func (suite *KeeperTestSuite) SetupIBCChannels() {
+func (suite *ICAAuthKeeperTestSuite) SetupIBCChannels() {
 	suite.StartSetupCCVChannel()
 	suite.CompleteSetupCCVChannel()
 	suite.SetupTransferChannel()
 	suite.SetupICAChannel()
 }
 
-func (suite *KeeperTestSuite) StartSetupCCVChannel() {
+func (suite *ICAAuthKeeperTestSuite) StartSetupCCVChannel() {
 	suite.coordinator.CreateConnections(suite.path)
 
 	err := suite.path.EndpointA.ChanOpenInit()
@@ -171,7 +177,7 @@ func (suite *KeeperTestSuite) StartSetupCCVChannel() {
 	suite.Require().NoError(err)
 }
 
-func (suite *KeeperTestSuite) CompleteSetupCCVChannel() {
+func (suite *ICAAuthKeeperTestSuite) CompleteSetupCCVChannel() {
 	err := suite.path.EndpointA.ChanOpenAck()
 	suite.Require().NoError(err)
 
@@ -183,7 +189,7 @@ func (suite *KeeperTestSuite) CompleteSetupCCVChannel() {
 	suite.Require().NoError(err)
 }
 
-func (suite *KeeperTestSuite) SetupTransferChannel() {
+func (suite *ICAAuthKeeperTestSuite) SetupTransferChannel() {
 	// transfer path will use the same connection as ccv path
 
 	suite.transferPath.EndpointA.ClientID = suite.path.EndpointA.ClientID
@@ -211,7 +217,7 @@ func (suite *KeeperTestSuite) SetupTransferChannel() {
 	suite.Require().NoError(err)
 }
 
-func (suite *KeeperTestSuite) SetupICAChannel() {
+func (suite *ICAAuthKeeperTestSuite) SetupICAChannel() {
 	// ica path will use the same connection as ccv path
 
 	suite.icaPath.EndpointA.ClientID = suite.path.EndpointA.ClientID
@@ -220,26 +226,21 @@ func (suite *KeeperTestSuite) SetupICAChannel() {
 	suite.icaPath.EndpointB.ConnectionID = suite.path.EndpointB.ConnectionID
 }
 
-// TestKeeperTestSuite runs all the tests within this package.
-func TestKeeperTestSuite(t *testing.T) {
-	suite.Run(t, new(KeeperTestSuite))
-}
-
 // SetupICAPath invokes the InterchainAccounts entrypoint and subsequent channel handshake handlers
 func SetupICAPath(path *ibctesting.Path, owner string) error {
-	if err := RegisterInterchainAccount(path.EndpointA, owner); err != nil {
+	if err := RegisterInterchainAccount(path.EndpointB, owner); err != nil {
 		return err
 	}
 
-	if err := path.EndpointB.ChanOpenTry(); err != nil {
+	if err := path.EndpointA.ChanOpenTry(); err != nil {
 		return err
 	}
 
-	if err := path.EndpointA.ChanOpenAck(); err != nil {
+	if err := path.EndpointB.ChanOpenAck(); err != nil {
 		return err
 	}
 
-	if err := path.EndpointB.ChanOpenConfirm(); err != nil {
+	if err := path.EndpointA.ChanOpenConfirm(); err != nil {
 		return err
 	}
 
@@ -285,4 +286,193 @@ func RegisterInterchainAccount(endpoint *ibctesting.Endpoint, owner string) erro
 	endpoint.ChannelConfig.PortID = portID
 
 	return nil
+}
+
+// TestICAAuthKeeperTestSuite runs all the tests within this package.
+func TestICAAuthKeeperTestSuite(t *testing.T) {
+	suite.Run(t, new(ICAAuthKeeperTestSuite))
+}
+
+func (suite *ICAAuthKeeperTestSuite) TestRegisterInterchainAccount() {
+	var (
+		owner string
+	)
+
+	testCases := []struct {
+		name     string
+		malleate func()
+		expPass  bool
+	}{
+		{
+			"success", func() {}, true,
+		},
+		{
+			"failure - port is already bound",
+			func() {
+				GetProviderICAApp(suite.providerChain).IBCKeeper.PortKeeper.BindPort(suite.providerCtx(), TestPortID)
+			},
+			false,
+		},
+		{
+			"faliure - owner is empty",
+			func() {
+				owner = ""
+			},
+			false,
+		},
+		{
+			"failure - channel is already active",
+			func() {
+				portID, err := icatypes.NewControllerPortID(owner)
+				suite.Require().NoError(err)
+
+				channel := channeltypes.NewChannel(
+					channeltypes.OPEN,
+					channeltypes.ORDERED,
+					channeltypes.NewCounterparty(suite.icaPath.EndpointB.ChannelConfig.PortID, suite.icaPath.EndpointB.ChannelID),
+					[]string{suite.icaPath.EndpointA.ConnectionID},
+					suite.icaPath.EndpointA.ChannelConfig.Version,
+				)
+
+				GetProviderICAApp(suite.providerChain).IBCKeeper.ChannelKeeper.SetChannel(suite.providerCtx(), portID, ibctesting.FirstChannelID, channel)
+				GetProviderICAApp(suite.providerChain).ICAControllerKeeper.SetActiveChannelID(suite.providerCtx(), ibctesting.FirstConnectionID, portID, ibctesting.FirstChannelID)
+			},
+			false,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			suite.SetupIBCChannels()
+			owner = TestOwnerAddress // must be explicitly changed
+
+			tc.malleate() // malleate mutates test data
+
+			msgSrv := keeper.NewMsgServerImpl(GetProviderICAApp(suite.providerChain).ICAMauthKeeper)
+			msg := types.NewMsgRegisterAccount(owner, suite.icaPath.EndpointA.ConnectionID, suite.icaPath.EndpointA.ChannelConfig.Version)
+
+			res, err := msgSrv.RegisterAccount(sdk.WrapSDKContext(suite.providerChain.GetContext()), msg)
+
+			if tc.expPass {
+				suite.Require().NoError(err)
+				suite.Require().NotNil(res)
+			} else {
+				suite.Require().Error(err)
+				suite.Require().Nil(res)
+			}
+		})
+	}
+}
+
+func (suite *ICAAuthKeeperTestSuite) TestSubmitTx() {
+	var (
+		registerInterchainAccount bool
+		owner                     string
+		connectionId              string
+		icaMsg                    sdk.Msg
+	)
+
+	testCases := []struct {
+		name     string
+		malleate func()
+		expPass  bool
+	}{
+		{
+			"success", func() {
+				registerInterchainAccount = true
+				owner = TestOwnerAddress
+				connectionId = suite.icaPath.EndpointA.ConnectionID
+			}, true,
+		},
+		{
+			"failure - owner address is empty", func() {
+				registerInterchainAccount = true
+				owner = ""
+				connectionId = suite.icaPath.EndpointA.ConnectionID
+			}, false,
+		},
+		{
+			"failure - active channel does not exist for connection ID", func() {
+				registerInterchainAccount = true
+				owner = TestOwnerAddress
+				connectionId = "connection-100"
+			}, false,
+		},
+		{
+			"failure - active channel does not exist for port ID", func() {
+				registerInterchainAccount = true
+				owner = "cosmos153lf4zntqt33a4v0sm5cytrxyqn78q7kz8j8x5"
+				connectionId = suite.icaPath.EndpointA.ConnectionID
+			}, false,
+		},
+		{
+			"failure - module does not own channel capability", func() {
+				registerInterchainAccount = false
+				owner = TestOwnerAddress
+				connectionId = suite.icaPath.EndpointA.ConnectionID
+				icaMsg = &banktypes.MsgSend{
+					FromAddress: "source-address",
+					ToAddress:   "destination-address",
+					Amount:      sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
+				}
+			}, false,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			suite.SetupIBCChannels()
+
+			icaAppA := GetProviderICAApp(suite.providerChain)
+			icaAppB := GetConsumerICAApp(suite.consumerChain)
+
+			tc.malleate() // malleate mutates test data
+
+			if registerInterchainAccount {
+				err := SetupICAPath(suite.icaPath, TestOwnerAddress)
+				suite.Require().NoError(err)
+
+				portID, err := icatypes.NewControllerPortID(TestOwnerAddress)
+				suite.Require().NoError(err)
+
+				// Get the address of the interchain account stored in state during handshake step
+				interchainAccountAddr, found := GetProviderICAApp(suite.providerChain).ICAControllerKeeper.GetInterchainAccountAddress(suite.providerCtx(), suite.icaPath.EndpointA.ConnectionID, portID)
+				suite.Require().True(found)
+
+				icaAddr, err := sdk.AccAddressFromBech32(interchainAccountAddr)
+				suite.Require().NoError(err)
+
+				// Check if account is created
+				interchainAccount := icaAppB.AccountKeeper.GetAccount(suite.consumerCtx(), icaAddr)
+				suite.Require().Equal(interchainAccount.GetAddress().String(), interchainAccountAddr)
+
+				// Create bank transfer message to execute on the host
+				icaMsg = &banktypes.MsgSend{
+					FromAddress: interchainAccountAddr,
+					ToAddress:   suite.consumerChain.SenderAccount.GetAddress().String(),
+					Amount:      sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100))),
+				}
+			}
+
+			msgSrv := keeper.NewMsgServerImpl(icaAppA.ICAMauthKeeper)
+			msg, err := types.NewMsgSubmitTx(icaMsg, connectionId, owner)
+			suite.Require().NoError(err)
+
+			res, err := msgSrv.SubmitTx(sdk.WrapSDKContext(suite.providerCtx()), msg)
+
+			if tc.expPass {
+				suite.Require().NoError(err)
+				suite.Require().NotNil(res)
+			} else {
+				suite.Require().Error(err)
+				suite.Require().Nil(res)
+			}
+		})
+	}
 }
