@@ -142,7 +142,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 				km.CkToPk = append(km.CkToPk, ccv.KeyToKey{From: &ck, To: &pk})
 				return false
 			})
-			k.KeyMap(ctx, chainID).Store.IterateCkToMemo(func(ck ConsumerConsAddr, m ccv.LastUpdateMemo) bool {
+			k.KeyMap(ctx, chainID).Store.IterateCcaToLastUpdateMemo(func(ck ConsumerConsAddr, m ccv.LastUpdateMemo) bool {
 				km.CcaToLastUpdateMemo = append(km.CcaToLastUpdateMemo, ccv.ConsAddrToLastUpdateMemo{ConsAddr: ck, LastUpdateMemo: &m})
 				return false
 			})

@@ -726,7 +726,7 @@ func compareForEquality(t *testing.T,
 	require.Equal(t, len(ckToPk), cnt)
 
 	cnt = 0
-	km.Store.IterateCkToMemo(func(_ keeper.ConsumerConsAddr, _ ccvtypes.LastUpdateMemo) bool {
+	km.Store.IterateCcaToLastUpdateMemo(func(_ keeper.ConsumerConsAddr, _ ccvtypes.LastUpdateMemo) bool {
 		cnt += 1
 		return false
 	})
@@ -744,7 +744,7 @@ func compareForEquality(t *testing.T,
 	}
 	for k, vExpect := range ckToMemo {
 		k := sdk.ConsAddress(k)
-		m, found := km.Store.GetCkToMemo(k)
+		m, found := km.Store.GetCcaToLastUpdateMemo(k)
 		require.True(t, found)
 		require.Equal(t, vExpect.Pk, m.Pk)
 		require.Equal(t, vExpect.Ck, m.Ck)
