@@ -97,7 +97,7 @@ func ConsumerPubKeyToConsumerConsAddr(ck ConsumerPubKey) ConsumerConsAddr {
 type Store interface {
 	SetPkToCk(ProviderPubKey, ConsumerPubKey)
 	SetCkToPk(ConsumerPubKey, ProviderPubKey)
-	SetCkToMemo(ConsumerConsAddr, ccvtypes.LastUpdateMemo)
+	SetCcaToLastUpdateMemo(ConsumerConsAddr, ccvtypes.LastUpdateMemo)
 	GetPkToCk(ProviderPubKey) (ConsumerPubKey, bool)
 	GetCkToPk(ConsumerPubKey) (ProviderPubKey, bool)
 	GetCkToMemo(ConsumerConsAddr) (ccvtypes.LastUpdateMemo, bool)
@@ -230,7 +230,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 			// For each provider key for which there was already a positive update
 			// create a deletion update for the associated consumer key.
 			cca := ConsumerPubKeyToConsumerConsAddr(*u.Ck)
-			e.Store.SetCkToMemo(cca, ccvtypes.LastUpdateMemo{Ck: u.Ck, Pk: &pk, Vscid: vscid, Power: 0})
+			e.Store.SetCcaToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{Ck: u.Ck, Pk: &pk, Vscid: vscid, Power: 0})
 			ret[*u.Ck] = 0
 			canonicalKey[DeterministicStringify(*u.Ck)] = *u.Ck
 		}
@@ -260,7 +260,7 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 				panic("must find ck for pk")
 			}
 			cca := ConsumerPubKeyToConsumerConsAddr(ck)
-			e.Store.SetCkToMemo(cca, ccvtypes.LastUpdateMemo{Ck: &ck, Pk: &pk, Vscid: vscid, Power: power})
+			e.Store.SetCcaToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{Ck: &ck, Pk: &pk, Vscid: vscid, Power: power})
 			if k, found := canonicalKey[DeterministicStringify(ck)]; found {
 				ret[k] = power
 			} else {
@@ -384,7 +384,7 @@ func (s *KeyMapStore) SetCkToPk(k ConsumerPubKey, v ProviderPubKey) {
 	}
 	s.Store.Set(types.KeyMapCkToPkKey(s.ChainID, kbz), vbz)
 }
-func (s *KeyMapStore) SetCkToMemo(k ConsumerConsAddr, v ccvtypes.LastUpdateMemo) {
+func (s *KeyMapStore) SetCcaToLastUpdateMemo(k ConsumerConsAddr, v ccvtypes.LastUpdateMemo) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)

@@ -83,7 +83,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 				k.KeyMap(ctx, cs.ChainId).Store.SetCkToPk(*ckToPk.From, *ckToPk.To)
 			}
 			for _, ckToMemo := range cs.KeyMap.CcaToLastUpdateMemo {
-				k.KeyMap(ctx, cs.ChainId).Store.SetCkToMemo(ckToMemo.ConsAddr, *ckToMemo.LastUpdateMemo)
+				k.KeyMap(ctx, cs.ChainId).Store.SetCcaToLastUpdateMemo(ckToMemo.ConsAddr, *ckToMemo.LastUpdateMemo)
 			}
 		}
 	}

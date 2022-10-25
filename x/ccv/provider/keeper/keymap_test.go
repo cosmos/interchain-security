@@ -799,7 +799,7 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 			km.Store.SetCkToPk(k, v)
 		}
 		for k, v := range ckToMemo {
-			km.Store.SetCkToMemo(sdk.ConsAddress(k), v)
+			km.Store.SetCcaToLastUpdateMemo(sdk.ConsAddress(k), v)
 		}
 	}
 
