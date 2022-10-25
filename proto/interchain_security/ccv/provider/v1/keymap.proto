@@ -10,7 +10,6 @@ import "tendermint/crypto/keys.proto";
 message LastUpdateMemo {
   tendermint.crypto.PublicKey ck = 1;
   tendermint.crypto.PublicKey pk = 2;
-  bytes cca = 3;
   uint64 vscid = 4;
   int64 power = 5;
 }

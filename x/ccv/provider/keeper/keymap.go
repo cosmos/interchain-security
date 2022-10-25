@@ -154,20 +154,14 @@ func (e *KeyMap) GetProviderPubKeyFromConsumerConsAddress(cca sdk.ConsAddress) (
 }
 
 func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
-
-	toDel := []ConsumerPubKey{}
+	toDel := []ConsumerConsAddr{}
 	e.Store.IterateCkToMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
 		if m.Power == 0 && m.Vscid <= latestVscid {
-			toDel = append(toDel, *m.Ck)
+			toDel = append(toDel, cca)
 		}
 		return false
 	})
-	for _, ck := range toDel {
-		cca := ConsumerPubKeyToConsumerConsAddr(ck)
-		m, found := e.Store.GetCkToMemo(cca)
-		if !found {
-			panic("must find memo for consumer key ck")
-		}
+	for _, cca := range toDel {
 		e.Store.DelCkToMemo(cca)
 	}
 }
@@ -315,23 +309,6 @@ func (e *KeyMap) InternalInvariants() bool {
 	}
 
 	{
-		// All values of pkToCk is a key of ccaToCk
-		// (reverse lookup is always possible, using consAddr)
-		e.Store.IteratePkToCk(func(pk ProviderPubKey, ck ConsumerPubKey) bool {
-			cca := ConsumerPubKeyToConsumerConsAddr(ck)
-			ckQueried, found := e.Store.GetCcaToCk(cca)
-			good = good && found
-
-			if pkQueried, ok := e.Store.GetCkToPk(ckQueried); ok {
-				good = good && pkQueried.Equal(pk)
-			} else {
-				good = false
-			}
-			return false
-		})
-	}
-
-	{
 		// All consumer keys mapping to provider keys are actually
 		// mapped to by the provider key.
 		// (ckToPk is sane)
@@ -365,38 +342,18 @@ func (e *KeyMap) InternalInvariants() bool {
 	}
 
 	{
-		// All entries in ckToMemo have a unique consumer consensus
-		// address
-		seen := map[string]bool{}
-		e.Store.IterateCkToMemo(func(_ ConsumerPubKey, m ccvtypes.LastUpdateMemo) bool {
-			if _, found := seen[string(m.Cca)]; found {
-				good = false
-			}
-			seen[string(m.Cca)] = true
-			return false
-		})
-
-	}
-
-	{
 		// All entries in ckToMemo have a consumer consensus
-		// address which is a key in ccaToCk
-		e.Store.IterateCkToMemo(func(_ ConsumerPubKey, m ccvtypes.LastUpdateMemo) bool {
-			if _, found := e.Store.GetCcaToCk(m.Cca); !found {
+		// address which is the address held inside
+		e.Store.IterateCkToMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
+			cons := ConsumerPubKeyToConsumerConsAddr(*m.Ck)
+			if len(cca) != len(cons) {
 				good = false
 			}
-			return false
-		})
-	}
-
-	{
-		// All entries in ccaToCk have a unique consumer pub key
-		seen := map[string]bool{}
-		e.Store.IterateCcaToCk(func(_ ConsumerConsAddr, ck ConsumerPubKey) bool {
-			if _, found := seen[DeterministicStringify(ck)]; found {
-				good = false
+			for i := range cons {
+				if cons[i] != cca[i] {
+					good = false
+				}
 			}
-			seen[DeterministicStringify(ck)] = true
 			return false
 		})
 	}
