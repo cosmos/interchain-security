@@ -371,21 +371,12 @@ func (d *driver) externalInvariants() {
 				expectQueryable[keeper.DeterministicStringify(u.PubKey)] = true
 			}
 		}
-		// If a consumer key is CURRENTLY mapped to by a provider key, it
-		// must be queryable.
-		d.km.Store.IteratePkToCk(func(_, ck keeper.ConsumerPubKey) bool {
-			expectQueryable[keeper.DeterministicStringify(ck)] = true
-			return false
-		})
 
 		// Simply check every consumer key for the correct queryable-ness.
 		for ck := uint64(0); ck < NUM_CKS; ck++ {
 			ck += 100 //TODO: fix with others
-			pk, actualQueryable := d.km.GetProviderPubKeyFromConsumerPubKey(key(ck))
 			cca := keeper.ConsumerPubKeyToConsumerConsAddr(key(ck))
-			pkByConsAddr, actualQueryableByConsAddr := d.km.GetProviderPubKeyFromConsumerConsAddress(cca)
-			require.Equal(d.t, pk, pkByConsAddr)
-			require.Equal(d.t, actualQueryable, actualQueryableByConsAddr)
+			_, actualQueryable := d.km.GetProviderPubKeyFromConsumerConsAddress(cca)
 			if expect, found := expectQueryable[keeper.DeterministicStringify(key(ck))]; found && expect {
 				require.True(d.t, actualQueryable)
 			} else {
@@ -657,14 +648,15 @@ func TestKeyMapSetUseReplaceAndReverse(t *testing.T) {
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 	km.ComputeUpdates(100, updates)
-	km.SetProviderPubKeyToConsumerPubKey(key(42), key(44))       // New consumer key
-	actual, _ := km.GetProviderPubKeyFromConsumerPubKey(key(43)) // Old is queryable
+	km.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // New consumer key
+	// actual, _ := km.GetProviderPubKeyFromConsumerPubKey(key(43)) // Old is queryable
+	actual, _ := km.GetProviderPubKeyFromConsumerConsAddress(keeper.ConsumerPubKeyToConsumerConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = km.GetProviderPubKeyFromConsumerPubKey(key(44)) // New is queryable
 	require.Equal(t, key(42), actual)
-	km.ComputeUpdates(101, updates)                             // Old is garbage collected on consumer
-	km.PruneUnusedKeys(102)                                     // Old is garbage collected on provider
-	_, found := km.GetProviderPubKeyFromConsumerPubKey(key(43)) // Not queryable
+	km.ComputeUpdates(101, updates) // Old is no longer known to consumer
+	km.PruneUnusedKeys(102)         // Old is garbage collected on provider
+	_, found := km.GetProviderPubKeyFromConsumerConsAddress(keeper.ConsumerPubKeyToConsumerConsAddr(key(43)))
 	require.False(t, found)
 	actual, _ = km.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
 	require.Equal(t, key(42), actual)
@@ -676,12 +668,12 @@ func TestKeyMapSetUseReplaceAndPrune(t *testing.T) {
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 	km.ComputeUpdates(100, updates)
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(44))
-	actual, _ := km.GetProviderPubKeyFromConsumerPubKey(key(43)) // Queryable
+	actual, _ := km.GetProviderPubKeyFromConsumerConsAddress(keeper.ConsumerPubKeyToConsumerConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = km.GetProviderPubKeyFromConsumerPubKey(key(44)) // Queryable
 	require.Equal(t, key(42), actual)
-	km.PruneUnusedKeys(101)                                     // Should not be pruned
-	_, found := km.GetProviderPubKeyFromConsumerPubKey(key(43)) // Still queryable
+	km.PruneUnusedKeys(101) // Should not be pruned
+	_, found := km.GetProviderPubKeyFromConsumerConsAddress(keeper.ConsumerPubKeyToConsumerConsAddr(key(43)))
 	require.True(t, found)
 	actual, _ = km.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
 	require.Equal(t, key(42), actual)

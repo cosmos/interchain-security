@@ -196,12 +196,11 @@ func (e *KeyMap) inner(vscid VSCID, providerUpdates map[ProviderPubKey]int64) ma
 	// and where the assigned consumer key has changed
 	e.Store.IterateCkToMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
 		oldCk := m.Ck
-		if newCk, ok := e.Store.GetPkToCk(*m.Pk); ok {
-			str := DeterministicStringify(*m.Pk)
+		if newCk, ok := e.Store.GetPkToCk(*m.Pk); ok { // TODO: do away with ok, should always be ok
 			// TODO: is !seen[str] needed?
-			if !oldCk.Equal(newCk) && 0 < m.Power { // TODO: comment why 0 < needed
+			if !oldCk.Equal(newCk) && 0 < m.Power {
 				providerKeysToSendUpdateFor = append(providerKeysToSendUpdateFor, *m.Pk)
-				keyInProviderKeysToSendUpdateFor[str] = true
+				keyInProviderKeysToSendUpdateFor[DeterministicStringify(*m.Pk)] = true
 			}
 		}
 		return false
