@@ -197,8 +197,24 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	ctx := keeperParams.Ctx
 
+	//~~~~~~~~~~~~
+	// TODO: tidyup
+	var pubKey tmprotocrypto.PublicKey
+	pk := ed25519.GenPrivKey().PubKey()
+
+	sdkVer, err := cryptocodec.FromTmPubKeyInterface(pk)
+	if err != nil {
+		panic(err)
+	}
+	pubKey, err = cryptocodec.ToTmProtoPublicKey(sdkVer)
+	if err != nil {
+		panic(err)
+	}
+	// TODO: tidyup
+	//~~~~~~~~~~~~
+
 	slashPacket := ccv.NewSlashPacketData(
-		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
+		abci.Validator{Address: pk.Address(),
 			Power: int64(0)},
 		uint64(0),
 		stakingtypes.DoubleSign,
@@ -244,6 +260,7 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 	providerKeeper.SetInitChainHeight(ctx, chainId, uint64(infractionHeight))
+	providerKeeper.KeyMap(ctx, chainId).SetProviderPubKeyToConsumerPubKey(pubKey, pubKey)
 
 	success, err := providerKeeper.HandleSlashPacket(ctx, chainId, slashPacket)
 	require.NoError(t, err)
