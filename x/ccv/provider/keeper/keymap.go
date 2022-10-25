@@ -564,6 +564,21 @@ func (s *KeyMapStore) IterateCcaToLastUpdateMemo(cb func(ConsumerConsAddr, ccvty
 	}
 }
 
+func (k Keeper) DeleteKeyMap(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	for _, pref := range [][]byte{
+		types.KeyMapPkToCkChainPrefix(chainID),
+		types.KeyMapCkToPkChainPrefix(chainID),
+		types.KeyMapCkToMemoChainPrefix(chainID),
+	} {
+		iter := sdk.KVStorePrefixIterator(store, pref)
+		defer iter.Close()
+		for ; iter.Valid(); iter.Next() {
+			store.Delete(iter.Key())
+		}
+	}
+}
+
 func (k Keeper) KeyMap(ctx sdk.Context, chainID string) *KeyMap {
 	store := KeyMapStore{ctx.KVStore(k.storeKey), chainID}
 	km := MakeKeyMap(&store)

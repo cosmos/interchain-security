@@ -124,6 +124,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	// clean up states
 	k.DeleteConsumerClientId(ctx, chainID)
 	k.DeleteConsumerGenesis(ctx, chainID)
+	k.DeleteKeyMap(ctx, chainID)
 	k.DeleteLockUnbondingOnTimeout(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
