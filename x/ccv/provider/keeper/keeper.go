@@ -12,7 +12,6 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -537,54 +536,6 @@ func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId u
 	}
 
 	return validatorSetUpdateId
-}
-
-type StakingHooks struct {
-	stakingtypes.StakingHooksTemplate
-	k *Keeper
-}
-
-var _ stakingtypes.StakingHooks = StakingHooks{}
-
-// Return the wrapper struct
-func (k *Keeper) Hooks() StakingHooks {
-	return StakingHooks{stakingtypes.StakingHooksTemplate{}, k}
-}
-
-// This stores a record of each unbonding op from staking, allowing us to track which consumer chains have unbonded
-func (h StakingHooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
-	var consumerChainIDS []string
-
-	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		consumerChainIDS = append(consumerChainIDS, chainID)
-		return false
-	})
-	if len(consumerChainIDS) == 0 {
-		// Do not put the unbonding op on hold if there are no consumer chains
-		return
-	}
-	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
-	unbondingOp := ccv.UnbondingOp{
-		Id:                      ID,
-		UnbondingConsumerChains: consumerChainIDS,
-	}
-
-	// Add to indexes
-	for _, consumerChainID := range consumerChainIDS {
-		index, _ := h.k.GetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID)
-		index = append(index, ID)
-		h.k.SetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID, index)
-	}
-
-	// Set unbondingOp
-	if err := h.k.SetUnbondingOp(ctx, unbondingOp); err != nil {
-		panic(fmt.Errorf("unbonding op could not be persisted: %w", err))
-	}
-
-	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
-	if err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, ID); err != nil {
-		panic(fmt.Errorf("unbonding could not be put on hold: %w", err))
-	}
 }
 
 // SetValsetUpdateBlockHeight sets the block height for a given valset update id
