@@ -75,20 +75,19 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 				k.AppendPendingVSC(ctx, chainID, vsc)
 			}
 		}
-	}
-
-	if cs.KeyMap != nil {
-		for _, pkToCk := range cs.KeyMap.PkToCk {
-			k.KeyMap(ctx, cs.ChainId).Store.SetPkToCk(*pkToCk.From, *pkToCk.To)
-		}
-		for _, ckToPk := range cs.KeyMap.CkToPk {
-			k.KeyMap(ctx, cs.ChainId).Store.SetCkToPk(*ckToPk.From, *ckToPk.To)
-		}
-		for _, ckToMemo := range cs.KeyMap.CkToLastUpdateMemo {
-			k.KeyMap(ctx, cs.ChainId).Store.SetCkToMemo(*ckToMemo.Key, *ckToMemo.LastUpdateMemo)
-		}
-		for _, ccaToCk := range cs.KeyMap.CcaToCk {
-			k.KeyMap(ctx, cs.ChainId).Store.SetCcaToCk(ccaToCk.ConsAddr, *ccaToCk.Key)
+		if cs.KeyMap != nil {
+			for _, pkToCk := range cs.KeyMap.PkToCk {
+				k.KeyMap(ctx, cs.ChainId).Store.SetPkToCk(*pkToCk.From, *pkToCk.To)
+			}
+			for _, ckToPk := range cs.KeyMap.CkToPk {
+				k.KeyMap(ctx, cs.ChainId).Store.SetCkToPk(*ckToPk.From, *ckToPk.To)
+			}
+			for _, ckToMemo := range cs.KeyMap.CkToLastUpdateMemo {
+				k.KeyMap(ctx, cs.ChainId).Store.SetCkToMemo(*ckToMemo.Key, *ckToMemo.LastUpdateMemo)
+			}
+			for _, ccaToCk := range cs.KeyMap.CcaToCk {
+				k.KeyMap(ctx, cs.ChainId).Store.SetCcaToCk(ccaToCk.ConsAddr, *ccaToCk.Key)
+			}
 		}
 	}
 

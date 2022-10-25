@@ -86,6 +86,18 @@ const (
 
 	// LockUnbondingOnTimeoutBytePrefix is the byte prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
 	LockUnbondingOnTimeoutBytePrefix
+
+	// TODO:
+	KeyMapPkToCkPrefix
+
+	// TODO:
+	KeyMapCkToPkPrefix
+
+	// TODO:
+	KeyMapCkToMemoPrefix
+
+	// TODO:
+	KeyMapCcaToCkPrefix
 )
 
 const (
@@ -257,6 +269,46 @@ func PendingVSCsKey(chainID string) []byte {
 // on CCV channel timeout
 func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return append([]byte{LockUnbondingOnTimeoutBytePrefix}, []byte(chainID)...)
+}
+
+// TODO:
+func KeyMapPkToCkChainPrefix(chainID string) []byte {
+	return append([]byte{KeyMapPkToCkPrefix}, []byte(chainID)...)
+}
+
+// TODO:
+func KeyMapCkToPkChainPrefix(chainID string) []byte {
+	return append([]byte{KeyMapCkToPkPrefix}, []byte(chainID)...)
+}
+
+// TODO:
+func KeyMapCkToMemoChainPrefix(chainID string) []byte {
+	return append([]byte{KeyMapCkToMemoPrefix}, []byte(chainID)...)
+}
+
+// TODO:
+func KeyMapCcaToCkChainPrefix(chainID string) []byte {
+	return append([]byte{KeyMapCcaToCkPrefix}, []byte(chainID)...)
+}
+
+// TODO:
+func KeyMapPkToCkKey(chainID string, kbz []byte) []byte {
+	return append(KeyMapPkToCkChainPrefix(chainID), kbz...)
+}
+
+// TODO:
+func KeyMapCkToPkKey(chainID string, kbz []byte) []byte {
+	return append(KeyMapCkToPkChainPrefix(chainID), kbz...)
+}
+
+// TODO:
+func KeyMapCkToMemoKey(chainID string, kbz []byte) []byte {
+	return append(KeyMapCkToMemoChainPrefix(chainID), kbz...)
+}
+
+// TODO:
+func KeyMapCcaToCkKey(chainID string, kbz []byte) []byte {
+	return append(KeyMapCcaToCkChainPrefix(chainID), kbz...)
 }
 
 // AppendMany appends a variable number of byte slices together
