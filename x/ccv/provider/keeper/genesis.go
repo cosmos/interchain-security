@@ -77,7 +77,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 		if cs.KeyMap != nil {
 			for _, pkToCk := range cs.KeyMap.PkToCk {
-				k.KeyMap(ctx, cs.ChainId).Store.SetPkToCk(*pkToCk.From, *pkToCk.To)
+				k.KeyMap(ctx, cs.ChainId).Store.SetPcaToCk(*pkToCk.From, *pkToCk.To)
 			}
 			for _, ckToPk := range cs.KeyMap.CkToPk {
 				k.KeyMap(ctx, cs.ChainId).Store.SetCkToPk(*ckToPk.From, *ckToPk.To)
@@ -134,7 +134,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			km.PkToCk = []ccv.KeyToKey{}
 			km.CkToPk = []ccv.KeyToKey{}
 			km.CcaToLastUpdateMemo = []ccv.ConsAddrToLastUpdateMemo{}
-			k.KeyMap(ctx, chainID).Store.IteratePkToCk(func(pk ProviderPubKey, ck ConsumerPubKey) bool {
+			k.KeyMap(ctx, chainID).Store.IteratePcaToCk(func(pk ProviderPubKey, ck ConsumerPubKey) bool {
 				km.PkToCk = append(km.PkToCk, ccv.KeyToKey{From: &pk, To: &ck})
 				return false
 			})

@@ -25,10 +25,10 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type LastUpdateMemo struct {
-	Ck    *crypto.PublicKey `protobuf:"bytes,1,opt,name=ck,proto3" json:"ck,omitempty"`
-	Pk    *crypto.PublicKey `protobuf:"bytes,2,opt,name=pk,proto3" json:"pk,omitempty"`
-	Vscid uint64            `protobuf:"varint,4,opt,name=vscid,proto3" json:"vscid,omitempty"`
-	Power int64             `protobuf:"varint,5,opt,name=power,proto3" json:"power,omitempty"`
+	ConsumerKey *crypto.PublicKey `protobuf:"bytes,1,opt,name=consumer_key,json=consumerKey,proto3" json:"consumer_key,omitempty"`
+	ProviderKey *crypto.PublicKey `protobuf:"bytes,2,opt,name=provider_key,json=providerKey,proto3" json:"provider_key,omitempty"`
+	Vscid       uint64            `protobuf:"varint,4,opt,name=vscid,proto3" json:"vscid,omitempty"`
+	Power       int64             `protobuf:"varint,5,opt,name=power,proto3" json:"power,omitempty"`
 }
 
 func (m *LastUpdateMemo) Reset()         { *m = LastUpdateMemo{} }
@@ -64,16 +64,16 @@ func (m *LastUpdateMemo) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_LastUpdateMemo proto.InternalMessageInfo
 
-func (m *LastUpdateMemo) GetCk() *crypto.PublicKey {
+func (m *LastUpdateMemo) GetConsumerKey() *crypto.PublicKey {
 	if m != nil {
-		return m.Ck
+		return m.ConsumerKey
 	}
 	return nil
 }
 
-func (m *LastUpdateMemo) GetPk() *crypto.PublicKey {
+func (m *LastUpdateMemo) GetProviderKey() *crypto.PublicKey {
 	if m != nil {
-		return m.Pk
+		return m.ProviderKey
 	}
 	return nil
 }
@@ -92,6 +92,58 @@ func (m *LastUpdateMemo) GetPower() int64 {
 	return 0
 }
 
+type ConsAddrToKey struct {
+	ConsAddr []byte            `protobuf:"bytes,1,opt,name=cons_addr,json=consAddr,proto3" json:"cons_addr,omitempty"`
+	To       *crypto.PublicKey `protobuf:"bytes,2,opt,name=to,proto3" json:"to,omitempty"`
+}
+
+func (m *ConsAddrToKey) Reset()         { *m = ConsAddrToKey{} }
+func (m *ConsAddrToKey) String() string { return proto.CompactTextString(m) }
+func (*ConsAddrToKey) ProtoMessage()    {}
+func (*ConsAddrToKey) Descriptor() ([]byte, []int) {
+	return fileDescriptor_864a04a770548246, []int{1}
+}
+func (m *ConsAddrToKey) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ConsAddrToKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ConsAddrToKey.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ConsAddrToKey) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ConsAddrToKey.Merge(m, src)
+}
+func (m *ConsAddrToKey) XXX_Size() int {
+	return m.Size()
+}
+func (m *ConsAddrToKey) XXX_DiscardUnknown() {
+	xxx_messageInfo_ConsAddrToKey.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ConsAddrToKey proto.InternalMessageInfo
+
+func (m *ConsAddrToKey) GetConsAddr() []byte {
+	if m != nil {
+		return m.ConsAddr
+	}
+	return nil
+}
+
+func (m *ConsAddrToKey) GetTo() *crypto.PublicKey {
+	if m != nil {
+		return m.To
+	}
+	return nil
+}
+
 type KeyToKey struct {
 	From *crypto.PublicKey `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 	To   *crypto.PublicKey `protobuf:"bytes,2,opt,name=to,proto3" json:"to,omitempty"`
@@ -101,7 +153,7 @@ func (m *KeyToKey) Reset()         { *m = KeyToKey{} }
 func (m *KeyToKey) String() string { return proto.CompactTextString(m) }
 func (*KeyToKey) ProtoMessage()    {}
 func (*KeyToKey) Descriptor() ([]byte, []int) {
-	return fileDescriptor_864a04a770548246, []int{1}
+	return fileDescriptor_864a04a770548246, []int{2}
 }
 func (m *KeyToKey) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -153,7 +205,7 @@ func (m *ConsAddrToLastUpdateMemo) Reset()         { *m = ConsAddrToLastUpdateMe
 func (m *ConsAddrToLastUpdateMemo) String() string { return proto.CompactTextString(m) }
 func (*ConsAddrToLastUpdateMemo) ProtoMessage()    {}
 func (*ConsAddrToLastUpdateMemo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_864a04a770548246, []int{2}
+	return fileDescriptor_864a04a770548246, []int{3}
 }
 func (m *ConsAddrToLastUpdateMemo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -197,16 +249,16 @@ func (m *ConsAddrToLastUpdateMemo) GetLastUpdateMemo() *LastUpdateMemo {
 }
 
 type KeyMap struct {
-	PkToCk              []KeyToKey                 `protobuf:"bytes,1,rep,name=pk_to_ck,json=pkToCk,proto3" json:"pk_to_ck"`
-	CkToPk              []KeyToKey                 `protobuf:"bytes,2,rep,name=ck_to_pk,json=ckToPk,proto3" json:"ck_to_pk"`
-	CcaToLastUpdateMemo []ConsAddrToLastUpdateMemo `protobuf:"bytes,3,rep,name=cca_to_last_update_memo,json=ccaToLastUpdateMemo,proto3" json:"cca_to_last_update_memo"`
+	ProviderConsAddrToConsumerKey    []ConsAddrToKey            `protobuf:"bytes,1,rep,name=provider_cons_addr_to_consumer_key,json=providerConsAddrToConsumerKey,proto3" json:"provider_cons_addr_to_consumer_key"`
+	ConsumerKeyToProviderKey         []KeyToKey                 `protobuf:"bytes,2,rep,name=consumer_key_to_provider_key,json=consumerKeyToProviderKey,proto3" json:"consumer_key_to_provider_key"`
+	ConsumerConsAddrToLastUpdateMemo []ConsAddrToLastUpdateMemo `protobuf:"bytes,3,rep,name=consumer_cons_addr_to_last_update_memo,json=consumerConsAddrToLastUpdateMemo,proto3" json:"consumer_cons_addr_to_last_update_memo"`
 }
 
 func (m *KeyMap) Reset()         { *m = KeyMap{} }
 func (m *KeyMap) String() string { return proto.CompactTextString(m) }
 func (*KeyMap) ProtoMessage()    {}
 func (*KeyMap) Descriptor() ([]byte, []int) {
-	return fileDescriptor_864a04a770548246, []int{3}
+	return fileDescriptor_864a04a770548246, []int{4}
 }
 func (m *KeyMap) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -235,29 +287,30 @@ func (m *KeyMap) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_KeyMap proto.InternalMessageInfo
 
-func (m *KeyMap) GetPkToCk() []KeyToKey {
+func (m *KeyMap) GetProviderConsAddrToConsumerKey() []ConsAddrToKey {
 	if m != nil {
-		return m.PkToCk
+		return m.ProviderConsAddrToConsumerKey
 	}
 	return nil
 }
 
-func (m *KeyMap) GetCkToPk() []KeyToKey {
+func (m *KeyMap) GetConsumerKeyToProviderKey() []KeyToKey {
 	if m != nil {
-		return m.CkToPk
+		return m.ConsumerKeyToProviderKey
 	}
 	return nil
 }
 
-func (m *KeyMap) GetCcaToLastUpdateMemo() []ConsAddrToLastUpdateMemo {
+func (m *KeyMap) GetConsumerConsAddrToLastUpdateMemo() []ConsAddrToLastUpdateMemo {
 	if m != nil {
-		return m.CcaToLastUpdateMemo
+		return m.ConsumerConsAddrToLastUpdateMemo
 	}
 	return nil
 }
 
 func init() {
 	proto.RegisterType((*LastUpdateMemo)(nil), "interchain_security.ccv.provider.v1.LastUpdateMemo")
+	proto.RegisterType((*ConsAddrToKey)(nil), "interchain_security.ccv.provider.v1.ConsAddrToKey")
 	proto.RegisterType((*KeyToKey)(nil), "interchain_security.ccv.provider.v1.KeyToKey")
 	proto.RegisterType((*ConsAddrToLastUpdateMemo)(nil), "interchain_security.ccv.provider.v1.ConsAddrToLastUpdateMemo")
 	proto.RegisterType((*KeyMap)(nil), "interchain_security.ccv.provider.v1.KeyMap")
@@ -268,36 +321,39 @@ func init() {
 }
 
 var fileDescriptor_864a04a770548246 = []byte{
-	// 454 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0x3f, 0x6f, 0xd3, 0x40,
-	0x14, 0x8f, 0x93, 0x34, 0x0a, 0x57, 0x54, 0x21, 0x53, 0x89, 0xa8, 0x54, 0x26, 0x0a, 0x4b, 0x06,
-	0x7a, 0x6e, 0xda, 0x99, 0x01, 0x3a, 0x9a, 0x48, 0x95, 0x15, 0x16, 0x24, 0x64, 0x5d, 0x9e, 0x8f,
-	0xd4, 0x5c, 0xec, 0x77, 0xba, 0xbb, 0x18, 0xee, 0x5b, 0x30, 0x21, 0x56, 0xbe, 0x4d, 0xc7, 0x8e,
-	0x4c, 0x08, 0x25, 0x5f, 0x04, 0xf9, 0xdc, 0x50, 0x95, 0x82, 0x64, 0x75, 0xf3, 0xf3, 0xfd, 0xfe,
-	0xe9, 0xfd, 0xf4, 0xc8, 0x71, 0x56, 0x18, 0xae, 0xe0, 0x82, 0x65, 0x45, 0xa2, 0x39, 0xac, 0x54,
-	0x66, 0x6c, 0x08, 0x50, 0x86, 0x52, 0x61, 0x99, 0xa5, 0x5c, 0x85, 0xe5, 0x24, 0x14, 0xdc, 0xe6,
-	0x4c, 0x52, 0xa9, 0xd0, 0xa0, 0xff, 0xfc, 0x1f, 0x0c, 0x0a, 0x50, 0xd2, 0x2d, 0x83, 0x96, 0x93,
-	0x83, 0xfd, 0x05, 0x2e, 0xd0, 0xe1, 0xc3, 0xea, 0xab, 0xa6, 0x1e, 0x1c, 0x1a, 0x5e, 0xa4, 0x5c,
-	0xe5, 0x59, 0x61, 0x42, 0x50, 0x56, 0x1a, 0xac, 0xa4, 0x75, 0xfd, 0x3a, 0xfa, 0xe6, 0x91, 0xbd,
-	0x37, 0x4c, 0x9b, 0xb7, 0x32, 0x65, 0x86, 0x4f, 0x79, 0x8e, 0xfe, 0x0b, 0xd2, 0x06, 0x31, 0xf0,
-	0x86, 0xde, 0x78, 0xf7, 0xe4, 0x90, 0xde, 0xb0, 0x69, 0xcd, 0xa6, 0xe7, 0xab, 0xf9, 0x32, 0x83,
-	0x88, 0xdb, 0xb8, 0x0d, 0xa2, 0x42, 0x4b, 0x31, 0x68, 0x37, 0x41, 0x4b, 0xe1, 0xef, 0x93, 0x9d,
-	0x52, 0x43, 0x96, 0x0e, 0xba, 0x43, 0x6f, 0xdc, 0x8d, 0xeb, 0xa1, 0xfa, 0x2b, 0xf1, 0x13, 0x57,
-	0x83, 0x9d, 0xa1, 0x37, 0xee, 0xc4, 0xf5, 0x30, 0xfa, 0x48, 0xfa, 0x11, 0xb7, 0x33, 0x8c, 0xb8,
-	0xf5, 0x8f, 0x49, 0xf7, 0x83, 0xc2, 0xbc, 0x51, 0x2a, 0x87, 0xac, 0x72, 0x19, 0x6c, 0x96, 0xcb,
-	0xe0, 0xe8, 0xab, 0x47, 0x06, 0x67, 0x58, 0xe8, 0x57, 0x69, 0xaa, 0x66, 0xf8, 0xd7, 0x42, 0x9e,
-	0x92, 0x07, 0x80, 0x85, 0x4e, 0x58, 0x9a, 0x2a, 0x97, 0xe0, 0x61, 0xdc, 0x87, 0x6b, 0xb0, 0xff,
-	0x9e, 0x3c, 0x5a, 0x32, 0x6d, 0x92, 0x95, 0xc3, 0x27, 0x39, 0xcf, 0xb7, 0xae, 0xa7, 0xb4, 0x41,
-	0x69, 0xf4, 0xb6, 0x57, 0xbc, 0xb7, 0xbc, 0x35, 0x8f, 0xbe, 0xb7, 0x49, 0x2f, 0xe2, 0x76, 0xca,
-	0xa4, 0x3f, 0x25, 0x7d, 0x29, 0x12, 0x83, 0x89, 0x6b, 0xa7, 0x33, 0xde, 0x3d, 0x39, 0x6a, 0xe4,
-	0xb0, 0x5d, 0xe2, 0xeb, 0xee, 0xe5, 0xcf, 0x67, 0xad, 0xb8, 0x27, 0xc5, 0x0c, 0xcf, 0x44, 0x25,
-	0x07, 0x4e, 0xce, 0xd5, 0x77, 0x7f, 0x39, 0x10, 0x33, 0x3c, 0x17, 0xbe, 0x25, 0x4f, 0x00, 0x58,
-	0xa5, 0x77, 0x67, 0x1d, 0x1d, 0xa7, 0xfe, 0xb2, 0x91, 0xfa, 0xff, 0x4a, 0xb8, 0x76, 0x7b, 0x0c,
-	0xc0, 0xee, 0x3c, 0x45, 0x97, 0xeb, 0xc0, 0xbb, 0x5a, 0x07, 0xde, 0xaf, 0x75, 0xe0, 0x7d, 0xd9,
-	0x04, 0xad, 0xab, 0x4d, 0xd0, 0xfa, 0xb1, 0x09, 0x5a, 0xef, 0x26, 0x8b, 0xcc, 0x5c, 0xac, 0xe6,
-	0x14, 0x30, 0x0f, 0x01, 0x75, 0x8e, 0x3a, 0xbc, 0x09, 0x71, 0xf4, 0xe7, 0xf4, 0x3e, 0xbb, 0xe3,
-	0x33, 0x56, 0x72, 0x3d, 0xef, 0xb9, 0xbb, 0x38, 0xfd, 0x1d, 0x00, 0x00, 0xff, 0xff, 0x73, 0xc5,
-	0x6c, 0xcd, 0xa4, 0x03, 0x00, 0x00,
+	// 505 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x94, 0xcf, 0x6e, 0xd3, 0x40,
+	0x10, 0xc6, 0xb3, 0x49, 0x5a, 0x95, 0x4d, 0xa9, 0x50, 0xd4, 0x83, 0x55, 0x82, 0x89, 0x8c, 0x84,
+	0x72, 0xa0, 0xeb, 0x26, 0x3d, 0x23, 0x04, 0x3d, 0x9a, 0x4a, 0x95, 0x55, 0x2e, 0x95, 0x90, 0xe5,
+	0xac, 0x97, 0xd4, 0x34, 0xf6, 0x58, 0xbb, 0x6b, 0xc3, 0x9e, 0x79, 0x01, 0x2e, 0x70, 0xe1, 0x5d,
+	0x38, 0xf7, 0xd8, 0x23, 0x27, 0x84, 0x92, 0x17, 0x41, 0x6b, 0xc7, 0x49, 0x1c, 0xfe, 0xc8, 0xb9,
+	0x79, 0xbd, 0x33, 0xdf, 0xef, 0x9b, 0x9d, 0xd1, 0xe0, 0x93, 0x30, 0x96, 0x8c, 0xd3, 0x6b, 0x3f,
+	0x8c, 0x3d, 0xc1, 0x68, 0xca, 0x43, 0xa9, 0x6c, 0x4a, 0x33, 0x3b, 0xe1, 0x90, 0x85, 0x01, 0xe3,
+	0x76, 0x36, 0xb4, 0x6f, 0x98, 0x8a, 0xfc, 0x84, 0x24, 0x1c, 0x24, 0x74, 0x9f, 0xfc, 0x25, 0x83,
+	0x50, 0x9a, 0x91, 0x32, 0x83, 0x64, 0xc3, 0xa3, 0xc3, 0x09, 0x4c, 0x20, 0x8f, 0xb7, 0xf5, 0x57,
+	0x91, 0x7a, 0xd4, 0x93, 0x2c, 0x0e, 0x18, 0x8f, 0xc2, 0x58, 0xda, 0x94, 0xab, 0x44, 0x82, 0x96,
+	0x16, 0xc5, 0xad, 0xf5, 0x1d, 0xe1, 0x83, 0xd7, 0xbe, 0x90, 0x6f, 0x92, 0xc0, 0x97, 0xec, 0x9c,
+	0x45, 0xd0, 0x7d, 0x81, 0xf7, 0x29, 0xc4, 0x22, 0x8d, 0x18, 0xf7, 0x6e, 0x98, 0x32, 0x50, 0x1f,
+	0x0d, 0x3a, 0xa3, 0x1e, 0x59, 0xe9, 0x90, 0x42, 0x87, 0x5c, 0xa4, 0xe3, 0x69, 0x48, 0x1d, 0xa6,
+	0xdc, 0x4e, 0x99, 0xe1, 0x30, 0xa5, 0x05, 0x4a, 0x5b, 0xb9, 0x40, 0xb3, 0x8e, 0x40, 0x99, 0xa1,
+	0x05, 0x0e, 0xf1, 0x4e, 0x26, 0x68, 0x18, 0x18, 0xed, 0x3e, 0x1a, 0xb4, 0xdd, 0xe2, 0xa0, 0xff,
+	0x26, 0xf0, 0x81, 0x71, 0x63, 0xa7, 0x8f, 0x06, 0x2d, 0xb7, 0x38, 0x58, 0x57, 0xf8, 0xfe, 0x19,
+	0xc4, 0xe2, 0x65, 0x10, 0xf0, 0x4b, 0xd0, 0xc9, 0x0f, 0xf1, 0x3d, 0x6d, 0xc6, 0xf3, 0x83, 0x80,
+	0xe7, 0xde, 0xf7, 0xdd, 0x3d, 0xba, 0x88, 0xe8, 0x3e, 0xc3, 0x4d, 0x09, 0xb5, 0x0c, 0x35, 0x25,
+	0x58, 0xef, 0xf1, 0x9e, 0xc3, 0x54, 0x21, 0x7b, 0x82, 0xdb, 0xef, 0x38, 0x44, 0xb5, 0x5e, 0x23,
+	0x8f, 0xdc, 0x92, 0xf5, 0x15, 0x61, 0x63, 0x55, 0xc8, 0x46, 0x4b, 0xfe, 0x5b, 0xd3, 0x5b, 0xfc,
+	0x60, 0xea, 0x0b, 0xe9, 0xa5, 0x79, 0xbc, 0x17, 0xb1, 0xa8, 0xa4, 0x9e, 0x92, 0x1a, 0x63, 0x43,
+	0xaa, 0x2c, 0xf7, 0x60, 0x5a, 0x39, 0x5b, 0xdf, 0x5a, 0x78, 0xd7, 0x61, 0xea, 0xdc, 0x4f, 0xba,
+	0x9f, 0x10, 0xb6, 0x96, 0x9d, 0x5d, 0x1a, 0xf2, 0x24, 0x78, 0x1b, 0x03, 0xd3, 0x1a, 0x74, 0x46,
+	0xa3, 0x5a, 0xf0, 0x4a, 0xef, 0x5e, 0xb5, 0x6f, 0x7f, 0x3e, 0x6e, 0xb8, 0x8f, 0xca, 0x80, 0xd5,
+	0xe5, 0xd9, 0xda, 0x78, 0x09, 0xdc, 0x5b, 0xc7, 0x69, 0xfc, 0xc6, 0xb8, 0x69, 0xfc, 0x71, 0x2d,
+	0x7c, 0xd9, 0xde, 0x05, 0xd9, 0x58, 0x1b, 0xe3, 0x4b, 0xb8, 0x58, 0x1b, 0xc9, 0x2f, 0x08, 0x3f,
+	0x5d, 0x52, 0x2b, 0xa5, 0xff, 0xf1, 0xf6, 0xad, 0x9c, 0xff, 0x7c, 0xcb, 0xf2, 0xab, 0x5d, 0x58,
+	0xf8, 0xe9, 0x97, 0xc8, 0x7f, 0xc6, 0x39, 0xb7, 0x33, 0x13, 0xdd, 0xcd, 0x4c, 0xf4, 0x6b, 0x66,
+	0xa2, 0xcf, 0x73, 0xb3, 0x71, 0x37, 0x37, 0x1b, 0x3f, 0xe6, 0x66, 0xe3, 0x6a, 0x38, 0x09, 0xe5,
+	0x75, 0x3a, 0x26, 0x14, 0x22, 0x9b, 0x82, 0x88, 0x40, 0xd8, 0x2b, 0x47, 0xc7, 0xcb, 0xb5, 0xf3,
+	0x31, 0x5f, 0x3c, 0x52, 0x25, 0x4c, 0x8c, 0x77, 0xf3, 0x9d, 0x70, 0xfa, 0x3b, 0x00, 0x00, 0xff,
+	0xff, 0x1f, 0x4f, 0x4a, 0xdc, 0xa0, 0x04, 0x00, 0x00,
 }
 
 func (m *LastUpdateMemo) Marshal() (dAtA []byte, err error) {
@@ -330,9 +386,9 @@ func (m *LastUpdateMemo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x20
 	}
-	if m.Pk != nil {
+	if m.ProviderKey != nil {
 		{
-			size, err := m.Pk.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.ProviderKey.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -342,15 +398,57 @@ func (m *LastUpdateMemo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.Ck != nil {
+	if m.ConsumerKey != nil {
 		{
-			size, err := m.Ck.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.ConsumerKey.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
 			i -= size
 			i = encodeVarintKeymap(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ConsAddrToKey) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ConsAddrToKey) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ConsAddrToKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.To != nil {
+		{
+			size, err := m.To.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintKeymap(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ConsAddr) > 0 {
+		i -= len(m.ConsAddr)
+		copy(dAtA[i:], m.ConsAddr)
+		i = encodeVarintKeymap(dAtA, i, uint64(len(m.ConsAddr)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -466,10 +564,10 @@ func (m *KeyMap) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.CcaToLastUpdateMemo) > 0 {
-		for iNdEx := len(m.CcaToLastUpdateMemo) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.ConsumerConsAddrToLastUpdateMemo) > 0 {
+		for iNdEx := len(m.ConsumerConsAddrToLastUpdateMemo) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.CcaToLastUpdateMemo[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.ConsumerConsAddrToLastUpdateMemo[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -480,10 +578,10 @@ func (m *KeyMap) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x1a
 		}
 	}
-	if len(m.CkToPk) > 0 {
-		for iNdEx := len(m.CkToPk) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.ConsumerKeyToProviderKey) > 0 {
+		for iNdEx := len(m.ConsumerKeyToProviderKey) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.CkToPk[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.ConsumerKeyToProviderKey[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -494,10 +592,10 @@ func (m *KeyMap) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x12
 		}
 	}
-	if len(m.PkToCk) > 0 {
-		for iNdEx := len(m.PkToCk) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.ProviderConsAddrToConsumerKey) > 0 {
+		for iNdEx := len(m.ProviderConsAddrToConsumerKey) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.PkToCk[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.ProviderConsAddrToConsumerKey[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -528,12 +626,12 @@ func (m *LastUpdateMemo) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Ck != nil {
-		l = m.Ck.Size()
+	if m.ConsumerKey != nil {
+		l = m.ConsumerKey.Size()
 		n += 1 + l + sovKeymap(uint64(l))
 	}
-	if m.Pk != nil {
-		l = m.Pk.Size()
+	if m.ProviderKey != nil {
+		l = m.ProviderKey.Size()
 		n += 1 + l + sovKeymap(uint64(l))
 	}
 	if m.Vscid != 0 {
@@ -541,6 +639,23 @@ func (m *LastUpdateMemo) Size() (n int) {
 	}
 	if m.Power != 0 {
 		n += 1 + sovKeymap(uint64(m.Power))
+	}
+	return n
+}
+
+func (m *ConsAddrToKey) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ConsAddr)
+	if l > 0 {
+		n += 1 + l + sovKeymap(uint64(l))
+	}
+	if m.To != nil {
+		l = m.To.Size()
+		n += 1 + l + sovKeymap(uint64(l))
 	}
 	return n
 }
@@ -585,20 +700,20 @@ func (m *KeyMap) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if len(m.PkToCk) > 0 {
-		for _, e := range m.PkToCk {
+	if len(m.ProviderConsAddrToConsumerKey) > 0 {
+		for _, e := range m.ProviderConsAddrToConsumerKey {
 			l = e.Size()
 			n += 1 + l + sovKeymap(uint64(l))
 		}
 	}
-	if len(m.CkToPk) > 0 {
-		for _, e := range m.CkToPk {
+	if len(m.ConsumerKeyToProviderKey) > 0 {
+		for _, e := range m.ConsumerKeyToProviderKey {
 			l = e.Size()
 			n += 1 + l + sovKeymap(uint64(l))
 		}
 	}
-	if len(m.CcaToLastUpdateMemo) > 0 {
-		for _, e := range m.CcaToLastUpdateMemo {
+	if len(m.ConsumerConsAddrToLastUpdateMemo) > 0 {
+		for _, e := range m.ConsumerConsAddrToLastUpdateMemo {
 			l = e.Size()
 			n += 1 + l + sovKeymap(uint64(l))
 		}
@@ -643,7 +758,7 @@ func (m *LastUpdateMemo) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Ck", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerKey", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -670,16 +785,16 @@ func (m *LastUpdateMemo) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Ck == nil {
-				m.Ck = &crypto.PublicKey{}
+			if m.ConsumerKey == nil {
+				m.ConsumerKey = &crypto.PublicKey{}
 			}
-			if err := m.Ck.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ConsumerKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Pk", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderKey", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -706,10 +821,10 @@ func (m *LastUpdateMemo) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Pk == nil {
-				m.Pk = &crypto.PublicKey{}
+			if m.ProviderKey == nil {
+				m.ProviderKey = &crypto.PublicKey{}
 			}
-			if err := m.Pk.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ProviderKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -751,6 +866,126 @@ func (m *LastUpdateMemo) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipKeymap(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthKeymap
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ConsAddrToKey) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowKeymap
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ConsAddrToKey: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ConsAddrToKey: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsAddr", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeymap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthKeymap
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthKeymap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ConsAddr = append(m.ConsAddr[:0], dAtA[iNdEx:postIndex]...)
+			if m.ConsAddr == nil {
+				m.ConsAddr = []byte{}
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field To", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowKeymap
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthKeymap
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthKeymap
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.To == nil {
+				m.To = &crypto.PublicKey{}
+			}
+			if err := m.To.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipKeymap(dAtA[iNdEx:])
@@ -1045,7 +1280,7 @@ func (m *KeyMap) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PkToCk", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderConsAddrToConsumerKey", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1072,14 +1307,14 @@ func (m *KeyMap) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PkToCk = append(m.PkToCk, KeyToKey{})
-			if err := m.PkToCk[len(m.PkToCk)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.ProviderConsAddrToConsumerKey = append(m.ProviderConsAddrToConsumerKey, ConsAddrToKey{})
+			if err := m.ProviderConsAddrToConsumerKey[len(m.ProviderConsAddrToConsumerKey)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CkToPk", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerKeyToProviderKey", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1106,14 +1341,14 @@ func (m *KeyMap) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CkToPk = append(m.CkToPk, KeyToKey{})
-			if err := m.CkToPk[len(m.CkToPk)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.ConsumerKeyToProviderKey = append(m.ConsumerKeyToProviderKey, KeyToKey{})
+			if err := m.ConsumerKeyToProviderKey[len(m.ConsumerKeyToProviderKey)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CcaToLastUpdateMemo", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerConsAddrToLastUpdateMemo", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1140,8 +1375,8 @@ func (m *KeyMap) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CcaToLastUpdateMemo = append(m.CcaToLastUpdateMemo, ConsAddrToLastUpdateMemo{})
-			if err := m.CcaToLastUpdateMemo[len(m.CcaToLastUpdateMemo)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.ConsumerConsAddrToLastUpdateMemo = append(m.ConsumerConsAddrToLastUpdateMemo, ConsAddrToLastUpdateMemo{})
+			if err := m.ConsumerConsAddrToLastUpdateMemo[len(m.ConsumerConsAddrToLastUpdateMemo)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

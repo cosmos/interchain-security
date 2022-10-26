@@ -269,7 +269,7 @@ func LockUnbondingOnTimeoutKey(chainID string) []byte {
 }
 
 // TODO:
-func KeyMapPkToCkChainPrefix(chainID string) []byte {
+func KeyMapPcaToCkChainPrefix(chainID string) []byte {
 	return append([]byte{KeyMapPkToCkPrefix}, []byte(chainID)...)
 }
 
@@ -279,13 +279,13 @@ func KeyMapCkToPkChainPrefix(chainID string) []byte {
 }
 
 // TODO:
-func KeyMapCkToMemoChainPrefix(chainID string) []byte {
+func KeyMapCcaToLastUpdateMemoChainPrefix(chainID string) []byte {
 	return append([]byte{KeyMapCkToMemoPrefix}, []byte(chainID)...)
 }
 
 // TODO:
-func KeyMapPkToCkKey(chainID string, kbz []byte) []byte {
-	return append(KeyMapPkToCkChainPrefix(chainID), kbz...)
+func KeyMapPcaToCkKey(chainID string, kbz []byte) []byte {
+	return append(KeyMapPcaToCkChainPrefix(chainID), kbz...)
 }
 
 // TODO:
@@ -294,8 +294,8 @@ func KeyMapCkToPkKey(chainID string, kbz []byte) []byte {
 }
 
 // TODO:
-func KeyMapCkToMemoKey(chainID string, kbz []byte) []byte {
-	return append(KeyMapCkToMemoChainPrefix(chainID), kbz...)
+func KeyMapCcaToLastUpdateMemoKey(chainID string, kbz []byte) []byte {
+	return append(KeyMapCcaToLastUpdateMemoChainPrefix(chainID), kbz...)
 }
 
 // AppendMany appends a variable number of byte slices together

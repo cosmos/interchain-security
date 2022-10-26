@@ -124,7 +124,7 @@ func (d *driver) applyKeyMapEntries(entries []keyMapEntry) {
 	}
 	// Duplicate the mapping for referencing later in tests.
 	copy := map[keeper.ProviderPubKey]keeper.ConsumerPubKey{}
-	d.km.Store.IteratePkToCk(func(pk, ck keeper.ConsumerPubKey) bool {
+	d.km.Store.IteratePcaToCk(func(pk, ck keeper.ConsumerPubKey) bool {
 		copy[pk] = ck
 		return false
 	})
@@ -299,7 +299,7 @@ func (d *driver) externalInvariants() {
 			// The query must return a result
 			pkQueried, found := d.km.GetProviderPubKeyFromConsumerPubKey(ckOnConsumer)
 			require.True(d.t, found)
-			pkQueriedByConsAddr, found := d.km.GetProviderPubKeyFromConsumerConsAddress(keeper.ConsumerPubKeyToConsumerConsAddr(ckOnConsumer))
+			pkQueriedByConsAddr, found := d.km.GetProviderPubKeyFromConsumerConsAddress(keeper.PubKeyToConsAddr(ckOnConsumer))
 			require.True(d.t, found)
 			require.Equal(d.t, pkQueried, pkQueriedByConsAddr)
 
@@ -375,7 +375,7 @@ func (d *driver) externalInvariants() {
 		// Simply check every consumer key for the correct queryable-ness.
 		for ck := uint64(0); ck < NUM_CKS; ck++ {
 			ck += 100 //TODO: fix with others
-			cca := keeper.ConsumerPubKeyToConsumerConsAddr(key(ck))
+			cca := keeper.PubKeyToConsAddr(key(ck))
 			_, actualQueryable := d.km.GetProviderPubKeyFromConsumerConsAddress(cca)
 			if expect, found := expectQueryable[keeper.DeterministicStringify(key(ck))]; found && expect {
 				require.True(d.t, actualQueryable)
@@ -661,13 +661,13 @@ func TestKeyMapSetUseReplaceAndReverse(t *testing.T) {
 	km.ComputeUpdates(100, updates)
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // New consumer key
 	// actual, _ := km.GetProviderPubKeyFromConsumerPubKey(key(43)) // Old is queryable
-	actual, _ := km.GetProviderPubKeyFromConsumerConsAddress(keeper.ConsumerPubKeyToConsumerConsAddr(key(43)))
+	actual, _ := km.GetProviderPubKeyFromConsumerConsAddress(keeper.PubKeyToConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = km.GetProviderPubKeyFromConsumerPubKey(key(44)) // New is queryable
 	require.Equal(t, key(42), actual)
 	km.ComputeUpdates(101, updates) // Old is no longer known to consumer
 	km.PruneUnusedKeys(102)         // Old is garbage collected on provider
-	_, found := km.GetProviderPubKeyFromConsumerConsAddress(keeper.ConsumerPubKeyToConsumerConsAddr(key(43)))
+	_, found := km.GetProviderPubKeyFromConsumerConsAddress(keeper.PubKeyToConsAddr(key(43)))
 	require.False(t, found)
 	actual, _ = km.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
 	require.Equal(t, key(42), actual)
@@ -679,12 +679,12 @@ func TestKeyMapSetUseReplaceAndPrune(t *testing.T) {
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 	km.ComputeUpdates(100, updates)
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(44))
-	actual, _ := km.GetProviderPubKeyFromConsumerConsAddress(keeper.ConsumerPubKeyToConsumerConsAddr(key(43)))
+	actual, _ := km.GetProviderPubKeyFromConsumerConsAddress(keeper.PubKeyToConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = km.GetProviderPubKeyFromConsumerPubKey(key(44)) // Queryable
 	require.Equal(t, key(42), actual)
 	km.PruneUnusedKeys(101) // Should not be pruned
-	_, found := km.GetProviderPubKeyFromConsumerConsAddress(keeper.ConsumerPubKeyToConsumerConsAddr(key(43)))
+	_, found := km.GetProviderPubKeyFromConsumerConsAddress(keeper.PubKeyToConsAddr(key(43)))
 	require.True(t, found)
 	actual, _ = km.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
 	require.Equal(t, key(42), actual)
@@ -723,7 +723,7 @@ func compareForEquality(t *testing.T,
 	ckToMemo map[string]ccvtypes.LastUpdateMemo) {
 
 	cnt := 0
-	km.Store.IteratePkToCk(func(_, _ keeper.ConsumerPubKey) bool {
+	km.Store.IteratePcaToCk(func(_, _ keeper.ConsumerPubKey) bool {
 		cnt += 1
 		return false
 	})
@@ -744,7 +744,7 @@ func compareForEquality(t *testing.T,
 	require.Equal(t, len(ckToMemo), cnt)
 
 	for k, vExpect := range pkToCk {
-		vActual, found := km.Store.GetPkToCk(k)
+		vActual, found := km.Store.GetPcaToCk(k)
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
@@ -786,13 +786,13 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 	pkToCk[keys[2]] = keys[3]
 	ckToPk[keys[4]] = keys[5]
 	ckToPk[keys[6]] = keys[7]
-	ckToMemo[string(keeper.ConsumerPubKeyToConsumerConsAddr(keys[8]))] = ccvtypes.LastUpdateMemo{
+	ckToMemo[string(keeper.PubKeyToConsAddr(keys[8]))] = ccvtypes.LastUpdateMemo{
 		Ck:    &keys[9],
 		Pk:    &keys[10],
 		Vscid: uint64_0,
 		Power: int64_0,
 	}
-	ckToMemo[string(keeper.ConsumerPubKeyToConsumerConsAddr(keys[11]))] = ccvtypes.LastUpdateMemo{
+	ckToMemo[string(keeper.PubKeyToConsAddr(keys[11]))] = ccvtypes.LastUpdateMemo{
 		Ck:    &keys[12],
 		Pk:    &keys[13],
 		Vscid: uint64_1,
@@ -804,7 +804,7 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 		store := keeper.KeyMapStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
 		km := keeper.MakeKeyMap(&store)
 		for k, v := range pkToCk {
-			km.Store.SetPkToCk(k, v)
+			km.Store.SetPcaToCk(k, v)
 		}
 		for k, v := range ckToPk {
 			km.Store.SetCkToPk(k, v)
