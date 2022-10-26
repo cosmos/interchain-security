@@ -427,7 +427,7 @@ func (e *KeyMap) InternalInvariants() bool {
 
 type KeyMapStore struct {
 	Store   sdk.KVStore
-	ChainID ChainID
+	ChainID string
 }
 
 func (s *KeyMapStore) SetPcaToCk(k ProviderConsAddr, v ConsumerPubKey) {
