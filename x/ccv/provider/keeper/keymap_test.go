@@ -716,6 +716,45 @@ func TestKeyMapGCUpdateIsEmitted(t *testing.T) {
 	require.True(t, good)
 }
 
+func TestValidatorRemoval(t *testing.T) {
+	km := newTestKeyMap(t)
+
+	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
+
+	km.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	km.ComputeUpdates(0, updates)
+
+	km.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // Now use a different consumer key
+	km.ComputeUpdates(1, updates)
+
+	km.SetProviderPubKeyToConsumerPubKey(key(42), key(45)) // Now use a different consumer key
+	km.ComputeUpdates(2, updates)
+
+	pca := keeper.PubKeyToConsAddr(key(42))
+	km.DeleteProviderKey(pca)
+
+	_, found := km.Store.GetPcaToCk(pca)
+	require.False(t, found)
+	_, found = km.Store.GetCkToPk(key(43))
+	require.False(t, found)
+	_, found = km.Store.GetCkToPk(key(44))
+	require.False(t, found)
+	_, found = km.Store.GetCkToPk(key(45))
+	require.False(t, found)
+
+	for i := uint64(43); i < 46; i++ {
+		_, found = km.Store.GetCcaToLastUpdateMemo(keeper.PubKeyToConsAddr(key(i)))
+		require.False(t, found)
+
+	}
+	km.Store.IterateCcaToLastUpdateMemo(func(cca keeper.ConsumerConsAddr, lum ccvtypes.LastUpdateMemo) bool {
+		pcaQueried := keeper.PubKeyToConsAddr(*lum.ProviderKey)
+		require.False(t, pca.Equals(pcaQueried))
+		return false
+	})
+
+}
+
 func compareForEquality(t *testing.T,
 	km keeper.KeyMap,
 	pcaToCk map[string]keeper.ConsumerPubKey,
