@@ -258,8 +258,6 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consum
 
 	gen.InitialValSet = consumerUpdates
 
-	gen.InitialValSet = providerUpdates
-
 	return gen, nil
 }
 
