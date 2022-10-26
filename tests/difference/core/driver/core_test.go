@@ -92,26 +92,6 @@ func (b *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
 	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
 }
 
-func (b *CoreSuite) consumerGreatestVscIDReceived() uint64 {
-	/*
-		TODO:
-		I know that the consumer slash will use the the provider validator address
-		and that that address should have been known to the consumer and should
-		not have already matured.
-		Therefore I can take any vscid that is still maturing on the consumer
-		and find a provider block, with one of those vscids,
-		 where that validator had non 0 power, and
-		take the mapping from that block to get the consumer address which
-		should actually be used as argument.
-		I can just do random mapping actions whenever.
-		I should query the mapping after provider EndBlock.
-	*/
-
-	k := b.consumerKeeper()
-	h := uint64(b.height(C) + 1) // TODO: is this height queried from the right place?
-	return k.GetHeightValsetUpdateID(b.ctx(C), h)
-}
-
 // height returns the height of the current header of chain
 func (s *CoreSuite) height(chain string) int64 {
 	return s.chain(chain).CurrentHeader.GetHeight()
@@ -125,6 +105,15 @@ func (s *CoreSuite) time(chain string) time.Time {
 // delegator retrieves the address for the delegator account
 func (s *CoreSuite) delegator() sdk.AccAddress {
 	return s.providerChain().SenderAccount.GetAddress()
+}
+
+// validator returns the address for the validator with id (ix) i
+func (s *CoreSuite) providerValidatorPubKey(i int64) providerkeeper.ProviderPubKey {
+	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
+	s.Require().True(found)
+	pk, err := v.TmConsPublicKey()
+	s.Require().NoError(err)
+	return pk
 }
 
 // validator returns the address for the validator with id (ix) i
@@ -354,7 +343,11 @@ func (s *CoreSuite) executeTrace() {
 
 		if rand.Intn(100) < 10 {
 			// TODO:
-			// s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey()
+			j := rand.Intn(initState.NumValidators)
+			pk := s.providerValidatorPubKey(int64(j))
+			ck :=
+				s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey()
+
 		}
 
 		switch a.Kind {
