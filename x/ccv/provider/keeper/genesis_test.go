@@ -10,7 +10,7 @@ import (
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -24,7 +24,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 	oneHourFromNow := time.Now().UTC().Add(time.Hour)
 	initHeight, vscID := uint64(5), uint64(1)
 	ubdIndex := []uint64{0, 1, 2}
-	params := types.DefaultParams()
+	params := providertypes.DefaultParams()
 	keyMaps := []ccv.KeyMap{
 		{
 			ProviderConsAddrToConsumerKey:    []ccv.ConsAddrToKey{{ConsAddr: sdk.ConsAddress{}, Key: &crypto.PublicKey{}}},
@@ -39,24 +39,24 @@ func TestIniAndExportGenesis(t *testing.T) {
 	}
 
 	// create genesis struct
-	pGenesis := types.NewGenesisState(vscID,
-		[]types.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
-		[]types.ConsumerState{
-			types.NewConsumerStates(
+	pGenesis := providertypes.NewGenesisState(vscID,
+		[]providertypes.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
+		[]providertypes.ConsumerState{
+			providertypes.NewConsumerStates(
 				cChainIDs[0],
 				expClientID,
 				"channel",
 				initHeight,
 				true,
 				*consumertypes.DefaultGenesisState(),
-				[]types.UnbondingOpIndex{
+				[]providertypes.UnbondingOpIndex{
 					{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex},
 				},
 				nil,
 				[]string{"slashedValidatorConsAddress"},
 				&keyMaps[0],
 			),
-			types.NewConsumerStates(
+			providertypes.NewConsumerStates(
 				cChainIDs[1],
 				expClientID,
 				"",
@@ -74,11 +74,11 @@ func TestIniAndExportGenesis(t *testing.T) {
 			UnbondingConsumerChains: []string{cChainIDs[0]},
 		}},
 		&ccv.MaturedUnbondingOps{Ids: ubdIndex},
-		[]types.ConsumerAdditionProposal{types.ConsumerAdditionProposal{
+		[]providertypes.ConsumerAdditionProposal{providertypes.ConsumerAdditionProposal{
 			ChainId:   cChainIDs[0],
 			SpawnTime: oneHourFromNow,
 		}},
-		[]types.ConsumerRemovalProposal{types.ConsumerRemovalProposal{
+		[]providertypes.ConsumerRemovalProposal{providertypes.ConsumerRemovalProposal{
 			ChainId:  cChainIDs[0],
 			StopTime: oneHourFromNow,
 		}},
@@ -131,7 +131,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 
 }
 
-func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, consumerStates ...types.ConsumerState) {
+func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, consumerStates ...providertypes.ConsumerState) {
 	for _, cs := range consumerStates {
 		chainID := cs.ChainId
 		gen, found := pk.GetConsumerGenesis(ctx, chainID)
