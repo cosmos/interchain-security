@@ -123,7 +123,22 @@ func MakeKeyMap(store Store) KeyMap {
 }
 
 func (e *KeyMap) DeleteProviderKey(pca ProviderConsAddr) error {
-	// TODO:
+	// TODO: document expensive operation
+	if ck, ok := e.Store.GetPcaToCk(pca); ok {
+		e.Store.DelCkToPk(ck)
+	}
+	e.Store.DelPcaToCk(pca)
+	toDelete := []ConsumerConsAddr{}
+	e.Store.IterateCcaToLastUpdateMemo(func(cca ConsumerConsAddr, lum ccvtypes.LastUpdateMemo) bool {
+		pcaInMemo := PubKeyToConsAddr(*lum.ProviderKey)
+		if pca.Equals(pcaInMemo) { // TODO: find other place where I should have used Equals
+			toDelete = append(toDelete, cca)
+		}
+		return false
+	})
+	for _, cca := range toDelete {
+		e.Store.DelCcaToLastUpdateMemo(cca)
+	}
 	return nil
 }
 
