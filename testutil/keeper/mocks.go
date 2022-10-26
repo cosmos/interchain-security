@@ -13,12 +13,13 @@ import (
 	types1 "github.com/cosmos/cosmos-sdk/x/capability/types"
 	types2 "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	types3 "github.com/cosmos/cosmos-sdk/x/staking/types"
-	types4 "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	types5 "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
-	types6 "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	types4 "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+	types5 "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	types6 "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
+	types7 "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	exported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	gomock "github.com/golang/mock/gomock"
-	types7 "github.com/tendermint/tendermint/abci/types"
+	types8 "github.com/tendermint/tendermint/abci/types"
 )
 
 // MockStakingKeeper is a mock of StakingKeeper interface.
@@ -75,10 +76,10 @@ func (mr *MockStakingKeeperMockRecorder) GetValidatorByConsAddr(ctx, consAddr in
 }
 
 // GetValidatorUpdates mocks base method.
-func (m *MockStakingKeeper) GetValidatorUpdates(ctx types.Context) []types7.ValidatorUpdate {
+func (m *MockStakingKeeper) GetValidatorUpdates(ctx types.Context) []types8.ValidatorUpdate {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorUpdates", ctx)
-	ret0, _ := ret[0].([]types7.ValidatorUpdate)
+	ret0, _ := ret[0].([]types8.ValidatorUpdate)
 	return ret0
 }
 
@@ -336,10 +337,10 @@ func (mr *MockChannelKeeperMockRecorder) ChanCloseInit(ctx, portID, channelID, c
 }
 
 // GetChannel mocks base method.
-func (m *MockChannelKeeper) GetChannel(ctx types.Context, srcPort, srcChan string) (types6.Channel, bool) {
+func (m *MockChannelKeeper) GetChannel(ctx types.Context, srcPort, srcChan string) (types7.Channel, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetChannel", ctx, srcPort, srcChan)
-	ret0, _ := ret[0].(types6.Channel)
+	ret0, _ := ret[0].(types7.Channel)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -454,10 +455,10 @@ func (m *MockConnectionKeeper) EXPECT() *MockConnectionKeeperMockRecorder {
 }
 
 // GetConnection mocks base method.
-func (m *MockConnectionKeeper) GetConnection(ctx types.Context, connectionID string) (types5.ConnectionEnd, bool) {
+func (m *MockConnectionKeeper) GetConnection(ctx types.Context, connectionID string) (types6.ConnectionEnd, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConnection", ctx, connectionID)
-	ret0, _ := ret[0].(types5.ConnectionEnd)
+	ret0, _ := ret[0].(types6.ConnectionEnd)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -726,7 +727,7 @@ func (m *MockIBCTransferKeeper) EXPECT() *MockIBCTransferKeeperMockRecorder {
 }
 
 // SendTransfer mocks base method.
-func (m *MockIBCTransferKeeper) SendTransfer(ctx types.Context, sourcePort, sourceChannel string, token types.Coin, sender types.AccAddress, receiver string, timeoutHeight types4.Height, timeoutTimestamp uint64) error {
+func (m *MockIBCTransferKeeper) SendTransfer(ctx types.Context, sourcePort, sourceChannel string, token types.Coin, sender types.AccAddress, receiver string, timeoutHeight types5.Height, timeoutTimestamp uint64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendTransfer", ctx, sourcePort, sourceChannel, token, sender, receiver, timeoutHeight, timeoutTimestamp)
 	ret0, _ := ret[0].(error)
@@ -763,10 +764,10 @@ func (m *MockIBCCoreKeeper) EXPECT() *MockIBCCoreKeeperMockRecorder {
 }
 
 // ChannelOpenInit mocks base method.
-func (m *MockIBCCoreKeeper) ChannelOpenInit(goCtx context.Context, msg *types6.MsgChannelOpenInit) (*types6.MsgChannelOpenInitResponse, error) {
+func (m *MockIBCCoreKeeper) ChannelOpenInit(goCtx context.Context, msg *types7.MsgChannelOpenInit) (*types7.MsgChannelOpenInitResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ChannelOpenInit", goCtx, msg)
-	ret0, _ := ret[0].(*types6.MsgChannelOpenInitResponse)
+	ret0, _ := ret[0].(*types7.MsgChannelOpenInitResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -866,6 +867,21 @@ func (m *MockICAControllerKeeper) EXPECT() *MockICAControllerKeeperMockRecorder 
 	return m.recorder
 }
 
+// GetActiveChannelID mocks base method.
+func (m *MockICAControllerKeeper) GetActiveChannelID(ctx types.Context, connectionID, portID string) (string, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetActiveChannelID", ctx, connectionID, portID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// GetActiveChannelID indicates an expected call of GetActiveChannelID.
+func (mr *MockICAControllerKeeperMockRecorder) GetActiveChannelID(ctx, connectionID, portID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveChannelID", reflect.TypeOf((*MockICAControllerKeeper)(nil).GetActiveChannelID), ctx, connectionID, portID)
+}
+
 // GetInterchainAccountAddress mocks base method.
 func (m *MockICAControllerKeeper) GetInterchainAccountAddress(ctx types.Context, connectionID, portID string) (string, bool) {
 	m.ctrl.T.Helper()
@@ -893,4 +909,19 @@ func (m *MockICAControllerKeeper) RegisterInterchainAccount(ctx types.Context, c
 func (mr *MockICAControllerKeeperMockRecorder) RegisterInterchainAccount(ctx, connectionID, owner interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterInterchainAccount", reflect.TypeOf((*MockICAControllerKeeper)(nil).RegisterInterchainAccount), ctx, connectionID, owner)
+}
+
+// SendTx mocks base method.
+func (m *MockICAControllerKeeper) SendTx(ctx types.Context, chanCap *types1.Capability, connectionID, portID string, icaPacketData types4.InterchainAccountPacketData, timeoutTimestamp uint64) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendTx", ctx, chanCap, connectionID, portID, icaPacketData, timeoutTimestamp)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SendTx indicates an expected call of SendTx.
+func (mr *MockICAControllerKeeperMockRecorder) SendTx(ctx, chanCap, connectionID, portID, icaPacketData, timeoutTimestamp interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendTx", reflect.TypeOf((*MockICAControllerKeeper)(nil).SendTx), ctx, chanCap, connectionID, portID, icaPacketData, timeoutTimestamp)
 }

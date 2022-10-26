@@ -9,6 +9,7 @@ import (
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -124,5 +125,7 @@ type ScopedKeeper interface {
 
 type ICAControllerKeeper interface {
 	GetInterchainAccountAddress(ctx sdk.Context, connectionID, portID string) (string, bool)
+	GetActiveChannelID(ctx sdk.Context, connectionID, portID string) (string, bool)
 	RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error
+	SendTx(ctx sdk.Context, chanCap *capabilitytypes.Capability, connectionID, portID string, icaPacketData icatypes.InterchainAccountPacketData, timeoutTimestamp uint64) (uint64, error)
 }

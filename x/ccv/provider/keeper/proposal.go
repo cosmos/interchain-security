@@ -18,12 +18,11 @@ import (
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	adminmodulemoduletypes "github.com/cosmos/interchain-security/x/ccv/adminmodule/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	icamauthtypes "github.com/cosmos/interchain-security/x/ccv/icamauth/types"
 )
 
 // HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
@@ -131,33 +130,37 @@ func (k Keeper) HandleConsumerGovernanceProposal(ctx sdk.Context, p *types.Consu
 		return errors.New("consumer governance content is not valid")
 	}
 
+	channelID, found := k.icaControllerKeeper.GetActiveChannelID(ctx, p.ConnectionId, portID)
+	if !found {
+		return sdkerrors.Wrapf(icatypes.ErrActiveChannelNotFound, "failed to retrieve active channel for port %s", portID)
+	}
+
+	// ICA authentication module owns channel capability
+	chanCap, found := k.icaScopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portID, channelID))
+	if !found {
+		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
+	}
+
 	msg := adminmodulemoduletypes.MsgSubmitProposal{
 		Content:  p.Content,
 		Proposer: govICAAccount,
 	}
 
-	anyMsg, err := codectypes.NewAnyWithValue(&msg)
+	data, err := icatypes.SerializeCosmosTx(k.cdc, []sdk.Msg{&msg})
 	if err != nil {
 		return err
 	}
 
-	icaMsg := icamauthtypes.MsgSubmitTx{
-		Owner:        govAddress,
-		ConnectionId: p.ConnectionId,
-		Msg:          anyMsg,
+	packetData := icatypes.InterchainAccountPacketData{
+		Type: icatypes.EXECUTE_TX,
+		Data: data,
 	}
 
-	handler := k.router.Handler(&icaMsg)
-	if handler == nil {
-		return sdkerrors.Wrap(govtypes.ErrNoProposalHandlerExists, sdk.MsgTypeURL(&icaMsg))
-	}
-	res, err := handler(ctx, &icaMsg)
+	timeoutTimestamp := ctx.BlockTime().Add(time.Minute).UnixNano()
+	_, err = k.icaControllerKeeper.SendTx(ctx, chanCap, p.ConnectionId, portID, packetData, uint64(timeoutTimestamp))
 	if err != nil {
 		return err
 	}
-
-	// NOTE: The sdk msg handler creates a new EventManager, so events must be correctly propagated back to the current context
-	ctx.EventManager().EmitEvents(res.GetEvents())
 
 	return nil
 }

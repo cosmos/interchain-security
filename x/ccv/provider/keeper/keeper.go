@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -42,7 +41,7 @@ type Keeper struct {
 	stakingKeeper       ccv.StakingKeeper
 	slashingKeeper      ccv.SlashingKeeper
 	icaControllerKeeper ccv.ICAControllerKeeper
-	router              *baseapp.MsgServiceRouter
+	icaScopedKeeper     ccv.ScopedKeeper
 	feeCollectorName    string
 }
 
@@ -53,7 +52,7 @@ func NewKeeper(
 	connectionKeeper ccv.ConnectionKeeper, clientKeeper ccv.ClientKeeper,
 	stakingKeeper ccv.StakingKeeper, slashingKeeper ccv.SlashingKeeper,
 	accountKeeper ccv.AccountKeeper, icaControllerKeeper ccv.ICAControllerKeeper,
-	router *baseapp.MsgServiceRouter, feeCollectorName string,
+	icaScopedKeeper ccv.ScopedKeeper, feeCollectorName string,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
@@ -73,7 +72,7 @@ func NewKeeper(
 		stakingKeeper:       stakingKeeper,
 		slashingKeeper:      slashingKeeper,
 		icaControllerKeeper: icaControllerKeeper,
-		router:              router,
+		icaScopedKeeper:     icaScopedKeeper,
 		feeCollectorName:    feeCollectorName,
 	}
 }

@@ -119,7 +119,7 @@ func NewInMemProviderKeeper(params InMemKeeperParams, mocks MockedKeepers) provi
 		mocks.MockSlashingKeeper,
 		mocks.MockAccountKeeper,
 		mocks.MockICAControllerKeeper,
-		nil,
+		mocks.MockScopedKeeper,
 		"",
 	)
 }

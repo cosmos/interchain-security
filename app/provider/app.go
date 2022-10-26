@@ -460,7 +460,8 @@ func New(
 		app.SlashingKeeper,
 		app.AccountKeeper,
 		app.ICAControllerKeeper,
-		app.MsgServiceRouter(),
+		// ICA Authentication module's scoped keeper owns capability of the channel used to send txs through ICA
+		scopedICAMauthKeeper,
 		authtypes.FeeCollectorName,
 	)
 
