@@ -46,8 +46,6 @@ import {
 
 class ActionGenerator {
   model;
-  // the set of validators on the consumer at each vscid
-  validatorsKnownToConsumer = new Map<number, number[]>();
   // was the validator slashed?
   didSlash = new Array(NUM_VALIDATORS).fill(false);
   // the timestamp contained in the latest trusted header
@@ -132,6 +130,7 @@ class ActionGenerator {
       valSets.forEach((valset) => {
         valset.forEach((power, i) => {
           if (power !== undefined) {
+            console.log(`powa`, power);
             slashableValidators.add(i);
           }
         });

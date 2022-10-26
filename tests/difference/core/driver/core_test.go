@@ -30,7 +30,8 @@ import (
 )
 
 type KeyMapHelp struct {
-	mapping   map[string]providerkeeper.ConsumerPubKey
+	// Map validators to the consumer pub key at a particular time
+	mapping   map[int64]providerkeeper.ConsumerPubKey
 	valBonded map[int64]bool
 }
 
@@ -202,7 +203,6 @@ func (s *CoreSuite) undelegate(val int64, amt int64) {
 // consumerSlash simulates a slash event occurring on the consumer chain.
 // It can be for a downtime or doublesign.
 func (s *CoreSuite) consumerSlash(val int64, h int64, isDowntime bool) {
-	providerConsAddr := s.consAddr(val)
 	var consumerConsAddr sdk.ConsAddress
 
 	{
@@ -220,7 +220,7 @@ func (s *CoreSuite) consumerSlash(val int64, h int64, isDowntime bool) {
 		for _, vscid := range unmaturedVscIDs {
 			help := s.keymapHelp[uint64(vscid)]
 			if help.valBonded[val] {
-				ck := help.mapping[string(providerConsAddr)]
+				ck := help.mapping[val]
 				cca := providerkeeper.PubKeyToConsAddr(ck)
 				choices[string(cca)] = true
 			}
@@ -229,8 +229,13 @@ func (s *CoreSuite) consumerSlash(val int64, h int64, isDowntime bool) {
 		for k := range choices {
 			choicesArr = append(choicesArr, k)
 		}
-		i := rand.Intn(len(choicesArr))
-		consumerConsAddr = sdk.ConsAddress(choicesArr[i])
+		if 0 < len(choicesArr) {
+			i := rand.Intn(len(choicesArr))
+			consumerConsAddr = sdk.ConsAddress(choicesArr[i])
+		} else {
+			fmt.Println(unmaturedVscIDs)
+			panic("done")
+		}
 	}
 
 	kind := stakingtypes.DoubleSign
@@ -265,30 +270,42 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 	s.simibc.DeliverPackets(s.chainID(chain), numPackets)
 }
 
-func (s *CoreSuite) fillKeymapHelp(chain string) {
-	if chain == P {
-		// If the provider ended a block then we should query the current vscid
-		k := s.providerKeeper()
-		vscid := k.GetValidatorSetUpdateId(s.ctx(P))
-		vscid -= 1 // The provider EndBlock does +=1 as a final step
-		mapping := map[string]providerkeeper.ConsumerPubKey{}
-		k.KeyMap(s.ctx(P), s.chainID(C)).Store.IteratePcaToCk(func(pca providerkeeper.ProviderConsAddr, ck providerkeeper.ConsumerPubKey) bool {
-			mapping[string(pca)] = ck
-			return false
-		})
-		valBonded := map[int64]bool{}
-		for j := int64(0); j < int64(initState.NumValidators); j++ {
-			status := s.validatorStatus(j)
-			valBonded[j] = status == stakingtypes.Bonded
+func (s *CoreSuite) fillKeymapHelp() {
+	// If the provider ended a block then we should query the current vscid
+	k := s.providerKeeper()
+	vscid := k.GetValidatorSetUpdateId(s.ctx(P))
+	vscid -= 1 // The provider EndBlock does +=1 as a final step
+	mapping := map[int64]providerkeeper.ConsumerPubKey{}
+	k.KeyMap(s.ctx(P), s.chainID(C)).Store.IteratePcaToCk(func(pca providerkeeper.ProviderConsAddr, ck providerkeeper.ConsumerPubKey) bool {
+		for i := int64(0); i < int64(initState.NumValidators); i++ {
+			consAddr := s.consAddr(i)
+			if consAddr.Equals(pca) {
+				mapping[i] = ck
+			}
 		}
-		s.keymapHelp[vscid] = KeyMapHelp{mapping: mapping, valBonded: valBonded}
+		return false
+	})
+	// if len(mapping) < initState.NumValidators {
+	// panic("not a full mapping")
+	// }
+	valBonded := map[int64]bool{}
+	for j := int64(0); j < int64(initState.NumValidators); j++ {
+		status := s.validatorStatus(j)
+		valBonded[j] = status == stakingtypes.Bonded
 	}
+	s.keymapHelp[vscid] = KeyMapHelp{mapping: mapping, valBonded: valBonded}
 }
 
 func (s *CoreSuite) endAndBeginBlock(chain string) {
 	s.simibc.EndAndBeginBlock(s.chainID(chain), initState.BlockSeconds, func() {
 		s.matchState()
-		s.fillKeymapHelp(chain)
+		if chain == P {
+			good := s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).InternalInvariants()
+			if !good {
+				panic("not good internal invariants")
+			}
+			s.fillKeymapHelp()
+		}
 	})
 }
 
@@ -348,7 +365,9 @@ func (s *CoreSuite) executeTrace() {
 			pk := s.providerValidatorPubKey(int64(j))
 			k := rand.Intn(50)
 			ck := testutil.GetTMCryptoPublicKeyFromSeed(uint64(k))
-			s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(pk, ck)
+			_ = pk
+			_ = ck
+			// s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(pk, ck)
 		}
 
 		switch a.Kind {
@@ -513,13 +532,14 @@ func (s *CoreSuite) TestAssumptions() {
 // Test a set of traces
 func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
-		Data: LoadTraces("traces.json"),
+		Data: LoadTraces("tracesAlt.json"),
 	}
-	// s.traces.Data = []TraceData{s.traces.Data[69]}
+	s.traces.Data = []TraceData{s.traces.Data[74]}
 	for i := range s.traces.Data {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
+			s.fillKeymapHelp()
 
 			s.traces.CurrentTraceIx = i
 			defer func() {
