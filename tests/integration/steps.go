@@ -14,21 +14,23 @@ func concatSteps(steps ...[]Step) []Step {
 }
 
 var happyPathSteps = concatSteps(
-	stepsStartChains("consu", false),
+	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
 	stepsUnbondRedelegate("consu"),
 	stepsDowntime("consu"),
-	stepsStopChain("consu"),
 )
 
 var democracySteps = concatSteps(
 	// democracySteps requires a transfer channel
-	stepsStartChains("democ", true),
+	stepsStartChains([]string{"democ"}, true),
 	stepsDelegate("democ"),
 	stepsDemocracy("democ"),
 )
 
-var doubleSignProviderSteps = concatSteps(
-	stepsStartChains("consu", false),
-	stepsDoubleSign("consu", "provi", "carol"),
-)
+func withSovereignChain(tr *TestRun, consumerNames []string) []Step {
+	return concatSteps(
+		stepsStartChains(consumerNames, false),
+		startSovereignChain(tr, append([]string{"provi"}, consumerNames...)),
+		stepsIBCSend(),
+	)
+}

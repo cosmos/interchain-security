@@ -34,6 +34,8 @@ type ChainConfig struct {
 	// Example: ".app_state.gov.voting_params.voting_period = \"5s\" | .app_state.slashing.params.signed_blocks_window = \"2\" | .app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\""
 	genesisChanges string
 	binaryName     string
+	// Maintains a mapping between chain names and ibc transfer channels.
+	transferChannels map[chainID]string
 }
 
 type ContainerConfig struct {
@@ -171,6 +173,17 @@ func DefaultTestRun() TestRun {
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+			},
+			chainID("sover"): {
+				chainId:        chainID("sover"),
+				binaryName:     "gaiad",
+				ipPrefix:       "7.7.1",
+				votingWaitTime: 10,
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"120s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.300000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"120s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
 		},

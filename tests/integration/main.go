@@ -32,10 +32,15 @@ func main() {
 	tr.ValidateStringLiterals()
 	tr.startDocker()
 
-	// dmc := DemocracyTestRun()
-	// dmc.SetLocalSDKPath(*localSdkPath)
-	// dmc.ValidateStringLiterals()
-	// dmc.startDocker()
+	dmc := DemocracyTestRun()
+	dmc.SetLocalSDKPath(*localSdkPath)
+	dmc.ValidateStringLiterals()
+	dmc.startDocker()
+
+	sov := DefaultTestRun()
+	sov.SetLocalSDKPath(*localSdkPath)
+	sov.ValidateStringLiterals()
+	sov.startDocker()
 
 	ds := DoubleSignTestRun()
 	ds.SetLocalSDKPath(*localSdkPath)
@@ -45,8 +50,11 @@ func main() {
 	wg.Add(1)
 	go tr.ExecuteSteps(&wg, happyPathSteps)
 
-	// wg.Add(1)
-	// go dmc.ExecuteSteps(&wg, democracySteps)
+	wg.Add(1)
+	go dmc.ExecuteSteps(&wg, democracySteps)
+
+	wg.Add(1)
+	go sov.ExecuteSteps(&wg, withSovereignChain(&tr, []string{}))
 
 	wg.Add(1)
 	go ds.ExecuteSteps(&wg, doubleSignProviderSteps)
@@ -99,6 +107,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.invokeDoublesignSlash(action, verbose)
 	case registerRepresentativeAction:
 		tr.registerRepresentative(action, verbose)
+	case sendIBCTokensAction:
+		tr.sendIBCTokens(action, verbose)
 	default:
 		log.Fatalf(fmt.Sprintf(`unknown action in testRun %s: %#v`, tr.name, action))
 	}

@@ -549,20 +549,32 @@ type addIbcConnectionAction struct {
 	chainB  chainID
 	clientA uint
 	clientB uint
-	order   string
+	// create new clients on both chains
+	createClients bool
 }
 
 func (tr TestRun) addIbcConnection(
 	action addIbcConnectionAction,
 	verbose bool,
 ) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
-		"create", "connection",
-		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
-		"--a-client", "07-tendermint-"+fmt.Sprint(action.clientA),
-		"--b-client", "07-tendermint-"+fmt.Sprint(action.clientB),
-	)
+	var cmd *exec.Cmd
+	if action.createClients {
+		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+		cmd = exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
+			"create", "connection",
+			"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
+			"--b-chain", string(tr.chainConfigs[action.chainB].chainId),
+		)
+	} else {
+		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+		cmd = exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
+			"create", "connection",
+			"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
+			"--a-client", "07-tendermint-"+fmt.Sprint(action.clientA),
+			"--b-client", "07-tendermint-"+fmt.Sprint(action.clientB),
+		)
+
+	}
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -597,22 +609,38 @@ type addIbcChannelAction struct {
 	portA       string
 	portB       string
 	order       string
+	// don't use configured channel version
+	// useful for non-ICS chains
+	noVersion bool
 }
 
 func (tr TestRun) addIbcChannel(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
-		"create", "channel",
-		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
-		"--a-connection", "connection-"+fmt.Sprint(action.connectionA),
-		"--a-port", action.portA,
-		"--b-port", action.portB,
-		"--channel-version", tr.containerConfig.ccvVersion,
-		"--order", action.order,
-	)
+	var cmd *exec.Cmd
+	if action.noVersion {
+		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+		cmd = exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
+			"create", "channel",
+			"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
+			"--a-connection", "connection-"+fmt.Sprint(action.connectionA),
+			"--a-port", action.portA,
+			"--b-port", action.portB,
+			"--order", action.order,
+		)
+	} else {
+		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+		cmd = exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
+			"create", "channel",
+			"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
+			"--a-connection", "connection-"+fmt.Sprint(action.connectionA),
+			"--a-port", action.portA,
+			"--b-port", action.portB,
+			"--channel-version", tr.containerConfig.ccvVersion,
+			"--order", action.order,
+		)
+	}
 
 	if verbose {
 		fmt.Println("addIbcChannel cmd:", cmd.String())
@@ -1052,4 +1080,47 @@ func (tr TestRun) invokeDoublesignSlash(
 		log.Fatal(err, "\n", string(bz))
 	}
 	tr.waitBlocks("provi", 10, 2*time.Minute)
+}
+
+type sendIBCTokensAction struct {
+	src    chainID
+	dst    chainID
+	from   validatorID
+	to     validatorID
+	amount uint
+}
+
+// sendIBCTokens makes an IBC token transfer
+func (tr TestRun) sendIBCTokens(action sendIBCTokensAction, verbose bool) {
+
+	transferChan, ok := tr.chainConfigs[action.src].transferChannels[action.dst]
+	if !ok {
+		log.Fatalf("%s chain missing transfer channel for destination: %s", action.src, action.dst)
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec",
+		tr.containerConfig.instanceName,
+		tr.chainConfigs[action.src].binaryName,
+		"tx", "ibc-transfer", "transfer", "transfer",
+		transferChan,
+		tr.validatorConfigs[action.to].delAddress,
+		fmt.Sprint(action.amount)+`stake`,
+		`--from`, tr.validatorConfigs[action.from].delAddress,
+		`--chain-id`, string(tr.chainConfigs[action.src].chainId),
+		`--home`, tr.getValidatorHome(action.src, action.from),
+		`--node`, tr.getValidatorNode(action.src, action.from),
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	)
+
+	if verbose {
+		fmt.Println("sendIBCTokens cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
 }
