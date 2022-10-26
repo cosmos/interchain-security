@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"math"
-	"sort"
 	"testing"
 	"time"
 
@@ -87,20 +86,6 @@ func (b *CoreSuite) providerKeeper() providerkeeper.Keeper {
 
 func (b *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
 	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
-}
-
-func (s *CoreSuite) consumerGreatestVscID() int64 {
-	// TODO: clean up..
-	unmaturedVscIDs := []int{}
-	s.consumerKeeper().IteratePacketMaturityTime(s.ctx(C), func(vscId, timeNs uint64) bool {
-		unmaturedVscIDs = append(unmaturedVscIDs, int(vscId)) // TODO: check validity of conversion
-		return false
-	})
-	sort.Ints(unmaturedVscIDs)
-	if 0 < len(unmaturedVscIDs) {
-		return int64(unmaturedVscIDs[len(unmaturedVscIDs)-1])
-	}
-	return -1
 }
 
 // height returns the height of the current header of chain
