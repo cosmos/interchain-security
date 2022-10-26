@@ -315,6 +315,8 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 		if b.initState.ValStates.Status[i] != stakingtypes.Bonded {
 			continue
 		}
+		// TODO: I think I can get in here and mimic this, and then things
+		// should work.
 		privVal := b.getValidatorPK(i)
 
 		pubKey, err := privVal.GetPubKey()
