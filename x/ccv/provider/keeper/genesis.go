@@ -76,14 +76,14 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 			}
 		}
 		if cs.KeyMap != nil {
-			for _, pkToCk := range cs.KeyMap.PkToCk {
-				k.KeyMap(ctx, cs.ChainId).Store.SetPcaToCk(*pkToCk.From, *pkToCk.To)
+			for _, pcaToCk := range cs.KeyMap.ProviderConsAddrToConsumerKey {
+				k.KeyMap(ctx, cs.ChainId).Store.SetPcaToCk(pcaToCk.ConsAddr, *pcaToCk.Key)
 			}
-			for _, ckToPk := range cs.KeyMap.CkToPk {
+			for _, ckToPk := range cs.KeyMap.ConsumerKeyToProviderKey {
 				k.KeyMap(ctx, cs.ChainId).Store.SetCkToPk(*ckToPk.From, *ckToPk.To)
 			}
-			for _, ckToMemo := range cs.KeyMap.CcaToLastUpdateMemo {
-				k.KeyMap(ctx, cs.ChainId).Store.SetCcaToLastUpdateMemo(ckToMemo.ConsAddr, *ckToMemo.LastUpdateMemo)
+			for _, ccaToLastUpdateMemo := range cs.KeyMap.ConsumerConsAddrToLastUpdateMemo {
+				k.KeyMap(ctx, cs.ChainId).Store.SetCcaToLastUpdateMemo(ccaToLastUpdateMemo.ConsAddr, *ccaToLastUpdateMemo.LastUpdateMemo)
 			}
 		}
 	}
@@ -131,19 +131,19 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 		keyMap := func() *ccv.KeyMap {
 			km := &ccv.KeyMap{}
-			km.PkToCk = []ccv.KeyToKey{}
-			km.CkToPk = []ccv.KeyToKey{}
-			km.CcaToLastUpdateMemo = []ccv.ConsAddrToLastUpdateMemo{}
-			k.KeyMap(ctx, chainID).Store.IteratePcaToCk(func(pk ProviderPubKey, ck ConsumerPubKey) bool {
-				km.PkToCk = append(km.PkToCk, ccv.KeyToKey{From: &pk, To: &ck})
+			km.ProviderConsAddrToConsumerKey = []ccv.ConsAddrToKey{}
+			km.ConsumerKeyToProviderKey = []ccv.KeyToKey{}
+			km.ConsumerConsAddrToLastUpdateMemo = []ccv.ConsAddrToLastUpdateMemo{}
+			k.KeyMap(ctx, chainID).Store.IteratePcaToCk(func(pca ProviderConsAddr, ck ConsumerPubKey) bool {
+				km.ProviderConsAddrToConsumerKey = append(km.ProviderConsAddrToConsumerKey, ccv.ConsAddrToKey{ConsAddr: pca, Key: &ck})
 				return false
 			})
 			k.KeyMap(ctx, chainID).Store.IterateCkToPk(func(ck ConsumerPubKey, pk ProviderPubKey) bool {
-				km.CkToPk = append(km.CkToPk, ccv.KeyToKey{From: &ck, To: &pk})
+				km.ConsumerKeyToProviderKey = append(km.ConsumerKeyToProviderKey, ccv.KeyToKey{From: &ck, To: &pk})
 				return false
 			})
 			k.KeyMap(ctx, chainID).Store.IterateCcaToLastUpdateMemo(func(ck ConsumerConsAddr, m ccv.LastUpdateMemo) bool {
-				km.CcaToLastUpdateMemo = append(km.CcaToLastUpdateMemo, ccv.ConsAddrToLastUpdateMemo{ConsAddr: ck, LastUpdateMemo: &m})
+				km.ConsumerConsAddrToLastUpdateMemo = append(km.ConsumerConsAddrToLastUpdateMemo, ccv.ConsAddrToLastUpdateMemo{ConsAddr: ck, LastUpdateMemo: &m})
 				return false
 			})
 

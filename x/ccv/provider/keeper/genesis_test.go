@@ -27,14 +27,14 @@ func TestIniAndExportGenesis(t *testing.T) {
 	params := types.DefaultParams()
 	keyMaps := []ccv.KeyMap{
 		{
-			PkToCk:              []ccv.KeyToKey{{From: &crypto.PublicKey{}, To: &crypto.PublicKey{}}},
-			CkToPk:              []ccv.KeyToKey{},
-			CcaToLastUpdateMemo: []ccv.ConsAddrToLastUpdateMemo{},
+			ProviderConsAddrToConsumerKey:    []ccv.ConsAddrToKey{{ConsAddr: sdk.ConsAddress{}, Key: &crypto.PublicKey{}}},
+			ConsumerKeyToProviderKey:         []ccv.KeyToKey{},
+			ConsumerConsAddrToLastUpdateMemo: []ccv.ConsAddrToLastUpdateMemo{},
 		},
 		{
-			PkToCk:              []ccv.KeyToKey{},
-			CkToPk:              []ccv.KeyToKey{},
-			CcaToLastUpdateMemo: []ccv.ConsAddrToLastUpdateMemo{},
+			ProviderConsAddrToConsumerKey:    []ccv.ConsAddrToKey{},
+			ConsumerKeyToProviderKey:         []ccv.KeyToKey{},
+			ConsumerConsAddrToLastUpdateMemo: []ccv.ConsAddrToLastUpdateMemo{},
 		},
 	}
 
@@ -118,9 +118,9 @@ func TestIniAndExportGenesis(t *testing.T) {
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, pGenesis.Params, pk.GetParams(ctx))
 
-	_, found = pk.KeyMap(ctx, cChainIDs[0]).Store.GetPcaToCk(crypto.PublicKey{})
+	_, found = pk.KeyMap(ctx, cChainIDs[0]).Store.GetPcaToCk(sdk.ConsAddress{})
 	require.True(t, found)
-	_, found = pk.KeyMap(ctx, cChainIDs[1]).Store.GetPcaToCk(crypto.PublicKey{})
+	_, found = pk.KeyMap(ctx, cChainIDs[1]).Store.GetPcaToCk(sdk.ConsAddress{})
 	require.False(t, found)
 
 	// check provider chain's consumer chain states

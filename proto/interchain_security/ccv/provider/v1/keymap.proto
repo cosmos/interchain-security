@@ -16,7 +16,7 @@ message LastUpdateMemo {
 
 message ConsAddrToKey {
   bytes cons_addr = 1;
-  tendermint.crypto.PublicKey to = 2;
+  tendermint.crypto.PublicKey key = 2;
 }
 
 message KeyToKey {
