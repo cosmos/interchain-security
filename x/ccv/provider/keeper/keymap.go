@@ -122,6 +122,22 @@ func MakeKeyMap(store Store) KeyMap {
 	}
 }
 
+func (e *KeyMap) SetProviderPubKeyToConsumerPubKey(pk ProviderPubKey, ck ConsumerPubKey) error {
+	if _, ok := e.Store.GetCkToPk(ck); ok {
+		return errors.New(`cannot reuse key which is in use or was recently in use`)
+	}
+	if _, ok := e.Store.GetCcaToLastUpdateMemo(PubKeyToConsAddr(ck)); ok {
+		return errors.New(`cannot reuse key which is in use or was recently in use`)
+	}
+	pca := PubKeyToConsAddr(pk)
+	if oldCk, ok := e.Store.GetPcaToCk(pca); ok {
+		e.Store.DelCkToPk(oldCk)
+	}
+	e.Store.SetPcaToCk(pca, ck)
+	e.Store.SetCkToPk(ck, pk)
+	return nil
+}
+
 func (e *KeyMap) DeleteProviderKey(pca ProviderConsAddr) error {
 	// TODO: document expensive operation
 	if ck, ok := e.Store.GetPcaToCk(pca); ok {
@@ -139,22 +155,6 @@ func (e *KeyMap) DeleteProviderKey(pca ProviderConsAddr) error {
 	for _, cca := range toDelete {
 		e.Store.DelCcaToLastUpdateMemo(cca)
 	}
-	return nil
-}
-
-func (e *KeyMap) SetProviderPubKeyToConsumerPubKey(pk ProviderPubKey, ck ConsumerPubKey) error {
-	if _, ok := e.Store.GetCkToPk(ck); ok {
-		return errors.New(`cannot reuse key which is in use or was recently in use`)
-	}
-	if _, ok := e.Store.GetCcaToLastUpdateMemo(PubKeyToConsAddr(ck)); ok {
-		return errors.New(`cannot reuse key which is in use or was recently in use`)
-	}
-	pca := PubKeyToConsAddr(pk)
-	if oldCk, ok := e.Store.GetPcaToCk(pca); ok {
-		e.Store.DelCkToPk(oldCk)
-	}
-	e.Store.SetPcaToCk(pca, ck)
-	e.Store.SetCkToPk(ck, pk)
 	return nil
 }
 

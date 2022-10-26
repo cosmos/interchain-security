@@ -11,7 +11,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -203,17 +202,12 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 }
 
 // TODO: should this be a panic or an error?
-func GetSlashingProviderConsAddr(keymap *KeyMap, consumerConsAddress sdk.ConsAddress) (sdk.ConsAddress, error) {
+func GetProviderConsAddr(keymap *KeyMap, consumerConsAddress sdk.ConsAddress) (sdk.ConsAddress, error) {
 	providerPublicKey, found := keymap.GetProviderPubKeyFromConsumerConsAddress(consumerConsAddress)
 	if !found {
 		return nil, errors.New("could not find provider address for slashing")
 	}
-	pk, err := cryptocodec.FromTmProtoPublicKey(providerPublicKey)
-	if err != nil {
-		panic("could not get sdk public key from tendermint proto public key for slashing")
-	}
-	return sdk.GetConsAddress(pk), nil
-
+	return PubKeyToConsAddr(providerPublicKey), nil
 }
 
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type
@@ -234,7 +228,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// TODO: document better
 	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
-	providerConsAddr, err := GetSlashingProviderConsAddr(k.KeyMap(ctx, chainID), consumerConsAddr)
+	providerConsAddr, err := GetProviderConsAddr(k.KeyMap(ctx, chainID), consumerConsAddr)
 	if err != nil {
 		return false, nil
 	}
