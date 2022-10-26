@@ -1,23 +1,23 @@
 package keeper_test
 
 import (
-	cryptoEd25519 "crypto/ed25519"
-	"encoding/binary"
 	"math/rand"
 	"testing"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/ibc-go/v3/testing/mock"
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	testutil "github.com/cosmos/interchain-security/testutil/sample"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
+
+func key(k uint64) crypto.PublicKey {
+	return testutil.GetTMCryptoPublicKeyFromSeed(k)
+}
 
 // TODO: all the map lookups are probably gonna fail because the objects are different
 
@@ -34,30 +34,6 @@ const NUM_VALS = 4
 // Number of consumer keys in the universe
 // (This is constrained to ensure overlap edge cases are tested)
 const NUM_CKS = 50
-
-func fromSeed(seed []byte) crypto.PublicKey {
-	//lint:ignore SA1019 We don't care because this is only a test.
-	privKey := mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
-	pubKey, err := privKey.GetPubKey()
-	if err != nil {
-		panic(err)
-	}
-	sdkVer, err := cryptocodec.FromTmPubKeyInterface(pubKey)
-	if err != nil {
-		panic(err)
-	}
-	pk, err := cryptocodec.ToTmProtoPublicKey(sdkVer)
-	if err != nil {
-		panic(err)
-	}
-	return pk
-}
-
-func key(i uint64) crypto.PublicKey {
-	seed := []byte("AAAAAAAAabcdefghijklmnopqrstuvwx") // 8+24 bytes
-	binary.LittleEndian.PutUint64(seed[:8], i)
-	return fromSeed(seed)
-}
 
 type keyMapEntry struct {
 	pk keeper.ProviderPubKey

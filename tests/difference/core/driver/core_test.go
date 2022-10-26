@@ -24,6 +24,7 @@ import (
 	"math/rand"
 
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
+	testutil "github.com/cosmos/interchain-security/testutil/sample"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 )
@@ -345,9 +346,9 @@ func (s *CoreSuite) executeTrace() {
 			// TODO:
 			j := rand.Intn(initState.NumValidators)
 			pk := s.providerValidatorPubKey(int64(j))
-			ck :=
-				s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey()
-
+			k := rand.Intn(50)
+			ck := testutil.GetTMCryptoPublicKeyFromSeed(uint64(k))
+			s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(pk, ck)
 		}
 
 		switch a.Kind {
