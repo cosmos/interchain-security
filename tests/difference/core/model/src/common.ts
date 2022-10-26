@@ -86,6 +86,7 @@ type ConsumerSlash = {
   val: Validator;
   infractionHeight: number;
   isDowntime: boolean;
+  vscid: number;
 };
 
 type UpdateClient = {
@@ -107,6 +108,7 @@ type EndAndBeginBlock = {
 type InvariantSnapshot = {
   h: Record<Chain, number>;
   t: Record<Chain, number>;
+  lastVscid: Record<Chain, number>;
   tokens: number[];
   status: Status[];
   undelegationQ: Undelegation[];

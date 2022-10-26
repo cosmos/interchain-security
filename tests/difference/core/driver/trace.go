@@ -17,6 +17,7 @@ type Action struct {
 	Kind             string `json:"kind"`
 	NumPackets       int    `json:"numPackets,omitempty"`
 	Val              int    `json:"val,omitempty"`
+	Vscid            int    `json:"vscid,omitempty"`
 }
 
 type Consequence struct {

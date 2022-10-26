@@ -147,7 +147,13 @@ class ActionGenerator {
   do = (a: Action) => {
     // Update internal state to prevent jailing all validators
     if (a.kind === 'ConsumerSlash') {
-      this.didSlash[(a as ConsumerSlash).val] = true;
+      const val = (a as ConsumerSlash).val;
+      this.didSlash[val] = true;
+      const vscids = this.model.blocks.getSlashableValidators().get(val);
+      const items = Array.from(vscids as Set<number>);
+      const vscid = items[Math.floor(Math.random() * items.length)];
+      (a as ConsumerSlash).vscid = vscid;
+      // console.log((a as ConsumerSlash).val, (a as ConsumerSlash).vscid);
     }
     // Update internal state to prevent expiring light clients
     // Client is also updated for Deliver, because this is needed in practice

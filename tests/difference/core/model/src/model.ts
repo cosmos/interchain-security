@@ -631,6 +631,10 @@ class Model {
     return cloneDeep({
       h: this.h,
       t: this.t,
+      lastVscid: {
+        provider: this.ccvP.vscID,
+        consumer: this.ccvC.hToVscID[this.h[C] + 1],
+      },
       tokens: this.staking.tokens,
       status: this.staking.status,
       undelegationQ: this.staking.undelegationQ,

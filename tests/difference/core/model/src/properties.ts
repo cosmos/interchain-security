@@ -146,21 +146,28 @@ class BlockHistory {
     this.blocks[chain].set(h, b);
   };
 
-  getSlashableValidators = (): Set<number> => {
+  getSlashableValidators = (): Map<number, Set<number>> => {
     const greatestCommittedConsumerHeight = _.max(
       Array.from(this.blocks[C].keys()),
     );
-    const lastBlockSnapshot = this.blocks[C].get(
+    const lastBlockSS = this.blocks[C].get(
       greatestCommittedConsumerHeight,
     )?.invariantSnapshot!;
-    const greatestCommittedConsumerTime = lastBlockSnapshot.t[C];
-    const validators = new Set<number>();
+
+    const validators = new Map<number, Set<number>>();
+
     for (let [_, block] of this.blocks[C]) {
-      const t = block.invariantSnapshot.t[C];
-      if (greatestCommittedConsumerTime < t + UNBONDING_SECONDS_C) {
-        block.invariantSnapshot.consumerPower.forEach((power, i) => {
+      const ss = block.invariantSnapshot;
+      const t = ss.t[C];
+      if (lastBlockSS.t[C] < t + UNBONDING_SECONDS_C) {
+        ss.consumerPower.forEach((power, i) => {
           if (power !== undefined) {
-            validators.add(i);
+            if (!validators.has(i)) {
+              validators.set(i, new Set<number>());
+            }
+            const set = validators.get(i);
+            const vscid = ss.lastVscid[C];
+            set?.add(vscid);
           }
         });
       }
