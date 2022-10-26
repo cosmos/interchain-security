@@ -146,29 +146,27 @@ class BlockHistory {
     this.blocks[chain].set(h, b);
   };
 
-  /**
-   * Get the valset on the consumer chain when the consumer
-   * was up-to-date to vscid, in a committed block.
-   * @param vscid
-   */
-  getConsumerValset = (
-    vscid: number,
-  ): (number | undefined)[] | undefined => {
-    // TODO: this and it's usage is extremely inefficient
+  getSlashableValidators = (): Set<number> => {
     const greatestCommittedConsumerHeight = _.max(
       Array.from(this.blocks[C].keys()),
     );
-    const hToVscID = this.blocks[C].get(greatestCommittedConsumerHeight)
-      ?.invariantSnapshot?.hToVscID!;
-    let h = -1;
-    for (const [key, value] of Object.entries(hToVscID)) {
-      if (value === vscid) {
-        h = parseInt(key);
-        break;
+    const lastBlockSnapshot = this.blocks[C].get(
+      greatestCommittedConsumerHeight,
+    )?.invariantSnapshot!;
+    const greatestCommittedConsumerTime = lastBlockSnapshot.t[C];
+    const validators = new Set<number>();
+    for (let [_, block] of this.blocks[C]) {
+      const t = block.invariantSnapshot.t[C];
+      if (greatestCommittedConsumerTime < t + UNBONDING_SECONDS_C) {
+        block.invariantSnapshot.consumerPower.forEach((power, i) => {
+          if (power !== undefined) {
+            validators.add(i);
+          }
+        });
       }
     }
-    const commitH = h - 1;
-    return this.blocks[C].get(commitH)?.invariantSnapshot?.consumerPower!;
+    // console.log(Array.from(validators.values()));
+    return validators;
   };
 }
 

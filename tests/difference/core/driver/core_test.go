@@ -31,8 +31,8 @@ import (
 
 type KeyMapHelp struct {
 	// Map validators to the consumer pub key at a particular time
-	mapping   map[int64]providerkeeper.ConsumerPubKey
-	valBonded map[int64]bool
+	mapping          map[int64]providerkeeper.ConsumerPubKey
+	valPositivePower map[int64]bool
 }
 
 type CoreSuite struct {
@@ -92,6 +92,20 @@ func (b *CoreSuite) providerKeeper() providerkeeper.Keeper {
 
 func (b *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
 	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
+}
+
+func (s *CoreSuite) consumerGreatestVscID() int64 {
+	// TODO: clean up..
+	unmaturedVscIDs := []int{}
+	s.consumerKeeper().IteratePacketMaturityTime(s.ctx(C), func(vscId, timeNs uint64) bool {
+		unmaturedVscIDs = append(unmaturedVscIDs, int(vscId)) // TODO: check validity of conversion
+		return false
+	})
+	sort.Ints(unmaturedVscIDs)
+	if 0 < len(unmaturedVscIDs) {
+		return int64(unmaturedVscIDs[len(unmaturedVscIDs)-1])
+	}
+	return -1
 }
 
 // height returns the height of the current header of chain
@@ -213,13 +227,13 @@ func (s *CoreSuite) consumerSlash(val int64, h int64, isDowntime bool) {
 			return false
 		})
 		sort.Ints(unmaturedVscIDs)
-		if 0 < len(unmaturedVscIDs) {
-			unmaturedVscIDs = unmaturedVscIDs[:len(unmaturedVscIDs)-1]
-		}
+		// if 0 < len(unmaturedVscIDs) {
+		// unmaturedVscIDs = unmaturedVscIDs[:len(unmaturedVscIDs)-1]
+		// }
 		choices := map[string]bool{}
 		for _, vscid := range unmaturedVscIDs {
 			help := s.keymapHelp[uint64(vscid)]
-			if help.valBonded[val] {
+			if help.valPositivePower[val] {
 				ck := help.mapping[val]
 				cca := providerkeeper.PubKeyToConsAddr(ck)
 				choices[string(cca)] = true
@@ -270,11 +284,8 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 	s.simibc.DeliverPackets(s.chainID(chain), numPackets)
 }
 
-func (s *CoreSuite) fillKeymapHelp() {
-	// If the provider ended a block then we should query the current vscid
+func (s *CoreSuite) getKeymapHelp() KeyMapHelp {
 	k := s.providerKeeper()
-	vscid := k.GetValidatorSetUpdateId(s.ctx(P))
-	vscid -= 1 // The provider EndBlock does +=1 as a final step
 	mapping := map[int64]providerkeeper.ConsumerPubKey{}
 	k.KeyMap(s.ctx(P), s.chainID(C)).Store.IteratePcaToCk(func(pca providerkeeper.ProviderConsAddr, ck providerkeeper.ConsumerPubKey) bool {
 		for i := int64(0); i < int64(initState.NumValidators); i++ {
@@ -285,15 +296,11 @@ func (s *CoreSuite) fillKeymapHelp() {
 		}
 		return false
 	})
-	// if len(mapping) < initState.NumValidators {
-	// panic("not a full mapping")
-	// }
-	valBonded := map[int64]bool{}
+	valPositivePower := map[int64]bool{}
 	for j := int64(0); j < int64(initState.NumValidators); j++ {
-		status := s.validatorStatus(j)
-		valBonded[j] = status == stakingtypes.Bonded
+		valPositivePower[j] = 0 < s.providerTokens(j)
 	}
-	s.keymapHelp[vscid] = KeyMapHelp{mapping: mapping, valBonded: valBonded}
+	return KeyMapHelp{mapping: mapping, valPositivePower: valPositivePower}
 }
 
 func (s *CoreSuite) endAndBeginBlock(chain string) {
@@ -304,7 +311,10 @@ func (s *CoreSuite) endAndBeginBlock(chain string) {
 			if !good {
 				panic("not good internal invariants")
 			}
-			s.fillKeymapHelp()
+			k := s.providerKeeper()
+			vscid := k.GetValidatorSetUpdateId(s.ctx(P))
+			vscid -= 1 // The provider EndBlock does +=1 as a final step, TODO: think need to move this
+			s.keymapHelp[vscid] = s.getKeymapHelp()
 		}
 	})
 }
@@ -428,6 +438,8 @@ func (s *CoreSuite) TestAssumptions() {
 	s.Require().Equal(stakeParams.UnbondingTime, initState.UnbondingP)
 	// Consumer unbonding period is correct
 	s.Require().Equal(s.consumerKeeper().UnbondingTime(s.ctx(C)), initState.UnbondingC)
+	// Consumer last vscid seen is correct
+	s.Require().Equal(s.consumerGreatestVscID(), 42)
 
 	// Each validator has signing info
 	for i := 0; i < len(initState.ValStates.Tokens); i++ {
@@ -534,12 +546,12 @@ func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
 		Data: LoadTraces("tracesAlt.json"),
 	}
-	s.traces.Data = []TraceData{s.traces.Data[74]}
+	// s.traces.Data = []TraceData{s.traces.Data[74]}
 	for i := range s.traces.Data {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
-			s.fillKeymapHelp()
+			s.keymapHelp = map[uint64]KeyMapHelp{}
 
 			s.traces.CurrentTraceIx = i
 			defer func() {
@@ -572,5 +584,4 @@ func (s *CoreSuite) SetupTest() {
 	s.offsetHeight = offsetHeight
 	s.offsetTimeUnix = offsetTimeUnix
 	s.simibc = simibc.MakeRelayedPath(s.Suite.T(), path)
-	s.keymapHelp = map[uint64]KeyMapHelp{}
 }

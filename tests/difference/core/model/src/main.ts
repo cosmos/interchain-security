@@ -115,28 +115,10 @@ class ActionGenerator {
       return true;
     }
     if (a.kind === 'ConsumerSlash') {
-      const maturingVscs = Array.from(
-        this.model.ccvC.maturingVscs.keys(),
-      );
-      const valSets = maturingVscs
-        .sort()
-        .slice(1, -1)
-        .map((vscid) => this.model.hist.getConsumerValset(vscid))
-        .filter((valset) => valset !== undefined) as (
-        | number
-        | undefined
-      )[][];
-      const slashableValidators = new Set();
-      valSets.forEach((valset) => {
-        valset.forEach((power, i) => {
-          if (power !== undefined) {
-            console.log(`powa`, power);
-            slashableValidators.add(i);
-          }
-        });
-      });
       return (
-        slashableValidators.has((a as ConsumerSlash).val) &&
+        this.model.blocks
+          .getSlashableValidators()
+          .has((a as ConsumerSlash).val) &&
         2 <= this.didSlash.filter((x) => !x).length
       );
     }
