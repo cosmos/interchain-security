@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"math"
+	"sort"
 	"testing"
 	"time"
 
@@ -20,12 +21,16 @@ import (
 
 	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 
+	"math/rand"
+
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 )
 
 type KeyMapHelp struct {
+	mapping   map[string]providerkeeper.ConsumerPubKey
+	valBonded map[int64]bool
 }
 
 type CoreSuite struct {
@@ -206,14 +211,45 @@ func (s *CoreSuite) undelegate(val int64, amt int64) {
 
 // consumerSlash simulates a slash event occurring on the consumer chain.
 // It can be for a downtime or doublesign.
-func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool) {
+func (s *CoreSuite) consumerSlash(val int64, h int64, isDowntime bool) {
+	providerConsAddr := s.consAddr(val)
+	var consumerConsAddr sdk.ConsAddress
+
+	{
+		// TODO: clean up..
+		unmaturedVscIDs := []int{}
+		s.consumerKeeper().IteratePacketMaturityTime(s.ctx(C), func(vscId, timeNs uint64) bool {
+			unmaturedVscIDs = append(unmaturedVscIDs, int(vscId)) // TODO: check validity of conversion
+			return false
+		})
+		sort.Ints(unmaturedVscIDs)
+		if 0 < len(unmaturedVscIDs) {
+			unmaturedVscIDs = unmaturedVscIDs[:len(unmaturedVscIDs)-1]
+		}
+		choices := map[string]bool{}
+		for _, vscid := range unmaturedVscIDs {
+			help := s.keymapHelp[uint64(vscid)]
+			if help.valBonded[val] {
+				ck := help.mapping[string(providerConsAddr)]
+				cca := providerkeeper.PubKeyToConsAddr(ck)
+				choices[string(cca)] = true
+			}
+		}
+		choicesArr := []string{}
+		for k := range choices {
+			choicesArr = append(choicesArr, k)
+		}
+		i := rand.Intn(len(choicesArr))
+		consumerConsAddr = sdk.ConsAddress(choicesArr[i])
+	}
+
 	kind := stakingtypes.DoubleSign
 	if isDowntime {
 		kind = stakingtypes.Downtime
 	}
 	ctx := s.ctx(C)
 	before := len(ctx.EventManager().Events())
-	s.consumerKeeper().Slash(ctx, val, h, 0, sdk.Dec{}, kind)
+	s.consumerKeeper().Slash(ctx, consumerConsAddr, h, 0, sdk.Dec{}, kind)
 	// consumer module emits packets on slash, so these must be collected.
 	evts := ctx.EventManager().ABCIEvents()
 	for _, e := range evts[before:] {
@@ -250,7 +286,12 @@ func (s *CoreSuite) fillKeymapHelp(chain string) {
 			mapping[string(pca)] = ck
 			return false
 		})
-
+		valBonded := map[int64]bool{}
+		for j := int64(0); j < int64(initState.NumValidators); j++ {
+			status := s.validatorStatus(j)
+			valBonded[j] = status == stakingtypes.Bonded
+		}
+		s.keymapHelp[vscid] = KeyMapHelp{mapping: mapping, valBonded: valBonded}
 	}
 }
 
@@ -311,6 +352,11 @@ func (s *CoreSuite) executeTrace() {
 
 		a := s.traces.Action()
 
+		if rand.Intn(100) < 10 {
+			// TODO:
+			// s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey()
+		}
+
 		switch a.Kind {
 		case "Delegate":
 			s.delegate(
@@ -324,7 +370,7 @@ func (s *CoreSuite) executeTrace() {
 			)
 		case "ConsumerSlash":
 			s.consumerSlash(
-				s.consAddr(int64(a.Val)),
+				int64(a.Val),
 				// The SUT height is greater than the model height
 				// because the SUT has to do initialization.
 				int64(a.InfractionHeight)+s.offsetHeight,
@@ -512,4 +558,5 @@ func (s *CoreSuite) SetupTest() {
 	s.offsetHeight = offsetHeight
 	s.offsetTimeUnix = offsetTimeUnix
 	s.simibc = simibc.MakeRelayedPath(s.Suite.T(), path)
+	s.keymapHelp = map[uint64]KeyMapHelp{}
 }
