@@ -124,7 +124,7 @@ func (d *driver) applyKeyMapEntries(entries []keyMapEntry) {
 	}
 	// Duplicate the mapping for referencing later in tests.
 	copy := map[keeper.ProviderPubKey]keeper.ConsumerPubKey{}
-	d.km.Store.IteratePcaToCk(func(pk, ck keeper.ConsumerPubKey) bool {
+	d.km.Store.IteratePcaToCk(func(pca keeper.ProviderConsAddr, ck keeper.ConsumerPubKey) bool {
 		copy[pk] = ck
 		return false
 	})
