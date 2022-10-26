@@ -10,6 +10,7 @@ import (
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
@@ -74,11 +75,11 @@ func TestIniAndExportGenesis(t *testing.T) {
 			UnbondingConsumerChains: []string{cChainIDs[0]},
 		}},
 		&ccv.MaturedUnbondingOps{Ids: ubdIndex},
-		[]providertypes.ConsumerAdditionProposal{providertypes.ConsumerAdditionProposal{
+		[]providertypes.ConsumerAdditionProposal{types.ConsumerAdditionProposal{
 			ChainId:   cChainIDs[0],
 			SpawnTime: oneHourFromNow,
 		}},
-		[]providertypes.ConsumerRemovalProposal{providertypes.ConsumerRemovalProposal{
+		[]providertypes.ConsumerRemovalProposal{types.ConsumerRemovalProposal{
 			ChainId:  cChainIDs[0],
 			StopTime: oneHourFromNow,
 		}},
