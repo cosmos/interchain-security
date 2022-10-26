@@ -42,9 +42,9 @@ type CoreSuite struct {
 
 	// offsets: the model time and heights start at 0
 	// so offsets are needed for comparisons.
-	offsetTimeUnix int64
-	offsetHeight   int64
-	offsetVscid    int64
+	offsetTimeUnix      int64
+	offsetHeight        int64
+	offsetProviderVscId uint64
 
 	// Maps vscid to data needed to check keymapping
 	vscidToMapping map[uint64]map[int64]providerkeeper.ConsumerPubKey
@@ -196,9 +196,9 @@ func (s *CoreSuite) undelegate(val int64, amt int64) {
 
 // consumerSlash simulates a slash event occurring on the consumer chain.
 // It can be for a downtime or doublesign.
-func (s *CoreSuite) consumerSlash(val int64, vscid int64, h int64, isDowntime bool) {
-	var consumerConsAddr sdk.ConsAddress
-	//TODO:
+func (s *CoreSuite) consumerSlash(val int64, vscid uint64, h int64, isDowntime bool) {
+	consumerPubKey := s.vscidToMapping[vscid+s.offsetProviderVscId][val]
+	consumerConsAddr := providerkeeper.PubKeyToConsAddr(consumerPubKey)
 
 	kind := stakingtypes.DoubleSign
 	if isDowntime {
@@ -338,7 +338,7 @@ func (s *CoreSuite) executeTrace() {
 		case "ConsumerSlash":
 			s.consumerSlash(
 				int64(a.Val),
-				int64(a.Vscid),
+				uint64(a.Vscid),
 				// The SUT height is greater than the model height
 				// because the SUT has to do initialization.
 				int64(a.InfractionHeight)+s.offsetHeight,
@@ -385,7 +385,7 @@ func (s *CoreSuite) TestAssumptions() {
 	s.Require().Equal(s.consumerKeeper().UnbondingTime(s.ctx(C)), initState.UnbondingC)
 
 	// Provider last vscid is correct
-	s.Require().Equal(int(s.offsetVscid), int(s.providerKeeper().GetValidatorSetUpdateId(s.ctx(P))))
+	s.Require().Equal(int(s.offsetProviderVscId), int(s.providerKeeper().GetValidatorSetUpdateId(s.ctx(P))))
 
 	// Each validator has signing info
 	for i := 0; i < len(initState.ValStates.Tokens); i++ {
@@ -498,6 +498,7 @@ func (s *CoreSuite) TestTraces() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
 			s.vscidToMapping = map[uint64]map[int64]providerkeeper.ConsumerPubKey{}
+			s.vscidToMapping[s.offsetProviderVscId] = s.getMapping()
 
 			s.traces.CurrentTraceIx = i
 			defer func() {
@@ -529,6 +530,6 @@ func (s *CoreSuite) SetupTest() {
 	s.valAddresses = valAddresses
 	s.offsetHeight = offsetHeight
 	s.offsetTimeUnix = offsetTimeUnix
-	s.offsetVscid = 32 // TODO: do properly
+	s.offsetProviderVscId = 32 // TODO: do properly
 	s.simibc = simibc.MakeRelayedPath(s.Suite.T(), path)
 }
