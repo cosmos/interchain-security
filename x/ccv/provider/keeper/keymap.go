@@ -78,6 +78,7 @@ Current testing status
 type VSCID = uint64
 type ProviderPubKey = crypto.PublicKey
 type ConsumerPubKey = crypto.PublicKey
+type ProviderConsAddr = sdk.ConsAddress
 type ConsumerConsAddr = sdk.ConsAddress
 
 func DeterministicStringify(k crypto.PublicKey) string {
@@ -121,12 +122,10 @@ func MakeKeyMap(store Store) KeyMap {
 	}
 }
 
-// func (e *KeyMap) DeleteProviderKey(pk ProviderPubKey) error {
-// 	if ck, ok := e.Store.GetPkToCk(pk); ok {
-// 		e.Store.DelCkToPk(ck)
-// 	}
-// 	e.Store.DelPkToCk(pk)
-// }
+func (e *KeyMap) DeleteProviderKey(pca ProviderConsAddr) error {
+	// TODO:
+	return nil
+}
 
 func (e *KeyMap) SetProviderPubKeyToConsumerPubKey(pk ProviderPubKey, ck ConsumerPubKey) error {
 	if _, ok := e.Store.GetCkToPk(ck); ok {
