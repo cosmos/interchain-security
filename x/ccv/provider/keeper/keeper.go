@@ -778,27 +778,43 @@ func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
 	store.Delete(types.ChainToClientKey(chainID))
 }
 
-// InsertPendingSlashPacket inserts a slash packet into the pending slash packet queue
-// TODO: see what happens when two slash packets are appended for different chains at same timestamp
-func (k Keeper) InsertPendingSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
+// QueuePendingSlashPacket inserts a slash packet into the pending slash packet queue
+func (k Keeper) QueuePendingSlashPacket(ctx sdk.Context, packet types.SlashPacket) {
 	store := ctx.KVStore(k.storeKey)
-	dataBz := k.cdc.MustMarshal(&data)
-	store.Set(types.PendingSlashPacketKey(ctx.BlockTime(), data, chainID), dataBz)
+	dataBz := k.cdc.MustMarshal(&packet.Data)
+	store.Set(types.PendingSlashPacketKey(packet), dataBz)
+}
+
+// DeletePendingSlashPacket deletes a slash packet from the pending slash packet queue
+func (k Keeper) DeletePendingSlashPacket(ctx sdk.Context, packet types.SlashPacket) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.PendingSlashPacketKey(packet))
+}
+
+// GetAllPendingSlashPackets returns all pending slash packets as an ordered list
+// This method is used for testing purposes only
+func (k Keeper) GetAllPendingSlashPackets(ctx sdk.Context) (packets []types.SlashPacket) {
+	k.IteratePendingSlashPackets(ctx, func(packet types.SlashPacket) bool {
+		packets = append(packets, packet)
+		return false
+	})
+	return packets
 }
 
 // TODO: the below method will be used to handle slash packets as defined in spec
 // Use shim from this callback to handleSlashPacket
 
 // IteratePendingSlashPackets iterates over the pending slash packets queue and calls the provided callback
-func (k Keeper) IteratePendingSlashPackets(ctx sdk.Context, cb func(chainID string, data ccv.SlashPacketData) bool) {
+func (k Keeper) IteratePendingSlashPackets(ctx sdk.Context, cb func(types.SlashPacket) bool) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingSlashPacketBytePrefix})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		chainID := types.ParsePendingSlashPacketKey(iterator.Key())
+		recvTime, chainID := types.ParsePendingSlashPacketKey(iterator.Key())
 		var data ccv.SlashPacketData
 		k.cdc.MustUnmarshal(iterator.Value(), &data)
-		if cb(chainID, data) {
+		packet := types.NewSlashPacket(recvTime, chainID, data)
+		if cb(packet) {
 			break
 		}
 	}

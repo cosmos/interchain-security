@@ -9,7 +9,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 type Status int
@@ -263,35 +262,39 @@ func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return append([]byte{LockUnbondingOnTimeoutBytePrefix}, []byte(chainID)...)
 }
 
-// PendingSlashPacketKey returns the key under which pending slash packet data
-// is stored for a given timestamp, val address, and chainID.
+// PendingSlashPacketKey returns the key under which a pending slash packet is stored
 //
 // Note: It's not expected for a single consumer chain to send a slash packet for the
 // same validator more than once in the same block. Hence why this key should be
 // unique per slash packet.
-func PendingSlashPacketKey(recvTime time.Time, data ccv.SlashPacketData, chainID string) []byte {
-	timeBz := sdk.FormatTimeBytes(recvTime)
+func PendingSlashPacketKey(packet SlashPacket) []byte {
+	timeBz := sdk.FormatTimeBytes(packet.RecvTime)
 	timeBzL := len(timeBz)
 	return AppendMany(
 		[]byte{PendingSlashPacketBytePrefix},
 		sdk.Uint64ToBigEndian(uint64(timeBzL)),
 		timeBz,
-		HashBytes(data.Validator.Address),
-		[]byte(chainID),
+		HashBytes(packet.Data.Validator.Address),
+		[]byte(packet.ConsumerChainID),
 	)
 }
 
-// ParsePendingSlashPacketKey returns the chain ID for a pending slash packet key
-func ParsePendingSlashPacketKey(bz []byte) string {
+// ParsePendingSlashPacketKey returns the received time and chainID for a pending slash packet key
+func ParsePendingSlashPacketKey(bz []byte) (time.Time, string) {
+	// Prefix is in first byte
 	expectedPrefix := []byte{PendingSlashPacketBytePrefix}
-	prefixL := len(expectedPrefix)
-	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
+	if prefix := bz[:1]; !bytes.Equal(prefix, expectedPrefix) {
 		panic(fmt.Sprintf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix))
 	}
-	timeBzL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	// 8 bytes for uint64 storing timestamp length
+	timeBzL := sdk.BigEndianToUint64(bz[1:9])
+	recvTime, err := sdk.ParseTimeBytes(bz[9 : 9+timeBzL])
+	if err != nil {
+		panic(err)
+	}
 	// ChainID is stored after 32 byte hashed validator address
-	chainID := string(bz[prefixL+8+int(timeBzL)+32:])
-	return chainID
+	chainID := string(bz[9+int(timeBzL)+32:])
+	return recvTime, chainID
 }
 
 // AppendMany appends a variable number of byte slices together

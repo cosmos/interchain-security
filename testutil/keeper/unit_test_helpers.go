@@ -4,6 +4,7 @@ import (
 	"testing"
 	time "time"
 
+	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -15,6 +16,7 @@ import (
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/crypto"
@@ -185,6 +187,13 @@ type PrivateKey struct {
 func GenPubKey() (crypto.PubKey, error) {
 	privKey := PrivateKey{ed25519.GenPrivKey()}
 	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
+}
+
+// Obtains slash packet data with a newly generated key
+func GetNewSlashPacketData() ccvtypes.SlashPacketData {
+	return ccvtypes.SlashPacketData{Validator: abci.Validator{
+		Address: ed25519.GenPrivKey().PubKey().Address(), Power: 100},
+		ValsetUpdateId: 78, Infraction: 37}
 }
 
 func GetClientState(chainID string) *ibctmtypes.ClientState {
