@@ -100,7 +100,6 @@ enum Event {
   SEND_VSC_WITHOUT_DOWNTIME_ACK = 'send_vsc_without_downtime_ack',
   SOME_UNDELS_EXPIRED_BUT_NOT_COMPLETED = 'some_undels_expired_but_not_completed',
   RECEIVE_DOUBLE_SIGN_SLASH_REQUEST = 'receive_double_sign_slash_request',
-  RECEIVE_SLASH_REQUEST_UNBONDED = 'receive_slash_request_unbonded',
   DOWNTIME_SLASH_REQUEST_OUTSTANDING = 'downtime_slash_request_outstanding',
   CONSUMER_UPDATE_VAL = 'consumer_update_val',
   CONSUMER_DEL_VAL = 'consumer_del_val',
