@@ -22,7 +22,11 @@ import (
 
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 )
+
+type KeyMapHelp struct {
+}
 
 type CoreSuite struct {
 	suite.Suite
@@ -40,6 +44,9 @@ type CoreSuite struct {
 	// so offsets are needed for comparisons.
 	offsetTimeUnix int64
 	offsetHeight   int64
+
+	// Maps vscid to data needed to check keymapping
+	keymapHelp map[uint64]KeyMapHelp
 }
 
 // ctx returns the sdk.Context for the chain
@@ -72,8 +79,32 @@ func (b *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
 	return b.providerChain().App.(*appProvider.App).SlashingKeeper
 }
 
+func (b *CoreSuite) providerKeeper() providerkeeper.Keeper {
+	return b.providerChain().App.(*appProvider.App).ProviderKeeper
+}
+
 func (b *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
 	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
+}
+
+func (b *CoreSuite) consumerGreatestVscIDReceived() uint64 {
+	/*
+		TODO:
+		I know that the consumer slash will use the the provider validator address
+		and that that address should have been known to the consumer and should
+		not have already matured.
+		Therefore I can take any vscid that is still maturing on the consumer
+		and find a provider block, with one of those vscids,
+		 where that validator had non 0 power, and
+		take the mapping from that block to get the consumer address which
+		should actually be used as argument.
+		I can just do random mapping actions whenever.
+		I should query the mapping after provider EndBlock.
+	*/
+
+	k := b.consumerKeeper()
+	h := uint64(b.height(C) + 1) // TODO: is this height queried from the right place?
+	return k.GetHeightValsetUpdateID(b.ctx(C), h)
 }
 
 // height returns the height of the current header of chain
@@ -208,9 +239,25 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 	s.simibc.DeliverPackets(s.chainID(chain), numPackets)
 }
 
+func (s *CoreSuite) fillKeymapHelp(chain string) {
+	if chain == P {
+		// If the provider ended a block then we should query the current vscid
+		k := s.providerKeeper()
+		vscid := k.GetValidatorSetUpdateId(s.ctx(P))
+		vscid -= 1 // The provider EndBlock does +=1 as a final step
+		mapping := map[string]providerkeeper.ConsumerPubKey{}
+		k.KeyMap(s.ctx(P), s.chainID(C)).Store.IteratePcaToCk(func(pca providerkeeper.ProviderConsAddr, ck providerkeeper.ConsumerPubKey) bool {
+			mapping[string(pca)] = ck
+			return false
+		})
+
+	}
+}
+
 func (s *CoreSuite) endAndBeginBlock(chain string) {
 	s.simibc.EndAndBeginBlock(s.chainID(chain), initState.BlockSeconds, func() {
 		s.matchState()
+		s.fillKeymapHelp(chain)
 	})
 }
 
