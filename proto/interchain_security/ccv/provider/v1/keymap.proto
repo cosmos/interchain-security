@@ -8,10 +8,15 @@ import "gogoproto/gogo.proto";
 import "tendermint/crypto/keys.proto";
 
 message LastUpdateMemo {
-  tendermint.crypto.PublicKey ck = 1;
-  tendermint.crypto.PublicKey pk = 2;
+  tendermint.crypto.PublicKey consumer_key = 1;
+  tendermint.crypto.PublicKey provider_key = 2;
   uint64 vscid = 4;
   int64 power = 5;
+}
+
+message ConsAddrToKey {
+  bytes cons_addr = 1;
+  tendermint.crypto.PublicKey to = 2;
 }
 
 message KeyToKey {
@@ -25,8 +30,10 @@ message ConsAddrToLastUpdateMemo {
 }
 
 message KeyMap {
-  repeated KeyToKey pk_to_ck = 1 [ (gogoproto.nullable) = false ];
-  repeated KeyToKey ck_to_pk = 2 [ (gogoproto.nullable) = false ];
-  repeated ConsAddrToLastUpdateMemo cca_to_last_update_memo = 3
+  repeated ConsAddrToKey provider_cons_addr_to_consumer_key = 1
+      [ (gogoproto.nullable) = false ];
+  repeated KeyToKey consumer_key_to_provider_key = 2
+      [ (gogoproto.nullable) = false ];
+  repeated ConsAddrToLastUpdateMemo consumer_cons_addr_to_last_update_memo = 3
       [ (gogoproto.nullable) = false ];
 }
