@@ -26,8 +26,6 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 )
 
-type ChainID = string
-
 // Keeper defines the Cross-Chain Validation Provider Keeper
 type Keeper struct {
 	storeKey         sdk.StoreKey
