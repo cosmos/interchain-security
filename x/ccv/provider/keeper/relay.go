@@ -205,7 +205,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
-	// map VSC ID to infraction height for the given chain ID
+	// Get infraction height from vscID for the given chain ID
 	var infractionHeight uint64
 	var found bool
 	if data.ValsetUpdateId == 0 {

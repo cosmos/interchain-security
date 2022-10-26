@@ -276,7 +276,11 @@ func (s *CCVTestSuite) TestSlashPacketAcknowldgement() {
 	s.Require().Error(err)
 }
 
-// TestHandleSlashPacketDoubleSigning tests the handling of a double-signing related slash packet, with e2e tests
+// TestHandleSlashPacketDoubleSigning tests the provider's handling of a double-signing related slash packet, with e2e tests
+//
+// Expected behavior: A validator is slashed only once for double signing
+// (regardless of the number of chain it double signs on) and then tombstoned (jailed forever).
+// Further assertion of this behavior is found in TestHandleSlashPacketErrors.
 func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
@@ -285,7 +289,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 	tmVal := suite.providerChain.Vals.Validators[0]
 	consAddr := sdk.ConsAddress(tmVal.Address)
 
-	// check that validator bonded status
+	// check that the validator is bonded
 	validator, found := providerStakingKeeper.GetValidatorByConsAddr(suite.providerCtx(), consAddr)
 	suite.Require().True(found)
 	suite.Require().Equal(stakingtypes.Bonded, validator.GetStatus())
@@ -311,13 +315,67 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 
 	// verify that validator is jailed in the staking and slashing modules' states
 	suite.Require().True(providerStakingKeeper.IsValidatorJailed(suite.providerCtx(), consAddr))
-
 	signingInfo, _ := providerSlashingKeeper.GetValidatorSigningInfo(suite.providerCtx(), consAddr)
 	suite.Require().True(signingInfo.JailedUntil.Equal(evidencetypes.DoubleSignJailEndTime))
 	suite.Require().True(signingInfo.Tombstoned)
 }
 
-// TestHandleSlashPacketErrors tests errors for the HandleSlashPacket method in an e2e testing setting
+// TestHandleSlashPacketDowntime tests the provider's handling of a downtime related slash packets
+// Expected behavior: a validator cannot get slashed multiple times for downtime on the same
+// chain without having to unjail itself first. A validator can get slashed multiple times
+// for downtime on different chains without having to unjail itself first.
+func (suite *CCVTestSuite) TestHandleSlashPacketDowntime() {
+	providerKeeper := suite.providerApp.GetProviderKeeper()
+	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
+	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
+
+	tmVal := suite.providerChain.Vals.Validators[0]
+	consAddr := sdk.ConsAddress(tmVal.Address)
+
+	// check that the validator is bonded
+	validator, found := providerStakingKeeper.GetValidatorByConsAddr(suite.providerCtx(), consAddr)
+	suite.Require().True(found)
+	suite.Require().Equal(stakingtypes.Bonded, validator.GetStatus())
+
+	// set init VSC id for chain0
+	providerKeeper.SetInitChainHeight(suite.providerCtx(), suite.consumerChain.ChainID, uint64(suite.providerCtx().BlockHeight()))
+
+	// set validator signing-info
+	providerSlashingKeeper.SetValidatorSigningInfo(
+		suite.providerCtx(),
+		consAddr,
+		slashingtypes.ValidatorSigningInfo{Address: consAddr.String()},
+	)
+
+	// First handling of slash packet should succeed
+	_, err := providerKeeper.HandleSlashPacket(suite.providerCtx(), suite.consumerChain.ChainID,
+		ccv.NewSlashPacketData(
+			abci.Validator{Address: tmVal.Address, Power: 55},
+			uint64(0),
+			stakingtypes.Downtime,
+		),
+	)
+	suite.Require().NoError(err)
+
+	// verify that validator is jailed in the staking and slashing modules' states
+	suite.Require().True(providerStakingKeeper.IsValidatorJailed(suite.providerCtx(), consAddr))
+	signingInfo, _ := providerSlashingKeeper.GetValidatorSigningInfo(suite.providerCtx(), consAddr)
+	expectedJailedUntil := suite.providerCtx().BlockTime().Add(
+		providerSlashingKeeper.DowntimeJailDuration(suite.providerCtx()))
+	suite.Require().Equal(expectedJailedUntil, signingInfo.JailedUntil)
+
+	// Second handling of slash packet should fail from the same chain, validator is still jailed
+	_, err = providerKeeper.HandleSlashPacket(suite.providerCtx(), suite.consumerChain.ChainID,
+		ccv.NewSlashPacketData(
+			abci.Validator{Address: tmVal.Address, Power: 55},
+			uint64(0),
+			stakingtypes.Downtime,
+		),
+	)
+	suite.Require().Error(err)
+}
+
+// TestHandleSlashPacketErrors tests errors for the provider's HandleSlashPacket method
 func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
 	ProviderKeeper := suite.providerApp.GetProviderKeeper()
@@ -376,7 +434,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 
 	// expect to slash and jail validator
 	_, err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
-	suite.Require().NoError(err, "did slash jail validator")
+	suite.Require().NoError(err, "did not slash jailed validator")
 
 	// expect error when infraction type in unspecified
 	tmAddr := suite.providerChain.Vals.Validators[1].Address
@@ -389,12 +447,12 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 	_, err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
 	suite.Require().EqualError(err, fmt.Sprintf("invalid infraction type: %v", stakingtypes.InfractionEmpty))
 
-	// expect to slash jail validator
+	// expect to slash and tombstone validator
 	slashingPkt.Infraction = stakingtypes.DoubleSign
 	_, err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
 	suite.Require().NoError(err)
 
-	// expect the slash to not succeed when validator is tombstoned
+	// expect the slash to not succeed when validator is already tombstoned
 	success, _ = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
 	suite.Require().False(success)
 }
@@ -502,9 +560,8 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDistribution() {
 	}
 }
 
-// TestValidatorDowntime tests if a slash packet is sent
-// and if the outstanding slashing flag is switched
-// when a validator has downtime on the slashing module
+// TestValidatorDowntime tests if a slash packet is sent from the consumer and if the
+// outstanding slashing flag is switched when a validator has downtime on the slashing module
 func (suite *CCVTestSuite) TestValidatorDowntime() {
 	// initial setup
 	suite.SetupCCVChannel()
@@ -592,7 +649,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 	})
 }
 
-// TestValidatorDoubleSigning tests if a slash packet is sent
+// TestValidatorDoubleSigning tests if a slash packet is sent from the consumer
 // when a double-signing evidence is handled by the evidence module
 func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	// initial setup
