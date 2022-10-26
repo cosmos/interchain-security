@@ -145,6 +145,31 @@ class BlockHistory {
     };
     this.blocks[chain].set(h, b);
   };
+
+  /**
+   * Get the valset on the consumer chain when the consumer
+   * was up-to-date to vscid, in a committed block.
+   * @param vscid
+   */
+  getConsumerValset = (
+    vscid: number,
+  ): (number | undefined)[] | undefined => {
+    // TODO: this and it's usage is extremely inefficient
+    const greatestCommittedConsumerHeight = _.max(
+      Array.from(this.blocks[C].keys()),
+    );
+    const hToVscID = this.blocks[C].get(greatestCommittedConsumerHeight)
+      ?.invariantSnapshot?.hToVscID!;
+    let h = -1;
+    for (const [key, value] of Object.entries(hToVscID)) {
+      if (value === vscid) {
+        h = parseInt(key);
+        break;
+      }
+    }
+    const commitH = h - 1;
+    return this.blocks[C].get(commitH)?.invariantSnapshot?.consumerPower!;
+  };
 }
 
 function sum(arr: number[]): number {

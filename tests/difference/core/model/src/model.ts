@@ -446,11 +446,6 @@ class CCVProvider {
       infractionHeight = this.vscIDtoH[data.vscID];
     }
 
-    if (this.m.staking.status[data.val] === Status.UNBONDED) {
-      this.m.events.push(Event.RECEIVE_SLASH_REQUEST_UNBONDED);
-      return;
-    }
-
     if (data.isDowntime) {
       this.m.events.push(Event.RECEIVE_DOWNTIME_SLASH_REQUEST);
     } else {
@@ -601,15 +596,15 @@ class Model {
   staking: Staking;
   ccvP: CCVProvider;
   ccvC: CCVConsumer;
-  blocks: BlockHistory;
+  hist: BlockHistory;
   events: Event[];
 
   constructor(
-    blocks: BlockHistory,
+    hist: BlockHistory,
     events: Event[],
     state: ModelInitState,
   ) {
-    this.blocks = blocks;
+    this.hist = hist;
     this.events = events;
     this.h = state.h;
     this.t = state.t;
@@ -620,9 +615,9 @@ class Model {
     // model initial blocks on P and C because C starts with
     // the same validator set as P (and thus must have received
     // a packet from P).
-    this.blocks.partialOrder.deliver(C, 0, 0);
-    this.blocks.commitBlock(P, this.invariantSnapshot());
-    this.blocks.commitBlock(C, this.invariantSnapshot());
+    this.hist.partialOrder.deliver(C, 0, 0);
+    this.hist.commitBlock(P, this.invariantSnapshot());
+    this.hist.commitBlock(C, this.invariantSnapshot());
     this.beginBlock(P);
     this.beginBlock(C);
   }
@@ -636,6 +631,7 @@ class Model {
       undelegationQ: this.staking.undelegationQ,
       delegatorTokens: this.staking.delegatorTokens,
       consumerPower: this.ccvC.consumerPower,
+      hToVscID: this.ccvC.hToVscID,
     });
   };
 
@@ -662,13 +658,13 @@ class Model {
   deliver = (chain: Chain, num: number) => {
     if (chain === P) {
       this.outbox[C].consume(num).forEach((p) => {
-        this.blocks.partialOrder.deliver(P, p.sendHeight, this.h[P]);
+        this.hist.partialOrder.deliver(P, p.sendHeight, this.h[P]);
         this.ccvP.onReceive(p.data);
       });
     }
     if (chain === C) {
       this.outbox[P].consume(num).forEach((p) => {
-        this.blocks.partialOrder.deliver(C, p.sendHeight, this.h[C]);
+        this.hist.partialOrder.deliver(C, p.sendHeight, this.h[C]);
         this.ccvC.onReceive(p.data);
       });
     }
@@ -688,7 +684,7 @@ class Model {
       this.ccvC.endBlock();
     }
     this.outbox[chain].commit();
-    this.blocks.commitBlock(chain, this.invariantSnapshot());
+    this.hist.commitBlock(chain, this.invariantSnapshot());
   };
 
   beginBlock = (chain: Chain) => {

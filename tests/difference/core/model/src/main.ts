@@ -46,6 +46,8 @@ import {
 
 class ActionGenerator {
   model;
+  // the set of validators on the consumer at each vscid
+  validatorsKnownToConsumer = new Map<number, number[]>();
   // was the validator slashed?
   didSlash = new Array(NUM_VALIDATORS).fill(false);
   // the timestamp contained in the latest trusted header
@@ -115,7 +117,29 @@ class ActionGenerator {
       return true;
     }
     if (a.kind === 'ConsumerSlash') {
-      return 2 <= this.didSlash.filter((x) => !x).length;
+      const maturingVscs = Array.from(
+        this.model.ccvC.maturingVscs.keys(),
+      );
+      const valSets = maturingVscs
+        .sort()
+        .slice(1, -1)
+        .map((vscid) => this.model.hist.getConsumerValset(vscid))
+        .filter((valset) => valset !== undefined) as (
+        | number
+        | undefined
+      )[][];
+      const slashableValidators = new Set();
+      valSets.forEach((valset) => {
+        valset.forEach((power, i) => {
+          if (power !== undefined) {
+            slashableValidators.add(i);
+          }
+        });
+      });
+      return (
+        slashableValidators.has((a as ConsumerSlash).val) &&
+        2 <= this.didSlash.filter((x) => !x).length
+      );
     }
     if (a.kind === 'UpdateClient') {
       return true;

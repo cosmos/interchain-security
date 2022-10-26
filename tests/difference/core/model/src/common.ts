@@ -112,6 +112,7 @@ type InvariantSnapshot = {
   undelegationQ: Undelegation[];
   delegatorTokens: number;
   consumerPower: (number | undefined)[];
+  hToVscID: Record<number, number>;
 };
 
 /**
