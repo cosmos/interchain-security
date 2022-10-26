@@ -196,12 +196,12 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 	k.QueuePendingSlashPacket(ctx, types.NewSlashPacket(ctx.BlockTime(), chainID, data))
 
-	// TODO: Move this handling
+	// TODO: Move this handling (only for certain cases, see spec)
 	// apply slashing
-	// if _, err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
-	// 	errAck := channeltypes.NewErrorAcknowledgement(err.Error())
-	// 	return &errAck
-	// }
+	if _, err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
+		errAck := channeltypes.NewErrorAcknowledgement(err.Error())
+		return &errAck
+	}
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
