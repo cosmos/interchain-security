@@ -80,7 +80,7 @@ type driver struct {
 	lastTimeConsumer int
 	lastTimeMaturity int
 	// indexed by time (starting at 0)
-	mappings []map[keeper.ProviderPubKey]keeper.ConsumerPubKey
+	mappings []map[string]keeper.ConsumerPubKey
 	// indexed by time (starting at 0)
 	consumerUpdates [][]abci.ValidatorUpdate
 	// indexed by time (starting at 0)
@@ -108,7 +108,7 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 	d.lastTimeProvider = 0
 	d.lastTimeConsumer = 0
 	d.lastTimeMaturity = 0
-	d.mappings = []map[keeper.ProviderPubKey]keeper.ConsumerPubKey{}
+	d.mappings = []map[string]keeper.ConsumerPubKey{}
 	d.consumerUpdates = [][]abci.ValidatorUpdate{}
 	d.providerValsets = []valset{}
 	d.consumerValset = valset{}
@@ -123,9 +123,9 @@ func (d *driver) applyKeyMapEntries(entries []keyMapEntry) {
 		_ = d.km.SetProviderPubKeyToConsumerPubKey(e.pk, e.ck)
 	}
 	// Duplicate the mapping for referencing later in tests.
-	copy := map[keeper.ProviderPubKey]keeper.ConsumerPubKey{}
+	copy := map[string]keeper.ConsumerPubKey{}
 	d.km.Store.IteratePcaToCk(func(pca keeper.ProviderConsAddr, ck keeper.ConsumerPubKey) bool {
-		copy[pk] = ck
+		copy[string(pca)] = ck
 		return false
 	})
 	d.mappings = append(d.mappings, copy)
@@ -539,14 +539,14 @@ func TestKeyMapMemo(t *testing.T) {
 	{
 		k0 := key(0)
 		k1 := key(1)
-		arr[0].Pk = &k0
-		arr[1].Pk = &k1
+		arr[0].ProviderKey = &k0
+		arr[1].ProviderKey = &k1
 	}
 	k2 := key(2)
 	pk := &k2
 	for i, m := range arr {
 		if i < 1 {
-			pk = m.Pk
+			pk = m.ProviderKey
 		}
 	}
 	require.True(t, pk.Equal(key(0)))
@@ -556,16 +556,16 @@ func TestKeyMapMemoLoopIteration(t *testing.T) {
 	m := ccvtypes.LastUpdateMemo{}
 	{
 		k0 := key(0)
-		m.Pk = &k0
+		m.ProviderKey = &k0
 	}
 	arr := []crypto.PublicKey{key(0), key(1)}
 	for i, pk := range arr {
 		if i < 1 {
-			m.Pk = &pk
+			m.ProviderKey = &pk
 		}
 	}
-	require.False(t, m.Pk.Equal(arr[0]))
-	require.True(t, m.Pk.Equal(arr[1]))
+	require.False(t, m.ProviderKey.Equal(arr[0]))
+	require.True(t, m.ProviderKey.Equal(arr[1]))
 }
 
 func TestKeyMapSameSeedDeterministicStringify(t *testing.T) {
@@ -718,16 +718,16 @@ func TestKeyMapGCUpdateIsEmitted(t *testing.T) {
 
 func compareForEquality(t *testing.T,
 	km keeper.KeyMap,
-	pkToCk map[keeper.ProviderPubKey]keeper.ConsumerPubKey,
+	pcaToCk map[string]keeper.ConsumerPubKey,
 	ckToPk map[keeper.ConsumerPubKey]keeper.ProviderPubKey,
-	ckToMemo map[string]ccvtypes.LastUpdateMemo) {
+	ccaToLastUpdateMemo map[string]ccvtypes.LastUpdateMemo) {
 
 	cnt := 0
-	km.Store.IteratePcaToCk(func(_, _ keeper.ConsumerPubKey) bool {
+	km.Store.IteratePcaToCk(func(_ keeper.ProviderConsAddr, _ keeper.ConsumerPubKey) bool {
 		cnt += 1
 		return false
 	})
-	require.Equal(t, len(pkToCk), cnt)
+	require.Equal(t, len(pcaToCk), cnt)
 
 	cnt = 0
 	km.Store.IterateCkToPk(func(_, _ keeper.ConsumerPubKey) bool {
@@ -741,10 +741,10 @@ func compareForEquality(t *testing.T,
 		cnt += 1
 		return false
 	})
-	require.Equal(t, len(ckToMemo), cnt)
+	require.Equal(t, len(ccaToLastUpdateMemo), cnt)
 
-	for k, vExpect := range pkToCk {
-		vActual, found := km.Store.GetPcaToCk(k)
+	for k, vExpect := range pcaToCk {
+		vActual, found := km.Store.GetPcaToCk(keeper.ProviderConsAddr(k))
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
@@ -753,12 +753,12 @@ func compareForEquality(t *testing.T,
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
-	for k, vExpect := range ckToMemo {
+	for k, vExpect := range ccaToLastUpdateMemo {
 		k := sdk.ConsAddress(k)
 		m, found := km.Store.GetCcaToLastUpdateMemo(k)
 		require.True(t, found)
-		require.Equal(t, vExpect.Pk, m.Pk)
-		require.Equal(t, vExpect.Ck, m.Ck)
+		require.Equal(t, vExpect.ProviderKey, m.ProviderKey)
+		require.Equal(t, vExpect.ConsumerKey, m.ConsumerKey)
 		require.Equal(t, vExpect.Vscid, m.Vscid)
 		require.Equal(t, vExpect.Power, m.Power)
 	}
@@ -778,38 +778,38 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 ) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 
-	pkToCk := map[keeper.ProviderPubKey]keeper.ConsumerPubKey{}
+	pcaToCk := map[string]keeper.ConsumerPubKey{}
 	ckToPk := map[keeper.ConsumerPubKey]keeper.ProviderPubKey{}
-	ckToMemo := map[string]ccvtypes.LastUpdateMemo{}
+	ccaToLastUpdateMemo := map[string]ccvtypes.LastUpdateMemo{}
 
-	pkToCk[keys[0]] = keys[1]
-	pkToCk[keys[2]] = keys[3]
+	pcaToCk[string(keeper.PubKeyToConsAddr(keys[0]))] = keys[1]
+	pcaToCk[string(keeper.PubKeyToConsAddr(keys[2]))] = keys[3]
 	ckToPk[keys[4]] = keys[5]
 	ckToPk[keys[6]] = keys[7]
-	ckToMemo[string(keeper.PubKeyToConsAddr(keys[8]))] = ccvtypes.LastUpdateMemo{
-		Ck:    &keys[9],
-		Pk:    &keys[10],
-		Vscid: uint64_0,
-		Power: int64_0,
+	ccaToLastUpdateMemo[string(keeper.PubKeyToConsAddr(keys[8]))] = ccvtypes.LastUpdateMemo{
+		ConsumerKey: &keys[9],
+		ProviderKey: &keys[10],
+		Vscid:       uint64_0,
+		Power:       int64_0,
 	}
-	ckToMemo[string(keeper.PubKeyToConsAddr(keys[11]))] = ccvtypes.LastUpdateMemo{
-		Ck:    &keys[12],
-		Pk:    &keys[13],
-		Vscid: uint64_1,
-		Power: int64_1,
+	ccaToLastUpdateMemo[string(keeper.PubKeyToConsAddr(keys[11]))] = ccvtypes.LastUpdateMemo{
+		ConsumerKey: &keys[12],
+		ProviderKey: &keys[13],
+		Vscid:       uint64_1,
+		Power:       int64_1,
 	}
 
 	{
 		// Use one KeyMap instance to serialize the data
 		store := keeper.KeyMapStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
 		km := keeper.MakeKeyMap(&store)
-		for k, v := range pkToCk {
-			km.Store.SetPcaToCk(k, v)
+		for k, v := range pcaToCk {
+			km.Store.SetPcaToCk(sdk.ConsAddress(k), v)
 		}
 		for k, v := range ckToPk {
 			km.Store.SetCkToPk(k, v)
 		}
-		for k, v := range ckToMemo {
+		for k, v := range ccaToLastUpdateMemo {
 			km.Store.SetCcaToLastUpdateMemo(sdk.ConsAddress(k), v)
 		}
 	}
@@ -820,7 +820,7 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 
 	// Check that the data is the same
 
-	compareForEquality(t, km, pkToCk, ckToPk, ckToMemo)
+	compareForEquality(t, km, pcaToCk, ckToPk, ccaToLastUpdateMemo)
 }
 
 func TestKeyMapSerializationAndDeserialization(t *testing.T) {
