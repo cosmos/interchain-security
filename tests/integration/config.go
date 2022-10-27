@@ -91,8 +91,8 @@ func DoubleSignTestRun() TestRun {
 	return TestRun{
 		name: "double-sign",
 		containerConfig: ContainerConfig{
-			containerName: "interchain-security-container",
-			instanceName:  "interchain-security-instance",
+			containerName: "interchain-security-ds-container",
+			instanceName:  "interchain-security-ds-instance",
 			ccvVersion:    "1",
 			now:           time.Now(),
 		},

@@ -32,24 +32,24 @@ func main() {
 	tr.ValidateStringLiterals()
 	tr.startDocker()
 
-	ds := DefaultTestRun()
-	ds.SetLocalSDKPath(*localSdkPath)
-	ds.ValidateStringLiterals()
-	ds.startDocker()
-
 	dmc := DemocracyTestRun()
 	dmc.SetLocalSDKPath(*localSdkPath)
 	dmc.ValidateStringLiterals()
 	dmc.startDocker()
 
+	ds := DoubleSignTestRun()
+	ds.SetLocalSDKPath(*localSdkPath)
+	ds.ValidateStringLiterals()
+	ds.startDocker()
+
 	wg.Add(1)
 	go tr.ExecuteSteps(&wg, happyPathSteps)
 
 	wg.Add(1)
-	go ds.ExecuteSteps(&wg, doubleSignProviderSteps)
+	go dmc.ExecuteSteps(&wg, democracySteps)
 
 	wg.Add(1)
-	go dmc.ExecuteSteps(&wg, democracySteps)
+	go ds.ExecuteSteps(&wg, doubleSignProviderSteps)
 
 	wg.Wait()
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
