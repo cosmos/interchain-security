@@ -13,17 +13,17 @@ func stepsDoubleSign(consumerName, doubleSignChain, doubleSignValidator string) 
 				// slash on provider
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
+						validatorID("alice"): 500,
 						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+						validatorID("carol"): 0,
 					},
 				},
 				// not slashed on consumer yet
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
+						validatorID("alice"): 500,
 						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+						validatorID("carol"): 500,
 					},
 				},
 			},
@@ -38,31 +38,14 @@ func stepsDoubleSign(consumerName, doubleSignChain, doubleSignValidator string) 
 			state: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   0,
-						validatorID("carol"): 501,
-					},
-				},
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
+						validatorID("alice"): 500,
 						validatorID("bob"):   500,
-						validatorID("carol"): 501,
+						validatorID("carol"): 0,
 					},
 				},
-			},
-		},
-		{
-			// power change becomes visible on the consumer
-			action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
-			},
-			state: State{
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
+						validatorID("alice"): 500,
 						validatorID("bob"):   500,
 						validatorID("carol"): 0,
 					},
