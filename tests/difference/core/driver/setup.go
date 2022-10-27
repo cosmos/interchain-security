@@ -334,17 +334,10 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 		if b.initState.ValStates.Status[i] != stakingtypes.Bonded {
 			continue
 		}
-		// TODO: I think I can get in here and mimic this, and then things
-		// should work.
 
 		validatorKeyData := b.getValidatorKeyData(i)
-
+		signers[validatorKeyData.pubKey.Address().String()] = validatorKeyData.signer
 		addresses = append(addresses, validatorKeyData.address)
-
-		// Save signer
-		signers[validatorKeyData.address.String()] = validatorKeyData.signer
-
-		// Save validator with power
 		validators = append(validators, tmtypes.NewValidator(validatorKeyData.pubKey, int64(power)))
 	}
 
