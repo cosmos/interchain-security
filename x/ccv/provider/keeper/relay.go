@@ -185,6 +185,7 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 }
 
 // OnRecvSlashPacket receives a slash packet and determines if it should be dropped, handled immediately, or queued
+// TODO: More unit tests, e2e? Do this after design is more finalized
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
 	// check that the channel is established
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
@@ -248,6 +249,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 // TODO: Circuit breaker logic that is called in EndBlocker
 
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type
+// TODO: update unit tests and e2e, do so after design is more finalized
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
 
 	// map VSC ID to infraction height for the given chain ID
