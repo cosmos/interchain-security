@@ -204,9 +204,14 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	valConsAddr := sdk.ConsAddress(data.Validator.Address)
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr)
 
-	// If validator is not found or unbonded, drop slash packet by returning an ack.
+	if !found {
+		// validator not found, drop packet
+		return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	}
+
+	// If validator is unbonded, drop slash packet by returning an ack.
 	// It wouldn't make sense to attempt to slash an unbonded validator.
-	if !found || validator.IsUnbonded() {
+	if validator.IsUnbonded() {
 		// TODO add warning log message
 		// fmt.Sprintf("consumer chain %s trying to slash unbonded validator %s", chainID, consAddr.String())
 		return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
@@ -268,6 +273,10 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	valConsAddr := sdk.ConsAddress(data.Validator.Address)
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr)
+	// If validator is not found, no need to continue handling the packet
+	if !found {
+		return false, nil
+	}
 
 	switch data.Infraction {
 	case stakingtypes.Downtime:
