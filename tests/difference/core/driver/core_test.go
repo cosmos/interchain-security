@@ -335,7 +335,7 @@ func (s *CoreSuite) executeTrace() {
 			ck := testutil.GetTMCryptoPublicKeyFromSeed(uint64(k))
 			_ = pk
 			_ = ck
-			s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(pk, ck)
+			// s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(pk, ck)
 		}
 
 		switch a.Kind {

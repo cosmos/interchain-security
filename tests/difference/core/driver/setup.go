@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/crypto"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
@@ -57,6 +58,24 @@ type Builder struct {
 	mustBeginBlock map[string]bool
 	valAddresses   []sdk.ValAddress
 	initState      InitState
+}
+
+type ValidatorKeyData struct {
+	signer  mock.PV
+	address sdk.ValAddress
+	pubKey  crypto.PubKey
+}
+
+func (b *Builder) getValidatorKeyData(seedIx int) ValidatorKeyData {
+	ret := ValidatorKeyData{}
+	ret.signer = b.getValidatorPK(seedIx)
+	pubKey, err := ret.signer.GetPubKey()
+	require.NoError(b.suite.T(), err)
+	ret.pubKey = pubKey
+	addr, err := sdk.ValAddressFromHex(ret.pubKey.Address().String())
+	require.NoError(b.suite.T(), err)
+	ret.address = addr
+	return ret
 }
 
 func (b *Builder) ctx(chain string) sdk.Context {
@@ -317,21 +336,16 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 		}
 		// TODO: I think I can get in here and mimic this, and then things
 		// should work.
-		privVal := b.getValidatorPK(i)
 
-		pubKey, err := privVal.GetPubKey()
-		require.NoError(b.suite.T(), err)
+		validatorKeyData := b.getValidatorKeyData(i)
 
-		// Compute address
-		addr, err := sdk.ValAddressFromHex(pubKey.Address().String())
-		require.NoError(b.suite.T(), err)
-		addresses = append(addresses, addr)
+		addresses = append(addresses, validatorKeyData.address)
 
 		// Save signer
-		signers[pubKey.Address().String()] = privVal
+		signers[validatorKeyData.address.String()] = validatorKeyData.signer
 
 		// Save validator with power
-		validators = append(validators, tmtypes.NewValidator(pubKey, int64(power)))
+		validators = append(validators, tmtypes.NewValidator(validatorKeyData.pubKey, int64(power)))
 	}
 
 	return tmtypes.NewValidatorSet(validators), signers, addresses
