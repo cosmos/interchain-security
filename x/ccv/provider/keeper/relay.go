@@ -196,6 +196,8 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 	k.QueuePendingSlashPacket(ctx, types.NewSlashPacket(ctx.BlockTime(), chainID, data))
 
+	// TODO: Implement a hardcoded number of queued slash packets that'd exist to panic the binary
+
 	// TODO: Move this handling (only for certain cases, see spec)
 	// apply slashing
 	if _, err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
