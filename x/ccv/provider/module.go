@@ -164,9 +164,10 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
 
-	// TODO: This is where new method will go which processes queue
-	// TODO: abide by spec here with EndBlockCIS, EndBlockVSU, etc.
-	// Or just make sure it's clear that this abides by spec in comments
+	// TODO: Determine if VSCToH mapping (currently in SendValidatorUpdates) should be done here
+	// before HandlePendingSlashPackets executes. Spec has it before, but can be changed.
+	// Intuitively it shouldn't matter since no slash packet should be received for this block height.
+	am.keeper.HandlePendingSlashPackets(ctx)
 
 	// TODO: separate PR for the new params that'll be needed
 

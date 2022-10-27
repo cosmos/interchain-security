@@ -36,12 +36,13 @@ func TestNoDuplicates(t *testing.T) {
 // any of which should be a single, unique byte.
 func getSingleByteKeys() [][]byte {
 
-	keys := make([][]byte, 17)
+	keys := make([][]byte, 18)
 	i := 0
 
 	keys[i], i = providertypes.PortKey(), i+1
 	keys[i], i = providertypes.MaturedUnbondingOpsKey(), i+1
 	keys[i], i = providertypes.ValidatorSetUpdateIdKey(), i+1
+	keys[i], i = providertypes.SlashGasMeterKey(), i+1
 	keys[i], i = []byte{providertypes.ChainToChannelBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChannelToChainBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChainToClientBytePrefix}, i+1

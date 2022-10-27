@@ -819,3 +819,29 @@ func (k Keeper) IteratePendingSlashPackets(ctx sdk.Context, cb func(types.SlashP
 		}
 	}
 }
+
+// TODO: If you keep slash gas meter as a percent, make sure it's clear that the param is a percent (put in name)
+
+// GetSlashGasMeter returns a meter (persisted as a scalar decimal string) which stores "slash gas",
+// ie. an amount of voting power % that corresponds to an allowance of validators that can be jailed at any given time.
+//
+// Note: the value of this decimal should always be in the range of [-100, 100] (representing -100% to 100% of voting power)
+func (k Keeper) GetSlashGasMeter(ctx sdk.Context) sdk.Dec {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.SlashGasMeterKey())
+	if bz == nil {
+		panic("slash gas meter not set")
+	}
+	return sdk.MustNewDecFromStr(string(bz))
+}
+
+// SetSlashGasMeter sets the "slash gas" meter to the given decimal string value
+//
+// Note: the value of this decimal should always be in the range of [-100, 100] (representing -100% to 100% of voting power)
+func (k Keeper) SetSlashGasMeter(ctx sdk.Context, value sdk.Dec) {
+	if value.LT(sdk.NewDec(-100)) || value.GT(sdk.NewDec(100)) {
+		panic("attempted slash gas meter set value is out of range")
+	}
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.SlashGasMeterKey(), []byte(value.String()))
+}

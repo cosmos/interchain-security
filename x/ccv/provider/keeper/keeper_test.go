@@ -424,3 +424,56 @@ func TestPendingSlashPacketDeletion(t *testing.T) {
 	// Packet 5 was deleted
 	require.Equal(t, "chain-6", gotPackets[3].ConsumerChainID)
 }
+
+// TestSlashGasMeter tests the getter and setter for the slash gas meter
+func TestSlashGasMeter(t *testing.T) {
+
+	testCases := []struct {
+		meterValue  string
+		shouldPanic bool
+	}{
+		{meterValue: "-4723894.3", shouldPanic: true},
+		{meterValue: "-4239", shouldPanic: true},
+		{meterValue: "-106.3", shouldPanic: true},
+		{meterValue: "-100.000000001", shouldPanic: true},
+		{meterValue: "-100", shouldPanic: false},
+		{meterValue: "-100.000", shouldPanic: false},
+		{meterValue: "-100.000000000000000000", shouldPanic: false},
+		{meterValue: "-44.42342342", shouldPanic: false},
+		{meterValue: "-15.3", shouldPanic: false},
+		{meterValue: "-12", shouldPanic: false},
+		{meterValue: "0.00000000", shouldPanic: false},
+		{meterValue: "0.000000000000000000", shouldPanic: false},
+		{meterValue: "0.05", shouldPanic: false},
+		{meterValue: "0.42343442342342432", shouldPanic: false},
+		{meterValue: "5.34238472394", shouldPanic: false},
+		{meterValue: "15.7237438297432984", shouldPanic: false},
+		{meterValue: "67.48723974892374", shouldPanic: false},
+		{meterValue: "100.0000000000000", shouldPanic: false},
+		{meterValue: "100", shouldPanic: false},
+		{meterValue: "100.00000000040", shouldPanic: true},
+		{meterValue: "104.3", shouldPanic: true},
+		{meterValue: "748239", shouldPanic: true},
+	}
+
+	for _, tc := range testCases {
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+			t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
+
+		// Note: More than 18 decimal places of precision is not supported by the sdk.Dec type by default.
+		// Invalid strings would also return an error, but this is outside the scope of this test.
+		decMeterValue, err := sdk.NewDecFromStr(tc.meterValue)
+		require.NoError(t, err)
+
+		if tc.shouldPanic {
+			require.Panics(t, func() {
+				providerKeeper.SetSlashGasMeter(ctx, decMeterValue)
+			})
+		} else {
+			providerKeeper.SetSlashGasMeter(ctx, decMeterValue)
+			gotMeterValue := providerKeeper.GetSlashGasMeter(ctx)
+			require.Equal(t, decMeterValue, gotMeterValue)
+		}
+	}
+}

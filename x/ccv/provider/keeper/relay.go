@@ -246,7 +246,13 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
 
-// TODO: Circuit breaker logic that is called in EndBlocker
+// HandlePendingSlashPackets handles all or some portion of pending slash packets depending on circuit breaker logic.
+// This method executes every end block routine
+func (k Keeper) HandlePendingSlashPackets(ctx sdk.Context) {
+
+	// meter := k.GetSlashGasMeter(ctx)
+
+}
 
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type
 // TODO: update unit tests and e2e, do so after design is more finalized
