@@ -184,7 +184,7 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 	}
 }
 
-// OnRecvSlashPacket slashes and jails the given validator in the packet data
+// OnRecvSlashPacket receives a slash packet and determines if it should be dropped, handled immediately, or queued
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
 	// check that the channel is established
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
@@ -194,27 +194,56 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	k.QueuePendingSlashPacket(ctx, types.NewSlashPacket(ctx.BlockTime(), chainID, data))
+	// Note: the following logic is not included in spec, since it does not affect the correctness of the ccv protocol
+	// and is implemented to alleviate the issue of the slash packet queue growing too large from malicious consumers
 
-	// TODO: Implement a hardcoded number of queued slash packets that'd exist to panic the binary
+	// An alternative to this logic is to leave the handling of slash packets as it exists in main,
+	// but assert that queued slash packets which do not affect validator voting power, cost 0 slash gas.
+	// This design is better because spam packets never even make it into the queue.
 
-	// TODO: Move this handling (only for certain cases, see spec)
-	// apply slashing
-	if _, err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement(err.Error())
-		return &errAck
+	valConsAddr := sdk.ConsAddress(data.Validator.Address)
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr)
+
+	// If validator is not found or unbonded, drop slash packet by returning an ack.
+	// It wouldn't make sense to attempt to slash an unbonded validator.
+	if !found || validator.IsUnbonded() {
+		// TODO add warning log message
+		// fmt.Sprintf("consumer chain %s trying to slash unbonded validator %s", chainID, consAddr.String())
+		return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	}
 
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	return ack
+	// If val is tombstoned, drop slash packet by returning an ack.
+	// Tombstoned validators should not be slashed multiple times.
+	if k.slashingKeeper.IsTombstoned(ctx, valConsAddr) {
+		return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	}
+
+	// If validator is already jailed, this packet won't affect voting power and can bypass
+	// the slashing circuit breaker by being handled immediately.
+	if validator.Jailed {
+		_, err := k.HandleSlashPacket(ctx, chainID, data)
+		if err != nil {
+			return channeltypes.NewErrorAcknowledgement(err.Error())
+		} else {
+			return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+		}
+	}
+
+	// TODO: Implement a hardcoded number of queued slash packets that'd panic the binary consistently for all nodes
+
+	// If the validator is bonded, not tombstoned, and not jailed,
+	// queue the slash packet to be handled by the circuit breaker
+	k.QueuePendingSlashPacket(ctx, types.NewSlashPacket(ctx.BlockTime(), chainID, data))
+
+	// TODO: Tests will fail until you call end blocker to execute HandleSlashPackets
+
+	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
+
+// TODO: Circuit breaker logic that is called in EndBlocker
 
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
-
-	// TODO: In spec, infraction height is computed when a slash packet is received.
-	// Change this, or change the spec. Although it's nice to find infraction height
-	// here, since it doesn't have to be persisted.
 
 	// map VSC ID to infraction height for the given chain ID
 	var infractionHeight uint64
@@ -230,23 +259,6 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		return false, fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
-	// get the validator
-	consAddr := sdk.ConsAddress(data.Validator.Address)
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
-
-	// make sure the validator is not yet unbonded;
-	// stakingKeeper.Slash() panics otherwise
-	if !found || validator.IsUnbonded() {
-		// TODO add warning log message
-		// fmt.Sprintf("consumer chain %s trying to slash unbonded validator %s", chainID, consAddr.String())
-		return false, nil
-	}
-
-	// tombstoned validators should not be slashed multiple times
-	if k.slashingKeeper.IsTombstoned(ctx, consAddr) {
-		return false, nil
-	}
-
 	// slash and jail validator according to their infraction type
 	// and using the provider chain parameters
 	var (
@@ -254,19 +266,22 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		slashFraction sdk.Dec
 	)
 
+	valConsAddr := sdk.ConsAddress(data.Validator.Address)
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr)
+
 	switch data.Infraction {
 	case stakingtypes.Downtime:
 		// set the downtime slash fraction and duration
 		// then append the validator address to the slash ack for its chain id
 		slashFraction = k.slashingKeeper.SlashFractionDowntime(ctx)
 		jailTime = ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
-		k.AppendSlashAck(ctx, chainID, consAddr.String())
+		k.AppendSlashAck(ctx, chainID, valConsAddr.String())
 	case stakingtypes.DoubleSign:
 		// set double-signing slash fraction and infinite jail duration
 		// then tombstone the validator
 		slashFraction = k.slashingKeeper.SlashFractionDoubleSign(ctx)
 		jailTime = evidencetypes.DoubleSignJailEndTime
-		k.slashingKeeper.Tombstone(ctx, consAddr)
+		k.slashingKeeper.Tombstone(ctx, valConsAddr)
 	default:
 		return false, fmt.Errorf("invalid infraction type: %v", data.Infraction)
 	}
@@ -274,7 +289,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// slash validator
 	k.stakingKeeper.Slash(
 		ctx,
-		consAddr,
+		valConsAddr,
 		int64(infractionHeight),
 		data.Validator.Power,
 		slashFraction,
@@ -283,9 +298,9 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// jail validator
 	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, consAddr)
+		k.stakingKeeper.Jail(ctx, valConsAddr)
 	}
-	k.slashingKeeper.JailUntil(ctx, consAddr, jailTime)
+	k.slashingKeeper.JailUntil(ctx, valConsAddr, jailTime)
 
 	return true, nil
 }
