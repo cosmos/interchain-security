@@ -34,7 +34,8 @@ const (
 	DefaultHistoricalEntries = int64(stakingtypes.DefaultHistoricalEntries)
 
 	// In general, the default unbonding period on the consumer is one day less
-	// than the default unbonding period on the provider.
+	// than the default unbonding period on the provider, where the provider uses
+	// the staking module default.
 	DefaultConsumerUnbondingPeriod = stakingtypes.DefaultUnbondingTime - 24*time.Hour
 )
 
