@@ -377,13 +377,9 @@ function replay(actions: TraceAction[]) {
   const hist = new BlockHistory();
   const events: Event[] = [];
   const model = new Model(hist, events, MODEL_INIT_STATE);
-  const actionGenerator = new ActionGenerator(model);
   for (let i = 0; i < actions.length; i++) {
     const a = actions[i];
-    console.log(a);
-    actionGenerator.do(a.action);
     doAction(model, a.action);
-    bondBasedConsumerVotingPower(hist);
   }
 }
 

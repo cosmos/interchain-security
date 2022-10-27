@@ -438,6 +438,7 @@ class CCVProvider {
   };
 
   onReceiveSlash = (data: Slash) => {
+    console.log(`recv slash, `, data);
     let infractionHeight = undefined;
 
     if (data.vscID === 0) {
@@ -461,6 +462,7 @@ class CCVProvider {
       return;
     }
 
+    console.log(`actu slash, `, data);
     this.m.staking.slash(data.val, infractionHeight);
     this.m.staking.jailUntil(data.val, this.m.t[P] + JAIL_SECONDS);
     if (data.isDowntime) {

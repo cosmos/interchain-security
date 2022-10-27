@@ -16,7 +16,8 @@ import (
 )
 
 func key(k uint64) crypto.PublicKey {
-	return testutil.GetTMCryptoPublicKeyFromSeed(k)
+	_, pubKey := testutil.GetTMCryptoPublicKeyFromSeed(k)
+	return pubKey
 }
 
 // TODO: all the map lookups are probably gonna fail because the objects are different

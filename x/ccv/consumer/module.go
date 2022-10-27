@@ -191,6 +191,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	// apply changes to cross-chain validator set
 	tendermintUpdates := am.keeper.ApplyCCValidatorChanges(ctx, data.ValidatorUpdates)
 	am.keeper.DeletePendingChanges(ctx)
+	fmt.Println("consumer endblock")
 
 	return tendermintUpdates
 }

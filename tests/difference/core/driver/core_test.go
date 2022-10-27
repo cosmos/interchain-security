@@ -22,6 +22,7 @@ import (
 
 	"math/rand"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	testutil "github.com/cosmos/interchain-security/testutil/sample"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
@@ -322,20 +323,37 @@ func (s *CoreSuite) matchState() {
 }
 
 func (s *CoreSuite) executeTrace() {
+
+	for i := 0; i < initState.NumValidators; i++ {
+		cons := s.consAddr(int64(i))
+		fmt.Println(i, " cons:", cons.String()[14:20])
+	}
+
 	for i := range s.traces.Actions() {
 		s.traces.CurrentActionIx = i
 
 		a := s.traces.Action()
 
-		if rand.Intn(100) < 10 {
-			// TODO:
-			j := rand.Intn(initState.NumValidators)
-			pk := s.providerValidatorPubKey(int64(j))
-			k := rand.Intn(50)
-			ck := testutil.GetTMCryptoPublicKeyFromSeed(uint64(k))
-			_ = pk
-			_ = ck
-			// s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(pk, ck)
+		for y := 0; y < rand.Intn(5); y++ {
+			if rand.Intn(100) < 10 {
+				j := rand.Intn(initState.NumValidators)
+				pk := s.providerValidatorPubKey(int64(j))
+				k := rand.Intn(50)
+				privK, ck := testutil.GetTMCryptoPublicKeyFromSeed(uint64(k))
+				cki, err := cryptocodec.FromTmProtoPublicKey(ck)
+				if err != nil {
+					panic("unexpected err A")
+				}
+				cki2, err := cryptocodec.ToTmPubKeyInterface(cki)
+				if err != nil {
+					panic("unexpected err B")
+				}
+				// signers[validatorKeyData.pubKey.Address().String()]
+				s.chain(C).Signers[cki2.Address().String()] = privK
+				_ = pk
+				_ = ck
+				s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(pk, ck)
+			}
 		}
 
 		switch a.Kind {
@@ -350,6 +368,7 @@ func (s *CoreSuite) executeTrace() {
 				int64(a.Amt),
 			)
 		case "ConsumerSlash":
+			// fmt.Printf("trace %d, slash: val %d vscid %d\n", s.traces.CurrentTraceIx, a.Val, a.Vscid)
 			s.consumerSlash(
 				int64(a.Val),
 				uint64(a.Vscid),
@@ -402,6 +421,27 @@ func (s *CoreSuite) TestAssumptions() {
 	s.Require().Equal(int(s.offsetProviderVscId), int(s.providerKeeper().GetValidatorSetUpdateId(s.ctx(P))))
 	// Consumer last vscid is correct
 	s.Require().Equal(int(16), int(s.consumerLastCommittedVscId()))
+
+	// Check that consumer uses current provider mapping
+	s.consumerKeeper().IterateValidators(s.ctx(C), func(_ int64, cval stakingtypes.ValidatorI) bool {
+		cpkActual, err := cval.TmConsPublicKey()
+		s.Require().NoError(err)
+		good := false
+		s.providerStakingKeeper().IterateValidators(s.ctx(P), func(_ int64, pval stakingtypes.ValidatorI) bool {
+			if pval.GetTokens().Equal(cval.GetTokens()) {
+				good = true
+			}
+			tmkey, err := pval.TmConsPublicKey()
+			s.Require().NoError(err)
+			km := s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C))
+			cpkFound, found := km.GetCurrentConsumerPubKeyFromProviderPubKey(tmkey)
+			s.Require().True(found)
+			s.Require().True(cpkFound.Equal(cpkActual))
+			return false
+		})
+		s.Require().True(good)
+		return false
+	})
 
 	// Each validator has signing info
 	for i := 0; i < len(initState.ValStates.Tokens); i++ {
@@ -508,14 +548,19 @@ func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
 		Data: LoadTraces("tracesAlt.json"),
 	}
-	// s.traces.Data = []TraceData{s.traces.Data[74]}
+	s.traces.Data = []TraceData{s.traces.Data[211]}
 	for i := range s.traces.Data {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
+			rand.Seed(2)
+			fmt.Println("pre setup")
+
 			s.SetupTest()
+			fmt.Println("post setup")
+
 			s.actualVscidToMapping = map[uint64]map[int64]providerkeeper.ConsumerPubKey{}
 			s.actualVscidToMapping[s.offsetProviderVscId] = s.buildMapping()
-			s.actualVscidToMapping[16] = s.buildMapping()
+			s.actualVscidToMapping[s.offsetProviderVscId] = s.buildMapping()
 
 			s.traces.CurrentTraceIx = i
 			defer func() {
