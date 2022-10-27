@@ -29,7 +29,7 @@ func stepsDoubleSign(consumerName, doubleSignChain, doubleSignValidator string) 
 			},
 		},
 		{
-			// power changed on provided, not on consumer
+			// power changed on provider, not on consumer
 			action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",
