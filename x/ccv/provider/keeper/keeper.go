@@ -5,12 +5,14 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
@@ -791,6 +793,14 @@ func (k Keeper) DeletePendingSlashPacket(ctx sdk.Context, packet types.SlashPack
 	store.Delete(types.PendingSlashPacketKey(packet))
 }
 
+// DeletePendingSlashPackets deletes the given slash packets from the pending slash packet queue
+func (k Keeper) DeletePendingSlashPackets(ctx sdk.Context, packets ...types.SlashPacket) {
+	store := ctx.KVStore(k.storeKey)
+	for _, packet := range packets {
+		store.Delete(types.PendingSlashPacketKey(packet))
+	}
+}
+
 // GetAllPendingSlashPackets returns all pending slash packets as an ordered list
 // This method is used for testing purposes only
 func (k Keeper) GetAllPendingSlashPackets(ctx sdk.Context) (packets []types.SlashPacket) {
@@ -800,9 +810,6 @@ func (k Keeper) GetAllPendingSlashPackets(ctx sdk.Context) (packets []types.Slas
 	})
 	return packets
 }
-
-// TODO: the below method will be used to handle slash packets as defined in spec
-// Use shim from this callback to handleSlashPacket
 
 // IteratePendingSlashPackets iterates over the pending slash packets queue and calls the provided callback
 func (k Keeper) IteratePendingSlashPackets(ctx sdk.Context, cb func(types.SlashPacket) bool) {
@@ -822,26 +829,60 @@ func (k Keeper) IteratePendingSlashPackets(ctx sdk.Context, cb func(types.SlashP
 
 // TODO: If you keep slash gas meter as a percent, make sure it's clear that the param is a percent (put in name)
 
-// GetSlashGasMeter returns a meter (persisted as a scalar decimal string) which stores "slash gas",
-// ie. an amount of voting power % that corresponds to an allowance of validators that can be jailed at any given time.
+// GetSlashGasMeter returns a meter (persisted as a signed int) which stores "slash gas",
+// ie. an amount of voting power corresponding to an allowance of validators (with non-zero voting power)
+// that can be jailed at a given time.
 //
-// Note: the value of this decimal should always be in the range of [-100, 100] (representing -100% to 100% of voting power)
-func (k Keeper) GetSlashGasMeter(ctx sdk.Context) sdk.Dec {
+// Note: the value of this decimal should always be in the range of tendermint's [-MaxVotingPower, MaxVotingPower]
+// TODO: Is this the standard way to persist a signed int in sdk?
+func (k Keeper) GetSlashGasMeter(ctx sdk.Context) sdk.Int {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.SlashGasMeterKey())
 	if bz == nil {
 		panic("slash gas meter not set")
 	}
-	return sdk.MustNewDecFromStr(string(bz))
+	value := sdk.ZeroInt()
+	err := value.Unmarshal(bz)
+	if err != nil {
+		panic(fmt.Sprintf("failed to unmarshal slash gas meter: %v", err))
+	}
+	return value
 }
 
-// SetSlashGasMeter sets the "slash gas" meter to the given decimal string value
+// SetSlashGasMeter sets the "slash gas" meter to the given signed int value
 //
-// Note: the value of this decimal should always be in the range of [-100, 100] (representing -100% to 100% of voting power)
-func (k Keeper) SetSlashGasMeter(ctx sdk.Context, value sdk.Dec) {
-	if value.LT(sdk.NewDec(-100)) || value.GT(sdk.NewDec(100)) {
-		panic("attempted slash gas meter set value is out of range")
+// Note: the value of this decimal should always be in the range of tendermint's [-MaxVotingPower, MaxVotingPower]
+func (k Keeper) SetSlashGasMeter(ctx sdk.Context, value sdk.Int) {
+	if value.GT(sdk.NewInt(tmtypes.MaxTotalVotingPower)) {
+		panic("slash gas meter value cannot be greater than tendermint's MaxTotalVotingPower")
+	}
+	if value.LT(sdk.NewInt(-tmtypes.MaxTotalVotingPower)) {
+		panic("slash gas meter value cannot be less than negative tendermint's MaxTotalVotingPower")
 	}
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.SlashGasMeterKey(), []byte(value.String()))
+	bz, err := value.Marshal()
+	if err != nil {
+		panic(fmt.Sprintf("failed to marshal slash gas meter: %v", err))
+	}
+	store.Set(types.SlashGasMeterKey(), bz)
+}
+
+// GetLastSlashGasReplenishTime returns the last time the slash gas meter was replenished
+func (k Keeper) GetLastSlashGasReplenishTime(ctx sdk.Context) time.Time {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.LastSlashGasReplenishTimeKey())
+	if bz == nil {
+		panic("last slash gas replenish time not set")
+	}
+	time, err := sdk.ParseTimeBytes(bz)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse last slash gas replenish time: %s", err))
+	}
+	return time.UTC()
+}
+
+// SetLastSlashGasReplenishTime sets the last time the slash gas meter was replenished
+func (k Keeper) SetLastSlashGasReplenishTime(ctx sdk.Context, time time.Time) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.LastSlashGasReplenishTimeKey(), sdk.FormatTimeBytes(time.UTC()))
 }

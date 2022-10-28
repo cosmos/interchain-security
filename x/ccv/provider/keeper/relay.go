@@ -4,16 +4,17 @@ import (
 	"fmt"
 	"time"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
@@ -250,11 +251,100 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 // This method executes every end block routine
 func (k Keeper) HandlePendingSlashPackets(ctx sdk.Context) {
 
-	// meter := k.GetSlashGasMeter(ctx)
+	meter := k.GetSlashGasMeter(ctx)
 
+	handledPackets := []types.SlashPacket{}
+	k.IteratePendingSlashPackets(ctx, func(nextSlashPacket types.SlashPacket) bool {
+		// Do not handle anymore slash packets if the meter has 0 or negative gas
+		if !meter.IsPositive() {
+			return true
+		}
+
+		gas := k.getSlashGas(ctx, nextSlashPacket)
+		meter.Sub(gas)
+
+		_, err := k.HandleSlashPacket(ctx, nextSlashPacket.ConsumerChainID, nextSlashPacket.Data)
+		if err != nil {
+			panic(fmt.Sprintf("failed to handle slash packet: %s", err.Error()))
+		}
+		handledPackets = append(handledPackets, nextSlashPacket)
+		return false
+	})
+	k.DeletePendingSlashPackets(ctx, handledPackets...)
+	k.SetSlashGasMeter(ctx, meter)
+}
+
+// NOTE: GetLastTotalPower is aligned by block with GetValidatorUpdates due to this method
+// Link:https://github.com/cosmos/cosmos-sdk/blob/interchain-security-rebase/x/staking/keeper/val_state_change.go#L225
+// or see end of ApplyAndReturnValidatorSetUpdates in staking keeper of cosmos sdk.
+//
+// Essentially, every endblock, that method is called, which updates both pieces of state used here.
+// TODO: Make an e2e test that asserts that the order of endblockers is correct between staking and ccv
+// TODO: ie. the staking updates need to occur before circuit breaker logic, so circuit breaker has most up to date val powers.
+//
+// TODO: In fact, you should prob make a dedicated e2e test which calls InitGenesis between the two modules' endblockers
+// so that we can gauruntee that the order of endblockers is correct (considering the above link)
+func (k Keeper) getSlashGas(ctx sdk.Context, packet types.SlashPacket) sdk.Int {
+	totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
+	updates := k.stakingKeeper.GetValidatorUpdates(ctx)
+
+	var valPower int64
+	found := false
+	// TODO: Is there a more efficient way find val power besides linear search?
+	for _, update := range updates {
+		packetConsAddr := sdk.ConsAddress(packet.Data.Validator.Address)
+		// Get pub key from update, converted to cons address
+		pubKey, err := cryptocodec.FromTmProtoPublicKey(update.PubKey)
+		if err != nil {
+			panic(fmt.Sprintf("failed to get sdk pubkey from validator update: %s", err.Error()))
+		}
+		updateConsAddr := sdk.GetConsAddress(pubKey)
+		if packetConsAddr.Equals(updateConsAddr) {
+			valPower = update.Power
+			found = true
+			break
+		}
+	}
+	// TODO: This ish will need a lot of testing
+	if !found {
+		panic(fmt.Sprintf("validator %s not found in validator updates", packet.Data.Validator.Address))
+	}
+	return sdk.NewInt(valPower).Quo(totalPower)
+}
+
+// CheckForSlashMeterReplenishment checks if the slash gas meter should be replenished, and if so, replenishes it.
+// This method executes every end block routine
+// TODO: hook this into endblocker
+// TODO: unit and e2e tests
+func (k Keeper) CheckForSlashMeterReplenishment(ctx sdk.Context) {
+	// TODO: Figure out time formats.
+	// TODO: Need to set initial replenishment time
+	if ctx.BlockTime().UTC().After(k.GetLastSlashGasReplenishTime(ctx).Add(time.Hour).UTC()) {
+		// TODO: Use param for replenish period and allowance
+		// slashGasAllowance := k.GetParams(ctx).SlashGasAllowance
+		// TODO: change code and documentation to reflect that this is a string param
+		slashGasAllowanceFraction := sdk.NewDec(5).Quo(sdk.NewDec(100)) // This will be a string param, ex: "0.05"
+
+		// Compute slash gas allowance in units of tendermint voting power (int64)
+		// TODO: This calculation needs to be tested
+		slashGasAllowance := sdk.NewInt(sdk.NewDec(tmtypes.MaxTotalVotingPower).Mul(slashGasAllowanceFraction).RoundInt64())
+
+		meter := k.GetSlashGasMeter(ctx)
+
+		// Replenish gas up to gas allowance per period. That is, if meter was negative
+		// before being replenished, it'll gain some additional gas. However, if the meter
+		// was 0 or positive in value, it'll be replenished only up to it's allowance for the period.
+		meter = meter.Add(slashGasAllowance)
+		if meter.GT(slashGasAllowance) {
+			meter = slashGasAllowance
+		}
+		k.SetSlashGasMeter(ctx, meter)
+		k.SetLastSlashGasReplenishTime(ctx, ctx.BlockTime())
+	}
 }
 
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type
+// TODO: You can make this method accept the new slash packet type you've defined, but it'll require some changes
 // TODO: update unit tests and e2e, do so after design is more finalized
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
 

@@ -22,6 +22,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -382,11 +383,11 @@ func TestPendingSlashPacketDeletion(t *testing.T) {
 
 	packets := []types.SlashPacket{}
 	packets = append(packets, types.NewSlashPacket(now, "chain-0", testkeeper.GetNewSlashPacketData()))
-	packets = append(packets, types.NewSlashPacket(now.Add(time.Hour), "chain-1", testkeeper.GetNewSlashPacketData()))
-	packets = append(packets, types.NewSlashPacket(now.Add(2*time.Hour), "chain-2", testkeeper.GetNewSlashPacketData()))
-	packets = append(packets, types.NewSlashPacket(now.Add(3*time.Hour), "chain-3", testkeeper.GetNewSlashPacketData()))
-	packets = append(packets, types.NewSlashPacket(now.Add(4*time.Hour), "chain-4", testkeeper.GetNewSlashPacketData()))
-	packets = append(packets, types.NewSlashPacket(now.Add(5*time.Hour), "chain-5", testkeeper.GetNewSlashPacketData()))
+	packets = append(packets, types.NewSlashPacket(now.Add(time.Hour).UTC(), "chain-1", testkeeper.GetNewSlashPacketData()))
+	packets = append(packets, types.NewSlashPacket(now.Add(2*time.Hour).Local(), "chain-2", testkeeper.GetNewSlashPacketData()))
+	packets = append(packets, types.NewSlashPacket(now.Add(3*time.Hour).UTC(), "chain-3", testkeeper.GetNewSlashPacketData()))
+	packets = append(packets, types.NewSlashPacket(now.Add(4*time.Hour).Local(), "chain-4", testkeeper.GetNewSlashPacketData()))
+	packets = append(packets, types.NewSlashPacket(now.Add(5*time.Hour).UTC(), "chain-5", testkeeper.GetNewSlashPacketData()))
 	packets = append(packets, types.NewSlashPacket(now.Add(6*time.Hour), "chain-6", testkeeper.GetNewSlashPacketData()))
 
 	// Instantiate shuffled copy of above slice
@@ -409,9 +410,7 @@ func TestPendingSlashPacketDeletion(t *testing.T) {
 	}
 
 	// Delete packets 1, 3, 5 (0-indexed)
-	providerKeeper.DeletePendingSlashPacket(ctx, gotPackets[1])
-	providerKeeper.DeletePendingSlashPacket(ctx, gotPackets[3])
-	providerKeeper.DeletePendingSlashPacket(ctx, gotPackets[5])
+	providerKeeper.DeletePendingSlashPackets(ctx, gotPackets[1], gotPackets[3], gotPackets[5])
 
 	// Assert deletion and ordering
 	gotPackets = providerKeeper.GetAllPendingSlashPackets(ctx)
@@ -429,31 +428,21 @@ func TestPendingSlashPacketDeletion(t *testing.T) {
 func TestSlashGasMeter(t *testing.T) {
 
 	testCases := []struct {
-		meterValue  string
+		meterValue  sdk.Int
 		shouldPanic bool
 	}{
-		{meterValue: "-4723894.3", shouldPanic: true},
-		{meterValue: "-4239", shouldPanic: true},
-		{meterValue: "-106.3", shouldPanic: true},
-		{meterValue: "-100.000000001", shouldPanic: true},
-		{meterValue: "-100", shouldPanic: false},
-		{meterValue: "-100.000", shouldPanic: false},
-		{meterValue: "-100.000000000000000000", shouldPanic: false},
-		{meterValue: "-44.42342342", shouldPanic: false},
-		{meterValue: "-15.3", shouldPanic: false},
-		{meterValue: "-12", shouldPanic: false},
-		{meterValue: "0.00000000", shouldPanic: false},
-		{meterValue: "0.000000000000000000", shouldPanic: false},
-		{meterValue: "0.05", shouldPanic: false},
-		{meterValue: "0.42343442342342432", shouldPanic: false},
-		{meterValue: "5.34238472394", shouldPanic: false},
-		{meterValue: "15.7237438297432984", shouldPanic: false},
-		{meterValue: "67.48723974892374", shouldPanic: false},
-		{meterValue: "100.0000000000000", shouldPanic: false},
-		{meterValue: "100", shouldPanic: false},
-		{meterValue: "100.00000000040", shouldPanic: true},
-		{meterValue: "104.3", shouldPanic: true},
-		{meterValue: "748239", shouldPanic: true},
+		{meterValue: sdk.NewInt(-7999999999999999999), shouldPanic: true},
+		{meterValue: sdk.NewInt(-tmtypes.MaxTotalVotingPower - 1), shouldPanic: true},
+		{meterValue: sdk.NewInt(-tmtypes.MaxTotalVotingPower), shouldPanic: false},
+		{meterValue: sdk.NewInt(-50000000078987), shouldPanic: false},
+		{meterValue: sdk.NewInt(-4237), shouldPanic: false},
+		{meterValue: sdk.NewInt(0), shouldPanic: false},
+		{meterValue: sdk.NewInt(1), shouldPanic: false},
+		{meterValue: sdk.NewInt(4237897), shouldPanic: false},
+		{meterValue: sdk.NewInt(500078078987), shouldPanic: false},
+		{meterValue: sdk.NewInt(tmtypes.MaxTotalVotingPower), shouldPanic: false},
+		{meterValue: sdk.NewInt(tmtypes.MaxTotalVotingPower + 1), shouldPanic: true},
+		{meterValue: sdk.NewInt(7999974823991111199), shouldPanic: true},
 	}
 
 	for _, tc := range testCases {
@@ -461,19 +450,41 @@ func TestSlashGasMeter(t *testing.T) {
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
-		// Note: More than 18 decimal places of precision is not supported by the sdk.Dec type by default.
-		// Invalid strings would also return an error, but this is outside the scope of this test.
-		decMeterValue, err := sdk.NewDecFromStr(tc.meterValue)
-		require.NoError(t, err)
-
 		if tc.shouldPanic {
 			require.Panics(t, func() {
-				providerKeeper.SetSlashGasMeter(ctx, decMeterValue)
+				providerKeeper.SetSlashGasMeter(ctx, tc.meterValue)
 			})
 		} else {
-			providerKeeper.SetSlashGasMeter(ctx, decMeterValue)
+			providerKeeper.SetSlashGasMeter(ctx, tc.meterValue)
 			gotMeterValue := providerKeeper.GetSlashGasMeter(ctx)
-			require.Equal(t, decMeterValue, gotMeterValue)
+			require.Equal(t, tc.meterValue, gotMeterValue)
 		}
+	}
+}
+
+// TestLastSlashGasReplenishTime tests the getter and setter for the last slash gas replenish time
+func TestLastSlashGasReplenishTime(t *testing.T) {
+
+	testCases := []time.Time{
+		time.Now(),
+		time.Now().Add(1 * time.Hour).UTC(),
+		time.Now().Add(2 * time.Hour).Local(),
+		time.Now().Add(3 * time.Hour).In(time.FixedZone("UTC-8", -8*60*60)),
+		time.Now().Add(4 * time.Hour).Local(),
+		time.Now().Add(-1 * time.Hour).UTC(),
+		time.Now().Add(-2 * time.Hour).Local(),
+		time.Now().Add(-3 * time.Hour).UTC(),
+		time.Now().Add(-4 * time.Hour).Local(),
+	}
+
+	for _, tc := range testCases {
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+			t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
+
+		providerKeeper.SetLastSlashGasReplenishTime(ctx, tc)
+		gotTime := providerKeeper.GetLastSlashGasReplenishTime(ctx)
+		// Time should be returned in UTC
+		require.Equal(t, tc.UTC(), gotTime)
 	}
 }

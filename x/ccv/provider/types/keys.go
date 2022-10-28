@@ -41,8 +41,12 @@ const (
 	// ValidatorSetUpdateIdByteKey is the byte key that stores the current validator set update id
 	ValidatorSetUpdateIdByteKey
 
-	// SlashGasMeterBytePrefix is the byte prefix that will store the slash gas meter
+	// SlashGasMeterBytePrefix is the byte prefix for storing the slash gas meter
 	SlashGasMeterBytePrefix
+
+	// LastSlashGasReplenishTimeBytePrefix is the byte prefix for storing
+	// the last time the slash gas meter was replenished
+	LastSlashGasReplenishTimeBytePrefix
 
 	// ChainToChannelBytePrefix is the byte prefix for storing mapping
 	// from chainID to the channel ID that is used to send over validator set changes.
@@ -117,6 +121,11 @@ func ValidatorSetUpdateIdKey() []byte {
 // SlashGasMeterKey returns the key under which the slash meter is stored
 func SlashGasMeterKey() []byte {
 	return []byte{SlashGasMeterBytePrefix}
+}
+
+// LastSlashGasReplenishTimeKey returns the key under which the last time the slash gas meter was replenished is stored
+func LastSlashGasReplenishTimeKey() []byte {
+	return []byte{LastSlashGasReplenishTimeBytePrefix}
 }
 
 // ChainToChannelKey returns the key under which the CCV channel ID will be stored for the given consumer chain.

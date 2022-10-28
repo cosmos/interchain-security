@@ -15,7 +15,6 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -43,8 +42,8 @@ type InMemKeeperParams struct {
 
 // NewInMemKeeperParams instantiates in-memory keeper params with default values
 func NewInMemKeeperParams(t testing.TB) InMemKeeperParams {
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
-	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
+	storeKey := sdk.NewKVStoreKey(ccvtypes.StoreKey)
+	memStoreKey := storetypes.NewMemoryStoreKey(ccvtypes.MemStoreKey)
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
