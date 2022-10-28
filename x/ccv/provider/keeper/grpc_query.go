@@ -71,3 +71,16 @@ func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryC
 
 	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &props}, nil
 }
+
+func (k Keeper) QueryConsumerChainValidatorKeyMapping(goCtx context.Context, req *types.QueryConsumerChainValidatorKeyMappingRequest) (*types.QueryConsumerChainValidatorKeyMappingResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// TODO:
+	_ = ctx
+
+	return &types.QueryConsumerChainValidatorKeyMappingResponse{}, nil
+}
