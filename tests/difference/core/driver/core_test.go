@@ -211,8 +211,9 @@ func (s *CoreSuite) undelegate(val int64, amt int64) {
 // consumerSlash simulates a slash event occurring on the consumer chain.
 // It can be for a downtime or doublesign.
 func (s *CoreSuite) consumerSlash(val int64, vscid uint64, h int64, isDowntime bool) {
-	consumerPubKey := s.actualVscidToMapping[vscid+s.offsetProviderVscId][val]
-	consumerConsAddr := providerkeeper.PubKeyToConsAddr(consumerPubKey)
+	// consumerPubKey := s.actualVscidToMapping[vscid+s.offsetProviderVscId][val]
+	// consumerConsAddr := providerkeeper.PubKeyToConsAddr(consumerPubKey)
+	consumerConsAddr := s.consAddr(val)
 
 	kind := stakingtypes.DoubleSign
 	if isDowntime {
@@ -352,7 +353,7 @@ func (s *CoreSuite) executeTrace() {
 				s.chain(C).Signers[cki2.Address().String()] = privK
 				_ = pk
 				_ = ck
-				s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(pk, ck)
+				// s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(pk, ck)
 			}
 		}
 
@@ -546,9 +547,40 @@ func (s *CoreSuite) TestAssumptions() {
 // Test a set of traces
 func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
-		Data: LoadTraces("tracesAlt.json"),
+		Data: LoadTraces("traces.json"),
 	}
-	s.traces.Data = []TraceData{s.traces.Data[211]}
+	// s.traces.Data = []TraceData{s.traces.Data[0]}
+	for i := range s.traces.Data {
+		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
+			// Setup a new pair of chains for each trace
+			s.SetupTest()
+			s.actualVscidToMapping = map[uint64]map[int64]providerkeeper.ConsumerPubKey{}
+			s.actualVscidToMapping[s.offsetProviderVscId] = s.buildMapping()
+
+			s.traces.CurrentTraceIx = i
+			defer func() {
+				// If a panic occurs, we trap it to print a diagnostic
+				// and improve debugging experience.
+				if r := recover(); r != nil {
+					fmt.Println(s.traces.Diagnostic())
+					fmt.Println(r)
+					// Double panic to halt.
+					panic("Panic occurred during TestTraces")
+				}
+			}()
+			// Record information about the trace, for debugging
+			// diagnostics.
+			s.executeTrace()
+		})
+	}
+}
+
+// Test a set of traces
+func (s *CoreSuite) TestTracesNoDowntime() {
+	s.traces = Traces{
+		Data: LoadTraces("tracesNoDowntime.json"),
+	}
+	// s.traces.Data = []TraceData{s.traces.Data[0]}
 	for i := range s.traces.Data {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
@@ -559,7 +591,6 @@ func (s *CoreSuite) TestTraces() {
 			fmt.Println("post setup")
 
 			s.actualVscidToMapping = map[uint64]map[int64]providerkeeper.ConsumerPubKey{}
-			s.actualVscidToMapping[s.offsetProviderVscId] = s.buildMapping()
 			s.actualVscidToMapping[s.offsetProviderVscId] = s.buildMapping()
 
 			s.traces.CurrentTraceIx = i
