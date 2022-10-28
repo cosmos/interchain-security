@@ -3,8 +3,6 @@ package provider
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	// "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
