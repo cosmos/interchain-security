@@ -13,6 +13,7 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
 type Helper struct {
@@ -47,5 +48,7 @@ func TestInvalidMsg(t *testing.T) {
 
 func TestDesignateConsensusKeyForConsumerChainHappy(t *testing.T) {
 	h := MakeHelper(t)
-
+	msg, err := types.NewMsgDesignateConsensusKeyForConsumerChain()
+	require.NoError(t, err)
+	h.handler(h.ctx, msg)
 }
