@@ -303,8 +303,8 @@ func TestMaturedUnbondingOps(t *testing.T) {
 	}
 }
 
-// TestPendingSlashPacket tests the queue and iteration functions
-// for pending slash packets with assertion of FIFO ordering
+// TestPendingSlashPacket tests the queue, iteration, and queue length functions
+// for pending slash packets, with assertion of FIFO ordering
 func TestPendingSlashPackets(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
@@ -314,16 +314,21 @@ func TestPendingSlashPackets(t *testing.T) {
 	// Consistent time for "now"
 	now := time.Now()
 
+	require.Equal(t, uint64(0), providerKeeper.GetNumPendingSlashPackets(ctx))
+
 	// Queue 3 slash packets for chainIDs 0, 1, 2
 	for i := 0; i < 3; i++ {
 		packet := types.NewSlashPacket(now, "chain-"+fmt.Sprint(i), testkeeper.GetNewSlashPacketData())
 		providerKeeper.QueuePendingSlashPacket(ctx, packet)
 	}
+	require.Equal(t, uint64(3), providerKeeper.GetNumPendingSlashPackets(ctx))
+
 	// Queue 3 slash packets for chainIDs 0, 1, 2 an hour later
 	for i := 0; i < 3; i++ {
 		packet := types.NewSlashPacket(now.Add(time.Hour), "chain-"+fmt.Sprint(i), testkeeper.GetNewSlashPacketData())
 		providerKeeper.QueuePendingSlashPacket(ctx, packet)
 	}
+	require.Equal(t, uint64(6), providerKeeper.GetNumPendingSlashPackets(ctx))
 
 	// Retrieve packets from store
 	packets := providerKeeper.GetAllPendingSlashPackets(ctx)
@@ -343,6 +348,7 @@ func TestPendingSlashPackets(t *testing.T) {
 		packet := types.NewSlashPacket(now.Add(2*time.Hour), "chain-"+fmt.Sprint(i+5), testkeeper.GetNewSlashPacketData())
 		providerKeeper.QueuePendingSlashPacket(ctx, packet)
 	}
+	require.Equal(t, uint64(9), providerKeeper.GetNumPendingSlashPackets(ctx))
 
 	// Retrieve packets from store
 	packets = providerKeeper.GetAllPendingSlashPackets(ctx)
@@ -372,7 +378,8 @@ func TestPendingSlashPackets(t *testing.T) {
 	require.Equal(t, 7, len(packets))
 }
 
-// TestPendingSlashPacketDeletion tests the deletion of pending slash packets with assertion of FIFO ordering
+// TestPendingSlashPacketDeletion tests the deletion and queue length functions for
+// pending slash packets with assertion of FIFO ordering
 func TestPendingSlashPacketDeletion(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
@@ -381,6 +388,9 @@ func TestPendingSlashPacketDeletion(t *testing.T) {
 
 	now := time.Now()
 
+	require.Equal(t, uint64(0), providerKeeper.GetNumPendingSlashPackets(ctx))
+
+	// Instantiate packets in the expected order we wish to get them back as (ordered by recv time)
 	packets := []types.SlashPacket{}
 	packets = append(packets, types.NewSlashPacket(now, "chain-0", testkeeper.GetNewSlashPacketData()))
 	packets = append(packets, types.NewSlashPacket(now.Add(time.Hour).UTC(), "chain-1", testkeeper.GetNewSlashPacketData()))
@@ -402,15 +412,21 @@ func TestPendingSlashPacketDeletion(t *testing.T) {
 		providerKeeper.QueuePendingSlashPacket(ctx, packet)
 	}
 
-	// Assert obtained order is decided upon via block time, not insertion order
+	require.Equal(t, uint64(7), providerKeeper.GetNumPendingSlashPackets(ctx))
+
+	// Assert obtained order is decided upon via packet recvTime, not insertion order
 	gotPackets := providerKeeper.GetAllPendingSlashPackets(ctx)
 	for i, gotPacket := range gotPackets {
 		expectedPacket := packets[i]
 		require.Equal(t, expectedPacket, gotPacket)
 	}
 
+	require.Equal(t, uint64(7), providerKeeper.GetNumPendingSlashPackets(ctx))
+
 	// Delete packets 1, 3, 5 (0-indexed)
 	providerKeeper.DeletePendingSlashPackets(ctx, gotPackets[1], gotPackets[3], gotPackets[5])
+
+	require.Equal(t, uint64(4), providerKeeper.GetNumPendingSlashPackets(ctx))
 
 	// Assert deletion and ordering
 	gotPackets = providerKeeper.GetAllPendingSlashPackets(ctx)

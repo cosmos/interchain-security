@@ -785,12 +785,7 @@ func (k Keeper) QueuePendingSlashPacket(ctx sdk.Context, packet types.SlashPacke
 	store := ctx.KVStore(k.storeKey)
 	dataBz := k.cdc.MustMarshal(&packet.Data)
 	store.Set(types.PendingSlashPacketKey(packet), dataBz)
-}
-
-// DeletePendingSlashPacket deletes a slash packet from the pending slash packet queue
-func (k Keeper) DeletePendingSlashPacket(ctx sdk.Context, packet types.SlashPacket) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.PendingSlashPacketKey(packet))
+	k.IncrementNumPendingSlashPackets(ctx)
 }
 
 // DeletePendingSlashPackets deletes the given slash packets from the pending slash packet queue
@@ -799,6 +794,35 @@ func (k Keeper) DeletePendingSlashPackets(ctx sdk.Context, packets ...types.Slas
 	for _, packet := range packets {
 		store.Delete(types.PendingSlashPacketKey(packet))
 	}
+	// Decrement the stored number of pending slash packets
+	numDeleted := uint64(len(packets))
+	k.setNumPendingSlashPackets(ctx, k.GetNumPendingSlashPackets(ctx)-numDeleted)
+}
+
+// GetNumPendingSlashPackets returns the number of pending slash packets in the queue
+func (k Keeper) GetNumPendingSlashPackets(ctx sdk.Context) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.NumPendingSlashPacketsKey())
+	if bz == nil {
+		// Queue starts with zero length by default
+		return 0
+	}
+	return binary.BigEndian.Uint64(bz)
+}
+
+// setNumPendingSlashPackets sets the number of pending slash packets in the queue
+// Note: this should only be called by the increment and delete functions
+func (k Keeper) setNumPendingSlashPackets(ctx sdk.Context, num uint64) {
+	store := ctx.KVStore(k.storeKey)
+	bz := make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, num)
+	store.Set(types.NumPendingSlashPacketsKey(), bz)
+}
+
+// IncrementNumPendingSlashPackets increments the number of pending slash packets in the queue
+func (k Keeper) IncrementNumPendingSlashPackets(ctx sdk.Context) {
+	num := k.GetNumPendingSlashPackets(ctx)
+	k.setNumPendingSlashPackets(ctx, num+1)
 }
 
 // GetAllPendingSlashPackets returns all pending slash packets as an ordered list

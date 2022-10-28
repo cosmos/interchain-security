@@ -48,6 +48,9 @@ const (
 	// the last time the slash gas meter was replenished
 	LastSlashGasReplenishTimeBytePrefix
 
+	// NumPendingSlashPacketsBytePrefix is the byte prefix for storing the number of pending slash packets in the queue
+	NumPendingSlashPacketsBytePrefix
+
 	// ChainToChannelBytePrefix is the byte prefix for storing mapping
 	// from chainID to the channel ID that is used to send over validator set changes.
 	ChainToChannelBytePrefix
@@ -126,6 +129,11 @@ func SlashGasMeterKey() []byte {
 // LastSlashGasReplenishTimeKey returns the key under which the last time the slash gas meter was replenished is stored
 func LastSlashGasReplenishTimeKey() []byte {
 	return []byte{LastSlashGasReplenishTimeBytePrefix}
+}
+
+// NumPendingSlashPacketsKey returns the key under which the number of pending slash packets is stored
+func NumPendingSlashPacketsKey() []byte {
+	return []byte{NumPendingSlashPacketsBytePrefix}
 }
 
 // ChainToChannelKey returns the key under which the CCV channel ID will be stored for the given consumer chain.

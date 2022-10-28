@@ -236,11 +236,17 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		}
 	}
 
-	// TODO: Implement a hardcoded number of queued slash packets that'd panic the binary consistently for all nodes
-
 	// If the validator is bonded, not tombstoned, and not jailed,
 	// queue the slash packet to be handled by the circuit breaker
 	k.QueuePendingSlashPacket(ctx, types.NewSlashPacket(ctx.BlockTime(), chainID, data))
+
+	if k.GetNumPendingSlashPackets(ctx) > 1000 {
+		// if the queue is too large, handle the oldest slash packet
+		// ^ lol the ai thought of this idea. It might be onto something.. The oldest slash packets would likely
+		// be the spam ones that don't affect voting power (jaisus the ai just finished that sentence)
+		// For now, we panic
+		panic("there are more than 1000 pending slash packets, something is wrong")
+	}
 
 	// TODO: Tests will fail until you call end blocker to execute HandleSlashPackets
 
