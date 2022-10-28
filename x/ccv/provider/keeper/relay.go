@@ -241,10 +241,8 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	k.QueuePendingSlashPacket(ctx, types.NewSlashPacket(ctx.BlockTime(), chainID, data))
 
 	if k.GetNumPendingSlashPackets(ctx) > 1000 {
-		// if the queue is too large, handle the oldest slash packet
-		// ^ lol the ai thought of this idea. It might be onto something.. The oldest slash packets would likely
-		// be the spam ones that don't affect voting power (jaisus the ai just finished that sentence)
-		// For now, we panic
+		// TODO: If the queue has gotten too large, iterate through it and handle/drop any packets that are relevant
+		// to validators which have a duplicate slash packet earlier in the queue. For now, we panic
 		panic("there are more than 1000 pending slash packets, something is wrong")
 	}
 
