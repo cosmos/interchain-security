@@ -1,0 +1,26 @@
+syntax = "proto3";
+package interchain_security.ccv.provider.v1;
+
+// this line is used by starport scaffolding # proto/tx/import
+
+option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types";
+
+import "google/api/annotations.proto";
+import "gogoproto/gogo.proto";
+import "interchain_security/ccv/provider/v1/keymap.proto";
+
+// Msg defines the Msg service.
+service Msg {
+  rpc DesignateConsensusKeyForConsumerChain(
+      MsgDesignateConsensusKeyForConsumerChain)
+      returns (MsgDesignateConsensusKeyForConsumerChainResponse);
+  // this line is used by starport scaffolding # proto/tx/rpc
+}
+
+message MsgDesignateConsensusKeyForConsumerChain { string placeholder = 1; }
+
+message MsgDesignateConsensusKeyForConsumerChainResponse {
+  string placeholder = 1;
+}
+
+// this line is used by starport scaffolding # proto/tx/message

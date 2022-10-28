@@ -8,7 +8,6 @@ import "gogoproto/gogo.proto";
 import "interchain_security/ccv/consumer/v1/genesis.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
 
-
 service Query {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
   // whose proposal has been accepted
@@ -39,6 +38,14 @@ service Query {
     option (google.api.http).get =
         "/interchain_security/ccv/provider/consumer_chain_stop_proposals";
   }
+
+  // TODO:
+  rpc QueryConsumerChainValidatorKeyMapping(
+      QueryConsumerChainValidatorKeyMappingRequest)
+      returns (QueryConsumerChainValidatorKeyMappingResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/provider/"
+                                   "consumer_chain_validator_key_mapping";
+  }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
@@ -54,17 +61,23 @@ message QueryConsumerChainsResponse { repeated Chain chains = 1; }
 
 message QueryConsumerChainStartProposalsRequest {}
 
-message QueryConsumerChainStartProposalsResponse { 
+message QueryConsumerChainStartProposalsResponse {
   ConsumerAdditionProposals proposals = 1;
 }
 
 message QueryConsumerChainStopProposalsRequest {}
 
-message QueryConsumerChainStopProposalsResponse { 
+message QueryConsumerChainStopProposalsResponse {
   ConsumerRemovalProposals proposals = 1;
 }
 
 message Chain {
   string chain_id = 1;
   string client_id = 2;
+}
+
+message QueryConsumerChainValidatorKeyMappingRequest { string placeholder = 1; }
+
+message QueryConsumerChainValidatorKeyMappingResponse {
+  string placeholder = 1;
 }
