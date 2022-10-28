@@ -2,14 +2,12 @@ package keeper_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -17,21 +15,6 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 )
-
-// TestUnbondingTime tests the getter and setter for the unbonding period of a consumer chain,
-func TestUnbondingTime(t *testing.T) {
-
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-	consumerKeeper.SetParams(ctx, consumertypes.DefaultParams())
-
-	ubdTime := consumerKeeper.GetUnbondingPeriod(ctx)
-	require.Equal(t, consumertypes.DefaultConsumerUnbondingPeriod, ubdTime)
-
-	consumerKeeper.SetUnbondingPeriod(ctx, time.Hour*24*10)
-	storedUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(ctx)
-	require.Equal(t, time.Hour*24*10, storedUnbondingPeriod)
-}
 
 // TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper
 func TestProviderClientID(t *testing.T) {
