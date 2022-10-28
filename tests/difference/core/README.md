@@ -74,6 +74,21 @@ yarn --version
 yarn install
 ```
 
+If you have an incompatible node version installed, you can still use nodejs v16 via `nvm`.
+```bash
+# install nvm - restart your terminal session for changes to take effect
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
+
+# install latest nodejs v16.x.x
+nvm install 16.18.0
+
+# use nodejs v16.x.x
+nvm use 16
+
+# now you can run yarn install with no issues
+yarn install
+```
+
 ### Commands
 
 There are several top level yarn project scripts which can be run via
