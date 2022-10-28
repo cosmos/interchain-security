@@ -777,3 +777,59 @@ func TestBeginBlockCCR(t *testing.T) {
 		ctx, pendingProps[2].ChainId, pendingProps[2].StopTime)
 	require.True(t, found)
 }
+
+// Test getting both matured and pending comnsumer addition proposals
+func TestGetAllConsumerAdditionProps(t *testing.T) {
+	now := time.Now().UTC()
+
+	props := []types.ConsumerAdditionProposal{
+		{ChainId: "1", SpawnTime: now.Add(1 * time.Hour)},
+		{ChainId: "2", SpawnTime: now.Add(2 * time.Hour)},
+		{ChainId: "3", SpawnTime: now.Add(3 * time.Hour)},
+		{ChainId: "4", SpawnTime: now.Add(4 * time.Hour)},
+	}
+
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	defer ctrl.Finish()
+
+	for _, prop := range props {
+		cpProp := prop // bring into loop scope - avoids using iterator pointer instead of value pointer
+		err := providerKeeper.SetPendingConsumerAdditionProp(ctx, &cpProp)
+		require.NoError(t, err)
+	}
+
+	// advance the clock to be 1 minute after first proposal
+	ctx = ctx.WithBlockTime(now.Add(time.Minute))
+	res := providerKeeper.GetAllConsumerAdditionProps(ctx)
+	require.NotEmpty(t, res, "GetAllConsumerAdditionProps returned empty result")
+	require.Len(t, res.Pending, 4, "wrong len for pending addition props")
+	require.Equal(t, props[0].ChainId, res.Pending[0].ChainId, "wrong chain ID for pending addition prop")
+}
+
+// Test getting both matured and pending consumer removal proposals
+func TestGetAllConsumerRemovalProps(t *testing.T) {
+	now := time.Now().UTC()
+
+	props := []types.ConsumerRemovalProposal{
+		{ChainId: "1", StopTime: now.Add(1 * time.Hour)},
+		{ChainId: "2", StopTime: now.Add(2 * time.Hour)},
+		{ChainId: "3", StopTime: now.Add(3 * time.Hour)},
+		{ChainId: "4", StopTime: now.Add(4 * time.Hour)},
+	}
+
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	defer ctrl.Finish()
+
+	for _, prop := range props {
+		providerKeeper.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
+	}
+
+	// advance the clock to be 1 minute after first proposal
+	ctx = ctx.WithBlockTime(now.Add(time.Minute))
+	res := providerKeeper.GetAllConsumerRemovalProps(ctx)
+	require.NotEmpty(t, res, "GetAllConsumerRemovalProps returned empty result")
+	require.Len(t, res.Pending, 4, "wrong len for pending removal props")
+	require.Equal(t, props[0].ChainId, res.Pending[0].ChainId, "wrong chain ID for pending removal prop")
+}
