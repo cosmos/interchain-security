@@ -6,6 +6,7 @@ import {
   BlockHistory,
   stakingWithoutSlashing,
   bondBasedConsumerVotingPower,
+  validatorSetReplication,
 } from './properties.js';
 import { Model } from './model.js';
 import {
@@ -329,6 +330,10 @@ function gen(seconds: number, checkProperties: boolean) {
         if (!stakingWithoutSlashing(hist)) {
           dumpTrace(`${DIR}trace_${i}.json`, actions, events);
           throw 'stakingWithoutSlashing property failure, trace written.';
+        }
+        if (!validatorSetReplication(hist)) {
+          dumpTrace(`${DIR}trace_${i}.json`, actions, events);
+          throw 'validatorSetReplication property failure, trace written.';
         }
       }
     }

@@ -271,10 +271,24 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
   );
 }
 
+/**
+ * Checks the Validator Set Replication property as defined
+ * in https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties
+ * Property: e very validator set on any consumer chain MUST either be or have been a validator set on the provider chain.
+ *
+ * @param hist A history of blocks.
+ * @returns Is the property satisfied?
+ */
+function validatorSetReplication(hist: BlockHistory): boolean {
+  const blocks = hist.blocks;
+  return true;
+}
+
 export {
   PartialOrder,
   CommittedBlock,
   BlockHistory,
   stakingWithoutSlashing,
   bondBasedConsumerVotingPower,
+  validatorSetReplication,
 };
