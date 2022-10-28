@@ -7,9 +7,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/testutil/e2e"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -214,11 +214,10 @@ func relayAllCommittedPackets(
 func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	// Get unboding period from staking keeper
 	providerUnbondingPeriod := s.providerApp.GetStakingKeeper().UnbondingTime(s.providerCtx())
-	consumerUnbondingPeriod, found := s.consumerApp.GetConsumerKeeper().GetUnbondingTime(s.consumerCtx())
-	s.Require().True(found)
-	expectedUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
-	s.Require().Equal(expectedUnbondingPeriod+24*time.Hour, providerUnbondingPeriod, "unexpected provider unbonding period")
-	s.Require().Equal(expectedUnbondingPeriod, consumerUnbondingPeriod, "unexpected consumer unbonding period")
+	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerCtx())
+	// Note: the assertions below are not strictly necessary, and rely on default values
+	s.Require().Equal(consumertypes.DefaultConsumerUnbondingPeriod+24*time.Hour, providerUnbondingPeriod, "unexpected provider unbonding period")
+	s.Require().Equal(consumertypes.DefaultConsumerUnbondingPeriod, consumerUnbondingPeriod, "unexpected consumer unbonding period")
 	var jumpPeriod time.Duration
 	if chainType == Provider {
 		jumpPeriod = providerUnbondingPeriod
@@ -354,8 +353,7 @@ func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.Sla
 // incrementTimeBy increments the overall time by jumpPeriod
 func incrementTimeBy(s *CCVTestSuite, jumpPeriod time.Duration) {
 	// Get unboding period from staking keeper
-	consumerUnbondingPeriod, found := s.consumerApp.GetConsumerKeeper().GetUnbondingTime(s.consumerChain.GetContext())
-	s.Require().True(found)
+	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerChain.GetContext())
 	split := 1
 	trustingPeriodFraction := s.providerApp.GetProviderKeeper().GetTrustingPeriodFraction(s.providerCtx())
 	if jumpPeriod > consumerUnbondingPeriod/time.Duration(trustingPeriodFraction) {

@@ -125,7 +125,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	providerUnbondingPeriod := suite.providerApp.GetStakingKeeper().UnbondingTime(suite.providerCtx())
 	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = providerUnbondingPeriod
 	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / time.Duration(trustingPeriodFraction)
-	consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
+	consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(suite.consumerCtx())
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
 	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / time.Duration(trustingPeriodFraction)
 	// - channel config
