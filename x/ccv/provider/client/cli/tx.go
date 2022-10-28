@@ -32,13 +32,13 @@ func GetTxCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	cmd.AddCommand(NewCreateValidatorCmd())
+	cmd.AddCommand(NewDesignateConsensusKeyForConsumerChainCmd())
 	// this line is used by starport scaffolding # 1
 
 	return cmd
 }
 
-func NewCreateValidatorCmd() *cobra.Command {
+func NewDesignateConsensusKeyForConsumerChainCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   ":TODO:",
 		Short: ":TODO:",
