@@ -17,7 +17,11 @@ service Msg {
   // this line is used by starport scaffolding # proto/tx/rpc
 }
 
-message MsgDesignateConsensusKeyForConsumerChain { string placeholder = 1; }
+message MsgDesignateConsensusKeyForConsumerChain {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  string placeholder = 1;
+}
 
 message MsgDesignateConsensusKeyForConsumerChainResponse {
   string placeholder = 1;
