@@ -6,5 +6,3 @@ docs/tla/states/
 *.out
 vendor/
 .vscode
-tests/difference/core/driver/traceAlt.json
-tests/difference/core/driver/tracesAlt.json

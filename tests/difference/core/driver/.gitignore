@@ -1,2 +1,3 @@
 *.log
 debug.json
+tracesNoDowntime.json

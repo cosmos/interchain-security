@@ -211,9 +211,9 @@ func (s *CoreSuite) undelegate(val int64, amt int64) {
 // consumerSlash simulates a slash event occurring on the consumer chain.
 // It can be for a downtime or doublesign.
 func (s *CoreSuite) consumerSlash(val int64, vscid uint64, h int64, isDowntime bool) {
-	// consumerPubKey := s.actualVscidToMapping[vscid+s.offsetProviderVscId][val]
-	// consumerConsAddr := providerkeeper.PubKeyToConsAddr(consumerPubKey)
-	consumerConsAddr := s.consAddr(val)
+	consumerPubKey := s.actualVscidToMapping[vscid+s.offsetProviderVscId][val]
+	consumerConsAddr := providerkeeper.PubKeyToConsAddr(consumerPubKey)
+	// consumerConsAddr := s.consAddr(val)
 
 	kind := stakingtypes.DoubleSign
 	if isDowntime {
@@ -353,7 +353,7 @@ func (s *CoreSuite) executeTrace() {
 				s.chain(C).Signers[cki2.Address().String()] = privK
 				_ = pk
 				_ = ck
-				// s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(pk, ck)
+				s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(pk, ck)
 			}
 		}
 
