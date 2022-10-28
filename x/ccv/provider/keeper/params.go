@@ -40,6 +40,30 @@ func (k Keeper) GetInitTimeoutPeriod(ctx sdk.Context) time.Duration {
 	return p
 }
 
+// GetSlashMeterReplenishPeriod returns the period for which the slash gas meter is replenished
+func (k Keeper) GetSlashMeterReplenishPeriod(ctx sdk.Context) time.Duration {
+	var p time.Duration
+	k.paramSpace.Get(ctx, types.KeySlashMeterReplenishPeriod, &p)
+	return p
+}
+
+// GetSlashGasReplenishFraction returns the string fraction of total voting power that is replenished to the
+// slash gas meter every replenish period. This param also serves as a maximum fraction of total voting power
+// that the slash gas meter can hold.
+func (k Keeper) GetSlashGasReplenishFraction(ctx sdk.Context) string {
+	var f string
+	k.paramSpace.Get(ctx, types.KeySlashGasReplenishFraction, &f)
+	return f
+}
+
+// GetMaxPendingSlashingPackets returns the maximum number of pending slashing packets that can be queued
+// before the provider chain halts
+func (k Keeper) GetMaxPendingSlashingPackets(ctx sdk.Context) int64 {
+	var p int64
+	k.paramSpace.Get(ctx, types.KeyMaxPendingSlashPackets, &p)
+	return p
+}
+
 // GetParams returns the paramset for the provider module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
@@ -47,6 +71,9 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetTrustingPeriodFraction(ctx),
 		k.GetCCVTimeoutPeriod(ctx),
 		k.GetInitTimeoutPeriod(ctx),
+		k.GetSlashMeterReplenishPeriod(ctx),
+		k.GetSlashGasReplenishFraction(ctx),
+		k.GetMaxPendingSlashingPackets(ctx),
 	)
 }
 

@@ -23,13 +23,28 @@ const (
 
 	// DefaultInitTimeoutPeriod defines the init timeout period
 	DefaultInitTimeoutPeriod = 7 * 24 * time.Hour
+
+	// DefaultSlashMeterReplenishPeriod defines the default period for which the slash gas meter is replenished
+	DefaultSlashMeterReplenishPeriod = time.Hour
+
+	// DefaultSlashFraction defines the default fraction of total voting power
+	// that is replenished to the slash gas meter every replenish period. This param also serves as a maximum
+	// fraction of total voting power that the slash gas meter can hold.
+	DefaultSlashGasReplenishFraction = "0.05"
+
+	// DefaultMaxPendingSlashPackets defines the default maximum number of pending slash packets that can be queued
+	// before the provider chain halts.
+	DefaultMaxPendingSlashPackets = 1000
 )
 
 // Reflection based keys for params subspace
 var (
-	KeyTemplateClient         = []byte("TemplateClient")
-	KeyTrustingPeriodFraction = []byte("TrustingPeriodFraction")
-	KeyInitTimeoutPeriod      = []byte("InitTimeoutPeriod")
+	KeyTemplateClient            = []byte("TemplateClient")
+	KeyTrustingPeriodFraction    = []byte("TrustingPeriodFraction")
+	KeyInitTimeoutPeriod         = []byte("InitTimeoutPeriod")
+	KeySlashMeterReplenishPeriod = []byte("SlashMeterReplenishPeriod")
+	KeySlashGasReplenishFraction = []byte("SlashGasReplenishFraction")
+	KeyMaxPendingSlashPackets    = []byte("MaxPendingSlashPackets")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -43,12 +58,18 @@ func NewParams(
 	trustingPeriodFraction int64,
 	ccvTimeoutPeriod time.Duration,
 	initTimeoutPeriod time.Duration,
+	slashMeterReplenishPeriod time.Duration,
+	slashGasReplenishFraction string,
+	maxPendingSlashPackets int64,
 ) Params {
 	return Params{
-		TemplateClient:         templateClient,
-		TrustingPeriodFraction: trustingPeriodFraction,
-		CcvTimeoutPeriod:       ccvTimeoutPeriod,
-		InitTimeoutPeriod:      initTimeoutPeriod,
+		TemplateClient:            templateClient,
+		TrustingPeriodFraction:    trustingPeriodFraction,
+		CcvTimeoutPeriod:          ccvTimeoutPeriod,
+		InitTimeoutPeriod:         initTimeoutPeriod,
+		SlashMeterReplenishPeriod: slashMeterReplenishPeriod,
+		SlashGasReplenishFraction: slashGasReplenishFraction,
+		MaxPendingSlashPackets:    maxPendingSlashPackets,
 	}
 }
 
@@ -71,6 +92,9 @@ func DefaultParams() Params {
 		DefaultTrustingPeriodFraction,
 		ccvtypes.DefaultCCVTimeoutPeriod,
 		DefaultInitTimeoutPeriod,
+		DefaultSlashMeterReplenishPeriod,
+		DefaultSlashGasReplenishFraction,
+		DefaultMaxPendingSlashPackets,
 	)
 }
 
@@ -91,6 +115,15 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidateDuration(p.InitTimeoutPeriod); err != nil {
 		return fmt.Errorf("init timeout period is invalid: %s", err)
 	}
+	if err := ccvtypes.ValidateDuration(p.SlashMeterReplenishPeriod); err != nil {
+		return fmt.Errorf("slash meter replenish period is invalid: %s", err)
+	}
+	if err := ccvtypes.ValidateStringFraction(p.SlashGasReplenishFraction); err != nil {
+		return fmt.Errorf("slash gas replenish fraction is invalid: %s", err)
+	}
+	if err := ccvtypes.ValidatePositiveInt64(p.MaxPendingSlashPackets); err != nil {
+		return fmt.Errorf("max pending slash packets is invalid: %s", err)
+	}
 	return nil
 }
 
@@ -101,6 +134,9 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyTrustingPeriodFraction, p.TrustingPeriodFraction, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyInitTimeoutPeriod, p.InitTimeoutPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(KeySlashMeterReplenishPeriod, p.SlashMeterReplenishPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(KeySlashGasReplenishFraction, p.SlashGasReplenishFraction, ccvtypes.ValidateStringFraction),
+		paramtypes.NewParamSetPair(KeyMaxPendingSlashPackets, p.MaxPendingSlashPackets, ccvtypes.ValidatePositiveInt64),
 	}
 }
 

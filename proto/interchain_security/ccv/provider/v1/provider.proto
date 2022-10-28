@@ -66,6 +66,17 @@ message Params {
   // The channel initialization (IBC channel opening handshake) will timeout after this duration
   google.protobuf.Duration init_timeout_period = 4
       [(gogoproto.nullable) = false, (gogoproto.stdduration) = true]; 
+
+  // The period for which the slash gas meter is replenished
+  google.protobuf.Duration slash_meter_replenish_period = 5
+      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  
+  // The fraction of total voting power that is replenished to the slash gas meter every replenish period.
+  // This param also serves as a maximum fraction of total voting power that the slash gas meter can hold.
+  string slash_gas_replenish_fraction = 6;
+
+  // The maximum amount of pending slash packets that can be queued before the provider chain halts.
+  int64 max_pending_slash_packets = 7;
 }
 
 message HandshakeMetadata {

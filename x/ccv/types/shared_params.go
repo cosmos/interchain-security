@@ -4,6 +4,7 @@ import (
 	fmt "fmt"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 )
@@ -74,4 +75,23 @@ func ValidateBech32(i interface{}) error {
 	}
 	_, err := sdktypes.AccAddressFromBech32(value)
 	return err
+}
+
+// Validates a string fraction in the range of [0, 1]
+func ValidateStringFraction(i interface{}) error {
+	str, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	dec, err := sdk.NewDecFromStr(str)
+	if err != nil {
+		return err
+	}
+	if dec.IsNegative() {
+		return fmt.Errorf("fraction is negative")
+	}
+	if dec.Sub(sdk.NewDec(1)).IsPositive() {
+		return fmt.Errorf("fraction cannot be above 1.0")
+	}
+	return nil
 }
