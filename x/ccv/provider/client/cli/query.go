@@ -22,6 +22,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerChains())
 	cmd.AddCommand(CmdConsumerStartProposals())
 	cmd.AddCommand(CmdConsumerStopProposals())
+	cmd.AddCommand(CmdConsumerValidatorKeyMapping())
 
 	return cmd
 }
@@ -131,6 +132,34 @@ func CmdConsumerStopProposals() *cobra.Command {
 
 			req := &types.QueryConsumerChainStopProposalsRequest{}
 			res, err := queryClient.QueryConsumerChainStops(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdConsumerValidatorKeyMapping() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list-chain-validator-key-mapping",
+		Short: "TODO:",
+		Long:  `TODO:`,
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryConsumerChainValidatorKeyMappingRequest{}
+			res, err := queryClient.QueryConsumerChainValidatorKeyMapping(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
