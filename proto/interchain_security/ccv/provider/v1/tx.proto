@@ -8,6 +8,8 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types"
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
 import "interchain_security/ccv/provider/v1/keymap.proto";
+import "cosmos_proto/cosmos.proto";
+import "google/protobuf/any.proto";
 
 // Msg defines the Msg service.
 service Msg {
@@ -20,7 +22,11 @@ service Msg {
 message MsgDesignateConsensusKeyForConsumerChain {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
-  string placeholder = 1;
+  string chain_id = 1;
+  string provider_validator_address = 2
+      [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  google.protobuf.Any consumer_validator_pubkey = 3
+      [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
 }
 
 message MsgDesignateConsensusKeyForConsumerChainResponse {
