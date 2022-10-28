@@ -51,4 +51,8 @@ func TestParams(t *testing.T) {
 	gotAddr := consumerKeeper.
 		GetProviderFeePoolAddrStr(ctx)
 	require.Equal(t, gotAddr, "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la")
+
+	consumerKeeper.SetUnbondingPeriod(ctx, time.Hour*24*10)
+	storedUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(ctx)
+	require.Equal(t, time.Hour*24*10, storedUnbondingPeriod)
 }
