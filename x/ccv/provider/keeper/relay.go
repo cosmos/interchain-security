@@ -66,6 +66,17 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	// clean up index
 	k.DeleteUnbondingOpIndex(ctx, chainID, data.ValsetUpdateId)
 
+	// remove the VSC timeout timestamp for this chainID and vscID
+	var timestamp time.Time
+	k.IterateVscTimeoutTimestamps(ctx, chainID, func(ts time.Time, vscID uint64) bool {
+		if vscID == data.ValsetUpdateId {
+			timestamp = ts
+			return false
+		}
+		return true
+	})
+	k.DeleteVscTimeoutTimestamp(ctx, chainID, timestamp)
+
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
 }
@@ -162,6 +173,9 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				if err != nil {
 					panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 				}
+				// add VSC timeout timestamp
+				ts := ctx.BlockTime().Add(k.GetParams(ctx).VscTimeoutPeriod)
+				k.SetVscTimeoutTimestamp(ctx, chainID, ts, packetData.ValsetUpdateId)
 			} else {
 				// store the packet data to be sent once the CCV channel is established
 				k.AppendPendingVSC(ctx, chainID, packetData)
@@ -189,6 +203,9 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 		if err != nil {
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
+		// add VSC timeout timestamp
+		ts := ctx.BlockTime().Add(k.GetParams(ctx).VscTimeoutPeriod)
+		k.SetVscTimeoutTimestamp(ctx, chainID, ts, data.ValsetUpdateId)
 	}
 }
 
@@ -300,24 +317,61 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 // EndBlockCIS contains the EndBlock logic needed for
 // the Consumer Chain Removal sub-protocol
 func (k Keeper) EndBlockCCR(ctx sdk.Context) {
-	currentTime := uint64(ctx.BlockTime().UnixNano())
+	currentTime := ctx.BlockTime()
+	currentTimeUint64 := uint64(currentTime.UnixNano())
 
 	// iterate over initTimeoutTimestamps
 	var removedChainIds []string
 	k.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) bool {
-		if currentTime > ts {
-			// initTimeout expired:
-			// stop the consumer chain and unlock the unbonding
-			err := k.StopConsumerChain(ctx, chainID, false, true)
-			if err != nil {
-				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
-			}
+		if currentTimeUint64 > ts {
+			// initTimeout expired
 			removedChainIds = append(removedChainIds, chainID)
+			// continue to iterate through all timed out consumers
+			return true
 		}
+		// break iteration since the timeout timestamps are in order
+		return false
+	})
+	// remove consumers that timed out
+	for _, chainID := range removedChainIds {
+		// stop the consumer chain and unlock the unbonding.
+		// Note that the CCV channel was not established,
+		// thus closeChan is irrelevant
+		err := k.StopConsumerChain(ctx, chainID, false, false)
+		if err != nil {
+			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+		}
+	}
+
+	// empty slice
+	removedChainIds = nil
+
+	// iterate over all consumers with established CCV channels
+	k.IterateChannelToChain(ctx, func(ctx sdk.Context, _, chainID string) bool {
+		// iterate over vscTimeoutTimestamps
+		k.IterateVscTimeoutTimestamps(ctx, chainID, func(ts time.Time, _ uint64) bool {
+			if currentTime.After(ts) {
+				// vscTimeout expired
+				removedChainIds = append(removedChainIds, chainID)
+			}
+			// break iteration since the timeout timestamps are in order
+			return false
+		})
+		// continue to iterate through all consumers
 		return true
 	})
-	// remove the init timeout timestamps for the stopped consumers
+	// remove consumers that timed out
 	for _, chainID := range removedChainIds {
-		k.DeleteInitTimeoutTimestamp(ctx, chainID)
+		// stop the consumer chain and use lockUnbondingOnTimeout
+		// to decide whether to lock the unbonding
+		err := k.StopConsumerChain(
+			ctx,
+			chainID,
+			k.GetLockUnbondingOnTimeout(ctx, chainID),
+			true,
+		)
+		if err != nil {
+			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+		}
 	}
 }

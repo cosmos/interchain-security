@@ -85,6 +85,31 @@ func TestTsAndChainIdKeyAndParse(t *testing.T) {
 	}
 }
 
+func TestChainIdAndTsKeyAndParse(t *testing.T) {
+	tests := []struct {
+		prefix    byte
+		chainID   string
+		timestamp time.Time
+	}{
+		{prefix: 0x01, chainID: "1", timestamp: time.Now()},
+		{prefix: 0x02, chainID: "some other ID", timestamp: time.Date(
+			2003, 11, 17, 20, 34, 58, 651387237, time.UTC)},
+		{prefix: 0x03, chainID: "some other other chain ID", timestamp: time.Now().Add(5000 * time.Hour)},
+	}
+
+	for _, test := range tests {
+		key := chainIdAndTsKey(test.prefix, test.chainID, test.timestamp)
+		require.NotEmpty(t, key)
+		// Expected bytes = prefix + chainID length + chainID + time bytes
+		expectedLen := 1 + 8 + len(test.chainID) + len(sdk.FormatTimeBytes(time.Time{}))
+		require.Equal(t, expectedLen, len(key))
+		parsedID, parsedTime, err := parseChainIdAndTsKey(test.prefix, key)
+		require.Equal(t, test.chainID, parsedID)
+		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
+		require.NoError(t, err)
+	}
+}
+
 func TestUnbondingOpIndexKeyAndParse(t *testing.T) {
 	tests := []struct {
 		chainID        string

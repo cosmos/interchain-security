@@ -141,47 +141,10 @@ func PendingCAPKey(timestamp time.Time, chainID string) []byte {
 	return tsAndChainIdKey(PendingCAPBytePrefix, timestamp, chainID)
 }
 
-// tsAndChainIdKey returns the key with the following format:
-// bytePrefix | len(timestamp) | timestamp | chainID
-func tsAndChainIdKey(prefix byte, timestamp time.Time, chainID string) []byte {
-	timeBz := sdk.FormatTimeBytes(timestamp)
-	timeBzL := len(timeBz)
-	prefixL := len([]byte{prefix})
-
-	bz := make([]byte, prefixL+8+timeBzL+len(chainID))
-	// copy the prefix
-	copy(bz[:prefixL], []byte{prefix})
-	// copy the time length
-	copy(bz[prefixL:prefixL+8], sdk.Uint64ToBigEndian(uint64(timeBzL)))
-	// copy the time bytes
-	copy(bz[prefixL+8:prefixL+8+timeBzL], timeBz)
-	// copy the chainId
-	copy(bz[prefixL+8+timeBzL:], chainID)
-	return bz
-}
-
 // ParsePendingCAPKey returns the time and chain ID for a pending consumer addition proposal key
 // or an error if unparsable
 func ParsePendingCAPKey(bz []byte) (time.Time, string, error) {
 	return parseTsAndChainIdKey(PendingCAPBytePrefix, bz)
-}
-
-// parseTsAndChainIdKey returns the time and chain ID for a TsAndChainId key
-func parseTsAndChainIdKey(prefix byte, bz []byte) (time.Time, string, error) {
-	expectedPrefix := []byte{prefix}
-	prefixL := len(expectedPrefix)
-	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
-		return time.Time{}, "", fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
-	}
-
-	timeBzL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
-	timestamp, err := sdk.ParseTimeBytes(bz[prefixL+8 : prefixL+8+int(timeBzL)])
-	if err != nil {
-		return time.Time{}, "", err
-	}
-
-	chainID := string(bz[prefixL+8+int(timeBzL):])
-	return timestamp, chainID, nil
 }
 
 // PendingCRPKey returns the key under which pending consumer removal proposals are stored
@@ -251,16 +214,16 @@ func PendingVSCsKey(chainID string) []byte {
 	return append([]byte{PendingVSCsBytePrefix}, []byte(chainID)...)
 }
 
-// VscTimeoutTimestampKey returns the key under which the list of
-// VSC timeout timestamps for a given chain ID is stored
-func VscTimeoutTimestampKey(timestamp time.Time, chainID string) []byte {
-	return tsAndChainIdKey(VscTimeoutTimestampBytePrefix, timestamp, chainID)
+// VscTimeoutTimestampKey returns the key under which the
+// IDs of the outstanding VSCPackets are stored
+func VscTimeoutTimestampKey(chainID string, timestamp time.Time) []byte {
+	return chainIdAndTsKey(VscTimeoutTimestampBytePrefix, chainID, timestamp)
 }
 
 // ParseVscTimeoutTimestampKey returns the time and chain ID
 // for a VscTimeoutTimestampKey or an error if unparsable
-func ParseVscTimeoutTimestampKey(bz []byte) (time.Time, string, error) {
-	return parseTsAndChainIdKey(VscTimeoutTimestampBytePrefix, bz)
+func ParseVscTimeoutTimestampKey(bz []byte) (string, time.Time, error) {
+	return parseChainIdAndTsKey(VscTimeoutTimestampBytePrefix, bz)
 }
 
 // LockUnbondingOnTimeoutKey returns the key that will store the consumer chain id which unbonding operations are locked
@@ -281,4 +244,84 @@ func AppendMany(byteses ...[]byte) (out []byte) {
 func HashString(x string) []byte {
 	hash := sha256.Sum256([]byte(x))
 	return hash[:]
+}
+
+// tsAndChainIdKey returns the key with the following format:
+// bytePrefix | len(timestamp) | timestamp | chainID
+func tsAndChainIdKey(prefix byte, timestamp time.Time, chainID string) []byte {
+	timeBz := sdk.FormatTimeBytes(timestamp)
+	timeBzL := len(timeBz)
+
+	bz := make([]byte, len([]byte{prefix})+8+timeBzL+len(chainID))
+	// copy the prefix
+	byteLen := copy(bz, []byte{prefix})
+	// copy the time length
+	byteLen += copy(bz[byteLen:], sdk.Uint64ToBigEndian(uint64(timeBzL)))
+	// copy the time bytes
+	byteLen += copy(bz[byteLen:], timeBz)
+	// copy the chainId
+	copy(bz[byteLen:], chainID)
+	return bz
+}
+
+// parseTsAndChainIdKey returns the time and chain ID for a TsAndChainId key
+func parseTsAndChainIdKey(prefix byte, bz []byte) (time.Time, string, error) {
+	expectedPrefix := []byte{prefix}
+	prefixL := len(expectedPrefix)
+	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
+		return time.Time{}, "", fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+	}
+
+	timeBzL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	timestamp, err := sdk.ParseTimeBytes(bz[prefixL+8 : prefixL+8+int(timeBzL)])
+	if err != nil {
+		return time.Time{}, "", err
+	}
+
+	chainID := string(bz[prefixL+8+int(timeBzL):])
+	return timestamp, chainID, nil
+}
+
+// chainIdAndTsKey returns the key with the following format:
+// bytePrefix | len(chainID) | chainID | timestamp
+func chainIdAndTsKey(prefix byte, chainID string, timestamp time.Time) []byte {
+	timeBz := sdk.FormatTimeBytes(timestamp)
+
+	partialKey := ChainIdWithLenKey(prefix, chainID)
+	bz := make([]byte, len(partialKey)+len(timeBz))
+	// copy the partialKey
+	byteLen := copy(bz, partialKey)
+	// copy the time bytes
+	copy(bz[byteLen:], timeBz)
+	return bz
+}
+
+// chainIdWithLenKey returns the key with the following format:
+// bytePrefix | len(chainID) | chainID
+func ChainIdWithLenKey(prefix byte, chainID string) []byte {
+	chainIdL := len(chainID)
+
+	bz := make([]byte, len([]byte{prefix})+8+chainIdL)
+	// copy the prefix
+	byteLen := copy(bz, []byte{prefix})
+	// copy the chainID length
+	byteLen += copy(bz[byteLen:], sdk.Uint64ToBigEndian(uint64(chainIdL)))
+	// copy the chainID
+	byteLen += copy(bz[byteLen:], chainID)
+	return bz
+}
+
+func parseChainIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
+	expectedPrefix := []byte{prefix}
+	prefixL := len(expectedPrefix)
+	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
+		return "", time.Time{}, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+	}
+	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
+	timestamp, err := sdk.ParseTimeBytes(bz[prefixL+8+int(chainIdL):])
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	return chainID, timestamp, nil
 }

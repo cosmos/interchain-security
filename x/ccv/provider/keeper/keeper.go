@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -829,8 +830,6 @@ func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
 	store.Delete(types.ChainToClientKey(chainID))
 }
 
-// ------
-
 // SetInitTimeoutTimestamp sets the init timeout timestamp for the given chain ID
 func (k Keeper) SetInitTimeoutTimestamp(ctx sdk.Context, chainID string, ts uint64) {
 	store := ctx.KVStore(k.storeKey)
@@ -866,6 +865,53 @@ func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID str
 		chainID := string(iterator.Key()[1:])
 		ts := binary.BigEndian.Uint64(iterator.Value())
 		if !cb(chainID, ts) {
+			return
+		}
+	}
+}
+
+// SetVscTimeoutTimestamp sets the VSC timeout timestamp
+// for a VSCPacket with ID vscID sent to a chain with ID chainID
+func (k Keeper) SetVscTimeoutTimestamp(
+	ctx sdk.Context,
+	chainID string,
+	timestamp time.Time,
+	vscID uint64,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	// Convert into bytes for storage
+	bz := make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, vscID)
+
+	store.Set(types.VscTimeoutTimestampKey(chainID, timestamp), bz)
+}
+
+// DeleteVscTimeoutTimestamp removes from the store a specific vsc timeout timestamp for the given chainID.
+func (k Keeper) DeleteVscTimeoutTimestamp(ctx sdk.Context, chainID string, timestamp time.Time) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.VscTimeoutTimestampKey(chainID, timestamp))
+}
+
+// IterateVscTimeoutTimestamps iterates in order (lowest first)
+// over the vsc timeout timestamps of the given chainID.
+func (k Keeper) IterateVscTimeoutTimestamps(
+	ctx sdk.Context,
+	chainID string,
+	cb func(ts time.Time, vscID uint64) bool,
+) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscTimeoutTimestampBytePrefix, chainID))
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		key := iterator.Key()
+		_, ts, err := types.ParseVscTimeoutTimestampKey(key)
+		if err != nil {
+			panic(fmt.Errorf("failed to parse VscTimeoutTimestampKey: %w", err))
+		}
+		vscID := binary.BigEndian.Uint64(iterator.Value())
+		if !cb(ts, vscID) {
 			return
 		}
 	}

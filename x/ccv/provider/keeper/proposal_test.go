@@ -375,7 +375,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
 			require.False(t, found)
 
-			testConsumerStateIsCleaned(t, ctx, providerKeeper, tc.prop.ChainId, "channelID")
+			testProviderStateIsCleaned(t, ctx, providerKeeper, tc.prop.ChainId, "channelID")
 		} else {
 			// Proposal should be stored as pending
 			found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
@@ -446,14 +446,14 @@ func TestStopConsumerChain(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		testConsumerStateIsCleaned(t, ctx, providerKeeper, "chainID", "channelID")
+		testProviderStateIsCleaned(t, ctx, providerKeeper, "chainID", "channelID")
 
 		ctrl.Finish()
 	}
 }
 
-// testConsumerStateIsCleaned executes test assertions for a stopped consumer chain's state being cleaned.
-func testConsumerStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
+// testProviderStateIsCleaned executes test assertions for the proposer's state being cleaned after a stopped consumer chain.
+func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
 	expectedChainID string, expectedChannelID string) {
 
 	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
@@ -468,6 +468,14 @@ func testConsumerStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 	require.False(t, found)
 	acks := providerKeeper.GetSlashAcks(ctx, expectedChainID)
 	require.Empty(t, acks)
+	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, expectedChainID)
+	require.False(t, found)
+	found = false
+	providerKeeper.IterateVscTimeoutTimestamps(ctx, expectedChainID, func(_ time.Time, _ uint64) bool {
+		found = true
+		return false
+	})
+	require.False(t, found)
 }
 
 // TestPendingConsumerRemovalPropDeletion tests the getting/setting

@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"github.com/golang/mock/gomock"
@@ -335,4 +336,60 @@ func TestInitTimeoutTimestamp(t *testing.T) {
 	providerKeeper.DeleteInitTimeoutTimestamp(ctx, tc[1].chainID)
 	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, tc[1].chainID)
 	require.False(t, found)
+}
+
+func TestVscTimeoutTimestamp(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	now := ctx.BlockTime()
+
+	testCases := []struct {
+		chainID string
+		ts      time.Time
+		vscID   uint64
+	}{
+		{chainID: "chain", ts: now.Add(time.Hour), vscID: 1},
+		{chainID: "chain", ts: now.Add(2 * time.Hour), vscID: 2},
+		{chainID: "chain1", ts: now.Add(time.Hour), vscID: 1},
+		{chainID: "chain2", ts: now.Add(time.Hour), vscID: 1},
+	}
+
+	i := 0
+	chainID := "chain"
+	providerKeeper.IterateVscTimeoutTimestamps(ctx, chainID, func(ts time.Time, vscID uint64) bool {
+		i++
+		return true
+	})
+	require.Equal(t, 0, i)
+
+	for _, tc := range testCases {
+		providerKeeper.SetVscTimeoutTimestamp(ctx, tc.chainID, tc.ts, tc.vscID)
+	}
+
+	i = 0
+	providerKeeper.IterateVscTimeoutTimestamps(ctx, testCases[0].chainID, func(ts time.Time, vscID uint64) bool {
+		require.Equal(t, ts, testCases[i].ts)
+		require.Equal(t, vscID, testCases[i].vscID)
+		i++
+		return true
+	})
+	require.Equal(t, 2, i)
+
+	// delete VSC timeout timestamps
+	var timestamps []time.Time
+	providerKeeper.IterateVscTimeoutTimestamps(ctx, testCases[0].chainID, func(ts time.Time, _ uint64) bool {
+		timestamps = append(timestamps, ts)
+		return true
+	})
+	for _, ts := range timestamps {
+		providerKeeper.DeleteVscTimeoutTimestamp(ctx, testCases[0].chainID, ts)
+	}
+
+	i = 0
+	providerKeeper.IterateVscTimeoutTimestamps(ctx, testCases[0].chainID, func(ts time.Time, vscID uint64) bool {
+		i++
+		return true
+	})
+	require.Equal(t, 0, i)
 }
