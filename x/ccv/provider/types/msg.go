@@ -1,6 +1,8 @@
 package types
 
 import (
+	"strings"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -18,9 +20,20 @@ var (
 
 // NewMsgDesignateConsensusKeyForConsumerChain creates a new MsgDesignateConsensusKeyForConsumerChain instance.
 // Delegator address and validator address are the same.
-func NewMsgDesignateConsensusKeyForConsumerChain() (*MsgDesignateConsensusKeyForConsumerChain, error) {
-
-	return &MsgDesignateConsensusKeyForConsumerChain{}, nil
+func NewMsgDesignateConsensusKeyForConsumerChain(chainID string, providerValidatorAddress sdk.ValAddress,
+	consumerValidatorPubKey cryptotypes.PubKey) (*MsgDesignateConsensusKeyForConsumerChain, error) {
+	var pubKeyAny *codectypes.Any
+	if consumerValidatorPubKey != nil {
+		var err error
+		if pubKeyAny, err = codectypes.NewAnyWithValue(consumerValidatorPubKey); err != nil {
+			return nil, err
+		}
+	}
+	return &MsgDesignateConsensusKeyForConsumerChain{
+		ChainId:                  chainID,
+		ProviderValidatorAddress: providerValidatorAddress.String(),
+		ConsumerValidatorPubkey:  pubKeyAny,
+	}, nil
 }
 
 // Route implements the sdk.Msg interface.
@@ -36,8 +49,11 @@ func (msg MsgDesignateConsensusKeyForConsumerChain) Type() string {
 // If the validator address is not same as delegator's, then the validator must
 // sign the msg as well.
 func (msg MsgDesignateConsensusKeyForConsumerChain) GetSigners() []sdk.AccAddress {
-	addrs := []sdk.AccAddress{}
-	return addrs
+	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderValidatorAddress)
+	if err != nil {
+		panic(err)
+	}
+	return []sdk.AccAddress{valAddr.Bytes()}
 }
 
 // GetSignBytes returns the message bytes to sign over.
@@ -48,7 +64,15 @@ func (msg MsgDesignateConsensusKeyForConsumerChain) GetSignBytes() []byte {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgDesignateConsensusKeyForConsumerChain) ValidateBasic() error {
-
+	if strings.TrimSpace(msg.ChainId) == "" {
+		return ErrBlankConsumerChainID
+	}
+	if msg.ProviderValidatorAddress == "" {
+		return ErrEmptyValidatorAddr
+	}
+	if msg.ConsumerValidatorPubkey == nil {
+		return ErrEmptyValidatorPubKey
+	}
 	return nil
 }
 
