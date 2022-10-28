@@ -111,13 +111,9 @@ func (k Keeper) MaxValidators(sdk.Context) uint32 {
 	panic("unimplemented on CCV keeper")
 }
 
-// UnbondingTime returns consumer unbonding time
+// UnbondingTime returns consumer unbonding period, satisfying the staking keeper interface
 func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
-	unbondingTime, found := k.GetUnbondingTime(ctx)
-	if !found {
-		panic("the consumer unbonding period is not set")
-	}
-	return unbondingTime
+	return k.GetUnbondingPeriod(ctx)
 }
 
 // GetHistoricalInfo gets the historical info at a given height
