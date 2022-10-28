@@ -25,7 +25,6 @@ func TestParams(t *testing.T) {
 	params := providerKeeper.GetParams(ctx)
 	require.Equal(t, defaultParams, params)
 
-		time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
 	newParams := providertypes.NewParams(
 		ibctmtypes.NewClientState(
 			"",
