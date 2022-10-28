@@ -625,9 +625,12 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		},
 		// Note these are unused provider parameters for this test, and not actually asserted against
 		// They must be populated with reasonable values to satisfy SetParams though.
-		TrustingPeriodFraction: providertypes.DefaultTrustingPeriodFraction,
-		CcvTimeoutPeriod:       ccvtypes.DefaultCCVTimeoutPeriod,
-		InitTimeoutPeriod:      types.DefaultInitTimeoutPeriod,
+		TrustingPeriodFraction:    providertypes.DefaultTrustingPeriodFraction,
+		CcvTimeoutPeriod:          ccvtypes.DefaultCCVTimeoutPeriod,
+		InitTimeoutPeriod:         types.DefaultInitTimeoutPeriod,
+		SlashMeterReplenishPeriod: types.DefaultSlashMeterReplenishPeriod,
+		SlashGasReplenishFraction: types.DefaultSlashGasReplenishFraction,
+		MaxPendingSlashPackets:    types.DefaultMaxPendingSlashPackets,
 	}
 	providerKeeper.SetParams(ctx, moduleParams)
 	defer ctrl.Finish()
