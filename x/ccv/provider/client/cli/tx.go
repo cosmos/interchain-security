@@ -4,8 +4,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"fmt"
-	"strconv"
-	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -19,11 +17,6 @@ import (
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
-var (
-	DefaultRelativePacketTimeoutTimestamp = uint64((time.Duration(10) * time.Minute).Nanoseconds())
-	_                                     = strconv.Itoa(0)
-)
-
 // GetTxCmd returns the transaction commands for this module
 func GetTxCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -35,7 +28,6 @@ func GetTxCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(NewDesignateConsensusKeyForConsumerChainCmd())
-	// this line is used by starport scaffolding # 1
 
 	return cmd
 }
@@ -63,6 +55,8 @@ func NewDesignateConsensusKeyForConsumerChainCmd() *cobra.Command {
 
 	cmd.Flags().AddFlagSet(FlagSetPublicKey())
 
+	cmd.Flags().String(FlagIP, "", fmt.Sprintf("The node's public IP. It takes effect only when used in combination with --%s", flags.FlagGenerateOnly))
+	cmd.Flags().String(FlagNodeID, "", "The node's ID")
 	flags.AddTxFlagsToCmd(cmd)
 
 	_ = cmd.MarkFlagRequired(flags.FlagFrom)
