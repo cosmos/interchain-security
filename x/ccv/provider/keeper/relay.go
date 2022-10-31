@@ -210,11 +210,6 @@ func GetProviderConsAddr(keymap *KeyMap, consumerConsAddress sdk.ConsAddress) (s
 	return PubKeyToConsAddr(providerPublicKey), nil
 }
 
-func debugStr(s string, pcons ProviderConsAddr, data ccv.SlashPacketData) {
-	p := pcons.String()[14:20]
-	fmt.Println(s, "pcons: ", p, data.ValsetUpdateId, data.Infraction == stakingtypes.Downtime)
-}
-
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
 	// map VSC ID to infraction height for the given chain ID
