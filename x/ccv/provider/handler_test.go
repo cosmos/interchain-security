@@ -1,7 +1,6 @@
 package provider
 
 import (
-	"crypto"
 	"strings"
 	"testing"
 
@@ -19,7 +18,6 @@ import (
 	testutil "github.com/cosmos/interchain-security/testutil/sample"
 	keeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 func TestInvalidMsg(t *testing.T) {
@@ -31,11 +29,6 @@ func TestInvalidMsg(t *testing.T) {
 	require.True(t, strings.Contains(err.Error(), "unrecognized provider message type"))
 }
 
-func key(k uint64) crypto.PublicKey {
-	_, pubKey := testutil.GetTMCryptoPublicKeyFromSeed(k)
-	return pubKey
-}
-
 func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 
 	consumerTMProtoPublicKey := func() cryptotypes.PubKey {
@@ -45,8 +38,8 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 		return ret
 	}
 
-	validatorAddressAndStakingType := func() (tmprotocrypto.PublicKey, sdk.ValAddress, stakingtypes.Validator) {
-		mockPV, tmProtoPublicKey := testutil.GetTMCryptoPublicKeyFromSeed(0)
+	validatorAddressAndStakingType := func() (sdk.ValAddress, stakingtypes.Validator) {
+		mockPV, _ := testutil.GetTMCryptoPublicKeyFromSeed(0)
 		tmPubKeyI, err := mockPV.GetPubKey()
 		require.NoError(t, err)
 		sdkPubKeyI, err := cryptocodec.FromTmPubKeyInterface(tmPubKeyI)
@@ -56,19 +49,17 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 		consensusAny, err := codectypes.NewAnyWithValue(sdkPubKeyI)
 		require.NoError(t, err)
 		v := stakingtypes.Validator{ConsensusPubkey: consensusAny}
-		return tmProtoPublicKey, addr, v
+		return addr, v
 	}
 
-	valTmProtoPublicKey, valSdkAddr, valSdkType := validatorAddressAndStakingType()
+	valSdkAddr, valSdkType := validatorAddressAndStakingType()
 
 	testCases := []struct {
 		name string
 		// State-mutating setup specific to this test case
-		setup                    func(sdk.Context, keeper.Keeper, testkeeper.MockedKeepers)
-		expError                 bool
-		chainID                  string
-		providerValidatorAddress sdk.ValAddress
-		consumerValidatorPubKey  cryptotypes.PubKey
+		setup    func(sdk.Context, keeper.Keeper, testkeeper.MockedKeepers)
+		expError bool
+		chainID  string
 	}{
 		{
 			name: "success",
@@ -83,18 +74,14 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 					).Return(valSdkType, true).Times(1),
 				)
 			},
-			expError:                 false,
-			chainID:                  "chainid",
-			providerValidatorAddress: valSdkAddr,
-			consumerValidatorPubKey:  consumerTMProtoPublicKey(),
+			expError: false,
+			chainID:  "chainid",
 		},
 		{
-			name:                     "fail: missing chain",
-			setup:                    func(ctx sdk.Context, k keeper.Keeper, mocks testkeeper.MockedKeepers) {},
-			expError:                 true,
-			chainID:                  "chainid",
-			providerValidatorAddress: valSdkAddr,
-			consumerValidatorPubKey:  consumerTMProtoPublicKey(),
+			name:     "fail: missing chain",
+			setup:    func(ctx sdk.Context, k keeper.Keeper, mocks testkeeper.MockedKeepers) {},
+			expError: true,
+			chainID:  "chainid",
 		},
 		{
 			name: "fail: missing validator",
@@ -109,10 +96,8 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 					).Return(stakingtypes.Validator{}, false).Times(1),
 				)
 			},
-			expError:                 true,
-			chainID:                  "chainid",
-			providerValidatorAddress: valSdkAddr,
-			consumerValidatorPubKey:  consumerTMProtoPublicKey(),
+			expError: true,
+			chainID:  "chainid",
 		},
 		{
 			name: "fail: consumer key in use",
@@ -123,7 +108,9 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 
 				tmConsPubKey, err := valSdkType.TmConsPublicKey()
 				require.NoError(t, err)
-				err = k.KeyMap(ctx, "chainid").SetProviderPubKeyToConsumerPubKey(tmConsPubKey, consumerTMProtoPublicKey())
+				tmPubKey, err := cryptocodec.ToTmProtoPublicKey(consumerTMProtoPublicKey())
+				require.NoError(t, err)
+				err = k.KeyMap(ctx, "chainid").SetProviderPubKeyToConsumerPubKey(tmConsPubKey, tmPubKey)
 				require.NoError(t, err)
 
 				gomock.InOrder(
@@ -132,10 +119,8 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 					).Return(stakingtypes.Validator{}, false).Times(1),
 				)
 			},
-			expError:                 true,
-			chainID:                  "chainid",
-			providerValidatorAddress: valSdkAddr,
-			consumerValidatorPubKey:  consumerTMProtoPublicKey(),
+			expError: true,
+			chainID:  "chainid",
 		},
 	}
 
@@ -146,7 +131,7 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 		tc.setup(ctx, k, mocks)
 
 		msg, err := types.NewMsgDesignateConsensusKeyForConsumerChain(tc.chainID,
-			tc.providerValidatorAddress, tc.consumerValidatorPubKey,
+			valSdkAddr, consumerTMProtoPublicKey(),
 		)
 
 		require.NoError(t, err)
