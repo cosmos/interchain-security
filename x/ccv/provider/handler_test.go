@@ -66,11 +66,13 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
 
+				// Make chain queryable
 				k.SetConsumerClientId(ctx, "chainid", "")
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, valSdkAddr,
+						// Return a valid validator, found!
 					).Return(valSdkType, true).Times(1),
 				)
 			},
@@ -78,8 +80,10 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 			chainID:  "chainid",
 		},
 		{
-			name:     "fail: missing chain",
-			setup:    func(ctx sdk.Context, k keeper.Keeper, mocks testkeeper.MockedKeepers) {},
+			name: "fail: missing chain",
+			setup: func(ctx sdk.Context, k keeper.Keeper, mocks testkeeper.MockedKeepers) {
+				// Do not make chain queryable
+			},
 			expError: true,
 			chainID:  "chainid",
 		},
@@ -88,11 +92,13 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
 
+				// Make chain queryable
 				k.SetConsumerClientId(ctx, "chainid", "")
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, valSdkAddr,
+						// return false: not found!
 					).Return(stakingtypes.Validator{}, false).Times(1),
 				)
 			},
@@ -104,12 +110,14 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
 
+				// Make chain queryable
 				k.SetConsumerClientId(ctx, "chainid", "")
 
 				tmConsPubKey, err := valSdkType.TmConsPublicKey()
 				require.NoError(t, err)
 				tmPubKey, err := cryptocodec.ToTmProtoPublicKey(consumerTMProtoPublicKey())
 				require.NoError(t, err)
+				// Use the consumer key already
 				err = k.KeyMap(ctx, "chainid").SetProviderPubKeyToConsumerPubKey(tmConsPubKey, tmPubKey)
 				require.NoError(t, err)
 
@@ -136,6 +144,7 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 
 		require.NoError(t, err)
 
+		// Try to handle the message
 		_, err = NewHandler(k)(ctx, msg)
 
 		if tc.expError {
