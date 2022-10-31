@@ -12,9 +12,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
-	// "github.com/cosmos/cosmos-sdk/x/staking/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	flag "github.com/spf13/pflag"
+	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 var (
@@ -81,7 +83,12 @@ func newBuildDesignateConsensusKeyForConsumerChainMsg(clientCtx client.Context, 
 		return txf, nil, err
 	}
 
-	msg, err := types.NewMsgDesignateConsensusKeyForConsumerChain()
+	// TODO: replace with real data
+	chainId := "chainid"
+	providerValidatorAddress := sdk.ValAddress{}
+	consumerValidatorPubKey, _ := cryptocodec.FromTmProtoPublicKey(crypto.PublicKey{})
+
+	msg, err := types.NewMsgDesignateConsensusKeyForConsumerChain(chainId, providerValidatorAddress, consumerValidatorPubKey)
 	if err != nil {
 		return txf, nil, err
 	}

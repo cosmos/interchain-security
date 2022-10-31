@@ -17,6 +17,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	testutil "github.com/cosmos/interchain-security/testutil/sample"
+	keeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
@@ -41,10 +42,22 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 	sdkk, err := cryptocodec.FromTmProtoPublicKey(cpk0)
 	require.NoError(t, err)
 
+	mockPV, _ := testutil.GetTMCryptoPublicKeyFromSeed(0)
+	tmPubKeyI, err := mockPV.GetPubKey()
+	require.NoError(t, err)
+	sdkPubKeyI, err := cryptocodec.FromTmPubKeyInterface(tmPubKeyI)
+	// mockPV := tmtypes.NewMockPV()
+	// pubKey, err := mockPV.GetPubKey()
+	require.NoError(t, err)
+	addr, err := sdk.ValAddressFromHex(tmPubKeyI.Address().String())
+	require.NoError(t, err)
+
 	testCases := []struct {
 		name string
 		// State-mutating setup specific to this test case
-		mockSetup                func(sdk.Context, testkeeper.MockedKeepers, sdk.ValAddress, stakingtypes.Validator)
+		mockSetup func(sdk.Context,
+			keeper.Keeper,
+			testkeeper.MockedKeepers, sdk.ValAddress, stakingtypes.Validator)
 		expError                 bool
 		chainID                  string
 		providerValidatorAddress sdk.ValAddress
@@ -52,7 +65,11 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 	}{
 		{
 			name: "success",
-			mockSetup: func(ctx sdk.Context, mocks testkeeper.MockedKeepers, pva sdk.ValAddress, val stakingtypes.Validator) {
+			mockSetup: func(ctx sdk.Context,
+				k keeper.Keeper, mocks testkeeper.MockedKeepers, pva sdk.ValAddress, val stakingtypes.Validator) {
+
+				k.SetConsumerClientId(ctx, "chainid", "")
+
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, pva,
@@ -61,25 +78,24 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 			},
 			expError:                 false,
 			chainID:                  "chainid",
-			providerValidatorAddress: sdk.ValAddress{},
+			providerValidatorAddress: addr,
 			consumerValidatorPubKey:  sdkk,
 		},
 	}
 
 	for _, tc := range testCases {
 
-		// TODO: I've done the types now I need to do the tests
-
 		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
 		handler := NewHandler(k)
 
-		_, pubKey := testutil.GetTMCryptoPublicKeyFromSeed(0)
-		ppkAny, err := codectypes.NewAnyWithValue(&pubKey)
+		// _, pubKey := testutil.GetTMCryptoPublicKeyFromSeed(0)
+		// consensusAny, err := codectypes.NewAnyWithValue(&tmprotoPublicKey)
+		consensusAny, err := codectypes.NewAnyWithValue(sdkPubKeyI)
 		require.NoError(t, err)
 
 		// Specific mock setup
-		tc.mockSetup(ctx, mocks, tc.providerValidatorAddress, stakingtypes.Validator{ConsensusPubkey: ppkAny})
+		tc.mockSetup(ctx, k, mocks, tc.providerValidatorAddress, stakingtypes.Validator{ConsensusPubkey: consensusAny})
 
 		// Common actions
 
@@ -88,10 +104,7 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 		)
 		require.NoError(t, err)
 
-		res, err := handler(ctx, msg)
-
-		_ = res
-		// TODO: do something with res
+		_, err = handler(ctx, msg)
 
 		if tc.expError {
 			require.Error(t, err, "invalid case did not return error")
