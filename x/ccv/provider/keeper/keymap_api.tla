@@ -15,9 +15,14 @@ VARIABLES
     maturedConsumerVSCID
 
 (***************************************************************************)
-(** State at genesis *******************************************************)
+(** Model ******************************************************************)
 (***************************************************************************)
 (***************************************************************************)
+
+(***************************************)
+(** State at genesis *******************)
+(***************************************)
+(***************************************)
 
 Init ==
     \* Store the genesis assignment, and the current assignment
@@ -32,10 +37,10 @@ Init ==
     \* Nothing has matured yet.
     /\ maturedConsumerVSCID = 0
 
-(***************************************************************************)
-(** Public write operation API *********************************************)
-(***************************************************************************)
-(***************************************************************************)
+(***************************************)
+(** Public TX API **********************)
+(***************************************)
+(***************************************)
 
 AssignKey == 
     \E providerKey \in ProviderKeys, consumerKey \in ConsumerKeys:
@@ -48,10 +53,10 @@ AssignKey ==
     \* The rest...
     /\ UNCHANGED << providerValSets, committedProviderVSCID, committedConsumerVSCID, maturedConsumerVSCID >>
 
-(***************************************************************************)
-(** Internal API ***********************************************************)
-(***************************************************************************)
-(***************************************************************************)
+(***************************************)
+(** Internal implemenation API *********)
+(***************************************)
+(***************************************)
 
 ProviderEndAndCommitBlock ==
     \E valset \in SUBSET ProviderKeys:
@@ -88,30 +93,35 @@ Next ==
     \/ ProviderDeliverMaturities
 
 (***************************************************************************)
-(** Invariants *************************************************************)
+(** Invariants and properties **********************************************)
 (***************************************************************************)
 (***************************************************************************)
 
-(***********************************)
-(** Query properties ***************)
-(***********************************)
-(***********************************)
+(** Public Query API *******************)
+(***************************************)
+(***************************************)
+(***************************************)
 
 (*
 The current consumer key assigned to a provider key is defined and
 queryable.
-True by construction, not explicityl modelled.
+True by construction: 'how' not explicitly modelled.
 *)
 AssignmentIsDefined == 
     \A k \in ProviderKeys:
     LET ConsumerKey == assignments[committedProviderVSCID + 1][k]
     IN TRUE
 
+(****************************************)
+(** Internal implementation properties **)
+(****************************************)
+(****************************************)
+
 (*
 The consumer validator set at committedConsumerVSCID
 is defined as the provider validator set at committedConsumerVSCID
 mapped through the assignment at committedConsumerVSCID.
-True by construction, not explicitly modelled.
+True by construction: 'how' not explicitly modelled.
 *)
 ConsumerValidatorSetIsDefined == 
     LET
