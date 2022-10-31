@@ -891,7 +891,7 @@ func (k Keeper) SetSlashGasMeter(ctx sdk.Context, value sdk.Int) {
 	store.Set(types.SlashGasMeterKey(), bz)
 }
 
-// GetLastSlashGasReplenishTime returns the last time the slash gas meter was replenished
+// GetLastSlashGasReplenishTime returns the last UTC time the slash gas meter was replenished
 func (k Keeper) GetLastSlashGasReplenishTime(ctx sdk.Context) time.Time {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.LastSlashGasReplenishTimeKey())

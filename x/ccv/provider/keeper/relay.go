@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
@@ -14,7 +13,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
-	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
@@ -226,7 +224,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	}
 
 	// If validator is already jailed, this packet won't affect voting power and can bypass
-	// the slashing circuit breaker by being handled immediately.
+	// the circuit breaker by being handled immediately.
 	if validator.Jailed {
 		_, err := k.HandleSlashPacket(ctx, chainID, data)
 		if err != nil {
@@ -236,7 +234,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		}
 	}
 
-	// If the validator is bonded, not tombstoned, and not jailed,
+	// If the validator is bonded, not tombstoned, and not jailed (ie. the val has voting power),
 	// queue the slash packet to be handled by the circuit breaker
 	k.QueuePendingSlashPacket(ctx, types.NewSlashPacket(ctx.BlockTime(), chainID, data))
 
@@ -259,79 +257,44 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdk.Context) {
 
 	handledPackets := []types.SlashPacket{}
 	k.IteratePendingSlashPackets(ctx, func(nextSlashPacket types.SlashPacket) bool {
-		// Do not handle anymore slash packets if the meter has 0 or negative gas
-		if !meter.IsPositive() {
-			return true
-		}
-
-		gas := k.getSlashGas(ctx, nextSlashPacket)
-		meter.Sub(gas)
 
 		_, err := k.HandleSlashPacket(ctx, nextSlashPacket.ConsumerChainID, nextSlashPacket.Data)
 		if err != nil {
 			panic(fmt.Sprintf("failed to handle slash packet: %s", err.Error()))
 		}
+
+		valPower := k.stakingKeeper.GetLastValidatorPower(ctx, nextSlashPacket.Data.Validator.Address)
+		meter.Sub(sdk.NewInt(valPower))
 		handledPackets = append(handledPackets, nextSlashPacket)
-		return false
+
+		// Do not handle anymore slash packets if the meter has 0 or negative gas
+		return !meter.IsPositive()
 	})
+
 	k.DeletePendingSlashPackets(ctx, handledPackets...)
 	k.SetSlashGasMeter(ctx, meter)
 }
 
-// NOTE: GetLastTotalPower is aligned by block with GetValidatorUpdates due to this method
-// Link:https://github.com/cosmos/cosmos-sdk/blob/interchain-security-rebase/x/staking/keeper/val_state_change.go#L225
-// or see end of ApplyAndReturnValidatorSetUpdates in staking keeper of cosmos sdk.
-//
-// Essentially, every endblock, that method is called, which updates both pieces of state used here.
 // TODO: Make an e2e test that asserts that the order of endblockers is correct between staking and ccv
-// TODO: ie. the staking updates need to occur before circuit breaker logic, so circuit breaker has most up to date val powers.
-//
-// TODO: In fact, you should prob make a dedicated e2e test which calls InitGenesis between the two modules' endblockers
-// so that we can gauruntee that the order of endblockers is correct (considering the above link)
-func (k Keeper) getSlashGas(ctx sdk.Context, packet types.SlashPacket) sdk.Int {
-	totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
-	updates := k.stakingKeeper.GetValidatorUpdates(ctx)
-
-	var valPower int64
-	found := false
-	// TODO: Is there a more efficient way find val power besides linear search?
-	for _, update := range updates {
-		packetConsAddr := sdk.ConsAddress(packet.Data.Validator.Address)
-		// Get pub key from update, converted to cons address
-		pubKey, err := cryptocodec.FromTmProtoPublicKey(update.PubKey)
-		if err != nil {
-			panic(fmt.Sprintf("failed to get sdk pubkey from validator update: %s", err.Error()))
-		}
-		updateConsAddr := sdk.GetConsAddress(pubKey)
-		if packetConsAddr.Equals(updateConsAddr) {
-			valPower = update.Power
-			found = true
-			break
-		}
-	}
-	// TODO: This ish will need a lot of testing
-	if !found {
-		panic(fmt.Sprintf("validator %s not found in validator updates", packet.Data.Validator.Address))
-	}
-	return sdk.NewInt(valPower).Quo(totalPower)
-}
+// TODO: ie. the staking updates to voting power need to occur before circuit breaker logic, so circuit breaker has most up to date val powers.
 
 // CheckForSlashMeterReplenishment checks if the slash gas meter should be replenished, and if so, replenishes it.
-// This method executes every end block routine
-// TODO: hook this into endblocker
-// TODO: unit and e2e tests
+// This method executes every end block routine.
+// TODO: hook this into endblocker, unit and e2e tests, tests must include odd time formats, since UTC is is used
 func (k Keeper) CheckForSlashMeterReplenishment(ctx sdk.Context) {
-	// TODO: Figure out time formats.
 	// TODO: Need to set initial replenishment time
-	if ctx.BlockTime().UTC().After(k.GetLastSlashGasReplenishTime(ctx).Add(time.Hour).UTC()) {
-		// TODO: Use param for replenish period and allowance
-		// slashGasAllowance := k.GetParams(ctx).SlashGasAllowance
-		// TODO: change code and documentation to reflect that this is a string param
+	if ctx.BlockTime().UTC().After(k.GetLastSlashGasReplenishTime(ctx).Add(time.Hour)) {
+		// TODO: Use param for replenish period, allowance, etc.
+		// TODO: change code and documentation to reflect that this is a string fraction param
 		slashGasAllowanceFraction := sdk.NewDec(5).Quo(sdk.NewDec(100)) // This will be a string param, ex: "0.05"
 
-		// Compute slash gas allowance in units of tendermint voting power (int64)
-		// TODO: This calculation needs to be tested
-		slashGasAllowance := sdk.NewInt(sdk.NewDec(tmtypes.MaxTotalVotingPower).Mul(slashGasAllowanceFraction).RoundInt64())
+		// Compute slash gas allowance in units of tendermint voting power (integer)
+		// TODO: total voting power would change as validators are jailed, is there a timing guarantee we can
+		// make on maximum slash packet delay? Perhaps we use a static "total voting power" like the tm maximum.
+
+		// TODO: Maybe the param could itself be an amount of voting power? This would be easier to reason about
+		totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
+		slashGasAllowance := sdk.NewInt(slashGasAllowanceFraction.MulInt(totalPower).RoundInt64())
 
 		meter := k.GetSlashGasMeter(ctx)
 
