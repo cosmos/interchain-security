@@ -14,6 +14,11 @@ VARIABLES
     committedConsumerVSCID,
     maturedConsumerVSCID
 
+(***************************************************************************)
+(** State at genesis *******************************************************)
+(***************************************************************************)
+(***************************************************************************)
+
 Init ==
     \* Store the genesis assignment, and the current assignment
     /\ assignments = [vscid \in 1..2 |-> [key \in ProviderKeys |-> key]]
@@ -27,6 +32,11 @@ Init ==
     \* Nothing has matured yet.
     /\ maturedConsumerVSCID = 0
 
+(***************************************************************************)
+(** Public write operation API *********************************************)
+(***************************************************************************)
+(***************************************************************************)
+
 AssignKey == 
     \E providerKey \in ProviderKeys, consumerKey \in ConsumerKeys:
     \* consumerKey is not in use
@@ -37,6 +47,11 @@ AssignKey ==
         [@ EXCEPT ![providerKey] = consumerKey] ]
     \* The rest...
     /\ UNCHANGED << providerValSets, committedProviderVSCID, committedConsumerVSCID, maturedConsumerVSCID >>
+
+(***************************************************************************)
+(** Internal API ***********************************************************)
+(***************************************************************************)
+(***************************************************************************)
 
 ProviderEndAndCommitBlock ==
     \E valset \in SUBSET ProviderKeys:
@@ -77,17 +92,37 @@ Next ==
 (***************************************************************************)
 (***************************************************************************)
 
-(*
-Storage cost grows bigO(committedProviderVSCID - maturedConsumerVSCID)
-*)
-BoundedStorage ==
-    Cardinality(DOMAIN(assignments)) <= STORAGE_CONSTANT * (1 + (committedProviderVSCID - maturedConsumerVSCID))
+(***********************************)
+(** Query properties ***************)
+(***********************************)
+(***********************************)
 
 (*
-It's always possible to retrieve a unique provider key, for any consumer key
-known to the consumer.
+The current consumer key assigned to a provider key is defined and
+queryable.
+True by construction, not explicityl modelled.
 *)
-UniqueReverseQuery == 
+AssignmentIsDefined == 
+    \A k \in ProviderKeys:
+    LET ConsumerKey == assignments[committedProviderVSCID + 1][k]
+    IN TRUE
+
+(*
+The consumer validator set at committedConsumerVSCID
+is defined as the provider validator set at committedConsumerVSCID
+mapped through the assignment at committedConsumerVSCID.
+True by construction, not explicitly modelled.
+*)
+ConsumerValidatorSetIsDefined == 
+    LET
+    ConsumerValset == {assignments[committedConsumerVSCID][k] : k \in providerValSets[committedConsumerVSCID]}
+    IN TRUE
+
+(*
+For any unmatured consumer valset, it is always possible to retrieve a unique provider key
+for any consumer key in the set.
+*)
+UniqueReverseQueryResultIsDefined == 
     \A i \in (maturedConsumerVSCID + 1)..committedConsumerVSCID : 
     LET
     \* The valset known to the consumer
@@ -99,6 +134,12 @@ UniqueReverseQuery ==
         }
     \* The query for the providerKey is successful and the result is unique.
     IN \A consumerKey \in ConsumerValset : Cardinality(Assigned(consumerKey)) = 1
+
+(*
+Storage cost grows linearly with committedProviderVSCID - maturedConsumerVSCID
+*)
+BoundedStorage ==
+    Cardinality(DOMAIN(assignments)) <= STORAGE_CONSTANT * (1 + (committedProviderVSCID - maturedConsumerVSCID))
 
 
 (*Check that the spec is written correctly.*)
