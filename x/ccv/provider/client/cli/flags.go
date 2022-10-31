@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	FlagChainId          = "validator"
+	FlagConsumerChainId  = "validator"
 	FlagAddressValidator = "validator"
-	FlagPubKey           = "pubkey"
+	FlagConsumerPubKey   = "pubkey"
 	FlagNodeID           = "node-id"
 	FlagIP               = "ip"
 )
@@ -24,6 +24,13 @@ func init() {
 // FlagSetPublicKey Returns the flagset for Public Key related operations.
 func FlagSetPublicKey() *flag.FlagSet {
 	fs := flag.NewFlagSet("", flag.ContinueOnError)
-	fs.String(FlagPubKey, "", "The validator's Protobuf JSON encoded public key")
+	fs.String(FlagConsumerPubKey, "", "The Protobuf JSON encoded public key to use for the consumer chain")
+	return fs
+}
+
+// FlagSetPublicKey Returns the flagset for Public Key related operations.
+func FlagSetConsumerChainId() *flag.FlagSet {
+	fs := flag.NewFlagSet("", flag.ContinueOnError)
+	fs.String(FlagConsumerChainId, "", "The chainId of the consumer chain")
 	return fs
 }

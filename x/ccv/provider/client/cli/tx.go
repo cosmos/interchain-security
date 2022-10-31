@@ -32,8 +32,8 @@ func GetTxCmd() *cobra.Command {
 
 func NewDesignateConsensusKeyForConsumerChainCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   ":TODO:",
-		Short: ":TODO:",
+		Use:   "designate-consensus-key [consumer-chain-id] [consumer-pubkey]",
+		Short: "designate a consensus public key to use for a consumer chain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -51,14 +51,16 @@ func NewDesignateConsensusKeyForConsumerChainCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().AddFlagSet(FlagSetConsumerChainId())
 	cmd.Flags().AddFlagSet(FlagSetPublicKey())
 
-	// TODO: ip, nodeid flags?
+	cmd.Flags().String(FlagIP, "", fmt.Sprintf("The node's public IP. It takes effect only when used in combination with --%s", flags.FlagGenerateOnly))
+	cmd.Flags().String(FlagNodeID, "", "The node's ID")
 	flags.AddTxFlagsToCmd(cmd)
 
-	// TODO: what else?
 	_ = cmd.MarkFlagRequired(flags.FlagFrom)
-	_ = cmd.MarkFlagRequired(FlagPubKey)
+	_ = cmd.MarkFlagRequired(FlagConsumerChainId)
+	_ = cmd.MarkFlagRequired(FlagConsumerPubKey)
 
 	return cmd
 }
@@ -66,7 +68,7 @@ func NewDesignateConsensusKeyForConsumerChainCmd() *cobra.Command {
 func newBuildDesignateConsensusKeyForConsumerChainMsg(clientCtx client.Context, txf tx.Factory, fs *flag.FlagSet) (tx.Factory, *types.MsgDesignateConsensusKeyForConsumerChain, error) {
 
 	providerValAddr := clientCtx.GetFromAddress()
-	consumerPubKeyStr, err := fs.GetString(FlagPubKey)
+	consumerPubKeyStr, err := fs.GetString(FlagConsumerPubKey)
 	if err != nil {
 		return txf, nil, err
 	}
@@ -76,7 +78,7 @@ func newBuildDesignateConsensusKeyForConsumerChainMsg(clientCtx client.Context, 
 		return txf, nil, err
 	}
 
-	chainId, _ := fs.GetString(FlagChainId)
+	chainId, _ := fs.GetString(FlagConsumerChainId)
 
 	msg, err := types.NewMsgDesignateConsensusKeyForConsumerChain(chainId, sdk.ValAddress(providerValAddr), consumerPubKey)
 	if err != nil {
