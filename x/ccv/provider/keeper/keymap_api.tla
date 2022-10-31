@@ -7,47 +7,61 @@ ProviderKeys == 0..2
 ConsumerKeys == 0..8
 
 VARIABLES
-    \*
     assignments,
     providerValSets,
-    consumerIndex,
-    consumerIndexMatured
+    committedProviderVSCID,
+    committedConsumerVSCID,
+    greatestConsumerVSCIDMatured
 
 Init ==
-    \* One block has been committed (genesis)
-    /\ \E valset \in SUBSET Validators: valsets = <<valset>>
     \* Store the genesis assignment, and the current assignment
-    /\ assignments = <<[key \in ProviderKeys |-> key], [key \in ProviderKeys |-> key]>>
-    /\ consumerIndex = 1
-    /\ consumerIndexMatured = 0 \* Nothing has been matured yet
+    /\ assignments = [1 |-> [key \in ProviderKeys |-> key],
+                      2 |-> [key \in ProviderKeys |-> key]]
+    \* One valset has been committed (genesis)
+    /\ \E valset \in SUBSET Validators: 
+       providerValSets = [1 |-> valset]
+    \* Genesis block is committed
+    /\ committedProviderVSCID = 1
+    \* on consumer too.
+    /\ committedConsumerVSCID = 1
+    \* Nothing has matured yet.
+    /\ greatestConsumerVSCIDMatured = 0
 
 AssignKey == 
     \E providerKey \in ProviderKeys, consumerKey \in ConsumerKeys:
-    /\ ~(\E i \in (consumerIndexMatured + 1)..Len(assignments) : assignments[i][providerKey] = consumerKey)
-    /\ assignments' = Subseq(assignments, 1, Len(assignments) - 1) \o <<[Tail(assignments) EXCEPT ![providerKey] = consumerKey]>>
+    \* consumerKey is not in use
+    /\ ~(k \in DOMAIN assignments : assignments[k][providerKey] = consumerKey)
+    \* Do assignment
+    /\ assignments' = [assignments EXCEPT ![committedProviderVSCID + 1] = [@ EXCEPT ![providerKey] = consumerKey] ]
+    \* The rest...
+    /\ UNCHANGED << providerValSets, committedProviderVSCID, committedConsumerVSCID, greatestConsumerVSCIDMatured >>
 
 ProviderEndAndCommitBlock ==
     \E valset \in SUBSET Validators:
-    /\ assignments' = assignments \o <<Tail(assignments)>> \* Extend assignments with a copy of the last committed mapping
-    /\ providerValSets' = providerValSets \o <<valset>> \* Obtain a new validator set from changes in voting power
+    \* Create a new assignment entry
+    /\ assignments' = assignments @@ [committedProviderVSCID' |-> assignments[committedProviderVSCID]]
+    \* Get a new validator set from changes in voting power
+    /\ providerValSets' = providerValSets @@ [committedProviderVSCID' |-> valset]
+    \* Increment vscid
+    /\ committedProviderVSCID' = committedProviderVSCID + 1
+    \* The rest...
+    /\ UNCHANGED << committedConsumerVSCID, greatestConsumerVSCIDMatured >>
 
-ConsumerDeliverUpdates(index) == 
-    \E index \in (consumerIndex + 1)..Len(providerValSets):
-    consumerIndex' = index
+ConsumerDeliverUpdates == 
+    \* Fast forward the consumer
+    \E vscid \in (committedConsumerVSCID + 1)..committedProviderVSCID:
+    committedConsumerVSCID' = vscid
 
-ProviderDeliverMaturities(index) == 
-    \E index \in (consumerIndexMatured + 1)..consumerIndex:
-    consumerIndexMatured' = index
+ProviderDeliverMaturities == 
+    \* Fast forward the consumer maturities, and notify provider
+    \E vscid \in (greatestConsumerVSCIDMatured + 1)..committedConsumerVSCID:
+    greatestConsumerVSCIDMatured' = vscid
 
 Next ==
-    \/ /\ AssignKey
-       /\ UNCHANGED <<providerValSets, consumerIndex, consumerIndexMatured>>
-    \/ /\ ProviderEndAndCommitBlock
-       /\ UNCHANGED <<consumerIndex, consumerIndexMatured>>
-    \/ /\ ConsumerDeliverUpdates
-       /\ UNCHANGED <<assignments,providerValSets,consumerIndexMatured>>
-    \/ /\ ProviderDeliverMaturities
-       /\ UNCHANGED <<assignments,providerValSets,consumerIndex>>
+    \/ AssignKey
+    \/ ProviderEndAndCommitBlock
+    \/ ConsumerDeliverUpdates
+    \/ ProviderDeliverMaturities
 
 ReverseQueries == 
     LET Query(consumerKey) == {providerKey \in ProviderKeys : 
@@ -55,20 +69,22 @@ ReverseQueries ==
     assignments[Len(assignments)][providerKey] = consumerKey}
 
 
-    \A ix \in (consumerIndexMatured+1)..consumerIndex:
+    \A ix \in (greatestConsumerVSCIDMatured+1)..consumerVSCID:
       \A consumerKey \in {assignments[ix][key] : key \in providerValSets[ix]}:
-
-
         
 
 
 Sanity == LET
-    Sanity0 == consumerIndexMatured <= consumerIndex
-    Sanity1 == Len(providerValSets) + 1 = Len(assignments) 
-    Sanity2 == consumerIndex <= Len(providerValSets)
+    Sanity0 == committedConsumerVSCID <= committedProviderVSCID
+    Sanity1 == greatestConsumerVSCIDMatured <= committedConsumerVSCID
+    Sanity2 == committedProviderVSCID \in DOMAIN assignments
+    Sanity3 == committedProviderVSCID + 1 \in DOMAIN assignments
+    Sanity4 == committedProviderVSCID \in DOMAIN providerValSets
     IN
     /\ Sanity0
     /\ Sanity1
     /\ Sanity2
+    /\ Sanity3
+    /\ Sanity4
 
 ====
