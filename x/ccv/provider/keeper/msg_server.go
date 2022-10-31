@@ -27,7 +27,7 @@ var _ types.MsgServer = msgServer{}
 func (k msgServer) DesignateConsensusKeyForConsumerChain(goCtx context.Context, msg *types.MsgDesignateConsensusKeyForConsumerChain) (*types.MsgDesignateConsensusKeyForConsumerChainResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if _, found := k.GetConsumerClientId(ctx, msg.ChainId); found {
+	if _, found := k.GetConsumerClientId(ctx, msg.ChainId); !found {
 		return nil, types.ErrNoConsumerChainFound
 	}
 

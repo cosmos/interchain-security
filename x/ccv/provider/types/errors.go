@@ -14,7 +14,7 @@ var (
 	ErrNoValidatorFound                = sdkerrors.Register(ModuleName, 6, "validator does not exist")
 	ErrEmptyValidatorPubKey            = sdkerrors.Register(ModuleName, 7, "empty validator public key")
 	ErrBlankConsumerChainID            = sdkerrors.Register(ModuleName, 8, "consumer chain id must not be blank")
-	ErrNoConsumerChainFound            = sdkerrors.Register(ModuleName, 9, "consumer chain id must not be blank")
+	ErrNoConsumerChainFound            = sdkerrors.Register(ModuleName, 9, "did not find consumer chain with chain id")
 	ErrValidatorPubKeyTypeNotSupported = sdkerrors.Register(ModuleName, 10, "validator pubkey type is not supported")
 	ErrInvalidValidatorPubKey          = sdkerrors.Register(ModuleName, 11, "incorrect validator pubkey")
 )

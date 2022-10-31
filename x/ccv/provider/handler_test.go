@@ -19,6 +19,7 @@ import (
 	testutil "github.com/cosmos/interchain-security/testutil/sample"
 	keeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 func TestInvalidMsg(t *testing.T) {
@@ -44,8 +45,8 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 		return ret
 	}
 
-	validatorAddressAndStakingType := func() (sdk.ValAddress, stakingtypes.Validator) {
-		mockPV, _ := testutil.GetTMCryptoPublicKeyFromSeed(0)
+	validatorAddressAndStakingType := func() (tmprotocrypto.PublicKey, sdk.ValAddress, stakingtypes.Validator) {
+		mockPV, tmProtoPublicKey := testutil.GetTMCryptoPublicKeyFromSeed(0)
 		tmPubKeyI, err := mockPV.GetPubKey()
 		require.NoError(t, err)
 		sdkPubKeyI, err := cryptocodec.FromTmPubKeyInterface(tmPubKeyI)
@@ -55,10 +56,10 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 		consensusAny, err := codectypes.NewAnyWithValue(sdkPubKeyI)
 		require.NoError(t, err)
 		v := stakingtypes.Validator{ConsensusPubkey: consensusAny}
-		return addr, v
+		return tmProtoPublicKey, addr, v
 	}
 
-	valAddr, val := validatorAddressAndStakingType()
+	valTmProtoPublicKey, valSdkAddr, valSdkType := validatorAddressAndStakingType()
 
 	testCases := []struct {
 		name string
@@ -78,13 +79,62 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
-						ctx, valAddr,
-					).Return(val, true).Times(1),
+						ctx, valSdkAddr,
+					).Return(valSdkType, true).Times(1),
 				)
 			},
 			expError:                 false,
 			chainID:                  "chainid",
-			providerValidatorAddress: valAddr,
+			providerValidatorAddress: valSdkAddr,
+			consumerValidatorPubKey:  consumerTMProtoPublicKey(),
+		},
+		{
+			name:                     "fail: missing chain",
+			setup:                    func(ctx sdk.Context, k keeper.Keeper, mocks testkeeper.MockedKeepers) {},
+			expError:                 true,
+			chainID:                  "chainid",
+			providerValidatorAddress: valSdkAddr,
+			consumerValidatorPubKey:  consumerTMProtoPublicKey(),
+		},
+		{
+			name: "fail: missing validator",
+			setup: func(ctx sdk.Context,
+				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
+
+				k.SetConsumerClientId(ctx, "chainid", "")
+
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidator(
+						ctx, valSdkAddr,
+					).Return(stakingtypes.Validator{}, false).Times(1),
+				)
+			},
+			expError:                 true,
+			chainID:                  "chainid",
+			providerValidatorAddress: valSdkAddr,
+			consumerValidatorPubKey:  consumerTMProtoPublicKey(),
+		},
+		{
+			name: "fail: consumer key in use",
+			setup: func(ctx sdk.Context,
+				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
+
+				k.SetConsumerClientId(ctx, "chainid", "")
+
+				tmConsPubKey, err := valSdkType.TmConsPublicKey()
+				require.NoError(t, err)
+				err = k.KeyMap(ctx, "chainid").SetProviderPubKeyToConsumerPubKey(tmConsPubKey, consumerTMProtoPublicKey())
+				require.NoError(t, err)
+
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidator(
+						ctx, valSdkAddr,
+					).Return(stakingtypes.Validator{}, false).Times(1),
+				)
+			},
+			expError:                 true,
+			chainID:                  "chainid",
+			providerValidatorAddress: valSdkAddr,
 			consumerValidatorPubKey:  consumerTMProtoPublicKey(),
 		},
 	}
@@ -93,22 +143,22 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 
 		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
-		handler := NewHandler(k)
-
 		tc.setup(ctx, k, mocks)
 
-		msg, err := types.NewMsgDesignateConsensusKeyForConsumerChain("chainId",
+		msg, err := types.NewMsgDesignateConsensusKeyForConsumerChain(tc.chainID,
 			tc.providerValidatorAddress, tc.consumerValidatorPubKey,
 		)
+
 		require.NoError(t, err)
 
-		_, err = handler(ctx, msg)
+		_, err = NewHandler(k)(ctx, msg)
 
 		if tc.expError {
 			require.Error(t, err, "invalid case did not return error")
 		} else {
 			require.NoError(t, err, "valid case returned error")
 		}
+
 		ctrl.Finish()
 	}
 }
