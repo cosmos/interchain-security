@@ -525,7 +525,8 @@ func New(
 	adminRouter := ccvgovtypes.NewRouter()
 	adminRouter.AddRoute(ccvgovtypes.RouterKey, ccvgovtypes.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
-		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper))
+		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
+		AddRoute(ccvdistrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper))
 
 	app.AdminmoduleKeeper = *adminmodulemodulekeeper.NewKeeper(
 		appCodec,
@@ -533,7 +534,8 @@ func New(
 		keys[adminmodulemoduletypes.MemStoreKey],
 		adminRouter,
 		// this allows any type of proposal to be submitted to the admin module (everything is whitelisted)
-		// projects will implement their functions to define what is allowed for provider and consumer admins
+		// projects will implement their functions to define what is allowed for provider and consumer admins.
+		// Implementation example can be found in app/consumer-democracy/proposals_whitelisting.go
 		func(ccvgovtypes.Content) bool { return true },
 		func(ccvgovtypes.Content) bool { return true },
 	)

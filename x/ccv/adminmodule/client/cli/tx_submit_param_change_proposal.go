@@ -44,9 +44,9 @@ Where proposal.json contains:
   "description": "Update max validators",
   "changes": [
     {
-      "subspace": "staking",
-      "key": "MaxValidators",
-      "value": 105
+		"subspace": "staking",
+		"key": "MaxValidators",
+		"value": 105
     }
   ]
 }

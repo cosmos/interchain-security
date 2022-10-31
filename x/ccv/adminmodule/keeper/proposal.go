@@ -35,6 +35,7 @@ func (k Keeper) SubmitProposal(ctx sdk.Context, content govtypes.Content) (govty
 		return govtypes.Proposal{}, err
 	}
 
+	proposal.VotingEndTime = headerTime
 	k.SetProposal(ctx, proposal)
 	// entTime is set to headerTime, because the proposal should be processed right after it is submitted
 	// since there is no voting

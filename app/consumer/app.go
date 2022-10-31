@@ -443,7 +443,8 @@ func New(
 		keys[adminmodulemoduletypes.MemStoreKey],
 		adminRouter,
 		// this allows any type of proposal to be submitted to the admin module (everything is whitelisted)
-		// projects will implement their functions to define what is allowed for provider and consumer admins
+		// projects will implement their functions to define what is allowed for provider and consumer admins.
+		// Implementation example can be found in app/consumer-democracy/proposals_whitelisting.go
 		func(govtypes.Content) bool { return true },
 		func(govtypes.Content) bool { return true },
 	)
