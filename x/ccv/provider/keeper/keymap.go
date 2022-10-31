@@ -306,6 +306,7 @@ func (e *KeyMap) getConsumerUpdates(vscid VSCID, stakingUpdates map[ProviderPubK
 }
 
 func toMap(providerUpdates []abci.ValidatorUpdate) map[ProviderPubKey]int64 {
+	// TODO: add panic
 	ret := map[ProviderPubKey]int64{}
 	for _, u := range providerUpdates {
 		ret[u.PubKey] = u.Power
