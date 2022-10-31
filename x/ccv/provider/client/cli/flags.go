@@ -5,6 +5,7 @@ import (
 )
 
 const (
+	FlagChainId          = "validator"
 	FlagAddressValidator = "validator"
 	FlagPubKey           = "pubkey"
 	FlagNodeID           = "node-id"

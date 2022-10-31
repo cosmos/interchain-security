@@ -10,11 +10,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	flag "github.com/spf13/pflag"
-	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 // GetTxCmd returns the transaction commands for this module
@@ -55,10 +53,10 @@ func NewDesignateConsensusKeyForConsumerChainCmd() *cobra.Command {
 
 	cmd.Flags().AddFlagSet(FlagSetPublicKey())
 
-	cmd.Flags().String(FlagIP, "", fmt.Sprintf("The node's public IP. It takes effect only when used in combination with --%s", flags.FlagGenerateOnly))
-	cmd.Flags().String(FlagNodeID, "", "The node's ID")
+	// TODO: ip, nodeid flags?
 	flags.AddTxFlagsToCmd(cmd)
 
+	// TODO: what else?
 	_ = cmd.MarkFlagRequired(flags.FlagFrom)
 	_ = cmd.MarkFlagRequired(FlagPubKey)
 
@@ -67,22 +65,20 @@ func NewDesignateConsensusKeyForConsumerChainCmd() *cobra.Command {
 
 func newBuildDesignateConsensusKeyForConsumerChainMsg(clientCtx client.Context, txf tx.Factory, fs *flag.FlagSet) (tx.Factory, *types.MsgDesignateConsensusKeyForConsumerChain, error) {
 
-	pkStr, err := fs.GetString(FlagPubKey)
+	providerValAddr := clientCtx.GetFromAddress()
+	consumerPubKeyStr, err := fs.GetString(FlagPubKey)
 	if err != nil {
 		return txf, nil, err
 	}
 
-	var pk cryptotypes.PubKey
-	if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(pkStr), &pk); err != nil {
+	var consumerPubKey cryptotypes.PubKey
+	if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(consumerPubKeyStr), &consumerPubKey); err != nil {
 		return txf, nil, err
 	}
 
-	// TODO: replace with real data
-	chainId := "chainid"
-	providerValidatorAddress := sdk.ValAddress{}
-	consumerValidatorPubKey, _ := cryptocodec.FromTmProtoPublicKey(crypto.PublicKey{})
+	chainId, _ := fs.GetString(FlagChainId)
 
-	msg, err := types.NewMsgDesignateConsensusKeyForConsumerChain(chainId, providerValidatorAddress, consumerValidatorPubKey)
+	msg, err := types.NewMsgDesignateConsensusKeyForConsumerChain(chainId, sdk.ValAddress(providerValAddr), consumerPubKey)
 	if err != nil {
 		return txf, nil, err
 	}
