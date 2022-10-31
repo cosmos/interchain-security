@@ -5,22 +5,20 @@ EXTENDS  Integers, Naturals, FiniteSets, Sequences, TLC
 Validators == 0..2
 
 VARIABLES
-    consumerIndex,
-    consumerIndexMatured,
+    valsets,
     mappings,
-    valsets
+    consumerIndex,
+    consumerIndexMatured
 
 Init ==
-    /\ consumerVscid = 1,
-    /\ consumerVscidMatured = 0,
-    /\ mappings = [],
-    /\ valsets = []
+    /\ valsets = 
+    /\ mappings = 
+    /\ consumerIndex = 
+    /\ consumerIndexMatured = 
 
 Next ==
     \/ Map(providerKey, consumerKey)
-    \/ Increase(providerKey, consumerKey)
-    \/ Map(providerKey, consumerKey)
-       
+    \/ NewValSet
 
 Inv == 
 
