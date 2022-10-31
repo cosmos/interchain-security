@@ -4,8 +4,8 @@ EXTENDS  Integers, Naturals, FiniteSets, Sequences, TLC
 
 CONSTANTS
     STORAGE_CONSTANT,
-    ProviderKeys,
-    ConsumerKeys
+    PROVIDER_KEYS,
+    CONSUMER_KEYS
 
 VARIABLES
     assignments,
@@ -26,9 +26,9 @@ VARIABLES
 
 Init ==
     \* Store the genesis assignment, and the current assignment
-    /\ assignments = [vscid \in 1..2 |-> [key \in ProviderKeys |-> key]]
+    /\ assignments = [vscid \in 1..2 |-> [key \in PROVIDER_KEYS |-> key]]
     \* One valset has been committed (genesis)
-    /\ \E valset \in SUBSET ProviderKeys: 
+    /\ \E valset \in SUBSET PROVIDER_KEYS: 
        providerValSets = [vscid \in {1} |-> valset]
     \* Genesis block is committed
     /\ committedProviderVSCID = 1
@@ -43,7 +43,7 @@ Init ==
 (***************************************)
 
 AssignKey == 
-    \E providerKey \in ProviderKeys, consumerKey \in ConsumerKeys:
+    \E providerKey \in PROVIDER_KEYS, consumerKey \in CONSUMER_KEYS:
     \* consumerKey is not in use
     /\ ~(\E i \in DOMAIN assignments: \E k \in DOMAIN assignments[i] : assignments[i][k] = consumerKey)
     \* Do assignment
@@ -59,7 +59,7 @@ AssignKey ==
 (***************************************)
 
 ProviderEndAndCommitBlock ==
-    \E valset \in SUBSET ProviderKeys:
+    \E valset \in SUBSET PROVIDER_KEYS:
     \* Create a new assignment entry
     /\ assignments' = assignments @@ [vscid \in {committedProviderVSCID+2} |-> assignments[committedProviderVSCID]]
     \* Get a new validator set from changes in voting power
@@ -108,7 +108,7 @@ queryable.
 True by construction: 'how' not explicitly modelled.
 *)
 AssignmentIsDefined == 
-    \A k \in ProviderKeys:
+    \A k \in PROVIDER_KEYS:
     LET ConsumerKey == assignments[committedProviderVSCID + 1][k]
     IN TRUE
 
@@ -139,7 +139,7 @@ UniqueReverseQueryResultIsDefined ==
     ConsumerValset == {assignments[i][k] : k \in providerValSets[i]}
     \* All the keys that are assigned to the consumerKey in stored assignments
     Assigned(consumerKey) == {
-            providerKey \in ProviderKeys :
+            providerKey \in PROVIDER_KEYS :
             \E j \in DOMAIN assignments : assignments[j][providerKey] = consumerKey
         }
     \* The query for the providerKey is successful and the result is unique.
@@ -148,7 +148,7 @@ UniqueReverseQueryResultIsDefined ==
 (*
 Storage cost grows linearly with committedProviderVSCID - maturedConsumerVSCID
 *)
-BoundedStorage ==
+StorageIsBounded ==
     Cardinality(DOMAIN(assignments)) <= STORAGE_CONSTANT * (1 + (committedProviderVSCID - maturedConsumerVSCID))
 
 
@@ -166,7 +166,12 @@ Sanity == LET
     /\ Sanity3
     /\ Sanity4
 
-Invariant == Sanity /\ BoundedStorage /\ UniqueReverseQuery
+Invariant == 
+    /\ Sanity
+    /\ AssignmentIsDefined
+    /\ ConsumerValidatorSetIsDefined
+    /\ UniqueReverseQueryResultIsDefined
+    /\ StorageIsBounded
 
 (***************************************************************************)
 
