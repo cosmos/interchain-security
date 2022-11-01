@@ -1,12 +1,11 @@
 package e2e
 
 import (
-	"strings"
+	"fmt"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
 	"github.com/cosmos/interchain-security/testutil/e2e"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -14,10 +13,10 @@ import (
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/ibc-go/modules/core/exported"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
+	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 )
@@ -207,8 +206,8 @@ func relayAllCommittedPackets(
 }
 
 // incrementTimeByUnbondingPeriod increments the overall time by
-//  - if chainType == Provider, the unbonding period on the provider.
-//  - otherwise, the unbonding period on the consumer.
+//   - if chainType == Provider, the unbonding period on the provider.
+//   - otherwise, the unbonding period on the consumer.
 //
 // Note that it is expected for the provider unbonding period
 // to be one day larger than the consumer unbonding period.
@@ -238,19 +237,44 @@ func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	}
 }
 
-func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold bool) {
+func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold bool, msgAndArgs ...interface{}) {
 	stakingUnbondingOp, wasFound := getStakingUnbondingDelegationEntry(s.providerCtx(), s.providerApp.GetE2eStakingKeeper(), id)
-	s.Require().True(found == wasFound)
-	s.Require().True(onHold == (0 < stakingUnbondingOp.UnbondingOnHoldRefCount))
+	s.Require().Equal(
+		found,
+		wasFound,
+		fmt.Sprintf("checkStakingUnbondingOps failed - getStakingUnbondingDelegationEntry; %s", msgAndArgs...),
+	)
+	if wasFound {
+		s.Require().True(
+			onHold == (0 < stakingUnbondingOp.UnbondingOnHoldRefCount),
+			fmt.Sprintf("checkStakingUnbondingOps failed - onHold; %s", msgAndArgs...),
+		)
+	}
 }
 
-func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool) {
+func checkCCVUnbondingOp(s *CCVTestSuite, providerCtx sdk.Context, chainID string, valUpdateID uint64, found bool, msgAndArgs ...interface{}) {
 	entries, wasFound := s.providerApp.GetProviderKeeper().GetUnbondingOpsFromIndex(providerCtx, chainID, valUpdateID)
-	s.Require().True(found == wasFound)
+	s.Require().Equal(
+		found,
+		wasFound,
+		fmt.Sprintf("checkCCVUnbondingOp failed - GetUnbondingOpsFromIndex; %s", msgAndArgs...),
+	)
 	if found {
-		s.Require().True(len(entries) > 0, "No unbonding ops found")
-		s.Require().True(len(entries[0].UnbondingConsumerChains) > 0, "Unbonding op with no consumer chains")
-		s.Require().True(strings.Compare(entries[0].UnbondingConsumerChains[0], "testchain2") == 0, "Unbonding op with unexpected consumer chain")
+		s.Require().Greater(
+			len(entries),
+			0,
+			fmt.Sprintf("checkCCVUnbondingOp failed - no unbonding ops found; %s", msgAndArgs...),
+		)
+		s.Require().Greater(
+			len(entries[0].UnbondingConsumerChains),
+			0,
+			fmt.Sprintf("checkCCVUnbondingOp failed - unbonding op with no consumer chains; %s", msgAndArgs...),
+		)
+		s.Require().Equal(
+			"testchain2",
+			entries[0].UnbondingConsumerChains[0],
+			fmt.Sprintf("checkCCVUnbondingOp failed - unbonding op with unexpected consumer chain; %s", msgAndArgs...),
+		)
 	}
 }
 

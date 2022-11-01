@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -139,68 +140,114 @@ func (s *CCVTestSuite) TestUndelegationNoValsetChange() {
 // TestUndelegationDuringInit checks that before the CCV channel is established
 //   - no undelegations can complete, even if the provider unbonding period elapses
 //   - all the VSC packets are stored in state as pending
+//   - if the channel handshake times out, then the undelegation completes
 func (s *CCVTestSuite) TestUndelegationDuringInit() {
+	testCases := []struct {
+		name                       string
+		updateInitTimeoutTimestamp func(*providerkeeper.Keeper, time.Duration)
+		removed                    bool
+	}{
+		{
+			"channel handshake completes after unbonding period", func(pk *providerkeeper.Keeper, pUnbondingPeriod time.Duration) {
+				// change the init timeout timestamp for this consumer chain
+				// to make sure the chain is not removed before the unbonding period elapses
+				ts := s.providerCtx().BlockTime().Add(pUnbondingPeriod + 24*time.Hour)
+				pk.SetInitTimeoutTimestamp(s.providerCtx(), s.consumerChain.ChainID, uint64(ts.UnixNano()))
+			}, false,
+		},
+		{
+			"channel handshake times out before unbonding period", func(pk *providerkeeper.Keeper, pUnbondingPeriod time.Duration) {
+				// change the init timeout timestamp for this consumer chain
+				// to make sure the chain is removed before the unbonding period elapses
+				ts := s.providerCtx().BlockTime().Add(pUnbondingPeriod - 24*time.Hour)
+				pk.SetInitTimeoutTimestamp(s.providerCtx(), s.consumerChain.ChainID, uint64(ts.UnixNano()))
+			}, true,
+		},
+	}
 
-	providerKeeper := s.providerApp.GetProviderKeeper()
+	for i, tc := range testCases {
+		providerKeeper := s.providerApp.GetProviderKeeper()
+		stakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
-	// delegate bondAmt and undelegate 1/2 of it
-	bondAmt := sdk.NewInt(10000000)
-	delAddr := s.providerChain.SenderAccount.GetAddress()
-	initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, 2)
-	// - check that staking unbonding op was created and onHold is true
-	checkStakingUnbondingOps(s, 1, true, true)
-	// - check that CCV unbonding op was created
-	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true)
+		// delegate bondAmt and undelegate 1/2 of it
+		bondAmt := sdk.NewInt(10000000)
+		delAddr := s.providerChain.SenderAccount.GetAddress()
+		initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, 2)
+		// - check that staking unbonding op was created and onHold is true
+		checkStakingUnbondingOps(s, 1, true, true, "test: "+tc.name)
+		// - check that CCV unbonding op was created
+		checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true, "test: "+tc.name)
 
-	// call NextBlock on the provider (which increments the height)
-	s.providerChain.NextBlock()
+		// get provider unbonding period
+		providerUnbondingPeriod := stakingKeeper.UnbondingTime(s.providerCtx())
+		// update init timeout timestamp
+		tc.updateInitTimeoutTimestamp(&providerKeeper, providerUnbondingPeriod)
 
-	// check that the VSC packet is stored in state as pending
-	pendingVSCs, _ := providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
-	s.Require().True(len(pendingVSCs) == 1, "no pending VSC packet found")
+		// call NextBlock on the provider (which increments the height)
+		s.providerChain.NextBlock()
 
-	// delegate again to create another VSC packet
-	delegate(s, delAddr, bondAmt)
+		// check that the VSC packet is stored in state as pending
+		pendingVSCs, _ := providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+		s.Require().True(len(pendingVSCs) == 1, "no pending VSC packet found; test: %s", tc.name)
 
-	// call NextBlock on the provider (which increments the height)
-	s.providerChain.NextBlock()
+		// delegate again to create another VSC packet
+		delegate(s, delAddr, bondAmt)
 
-	// check that the VSC packet is stored in state as pending
-	pendingVSCs, _ = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
-	s.Require().True(len(pendingVSCs) == 2, "only one pending VSC packet found")
+		// call NextBlock on the provider (which increments the height)
+		s.providerChain.NextBlock()
 
-	// increment time so that the unbonding period ends on the provider
-	incrementTimeByUnbondingPeriod(s, Provider)
-	// - check that the unbonding op is still there and onHold is true
-	checkStakingUnbondingOps(s, 1, true, true)
-	// - check that unbonding has not yet completed, i.e., the initBalance
-	// is still lower by the bond amount, because it has been taken out of
-	// the delegator's account
-	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt).Sub(bondAmt)))
+		// check that the VSC packet is stored in state as pending
+		pendingVSCs, _ = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+		s.Require().True(len(pendingVSCs) == 2, "only one pending VSC packet found; test: %s", tc.name)
 
-	// complete CCV channel setup
-	s.SetupCCVChannel()
-	s.SetupTransferChannel()
+		// increment time so that the unbonding period ends on the provider
+		incrementTimeByUnbondingPeriod(s, Provider)
 
-	// relay VSC packets from provider to consumer
-	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 2)
+		// check whether the unbonding op is still there and onHold is true
+		checkStakingUnbondingOps(s, 1, !tc.removed, true, "test: "+tc.name)
 
-	// increment time so that the unbonding period ends on the consumer
-	incrementTimeByUnbondingPeriod(s, Consumer)
+		if !tc.removed {
+			// check that unbonding has not yet completed, i.e., the initBalance
+			// is still lower by the bond amount, because it has been taken out of
+			// the delegator's account
+			s.Require().Equal(
+				initBalance.Sub(bondAmt).Sub(bondAmt),
+				getBalance(s, s.providerCtx(), delAddr),
+				"unexpected initial balance before unbonding; test: %s", tc.name,
+			)
 
-	// relay VSCMatured packets from consumer to provider
-	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 2)
+			// complete CCV channel setup
+			s.SetupCCVChannel()
 
-	// check that the unbonding operation completed
-	// - check that ccv unbonding op has been deleted
-	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
-	// - check that staking unbonding op has been deleted
-	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
-	// - check that one quarter the delegated coins have been returned
-	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt).Sub(bondAmt.Quo(sdk.NewInt(2)))))
+			// relay VSC packets from provider to consumer
+			relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 2)
+
+			// increment time so that the unbonding period ends on the consumer
+			incrementTimeByUnbondingPeriod(s, Consumer)
+
+			// relay VSCMatured packets from consumer to provider
+			relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 2)
+
+			// check that the unbonding operation completed
+			// - check that ccv unbonding op has been deleted
+			checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false, "test: "+tc.name)
+			// - check that staking unbonding op has been deleted
+			checkStakingUnbondingOps(s, valsetUpdateID, false, false, "test: "+tc.name)
+			// - check that one quarter the delegated coins have been returned
+			s.Require().Equal(
+				initBalance.Sub(bondAmt).Sub(bondAmt.Quo(sdk.NewInt(2))),
+				getBalance(s, s.providerCtx(), delAddr),
+				"unexpected initial balance after unbonding; test: %s", tc.name,
+			)
+		}
+
+		if i+1 < len(testCases) {
+			// reset suite to reset provider client
+			s.SetupTest()
+		}
+	}
 }
 
-// TODO FIX, the consumer is added during SetupTest()
 // Bond some tokens on provider
 // Unbond them to create unbonding op
 // Check unbonding ops on both sides

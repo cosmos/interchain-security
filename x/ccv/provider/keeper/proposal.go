@@ -86,6 +86,10 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 		return err
 	}
 
+	// add the init timeout timestamp for this consumer chain
+	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
+	k.SetInitTimeoutTimestamp(ctx, chainID, uint64(ts.UnixNano()))
+
 	// store LockUnbondingOnTimeout flag
 	if lockUbdOnTimeout {
 		k.SetLockUnbondingOnTimeout(ctx, chainID)
