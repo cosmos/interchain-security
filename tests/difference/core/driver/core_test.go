@@ -421,7 +421,7 @@ func (s *CoreSuite) TestAssumptions() {
 	// Provider last vscid is correct
 	s.Require().Equal(int(s.offsetProviderVscId), int(s.providerKeeper().GetValidatorSetUpdateId(s.ctx(P))))
 	// Consumer last vscid is correct
-	// TODO: unhardcode
+	// TODO: unhardcode 16
 	s.Require().Equal(int(16), int(s.consumerLastCommittedVscId()))
 
 	// Check that consumer uses current provider mapping
@@ -545,16 +545,12 @@ func (s *CoreSuite) TestAssumptions() {
 	s.Require().Empty(s.simibc.Link.OutboxAcks[C])
 }
 
-// Test a set of traces
-func (s *CoreSuite) TestTraces() {
-	s.traces = Traces{
-		Data: LoadTraces("traces.json"),
-	}
-	// s.traces.Data = []TraceData{s.traces.Data[0]}
+func (s *CoreSuite) executeTraces() {
 	for i := range s.traces.Data {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
+			// TODO: move these initialisation steps to somewhere sensible
 			s.vscidToKeyAssignment = map[uint64]map[int64]providerkeeper.ConsumerPublicKey{}
 			s.vscidToKeyAssignment[s.offsetProviderVscId] = s.readCurrentKeyAssignment()
 
@@ -576,40 +572,23 @@ func (s *CoreSuite) TestTraces() {
 	}
 }
 
-// Test a set of traces
+// Test a set of traces with downtime slashing included
+// but no key assignments.
+func (s *CoreSuite) TestTracesDowntime() {
+	s.traces = Traces{
+		Data: LoadTraces("tracesDowntime.json"),
+	}
+	// s.traces.Data = []TraceData{s.traces.Data[0]}
+	s.executeTraces()
+}
+
+// Test a set of traces with downtime slashing excluded
+// and key assignments.
 func (s *CoreSuite) TestTracesNoDowntime() {
 	s.traces = Traces{
 		Data: LoadTraces("tracesNoDowntime.json"),
 	}
-	// s.traces.Data = []TraceData{s.traces.Data[0]}
-	for i := range s.traces.Data {
-		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
-			// Setup a new pair of chains for each trace
-			rand.Seed(2)
-			fmt.Println("pre setup")
-
-			s.SetupTest()
-			fmt.Println("post setup")
-
-			s.vscidToKeyAssignment = map[uint64]map[int64]providerkeeper.ConsumerPublicKey{}
-			s.vscidToKeyAssignment[s.offsetProviderVscId] = s.readCurrentKeyAssignment()
-
-			s.traces.CurrentTraceIx = i
-			defer func() {
-				// If a panic occurs, we trap it to print a diagnostic
-				// and improve debugging experience.
-				if r := recover(); r != nil {
-					fmt.Println(s.traces.Diagnostic())
-					fmt.Println(r)
-					// Double panic to halt.
-					panic("Panic occurred during TestTraces")
-				}
-			}()
-			// Record information about the trace, for debugging
-			// diagnostics.
-			s.executeTrace()
-		})
-	}
+	s.executeTraces()
 }
 
 func TestCoreSuite(t *testing.T) {
