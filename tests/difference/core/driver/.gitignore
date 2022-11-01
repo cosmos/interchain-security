@@ -1,4 +1,5 @@
 *.log
+pretty.json
 debug.json
 tracesDowntime.json
 tracesNoDowntime.json
