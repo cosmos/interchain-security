@@ -25,12 +25,10 @@ message MsgDesignateConsensusKeyForConsumerChain {
   string chain_id = 1;
   string provider_validator_address = 2
       [ (gogoproto.moretags) = "yaml:\"address\"" ];
-  google.protobuf.Any consumer_validator_pubkey = 3
+  google.protobuf.Any consumer_validator_pub_key = 3
       [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
 }
 
-message MsgDesignateConsensusKeyForConsumerChainResponse {
-  string placeholder = 1;
-}
+message MsgDesignateConsensusKeyForConsumerChainResponse {}
 
 // this line is used by starport scaffolding # proto/tx/message

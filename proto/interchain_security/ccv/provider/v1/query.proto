@@ -88,6 +88,6 @@ message QueryConsumerChainValidatorKeyMappingRequest {
 }
 
 message QueryConsumerChainValidatorKeyMappingResponse {
-  google.protobuf.Any consumer_validator_pubkey = 1
+  google.protobuf.Any consumer_validator_pub_key = 1
       [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
 }
