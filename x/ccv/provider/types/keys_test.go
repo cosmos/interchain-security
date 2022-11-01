@@ -36,7 +36,7 @@ func TestNoDuplicates(t *testing.T) {
 // any of which should be a single, unique byte.
 func getSingleByteKeys() [][]byte {
 
-	keys := make([][]byte, 19)
+	keys := make([][]byte, 32)
 	i := 0
 
 	keys[i], i = providertypes.PortKey(), i+1
@@ -59,7 +59,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{providertypes.LockUnbondingOnTimeoutBytePrefix}, i+1
 	keys[i] = []byte{providertypes.PendingSlashPacketEntryBytePrefix}
 
-	return keys
+	return keys[:i]
 }
 
 // Tests the construction and parsing of keys for storing pending consumer addition proposals

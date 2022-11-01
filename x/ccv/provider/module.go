@@ -164,18 +164,17 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
 
-	// TODO: Determine if VSCToH mapping (currently in SendValidatorUpdates) should be done here
-	// before HandlePendingSlashPackets executes. Spec has it before, but can be changed.
-	// Intuitively it shouldn't matter since no slash packet should be received for this block height.
+	// TODO: this method could be put into one of the below ones, you just need to figure out which one
 	am.keeper.HandlePendingSlashPackets(ctx)
 
-	// TODO: separate PR for the new params that'll be needed
+	// EndBlock logic needed for the Consumer Initiated Slashing sub-protocol.
+	// Important: EndBlockCIS must be called before EndBlockVSU
+	am.keeper.EndBlockCIS(ctx)
+	// EndBlock logic needed for the Consumer Chain Removal sub-protocol
+	am.keeper.EndBlockCCR(ctx)
+	// EndBlock logic needed for the Validator Set Update sub-protocol
+	am.keeper.EndBlockVSU(ctx)
 
-	// notify the staking module to complete all matured unbonding ops
-	am.keeper.CompleteMaturedUnbondingOps(ctx)
-
-	// send validator updates to consumer chains
-	am.keeper.SendValidatorUpdates(ctx)
 	return []abci.ValidatorUpdate{}
 }
 
