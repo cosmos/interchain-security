@@ -340,16 +340,7 @@ func (s *CoreSuite) keyAssignment() {
 	}
 }
 
-func (s *CoreSuite) debugPrintProviderValidatorConsAddresses() {
-	for i := 0; i < initState.NumValidators; i++ {
-		cons := s.consAddr(int64(i))
-		fmt.Println(i, " cons:", cons.String()[14:20])
-	}
-}
-
 func (s *CoreSuite) executeTrace() {
-
-	s.debugPrintProviderValidatorConsAddresses()
 
 	for i := range s.traces.Actions() {
 		s.traces.CurrentActionIx = i
@@ -598,10 +589,10 @@ func TestCoreSuite(t *testing.T) {
 // the initial state in the model.
 func (s *CoreSuite) SetupTest() {
 	state := initState
-	path, valAddresses, offsetHeight, offsetTimeUnix := GetZeroState(&s.Suite, state)
+	path, valAddresses, offsetHeight, offsetTimeUnix, providerVscID := GetZeroState(&s.Suite, state)
 	s.valAddresses = valAddresses
 	s.offsetHeight = offsetHeight
 	s.offsetTimeUnix = offsetTimeUnix
-	s.offsetProviderVscId = 32 // TODO: do properly
+	s.offsetProviderVscId = providerVscID
 	s.simibc = simibc.MakeRelayedPath(s.Suite.T(), path)
 }

@@ -61,8 +61,8 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
 func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
 }
 func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, ca sdk.ConsAddress, _ sdk.ValAddress) {
-	fmt.Println("validator removed!")
-
+	// Delete any key assignments that are associated with this
+	// validator across all consumer chains
 	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
 		h.k.KeyMap(ctx, chainID).DeleteProviderKey(ca)
 		return false

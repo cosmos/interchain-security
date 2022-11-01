@@ -230,10 +230,8 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// TODO: document better
 	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
 	providerConsAddr, err := GetProviderConsAddr(k.KeyMap(ctx, chainID), consumerConsAddr)
-	// debugStr("recv slash, ", providerConsAddr, data)
 
 	if err != nil {
-		fmt.Println("could not find providerConsAddr using keymap lookup")
 		return false, nil
 	}
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr)
@@ -274,7 +272,6 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	default:
 		return false, fmt.Errorf("invalid infraction type: %v", data.Infraction)
 	}
-	// debugStr("actu slash, ", providerConsAddr, data)
 
 	// slash validator
 	k.stakingKeeper.Slash(

@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"errors"
-	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -140,8 +139,6 @@ func (e *KeyMap) SetProviderPubKeyToConsumerPubKey(pk ProviderPublicKey, ck Cons
 }
 
 func (e *KeyMap) DeleteProviderKey(pca ProviderConsAddr) error {
-	fmt.Println("called deleteProviderKey!")
-
 	// TODO: document expensive operation
 	if ck, ok := e.Store.GetPcaToCk(pca); ok {
 		e.Store.DelCkToPk(ck)

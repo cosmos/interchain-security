@@ -3,7 +3,6 @@ package core
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -382,7 +381,7 @@ func (b *Builder) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.ValAdd
 
 // setSigningInfos sets the validator signing info in the provider Slashing module
 func (b *Builder) setSigningInfos() {
-	for i := 0; i < 4; i++ { // TODO: unhardcode
+	for i := 0; i < initState.NumValidators; i++ {
 		info := slashingtypes.NewValidatorSigningInfo(
 			b.consAddr(int64(i)),
 			b.chain(P).CurrentHeader.GetHeight(),
@@ -493,13 +492,13 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		consumertypes.DefaultConsumerUnbondingPeriod,
 	)
 
-	{
-		// TODO: this is a hack
-		for _, u := range valUpdates {
-			b.providerKeeper().KeyMap(b.ctx(P), b.chainID(C)).SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
-		}
-		b.providerKeeper().KeyMap(b.ctx(P), b.chainID(C)).ComputeUpdates(0, valUpdates)
+	// For each update, assign a default key assignment from provider key to provider key.
+	// In this manner the default behavior is for the consumer to be assigned the same consensus
+	// key as is used on the provider, for a given validator.
+	for _, u := range valUpdates {
+		b.providerKeeper().KeyMap(b.ctx(P), b.chainID(C)).SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
 	}
+	b.providerKeeper().KeyMap(b.ctx(P), b.chainID(C)).ComputeUpdates(0, valUpdates)
 
 	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, consumertypes.SlashRequests{}, params)
 }
@@ -779,14 +778,14 @@ func (b *Builder) build() {
 // state does not necessarily mimic the order of steps that happen in a
 // live scenario.
 func GetZeroState(suite *suite.Suite, initState InitState) (
-	*ibctesting.Path, []sdk.ValAddress, int64, int64) {
+	*ibctesting.Path, []sdk.ValAddress, int64, int64, uint64) {
 	b := Builder{initState: initState, suite: suite}
 	b.build()
 	// Height of the last committed block (current header is not committed)
 	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
 	// Time of the last committed block (current header is not committed)
 	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(-b.initState.BlockSeconds).Unix()
-	// TODO:
-	fmt.Println("id", b.providerKeeper().GetValidatorSetUpdateId(b.ctx(P)))
-	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
+	// Get the current provider vscID
+	providerVscid := b.providerKeeper().GetValidatorSetUpdateId(b.ctx(P))
+	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted, providerVscid
 }
