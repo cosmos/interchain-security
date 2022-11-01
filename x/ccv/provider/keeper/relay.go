@@ -234,80 +234,23 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		}
 	}
 
+	// TODO: remove all this ish above and make it closer to main
+
 	// If the validator is bonded, not tombstoned, and not jailed (ie. the val has voting power),
 	// queue the slash packet to be handled by the circuit breaker
-	k.QueuePendingSlashPacket(ctx, types.NewSlashPacket(ctx.BlockTime(), chainID, data))
+	k.QueuePendingSlashPacket(ctx, ctx.BlockTime(), chainID, data)
 
-	if k.GetNumPendingSlashPackets(ctx) > 1000 {
-		// TODO: If the queue has gotten too large, iterate through it and handle/drop any packets that are relevant
-		// to validators which have a duplicate slash packet earlier in the queue. For now, we panic
-		panic("there are more than 1000 pending slash packets, something is wrong")
-	}
+	// TODO: this below should be on the per chain queue
+
+	// if k.GetNumPendingSlashPackets(ctx) > 1000 {
+	// 	// TODO: If the queue has gotten too large, iterate through it and handle/drop any packets that are relevant
+	// 	// to validators which have a duplicate slash packet earlier in the queue. For now, we panic
+	// 	panic("there are more than 1000 pending slash packets, something is wrong")
+	// }
 
 	// TODO: Tests will fail until you call end blocker to execute HandleSlashPackets
 
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-}
-
-// HandlePendingSlashPackets handles all or some portion of pending slash packets depending on circuit breaker logic.
-// This method executes every end block routine
-func (k Keeper) HandlePendingSlashPackets(ctx sdk.Context) {
-
-	meter := k.GetSlashGasMeter(ctx)
-
-	handledPackets := []types.SlashPacket{}
-	k.IteratePendingSlashPackets(ctx, func(nextSlashPacket types.SlashPacket) bool {
-
-		_, err := k.HandleSlashPacket(ctx, nextSlashPacket.ConsumerChainID, nextSlashPacket.Data)
-		if err != nil {
-			panic(fmt.Sprintf("failed to handle slash packet: %s", err.Error()))
-		}
-
-		valPower := k.stakingKeeper.GetLastValidatorPower(ctx, nextSlashPacket.Data.Validator.Address)
-		meter.Sub(sdk.NewInt(valPower))
-		handledPackets = append(handledPackets, nextSlashPacket)
-
-		// Do not handle anymore slash packets if the meter has 0 or negative gas
-		return !meter.IsPositive()
-	})
-
-	k.DeletePendingSlashPackets(ctx, handledPackets...)
-	k.SetSlashGasMeter(ctx, meter)
-}
-
-// TODO: Make an e2e test that asserts that the order of endblockers is correct between staking and ccv
-// TODO: ie. the staking updates to voting power need to occur before circuit breaker logic, so circuit breaker has most up to date val powers.
-
-// CheckForSlashMeterReplenishment checks if the slash gas meter should be replenished, and if so, replenishes it.
-// This method executes every end block routine.
-// TODO: hook this into endblocker, unit and e2e tests, tests must include odd time formats, since UTC is is used
-func (k Keeper) CheckForSlashMeterReplenishment(ctx sdk.Context) {
-	// TODO: Need to set initial replenishment time
-	if ctx.BlockTime().UTC().After(k.GetLastSlashGasReplenishTime(ctx).Add(time.Hour)) {
-		// TODO: Use param for replenish period, allowance, etc.
-		// TODO: change code and documentation to reflect that this is a string fraction param
-		slashGasAllowanceFraction := sdk.NewDec(5).Quo(sdk.NewDec(100)) // This will be a string param, ex: "0.05"
-
-		// Compute slash gas allowance in units of tendermint voting power (integer)
-		// TODO: total voting power would change as validators are jailed, is there a timing guarantee we can
-		// make on maximum slash packet delay? Perhaps we use a static "total voting power" like the tm maximum.
-
-		// TODO: Maybe the param could itself be an amount of voting power? This would be easier to reason about
-		totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
-		slashGasAllowance := sdk.NewInt(slashGasAllowanceFraction.MulInt(totalPower).RoundInt64())
-
-		meter := k.GetSlashGasMeter(ctx)
-
-		// Replenish gas up to gas allowance per period. That is, if meter was negative
-		// before being replenished, it'll gain some additional gas. However, if the meter
-		// was 0 or positive in value, it'll be replenished only up to it's allowance for the period.
-		meter = meter.Add(slashGasAllowance)
-		if meter.GT(slashGasAllowance) {
-			meter = slashGasAllowance
-		}
-		k.SetSlashGasMeter(ctx, meter)
-		k.SetLastSlashGasReplenishTime(ctx, ctx.BlockTime())
-	}
 }
 
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type

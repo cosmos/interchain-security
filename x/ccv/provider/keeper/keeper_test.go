@@ -1,10 +1,7 @@
 package keeper_test
 
 import (
-	"fmt"
-	"math/rand"
 	"testing"
-	"time"
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"github.com/golang/mock/gomock"
@@ -15,14 +12,11 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
-	"golang.org/x/exp/slices"
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
-	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -300,207 +294,5 @@ func TestMaturedUnbondingOps(t *testing.T) {
 	require.Equal(t, len(unbondingOpIds), len(ids))
 	for i := 0; i < len(unbondingOpIds); i++ {
 		require.Equal(t, unbondingOpIds[i], ids[i])
-	}
-}
-
-// TestPendingSlashPacket tests the queue, iteration, and queue length functions
-// for pending slash packets, with assertion of FIFO ordering
-func TestPendingSlashPackets(t *testing.T) {
-
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
-		t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	// Consistent time for "now"
-	now := time.Now()
-
-	require.Equal(t, uint64(0), providerKeeper.GetNumPendingSlashPackets(ctx))
-
-	// Queue 3 slash packets for chainIDs 0, 1, 2
-	for i := 0; i < 3; i++ {
-		packet := types.NewSlashPacket(now, "chain-"+fmt.Sprint(i), testkeeper.GetNewSlashPacketData())
-		providerKeeper.QueuePendingSlashPacket(ctx, packet)
-	}
-	require.Equal(t, uint64(3), providerKeeper.GetNumPendingSlashPackets(ctx))
-
-	// Queue 3 slash packets for chainIDs 0, 1, 2 an hour later
-	for i := 0; i < 3; i++ {
-		packet := types.NewSlashPacket(now.Add(time.Hour), "chain-"+fmt.Sprint(i), testkeeper.GetNewSlashPacketData())
-		providerKeeper.QueuePendingSlashPacket(ctx, packet)
-	}
-	require.Equal(t, uint64(6), providerKeeper.GetNumPendingSlashPackets(ctx))
-
-	// Retrieve packets from store
-	packets := providerKeeper.GetAllPendingSlashPackets(ctx)
-
-	// Assert that packets are obtained in FIFO order according to block time
-	firstChainIdSet := []string{packets[0].ConsumerChainID, packets[1].ConsumerChainID, packets[2].ConsumerChainID}
-	require.True(t, slices.Contains(firstChainIdSet, "chain-0"))
-	require.True(t, slices.Contains(firstChainIdSet, "chain-1"))
-	require.True(t, slices.Contains(firstChainIdSet, "chain-2"))
-	secondChainIdSet := []string{packets[3].ConsumerChainID, packets[4].ConsumerChainID, packets[5].ConsumerChainID}
-	require.True(t, slices.Contains(secondChainIdSet, "chain-0"))
-	require.True(t, slices.Contains(secondChainIdSet, "chain-1"))
-	require.True(t, slices.Contains(secondChainIdSet, "chain-2"))
-
-	// Queue 3 slash packets for chainIDs 5, 6, 7 another hour later
-	for i := 0; i < 3; i++ {
-		packet := types.NewSlashPacket(now.Add(2*time.Hour), "chain-"+fmt.Sprint(i+5), testkeeper.GetNewSlashPacketData())
-		providerKeeper.QueuePendingSlashPacket(ctx, packet)
-	}
-	require.Equal(t, uint64(9), providerKeeper.GetNumPendingSlashPackets(ctx))
-
-	// Retrieve packets from store
-	packets = providerKeeper.GetAllPendingSlashPackets(ctx)
-
-	// Assert that packets are obtained in FIFO order according to block time
-	firstChainIdSet = []string{packets[0].ConsumerChainID, packets[1].ConsumerChainID, packets[2].ConsumerChainID}
-	require.True(t, slices.Contains(firstChainIdSet, "chain-0"))
-	require.True(t, slices.Contains(firstChainIdSet, "chain-1"))
-	require.True(t, slices.Contains(firstChainIdSet, "chain-2"))
-	secondChainIdSet = []string{packets[3].ConsumerChainID, packets[4].ConsumerChainID, packets[5].ConsumerChainID}
-	require.True(t, slices.Contains(secondChainIdSet, "chain-0"))
-	require.True(t, slices.Contains(secondChainIdSet, "chain-1"))
-	require.True(t, slices.Contains(secondChainIdSet, "chain-2"))
-	thirdChainIdSet := []string{packets[6].ConsumerChainID, packets[7].ConsumerChainID, packets[8].ConsumerChainID}
-	require.True(t, slices.Contains(thirdChainIdSet, "chain-5"))
-	require.True(t, slices.Contains(thirdChainIdSet, "chain-6"))
-	require.True(t, slices.Contains(thirdChainIdSet, "chain-7"))
-
-	// Test the callback break functionality of the iterator
-	packets = []types.SlashPacket{}
-	providerKeeper.IteratePendingSlashPackets(ctx, func(packet types.SlashPacket) bool {
-		packets = append(packets, packet)
-		// Break after any of the third set of packets is seen
-		return slices.Contains(thirdChainIdSet, packet.ConsumerChainID)
-	})
-	// Expect first two sets of packets to be seen, and one packet from the third set
-	require.Equal(t, 7, len(packets))
-}
-
-// TestPendingSlashPacketDeletion tests the deletion and queue length functions for
-// pending slash packets with assertion of FIFO ordering
-func TestPendingSlashPacketDeletion(t *testing.T) {
-
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
-		t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	now := time.Now()
-
-	require.Equal(t, uint64(0), providerKeeper.GetNumPendingSlashPackets(ctx))
-
-	// Instantiate packets in the expected order we wish to get them back as (ordered by recv time)
-	packets := []types.SlashPacket{}
-	packets = append(packets, types.NewSlashPacket(now, "chain-0", testkeeper.GetNewSlashPacketData()))
-	packets = append(packets, types.NewSlashPacket(now.Add(time.Hour).UTC(), "chain-1", testkeeper.GetNewSlashPacketData()))
-	packets = append(packets, types.NewSlashPacket(now.Add(2*time.Hour).Local(), "chain-2", testkeeper.GetNewSlashPacketData()))
-	packets = append(packets, types.NewSlashPacket(now.Add(3*time.Hour).UTC(), "chain-3", testkeeper.GetNewSlashPacketData()))
-	packets = append(packets, types.NewSlashPacket(now.Add(4*time.Hour).Local(), "chain-4", testkeeper.GetNewSlashPacketData()))
-	packets = append(packets, types.NewSlashPacket(now.Add(5*time.Hour).UTC(), "chain-5", testkeeper.GetNewSlashPacketData()))
-	packets = append(packets, types.NewSlashPacket(now.Add(6*time.Hour), "chain-6", testkeeper.GetNewSlashPacketData()))
-
-	// Instantiate shuffled copy of above slice
-	shuffledPackets := append([]types.SlashPacket{}, packets...)
-	rand.Seed(now.UnixNano())
-	rand.Shuffle(len(shuffledPackets), func(i, j int) {
-		shuffledPackets[i], shuffledPackets[j] = shuffledPackets[j], shuffledPackets[i]
-	})
-
-	// Queue 7 slash packets with various block times in random order
-	for _, packet := range shuffledPackets {
-		providerKeeper.QueuePendingSlashPacket(ctx, packet)
-	}
-
-	require.Equal(t, uint64(7), providerKeeper.GetNumPendingSlashPackets(ctx))
-
-	// Assert obtained order is decided upon via packet recvTime, not insertion order
-	gotPackets := providerKeeper.GetAllPendingSlashPackets(ctx)
-	for i, gotPacket := range gotPackets {
-		expectedPacket := packets[i]
-		require.Equal(t, expectedPacket, gotPacket)
-	}
-
-	require.Equal(t, uint64(7), providerKeeper.GetNumPendingSlashPackets(ctx))
-
-	// Delete packets 1, 3, 5 (0-indexed)
-	providerKeeper.DeletePendingSlashPackets(ctx, gotPackets[1], gotPackets[3], gotPackets[5])
-
-	require.Equal(t, uint64(4), providerKeeper.GetNumPendingSlashPackets(ctx))
-
-	// Assert deletion and ordering
-	gotPackets = providerKeeper.GetAllPendingSlashPackets(ctx)
-	require.Equal(t, 4, len(gotPackets))
-	require.Equal(t, "chain-0", gotPackets[0].ConsumerChainID)
-	// Packet 1 was deleted
-	require.Equal(t, "chain-2", gotPackets[1].ConsumerChainID)
-	// Packet 3 was deleted
-	require.Equal(t, "chain-4", gotPackets[2].ConsumerChainID)
-	// Packet 5 was deleted
-	require.Equal(t, "chain-6", gotPackets[3].ConsumerChainID)
-}
-
-// TestSlashGasMeter tests the getter and setter for the slash gas meter
-func TestSlashGasMeter(t *testing.T) {
-
-	testCases := []struct {
-		meterValue  sdk.Int
-		shouldPanic bool
-	}{
-		{meterValue: sdk.NewInt(-7999999999999999999), shouldPanic: true},
-		{meterValue: sdk.NewInt(-tmtypes.MaxTotalVotingPower - 1), shouldPanic: true},
-		{meterValue: sdk.NewInt(-tmtypes.MaxTotalVotingPower), shouldPanic: false},
-		{meterValue: sdk.NewInt(-50000000078987), shouldPanic: false},
-		{meterValue: sdk.NewInt(-4237), shouldPanic: false},
-		{meterValue: sdk.NewInt(0), shouldPanic: false},
-		{meterValue: sdk.NewInt(1), shouldPanic: false},
-		{meterValue: sdk.NewInt(4237897), shouldPanic: false},
-		{meterValue: sdk.NewInt(500078078987), shouldPanic: false},
-		{meterValue: sdk.NewInt(tmtypes.MaxTotalVotingPower), shouldPanic: false},
-		{meterValue: sdk.NewInt(tmtypes.MaxTotalVotingPower + 1), shouldPanic: true},
-		{meterValue: sdk.NewInt(7999974823991111199), shouldPanic: true},
-	}
-
-	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
-		defer ctrl.Finish()
-
-		if tc.shouldPanic {
-			require.Panics(t, func() {
-				providerKeeper.SetSlashGasMeter(ctx, tc.meterValue)
-			})
-		} else {
-			providerKeeper.SetSlashGasMeter(ctx, tc.meterValue)
-			gotMeterValue := providerKeeper.GetSlashGasMeter(ctx)
-			require.Equal(t, tc.meterValue, gotMeterValue)
-		}
-	}
-}
-
-// TestLastSlashGasReplenishTime tests the getter and setter for the last slash gas replenish time
-func TestLastSlashGasReplenishTime(t *testing.T) {
-
-	testCases := []time.Time{
-		time.Now(),
-		time.Now().Add(1 * time.Hour).UTC(),
-		time.Now().Add(2 * time.Hour).Local(),
-		time.Now().Add(3 * time.Hour).In(time.FixedZone("UTC-8", -8*60*60)),
-		time.Now().Add(4 * time.Hour).Local(),
-		time.Now().Add(-1 * time.Hour).UTC(),
-		time.Now().Add(-2 * time.Hour).Local(),
-		time.Now().Add(-3 * time.Hour).UTC(),
-		time.Now().Add(-4 * time.Hour).Local(),
-	}
-
-	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
-			t, testkeeper.NewInMemKeeperParams(t))
-		defer ctrl.Finish()
-
-		providerKeeper.SetLastSlashGasReplenishTime(ctx, tc)
-		gotTime := providerKeeper.GetLastSlashGasReplenishTime(ctx)
-		// Time should be returned in UTC
-		require.Equal(t, tc.UTC(), gotTime)
 	}
 }

@@ -5,9 +5,9 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	testutil "github.com/cosmos/interchain-security/testutil/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
 // Tests that all singular keys, or prefixes to fully resolves keys are a single byte long,
@@ -36,7 +36,7 @@ func TestNoDuplicates(t *testing.T) {
 // any of which should be a single, unique byte.
 func getSingleByteKeys() [][]byte {
 
-	keys := make([][]byte, 20)
+	keys := make([][]byte, 19)
 	i := 0
 
 	keys[i], i = providertypes.PortKey(), i+1
@@ -44,7 +44,6 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = providertypes.ValidatorSetUpdateIdKey(), i+1
 	keys[i], i = providertypes.SlashGasMeterKey(), i+1
 	keys[i], i = providertypes.LastSlashGasReplenishTimeKey(), i+1
-	keys[i], i = providertypes.NumPendingSlashPacketsKey(), i+1
 	keys[i], i = []byte{providertypes.ChainToChannelBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChannelToChainBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChainToClientBytePrefix}, i+1
@@ -58,7 +57,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{providertypes.InitChainHeightBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.PendingVSCsBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.LockUnbondingOnTimeoutBytePrefix}, i+1
-	keys[i] = []byte{providertypes.PendingSlashPacketBytePrefix}
+	keys[i] = []byte{providertypes.PendingSlashPacketEntryBytePrefix}
 
 	return keys
 }
@@ -137,23 +136,23 @@ func TestUnbondingOpIndexKeyAndParse(t *testing.T) {
 	}
 }
 
-// Tests the construction and parsing of keys for pending slash packets
-func TestPendingSlashPacketKeyAndParse(t *testing.T) {
+// Tests the construction and parsing of keys for pending slash packet entries
+func TestPendingSlashPacketEntryKeyAndParse(t *testing.T) {
 	now := time.Now()
-	packets := []providertypes.SlashPacket{}
-	packets = append(packets, providertypes.NewSlashPacket(now, "chain-0", testutil.GetNewSlashPacketData()))
-	packets = append(packets, providertypes.NewSlashPacket(now.Add(time.Hour), "chain-7896978", testutil.GetNewSlashPacketData()))
-	packets = append(packets, providertypes.NewSlashPacket(now.Add(2*time.Hour), "chain-1", testutil.GetNewSlashPacketData()))
+	entries := []providertypes.SlashPacketEntry{}
+	entries = append(entries, providertypes.NewSlashPacketEntry(now, "chain-0", ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(2*time.Hour), "chain-7896978", ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(3*time.Hour), "chain-1", ed25519.GenPrivKey().PubKey().Address()))
 
-	for _, packet := range packets {
-		key := providertypes.PendingSlashPacketKey(packet)
+	for _, entry := range entries {
+		key := providertypes.PendingSlashPacketEntryKey(entry)
 		require.NotEmpty(t, key)
-		timeBzL := len(sdk.FormatTimeBytes(packet.RecvTime))
+		timeBzL := len(sdk.FormatTimeBytes(entry.RecvTime))
 		// This key should be of set length: prefix + 8 + timeBzL + hashed valAddr + chainID
-		require.Equal(t, 1+8+timeBzL+32+len(packet.ConsumerChainID), len(key))
-		parsedRecvTime, parsedChainID := providertypes.ParsePendingSlashPacketKey(key)
-		require.Equal(t, packet.RecvTime, parsedRecvTime)
-		require.Equal(t, packet.ConsumerChainID, parsedChainID)
+		require.Equal(t, 1+8+timeBzL+32+len(entry.ConsumerChainID), len(key))
+		parsedRecvTime, parsedChainID := providertypes.ParsePendingSlashPacketEntryKey(key)
+		require.Equal(t, entry.RecvTime, parsedRecvTime)
+		require.Equal(t, entry.ConsumerChainID, parsedChainID)
 	}
 }
 

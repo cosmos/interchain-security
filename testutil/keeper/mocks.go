@@ -194,6 +194,21 @@ func (mr *MockStakingKeeperMockRecorder) GetLastTotalPower(ctx interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTotalPower", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastTotalPower), ctx)
 }
 
+// GetLastValidatorPower mocks base method.
+func (m *MockStakingKeeper) GetLastValidatorPower(ctx types.Context, addr types.ValAddress) (power int64) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastValidatorPower", ctx, addr)
+	ret0, _ := ret[0].(int64)
+	return ret0
+}
+
+// GetLastValidatorPower indicates an expected call of GetLastValidatorPower.
+func (mr *MockStakingKeeperMockRecorder) GetLastValidatorPower(ctx, addr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidatorPower", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidatorPower), ctx, addr)
+}
+
+
 // MockSlashingKeeper is a mock of SlashingKeeper interface.
 type MockSlashingKeeper struct {
 	ctrl     *gomock.Controller

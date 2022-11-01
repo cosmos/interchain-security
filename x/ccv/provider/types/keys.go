@@ -97,8 +97,8 @@ const (
 	// LockUnbondingOnTimeoutBytePrefix is the byte prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
 	LockUnbondingOnTimeoutBytePrefix
 
-	// PendingSlashPacketBytePrefix is the byte prefix that will store pending slash packet data
-	PendingSlashPacketBytePrefix
+	// PendingSlashPacketEntryBytePrefix is the byte prefix storing pending slash packet entries
+	PendingSlashPacketEntryBytePrefix
 )
 
 const (
@@ -129,11 +129,6 @@ func SlashGasMeterKey() []byte {
 // LastSlashGasReplenishTimeKey returns the key under which the last time the slash gas meter was replenished is stored
 func LastSlashGasReplenishTimeKey() []byte {
 	return []byte{LastSlashGasReplenishTimeBytePrefix}
-}
-
-// NumPendingSlashPacketsKey returns the key under which the number of pending slash packets is stored
-func NumPendingSlashPacketsKey() []byte {
-	return []byte{NumPendingSlashPacketsBytePrefix}
 }
 
 // ChainToChannelKey returns the key under which the CCV channel ID will be stored for the given consumer chain.
@@ -287,27 +282,27 @@ func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return append([]byte{LockUnbondingOnTimeoutBytePrefix}, []byte(chainID)...)
 }
 
-// PendingSlashPacketKey returns the key under which a pending slash packet is stored
+// PendingSlashPacketEntryKey returns the key for storing a pending slash packet entry.
 //
-// Note: It's not expected for a single consumer chain to send a slash packet for the
-// same validator more than once in the same block. Hence why this key should be
-// unique per slash packet.
-func PendingSlashPacketKey(packet SlashPacket) []byte {
-	timeBz := sdk.FormatTimeBytes(packet.RecvTime)
+// Note: It's not expected for a single consumer chain to send a slash packet for the same validator more than once
+// in the same block. Hence why this key should ber unique per slash packet. However, if a malicious consumer did send
+// duplicate slash packets in the same block, the slash packet entry would simply be overwritten.
+func PendingSlashPacketEntryKey(packetEntry SlashPacketEntry) []byte {
+	timeBz := sdk.FormatTimeBytes(packetEntry.RecvTime)
 	timeBzL := len(timeBz)
 	return AppendMany(
-		[]byte{PendingSlashPacketBytePrefix},
+		[]byte{PendingSlashPacketEntryBytePrefix},
 		sdk.Uint64ToBigEndian(uint64(timeBzL)),
 		timeBz,
-		HashBytes(packet.Data.Validator.Address),
-		[]byte(packet.ConsumerChainID),
+		HashBytes(packetEntry.ValAddr),
+		[]byte(packetEntry.ConsumerChainID),
 	)
 }
 
-// ParsePendingSlashPacketKey returns the received time and chainID for a pending slash packet key
-func ParsePendingSlashPacketKey(bz []byte) (time.Time, string) {
+// ParsePendingSlashPacketEntryKey returns the received time and chainID for a pending slash packet entry key
+func ParsePendingSlashPacketEntryKey(bz []byte) (time.Time, string) {
 	// Prefix is in first byte
-	expectedPrefix := []byte{PendingSlashPacketBytePrefix}
+	expectedPrefix := []byte{PendingSlashPacketEntryBytePrefix}
 	if prefix := bz[:1]; !bytes.Equal(prefix, expectedPrefix) {
 		panic(fmt.Sprintf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix))
 	}
