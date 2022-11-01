@@ -45,6 +45,7 @@ service Query {
   rpc QueryConsumerChainValidatorKeyMapping(
       QueryConsumerChainValidatorKeyMappingRequest)
       returns (QueryConsumerChainValidatorKeyMappingResponse) {
+    // TODO: make sure path up to date
     option (google.api.http).get = "/interchain_security/ccv/provider/"
                                    "consumer_chain_validator_key_mapping";
   }

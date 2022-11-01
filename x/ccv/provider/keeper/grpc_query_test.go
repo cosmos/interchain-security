@@ -6,8 +6,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	gocontext "context"
-
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -51,15 +49,15 @@ func TestGRPCQueryConsumerChainValidatorKeyMapping(t *testing.T) {
 	testCases := []struct {
 		name string
 		// State-mutating setup specific to this test case
-		setup    func(sdk.Context, keeper.Keeper, testkeeper.MockedKeepers)
+		setup    func(sdk.Context, keeper.Keeper, testkeeper.MockedKeepers, string)
 		expError bool
 		chainID  string
 	}{
 		{
 			name: "success",
-			setup: func(ctx sdk.Context, k keeper.Keeper, mocks testkeeper.MockedKeepers) {
+			setup: func(ctx sdk.Context, k keeper.Keeper, mocks testkeeper.MockedKeepers, chainID string) {
 				// Make chain queryable
-				k.SetConsumerClientId(ctx, "chainid", "")
+				k.SetConsumerClientId(ctx, chainID, "")
 				// Make validator queryable
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
@@ -68,9 +66,25 @@ func TestGRPCQueryConsumerChainValidatorKeyMapping(t *testing.T) {
 					).Return(valSdkObject, true).Times(1),
 				)
 				// Set a mapping
-				k.KeyMap(ctx, "chainid").SetProviderPubKeyToConsumerPubKey(valTMProtoPublicKey, consumerTmPublickey)
+				k.KeyMap(ctx, chainID).SetProviderPubKeyToConsumerPubKey(valTMProtoPublicKey, consumerTmPublickey)
 			},
 			expError: false,
+			chainID:  "chainid",
+		},
+		{
+			name: "mapping doesn't exist",
+			setup: func(ctx sdk.Context, k keeper.Keeper, mocks testkeeper.MockedKeepers, chainID string) {
+				// Make chain queryable
+				k.SetConsumerClientId(ctx, chainID, "")
+				// Make validator queryable
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidator(
+						ctx, valSdkAddr,
+						// Return a valid validator, found!
+					).Return(valSdkObject, true).Times(1),
+				)
+			},
+			expError: true,
 			chainID:  "chainid",
 		},
 	}
@@ -79,29 +93,28 @@ func TestGRPCQueryConsumerChainValidatorKeyMapping(t *testing.T) {
 
 		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
-		// TODO: no idea if these 4 lines are right
 		app := simapp.Setup(false)
 		queryHelper := baseapp.NewQueryServerTestHelper(ctx, app.InterfaceRegistry())
 		types.RegisterQueryServer(queryHelper, k)
 		queryClient := types.NewQueryClient(queryHelper)
 
-		tc.setup(ctx, k, mocks)
+		tc.setup(ctx, k, mocks, tc.chainID)
 
 		req := types.QueryConsumerChainValidatorKeyMappingRequest{
-			ChainId:                  "chainid",
+			ChainId:                  tc.chainID,
 			ProviderValidatorAddress: valSdkAddr.String(),
 		}
 
-		res, err := queryClient.QueryConsumerChainValidatorKeyMapping(gocontext.Background(), &req)
+		goCtx := sdk.WrapSDKContext(ctx)
+		res, err := queryClient.QueryConsumerChainValidatorKeyMapping(goCtx, &req)
 
 		if tc.expError {
 			require.Error(t, err, "invalid case did not return error")
 		} else {
 			require.NoError(t, err, "valid case returned error")
-			cached := res.ConsumerValidatorPubkey.GetCachedValue()
-			consumerSdkPubKeyActual, ok := cached.(cryptotypes.PubKey)
-			require.True(t, ok)
-			require.Equal(t, consumerSdkPubKeyExpect, consumerSdkPubKeyActual)
+			consumerValidatorPubKeyAnyExpect, err := codectypes.NewAnyWithValue(consumerSdkPubKeyExpect)
+			require.NoError(t, err, "faulty test")
+			require.Equal(t, consumerValidatorPubKeyAnyExpect.Value, res.ConsumerValidatorPubkey.Value)
 		}
 
 		ctrl.Finish()
