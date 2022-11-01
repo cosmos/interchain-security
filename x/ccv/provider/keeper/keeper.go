@@ -258,9 +258,13 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 	return nil
 }
 
-// SetConsumerChain ensures that the consumer chain has not already been set by a different channel, and then sets the consumer chain mappings in keeper,
-// and set the channel status to validating.
-// If there is already a ccv channel between the provider and consumer chain then close the channel, so that another channel can be made.
+// SetConsumerChain ensures that the consumer chain has not already been
+// set by a different channel, and then sets the consumer chain mappings
+// in keeper, and set the channel status to validating.
+// If there is already a CCV channel between the provider and consumer
+// chain then close the channel, so that another channel can be made.
+//
+// SetConsumerChain is called by OnChanOpenConfirm.
 func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	channel, ok := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
 	if !ok {
