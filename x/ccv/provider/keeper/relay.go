@@ -183,7 +183,8 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 	}
 }
 
-// OnRecvSlashPacket receives a slash packet and determines if it should be dropped, handled immediately, or queued
+// OnRecvSlashPacket receives a slash packet and determines whether the channel is established,
+// then queues the slash packet as pending if the channel is established and found.
 // TODO: More unit tests, e2e? Do this after design is more finalized
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
 	// check that the channel is established
@@ -194,50 +195,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	// Note: the following logic is not included in spec, since it does not affect the correctness of the ccv protocol
-	// and is implemented to alleviate the issue of the slash packet queue growing too large from malicious consumers
-
-	// An alternative to this logic is to leave the handling of slash packets as it exists in main,
-	// but assert that queued slash packets which do not affect validator voting power, cost 0 slash gas.
-	// This design is better because spam packets never even make it into the queue.
-
-	valConsAddr := sdk.ConsAddress(data.Validator.Address)
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr)
-
-	if !found {
-		// validator not found, drop packet
-		return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	}
-
-	// If validator is unbonded, drop slash packet by returning an ack.
-	// It wouldn't make sense to attempt to slash an unbonded validator.
-	if validator.IsUnbonded() {
-		// TODO add warning log message
-		// fmt.Sprintf("consumer chain %s trying to slash unbonded validator %s", chainID, consAddr.String())
-		return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	}
-
-	// If val is tombstoned, drop slash packet by returning an ack.
-	// Tombstoned validators should not be slashed multiple times.
-	if k.slashingKeeper.IsTombstoned(ctx, valConsAddr) {
-		return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	}
-
-	// If validator is already jailed, this packet won't affect voting power and can bypass
-	// the circuit breaker by being handled immediately.
-	if validator.Jailed {
-		_, err := k.HandleSlashPacket(ctx, chainID, data)
-		if err != nil {
-			return channeltypes.NewErrorAcknowledgement(err.Error())
-		} else {
-			return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-		}
-	}
-
-	// TODO: remove all this ish above and make it closer to main
-
-	// If the validator is bonded, not tombstoned, and not jailed (ie. the val has voting power),
-	// queue the slash packet to be handled by the circuit breaker
+	// Queue the slash packet as pending with current block time as recvTime, to be handled by circuit breaker logic
 	k.QueuePendingSlashPacket(ctx, ctx.BlockTime(), chainID, data)
 
 	// TODO: this below should be on the per chain queue
@@ -253,8 +211,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
 
-// HandleSlashPacket slash and jail a misbehaving validator according the infraction type
-// TODO: You can make this method accept the new slash packet type you've defined, but it'll require some changes
+// HandleSlashPacket potentially slashes, jails and/or tombstones a misbehaving validator according to infraction type
 // TODO: update unit tests and e2e, do so after design is more finalized
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
 
