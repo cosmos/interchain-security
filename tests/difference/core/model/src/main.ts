@@ -301,6 +301,10 @@ function doAction(model: Model, action: Action): Consequence {
       };
     }
   }
+  if (kind === 'KeyAssignment') {
+    // No op
+    return {};
+  }
   throw 'Action kind not recognized';
 }
 

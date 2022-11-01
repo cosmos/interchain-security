@@ -37,7 +37,7 @@ const UNDELEGATE_AMT_MIN = 1000;
 const UNDELEGATE_AMT_MAX = 5000;
 const MAX_NUM_PACKETS_FOR_DELIVER = 6;
 const ENABLE_DOWNTIME = false;
-const ENABLE_KEY_ASSIGNMENT = false;
+const ENABLE_KEY_ASSIGNMENT = true;
 
 const MODEL_INIT_STATE: ModelInitState = {
   h: { provider: 0, consumer: 0 },
