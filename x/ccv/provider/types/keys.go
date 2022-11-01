@@ -307,7 +307,7 @@ func ChainIdWithLenKey(prefix byte, chainID string) []byte {
 	// copy the chainID length
 	byteLen += copy(bz[byteLen:], sdk.Uint64ToBigEndian(uint64(chainIdL)))
 	// copy the chainID
-	byteLen += copy(bz[byteLen:], chainID)
+	copy(bz[byteLen:], chainID)
 	return bz
 }
 
