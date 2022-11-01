@@ -32,7 +32,7 @@ type StakingKeeper interface {
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
 	PowerReduction(ctx sdk.Context) sdk.Int
 	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
-	GetLastTotalPower(ctx sdk.Context) sdk.Int // TODO: may or may not need this depending on limiting param
+	GetLastTotalPower(ctx sdk.Context) sdk.Int
 	GetLastValidatorPower(ctx sdk.Context, operator sdk.ValAddress) (power int64)
 }
 
