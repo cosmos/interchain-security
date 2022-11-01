@@ -31,15 +31,15 @@ func TestInvalidMsg(t *testing.T) {
 
 func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 
-	consumerTMProtoPublicKey := func() cryptotypes.PubKey {
+	consumerSdkPubKey := func() cryptotypes.PubKey {
 		_, cpk0 := testutil.GetTMCryptoPublicKeyFromSeed(0)
 		ret, err := cryptocodec.FromTmProtoPublicKey(cpk0)
 		require.NoError(t, err)
 		return ret
 	}
 
-	validatorAddressAndStakingType := func() (sdk.ValAddress, stakingtypes.Validator) {
-		mockPV, _ := testutil.GetTMCryptoPublicKeyFromSeed(0)
+	valSdkAddressAndValObject := func() (sdk.ValAddress, stakingtypes.Validator) {
+		mockPV, _ := testutil.GetTMCryptoPublicKeyFromSeed(1)
 		tmPubKeyI, err := mockPV.GetPubKey()
 		require.NoError(t, err)
 		sdkPubKeyI, err := cryptocodec.FromTmPubKeyInterface(tmPubKeyI)
@@ -52,7 +52,7 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 		return addr, v
 	}
 
-	valSdkAddr, valSdkType := validatorAddressAndStakingType()
+	valSdkAddr, valSdkObject := valSdkAddressAndValObject()
 
 	testCases := []struct {
 		name string
@@ -73,7 +73,7 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, valSdkAddr,
 						// Return a valid validator, found!
-					).Return(valSdkType, true).Times(1),
+					).Return(valSdkObject, true).Times(1),
 				)
 			},
 			expError: false,
@@ -113,9 +113,9 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 				// Make chain queryable
 				k.SetConsumerClientId(ctx, "chainid", "")
 
-				tmConsPubKey, err := valSdkType.TmConsPublicKey()
+				tmConsPubKey, err := valSdkObject.TmConsPublicKey()
 				require.NoError(t, err)
-				tmPubKey, err := cryptocodec.ToTmProtoPublicKey(consumerTMProtoPublicKey())
+				tmPubKey, err := cryptocodec.ToTmProtoPublicKey(consumerSdkPubKey())
 				require.NoError(t, err)
 				// Use the consumer key already
 				err = k.KeyMap(ctx, "chainid").SetProviderPubKeyToConsumerPubKey(tmConsPubKey, tmPubKey)
@@ -139,7 +139,7 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 		tc.setup(ctx, k, mocks)
 
 		msg, err := types.NewMsgDesignateConsensusKeyForConsumerChain(tc.chainID,
-			valSdkAddr, consumerTMProtoPublicKey(),
+			valSdkAddr, consumerSdkPubKey(),
 		)
 
 		require.NoError(t, err)
