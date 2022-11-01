@@ -8,18 +8,13 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 const (
-	// DefaultTrustingPeriod is duration of the period since
-	// the LastestTimestamp during which the submitted headers are valid for upgrade
-	DefaultTrustingPeriod = 3 * 7 * 24 * time.Hour
-
-	// DefaultUnbondingPeriod of the staking unbonding period
-	DefaultUnbondingPeriod = 4 * 7 * 24 * time.Hour
-
 	// DefaultMaxClockDrift defines how much new (untrusted) header's Time can drift into the future.
+	// This default is only used in the default template client param.
 	DefaultMaxClockDrift = 10 * time.Second
 
 	// DefaultTrustingPeriodFraction is the default fraction used to compute TrustingPeriod
@@ -39,10 +34,10 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates new provider parameters with provided arguments
-func NewParams(cs *ibctmtypes.ClientState, ccvTimeoutPeriod time.Duration,
+func NewParams(templateClient *ibctmtypes.ClientState, ccvTimeoutPeriod time.Duration,
 	trustingPeriodFraction int64) Params {
 	return Params{
-		TemplateClient:         cs,
+		TemplateClient:         templateClient,
 		CcvTimeoutPeriod:       ccvTimeoutPeriod,
 		TrustingPeriodFraction: trustingPeriodFraction,
 	}
@@ -53,8 +48,17 @@ func DefaultParams() Params {
 	// create default client state with chainID, trusting period, unbonding period, and inital height zeroed out.
 	// these fields will be populated during proposal handler.
 	return NewParams(
-		ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			DefaultMaxClockDrift, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, true, true),
+		ibctmtypes.NewClientState(
+			"", // chainID
+			ibctmtypes.DefaultTrustLevel,
+			0, // trusting period
+			0, // unbonding period
+			DefaultMaxClockDrift,
+			clienttypes.Height{}, // latest(initial) height
+			commitmenttypes.GetSDKSpecs(),
+			[]string{"upgrade", "upgradedIBCState"},
+			true,
+			true),
 		ccvtypes.DefaultCCVTimeoutPeriod,
 		DefaultTrustingPeriodFraction,
 	)
@@ -97,8 +101,8 @@ func validateTemplateClient(i interface{}) error {
 
 	// populate zeroed fields with valid fields
 	copiedClient.ChainId = "chainid"
-	copiedClient.TrustingPeriod = DefaultTrustingPeriod
-	copiedClient.UnbondingPeriod = DefaultUnbondingPeriod
+	copiedClient.TrustingPeriod = consumertypes.DefaultConsumerUnbondingPeriod / DefaultTrustingPeriodFraction
+	copiedClient.UnbondingPeriod = consumertypes.DefaultConsumerUnbondingPeriod
 	copiedClient.LatestHeight = clienttypes.NewHeight(0, 1)
 
 	if err := copiedClient.Validate(); err != nil {
