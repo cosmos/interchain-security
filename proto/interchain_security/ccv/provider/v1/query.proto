@@ -5,6 +5,8 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "cosmos_proto/cosmos.proto";
 import "interchain_security/ccv/consumer/v1/genesis.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
 
@@ -76,8 +78,15 @@ message Chain {
   string client_id = 2;
 }
 
-message QueryConsumerChainValidatorKeyMappingRequest { string placeholder = 1; }
+message QueryConsumerChainValidatorKeyMappingRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  string chain_id = 1;
+  string provider_validator_address = 2
+      [ (gogoproto.moretags) = "yaml:\"address\"" ];
+}
 
 message QueryConsumerChainValidatorKeyMappingResponse {
-  string placeholder = 1;
+  google.protobuf.Any consumer_validator_pubkey = 1
+      [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
 }
