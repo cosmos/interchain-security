@@ -11,7 +11,7 @@ CHAIN_ID=$3
 
 # chain's IP address prefix; 7.7.7, 7.7.8...
 # see chain config for details 
-CHAIN_PREFIX=${4:-"7.7.7"}
+CHAIN_PREFIX=$4
 
 # create directory for double signing node
 mkdir /$CHAIN_ID/validatorsybil
