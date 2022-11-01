@@ -124,7 +124,7 @@ class ActionGenerator {
       // since the last maturity.
       return (
         this.model.blocks
-          .getNonMaturedRecentConsumerValidators()
+          .getConsumerValidatorRecentActiveVSCIDs()
           .has((a as ConsumerSlash).val) &&
         2 <= this.didSlash.filter((x) => !x).length
       );
@@ -155,14 +155,15 @@ class ActionGenerator {
     // Update internal state to prevent jailing all validators
     if (a.kind === 'ConsumerSlash') {
       const val = (a as ConsumerSlash).val;
+      // Don't slash the same validator twice
       this.didSlash[val] = true;
       const vscids = this.model.blocks
-        .getNonMaturedRecentConsumerValidators()
+        .getConsumerValidatorRecentActiveVSCIDs()
         .get(val);
       const items = Array.from(vscids as Set<number>);
+      // Take a random vscid
       const vscid = items[Math.floor(Math.random() * items.length)];
       (a as ConsumerSlash).vscid = vscid;
-      // console.log((a as ConsumerSlash).val, (a as ConsumerSlash).vscid);
     }
     // Update internal state to prevent expiring light clients
     // Client is also updated for Deliver, because this is needed in practice

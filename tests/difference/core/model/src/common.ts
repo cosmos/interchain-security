@@ -83,9 +83,13 @@ type Undelegate = {
 
 type ConsumerSlash = {
   kind: string;
+  // The validator unique id, corresponds to real validator identity
+  // ie. the provider indentity
   val: Validator;
   infractionHeight: number;
   isDowntime: boolean;
+  // The vscid at which the validator was active, used to map
+  // the validator unique id to a consumer consensus address.
   vscid: number;
 };
 
@@ -108,7 +112,7 @@ type EndAndBeginBlock = {
 type SystemSnapshot = {
   h: Record<Chain, number>;
   t: Record<Chain, number>;
-  lastVscid: Record<Chain, number>;
+  latestVscid: Record<Chain, number>;
   tokens: number[];
   status: Status[];
   undelegationQ: Undelegation[];

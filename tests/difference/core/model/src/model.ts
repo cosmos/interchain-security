@@ -631,7 +631,7 @@ class Model {
     return cloneDeep({
       h: this.h,
       t: this.t,
-      lastVscid: {
+      latestVscid: {
         provider: this.ccvP.vscID,
         consumer: this.ccvC.hToVscID[this.h[C] + 1],
       },

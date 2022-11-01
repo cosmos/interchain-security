@@ -11,6 +11,7 @@ import {
   CommittedBlock,
   Status,
   SystemSnapshot,
+  Validator,
 } from './common.js';
 
 /**
@@ -147,11 +148,12 @@ class BlockHistory {
   };
 
   /**
-   * @returns Get a map of vscid to the set of validators
-   * who were validating at that vscid on the consumer chain.
+   * @returns a map of validator id to the set of vscids
+   * where that validator was validating, since the last
+   * maturity sent by the consumer
    */
-  getNonMaturedRecentConsumerValidators = (): Map<
-    number,
+  getConsumerValidatorRecentActiveVSCIDs = (): Map<
+    Validator,
     Set<number>
   > => {
     const greatestCommittedConsumerHeight = _.max(
@@ -173,7 +175,7 @@ class BlockHistory {
               ret.set(i, new Set<number>());
             }
             const set = ret.get(i);
-            const vscid = ss.lastVscid[C];
+            const vscid = ss.latestVscid[C];
             set?.add(vscid);
           }
         });
