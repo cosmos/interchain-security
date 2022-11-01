@@ -58,7 +58,7 @@ message ConsumerAdditionProposal {
 // Params defines the parameters for CCV Provider module
 message Params {
   ibc.lightclients.tendermint.v1.ClientState template_client = 1;
-  // TrustingPeriodFraction is used to compute the consumer and provider IBC client's TrustingPeriod
+  // TrustingPeriodFraction is used to compute the consumer and provider IBC client's TrustingPeriod from the chain defined UnbondingPeriod
     int64 trusting_period_fraction = 2;
   // Sent IBC packets will timeout after this duration
   google.protobuf.Duration ccv_timeout_period = 3
