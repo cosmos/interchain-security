@@ -3,6 +3,8 @@ package keeper
 import (
 	"context"
 
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -79,8 +81,55 @@ func (k Keeper) QueryConsumerChainValidatorKeyMapping(goCtx context.Context, req
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// TODO:
-	_ = ctx
+	if _, found := k.GetConsumerClientId(ctx, req.ChainId); !found {
+		return nil, types.ErrNoConsumerChainFound
+	}
 
-	return &types.QueryConsumerChainValidatorKeyMappingResponse{}, nil
+	providerValidatorAddr, err := sdk.ValAddressFromBech32(req.ProviderValidatorAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	validator, found := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
+	if !found {
+		return nil, types.ErrNoValidatorFound
+	}
+
+	providerTMPublicKey, err := validator.TmConsPublicKey()
+	if err != nil {
+		return nil, sdkerrors.Wrapf(
+			types.ErrInvalidValidatorPubKey,
+			"cryptocodec error: %w",
+			err,
+		)
+	}
+
+	consumerTMPublicKey, found := k.KeyMap(ctx, req.ChainId).GetCurrentConsumerPubKeyFromProviderPubKey(providerTMPublicKey)
+
+	if !found {
+		return nil, types.ErrNoAssignedConsumerKeyFoundForValidator
+	}
+
+	consumerSDKPublicKey, err := cryptocodec.FromTmProtoPublicKey(consumerTMPublicKey)
+
+	if err != nil {
+		return nil, sdkerrors.Wrapf(
+			// TODO: is this the right kind of error?
+			types.ErrInvalidValidatorPubKey,
+			"cryptocodec error: %w",
+			err,
+		)
+	}
+
+	var pubKeyAny *codectypes.Any
+	if consumerSDKPublicKey != nil {
+		var err error
+		if pubKeyAny, err = codectypes.NewAnyWithValue(consumerSDKPublicKey); err != nil {
+			return nil, err
+		}
+	}
+
+	return &types.QueryConsumerChainValidatorKeyMappingResponse{
+		ConsumerValidatorPubkey: pubKeyAny,
+	}, nil
 }
