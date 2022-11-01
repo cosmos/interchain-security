@@ -7,10 +7,10 @@ import {
   NUM_VALIDATORS,
 } from './constants.js';
 import {
-  InvariantSnapshot,
   Chain,
   CommittedBlock,
   Status,
+  SystemSnapshot,
 } from './common.js';
 
 /**
@@ -135,45 +135,51 @@ class BlockHistory {
   /**
    * Mark state as permanently committed to the blockchain.
    * @param chain
-   * @param invariantSnapshot
+   * @param systemSnapshot
    */
-  commitBlock = (chain: Chain, invariantSnapshot: InvariantSnapshot) => {
-    const h = invariantSnapshot.h[chain];
+  commitBlock = (chain: Chain, systemSnapshot: SystemSnapshot) => {
+    const h = systemSnapshot.h[chain];
     const b: CommittedBlock = {
       chain,
-      invariantSnapshot,
+      systemSnapshot: systemSnapshot,
     };
     this.blocks[chain].set(h, b);
   };
 
-  getSlashableValidators = (): Map<number, Set<number>> => {
+  /**
+   * @returns Get a map of vscid to the set of validators
+   * who were validating at that vscid on the consumer chain.
+   */
+  getNonMaturedRecentConsumerValidators = (): Map<
+    number,
+    Set<number>
+  > => {
     const greatestCommittedConsumerHeight = _.max(
       Array.from(this.blocks[C].keys()),
     );
-    const lastBlockSS = this.blocks[C].get(
+    const lastSnapshot = this.blocks[C].get(
       greatestCommittedConsumerHeight,
-    )?.invariantSnapshot!;
+    )?.systemSnapshot!;
 
-    const validators = new Map<number, Set<number>>();
+    const ret = new Map<number, Set<number>>();
 
     for (let [_, block] of this.blocks[C]) {
-      const ss = block.invariantSnapshot;
-      const t = ss.t[C];
-      if (lastBlockSS.t[C] < t + UNBONDING_SECONDS_C) {
+      const ss = block.systemSnapshot;
+      if (lastSnapshot.t[C] < ss.t[C] + UNBONDING_SECONDS_C) {
         ss.consumerPower.forEach((power, i) => {
+          // If the validator had power.
           if (power !== undefined) {
-            if (!validators.has(i)) {
-              validators.set(i, new Set<number>());
+            if (!ret.has(i)) {
+              ret.set(i, new Set<number>());
             }
-            const set = validators.get(i);
+            const set = ret.get(i);
             const vscid = ss.lastVscid[C];
             set?.add(vscid);
           }
         });
       }
     }
-    // console.log(Array.from(validators.values()));
-    return validators;
+    return ret;
   };
 }
 
@@ -194,9 +200,9 @@ function stakingWithoutSlashing(hist: BlockHistory): boolean {
   const blocks = Array.from(hist.blocks[P].entries())
     .sort((a, b) => a[0] - b[0])
     .map((e) => e[1])
-    .map((b) => b.invariantSnapshot);
+    .map((b) => b.systemSnapshot);
 
-  function value(e: InvariantSnapshot) {
+  function value(e: SystemSnapshot) {
     let x = e.delegatorTokens;
     x += sum(e.tokens);
     x += sum(e.undelegationQ.map((e) => e.balance));
@@ -231,11 +237,11 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
   function powerProvider(block: CommittedBlock, hp: number): number[] {
     return _.range(NUM_VALIDATORS).map((i) => {
       let x = 0;
-      if (block.invariantSnapshot.status[i] !== Status.UNBONDED) {
-        x += block.invariantSnapshot.tokens[i];
+      if (block.systemSnapshot.status[i] !== Status.UNBONDED) {
+        x += block.systemSnapshot.tokens[i];
       }
       x += sum(
-        block.invariantSnapshot.undelegationQ
+        block.systemSnapshot.undelegationQ
           .filter((e) => e.val === i)
           .filter((e) => hp <= e.creationHeight)
           .map((e) => e.initialBalance),
@@ -244,14 +250,15 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
     });
   }
   function powerConsumer(block: CommittedBlock) {
-    return block.invariantSnapshot.consumerPower;
+    return block.systemSnapshot.consumerPower;
   }
   function inner(hc: number): boolean {
     const hp = partialOrder.getGreatestPred(C, hc);
     assert(hp !== undefined, 'this should never happen.');
     function getHC_() {
-      const tsHC = (blocks[C].get(hc) as CommittedBlock).invariantSnapshot
-        .t[C];
+      const tsHC = (blocks[C].get(hc) as CommittedBlock).systemSnapshot.t[
+        C
+      ];
       // Get earliest height on consumer
       // that a VSC received at hc could mature
       const heights = Array.from(blocks[C].keys()).sort((a, b) => a - b);
@@ -259,7 +266,7 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
         const hc_ = heights[i];
         if (
           tsHC + UNBONDING_SECONDS_C <=
-          (blocks[C].get(hc_) as CommittedBlock).invariantSnapshot.t[C]
+          (blocks[C].get(hc_) as CommittedBlock).systemSnapshot.t[C]
         ) {
           return hc_;
         }

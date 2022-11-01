@@ -105,7 +105,7 @@ type EndAndBeginBlock = {
   chain: Chain;
 };
 
-type InvariantSnapshot = {
+type SystemSnapshot = {
   h: Record<Chain, number>;
   t: Record<Chain, number>;
   lastVscid: Record<Chain, number>;
@@ -122,7 +122,7 @@ type InvariantSnapshot = {
  */
 interface CommittedBlock {
   chain: Chain;
-  invariantSnapshot: InvariantSnapshot;
+  systemSnapshot: SystemSnapshot;
 }
 
 /**
@@ -200,7 +200,7 @@ export {
   UpdateClient,
   Deliver,
   EndAndBeginBlock,
-  InvariantSnapshot,
+  SystemSnapshot,
   Status,
   Undelegation,
   Unval,

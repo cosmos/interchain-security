@@ -36,7 +36,8 @@ import {
   DELEGATE_AMT_MAX,
   UNDELEGATE_AMT_MIN,
   UNDELEGATE_AMT_MAX,
-  ISDOWNTIME_PROBABILITY,
+  ENABLE_DOWNTIME,
+  ENABLE_KEY_ASSIGNMENT,
   TRUSTING_SECONDS,
   BLOCK_SECONDS,
   MAX_NUM_PACKETS_FOR_DELIVER,
@@ -58,14 +59,18 @@ class ActionGenerator {
   }
 
   create = (): Action => {
-    const kind = _.sample([
+    const actionTypes = [
       'Delegate',
       'Undelegate',
       'ConsumerSlash',
       'EndAndBeginBlock',
       'Deliver',
       'UpdateClient',
-    ]);
+    ];
+    if (ENABLE_KEY_ASSIGNMENT) {
+      actionTypes.push('KeyAssignment');
+    }
+    const kind = _.sample(actionTypes);
     if (kind === 'Delegate') {
       return {
         kind,
@@ -85,7 +90,7 @@ class ActionGenerator {
         kind,
         val: _.random(0, NUM_VALIDATORS - 1),
         infractionHeight: Math.floor(Math.random() * this.model.h[C]),
-        isDowntime: Math.random() < ISDOWNTIME_PROBABILITY,
+        isDowntime: Math.random() < (ENABLE_DOWNTIME ? 0.5 : 0),
       } as ConsumerSlash;
     }
     if (kind === 'UpdateClient') {
@@ -115,9 +120,11 @@ class ActionGenerator {
       return true;
     }
     if (a.kind === 'ConsumerSlash') {
+      // The consumer can only slash validators who were validating
+      // since the last maturity.
       return (
         this.model.blocks
-          .getSlashableValidators()
+          .getNonMaturedRecentConsumerValidators()
           .has((a as ConsumerSlash).val) &&
         2 <= this.didSlash.filter((x) => !x).length
       );
@@ -149,7 +156,9 @@ class ActionGenerator {
     if (a.kind === 'ConsumerSlash') {
       const val = (a as ConsumerSlash).val;
       this.didSlash[val] = true;
-      const vscids = this.model.blocks.getSlashableValidators().get(val);
+      const vscids = this.model.blocks
+        .getNonMaturedRecentConsumerValidators()
+        .get(val);
       const items = Array.from(vscids as Set<number>);
       const vscid = items[Math.floor(Math.random() * items.length)];
       (a as ConsumerSlash).vscid = vscid;
