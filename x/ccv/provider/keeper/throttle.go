@@ -5,13 +5,12 @@ import (
 	"time"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// This file contains functionality relevant to the throttling of slash and vsc matured packets, aka circuit breaker.
+// This file contains functionality relevant to the throttling of slash and vsc matured packets, aka circuit breaker logic.
 
 // HandlePendingSlashPackets handles all or some portion of pending slash packets depending on circuit breaker logic.
 // This method executes every end block routine
@@ -162,7 +161,7 @@ func (k Keeper) QueuePendingPacketData(ctx sdktypes.Context, consumerChainID str
 func (k Keeper) GetSlashGasMeter(ctx sdktypes.Context) sdktypes.Int {
 	// TODO: is this the standard way to set a signed int?
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.SlashGasMeterKey())
+	bz := store.Get(providertypes.SlashGasMeterKey())
 	if bz == nil {
 		panic("slash gas meter not set")
 	}
@@ -189,13 +188,13 @@ func (k Keeper) SetSlashGasMeter(ctx sdktypes.Context, value sdktypes.Int) {
 	if err != nil {
 		panic(fmt.Sprintf("failed to marshal slash gas meter: %v", err))
 	}
-	store.Set(types.SlashGasMeterKey(), bz)
+	store.Set(providertypes.SlashGasMeterKey(), bz)
 }
 
 // GetLastSlashGasReplenishTime returns the last UTC time the slash gas meter was replenished
 func (k Keeper) GetLastSlashGasReplenishTime(ctx sdktypes.Context) time.Time {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.LastSlashGasReplenishTimeKey())
+	bz := store.Get(providertypes.LastSlashGasReplenishTimeKey())
 	if bz == nil {
 		panic("last slash gas replenish time not set")
 	}
@@ -209,5 +208,5 @@ func (k Keeper) GetLastSlashGasReplenishTime(ctx sdktypes.Context) time.Time {
 // SetLastSlashGasReplenishTime sets the last time the slash gas meter was replenished
 func (k Keeper) SetLastSlashGasReplenishTime(ctx sdktypes.Context, time time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.LastSlashGasReplenishTimeKey(), sdktypes.FormatTimeBytes(time.UTC()))
+	store.Set(providertypes.LastSlashGasReplenishTimeKey(), sdktypes.FormatTimeBytes(time.UTC()))
 }
