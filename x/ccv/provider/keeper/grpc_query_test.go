@@ -98,7 +98,8 @@ func TestGRPCQueryConsumerChainValidatorKeyMapping(t *testing.T) {
 			require.Error(t, err, "invalid case did not return error")
 		} else {
 			require.NoError(t, err, "valid case returned error")
-			consumerSdkPubKeyActual, ok := res.ConsumerValidatorPubkey.GetCachedValue().(cryptotypes.PubKey)
+			cached := res.ConsumerValidatorPubkey.GetCachedValue()
+			consumerSdkPubKeyActual, ok := cached.(cryptotypes.PubKey)
 			require.True(t, ok)
 			require.Equal(t, consumerSdkPubKeyExpect, consumerSdkPubKeyActual)
 		}

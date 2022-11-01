@@ -97,28 +97,17 @@ func (k Keeper) QueryConsumerChainValidatorKeyMapping(goCtx context.Context, req
 
 	providerTMPublicKey, err := validator.TmConsPublicKey()
 	if err != nil {
-		return nil, sdkerrors.Wrapf(
-			types.ErrInvalidValidatorPubKey,
-			"cryptocodec error: %w",
-			err,
-		)
+		return nil, err
 	}
 
 	consumerTMPublicKey, found := k.KeyMap(ctx, req.ChainId).GetCurrentConsumerPubKeyFromProviderPubKey(providerTMPublicKey)
-
 	if !found {
 		return nil, types.ErrNoAssignedConsumerKeyFoundForValidator
 	}
 
 	consumerSDKPublicKey, err := cryptocodec.FromTmProtoPublicKey(consumerTMPublicKey)
-
 	if err != nil {
-		return nil, sdkerrors.Wrapf(
-			// TODO: is this the right kind of error?
-			types.ErrInvalidValidatorPubKey,
-			"cryptocodec error: %w",
-			err,
-		)
+		return nil, err
 	}
 
 	var pubKeyAny *codectypes.Any
@@ -127,6 +116,14 @@ func (k Keeper) QueryConsumerChainValidatorKeyMapping(goCtx context.Context, req
 		if pubKeyAny, err = codectypes.NewAnyWithValue(consumerSDKPublicKey); err != nil {
 			return nil, err
 		}
+	} else {
+		// TODO: improve err info
+		return nil, types.ErrInvalidValidatorPubKey
+	}
+
+	if pubKeyAny == nil {
+		// TODO: improve err info
+		return nil, types.ErrInvalidValidatorPubKey
 	}
 
 	return &types.QueryConsumerChainValidatorKeyMappingResponse{

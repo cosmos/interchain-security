@@ -43,11 +43,7 @@ func (k msgServer) DesignateConsensusKeyForConsumerChain(goCtx context.Context, 
 	}
 	providerTMPublicKey, err := validator.TmConsPublicKey()
 	if err != nil {
-		return nil, sdkerrors.Wrapf(
-			types.ErrInvalidValidatorPubKey,
-			"cryptocodec error: %w",
-			err,
-		)
+		return nil, err
 	}
 
 	consumerSDKPublicKey, ok := msg.ConsumerValidatorPubkey.GetCachedValue().(cryptotypes.PubKey)
@@ -67,11 +63,7 @@ func (k msgServer) DesignateConsensusKeyForConsumerChain(goCtx context.Context, 
 
 	consumerTMPublicKey, err := cryptocodec.ToTmProtoPublicKey(consumerSDKPublicKey)
 	if err != nil {
-		return nil, sdkerrors.Wrapf(
-			types.ErrInvalidValidatorPubKey,
-			"cryptocodec error: %w",
-			err,
-		)
+		return nil, err
 	}
 
 	err = k.KeyMap(ctx, msg.ChainId).SetProviderPubKeyToConsumerPubKey(
@@ -80,11 +72,7 @@ func (k msgServer) DesignateConsensusKeyForConsumerChain(goCtx context.Context, 
 	)
 
 	if err != nil {
-		return nil, sdkerrors.Wrapf(
-			types.ErrInvalidValidatorPubKey,
-			"info: %w",
-			err,
-		)
+		return nil, err
 	}
 
 	// TODO: emit events?
