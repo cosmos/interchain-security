@@ -101,7 +101,7 @@ func (k Keeper) QueuePendingSlashPacket(
 func (k Keeper) QueuePendingSlashPacketEntry(ctx sdktypes.Context, entry providertypes.SlashPacketEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.PendingSlashPacketEntryKey(entry)
-	// Note: Val address is stored as value to assist in debugging.
+	// Note: Val address is stored as value to assist in debugging. This could be removed for efficiency.
 	store.Set(key, entry.ValAddr)
 }
 
