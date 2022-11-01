@@ -34,6 +34,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/oxyno-zeta/gomock-extra-matcher v1.1.0
 	github.com/regen-network/cosmos-proto v0.3.1
+	github.com/spf13/pflag v1.0.5
 )
 
 require (
@@ -111,7 +112,6 @@ require (
 	github.com/sasha-s/go-deadlock v0.2.1-0.20190427202633-1595213edefa // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.10.1 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca // indirect
@@ -136,3 +136,12 @@ replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )
+
+// replace (
+// 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
+// 	// github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-beta1.0.20220816140824-aba9c2f2b943
+// 	github.com/cosmos/ibc-go/v3 => /Users/danwt/Documents/work/informal-ibc-go
+// 	github.com/tendermint/tendermint v0.34.14 => /Users/danwt/Documents/work/tendermint
+// 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+// 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
+// )
