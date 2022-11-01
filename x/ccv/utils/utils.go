@@ -77,26 +77,3 @@ func SendIBCPacket(
 	)
 	return channelKeeper.SendPacket(ctx, channelCap, packet)
 }
-
-// ComputeConsumerUnbondingPeriod computes the unbonding period on the consumer
-// from the unbonding period on the provider (providerUnbondingPeriod).
-// In general, the consumer unbonding period should be a bit smaller (e.g., one day)
-// than the provider unbonding period so that it covers the delays of relaying IBC packets.
-// As a result, delegators on the provider would not have to wait longer to unbond their tokens.
-func ComputeConsumerUnbondingPeriod(providerUnbondingPeriod time.Duration) time.Duration {
-	if providerUnbondingPeriod > 7*24*time.Hour {
-		// In general, the unbonding period on the consumer
-		// is one day less than the unbonding period on the provider
-		return providerUnbondingPeriod - 24*time.Hour // one day less
-	} else if providerUnbondingPeriod >= 24*time.Hour {
-		// If the unbonding period on the provider is
-		// between one day and one week, then the unbonding period
-		// on the consumer is one hour less
-		return providerUnbondingPeriod - time.Hour // one hour less
-	} else {
-		// If the unbonding period on the provider is
-		// less than one day, then the unbonding period
-		// on the consumer is the same as on the provider
-		return providerUnbondingPeriod
-	}
-}
