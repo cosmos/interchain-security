@@ -32,7 +32,7 @@ func NewMsgDesignateConsensusKeyForConsumerChain(chainID string, providerValidat
 	return &MsgDesignateConsensusKeyForConsumerChain{
 		ChainId:                  chainID,
 		ProviderValidatorAddress: providerValidatorAddress.String(),
-		ConsumerValidatorPubkey:  pubKeyAny,
+		ConsumerValidatorPubKey:  pubKeyAny,
 	}, nil
 }
 
@@ -70,7 +70,7 @@ func (msg MsgDesignateConsensusKeyForConsumerChain) ValidateBasic() error {
 	if msg.ProviderValidatorAddress == "" {
 		return ErrEmptyValidatorAddr
 	}
-	if msg.ConsumerValidatorPubkey == nil {
+	if msg.ConsumerValidatorPubKey == nil {
 		return ErrEmptyValidatorPubKey
 	}
 	return nil

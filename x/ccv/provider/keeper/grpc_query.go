@@ -127,6 +127,6 @@ func (k Keeper) QueryConsumerChainValidatorKeyMapping(goCtx context.Context, req
 	}
 
 	return &types.QueryConsumerChainValidatorKeyMappingResponse{
-		ConsumerValidatorPubkey: pubKeyAny,
+		ConsumerValidatorPubKey: pubKeyAny,
 	}, nil
 }

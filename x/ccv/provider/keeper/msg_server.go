@@ -46,7 +46,7 @@ func (k msgServer) DesignateConsensusKeyForConsumerChain(goCtx context.Context, 
 		return nil, err
 	}
 
-	consumerSDKPublicKey, ok := msg.ConsumerValidatorPubkey.GetCachedValue().(cryptotypes.PubKey)
+	consumerSDKPublicKey, ok := msg.ConsumerValidatorPubKey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "Expecting cryptotypes.PubKey, got %T", consumerSDKPublicKey)
 	}

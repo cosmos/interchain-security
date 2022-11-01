@@ -114,7 +114,7 @@ func TestGRPCQueryConsumerChainValidatorKeyMapping(t *testing.T) {
 			require.NoError(t, err, "valid case returned error")
 			consumerValidatorPubKeyAnyExpect, err := codectypes.NewAnyWithValue(consumerSdkPubKeyExpect)
 			require.NoError(t, err, "faulty test")
-			require.Equal(t, consumerValidatorPubKeyAnyExpect.Value, res.ConsumerValidatorPubkey.Value)
+			require.Equal(t, consumerValidatorPubKeyAnyExpect.Value, res.ConsumerValidatorPubKey.Value)
 		}
 
 		ctrl.Finish()
