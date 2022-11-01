@@ -1,27 +1,40 @@
 package keeper_test
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	testutil "github.com/cosmos/interchain-security/testutil/sample"
 	keeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
-
 func TestGRPCQueryConsumerChainValidatorKeyMapping(t *testing.T) {
+
+	consumerTMProtoPublicKey := func() cryptotypes.PubKey {
+		_, cpk0 := testutil.GetTMCryptoPublicKeyFromSeed(0)
+		ret, err := cryptocodec.FromTmProtoPublicKey(cpk0)
+		require.NoError(t, err)
+		return ret
+	}
+
+	valAddress := func() sdk.ValAddress {
+		mockPV, _ := testutil.GetTMCryptoPublicKeyFromSeed(0)
+		tmPubKeyI, err := mockPV.GetPubKey()
+		require.NoError(t, err)
+		addr, err := sdk.ValAddressFromHex(tmPubKeyI.Address().String())
+		require.NoError(t, err)
+		return addr
+	}
+
+	consumerKey := consumerTMProtoPublicKey()
+	valAddr := valAddress()
 
 	testCases := []struct {
 		name string
@@ -39,14 +52,14 @@ func TestGRPCQueryConsumerChainValidatorKeyMapping(t *testing.T) {
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
-						ctx, valSdkAddr,
+						ctx, valAddr,
 						// Return a valid validator, found!
 					).Return(valSdkType, true).Times(1),
 				)
 			},
 			expError: false,
 			chainID:  "chainid",
-		}
+		},
 	}
 
 	for _, tc := range testCases {
@@ -55,14 +68,12 @@ func TestGRPCQueryConsumerChainValidatorKeyMapping(t *testing.T) {
 
 		tc.setup(ctx, k, mocks)
 
-		msg, err := types.NewMsgDesignateConsensusKeyForConsumerChain(tc.chainID,
-			valSdkAddr, consumerTMProtoPublicKey(),
-		)
+		req := types.QueryConsumerChainValidatorKeyMappingRequest{
+			ChainId:                  "chainid",
+			ProviderValidatorAddress: valAddr.String(),
+		}
 
-		require.NoError(t, err)
-
-		// Try to handle the message
-		_, err = NewHandler(k)(ctx, msg)
+		res, err := k.QueryConsumerChainValidatorKeyMapping
 
 		if tc.expError {
 			require.Error(t, err, "invalid case did not return error")
