@@ -139,13 +139,18 @@ func (b *CoreSuite) consumerLastCommittedVscId() uint64 {
 // consumerPower returns the power on the consumer chain for
 // validator with id (ix) i
 func (s *CoreSuite) consumerPower(val int64) (int64, error) {
-	// TODO: make this work
 	vscid := s.consumerLastCommittedVscId()
-	mapping := s.vscidToKeyAssignment[vscid]
-	s.Require().NotNilf(mapping, "no mapping found for vscid")
-	publicKey := mapping[val]
-	consAddr := providerkeeper.PubKeyToConsAddr(publicKey)
-	v, found := s.consumerKeeper().GetCCValidator(s.ctx(C), []byte(consAddr))
+	assignment := s.vscidToKeyAssignment[vscid]
+	s.Require().NotNilf(assignment, "no mapping found for vscid")
+	consumerPublicKey, found := assignment[val]
+	if !found {
+		fmt.Println("val not found in assignment", s.traces.Diagnostic())
+	}
+	s.Require().Truef(found, "no assignment found for val %d, at vscid %d", val, vscid)
+	pk, err := cryptocodec.FromTmProtoPublicKey(consumerPublicKey)
+	s.Require().NoErrorf(err, "GetCCValidator() -> fail")
+	bz := pk.Address()
+	v, found := s.consumerKeeper().GetCCValidator(s.ctx(C), bz)
 	s.Require().Truef(found, "GetCCValidator() -> !found")
 	return v.Power, nil
 }
@@ -247,22 +252,21 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 // to their assigned consumer consensus addresses. This is needed for testing slashing.
 func (s *CoreSuite) readCurrentKeyAssignment() map[int64]providerkeeper.ConsumerPublicKey {
 	k := s.providerKeeper()
-	mapping := map[int64]providerkeeper.ConsumerPublicKey{}
+	assignment := map[int64]providerkeeper.ConsumerPublicKey{}
 	k.KeyMap(s.ctx(P), s.chainID(C)).Store.IteratePcaToCk(func(pca providerkeeper.ProviderConsAddr, consumerPubKey providerkeeper.ConsumerPublicKey) bool {
 		for val := int64(0); val < int64(initState.NumValidators); val++ {
 			consAddr := s.consAddr(val)
 			if consAddr.Equals(pca) {
-				mapping[val] = consumerPubKey
+				assignment[val] = consumerPubKey
 			}
 		}
 		return false
 	})
-	return mapping
+	return assignment
 }
 
 func (s *CoreSuite) endAndBeginBlock(chain string) {
 	s.simibc.EndAndBeginBlock(s.chainID(chain), initState.BlockSeconds, func() {
-		s.matchState()
 		if chain == P {
 			good := s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).InternalInvariants()
 			s.Require().Truef(good, "KeyMap internal invariants failed")
@@ -273,6 +277,7 @@ func (s *CoreSuite) endAndBeginBlock(chain string) {
 			vscid -= 1
 			s.vscidToKeyAssignment[vscid] = s.readCurrentKeyAssignment()
 		}
+		s.matchState()
 	})
 }
 
@@ -307,15 +312,13 @@ func (s *CoreSuite) matchState() {
 	}
 	if chain == C {
 		for j := 0; j < initState.NumValidators; j++ {
-			// TODO: FIX THIS
 			exp := s.traces.ConsumerPower(j)
 			_ = exp
-			// actual, err := s.consumerPower(int64(j))
+			// TODO: Bring back
 			// if exp != nil {
-			// 	s.Require().Nilf(err, diagnostic+" validator not found")
-			// 	s.Require().Equalf(int64(*exp), actual, diagnostic+" power mismatch for val %d", j)
-			// } else {
-			// 	s.Require().Errorf(err, diagnostic+" power mismatch for val %d, expect 0 (nil), got %d", j, actual)
+			// actual, err := s.consumerPower(int64(j))
+			// s.Require().Nilf(err, diagnostic+" validator not found")
+			// s.Require().Equalf(int64(*exp), actual, diagnostic+" power mismatch for val %d", j)
 			// }
 		}
 	}
@@ -543,6 +546,7 @@ func (s *CoreSuite) executeTraces() {
 			s.SetupTest()
 			// TODO: move these initialisation steps to somewhere sensible
 			s.vscidToKeyAssignment = map[uint64]map[int64]providerkeeper.ConsumerPublicKey{}
+			s.vscidToKeyAssignment[16] = s.readCurrentKeyAssignment()
 			s.vscidToKeyAssignment[s.offsetProviderVscId] = s.readCurrentKeyAssignment()
 
 			s.traces.CurrentTraceIx = i
