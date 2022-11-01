@@ -41,24 +41,25 @@ type ActionAndConsequence struct {
 type TraceData struct {
 	Actions   []ActionAndConsequence `json:"actions"`
 	Constants struct {
-		BlockSeconds            int     `json:"BLOCK_SECONDS"`
-		C                       string  `json:"C"`
-		DelegateAmtMax          int     `json:"DELEGATE_AMT_MAX"`
-		DelegateAmtMin          int     `json:"DELEGATE_AMT_MIN"`
-		InitialDelegatorTokens  int     `json:"INITIAL_DELEGATOR_TOKENS"`
-		IsdowntimeProbability   float64 `json:"ISDOWNTIME_PROBABILITY"`
-		JailSeconds             int     `json:"JAIL_SECONDS"`
-		MaxNumPacketsForDeliver int     `json:"MAX_NUM_PACKETS_FOR_DELIVER"`
-		MaxValidators           int     `json:"MAX_VALIDATORS"`
-		NumValidators           int     `json:"NUM_VALIDATORS"`
-		P                       string  `json:"P"`
-		SlashDoublesign         int     `json:"SLASH_DOUBLESIGN"`
-		SlashDowntime           int     `json:"SLASH_DOWNTIME"`
-		TrustingSeconds         int     `json:"TRUSTING_SECONDS"`
-		UnbondingSecondsC       int     `json:"UNBONDING_SECONDS_C"`
-		UnbondingSecondsP       int     `json:"UNBONDING_SECONDS_P"`
-		UndelegateAmtMax        int     `json:"UNDELEGATE_AMT_MAX"`
-		UndelegateAmtMin        int     `json:"UNDELEGATE_AMT_MIN"`
+		BlockSeconds            int    `json:"BLOCK_SECONDS"`
+		C                       string `json:"C"`
+		DelegateAmtMax          int    `json:"DELEGATE_AMT_MAX"`
+		DelegateAmtMin          int    `json:"DELEGATE_AMT_MIN"`
+		InitialDelegatorTokens  int    `json:"INITIAL_DELEGATOR_TOKENS"`
+		EnableDowntime          bool   `json:"ENABLE_DOWNTIME"`
+		EnableKeyAssignment     bool   `json:"ENABLE_KEY_ASSIGNMENT"`
+		JailSeconds             int    `json:"JAIL_SECONDS"`
+		MaxNumPacketsForDeliver int    `json:"MAX_NUM_PACKETS_FOR_DELIVER"`
+		MaxValidators           int    `json:"MAX_VALIDATORS"`
+		NumValidators           int    `json:"NUM_VALIDATORS"`
+		P                       string `json:"P"`
+		SlashDoublesign         int    `json:"SLASH_DOUBLESIGN"`
+		SlashDowntime           int    `json:"SLASH_DOWNTIME"`
+		TrustingSeconds         int    `json:"TRUSTING_SECONDS"`
+		UnbondingSecondsC       int    `json:"UNBONDING_SECONDS_C"`
+		UnbondingSecondsP       int    `json:"UNBONDING_SECONDS_P"`
+		UndelegateAmtMax        int    `json:"UNDELEGATE_AMT_MAX"`
+		UndelegateAmtMin        int    `json:"UNDELEGATE_AMT_MIN"`
 	} `json:"constants"`
 	Events []string `json:"events"`
 	Meta   struct {

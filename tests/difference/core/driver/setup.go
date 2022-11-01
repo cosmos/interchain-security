@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -785,5 +786,7 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
 	// Time of the last committed block (current header is not committed)
 	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(-b.initState.BlockSeconds).Unix()
+	// TODO:
+	fmt.Println("id", b.providerKeeper().GetValidatorSetUpdateId(b.ctx(P)))
 	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
 }
