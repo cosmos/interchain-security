@@ -48,7 +48,7 @@ type CoreSuite struct {
 	offsetProviderVscId uint64
 
 	// Maps vscid to data needed to check keymapping
-	actualVscidToMapping map[uint64]map[int64]providerkeeper.ConsumerPubKey
+	vscidToMapping map[uint64]map[int64]providerkeeper.ConsumerPubKey
 }
 
 // ctx returns the sdk.Context for the chain
@@ -139,7 +139,7 @@ func (b *CoreSuite) consumerLastCommittedVscId() uint64 {
 // validator with id (ix) i
 func (s *CoreSuite) consumerPower(i int64) (int64, error) {
 	vscid := s.consumerLastCommittedVscId()
-	mapping := s.actualVscidToMapping[vscid]
+	mapping := s.vscidToMapping[vscid]
 	if mapping == nil {
 		panic("no mapping found for vscid")
 	}
@@ -211,7 +211,7 @@ func (s *CoreSuite) undelegate(val int64, amt int64) {
 // consumerSlash simulates a slash event occurring on the consumer chain.
 // It can be for a downtime or doublesign.
 func (s *CoreSuite) consumerSlash(val int64, vscid uint64, h int64, isDowntime bool) {
-	consumerPubKey := s.actualVscidToMapping[vscid+s.offsetProviderVscId][val]
+	consumerPubKey := s.vscidToMapping[vscid+s.offsetProviderVscId][val]
 	consumerConsAddr := providerkeeper.PubKeyToConsAddr(consumerPubKey)
 	// consumerConsAddr := s.consAddr(val)
 
@@ -273,7 +273,7 @@ func (s *CoreSuite) endAndBeginBlock(chain string) {
 			k := s.providerKeeper()
 			vscid := k.GetValidatorSetUpdateId(s.ctx(P))
 			vscid -= 1 // The provider EndBlock does +=1 as a final step, TODO: think need to move this
-			s.actualVscidToMapping[vscid] = s.buildMapping()
+			s.vscidToMapping[vscid] = s.buildMapping()
 		}
 	})
 }
@@ -554,8 +554,8 @@ func (s *CoreSuite) TestTraces() {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
-			s.actualVscidToMapping = map[uint64]map[int64]providerkeeper.ConsumerPubKey{}
-			s.actualVscidToMapping[s.offsetProviderVscId] = s.buildMapping()
+			s.vscidToMapping = map[uint64]map[int64]providerkeeper.ConsumerPubKey{}
+			s.vscidToMapping[s.offsetProviderVscId] = s.buildMapping()
 
 			s.traces.CurrentTraceIx = i
 			defer func() {
@@ -590,8 +590,8 @@ func (s *CoreSuite) TestTracesNoDowntime() {
 			s.SetupTest()
 			fmt.Println("post setup")
 
-			s.actualVscidToMapping = map[uint64]map[int64]providerkeeper.ConsumerPubKey{}
-			s.actualVscidToMapping[s.offsetProviderVscId] = s.buildMapping()
+			s.vscidToMapping = map[uint64]map[int64]providerkeeper.ConsumerPubKey{}
+			s.vscidToMapping[s.offsetProviderVscId] = s.buildMapping()
 
 			s.traces.CurrentTraceIx = i
 			defer func() {
