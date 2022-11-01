@@ -32,6 +32,11 @@ const (
 	// so that negative values can be caught during parameter validation in a readable way,
 	// (and for consistency with other protobuf schemas defined for ccv).
 	DefaultHistoricalEntries = int64(stakingtypes.DefaultHistoricalEntries)
+
+	// In general, the default unbonding period on the consumer is one day less
+	// than the default unbonding period on the provider, where the provider uses
+	// the staking module default.
+	DefaultConsumerUnbondingPeriod = stakingtypes.DefaultUnbondingTime - 24*time.Hour
 )
 
 // Reflection based keys for params subspace
@@ -43,6 +48,7 @@ var (
 	KeyTransferTimeoutPeriod             = []byte("TransferTimeoutPeriod")
 	KeyConsumerRedistributionFrac        = []byte("ConsumerRedistributionFraction")
 	KeyHistoricalEntries                 = []byte("HistoricalEntries")
+	KeyConsumerUnbondingPeriod           = []byte("UnbondingPeriod")
 )
 
 // ParamKeyTable type declaration for parameters
@@ -54,7 +60,8 @@ func ParamKeyTable() paramtypes.KeyTable {
 func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 	distributionTransmissionChannel, providerFeePoolAddrStr string,
 	ccvTimeoutPeriod time.Duration, transferTimeoutPeriod time.Duration,
-	consumerRedistributionFraction string, historicalEntries int64) Params {
+	consumerRedistributionFraction string, historicalEntries int64,
+	consumerUnbondingPeriod time.Duration) Params {
 	return Params{
 		Enabled:                           enabled,
 		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
@@ -64,6 +71,7 @@ func NewParams(enabled bool, blocksPerDistributionTransmission int64,
 		TransferTimeoutPeriod:             transferTimeoutPeriod,
 		ConsumerRedistributionFraction:    consumerRedistributionFraction,
 		HistoricalEntries:                 historicalEntries,
+		UnbondingPeriod:                   consumerUnbondingPeriod,
 	}
 }
 
@@ -78,6 +86,7 @@ func DefaultParams() Params {
 		DefaultTransferTimeoutPeriod,
 		DefaultConsumerRedistributeFrac,
 		DefaultHistoricalEntries,
+		DefaultConsumerUnbondingPeriod,
 	)
 }
 
@@ -107,6 +116,9 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidatePositiveInt64(p.HistoricalEntries); err != nil {
 		return err
 	}
+	if err := ccvtypes.ValidateDuration(p.UnbondingPeriod); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -128,6 +140,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 			p.ConsumerRedistributionFraction, validateConsumerRedistributionFraction),
 		paramtypes.NewParamSetPair(KeyHistoricalEntries,
 			p.HistoricalEntries, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(KeyConsumerUnbondingPeriod,
+			p.UnbondingPeriod, ccvtypes.ValidateDuration),
 	}
 }
 
