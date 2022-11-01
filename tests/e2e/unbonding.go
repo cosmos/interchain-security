@@ -80,8 +80,7 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 
 		// set VSC timeout period to not trigger the removal of the consumer chain
 		providerUnbondingPeriod := stakingKeeper.UnbondingTime(s.providerCtx())
-		consumerUnbondingPeriod, found := consumerKeeper.GetUnbondingTime(s.consumerCtx())
-		s.Require().True(found)
+		consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(s.consumerCtx())
 		providerKeeper.SetVscTimeoutPeriod(s.providerCtx(), providerUnbondingPeriod+consumerUnbondingPeriod+24*time.Hour)
 
 		// delegate bondAmt and undelegate tc.shareDiv of it
@@ -192,7 +191,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 		removed                    bool
 	}{
 		{
-			"channel handshake completes before unbonding period", func(pk *providerkeeper.Keeper, pUnbondingPeriod time.Duration) {
+			"channel handshake completes after unbonding period", func(pk *providerkeeper.Keeper, pUnbondingPeriod time.Duration) {
 				// change the init timeout timestamp for this consumer chain
 				// to make sure the chain is not removed before the unbonding period elapses
 				ts := s.providerCtx().BlockTime().Add(pUnbondingPeriod + 24*time.Hour)
@@ -386,8 +385,7 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 
 	// set VSC timeout period to not trigger the removal of the consumer chain
 	providerUnbondingPeriod := stakingKeeper.UnbondingTime(s.providerCtx())
-	consumerUnbondingPeriod, found := consumerKeeper.GetUnbondingTime(s.consumerCtx())
-	s.Require().True(found)
+	consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(s.consumerCtx())
 	providerKeeper.SetVscTimeoutPeriod(s.providerCtx(), providerUnbondingPeriod+consumerUnbondingPeriod+24*time.Hour)
 
 	// Setup delegator, bond amount, and src/dst validators

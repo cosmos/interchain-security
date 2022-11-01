@@ -20,6 +20,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetTransferTimeoutPeriod(ctx),
 		k.GetConsumerRedistributionFrac(ctx),
 		k.GetHistoricalEntries(ctx),
+		k.GetUnbondingPeriod(ctx),
 	)
 }
 
@@ -93,4 +94,15 @@ func (k Keeper) GetHistoricalEntries(ctx sdk.Context) int64 {
 	var n int64
 	k.paramStore.Get(ctx, types.KeyHistoricalEntries, &n)
 	return n
+}
+
+// Only used to set an unbonding period in diff tests
+func (k Keeper) SetUnbondingPeriod(ctx sdk.Context, period time.Duration) {
+	k.paramStore.Set(ctx, types.KeyConsumerUnbondingPeriod, period)
+}
+
+func (k Keeper) GetUnbondingPeriod(ctx sdk.Context) time.Duration {
+	var period time.Duration
+	k.paramStore.Get(ctx, types.KeyConsumerUnbondingPeriod, &period)
+	return period
 }

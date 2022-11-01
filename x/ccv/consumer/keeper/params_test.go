@@ -26,13 +26,15 @@ func TestParams(t *testing.T) {
 		consumertypes.DefaultTransferTimeoutPeriod,
 		consumertypes.DefaultConsumerRedistributeFrac,
 		consumertypes.DefaultHistoricalEntries,
+		consumertypes.DefaultConsumerUnbondingPeriod,
 	) // these are the default params, IBC suite independently sets enabled=true
 
 	params := consumerKeeper.GetParams(ctx)
 	require.Equal(t, expParams, params)
 
 	newParams := types.NewParams(false, 1000,
-		"channel-2", "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm", 7*24*time.Hour, 25*time.Hour, "0.5", 500)
+		"channel-2", "cosmos19pe9pg5dv9k5fzgzmsrgnw9rl9asf7ddwhu7lm",
+		7*24*time.Hour, 25*time.Hour, "0.5", 500, 24*21*time.Hour)
 	consumerKeeper.SetParams(ctx, newParams)
 	params = consumerKeeper.GetParams(ctx)
 	require.Equal(t, newParams, params)
@@ -49,4 +51,8 @@ func TestParams(t *testing.T) {
 	gotAddr := consumerKeeper.
 		GetProviderFeePoolAddrStr(ctx)
 	require.Equal(t, gotAddr, "cosmos1dkas8mu4kyhl5jrh4nzvm65qz588hy9qcz08la")
+
+	consumerKeeper.SetUnbondingPeriod(ctx, time.Hour*24*10)
+	storedUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(ctx)
+	require.Equal(t, time.Hour*24*10, storedUnbondingPeriod)
 }

@@ -58,6 +58,7 @@ func TestInitGenesis(t *testing.T) {
 		consumertypes.DefaultTransferTimeoutPeriod,
 		consumertypes.DefaultConsumerRedistributeFrac,
 		consumertypes.DefaultHistoricalEntries,
+		consumertypes.DefaultConsumerUnbondingPeriod,
 	)
 
 	testCases := []struct {
@@ -81,9 +82,8 @@ func TestInitGenesis(t *testing.T) {
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
 				require.Equal(t, ccv.ConsumerPortID, ck.GetPort(ctx))
 
-				ubdTime, found := ck.GetUnbondingTime(ctx)
-				require.True(t, found)
-				require.Equal(t, gs.ProviderClientState.UnbondingPeriod, ubdTime)
+				ubdPeriod := ck.GetUnbondingPeriod(ctx)
+				require.Equal(t, consumertypes.DefaultConsumerUnbondingPeriod, ubdPeriod)
 
 				require.Zero(t, ck.GetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())))
 
@@ -97,7 +97,6 @@ func TestInitGenesis(t *testing.T) {
 				gomock.InOrder(
 					expectGetCapabilityMock(ctx, mocks),
 					expectLatestConsensusStateMock(ctx, mocks, clientID, validator),
-					expectGetClientStateMock(ctx, mocks, "", clientID),
 				)
 			},
 			genesis: consumertypes.NewRestartGenesisState(clientID, channelID,
@@ -111,9 +110,8 @@ func TestInitGenesis(t *testing.T) {
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
 				require.Equal(t, ccv.ConsumerPortID, ck.GetPort(ctx))
 
-				ubdTime, found := ck.GetUnbondingTime(ctx)
-				require.True(t, found)
-				require.Equal(t, testutil.GetClientState("").UnbondingPeriod, ubdTime)
+				ubdPeriod := ck.GetUnbondingPeriod(ctx)
+				require.Equal(t, consumertypes.DefaultConsumerUnbondingPeriod, ubdPeriod)
 
 				// export states to genesis
 				require.Equal(t, matPacket.VscId, ck.GetHeightValsetUpdateID(ctx, uint64(0)))
@@ -169,6 +167,7 @@ func TestExportGenesis(t *testing.T) {
 		consumertypes.DefaultTransferTimeoutPeriod,
 		consumertypes.DefaultConsumerRedistributeFrac,
 		consumertypes.DefaultHistoricalEntries,
+		consumertypes.DefaultConsumerUnbondingPeriod,
 	)
 
 	// create a single validator
