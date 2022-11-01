@@ -18,6 +18,7 @@ import (
 
 // Tests the edge case behavior where duplicate slash packet entires are queued in the same block.
 func TestDupSlashPackets(t *testing.T) {
+
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockTime(time.Now())
@@ -30,18 +31,27 @@ func TestDupSlashPackets(t *testing.T) {
 	require.Equal(t, 1, len(entries))
 	require.Equal(t, entries[0], entry)
 
-	// New in-mem object with same data
+	// Queue new in-mem object with same data
 	newButDupEntry := providertypes.NewSlashPacketEntry(ctx.BlockTime(), "chain-7", entry.ValAddr)
-
 	providerKeeper.QueuePendingSlashPacketEntry(ctx, newButDupEntry)
 
+	// Duplicate entry should overwrite the old one with the same data, so length should still be 1
 	entries = providerKeeper.GetAllPendingSlashPacketEntries(ctx)
 	require.Equal(t, 1, len(entries))
 	require.Equal(t, entries[0], entry)
+
+	// Prove that a non duplicate entry doesn't overwrite the existing entry
+	nonDupEntry := providertypes.NewSlashPacketEntry(ctx.BlockTime(), "chain-8", entry.ValAddr)
+	providerKeeper.QueuePendingSlashPacketEntry(ctx, nonDupEntry)
+
+	entries = providerKeeper.GetAllPendingSlashPacketEntries(ctx)
+	require.Equal(t, 2, len(entries))
+	require.Equal(t, entries[0], entry)
+	require.Equal(t, entries[1], nonDupEntry)
 }
 
-// TestPendingSlashPacket tests the queue, iteration, and queue length functions
-// for pending slash packets, with assertion of FIFO ordering
+// TestPendingSlashPacket tests the queue and iteration functions for pending slash packet entries,
+// with assertion of FIFO ordering
 func TestPendingSlashPacketEntries(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -119,7 +129,7 @@ func TestPendingSlashPacketEntries(t *testing.T) {
 	require.Equal(t, 7, len(entries))
 }
 
-// TestPendingSlashPacketEntryDeletion tests the deletion and queue length functions for
+// TestPendingSlashPacketEntryDeletion tests the deletion function for
 // pending slash packet entries with assertion of FIFO ordering.
 func TestPendingSlashPacketEntryDeletion(t *testing.T) {
 
@@ -163,7 +173,7 @@ func TestPendingSlashPacketEntryDeletion(t *testing.T) {
 		require.Equal(t, expectedEntry, gotEntry)
 	}
 
-	// Confirm no mutations have occurred
+	// Confirm no mutations have occurred from test helper
 	gotEntries = providerKeeper.GetAllPendingSlashPacketEntries(ctx)
 	require.Equal(t, 7, len(gotEntries))
 
