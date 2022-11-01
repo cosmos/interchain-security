@@ -23,6 +23,7 @@ import {
   UpdateClient,
   Deliver,
   EndAndBeginBlock,
+  KeyAssignment,
   TraceAction,
   Chain,
   Consequence,
@@ -109,6 +110,11 @@ class ActionGenerator {
         chain: _.sample([P, C]) as Chain,
       } as EndAndBeginBlock;
     }
+    if (kind == 'KeyAssignment') {
+      return {
+        kind,
+      } as KeyAssignment;
+    }
     throw `kind doesn't match`;
   };
 
@@ -141,6 +147,9 @@ class ActionGenerator {
         this.model.t[chain] + BLOCK_SECONDS <
         this.tLastTrustedHeader[chain] + TRUSTING_SECONDS
       );
+    }
+    if (a.kind === 'KeyAssignment') {
+      return true;
     }
     throw `kind doesn't match`;
   };

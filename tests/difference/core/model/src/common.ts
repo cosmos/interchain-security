@@ -109,6 +109,10 @@ type EndAndBeginBlock = {
   chain: Chain;
 };
 
+type KeyAssignment = {
+  kind: string;
+};
+
 type SystemSnapshot = {
   h: Record<Chain, number>;
   t: Record<Chain, number>;
@@ -204,6 +208,7 @@ export {
   UpdateClient,
   Deliver,
   EndAndBeginBlock,
+  KeyAssignment,
   SystemSnapshot,
   Status,
   Undelegation,
