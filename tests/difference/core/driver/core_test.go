@@ -578,7 +578,6 @@ func (s *CoreSuite) TestTracesDowntime() {
 	s.traces = Traces{
 		Data: LoadTraces("tracesDowntime.json"),
 	}
-	// s.traces.Data = []TraceData{s.traces.Data[0]}
 	s.executeTraces()
 }
 
