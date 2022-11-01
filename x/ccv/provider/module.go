@@ -163,7 +163,8 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 
 // EndBlock implements the AppModule interface
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	// EndBlock logic needed for the Consumer Initiated Slashing sub-protocol
+	// EndBlock logic needed for the Consumer Initiated Slashing sub-protocol.
+	// Important: EndBlockCIS must be called before EndBlockVSU
 	am.keeper.EndBlockCIS(ctx)
 	// EndBlock logic needed for the Consumer Chain Removal sub-protocol
 	am.keeper.EndBlockCCR(ctx)
