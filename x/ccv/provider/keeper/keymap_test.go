@@ -37,8 +37,8 @@ const NUM_VALS = 4
 const NUM_CKS = 50
 
 type keyMapEntry struct {
-	pk keeper.ProviderPubKey
-	ck keeper.ConsumerPubKey
+	pk keeper.ProviderPublicKey
+	ck keeper.ConsumerPublicKey
 }
 
 type traceStep struct {
@@ -57,7 +57,7 @@ type driver struct {
 	lastTimeConsumer int
 	lastTimeMaturity int
 	// indexed by time (starting at 0)
-	mappings []map[string]keeper.ConsumerPubKey
+	mappings []map[string]keeper.ConsumerPublicKey
 	// indexed by time (starting at 0)
 	consumerUpdates [][]abci.ValidatorUpdate
 	// indexed by time (starting at 0)
@@ -85,7 +85,7 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 	d.lastTimeProvider = 0
 	d.lastTimeConsumer = 0
 	d.lastTimeMaturity = 0
-	d.mappings = []map[string]keeper.ConsumerPubKey{}
+	d.mappings = []map[string]keeper.ConsumerPublicKey{}
 	d.consumerUpdates = [][]abci.ValidatorUpdate{}
 	d.providerValsets = []valset{}
 	d.consumerValset = valset{}
@@ -100,8 +100,8 @@ func (d *driver) applyKeyMapEntries(entries []keyMapEntry) {
 		_ = d.km.SetProviderPubKeyToConsumerPubKey(e.pk, e.ck)
 	}
 	// Duplicate the mapping for referencing later in tests.
-	copy := map[string]keeper.ConsumerPubKey{}
-	d.km.Store.IteratePcaToCk(func(pca keeper.ProviderConsAddr, ck keeper.ConsumerPubKey) bool {
+	copy := map[string]keeper.ConsumerPublicKey{}
+	d.km.Store.IteratePcaToCk(func(pca keeper.ProviderConsAddr, ck keeper.ConsumerPublicKey) bool {
 		copy[string(pca)] = ck
 		return false
 	})
@@ -242,13 +242,13 @@ func (d *driver) externalInvariants() {
 			pk := u.PubKey
 			expectedPower := u.Power
 			found := false
-			ck := keeper.ConsumerPubKey{}
+			ck := keeper.ConsumerPublicKey{}
 			for k, v := range d.mappings[d.lastTimeConsumer] {
 				if pk.Equal(k) {
 					ck = v
 				}
 			}
-			require.NotEqualf(d.t, ck, keeper.ConsumerPubKey{}, "bad test, a mapping must exist")
+			require.NotEqualf(d.t, ck, keeper.ConsumerPublicKey{}, "bad test, a mapping must exist")
 
 			// Check that the mapped through validator has the correct power
 			for _, u := range cSet {
@@ -283,7 +283,7 @@ func (d *driver) externalInvariants() {
 			// The provider key must be the one that was actually referenced
 			// in the latest trueMapping used to compute updates sent to the
 			// consumer.
-			ckWasActuallyMappedTo := map[keeper.ConsumerPubKey]bool{}
+			ckWasActuallyMappedTo := map[keeper.ConsumerPublicKey]bool{}
 			actualMapping := d.mappings[d.lastTimeConsumer]
 			for pk, ck := range actualMapping {
 
@@ -734,19 +734,19 @@ func TestValidatorRemoval(t *testing.T) {
 
 func compareForEquality(t *testing.T,
 	km keeper.KeyMap,
-	pcaToCk map[string]keeper.ConsumerPubKey,
-	ckToPk map[keeper.ConsumerPubKey]keeper.ProviderPubKey,
+	pcaToCk map[string]keeper.ConsumerPublicKey,
+	ckToPk map[keeper.ConsumerPublicKey]keeper.ProviderPublicKey,
 	ccaToLastUpdateMemo map[string]ccvtypes.LastUpdateMemo) {
 
 	cnt := 0
-	km.Store.IteratePcaToCk(func(_ keeper.ProviderConsAddr, _ keeper.ConsumerPubKey) bool {
+	km.Store.IteratePcaToCk(func(_ keeper.ProviderConsAddr, _ keeper.ConsumerPublicKey) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(pcaToCk), cnt)
 
 	cnt = 0
-	km.Store.IterateCkToPk(func(_, _ keeper.ConsumerPubKey) bool {
+	km.Store.IterateCkToPk(func(_, _ keeper.ConsumerPublicKey) bool {
 		cnt += 1
 		return false
 	})
@@ -794,8 +794,8 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 ) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 
-	pcaToCk := map[string]keeper.ConsumerPubKey{}
-	ckToPk := map[keeper.ConsumerPubKey]keeper.ProviderPubKey{}
+	pcaToCk := map[string]keeper.ConsumerPublicKey{}
+	ckToPk := map[keeper.ConsumerPublicKey]keeper.ProviderPublicKey{}
 	ccaToLastUpdateMemo := map[string]ccvtypes.LastUpdateMemo{}
 
 	pcaToCk[string(keeper.PubKeyToConsAddr(keys[0]))] = keys[1]

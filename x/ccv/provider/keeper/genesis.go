@@ -134,11 +134,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			km.ProviderConsAddrToConsumerKey = []ccv.ConsAddrToKey{}
 			km.ConsumerKeyToProviderKey = []ccv.KeyToKey{}
 			km.ConsumerConsAddrToLastUpdateMemo = []ccv.ConsAddrToLastUpdateMemo{}
-			k.KeyMap(ctx, chainID).Store.IteratePcaToCk(func(pca ProviderConsAddr, ck ConsumerPubKey) bool {
+			k.KeyMap(ctx, chainID).Store.IteratePcaToCk(func(pca ProviderConsAddr, ck ConsumerPublicKey) bool {
 				km.ProviderConsAddrToConsumerKey = append(km.ProviderConsAddrToConsumerKey, ccv.ConsAddrToKey{ConsAddr: pca, Key: &ck})
 				return false
 			})
-			k.KeyMap(ctx, chainID).Store.IterateCkToPk(func(ck ConsumerPubKey, pk ProviderPubKey) bool {
+			k.KeyMap(ctx, chainID).Store.IterateCkToPk(func(ck ConsumerPublicKey, pk ProviderPublicKey) bool {
 				km.ConsumerKeyToProviderKey = append(km.ConsumerKeyToProviderKey, ccv.KeyToKey{From: &ck, To: &pk})
 				return false
 			})

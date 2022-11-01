@@ -48,7 +48,7 @@ type CoreSuite struct {
 	offsetProviderVscId uint64
 
 	// Maps vscid to data needed to check keymapping
-	vscidToMapping map[uint64]map[int64]providerkeeper.ConsumerPubKey
+	vscidToKeyAssignment map[uint64]map[int64]providerkeeper.ConsumerPublicKey
 }
 
 // ctx returns the sdk.Context for the chain
@@ -105,31 +105,32 @@ func (s *CoreSuite) delegator() sdk.AccAddress {
 }
 
 // validator returns the address for the validator with id (ix) i
-func (s *CoreSuite) providerValidatorPubKey(i int64) providerkeeper.ProviderPubKey {
-	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
+func (s *CoreSuite) providerValidatorConsensusPubKey(val int64) providerkeeper.ProviderPublicKey {
+	validator, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(val))
 	s.Require().True(found)
-	pk, err := v.TmConsPublicKey()
+	ret, err := validator.TmConsPublicKey()
 	s.Require().NoError(err)
-	return pk
+	return ret
 }
 
 // validator returns the address for the validator with id (ix) i
-func (s *CoreSuite) validator(i int64) sdk.ValAddress {
-	return s.valAddresses[i]
+func (s *CoreSuite) validator(val int64) sdk.ValAddress {
+	return s.valAddresses[val]
 }
 
 // consAddr returns the ConsAdd for the validator with id (ix) i
-func (s *CoreSuite) consAddr(i int64) sdk.ConsAddress {
-	return sdk.ConsAddress(s.validator(i))
+func (s *CoreSuite) consAddr(val int64) sdk.ConsAddress {
+	return sdk.ConsAddress(s.validator(val))
 }
 
 // isJailed returns the jail status of validator with id (ix) i
-func (s *CoreSuite) isJailed(i int64) bool {
-	val, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
+func (s *CoreSuite) isJailed(val int64) bool {
+	validator, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(val))
 	s.Require().Truef(found, "GetValidator() -> !found")
-	return val.IsJailed()
+	return validator.IsJailed()
 }
 
+// consumerLastCommittedVscId gets the last committed vscid from the consumer chain
 func (b *CoreSuite) consumerLastCommittedVscId() uint64 {
 	k := b.consumerKeeper()
 	return k.GetHeightValsetUpdateID(b.ctx(C), uint64(b.height(C)))
@@ -137,42 +138,38 @@ func (b *CoreSuite) consumerLastCommittedVscId() uint64 {
 
 // consumerPower returns the power on the consumer chain for
 // validator with id (ix) i
-func (s *CoreSuite) consumerPower(i int64) (int64, error) {
+func (s *CoreSuite) consumerPower(val int64) (int64, error) {
+	// TODO: make this work
 	vscid := s.consumerLastCommittedVscId()
-	mapping := s.vscidToMapping[vscid]
-	if mapping == nil {
-		panic("no mapping found for vscid")
-	}
-	s.Require().NotNilf(mapping, "could not find mapping for vscid")
-	publicKey := mapping[i]
+	mapping := s.vscidToKeyAssignment[vscid]
+	s.Require().NotNilf(mapping, "no mapping found for vscid")
+	publicKey := mapping[val]
 	consAddr := providerkeeper.PubKeyToConsAddr(publicKey)
 	v, found := s.consumerKeeper().GetCCValidator(s.ctx(C), []byte(consAddr))
-	if !found {
-		return 0, fmt.Errorf("GetCCValidator() -> !found")
-	}
+	s.Require().Truef(found, "GetCCValidator() -> !found")
 	return v.Power, nil
 }
 
 // delegation returns the number of delegated tokens in the delegation from
 // the delegator account to the validator with id (ix) i
-func (s *CoreSuite) delegation(i int64) int64 {
-	d, found := s.providerStakingKeeper().GetDelegation(s.ctx(P), s.delegator(), s.validator(i))
+func (s *CoreSuite) delegation(val int64) int64 {
+	d, found := s.providerStakingKeeper().GetDelegation(s.ctx(P), s.delegator(), s.validator(val))
 	s.Require().Truef(found, "GetDelegation() -> !found")
 	return d.Shares.TruncateInt64()
 }
 
 // validatorStatus returns the validator status for validator with id (ix) i
 // on the provider chain
-func (s *CoreSuite) validatorStatus(i int64) stakingtypes.BondStatus {
-	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
+func (s *CoreSuite) validatorStatus(val int64) stakingtypes.BondStatus {
+	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(val))
 	s.Require().Truef(found, "GetValidator() -> !found")
 	return v.GetStatus()
 }
 
 // providerTokens returns the number of tokens that the validator with
 // id (ix) i has delegated to it in total on the provider chain
-func (s *CoreSuite) providerTokens(i int64) int64 {
-	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(i))
+func (s *CoreSuite) providerTokens(val int64) int64 {
+	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(val))
 	s.Require().Truef(found, "GetValidator() -> !found")
 	return v.Tokens.Int64()
 }
@@ -210,10 +207,9 @@ func (s *CoreSuite) undelegate(val int64, amt int64) {
 
 // consumerSlash simulates a slash event occurring on the consumer chain.
 // It can be for a downtime or doublesign.
-func (s *CoreSuite) consumerSlash(val int64, vscid uint64, h int64, isDowntime bool) {
-	consumerPubKey := s.vscidToMapping[vscid+s.offsetProviderVscId][val]
-	consumerConsAddr := providerkeeper.PubKeyToConsAddr(consumerPubKey)
-	// consumerConsAddr := s.consAddr(val)
+func (s *CoreSuite) consumerSlash(val int64, h int64, isDowntime bool, vscidOfValidatorActive uint64) {
+	consumerPublicKey := s.vscidToKeyAssignment[vscidOfValidatorActive+s.offsetProviderVscId][val]
+	consumerConsAddr := providerkeeper.PubKeyToConsAddr(consumerPublicKey)
 
 	kind := stakingtypes.DoubleSign
 	if isDowntime {
@@ -247,14 +243,16 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 	s.simibc.DeliverPackets(s.chainID(chain), numPackets)
 }
 
-func (s *CoreSuite) buildMapping() map[int64]providerkeeper.ConsumerPubKey {
+// Queries the provider chain to read the current state of the mapping from validators
+// to their assigned consumer consensus addresses. This is needed for testing slashing.
+func (s *CoreSuite) readCurrentKeyAssignment() map[int64]providerkeeper.ConsumerPublicKey {
 	k := s.providerKeeper()
-	mapping := map[int64]providerkeeper.ConsumerPubKey{}
-	k.KeyMap(s.ctx(P), s.chainID(C)).Store.IteratePcaToCk(func(pca providerkeeper.ProviderConsAddr, ck providerkeeper.ConsumerPubKey) bool {
-		for i := int64(0); i < int64(initState.NumValidators); i++ {
-			consAddr := s.consAddr(i)
+	mapping := map[int64]providerkeeper.ConsumerPublicKey{}
+	k.KeyMap(s.ctx(P), s.chainID(C)).Store.IteratePcaToCk(func(pca providerkeeper.ProviderConsAddr, consumerPubKey providerkeeper.ConsumerPublicKey) bool {
+		for val := int64(0); val < int64(initState.NumValidators); val++ {
+			consAddr := s.consAddr(val)
 			if consAddr.Equals(pca) {
-				mapping[i] = ck
+				mapping[val] = consumerPubKey
 			}
 		}
 		return false
@@ -267,13 +265,13 @@ func (s *CoreSuite) endAndBeginBlock(chain string) {
 		s.matchState()
 		if chain == P {
 			good := s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).InternalInvariants()
-			if !good {
-				panic("not good internal invariants")
-			}
-			k := s.providerKeeper()
-			vscid := k.GetValidatorSetUpdateId(s.ctx(P))
-			vscid -= 1 // The provider EndBlock does +=1 as a final step, TODO: think need to move this
-			s.vscidToMapping[vscid] = s.buildMapping()
+			s.Require().Truef(good, "KeyMap internal invariants failed")
+			vscid := s.providerKeeper().GetValidatorSetUpdateId(s.ctx(P))
+			// The provider EndBlock does +=1 as a final step
+			// so do -=1 to compensate, as we want the vscid that was actually
+			// associated to the last validator set update.
+			vscid -= 1
+			s.vscidToKeyAssignment[vscid] = s.readCurrentKeyAssignment()
 		}
 	})
 }
@@ -309,6 +307,7 @@ func (s *CoreSuite) matchState() {
 	}
 	if chain == C {
 		for j := 0; j < initState.NumValidators; j++ {
+			// TODO: FIX THIS
 			exp := s.traces.ConsumerPower(j)
 			_ = exp
 			// actual, err := s.consumerPower(int64(j))
@@ -319,43 +318,43 @@ func (s *CoreSuite) matchState() {
 			// 	s.Require().Errorf(err, diagnostic+" power mismatch for val %d, expect 0 (nil), got %d", j, actual)
 			// }
 		}
-		// TODO: outstanding downtime
+	}
+}
+
+func (s *CoreSuite) keyAssignment() {
+	for i := 0; i < rand.Intn(5); i++ {
+		if rand.Intn(100) < 20 {
+			val := rand.Intn(initState.NumValidators)
+			valPubKey := s.providerValidatorConsensusPubKey(int64(val))
+			seed := rand.Intn(50)
+			privateKey, ck := testutil.GetTMCryptoPublicKeyFromSeed(uint64(seed))
+			consumerSdkPubKey, err := cryptocodec.FromTmProtoPublicKey(ck)
+			s.Require().NoError(err)
+			consumerTMPubKey, err := cryptocodec.ToTmPubKeyInterface(consumerSdkPubKey)
+			s.Require().NoError(err)
+			// Allow signing simulation
+			s.chain(C).Signers[consumerTMPubKey.Address().String()] = privateKey
+			// Actually make the key mapping
+			s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(valPubKey, ck)
+		}
+	}
+}
+
+func (s *CoreSuite) debugPrintProviderValidatorConsAddresses() {
+	for i := 0; i < initState.NumValidators; i++ {
+		cons := s.consAddr(int64(i))
+		fmt.Println(i, " cons:", cons.String()[14:20])
 	}
 }
 
 func (s *CoreSuite) executeTrace() {
 
-	for i := 0; i < initState.NumValidators; i++ {
-		cons := s.consAddr(int64(i))
-		fmt.Println(i, " cons:", cons.String()[14:20])
-	}
+	s.debugPrintProviderValidatorConsAddresses()
 
 	for i := range s.traces.Actions() {
 		s.traces.CurrentActionIx = i
 
 		a := s.traces.Action()
-
-		for y := 0; y < rand.Intn(5); y++ {
-			if rand.Intn(100) < 10 {
-				j := rand.Intn(initState.NumValidators)
-				pk := s.providerValidatorPubKey(int64(j))
-				k := rand.Intn(50)
-				privK, ck := testutil.GetTMCryptoPublicKeyFromSeed(uint64(k))
-				cki, err := cryptocodec.FromTmProtoPublicKey(ck)
-				if err != nil {
-					panic("unexpected err A")
-				}
-				cki2, err := cryptocodec.ToTmPubKeyInterface(cki)
-				if err != nil {
-					panic("unexpected err B")
-				}
-				// signers[validatorKeyData.pubKey.Address().String()]
-				s.chain(C).Signers[cki2.Address().String()] = privK
-				_ = pk
-				_ = ck
-				s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(pk, ck)
-			}
-		}
 
 		switch a.Kind {
 		case "Delegate":
@@ -369,14 +368,13 @@ func (s *CoreSuite) executeTrace() {
 				int64(a.Amt),
 			)
 		case "ConsumerSlash":
-			// fmt.Printf("trace %d, slash: val %d vscid %d\n", s.traces.CurrentTraceIx, a.Val, a.Vscid)
 			s.consumerSlash(
 				int64(a.Val),
-				uint64(a.Vscid),
 				// The SUT height is greater than the model height
 				// because the SUT has to do initialization.
 				int64(a.InfractionHeight)+s.offsetHeight,
 				a.IsDowntime,
+				uint64(a.Vscid),
 			)
 		case "UpdateClient":
 			s.updateClient(a.Chain)
@@ -384,6 +382,8 @@ func (s *CoreSuite) executeTrace() {
 			s.deliver(a.Chain, a.NumPackets)
 		case "EndAndBeginBlock":
 			s.endAndBeginBlock(a.Chain)
+		case "KeyAssignment":
+			s.keyAssignment()
 		default:
 			s.Require().FailNow("Failed to parse action")
 		}
@@ -421,23 +421,24 @@ func (s *CoreSuite) TestAssumptions() {
 	// Provider last vscid is correct
 	s.Require().Equal(int(s.offsetProviderVscId), int(s.providerKeeper().GetValidatorSetUpdateId(s.ctx(P))))
 	// Consumer last vscid is correct
+	// TODO: unhardcode
 	s.Require().Equal(int(16), int(s.consumerLastCommittedVscId()))
 
 	// Check that consumer uses current provider mapping
-	s.consumerKeeper().IterateValidators(s.ctx(C), func(_ int64, cval stakingtypes.ValidatorI) bool {
-		cpkActual, err := cval.TmConsPublicKey()
+	s.consumerKeeper().IterateValidators(s.ctx(C), func(_ int64, consumerValidator stakingtypes.ValidatorI) bool {
+		consumerPublicKeyActual, err := consumerValidator.TmConsPublicKey()
 		s.Require().NoError(err)
 		good := false
-		s.providerStakingKeeper().IterateValidators(s.ctx(P), func(_ int64, pval stakingtypes.ValidatorI) bool {
-			if pval.GetTokens().Equal(cval.GetTokens()) {
+		s.providerStakingKeeper().IterateValidators(s.ctx(P), func(_ int64, providerValidator stakingtypes.ValidatorI) bool {
+			if providerValidator.GetTokens().Equal(consumerValidator.GetTokens()) {
 				good = true
 			}
-			tmkey, err := pval.TmConsPublicKey()
+			providerPublicKey, err := providerValidator.TmConsPublicKey()
 			s.Require().NoError(err)
 			km := s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C))
-			cpkFound, found := km.GetCurrentConsumerPubKeyFromProviderPubKey(tmkey)
+			consumerPublicKeyExpect, found := km.GetCurrentConsumerPubKeyFromProviderPubKey(providerPublicKey)
 			s.Require().True(found)
-			s.Require().True(cpkFound.Equal(cpkActual))
+			s.Require().Equal(consumerPublicKeyExpect, consumerPublicKeyActual)
 			return false
 		})
 		s.Require().True(good)
@@ -554,8 +555,8 @@ func (s *CoreSuite) TestTraces() {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
-			s.vscidToMapping = map[uint64]map[int64]providerkeeper.ConsumerPubKey{}
-			s.vscidToMapping[s.offsetProviderVscId] = s.buildMapping()
+			s.vscidToKeyAssignment = map[uint64]map[int64]providerkeeper.ConsumerPublicKey{}
+			s.vscidToKeyAssignment[s.offsetProviderVscId] = s.readCurrentKeyAssignment()
 
 			s.traces.CurrentTraceIx = i
 			defer func() {
@@ -590,8 +591,8 @@ func (s *CoreSuite) TestTracesNoDowntime() {
 			s.SetupTest()
 			fmt.Println("post setup")
 
-			s.vscidToMapping = map[uint64]map[int64]providerkeeper.ConsumerPubKey{}
-			s.vscidToMapping[s.offsetProviderVscId] = s.buildMapping()
+			s.vscidToKeyAssignment = map[uint64]map[int64]providerkeeper.ConsumerPublicKey{}
+			s.vscidToKeyAssignment[s.offsetProviderVscId] = s.readCurrentKeyAssignment()
 
 			s.traces.CurrentTraceIx = i
 			defer func() {
