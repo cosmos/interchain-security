@@ -27,7 +27,7 @@ const (
 	DefaultTrustingPeriodFraction = 2
 
 	// DafaultInitTimeoutPeriod defines the init timeout period
-	DafaultInitTimeoutPeriod = 7 * 24 * time.Hour
+	DefaultInitTimeoutPeriod = 7 * 24 * time.Hour
 )
 
 // Reflection based keys for params subspace
@@ -66,7 +66,7 @@ func DefaultParams() Params {
 			DefaultMaxClockDrift, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"upgrade", "upgradedIBCState"}, true, true),
 		DefaultTrustingPeriodFraction,
 		ccvtypes.DefaultCCVTimeoutPeriod,
-		DafaultInitTimeoutPeriod,
+		DefaultInitTimeoutPeriod,
 	)
 }
 
