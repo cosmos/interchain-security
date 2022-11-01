@@ -47,6 +47,11 @@ func (k Keeper) GetVscTimeoutPeriod(ctx sdk.Context) time.Duration {
 	return p
 }
 
+// SetVscTimeoutPeriod sets the vsc timeout period
+func (k Keeper) SetVscTimeoutPeriod(ctx sdk.Context, period time.Duration) {
+	k.paramSpace.Set(ctx, types.KeyVscTimeoutPeriod, period)
+}
+
 // GetParams returns the paramset for the provider module
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
