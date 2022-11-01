@@ -1,6 +1,7 @@
 package cli
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -147,10 +148,10 @@ func CmdConsumerStopProposals() *cobra.Command {
 
 func CmdConsumerValidatorKeyMapping() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list-chain-validator-key-mapping",
+		Use:   "TODO:",
 		Short: "TODO:",
 		Long:  `TODO:`,
-		Args:  cobra.ExactArgs(0),
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -158,7 +159,17 @@ func CmdConsumerValidatorKeyMapping() *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			req := &types.QueryConsumerChainValidatorKeyMappingRequest{}
+			consumerChainID := args[0]
+
+			addr, err := sdk.ValAddressFromBech32(args[1])
+			if err != nil {
+				return err
+			}
+
+			req := &types.QueryConsumerChainValidatorKeyMappingRequest{
+				ChainId:                  consumerChainID,
+				ProviderValidatorAddress: addr.String(),
+			}
 			res, err := queryClient.QueryConsumerChainValidatorKeyMapping(cmd.Context(), req)
 			if err != nil {
 				return err
