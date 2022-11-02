@@ -23,7 +23,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerChains())
 	cmd.AddCommand(CmdConsumerStartProposals())
 	cmd.AddCommand(CmdConsumerStopProposals())
-	cmd.AddCommand(CmdConsumerValidatorKeyMapping())
+	cmd.AddCommand(CmdConsumerValidatorKeyAssignmentping())
 
 	return cmd
 }
@@ -146,7 +146,7 @@ func CmdConsumerStopProposals() *cobra.Command {
 	return cmd
 }
 
-func CmdConsumerValidatorKeyMapping() *cobra.Command {
+func CmdConsumerValidatorKeyAssignmentping() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "TODO:",
 		Short: "TODO:",
@@ -166,11 +166,11 @@ func CmdConsumerValidatorKeyMapping() *cobra.Command {
 				return err
 			}
 
-			req := &types.QueryConsumerChainValidatorKeyMappingRequest{
+			req := &types.QueryConsumerChainValidatorKeyAssignmentpingRequest{
 				ChainId:                  consumerChainID,
 				ProviderValidatorAddress: addr.String(),
 			}
-			res, err := queryClient.QueryConsumerChainValidatorKeyMapping(cmd.Context(), req)
+			res, err := queryClient.QueryConsumerChainValidatorKeyAssignmentping(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

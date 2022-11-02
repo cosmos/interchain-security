@@ -42,9 +42,9 @@ service Query {
   }
 
   // TODO:
-  rpc QueryConsumerChainValidatorKeyMapping(
-      QueryConsumerChainValidatorKeyMappingRequest)
-      returns (QueryConsumerChainValidatorKeyMappingResponse) {
+  rpc QueryConsumerChainValidatorKeyAssignmentping(
+      QueryConsumerChainValidatorKeyAssignmentpingRequest)
+      returns (QueryConsumerChainValidatorKeyAssignmentpingResponse) {
     // TODO: make sure path up to date
     option (google.api.http).get = "/interchain_security/ccv/provider/"
                                    "consumer_chain_validator_key_mapping";
@@ -79,7 +79,7 @@ message Chain {
   string client_id = 2;
 }
 
-message QueryConsumerChainValidatorKeyMappingRequest {
+message QueryConsumerChainValidatorKeyAssignmentpingRequest {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
   string chain_id = 1;
@@ -87,7 +87,7 @@ message QueryConsumerChainValidatorKeyMappingRequest {
       [ (gogoproto.moretags) = "yaml:\"address\"" ];
 }
 
-message QueryConsumerChainValidatorKeyMappingResponse {
+message QueryConsumerChainValidatorKeyAssignmentpingResponse {
   google.protobuf.Any consumer_validator_pub_key = 1
       [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
 }

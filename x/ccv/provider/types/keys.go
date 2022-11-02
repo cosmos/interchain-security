@@ -88,13 +88,13 @@ const (
 	LockUnbondingOnTimeoutBytePrefix
 
 	// TODO:
-	KeyMapPkToCkPrefix
+	KeyAssignmentPkToCkPrefix
 
 	// TODO:
-	KeyMapCkToPkPrefix
+	KeyAssignmentCkToPkPrefix
 
 	// TODO:
-	KeyMapCkToMemoPrefix
+	KeyAssignmentCkToMemoPrefix
 )
 
 const (
@@ -269,33 +269,33 @@ func LockUnbondingOnTimeoutKey(chainID string) []byte {
 }
 
 // TODO:
-func KeyMapPcaToCkChainPrefix(chainID string) []byte {
-	return append([]byte{KeyMapPkToCkPrefix}, []byte(chainID)...)
+func KeyAssignmentPcaToCkChainPrefix(chainID string) []byte {
+	return append([]byte{KeyAssignmentPkToCkPrefix}, []byte(chainID)...)
 }
 
 // TODO:
-func KeyMapCkToPkChainPrefix(chainID string) []byte {
-	return append([]byte{KeyMapCkToPkPrefix}, []byte(chainID)...)
+func KeyAssignmentCkToPkChainPrefix(chainID string) []byte {
+	return append([]byte{KeyAssignmentCkToPkPrefix}, []byte(chainID)...)
 }
 
 // TODO:
-func KeyMapCcaToLastUpdateMemoChainPrefix(chainID string) []byte {
-	return append([]byte{KeyMapCkToMemoPrefix}, []byte(chainID)...)
+func KeyAssignmentCcaToLastUpdateMemoChainPrefix(chainID string) []byte {
+	return append([]byte{KeyAssignmentCkToMemoPrefix}, []byte(chainID)...)
 }
 
 // TODO:
-func KeyMapPcaToCkKey(chainID string, kbz []byte) []byte {
-	return append(KeyMapPcaToCkChainPrefix(chainID), kbz...)
+func KeyAssignmentPcaToCkKey(chainID string, kbz []byte) []byte {
+	return append(KeyAssignmentPcaToCkChainPrefix(chainID), kbz...)
 }
 
 // TODO:
-func KeyMapCkToPkKey(chainID string, kbz []byte) []byte {
-	return append(KeyMapCkToPkChainPrefix(chainID), kbz...)
+func KeyAssignmentCkToPkKey(chainID string, kbz []byte) []byte {
+	return append(KeyAssignmentCkToPkChainPrefix(chainID), kbz...)
 }
 
 // TODO:
-func KeyMapCcaToLastUpdateMemoKey(chainID string, kbz []byte) []byte {
-	return append(KeyMapCcaToLastUpdateMemoChainPrefix(chainID), kbz...)
+func KeyAssignmentCcaToLastUpdateMemoKey(chainID string, kbz []byte) []byte {
+	return append(KeyAssignmentCcaToLastUpdateMemoChainPrefix(chainID), kbz...)
 }
 
 // AppendMany appends a variable number of byte slices together

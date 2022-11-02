@@ -125,7 +125,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	// clean up states
 	k.DeleteConsumerClientId(ctx, chainID)
 	k.DeleteConsumerGenesis(ctx, chainID)
-	k.DeleteKeyMap(ctx, chainID)
+	k.DeleteKeyAssignment(ctx, chainID)
 	k.DeleteLockUnbondingOnTimeout(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
@@ -246,16 +246,16 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consum
 
 	// TODO: deduplicate these blocks
 	for _, u := range providerUpdates {
-		if _, found := k.KeyMap(ctx, chainID).GetCurrentConsumerPubKeyFromProviderPubKey(u.PubKey); !found {
+		if _, found := k.KeyAssignment(ctx, chainID).GetCurrentConsumerPubKeyFromProviderPubKey(u.PubKey); !found {
 			// The provider has not designated a key to use for the consumer chain. Use the provider key
 			// by default.
-			k.KeyMap(ctx, chainID).SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
+			k.KeyAssignment(ctx, chainID).SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
 		}
 	}
 
 	// Map the updates through any key transformations
 	// TODO: check vscid
-	consumerUpdates := k.KeyMap(ctx, chainID).ComputeUpdates(0, providerUpdates)
+	consumerUpdates := k.KeyAssignment(ctx, chainID).ComputeUpdates(0, providerUpdates)
 
 	gen.InitialValSet = consumerUpdates
 

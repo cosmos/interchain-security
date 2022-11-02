@@ -246,8 +246,8 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 	providerKeeper.SetInitChainHeight(ctx, chainId, uint64(infractionHeight))
-	providerKeeper.KeyMap(ctx, chainId).SetProviderPubKeyToConsumerPubKey(testVal.TMProtoCryptoPublicKey(), testVal.TMProtoCryptoPublicKey())
-	providerKeeper.KeyMap(ctx, chainId).ComputeUpdates(0, []abci.ValidatorUpdate{{PubKey: testVal.TMProtoCryptoPublicKey(), Power: 1}})
+	providerKeeper.KeyAssignment(ctx, chainId).SetProviderPubKeyToConsumerPubKey(testVal.TMProtoCryptoPublicKey(), testVal.TMProtoCryptoPublicKey())
+	providerKeeper.KeyAssignment(ctx, chainId).ComputeUpdates(0, []abci.ValidatorUpdate{{PubKey: testVal.TMProtoCryptoPublicKey(), Power: 1}})
 
 	success, err := providerKeeper.HandleSlashPacket(ctx, chainId, slashPacket)
 	require.NoError(t, err)

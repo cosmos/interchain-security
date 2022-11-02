@@ -112,17 +112,17 @@ type Store interface {
 	IterateCcaToLastUpdateMemo(func(ConsumerConsAddr, ccvtypes.LastUpdateMemo) bool)
 }
 
-type KeyMap struct {
+type KeyAssignment struct {
 	Store Store
 }
 
-func MakeKeyMap(store Store) KeyMap {
-	return KeyMap{
+func MakeKeyAssignment(store Store) KeyAssignment {
+	return KeyAssignment{
 		Store: store,
 	}
 }
 
-func (e *KeyMap) SetProviderPubKeyToConsumerPubKey(pk ProviderPublicKey, ck ConsumerPublicKey) error {
+func (e *KeyAssignment) SetProviderPubKeyToConsumerPubKey(pk ProviderPublicKey, ck ConsumerPublicKey) error {
 	if _, ok := e.Store.GetCkToPk(ck); ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
@@ -138,7 +138,7 @@ func (e *KeyMap) SetProviderPubKeyToConsumerPubKey(pk ProviderPublicKey, ck Cons
 	return nil
 }
 
-func (e *KeyMap) DeleteProviderKey(pca ProviderConsAddr) error {
+func (e *KeyAssignment) DeleteProviderKey(pca ProviderConsAddr) error {
 	// TODO: document expensive operation
 	if ck, ok := e.Store.GetPcaToCk(pca); ok {
 		e.Store.DelCkToPk(ck)
@@ -158,22 +158,22 @@ func (e *KeyMap) DeleteProviderKey(pca ProviderConsAddr) error {
 	return nil
 }
 
-func (e *KeyMap) GetCurrentConsumerPubKeyFromProviderPubKey(pk ProviderPublicKey) (ck ConsumerPublicKey, found bool) {
+func (e *KeyAssignment) GetCurrentConsumerPubKeyFromProviderPubKey(pk ProviderPublicKey) (ck ConsumerPublicKey, found bool) {
 	return e.Store.GetPcaToCk(PubKeyToConsAddr(pk))
 }
 
-func (e *KeyMap) GetProviderPubKeyFromConsumerPubKey(ck ConsumerPublicKey) (pk ProviderPublicKey, found bool) {
+func (e *KeyAssignment) GetProviderPubKeyFromConsumerPubKey(ck ConsumerPublicKey) (pk ProviderPublicKey, found bool) {
 	return e.Store.GetCkToPk(ck)
 }
 
-func (e *KeyMap) GetProviderPubKeyFromConsumerConsAddress(cca sdk.ConsAddress) (pk ProviderPublicKey, found bool) {
+func (e *KeyAssignment) GetProviderPubKeyFromConsumerConsAddress(cca sdk.ConsAddress) (pk ProviderPublicKey, found bool) {
 	if memo, found := e.Store.GetCcaToLastUpdateMemo(cca); found {
 		return *memo.ProviderKey, true
 	}
 	return pk, false
 }
 
-func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
+func (e *KeyAssignment) PruneUnusedKeys(latestVscid VSCID) {
 	toDel := []ConsumerConsAddr{}
 	e.Store.IterateCcaToLastUpdateMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
 		if m.Power == 0 && m.Vscid <= latestVscid {
@@ -186,7 +186,7 @@ func (e *KeyMap) PruneUnusedKeys(latestVscid VSCID) {
 	}
 }
 
-func (e *KeyMap) getProviderKeysForUpdate(stakingUpdates map[ProviderPublicKey]int64) ([]ProviderPublicKey, map[string]bool) {
+func (e *KeyAssignment) getProviderKeysForUpdate(stakingUpdates map[ProviderPublicKey]int64) ([]ProviderPublicKey, map[string]bool) {
 
 	// TODO: document
 	keys := []ProviderPublicKey{}
@@ -219,7 +219,7 @@ func (e *KeyMap) getProviderKeysForUpdate(stakingUpdates map[ProviderPublicKey]i
 	return keys, included
 }
 
-func (e KeyMap) getProviderKeysLastPositiveUpdate(mustCreateUpdate map[string]bool) map[string]ccvtypes.LastUpdateMemo {
+func (e KeyAssignment) getProviderKeysLastPositiveUpdate(mustCreateUpdate map[string]bool) map[string]ccvtypes.LastUpdateMemo {
 	lastUpdate := map[string]ccvtypes.LastUpdateMemo{}
 	e.Store.IterateCcaToLastUpdateMemo(func(_ ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
 		s := DeterministicStringify(*m.ProviderKey)
@@ -234,7 +234,7 @@ func (e KeyMap) getProviderKeysLastPositiveUpdate(mustCreateUpdate map[string]bo
 }
 
 // do inner work as part of ComputeUpdates
-func (e *KeyMap) getConsumerUpdates(vscid VSCID, stakingUpdates map[ProviderPublicKey]int64) (consumerUpdates map[ConsumerPublicKey]int64) {
+func (e *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates map[ProviderPublicKey]int64) (consumerUpdates map[ConsumerPublicKey]int64) {
 
 	// Init the return value
 	consumerUpdates = map[ConsumerPublicKey]int64{}
@@ -319,12 +319,12 @@ func fromMap(consumerUpdates map[ConsumerPublicKey]int64) []abci.ValidatorUpdate
 	return ret
 }
 
-func (e *KeyMap) ComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) (consumerUpdatesx []abci.ValidatorUpdate) {
+func (e *KeyAssignment) ComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) (consumerUpdatesx []abci.ValidatorUpdate) {
 	return fromMap(e.getConsumerUpdates(vscid, toMap(stakingUpdates)))
 }
 
 // Returns true iff internal invariants hold
-func (e *KeyMap) InternalInvariants() bool {
+func (e *KeyAssignment) InternalInvariants() bool {
 
 	good := true
 
@@ -426,12 +426,12 @@ func (e *KeyMap) InternalInvariants() bool {
 
 }
 
-type KeyMapStore struct {
+type KeyAssignmentStore struct {
 	Store   sdk.KVStore
 	ChainID string
 }
 
-func (s *KeyMapStore) SetPcaToCk(k ProviderConsAddr, v ConsumerPublicKey) {
+func (s *KeyAssignmentStore) SetPcaToCk(k ProviderConsAddr, v ConsumerPublicKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -440,9 +440,9 @@ func (s *KeyMapStore) SetPcaToCk(k ProviderConsAddr, v ConsumerPublicKey) {
 	if err != nil {
 		panic(err)
 	}
-	s.Store.Set(types.KeyMapPcaToCkKey(s.ChainID, kbz), vbz)
+	s.Store.Set(types.KeyAssignmentPcaToCkKey(s.ChainID, kbz), vbz)
 }
-func (s *KeyMapStore) SetCkToPk(k ConsumerPublicKey, v ProviderPublicKey) {
+func (s *KeyAssignmentStore) SetCkToPk(k ConsumerPublicKey, v ProviderPublicKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -451,9 +451,9 @@ func (s *KeyMapStore) SetCkToPk(k ConsumerPublicKey, v ProviderPublicKey) {
 	if err != nil {
 		panic(err)
 	}
-	s.Store.Set(types.KeyMapCkToPkKey(s.ChainID, kbz), vbz)
+	s.Store.Set(types.KeyAssignmentCkToPkKey(s.ChainID, kbz), vbz)
 }
-func (s *KeyMapStore) SetCcaToLastUpdateMemo(k ConsumerConsAddr, v ccvtypes.LastUpdateMemo) {
+func (s *KeyAssignmentStore) SetCcaToLastUpdateMemo(k ConsumerConsAddr, v ccvtypes.LastUpdateMemo) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -462,14 +462,14 @@ func (s *KeyMapStore) SetCcaToLastUpdateMemo(k ConsumerConsAddr, v ccvtypes.Last
 	if err != nil {
 		panic(err)
 	}
-	s.Store.Set(types.KeyMapCcaToLastUpdateMemoKey(s.ChainID, kbz), vbz)
+	s.Store.Set(types.KeyAssignmentCcaToLastUpdateMemoKey(s.ChainID, kbz), vbz)
 }
-func (s *KeyMapStore) GetPcaToCk(k ProviderConsAddr) (v ConsumerPublicKey, found bool) {
+func (s *KeyAssignmentStore) GetPcaToCk(k ProviderConsAddr) (v ConsumerPublicKey, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
-	if vbz := s.Store.Get(types.KeyMapPcaToCkKey(s.ChainID, kbz)); vbz != nil {
+	if vbz := s.Store.Get(types.KeyAssignmentPcaToCkKey(s.ChainID, kbz)); vbz != nil {
 		err := v.Unmarshal(vbz)
 		if err != nil {
 			panic(err)
@@ -478,12 +478,12 @@ func (s *KeyMapStore) GetPcaToCk(k ProviderConsAddr) (v ConsumerPublicKey, found
 	}
 	return v, false
 }
-func (s *KeyMapStore) GetCkToPk(k ConsumerPublicKey) (v ProviderPublicKey, found bool) {
+func (s *KeyAssignmentStore) GetCkToPk(k ConsumerPublicKey) (v ProviderPublicKey, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
-	if vbz := s.Store.Get(types.KeyMapCkToPkKey(s.ChainID, kbz)); vbz != nil {
+	if vbz := s.Store.Get(types.KeyAssignmentCkToPkKey(s.ChainID, kbz)); vbz != nil {
 		err := v.Unmarshal(vbz)
 		if err != nil {
 			panic(err)
@@ -492,12 +492,12 @@ func (s *KeyMapStore) GetCkToPk(k ConsumerPublicKey) (v ProviderPublicKey, found
 	}
 	return v, false
 }
-func (s *KeyMapStore) GetCcaToLastUpdateMemo(k ConsumerConsAddr) (v ccvtypes.LastUpdateMemo, found bool) {
+func (s *KeyAssignmentStore) GetCcaToLastUpdateMemo(k ConsumerConsAddr) (v ccvtypes.LastUpdateMemo, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
-	if vbz := s.Store.Get(types.KeyMapCcaToLastUpdateMemoKey(s.ChainID, kbz)); vbz != nil {
+	if vbz := s.Store.Get(types.KeyAssignmentCcaToLastUpdateMemoKey(s.ChainID, kbz)); vbz != nil {
 		v := ccvtypes.LastUpdateMemo{}
 		err := v.Unmarshal(vbz)
 		if err != nil {
@@ -507,29 +507,29 @@ func (s *KeyMapStore) GetCcaToLastUpdateMemo(k ConsumerConsAddr) (v ccvtypes.Las
 	}
 	return v, false
 }
-func (s *KeyMapStore) DelPcaToCk(k ProviderConsAddr) {
+func (s *KeyAssignmentStore) DelPcaToCk(k ProviderConsAddr) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
-	s.Store.Delete(types.KeyMapPcaToCkKey(s.ChainID, kbz))
+	s.Store.Delete(types.KeyAssignmentPcaToCkKey(s.ChainID, kbz))
 }
-func (s *KeyMapStore) DelCkToPk(k ConsumerPublicKey) {
+func (s *KeyAssignmentStore) DelCkToPk(k ConsumerPublicKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
-	s.Store.Delete(types.KeyMapCkToPkKey(s.ChainID, kbz))
+	s.Store.Delete(types.KeyAssignmentCkToPkKey(s.ChainID, kbz))
 }
-func (s *KeyMapStore) DelCcaToLastUpdateMemo(k ConsumerConsAddr) {
+func (s *KeyAssignmentStore) DelCcaToLastUpdateMemo(k ConsumerConsAddr) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
-	s.Store.Delete(types.KeyMapCcaToLastUpdateMemoKey(s.ChainID, kbz))
+	s.Store.Delete(types.KeyAssignmentCcaToLastUpdateMemoKey(s.ChainID, kbz))
 }
-func (s *KeyMapStore) IteratePcaToCk(cb func(ProviderConsAddr, ConsumerPublicKey) bool) {
-	prefix := types.KeyMapPcaToCkChainPrefix(s.ChainID)
+func (s *KeyAssignmentStore) IteratePcaToCk(cb func(ProviderConsAddr, ConsumerPublicKey) bool) {
+	prefix := types.KeyAssignmentPcaToCkChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -548,8 +548,8 @@ func (s *KeyMapStore) IteratePcaToCk(cb func(ProviderConsAddr, ConsumerPublicKey
 		}
 	}
 }
-func (s *KeyMapStore) IterateCkToPk(cb func(ConsumerPublicKey, ProviderPublicKey) bool) {
-	prefix := types.KeyMapCkToPkChainPrefix(s.ChainID)
+func (s *KeyAssignmentStore) IterateCkToPk(cb func(ConsumerPublicKey, ProviderPublicKey) bool) {
+	prefix := types.KeyAssignmentCkToPkChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -568,8 +568,8 @@ func (s *KeyMapStore) IterateCkToPk(cb func(ConsumerPublicKey, ProviderPublicKey
 		}
 	}
 }
-func (s *KeyMapStore) IterateCcaToLastUpdateMemo(cb func(ConsumerConsAddr, ccvtypes.LastUpdateMemo) bool) {
-	prefix := types.KeyMapCcaToLastUpdateMemoChainPrefix(s.ChainID)
+func (s *KeyAssignmentStore) IterateCcaToLastUpdateMemo(cb func(ConsumerConsAddr, ccvtypes.LastUpdateMemo) bool) {
+	prefix := types.KeyAssignmentCcaToLastUpdateMemoChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -589,12 +589,12 @@ func (s *KeyMapStore) IterateCcaToLastUpdateMemo(cb func(ConsumerConsAddr, ccvty
 	}
 }
 
-func (k Keeper) DeleteKeyMap(ctx sdk.Context, chainID string) {
+func (k Keeper) DeleteKeyAssignment(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	for _, pref := range [][]byte{
-		types.KeyMapPcaToCkChainPrefix(chainID),
-		types.KeyMapCkToPkChainPrefix(chainID),
-		types.KeyMapCcaToLastUpdateMemoChainPrefix(chainID),
+		types.KeyAssignmentPcaToCkChainPrefix(chainID),
+		types.KeyAssignmentCkToPkChainPrefix(chainID),
+		types.KeyAssignmentCcaToLastUpdateMemoChainPrefix(chainID),
 	} {
 		iter := sdk.KVStorePrefixIterator(store, pref)
 		defer iter.Close()
@@ -604,8 +604,8 @@ func (k Keeper) DeleteKeyMap(ctx sdk.Context, chainID string) {
 	}
 }
 
-func (k Keeper) KeyMap(ctx sdk.Context, chainID string) *KeyMap {
-	store := KeyMapStore{ctx.KVStore(k.storeKey), chainID}
-	km := MakeKeyMap(&store)
+func (k Keeper) KeyAssignment(ctx sdk.Context, chainID string) *KeyAssignment {
+	store := KeyAssignmentStore{ctx.KVStore(k.storeKey), chainID}
+	km := MakeKeyAssignment(&store)
 	return &km
 }

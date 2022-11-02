@@ -75,15 +75,15 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 				k.AppendPendingVSC(ctx, chainID, vsc)
 			}
 		}
-		if cs.KeyMap != nil {
-			for _, pcaToCk := range cs.KeyMap.ProviderConsAddrToConsumerKey {
-				k.KeyMap(ctx, cs.ChainId).Store.SetPcaToCk(pcaToCk.ConsAddr, *pcaToCk.Key)
+		if cs.KeyAssignment != nil {
+			for _, pcaToCk := range cs.KeyAssignment.ProviderConsAddrToConsumerKey {
+				k.KeyAssignment(ctx, cs.ChainId).Store.SetPcaToCk(pcaToCk.ConsAddr, *pcaToCk.Key)
 			}
-			for _, ckToPk := range cs.KeyMap.ConsumerKeyToProviderKey {
-				k.KeyMap(ctx, cs.ChainId).Store.SetCkToPk(*ckToPk.From, *ckToPk.To)
+			for _, ckToPk := range cs.KeyAssignment.ConsumerKeyToProviderKey {
+				k.KeyAssignment(ctx, cs.ChainId).Store.SetCkToPk(*ckToPk.From, *ckToPk.To)
 			}
-			for _, ccaToLastUpdateMemo := range cs.KeyMap.ConsumerConsAddrToLastUpdateMemo {
-				k.KeyMap(ctx, cs.ChainId).Store.SetCcaToLastUpdateMemo(ccaToLastUpdateMemo.ConsAddr, *ccaToLastUpdateMemo.LastUpdateMemo)
+			for _, ccaToLastUpdateMemo := range cs.KeyAssignment.ConsumerConsAddrToLastUpdateMemo {
+				k.KeyAssignment(ctx, cs.ChainId).Store.SetCcaToLastUpdateMemo(ccaToLastUpdateMemo.ConsAddr, *ccaToLastUpdateMemo.LastUpdateMemo)
 			}
 		}
 	}
@@ -129,20 +129,20 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			}
 		}
 
-		keyMap := func() *ccv.KeyMap {
-			km := &ccv.KeyMap{}
+		keyMap := func() *ccv.KeyAssignment {
+			km := &ccv.KeyAssignment{}
 			km.ProviderConsAddrToConsumerKey = []ccv.ConsAddrToKey{}
 			km.ConsumerKeyToProviderKey = []ccv.KeyToKey{}
 			km.ConsumerConsAddrToLastUpdateMemo = []ccv.ConsAddrToLastUpdateMemo{}
-			k.KeyMap(ctx, chainID).Store.IteratePcaToCk(func(pca ProviderConsAddr, ck ConsumerPublicKey) bool {
+			k.KeyAssignment(ctx, chainID).Store.IteratePcaToCk(func(pca ProviderConsAddr, ck ConsumerPublicKey) bool {
 				km.ProviderConsAddrToConsumerKey = append(km.ProviderConsAddrToConsumerKey, ccv.ConsAddrToKey{ConsAddr: pca, Key: &ck})
 				return false
 			})
-			k.KeyMap(ctx, chainID).Store.IterateCkToPk(func(ck ConsumerPublicKey, pk ProviderPublicKey) bool {
+			k.KeyAssignment(ctx, chainID).Store.IterateCkToPk(func(ck ConsumerPublicKey, pk ProviderPublicKey) bool {
 				km.ConsumerKeyToProviderKey = append(km.ConsumerKeyToProviderKey, ccv.KeyToKey{From: &ck, To: &pk})
 				return false
 			})
-			k.KeyMap(ctx, chainID).Store.IterateCcaToLastUpdateMemo(func(ck ConsumerConsAddr, m ccv.LastUpdateMemo) bool {
+			k.KeyAssignment(ctx, chainID).Store.IterateCcaToLastUpdateMemo(func(ck ConsumerConsAddr, m ccv.LastUpdateMemo) bool {
 				km.ConsumerConsAddrToLastUpdateMemo = append(km.ConsumerConsAddrToLastUpdateMemo, ccv.ConsAddrToLastUpdateMemo{ConsAddr: ck, LastUpdateMemo: &m})
 				return false
 			})
@@ -150,7 +150,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			return km
 		}
 
-		cs.KeyMap = keyMap()
+		cs.KeyAssignment = keyMap()
 
 		consumerStates = append(consumerStates, cs)
 		return true

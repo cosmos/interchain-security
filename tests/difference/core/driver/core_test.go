@@ -253,7 +253,7 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 func (s *CoreSuite) readCurrentKeyAssignment() map[int64]providerkeeper.ConsumerPublicKey {
 	k := s.providerKeeper()
 	assignment := map[int64]providerkeeper.ConsumerPublicKey{}
-	k.KeyMap(s.ctx(P), s.chainID(C)).Store.IteratePcaToCk(func(pca providerkeeper.ProviderConsAddr, consumerPubKey providerkeeper.ConsumerPublicKey) bool {
+	k.KeyAssignment(s.ctx(P), s.chainID(C)).Store.IteratePcaToCk(func(pca providerkeeper.ProviderConsAddr, consumerPubKey providerkeeper.ConsumerPublicKey) bool {
 		for val := int64(0); val < int64(initState.NumValidators); val++ {
 			consAddr := s.consAddr(val)
 			if consAddr.Equals(pca) {
@@ -268,8 +268,8 @@ func (s *CoreSuite) readCurrentKeyAssignment() map[int64]providerkeeper.Consumer
 func (s *CoreSuite) endAndBeginBlock(chain string) {
 	s.simibc.EndAndBeginBlock(s.chainID(chain), initState.BlockSeconds, func() {
 		if chain == P {
-			good := s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).InternalInvariants()
-			s.Require().Truef(good, "KeyMap internal invariants failed")
+			good := s.providerKeeper().KeyAssignment(s.ctx(P), s.chainID(C)).InternalInvariants()
+			s.Require().Truef(good, "KeyAssignment internal invariants failed")
 			vscid := s.providerKeeper().GetValidatorSetUpdateId(s.ctx(P))
 			// The provider EndBlock does +=1 as a final step
 			// so do -=1 to compensate, as we want the vscid that was actually
@@ -333,7 +333,7 @@ func (s *CoreSuite) keyAssignment() {
 			testVal := testcrypto.NewValidatorFromIntSeed(keySeed)
 			s.chain(C).Signers[testVal.SDKValAddressString()] = testVal
 			// Apply the key assignment instruction
-			s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(providerTMProtoCrytoPublicKey, testVal.TMProtoCryptoPublicKey())
+			s.providerKeeper().KeyAssignment(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(providerTMProtoCrytoPublicKey, testVal.TMProtoCryptoPublicKey())
 		}
 	}
 }
@@ -424,7 +424,7 @@ func (s *CoreSuite) TestAssumptions() {
 			}
 			providerPublicKey, err := providerValidator.TmConsPublicKey()
 			s.Require().NoError(err)
-			km := s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C))
+			km := s.providerKeeper().KeyAssignment(s.ctx(P), s.chainID(C))
 			consumerPublicKeyExpect, found := km.GetCurrentConsumerPubKeyFromProviderPubKey(providerPublicKey)
 			s.Require().True(found)
 			s.Require().Equal(consumerPublicKeyExpect, consumerPublicKeyActual)

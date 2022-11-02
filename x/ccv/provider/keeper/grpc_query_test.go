@@ -16,7 +16,7 @@ import (
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
-func TestGRPCQueryConsumerChainValidatorKeyMapping(t *testing.T) {
+func TestGRPCQueryConsumerChainValidatorKeyAssignmentping(t *testing.T) {
 
 	testValProvider := testcrypto.NewValidatorFromIntSeed(0)
 	testValConsumer := testcrypto.NewValidatorFromIntSeed(1)
@@ -41,7 +41,7 @@ func TestGRPCQueryConsumerChainValidatorKeyMapping(t *testing.T) {
 					).Return(testValProvider.SDKStakingValidator(), true).Times(1),
 				)
 				// Set a mapping
-				k.KeyMap(ctx, chainID).SetProviderPubKeyToConsumerPubKey(testValProvider.TMProtoCryptoPublicKey(), testValConsumer.TMProtoCryptoPublicKey())
+				k.KeyAssignment(ctx, chainID).SetProviderPubKeyToConsumerPubKey(testValProvider.TMProtoCryptoPublicKey(), testValConsumer.TMProtoCryptoPublicKey())
 			},
 			expError: false,
 			chainID:  "chainid",
@@ -75,13 +75,13 @@ func TestGRPCQueryConsumerChainValidatorKeyMapping(t *testing.T) {
 
 		tc.setup(ctx, k, mocks, tc.chainID)
 
-		req := providertypes.QueryConsumerChainValidatorKeyMappingRequest{
+		req := providertypes.QueryConsumerChainValidatorKeyAssignmentpingRequest{
 			ChainId:                  tc.chainID,
 			ProviderValidatorAddress: testValProvider.SDKValAddress().String(),
 		}
 
 		goCtx := sdktypes.WrapSDKContext(ctx)
-		res, err := queryClient.QueryConsumerChainValidatorKeyMapping(goCtx, &req)
+		res, err := queryClient.QueryConsumerChainValidatorKeyAssignmentping(goCtx, &req)
 
 		if tc.expError {
 			require.Error(t, err, "invalid case did not return error")

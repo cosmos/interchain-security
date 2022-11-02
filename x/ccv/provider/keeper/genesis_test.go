@@ -26,7 +26,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 	initHeight, vscID := uint64(5), uint64(1)
 	ubdIndex := []uint64{0, 1, 2}
 	params := providertypes.DefaultParams()
-	keyMaps := []ccv.KeyMap{
+	keyMaps := []ccv.KeyAssignment{
 		{
 			ProviderConsAddrToConsumerKey:    []ccv.ConsAddrToKey{{ConsAddr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
 			ConsumerKeyToProviderKey:         []ccv.KeyToKey{},
@@ -119,9 +119,9 @@ func TestIniAndExportGenesis(t *testing.T) {
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, pGenesis.Params, pk.GetParams(ctx))
 
-	_, found = pk.KeyMap(ctx, cChainIDs[0]).Store.GetPcaToCk(sdk.ConsAddress{})
+	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).Store.GetPcaToCk(sdk.ConsAddress{})
 	require.True(t, found)
-	_, found = pk.KeyMap(ctx, cChainIDs[1]).Store.GetPcaToCk(sdk.ConsAddress{})
+	_, found = pk.KeyAssignment(ctx, cChainIDs[1]).Store.GetPcaToCk(sdk.ConsAddress{})
 	require.False(t, found)
 
 	// check provider chain's consumer chain states

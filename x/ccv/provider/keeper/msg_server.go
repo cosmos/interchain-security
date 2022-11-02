@@ -66,7 +66,7 @@ func (k msgServer) DesignateConsensusKeyForConsumerChain(goCtx context.Context, 
 		return nil, err
 	}
 
-	err = k.KeyMap(ctx, msg.ChainId).SetProviderPubKeyToConsumerPubKey(
+	err = k.KeyAssignment(ctx, msg.ChainId).SetProviderPubKeyToConsumerPubKey(
 		providerTMPublicKey,
 		consumerTMPublicKey,
 	)

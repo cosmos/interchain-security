@@ -29,7 +29,7 @@ message ConsAddrToLastUpdateMemo {
   LastUpdateMemo last_update_memo = 2;
 }
 
-message KeyMap {
+message KeyAssignment {
   repeated ConsAddrToKey provider_cons_addr_to_consumer_key = 1
       [ (gogoproto.nullable) = false ];
   repeated KeyToKey consumer_key_to_provider_key = 2

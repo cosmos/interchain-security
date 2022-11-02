@@ -74,7 +74,7 @@ func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryC
 	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &props}, nil
 }
 
-func (k Keeper) QueryConsumerChainValidatorKeyMapping(goCtx context.Context, req *types.QueryConsumerChainValidatorKeyMappingRequest) (*types.QueryConsumerChainValidatorKeyMappingResponse, error) {
+func (k Keeper) QueryConsumerChainValidatorKeyAssignmentping(goCtx context.Context, req *types.QueryConsumerChainValidatorKeyAssignmentpingRequest) (*types.QueryConsumerChainValidatorKeyAssignmentpingResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -100,7 +100,7 @@ func (k Keeper) QueryConsumerChainValidatorKeyMapping(goCtx context.Context, req
 		return nil, err
 	}
 
-	consumerTMPublicKey, found := k.KeyMap(ctx, req.ChainId).GetCurrentConsumerPubKeyFromProviderPubKey(providerTMPublicKey)
+	consumerTMPublicKey, found := k.KeyAssignment(ctx, req.ChainId).GetCurrentConsumerPubKeyFromProviderPubKey(providerTMPublicKey)
 	if !found {
 		return nil, types.ErrNoAssignedConsumerKeyFoundForValidator
 	}
@@ -126,7 +126,7 @@ func (k Keeper) QueryConsumerChainValidatorKeyMapping(goCtx context.Context, req
 		return nil, types.ErrInvalidValidatorPubKey
 	}
 
-	return &types.QueryConsumerChainValidatorKeyMappingResponse{
+	return &types.QueryConsumerChainValidatorKeyAssignmentpingResponse{
 		ConsumerValidatorPubKey: pubKeyAny,
 	}, nil
 }

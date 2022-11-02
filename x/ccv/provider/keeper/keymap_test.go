@@ -52,7 +52,7 @@ type traceStep struct {
 
 type driver struct {
 	t                *testing.T
-	km               *keeper.KeyMap
+	km               *keeper.KeyAssignment
 	trace            []traceStep
 	lastTimeProvider int
 	lastTimeConsumer int
@@ -68,11 +68,11 @@ type driver struct {
 	consumerValset valset
 }
 
-func newTestKeyMap(t *testing.T) *keeper.KeyMap {
+func newTestKeyAssignment(t *testing.T) *keeper.KeyAssignment {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	chainID := "foobar"
-	store := keeper.KeyMapStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
-	km := keeper.MakeKeyMap(&store)
+	store := keeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
+	km := keeper.MakeKeyAssignment(&store)
 	return &km
 }
 
@@ -81,7 +81,7 @@ type valset = []abci.ValidatorUpdate
 func makeDriver(t *testing.T, trace []traceStep) driver {
 	d := driver{}
 	d.t = t
-	d.km = newTestKeyMap(t)
+	d.km = newTestKeyAssignment(t)
 	d.trace = trace
 	d.lastTimeProvider = 0
 	d.lastTimeConsumer = 0
@@ -94,7 +94,7 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 }
 
 // Apply a list of (pk, ck) mapping requests to the KeyDel class instance
-func (d *driver) applyKeyMapEntries(entries []keyMapEntry) {
+func (d *driver) applyKeyAssignmentEntries(entries []keyMapEntry) {
 	for _, e := range entries {
 		// TRY to map provider key pk to consumer key ck.
 		// (May fail due to API constraints, this is correct)
@@ -149,7 +149,7 @@ func (d *driver) run() {
 	{
 		init := d.trace[0]
 		// Set the initial map
-		d.applyKeyMapEntries(init.keyMapEntries)
+		d.applyKeyAssignmentEntries(init.keyMapEntries)
 		// Set the initial provider set
 		d.providerValsets = append(d.providerValsets, applyUpdates(valset{}, init.providerUpdates))
 		// Set the initial consumer set
@@ -170,7 +170,7 @@ func (d *driver) run() {
 			// Provider time increase:
 			// Apply some new key mapping requests to KeyDel, and create new validator
 			// power updates.
-			d.applyKeyMapEntries(s.keyMapEntries)
+			d.applyKeyAssignmentEntries(s.keyMapEntries)
 			d.applyProviderUpdates(s.providerUpdates)
 
 			// Store the updates, to reference later in tests.
@@ -481,12 +481,12 @@ func getTrace(t *testing.T) []traceStep {
 	return ret
 }
 
-// go test -coverprofile=coverage.out -coverpkg=./... -timeout 1000m -run KeyMapPropertiesRandomlyHeuristically keymap_test.go
+// go test -coverprofile=coverage.out -coverpkg=./... -timeout 1000m -run KeyAssignmentPropertiesRandomlyHeuristically keymap_test.go
 
 // Execute randomly generated traces (lists of actions)
 // against new instances of the class, checking properties
 // after each action is done.
-func TestKeyMapPropertiesRandomlyHeuristically(t *testing.T) {
+func TestKeyAssignmentPropertiesRandomlyHeuristically(t *testing.T) {
 	for i := 0; i < NUM_TRACES; i++ {
 		trace := []traceStep{}
 		for len(trace) < 2 {
@@ -497,7 +497,7 @@ func TestKeyMapPropertiesRandomlyHeuristically(t *testing.T) {
 	}
 }
 
-func TestKeyMapKeySerialization(t *testing.T) {
+func TestKeyAssignmentKeySerialization(t *testing.T) {
 	k0 := key(0)
 	k1 := key(0)
 	bz0, err := k0.Marshal()
@@ -510,7 +510,7 @@ func TestKeyMapKeySerialization(t *testing.T) {
 	}
 }
 
-func TestKeyMapMemo(t *testing.T) {
+func TestKeyAssignmentMemo(t *testing.T) {
 	arr := []ccvtypes.LastUpdateMemo{
 		{}, {},
 	}
@@ -530,7 +530,7 @@ func TestKeyMapMemo(t *testing.T) {
 	require.True(t, pk.Equal(key(0)))
 }
 
-func TestKeyMapMemoLoopIteration(t *testing.T) {
+func TestKeyAssignmentMemoLoopIteration(t *testing.T) {
 	m := ccvtypes.LastUpdateMemo{}
 	{
 		k0 := key(0)
@@ -546,7 +546,7 @@ func TestKeyMapMemoLoopIteration(t *testing.T) {
 	require.True(t, m.ProviderKey.Equal(arr[1]))
 }
 
-func TestKeyMapSameSeedDeterministicStringify(t *testing.T) {
+func TestKeyAssignmentSameSeedDeterministicStringify(t *testing.T) {
 	// This doesn't prove anything
 	for i := 0; i < 1000; i++ {
 		k0 := key(i)
@@ -557,14 +557,14 @@ func TestKeyMapSameSeedDeterministicStringify(t *testing.T) {
 	}
 }
 
-func TestKeyMapSameSeedEquality(t *testing.T) {
+func TestKeyAssignmentSameSeedEquality(t *testing.T) {
 	k0 := key(0)
 	k1 := key(0)
 	require.True(t, k0.Equal(k1))
 	require.Equal(t, k0, k1)
 }
 
-func TestKeyMapSameSeedMapLength(t *testing.T) {
+func TestKeyAssignmentSameSeedMapLength(t *testing.T) {
 	k0 := key(0)
 	k1 := key(0)
 	m := map[tmprotocrypto.PublicKey]bool{}
@@ -574,7 +574,7 @@ func TestKeyMapSameSeedMapLength(t *testing.T) {
 	require.Len(t, m, 2)
 }
 
-func TestKeyMapSameSeedMapLengthCopy(t *testing.T) {
+func TestKeyAssignmentSameSeedMapLengthCopy(t *testing.T) {
 	k0 := key(0)
 	arr := []tmprotocrypto.PublicKey{k0}
 	m := map[tmprotocrypto.PublicKey]bool{}
@@ -584,7 +584,7 @@ func TestKeyMapSameSeedMapLengthCopy(t *testing.T) {
 	require.Len(t, m, 1)
 }
 
-func TestKeyMapDifferentKeyComparison(t *testing.T) {
+func TestKeyAssignmentDifferentKeyComparison(t *testing.T) {
 	k := key(0)
 	bz, err := k.Marshal()
 	require.Nil(t, err)
@@ -597,15 +597,15 @@ func TestKeyMapDifferentKeyComparison(t *testing.T) {
 	require.True(t, k != other)
 }
 
-func TestKeyMapSetCurrentQueryWithIdenticalKey(t *testing.T) {
-	km := newTestKeyMap(t)
+func TestKeyAssignmentSetCurrentQueryWithIdenticalKey(t *testing.T) {
+	km := newTestKeyAssignment(t)
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	actual, _ := km.GetCurrentConsumerPubKeyFromProviderPubKey(key(42)) // Queryable
 	require.Equal(t, key(43), actual)
 }
 
-func TestKeyMapSetCurrentQueryWithEqualKey(t *testing.T) {
-	km := newTestKeyMap(t)
+func TestKeyAssignmentSetCurrentQueryWithEqualKey(t *testing.T) {
+	km := newTestKeyAssignment(t)
 	k := key(42)
 	km.SetProviderPubKeyToConsumerPubKey(k, key(43))
 
@@ -619,21 +619,21 @@ func TestKeyMapSetCurrentQueryWithEqualKey(t *testing.T) {
 	require.Equal(t, key(43), actual)
 }
 
-func TestKeyMapNoSetReverseQuery(t *testing.T) {
-	km := newTestKeyMap(t)
+func TestKeyAssignmentNoSetReverseQuery(t *testing.T) {
+	km := newTestKeyAssignment(t)
 	_, found := km.GetProviderPubKeyFromConsumerPubKey(key(43)) // Not queryable
 	require.False(t, found)
 }
 
-func TestKeyMapSetReverseQuery(t *testing.T) {
-	km := newTestKeyMap(t)
+func TestKeyAssignmentSetReverseQuery(t *testing.T) {
+	km := newTestKeyAssignment(t)
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	actual, _ := km.GetProviderPubKeyFromConsumerPubKey(key(43)) // Queryable
 	require.Equal(t, key(42), actual)
 }
 
-func TestKeyMapSetUseReplaceAndReverse(t *testing.T) {
-	km := newTestKeyMap(t)
+func TestKeyAssignmentSetUseReplaceAndReverse(t *testing.T) {
+	km := newTestKeyAssignment(t)
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 	km.ComputeUpdates(100, updates)
@@ -651,8 +651,8 @@ func TestKeyMapSetUseReplaceAndReverse(t *testing.T) {
 	require.Equal(t, key(42), actual)
 }
 
-func TestKeyMapSetUseReplaceAndPrune(t *testing.T) {
-	km := newTestKeyMap(t)
+func TestKeyAssignmentSetUseReplaceAndPrune(t *testing.T) {
+	km := newTestKeyAssignment(t)
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 	km.ComputeUpdates(100, updates)
@@ -668,16 +668,16 @@ func TestKeyMapSetUseReplaceAndPrune(t *testing.T) {
 	require.Equal(t, key(42), actual)
 }
 
-func TestKeyMapSetUnsetReverseQuery(t *testing.T) {
-	km := newTestKeyMap(t)
+func TestKeyAssignmentSetUnsetReverseQuery(t *testing.T) {
+	km := newTestKeyAssignment(t)
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(44))      // Set to different value
 	_, found := km.GetProviderPubKeyFromConsumerPubKey(key(43)) // Ealier value not queryable
 	require.False(t, found)
 }
 
-func TestKeyMapGCUpdateIsEmitted(t *testing.T) {
-	km := newTestKeyMap(t)
+func TestKeyAssignmentGCUpdateIsEmitted(t *testing.T) {
+	km := newTestKeyAssignment(t)
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 	km.ComputeUpdates(100, updates)
@@ -695,7 +695,7 @@ func TestKeyMapGCUpdateIsEmitted(t *testing.T) {
 }
 
 func TestValidatorRemoval(t *testing.T) {
-	km := newTestKeyMap(t)
+	km := newTestKeyAssignment(t)
 
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 
@@ -734,7 +734,7 @@ func TestValidatorRemoval(t *testing.T) {
 }
 
 func compareForEquality(t *testing.T,
-	km keeper.KeyMap,
+	km keeper.KeyAssignment,
 	pcaToCk map[string]keeper.ConsumerPublicKey,
 	ckToPk map[keeper.ConsumerPublicKey]keeper.ProviderPublicKey,
 	ccaToLastUpdateMemo map[string]ccvtypes.LastUpdateMemo) {
@@ -817,9 +817,9 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 	}
 
 	{
-		// Use one KeyMap instance to serialize the data
-		store := keeper.KeyMapStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
-		km := keeper.MakeKeyMap(&store)
+		// Use one KeyAssignment instance to serialize the data
+		store := keeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
+		km := keeper.MakeKeyAssignment(&store)
 		for k, v := range pcaToCk {
 			km.Store.SetPcaToCk(sdktypes.ConsAddress(k), v)
 		}
@@ -831,16 +831,16 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 		}
 	}
 
-	// Use another KeyMap instance to deserialize the data
-	store := keeper.KeyMapStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
-	km := keeper.MakeKeyMap(&store)
+	// Use another KeyAssignment instance to deserialize the data
+	store := keeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
+	km := keeper.MakeKeyAssignment(&store)
 
 	// Check that the data is the same
 
 	compareForEquality(t, km, pcaToCk, ckToPk, ccaToLastUpdateMemo)
 }
 
-func TestKeyMapSerializationAndDeserialization(t *testing.T) {
+func TestKeyAssignmentSerializationAndDeserialization(t *testing.T) {
 	keys := []tmprotocrypto.PublicKey{}
 	for i := 0; i < 16; i++ {
 		keys = append(keys, key(i))

@@ -43,7 +43,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 
 	// It is now possible to delete keys from the keymap which the consumer chain
 	// is no longer able to reference in slash requests.
-	k.KeyMap(ctx, chainID).PruneUnusedKeys(data.ValsetUpdateId)
+	k.KeyAssignment(ctx, chainID).PruneUnusedKeys(data.ValsetUpdateId)
 
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
 	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
@@ -138,15 +138,15 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 
 			for _, u := range valUpdates {
-				if _, found := k.KeyMap(ctx, chainID).GetCurrentConsumerPubKeyFromProviderPubKey(u.PubKey); !found {
+				if _, found := k.KeyAssignment(ctx, chainID).GetCurrentConsumerPubKeyFromProviderPubKey(u.PubKey); !found {
 					// The provider has not designated a key to use for the consumer chain. Use the provider key
 					// by default.
-					k.KeyMap(ctx, chainID).SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
+					k.KeyAssignment(ctx, chainID).SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
 				}
 			}
 
 			// Map the updates through any key transformations
-			updatesToSend := k.KeyMap(ctx, chainID).ComputeUpdates(valUpdateID, valUpdates)
+			updatesToSend := k.KeyAssignment(ctx, chainID).ComputeUpdates(valUpdateID, valUpdates)
 
 			packets = append(
 				packets,
@@ -202,7 +202,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 }
 
 // TODO: should this be a panic or an error?
-func GetProviderConsAddr(keymap *KeyMap, consumerConsAddress sdk.ConsAddress) (sdk.ConsAddress, error) {
+func GetProviderConsAddr(keymap *KeyAssignment, consumerConsAddress sdk.ConsAddress) (sdk.ConsAddress, error) {
 	providerPublicKey, found := keymap.GetProviderPubKeyFromConsumerConsAddress(consumerConsAddress)
 	if !found {
 		return nil, errors.New("could not find provider address for slashing")
@@ -229,7 +229,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// TODO: document better
 	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
-	providerConsAddr, err := GetProviderConsAddr(k.KeyMap(ctx, chainID), consumerConsAddr)
+	providerConsAddr, err := GetProviderConsAddr(k.KeyAssignment(ctx, chainID), consumerConsAddr)
 
 	if err != nil {
 		return false, nil
