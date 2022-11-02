@@ -92,13 +92,13 @@ const (
 	LockUnbondingOnTimeoutBytePrefix
 
 	// TODO:
-	KeyAssignmentPkToCkPrefix
+	KeyAssignmentProviderConsAddrToConsumerPublicKeyPrefix
 
 	// TODO:
-	KeyAssignmentCkToPkPrefix
+	KeyAssignmentConsumerPublicKeyToProviderPublicKeyPrefix
 
 	// TODO:
-	KeyAssignmentCkToMemoPrefix
+	KeyAssignmentConsAddrToLastUpdateMemoPrefix
 )
 
 const (
@@ -278,33 +278,33 @@ func LockUnbondingOnTimeoutKey(chainID string) []byte {
 }
 
 // TODO:
-func KeyAssignmentPcaToCkChainPrefix(chainID string) []byte {
-	return append([]byte{KeyAssignmentPkToCkPrefix}, []byte(chainID)...)
+func KeyAssignmentProviderConsAddrToConsumerPublicKeyChainPrefix(chainID string) []byte {
+	return append([]byte{KeyAssignmentProviderConsAddrToConsumerPublicKeyPrefix}, []byte(chainID)...)
 }
 
 // TODO:
-func KeyAssignmentCkToPkChainPrefix(chainID string) []byte {
-	return append([]byte{KeyAssignmentCkToPkPrefix}, []byte(chainID)...)
+func KeyAssignmentConsumerPublicKeyToProviderPublicKeyChainPrefix(chainID string) []byte {
+	return append([]byte{KeyAssignmentConsumerPublicKeyToProviderPublicKeyPrefix}, []byte(chainID)...)
 }
 
 // TODO:
-func KeyAssignmentCcaToLastUpdateMemoChainPrefix(chainID string) []byte {
-	return append([]byte{KeyAssignmentCkToMemoPrefix}, []byte(chainID)...)
+func KeyAssignmentConsumerConsAddrToLastUpdateMemoChainPrefix(chainID string) []byte {
+	return append([]byte{KeyAssignmentConsAddrToLastUpdateMemoPrefix}, []byte(chainID)...)
 }
 
 // TODO:
-func KeyAssignmentPcaToCkKey(chainID string, kbz []byte) []byte {
-	return append(KeyAssignmentPcaToCkChainPrefix(chainID), kbz...)
+func KeyAssignmentProviderConsAddrToConsumerPublicKeyKey(chainID string, kbz []byte) []byte {
+	return append(KeyAssignmentProviderConsAddrToConsumerPublicKeyChainPrefix(chainID), kbz...)
 }
 
 // TODO:
-func KeyAssignmentCkToPkKey(chainID string, kbz []byte) []byte {
-	return append(KeyAssignmentCkToPkChainPrefix(chainID), kbz...)
+func KeyAssignmentConsumerPublicKeyToProviderPublicKeyKey(chainID string, kbz []byte) []byte {
+	return append(KeyAssignmentConsumerPublicKeyToProviderPublicKeyChainPrefix(chainID), kbz...)
 }
 
 // TODO:
-func KeyAssignmentCcaToLastUpdateMemoKey(chainID string, kbz []byte) []byte {
-	return append(KeyAssignmentCcaToLastUpdateMemoChainPrefix(chainID), kbz...)
+func KeyAssignmentConsumerConsAddrToLastUpdateMemoKey(chainID string, kbz []byte) []byte {
+	return append(KeyAssignmentConsumerConsAddrToLastUpdateMemoChainPrefix(chainID), kbz...)
 }
 
 // AppendMany appends a variable number of byte slices together
