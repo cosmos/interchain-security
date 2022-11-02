@@ -35,6 +35,10 @@ func NewValidatorFromIntSeed(i int) Validator {
 	return NewValidatorFromBytesSeed(seed)
 }
 
+func (v *Validator) ABCIAddressBytes() []byte {
+	return v.SDKPubKey().Address()
+}
+
 func (v *Validator) TMValidator(power int64) *tmtypes.Validator {
 	return tmtypes.NewValidator(v.TMCryptoPubKey(), power)
 }

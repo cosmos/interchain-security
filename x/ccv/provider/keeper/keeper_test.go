@@ -17,8 +17,8 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
+	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
 // TestValsetUpdateBlockHeight tests the getter, setter, and deletion methods for valset updates mapped to block height
@@ -197,24 +197,10 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	ctx := keeperParams.Ctx
 
-	//~~~~~~~~~~~~
-	// TODO: tidyup
-	var pubKey tmprotocrypto.PublicKey
-	pk := ed25519.GenPrivKey().PubKey()
-
-	sdkVer, err := cryptocodec.FromTmPubKeyInterface(pk)
-	if err != nil {
-		panic(err)
-	}
-	pubKey, err = cryptocodec.ToTmProtoPublicKey(sdkVer)
-	if err != nil {
-		panic(err)
-	}
-	// TODO: tidyup
-	//~~~~~~~~~~~~
+	testVal := testcrypto.NewValidatorFromIntSeed(0)
 
 	slashPacket := ccv.NewSlashPacketData(
-		abci.Validator{Address: pk.Address(),
+		abci.Validator{Address: testVal.ABCIAddressBytes(),
 			Power: int64(0)},
 		uint64(0),
 		stakingtypes.DoubleSign,
@@ -260,8 +246,8 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 	providerKeeper.SetInitChainHeight(ctx, chainId, uint64(infractionHeight))
-	providerKeeper.KeyMap(ctx, chainId).SetProviderPubKeyToConsumerPubKey(pubKey, pubKey)
-	providerKeeper.KeyMap(ctx, chainId).ComputeUpdates(0, []abci.ValidatorUpdate{{PubKey: pubKey, Power: 1}})
+	providerKeeper.KeyMap(ctx, chainId).SetProviderPubKeyToConsumerPubKey(testVal.TMProtoCryptoPublicKey(), testVal.TMProtoCryptoPublicKey())
+	providerKeeper.KeyMap(ctx, chainId).ComputeUpdates(0, []abci.ValidatorUpdate{{PubKey: testVal.TMProtoCryptoPublicKey(), Power: 1}})
 
 	success, err := providerKeeper.HandleSlashPacket(ctx, chainId, slashPacket)
 	require.NoError(t, err)
