@@ -606,7 +606,8 @@ type QueryClient interface {
 	QueryConsumerChainStarts(ctx context.Context, in *QueryConsumerChainStartProposalsRequest, opts ...grpc.CallOption) (*QueryConsumerChainStartProposalsResponse, error)
 	// QueryConsumerChainStops queries consumer chain stop proposals.
 	QueryConsumerChainStops(ctx context.Context, in *QueryConsumerChainStopProposalsRequest, opts ...grpc.CallOption) (*QueryConsumerChainStopProposalsResponse, error)
-	// TODO:
+	// QueryConsumerChainValidatorKeyAssignment queries the consensus key
+	// assigned by a validator for a consumer chain.
 	QueryConsumerChainValidatorKeyAssignment(ctx context.Context, in *QueryConsumerChainValidatorKeyAssignmentRequest, opts ...grpc.CallOption) (*QueryConsumerChainValidatorKeyAssignmentResponse, error)
 }
 
@@ -675,7 +676,8 @@ type QueryServer interface {
 	QueryConsumerChainStarts(context.Context, *QueryConsumerChainStartProposalsRequest) (*QueryConsumerChainStartProposalsResponse, error)
 	// QueryConsumerChainStops queries consumer chain stop proposals.
 	QueryConsumerChainStops(context.Context, *QueryConsumerChainStopProposalsRequest) (*QueryConsumerChainStopProposalsResponse, error)
-	// TODO:
+	// QueryConsumerChainValidatorKeyAssignment queries the consensus key
+	// assigned by a validator for a consumer chain.
 	QueryConsumerChainValidatorKeyAssignment(context.Context, *QueryConsumerChainValidatorKeyAssignmentRequest) (*QueryConsumerChainValidatorKeyAssignmentResponse, error)
 }
 
