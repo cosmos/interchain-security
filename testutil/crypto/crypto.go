@@ -11,9 +11,11 @@ import (
 
 	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdkcryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
 	tmcrypto "github.com/tendermint/tendermint/crypto"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 type Validator struct {
@@ -31,6 +33,10 @@ func NewValidatorFromIntSeed(i int) Validator {
 	seed := []byte("AAAAAAAAabcdefghijklmnopqrstuvwx") // 8+24 bytes
 	binary.LittleEndian.PutUint64(seed[:8], iUint64)
 	return NewValidatorFromBytesSeed(seed)
+}
+
+func (v *Validator) TMValidator(power int64) *tmtypes.Validator {
+	return tmtypes.NewValidator(v.TMCryptoPubKey(), power)
 }
 
 func (v *Validator) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
@@ -52,6 +58,18 @@ func (v *Validator) TMCryptoPubKey() tmcrypto.PubKey {
 func (v *Validator) SDKPubKey() sdkcryptotypes.PubKey {
 	tmcryptoPubKey := v.TMCryptoPubKey()
 	ret, err := sdkcryptocodec.FromTmPubKeyInterface(tmcryptoPubKey)
+	if err != nil {
+		panic(err)
+	}
+	return ret
+}
+
+func (v *Validator) SDKValAddressString() string {
+	return v.TMCryptoPubKey().Address().String()
+}
+
+func (v *Validator) SDKValAddress() sdktypes.ValAddress {
+	ret, err := sdktypes.ValAddressFromHex(v.SDKValAddressString())
 	if err != nil {
 		panic(err)
 	}

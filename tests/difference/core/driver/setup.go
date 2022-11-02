@@ -14,11 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
-
-	"github.com/cosmos/ibc-go/v3/testing/mock"
 
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
@@ -26,9 +23,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	simapp "github.com/cosmos/interchain-security/testutil/simapp"
 
-	cryptoEd25519 "crypto/ed25519"
-
-	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -58,24 +53,6 @@ type Builder struct {
 	mustBeginBlock map[string]bool
 	valAddresses   []sdk.ValAddress
 	initState      InitState
-}
-
-type ValidatorKeyData struct {
-	signer  mock.PV
-	address sdk.ValAddress
-	pubKey  crypto.PubKey
-}
-
-func (b *Builder) getValidatorKeyData(seedIx int) ValidatorKeyData {
-	ret := ValidatorKeyData{}
-	ret.signer = b.getValidatorPK(seedIx)
-	pubKey, err := ret.signer.GetPubKey()
-	require.NoError(b.suite.T(), err)
-	ret.pubKey = pubKey
-	addr, err := sdk.ValAddressFromHex(ret.pubKey.Address().String())
-	require.NoError(b.suite.T(), err)
-	ret.address = addr
-	return ret
 }
 
 func (b *Builder) ctx(chain string) sdk.Context {
@@ -135,10 +112,8 @@ func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 }
 
 // getValidatorPK returns the validator private key using the given seed index
-func (b *Builder) getValidatorPK(seedIx int) mock.PV {
-	seed := []byte(b.initState.PKSeeds[seedIx])
-	//lint:ignore SA1019 We don't care because this is only a test.
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+func (b *Builder) getValidatorPK(seedIx int) testcrypto.Validator {
+	return testcrypto.NewValidatorFromBytesSeed([]byte(b.initState.PKSeeds[seedIx]))
 }
 
 func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingApp, genesis map[string]json.RawMessage,
@@ -335,10 +310,10 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 			continue
 		}
 
-		validatorKeyData := b.getValidatorKeyData(i)
-		signers[validatorKeyData.pubKey.Address().String()] = validatorKeyData.signer
-		addresses = append(addresses, validatorKeyData.address)
-		validators = append(validators, tmtypes.NewValidator(validatorKeyData.pubKey, int64(power)))
+		testVal := b.getValidatorPK(i)
+		signers[testVal.SDKValAddressString()] = testVal
+		addresses = append(addresses, testVal.SDKValAddress())
+		validators = append(validators, testVal.TMValidator(int64(power)))
 	}
 
 	return tmtypes.NewValidatorSet(validators), signers, addresses
