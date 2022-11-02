@@ -21,7 +21,8 @@ import {
   DELEGATE_AMT_MAX,
   UNDELEGATE_AMT_MIN,
   UNDELEGATE_AMT_MAX,
-  ISDOWNTIME_PROBABILITY,
+  ENABLE_DOWNTIME,
+  ENABLE_KEY_ASSIGNMENT,
   MAX_NUM_PACKETS_FOR_DELIVER,
 } from './constants.js';
 
@@ -78,8 +79,9 @@ function dumpTrace(fn: string, actions: TraceAction[], events: Event[]) {
       DELEGATE_AMT_MAX,
       UNDELEGATE_AMT_MIN,
       UNDELEGATE_AMT_MAX,
-      ISDOWNTIME_PROBABILITY,
       MAX_NUM_PACKETS_FOR_DELIVER,
+      ENABLE_DOWNTIME,
+      ENABLE_KEY_ASSIGNMENT,
     },
     // Record which actions occurred
     actions,

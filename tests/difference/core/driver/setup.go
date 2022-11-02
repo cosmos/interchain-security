@@ -17,17 +17,13 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/ibc-go/v3/testing/mock"
-
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	simapp "github.com/cosmos/interchain-security/testutil/simapp"
 
-	cryptoEd25519 "crypto/ed25519"
-
-	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -49,14 +45,14 @@ import (
 )
 
 type Builder struct {
-	suite          *suite.Suite
-	link           simibc.OrderedLink
-	path           *ibctesting.Path
-	coordinator    *ibctesting.Coordinator
-	clientHeaders  map[string][]*ibctmtypes.Header
-	mustBeginBlock map[string]bool
-	valAddresses   []sdk.ValAddress
-	initState      InitState
+	suite           *suite.Suite
+	link            simibc.OrderedLink
+	path            *ibctesting.Path
+	coordinator     *ibctesting.Coordinator
+	clientHeaders   map[string][]*ibctmtypes.Header
+	mustBeginBlock  map[string]bool
+	sdkValAddresses []sdk.ValAddress
+	initState       InitState
 }
 
 func (b *Builder) ctx(chain string) sdk.Context {
@@ -108,18 +104,16 @@ func (b *Builder) endpoint(chain string) *ibctesting.Endpoint {
 }
 
 func (b *Builder) validator(i int64) sdk.ValAddress {
-	return b.valAddresses[i]
+	return b.sdkValAddresses[i]
 }
 
 func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(b.validator(i))
 }
 
-// getValidatorPK returns the validator private key using the given seed index
-func (b *Builder) getValidatorPK(seedIx int) mock.PV {
-	seed := []byte(b.initState.PKSeeds[seedIx])
-	//lint:ignore SA1019 We don't care because this is only a test.
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+// getTestValidator returns the validator private key using the given seed index
+func (b *Builder) getTestValidator(seedIx int) testcrypto.Validator {
+	return testcrypto.NewValidatorFromBytesSeed([]byte(b.initState.PKSeeds[seedIx]))
 }
 
 func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingApp, genesis map[string]json.RawMessage,
@@ -315,21 +309,11 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 		if b.initState.ValStates.Status[i] != stakingtypes.Bonded {
 			continue
 		}
-		privVal := b.getValidatorPK(i)
 
-		pubKey, err := privVal.GetPubKey()
-		require.NoError(b.suite.T(), err)
-
-		// Compute address
-		addr, err := sdk.ValAddressFromHex(pubKey.Address().String())
-		require.NoError(b.suite.T(), err)
-		addresses = append(addresses, addr)
-
-		// Save signer
-		signers[pubKey.Address().String()] = privVal
-
-		// Save validator with power
-		validators = append(validators, tmtypes.NewValidator(pubKey, int64(power)))
+		testVal := b.getTestValidator(i)
+		signers[testVal.SDKValAddressString()] = testVal
+		addresses = append(addresses, testVal.SDKValAddress())
+		validators = append(validators, testVal.TMValidator(int64(power)))
 	}
 
 	return tmtypes.NewValidatorSet(validators), signers, addresses
@@ -339,40 +323,21 @@ func (b *Builder) createChains() {
 
 	coordinator := simapp.NewBasicCoordinator(b.suite.T())
 
-	// Create validators
-	validators, signers, addresses := b.createValidators()
+	// Create tmValidators
+	tmValidators, signers, sdkValAddresses := b.createValidators()
 	// Create provider
-	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, simapp.SetupTestingappProvider, ibctesting.GetChainID(0), validators, signers)
+	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, simapp.SetupTestingappProvider, ibctesting.GetChainID(0), tmValidators, signers)
 	// Create consumer, using the same validators.
-	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, simapp.SetupTestingAppConsumer, ibctesting.GetChainID(1), validators, signers)
+	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, simapp.SetupTestingAppConsumer, ibctesting.GetChainID(1), tmValidators, signers)
 
 	b.coordinator = coordinator
-	b.valAddresses = addresses
+	b.sdkValAddresses = sdkValAddresses
 
-}
-
-// createValidator creates an additional validator with zero commission
-// and zero tokens (zero voting power).
-func (b *Builder) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.ValAddress) {
-	privVal := b.getValidatorPK(seedIx)
-	pubKey, err := privVal.GetPubKey()
-	b.suite.Require().NoError(err)
-	val := tmtypes.NewValidator(pubKey, 0)
-	addr, err := sdk.ValAddressFromHex(val.Address.String())
-	b.suite.Require().NoError(err)
-	PK := privVal.PrivKey.PubKey()
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
-	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{},
-		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
-	b.suite.Require().NoError(err)
-	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
-	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
-	return privVal, addr
 }
 
 // setSigningInfos sets the validator signing info in the provider Slashing module
 func (b *Builder) setSigningInfos() {
-	for i := 0; i < 4; i++ { // TODO: unhardcode
+	for i := 0; i < initState.NumValidators; i++ {
 		info := slashingtypes.NewValidatorSigningInfo(
 			b.consAddr(int64(i)),
 			b.chain(P).CurrentHeader.GetHeight(),
@@ -406,10 +371,10 @@ func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
 	// deciding the active validator set by comparing addresses lexicographically.
 	// Thus, we assert here that the ordering in the model matches the ordering
 	// in the SUT.
-	for i := range b.valAddresses[:len(b.valAddresses)-1] {
+	for i := range b.sdkValAddresses[:len(b.sdkValAddresses)-1] {
 		// validators are chosen sorted descending in the staking module
-		greater := b.valAddresses[i]
-		lesser := b.valAddresses[i+1]
+		greater := b.sdkValAddresses[i]
+		lesser := b.sdkValAddresses[i+1]
 		check(lesser, greater)
 	}
 }
@@ -425,16 +390,26 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	b.suite.Require().NoError(err)
 }
 
+// addValidatorToStakingModule creates an additional validator with zero commission
+// and zero tokens (zero voting power).
+func (b *Builder) addValidatorToStakingModule(testVal testcrypto.Validator) {
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
+	msg, err := stakingtypes.NewMsgCreateValidator(testVal.SDKValAddress(), testVal.SDKPubKey(), coin, stakingtypes.Description{},
+		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
+	b.suite.Require().NoError(err)
+	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
+	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
+}
+
 func (b *Builder) addExtraValidators() {
 
 	for i, status := range b.initState.ValStates.Status {
 		if status == stakingtypes.Unbonded {
-			val, addr := b.createValidator(i)
-			pubKey, err := val.GetPubKey()
-			b.suite.Require().Nil(err)
-			b.valAddresses = append(b.valAddresses, addr)
-			b.providerChain().Signers[pubKey.Address().String()] = val
-			b.consumerChain().Signers[pubKey.Address().String()] = val
+			testVal := b.getTestValidator(i)
+			b.addValidatorToStakingModule(testVal)
+			b.sdkValAddresses = append(b.sdkValAddresses, testVal.SDKValAddress())
+			b.providerChain().Signers[testVal.SDKValAddressString()] = testVal
+			b.consumerChain().Signers[testVal.SDKValAddressString()] = testVal
 		}
 	}
 
@@ -482,6 +457,15 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		consumertypes.DefaultHistoricalEntries,
 		consumertypes.DefaultConsumerUnbondingPeriod,
 	)
+
+	// For each update, assign a default key assignment from provider key to provider key.
+	// In this manner the default behavior is for the consumer to be assigned the same consensus
+	// key as is used on the provider, for a given validator.
+	for _, u := range valUpdates {
+		b.providerKeeper().KeyAssignment(b.ctx(P), b.chainID(C)).SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
+	}
+	b.providerKeeper().KeyAssignment(b.ctx(P), b.chainID(C)).ComputeUpdates(0, valUpdates)
+
 	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, consumertypes.SlashRequests{}, params)
 }
 
@@ -760,12 +744,14 @@ func (b *Builder) build() {
 // state does not necessarily mimic the order of steps that happen in a
 // live scenario.
 func GetZeroState(suite *suite.Suite, initState InitState) (
-	*ibctesting.Path, []sdk.ValAddress, int64, int64) {
+	*ibctesting.Path, []sdk.ValAddress, int64, int64, uint64) {
 	b := Builder{initState: initState, suite: suite}
 	b.build()
 	// Height of the last committed block (current header is not committed)
 	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
 	// Time of the last committed block (current header is not committed)
 	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(-b.initState.BlockSeconds).Unix()
-	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
+	// Get the current provider vscID
+	providerVscid := b.providerKeeper().GetValidatorSetUpdateId(b.ctx(P))
+	return b.path, b.sdkValAddresses, heightLastCommitted, timeLastCommitted, providerVscid
 }

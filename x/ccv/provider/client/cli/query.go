@@ -1,6 +1,7 @@
 package cli
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -22,6 +23,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerChains())
 	cmd.AddCommand(CmdConsumerStartProposals())
 	cmd.AddCommand(CmdConsumerStopProposals())
+	cmd.AddCommand(CmdConsumerValidatorKeyAssignment())
 
 	return cmd
 }
@@ -131,6 +133,44 @@ func CmdConsumerStopProposals() *cobra.Command {
 
 			req := &types.QueryConsumerChainStopProposalsRequest{}
 			res, err := queryClient.QueryConsumerChainStops(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdConsumerValidatorKeyAssignment() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "TODO:",
+		Short: "TODO:",
+		Long:  `TODO:`,
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			consumerChainID := args[0]
+
+			addr, err := sdk.ValAddressFromBech32(args[1])
+			if err != nil {
+				return err
+			}
+
+			req := &types.QueryConsumerChainValidatorKeyAssignmentRequest{
+				ChainId:                  consumerChainID,
+				ProviderValidatorAddress: addr.String(),
+			}
+			res, err := queryClient.QueryConsumerChainValidatorKeyAssignment(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

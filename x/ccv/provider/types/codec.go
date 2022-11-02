@@ -3,6 +3,8 @@ package types
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
@@ -18,6 +20,10 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		(*govtypes.Content)(nil),
 		&ConsumerAdditionProposal{},
 	)
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgAssignConsensusPublicKeyToConsumerChain{},
+	)
+	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 
 var (

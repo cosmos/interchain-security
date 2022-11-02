@@ -77,7 +77,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 	}
 	k.SetConsumerClientId(ctx, chainID, clientID)
 
-	consumerGen, err := k.MakeConsumerGenesis(ctx)
+	consumerGen, err := k.MakeConsumerGenesis(ctx, chainID)
 	if err != nil {
 		return err
 	}
@@ -129,6 +129,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	// clean up states
 	k.DeleteConsumerClientId(ctx, chainID)
 	k.DeleteConsumerGenesis(ctx, chainID)
+	k.DeleteKeyAssignment(ctx, chainID)
 	k.DeleteLockUnbondingOnTimeout(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
@@ -194,7 +195,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 }
 
 // MakeConsumerGenesis constructs a consumer genesis state.
-func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisState, err error) {
+func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consumertypes.GenesisState, err error) {
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
 
@@ -223,7 +224,7 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 		return false
 	})
 
-	updates := []abci.ValidatorUpdate{}
+	providerUpdates := []abci.ValidatorUpdate{}
 
 	for _, p := range lastPowers {
 		addr, err := sdk.ValAddressFromBech32(p.Address)
@@ -241,13 +242,26 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 			panic(err)
 		}
 
-		updates = append(updates, abci.ValidatorUpdate{
+		providerUpdates = append(providerUpdates, abci.ValidatorUpdate{
 			PubKey: tmProtoPk,
 			Power:  p.Power,
 		})
 	}
 
-	gen.InitialValSet = updates
+	// Assign consumer chain consensus keys for each validator by taking the provider chain key as default
+	for _, u := range providerUpdates {
+		if _, found := k.KeyAssignment(ctx, chainID).GetCurrentConsumerPubKeyFromProviderPubKey(u.PubKey); !found {
+			// The provider has not designated a key to use for the consumer chain. Use the provider key
+			// by default.
+			k.KeyAssignment(ctx, chainID).SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
+		}
+	}
+
+	// Store memos for the updates so that future validator power updates can be made consistent
+	// with any future changes to the key assignment.
+	consumerUpdates := k.KeyAssignment(ctx, chainID).ComputeUpdates(0, providerUpdates)
+
+	gen.InitialValSet = consumerUpdates
 
 	return gen, nil
 }

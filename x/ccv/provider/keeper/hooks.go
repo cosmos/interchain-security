@@ -60,7 +60,13 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
 // Define unimplemented methods to satisfy the StakingHooks contract
 func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
 }
-func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) {
+func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, ca sdk.ConsAddress, _ sdk.ValAddress) {
+	// Delete any key assignments that are associated with this
+	// validator across all consumer chains
+	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
+		h.k.KeyAssignment(ctx, chainID).DeleteProviderKey(ca)
+		return false
+	})
 }
 func (h Hooks) BeforeDelegationCreated(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) {
 }

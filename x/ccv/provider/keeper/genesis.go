@@ -75,6 +75,17 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 				k.AppendPendingVSC(ctx, chainID, vsc)
 			}
 		}
+		if cs.KeyAssignment != nil {
+			for _, pcaToCk := range cs.KeyAssignment.ProviderConsAddrToConsumerKey {
+				k.KeyAssignment(ctx, cs.ChainId).Store.SetProviderConsAddrToConsumerPublicKey(pcaToCk.ConsAddr, *pcaToCk.Key)
+			}
+			for _, ckToPk := range cs.KeyAssignment.ConsumerKeyToProviderKey {
+				k.KeyAssignment(ctx, cs.ChainId).Store.SetConsumerPublicKeyToProviderPublicKey(*ckToPk.From, *ckToPk.To)
+			}
+			for _, ccaToLastUpdateMemo := range cs.KeyAssignment.ConsumerConsAddrToLastUpdateMemo {
+				k.KeyAssignment(ctx, cs.ChainId).Store.SetConsumerConsAddrToLastUpdateMemo(ccaToLastUpdateMemo.ConsAddr, *ccaToLastUpdateMemo.LastUpdateMemo)
+			}
+		}
 	}
 
 	k.SetParams(ctx, genState.Params)
@@ -117,6 +128,29 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 				cs.PendingValsetChanges = pendingVSC
 			}
 		}
+
+		keyAssignment := func() *types.KeyAssignment {
+			km := &types.KeyAssignment{}
+			km.ProviderConsAddrToConsumerKey = []types.ConsAddrToKey{}
+			km.ConsumerKeyToProviderKey = []types.KeyToKey{}
+			km.ConsumerConsAddrToLastUpdateMemo = []types.ConsAddrToLastUpdateMemo{}
+			k.KeyAssignment(ctx, chainID).Store.IterateProviderConsAddrToConsumerPublicKey(func(pca ProviderConsAddr, ck ConsumerPublicKey) bool {
+				km.ProviderConsAddrToConsumerKey = append(km.ProviderConsAddrToConsumerKey, types.ConsAddrToKey{ConsAddr: pca, Key: &ck})
+				return false
+			})
+			k.KeyAssignment(ctx, chainID).Store.IterateConsumerPublicKeyToProviderPublicKey(func(ck ConsumerPublicKey, pk ProviderPublicKey) bool {
+				km.ConsumerKeyToProviderKey = append(km.ConsumerKeyToProviderKey, types.KeyToKey{From: &ck, To: &pk})
+				return false
+			})
+			k.KeyAssignment(ctx, chainID).Store.IterateConsumerConsAddrToLastUpdateMemo(func(ck ConsumerConsAddr, m types.LastUpdateMemo) bool {
+				km.ConsumerConsAddrToLastUpdateMemo = append(km.ConsumerConsAddrToLastUpdateMemo, types.ConsAddrToLastUpdateMemo{ConsAddr: ck, LastUpdateMemo: &m})
+				return false
+			})
+
+			return km
+		}
+
+		cs.KeyAssignment = keyAssignment()
 
 		consumerStates = append(consumerStates, cs)
 		return true

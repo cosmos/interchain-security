@@ -7,7 +7,6 @@ import (
 	"github.com/golang/mock/gomock"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -18,6 +17,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
+	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 	"github.com/stretchr/testify/require"
 )
 
@@ -197,8 +197,10 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	ctx := keeperParams.Ctx
 
+	testVal := testcrypto.NewValidatorFromIntSeed(0)
+
 	slashPacket := ccv.NewSlashPacketData(
-		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
+		abci.Validator{Address: testVal.ABCIAddressBytes(),
 			Power: int64(0)},
 		uint64(0),
 		stakingtypes.DoubleSign,
@@ -244,6 +246,8 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 	providerKeeper.SetInitChainHeight(ctx, chainId, uint64(infractionHeight))
+	providerKeeper.KeyAssignment(ctx, chainId).SetProviderPubKeyToConsumerPubKey(testVal.TMProtoCryptoPublicKey(), testVal.TMProtoCryptoPublicKey())
+	providerKeeper.KeyAssignment(ctx, chainId).ComputeUpdates(0, []abci.ValidatorUpdate{{PubKey: testVal.TMProtoCryptoPublicKey(), Power: 1}})
 
 	success, err := providerKeeper.HandleSlashPacket(ctx, chainId, slashPacket)
 	require.NoError(t, err)

@@ -32,7 +32,7 @@ import {
   Validator,
   PacketData,
   Slash,
-  InvariantSnapshot,
+  SystemSnapshot,
   Status,
   ModelInitState,
 } from './common.js';
@@ -621,16 +621,20 @@ class Model {
     // the same validator set as P (and thus must have received
     // a packet from P).
     this.blocks.partialOrder.deliver(C, 0, 0);
-    this.blocks.commitBlock(P, this.invariantSnapshot());
-    this.blocks.commitBlock(C, this.invariantSnapshot());
+    this.blocks.commitBlock(P, this.snapshot());
+    this.blocks.commitBlock(C, this.snapshot());
     this.beginBlock(P);
     this.beginBlock(C);
   }
 
-  invariantSnapshot = (): InvariantSnapshot => {
+  snapshot = (): SystemSnapshot => {
     return cloneDeep({
       h: this.h,
       t: this.t,
+      latestVscid: {
+        provider: this.ccvP.vscID,
+        consumer: this.ccvC.hToVscID[this.h[C] + 1],
+      },
       tokens: this.staking.tokens,
       status: this.staking.status,
       undelegationQ: this.staking.undelegationQ,
@@ -688,7 +692,7 @@ class Model {
       this.ccvC.endBlock();
     }
     this.outbox[chain].commit();
-    this.blocks.commitBlock(chain, this.invariantSnapshot());
+    this.blocks.commitBlock(chain, this.snapshot());
   };
 
   beginBlock = (chain: Chain) => {

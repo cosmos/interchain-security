@@ -23,6 +23,7 @@ import {
   UpdateClient,
   Deliver,
   EndAndBeginBlock,
+  KeyAssignment,
   TraceAction,
   Chain,
   Consequence,
@@ -36,7 +37,8 @@ import {
   DELEGATE_AMT_MAX,
   UNDELEGATE_AMT_MIN,
   UNDELEGATE_AMT_MAX,
-  ISDOWNTIME_PROBABILITY,
+  ENABLE_DOWNTIME,
+  ENABLE_KEY_ASSIGNMENT,
   TRUSTING_SECONDS,
   BLOCK_SECONDS,
   MAX_NUM_PACKETS_FOR_DELIVER,
@@ -58,14 +60,18 @@ class ActionGenerator {
   }
 
   create = (): Action => {
-    const kind = _.sample([
+    const actionTypes = [
       'Delegate',
       'Undelegate',
       'ConsumerSlash',
       'EndAndBeginBlock',
       'Deliver',
       'UpdateClient',
-    ]);
+    ];
+    if (ENABLE_KEY_ASSIGNMENT) {
+      actionTypes.push('KeyAssignment');
+    }
+    const kind = _.sample(actionTypes);
     if (kind === 'Delegate') {
       return {
         kind,
@@ -85,7 +91,7 @@ class ActionGenerator {
         kind,
         val: _.random(0, NUM_VALIDATORS - 1),
         infractionHeight: Math.floor(Math.random() * this.model.h[C]),
-        isDowntime: Math.random() < ISDOWNTIME_PROBABILITY,
+        isDowntime: Math.random() < (ENABLE_DOWNTIME ? 0.5 : 0),
       } as ConsumerSlash;
     }
     if (kind === 'UpdateClient') {
@@ -104,6 +110,11 @@ class ActionGenerator {
         chain: _.sample([P, C]) as Chain,
       } as EndAndBeginBlock;
     }
+    if (kind == 'KeyAssignment') {
+      return {
+        kind,
+      } as KeyAssignment;
+    }
     throw `kind doesn't match`;
   };
 
@@ -115,7 +126,14 @@ class ActionGenerator {
       return true;
     }
     if (a.kind === 'ConsumerSlash') {
-      return 2 <= this.didSlash.filter((x) => !x).length;
+      // The consumer can only slash validators who were validating
+      // since the last maturity.
+      return (
+        this.model.blocks
+          .getConsumerValidatorRecentActiveVSCIDs()
+          .has((a as ConsumerSlash).val) &&
+        2 <= this.didSlash.filter((x) => !x).length
+      );
     }
     if (a.kind === 'UpdateClient') {
       return true;
@@ -130,6 +148,9 @@ class ActionGenerator {
         this.tLastTrustedHeader[chain] + TRUSTING_SECONDS
       );
     }
+    if (a.kind === 'KeyAssignment') {
+      return true;
+    }
     throw `kind doesn't match`;
   };
 
@@ -142,7 +163,16 @@ class ActionGenerator {
   do = (a: Action) => {
     // Update internal state to prevent jailing all validators
     if (a.kind === 'ConsumerSlash') {
-      this.didSlash[(a as ConsumerSlash).val] = true;
+      const val = (a as ConsumerSlash).val;
+      // Don't slash the same validator twice
+      this.didSlash[val] = true;
+      const vscids = this.model.blocks
+        .getConsumerValidatorRecentActiveVSCIDs()
+        .get(val);
+      const items = Array.from(vscids as Set<number>);
+      // Take a random vscid
+      const vscid = items[Math.floor(Math.random() * items.length)];
+      (a as ConsumerSlash).vscid = vscid;
     }
     // Update internal state to prevent expiring light clients
     // Client is also updated for Deliver, because this is needed in practice
@@ -271,6 +301,10 @@ function doAction(model: Model, action: Action): Consequence {
       };
     }
   }
+  if (kind === 'KeyAssignment') {
+    // No op
+    return {};
+  }
   throw 'Action kind not recognized';
 }
 
@@ -366,13 +400,9 @@ function replay(actions: TraceAction[]) {
   const hist = new BlockHistory();
   const events: Event[] = [];
   const model = new Model(hist, events, MODEL_INIT_STATE);
-  const actionGenerator = new ActionGenerator(model);
   for (let i = 0; i < actions.length; i++) {
     const a = actions[i];
-    console.log(a);
-    actionGenerator.do(a.action);
     doAction(model, a.action);
-    bondBasedConsumerVotingPower(hist);
   }
 }
 
