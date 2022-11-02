@@ -24,7 +24,7 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 var _ types.MsgServer = msgServer{}
 
 // CreateValidator defines a method for creating a new validator
-func (k msgServer) DesignateConsensusKeyForConsumerChain(goCtx context.Context, msg *types.MsgDesignateConsensusKeyForConsumerChain) (*types.MsgDesignateConsensusKeyForConsumerChainResponse, error) {
+func (k msgServer) AssignConsensusPublicKeyToConsumerChain(goCtx context.Context, msg *types.MsgAssignConsensusPublicKeyToConsumerChain) (*types.MsgAssignConsensusPublicKeyToConsumerChainResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if _, found := k.GetConsumerClientId(ctx, msg.ChainId); !found {
@@ -46,7 +46,7 @@ func (k msgServer) DesignateConsensusKeyForConsumerChain(goCtx context.Context, 
 		return nil, err
 	}
 
-	consumerSDKPublicKey, ok := msg.ConsumerValidatorPubKey.GetCachedValue().(cryptotypes.PubKey)
+	consumerSDKPublicKey, ok := msg.ConsumerConsensusPubKey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "Expecting cryptotypes.PubKey, got %T", consumerSDKPublicKey)
 	}
@@ -77,5 +77,5 @@ func (k msgServer) DesignateConsensusKeyForConsumerChain(goCtx context.Context, 
 
 	// TODO: emit events?
 
-	return &types.MsgDesignateConsensusKeyForConsumerChainResponse{}, nil
+	return &types.MsgAssignConsensusPublicKeyToConsumerChainResponse{}, nil
 }

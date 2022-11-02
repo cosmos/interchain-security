@@ -8,47 +8,48 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// staking message types
+// provider message types
 const (
-	TypeMsgDesignateConsensusKeyForConsumerChain = "create_validator"
+	// TODO: what should this be?
+	TypeMsgAssignConsensusPublicKeyToConsumerChain = "create_validator"
 )
 
 var (
-	_ sdk.Msg                            = &MsgDesignateConsensusKeyForConsumerChain{}
-	_ codectypes.UnpackInterfacesMessage = (*MsgDesignateConsensusKeyForConsumerChain)(nil)
+	_ sdk.Msg                            = &MsgAssignConsensusPublicKeyToConsumerChain{}
+	_ codectypes.UnpackInterfacesMessage = (*MsgAssignConsensusPublicKeyToConsumerChain)(nil)
 )
 
-// NewMsgDesignateConsensusKeyForConsumerChain creates a new MsgDesignateConsensusKeyForConsumerChain instance.
+// NewMsgAssignConsensusPublicKeyToConsumerChain creates a new MsgAssignConsensusPublicKeyToConsumerChain instance.
 // Delegator address and validator address are the same.
-func NewMsgDesignateConsensusKeyForConsumerChain(chainID string, providerValidatorAddress sdk.ValAddress,
-	consumerValidatorPubKey cryptotypes.PubKey) (*MsgDesignateConsensusKeyForConsumerChain, error) {
-	var pubKeyAny *codectypes.Any
-	if consumerValidatorPubKey != nil {
+func NewMsgAssignConsensusPublicKeyToConsumerChain(chainID string, providerValidatorAddress sdk.ValAddress,
+	consumerConsensusPubKey cryptotypes.PubKey) (*MsgAssignConsensusPublicKeyToConsumerChain, error) {
+	var keyAsAny *codectypes.Any
+	if consumerConsensusPubKey != nil {
 		var err error
-		if pubKeyAny, err = codectypes.NewAnyWithValue(consumerValidatorPubKey); err != nil {
+		if keyAsAny, err = codectypes.NewAnyWithValue(consumerConsensusPubKey); err != nil {
 			return nil, err
 		}
 	}
-	return &MsgDesignateConsensusKeyForConsumerChain{
+	return &MsgAssignConsensusPublicKeyToConsumerChain{
 		ChainId:                  chainID,
 		ProviderValidatorAddress: providerValidatorAddress.String(),
-		ConsumerValidatorPubKey:  pubKeyAny,
+		ConsumerConsensusPubKey:  keyAsAny,
 	}, nil
 }
 
 // Route implements the sdk.Msg interface.
-func (msg MsgDesignateConsensusKeyForConsumerChain) Route() string { return RouterKey }
+func (msg MsgAssignConsensusPublicKeyToConsumerChain) Route() string { return RouterKey }
 
 // Type implements the sdk.Msg interface.
-func (msg MsgDesignateConsensusKeyForConsumerChain) Type() string {
-	return TypeMsgDesignateConsensusKeyForConsumerChain
+func (msg MsgAssignConsensusPublicKeyToConsumerChain) Type() string {
+	return TypeMsgAssignConsensusPublicKeyToConsumerChain
 }
 
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that
 // must sign over msg.GetSignBytes().
 // If the validator address is not same as delegator's, then the validator must
 // sign the msg as well.
-func (msg MsgDesignateConsensusKeyForConsumerChain) GetSigners() []sdk.AccAddress {
+func (msg MsgAssignConsensusPublicKeyToConsumerChain) GetSigners() []sdk.AccAddress {
 	valAddr, err := sdk.ValAddressFromBech32(msg.ProviderValidatorAddress)
 	if err != nil {
 		panic(err)
@@ -57,27 +58,27 @@ func (msg MsgDesignateConsensusKeyForConsumerChain) GetSigners() []sdk.AccAddres
 }
 
 // GetSignBytes returns the message bytes to sign over.
-func (msg MsgDesignateConsensusKeyForConsumerChain) GetSignBytes() []byte {
+func (msg MsgAssignConsensusPublicKeyToConsumerChain) GetSignBytes() []byte {
 	bz := ModuleCdc.MustMarshalJSON(&msg)
 	return sdk.MustSortJSON(bz)
 }
 
 // ValidateBasic implements the sdk.Msg interface.
-func (msg MsgDesignateConsensusKeyForConsumerChain) ValidateBasic() error {
+func (msg MsgAssignConsensusPublicKeyToConsumerChain) ValidateBasic() error {
 	if strings.TrimSpace(msg.ChainId) == "" {
 		return ErrBlankConsumerChainID
 	}
 	if msg.ProviderValidatorAddress == "" {
 		return ErrEmptyValidatorAddr
 	}
-	if msg.ConsumerValidatorPubKey == nil {
+	if msg.ConsumerConsensusPubKey == nil {
 		return ErrEmptyValidatorPubKey
 	}
 	return nil
 }
 
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (msg MsgDesignateConsensusKeyForConsumerChain) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (msg MsgAssignConsensusPublicKeyToConsumerChain) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 	var pubKey cryptotypes.PubKey
 
 	todo := &codectypes.Any{}

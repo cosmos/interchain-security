@@ -14,8 +14,8 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 		ctx = ctx.WithEventManager(sdk.NewEventManager())
 
 		switch msg := msg.(type) {
-		case *types.MsgDesignateConsensusKeyForConsumerChain:
-			res, err := msgServer.DesignateConsensusKeyForConsumerChain(sdk.WrapSDKContext(ctx), msg)
+		case *types.MsgAssignConsensusPublicKeyToConsumerChain:
+			res, err := msgServer.AssignConsensusPublicKeyToConsumerChain(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		default:
 			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized %s message type: %T", types.ModuleName, msg)

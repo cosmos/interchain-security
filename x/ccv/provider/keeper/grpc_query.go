@@ -74,7 +74,7 @@ func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryC
 	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &props}, nil
 }
 
-func (k Keeper) QueryConsumerChainValidatorKeyAssignmentping(goCtx context.Context, req *types.QueryConsumerChainValidatorKeyAssignmentpingRequest) (*types.QueryConsumerChainValidatorKeyAssignmentpingResponse, error) {
+func (k Keeper) QueryConsumerChainValidatorKeyAssignment(goCtx context.Context, req *types.QueryConsumerChainValidatorKeyAssignmentRequest) (*types.QueryConsumerChainValidatorKeyAssignmentResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -126,7 +126,7 @@ func (k Keeper) QueryConsumerChainValidatorKeyAssignmentping(goCtx context.Conte
 		return nil, types.ErrInvalidValidatorPubKey
 	}
 
-	return &types.QueryConsumerChainValidatorKeyAssignmentpingResponse{
-		ConsumerValidatorPubKey: pubKeyAny,
+	return &types.QueryConsumerChainValidatorKeyAssignmentResponse{
+		ConsumerConsensusPubKey: pubKeyAny,
 	}, nil
 }

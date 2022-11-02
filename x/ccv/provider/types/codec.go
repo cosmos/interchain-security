@@ -21,7 +21,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&ConsumerAdditionProposal{},
 	)
 	registry.RegisterImplementations((*sdk.Msg)(nil),
-		&MsgDesignateConsensusKeyForConsumerChain{},
+		&MsgAssignConsensusPublicKeyToConsumerChain{},
 	)
 	// TODO: double check, do I need this line?
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)

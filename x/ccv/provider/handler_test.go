@@ -111,7 +111,7 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 
 		tc.setup(ctx, k, mocks)
 
-		msg, err := types.NewMsgDesignateConsensusKeyForConsumerChain(tc.chainID,
+		msg, err := types.NewMsgAssignConsensusPublicKeyToConsumerChain(tc.chainID,
 			testValProvider.SDKValAddress(), testValConsumer.SDKPubKey(),
 		)
 

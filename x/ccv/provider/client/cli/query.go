@@ -166,11 +166,11 @@ func CmdConsumerValidatorKeyAssignmentping() *cobra.Command {
 				return err
 			}
 
-			req := &types.QueryConsumerChainValidatorKeyAssignmentpingRequest{
+			req := &types.QueryConsumerChainValidatorKeyAssignmentRequest{
 				ChainId:                  consumerChainID,
 				ProviderValidatorAddress: addr.String(),
 			}
-			res, err := queryClient.QueryConsumerChainValidatorKeyAssignmentping(cmd.Context(), req)
+			res, err := queryClient.QueryConsumerChainValidatorKeyAssignment(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
