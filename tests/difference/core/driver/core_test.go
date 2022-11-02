@@ -327,13 +327,13 @@ func (s *CoreSuite) matchState() {
 func (s *CoreSuite) keyAssignment() {
 	for i := 0; i < rand.Intn(5); i++ {
 		if rand.Intn(100) < 20 {
-			valID := int64(rand.Intn(initState.NumValidators))
-			providerPubKey := s.providerValidatorConsensusPubKey(valID)
-			seed := rand.Intn(50)
-			v := testcrypto.NewValidatorFromIntSeed(seed)
-			s.chain(C).Signers[v.TMCryptoPubKey().Address().String()] = v
-			// Actually make the key mapping
-			s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(providerPubKey, v.TMProtoCryptoPublicKey())
+			val := int64(rand.Intn(initState.NumValidators))
+			providerTMProtoCrytoPublicKey := s.providerValidatorConsensusPubKey(val)
+			keySeed := rand.Intn(50)
+			testVal := testcrypto.NewValidatorFromIntSeed(keySeed)
+			s.chain(C).Signers[testVal.SDKValAddressString()] = testVal
+			// Apply the key assignment instruction
+			s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(providerTMProtoCrytoPublicKey, testVal.TMProtoCryptoPublicKey())
 		}
 	}
 }
