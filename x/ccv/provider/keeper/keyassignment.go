@@ -4,14 +4,14 @@ import (
 	"errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 /*
@@ -76,12 +76,12 @@ Current testing status
 */
 
 type VSCID = uint64
-type ProviderPublicKey = crypto.PublicKey
-type ConsumerPublicKey = crypto.PublicKey
+type ProviderPublicKey = tmprotocrypto.PublicKey
+type ConsumerPublicKey = tmprotocrypto.PublicKey
 type ProviderConsAddr = sdk.ConsAddress
 type ConsumerConsAddr = sdk.ConsAddress
 
-func DeterministicStringify(k crypto.PublicKey) string {
+func DeterministicStringify(k tmprotocrypto.PublicKey) string {
 	bz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -89,8 +89,8 @@ func DeterministicStringify(k crypto.PublicKey) string {
 	return string(bz)
 }
 
-func PubKeyToConsAddr(k crypto.PublicKey) sdk.ConsAddress {
-	sdkK, err := cryptocodec.FromTmProtoPublicKey(k)
+func PubKeyToConsAddr(k tmprotocrypto.PublicKey) sdk.ConsAddress {
+	sdkK, err := sdkcryptocodec.FromTmProtoPublicKey(k)
 	if err != nil {
 		panic("could not get public key from tm proto public key")
 	}
@@ -440,7 +440,7 @@ func (s *KeyAssignmentStore) SetPcaToCk(k ProviderConsAddr, v ConsumerPublicKey)
 	if err != nil {
 		panic(err)
 	}
-	s.Store.Set(types.KeyAssignmentPcaToCkKey(s.ChainID, kbz), vbz)
+	s.Store.Set(providertypes.KeyAssignmentPcaToCkKey(s.ChainID, kbz), vbz)
 }
 func (s *KeyAssignmentStore) SetCkToPk(k ConsumerPublicKey, v ProviderPublicKey) {
 	kbz, err := k.Marshal()
@@ -451,7 +451,7 @@ func (s *KeyAssignmentStore) SetCkToPk(k ConsumerPublicKey, v ProviderPublicKey)
 	if err != nil {
 		panic(err)
 	}
-	s.Store.Set(types.KeyAssignmentCkToPkKey(s.ChainID, kbz), vbz)
+	s.Store.Set(providertypes.KeyAssignmentCkToPkKey(s.ChainID, kbz), vbz)
 }
 func (s *KeyAssignmentStore) SetCcaToLastUpdateMemo(k ConsumerConsAddr, v ccvtypes.LastUpdateMemo) {
 	kbz, err := k.Marshal()
@@ -462,14 +462,14 @@ func (s *KeyAssignmentStore) SetCcaToLastUpdateMemo(k ConsumerConsAddr, v ccvtyp
 	if err != nil {
 		panic(err)
 	}
-	s.Store.Set(types.KeyAssignmentCcaToLastUpdateMemoKey(s.ChainID, kbz), vbz)
+	s.Store.Set(providertypes.KeyAssignmentCcaToLastUpdateMemoKey(s.ChainID, kbz), vbz)
 }
 func (s *KeyAssignmentStore) GetPcaToCk(k ProviderConsAddr) (v ConsumerPublicKey, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
-	if vbz := s.Store.Get(types.KeyAssignmentPcaToCkKey(s.ChainID, kbz)); vbz != nil {
+	if vbz := s.Store.Get(providertypes.KeyAssignmentPcaToCkKey(s.ChainID, kbz)); vbz != nil {
 		err := v.Unmarshal(vbz)
 		if err != nil {
 			panic(err)
@@ -483,7 +483,7 @@ func (s *KeyAssignmentStore) GetCkToPk(k ConsumerPublicKey) (v ProviderPublicKey
 	if err != nil {
 		panic(err)
 	}
-	if vbz := s.Store.Get(types.KeyAssignmentCkToPkKey(s.ChainID, kbz)); vbz != nil {
+	if vbz := s.Store.Get(providertypes.KeyAssignmentCkToPkKey(s.ChainID, kbz)); vbz != nil {
 		err := v.Unmarshal(vbz)
 		if err != nil {
 			panic(err)
@@ -497,7 +497,7 @@ func (s *KeyAssignmentStore) GetCcaToLastUpdateMemo(k ConsumerConsAddr) (v ccvty
 	if err != nil {
 		panic(err)
 	}
-	if vbz := s.Store.Get(types.KeyAssignmentCcaToLastUpdateMemoKey(s.ChainID, kbz)); vbz != nil {
+	if vbz := s.Store.Get(providertypes.KeyAssignmentCcaToLastUpdateMemoKey(s.ChainID, kbz)); vbz != nil {
 		v := ccvtypes.LastUpdateMemo{}
 		err := v.Unmarshal(vbz)
 		if err != nil {
@@ -512,24 +512,24 @@ func (s *KeyAssignmentStore) DelPcaToCk(k ProviderConsAddr) {
 	if err != nil {
 		panic(err)
 	}
-	s.Store.Delete(types.KeyAssignmentPcaToCkKey(s.ChainID, kbz))
+	s.Store.Delete(providertypes.KeyAssignmentPcaToCkKey(s.ChainID, kbz))
 }
 func (s *KeyAssignmentStore) DelCkToPk(k ConsumerPublicKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
-	s.Store.Delete(types.KeyAssignmentCkToPkKey(s.ChainID, kbz))
+	s.Store.Delete(providertypes.KeyAssignmentCkToPkKey(s.ChainID, kbz))
 }
 func (s *KeyAssignmentStore) DelCcaToLastUpdateMemo(k ConsumerConsAddr) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
-	s.Store.Delete(types.KeyAssignmentCcaToLastUpdateMemoKey(s.ChainID, kbz))
+	s.Store.Delete(providertypes.KeyAssignmentCcaToLastUpdateMemoKey(s.ChainID, kbz))
 }
 func (s *KeyAssignmentStore) IteratePcaToCk(cb func(ProviderConsAddr, ConsumerPublicKey) bool) {
-	prefix := types.KeyAssignmentPcaToCkChainPrefix(s.ChainID)
+	prefix := providertypes.KeyAssignmentPcaToCkChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -549,7 +549,7 @@ func (s *KeyAssignmentStore) IteratePcaToCk(cb func(ProviderConsAddr, ConsumerPu
 	}
 }
 func (s *KeyAssignmentStore) IterateCkToPk(cb func(ConsumerPublicKey, ProviderPublicKey) bool) {
-	prefix := types.KeyAssignmentCkToPkChainPrefix(s.ChainID)
+	prefix := providertypes.KeyAssignmentCkToPkChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -569,7 +569,7 @@ func (s *KeyAssignmentStore) IterateCkToPk(cb func(ConsumerPublicKey, ProviderPu
 	}
 }
 func (s *KeyAssignmentStore) IterateCcaToLastUpdateMemo(cb func(ConsumerConsAddr, ccvtypes.LastUpdateMemo) bool) {
-	prefix := types.KeyAssignmentCcaToLastUpdateMemoChainPrefix(s.ChainID)
+	prefix := providertypes.KeyAssignmentCcaToLastUpdateMemoChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -592,9 +592,9 @@ func (s *KeyAssignmentStore) IterateCcaToLastUpdateMemo(cb func(ConsumerConsAddr
 func (k Keeper) DeleteKeyAssignment(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	for _, pref := range [][]byte{
-		types.KeyAssignmentPcaToCkChainPrefix(chainID),
-		types.KeyAssignmentCkToPkChainPrefix(chainID),
-		types.KeyAssignmentCcaToLastUpdateMemoChainPrefix(chainID),
+		providertypes.KeyAssignmentPcaToCkChainPrefix(chainID),
+		providertypes.KeyAssignmentCkToPkChainPrefix(chainID),
+		providertypes.KeyAssignmentCcaToLastUpdateMemoChainPrefix(chainID),
 	} {
 		iter := sdk.KVStorePrefixIterator(store, pref)
 		defer iter.Close()
