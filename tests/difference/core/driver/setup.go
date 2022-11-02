@@ -111,8 +111,8 @@ func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(b.validator(i))
 }
 
-// getValidatorPK returns the validator private key using the given seed index
-func (b *Builder) getValidatorPK(seedIx int) testcrypto.Validator {
+// getTestValidator returns the validator private key using the given seed index
+func (b *Builder) getTestValidator(seedIx int) testcrypto.Validator {
 	return testcrypto.NewValidatorFromBytesSeed([]byte(b.initState.PKSeeds[seedIx]))
 }
 
@@ -310,7 +310,7 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 			continue
 		}
 
-		testVal := b.getValidatorPK(i)
+		testVal := b.getTestValidator(i)
 		signers[testVal.SDKValAddressString()] = testVal
 		addresses = append(addresses, testVal.SDKValAddress())
 		validators = append(validators, testVal.TMValidator(int64(power)))
@@ -338,7 +338,7 @@ func (b *Builder) createChains() {
 // createValidator creates an additional validator with zero commission
 // and zero tokens (zero voting power).
 func (b *Builder) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.ValAddress) {
-	privVal := b.getValidatorPK(seedIx)
+	privVal := b.getTestValidator(seedIx)
 	pubKey, err := privVal.GetPubKey()
 	b.suite.Require().NoError(err)
 	val := tmtypes.NewValidator(pubKey, 0)
