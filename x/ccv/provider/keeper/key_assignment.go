@@ -126,8 +126,10 @@ func (ka *KeyAssignment) PruneUnusedKeys(latestVscid VSCID) {
 
 func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates map[ProviderPublicKey]int64) ([]ProviderPublicKey, map[string]bool) {
 
-	// TODO: document
+	// Return a list of provider keys that need to be updated
 	keys := []ProviderPublicKey{}
+	// Key types cannot be used for map lookup so use this string indexed
+	// map to check if a key is already in the list
 	included := map[string]bool{}
 
 	// Get provider keys which the consumer is aware of, because the
@@ -135,7 +137,7 @@ func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates map[ProviderPub
 	// and the assigned key has changed since that update.
 	ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(cca ConsumerConsAddr, lum providertypes.LastUpdateMemo) bool {
 		pca := TMCryptoPublicKeyToConsAddr(*lum.ProviderKey)
-		if newCk, ok := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca); ok { // TODO: do away with ok, should always be ok
+		if newCk, ok := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca); ok {
 			oldCk := lum.ConsumerKey
 			if !oldCk.Equal(newCk) && 0 < lum.Power {
 				keys = append(keys, *lum.ProviderKey)
