@@ -8,14 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	testutil "github.com/cosmos/interchain-security/testutil/sample"
 	keeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
@@ -31,28 +28,8 @@ func TestInvalidMsg(t *testing.T) {
 
 func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 
-	consumerSdkPubKey := func() cryptotypes.PubKey {
-		_, cpk0 := testutil.GetTMCryptoPublicKeyFromSeed(0)
-		ret, err := cryptocodec.FromTmProtoPublicKey(cpk0)
-		require.NoError(t, err)
-		return ret
-	}
-
-	valSdkAddressAndValObject := func() (sdk.ValAddress, stakingtypes.Validator) {
-		mockPV, _ := testutil.GetTMCryptoPublicKeyFromSeed(1)
-		tmPubKeyI, err := mockPV.GetPubKey()
-		require.NoError(t, err)
-		sdkPubKeyI, err := cryptocodec.FromTmPubKeyInterface(tmPubKeyI)
-		require.NoError(t, err)
-		addr, err := sdk.ValAddressFromHex(tmPubKeyI.Address().String())
-		require.NoError(t, err)
-		consensusAny, err := codectypes.NewAnyWithValue(sdkPubKeyI)
-		require.NoError(t, err)
-		v := stakingtypes.Validator{ConsensusPubkey: consensusAny}
-		return addr, v
-	}
-
-	valSdkAddr, valSdkObject := valSdkAddressAndValObject()
+	testValProvider := testcrypto.NewValidatorFromIntSeed(0)
+	testValConsumer := testcrypto.NewValidatorFromIntSeed(1)
 
 	testCases := []struct {
 		name string
@@ -71,9 +48,9 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
-						ctx, valSdkAddr,
+						ctx, testValProvider.SDKValAddress(),
 						// Return a valid validator, found!
-					).Return(valSdkObject, true).Times(1),
+					).Return(testValProvider.SDKStakingValidator(), true).Times(1),
 				)
 			},
 			expError: false,
@@ -97,7 +74,7 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
-						ctx, valSdkAddr,
+						ctx, testValProvider.SDKValAddress(),
 						// return false: not found!
 					).Return(stakingtypes.Validator{}, false).Times(1),
 				)
@@ -113,17 +90,13 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 				// Make chain queryable
 				k.SetConsumerClientId(ctx, "chainid", "")
 
-				tmConsPubKey, err := valSdkObject.TmConsPublicKey()
-				require.NoError(t, err)
-				tmPubKey, err := cryptocodec.ToTmProtoPublicKey(consumerSdkPubKey())
-				require.NoError(t, err)
 				// Use the consumer key already
-				err = k.KeyMap(ctx, "chainid").SetProviderPubKeyToConsumerPubKey(tmConsPubKey, tmPubKey)
+				err := k.KeyMap(ctx, "chainid").SetProviderPubKeyToConsumerPubKey(testValProvider.TMProtoCryptoPublicKey(), testValConsumer.TMProtoCryptoPublicKey())
 				require.NoError(t, err)
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
-						ctx, valSdkAddr,
+						ctx, testValProvider.SDKValAddress(),
 					).Return(stakingtypes.Validator{}, false).Times(1),
 				)
 			},
@@ -139,7 +112,7 @@ func TestDesignateConsensusKeyForConsumerChain(t *testing.T) {
 		tc.setup(ctx, k, mocks)
 
 		msg, err := types.NewMsgDesignateConsensusKeyForConsumerChain(tc.chainID,
-			valSdkAddr, consumerSdkPubKey(),
+			testValProvider.SDKValAddress(), testValConsumer.SDKPubKey(),
 		)
 
 		require.NoError(t, err)
