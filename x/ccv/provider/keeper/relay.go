@@ -200,15 +200,6 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
 }
 
-// EndBlockCIS contains the EndBlock logic needed for
-// the Consumer Initiated Slashing sub-protocol
-func (k Keeper) EndBlockCIS(ctx sdk.Context) {
-	// get current ValidatorSetUpdateId
-	valUpdateID := k.GetValidatorSetUpdateId(ctx)
-	// set the ValsetUpdateBlockHeight
-	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
-}
-
 // OnRecvSlashPacket slashes and jails the given validator in the packet data
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
 	// check that the channel is established
@@ -323,7 +314,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	return true, nil
 }
 
-// EndBlockCIS contains the EndBlock logic needed for
+// EndBlockCCR contains the EndBlock logic needed for
 // the Consumer Chain Removal sub-protocol
 func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	currentTime := uint64(ctx.BlockTime().UnixNano())
