@@ -45,14 +45,14 @@ import (
 )
 
 type Builder struct {
-	suite          *suite.Suite
-	link           simibc.OrderedLink
-	path           *ibctesting.Path
-	coordinator    *ibctesting.Coordinator
-	clientHeaders  map[string][]*ibctmtypes.Header
-	mustBeginBlock map[string]bool
-	valAddresses   []sdk.ValAddress
-	initState      InitState
+	suite           *suite.Suite
+	link            simibc.OrderedLink
+	path            *ibctesting.Path
+	coordinator     *ibctesting.Coordinator
+	clientHeaders   map[string][]*ibctmtypes.Header
+	mustBeginBlock  map[string]bool
+	sdkValAddresses []sdk.ValAddress
+	initState       InitState
 }
 
 func (b *Builder) ctx(chain string) sdk.Context {
@@ -104,7 +104,7 @@ func (b *Builder) endpoint(chain string) *ibctesting.Endpoint {
 }
 
 func (b *Builder) validator(i int64) sdk.ValAddress {
-	return b.valAddresses[i]
+	return b.sdkValAddresses[i]
 }
 
 func (b *Builder) consAddr(i int64) sdk.ConsAddress {
@@ -323,35 +323,16 @@ func (b *Builder) createChains() {
 
 	coordinator := simapp.NewBasicCoordinator(b.suite.T())
 
-	// Create validators
-	validators, signers, addresses := b.createValidators()
+	// Create tmValidators
+	tmValidators, signers, sdkValAddresses := b.createValidators()
 	// Create provider
-	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, simapp.SetupTestingappProvider, ibctesting.GetChainID(0), validators, signers)
+	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, simapp.SetupTestingappProvider, ibctesting.GetChainID(0), tmValidators, signers)
 	// Create consumer, using the same validators.
-	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, simapp.SetupTestingAppConsumer, ibctesting.GetChainID(1), validators, signers)
+	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, simapp.SetupTestingAppConsumer, ibctesting.GetChainID(1), tmValidators, signers)
 
 	b.coordinator = coordinator
-	b.valAddresses = addresses
+	b.sdkValAddresses = sdkValAddresses
 
-}
-
-// createValidator creates an additional validator with zero commission
-// and zero tokens (zero voting power).
-func (b *Builder) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.ValAddress) {
-	privVal := b.getTestValidator(seedIx)
-	pubKey, err := privVal.GetPubKey()
-	b.suite.Require().NoError(err)
-	val := tmtypes.NewValidator(pubKey, 0)
-	addr, err := sdk.ValAddressFromHex(val.Address.String())
-	b.suite.Require().NoError(err)
-	PK := privVal.PrivKey.PubKey()
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
-	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{},
-		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
-	b.suite.Require().NoError(err)
-	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
-	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
-	return privVal, addr
 }
 
 // setSigningInfos sets the validator signing info in the provider Slashing module
@@ -390,10 +371,10 @@ func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
 	// deciding the active validator set by comparing addresses lexicographically.
 	// Thus, we assert here that the ordering in the model matches the ordering
 	// in the SUT.
-	for i := range b.valAddresses[:len(b.valAddresses)-1] {
+	for i := range b.sdkValAddresses[:len(b.sdkValAddresses)-1] {
 		// validators are chosen sorted descending in the staking module
-		greater := b.valAddresses[i]
-		lesser := b.valAddresses[i+1]
+		greater := b.sdkValAddresses[i]
+		lesser := b.sdkValAddresses[i+1]
 		check(lesser, greater)
 	}
 }
@@ -409,16 +390,26 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	b.suite.Require().NoError(err)
 }
 
+// addValidatorToStakingModule creates an additional validator with zero commission
+// and zero tokens (zero voting power).
+func (b *Builder) addValidatorToStakingModule(testVal testcrypto.Validator) {
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
+	msg, err := stakingtypes.NewMsgCreateValidator(testVal.SDKValAddress(), testVal.SDKPubKey(), coin, stakingtypes.Description{},
+		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
+	b.suite.Require().NoError(err)
+	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
+	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
+}
+
 func (b *Builder) addExtraValidators() {
 
 	for i, status := range b.initState.ValStates.Status {
 		if status == stakingtypes.Unbonded {
-			val, addr := b.createValidator(i)
-			pubKey, err := val.GetPubKey()
-			b.suite.Require().Nil(err)
-			b.valAddresses = append(b.valAddresses, addr)
-			b.providerChain().Signers[pubKey.Address().String()] = val
-			b.consumerChain().Signers[pubKey.Address().String()] = val
+			testVal := b.getTestValidator(i)
+			b.addValidatorToStakingModule(testVal)
+			b.sdkValAddresses = append(b.sdkValAddresses, testVal.SDKValAddress())
+			b.providerChain().Signers[testVal.SDKValAddressString()] = testVal
+			b.consumerChain().Signers[testVal.SDKValAddressString()] = testVal
 		}
 	}
 
@@ -762,5 +753,5 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(-b.initState.BlockSeconds).Unix()
 	// Get the current provider vscID
 	providerVscid := b.providerKeeper().GetValidatorSetUpdateId(b.ctx(P))
-	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted, providerVscid
+	return b.path, b.sdkValAddresses, heightLastCommitted, timeLastCommitted, providerVscid
 }
