@@ -4,20 +4,21 @@ import (
 	"math/rand"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
 
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
+
+	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	testutil "github.com/cosmos/interchain-security/testutil/sample"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
-	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
-func key(k uint64) crypto.PublicKey {
-	_, pubKey := testutil.GetTMCryptoPublicKeyFromSeed(k)
-	return pubKey
+func key(seed int) tmprotocrypto.PublicKey {
+	v := testcrypto.NewValidatorFromIntSeed(seed)
+	return v.TMProtoCryptoPublicKey()
 }
 
 // TODO: all the map lookups are probably gonna fail because the objects are different
@@ -350,7 +351,7 @@ func (d *driver) externalInvariants() {
 		}
 
 		// Simply check every consumer key for the correct queryable-ness.
-		for ck := uint64(0); ck < NUM_CKS; ck++ {
+		for ck := 0; ck < NUM_CKS; ck++ {
 			ck += 100 //TODO: fix with others
 			cca := keeper.PubKeyToConsAddr(key(ck))
 			_, actualQueryable := d.km.GetProviderPubKeyFromConsumerConsAddress(cca)
@@ -383,7 +384,7 @@ func getTrace(t *testing.T) []traceStep {
 			pks := rand.Perm(NUM_VALS)[0:rand.Intn(NUM_VALS+1)]
 			for _, pk := range pks {
 				ck := rand.Intn(NUM_CKS) + 100 // differentiate from pk
-				ret = append(ret, keyMapEntry{key(uint64(pk)), key(uint64(ck))})
+				ret = append(ret, keyMapEntry{key(pk), key(ck)})
 			}
 		}
 		return ret
@@ -400,7 +401,7 @@ func getTrace(t *testing.T) []traceStep {
 			// 1: positive
 			// 2: positive (change)
 			power := int64(rand.Intn(3))
-			ret = append(ret, abci.ValidatorUpdate{PubKey: key(uint64(pk)), Power: power})
+			ret = append(ret, abci.ValidatorUpdate{PubKey: key(pk), Power: power})
 		}
 		return ret
 	}
@@ -410,7 +411,7 @@ func getTrace(t *testing.T) []traceStep {
 	initialMappings := []keyMapEntry{}
 	for pk := 0; pk < NUM_VALS; pk++ {
 		ck := pk + 100 // differentiate from i
-		initialMappings = append(initialMappings, keyMapEntry{key(uint64(pk)), key(uint64(ck))})
+		initialMappings = append(initialMappings, keyMapEntry{key(pk), key(ck)})
 	}
 
 	ret := []traceStep{
@@ -535,7 +536,7 @@ func TestKeyMapMemoLoopIteration(t *testing.T) {
 		k0 := key(0)
 		m.ProviderKey = &k0
 	}
-	arr := []crypto.PublicKey{key(0), key(1)}
+	arr := []tmprotocrypto.PublicKey{key(0), key(1)}
 	for i, pk := range arr {
 		if i < 1 {
 			m.ProviderKey = &pk
@@ -547,7 +548,7 @@ func TestKeyMapMemoLoopIteration(t *testing.T) {
 
 func TestKeyMapSameSeedDeterministicStringify(t *testing.T) {
 	// This doesn't prove anything
-	for i := uint64(0); i < 1000; i++ {
+	for i := 0; i < 1000; i++ {
 		k0 := key(i)
 		k1 := key(i)
 		s0 := keeper.DeterministicStringify(k0)
@@ -566,7 +567,7 @@ func TestKeyMapSameSeedEquality(t *testing.T) {
 func TestKeyMapSameSeedMapLength(t *testing.T) {
 	k0 := key(0)
 	k1 := key(0)
-	m := map[crypto.PublicKey]bool{}
+	m := map[tmprotocrypto.PublicKey]bool{}
 	m[k0] = true
 	m[k1] = true
 	require.Equal(t, k0, k1)
@@ -575,8 +576,8 @@ func TestKeyMapSameSeedMapLength(t *testing.T) {
 
 func TestKeyMapSameSeedMapLengthCopy(t *testing.T) {
 	k0 := key(0)
-	arr := []crypto.PublicKey{k0}
-	m := map[crypto.PublicKey]bool{}
+	arr := []tmprotocrypto.PublicKey{k0}
+	m := map[tmprotocrypto.PublicKey]bool{}
 	m[k0] = true
 	m[arr[0]] = true
 	require.Equal(t, k0, arr[0])
@@ -587,7 +588,7 @@ func TestKeyMapDifferentKeyComparison(t *testing.T) {
 	k := key(0)
 	bz, err := k.Marshal()
 	require.Nil(t, err)
-	other := crypto.PublicKey{}
+	other := tmprotocrypto.PublicKey{}
 	other.Unmarshal(bz)
 	require.Equal(t, k, other)
 	require.True(t, k.Equal(other))
@@ -610,7 +611,7 @@ func TestKeyMapSetCurrentQueryWithEqualKey(t *testing.T) {
 
 	kbz, err := k.Marshal()
 	require.Nil(t, err)
-	kEqual := crypto.PublicKey{}
+	kEqual := tmprotocrypto.PublicKey{}
 	err = kEqual.Unmarshal(kbz)
 	require.Nil(t, err)
 
@@ -719,7 +720,7 @@ func TestValidatorRemoval(t *testing.T) {
 	_, found = km.Store.GetCkToPk(key(45))
 	require.False(t, found)
 
-	for i := uint64(43); i < 46; i++ {
+	for i := 43; i < 46; i++ {
 		_, found = km.Store.GetCcaToLastUpdateMemo(keeper.PubKeyToConsAddr(key(i)))
 		require.False(t, found)
 
@@ -770,7 +771,7 @@ func compareForEquality(t *testing.T,
 		require.Equal(t, vExpect, vActual)
 	}
 	for k, vExpect := range ccaToLastUpdateMemo {
-		k := sdk.ConsAddress(k)
+		k := sdktypes.ConsAddress(k)
 		m, found := km.Store.GetCcaToLastUpdateMemo(k)
 		require.True(t, found)
 		require.Equal(t, vExpect.ProviderKey, m.ProviderKey)
@@ -782,7 +783,7 @@ func compareForEquality(t *testing.T,
 }
 
 func checkCorrectSerializationAndDeserialization(t *testing.T,
-	chainID string, keys []crypto.PublicKey,
+	chainID string, keys []tmprotocrypto.PublicKey,
 	string0 string,
 	string1 string,
 	string2 string,
@@ -820,13 +821,13 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 		store := keeper.KeyMapStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
 		km := keeper.MakeKeyMap(&store)
 		for k, v := range pcaToCk {
-			km.Store.SetPcaToCk(sdk.ConsAddress(k), v)
+			km.Store.SetPcaToCk(sdktypes.ConsAddress(k), v)
 		}
 		for k, v := range ckToPk {
 			km.Store.SetCkToPk(k, v)
 		}
 		for k, v := range ccaToLastUpdateMemo {
-			km.Store.SetCcaToLastUpdateMemo(sdk.ConsAddress(k), v)
+			km.Store.SetCcaToLastUpdateMemo(sdktypes.ConsAddress(k), v)
 		}
 	}
 
@@ -840,8 +841,8 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 }
 
 func TestKeyMapSerializationAndDeserialization(t *testing.T) {
-	keys := []crypto.PublicKey{}
-	for i := uint64(0); i < 16; i++ {
+	keys := []tmprotocrypto.PublicKey{}
+	for i := 0; i < 16; i++ {
 		keys = append(keys, key(i))
 	}
 	checkCorrectSerializationAndDeserialization(t, "foobar", keys,
