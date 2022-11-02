@@ -26,7 +26,7 @@ func key(seed int) tmprotocrypto.PublicKey {
 
 // Num traces to run for heuristic testing
 // About 1.5 secs per trace when using real store
-const NUM_TRACES = 4000
+const NUM_TRACES = 100
 
 // Len of trace for a single heuristic testing run
 const TRACE_LEN = 400
@@ -353,7 +353,6 @@ func (d *driver) externalInvariants() {
 
 		// Simply check every consumer key for the correct queryable-ness.
 		for ck := 0; ck < NUM_CKS; ck++ {
-			ck += 100 //TODO: fix with others
 			cca := providerkeeper.TMCryptoPublicKeyToConsAddr(key(ck))
 			_, actualQueryable := d.ka.GetProviderPubKeyFromConsumerConsAddress(cca)
 			if expect, found := expectQueryable[providerkeeper.DeterministicStringify(key(ck))]; found && expect {
@@ -384,7 +383,7 @@ func getTrace(t *testing.T) []traceStep {
 			// include none (to) all validators
 			pks := rand.Perm(NUM_VALS)[0:rand.Intn(NUM_VALS+1)]
 			for _, pk := range pks {
-				ck := rand.Intn(NUM_CKS) + 100 // differentiate from pk
+				ck := rand.Intn(NUM_CKS)
 				ret = append(ret, keyAssignmentEntry{key(pk), key(ck)})
 			}
 		}
@@ -411,7 +410,7 @@ func getTrace(t *testing.T) []traceStep {
 	// The real system may use some manual set defaults.
 	initialAssignment := []keyAssignmentEntry{}
 	for pk := 0; pk < NUM_VALS; pk++ {
-		ck := pk + 100 // differentiate from i
+		ck := pk
 		initialAssignment = append(initialAssignment, keyAssignmentEntry{key(pk), key(ck)})
 	}
 
