@@ -10,7 +10,7 @@ import (
 
 	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
@@ -38,8 +38,8 @@ const NUM_VALS = 4
 const NUM_CKS = 50
 
 type keyMapEntry struct {
-	pk keeper.ProviderPublicKey
-	ck keeper.ConsumerPublicKey
+	pk providerkeeper.ProviderPublicKey
+	ck providerkeeper.ConsumerPublicKey
 }
 
 type traceStep struct {
@@ -52,13 +52,13 @@ type traceStep struct {
 
 type driver struct {
 	t                *testing.T
-	km               *keeper.KeyAssignment
+	km               *providerkeeper.KeyAssignment
 	trace            []traceStep
 	lastTimeProvider int
 	lastTimeConsumer int
 	lastTimeMaturity int
 	// indexed by time (starting at 0)
-	mappings []map[string]keeper.ConsumerPublicKey
+	mappings []map[string]providerkeeper.ConsumerPublicKey
 	// indexed by time (starting at 0)
 	consumerUpdates [][]abci.ValidatorUpdate
 	// indexed by time (starting at 0)
@@ -68,11 +68,11 @@ type driver struct {
 	consumerValset valset
 }
 
-func newTestKeyAssignment(t *testing.T) *keeper.KeyAssignment {
+func newTestKeyAssignment(t *testing.T) *providerkeeper.KeyAssignment {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	chainID := "foobar"
-	store := keeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
-	km := keeper.MakeKeyAssignment(&store)
+	store := providerkeeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
+	km := providerkeeper.MakeKeyAssignment(&store)
 	return &km
 }
 
@@ -86,7 +86,7 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 	d.lastTimeProvider = 0
 	d.lastTimeConsumer = 0
 	d.lastTimeMaturity = 0
-	d.mappings = []map[string]keeper.ConsumerPublicKey{}
+	d.mappings = []map[string]providerkeeper.ConsumerPublicKey{}
 	d.consumerUpdates = [][]abci.ValidatorUpdate{}
 	d.providerValsets = []valset{}
 	d.consumerValset = valset{}
@@ -101,8 +101,8 @@ func (d *driver) applyKeyAssignmentEntries(entries []keyMapEntry) {
 		_ = d.km.SetProviderPubKeyToConsumerPubKey(e.pk, e.ck)
 	}
 	// Duplicate the mapping for referencing later in tests.
-	copy := map[string]keeper.ConsumerPublicKey{}
-	d.km.Store.IteratePcaToCk(func(pca keeper.ProviderConsAddr, ck keeper.ConsumerPublicKey) bool {
+	copy := map[string]providerkeeper.ConsumerPublicKey{}
+	d.km.Store.IteratePcaToCk(func(pca providerkeeper.ProviderConsAddr, ck providerkeeper.ConsumerPublicKey) bool {
 		copy[string(pca)] = ck
 		return false
 	})
@@ -243,13 +243,13 @@ func (d *driver) externalInvariants() {
 			pk := u.PubKey
 			expectedPower := u.Power
 			found := false
-			ck := keeper.ConsumerPublicKey{}
+			ck := providerkeeper.ConsumerPublicKey{}
 			for k, v := range d.mappings[d.lastTimeConsumer] {
 				if pk.Equal(k) {
 					ck = v
 				}
 			}
-			require.NotEqualf(d.t, ck, keeper.ConsumerPublicKey{}, "bad test, a mapping must exist")
+			require.NotEqualf(d.t, ck, providerkeeper.ConsumerPublicKey{}, "bad test, a mapping must exist")
 
 			// Check that the mapped through validator has the correct power
 			for _, u := range cSet {
@@ -277,14 +277,14 @@ func (d *driver) externalInvariants() {
 			// The query must return a result
 			pkQueried, found := d.km.GetProviderPubKeyFromConsumerPubKey(ckOnConsumer)
 			require.True(d.t, found)
-			pkQueriedByConsAddr, found := d.km.GetProviderPubKeyFromConsumerConsAddress(keeper.PubKeyToConsAddr(ckOnConsumer))
+			pkQueriedByConsAddr, found := d.km.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.PubKeyToConsAddr(ckOnConsumer))
 			require.True(d.t, found)
 			require.Equal(d.t, pkQueried, pkQueriedByConsAddr)
 
 			// The provider key must be the one that was actually referenced
 			// in the latest trueMapping used to compute updates sent to the
 			// consumer.
-			ckWasActuallyMappedTo := map[keeper.ConsumerPublicKey]bool{}
+			ckWasActuallyMappedTo := map[providerkeeper.ConsumerPublicKey]bool{}
 			actualMapping := d.mappings[d.lastTimeConsumer]
 			for pk, ck := range actualMapping {
 
@@ -339,23 +339,23 @@ func (d *driver) externalInvariants() {
 				// 2) if that abci.ValidatorUpdate was a zero positive power abci.ValidatorUpdate then the
 				//    key should not be queryable unless it was used in a subsquent
 				//    abci.ValidatorUpdate (see next block).
-				expectQueryable[keeper.DeterministicStringify(u.PubKey)] = 0 < u.Power
+				expectQueryable[providerkeeper.DeterministicStringify(u.PubKey)] = 0 < u.Power
 			}
 		}
 		for i := d.lastTimeMaturity + 1; i <= d.lastTimeProvider; i++ {
 			for _, u := range d.consumerUpdates[i] {
 				// If a positive OR zero power abci.ValidatorUpdate was RECENTLY received
 				// for the consumer, then the key must be queryable.
-				expectQueryable[keeper.DeterministicStringify(u.PubKey)] = true
+				expectQueryable[providerkeeper.DeterministicStringify(u.PubKey)] = true
 			}
 		}
 
 		// Simply check every consumer key for the correct queryable-ness.
 		for ck := 0; ck < NUM_CKS; ck++ {
 			ck += 100 //TODO: fix with others
-			cca := keeper.PubKeyToConsAddr(key(ck))
+			cca := providerkeeper.PubKeyToConsAddr(key(ck))
 			_, actualQueryable := d.km.GetProviderPubKeyFromConsumerConsAddress(cca)
-			if expect, found := expectQueryable[keeper.DeterministicStringify(key(ck))]; found && expect {
+			if expect, found := expectQueryable[providerkeeper.DeterministicStringify(key(ck))]; found && expect {
 				require.True(d.t, actualQueryable)
 			} else {
 				require.False(d.t, actualQueryable)
@@ -551,8 +551,8 @@ func TestKeyAssignmentSameSeedDeterministicStringify(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		k0 := key(i)
 		k1 := key(i)
-		s0 := keeper.DeterministicStringify(k0)
-		s1 := keeper.DeterministicStringify(k1)
+		s0 := providerkeeper.DeterministicStringify(k0)
+		s1 := providerkeeper.DeterministicStringify(k1)
 		require.Equal(t, s0, s1)
 	}
 }
@@ -639,13 +639,13 @@ func TestKeyAssignmentSetUseReplaceAndReverse(t *testing.T) {
 	km.ComputeUpdates(100, updates)
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // New consumer key
 	// actual, _ := km.GetProviderPubKeyFromConsumerPubKey(key(43)) // Old is queryable
-	actual, _ := km.GetProviderPubKeyFromConsumerConsAddress(keeper.PubKeyToConsAddr(key(43)))
+	actual, _ := km.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.PubKeyToConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = km.GetProviderPubKeyFromConsumerPubKey(key(44)) // New is queryable
 	require.Equal(t, key(42), actual)
 	km.ComputeUpdates(101, updates) // Old is no longer known to consumer
 	km.PruneUnusedKeys(102)         // Old is garbage collected on provider
-	_, found := km.GetProviderPubKeyFromConsumerConsAddress(keeper.PubKeyToConsAddr(key(43)))
+	_, found := km.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.PubKeyToConsAddr(key(43)))
 	require.False(t, found)
 	actual, _ = km.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
 	require.Equal(t, key(42), actual)
@@ -657,12 +657,12 @@ func TestKeyAssignmentSetUseReplaceAndPrune(t *testing.T) {
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 	km.ComputeUpdates(100, updates)
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(44))
-	actual, _ := km.GetProviderPubKeyFromConsumerConsAddress(keeper.PubKeyToConsAddr(key(43)))
+	actual, _ := km.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.PubKeyToConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = km.GetProviderPubKeyFromConsumerPubKey(key(44)) // Queryable
 	require.Equal(t, key(42), actual)
 	km.PruneUnusedKeys(101) // Should not be pruned
-	_, found := km.GetProviderPubKeyFromConsumerConsAddress(keeper.PubKeyToConsAddr(key(43)))
+	_, found := km.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.PubKeyToConsAddr(key(43)))
 	require.True(t, found)
 	actual, _ = km.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
 	require.Equal(t, key(42), actual)
@@ -708,7 +708,7 @@ func TestValidatorRemoval(t *testing.T) {
 	km.SetProviderPubKeyToConsumerPubKey(key(42), key(45)) // Now use a different consumer key
 	km.ComputeUpdates(2, updates)
 
-	pca := keeper.PubKeyToConsAddr(key(42))
+	pca := providerkeeper.PubKeyToConsAddr(key(42))
 	km.DeleteProviderKey(pca)
 
 	_, found := km.Store.GetPcaToCk(pca)
@@ -721,12 +721,12 @@ func TestValidatorRemoval(t *testing.T) {
 	require.False(t, found)
 
 	for i := 43; i < 46; i++ {
-		_, found = km.Store.GetCcaToLastUpdateMemo(keeper.PubKeyToConsAddr(key(i)))
+		_, found = km.Store.GetCcaToLastUpdateMemo(providerkeeper.PubKeyToConsAddr(key(i)))
 		require.False(t, found)
 
 	}
-	km.Store.IterateCcaToLastUpdateMemo(func(cca keeper.ConsumerConsAddr, lum ccvtypes.LastUpdateMemo) bool {
-		pcaQueried := keeper.PubKeyToConsAddr(*lum.ProviderKey)
+	km.Store.IterateCcaToLastUpdateMemo(func(cca providerkeeper.ConsumerConsAddr, lum ccvtypes.LastUpdateMemo) bool {
+		pcaQueried := providerkeeper.PubKeyToConsAddr(*lum.ProviderKey)
 		require.False(t, pca.Equals(pcaQueried))
 		return false
 	})
@@ -734,34 +734,34 @@ func TestValidatorRemoval(t *testing.T) {
 }
 
 func compareForEquality(t *testing.T,
-	km keeper.KeyAssignment,
-	pcaToCk map[string]keeper.ConsumerPublicKey,
-	ckToPk map[keeper.ConsumerPublicKey]keeper.ProviderPublicKey,
+	km providerkeeper.KeyAssignment,
+	pcaToCk map[string]providerkeeper.ConsumerPublicKey,
+	ckToPk map[providerkeeper.ConsumerPublicKey]providerkeeper.ProviderPublicKey,
 	ccaToLastUpdateMemo map[string]ccvtypes.LastUpdateMemo) {
 
 	cnt := 0
-	km.Store.IteratePcaToCk(func(_ keeper.ProviderConsAddr, _ keeper.ConsumerPublicKey) bool {
+	km.Store.IteratePcaToCk(func(_ providerkeeper.ProviderConsAddr, _ providerkeeper.ConsumerPublicKey) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(pcaToCk), cnt)
 
 	cnt = 0
-	km.Store.IterateCkToPk(func(_, _ keeper.ConsumerPublicKey) bool {
+	km.Store.IterateCkToPk(func(_, _ providerkeeper.ConsumerPublicKey) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(ckToPk), cnt)
 
 	cnt = 0
-	km.Store.IterateCcaToLastUpdateMemo(func(_ keeper.ConsumerConsAddr, _ ccvtypes.LastUpdateMemo) bool {
+	km.Store.IterateCcaToLastUpdateMemo(func(_ providerkeeper.ConsumerConsAddr, _ ccvtypes.LastUpdateMemo) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(ccaToLastUpdateMemo), cnt)
 
 	for k, vExpect := range pcaToCk {
-		vActual, found := km.Store.GetPcaToCk(keeper.ProviderConsAddr(k))
+		vActual, found := km.Store.GetPcaToCk(providerkeeper.ProviderConsAddr(k))
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
@@ -795,21 +795,21 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 ) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 
-	pcaToCk := map[string]keeper.ConsumerPublicKey{}
-	ckToPk := map[keeper.ConsumerPublicKey]keeper.ProviderPublicKey{}
+	pcaToCk := map[string]providerkeeper.ConsumerPublicKey{}
+	ckToPk := map[providerkeeper.ConsumerPublicKey]providerkeeper.ProviderPublicKey{}
 	ccaToLastUpdateMemo := map[string]ccvtypes.LastUpdateMemo{}
 
-	pcaToCk[string(keeper.PubKeyToConsAddr(keys[0]))] = keys[1]
-	pcaToCk[string(keeper.PubKeyToConsAddr(keys[2]))] = keys[3]
+	pcaToCk[string(providerkeeper.PubKeyToConsAddr(keys[0]))] = keys[1]
+	pcaToCk[string(providerkeeper.PubKeyToConsAddr(keys[2]))] = keys[3]
 	ckToPk[keys[4]] = keys[5]
 	ckToPk[keys[6]] = keys[7]
-	ccaToLastUpdateMemo[string(keeper.PubKeyToConsAddr(keys[8]))] = ccvtypes.LastUpdateMemo{
+	ccaToLastUpdateMemo[string(providerkeeper.PubKeyToConsAddr(keys[8]))] = ccvtypes.LastUpdateMemo{
 		ConsumerKey: &keys[9],
 		ProviderKey: &keys[10],
 		Vscid:       uint64_0,
 		Power:       int64_0,
 	}
-	ccaToLastUpdateMemo[string(keeper.PubKeyToConsAddr(keys[11]))] = ccvtypes.LastUpdateMemo{
+	ccaToLastUpdateMemo[string(providerkeeper.PubKeyToConsAddr(keys[11]))] = ccvtypes.LastUpdateMemo{
 		ConsumerKey: &keys[12],
 		ProviderKey: &keys[13],
 		Vscid:       uint64_1,
@@ -818,8 +818,8 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 
 	{
 		// Use one KeyAssignment instance to serialize the data
-		store := keeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
-		km := keeper.MakeKeyAssignment(&store)
+		store := providerkeeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
+		km := providerkeeper.MakeKeyAssignment(&store)
 		for k, v := range pcaToCk {
 			km.Store.SetPcaToCk(sdktypes.ConsAddress(k), v)
 		}
@@ -832,8 +832,8 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 	}
 
 	// Use another KeyAssignment instance to deserialize the data
-	store := keeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
-	km := keeper.MakeKeyAssignment(&store)
+	store := providerkeeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
+	km := providerkeeper.MakeKeyAssignment(&store)
 
 	// Check that the data is the same
 
