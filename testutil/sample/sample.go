@@ -2,7 +2,6 @@ package sample
 
 import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
