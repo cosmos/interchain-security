@@ -14,67 +14,6 @@ import (
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
-/*
-
-   Rough thoughts
-
-   ## Feature list
-
-   - [ ] sendUpdate must work
-   - [ ] slash requests must work
-   - [ ] slash acks must work
-   - [ ] pruning must work
-   - [ ] mappings must to be present whenever a consumer genesis is created
-   - [ ] consumer mappings must be deleted whenever a consumer is stopped/deleted
-   - [ ] all mappings must be saved whenever the provider genesis is created
-   - [ ] all mappings must be loaded whenever the provider is started from genesis (check this)
-   - [ ] default mapping should be inserted whenever a validator update goes out for a previously unseen validator
-   - [ ] it must be possible to change a mapping via a tx submitted to the provider
-   - [ ] it must be possible to query current mappings (via rpc? how?)
-   - [ ] garbage collect pkToCk, ckToPk if appropriate, when validator is destroyed
-   - [ ] when a validator is destroyed all the memos that refer to it must be destroyed
-
-
-   ## Quality list
-
-   - [ ] check coverage
-   - [ ] make sure all tests are included in coverage computation
-   - [ ] make sure package org is sensible and things that should be
-   - [ ] make sure private things are private
-   - [ ] make sure public things are public
-   - [ ] make sure diff tests (core) include a default mapping
-   - [ ] ideally, use custom mappings in diff tests (core)
-   - [ ] unit tests
-   - [ ] fuzzing for serialization ?
-   - [ ] use sdk idioms where appropriate
-   	- [ ] PrefixStore
-   - [ ] not too short var names
-   - [ ] use 'KeyDesignation' as name?
-
-   Memory trigger
-   I have tackled a lot of the above but the integration points still aren't well tested.
-   The things I need to do are to continue working outwards, testing as necessary. Some things are not implemented at all,
-   these are
-   	- [ ] tx's
-   	- [ ] queries
-   	- [1/2] consumer genesis
-   		For this I think it is sufficient to map through any defaults, just as in SendValidatorUpdates
-   		and call ComputeUpdates with a 0 vscid. This should allow future pruning.
-		I think I've half completed this
-   	- [x] provider genesis / init from genesis
-   	- [ ] consumer removal
-	- [ ] validator destruction (...?)
-	- [x] diff test basic
-	- [ ] diff test with random key assignments
-		-
-
-Current testing status
-	All unit tests pass
-	diff tests pass
-	integration tests : ?
-
-*/
-
 type VSCID = uint64
 type ProviderPublicKey = tmprotocrypto.PublicKey
 type ConsumerPublicKey = tmprotocrypto.PublicKey
