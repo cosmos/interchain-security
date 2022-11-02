@@ -1,8 +1,6 @@
 syntax = "proto3";
 package interchain_security.ccv.provider.v1;
 
-// this line is used by starport scaffolding # proto/tx/import
-
 option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types";
 
 import "google/api/annotations.proto";
@@ -13,22 +11,19 @@ import "google/protobuf/any.proto";
 
 // Msg defines the Msg service.
 service Msg {
-  rpc DesignateConsensusKeyForConsumerChain(
-      MsgDesignateConsensusKeyForConsumerChain)
-      returns (MsgDesignateConsensusKeyForConsumerChainResponse);
-  // this line is used by starport scaffolding # proto/tx/rpc
+  rpc AssignConsensusPublicKeyToConsumerChain(
+      MsgAssignConsensusPublicKeyToConsumerChain)
+      returns (MsgAssignConsensusPublicKeyToConsumerChainResponse);
 }
 
-message MsgDesignateConsensusKeyForConsumerChain {
+message MsgAssignConsensusPublicKeyToConsumerChain {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
   string chain_id = 1;
   string provider_validator_address = 2
       [ (gogoproto.moretags) = "yaml:\"address\"" ];
-  google.protobuf.Any consumer_validator_pub_key = 3
+  google.protobuf.Any consumer_consensus_pub_key = 3
       [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
 }
 
-message MsgDesignateConsensusKeyForConsumerChainResponse {}
-
-// this line is used by starport scaffolding # proto/tx/message
+message MsgAssignConsensusPublicKeyToConsumerChainResponse {}
