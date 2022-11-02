@@ -75,7 +75,7 @@ func (k msgServer) AssignConsensusPublicKeyToConsumerChain(goCtx context.Context
 		return nil, err
 	}
 
-	// TODO: emit events?
+	// TODO: emit events
 
 	return &types.MsgAssignConsensusPublicKeyToConsumerChainResponse{}, nil
 }
