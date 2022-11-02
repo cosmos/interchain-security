@@ -24,7 +24,7 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
-	testutil "github.com/cosmos/interchain-security/testutil/sample"
+	testutil "github.com/cosmos/interchain-security/testutil/crypto"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 )
@@ -327,18 +327,13 @@ func (s *CoreSuite) matchState() {
 func (s *CoreSuite) keyAssignment() {
 	for i := 0; i < rand.Intn(5); i++ {
 		if rand.Intn(100) < 20 {
-			val := rand.Intn(initState.NumValidators)
-			valPubKey := s.providerValidatorConsensusPubKey(int64(val))
+			valID := int64(rand.Intn(initState.NumValidators))
+			providerPubKey := s.providerValidatorConsensusPubKey(valID)
 			seed := rand.Intn(50)
-			privateKey, ck := testutil.GetTMCryptoPublicKeyFromSeed(uint64(seed))
-			consumerSdkPubKey, err := cryptocodec.FromTmProtoPublicKey(ck)
-			s.Require().NoError(err)
-			consumerTMPubKey, err := cryptocodec.ToTmPubKeyInterface(consumerSdkPubKey)
-			s.Require().NoError(err)
-			// Allow signing simulation
-			s.chain(C).Signers[consumerTMPubKey.Address().String()] = privateKey
+			v := testutil.NewValidatorFromIntSeed(seed)
+			s.chain(C).Signers[v.TMCryptoPubKey().Address().String()] = v
 			// Actually make the key mapping
-			s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(valPubKey, ck)
+			s.providerKeeper().KeyMap(s.ctx(P), s.chainID(C)).SetProviderPubKeyToConsumerPubKey(providerPubKey, v.TMProtoCryptoPublicKey())
 		}
 	}
 }
