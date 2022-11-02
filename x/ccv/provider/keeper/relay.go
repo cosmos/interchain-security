@@ -225,7 +225,7 @@ func GetProviderConsAddr(keyassignment *KeyAssignment, consumerConsAddress sdk.C
 	if !found {
 		return nil, errors.New("could not find provider address for slashing")
 	}
-	return PubKeyToConsAddr(providerPublicKey), nil
+	return TMCryptoPublicKeyToConsAddr(providerPublicKey), nil
 }
 
 // HandleSlashPacket slash and jail a misbehaving validator according the infraction type

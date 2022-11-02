@@ -214,7 +214,7 @@ func (s *CoreSuite) undelegate(val int64, amt int64) {
 // It can be for a downtime or doublesign.
 func (s *CoreSuite) consumerSlash(val int64, h int64, isDowntime bool, vscidOfValidatorActive uint64) {
 	consumerPublicKey := s.vscidToKeyAssignment[vscidOfValidatorActive+s.offsetProviderVscId][val]
-	consumerConsAddr := providerkeeper.PubKeyToConsAddr(consumerPublicKey)
+	consumerConsAddr := providerkeeper.TMCryptoPublicKeyToConsAddr(consumerPublicKey)
 
 	kind := stakingtypes.DoubleSign
 	if isDowntime {

@@ -278,7 +278,7 @@ func (d *driver) externalInvariants() {
 			// The query must return a result
 			pkQueried, found := d.ka.GetProviderPubKeyFromConsumerPubKey(ckOnConsumer)
 			require.True(d.t, found)
-			pkQueriedByConsAddr, found := d.ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.PubKeyToConsAddr(ckOnConsumer))
+			pkQueriedByConsAddr, found := d.ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(ckOnConsumer))
 			require.True(d.t, found)
 			require.Equal(d.t, pkQueried, pkQueriedByConsAddr)
 
@@ -354,7 +354,7 @@ func (d *driver) externalInvariants() {
 		// Simply check every consumer key for the correct queryable-ness.
 		for ck := 0; ck < NUM_CKS; ck++ {
 			ck += 100 //TODO: fix with others
-			cca := providerkeeper.PubKeyToConsAddr(key(ck))
+			cca := providerkeeper.TMCryptoPublicKeyToConsAddr(key(ck))
 			_, actualQueryable := d.ka.GetProviderPubKeyFromConsumerConsAddress(cca)
 			if expect, found := expectQueryable[providerkeeper.DeterministicStringify(key(ck))]; found && expect {
 				require.True(d.t, actualQueryable)
@@ -481,8 +481,6 @@ func getTrace(t *testing.T) []traceStep {
 	}
 	return ret
 }
-
-// go test -coverprofile=coverage.out -coverpkg=./... -timeout 1000m -run KeyAssignmentPropertiesRandomlyHeuristically keyassignment_test.go
 
 // Execute randomly generated traces (lists of actions)
 // against new instances of the class, checking properties
@@ -639,13 +637,13 @@ func TestKeyAssignmentSetUseReplaceAndReverse(t *testing.T) {
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 	ka.ComputeUpdates(100, updates)
 	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // New consumer key
-	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.PubKeyToConsAddr(key(43)))
+	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // New is queryable
 	require.Equal(t, key(42), actual)
 	ka.ComputeUpdates(101, updates) // Old is no longer known to consumer
 	ka.PruneUnusedKeys(102)         // Old is garbage collected on provider
-	_, found := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.PubKeyToConsAddr(key(43)))
+	_, found := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.False(t, found)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
 	require.Equal(t, key(42), actual)
@@ -657,12 +655,12 @@ func TestKeyAssignmentSetUseReplaceAndPrune(t *testing.T) {
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 	ka.ComputeUpdates(100, updates)
 	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44))
-	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.PubKeyToConsAddr(key(43)))
+	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // Queryable
 	require.Equal(t, key(42), actual)
 	ka.PruneUnusedKeys(101) // Should not be pruned
-	_, found := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.PubKeyToConsAddr(key(43)))
+	_, found := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.True(t, found)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
 	require.Equal(t, key(42), actual)
@@ -708,7 +706,7 @@ func TestValidatorRemoval(t *testing.T) {
 	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(45)) // Now use a different consumer key
 	ka.ComputeUpdates(2, updates)
 
-	pca := providerkeeper.PubKeyToConsAddr(key(42))
+	pca := providerkeeper.TMCryptoPublicKeyToConsAddr(key(42))
 	ka.DeleteProviderKey(pca)
 
 	_, found := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca)
@@ -721,12 +719,12 @@ func TestValidatorRemoval(t *testing.T) {
 	require.False(t, found)
 
 	for i := 43; i < 46; i++ {
-		_, found = ka.Store.GetConsumerConsAddrToLastUpdateMemo(providerkeeper.PubKeyToConsAddr(key(i)))
+		_, found = ka.Store.GetConsumerConsAddrToLastUpdateMemo(providerkeeper.TMCryptoPublicKeyToConsAddr(key(i)))
 		require.False(t, found)
 
 	}
 	ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(cca providerkeeper.ConsumerConsAddr, lum providertypes.LastUpdateMemo) bool {
-		pcaQueried := providerkeeper.PubKeyToConsAddr(*lum.ProviderKey)
+		pcaQueried := providerkeeper.TMCryptoPublicKeyToConsAddr(*lum.ProviderKey)
 		require.False(t, pca.Equals(pcaQueried))
 		return false
 	})
@@ -799,17 +797,17 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 	ckToPk := map[providerkeeper.ConsumerPublicKey]providerkeeper.ProviderPublicKey{}
 	ccaToLastUpdateMemo := map[string]providertypes.LastUpdateMemo{}
 
-	pcaToCk[string(providerkeeper.PubKeyToConsAddr(keys[0]))] = keys[1]
-	pcaToCk[string(providerkeeper.PubKeyToConsAddr(keys[2]))] = keys[3]
+	pcaToCk[string(providerkeeper.TMCryptoPublicKeyToConsAddr(keys[0]))] = keys[1]
+	pcaToCk[string(providerkeeper.TMCryptoPublicKeyToConsAddr(keys[2]))] = keys[3]
 	ckToPk[keys[4]] = keys[5]
 	ckToPk[keys[6]] = keys[7]
-	ccaToLastUpdateMemo[string(providerkeeper.PubKeyToConsAddr(keys[8]))] = providertypes.LastUpdateMemo{
+	ccaToLastUpdateMemo[string(providerkeeper.TMCryptoPublicKeyToConsAddr(keys[8]))] = providertypes.LastUpdateMemo{
 		ConsumerKey: &keys[9],
 		ProviderKey: &keys[10],
 		Vscid:       uint64_0,
 		Power:       int64_0,
 	}
-	ccaToLastUpdateMemo[string(providerkeeper.PubKeyToConsAddr(keys[11]))] = providertypes.LastUpdateMemo{
+	ccaToLastUpdateMemo[string(providerkeeper.TMCryptoPublicKeyToConsAddr(keys[11]))] = providertypes.LastUpdateMemo{
 		ConsumerKey: &keys[12],
 		ProviderKey: &keys[13],
 		Vscid:       uint64_1,
