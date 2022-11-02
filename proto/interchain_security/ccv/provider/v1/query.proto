@@ -41,11 +41,12 @@ service Query {
         "/interchain_security/ccv/provider/consumer_chain_stop_proposals";
   }
 
-  // TODO:
+  // QueryConsumerChainValidatorKeyAssignment queries the consensus key
+  // assigned by a validator for a consumer chain.
   rpc QueryConsumerChainValidatorKeyAssignment(
       QueryConsumerChainValidatorKeyAssignmentRequest)
       returns (QueryConsumerChainValidatorKeyAssignmentResponse) {
-    // TODO: make sure path up to date
+    // TODO: make sure path is correct.
     option (google.api.http).get = "/interchain_security/ccv/provider/"
                                    "consumer_chain_validator_key_assignment";
   }
