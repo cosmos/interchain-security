@@ -295,6 +295,8 @@ func (k Keeper) PendingConsumerAdditionPropIterator(ctx sdk.Context) sdk.Iterato
 	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
 }
 
+// TODO: add events
+// - emit props to execute
 // BeginBlockInit iterates over the pending consumer addition proposals in order, and creates
 // clients for props in which the spawn time has passed. Executed proposals are deleted.
 //
@@ -415,6 +417,8 @@ func (k Keeper) PendingConsumerRemovalPropIterator(ctx sdk.Context) sdk.Iterator
 	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
 }
 
+// TODO: add events
+// - emit removal props that will be executed
 // BeginBlockCCR iterates over the pending consumer removal proposals
 // in order and stop/removes the chain if the stop time has passed,
 // otherwise it will break out of loop and return. Executed proposals are deleted.
