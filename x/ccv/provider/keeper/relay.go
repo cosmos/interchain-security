@@ -41,7 +41,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	// It is now possible to delete keys from the keymap which the consumer chain
+	// It is now possible to delete keys from the keyassignment which the consumer chain
 	// is no longer able to reference in slash requests.
 	k.KeyAssignment(ctx, chainID).PruneUnusedKeys(data.ValsetUpdateId)
 
@@ -202,8 +202,8 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 }
 
 // TODO: should this be a panic or an error?
-func GetProviderConsAddr(keymap *KeyAssignment, consumerConsAddress sdk.ConsAddress) (sdk.ConsAddress, error) {
-	providerPublicKey, found := keymap.GetProviderPubKeyFromConsumerConsAddress(consumerConsAddress)
+func GetProviderConsAddr(keyassignment *KeyAssignment, consumerConsAddress sdk.ConsAddress) (sdk.ConsAddress, error) {
+	providerPublicKey, found := keyassignment.GetProviderPubKeyFromConsumerConsAddress(consumerConsAddress)
 	if !found {
 		return nil, errors.New("could not find provider address for slashing")
 	}

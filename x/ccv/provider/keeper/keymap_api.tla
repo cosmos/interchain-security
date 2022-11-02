@@ -1,4 +1,4 @@
----- MODULE keymap_api ----
+---- MODULE keyassignment_api ----
 
 EXTENDS  Integers, Naturals, FiniteSets, Sequences, TLC
 

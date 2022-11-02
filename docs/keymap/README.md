@@ -107,4 +107,4 @@ The KeyAssignment implementation satisfies a number of internal properties, whic
 3. Pruning\
    'When the pruning method is used correctly, the internal state of the data structure does not grow unboundedly'
 
-Details can be found in x/ccv/provider/keeper/keymap_core_test.go. TODO: link?
+Details can be found in x/ccv/provider/keeper/keyassignment_core_test.go. TODO: link?

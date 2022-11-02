@@ -481,7 +481,7 @@ func getTrace(t *testing.T) []traceStep {
 	return ret
 }
 
-// go test -coverprofile=coverage.out -coverpkg=./... -timeout 1000m -run KeyAssignmentPropertiesRandomlyHeuristically keymap_test.go
+// go test -coverprofile=coverage.out -coverpkg=./... -timeout 1000m -run KeyAssignmentPropertiesRandomlyHeuristically keyassignment_test.go
 
 // Execute randomly generated traces (lists of actions)
 // against new instances of the class, checking properties
