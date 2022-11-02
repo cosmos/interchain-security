@@ -26,7 +26,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 	initHeight, vscID := uint64(5), uint64(1)
 	ubdIndex := []uint64{0, 1, 2}
 	params := providertypes.DefaultParams()
-	keyMaps := []ccv.KeyAssignment{
+	keyAssignments := []ccv.KeyAssignment{
 		{
 			ProviderConsAddrToConsumerKey:    []ccv.ConsAddrToKey{{ConsAddr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
 			ConsumerKeyToProviderKey:         []ccv.KeyToKey{},
@@ -55,7 +55,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 				},
 				nil,
 				[]string{"slashedValidatorConsAddress"},
-				&keyMaps[0],
+				&keyAssignments[0],
 			),
 			providertypes.NewConsumerStates(
 				cChainIDs[1],
@@ -67,7 +67,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 				nil,
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
 				nil,
-				&keyMaps[1],
+				&keyAssignments[1],
 			),
 		},
 		[]ccv.UnbondingOp{{

@@ -129,7 +129,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			}
 		}
 
-		keyMap := func() *ccv.KeyAssignment {
+		keyAssignment := func() *ccv.KeyAssignment {
 			km := &ccv.KeyAssignment{}
 			km.ProviderConsAddrToConsumerKey = []ccv.ConsAddrToKey{}
 			km.ConsumerKeyToProviderKey = []ccv.KeyToKey{}
@@ -150,7 +150,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			return km
 		}
 
-		cs.KeyAssignment = keyMap()
+		cs.KeyAssignment = keyAssignment()
 
 		consumerStates = append(consumerStates, cs)
 		return true

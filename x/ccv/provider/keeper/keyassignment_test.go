@@ -37,17 +37,17 @@ const NUM_VALS = 4
 // (This is constrained to ensure overlap edge cases are tested)
 const NUM_CKS = 50
 
-type keyMapEntry struct {
+type keyAssignmentEntry struct {
 	pk providerkeeper.ProviderPublicKey
 	ck providerkeeper.ConsumerPublicKey
 }
 
 type traceStep struct {
-	keyMapEntries   []keyMapEntry
-	providerUpdates []abci.ValidatorUpdate
-	timeProvider    int
-	timeConsumer    int
-	timeMaturity    int
+	keyAssignmentEntries []keyAssignmentEntry
+	providerUpdates      []abci.ValidatorUpdate
+	timeProvider         int
+	timeConsumer         int
+	timeMaturity         int
 }
 
 type driver struct {
@@ -94,7 +94,7 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 }
 
 // Apply a list of (pk, ck) mapping requests to the KeyDel class instance
-func (d *driver) applyKeyAssignmentEntries(entries []keyMapEntry) {
+func (d *driver) applyKeyAssignmentEntries(entries []keyAssignmentEntry) {
 	for _, e := range entries {
 		// TRY to map provider key pk to consumer key ck.
 		// (May fail due to API constraints, this is correct)
@@ -149,7 +149,7 @@ func (d *driver) run() {
 	{
 		init := d.trace[0]
 		// Set the initial map
-		d.applyKeyAssignmentEntries(init.keyMapEntries)
+		d.applyKeyAssignmentEntries(init.keyAssignmentEntries)
 		// Set the initial provider set
 		d.providerValsets = append(d.providerValsets, applyUpdates(valset{}, init.providerUpdates))
 		// Set the initial consumer set
@@ -170,7 +170,7 @@ func (d *driver) run() {
 			// Provider time increase:
 			// Apply some new key mapping requests to KeyDel, and create new validator
 			// power updates.
-			d.applyKeyAssignmentEntries(s.keyMapEntries)
+			d.applyKeyAssignmentEntries(s.keyAssignmentEntries)
 			d.applyProviderUpdates(s.providerUpdates)
 
 			// Store the updates, to reference later in tests.
@@ -373,8 +373,8 @@ func (d *driver) externalInvariants() {
 // which can be used to execute actions for testing.
 func getTrace(t *testing.T) []traceStep {
 
-	keyMappings := func() []keyMapEntry {
-		ret := []keyMapEntry{}
+	keyAssignmentpings := func() []keyAssignmentEntry {
+		ret := []keyAssignmentEntry{}
 
 		const NUM_ITS = 2 // Chosen arbitrarily/heuristically
 		// Do this NUM_ITS times, to be able to generate conflicting mappings.
@@ -384,7 +384,7 @@ func getTrace(t *testing.T) []traceStep {
 			pks := rand.Perm(NUM_VALS)[0:rand.Intn(NUM_VALS+1)]
 			for _, pk := range pks {
 				ck := rand.Intn(NUM_CKS) + 100 // differentiate from pk
-				ret = append(ret, keyMapEntry{key(pk), key(ck)})
+				ret = append(ret, keyAssignmentEntry{key(pk), key(ck)})
 			}
 		}
 		return ret
@@ -408,20 +408,20 @@ func getTrace(t *testing.T) []traceStep {
 
 	// Get an initial key mapping.
 	// The real system may use some manual set defaults.
-	initialMappings := []keyMapEntry{}
+	initialMappings := []keyAssignmentEntry{}
 	for pk := 0; pk < NUM_VALS; pk++ {
 		ck := pk + 100 // differentiate from i
-		initialMappings = append(initialMappings, keyMapEntry{key(pk), key(ck)})
+		initialMappings = append(initialMappings, keyAssignmentEntry{key(pk), key(ck)})
 	}
 
 	ret := []traceStep{
 		{
 			// Hard code initial mapping
-			keyMapEntries:   initialMappings,
-			providerUpdates: providerUpdates(),
-			timeProvider:    0,
-			timeConsumer:    0,
-			timeMaturity:    0,
+			keyAssignmentEntries: initialMappings,
+			providerUpdates:      providerUpdates(),
+			timeProvider:         0,
+			timeConsumer:         0,
+			timeMaturity:         0,
 		},
 	}
 
@@ -432,11 +432,11 @@ func getTrace(t *testing.T) []traceStep {
 			// Increment provider time, and generate
 			// new key mappings and validator updates.
 			ret = append(ret, traceStep{
-				keyMapEntries:   keyMappings(),
-				providerUpdates: providerUpdates(),
-				timeProvider:    last.timeProvider + 1,
-				timeConsumer:    last.timeConsumer,
-				timeMaturity:    last.timeMaturity,
+				keyAssignmentEntries: keyAssignmentpings(),
+				providerUpdates:      providerUpdates(),
+				timeProvider:         last.timeProvider + 1,
+				timeConsumer:         last.timeConsumer,
+				timeMaturity:         last.timeMaturity,
 			})
 		}
 		if choice == 1 {
@@ -451,11 +451,11 @@ func getTrace(t *testing.T) []traceStep {
 				newTC := rand.Intn(limInclusive-curr) + curr + 1
 				require.True(t, curr < newTC && newTC <= limInclusive)
 				ret = append(ret, traceStep{
-					keyMapEntries:   nil,
-					providerUpdates: nil,
-					timeProvider:    last.timeProvider,
-					timeConsumer:    newTC,
-					timeMaturity:    last.timeMaturity,
+					keyAssignmentEntries: nil,
+					providerUpdates:      nil,
+					timeProvider:         last.timeProvider,
+					timeConsumer:         newTC,
+					timeMaturity:         last.timeMaturity,
 				})
 			}
 		}
@@ -469,11 +469,11 @@ func getTrace(t *testing.T) []traceStep {
 				newTM := rand.Intn(limInclusive-curr) + curr + 1
 				require.True(t, curr < newTM && newTM <= limInclusive)
 				ret = append(ret, traceStep{
-					keyMapEntries:   nil,
-					providerUpdates: nil,
-					timeProvider:    last.timeProvider,
-					timeConsumer:    last.timeConsumer,
-					timeMaturity:    newTM,
+					keyAssignmentEntries: nil,
+					providerUpdates:      nil,
+					timeProvider:         last.timeProvider,
+					timeConsumer:         last.timeConsumer,
+					timeMaturity:         newTM,
 				})
 			}
 		}
