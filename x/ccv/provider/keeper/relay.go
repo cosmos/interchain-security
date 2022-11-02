@@ -346,9 +346,11 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	// empty slice
 	removedChainIds = nil
 
-	// iterate over all consumers with established CCV channels
+	// Iterate over all consumers with established CCV channels and
+	// check if the first vscTimeoutTimestamp in iterator is expired.
+	// Checking the first timeout for each chain is sufficient since
+	// timestamps are ordered from oldest to newest
 	k.IterateChannelToChain(ctx, func(ctx sdk.Context, _, chainID string) bool {
-		// iterate over vscTimeoutTimestamps
 		k.IterateVscTimeoutTimestamps(ctx, chainID, func(ts time.Time, _ uint64) bool {
 			if currentTime.After(ts) {
 				// vscTimeout expired
