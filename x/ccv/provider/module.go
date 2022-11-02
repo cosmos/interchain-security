@@ -109,7 +109,6 @@ func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 
 // Route implements the AppModule interface
 func (am AppModule) Route() sdk.Route {
-	// TODO: check pointer deref
 	return sdk.NewRoute(providertypes.RouterKey, NewHandler(*am.keeper))
 }
 
@@ -126,7 +125,6 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 // RegisterServices registers module services.
 // TODO
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	// TODO: check pointer deref
 	providertypes.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(*am.keeper))
 	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
