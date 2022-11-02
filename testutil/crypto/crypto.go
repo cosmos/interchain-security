@@ -7,11 +7,11 @@ import (
 
 	cryptoEd25519 "crypto/ed25519"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-
 	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdkcryptokeys "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdkcryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	sdkstakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	tmcrypto "github.com/tendermint/tendermint/crypto"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
@@ -24,7 +24,7 @@ type Validator struct {
 
 func NewValidatorFromBytesSeed(seed []byte) Validator {
 	//lint:ignore SA1019 We don't care because this is only a test.
-	privKey := mock.PV{PrivKey: &ed25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+	privKey := mock.PV{PrivKey: &sdkcryptokeys.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 	return Validator{PV: privKey}
 }
 
@@ -49,6 +49,14 @@ func (v *Validator) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
 
 func (v *Validator) TMCryptoPubKey() tmcrypto.PubKey {
 	ret, err := v.GetPubKey()
+	if err != nil {
+		panic(err)
+	}
+	return ret
+}
+
+func (v *Validator) SDKStakingValidator() sdkstakingtypes.Validator {
+	ret, err := sdkstakingtypes.NewValidator(v.SDKValAddress(), v.SDKPubKey(), sdkstakingtypes.Description{})
 	if err != nil {
 		panic(err)
 	}
