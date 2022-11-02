@@ -47,7 +47,7 @@ type CoreSuite struct {
 	offsetHeight        int64
 	offsetProviderVscId uint64
 
-	// Maps vscid to data needed to check keyassignment
+	// Maps vscid to data needed to check key assignment
 	vscidToKeyAssignment map[uint64]map[int64]providerkeeper.ConsumerPublicKey
 }
 
