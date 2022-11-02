@@ -20,12 +20,16 @@ const (
 	// DefaultTrustingPeriodFraction is the default fraction used to compute TrustingPeriod
 	// as UnbondingPeriod / TrustingPeriodFraction
 	DefaultTrustingPeriodFraction = 2
+
+	// DafaultInitTimeoutPeriod defines the init timeout period
+	DefaultInitTimeoutPeriod = 7 * 24 * time.Hour
 )
 
 // Reflection based keys for params subspace
 var (
 	KeyTemplateClient         = []byte("TemplateClient")
 	KeyTrustingPeriodFraction = []byte("TrustingPeriodFraction")
+	KeyInitTimeoutPeriod      = []byte("InitTimeoutPeriod")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -34,12 +38,17 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates new provider parameters with provided arguments
-func NewParams(templateClient *ibctmtypes.ClientState, ccvTimeoutPeriod time.Duration,
-	trustingPeriodFraction int64) Params {
+func NewParams(
+	cs *ibctmtypes.ClientState,
+	trustingPeriodFraction int64,
+	ccvTimeoutPeriod time.Duration,
+	initTimeoutPeriod time.Duration,
+) Params {
 	return Params{
-		TemplateClient:         templateClient,
-		CcvTimeoutPeriod:       ccvTimeoutPeriod,
+		TemplateClient:         cs,
 		TrustingPeriodFraction: trustingPeriodFraction,
+		CcvTimeoutPeriod:       ccvTimeoutPeriod,
+		InitTimeoutPeriod:      initTimeoutPeriod,
 	}
 }
 
@@ -58,9 +67,11 @@ func DefaultParams() Params {
 			commitmenttypes.GetSDKSpecs(),
 			[]string{"upgrade", "upgradedIBCState"},
 			true,
-			true),
-		ccvtypes.DefaultCCVTimeoutPeriod,
+			true,
+		),
 		DefaultTrustingPeriodFraction,
+		ccvtypes.DefaultCCVTimeoutPeriod,
+		DefaultInitTimeoutPeriod,
 	)
 }
 
@@ -72,11 +83,14 @@ func (p Params) Validate() error {
 	if err := validateTemplateClient(*p.TemplateClient); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
-		return err
-	}
 	if err := ccvtypes.ValidatePositiveInt64(p.TrustingPeriodFraction); err != nil {
-		return err
+		return fmt.Errorf("trusting period fraction is invalid: %s", err)
+	}
+	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
+		return fmt.Errorf("ccv timeout period is invalid: %s", err)
+	}
+	if err := ccvtypes.ValidateDuration(p.InitTimeoutPeriod); err != nil {
+		return fmt.Errorf("init timeout period is invalid: %s", err)
 	}
 	return nil
 }
@@ -85,8 +99,9 @@ func (p Params) Validate() error {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyTemplateClient, p.TemplateClient, validateTemplateClient),
-		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyTrustingPeriodFraction, p.TrustingPeriodFraction, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(KeyInitTimeoutPeriod, p.InitTimeoutPeriod, ccvtypes.ValidateDuration),
 	}
 }
 

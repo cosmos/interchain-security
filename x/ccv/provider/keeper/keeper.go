@@ -258,9 +258,13 @@ func (k Keeper) VerifyConsumerChain(ctx sdk.Context, channelID string, connectio
 	return nil
 }
 
-// SetConsumerChain ensures that the consumer chain has not already been set by a different channel, and then sets the consumer chain mappings in keeper,
-// and set the channel status to validating.
-// If there is already a ccv channel between the provider and consumer chain then close the channel, so that another channel can be made.
+// SetConsumerChain ensures that the consumer chain has not already been
+// set by a different channel, and then sets the consumer chain mappings
+// in keeper, and set the channel status to validating.
+// If there is already a CCV channel between the provider and consumer
+// chain then close the channel, so that another channel can be made.
+//
+// SetConsumerChain is called by OnChanOpenConfirm.
 func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	channel, ok := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
 	if !ok {
@@ -282,10 +286,12 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 
 	// the CCV channel is established:
 	// - set channel mappings
-	k.SetChainToChannel(ctx, tmClient.ChainId, channelID)
-	k.SetChannelToChain(ctx, channelID, tmClient.ChainId)
+	k.SetChainToChannel(ctx, chainID, channelID)
+	k.SetChannelToChain(ctx, channelID, chainID)
 	// - set current block height for the consumer chain initialization
-	k.SetInitChainHeight(ctx, tmClient.ChainId, uint64(ctx.BlockHeight()))
+	k.SetInitChainHeight(ctx, chainID, uint64(ctx.BlockHeight()))
+	// - remove init timeout timestamp
+	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 	return nil
 }
 
@@ -779,4 +785,46 @@ func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bo
 func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ChainToClientKey(chainID))
+}
+
+// ------
+
+// SetInitTimeoutTimestamp sets the init timeout timestamp for the given chain ID
+func (k Keeper) SetInitTimeoutTimestamp(ctx sdk.Context, chainID string, ts uint64) {
+	store := ctx.KVStore(k.storeKey)
+	tsBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(tsBytes, ts)
+	store.Set(types.InitTimeoutTimestampKey(chainID), tsBytes)
+}
+
+// GetInitTimeoutTimestamp returns the init timeout timestamp for the given chain ID.
+// This method is used only in testing.
+func (k Keeper) GetInitTimeoutTimestamp(ctx sdk.Context, chainID string) (uint64, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.InitTimeoutTimestampKey(chainID))
+	if bz == nil {
+		return 0, false
+	}
+	return binary.BigEndian.Uint64(bz), true
+}
+
+// DeleteInitTimeoutTimestamp removes from the store the init timeout timestamp for the given chainID.
+func (k Keeper) DeleteInitTimeoutTimestamp(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.InitTimeoutTimestampKey(chainID))
+}
+
+// IterateInitTimeoutTimestamp iterates through the init timeout timestamps in the store
+func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID string, ts uint64) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.InitTimeoutTimestampBytePrefix})
+
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		chainID := string(iterator.Key()[1:])
+		ts := binary.BigEndian.Uint64(iterator.Value())
+		if !cb(chainID, ts) {
+			return
+		}
+	}
 }
