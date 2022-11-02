@@ -11,7 +11,8 @@ import (
 	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
@@ -511,7 +512,7 @@ func TestKeyAssignmentKeySerialization(t *testing.T) {
 }
 
 func TestKeyAssignmentMemo(t *testing.T) {
-	arr := []ccvtypes.LastUpdateMemo{
+	arr := []providertypes.LastUpdateMemo{
 		{}, {},
 	}
 	{
@@ -531,7 +532,7 @@ func TestKeyAssignmentMemo(t *testing.T) {
 }
 
 func TestKeyAssignmentMemoLoopIteration(t *testing.T) {
-	m := ccvtypes.LastUpdateMemo{}
+	m := providertypes.LastUpdateMemo{}
 	{
 		k0 := key(0)
 		m.ProviderKey = &k0
@@ -725,7 +726,7 @@ func TestValidatorRemoval(t *testing.T) {
 		require.False(t, found)
 
 	}
-	km.Store.IterateConsumerConsAddrToLastUpdateMemo(func(cca providerkeeper.ConsumerConsAddr, lum ccvtypes.LastUpdateMemo) bool {
+	km.Store.IterateConsumerConsAddrToLastUpdateMemo(func(cca providerkeeper.ConsumerConsAddr, lum providertypes.LastUpdateMemo) bool {
 		pcaQueried := providerkeeper.PubKeyToConsAddr(*lum.ProviderKey)
 		require.False(t, pca.Equals(pcaQueried))
 		return false
@@ -737,7 +738,7 @@ func compareForEquality(t *testing.T,
 	km providerkeeper.KeyAssignment,
 	pcaToCk map[string]providerkeeper.ConsumerPublicKey,
 	ckToPk map[providerkeeper.ConsumerPublicKey]providerkeeper.ProviderPublicKey,
-	ccaToLastUpdateMemo map[string]ccvtypes.LastUpdateMemo) {
+	ccaToLastUpdateMemo map[string]providertypes.LastUpdateMemo) {
 
 	cnt := 0
 	km.Store.IterateProviderConsAddrToConsumerPublicKey(func(_ providerkeeper.ProviderConsAddr, _ providerkeeper.ConsumerPublicKey) bool {
@@ -754,7 +755,7 @@ func compareForEquality(t *testing.T,
 	require.Equal(t, len(ckToPk), cnt)
 
 	cnt = 0
-	km.Store.IterateConsumerConsAddrToLastUpdateMemo(func(_ providerkeeper.ConsumerConsAddr, _ ccvtypes.LastUpdateMemo) bool {
+	km.Store.IterateConsumerConsAddrToLastUpdateMemo(func(_ providerkeeper.ConsumerConsAddr, _ providertypes.LastUpdateMemo) bool {
 		cnt += 1
 		return false
 	})
@@ -797,19 +798,19 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 
 	pcaToCk := map[string]providerkeeper.ConsumerPublicKey{}
 	ckToPk := map[providerkeeper.ConsumerPublicKey]providerkeeper.ProviderPublicKey{}
-	ccaToLastUpdateMemo := map[string]ccvtypes.LastUpdateMemo{}
+	ccaToLastUpdateMemo := map[string]providertypes.LastUpdateMemo{}
 
 	pcaToCk[string(providerkeeper.PubKeyToConsAddr(keys[0]))] = keys[1]
 	pcaToCk[string(providerkeeper.PubKeyToConsAddr(keys[2]))] = keys[3]
 	ckToPk[keys[4]] = keys[5]
 	ckToPk[keys[6]] = keys[7]
-	ccaToLastUpdateMemo[string(providerkeeper.PubKeyToConsAddr(keys[8]))] = ccvtypes.LastUpdateMemo{
+	ccaToLastUpdateMemo[string(providerkeeper.PubKeyToConsAddr(keys[8]))] = providertypes.LastUpdateMemo{
 		ConsumerKey: &keys[9],
 		ProviderKey: &keys[10],
 		Vscid:       uint64_0,
 		Power:       int64_0,
 	}
-	ccaToLastUpdateMemo[string(providerkeeper.PubKeyToConsAddr(keys[11]))] = ccvtypes.LastUpdateMemo{
+	ccaToLastUpdateMemo[string(providerkeeper.PubKeyToConsAddr(keys[11]))] = providertypes.LastUpdateMemo{
 		ConsumerKey: &keys[12],
 		ProviderKey: &keys[13],
 		Vscid:       uint64_1,

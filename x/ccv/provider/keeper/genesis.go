@@ -129,21 +129,21 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			}
 		}
 
-		keyAssignment := func() *ccv.KeyAssignment {
-			km := &ccv.KeyAssignment{}
-			km.ProviderConsAddrToConsumerKey = []ccv.ConsAddrToKey{}
-			km.ConsumerKeyToProviderKey = []ccv.KeyToKey{}
-			km.ConsumerConsAddrToLastUpdateMemo = []ccv.ConsAddrToLastUpdateMemo{}
+		keyAssignment := func() *types.KeyAssignment {
+			km := &types.KeyAssignment{}
+			km.ProviderConsAddrToConsumerKey = []types.ConsAddrToKey{}
+			km.ConsumerKeyToProviderKey = []types.KeyToKey{}
+			km.ConsumerConsAddrToLastUpdateMemo = []types.ConsAddrToLastUpdateMemo{}
 			k.KeyAssignment(ctx, chainID).Store.IterateProviderConsAddrToConsumerPublicKey(func(pca ProviderConsAddr, ck ConsumerPublicKey) bool {
-				km.ProviderConsAddrToConsumerKey = append(km.ProviderConsAddrToConsumerKey, ccv.ConsAddrToKey{ConsAddr: pca, Key: &ck})
+				km.ProviderConsAddrToConsumerKey = append(km.ProviderConsAddrToConsumerKey, types.ConsAddrToKey{ConsAddr: pca, Key: &ck})
 				return false
 			})
 			k.KeyAssignment(ctx, chainID).Store.IterateConsumerPublicKeyToProviderPublicKey(func(ck ConsumerPublicKey, pk ProviderPublicKey) bool {
-				km.ConsumerKeyToProviderKey = append(km.ConsumerKeyToProviderKey, ccv.KeyToKey{From: &ck, To: &pk})
+				km.ConsumerKeyToProviderKey = append(km.ConsumerKeyToProviderKey, types.KeyToKey{From: &ck, To: &pk})
 				return false
 			})
-			k.KeyAssignment(ctx, chainID).Store.IterateConsumerConsAddrToLastUpdateMemo(func(ck ConsumerConsAddr, m ccv.LastUpdateMemo) bool {
-				km.ConsumerConsAddrToLastUpdateMemo = append(km.ConsumerConsAddrToLastUpdateMemo, ccv.ConsAddrToLastUpdateMemo{ConsAddr: ck, LastUpdateMemo: &m})
+			k.KeyAssignment(ctx, chainID).Store.IterateConsumerConsAddrToLastUpdateMemo(func(ck ConsumerConsAddr, m types.LastUpdateMemo) bool {
+				km.ConsumerConsAddrToLastUpdateMemo = append(km.ConsumerConsAddrToLastUpdateMemo, types.ConsAddrToLastUpdateMemo{ConsAddr: ck, LastUpdateMemo: &m})
 				return false
 			})
 

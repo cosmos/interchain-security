@@ -153,8 +153,8 @@ type ConsumerState struct {
 	PendingValsetChanges []types.ValidatorSetChangePacketData `protobuf:"bytes,7,rep,name=pending_valset_changes,json=pendingValsetChanges,proto3" json:"pending_valset_changes"`
 	SlashDowntimeAck     []string                             `protobuf:"bytes,8,rep,name=slash_downtime_ack,json=slashDowntimeAck,proto3" json:"slash_downtime_ack,omitempty"`
 	// UnbondingOpsIndex defines the unbonding operations on the consumer chain
-	UnbondingOpsIndex []UnbondingOpIndex   `protobuf:"bytes,9,rep,name=unbonding_ops_index,json=unbondingOpsIndex,proto3" json:"unbonding_ops_index"`
-	KeyAssignment     *types.KeyAssignment `protobuf:"bytes,10,opt,name=key_assignment,json=keyAssignment,proto3" json:"key_assignment,omitempty"`
+	UnbondingOpsIndex []UnbondingOpIndex `protobuf:"bytes,9,rep,name=unbonding_ops_index,json=unbondingOpsIndex,proto3" json:"unbonding_ops_index"`
+	KeyAssignment     *KeyAssignment     `protobuf:"bytes,10,opt,name=key_assignment,json=keyAssignment,proto3" json:"key_assignment,omitempty"`
 }
 
 func (m *ConsumerState) Reset()         { *m = ConsumerState{} }
@@ -253,7 +253,7 @@ func (m *ConsumerState) GetUnbondingOpsIndex() []UnbondingOpIndex {
 	return nil
 }
 
-func (m *ConsumerState) GetKeyAssignment() *types.KeyAssignment {
+func (m *ConsumerState) GetKeyAssignment() *KeyAssignment {
 	if m != nil {
 		return m.KeyAssignment
 	}
@@ -1538,7 +1538,7 @@ func (m *ConsumerState) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.KeyAssignment == nil {
-				m.KeyAssignment = &types.KeyAssignment{}
+				m.KeyAssignment = &KeyAssignment{}
 			}
 			if err := m.KeyAssignment.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

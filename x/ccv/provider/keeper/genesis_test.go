@@ -26,16 +26,16 @@ func TestIniAndExportGenesis(t *testing.T) {
 	initHeight, vscID := uint64(5), uint64(1)
 	ubdIndex := []uint64{0, 1, 2}
 	params := providertypes.DefaultParams()
-	keyAssignments := []ccv.KeyAssignment{
+	keyAssignments := []providertypes.KeyAssignment{
 		{
-			ProviderConsAddrToConsumerKey:    []ccv.ConsAddrToKey{{ConsAddr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
-			ConsumerKeyToProviderKey:         []ccv.KeyToKey{},
-			ConsumerConsAddrToLastUpdateMemo: []ccv.ConsAddrToLastUpdateMemo{},
+			ProviderConsAddrToConsumerKey:    []providertypes.ConsAddrToKey{{ConsAddr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
+			ConsumerKeyToProviderKey:         []providertypes.KeyToKey{},
+			ConsumerConsAddrToLastUpdateMemo: []providertypes.ConsAddrToLastUpdateMemo{},
 		},
 		{
-			ProviderConsAddrToConsumerKey:    []ccv.ConsAddrToKey{},
-			ConsumerKeyToProviderKey:         []ccv.KeyToKey{},
-			ConsumerConsAddrToLastUpdateMemo: []ccv.ConsAddrToLastUpdateMemo{},
+			ProviderConsAddrToConsumerKey:    []providertypes.ConsAddrToKey{},
+			ConsumerKeyToProviderKey:         []providertypes.KeyToKey{},
+			ConsumerConsAddrToLastUpdateMemo: []providertypes.ConsAddrToLastUpdateMemo{},
 		},
 	}
 
