@@ -16,7 +16,7 @@ import (
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
-func TestGRPCQueryConsumerChainValidatorKeyAssignmentping(t *testing.T) {
+func TestGRPCQueryConsumerChainValidatorKeyAssignment(t *testing.T) {
 
 	testValProvider := testcrypto.NewValidatorFromIntSeed(0)
 	testValConsumer := testcrypto.NewValidatorFromIntSeed(1)

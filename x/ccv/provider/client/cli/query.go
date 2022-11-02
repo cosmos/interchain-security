@@ -23,7 +23,7 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerChains())
 	cmd.AddCommand(CmdConsumerStartProposals())
 	cmd.AddCommand(CmdConsumerStopProposals())
-	cmd.AddCommand(CmdConsumerValidatorKeyAssignmentping())
+	cmd.AddCommand(CmdConsumerValidatorKeyAssignment())
 
 	return cmd
 }
@@ -146,7 +146,7 @@ func CmdConsumerStopProposals() *cobra.Command {
 	return cmd
 }
 
-func CmdConsumerValidatorKeyAssignmentping() *cobra.Command {
+func CmdConsumerValidatorKeyAssignment() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "TODO:",
 		Short: "TODO:",

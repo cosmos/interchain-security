@@ -373,7 +373,7 @@ func (d *driver) externalInvariants() {
 // which can be used to execute actions for testing.
 func getTrace(t *testing.T) []traceStep {
 
-	keyAssignmentpings := func() []keyAssignmentEntry {
+	keyAssignments := func() []keyAssignmentEntry {
 		ret := []keyAssignmentEntry{}
 
 		const NUM_ITS = 2 // Chosen arbitrarily/heuristically
@@ -432,7 +432,7 @@ func getTrace(t *testing.T) []traceStep {
 			// Increment provider time, and generate
 			// new key assignments and validator updates.
 			ret = append(ret, traceStep{
-				keyAssignmentEntries: keyAssignmentpings(),
+				keyAssignmentEntries: keyAssignments(),
 				providerUpdates:      providerUpdates(),
 				timeProvider:         last.timeProvider + 1,
 				timeConsumer:         last.timeConsumer,
