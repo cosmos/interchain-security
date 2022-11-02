@@ -544,6 +544,6 @@ func (k Keeper) DeleteKeyAssignment(ctx sdk.Context, chainID string) {
 
 func (k Keeper) KeyAssignment(ctx sdk.Context, chainID string) *KeyAssignment {
 	store := KeyAssignmentStore{ctx.KVStore(k.storeKey), chainID}
-	km := MakeKeyAssignment(&store)
-	return &km
+	ka := MakeKeyAssignment(&store)
+	return &ka
 }
