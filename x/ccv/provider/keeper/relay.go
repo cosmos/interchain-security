@@ -155,7 +155,8 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				}
 			}
 
-			// Map the updates through any key transformations
+			// Map the updates through the key assignments so that the consumer chain can use the correct keys
+			// when it receives the updates.
 			updatesToSend := k.KeyAssignment(ctx, chainID).ComputeUpdates(valUpdateID, valUpdates)
 
 			packets = append(
