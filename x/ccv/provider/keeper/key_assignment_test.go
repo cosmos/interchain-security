@@ -22,11 +22,9 @@ func key(seed int) tmprotocrypto.PublicKey {
 	return v.TMProtoCryptoPublicKey()
 }
 
-// TODO: all the map lookups are probably gonna fail because the objects are different
-
 // Num traces to run for heuristic testing
 // About 1.5 secs per trace when using real store
-const NUM_TRACES = 500
+const NUM_TRACES = 4000
 
 // Len of trace for a single heuristic testing run
 const TRACE_LEN = 400
