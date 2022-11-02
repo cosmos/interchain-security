@@ -26,3 +26,8 @@ var democracySteps = concatSteps(
 	stepsDelegate("democ"),
 	stepsDemocracy("democ"),
 )
+
+var doubleSignProviderSteps = concatSteps(
+	stepsStartChains("consu", false),
+	stepsDoubleSign("consu", "provi", "carol"),
+)
