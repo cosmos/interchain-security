@@ -10,101 +10,77 @@ The KeyAssignment feature is available via a provider chain API (transactions an
 
 It is possible to start validating a consumer chain with the same key as used for the provider. This is the default behavior. It is also possible to specify another key to use when joining the validator set. Moreover it is possible to change the used key at any time, any multiple times, with some minor restrictions.
 
-## API (High level)
+## External API (High Level)
 
-**Writes**
+**TXs**
 
 ```go
-// Associates a new consumer key as consensus key on the consumer chain
-// for the validator on the provider chain associated to the provider key.
+// Assign a new public consensus key to be used by a validator
+// on the provider when it signs transactions on the consumer chain.
 // The TX must be signed by the private key associated to the provider
 // validator address.
+//
+// The assignment can fail if the consumer consensus key is already
+// in use for the chain, currently, or in the recent past.
 AssignConsensusPublicKeyToConsumerChain(
-	ChainId                  string,
-	ProviderValidatorAddress string,    
-	ConsumerConsensusPubKey  *types.Any 
+	ChainId                  string, // consumer chain
+	ProviderValidatorAddress string, // must sign TX
+	ConsumerConsensusPubKey  *types.Any
 )
 ```
 
-**Reads**
+**Queries**
 
 ```go
 // Returns the last consumer key associated to the provider key and
 // the consumer chain by a call to AssignConsensusPublicKeyToConsumerChain.
-QueryConsumerChainValidatorKeyAssignment(providerKey, consumerChainID) {
-	ChainId                  string,
-	ProviderValidatorAddress string,
-}
+QueryConsumerChainValidatorKeyAssignment (
+	ChainId                  string, // consumer chain
+	ProviderValidatorAddress string, // validator address for the provider chain
+)
 ```
+
+## Internal API (High Level)
+
+TODO: write this section
 
 ## API (Details)
 
-**Writes**
+The external API is specified in [api.tla](./api.tla). An 'internal' API is also specified. The external API supports the TXs and Queries listed above. The internal API documents the API that the implementation of KeyAssignment exposes for integration
+in the implementation of the wider system.
 
-```go
-// Attemps to associate a new consumer key consumerKey on the consumer chain
-// specified by consumerChainID to the validator on the provider chain
-// specified by providerKey.
-// If the attempt succeeds, the consumer chain will start consumerKey as
-// consensus key from the earliest block at which it receives the update
-// via IBC.
-// The attempt can fail if any of the arguments are invalid, if either chain
-// or the IBC connection is faulty.
-// The attempt can additionally fail if the key consumerKey was already used
-// as for a mapping with the KeyAssignment feature too recently in the past. This is
-// to prevent attacks. In particular, once a key is used in a KeyAssignment association
-// that key is no longer useable for another association until the first
-// association is cancelled, and an acknowledgement of the cancellation is
-// received from the consumer chain and processed on the provider chain.
-SetConsumerKey(providerKey, consumerChainID, consumerKey) {
-    // TODO: signatures, types
-}
-```
+## Implementation
 
-**Reads**
+### Algorithm idea
 
-```go
-// Returns the last consumerKey associated to the provider key and
-// the consumer chain by a call to SetConsumerKey.
-// TODO: more detail needed?
-GetConsumerKey(providerKey, consumerChainID) {
-}
-```
 
-```go
-// Returns the last providerKey associated to consumerKey and the consumer
-// chain by a call to SetConsumerKey.
-// TODO: more detail needed?
-GetProviderKey(consumerKey, consumerChainID) {
-}
-```
+### System integration points
 
-### External Properties - Interchain Security
 
-KeyAssignment has some properties relevant to the external user
+## External properties
+
+KeyAssignment has some properties relevant to the external user:
+
+
 
 1. Validator Set Replication\
    When the Interchain Security property [Validator Set Replication](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties) holds for an implementation without KeyAssignment, then the property holds when KeyAssignment is used.
 2. Slashable Consumer Misbehavior\
    When the Interchain Security property [Slashable Consumer Misbehavior](https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties) holds for an implementation without KeyAssignment, then the property holds when KeyAssignment is used.
 
-In fact, all Interchain Security properties still hold when KeyAssignment is used, the above are just the most relevant.
+All Interchain Security properties still hold when KeyAssignment is used, the above are just the most relevant.
 
-### External Properties - timeliness
+Additionally
 
-When a call to `SetConsumerKey` succeeds for a given `(providerKey, consumerChainID)` tuple at block height `hp0`, and is not followed by a subsquent call for the same tuple before or during a height `hp1` (`hp0 <= hp1`), and at `hp1` a validator set update packet is committed at the provider chain, then at the next earliest height `hc2` on the consumer chain that the packet is received, the `consumerKey` is passed as consensus key to tendermint. Thus tendermint will expect a signature from `consumerKey` from height `hc2 + 1`.
+3. When a `AssignConsensusPublicKeyToConsumerChain` operation succeeds for a given `(chainID, ProviderValidatorAddress, ConsumerConsensusPubKey)` tuple at block height `hp0`, and is not followed by a subsquent call for the same tuple before or during a height `hp1` (`hp0 <= hp1`), and at `hp1` a validator set update packet is committed at the provider chain, then at the next earliest height `hc2` on the consumer chain that the packet is received, the `ConsumerConsensusPubKey ` is passed as consensus key to tendermint. Thus tendermint will expect a signature from `ConsumerConsensusPubKey ` from height `hc2 + 1`.
 
-TODO: check, test, correct, guarantee and formalize this.
 
-### Internal properties
+## Internal properties
 
-The KeyAssignment implementation satisfies a number of internal properties, which are used to guarantee the external properties. These are only relevant to system internals. They are, briefly:
+The internal properties section in [api.tla](./api.tla) specifies abstract but precise properties. In particular, at a high level:
 
-1. Validator Set Replication\
-   'All consumer validator sets are some earlier provider validator set'
-2. Queries\
-   'It is always possible to query the provider key for a given consumer key, when the consumer can still make slash requests'
-3. Pruning\
-   'When the pruning method is used correctly, the internal state of the data structure does not grow unboundedly'
+1. The consumer validator set is always defined as per the validator set replication property.
+2. It is always possible to lookup the provider consensus address, for a given consumer consensus public key, when the consumer has been sent that public key and that key is still liable for double signing or downtime slashing.
+3. The storage requirements are reasonable.
 
-Details can be found in x/ccv/provider/keeper/keyassignment_core_test.go. TODO: link?
+Please see [api.tla](./api.tla) and [key_assignment_test.go::externalInvariants](../../x/ccv/provider/keeper/key_assignment_test.go) and [key_assignment.go::internalInvariants](../../x/ccv/provider/keeper/key_assignment.go) for precise formulations.
