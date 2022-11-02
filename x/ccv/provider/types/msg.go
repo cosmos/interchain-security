@@ -10,8 +10,7 @@ import (
 
 // provider message types
 const (
-	// TODO: what should this be?
-	TypeMsgAssignConsensusPublicKeyToConsumerChain = "create_validator"
+	TypeMsgAssignConsensusPublicKeyToConsumerChain = "assign_consensus_public_key_to_consumer_chain"
 )
 
 var (
