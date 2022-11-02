@@ -79,8 +79,5 @@ func (msg MsgAssignConsensusPublicKeyToConsumerChain) ValidateBasic() error {
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
 func (msg MsgAssignConsensusPublicKeyToConsumerChain) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 	var pubKey cryptotypes.PubKey
-
-	todo := &codectypes.Any{}
-	// return unpacker.UnpackAny(msg.Pubkey, &pubKey)
-	return unpacker.UnpackAny(todo, &pubKey)
+	return unpacker.UnpackAny(msg.ConsumerConsensusPubKey, &pubKey)
 }
