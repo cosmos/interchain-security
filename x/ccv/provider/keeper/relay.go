@@ -219,9 +219,11 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	return ack
 }
 
-// TODO: should this be a panic or an error?
-func GetProviderConsAddr(keyassignment *KeyAssignment, consumerConsAddress sdk.ConsAddress) (sdk.ConsAddress, error) {
-	providerPublicKey, found := keyassignment.GetProviderPubKeyFromConsumerConsAddress(consumerConsAddress)
+// GetProviderConsAddrForSlashing returns the cons address of the validator to be slashed
+// on the provider chain. It looks up the provider's consensus address from past key assignments.
+func (k Keeper) GetProviderConsAddrForSlashing(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (sdk.ConsAddress, error) {
+	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
+	providerPublicKey, found := k.KeyAssignment(ctx, chainID).GetProviderPubKeyFromConsumerConsAddress(consumerConsAddr)
 	if !found {
 		return nil, errors.New("could not find provider address for slashing")
 	}
@@ -233,7 +235,6 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// map VSC ID to infraction height for the given chain ID
 	var infractionHeight uint64
 	var found bool
-
 	if data.ValsetUpdateId == 0 {
 		infractionHeight, found = k.GetInitChainHeight(ctx, chainID)
 	} else {
@@ -245,13 +246,15 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		return false, fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
-	// TODO: document better
-	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
-	providerConsAddr, err := GetProviderConsAddr(k.KeyAssignment(ctx, chainID), consumerConsAddr)
+	// The slash packet validator address is the address known to the consumer chain
+	// so it must be mapped back to the consensus address on the provider chain to be
+	// able to slash the validator.
+	providerConsAddr, err := k.GetProviderConsAddrForSlashing(ctx, chainID, data)
 
 	if err != nil {
 		return false, nil
 	}
+
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr)
 
 	// make sure the validator is not yet unbonded;
