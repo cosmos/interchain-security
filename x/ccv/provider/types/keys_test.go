@@ -34,7 +34,7 @@ func TestNoDuplicates(t *testing.T) {
 // any of which should be a single, unique byte.
 func getSingleByteKeys() [][]byte {
 
-	keys := make([][]byte, 16)
+	keys := make([][]byte, 32)
 	i := 0
 
 	keys[i], i = PortKey(), i+1
@@ -43,6 +43,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{ChainToChannelBytePrefix}, i+1
 	keys[i], i = []byte{ChannelToChainBytePrefix}, i+1
 	keys[i], i = []byte{ChainToClientBytePrefix}, i+1
+	keys[i], i = []byte{InitTimeoutTimestampBytePrefix}, i+1
 	keys[i], i = []byte{PendingCAPBytePrefix}, i+1
 	keys[i], i = []byte{PendingCRPBytePrefix}, i+1
 	keys[i], i = []byte{UnbondingOpBytePrefix}, i+1
@@ -52,9 +53,9 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{SlashAcksBytePrefix}, i+1
 	keys[i], i = []byte{InitChainHeightBytePrefix}, i+1
 	keys[i], i = []byte{PendingVSCsBytePrefix}, i+1
-	keys[i] = []byte{LockUnbondingOnTimeoutBytePrefix}
+	keys[i], i = []byte{LockUnbondingOnTimeoutBytePrefix}, i+1
 
-	return keys
+	return keys[:i]
 }
 
 // Tests the construction and parsing of keys for storing pending consumer addition proposals
@@ -138,6 +139,7 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 		ChainToChannelKey,
 		ChannelToChainKey,
 		ChainToClientKey,
+		InitTimeoutTimestampKey,
 		ConsumerGenesisKey,
 		SlashAcksKey,
 		InitChainHeightKey,
@@ -149,6 +151,7 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 		ChainToChannelBytePrefix,
 		ChannelToChainBytePrefix,
 		ChainToClientBytePrefix,
+		InitTimeoutTimestampBytePrefix,
 		ConsumerGenesisBytePrefix,
 		SlashAcksBytePrefix,
 		InitChainHeightBytePrefix,

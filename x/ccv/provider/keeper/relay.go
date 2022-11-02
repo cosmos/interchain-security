@@ -71,7 +71,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 }
 
 // CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
-func (k Keeper) CompleteMaturedUnbondingOps(ctx sdk.Context) {
+func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
 	ids, err := k.ConsumeMaturedUnbondingOps(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("could not get the list of matured unbonding ops: %s", err.Error()))
@@ -116,8 +116,18 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 	return k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID), false)
 }
 
+// EndBlockVSU contains the EndBlock logic needed for
+// the Validator Set Update sub-protocol
+func (k Keeper) EndBlockVSU(ctx sdk.Context) {
+	// notify the staking module to complete all matured unbonding ops
+	k.completeMaturedUnbondingOps(ctx)
+
+	// send latest validator updates to every registered consumer chain
+	k.sendValidatorUpdates(ctx)
+}
+
 // SendValidatorUpdates sends latest validator updates to every registered consumer chain
-func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
+func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 	// get current ValidatorSetUpdateId
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	// get the validator updates from the staking module
@@ -159,7 +169,6 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 		}
 		return false // do not stop the iteration
 	})
-	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
 	k.IncrementValidatorSetUpdateId(ctx)
 }
 
@@ -181,6 +190,15 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
 	}
+}
+
+// EndBlockCIS contains the EndBlock logic needed for
+// the Consumer Initiated Slashing sub-protocol
+func (k Keeper) EndBlockCIS(ctx sdk.Context) {
+	// get current ValidatorSetUpdateId
+	valUpdateID := k.GetValidatorSetUpdateId(ctx)
+	// set the ValsetUpdateBlockHeight
+	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
 }
 
 // OnRecvSlashPacket slashes and jails the given validator in the packet data
@@ -277,4 +295,29 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	k.slashingKeeper.JailUntil(ctx, consAddr, jailTime)
 
 	return true, nil
+}
+
+// EndBlockCIS contains the EndBlock logic needed for
+// the Consumer Chain Removal sub-protocol
+func (k Keeper) EndBlockCCR(ctx sdk.Context) {
+	currentTime := uint64(ctx.BlockTime().UnixNano())
+
+	// iterate over initTimeoutTimestamps
+	var removedChainIds []string
+	k.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) bool {
+		if currentTime > ts {
+			// initTimeout expired:
+			// stop the consumer chain and unlock the unbonding
+			err := k.StopConsumerChain(ctx, chainID, false, true)
+			if err != nil {
+				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+			}
+			removedChainIds = append(removedChainIds, chainID)
+		}
+		return true
+	})
+	// remove the init timeout timestamps for the stopped consumers
+	for _, chainID := range removedChainIds {
+		k.DeleteInitTimeoutTimestamp(ctx, chainID)
+	}
 }
