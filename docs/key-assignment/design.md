@@ -6,9 +6,9 @@ Validators can improve their security by using different consensus keys for each
 
 ## Overview
 
-The KeyAssignment feature is available via a provider chain API (transactions and queries). The provider chain validator operator submits a mapping transaction to the provider chain with a consumer chain ID and desired consensus key as parameters. The IBC protocol used by Interchain Security takes care of forwarding the mapping to the specified consumer chain. When the consumer chain receives the key, it will immediately start using it with tendermint.
+The KeyAssignment feature is available via a provider chain API (transactions and queries). The provider chain validator operator submits an assignment transaction to the provider chain with a consumer chain ID and desired consensus key as parameters. The over-IBC protocol used by Interchain Security takes care of forwarding the assignment to the specified consumer chain. When the consumer chain receives the key, it will immediately start using it with tendermint.
 
-It is possible to start validating a consumer chain with the same key as used for the provider. It is also possible to specify another key to use when joining the validator set. Moreover it is possible to change the used key at any time, any multiple times, with some minor restrictions.
+It is possible to start validating a consumer chain with the same key as used for the provider. This is the default behavior. It is also possible to specify another key to use when joining the validator set. Moreover it is possible to change the used key at any time, any multiple times, with some minor restrictions.
 
 ## API (High level)
 
@@ -17,23 +17,23 @@ It is possible to start validating a consumer chain with the same key as used fo
 ```go
 // Associates a new consumer key as consensus key on the consumer chain
 // for the validator on the provider chain associated to the provider key.
-SetConsumerKey(providerKey, consumerChainID, consumerKey) {
-}
+// The TX must be signed by the private key associated to the provider
+// validator address.
+AssignConsensusPublicKeyToConsumerChain(
+	ChainId                  string,
+	ProviderValidatorAddress string,    
+	ConsumerConsensusPubKey  *types.Any 
+)
 ```
 
 **Reads**
 
 ```go
-// Returns the last consumerKey associated to the provider key and
-// the consumer chain by a call to SetConsumerKey.
-GetConsumerKey(providerKey, consumerChainID) {
-}
-```
-
-```go
-// Returns the last providerKey associated to consumerKey and the consumer
-// chain by a call to SetConsumerKey.
-GetProviderKey(consumerKey, consumerChainID) {
+// Returns the last consumer key associated to the provider key and
+// the consumer chain by a call to AssignConsensusPublicKeyToConsumerChain.
+QueryConsumerChainValidatorKeyAssignment(providerKey, consumerChainID) {
+	ChainId                  string,
+	ProviderValidatorAddress string,
 }
 ```
 
