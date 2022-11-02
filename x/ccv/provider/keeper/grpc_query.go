@@ -3,9 +3,9 @@ package keeper
 import (
 	"context"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkcodectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"google.golang.org/grpc/codes"
@@ -15,7 +15,7 @@ import (
 var _ types.QueryServer = Keeper{}
 
 func (k Keeper) QueryConsumerGenesis(c context.Context, req *types.QueryConsumerGenesisRequest) (*types.QueryConsumerGenesisResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
+	ctx := sdktypes.UnwrapSDKContext(c)
 
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
@@ -38,9 +38,9 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	ctx := sdktypes.UnwrapSDKContext(goCtx)
 	chains := []*types.Chain{}
-	cb := func(ctx sdk.Context, chainID, clientID string) bool {
+	cb := func(ctx sdktypes.Context, chainID, clientID string) bool {
 		chains = append(chains, &types.Chain{
 			ChainId:  chainID,
 			ClientId: clientID,
@@ -57,7 +57,7 @@ func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.Query
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	ctx := sdktypes.UnwrapSDKContext(goCtx)
 	props := k.GetAllConsumerAdditionProps(ctx)
 
 	return &types.QueryConsumerChainStartProposalsResponse{Proposals: &props}, nil
@@ -68,7 +68,7 @@ func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryC
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	ctx := sdktypes.UnwrapSDKContext(goCtx)
 	props := k.GetAllConsumerRemovalProps(ctx)
 
 	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &props}, nil
@@ -79,13 +79,13 @@ func (k Keeper) QueryConsumerChainValidatorKeyMapping(goCtx context.Context, req
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	ctx := sdktypes.UnwrapSDKContext(goCtx)
 
 	if _, found := k.GetConsumerClientId(ctx, req.ChainId); !found {
 		return nil, types.ErrNoConsumerChainFound
 	}
 
-	providerValidatorAddr, err := sdk.ValAddressFromBech32(req.ProviderValidatorAddress)
+	providerValidatorAddr, err := sdktypes.ValAddressFromBech32(req.ProviderValidatorAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -105,15 +105,15 @@ func (k Keeper) QueryConsumerChainValidatorKeyMapping(goCtx context.Context, req
 		return nil, types.ErrNoAssignedConsumerKeyFoundForValidator
 	}
 
-	consumerSDKPublicKey, err := cryptocodec.FromTmProtoPublicKey(consumerTMPublicKey)
+	consumerSDKPublicKey, err := sdkcryptocodec.FromTmProtoPublicKey(consumerTMPublicKey)
 	if err != nil {
 		return nil, err
 	}
 
-	var pubKeyAny *codectypes.Any
+	var pubKeyAny *sdkcodectypes.Any
 	if consumerSDKPublicKey != nil {
 		var err error
-		if pubKeyAny, err = codectypes.NewAnyWithValue(consumerSDKPublicKey); err != nil {
+		if pubKeyAny, err = sdkcodectypes.NewAnyWithValue(consumerSDKPublicKey); err != nil {
 			return nil, err
 		}
 	} else {

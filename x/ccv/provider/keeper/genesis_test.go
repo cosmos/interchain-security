@@ -15,7 +15,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 func TestIniAndExportGenesis(t *testing.T) {
@@ -28,7 +28,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 	params := providertypes.DefaultParams()
 	keyMaps := []ccv.KeyMap{
 		{
-			ProviderConsAddrToConsumerKey:    []ccv.ConsAddrToKey{{ConsAddr: sdk.ConsAddress{}, Key: &crypto.PublicKey{}}},
+			ProviderConsAddrToConsumerKey:    []ccv.ConsAddrToKey{{ConsAddr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
 			ConsumerKeyToProviderKey:         []ccv.KeyToKey{},
 			ConsumerConsAddrToLastUpdateMemo: []ccv.ConsAddrToLastUpdateMemo{},
 		},
