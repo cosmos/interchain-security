@@ -252,16 +252,16 @@ func tsAndChainIdKey(prefix byte, timestamp time.Time, chainID string) []byte {
 	timeBz := sdk.FormatTimeBytes(timestamp)
 	timeBzL := len(timeBz)
 
-	bz := make([]byte, len([]byte{prefix})+8+timeBzL+len(chainID))
-	// copy the prefix
-	byteLen := copy(bz, []byte{prefix})
-	// copy the time length
-	byteLen += copy(bz[byteLen:], sdk.Uint64ToBigEndian(uint64(timeBzL)))
-	// copy the time bytes
-	byteLen += copy(bz[byteLen:], timeBz)
-	// copy the chainId
-	copy(bz[byteLen:], chainID)
-	return bz
+	return AppendMany(
+		// Append the prefix
+		[]byte{prefix},
+		// Append the time length
+		sdk.Uint64ToBigEndian(uint64(timeBzL)),
+		// Append the time bytes
+		timeBz,
+		// Append the chainId
+		[]byte(chainID),
+	)
 }
 
 // parseTsAndChainIdKey returns the time and chain ID for a TsAndChainId key
@@ -285,30 +285,28 @@ func parseTsAndChainIdKey(prefix byte, bz []byte) (time.Time, string, error) {
 // chainIdAndTsKey returns the key with the following format:
 // bytePrefix | len(chainID) | chainID | timestamp
 func chainIdAndTsKey(prefix byte, chainID string, timestamp time.Time) []byte {
-	timeBz := sdk.FormatTimeBytes(timestamp)
-
 	partialKey := ChainIdWithLenKey(prefix, chainID)
-	bz := make([]byte, len(partialKey)+len(timeBz))
-	// copy the partialKey
-	byteLen := copy(bz, partialKey)
-	// copy the time bytes
-	copy(bz[byteLen:], timeBz)
-	return bz
+	timeBz := sdk.FormatTimeBytes(timestamp)
+	return AppendMany(
+		// Append the partialKey
+		partialKey,
+		// Append the time bytes
+		timeBz,
+	)
 }
 
 // chainIdWithLenKey returns the key with the following format:
 // bytePrefix | len(chainID) | chainID
 func ChainIdWithLenKey(prefix byte, chainID string) []byte {
 	chainIdL := len(chainID)
-
-	bz := make([]byte, len([]byte{prefix})+8+chainIdL)
-	// copy the prefix
-	byteLen := copy(bz, []byte{prefix})
-	// copy the chainID length
-	byteLen += copy(bz[byteLen:], sdk.Uint64ToBigEndian(uint64(chainIdL)))
-	// copy the chainID
-	copy(bz[byteLen:], chainID)
-	return bz
+	return AppendMany(
+		// Append the prefix
+		[]byte{prefix},
+		// Append the chainID length
+		sdk.Uint64ToBigEndian(uint64(chainIdL)),
+		// Append the chainID
+		[]byte(chainID),
+	)
 }
 
 func parseChainIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
