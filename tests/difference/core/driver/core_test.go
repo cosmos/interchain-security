@@ -73,20 +73,20 @@ func (s *CoreSuite) consumerChain() *ibctesting.TestChain {
 	return s.simibc.Chain(ibctesting.GetChainID(1))
 }
 
-func (b *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).StakingKeeper
+func (s *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
+	return s.providerChain().App.(*appProvider.App).StakingKeeper
 }
 
-func (b *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).SlashingKeeper
+func (s *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
+	return s.providerChain().App.(*appProvider.App).SlashingKeeper
 }
 
-func (b *CoreSuite) providerKeeper() providerkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).ProviderKeeper
+func (s *CoreSuite) providerKeeper() providerkeeper.Keeper {
+	return s.providerChain().App.(*appProvider.App).ProviderKeeper
 }
 
-func (b *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
-	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
+func (s *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
+	return s.consumerChain().App.(*appConsumer.App).ConsumerKeeper
 }
 
 // height returns the height of the current header of chain
