@@ -141,7 +141,7 @@ func (b *CoreSuite) consumerLastCommittedVscId() uint64 {
 func (s *CoreSuite) consumerPower(val int64) (int64, error) {
 	vscid := s.consumerLastCommittedVscId()
 	assignment := s.vscidToKeyAssignment[vscid]
-	s.Require().NotNilf(assignment, "no mapping found for vscid")
+	s.Require().NotNilf(assignment, "no assignment found for vscid")
 	consumerPublicKey, found := assignment[val]
 	if !found {
 		fmt.Println("val not found in assignment", s.traces.Diagnostic())
@@ -248,7 +248,7 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 	s.simibc.DeliverPackets(s.chainID(chain), numPackets)
 }
 
-// Queries the provider chain to read the current state of the mapping from validators
+// Queries the provider chain to read the current state of the assignment from validators
 // to their assigned consumer consensus addresses. This is needed for testing slashing.
 func (s *CoreSuite) readCurrentKeyAssignment() map[int64]providerkeeper.ConsumerPublicKey {
 	k := s.providerKeeper()
@@ -413,7 +413,7 @@ func (s *CoreSuite) TestAssumptions() {
 	// TODO: unhardcode 16
 	s.Require().Equal(int(16), int(s.consumerLastCommittedVscId()))
 
-	// Check that consumer uses current provider mapping
+	// Check that consumer uses current provider assignment
 	s.consumerKeeper().IterateValidators(s.ctx(C), func(_ int64, consumerValidator stakingtypes.ValidatorI) bool {
 		consumerPublicKeyActual, err := consumerValidator.TmConsPublicKey()
 		s.Require().NoError(err)

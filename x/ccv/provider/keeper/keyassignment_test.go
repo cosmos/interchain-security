@@ -58,7 +58,7 @@ type driver struct {
 	lastTimeConsumer int
 	lastTimeMaturity int
 	// indexed by time (starting at 0)
-	mappings []map[string]providerkeeper.ConsumerPublicKey
+	assignments []map[string]providerkeeper.ConsumerPublicKey
 	// indexed by time (starting at 0)
 	consumerUpdates [][]abci.ValidatorUpdate
 	// indexed by time (starting at 0)
@@ -86,27 +86,27 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 	d.lastTimeProvider = 0
 	d.lastTimeConsumer = 0
 	d.lastTimeMaturity = 0
-	d.mappings = []map[string]providerkeeper.ConsumerPublicKey{}
+	d.assignments = []map[string]providerkeeper.ConsumerPublicKey{}
 	d.consumerUpdates = [][]abci.ValidatorUpdate{}
 	d.providerValsets = []valset{}
 	d.consumerValset = valset{}
 	return d
 }
 
-// Apply a list of (pk, ck) mapping requests to the KeyDel class instance
+// Apply a list of (pk, ck) assignment requests to the KeyDel class instance
 func (d *driver) applyKeyAssignmentEntries(entries []keyAssignmentEntry) {
 	for _, e := range entries {
 		// TRY to map provider key pk to consumer key ck.
 		// (May fail due to API constraints, this is correct)
 		_ = d.km.SetProviderPubKeyToConsumerPubKey(e.pk, e.ck)
 	}
-	// Duplicate the mapping for referencing later in tests.
+	// Duplicate the assignment for referencing later in tests.
 	copy := map[string]providerkeeper.ConsumerPublicKey{}
 	d.km.Store.IteratePcaToCk(func(pca providerkeeper.ProviderConsAddr, ck providerkeeper.ConsumerPublicKey) bool {
 		copy[string(pca)] = ck
 		return false
 	})
-	d.mappings = append(d.mappings, copy)
+	d.assignments = append(d.assignments, copy)
 }
 
 // Apply a batch of (key, power) updates to the known validator set.
@@ -160,7 +160,7 @@ func (d *driver) run() {
 	}
 
 	// Sanity check the initial state
-	require.Len(d.t, d.mappings, 1)
+	require.Len(d.t, d.assignments, 1)
 	require.Len(d.t, d.consumerUpdates, 1)
 	require.Len(d.t, d.providerValsets, 1)
 
@@ -168,7 +168,7 @@ func (d *driver) run() {
 	for _, s := range d.trace[1:] {
 		if d.lastTimeProvider < s.timeProvider {
 			// Provider time increase:
-			// Apply some new key mapping requests to KeyDel, and create new validator
+			// Apply some new key assignment requests to KeyDel, and create new validator
 			// power updates.
 			d.applyKeyAssignmentEntries(s.keyAssignmentEntries)
 			d.applyProviderUpdates(s.providerUpdates)
@@ -225,7 +225,7 @@ func (d *driver) externalInvariants() {
 	/*
 		For a consumer who has received updates up to vscid i, its
 		provider validator set must be equal to the set on the provider
-		when i was sent, mapped through the mapping at that time.
+		when i was sent, mapped through the assignment at that time.
 	*/
 	validatorSetReplication := func() {
 
@@ -239,17 +239,17 @@ func (d *driver) externalInvariants() {
 
 		for _, u := range pSet {
 
-			// Find the appropriate forward mapping
+			// Find the appropriate forward assignment
 			pk := u.PubKey
 			expectedPower := u.Power
 			found := false
 			ck := providerkeeper.ConsumerPublicKey{}
-			for k, v := range d.mappings[d.lastTimeConsumer] {
+			for k, v := range d.assignments[d.lastTimeConsumer] {
 				if pk.Equal(k) {
 					ck = v
 				}
 			}
-			require.NotEqualf(d.t, ck, providerkeeper.ConsumerPublicKey{}, "bad test, a mapping must exist")
+			require.NotEqualf(d.t, ck, providerkeeper.ConsumerPublicKey{}, "bad test, a assignment must exist")
 
 			// Check that the mapped through validator has the correct power
 			for _, u := range cSet {
@@ -282,11 +282,11 @@ func (d *driver) externalInvariants() {
 			require.Equal(d.t, pkQueried, pkQueriedByConsAddr)
 
 			// The provider key must be the one that was actually referenced
-			// in the latest trueMapping used to compute updates sent to the
+			// in the latest actualAssignment used to compute updates sent to the
 			// consumer.
 			ckWasActuallyMappedTo := map[providerkeeper.ConsumerPublicKey]bool{}
-			actualMapping := d.mappings[d.lastTimeConsumer]
-			for pk, ck := range actualMapping {
+			actualAssignment := d.assignments[d.lastTimeConsumer]
+			for pk, ck := range actualAssignment {
 
 				// Sanity check: no two provider keys should map to the same consumer key
 				require.Falsef(d.t, ckWasActuallyMappedTo[ck], "two provider keys map to the same consumer key")
@@ -310,7 +310,7 @@ func (d *driver) externalInvariants() {
 					good = true
 				}
 			}
-			require.Truef(d.t, good, "no mapping found for consumer key")
+			require.Truef(d.t, good, "no assignment found for consumer key")
 		}
 	}
 
@@ -377,7 +377,7 @@ func getTrace(t *testing.T) []traceStep {
 		ret := []keyAssignmentEntry{}
 
 		const NUM_ITS = 2 // Chosen arbitrarily/heuristically
-		// Do this NUM_ITS times, to be able to generate conflicting mappings.
+		// Do this NUM_ITS times, to be able to generate conflicting assignments.
 		// This is allowed by the KeyDel API, so it must be tested.
 		for i := 0; i < NUM_ITS; i++ {
 			// include none (to) all validators
@@ -406,18 +406,18 @@ func getTrace(t *testing.T) []traceStep {
 		return ret
 	}
 
-	// Get an initial key mapping.
+	// Get an initial key assignment.
 	// The real system may use some manual set defaults.
-	initialMappings := []keyAssignmentEntry{}
+	initialAssignment := []keyAssignmentEntry{}
 	for pk := 0; pk < NUM_VALS; pk++ {
 		ck := pk + 100 // differentiate from i
-		initialMappings = append(initialMappings, keyAssignmentEntry{key(pk), key(ck)})
+		initialAssignment = append(initialAssignment, keyAssignmentEntry{key(pk), key(ck)})
 	}
 
 	ret := []traceStep{
 		{
-			// Hard code initial mapping
-			keyAssignmentEntries: initialMappings,
+			// Hard code initial assignment
+			keyAssignmentEntries: initialAssignment,
 			providerUpdates:      providerUpdates(),
 			timeProvider:         0,
 			timeConsumer:         0,
@@ -430,7 +430,7 @@ func getTrace(t *testing.T) []traceStep {
 		last := ret[len(ret)-1]
 		if choice == 0 {
 			// Increment provider time, and generate
-			// new key mappings and validator updates.
+			// new key assignments and validator updates.
 			ret = append(ret, traceStep{
 				keyAssignmentEntries: keyAssignmentpings(),
 				providerUpdates:      providerUpdates(),
