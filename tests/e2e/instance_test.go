@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	gaia "github.com/cosmos/gaia/v7/app"
 	"testing"
 
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
@@ -56,4 +57,23 @@ func TestConsumerDemocracyTestSuite(t *testing.T) {
 		},
 	)
 	suite.Run(t, democSuite)
+}
+
+func TestCCVTestSuiteGaia(t *testing.T) {
+
+	ccvSuite := e2e.NewCCVTestSuite(
+		func(t *testing.T) (
+			*ibctesting.Coordinator,
+			*ibctesting.TestChain,
+			*ibctesting.TestChain,
+			gaia.GaiaApp,
+			e2etestutil.ConsumerApp,
+		) {
+			// Here we pass the concrete types that must implement the necessary interfaces
+			// to be ran with e2e tests.
+			coord, prov, cons := simapp.NewProviderConsumerCoordinator(t)
+			return coord, prov, cons, prov.App.(*appProvider.App), cons.App.(*appConsumer.App)
+		},
+	)
+	suite.Run(t, ccvSuite)
 }
