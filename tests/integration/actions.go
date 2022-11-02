@@ -962,3 +962,35 @@ func (tr TestRun) registerRepresentative(
 
 	wg.Wait()
 }
+
+// Creates an additional node on selected chain
+// by copying an existing validator's home folder
+//
+// Steps needed to double sign:
+// - copy existing validator's state and configs
+// - use existing priv_validator_key.json
+// - use new node_key.json (otherwise node gets rejected)
+// - reset priv_validator_state.json to initial values
+// - start the new node
+// Double sign should be registered within couple blocks.
+type doublesignSlashAction struct {
+	// start another node for this validator
+	validator validatorID
+	chain     chainID
+}
+
+func (tr TestRun) invokeDoublesignSlash(
+	action doublesignSlashAction,
+	verbose bool,
+) {
+	chainConfig := tr.chainConfigs[action.chain]
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
+		"/testnet-scripts/cause-doublesign.sh", chainConfig.binaryName, string(action.validator),
+		string(chainConfig.chainId), chainConfig.ipPrefix).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+	tr.waitBlocks("provi", 10, 2*time.Minute)
+}
