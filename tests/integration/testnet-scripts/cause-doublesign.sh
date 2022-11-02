@@ -20,7 +20,12 @@ cp -r /$CHAIN_ID/validator$VAL_ID/* /$CHAIN_ID/validatorsybil
 # clear state in validatorsybil
 echo '{"height": "0","round": 0,"step": 0,"signature":"","signbytes":""}' > /$CHAIN_ID/validatorsybil/data/priv_validator_state.json
 
-# add new key to sybil
+# add new node key to sybil
+# key was generated using gaiad init
+# if the node key is not unique, double signing cannot be achieved
+# and errors such as this can be seen in the terminal
+# 5:54PM ERR found conflicting vote from ourselves; did you unsafe_reset a validator? height=1961 module=consensus round=0 type=2
+# 5:54PM ERR failed to process message err="conflicting votes from validator C888306A908A217B9A943D1DAD8790044D0947A4"
 echo '{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"tj55by/yYwruSz4NxsOG9y9k2WrPvKLXKQdz/9jL9Uptmi647OYpcisjwf92TyA+wCUYVDOgW7D53Q+638l9/w=="}}' > /$CHAIN_ID/validatorsybil/config/node_key.json
 
 # does not use persistent peers; will do a lookup in genesis.json to find peers

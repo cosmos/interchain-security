@@ -240,7 +240,7 @@ func (s *TestRun) ValidateStringLiterals() {
 			panic("ip suffix 252 is reserved for double signing node")
 		}
 
-		if ipSuffix < 1 || ipSuffix > 251 {
+		if ipSuffix < 1 || 251 < ipSuffix {
 			panic("ip suffix out of range, need to change config")
 		}
 	}
