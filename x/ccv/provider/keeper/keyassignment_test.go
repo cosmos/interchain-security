@@ -102,7 +102,7 @@ func (d *driver) applyKeyAssignmentEntries(entries []keyAssignmentEntry) {
 	}
 	// Duplicate the assignment for referencing later in tests.
 	copy := map[string]providerkeeper.ConsumerPublicKey{}
-	d.km.Store.IteratePcaToCk(func(pca providerkeeper.ProviderConsAddr, ck providerkeeper.ConsumerPublicKey) bool {
+	d.km.Store.IterateProviderConsAddrToConsumerPublicKey(func(pca providerkeeper.ProviderConsAddr, ck providerkeeper.ConsumerPublicKey) bool {
 		copy[string(pca)] = ck
 		return false
 	})
@@ -711,21 +711,21 @@ func TestValidatorRemoval(t *testing.T) {
 	pca := providerkeeper.PubKeyToConsAddr(key(42))
 	km.DeleteProviderKey(pca)
 
-	_, found := km.Store.GetPcaToCk(pca)
+	_, found := km.Store.GetProviderConsAddrToConsumerPublicKey(pca)
 	require.False(t, found)
-	_, found = km.Store.GetCkToPk(key(43))
+	_, found = km.Store.GetConsumerPublicKeyToProviderPublicKey(key(43))
 	require.False(t, found)
-	_, found = km.Store.GetCkToPk(key(44))
+	_, found = km.Store.GetConsumerPublicKeyToProviderPublicKey(key(44))
 	require.False(t, found)
-	_, found = km.Store.GetCkToPk(key(45))
+	_, found = km.Store.GetConsumerPublicKeyToProviderPublicKey(key(45))
 	require.False(t, found)
 
 	for i := 43; i < 46; i++ {
-		_, found = km.Store.GetCcaToLastUpdateMemo(providerkeeper.PubKeyToConsAddr(key(i)))
+		_, found = km.Store.GetConsumerConsAddrToLastUpdateMemo(providerkeeper.PubKeyToConsAddr(key(i)))
 		require.False(t, found)
 
 	}
-	km.Store.IterateCcaToLastUpdateMemo(func(cca providerkeeper.ConsumerConsAddr, lum ccvtypes.LastUpdateMemo) bool {
+	km.Store.IterateConsumerConsAddrToLastUpdateMemo(func(cca providerkeeper.ConsumerConsAddr, lum ccvtypes.LastUpdateMemo) bool {
 		pcaQueried := providerkeeper.PubKeyToConsAddr(*lum.ProviderKey)
 		require.False(t, pca.Equals(pcaQueried))
 		return false
@@ -740,39 +740,39 @@ func compareForEquality(t *testing.T,
 	ccaToLastUpdateMemo map[string]ccvtypes.LastUpdateMemo) {
 
 	cnt := 0
-	km.Store.IteratePcaToCk(func(_ providerkeeper.ProviderConsAddr, _ providerkeeper.ConsumerPublicKey) bool {
+	km.Store.IterateProviderConsAddrToConsumerPublicKey(func(_ providerkeeper.ProviderConsAddr, _ providerkeeper.ConsumerPublicKey) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(pcaToCk), cnt)
 
 	cnt = 0
-	km.Store.IterateCkToPk(func(_, _ providerkeeper.ConsumerPublicKey) bool {
+	km.Store.IterateConsumerPublicKeyToProviderPublicKey(func(_, _ providerkeeper.ConsumerPublicKey) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(ckToPk), cnt)
 
 	cnt = 0
-	km.Store.IterateCcaToLastUpdateMemo(func(_ providerkeeper.ConsumerConsAddr, _ ccvtypes.LastUpdateMemo) bool {
+	km.Store.IterateConsumerConsAddrToLastUpdateMemo(func(_ providerkeeper.ConsumerConsAddr, _ ccvtypes.LastUpdateMemo) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(ccaToLastUpdateMemo), cnt)
 
 	for k, vExpect := range pcaToCk {
-		vActual, found := km.Store.GetPcaToCk(providerkeeper.ProviderConsAddr(k))
+		vActual, found := km.Store.GetProviderConsAddrToConsumerPublicKey(providerkeeper.ProviderConsAddr(k))
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
 	for k, vExpect := range ckToPk {
-		vActual, found := km.Store.GetCkToPk(k)
+		vActual, found := km.Store.GetConsumerPublicKeyToProviderPublicKey(k)
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
 	for k, vExpect := range ccaToLastUpdateMemo {
 		k := sdktypes.ConsAddress(k)
-		m, found := km.Store.GetCcaToLastUpdateMemo(k)
+		m, found := km.Store.GetConsumerConsAddrToLastUpdateMemo(k)
 		require.True(t, found)
 		require.Equal(t, vExpect.ProviderKey, m.ProviderKey)
 		require.Equal(t, vExpect.ConsumerKey, m.ConsumerKey)
@@ -821,13 +821,13 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 		store := providerkeeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
 		km := providerkeeper.MakeKeyAssignment(&store)
 		for k, v := range pcaToCk {
-			km.Store.SetPcaToCk(sdktypes.ConsAddress(k), v)
+			km.Store.SetProviderConsAddrToConsumerPublicKey(sdktypes.ConsAddress(k), v)
 		}
 		for k, v := range ckToPk {
-			km.Store.SetCkToPk(k, v)
+			km.Store.SetConsumerPublicKeyToProviderPublicKey(k, v)
 		}
 		for k, v := range ccaToLastUpdateMemo {
-			km.Store.SetCcaToLastUpdateMemo(sdktypes.ConsAddress(k), v)
+			km.Store.SetConsumerConsAddrToLastUpdateMemo(sdktypes.ConsAddress(k), v)
 		}
 	}
 

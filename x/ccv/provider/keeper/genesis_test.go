@@ -119,9 +119,9 @@ func TestIniAndExportGenesis(t *testing.T) {
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, pGenesis.Params, pk.GetParams(ctx))
 
-	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).Store.GetPcaToCk(sdk.ConsAddress{})
+	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).Store.GetProviderConsAddrToConsumerPublicKey(sdk.ConsAddress{})
 	require.True(t, found)
-	_, found = pk.KeyAssignment(ctx, cChainIDs[1]).Store.GetPcaToCk(sdk.ConsAddress{})
+	_, found = pk.KeyAssignment(ctx, cChainIDs[1]).Store.GetProviderConsAddrToConsumerPublicKey(sdk.ConsAddress{})
 	require.False(t, found)
 
 	// check provider chain's consumer chain states

@@ -253,7 +253,7 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 func (s *CoreSuite) readCurrentKeyAssignment() map[int64]providerkeeper.ConsumerPublicKey {
 	k := s.providerKeeper()
 	assignment := map[int64]providerkeeper.ConsumerPublicKey{}
-	k.KeyAssignment(s.ctx(P), s.chainID(C)).Store.IteratePcaToCk(func(pca providerkeeper.ProviderConsAddr, consumerPubKey providerkeeper.ConsumerPublicKey) bool {
+	k.KeyAssignment(s.ctx(P), s.chainID(C)).Store.IterateProviderConsAddrToConsumerPublicKey(func(pca providerkeeper.ProviderConsAddr, consumerPubKey providerkeeper.ConsumerPublicKey) bool {
 		for val := int64(0); val < int64(initState.NumValidators); val++ {
 			consAddr := s.consAddr(val)
 			if consAddr.Equals(pca) {

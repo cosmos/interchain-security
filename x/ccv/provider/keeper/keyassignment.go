@@ -37,18 +37,18 @@ func PubKeyToConsAddr(k tmprotocrypto.PublicKey) sdk.ConsAddress {
 }
 
 type Store interface {
-	SetPcaToCk(ProviderConsAddr, ConsumerPublicKey)
-	SetCkToPk(ConsumerPublicKey, ProviderPublicKey)
-	SetCcaToLastUpdateMemo(ConsumerConsAddr, ccvtypes.LastUpdateMemo)
-	GetPcaToCk(ProviderConsAddr) (ConsumerPublicKey, bool)
-	GetCkToPk(ConsumerPublicKey) (ProviderPublicKey, bool)
-	GetCcaToLastUpdateMemo(ConsumerConsAddr) (ccvtypes.LastUpdateMemo, bool)
-	DelPcaToCk(ProviderConsAddr)
-	DelCkToPk(ConsumerPublicKey)
-	DelCcaToLastUpdateMemo(ConsumerConsAddr)
-	IteratePcaToCk(func(ProviderConsAddr, ConsumerPublicKey) bool)
-	IterateCkToPk(func(ConsumerPublicKey, ProviderPublicKey) bool)
-	IterateCcaToLastUpdateMemo(func(ConsumerConsAddr, ccvtypes.LastUpdateMemo) bool)
+	SetProviderConsAddrToConsumerPublicKey(ProviderConsAddr, ConsumerPublicKey)
+	SetConsumerPublicKeyToProviderPublicKey(ConsumerPublicKey, ProviderPublicKey)
+	SetConsumerConsAddrToLastUpdateMemo(ConsumerConsAddr, ccvtypes.LastUpdateMemo)
+	GetProviderConsAddrToConsumerPublicKey(ProviderConsAddr) (ConsumerPublicKey, bool)
+	GetConsumerPublicKeyToProviderPublicKey(ConsumerPublicKey) (ProviderPublicKey, bool)
+	GetConsumerConsAddrToLastUpdateMemo(ConsumerConsAddr) (ccvtypes.LastUpdateMemo, bool)
+	DelProviderConsAddrToConsumerPublicKey(ProviderConsAddr)
+	DelConsumerPublicKeyToProviderPublicKey(ConsumerPublicKey)
+	DelConsumerConsAddrToLastUpdateMemo(ConsumerConsAddr)
+	IterateProviderConsAddrToConsumerPublicKey(func(ProviderConsAddr, ConsumerPublicKey) bool)
+	IterateConsumerPublicKeyToProviderPublicKey(func(ConsumerPublicKey, ProviderPublicKey) bool)
+	IterateConsumerConsAddrToLastUpdateMemo(func(ConsumerConsAddr, ccvtypes.LastUpdateMemo) bool)
 }
 
 type KeyAssignment struct {
@@ -62,29 +62,29 @@ func MakeKeyAssignment(store Store) KeyAssignment {
 }
 
 func (ka *KeyAssignment) SetProviderPubKeyToConsumerPubKey(pk ProviderPublicKey, ck ConsumerPublicKey) error {
-	if _, ok := ka.Store.GetCkToPk(ck); ok {
+	if _, ok := ka.Store.GetConsumerPublicKeyToProviderPublicKey(ck); ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
-	if _, ok := ka.Store.GetCcaToLastUpdateMemo(PubKeyToConsAddr(ck)); ok {
+	if _, ok := ka.Store.GetConsumerConsAddrToLastUpdateMemo(PubKeyToConsAddr(ck)); ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
 	pca := PubKeyToConsAddr(pk)
-	if oldCk, ok := ka.Store.GetPcaToCk(pca); ok {
-		ka.Store.DelCkToPk(oldCk)
+	if oldCk, ok := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca); ok {
+		ka.Store.DelConsumerPublicKeyToProviderPublicKey(oldCk)
 	}
-	ka.Store.SetPcaToCk(pca, ck)
-	ka.Store.SetCkToPk(ck, pk)
+	ka.Store.SetProviderConsAddrToConsumerPublicKey(pca, ck)
+	ka.Store.SetConsumerPublicKeyToProviderPublicKey(ck, pk)
 	return nil
 }
 
 func (ka *KeyAssignment) DeleteProviderKey(pca ProviderConsAddr) error {
 	// TODO: document expensive operation
-	if ck, ok := ka.Store.GetPcaToCk(pca); ok {
-		ka.Store.DelCkToPk(ck)
+	if ck, ok := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca); ok {
+		ka.Store.DelConsumerPublicKeyToProviderPublicKey(ck)
 	}
-	ka.Store.DelPcaToCk(pca)
+	ka.Store.DelProviderConsAddrToConsumerPublicKey(pca)
 	toDelete := []ConsumerConsAddr{}
-	ka.Store.IterateCcaToLastUpdateMemo(func(cca ConsumerConsAddr, lum ccvtypes.LastUpdateMemo) bool {
+	ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(cca ConsumerConsAddr, lum ccvtypes.LastUpdateMemo) bool {
 		pcaInMemo := PubKeyToConsAddr(*lum.ProviderKey)
 		if pca.Equals(pcaInMemo) { // TODO: find other place where I should have used Equals
 			toDelete = append(toDelete, cca)
@@ -92,21 +92,21 @@ func (ka *KeyAssignment) DeleteProviderKey(pca ProviderConsAddr) error {
 		return false
 	})
 	for _, cca := range toDelete {
-		ka.Store.DelCcaToLastUpdateMemo(cca)
+		ka.Store.DelConsumerConsAddrToLastUpdateMemo(cca)
 	}
 	return nil
 }
 
 func (ka *KeyAssignment) GetCurrentConsumerPubKeyFromProviderPubKey(pk ProviderPublicKey) (ck ConsumerPublicKey, found bool) {
-	return ka.Store.GetPcaToCk(PubKeyToConsAddr(pk))
+	return ka.Store.GetProviderConsAddrToConsumerPublicKey(PubKeyToConsAddr(pk))
 }
 
 func (ka *KeyAssignment) GetProviderPubKeyFromConsumerPubKey(ck ConsumerPublicKey) (pk ProviderPublicKey, found bool) {
-	return ka.Store.GetCkToPk(ck)
+	return ka.Store.GetConsumerPublicKeyToProviderPublicKey(ck)
 }
 
 func (ka *KeyAssignment) GetProviderPubKeyFromConsumerConsAddress(cca sdk.ConsAddress) (pk ProviderPublicKey, found bool) {
-	if memo, found := ka.Store.GetCcaToLastUpdateMemo(cca); found {
+	if memo, found := ka.Store.GetConsumerConsAddrToLastUpdateMemo(cca); found {
 		return *memo.ProviderKey, true
 	}
 	return pk, false
@@ -114,14 +114,14 @@ func (ka *KeyAssignment) GetProviderPubKeyFromConsumerConsAddress(cca sdk.ConsAd
 
 func (ka *KeyAssignment) PruneUnusedKeys(latestVscid VSCID) {
 	toDel := []ConsumerConsAddr{}
-	ka.Store.IterateCcaToLastUpdateMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
+	ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
 		if m.Power == 0 && m.Vscid <= latestVscid {
 			toDel = append(toDel, cca)
 		}
 		return false
 	})
 	for _, cca := range toDel {
-		ka.Store.DelCcaToLastUpdateMemo(cca)
+		ka.Store.DelConsumerConsAddrToLastUpdateMemo(cca)
 	}
 }
 
@@ -134,9 +134,9 @@ func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates map[ProviderPub
 	// Get provider keys which the consumer is aware of, because the
 	// last update sent to the consumer was a positive power update
 	// and the assigned key has changed since that update.
-	ka.Store.IterateCcaToLastUpdateMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
+	ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
 		pca := PubKeyToConsAddr(*m.ProviderKey)
-		if newCk, ok := ka.Store.GetPcaToCk(pca); ok { // TODO: do away with ok, should always be ok
+		if newCk, ok := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca); ok { // TODO: do away with ok, should always be ok
 			oldCk := m.ConsumerKey
 			if !oldCk.Equal(newCk) && 0 < m.Power {
 				keys = append(keys, *m.ProviderKey)
@@ -160,7 +160,7 @@ func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates map[ProviderPub
 
 func (ka KeyAssignment) getProviderKeysLastPositiveUpdate(mustCreateUpdate map[string]bool) map[string]ccvtypes.LastUpdateMemo {
 	lastUpdate := map[string]ccvtypes.LastUpdateMemo{}
-	ka.Store.IterateCcaToLastUpdateMemo(func(_ ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
+	ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(_ ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
 		s := DeterministicStringify(*m.ProviderKey)
 		if 0 < m.Power {
 			if _, found := mustCreateUpdate[s]; found {
@@ -196,7 +196,7 @@ func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates map[Prov
 			canonicalConsumerKey[s] = *u.ConsumerKey
 			consumerUpdates[*u.ConsumerKey] = 0
 			cca := PubKeyToConsAddr(*u.ConsumerKey)
-			ka.Store.SetCcaToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{ConsumerKey: u.ConsumerKey, ProviderKey: &pk, Vscid: vscid, Power: 0})
+			ka.Store.SetConsumerConsAddrToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{ConsumerKey: u.ConsumerKey, ProviderKey: &pk, Vscid: vscid, Power: 0})
 		}
 	}
 
@@ -224,12 +224,12 @@ func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates map[Prov
 
 		// Only ship update with positive powers.
 		if 0 < power {
-			ck, found := ka.Store.GetPcaToCk(PubKeyToConsAddr(pk))
+			ck, found := ka.Store.GetProviderConsAddrToConsumerPublicKey(PubKeyToConsAddr(pk))
 			if !found {
 				panic("must find ck for pk")
 			}
 			cca := PubKeyToConsAddr(ck)
-			ka.Store.SetCcaToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{ConsumerKey: &ck, ProviderKey: &pk, Vscid: vscid, Power: power})
+			ka.Store.SetConsumerConsAddrToLastUpdateMemo(cca, ccvtypes.LastUpdateMemo{ConsumerKey: &ck, ProviderKey: &pk, Vscid: vscid, Power: power})
 			if k, found := canonicalConsumerKey[DeterministicStringify(ck)]; found {
 				consumerUpdates[k] = power
 			} else {
@@ -271,7 +271,7 @@ func (ka *KeyAssignment) InternalInvariants() bool {
 		// No two provider keys can map to the same consumer key
 		// (pkToCk is sane)
 		seen := map[string]bool{}
-		ka.Store.IteratePcaToCk(func(_ ProviderConsAddr, ck ConsumerPublicKey) bool {
+		ka.Store.IterateProviderConsAddrToConsumerPublicKey(func(_ ProviderConsAddr, ck ConsumerPublicKey) bool {
 			if seen[DeterministicStringify(ck)] {
 				good = false
 			}
@@ -283,8 +283,8 @@ func (ka *KeyAssignment) InternalInvariants() bool {
 	{
 		// All values of pkToCk is a key of ckToPk
 		// (reverse lookup is always possible)
-		ka.Store.IteratePcaToCk(func(pca ProviderConsAddr, ck ConsumerPublicKey) bool {
-			if pkQueried, ok := ka.Store.GetCkToPk(ck); ok {
+		ka.Store.IterateProviderConsAddrToConsumerPublicKey(func(pca ProviderConsAddr, ck ConsumerPublicKey) bool {
+			if pkQueried, ok := ka.Store.GetConsumerPublicKeyToProviderPublicKey(ck); ok {
 				pcaQueried := PubKeyToConsAddr(pkQueried)
 				good = good && string(pcaQueried) == string(pca)
 			} else {
@@ -298,9 +298,9 @@ func (ka *KeyAssignment) InternalInvariants() bool {
 		// All consumer keys mapping to provider keys are actually
 		// mapped to by the provider key.
 		// (ckToPk is sane)
-		ka.Store.IterateCkToPk(func(ck ConsumerPublicKey, _ ProviderPublicKey) bool {
+		ka.Store.IterateConsumerPublicKeyToProviderPublicKey(func(ck ConsumerPublicKey, _ ProviderPublicKey) bool {
 			found := false
-			ka.Store.IteratePcaToCk(func(_ ProviderConsAddr, candidateCk ConsumerPublicKey) bool {
+			ka.Store.IterateProviderConsAddrToConsumerPublicKey(func(_ ProviderConsAddr, candidateCk ConsumerPublicKey) bool {
 				if candidateCk.Equal(ck) {
 					found = true
 					return true
@@ -317,8 +317,8 @@ func (ka *KeyAssignment) InternalInvariants() bool {
 		// any memo containing the same consumer key has the same
 		// mapping.
 		// (Ensures lookups are correct)
-		ka.Store.IterateCkToPk(func(ck ConsumerPublicKey, pk ProviderPublicKey) bool {
-			if m, ok := ka.Store.GetCcaToLastUpdateMemo(PubKeyToConsAddr(ck)); ok {
+		ka.Store.IterateConsumerPublicKeyToProviderPublicKey(func(ck ConsumerPublicKey, pk ProviderPublicKey) bool {
+			if m, ok := ka.Store.GetConsumerConsAddrToLastUpdateMemo(PubKeyToConsAddr(ck)); ok {
 				if !pk.Equal(m.ProviderKey) {
 					good = false
 				}
@@ -330,7 +330,7 @@ func (ka *KeyAssignment) InternalInvariants() bool {
 	{
 		// All entries in ckToMemo have a consumer consensus
 		// address which is the address held inside
-		ka.Store.IterateCcaToLastUpdateMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
+		ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(cca ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
 			cons := PubKeyToConsAddr(*m.ConsumerKey)
 			if len(cca) != len(cons) {
 				good = false
@@ -348,7 +348,7 @@ func (ka *KeyAssignment) InternalInvariants() bool {
 		// The set of all LastUpdateMemos with positive power
 		// has pairwise unique provider keys
 		seen := map[string]bool{}
-		ka.Store.IterateCcaToLastUpdateMemo(func(_ ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
+		ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(_ ConsumerConsAddr, m ccvtypes.LastUpdateMemo) bool {
 			if 0 < m.Power {
 				s := DeterministicStringify(*m.ProviderKey)
 				if _, ok := seen[s]; ok {
@@ -370,7 +370,7 @@ type KeyAssignmentStore struct {
 	ChainID string
 }
 
-func (s *KeyAssignmentStore) SetPcaToCk(k ProviderConsAddr, v ConsumerPublicKey) {
+func (s *KeyAssignmentStore) SetProviderConsAddrToConsumerPublicKey(k ProviderConsAddr, v ConsumerPublicKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -381,7 +381,7 @@ func (s *KeyAssignmentStore) SetPcaToCk(k ProviderConsAddr, v ConsumerPublicKey)
 	}
 	s.Store.Set(providertypes.KeyAssignmentPcaToCkKey(s.ChainID, kbz), vbz)
 }
-func (s *KeyAssignmentStore) SetCkToPk(k ConsumerPublicKey, v ProviderPublicKey) {
+func (s *KeyAssignmentStore) SetConsumerPublicKeyToProviderPublicKey(k ConsumerPublicKey, v ProviderPublicKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -392,7 +392,7 @@ func (s *KeyAssignmentStore) SetCkToPk(k ConsumerPublicKey, v ProviderPublicKey)
 	}
 	s.Store.Set(providertypes.KeyAssignmentCkToPkKey(s.ChainID, kbz), vbz)
 }
-func (s *KeyAssignmentStore) SetCcaToLastUpdateMemo(k ConsumerConsAddr, v ccvtypes.LastUpdateMemo) {
+func (s *KeyAssignmentStore) SetConsumerConsAddrToLastUpdateMemo(k ConsumerConsAddr, v ccvtypes.LastUpdateMemo) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -403,7 +403,7 @@ func (s *KeyAssignmentStore) SetCcaToLastUpdateMemo(k ConsumerConsAddr, v ccvtyp
 	}
 	s.Store.Set(providertypes.KeyAssignmentCcaToLastUpdateMemoKey(s.ChainID, kbz), vbz)
 }
-func (s *KeyAssignmentStore) GetPcaToCk(k ProviderConsAddr) (v ConsumerPublicKey, found bool) {
+func (s *KeyAssignmentStore) GetProviderConsAddrToConsumerPublicKey(k ProviderConsAddr) (v ConsumerPublicKey, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -417,7 +417,7 @@ func (s *KeyAssignmentStore) GetPcaToCk(k ProviderConsAddr) (v ConsumerPublicKey
 	}
 	return v, false
 }
-func (s *KeyAssignmentStore) GetCkToPk(k ConsumerPublicKey) (v ProviderPublicKey, found bool) {
+func (s *KeyAssignmentStore) GetConsumerPublicKeyToProviderPublicKey(k ConsumerPublicKey) (v ProviderPublicKey, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -431,7 +431,7 @@ func (s *KeyAssignmentStore) GetCkToPk(k ConsumerPublicKey) (v ProviderPublicKey
 	}
 	return v, false
 }
-func (s *KeyAssignmentStore) GetCcaToLastUpdateMemo(k ConsumerConsAddr) (v ccvtypes.LastUpdateMemo, found bool) {
+func (s *KeyAssignmentStore) GetConsumerConsAddrToLastUpdateMemo(k ConsumerConsAddr) (v ccvtypes.LastUpdateMemo, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -446,28 +446,28 @@ func (s *KeyAssignmentStore) GetCcaToLastUpdateMemo(k ConsumerConsAddr) (v ccvty
 	}
 	return v, false
 }
-func (s *KeyAssignmentStore) DelPcaToCk(k ProviderConsAddr) {
+func (s *KeyAssignmentStore) DelProviderConsAddrToConsumerPublicKey(k ProviderConsAddr) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
 	s.Store.Delete(providertypes.KeyAssignmentPcaToCkKey(s.ChainID, kbz))
 }
-func (s *KeyAssignmentStore) DelCkToPk(k ConsumerPublicKey) {
+func (s *KeyAssignmentStore) DelConsumerPublicKeyToProviderPublicKey(k ConsumerPublicKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
 	s.Store.Delete(providertypes.KeyAssignmentCkToPkKey(s.ChainID, kbz))
 }
-func (s *KeyAssignmentStore) DelCcaToLastUpdateMemo(k ConsumerConsAddr) {
+func (s *KeyAssignmentStore) DelConsumerConsAddrToLastUpdateMemo(k ConsumerConsAddr) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
 	}
 	s.Store.Delete(providertypes.KeyAssignmentCcaToLastUpdateMemoKey(s.ChainID, kbz))
 }
-func (s *KeyAssignmentStore) IteratePcaToCk(cb func(ProviderConsAddr, ConsumerPublicKey) bool) {
+func (s *KeyAssignmentStore) IterateProviderConsAddrToConsumerPublicKey(cb func(ProviderConsAddr, ConsumerPublicKey) bool) {
 	prefix := providertypes.KeyAssignmentPcaToCkChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
@@ -487,7 +487,7 @@ func (s *KeyAssignmentStore) IteratePcaToCk(cb func(ProviderConsAddr, ConsumerPu
 		}
 	}
 }
-func (s *KeyAssignmentStore) IterateCkToPk(cb func(ConsumerPublicKey, ProviderPublicKey) bool) {
+func (s *KeyAssignmentStore) IterateConsumerPublicKeyToProviderPublicKey(cb func(ConsumerPublicKey, ProviderPublicKey) bool) {
 	prefix := providertypes.KeyAssignmentCkToPkChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
@@ -507,7 +507,7 @@ func (s *KeyAssignmentStore) IterateCkToPk(cb func(ConsumerPublicKey, ProviderPu
 		}
 	}
 }
-func (s *KeyAssignmentStore) IterateCcaToLastUpdateMemo(cb func(ConsumerConsAddr, ccvtypes.LastUpdateMemo) bool) {
+func (s *KeyAssignmentStore) IterateConsumerConsAddrToLastUpdateMemo(cb func(ConsumerConsAddr, ccvtypes.LastUpdateMemo) bool) {
 	prefix := providertypes.KeyAssignmentCcaToLastUpdateMemoChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
