@@ -91,13 +91,13 @@ const (
 	// LockUnbondingOnTimeoutBytePrefix is the byte prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
 	LockUnbondingOnTimeoutBytePrefix
 
-	// TODO:
+	// KeyAssignmentProviderConsAddrToConsumerPublicKeyPrefix is the byte prefix that will store the mapping from provider chain consensus address to consumer chain public key
 	KeyAssignmentProviderConsAddrToConsumerPublicKeyPrefix
 
-	// TODO:
+	// KeyAssignmentConsumerPublicKeyToProviderPublicKeyPrefix is the byte prefix that will store the mapping from consumer chain public key to provider chain public key
 	KeyAssignmentConsumerPublicKeyToProviderPublicKeyPrefix
 
-	// TODO:
+	// KeyAssignmentConsAddrToLastUpdateMemoPrefix is the byte prefix that will store the mapping from provider chain consensus address to last update memo
 	KeyAssignmentConsAddrToLastUpdateMemoPrefix
 )
 
@@ -277,32 +277,32 @@ func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return append([]byte{LockUnbondingOnTimeoutBytePrefix}, []byte(chainID)...)
 }
 
-// TODO:
+// KeyAssignmentProviderConsAddrToConsumerPublicKeyChainPrefix returns the key chain prefix for the mapping from provider consensus address to consumer public key
 func KeyAssignmentProviderConsAddrToConsumerPublicKeyChainPrefix(chainID string) []byte {
 	return append([]byte{KeyAssignmentProviderConsAddrToConsumerPublicKeyPrefix}, []byte(chainID)...)
 }
 
-// TODO:
+// KeyAssignmentConsumerPublicKeyToProviderPublicKeyChainPrefix returns the key chain prefix for the mapping from consumer public key to provider public key
 func KeyAssignmentConsumerPublicKeyToProviderPublicKeyChainPrefix(chainID string) []byte {
 	return append([]byte{KeyAssignmentConsumerPublicKeyToProviderPublicKeyPrefix}, []byte(chainID)...)
 }
 
-// TODO:
+// KeyAssignmentConsumerConsAddrToLastUpdateMemoChainPrefix returns the key chain prefix for the mapping from consumer consensus address to last update memo
 func KeyAssignmentConsumerConsAddrToLastUpdateMemoChainPrefix(chainID string) []byte {
 	return append([]byte{KeyAssignmentConsAddrToLastUpdateMemoPrefix}, []byte(chainID)...)
 }
 
-// TODO:
+// KeyAssignmentProviderConsAddrToConsumerPublicKeyKey returns the key for the mapping from provider consensus address to consumer public key
 func KeyAssignmentProviderConsAddrToConsumerPublicKeyKey(chainID string, kbz []byte) []byte {
 	return append(KeyAssignmentProviderConsAddrToConsumerPublicKeyChainPrefix(chainID), kbz...)
 }
 
-// TODO:
+// KeyAssignmentConsumerPublicKeyToProviderPublicKeyKey returns the key for the mapping from consumer public key to provider public key
 func KeyAssignmentConsumerPublicKeyToProviderPublicKeyKey(chainID string, kbz []byte) []byte {
 	return append(KeyAssignmentConsumerPublicKeyToProviderPublicKeyChainPrefix(chainID), kbz...)
 }
 
-// TODO:
+// KeyAssignmentConsumerConsAddrToLastUpdateMemoKey returns the key for the mapping from consumer consensus address to last update memo
 func KeyAssignmentConsumerConsAddrToLastUpdateMemoKey(chainID string, kbz []byte) []byte {
 	return append(KeyAssignmentConsumerConsAddrToLastUpdateMemoChainPrefix(chainID), kbz...)
 }
