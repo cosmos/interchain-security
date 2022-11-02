@@ -539,10 +539,6 @@ func (s *CoreSuite) executeTraces() {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
-			// TODO: move these initialisation steps to somewhere sensible
-			s.vscidToKeyAssignment = map[uint64]map[int64]providerkeeper.ConsumerPublicKey{}
-			s.vscidToKeyAssignment[16] = s.readCurrentKeyAssignment()
-			s.vscidToKeyAssignment[s.offsetProviderVscId] = s.readCurrentKeyAssignment()
 
 			s.traces.CurrentTraceIx = i
 			defer func() {
@@ -594,4 +590,7 @@ func (s *CoreSuite) SetupTest() {
 	s.offsetTimeUnix = offsetTimeUnix
 	s.offsetProviderVscId = providerVscID
 	s.simibc = simibc.MakeRelayedPath(s.Suite.T(), path)
+	s.vscidToKeyAssignment = map[uint64]map[int64]providerkeeper.ConsumerPublicKey{}
+	s.vscidToKeyAssignment[16] = s.readCurrentKeyAssignment() // TODO: unhardcode, check if needed
+	s.vscidToKeyAssignment[s.offsetProviderVscId] = s.readCurrentKeyAssignment()
 }
