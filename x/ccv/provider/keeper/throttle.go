@@ -76,6 +76,37 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 // is deleted in this method. Whereas the entry itself is deleted after iteration is completed in HandlePendingSlashPackets.
 func (k Keeper) HandlePendingSlashPacketByEntry(
 	ctx sdktypes.Context, entry providertypes.SlashPacketEntry) {
+
+	// Store how many slash packet data structures were handled, and how many vsc matured
+	numSlash := 0
+	numVSCMatured := 0
+
+	k.IteratePendingPacketData(ctx, entry.ConsumerChainID, func(ibcSeqNum uint64, data interface{}) bool {
+
+		switch data := data.(type) {
+		case ccvtypes.SlashPacketData:
+			if numSlash > 0 {
+				// Break iteration, since we've already handled one slash packet
+				return true
+			}
+			_, err := k.HandleSlashPacket(ctx, entry.ConsumerChainID, data)
+			if err != nil {
+				panic(fmt.Sprintf("failed to handle slash packet: %s", err))
+			}
+			numSlash++
+		case ccvtypes.VSCMaturedPacketData:
+			// TODO: confirm this is safe, make tests around handling vsc matured packets immediately if no slash packets in queue
+			if numSlash == 0 {
+				panic("data is corrupt, first data struct in queue should be slash packet data")
+			}
+			// TODO: handle vsc matured packet
+			numVSCMatured++
+		default:
+			panic(fmt.Sprintf("unexpected pending packet data type: %T", data))
+		}
+		return false
+	})
+
 	// TODO: handle slash packet, and all trailing vsc matured packets
 
 	_, err := k.HandleSlashPacket(ctx, entry.ConsumerChainID,
