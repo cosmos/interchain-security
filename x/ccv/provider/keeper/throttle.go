@@ -44,15 +44,19 @@ func (k Keeper) QueuePendingSlashPacket(
 func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 	meter := k.GetSlashGasMeter(ctx)
-
 	handledEntries := []providertypes.SlashPacketEntry{}
+
 	k.IteratePendingSlashPacketEntries(ctx, func(entry providertypes.SlashPacketEntry) bool {
 
+		// Obtain the validator power relevant to the slash packet that's about to be handled
+		// (this power will be removed via jailing or tombstoning)
 		valPower := k.stakingKeeper.GetLastValidatorPower(ctx, entry.ValAddr)
+
+		// Subtract this power from the slash gas meter
 		meter.Sub(sdktypes.NewInt(valPower))
 
+		// Handle slash packet by entry, and store entry to be deleted after iteration is completed
 		k.HandlePendingSlashPacketByEntry(ctx, entry)
-
 		handledEntries = append(handledEntries, entry)
 
 		// Do not handle anymore slash packets if the meter has 0 or negative gas
@@ -61,6 +65,7 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 	// Handled entries are deleted after iteration is completed
 	k.DeletePendingSlashPacketEntries(ctx, handledEntries...)
+
 	// Persist current value for slash gas meter
 	k.SetSlashGasMeter(ctx, meter)
 }
