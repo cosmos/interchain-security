@@ -9,6 +9,9 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
+// TestUndelegationNormalOperation tests that undelegations complete after 
+// the unbonding period elapses on both the consumer and provider, without 
+// VSC packets timing out.
 func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 	unbondConsumer := func(expectedPackets int) {
 		// relay 1 VSC packet from provider to consumer
