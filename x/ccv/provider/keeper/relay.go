@@ -41,6 +41,14 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 
 	// TODO: if no packets are in the per chain queue, immediately handle vsc matured packet
 	// TODO: else queue that bish up
+	k.HandleVSCMaturedPacket(ctx, chainID, packet, data)
+
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	return ack
+}
+
+func (k Keeper) HandleVSCMaturedPacket(
+	ctx sdk.Context, chainID string, packet channeltypes.Packet, data ccv.VSCMaturedPacketData) {
 
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
 	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
@@ -61,15 +69,13 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 			}
 		}
 	}
+
 	if err := k.AppendMaturedUnbondingOps(ctx, maturedIds); err != nil {
 		panic(fmt.Errorf("mature unbonding ops could not be appended: %w", err))
 	}
 
 	// clean up index
 	k.DeleteUnbondingOpIndex(ctx, chainID, data.ValsetUpdateId)
-
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	return ack
 }
 
 // CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations

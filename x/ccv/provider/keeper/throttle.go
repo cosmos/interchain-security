@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -55,8 +57,10 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		// Subtract this power from the slash gas meter
 		meter.Sub(sdktypes.NewInt(valPower))
 
-		// Handle slash packet by entry, and store entry to be deleted after iteration is completed
-		k.HandlePendingSlashPacketByEntry(ctx, entry)
+		// Handle slash packet by entry, passing in appropriate handlers
+		k.HandlePendingSlashPacketByEntry(ctx, entry, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
+
+		// Store handled entry to be deleted after iteration is completed
 		handledEntries = append(handledEntries, entry)
 
 		// Do not handle anymore slash packets if the meter has 0 or negative gas
@@ -70,12 +74,14 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 	k.SetSlashGasMeter(ctx, meter)
 }
 
-// HandlePendingSlashPacketByEntry retrieves the queued slash packet data relevant to the given entry,
-// then handles the slash packet, and finally handles any trailing vsc matured packets in the
-// chain specific pending packet data queue. Note that any handled (chain specific) pending packet data
+// HandlePendingSlashPacketByEntry retrieves the queued slash packet data relevant to the provided entry,
+// handles the slash packet, and finally handles any trailing vsc matured packets in the
+// chain-specific pending packet data queue. Note that any handled (chain-specific) pending packet data
 // is deleted in this method. Whereas the entry itself is deleted after iteration is completed in HandlePendingSlashPackets.
-func (k Keeper) HandlePendingSlashPacketByEntry(
-	ctx sdktypes.Context, entry providertypes.SlashPacketEntry) {
+func (k Keeper) HandlePendingSlashPacketByEntry(ctx sdktypes.Context, entry providertypes.SlashPacketEntry,
+	slashPacketHandler func(sdktypes.Context, string, ccvtypes.SlashPacketData) (bool, error),
+	vscMaturedPacketHandler func(sdk.Context, string, channeltypes.Packet, ccv.VSCMaturedPacketData),
+) {
 
 	// Store how many slash packet data structures were handled, and how many vsc matured
 	numSlash := 0
@@ -84,23 +90,25 @@ func (k Keeper) HandlePendingSlashPacketByEntry(
 	k.IteratePendingPacketData(ctx, entry.ConsumerChainID, func(ibcSeqNum uint64, data interface{}) bool {
 
 		switch data := data.(type) {
+
 		case ccvtypes.SlashPacketData:
 			if numSlash > 0 {
 				// Break iteration, since we've already handled one slash packet
 				return true
 			}
-			_, err := k.HandleSlashPacket(ctx, entry.ConsumerChainID, data)
+			_, err := slashPacketHandler(ctx, entry.ConsumerChainID, data)
 			if err != nil {
 				panic(fmt.Sprintf("failed to handle slash packet: %s", err))
 			}
 			numSlash++
+
 		case ccvtypes.VSCMaturedPacketData:
 			// TODO: confirm this is safe, make tests around handling vsc matured packets immediately if no slash packets in queue
 			if numSlash == 0 {
 				panic("data is corrupt, first data struct in queue should be slash packet data")
 			}
-			// TODO: handle vsc matured packet
 			numVSCMatured++
+
 		default:
 			panic(fmt.Sprintf("unexpected pending packet data type: %T", data))
 		}
