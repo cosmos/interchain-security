@@ -61,9 +61,9 @@ AssignKey ==
 ProviderEndAndCommitBlock ==
     \E valset \in SUBSET PROVIDER_KEYS:
     \* Create a new assignment entry
-    /\ assignments' = assignments @@ [vscid \in {committedProviderVSCID+2} |-> assignments[committedProviderVSCID]]
+    /\ assignments' = assignments @@ (committedProviderVSCID+2) :> assignments[committedProviderVSCID]
     \* Get a new validator set from changes in voting power
-    /\ providerValSets' = providerValSets @@ [vscid \in {committedProviderVSCID+1} |-> valset]
+    /\ providerValSets' = providerValSets @@ (committedProviderVSCID+1) :> valset
     \* Increment vscid
     /\ committedProviderVSCID' = committedProviderVSCID + 1
     \* The rest...
