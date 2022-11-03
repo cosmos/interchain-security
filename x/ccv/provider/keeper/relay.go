@@ -219,7 +219,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		chainID,         // consumer chain id that sent the packet
 		data.Validator.Address))
 	// Queue data in the same queue as vsc matured packets to enforce seq num ordering
-	k.QueuePendingPacketData(ctx,
+	k.QueuePendingSlashPacketData(ctx,
 		chainID,         // consumer chain id that sent the packet
 		packet.Sequence, // IBC sequence number of the packet
 		data)

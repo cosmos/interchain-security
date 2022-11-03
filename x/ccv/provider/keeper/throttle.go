@@ -94,7 +94,7 @@ func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 func (k Keeper) HandleOrQueueVSCMaturedPacket(ctx sdktypes.Context, consumerChainID string, data ccvtypes.VSCMaturedPacketData) {
 	// TODO: if queue for this chain is empty (no pending slash packets), handle vsc matured packet immediately
 	// else queue it
-	k.QueuePendingPacketData(ctx, consumerChainID, 7, data) // TODO: hook seq number into this
+	k.QueuePendingVSCMaturedPacketData(ctx, consumerChainID, 7, data) // TODO: hook seq number into this
 }
 
 // Highest level "parent" queue
@@ -146,67 +146,56 @@ const (
 	vscMaturedPacketData
 )
 
-// TODO: you can refactor this to be two methods total
-func (k Keeper) QueuePendingSlashPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData) {
-	k.QueuePendingPacketData(ctx, consumerChainID, ibcSeqNum, data)
-}
-
-func (k Keeper) QueuePendingVSCMaturedPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData) {
-	k.QueuePendingPacketData(ctx, consumerChainID, ibcSeqNum, data)
-}
-
-// Handling a slash packet at the head of the queue handles all vsc matured packets after the head
-// VSC matured packets at the head are handled immediately
-func (k Keeper) QueuePendingPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data interface{}) {
+func (k Keeper) QueuePendingSlashPacketData(
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData) {
 	store := ctx.KVStore(k.storeKey)
-	var bz []byte
-	var err error
-	var t byte
-	switch d := data.(type) {
-	case ccvtypes.SlashPacketData:
-		bz, err = d.Marshal()
-		t = slashPacketData
-	case ccvtypes.VSCMaturedPacketData:
-		bz, err = d.Marshal()
-		t = vscMaturedPacketData
-	default:
-		panic("invalid packet data type")
-	}
+	bz, err := data.Marshal()
 	if err != nil {
-		panic(fmt.Sprintf("failed to marshal pending packet data: %v", err))
+		panic(fmt.Sprintf("failed to marshal slash packet data: %v", err))
 	}
-	// Byte array value starts with byte type enum, followed by the marshaled data payload
-	bz = append([]byte{t}, bz...)
+	bz = append([]byte{slashPacketData}, bz...)
+	store.Set(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum), bz)
+}
+
+func (k Keeper) QueuePendingVSCMaturedPacketData(
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData) {
+	store := ctx.KVStore(k.storeKey)
+	bz, err := data.Marshal()
+	if err != nil {
+		panic(fmt.Sprintf("failed to marshal vsc matured packet data: %v", err))
+	}
+	bz = append([]byte{vscMaturedPacketData}, bz...)
 	store.Set(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum), bz)
 }
 
 // IteratePendingPacketData iterates over the pending packet data queue for a specific consumer chain
 // (ordered by ibc seq number) and calls the provided callback
-// Note, the parameter callback executes on a pointer to the packet data
 func (k Keeper) IteratePendingPacketData(ctx sdktypes.Context, consumerChainID string, cb func(uint64, interface{}) bool) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := append([]byte{providertypes.PendingPacketDataBytePrefix}, providertypes.HashString(consumerChainID)...)
 	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		ibcSeqNum := providertypes.ParsePendingPacketDataKey(iterator.Key())
-		data := iterator.Value()
-		var unmarshaledDataPtr interface{}
+		var packetData interface{}
 		var err error
-		switch data[0] {
+		bz := iterator.Value()
+		switch bz[0] {
 		case slashPacketData:
-			unmarshaledDataPtr = &ccvtypes.SlashPacketData{}
-			err = unmarshaledDataPtr.(*ccvtypes.SlashPacketData).Unmarshal(data[1:])
+			spd := ccvtypes.SlashPacketData{}
+			err = spd.Unmarshal(bz[1:])
+			packetData = spd
 		case vscMaturedPacketData:
-			unmarshaledDataPtr = &ccvtypes.VSCMaturedPacketData{}
-			err = unmarshaledDataPtr.(*ccvtypes.VSCMaturedPacketData).Unmarshal(data[1:])
+			vpd := ccvtypes.VSCMaturedPacketData{}
+			err = vpd.Unmarshal(bz[1:])
+			packetData = vpd
 		default:
 			panic("invalid packet data type")
 		}
 		if err != nil {
 			panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
 		}
-		if cb(ibcSeqNum, unmarshaledDataPtr) {
+		ibcSeqNum := providertypes.ParsePendingPacketDataKey(iterator.Key())
+		if cb(ibcSeqNum, packetData) {
 			break
 		}
 	}

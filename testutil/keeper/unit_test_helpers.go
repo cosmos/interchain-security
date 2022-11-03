@@ -190,10 +190,10 @@ func GenPubKey() (crypto.PubKey, error) {
 	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
 }
 
-// Obtains slash packet data pointer with a newly generated key
-func GetNewSlashPacketData() *ccvtypes.SlashPacketData {
+// Obtains slash packet data with a newly generated key
+func GetNewSlashPacketData() ccvtypes.SlashPacketData {
 	rand.Seed(time.Now().UnixNano())
-	return &ccvtypes.SlashPacketData{
+	return ccvtypes.SlashPacketData{
 		Validator: abci.Validator{
 			Address: ed25519.GenPrivKey().PubKey().Address(),
 			Power:   rand.Int63(),
@@ -203,10 +203,10 @@ func GetNewSlashPacketData() *ccvtypes.SlashPacketData {
 	}
 }
 
-// Obtains vsc matured packet data pointer with a newly generated key
-func GetNewVSCMaturedPacketData() *ccvtypes.VSCMaturedPacketData {
+// Obtains vsc matured packet data with a newly generated key
+func GetNewVSCMaturedPacketData() ccvtypes.VSCMaturedPacketData {
 	rand.Seed(time.Now().UnixNano())
-	return &ccvtypes.VSCMaturedPacketData{ValsetUpdateId: rand.Uint64()}
+	return ccvtypes.VSCMaturedPacketData{ValsetUpdateId: rand.Uint64()}
 }
 
 func GetClientState(chainID string) *ibctmtypes.ClientState {

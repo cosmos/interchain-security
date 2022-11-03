@@ -197,14 +197,14 @@ func TestPendingSlashPacketEntryDeletion(t *testing.T) {
 
 type pendingPacketDataInstance struct {
 	IbcSeqNum uint64
-	DataPtr   interface{}
+	Data      interface{}
 }
 
 // getAllPendingPacketDataPtrs returns all pending packet data instances in order from the pending packet data queue
 // This function helps test the iterator for pending packet data
 func getAllPendingPacketDataInstances(k *keeper.Keeper, ctx sdktypes.Context, consumerChainId string) (instances []pendingPacketDataInstance) {
-	k.IteratePendingPacketData(ctx, consumerChainId, func(ibcSeqNum uint64, dataPtr interface{}) bool {
-		instances = append(instances, pendingPacketDataInstance{IbcSeqNum: ibcSeqNum, DataPtr: dataPtr})
+	k.IteratePendingPacketData(ctx, consumerChainId, func(ibcSeqNum uint64, data interface{}) bool {
+		instances = append(instances, pendingPacketDataInstance{IbcSeqNum: ibcSeqNum, Data: data})
 		return false
 	})
 	return
@@ -226,36 +226,36 @@ func TestPendingPacketData(t *testing.T) {
 		{
 			chainID: "chain-0",
 			instances: []pendingPacketDataInstance{
-				{IbcSeqNum: 0, DataPtr: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 1, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
-				{IbcSeqNum: 2, DataPtr: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 3, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
-				{IbcSeqNum: 4, DataPtr: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 0, Data: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 1, Data: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 2, Data: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 3, Data: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 4, Data: testkeeper.GetNewSlashPacketData()},
 			},
 			expectedOrder: []int{0, 1, 2, 3, 4},
 		},
 		{
 			chainID: "chain-7",
 			instances: []pendingPacketDataInstance{
-				{IbcSeqNum: 96, DataPtr: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 78, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
-				{IbcSeqNum: 12, DataPtr: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 0, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
-				{IbcSeqNum: 1, DataPtr: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 78972, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
-				{IbcSeqNum: 9999999999999999999, DataPtr: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 96, Data: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 78, Data: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 12, Data: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 0, Data: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 1, Data: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 78972, Data: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 9999999999999999999, Data: testkeeper.GetNewSlashPacketData()},
 			},
 			expectedOrder: []int{3, 4, 2, 1, 0, 5, 6},
 		},
 		{
 			chainID: "chain-thats-not-0-or-7",
 			instances: []pendingPacketDataInstance{
-				{IbcSeqNum: 9, DataPtr: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 8, DataPtr: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 7, DataPtr: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 6, DataPtr: testkeeper.GetNewSlashPacketData()},
-				{IbcSeqNum: 5, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
-				{IbcSeqNum: 1, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 9, Data: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 8, Data: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 7, Data: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 6, Data: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 5, Data: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 1, Data: testkeeper.GetNewVSCMaturedPacketData()},
 			},
 			expectedOrder: []int{5, 4, 3, 2, 1, 0},
 		},
@@ -264,12 +264,12 @@ func TestPendingPacketData(t *testing.T) {
 	// Queue all packet data at once
 	for _, chainData := range packetDataForMultipleConsumers {
 		for _, dataInstance := range chainData.instances {
-			// TODO: you can make this better
-			if slashData, ok := dataInstance.DataPtr.(*ccvtypes.SlashPacketData); ok {
-				providerKeeper.QueuePendingSlashPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, *slashData)
+			// Queue packet data differently depending on type
+			if slashData, ok := dataInstance.Data.(ccvtypes.SlashPacketData); ok {
+				providerKeeper.QueuePendingSlashPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, slashData)
 
-			} else if vscMaturedData, ok := dataInstance.DataPtr.(*ccvtypes.VSCMaturedPacketData); ok {
-				providerKeeper.QueuePendingVSCMaturedPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, *vscMaturedData)
+			} else if vscMaturedData, ok := dataInstance.Data.(ccvtypes.VSCMaturedPacketData); ok {
+				providerKeeper.QueuePendingVSCMaturedPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, vscMaturedData)
 
 			} else {
 				panic("invalid data type")
@@ -286,9 +286,9 @@ func TestPendingPacketData(t *testing.T) {
 			expectedIdx := chainData.expectedOrder[i]
 			expectedIbcSeqNum := chainData.instances[expectedIdx].IbcSeqNum
 			require.Equal(t, expectedIbcSeqNum, obtainedInstance.IbcSeqNum)
-			// Assert expected data at this index
-			expectedDataPtr := chainData.instances[expectedIdx].DataPtr
-			require.EqualValues(t, expectedDataPtr, obtainedInstance.DataPtr)
+			// Assert expected data at this index matches the obtained data
+			expectedData := chainData.instances[expectedIdx].Data
+			require.EqualValues(t, expectedData, obtainedInstance.Data)
 		}
 	}
 
