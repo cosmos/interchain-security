@@ -109,7 +109,7 @@ All Interchain Security properties still hold when KeyAssignment is used, the ab
 Additionally
 
 3. Timeliness\
-When a `AssignConsensusPublicKeyToConsumerChain` operation succeeds for a given `(chainID, ProviderValidatorAddress, ConsumerConsensusPubKey)` tuple at block height `hp0`, and is not followed by a subsquent call for the same tuple before or during a height `hp1` (`hp0 <= hp1`), and at `hp1` a validator set update packet is committed at the provider chain, then at the next earliest height `hc2` on the consumer chain that the packet is received, the `ConsumerConsensusPubKey ` is passed as consensus key to tendermint. Thus tendermint will expect a signature from `ConsumerConsensusPubKey ` from height `hc2 + 1`.
+When a `AssignConsensusPublicKeyToConsumerChain` operation succeeds for a given `(chainID, ProviderValidatorAddress, ConsumerConsensusPubKey)` tuple at block height `hp0`, and is not followed by a subsequent call for a tuple starting `(chainID, ProviderValidatorAddress,)` before or during a height `hp1` (`hp0 <= hp1`), and at `hp1` a validator set update packet is committed at the provider chain, then at the next earliest height `hc2` on the consumer chain that the packet committed at `hp1` is received, the key `ConsumerConsensusPubKey ` is passed as consensus key to tendermint. Thus tendermint will expect a signature from `ConsumerConsensusPubKey ` from height `hc2 + 1`.
 
 
 ## Internal properties
