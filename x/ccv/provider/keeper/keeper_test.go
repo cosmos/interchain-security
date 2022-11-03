@@ -338,6 +338,7 @@ func TestInitTimeoutTimestamp(t *testing.T) {
 	require.False(t, found)
 }
 
+// TestVscTimeoutTimestamp tests the set, deletion, and iteration methods for VSC timeout timestamps
 func TestVscTimeoutTimestamp(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
