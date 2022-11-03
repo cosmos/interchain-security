@@ -5,6 +5,7 @@ import (
 	"time"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -21,6 +22,23 @@ import (
 // 1. How slash packets relate to other slash packets over time (regardless of chain) -> global queue
 // 2. How slash packets relate to vsc matured packets from the same chain -> chain specific queue
 
+// QueuePendingSlashPacket queues an entry in the parent queue, and queues the slash packet data to the chain specific queue.
+func (k Keeper) QueuePendingSlashPacket(
+	ctx sdktypes.Context, consumerChainID string, packet channeltypes.Packet, data ccvtypes.SlashPacketData) {
+
+	// Queue a pending slash packet entry to the parent queue, which will be seen by the throttling logic
+	k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
+		ctx.BlockTime(), // recv time
+		consumerChainID, // consumer chain id that sent the packet
+		data.Validator.Address))
+
+	// Queue slash packet data in the same queue as vsc matured packet data, to enforce order of handling between the two types
+	k.QueuePendingSlashPacketData(ctx,
+		consumerChainID, // consumer chain id that sent the packet
+		packet.Sequence, // IBC sequence number of the packet
+		data)
+}
+
 // HandlePendingSlashPackets handles all or some portion of pending slash packets depending on circuit breaker logic.
 // This method executes every end block routine
 func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
@@ -30,17 +48,11 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 	handledEntries := []providertypes.SlashPacketEntry{}
 	k.IteratePendingSlashPacketEntries(ctx, func(entry providertypes.SlashPacketEntry) bool {
 
-		// TODO Get data from other queue, handle the vsc matured that're there too
-
-		_, err := k.HandleSlashPacket(ctx, entry.ConsumerChainID,
-			ccvtypes.SlashPacketData{}, // TODO
-		)
-		if err != nil {
-			panic(fmt.Sprintf("failed to handle slash packet: %s", err.Error()))
-		}
-
 		valPower := k.stakingKeeper.GetLastValidatorPower(ctx, entry.ValAddr)
 		meter.Sub(sdktypes.NewInt(valPower))
+
+		k.HandlePendingSlashPacketByEntry(ctx, entry)
+
 		handledEntries = append(handledEntries, entry)
 
 		// Do not handle anymore slash packets if the meter has 0 or negative gas
@@ -51,11 +63,26 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 	k.SetSlashGasMeter(ctx, meter)
 }
 
+// HandlePendingSlashPacketByEntry retrieves the queued slash packet data relevant to the given entry,
+// then handles the slash packet, and finally handles any trailing vsc matured packets in the
+// chain specific pending packet data queue. Note that any handled (chain specific) pending packet data
+// is deleted in this method. Whereas the entry itself is deleted after iteration is completed in HandlePendingSlashPackets.
+func (k Keeper) HandlePendingSlashPacketByEntry(
+	ctx sdktypes.Context, entry providertypes.SlashPacketEntry) {
+	// TODO: handle slash packet, and all trailing vsc matured packets
+
+	_, err := k.HandleSlashPacket(ctx, entry.ConsumerChainID,
+		ccvtypes.SlashPacketData{}, // TODO
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to handle slash packet: %s", err.Error()))
+	}
+}
+
 // TODO: Make an e2e test that asserts that the order of endblockers is correct between staking and ccv
 // TODO: ie. the staking updates to voting power need to occur before circuit breaker logic, so circuit breaker has most up to date val powers.
 
 // CheckForSlashMeterReplenishment checks if the slash gas meter should be replenished, and if so, replenishes it.
-// This method executes every end block routine.
 // TODO: hook this into endblocker, unit and e2e tests, tests must include odd time formats, since UTC is is used
 func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 	// TODO: Need to set initial replenishment time
@@ -64,11 +91,7 @@ func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 		// TODO: change code and documentation to reflect that this is a string fraction param
 		slashGasAllowanceFraction := sdktypes.NewDec(5).Quo(sdktypes.NewDec(100)) // This will be a string param, ex: "0.05"
 
-		// Compute slash gas allowance in units of tendermint voting power (integer)
-		// TODO: total voting power would change as validators are jailed, is there a timing guarantee we can
-		// make on maximum slash packet delay? Perhaps we use a static "total voting power" like the tm maximum.
-
-		// TODO: Maybe the param could itself be an amount of voting power? This would be easier to reason about
+		// Compute slash gas allowance in units of tendermint voting power (integer), noting that total power changes over time
 		totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
 		slashGasAllowance := sdktypes.NewInt(slashGasAllowanceFraction.MulInt(totalPower).RoundInt64())
 
@@ -140,14 +163,27 @@ func (k Keeper) DeletePendingSlashPacketEntries(ctx sdktypes.Context, entries ..
 	}
 }
 
-// Pending packet data type enum
+// Pending packet data type enum, used to encode the type of packet data stored at each entry in the mutual queue.
 const (
 	slashPacketData byte = iota
 	vscMaturedPacketData
 )
 
+// PanicIfTooMuchPendingPacketData is a sanity check to ensure that the pending packet data queue
+// does not grow too large for a single consumer chain.
+func (k Keeper) PanicIfTooMuchPendingPacketData(ctx sdktypes.Context, consumerChainID string) {
+	// TODO, implement, and test?
+	// if k.GetPendingPacketDataQueueSize(ctx) > 1000 {
+	// 	panic(fmt.Sprintf("pending packet data queue size is too large: %d", k.GetPendingPacketDataQueueSize(ctx)))
+	// }
+}
+
+// QueuePendingSlashPacketData queues the given slash packet data for the given consumer chain's queue
+// Note: This queue is shared between pending slash packet data and pending vsc matured packet data
 func (k Keeper) QueuePendingSlashPacketData(
 	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData) {
+
+	k.PanicIfTooMuchPendingPacketData(ctx, consumerChainID)
 	store := ctx.KVStore(k.storeKey)
 	bz, err := data.Marshal()
 	if err != nil {
@@ -157,8 +193,12 @@ func (k Keeper) QueuePendingSlashPacketData(
 	store.Set(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum), bz)
 }
 
+// QueuePendingVSCMaturedPacketData queues the given vsc matured packet data for the given consumer chain's queue
+// Note: This queue is shared between pending slash packet data and pending vsc matured packet data
 func (k Keeper) QueuePendingVSCMaturedPacketData(
 	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData) {
+
+	k.PanicIfTooMuchPendingPacketData(ctx, consumerChainID)
 	store := ctx.KVStore(k.storeKey)
 	bz, err := data.Marshal()
 	if err != nil {
@@ -207,12 +247,6 @@ func (k Keeper) DeletePendingPacketData(ctx sdktypes.Context, consumerChainID st
 	for _, ibcSeqNum := range ibcSeqNumbers {
 		store.Delete(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum))
 	}
-}
-
-// TODO: just do this in the place that's appropriate, this name is dumb
-func (k Keeper) GetNextSlashAndTrailingVSCMaturedPacketData() {
-	// TODO: if no packets are in the per chain queue, immediately handle vsc matured packet
-	// TODO: else, handle next slash packet, and all trailing vsc matured packets
 }
 
 // GetSlashGasMeter returns a meter (persisted as a signed int) which stores "slash gas",

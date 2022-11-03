@@ -39,6 +39,9 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
+	// TODO: if no packets are in the per chain queue, immediately handle vsc matured packet
+	// TODO: else queue that bish up
+
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
 	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
 	var maturedIds []uint64
@@ -215,16 +218,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	// Queue a pending slash packet entry to be handled by circuit breaker logic
-	k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
-		ctx.BlockTime(), // recv time
-		chainID,         // consumer chain id that sent the packet
-		data.Validator.Address))
-	// Queue data in the same queue as vsc matured packets to enforce seq num ordering
-	k.QueuePendingSlashPacketData(ctx,
-		chainID,         // consumer chain id that sent the packet
-		packet.Sequence, // IBC sequence number of the packet
-		data)
+	k.QueuePendingSlashPacket(ctx, chainID, packet, data)
 
 	// TODO: this below should be on the per chain queue
 
