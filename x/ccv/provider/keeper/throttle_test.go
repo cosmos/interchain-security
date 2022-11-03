@@ -195,13 +195,13 @@ func TestPendingSlashPacketEntryDeletion(t *testing.T) {
 	require.Equal(t, "chain-6", gotEntries[3].ConsumerChainID)
 }
 
+// Struct used for TestPendingPacketData and helpers
 type pendingPacketDataInstance struct {
 	IbcSeqNum uint64
 	Data      interface{}
 }
 
-// getAllPendingPacketDataPtrs returns all pending packet data instances in order from the pending packet data queue
-// This function helps test the iterator for pending packet data
+// getAllPendingPacketDataInstances returns all pending packet data instances in order from the pending packet data queue
 func getAllPendingPacketDataInstances(k *keeper.Keeper, ctx sdktypes.Context, consumerChainId string) (instances []pendingPacketDataInstance) {
 	k.IteratePendingPacketData(ctx, consumerChainId, func(ibcSeqNum uint64, data interface{}) bool {
 		instances = append(instances, pendingPacketDataInstance{IbcSeqNum: ibcSeqNum, Data: data})
@@ -210,7 +210,29 @@ func getAllPendingPacketDataInstances(k *keeper.Keeper, ctx sdktypes.Context, co
 	return
 }
 
-// TestPendingPacketData tests the pending packet data's queue and iteration functionality.
+// getOrderedInstances returns the given instances in order, specified by the given indexes
+func getOrderedInstances(instances []pendingPacketDataInstance, orderbyIdx []int) (orderedInstances []pendingPacketDataInstance) {
+	toReturn := []pendingPacketDataInstance{}
+	for _, idx := range orderbyIdx {
+		toReturn = append(toReturn, instances[idx])
+	}
+	return toReturn
+}
+
+// Asserts that the pending packet data retrieved for this consumer chain matches what's expected
+func assertPendingPacketDataOrdering(t *testing.T, k *keeper.Keeper, ctx sdktypes.Context,
+	consumerChainId string, expectedInstances []pendingPacketDataInstance) {
+	// Get all packet data for this chain
+	obtainedInstances := getAllPendingPacketDataInstances(k, ctx, consumerChainId)
+	// No extra data should be present
+	require.Equal(t, len(expectedInstances), len(obtainedInstances))
+	// Assert order and correct serialization/deserialization for each data instance
+	for i, obtainedInstance := range obtainedInstances {
+		require.Equal(t, expectedInstances[i], obtainedInstance)
+	}
+}
+
+// TestPendingPacketData tests the pending packet data queuing, iteration and deletion functionality.
 func TestPendingPacketData(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -219,8 +241,13 @@ func TestPendingPacketData(t *testing.T) {
 	packetDataForMultipleConsumers := []struct {
 		chainID   string
 		instances []pendingPacketDataInstance
-		// Expected order of data instances after retrieval from store (specified by instance index)
+
+		// Expected order of data instances after retrieval from store, before deletion (specified by instance index)
 		expectedOrder []int
+		// Data instances to delete (specified by instance index)
+		toDelete []int
+		// Expected order of data instances after deletion (specified by instance index)
+		expectedOrderAfterDeletion []int
 	}{
 		// Note, duplicate ibc sequence numbers are not tested, as we assume ibc behaves correctly
 		{
@@ -232,7 +259,9 @@ func TestPendingPacketData(t *testing.T) {
 				{IbcSeqNum: 3, Data: testkeeper.GetNewVSCMaturedPacketData()},
 				{IbcSeqNum: 4, Data: testkeeper.GetNewSlashPacketData()},
 			},
-			expectedOrder: []int{0, 1, 2, 3, 4},
+			expectedOrder:              []int{0, 1, 2, 3, 4},
+			toDelete:                   []int{0, 2, 4},
+			expectedOrderAfterDeletion: []int{1, 3},
 		},
 		{
 			chainID: "chain-7",
@@ -245,7 +274,9 @@ func TestPendingPacketData(t *testing.T) {
 				{IbcSeqNum: 78972, Data: testkeeper.GetNewVSCMaturedPacketData()},
 				{IbcSeqNum: 9999999999999999999, Data: testkeeper.GetNewSlashPacketData()},
 			},
-			expectedOrder: []int{3, 4, 2, 1, 0, 5, 6},
+			expectedOrder:              []int{3, 4, 2, 1, 0, 5, 6},
+			toDelete:                   []int{0, 1, 2, 3, 4, 5},
+			expectedOrderAfterDeletion: []int{6},
 		},
 		{
 			chainID: "chain-thats-not-0-or-7",
@@ -257,14 +288,16 @@ func TestPendingPacketData(t *testing.T) {
 				{IbcSeqNum: 5, Data: testkeeper.GetNewVSCMaturedPacketData()},
 				{IbcSeqNum: 1, Data: testkeeper.GetNewVSCMaturedPacketData()},
 			},
-			expectedOrder: []int{5, 4, 3, 2, 1, 0},
+			expectedOrder:              []int{5, 4, 3, 2, 1, 0},
+			toDelete:                   []int{1, 2, 3, 4, 5},
+			expectedOrderAfterDeletion: []int{0},
 		},
 	}
 
 	// Queue all packet data at once
 	for _, chainData := range packetDataForMultipleConsumers {
 		for _, dataInstance := range chainData.instances {
-			// Queue packet data differently depending on type
+			// Queue each instance differently depending on type
 			if slashData, ok := dataInstance.Data.(ccvtypes.SlashPacketData); ok {
 				providerKeeper.QueuePendingSlashPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, slashData)
 
@@ -277,16 +310,23 @@ func TestPendingPacketData(t *testing.T) {
 		}
 	}
 
-	// Assert queueing and retrieval ordering for each chain
+	// Assert retrieval ordering for each chain
 	for _, chainData := range packetDataForMultipleConsumers {
-		// Get all packet data for this chain
-		obtainedInstances := getAllPendingPacketDataInstances(&providerKeeper, ctx, chainData.chainID)
-		// Assert order and correct serialization/deserialization for each data instance
-		for i, obtainedInstance := range obtainedInstances {
-			expectedInstance := chainData.instances[chainData.expectedOrder[i]]
-			require.Equal(t, expectedInstance.IbcSeqNum, obtainedInstance.IbcSeqNum)
-			require.Equal(t, expectedInstance.Data, obtainedInstance.Data)
+		expectedInstances := getOrderedInstances(chainData.instances, chainData.expectedOrder)
+		assertPendingPacketDataOrdering(t, &providerKeeper, ctx, chainData.chainID, expectedInstances)
+	}
+
+	// Delete specified data all at once
+	for _, chainData := range packetDataForMultipleConsumers {
+		for _, i := range chainData.toDelete {
+			providerKeeper.DeletePendingPacketData(ctx, chainData.chainID, chainData.instances[i].IbcSeqNum)
 		}
+	}
+
+	// Assert retrieval ordering after deletion for each chain
+	for _, chainData := range packetDataForMultipleConsumers {
+		expectedInstances := getOrderedInstances(chainData.instances, chainData.expectedOrderAfterDeletion)
+		assertPendingPacketDataOrdering(t, &providerKeeper, ctx, chainData.chainID, expectedInstances)
 	}
 }
 
