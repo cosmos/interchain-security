@@ -85,14 +85,7 @@ func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 func (k Keeper) HandleOrQueueVSCMaturedPacket(ctx sdktypes.Context, consumerChainID string, data ccvtypes.VSCMaturedPacketData) {
 	// TODO: if queue for this chain is empty (no pending slash packets), handle vsc matured packet immediately
 	// else queue it
-	k.QueuePendingPacketData(ctx, consumerChainID, data)
-}
-
-// TODO: maybe this goes in the on recv method too
-func (k Keeper) QueuePendingSlashPacket(
-	ctx sdktypes.Context, recvTime time.Time, consumerChainID string, data ccvtypes.SlashPacketData) {
-	k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(recvTime, consumerChainID, data.Validator.Address))
-	k.QueuePendingPacketData(ctx, consumerChainID, data)
+	k.QueuePendingPacketData(ctx, consumerChainID, 7, data) // TODO: hook seq number into this
 }
 
 // Highest level "parent" queue
@@ -138,18 +131,89 @@ func (k Keeper) DeletePendingSlashPacketEntries(ctx sdktypes.Context, entries ..
 	}
 }
 
-// Needs to be true FIFO
+// Pending packet data type enum
+const (
+	slashPacketData byte = iota
+	vscMaturedPacketData
+)
+
+// TODO: you can refactor this to be two methods total
+func (k Keeper) QueuePendingSlashPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData) {
+	k.QueuePendingPacketData(ctx, consumerChainID, ibcSeqNum, data)
+}
+
+func (k Keeper) QueuePendingVSCMaturedPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData) {
+	k.QueuePendingPacketData(ctx, consumerChainID, ibcSeqNum, data)
+}
+
 // Handling a slash packet at the head of the queue handles all vsc matured packets after the head
 // VSC matured packets at the head are handled immediately
-func (k Keeper) QueuePendingPacketData(ctx sdktypes.Context, consumerChainID string, data interface{}) {
-	switch data.(type) {
+func (k Keeper) QueuePendingPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data interface{}) {
+	store := ctx.KVStore(k.storeKey)
+	var bz []byte
+	var err error
+	var t byte
+	switch d := data.(type) {
 	case ccvtypes.SlashPacketData:
-		// TODO: add slash packet data to queue
+		bz, err = d.Marshal()
+		t = slashPacketData
 	case ccvtypes.VSCMaturedPacketData:
-		// TODO: add vsc packet data to queue
+		bz, err = d.Marshal()
+		t = vscMaturedPacketData
 	default:
 		panic("invalid packet data type")
 	}
+	if err != nil {
+		panic(fmt.Sprintf("failed to marshal pending packet data: %v", err))
+	}
+	// Byte array value starts with byte type enum, followed by the marshaled data payload
+	bz = append([]byte{t}, bz...)
+	store.Set(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum), bz)
+}
+
+// IteratePendingPacketData iterates over the pending packet data queue for a specific consumer chain
+// (ordered by ibc seq number) and calls the provided callback
+// Note, the parameter callback executes on a pointer to the packet data
+func (k Keeper) IteratePendingPacketData(ctx sdktypes.Context, consumerChainID string, cb func(uint64, interface{}) bool) {
+	store := ctx.KVStore(k.storeKey)
+	iteratorPrefix := append([]byte{providertypes.PendingPacketDataBytePrefix}, providertypes.HashString(consumerChainID)...)
+	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		ibcSeqNum := providertypes.ParsePendingPacketDataKey(iterator.Key())
+		data := iterator.Value()
+		var unmarshaledDataPtr interface{}
+		var err error
+		switch data[0] {
+		case slashPacketData:
+			unmarshaledDataPtr = &ccvtypes.SlashPacketData{}
+			err = unmarshaledDataPtr.(*ccvtypes.SlashPacketData).Unmarshal(data[1:])
+		case vscMaturedPacketData:
+			unmarshaledDataPtr = &ccvtypes.VSCMaturedPacketData{}
+			err = unmarshaledDataPtr.(*ccvtypes.VSCMaturedPacketData).Unmarshal(data[1:])
+		default:
+			panic("invalid packet data type")
+		}
+		if err != nil {
+			panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
+		}
+		if cb(ibcSeqNum, unmarshaledDataPtr) {
+			break
+		}
+	}
+}
+
+// DeletePendingPacketData deletes the given entries (specified by their ibc seq number) from the pending packet data queue
+func (k Keeper) DeletePendingPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNumbers ...uint64) {
+	store := ctx.KVStore(k.storeKey)
+	for _, ibcSeqNum := range ibcSeqNumbers {
+		store.Delete(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum))
+	}
+}
+
+// TODO: just do this in the place that's appropriate, this name is dumb
+func (k Keeper) GetNextSlashAndTrailingVSCMaturedPacketData() {
+	// TODO: if no packets in the per chain queue, immediately handle vsc matured packet
 }
 
 // GetSlashGasMeter returns a meter (persisted as a signed int) which stores "slash gas",

@@ -101,6 +101,9 @@ const (
 	// LockUnbondingOnTimeoutBytePrefix is the byte prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
 	LockUnbondingOnTimeoutBytePrefix
 
+	// PendingPacketDataBytePrefix is the byte prefix storing pending packet data
+	PendingPacketDataBytePrefix
+
 	// PendingSlashPacketEntryBytePrefix is the byte prefix storing pending slash packet entries
 	PendingSlashPacketEntryBytePrefix
 )
@@ -289,6 +292,20 @@ func PendingVSCsKey(chainID string) []byte {
 // on CCV channel timeout
 func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return append([]byte{LockUnbondingOnTimeoutBytePrefix}, []byte(chainID)...)
+}
+
+// TODO: tests
+func PendingPacketDataKey(consumerChainID string, ibcSeqNum uint64) []byte {
+	return AppendMany(
+		[]byte{PendingPacketDataBytePrefix},
+		HashString(consumerChainID),
+		sdk.Uint64ToBigEndian(ibcSeqNum),
+	)
+}
+
+// ParsePendingPacketDataKey parses a pending packet data key for IBC sequence number
+func ParsePendingPacketDataKey(key []byte) uint64 {
+	return sdk.BigEndianToUint64(key[1+32:])
 }
 
 // PendingSlashPacketEntryKey returns the key for storing a pending slash packet entry.

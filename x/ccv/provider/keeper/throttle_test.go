@@ -6,9 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/crypto/ed25519"
@@ -190,6 +193,107 @@ func TestPendingSlashPacketEntryDeletion(t *testing.T) {
 	require.Equal(t, "chain-4", gotEntries[2].ConsumerChainID)
 	// Packet 5 was deleted
 	require.Equal(t, "chain-6", gotEntries[3].ConsumerChainID)
+}
+
+type pendingPacketDataInstance struct {
+	IbcSeqNum uint64
+	DataPtr   interface{}
+}
+
+// getAllPendingPacketDataPtrs returns all pending packet data instances in order from the pending packet data queue
+// This function helps test the iterator for pending packet data
+func getAllPendingPacketDataInstances(k *keeper.Keeper, ctx sdktypes.Context, consumerChainId string) (instances []pendingPacketDataInstance) {
+	k.IteratePendingPacketData(ctx, consumerChainId, func(ibcSeqNum uint64, dataPtr interface{}) bool {
+		instances = append(instances, pendingPacketDataInstance{IbcSeqNum: ibcSeqNum, DataPtr: dataPtr})
+		return false
+	})
+	return
+}
+
+// TestPendingPacketData tests the pending packet data's queue, iteration, and deletion functionality.
+func TestPendingPacketData(t *testing.T) {
+
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	packetDataForMultipleConsumers := []struct {
+		chainID   string
+		instances []pendingPacketDataInstance
+		// Expected order of data instances after retrieval from store (specified instance index)
+		expectedOrder []int
+	}{
+		// Note, duplicate ibc sequence numbers are not tested, as we assume ibc behaves correctly
+		{
+			chainID: "chain-0",
+			instances: []pendingPacketDataInstance{
+				{IbcSeqNum: 0, DataPtr: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 1, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 2, DataPtr: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 3, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 4, DataPtr: testkeeper.GetNewSlashPacketData()},
+			},
+			expectedOrder: []int{0, 1, 2, 3, 4},
+		},
+		{
+			chainID: "chain-7",
+			instances: []pendingPacketDataInstance{
+				{IbcSeqNum: 96, DataPtr: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 78, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 12, DataPtr: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 0, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 1, DataPtr: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 78972, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 9999999999999999999, DataPtr: testkeeper.GetNewSlashPacketData()},
+			},
+			expectedOrder: []int{3, 4, 2, 1, 0, 5, 6},
+		},
+		{
+			chainID: "chain-thats-not-0-or-7",
+			instances: []pendingPacketDataInstance{
+				{IbcSeqNum: 9, DataPtr: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 8, DataPtr: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 7, DataPtr: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 6, DataPtr: testkeeper.GetNewSlashPacketData()},
+				{IbcSeqNum: 5, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
+				{IbcSeqNum: 1, DataPtr: testkeeper.GetNewVSCMaturedPacketData()},
+			},
+			expectedOrder: []int{5, 4, 3, 2, 1, 0},
+		},
+	}
+
+	// Queue all packet data at once
+	for _, chainData := range packetDataForMultipleConsumers {
+		for _, dataInstance := range chainData.instances {
+			// TODO: you can make this better
+			if slashData, ok := dataInstance.DataPtr.(*ccvtypes.SlashPacketData); ok {
+				providerKeeper.QueuePendingSlashPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, *slashData)
+
+			} else if vscMaturedData, ok := dataInstance.DataPtr.(*ccvtypes.VSCMaturedPacketData); ok {
+				providerKeeper.QueuePendingVSCMaturedPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, *vscMaturedData)
+
+			} else {
+				panic("invalid data type")
+			}
+		}
+	}
+
+	for _, chainData := range packetDataForMultipleConsumers {
+		// Get all packet data for this chain
+		obtainedInstances := getAllPendingPacketDataInstances(&providerKeeper, ctx, chainData.chainID)
+		// Assert order and correct serialization/deserialization for each data instance
+		for i, obtainedInstance := range obtainedInstances {
+			// Assert expected order
+			expectedIdx := chainData.expectedOrder[i]
+			expectedIbcSeqNum := chainData.instances[expectedIdx].IbcSeqNum
+			require.Equal(t, expectedIbcSeqNum, obtainedInstance.IbcSeqNum)
+			// Assert expected data at this index
+			expectedDataPtr := chainData.instances[expectedIdx].DataPtr
+			require.EqualValues(t, expectedDataPtr, obtainedInstance.DataPtr)
+		}
+	}
+
+	// TODO: Test deletion
+
 }
 
 // TestSlashGasMeter tests the getter and setter for the slash gas meter

@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"math/rand"
 	"testing"
 	time "time"
 
@@ -13,6 +14,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
@@ -188,11 +190,23 @@ func GenPubKey() (crypto.PubKey, error) {
 	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
 }
 
-// Obtains slash packet data with a newly generated key
-func GetNewSlashPacketData() ccvtypes.SlashPacketData {
-	return ccvtypes.SlashPacketData{Validator: abci.Validator{
-		Address: ed25519.GenPrivKey().PubKey().Address(), Power: 100},
-		ValsetUpdateId: 78, Infraction: 37}
+// Obtains slash packet data pointer with a newly generated key
+func GetNewSlashPacketData() *ccvtypes.SlashPacketData {
+	rand.Seed(time.Now().UnixNano())
+	return &ccvtypes.SlashPacketData{
+		Validator: abci.Validator{
+			Address: ed25519.GenPrivKey().PubKey().Address(),
+			Power:   rand.Int63(),
+		},
+		ValsetUpdateId: rand.Uint64(),
+		Infraction:     stakingtypes.InfractionType(rand.Intn(3)),
+	}
+}
+
+// Obtains vsc matured packet data pointer with a newly generated key
+func GetNewVSCMaturedPacketData() *ccvtypes.VSCMaturedPacketData {
+	rand.Seed(time.Now().UnixNano())
+	return &ccvtypes.VSCMaturedPacketData{ValsetUpdateId: rand.Uint64()}
 }
 
 func GetClientState(chainID string) *ibctmtypes.ClientState {

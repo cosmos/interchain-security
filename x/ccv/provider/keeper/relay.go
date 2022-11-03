@@ -11,6 +11,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 )
@@ -212,8 +213,16 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	// Queue the slash packet as pending with current block time as recvTime, to be handled by circuit breaker logic
-	k.QueuePendingSlashPacket(ctx, ctx.BlockTime(), chainID, data)
+	// Queue a pending slash packet entry to be handled by circuit breaker logic
+	k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
+		ctx.BlockTime(), // recv time
+		chainID,         // consumer chain id that sent the packet
+		data.Validator.Address))
+	// Queue data in the same queue as vsc matured packets to enforce seq num ordering
+	k.QueuePendingPacketData(ctx,
+		chainID,         // consumer chain id that sent the packet
+		packet.Sequence, // IBC sequence number of the packet
+		data)
 
 	// TODO: this below should be on the per chain queue
 
