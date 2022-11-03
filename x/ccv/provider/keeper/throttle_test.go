@@ -10,7 +10,6 @@ import (
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/stretchr/testify/require"
@@ -334,21 +333,21 @@ func TestPendingPacketData(t *testing.T) {
 func TestSlashGasMeter(t *testing.T) {
 
 	testCases := []struct {
-		meterValue  sdk.Int
+		meterValue  sdktypes.Int
 		shouldPanic bool
 	}{
-		{meterValue: sdk.NewInt(-7999999999999999999), shouldPanic: true},
-		{meterValue: sdk.NewInt(-tmtypes.MaxTotalVotingPower - 1), shouldPanic: true},
-		{meterValue: sdk.NewInt(-tmtypes.MaxTotalVotingPower), shouldPanic: false},
-		{meterValue: sdk.NewInt(-50000000078987), shouldPanic: false},
-		{meterValue: sdk.NewInt(-4237), shouldPanic: false},
-		{meterValue: sdk.NewInt(0), shouldPanic: false},
-		{meterValue: sdk.NewInt(1), shouldPanic: false},
-		{meterValue: sdk.NewInt(4237897), shouldPanic: false},
-		{meterValue: sdk.NewInt(500078078987), shouldPanic: false},
-		{meterValue: sdk.NewInt(tmtypes.MaxTotalVotingPower), shouldPanic: false},
-		{meterValue: sdk.NewInt(tmtypes.MaxTotalVotingPower + 1), shouldPanic: true},
-		{meterValue: sdk.NewInt(7999974823991111199), shouldPanic: true},
+		{meterValue: sdktypes.NewInt(-7999999999999999999), shouldPanic: true},
+		{meterValue: sdktypes.NewInt(-tmtypes.MaxTotalVotingPower - 1), shouldPanic: true},
+		{meterValue: sdktypes.NewInt(-tmtypes.MaxTotalVotingPower), shouldPanic: false},
+		{meterValue: sdktypes.NewInt(-50000000078987), shouldPanic: false},
+		{meterValue: sdktypes.NewInt(-4237), shouldPanic: false},
+		{meterValue: sdktypes.NewInt(0), shouldPanic: false},
+		{meterValue: sdktypes.NewInt(1), shouldPanic: false},
+		{meterValue: sdktypes.NewInt(4237897), shouldPanic: false},
+		{meterValue: sdktypes.NewInt(500078078987), shouldPanic: false},
+		{meterValue: sdktypes.NewInt(tmtypes.MaxTotalVotingPower), shouldPanic: false},
+		{meterValue: sdktypes.NewInt(tmtypes.MaxTotalVotingPower + 1), shouldPanic: true},
+		{meterValue: sdktypes.NewInt(7999974823991111199), shouldPanic: true},
 	}
 
 	for _, tc := range testCases {
