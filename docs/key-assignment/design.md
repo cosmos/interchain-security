@@ -98,7 +98,7 @@ ComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) (consumerUpda
 	// Step 1
 	// Get a list of provider consensus keys for which, either,
 	// a) the assigned key has changed and the consumer has the old assigned key
-    // b) the voting power has changed
+	// b) the voting power has changed
 	keys <- getProviderKeysForUpdate(stakingUpdates)
 	// Step 2
 	// For each provider consensus key for which
@@ -122,7 +122,7 @@ ComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) (consumerUpda
 	// Step 4
 	// For each provider consensus key for which
 	// a) the assigned key has changed and the consumer has the old assigned key
-    // b) the voting power has changed
+	// b) the voting power has changed
 	// If the voting power changed, create an update for that key with the latest
 	// voting power. If the voting power did not change, create an update for that
 	// key with the LAST voting power associated to that key.
