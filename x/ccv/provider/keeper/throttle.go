@@ -15,6 +15,11 @@ import (
 // High level TODOs
 // TODO: still implement X amount of packets that halt the provider
 // TODO: write up a readme explaining the design (no spec stuff, Marius can put this in ADR)
+// TODO: in write up, explain that the feature could have been done with a single queue, but you'd need to
+// periodically iterate over the queue to insert vsc matured packets, etc. With one global queue, and another queue
+// for each chain, it's easy to reason about both:
+// 1. How slash packets relate to other slash packets over time (regardless of chain) -> global queue
+// 2. How slash packets relate to vsc matured packets from the same chain -> chain specific queue
 
 // HandlePendingSlashPackets handles all or some portion of pending slash packets depending on circuit breaker logic.
 // This method executes every end block routine
