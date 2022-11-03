@@ -54,7 +54,7 @@ AssignKey ==
     /\ UNCHANGED << providerValSets, committedProviderVSCID, committedConsumerVSCID, maturedConsumerVSCID >>
 
 (***************************************)
-(** Internal implemenation API *********)
+(** Internal implementation API ********)
 (***************************************)
 (***************************************)
 
@@ -85,6 +85,11 @@ ProviderDeliverMaturities ==
         } |-> assignments[i]]
     \* The rest...
     /\ UNCHANGED <<committedConsumerVSCID, committedProviderVSCID, providerValSets>>
+
+(***************************************)
+(** Transition *************************)
+(***************************************)
+(***************************************)
 
 Next ==
     \/ AssignKey
