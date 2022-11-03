@@ -51,17 +51,13 @@ in the implementation of the wider system.
 
 ## Implementation
 
-### Algorithm idea
-
-The algorithm 
-
 
 ### System integration points
 
 There are some integration points with the system
 
 1. `KeyAssignment.ComputeUpdates(..)` in provider `EndBlocker`, during `sendValidatorUpdates`\
-The validator updates from the staking module on the provider transformed by mapping the validator consensus key to their assigned consumer consensus key. If no assignment has been explicitly made, then the provider consensus key is used.
+The validator updates from the staking module on the provider are transformed by mapping the validator consensus key to their assigned consumer consensus key. If no assignment has been explicitly made, then the provider consensus key is used.
 2. `KeyAssignment.PruneUnusedKeys(..)` in provider `OnRecvVSCMaturedPacket`\
 On receiving a VSCID for a consumer in a maturity packet, it is certain that any consensus keys which were sent to the consumer at a vscid <= VSCID with a _zero_ power update, and have not since been sent to the consumer with a _positive_ power update, can be pruned, as these keys are no longer
 valid for slashing.
@@ -84,11 +80,23 @@ be used to send updates for that validator to the specified consumer chain.
 10. `QueryConsumerChainValidatorKeyAssignment(..)` query handler in provider `grpc_query`\
 Query the currently assigned tendermint public key for a given (validator, consumer chain) pair.
 
+### Algorithm idea
+
+The bulk of the computation takes place inside the `ComputeUpdates(..)` method of the KeyAssignment instance for a given consumer chain. The method transforms a set of validator updates returned by the provider staking module. It returns a set of validator updates to be sent to the consumer chain (which will be forwarded to tendermint on the consumer) chain. The updates are computed to ensure a consistent replicated validator set on the consumer chain. 
+
+Ensuring a consistent replicated validator set, means that when the assigned key for a given validator changes, an `abci.ValidatorUpdate` with zero power must be sent for the old key and a new update must be sent with the latest power for the new key.
+
+```
+// A per-consumer chain instance of KeyAssignment enables mapping updates from the provider
+// to updates for the consumer
+ComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) (consumerUpdates []abci.ValidatorUpdate){
+
+}
+```
 
 ## External properties
 
 KeyAssignment has some properties relevant to the external user:
-
 
 
 1. Validator Set Replication\
@@ -100,7 +108,8 @@ All Interchain Security properties still hold when KeyAssignment is used, the ab
 
 Additionally
 
-3. When a `AssignConsensusPublicKeyToConsumerChain` operation succeeds for a given `(chainID, ProviderValidatorAddress, ConsumerConsensusPubKey)` tuple at block height `hp0`, and is not followed by a subsquent call for the same tuple before or during a height `hp1` (`hp0 <= hp1`), and at `hp1` a validator set update packet is committed at the provider chain, then at the next earliest height `hc2` on the consumer chain that the packet is received, the `ConsumerConsensusPubKey ` is passed as consensus key to tendermint. Thus tendermint will expect a signature from `ConsumerConsensusPubKey ` from height `hc2 + 1`.
+3. Timeliness\
+When a `AssignConsensusPublicKeyToConsumerChain` operation succeeds for a given `(chainID, ProviderValidatorAddress, ConsumerConsensusPubKey)` tuple at block height `hp0`, and is not followed by a subsquent call for the same tuple before or during a height `hp1` (`hp0 <= hp1`), and at `hp1` a validator set update packet is committed at the provider chain, then at the next earliest height `hc2` on the consumer chain that the packet is received, the `ConsumerConsensusPubKey ` is passed as consensus key to tendermint. Thus tendermint will expect a signature from `ConsumerConsensusPubKey ` from height `hc2 + 1`.
 
 
 ## Internal properties
