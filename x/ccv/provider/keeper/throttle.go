@@ -12,6 +12,10 @@ import (
 
 // This file contains functionality relevant to the throttling of slash and vsc matured packets, aka circuit breaker logic.
 
+// High level TODOs
+// TODO: still implement X amount of packets that halt the provider
+// TODO: write up a readme explaining the design (no spec stuff, Marius can put this in ADR)
+
 // HandlePendingSlashPackets handles all or some portion of pending slash packets depending on circuit breaker logic.
 // This method executes every end block routine
 func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
@@ -213,7 +217,8 @@ func (k Keeper) DeletePendingPacketData(ctx sdktypes.Context, consumerChainID st
 
 // TODO: just do this in the place that's appropriate, this name is dumb
 func (k Keeper) GetNextSlashAndTrailingVSCMaturedPacketData() {
-	// TODO: if no packets in the per chain queue, immediately handle vsc matured packet
+	// TODO: if no packets are in the per chain queue, immediately handle vsc matured packet
+	// TODO: else, handle next slash packet, and all trailing vsc matured packets
 }
 
 // GetSlashGasMeter returns a meter (persisted as a signed int) which stores "slash gas",
