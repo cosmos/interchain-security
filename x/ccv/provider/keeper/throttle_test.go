@@ -210,7 +210,7 @@ func getAllPendingPacketDataInstances(k *keeper.Keeper, ctx sdktypes.Context, co
 	return
 }
 
-// TestPendingPacketData tests the pending packet data's queue, iteration, and deletion functionality.
+// TestPendingPacketData tests the pending packet data's queue and iteration functionality.
 func TestPendingPacketData(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -219,7 +219,7 @@ func TestPendingPacketData(t *testing.T) {
 	packetDataForMultipleConsumers := []struct {
 		chainID   string
 		instances []pendingPacketDataInstance
-		// Expected order of data instances after retrieval from store (specified instance index)
+		// Expected order of data instances after retrieval from store (specified by instance index)
 		expectedOrder []int
 	}{
 		// Note, duplicate ibc sequence numbers are not tested, as we assume ibc behaves correctly
@@ -277,23 +277,17 @@ func TestPendingPacketData(t *testing.T) {
 		}
 	}
 
+	// Assert queueing and retrieval ordering for each chain
 	for _, chainData := range packetDataForMultipleConsumers {
 		// Get all packet data for this chain
 		obtainedInstances := getAllPendingPacketDataInstances(&providerKeeper, ctx, chainData.chainID)
 		// Assert order and correct serialization/deserialization for each data instance
 		for i, obtainedInstance := range obtainedInstances {
-			// Assert expected order
-			expectedIdx := chainData.expectedOrder[i]
-			expectedIbcSeqNum := chainData.instances[expectedIdx].IbcSeqNum
-			require.Equal(t, expectedIbcSeqNum, obtainedInstance.IbcSeqNum)
-			// Assert expected data at this index matches the obtained data
-			expectedData := chainData.instances[expectedIdx].Data
-			require.EqualValues(t, expectedData, obtainedInstance.Data)
+			expectedInstance := chainData.instances[chainData.expectedOrder[i]]
+			require.Equal(t, expectedInstance.IbcSeqNum, obtainedInstance.IbcSeqNum)
+			require.Equal(t, expectedInstance.Data, obtainedInstance.Data)
 		}
 	}
-
-	// TODO: Test deletion
-
 }
 
 // TestSlashGasMeter tests the getter and setter for the slash gas meter
