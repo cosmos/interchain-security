@@ -88,6 +88,7 @@ func (k Keeper) HandlePendingSlashPacketByEntry(
 
 // TODO: Make an e2e test that asserts that the order of endblockers is correct between staking and ccv
 // TODO: ie. the staking updates to voting power need to occur before circuit breaker logic, so circuit breaker has most up to date val powers.
+// From looking at app.go, this seems to be the case ^^
 
 // CheckForSlashMeterReplenishment checks if the slash gas meter should be replenished, and if so, replenishes it.
 // TODO: hook this into endblocker, unit and e2e tests, tests must include odd time formats, since UTC is is used
@@ -127,9 +128,10 @@ func (k Keeper) HandleOrQueueVSCMaturedPacket(ctx sdktypes.Context, consumerChai
 	k.QueuePendingVSCMaturedPacketData(ctx, consumerChainID, 7, data) // TODO: hook seq number into this
 }
 
-// Highest level "parent" queue
-// Note: this will overwrite the existing entry if a malicious consumer sends duplicate slash packets in the same block.
-// TODO: unit test edge case where duplicate slash packet entries are added
+// QueuePendingSlashPacketEntry queues an entry to the "parent" slash packet queue, used for throttling val power changes
+// related to jailing/tombstoning over time. This "parent" queue is used to coordinate the order of slash packet handling
+// between chains, whereas the chain specific queue is used to coordinate the order of slash and vsc matured packets
+// relevant to each chain.
 func (k Keeper) QueuePendingSlashPacketEntry(ctx sdktypes.Context, entry providertypes.SlashPacketEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.PendingSlashPacketEntryKey(entry)

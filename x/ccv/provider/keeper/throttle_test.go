@@ -18,38 +18,11 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// Tests the edge case behavior where duplicate slash packet entires are queued in the same block.
-func TestDupSlashPackets(t *testing.T) {
-
+// TestHandleSlashPacketByEntry tests the HandleSlashPacketByEntry function
+func TestHandleSlashPacketByEntry(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
-	ctx = ctx.WithBlockTime(time.Now())
 
-	entry := providertypes.NewSlashPacketEntry(ctx.BlockTime(), "chain-7", ed25519.GenPrivKey().PubKey().Address())
-
-	providerKeeper.QueuePendingSlashPacketEntry(ctx, entry)
-
-	entries := providerKeeper.GetAllPendingSlashPacketEntries(ctx)
-	require.Equal(t, 1, len(entries))
-	require.Equal(t, entries[0], entry)
-
-	// Queue new in-mem object with same data
-	newButDupEntry := providertypes.NewSlashPacketEntry(ctx.BlockTime(), "chain-7", entry.ValAddr)
-	providerKeeper.QueuePendingSlashPacketEntry(ctx, newButDupEntry)
-
-	// Duplicate entry should overwrite the old one with the same data, so length should still be 1
-	entries = providerKeeper.GetAllPendingSlashPacketEntries(ctx)
-	require.Equal(t, 1, len(entries))
-	require.Equal(t, entries[0], entry)
-
-	// Prove that a non duplicate entry doesn't overwrite the existing entry
-	nonDupEntry := providertypes.NewSlashPacketEntry(ctx.BlockTime(), "chain-8", entry.ValAddr)
-	providerKeeper.QueuePendingSlashPacketEntry(ctx, nonDupEntry)
-
-	entries = providerKeeper.GetAllPendingSlashPacketEntries(ctx)
-	require.Equal(t, 2, len(entries))
-	require.Equal(t, entries[0], entry)
-	require.Equal(t, entries[1], nonDupEntry)
 }
 
 // TestPendingSlashPacket tests the queue and iteration functions for pending slash packet entries,
