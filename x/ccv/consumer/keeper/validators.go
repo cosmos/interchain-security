@@ -84,13 +84,20 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		return
 	}
 
+	// vscid := k.GetHeightValsetUpdateID(ctx, uint64(infractionHeight))
+	// // If the maturity time is not set, then it is a either an infraction
+	// // from the future which TODO:
+	// if k.GetPacketMaturityTime(ctx, vscid) == 0 {
+	// 	return
+	// }
+
 	k.SendSlashPacket(
 		ctx,
 		abci.Validator{
 			Address: addr.Bytes(),
 			Power:   power},
 		// get VSC ID for infraction height
-		k.GetHeightValsetUpdateID(ctx, uint64(infractionHeight)),
+		vscid,
 		infraction,
 	)
 }
