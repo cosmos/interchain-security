@@ -323,11 +323,11 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	currentTimeUint64 := uint64(currentTime.UnixNano())
 
 	// iterate over initTimeoutTimestamps
-	var removedChainIds []string
+	var chainIdsToRemove []string
 	k.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) bool {
 		if currentTimeUint64 > ts {
 			// initTimeout expired
-			removedChainIds = append(removedChainIds, chainID)
+			chainIdsToRemove = append(chainIdsToRemove, chainID)
 			// continue to iterate through all timed out consumers
 			return true
 		}
@@ -335,7 +335,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 		return false
 	})
 	// remove consumers that timed out
-	for _, chainID := range removedChainIds {
+	for _, chainID := range chainIdsToRemove {
 		// stop the consumer chain and unlock the unbonding.
 		// Note that the CCV channel was not established,
 		// thus closeChan is irrelevant
@@ -346,7 +346,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	}
 
 	// empty slice
-	removedChainIds = nil
+	chainIdsToRemove = nil
 
 	// Iterate over all consumers with established CCV channels and
 	// check if the first vscTimeoutTimestamp in iterator is expired.
@@ -356,7 +356,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 		k.IterateVscTimeoutTimestamps(ctx, chainID, func(ts time.Time, _ uint64) bool {
 			if currentTime.After(ts) {
 				// vscTimeout expired
-				removedChainIds = append(removedChainIds, chainID)
+				chainIdsToRemove = append(chainIdsToRemove, chainID)
 			}
 			// break iteration since the timeout timestamps are in order
 			return false
@@ -365,7 +365,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 		return true
 	})
 	// remove consumers that timed out
-	for _, chainID := range removedChainIds {
+	for _, chainID := range chainIdsToRemove {
 		// stop the consumer chain and use lockUnbondingOnTimeout
 		// to decide whether to lock the unbonding
 		err := k.StopConsumerChain(
