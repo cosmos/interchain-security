@@ -59,7 +59,9 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		return !meter.IsPositive()
 	})
 
+	// Handled entries are deleted after iteration is completed
 	k.DeletePendingSlashPacketEntries(ctx, handledEntries...)
+	// Persist current value for slash gas meter
 	k.SetSlashGasMeter(ctx, meter)
 }
 
