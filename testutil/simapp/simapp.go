@@ -6,6 +6,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/simapp"
 
+	gaia "github.com/cosmos/gaia/v7/app"
+	"github.com/cosmos/gaia/v7/app/params"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	"github.com/tendermint/spm/cosmoscmd"
@@ -23,6 +25,19 @@ func SetupTestingappProvider() (ibctesting.TestingApp, map[string]json.RawMessag
 	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
 	testApp := appProvider.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
+}
+
+type EmptyAppOptions struct{}
+
+func (EmptyAppOptions) Get(o string) interface{} { return nil }
+
+func SetupTestingappGaia() (ibctesting.TestingApp, map[string]json.RawMessage) {
+	db := tmdb.NewMemDB()
+	// encCdc := app.MakeTestEncodingConfig()
+	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
+	app := gaia.NewGaiaApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, gaia.DefaultNodeHome, 5, params.EncodingConfig(encoding), EmptyAppOptions{})
+	testapp := ibctesting.TestingApp(app)
+	return testapp, gaia.NewDefaultGenesisState()
 }
 
 func SetupTestingAppConsumerDemocracy() (ibctesting.TestingApp, map[string]json.RawMessage) {
@@ -57,6 +72,19 @@ func NewProviderConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibc
 	coordinator := NewBasicCoordinator(t)
 	chainID := ibctesting.GetChainID(1)
 	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingappProvider, chainID)
+	providerChain := coordinator.GetChain(chainID)
+	chainID = ibctesting.GetChainID(2)
+	coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(t, coordinator,
+		SetupTestingAppConsumer, chainID, providerChain.Vals, providerChain.Signers)
+	consumerChain := coordinator.GetChain(chainID)
+	return coordinator, providerChain, consumerChain
+}
+
+// NewCoordinator initializes Coordinator with 0 TestChains
+func NewGaiaConsumerCoordinator(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain, *ibctesting.TestChain) {
+	coordinator := NewBasicCoordinator(t)
+	chainID := ibctesting.GetChainID(1)
+	coordinator.Chains[chainID] = ibctesting.NewTestChain(t, coordinator, SetupTestingappGaia, chainID)
 	providerChain := coordinator.GetChain(chainID)
 	chainID = ibctesting.GetChainID(2)
 	coordinator.Chains[chainID] = ibctesting.NewTestChainWithValSet(t, coordinator,

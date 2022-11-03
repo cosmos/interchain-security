@@ -6,3 +6,4 @@ docs/tla/states/
 *.out
 vendor/
 .vscode
+.idea/
