@@ -173,7 +173,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				if err != nil {
 					panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 				}
-				// add VSC timeout timestamp
+				// set the VSC timeout timestamp for this packet
 				ts := ctx.BlockTime().Add(k.GetParams(ctx).VscTimeoutPeriod)
 				k.SetVscTimeoutTimestamp(ctx, chainID, ts, packetData.ValsetUpdateId)
 			} else {
@@ -203,7 +203,9 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 		if err != nil {
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
-		// add VSC timeout timestamp
+		// set the VSC timeout timestamp for this packet;
+		// note that the VSC timeout timestamp are set when the packets
+		// are actually sent over IBC
 		ts := ctx.BlockTime().Add(k.GetParams(ctx).VscTimeoutPeriod)
 		k.SetVscTimeoutTimestamp(ctx, chainID, ts, data.ValsetUpdateId)
 	}
