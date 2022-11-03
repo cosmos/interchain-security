@@ -53,8 +53,36 @@ in the implementation of the wider system.
 
 ### Algorithm idea
 
+The algorithm 
+
 
 ### System integration points
+
+There are some integration points with the system
+
+1. `KeyAssignment.ComputeUpdates(..)` in provider `EndBlocker`, during `sendValidatorUpdates`\
+The validator updates from the staking module on the provider transformed by mapping the validator consensus key to their assigned consumer consensus key. If no assignment has been explicitly made, then the provider consensus key is used.
+2. `KeyAssignment.PruneUnusedKeys(..)` in provider `OnRecvVSCMaturedPacket`\
+On receiving a VSCID for a consumer in a maturity packet, it is certain that any consensus keys which were sent to the consumer at a vscid <= VSCID with a _zero_ power update, and have not since been sent to the consumer with a _positive_ power update, can be pruned, as these keys are no longer
+valid for slashing.
+3. `KeyAssignment.GetProviderPubKeyFromConsumerConsAddress(..)` in provider `HandleSlashPacket`\
+Slash packets delivered to the provider contain the consensus address for the validator to be slashed, as it is known to tendermint on the consumer chain. The consensus address is used as a key in a lookup table to retrieve the _provider_ validator consensus address. This can be then be used to slash the validator accordingly.
+4. `KeyAssignment.DeleteProviderKey(..)` in provider staking hook `AfterValidatorRemoved`\
+When a validator is entirely removed on the provider chain, the associated index data is deleted from the state.
+5. `SetProviderPubKeyToConsumerPubKey(..)` in provider `CreateConsumerClient` during `MakeConsumerGenesis`\
+When a new consumer is added, the provider exports a genesis state for that consumer. At this time,
+the initial validator set must be computed. It is mapped through the assigned consensus keys, exactly as happens in the provider `EndBlocker` (see bullet 1).
+6. `DeleteKeyAssignment(chainID)` in provider `StopConsumerChain`\
+When a consumer chain is stopped, all of the associated state is deleted.
+7. The internal state is serialized during provider `ExportGenesis`\
+Self explanatory.
+8. The internal state is loaded during provider `InitGenesis`\
+Self explanatory.
+9. `AssignConsensusPublicKeyToConsumerChain(..)` TX handler in provider `msg_server`\
+A tx type is exposed on the provider, which takes a valid consumer chainID, and a tendermint public key. A validator on the provider must sign the tx. On receipt, the specified public key will
+be used to send updates for that validator to the specified consumer chain.
+10. `QueryConsumerChainValidatorKeyAssignment(..)` query handler in provider `grpc_query`\
+Query the currently assigned tendermint public key for a given (validator, consumer chain) pair.
 
 
 ## External properties
