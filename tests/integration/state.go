@@ -22,6 +22,7 @@ type ChainState struct {
 	RepresentativePowers *map[validatorID]uint
 	Params               *[]Param
 	Rewards              *Rewards
+	ConsumerChains       *map[chainID]bool
 }
 
 type Proposal interface {
@@ -122,6 +123,11 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 	if modelState.Rewards != nil {
 		rewards := tr.getRewards(chain, *modelState.Rewards)
 		chainState.Rewards = &rewards
+	}
+
+	if modelState.ConsumerChains != nil {
+		chains := tr.getConsumerChains(chain)
+		chainState.ConsumerChains = &chains
 	}
 
 	return chainState
@@ -465,6 +471,34 @@ func (tr TestRun) getParam(chain chainID, param Param) string {
 	value := gjson.Get(string(bz), `value`)
 
 	return value.String()
+}
+
+// queryConsumerChainRemoved checks if provided consumerChain
+// was removed from the list of consumer chains on the provider.
+// If a chain was not removed a panic will be raised.
+func (tr TestRun) getConsumerChains(chain chainID) map[chainID]bool {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+
+		"query", "provider", "list-consumer-chains",
+		`--node`, tr.getQueryNode(chain),
+		`-o`, `json`,
+	)
+
+	// {"chains":[{"chain_id":"consu","client_id":"07-tendermint-0"}]}
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	arr := gjson.Get(string(bz), "chains").Array()
+	chains := make(map[chainID]bool)
+	for _, c := range arr {
+		id := c.Get("chain_id").String()
+		chains[chainID(id)] = true
+	}
+
+	return chains
 }
 
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {

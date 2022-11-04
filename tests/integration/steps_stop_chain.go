@@ -5,11 +5,11 @@ func stepsStopChain(consumerName string) []Step {
 	s := []Step{
 		{
 			action: submitConsumerRemovalProposalAction{
-				chain:         chainID("provi"),
-				from:          validatorID("bob"),
-				deposit:       10000001,
-				consumerChain: chainID(consumerName),
-				stopTime:      0,
+				chain:          chainID("provi"),
+				from:           validatorID("bob"),
+				deposit:        10000001,
+				consumerChain:  chainID(consumerName),
+				stopTimeOffset: 0,
 			},
 			state: State{
 				chainID("provi"): ChainState{
@@ -24,6 +24,7 @@ func stepsStopChain(consumerName string) []Step {
 							Status:   "PROPOSAL_STATUS_VOTING_PERIOD",
 						},
 					},
+					ConsumerChains: &map[chainID]bool{"consu": true},
 				},
 			},
 		},
@@ -47,15 +48,9 @@ func stepsStopChain(consumerName string) []Step {
 					ValBalances: &map[validatorID]uint{
 						validatorID("bob"): 9500000002,
 					},
+					ConsumerChains: &map[chainID]bool{},
 				},
 			},
-		},
-		{
-			action: queryConsumerChainRemovedAction{
-				providerChain: chainID("provi"),
-				consumerChain: chainID(consumerName),
-			},
-			state: State{},
 		},
 	}
 
