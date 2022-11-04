@@ -29,11 +29,11 @@ For an overview of the Interchain Security workflow, have a look at [the diagram
 
 | ID | Concern | Code Review | Automatic Tools | Unit Testing |
 | -- | ------- | ----------- | --------------- | ------------ |
-| 1.01 | Unexpected panics | `Scheduled` | `??` | `??` |
+| 1.01 | Unexpected panics | `Scheduled` | `NA` | `NA` |
 | 1.02 | Handling errors | `Scheduled` | `gosec` | `Partial coverage` |
-| 1.03 | Accessing store (setters, getters, iterators) | `Scheduled` | `??` | `Partial coverage` |
-| 1.04 | Serialization / deserialization | `Scheduled` | `??` | `Partial coverage` |
-| 1.05 | Storage leaks | `Scheduled` | `NA` | `??` |
+| 1.03 | Accessing store (setters, getters, iterators) | `Scheduled` | `NA` | `Partial coverage` |
+| 1.04 | Serialization / deserialization | `Scheduled` | `NA` | `Partial coverage` |
+| 1.05 | Storage leaks | `Scheduled` | `NA` | `NA` |
 
 ### Integration with IBC
 
