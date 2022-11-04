@@ -20,7 +20,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ProposalHandler is the param change proposal handler.
 var (
 	ConsumerAdditionProposalHandler = govclient.NewProposalHandler(SubmitConsumerAdditionPropTxCmd, ConsumerAdditionProposalRESTHandler)
 	ConsumerRemovalProposalHandler  = govclient.NewProposalHandler(SubmitConsumerRemovalProposalTxCmd, ConsumerRemovalProposalRESTHandler)
@@ -38,7 +37,7 @@ Submit a consumer addition proposal along with an initial deposit.
 The proposal details must be supplied via a JSON file.
 
 Example:
-$ %s tx gov submit-proposal consumer-addition <path/to/proposal.json> --from=<key_or_address>
+$ <appd> tx gov submit-proposal consumer-addition <path/to/proposal.json> --from=<key_or_address>
 
 Where proposal.json contains:
 
@@ -100,7 +99,7 @@ Submit a consumer chain removal proposal along with an initial deposit.
 The proposal details must be supplied via a JSON file.
 
 Example:
-$ %s tx gov submit-proposal consumer-removal <path/to/proposal.json> --from=<key_or_address>
+$ <appd> tx gov submit-proposal consumer-removal <path/to/proposal.json> --from=<key_or_address>
 
 Where proposal.json contains:
 {
@@ -122,8 +121,7 @@ Where proposal.json contains:
 			}
 
 			content := types.NewConsumerRemovalProposal(
-				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
-				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime)
+				proposal.Title, proposal.Description, proposal.ChainId, proposal.StopTime)
 
 			from := clientCtx.GetFromAddress()
 
