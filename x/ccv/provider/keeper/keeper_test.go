@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"github.com/golang/mock/gomock"
@@ -335,4 +336,61 @@ func TestInitTimeoutTimestamp(t *testing.T) {
 	providerKeeper.DeleteInitTimeoutTimestamp(ctx, tc[1].chainID)
 	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, tc[1].chainID)
 	require.False(t, found)
+}
+
+// TestVscSendTimestamp tests the set, deletion, and iteration methods for VSC timeout timestamps
+func TestVscSendTimestamp(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	now := ctx.BlockTime()
+
+	testCases := []struct {
+		chainID string
+		ts      time.Time
+		vscID   uint64
+	}{
+		{chainID: "chain", ts: now.Add(time.Hour), vscID: 1},
+		{chainID: "chain", ts: now.Add(2 * time.Hour), vscID: 2},
+		{chainID: "chain1", ts: now.Add(time.Hour), vscID: 1},
+		{chainID: "chain2", ts: now.Add(time.Hour), vscID: 1},
+	}
+
+	i := 0
+	chainID := "chain"
+	providerKeeper.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, _ time.Time) bool {
+		i++
+		return true
+	})
+	require.Equal(t, 0, i)
+
+	for _, tc := range testCases {
+		providerKeeper.SetVscSendTimestamp(ctx, tc.chainID, tc.vscID, tc.ts)
+	}
+
+	i = 0
+	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(vscID uint64, ts time.Time) bool {
+		require.Equal(t, vscID, testCases[i].vscID)
+		require.Equal(t, ts, testCases[i].ts)
+		i++
+		return true
+	})
+	require.Equal(t, 2, i)
+
+	// delete VSC send timestamps
+	var ids []uint64
+	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(vscID uint64, _ time.Time) bool {
+		ids = append(ids, vscID)
+		return true
+	})
+	for _, vscID := range ids {
+		providerKeeper.DeleteVscSendTimestamp(ctx, testCases[0].chainID, vscID)
+	}
+
+	i = 0
+	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(_ uint64, _ time.Time) bool {
+		i++
+		return true
+	})
+	require.Equal(t, 0, i)
 }

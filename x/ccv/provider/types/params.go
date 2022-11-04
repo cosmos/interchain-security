@@ -21,8 +21,11 @@ const (
 	// as UnbondingPeriod / TrustingPeriodFraction
 	DefaultTrustingPeriodFraction = 2
 
-	// DafaultInitTimeoutPeriod defines the init timeout period
+	// DefaultInitTimeoutPeriod defines the init timeout period
 	DefaultInitTimeoutPeriod = 7 * 24 * time.Hour
+
+	// DefaultVscTimeoutPeriod defines the VSC timeout period
+	DefaultVscTimeoutPeriod = 5 * 7 * 24 * time.Hour
 )
 
 // Reflection based keys for params subspace
@@ -30,6 +33,7 @@ var (
 	KeyTemplateClient         = []byte("TemplateClient")
 	KeyTrustingPeriodFraction = []byte("TrustingPeriodFraction")
 	KeyInitTimeoutPeriod      = []byte("InitTimeoutPeriod")
+	KeyVscTimeoutPeriod       = []byte("VscTimeoutPeriod")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -43,12 +47,14 @@ func NewParams(
 	trustingPeriodFraction int64,
 	ccvTimeoutPeriod time.Duration,
 	initTimeoutPeriod time.Duration,
+	vscTimeoutPeriod time.Duration,
 ) Params {
 	return Params{
 		TemplateClient:         cs,
 		TrustingPeriodFraction: trustingPeriodFraction,
 		CcvTimeoutPeriod:       ccvTimeoutPeriod,
 		InitTimeoutPeriod:      initTimeoutPeriod,
+		VscTimeoutPeriod:       vscTimeoutPeriod,
 	}
 }
 
@@ -72,6 +78,7 @@ func DefaultParams() Params {
 		DefaultTrustingPeriodFraction,
 		ccvtypes.DefaultCCVTimeoutPeriod,
 		DefaultInitTimeoutPeriod,
+		DefaultVscTimeoutPeriod,
 	)
 }
 
@@ -92,6 +99,9 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidateDuration(p.InitTimeoutPeriod); err != nil {
 		return fmt.Errorf("init timeout period is invalid: %s", err)
 	}
+	if err := ccvtypes.ValidateDuration(p.VscTimeoutPeriod); err != nil {
+		return fmt.Errorf("vsc timeout period is invalid: %s", err)
+	}
 	return nil
 }
 
@@ -102,6 +112,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyTrustingPeriodFraction, p.TrustingPeriodFraction, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyInitTimeoutPeriod, p.InitTimeoutPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(KeyVscTimeoutPeriod, p.VscTimeoutPeriod, ccvtypes.ValidateDuration),
 	}
 }
 

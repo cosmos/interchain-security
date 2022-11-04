@@ -130,6 +130,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	k.DeleteConsumerClientId(ctx, chainID)
 	k.DeleteConsumerGenesis(ctx, chainID)
 	k.DeleteLockUnbondingOnTimeout(ctx, chainID)
+	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
 	if channelID, found := k.GetChainToChannel(ctx, chainID); found {
@@ -138,6 +139,16 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 		}
 		k.DeleteChainToChannel(ctx, chainID)
 		k.DeleteChannelToChain(ctx, channelID)
+
+		// delete VSC send timestamps
+		var ids []uint64
+		k.IterateVscSendTimestamps(ctx, chainID, func(vscID uint64, ts time.Time) bool {
+			ids = append(ids, vscID)
+			return true
+		})
+		for _, vscID := range ids {
+			k.DeleteVscSendTimestamp(ctx, chainID, vscID)
+		}
 	}
 
 	k.DeleteInitChainHeight(ctx, chainID)
