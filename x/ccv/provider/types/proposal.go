@@ -17,10 +17,12 @@ const (
 
 var (
 	_ govtypes.Content = &ConsumerAdditionProposal{}
+	_ govtypes.Content = &ConsumerRemovalProposal{}
 )
 
 func init() {
 	govtypes.RegisterProposalType(ProposalTypeConsumerAddition)
+	govtypes.RegisterProposalType(ProposalTypeConsumerRemoval)
 }
 
 // NewConsumerAdditionProposal creates a new consumer addition proposal.
