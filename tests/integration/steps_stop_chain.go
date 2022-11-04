@@ -1,5 +1,7 @@
 package main
 
+import "time"
+
 // submits a consumer-removal proposal and removes the chain
 func stepsStopChain(consumerName string) []Step {
 	s := []Step{
@@ -9,7 +11,7 @@ func stepsStopChain(consumerName string) []Step {
 				from:           validatorID("bob"),
 				deposit:        10000001,
 				consumerChain:  chainID(consumerName),
-				stopTimeOffset: 0,
+				stopTimeOffset: 0 * time.Millisecond,
 			},
 			state: State{
 				chainID("provi"): ChainState{

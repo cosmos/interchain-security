@@ -252,14 +252,14 @@ type submitConsumerRemovalProposalAction struct {
 	from           validatorID
 	deposit        uint
 	consumerChain  chainID
-	stopTimeOffset uint // offset from time.Now()
+	stopTimeOffset time.Duration // offset from time.Now()
 }
 
 func (tr TestRun) submitConsumerRemovalProposal(
 	action submitConsumerRemovalProposalAction,
 	verbose bool,
 ) {
-	stopTime := tr.containerConfig.now.Add(time.Duration(action.stopTimeOffset) * time.Millisecond)
+	stopTime := tr.containerConfig.now.Add(action.stopTimeOffset)
 	prop := client.ConsumerRemovalProposalJSON{
 		Title:       fmt.Sprintf("Stop the %v chain", action.consumerChain),
 		Description: "It was a great chain",
