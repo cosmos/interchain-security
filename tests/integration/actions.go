@@ -1094,6 +1094,6 @@ func (tr TestRun) queryConsumerChainRemoved(
 		}
 	}
 	if verbose {
-		fmt.Printf("consumer chain %s successfully removed\b", action.consumerChain)
+		fmt.Printf("consumer chain %s successfully removed\n", action.consumerChain)
 	}
 }

@@ -6,7 +6,7 @@ func stepsStopChain(consumerName string) []Step {
 		{
 			action: submitConsumerRemovalProposalAction{
 				chain:         chainID("provi"),
-				from:          validatorID("alice"),
+				from:          validatorID("bob"),
 				deposit:       10000001,
 				consumerChain: chainID(consumerName),
 				stopTime:      0,
@@ -14,8 +14,7 @@ func stepsStopChain(consumerName string) []Step {
 			state: State{
 				chainID("provi"): ChainState{
 					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9479013472, // was 9489999997
-						validatorID("bob"):   9500000002,
+						validatorID("bob"): 9490000001,
 					},
 					Proposals: &map[uint]Proposal{
 						2: ConsumerRemovalProposal{
@@ -46,8 +45,7 @@ func stepsStopChain(consumerName string) []Step {
 						},
 					},
 					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9479013472,
-						validatorID("bob"):   9500000002,
+						validatorID("bob"): 9500000002,
 					},
 				},
 			},

@@ -32,10 +32,10 @@ func main() {
 	tr.ValidateStringLiterals()
 	tr.startDocker()
 
-	// dmc := DemocracyTestRun()
-	// dmc.SetLocalSDKPath(*localSdkPath)
-	// dmc.ValidateStringLiterals()
-	// dmc.startDocker()
+	dmc := DemocracyTestRun()
+	dmc.SetLocalSDKPath(*localSdkPath)
+	dmc.ValidateStringLiterals()
+	dmc.startDocker()
 
 	ds := DoubleSignTestRun()
 	ds.SetLocalSDKPath(*localSdkPath)
@@ -45,8 +45,8 @@ func main() {
 	wg.Add(1)
 	go tr.ExecuteSteps(&wg, happyPathSteps)
 
-	// wg.Add(1)
-	// go dmc.ExecuteSteps(&wg, democracySteps)
+	wg.Add(1)
+	go dmc.ExecuteSteps(&wg, democracySteps)
 
 	wg.Add(1)
 	go ds.ExecuteSteps(&wg, doubleSignProviderSteps)
