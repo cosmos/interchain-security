@@ -153,12 +153,12 @@ The main concern addressed in this section is the correctness of the consumer ch
 
 | ID | Concern | Code Review | Unit Testing | E2e Testing | Diff. testing | Testnet | Protocol audit |
 | -- | ------- | ----------- | ------------ | ----------- | ------------- | ------- | -------------- |
-| 10.01 | Consumer chain liveness (blocks are being produced) | `Scheduled` | `NA` | `NA` | `??` | `Scheduled` | `NA` |
-| 10.02 | A chain has the ability to restart as a consumer chain with no more than 24 hours downtime | `Scheduled` | `NA` | `NA` | `??` | `Scheduled` | `NA` |
-| 10.03 | A consumer chain has the ability to restart as a normal chain after shutting down, either controlled (via `ConsumerRemovalProposal`) or due to timing out | `Scheduled` | `??` | `??` | `??` | `Scheduled` | `NA` |
-| 10.04 | A consumer chain has the ability to restart as a consumer chain with the same `chainId` after shutting down, either controlled (via `ConsumerRemovalProposal`) or due to timing out | `Scheduled` | `??` | `??` | `??` | `Scheduled` | `NA` |
-| 10.05 | Governance on `gov-cc` | `Scheduled` | `??` | `??` | `??` | `Scheduled` | `NA` |
-| 10.06 | CosmWasm on `wasm-cc` | `Scheduled` | `??` | `??` | `??` | `Scheduled` | `NA` |
+| 10.01 | Consumer chain liveness (blocks are being produced) | `Scheduled` | `NA` | `NA` | `NA` | `Scheduled` | `NA` |
+| 10.02 | A chain has the ability to restart as a consumer chain with no more than 24 hours downtime | `Scheduled` | `NA` | `NA` | `NA` | `Scheduled` | `NA` |
+| 10.03 | A consumer chain has the ability to restart as a normal chain after shutting down, either controlled (via `ConsumerRemovalProposal`) or due to timing out | `Scheduled` | `NA` | `NA` | `NA` | `Scheduled` | `NA` |
+| 10.04 | A consumer chain has the ability to restart as a consumer chain with the same `chainId` after shutting down, either controlled (via `ConsumerRemovalProposal`) or due to timing out | `Scheduled` | `NA` | `Scheduled` | `NA` | `Scheduled` | `NA` |
+| 10.05 | Governance on `gov-cc` | `Scheduled` | `NA` | `Partial Coverage` [TestDemocracyGovernanceWhitelisting](../tests/e2e/distribution_test.go#133) | `Scheduled` | `Scheduled` | `NA` |
+| 10.06 | CosmWasm on `wasm-cc` | `Scheduled` | `NA` | `Scheduled` | `NA` | `Scheduled` | `NA` |
 | TBA ...
 
 > TODO create clear concerns for `gov-cc` and `wasm-cc` once the implementations are done
