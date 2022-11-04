@@ -41,12 +41,12 @@ const (
 	// ValidatorSetUpdateIdByteKey is the byte key that stores the current validator set update id
 	ValidatorSetUpdateIdByteKey
 
-	// SlashGasMeterBytePrefix is the byte prefix for storing the slash gas meter
-	SlashGasMeterBytePrefix
+	// SlashMeterBytePrefix is the byte prefix for storing the slash meter
+	SlashMeterBytePrefix
 
-	// LastSlashGasReplenishTimeBytePrefix is the byte prefix for storing
-	// the last time the slash gas meter was replenished
-	LastSlashGasReplenishTimeBytePrefix
+	// LastSlashMeterReplenishTimeBytePrefix is the byte prefix for storing
+	// the last time the slash meter was replenished
+	LastSlashMeterReplenishTimeBytePrefix
 
 	// NumPendingSlashPacketsBytePrefix is the byte prefix for storing the number of pending slash packets in the queue
 	NumPendingSlashPacketsBytePrefix
@@ -128,14 +128,14 @@ func ValidatorSetUpdateIdKey() []byte {
 	return []byte{ValidatorSetUpdateIdByteKey}
 }
 
-// SlashGasMeterKey returns the key under which the slash meter is stored
-func SlashGasMeterKey() []byte {
-	return []byte{SlashGasMeterBytePrefix}
+// SlashMeterKey returns the key storing the slash meter
+func SlashMeterKey() []byte {
+	return []byte{SlashMeterBytePrefix}
 }
 
-// LastSlashGasReplenishTimeKey returns the key under which the last time the slash gas meter was replenished is stored
-func LastSlashGasReplenishTimeKey() []byte {
-	return []byte{LastSlashGasReplenishTimeBytePrefix}
+// LastSlashMeterReplenishTimeKey returns the key storing the last time the slash meter was replenished
+func LastSlashMeterReplenishTimeKey() []byte {
+	return []byte{LastSlashMeterReplenishTimeBytePrefix}
 }
 
 // ChainToChannelKey returns the key under which the CCV channel ID will be stored for the given consumer chain.

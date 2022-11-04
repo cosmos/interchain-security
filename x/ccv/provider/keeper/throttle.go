@@ -41,13 +41,14 @@ func (k Keeper) QueuePendingSlashPacket(
 		data)
 }
 
-// HandlePendingSlashPackets handles all or some portion of pending slash packets depending on circuit breaker logic.
-// This method executes every end block routine
+// HandlePendingSlashPackets handles all or some portion of pending slash packets received by any consumer chain
+// depending on circuit breaker logic. This method executes every end block routine.
 func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
-	meter := k.GetSlashGasMeter(ctx)
+	meter := k.GetSlashMeter(ctx)
 	handledEntries := []providertypes.SlashPacketEntry{}
 
+	// Iterate through ordered (by received time) slash packet entries from any consumer chain
 	k.IteratePendingSlashPacketEntries(ctx, func(entry providertypes.SlashPacketEntry) bool {
 
 		// Obtain the validator power relevant to the slash packet that's about to be handled
@@ -57,8 +58,8 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		// Subtract this power from the slash gas meter
 		meter.Sub(sdktypes.NewInt(valPower))
 
-		// Handle slash packet by entry, passing in appropriate handlers
-		k.HandlePendingSlashPacketByEntry(ctx, entry, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
+		// Handle slash packet by passing in chainID and appropriate handlers
+		k.HandlePendingSlashPacket(ctx, entry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
 
 		// Store handled entry to be deleted after iteration is completed
 		handledEntries = append(handledEntries, entry)
@@ -71,14 +72,14 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 	k.DeletePendingSlashPacketEntries(ctx, handledEntries...)
 
 	// Persist current value for slash gas meter
-	k.SetSlashGasMeter(ctx, meter)
+	k.SetSlashMeter(ctx, meter)
 }
 
-// HandlePendingSlashPacketByEntry retrieves the queued slash packet data relevant to the provided entry,
+// HandlePendingSlashPacket retrieves the queued slash packet data relevant to the passed chainID,
 // handles the slash packet, and finally handles any trailing vsc matured packets in the
 // chain-specific pending packet data queue. Note that any handled (chain-specific) pending packet data
-// is deleted in this method. Whereas the entry itself is deleted after iteration is completed in HandlePendingSlashPackets.
-func (k Keeper) HandlePendingSlashPacketByEntry(ctx sdktypes.Context, entry providertypes.SlashPacketEntry,
+// is deleted in this method.
+func (k Keeper) HandlePendingSlashPacket(ctx sdktypes.Context, consumerChainID string,
 	slashPacketHandler func(sdktypes.Context, string, ccvtypes.SlashPacketData) (bool, error),
 	vscMaturedPacketHandler func(sdk.Context, string, channeltypes.Packet, ccv.VSCMaturedPacketData),
 ) {
@@ -87,7 +88,7 @@ func (k Keeper) HandlePendingSlashPacketByEntry(ctx sdktypes.Context, entry prov
 	numSlash := 0
 	numVSCMatured := 0
 
-	k.IteratePendingPacketData(ctx, entry.ConsumerChainID, func(ibcSeqNum uint64, data interface{}) bool {
+	k.IteratePendingPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, data interface{}) bool {
 
 		switch data := data.(type) {
 
@@ -96,7 +97,7 @@ func (k Keeper) HandlePendingSlashPacketByEntry(ctx sdktypes.Context, entry prov
 				// Break iteration, since we've already handled one slash packet
 				return true
 			}
-			_, err := slashPacketHandler(ctx, entry.ConsumerChainID, data)
+			_, err := slashPacketHandler(ctx, consumerChainID, data)
 			if err != nil {
 				panic(fmt.Sprintf("failed to handle slash packet: %s", err))
 			}
@@ -117,7 +118,7 @@ func (k Keeper) HandlePendingSlashPacketByEntry(ctx sdktypes.Context, entry prov
 
 	// TODO: handle slash packet, and all trailing vsc matured packets
 
-	_, err := k.HandleSlashPacket(ctx, entry.ConsumerChainID,
+	_, err := k.HandleSlashPacket(ctx, consumerChainID,
 		ccvtypes.SlashPacketData{}, // TODO
 	)
 	if err != nil {
@@ -133,7 +134,7 @@ func (k Keeper) HandlePendingSlashPacketByEntry(ctx sdktypes.Context, entry prov
 // TODO: hook this into endblocker, unit and e2e tests, tests must include odd time formats, since UTC is is used
 func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 	// TODO: Need to set initial replenishment time
-	if ctx.BlockTime().UTC().After(k.GetLastSlashGasReplenishTime(ctx).Add(time.Hour)) {
+	if ctx.BlockTime().UTC().After(k.GetLastSlashMeterReplenishTime(ctx).Add(time.Hour)) {
 		// TODO: Use param for replenish period, allowance, etc.
 		// TODO: change code and documentation to reflect that this is a string fraction param
 		slashGasAllowanceFraction := sdktypes.NewDec(5).Quo(sdktypes.NewDec(100)) // This will be a string param, ex: "0.05"
@@ -142,7 +143,7 @@ func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 		totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
 		slashGasAllowance := sdktypes.NewInt(slashGasAllowanceFraction.MulInt(totalPower).RoundInt64())
 
-		meter := k.GetSlashGasMeter(ctx)
+		meter := k.GetSlashMeter(ctx)
 
 		// Replenish gas up to gas allowance per period. That is, if meter was negative
 		// before being replenished, it'll gain some additional gas. However, if the meter
@@ -151,21 +152,14 @@ func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 		if meter.GT(slashGasAllowance) {
 			meter = slashGasAllowance
 		}
-		k.SetSlashGasMeter(ctx, meter)
-		k.SetLastSlashGasReplenishTime(ctx, ctx.BlockTime())
+		k.SetSlashMeter(ctx, meter)
+		k.SetLastSlashMeterReplenishTime(ctx, ctx.BlockTime())
 	}
 }
 
 //
 // CRUD section
 //
-
-// TODO: Maybe this method just goes in the on recv method
-func (k Keeper) HandleOrQueueVSCMaturedPacket(ctx sdktypes.Context, consumerChainID string, data ccvtypes.VSCMaturedPacketData) {
-	// TODO: if queue for this chain is empty (no pending slash packets), handle vsc matured packet immediately
-	// else queue it
-	k.QueuePendingVSCMaturedPacketData(ctx, consumerChainID, 7, data) // TODO: hook seq number into this
-}
 
 // QueuePendingSlashPacketEntry queues an entry to the "parent" slash packet queue, used for throttling val power changes
 // related to jailing/tombstoning over time. This "parent" queue is used to coordinate the order of slash packet handling
@@ -297,61 +291,59 @@ func (k Keeper) DeletePendingPacketData(ctx sdktypes.Context, consumerChainID st
 	}
 }
 
-// GetSlashGasMeter returns a meter (persisted as a signed int) which stores "slash gas",
-// ie. an amount of voting power corresponding to an allowance of validators (with non-zero voting power)
-// that can be jailed at a given time.
+// GetSlashMeter returns a meter (persisted as a signed int) which stores an amount of voting power, corresponding
+// to an allowance of validators that can be jailed/tombstoned over time.
 //
-// Note: the value of this decimal should always be in the range of tendermint's [-MaxVotingPower, MaxVotingPower]
+// Note: the value of this int should always be in the range of tendermint's [-MaxVotingPower, MaxVotingPower]
 // TODO: If you keep slash gas meter as a percent, make sure it's clear that the param is a percent (put in name)
-func (k Keeper) GetSlashGasMeter(ctx sdktypes.Context) sdktypes.Int {
-	// TODO: is this the standard way to set a signed int?
+func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(providertypes.SlashGasMeterKey())
+	bz := store.Get(providertypes.SlashMeterKey())
 	if bz == nil {
-		panic("slash gas meter not set")
+		panic("slash meter not set")
 	}
 	value := sdktypes.ZeroInt()
 	err := value.Unmarshal(bz)
 	if err != nil {
-		panic(fmt.Sprintf("failed to unmarshal slash gas meter: %v", err))
+		panic(fmt.Sprintf("failed to unmarshal slash meter: %v", err))
 	}
 	return value
 }
 
-// SetSlashGasMeter sets the "slash gas" meter to the given signed int value
+// SetSlashMeter sets the slash meter to the given signed int value
 //
-// Note: the value of this decimal should always be in the range of tendermint's [-MaxVotingPower, MaxVotingPower]
-func (k Keeper) SetSlashGasMeter(ctx sdktypes.Context, value sdktypes.Int) {
+// Note: the value of this int should always be in the range of tendermint's [-MaxVotingPower, MaxVotingPower]
+func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value sdktypes.Int) {
 	if value.GT(sdktypes.NewInt(tmtypes.MaxTotalVotingPower)) {
-		panic("slash gas meter value cannot be greater than tendermint's MaxTotalVotingPower")
+		panic("slash meter value cannot be greater than tendermint's MaxTotalVotingPower")
 	}
 	if value.LT(sdktypes.NewInt(-tmtypes.MaxTotalVotingPower)) {
-		panic("slash gas meter value cannot be less than negative tendermint's MaxTotalVotingPower")
+		panic("slash meter value cannot be less than negative tendermint's MaxTotalVotingPower")
 	}
 	store := ctx.KVStore(k.storeKey)
 	bz, err := value.Marshal()
 	if err != nil {
-		panic(fmt.Sprintf("failed to marshal slash gas meter: %v", err))
+		panic(fmt.Sprintf("failed to marshal slash meter: %v", err))
 	}
-	store.Set(providertypes.SlashGasMeterKey(), bz)
+	store.Set(providertypes.SlashMeterKey(), bz)
 }
 
-// GetLastSlashGasReplenishTime returns the last UTC time the slash gas meter was replenished
-func (k Keeper) GetLastSlashGasReplenishTime(ctx sdktypes.Context) time.Time {
+// GetLastSlashMeterReplenishTime returns the last UTC time the slash meter was replenished
+func (k Keeper) GetLastSlashMeterReplenishTime(ctx sdktypes.Context) time.Time {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(providertypes.LastSlashGasReplenishTimeKey())
+	bz := store.Get(providertypes.LastSlashMeterReplenishTimeKey())
 	if bz == nil {
-		panic("last slash gas replenish time not set")
+		panic("last slash replenish time not set")
 	}
 	time, err := sdktypes.ParseTimeBytes(bz)
 	if err != nil {
-		panic(fmt.Sprintf("failed to parse last slash gas replenish time: %s", err))
+		panic(fmt.Sprintf("failed to parse last slash meter replenish time: %s", err))
 	}
 	return time.UTC()
 }
 
-// SetLastSlashGasReplenishTime sets the last time the slash gas meter was replenished
-func (k Keeper) SetLastSlashGasReplenishTime(ctx sdktypes.Context, time time.Time) {
+// SetLastSlashMeterReplenishTime sets the last time the slash meter was replenished
+func (k Keeper) SetLastSlashMeterReplenishTime(ctx sdktypes.Context, time time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(providertypes.LastSlashGasReplenishTimeKey(), sdktypes.FormatTimeBytes(time.UTC()))
+	store.Set(providertypes.LastSlashMeterReplenishTimeKey(), sdktypes.FormatTimeBytes(time.UTC()))
 }

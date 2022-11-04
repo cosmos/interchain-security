@@ -43,6 +43,10 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	// TODO: else queue that bish up
 	k.HandleVSCMaturedPacket(ctx, chainID, packet, data)
 
+	// TODO: if queue for this chain is empty (no pending slash packets), handle vsc matured packet immediately
+	// else queue it
+	// k.QueuePendingVSCMaturedPacketData(ctx, consumerChainID, 7, data) // TODO: hook seq number into this
+
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
 }
