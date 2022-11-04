@@ -2,13 +2,11 @@ package types
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 type Status int
@@ -96,11 +94,6 @@ const (
 	LockUnbondingOnTimeoutBytePrefix
 )
 
-const (
-	// UnbondingOpIndexKey should be of set length: prefix + hashed chain ID + uint64
-	UnbondingOpIndexKeySize = 1 + 32 + 8
-)
-
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {
 	return []byte{PortByteKey}
@@ -160,21 +153,14 @@ func ParsePendingCRPKey(bz []byte) (time.Time, string, error) {
 // UnbondingOpIndexKey returns an unbonding op index key
 // Note: chainId is hashed to a fixed length sequence of bytes here to prevent
 // injection attack between chainIDs.
-func UnbondingOpIndexKey(chainID string, valsetUpdateID uint64) []byte {
-	return AppendMany([]byte{UnbondingOpIndexBytePrefix}, HashString(chainID),
-		sdk.Uint64ToBigEndian(valsetUpdateID))
+func UnbondingOpIndexKey(chainID string, vscID uint64) []byte {
+	return chainIdAndVscIdKey(UnbondingOpIndexBytePrefix, chainID, vscID)
 }
 
 // ParseUnbondingOpIndexKey parses an unbonding op index key for VSC ID
 // Removes the prefix + chainID from index key and returns only the key part.
-func ParseUnbondingOpIndexKey(key []byte) (vscID []byte, err error) {
-	if len(key) != UnbondingOpIndexKeySize {
-		return nil, sdkerrors.Wrapf(
-			sdkerrors.ErrLogic, "key provided is incorrect: the key has incorrect length, expected %d, got %d",
-			UnbondingOpIndexKeySize, len(key),
-		)
-	}
-	return key[1+32:], nil
+func ParseUnbondingOpIndexKey(key []byte) (string, uint64, error) {
+	return parseChainIdAndVscIdKey(UnbondingOpIndexBytePrefix, key)
 }
 
 // UnbondingOpKey returns the key that stores a record of all the ids of consumer chains that
@@ -238,12 +224,6 @@ func AppendMany(byteses ...[]byte) (out []byte) {
 		out = append(out, bytes...)
 	}
 	return out
-}
-
-// HashString outputs a fixed length 32 byte hash for any string
-func HashString(x string) []byte {
-	hash := sha256.Sum256([]byte(x))
-	return hash[:]
 }
 
 // tsAndChainIdKey returns the key with the following format:

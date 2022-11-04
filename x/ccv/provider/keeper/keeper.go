@@ -360,18 +360,15 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 // IterateOverUnbondingOpIndex iterates over the unbonding indexes for a given chain id.
 func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb func(vscID uint64, ubdIndex []uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
-	iterationPrefix := append([]byte{types.UnbondingOpIndexBytePrefix}, types.HashString(chainID)...)
-	iterator := sdk.KVStorePrefixIterator(store, iterationPrefix)
-
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.UnbondingOpIndexBytePrefix, chainID))
 	defer iterator.Close()
+
 	for ; iterator.Valid(); iterator.Next() {
 		// parse key to get the current VSC ID
-		var vscID uint64
-		vscBytes, err := types.ParseUnbondingOpIndexKey(iterator.Key())
+		_, vscID, err := types.ParseUnbondingOpIndexKey(iterator.Key())
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("failed to parse UnbondingOpIndexKey: %w", err))
 		}
-		vscID = binary.BigEndian.Uint64(vscBytes)
 
 		var index ccv.UnbondingOpsIndex
 		if err = index.Unmarshal(iterator.Value()); err != nil {

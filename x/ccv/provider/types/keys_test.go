@@ -136,30 +136,6 @@ func TestChainIdAndVscIdAndParse(t *testing.T) {
 	}
 }
 
-func TestUnbondingOpIndexKeyAndParse(t *testing.T) {
-	tests := []struct {
-		chainID        string
-		valsetUpdateID uint64
-	}{
-		{chainID: " some chain id", valsetUpdateID: 45},
-		{chainID: " some chain id that is longer", valsetUpdateID: 54038},
-		{chainID: " some chain id that is longer-er     ", valsetUpdateID: 9999999999999999999},
-		{chainID: "2", valsetUpdateID: 0},
-	}
-
-	for _, test := range tests {
-		key := UnbondingOpIndexKey(test.chainID, test.valsetUpdateID)
-		require.NotEmpty(t, key)
-		// This key should be of set length: prefix + hashed chain ID + uint64
-		require.Equal(t, 1+32+8, len(key))
-		parsedVSCID, err := ParseUnbondingOpIndexKey(key)
-		require.NotEmpty(t, parsedVSCID)
-		asUint64 := sdk.BigEndianToUint64(parsedVSCID)
-		require.Equal(t, test.valsetUpdateID, asUint64)
-		require.NoError(t, err)
-	}
-}
-
 // Test key packing functions with the format <prefix><stringID>
 func TestKeysWithPrefixAndId(t *testing.T) {
 
