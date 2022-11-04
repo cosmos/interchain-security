@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -21,8 +22,7 @@ import (
 // TestHandlePacketDataForChain tests the HandlePacketDataForChain function. Note: Only one consumer is tested here,
 // but multiple consumers are tested in TestPendingPacketData.
 // TODO: will need to separately test that no vsc matured packet is queued without a slash packet already in the queue
-// ^ in a separate test just confirm that this method panics if a vsc matured is at the head of the queue.
-// Then make a corresponding test for the place that queues up that packet.
+// ^ make a corresponding test for the place that queues up that packet, gaurunteeing vsc matured will never be at the head.
 func TestHandlePacketDataForChain(t *testing.T) {
 
 	testCases := []struct {
@@ -158,8 +158,6 @@ func TestHandlePacketDataForChain(t *testing.T) {
 			}
 		}
 
-		// TODO: go over this logic with a fresh brain
-
 		// Assert that the unhandled queued data instances are as expected (i.e no unexpected deletions)
 		expectedDataThatsLeft := []interface{}{}
 		for idx, data := range tc.dataToQueue {
@@ -180,6 +178,49 @@ func TestHandlePacketDataForChain(t *testing.T) {
 		for _, dataInstance := range handledData {
 			require.NotContains(t, dataThatsLeft, dataInstance)
 		}
+	}
+}
+
+// TestHandlePacketDataForChainPanic tests that HandlePacketDataForChain panics when expected
+func TestHandlePacketDataForChainPanic(t *testing.T) {
+	testCases := []struct {
+		name         string
+		dataToQueue  []interface{}
+		slashHandler func(ctx sdktypes.Context, chainID string, data ccvtypes.SlashPacketData) (bool, error)
+	}{
+		{
+			"panic when slash packet data is not first in queue",
+			[]interface{}{
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewSlashPacketData(),
+			},
+			func(ctx sdktypes.Context, chainID string, data ccvtypes.SlashPacketData) (bool, error) {
+				return true, nil
+			},
+		},
+		// Panic for invalid persisted data is skipped, its not worth adding a keeper method to allow for invalid data
+		{
+			"panic when slash handler returns error",
+			[]interface{}{
+				testkeeper.GetNewSlashPacketData(),
+			},
+			func(ctx sdktypes.Context, chainID string,
+				data ccvtypes.SlashPacketData) (bool, error) {
+				return false, errors.New("error")
+			},
+		},
+	}
+	for _, tc := range testCases {
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
+
+		for i, data := range tc.dataToQueue {
+			queuePendingPacketData(ctx, &providerKeeper, "chainID", uint64(i), data)
+		}
+
+		require.Panics(t, func() {
+			providerKeeper.HandlePacketDataForChain(ctx, "chainID", tc.slashHandler, func(ctx sdktypes.Context, chainID string, data ccvtypes.VSCMaturedPacketData) {})
+		})
 	}
 }
 

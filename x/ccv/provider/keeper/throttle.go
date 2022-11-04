@@ -32,14 +32,15 @@ func (k Keeper) QueuePendingSlashPacket(
 		consumerChainID, // consumer chain id that sent the packet
 		data.Validator.Address))
 
-	// Queue slash packet data in the same queue as vsc matured packet data, to enforce order of handling between the two types
+	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
+	// to enforce order of handling between the two packet types.
 	k.QueuePendingSlashPacketData(ctx,
 		consumerChainID, // consumer chain id that sent the packet
 		packet.Sequence, // IBC sequence number of the packet
 		data)
 }
 
-// HandlePendingSlashPackets handles all or some portion of pending slash packets received by any consumer chain
+// HandlePendingSlashPackets handles all or some portion of pending slash packets received by any consumer chain,
 // depending on circuit breaker logic. This method executes every end block routine.
 // TODO: This deserves an e2e test, not unit. You'll prob need to setup some staking module stuff tho.
 func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
@@ -74,9 +75,10 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 	k.SetSlashMeter(ctx, meter)
 }
 
-// HandlePacketDataForChain retrieves the queued packet data relevant to the passed chainID,
-// handles only the first slash packet, and then handles any trailing vsc matured packets in the queue.
-// Note that any packet data which is handled in this method is also deleted from the queue.
+// HandlePacketDataForChain handles only the first queued slash packet relevant to the passed consumer chainID,
+// and then handles any trailing vsc matured packets in that (consumer chain specific) queue.
+//
+// Note: Any packet data which is handled in this method is also deleted from the (consumer chain specific) queue.
 func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID string,
 	slashPacketHandler func(sdktypes.Context, string, ccvtypes.SlashPacketData) (bool, error),
 	vscMaturedPacketHandler func(sdktypes.Context, string, ccvtypes.VSCMaturedPacketData),
@@ -112,7 +114,6 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 		default:
 			panic(fmt.Sprintf("unexpected pending packet data type: %T", data))
 		}
-		// TODO: Confirm these are appended correctly
 		seqNums = append(seqNums, ibcSeqNum)
 		return false
 	})
