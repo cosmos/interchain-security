@@ -88,9 +88,9 @@ const (
 	// PendingVSCsBytePrefix is the byte prefix that will store pending ValidatorSetChangePacket data
 	PendingVSCsBytePrefix
 
-	// VscTimeoutTimestampBytePrefix is the byte prefix for storing
-	// the list of VSC timeout timestamps for a given consumer chainID.
-	VscTimeoutTimestampBytePrefix
+	// VscSendTimestampBytePrefix is the byte prefix for storing
+	// the list of VSC sending timestamps for a given consumer chainID.
+	VscSendTimestampBytePrefix
 
 	// LockUnbondingOnTimeoutBytePrefix is the byte prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
 	LockUnbondingOnTimeoutBytePrefix
@@ -214,16 +214,16 @@ func PendingVSCsKey(chainID string) []byte {
 	return append([]byte{PendingVSCsBytePrefix}, []byte(chainID)...)
 }
 
-// VscTimeoutTimestampKey returns the key under which the
-// IDs of the outstanding VSCPackets are stored
-func VscTimeoutTimestampKey(chainID string, timestamp time.Time) []byte {
-	return chainIdAndTsKey(VscTimeoutTimestampBytePrefix, chainID, timestamp)
+// VscSendingTimestampKey returns the key under which the
+// sending timestamp of the VSCPacket with vsc ID is stored
+func VscSendingTimestampKey(chainID string, vscID uint64) []byte {
+	return chainIdAndVscIdKey(VscSendTimestampBytePrefix, chainID, vscID)
 }
 
-// ParseVscTimeoutTimestampKey returns the time and chain ID
-// for a VscTimeoutTimestampKey or an error if unparsable
-func ParseVscTimeoutTimestampKey(bz []byte) (string, time.Time, error) {
-	return parseChainIdAndTsKey(VscTimeoutTimestampBytePrefix, bz)
+// ParseVscTimeoutTimestampKey returns chain ID and vsc ID
+// for a VscSendingTimestampKey or an error if unparsable
+func ParseVscSendingTimestampKey(bz []byte) (string, uint64, error) {
+	return parseChainIdAndVscIdKey(VscSendTimestampBytePrefix, bz)
 }
 
 // LockUnbondingOnTimeoutKey returns the key that will store the consumer chain id which unbonding operations are locked
@@ -309,6 +309,7 @@ func ChainIdWithLenKey(prefix byte, chainID string) []byte {
 	)
 }
 
+// parseChainIdAndTsKey returns the chain ID and time for a ChainIdAndTs key
 func parseChainIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
@@ -322,4 +323,29 @@ func parseChainIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
 		return "", time.Time{}, err
 	}
 	return chainID, timestamp, nil
+}
+
+// chainIdAndVscIdKey returns the key with the following format:
+// bytePrefix | len(chainID) | chainID | vscID
+func chainIdAndVscIdKey(prefix byte, chainID string, vscID uint64) []byte {
+	partialKey := ChainIdWithLenKey(prefix, chainID)
+	return AppendMany(
+		// Append the partialKey
+		partialKey,
+		// Append the vscID bytes
+		sdk.Uint64ToBigEndian(vscID),
+	)
+}
+
+// parseChainIdAndVscIdKey returns the chain ID and vsc ID for a ChainIdAndVscId key
+func parseChainIdAndVscIdKey(prefix byte, bz []byte) (string, uint64, error) {
+	expectedPrefix := []byte{prefix}
+	prefixL := len(expectedPrefix)
+	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
+		return "", 0, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+	}
+	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
+	vscID := sdk.BigEndianToUint64(bz[prefixL+8+int(chainIdL):])
+	return chainID, vscID, nil
 }

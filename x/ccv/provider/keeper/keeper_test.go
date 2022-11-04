@@ -338,8 +338,8 @@ func TestInitTimeoutTimestamp(t *testing.T) {
 	require.False(t, found)
 }
 
-// TestVscTimeoutTimestamp tests the set, deletion, and iteration methods for VSC timeout timestamps
-func TestVscTimeoutTimestamp(t *testing.T) {
+// TestVscSendTimestamp tests the set, deletion, and iteration methods for VSC timeout timestamps
+func TestVscSendTimestamp(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -358,37 +358,37 @@ func TestVscTimeoutTimestamp(t *testing.T) {
 
 	i := 0
 	chainID := "chain"
-	providerKeeper.IterateVscTimeoutTimestamps(ctx, chainID, func(ts time.Time, vscID uint64) bool {
+	providerKeeper.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, _ time.Time) bool {
 		i++
 		return true
 	})
 	require.Equal(t, 0, i)
 
 	for _, tc := range testCases {
-		providerKeeper.SetVscTimeoutTimestamp(ctx, tc.chainID, tc.ts, tc.vscID)
+		providerKeeper.SetVscSendTimestamp(ctx, tc.chainID, tc.vscID, tc.ts)
 	}
 
 	i = 0
-	providerKeeper.IterateVscTimeoutTimestamps(ctx, testCases[0].chainID, func(ts time.Time, vscID uint64) bool {
-		require.Equal(t, ts, testCases[i].ts)
+	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(vscID uint64, ts time.Time) bool {
 		require.Equal(t, vscID, testCases[i].vscID)
+		require.Equal(t, ts, testCases[i].ts)
 		i++
 		return true
 	})
 	require.Equal(t, 2, i)
 
-	// delete VSC timeout timestamps
-	var timestamps []time.Time
-	providerKeeper.IterateVscTimeoutTimestamps(ctx, testCases[0].chainID, func(ts time.Time, _ uint64) bool {
-		timestamps = append(timestamps, ts)
+	// delete VSC send timestamps
+	var ids []uint64
+	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(vscID uint64, _ time.Time) bool {
+		ids = append(ids, vscID)
 		return true
 	})
-	for _, ts := range timestamps {
-		providerKeeper.DeleteVscTimeoutTimestamp(ctx, testCases[0].chainID, ts)
+	for _, vscID := range ids {
+		providerKeeper.DeleteVscSendTimestamp(ctx, testCases[0].chainID, vscID)
 	}
 
 	i = 0
-	providerKeeper.IterateVscTimeoutTimestamps(ctx, testCases[0].chainID, func(ts time.Time, vscID uint64) bool {
+	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(_ uint64, _ time.Time) bool {
 		i++
 		return true
 	})

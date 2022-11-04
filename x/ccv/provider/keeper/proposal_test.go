@@ -471,7 +471,7 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, expectedChainID)
 	require.False(t, found)
 	found = false
-	providerKeeper.IterateVscTimeoutTimestamps(ctx, expectedChainID, func(_ time.Time, _ uint64) bool {
+	providerKeeper.IterateVscSendTimestamps(ctx, expectedChainID, func(_ uint64, _ time.Time) bool {
 		found = true
 		return false
 	})

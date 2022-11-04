@@ -140,14 +140,14 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 		k.DeleteChainToChannel(ctx, chainID)
 		k.DeleteChannelToChain(ctx, channelID)
 
-		// delete VSC timeout timestamps
-		var timestamps []time.Time
-		k.IterateVscTimeoutTimestamps(ctx, chainID, func(ts time.Time, _ uint64) bool {
-			timestamps = append(timestamps, ts)
+		// delete VSC send timestamps
+		var ids []uint64
+		k.IterateVscSendTimestamps(ctx, chainID, func(vscID uint64, ts time.Time) bool {
+			ids = append(ids, vscID)
 			return true
 		})
-		for _, ts := range timestamps {
-			k.DeleteVscTimeoutTimestamp(ctx, chainID, ts)
+		for _, vscID := range ids {
+			k.DeleteVscSendTimestamp(ctx, chainID, vscID)
 		}
 	}
 

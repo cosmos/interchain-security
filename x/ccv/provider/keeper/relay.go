@@ -67,15 +67,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	k.DeleteUnbondingOpIndex(ctx, chainID, data.ValsetUpdateId)
 
 	// remove the VSC timeout timestamp for this chainID and vscID
-	var timestamp time.Time
-	k.IterateVscTimeoutTimestamps(ctx, chainID, func(ts time.Time, vscID uint64) bool {
-		if vscID == data.ValsetUpdateId {
-			timestamp = ts
-			return false
-		}
-		return true
-	})
-	k.DeleteVscTimeoutTimestamp(ctx, chainID, timestamp)
+	k.DeleteVscSendTimestamp(ctx, chainID, data.ValsetUpdateId)
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
@@ -173,9 +165,8 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				if err != nil {
 					panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 				}
-				// set the VSC timeout timestamp for this packet
-				ts := ctx.BlockTime().Add(k.GetParams(ctx).VscTimeoutPeriod)
-				k.SetVscTimeoutTimestamp(ctx, chainID, ts, packetData.ValsetUpdateId)
+				// set the VSC send timestamp for this packet
+				k.SetVscSendTimestamp(ctx, chainID, packetData.ValsetUpdateId, ctx.BlockTime())
 			} else {
 				// store the packet data to be sent once the CCV channel is established
 				k.AppendPendingVSC(ctx, chainID, packetData)
@@ -203,11 +194,10 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 		if err != nil {
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
-		// set the VSC timeout timestamp for this packet;
-		// note that the VSC timeout timestamp are set when the packets
+		// set the VSC send timestamp for this packet;
+		// note that the VSC send timestamp are set when the packets
 		// are actually sent over IBC
-		ts := ctx.BlockTime().Add(k.GetParams(ctx).VscTimeoutPeriod)
-		k.SetVscTimeoutTimestamp(ctx, chainID, ts, data.ValsetUpdateId)
+		k.SetVscSendTimestamp(ctx, chainID, data.ValsetUpdateId, ctx.BlockTime())
 	}
 }
 
@@ -349,16 +339,18 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	chainIdsToRemove = nil
 
 	// Iterate over all consumers with established CCV channels and
-	// check if the first vscTimeoutTimestamp in iterator is expired.
-	// Checking the first timeout for each chain is sufficient since
-	// timestamps are ordered from oldest to newest
+	// check if the first vscSendTimestamp in iterator + VscTimeoutPeriod
+	// exceed the current block time.
+	// Checking the first send timestamp for each chain is sufficient since
+	// timestamps are ordered by vsc ID.
 	k.IterateChannelToChain(ctx, func(ctx sdk.Context, _, chainID string) bool {
-		k.IterateVscTimeoutTimestamps(ctx, chainID, func(ts time.Time, _ uint64) bool {
-			if currentTime.After(ts) {
+		k.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, ts time.Time) bool {
+			timeoutTimestamp := ts.Add(k.GetParams(ctx).VscTimeoutPeriod)
+			if currentTime.After(timeoutTimestamp) {
 				// vscTimeout expired
 				chainIdsToRemove = append(chainIdsToRemove, chainID)
 			}
-			// break iteration since the timeout timestamps are in order
+			// break iteration since the send timestamps are in order
 			return false
 		})
 		// continue to iterate through all consumers

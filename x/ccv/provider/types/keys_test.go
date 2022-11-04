@@ -53,7 +53,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{SlashAcksBytePrefix}, i+1
 	keys[i], i = []byte{InitChainHeightBytePrefix}, i+1
 	keys[i], i = []byte{PendingVSCsBytePrefix}, i+1
-	keys[i], i = []byte{VscTimeoutTimestampBytePrefix}, i+1
+	keys[i], i = []byte{VscSendTimestampBytePrefix}, i+1
 	keys[i], i = []byte{LockUnbondingOnTimeoutBytePrefix}, i+1
 
 	return keys[:i]
@@ -85,6 +85,7 @@ func TestTsAndChainIdKeyAndParse(t *testing.T) {
 	}
 }
 
+// Tests the construction and parsing of ChainIdAndTs keys
 func TestChainIdAndTsKeyAndParse(t *testing.T) {
 	tests := []struct {
 		prefix    byte
@@ -106,6 +107,31 @@ func TestChainIdAndTsKeyAndParse(t *testing.T) {
 		parsedID, parsedTime, err := parseChainIdAndTsKey(test.prefix, key)
 		require.Equal(t, test.chainID, parsedID)
 		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
+		require.NoError(t, err)
+	}
+}
+
+// Tests the construction and parsing of ChainIdAndVscId keys
+func TestChainIdAndVscIdAndParse(t *testing.T) {
+	tests := []struct {
+		prefix  byte
+		chainID string
+		vscID   uint64
+	}{
+		{prefix: 0x01, chainID: "1", vscID: 1},
+		{prefix: 0x02, chainID: "some other ID", vscID: 2},
+		{prefix: 0x03, chainID: "some other other chain ID", vscID: 3},
+	}
+
+	for _, test := range tests {
+		key := chainIdAndVscIdKey(test.prefix, test.chainID, test.vscID)
+		require.NotEmpty(t, key)
+		// Expected bytes = prefix + chainID length + chainID + vscId bytes
+		expectedLen := 1 + 8 + len(test.chainID) + 8
+		require.Equal(t, expectedLen, len(key))
+		parsedID, parsedVscID, err := parseChainIdAndVscIdKey(test.prefix, key)
+		require.Equal(t, test.chainID, parsedID)
+		require.Equal(t, test.vscID, parsedVscID)
 		require.NoError(t, err)
 	}
 }
