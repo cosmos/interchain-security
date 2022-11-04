@@ -36,13 +36,24 @@ type TextProposal struct {
 
 func (p TextProposal) isProposal() {}
 
-type ConsumerProposal struct {
+type ConsumerAdditionProposal struct {
 	Deposit       uint
 	Chain         chainID
 	SpawnTime     int
 	InitialHeight clienttypes.Height
 	Status        string
 }
+
+func (p ConsumerAdditionProposal) isProposal() {}
+
+type ConsumerRemovalProposal struct {
+	Deposit  uint
+	Chain    chainID
+	StopTime int
+	Status   string
+}
+
+func (p ConsumerRemovalProposal) isProposal() {}
 
 type Rewards struct {
 	IsRewarded map[validatorID]bool
@@ -53,8 +64,6 @@ type Rewards struct {
 	//other chains (e.g. false is used to check if provider received rewards from a consumer chain)
 	IsNativeDenom bool
 }
-
-func (p ConsumerProposal) isProposal() {}
 
 type ParamsProposal struct {
 	Deposit  uint
@@ -315,7 +324,7 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			}
 		}
 
-		return ConsumerProposal{
+		return ConsumerAdditionProposal{
 			Deposit:   uint(deposit),
 			Status:    status,
 			Chain:     chain,
@@ -325,6 +334,25 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 				RevisionHeight: gjson.Get(string(bz), `content.initial_height.revision_height`).Uint(),
 			},
 		}
+	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
+		chainId := gjson.Get(string(bz), `content.chain_id`).String()
+		stopTime := gjson.Get(string(bz), `content.stop_time`).Time().Sub(tr.containerConfig.now)
+
+		var chain chainID
+		for i, conf := range tr.chainConfigs {
+			if string(conf.chainId) == chainId {
+				chain = i
+				break
+			}
+		}
+
+		return ConsumerRemovalProposal{
+			Deposit:  uint(deposit),
+			Status:   status,
+			Chain:    chain,
+			StopTime: int(stopTime.Milliseconds()),
+		}
+
 	case "/cosmos.params.v1beta1.ParameterChangeProposal":
 		return ParamsProposal{
 			Deposit:  uint(deposit),

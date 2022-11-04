@@ -13,6 +13,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/client"
+	"github.com/tidwall/gjson"
 )
 
 type SendTokensAction struct {
@@ -184,7 +185,7 @@ func (tr TestRun) submitTextProposal(
 	}
 }
 
-type submitConsumerProposalAction struct {
+type submitConsumerAdditionProposalAction struct {
 	chain         chainID
 	from          validatorID
 	deposit       uint
@@ -194,7 +195,7 @@ type submitConsumerProposalAction struct {
 }
 
 func (tr TestRun) submitConsumerAdditionProposal(
-	action submitConsumerProposalAction,
+	action submitConsumerAdditionProposalAction,
 	verbose bool,
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
@@ -231,6 +232,65 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
 		"tx", "gov", "submit-proposal", "consumer-addition",
+		"/temp-proposal.json",
+
+		`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--home`, tr.getValidatorHome(action.chain, action.from),
+		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
+type submitConsumerRemovalProposalAction struct {
+	chain         chainID
+	from          validatorID
+	deposit       uint
+	consumerChain chainID
+	stopTime      uint
+}
+
+func (tr TestRun) submitConsumerRemovalProposal(
+	action submitConsumerRemovalProposalAction,
+	verbose bool,
+) {
+	stopTime := tr.containerConfig.now.Add(time.Duration(action.stopTime) * time.Millisecond)
+	prop := client.ConsumerRemovalProposalJSON{
+		Title:       fmt.Sprintf("Stop the %v chain", action.consumerChain),
+		Description: "It was a great chain",
+		ChainId:     string(tr.chainConfigs[action.consumerChain].chainId),
+		StopTime:    stopTime,
+		Deposit:     fmt.Sprint(action.deposit) + `stake`,
+	}
+
+	bz, err := json.Marshal(prop)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	jsonStr := string(bz)
+	if strings.Contains(jsonStr, "'") {
+		log.Fatal("prop json contains single quote")
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName,
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json")).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+
+		"tx", "gov", "submit-proposal", "consumer-removal",
 		"/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
@@ -993,4 +1053,47 @@ func (tr TestRun) invokeDoublesignSlash(
 		log.Fatal(err, "\n", string(bz))
 	}
 	tr.waitBlocks("provi", 10, 2*time.Minute)
+}
+
+type queryConsumerChainRemovedAction struct {
+	providerChain chainID
+	consumerChain chainID
+}
+
+// queryConsumerChainRemoved checks if provided consumerChain
+// was removed from the list of consumer chains on the provider.
+// If a chain was not removed a panic will be raised.
+func (tr TestRun) queryConsumerChainRemoved(
+	action queryConsumerChainRemovedAction,
+	verbose bool,
+) {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.providerChain].binaryName,
+
+		"query", "provider", "list-consumer-chains",
+		`--node`, tr.getQueryNode(action.providerChain),
+		`-o`, `json`,
+	)
+
+	if verbose {
+		log.Println("queryConsumerChainRemoved cmd: ", cmd.String())
+	}
+
+	// {"chains":[{"chain_id":"consu","client_id":"07-tendermint-0"}]}
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	chains := gjson.Get(string(bz), "chains").Array()
+	for _, c := range chains {
+		id := c.Get("chain_id").String()
+		fmt.Println("## CHAIN ID ##", id)
+		if id == string(action.consumerChain) {
+			log.Fatalf("chain %s was not removed\nchains: %#v", action.consumerChain, string(bz))
+		}
+	}
+	if verbose {
+		fmt.Printf("consumer chain %s successfully removed\b", action.consumerChain)
+	}
 }

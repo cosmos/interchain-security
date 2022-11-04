@@ -32,10 +32,10 @@ func main() {
 	tr.ValidateStringLiterals()
 	tr.startDocker()
 
-	dmc := DemocracyTestRun()
-	dmc.SetLocalSDKPath(*localSdkPath)
-	dmc.ValidateStringLiterals()
-	dmc.startDocker()
+	// dmc := DemocracyTestRun()
+	// dmc.SetLocalSDKPath(*localSdkPath)
+	// dmc.ValidateStringLiterals()
+	// dmc.startDocker()
 
 	ds := DoubleSignTestRun()
 	ds.SetLocalSDKPath(*localSdkPath)
@@ -45,8 +45,8 @@ func main() {
 	wg.Add(1)
 	go tr.ExecuteSteps(&wg, happyPathSteps)
 
-	wg.Add(1)
-	go dmc.ExecuteSteps(&wg, democracySteps)
+	// wg.Add(1)
+	// go dmc.ExecuteSteps(&wg, democracySteps)
 
 	wg.Add(1)
 	go ds.ExecuteSteps(&wg, doubleSignProviderSteps)
@@ -63,8 +63,12 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.sendTokens(action, verbose)
 	case submitTextProposalAction:
 		tr.submitTextProposal(action, verbose)
-	case submitConsumerProposalAction:
+	case submitConsumerAdditionProposalAction:
 		tr.submitConsumerAdditionProposal(action, verbose)
+	case submitConsumerRemovalProposalAction:
+		tr.submitConsumerRemovalProposal(action, verbose)
+	case queryConsumerChainRemovedAction:
+		tr.queryConsumerChainRemoved(action, verbose)
 	case submitParamChangeProposalAction:
 		tr.submitParamChangeProposal(action, verbose)
 	case voteGovProposalAction:
