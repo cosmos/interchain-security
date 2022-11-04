@@ -24,7 +24,7 @@ func stepsStopChain(consumerName string) []Step {
 							Status:   "PROPOSAL_STATUS_VOTING_PERIOD",
 						},
 					},
-					ConsumerChains: &map[chainID]bool{"consu": true},
+					ConsumerChains: &map[chainID]bool{"consu": true}, // consumer chain not yet removed
 				},
 			},
 		},
@@ -48,7 +48,7 @@ func stepsStopChain(consumerName string) []Step {
 					ValBalances: &map[validatorID]uint{
 						validatorID("bob"): 9500000002,
 					},
-					ConsumerChains: &map[chainID]bool{},
+					ConsumerChains: &map[chainID]bool{}, // Consumer chain is now removed
 				},
 			},
 		},

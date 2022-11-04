@@ -473,9 +473,8 @@ func (tr TestRun) getParam(chain chainID, param Param) string {
 	return value.String()
 }
 
-// queryConsumerChainRemoved checks if provided consumerChain
-// was removed from the list of consumer chains on the provider.
-// If a chain was not removed a panic will be raised.
+// getConsumerChains returns a list of consumer chains that're being secured by the provider chain,
+// determined by querying the provider chain.
 func (tr TestRun) getConsumerChains(chain chainID) map[chainID]bool {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
@@ -485,7 +484,6 @@ func (tr TestRun) getConsumerChains(chain chainID) map[chainID]bool {
 		`-o`, `json`,
 	)
 
-	// {"chains":[{"chain_id":"consu","client_id":"07-tendermint-0"}]}
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
