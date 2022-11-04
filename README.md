@@ -47,9 +47,9 @@ Inspect the [Makefile](./Makefile) if curious.
 
 ### Unit Tests
 
-Unit tests are useful for simple standalone functionality, and CRUD operations. Unit tests should use golang's standard testing package, and be defined in files formatted as ```<file being tested>_test.go``` in the same directory as the file being tested, following standard conventions. 
+Unit tests are useful for simple standalone functionality, and CRUD operations. Unit tests should use golang's standard testing package, and be defined in files formatted as ```<file being tested>_test.go``` in the same directory as the file being tested, following standard conventions.
 
-[Mocked external keepers](./testutil/keeper/mocks.go) (implemented with [gomock](https://github.com/golang/mock)) are available for testing more complex functionality, but still only relevant to execution within a single node. Ie. no internode or interchain communication. 
+[Mocked external keepers](./testutil/keeper/mocks.go) (implemented with [gomock](https://github.com/golang/mock)) are available for testing code that briefly interacts with external modules, but still only a single function/method relevant to ccv, and a single chain. Ie. do not use mocked external keepers to test the integration of the ccv module with external modules, or integration between consumer and provider.
 
 ### End to End (e2e) Tests
 
@@ -61,11 +61,12 @@ To run e2e tests against your own consumer/provider implementations, use [instan
 
 Similar to e2e tests, but they compare the system state to an expected state generated from a model implementation.
 
-### Integration Tests 
+### Integration Tests
 
 [Integration tests](./tests/integration/) run true consumer and provider chain binaries within a docker container and are relevant to the highest level of functionality. Integration tests use queries/transactions invoked from CLI to drive and validate the code.
 
 ### Running Tests
+
 Tests can be run using `make`:
 
 ```bash
