@@ -18,12 +18,172 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// TestHandleSlashPacketByEntry tests the HandleSlashPacketByEntry function
-func TestHandleSlashPacketByEntry(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
+// TestHandlePacketDataForChain tests the HandlePacketDataForChain function. Note: Only one consumer is tested here,
+// but multiple consumers are tested in TestPendingPacketData.
+// TODO: will need to separately test that no vsc matured packet is queued without a slash packet already in the queue
+// ^ in a separate test just confirm that this method panics if a vsc matured is at the head of the queue.
+// Then make a corresponding test for the place that queues up that packet.
+func TestHandlePacketDataForChain(t *testing.T) {
 
+	testCases := []struct {
+		name    string
+		chainID string
+		// Pending packet data that will be queued in the order specified by the slice
+		dataToQueue []interface{}
+		// Indexes of packet data from dataToQueue that are expected to be handled and deleted from store
+		expectedHandledIndexes []int
+	}{
+		{
+			"no packets",
+			"my-cool-chain",
+			[]interface{}{},
+			[]int{},
+		},
+		{
+			"one slash packet should be handled",
+			"chain-37",
+			[]interface{}{
+				testkeeper.GetNewSlashPacketData(),
+			},
+			[]int{0},
+		},
+		{
+			"one slash packet followed by one vsc matured packet should all be handled",
+			"chain-222",
+			[]interface{}{
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+			},
+			[]int{0, 1},
+		},
+		{
+			"one slash packet followed by multiple vsc matured packets should all be handled",
+			"chain-2223",
+			[]interface{}{
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+			},
+			[]int{0, 1, 2, 3, 4, 5},
+		},
+		{
+			"multiple slash packets followed by multiple vsc matured packets should only handle first slash packet",
+			"chain-9",
+			[]interface{}{
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+			},
+			[]int{0},
+		},
+		{
+			"vsc matured packets sandwiched between slash packets should handle everything but the last slash packet",
+			"chain-000",
+			[]interface{}{
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewSlashPacketData(), // 10th index not included in expectedHandledIndexes
+			},
+			[]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+		},
+		{
+			"alternating slash and vsc matured packets should handle only the first slash, and trailing vsc matured packets",
+			"chain-00000",
+			[]interface{}{
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+			},
+			[]int{0, 1, 2},
+		},
+	}
+
+	for _, tc := range testCases {
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
+
+		// Queue pending packet data, where chainID is arbitrary, and ibc seq number is index of the data instance
+		for i, data := range tc.dataToQueue {
+			queuePendingPacketData(ctx, &providerKeeper, tc.chainID, uint64(i), data)
+		}
+
+		// Define our handler callbacks to simply store the data instances that are handled
+		handledData := []interface{}{}
+		slashHandleCounter := func(ctx sdktypes.Context, chainID string, data ccvtypes.SlashPacketData) (bool, error) {
+			handledData = append(handledData, data)
+			return true, nil
+		}
+		vscMaturedHandleCounter := func(ctx sdktypes.Context, chainID string, data ccvtypes.VSCMaturedPacketData) {
+			handledData = append(handledData, data)
+		}
+
+		providerKeeper.HandlePacketDataForChain(ctx, tc.chainID, slashHandleCounter, vscMaturedHandleCounter)
+
+		// Assert number of handled data instances matches expected number
+		require.Equal(t, len(tc.expectedHandledIndexes), len(handledData))
+
+		// Assert handled data instances match expected value
+		for i, expectedIndex := range tc.expectedHandledIndexes {
+			require.Equal(t, tc.dataToQueue[expectedIndex], handledData[i])
+		}
+
+		// Sanity check, Assert that only the first handled packet is a slash packet, and the rest are vsc matured packets
+		for idx, instance := range handledData {
+			switch instance.(type) {
+			case ccvtypes.SlashPacketData:
+				require.Equal(t, 0, idx)
+			case ccvtypes.VSCMaturedPacketData:
+			default:
+				require.Fail(t, "unexpected data instance type")
+			}
+		}
+
+		// TODO: go over this logic with a fresh brain
+
+		// Assert that the unhandled queued data instances are as expected (i.e no unexpected deletions)
+		expectedDataThatsLeft := []interface{}{}
+		for idx, data := range tc.dataToQueue {
+			if !slices.Contains(tc.expectedHandledIndexes, idx) {
+				expectedDataThatsLeft = append(expectedDataThatsLeft, data)
+			}
+		}
+
+		dataThatsLeft := []interface{}{}
+		providerKeeper.IteratePendingPacketData(ctx, tc.chainID, func(ibcSeqNum uint64, data interface{}) bool {
+			dataThatsLeft = append(dataThatsLeft, data)
+			return false
+		})
+
+		require.Equal(t, expectedDataThatsLeft, dataThatsLeft)
+
+		// Assert that each instance of handled data is deleted from the persisted queue (i.e deletions where expected)
+		for _, dataInstance := range handledData {
+			require.NotContains(t, dataThatsLeft, dataInstance)
+		}
+	}
 }
+
+// TODO: test for CheckForSlashMeterReplenishment. This could prob use a unit and e2e test
 
 // TestPendingSlashPacket tests the queue and iteration functions for pending slash packet entries,
 // with assertion of FIFO ordering
@@ -167,43 +327,6 @@ func TestPendingSlashPacketEntryDeletion(t *testing.T) {
 	require.Equal(t, "chain-6", gotEntries[3].ConsumerChainID)
 }
 
-// Struct used for TestPendingPacketData and helpers
-type pendingPacketDataInstance struct {
-	IbcSeqNum uint64
-	Data      interface{}
-}
-
-// getAllPendingPacketDataInstances returns all pending packet data instances in order from the pending packet data queue
-func getAllPendingPacketDataInstances(k *keeper.Keeper, ctx sdktypes.Context, consumerChainId string) (instances []pendingPacketDataInstance) {
-	k.IteratePendingPacketData(ctx, consumerChainId, func(ibcSeqNum uint64, data interface{}) bool {
-		instances = append(instances, pendingPacketDataInstance{IbcSeqNum: ibcSeqNum, Data: data})
-		return false
-	})
-	return
-}
-
-// getOrderedInstances returns the given instances in order, specified by the given indexes
-func getOrderedInstances(instances []pendingPacketDataInstance, orderbyIdx []int) (orderedInstances []pendingPacketDataInstance) {
-	toReturn := []pendingPacketDataInstance{}
-	for _, idx := range orderbyIdx {
-		toReturn = append(toReturn, instances[idx])
-	}
-	return toReturn
-}
-
-// Asserts that the pending packet data retrieved for this consumer chain matches what's expected
-func assertPendingPacketDataOrdering(t *testing.T, k *keeper.Keeper, ctx sdktypes.Context,
-	consumerChainId string, expectedInstances []pendingPacketDataInstance) {
-	// Get all packet data for this chain
-	obtainedInstances := getAllPendingPacketDataInstances(k, ctx, consumerChainId)
-	// No extra data should be present
-	require.Equal(t, len(expectedInstances), len(obtainedInstances))
-	// Assert order and correct serialization/deserialization for each data instance
-	for i, obtainedInstance := range obtainedInstances {
-		require.Equal(t, expectedInstances[i], obtainedInstance)
-	}
-}
-
 // TestPendingPacketData tests the pending packet data queuing, iteration and deletion functionality.
 func TestPendingPacketData(t *testing.T) {
 
@@ -269,16 +392,7 @@ func TestPendingPacketData(t *testing.T) {
 	// Queue all packet data at once
 	for _, chainData := range packetDataForMultipleConsumers {
 		for _, dataInstance := range chainData.instances {
-			// Queue each instance differently depending on type
-			if slashData, ok := dataInstance.Data.(ccvtypes.SlashPacketData); ok {
-				providerKeeper.QueuePendingSlashPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, slashData)
-
-			} else if vscMaturedData, ok := dataInstance.Data.(ccvtypes.VSCMaturedPacketData); ok {
-				providerKeeper.QueuePendingVSCMaturedPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, vscMaturedData)
-
-			} else {
-				panic("invalid data type")
-			}
+			queuePendingPacketData(ctx, &providerKeeper, chainData.chainID, dataInstance.IbcSeqNum, dataInstance.Data)
 		}
 	}
 
@@ -302,8 +416,8 @@ func TestPendingPacketData(t *testing.T) {
 	}
 }
 
-// TestSlashGasMeter tests the getter and setter for the slash gas meter
-func TestSlashGasMeter(t *testing.T) {
+// TestSlashMeter tests the getter and setter for the slash gas meter
+func TestSlashMeter(t *testing.T) {
 
 	testCases := []struct {
 		meterValue  sdktypes.Int
@@ -330,18 +444,18 @@ func TestSlashGasMeter(t *testing.T) {
 
 		if tc.shouldPanic {
 			require.Panics(t, func() {
-				providerKeeper.SetSlashGasMeter(ctx, tc.meterValue)
+				providerKeeper.SetSlashMeter(ctx, tc.meterValue)
 			})
 		} else {
-			providerKeeper.SetSlashGasMeter(ctx, tc.meterValue)
-			gotMeterValue := providerKeeper.GetSlashGasMeter(ctx)
+			providerKeeper.SetSlashMeter(ctx, tc.meterValue)
+			gotMeterValue := providerKeeper.GetSlashMeter(ctx)
 			require.Equal(t, tc.meterValue, gotMeterValue)
 		}
 	}
 }
 
-// TestLastSlashGasReplenishTime tests the getter and setter for the last slash gas replenish time
-func TestLastSlashGasReplenishTime(t *testing.T) {
+// TestLastSlashMeterReplenishTime tests the getter and setter for the last slash meter replenish time
+func TestLastSlashMeterReplenishTime(t *testing.T) {
 
 	testCases := []time.Time{
 		time.Now(),
@@ -360,9 +474,60 @@ func TestLastSlashGasReplenishTime(t *testing.T) {
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
-		providerKeeper.SetLastSlashGasReplenishTime(ctx, tc)
-		gotTime := providerKeeper.GetLastSlashGasReplenishTime(ctx)
+		providerKeeper.SetLastSlashMeterReplenishTime(ctx, tc)
+		gotTime := providerKeeper.GetLastSlashMeterReplenishTime(ctx)
 		// Time should be returned in UTC
 		require.Equal(t, tc.UTC(), gotTime)
+	}
+}
+
+// Struct used for TestPendingPacketData and helpers
+type pendingPacketDataInstance struct {
+	IbcSeqNum uint64
+	Data      interface{}
+}
+
+// queuePendingPacketData queues the given pending packet data as it's appropriate concrete type
+func queuePendingPacketData(ctx sdktypes.Context, k *keeper.Keeper, chainID string, ibcSeqNum uint64, data interface{}) {
+	// Queue data differently depending on concrete type
+	if slashData, ok := data.(ccvtypes.SlashPacketData); ok {
+		k.QueuePendingSlashPacketData(ctx, chainID, ibcSeqNum, slashData)
+
+	} else if vscMaturedData, ok := data.(ccvtypes.VSCMaturedPacketData); ok {
+		k.QueuePendingVSCMaturedPacketData(ctx, chainID, ibcSeqNum, vscMaturedData)
+
+	} else {
+		panic("invalid data type")
+	}
+}
+
+// getAllPendingPacketDataInstances returns all pending packet data instances in order from the pending packet data queue
+func getAllPendingPacketDataInstances(ctx sdktypes.Context, k *keeper.Keeper, consumerChainId string) (instances []pendingPacketDataInstance) {
+	k.IteratePendingPacketData(ctx, consumerChainId, func(ibcSeqNum uint64, data interface{}) bool {
+		instances = append(instances, pendingPacketDataInstance{IbcSeqNum: ibcSeqNum, Data: data})
+		return false
+	})
+	return
+}
+
+// getOrderedInstances returns the given instances in order, specified by the given indexes
+func getOrderedInstances(instances []pendingPacketDataInstance, orderbyIdx []int) (orderedInstances []pendingPacketDataInstance) {
+	toReturn := []pendingPacketDataInstance{}
+	for _, idx := range orderbyIdx {
+		toReturn = append(toReturn, instances[idx])
+	}
+	return toReturn
+}
+
+// Asserts that the pending packet data retrieved for this consumer chain matches what's expected
+func assertPendingPacketDataOrdering(t *testing.T, k *keeper.Keeper, ctx sdktypes.Context,
+	consumerChainId string, expectedInstances []pendingPacketDataInstance) {
+	// Get all packet data for this chain
+	obtainedInstances := getAllPendingPacketDataInstances(ctx, k, consumerChainId)
+	// No extra data should be present
+	require.Equal(t, len(expectedInstances), len(obtainedInstances))
+	// Assert order and correct serialization/deserialization for each data instance
+	for i, obtainedInstance := range obtainedInstances {
+		require.Equal(t, expectedInstances[i], obtainedInstance)
 	}
 }

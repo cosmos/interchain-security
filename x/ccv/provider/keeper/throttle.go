@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -43,6 +41,7 @@ func (k Keeper) QueuePendingSlashPacket(
 
 // HandlePendingSlashPackets handles all or some portion of pending slash packets received by any consumer chain
 // depending on circuit breaker logic. This method executes every end block routine.
+// TODO: This deserves an e2e test, not unit. You'll prob need to setup some staking module stuff tho.
 func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
@@ -55,11 +54,11 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		// (this power will be removed via jailing or tombstoning)
 		valPower := k.stakingKeeper.GetLastValidatorPower(ctx, entry.ValAddr)
 
-		// Subtract this power from the slash gas meter
+		// Subtract this power from the slash meter
 		meter.Sub(sdktypes.NewInt(valPower))
 
-		// Handle slash packet by passing in chainID and appropriate handlers
-		k.HandlePendingSlashPacket(ctx, entry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
+		// Handle slash packet by passing in chainID and appropriate callbacks, relevant packet data is deleted in this method
+		k.HandlePacketDataForChain(ctx, entry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
 
 		// Store handled entry to be deleted after iteration is completed
 		handledEntries = append(handledEntries, entry)
@@ -75,25 +74,25 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 	k.SetSlashMeter(ctx, meter)
 }
 
-// HandlePendingSlashPacket retrieves the queued slash packet data relevant to the passed chainID,
-// handles the slash packet, and finally handles any trailing vsc matured packets in the
-// chain-specific pending packet data queue. Note that any handled (chain-specific) pending packet data
-// is deleted in this method.
-func (k Keeper) HandlePendingSlashPacket(ctx sdktypes.Context, consumerChainID string,
+// HandlePacketDataForChain retrieves the queued packet data relevant to the passed chainID,
+// handles only the first slash packet, and then handles any trailing vsc matured packets in the queue.
+// Note that any packet data which is handled in this method is also deleted from the queue.
+func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID string,
 	slashPacketHandler func(sdktypes.Context, string, ccvtypes.SlashPacketData) (bool, error),
-	vscMaturedPacketHandler func(sdk.Context, string, channeltypes.Packet, ccv.VSCMaturedPacketData),
+	vscMaturedPacketHandler func(sdktypes.Context, string, ccvtypes.VSCMaturedPacketData),
 ) {
+	// Instantiate flag to indicate if one slash packet has been handled yet
+	haveHandledSlash := false
 
-	// Store how many slash packet data structures were handled, and how many vsc matured
-	numSlash := 0
-	numVSCMatured := 0
+	// Store ibc sequence numbers to delete data after iteration is completed
+	seqNums := []uint64{}
 
 	k.IteratePendingPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, data interface{}) bool {
 
 		switch data := data.(type) {
 
 		case ccvtypes.SlashPacketData:
-			if numSlash > 0 {
+			if haveHandledSlash {
 				// Break iteration, since we've already handled one slash packet
 				return true
 			}
@@ -101,29 +100,25 @@ func (k Keeper) HandlePendingSlashPacket(ctx sdktypes.Context, consumerChainID s
 			if err != nil {
 				panic(fmt.Sprintf("failed to handle slash packet: %s", err))
 			}
-			numSlash++
+			haveHandledSlash = true
 
 		case ccvtypes.VSCMaturedPacketData:
 			// TODO: confirm this is safe, make tests around handling vsc matured packets immediately if no slash packets in queue
-			if numSlash == 0 {
+			if !haveHandledSlash {
 				panic("data is corrupt, first data struct in queue should be slash packet data")
 			}
-			numVSCMatured++
+			vscMaturedPacketHandler(ctx, consumerChainID, data)
 
 		default:
 			panic(fmt.Sprintf("unexpected pending packet data type: %T", data))
 		}
+		// TODO: Confirm these are appended correctly
+		seqNums = append(seqNums, ibcSeqNum)
 		return false
 	})
 
-	// TODO: handle slash packet, and all trailing vsc matured packets
-
-	_, err := k.HandleSlashPacket(ctx, consumerChainID,
-		ccvtypes.SlashPacketData{}, // TODO
-	)
-	if err != nil {
-		panic(fmt.Sprintf("failed to handle slash packet: %s", err.Error()))
-	}
+	// Delete handled data after iteration is completed
+	k.DeletePendingPacketData(ctx, consumerChainID, seqNums...)
 }
 
 // TODO: Make an e2e test that asserts that the order of endblockers is correct between staking and ccv

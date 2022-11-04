@@ -41,7 +41,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 
 	// TODO: if no packets are in the per chain queue, immediately handle vsc matured packet
 	// TODO: else queue that bish up
-	k.HandleVSCMaturedPacket(ctx, chainID, packet, data)
+	k.HandleVSCMaturedPacket(ctx, chainID, data)
 
 	// TODO: if queue for this chain is empty (no pending slash packets), handle vsc matured packet immediately
 	// else queue it
@@ -52,7 +52,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 }
 
 func (k Keeper) HandleVSCMaturedPacket(
-	ctx sdk.Context, chainID string, packet channeltypes.Packet, data ccv.VSCMaturedPacketData) {
+	ctx sdk.Context, chainID string, data ccv.VSCMaturedPacketData) {
 
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
 	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)

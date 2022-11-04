@@ -78,9 +78,9 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 
 	k.SetParams(ctx, genState.Params)
-	// TODO: Set slash gas meter to full value according to params
-	k.SetSlashGasMeter(ctx, sdk.NewInt(5).Quo(sdk.NewInt(100)))
-	k.SetLastSlashGasReplenishTime(ctx, ctx.BlockTime())
+	// TODO: Set slash meter to full value according to params
+	k.SetSlashMeter(ctx, sdk.NewInt(5).Quo(sdk.NewInt(100)))
+	k.SetLastSlashMeterReplenishTime(ctx, ctx.BlockTime())
 }
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
