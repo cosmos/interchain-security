@@ -88,6 +88,9 @@ func (gs GenesisState) Validate() error {
 		if len(gs.MaturingPackets) != 0 {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "maturing packets must be empty for new chain")
 		}
+		if gs.LastTransmissionBlockHeight.Height != 0 {
+			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "last transmission block height must be empty for new chain")
+		}
 
 		// ensure that initial validator set is same as initial consensus state on provider client.
 		// this will be verified by provider module on channel handshake.

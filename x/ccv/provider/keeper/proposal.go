@@ -449,10 +449,9 @@ func (k Keeper) ConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerR
 		if !ctx.BlockTime().Before(stopTime) {
 			propsToExecute = append(propsToExecute, prop)
 			return true
-		} else {
-			// No more proposals to check, since they're stored/ordered by timestamp.
-			return false
 		}
+		// No more proposals to check, since they're stored/ordered by timestamp.
+		return false
 	})
 
 	return propsToExecute

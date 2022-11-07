@@ -135,7 +135,7 @@ func (m *GenesisState) GetParams() Params {
 
 // consumer chain
 type ConsumerState struct {
-	// ChannelID defines the chain ID for the consumer chain
+	// ChainlID defines the chain ID for the consumer chain
 	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	// ChannelID defines the IBC channel ID for the consumer chain
 	ChannelId string `protobuf:"bytes,2,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`

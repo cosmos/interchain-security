@@ -112,6 +112,8 @@ func TestInitGenesis(t *testing.T) {
 
 				require.Zero(t, ck.GetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())))
 
+				require.Equal(t, gs.PendingSlashRequests, ck.GetPendingSlashRequests(ctx))
+
 				cid, ok := ck.GetProviderClientID(ctx)
 				require.True(t, ok)
 				require.Equal(t, provClientID, cid)
@@ -119,6 +121,8 @@ func TestInitGenesis(t *testing.T) {
 		}, {
 			name: "restart a chain with an already established channel",
 			malleate: func(ctx sdk.Context, mocks testutil.MockedKeepers) {
+				params.DistributionTransmissionChannel = "distribution-channel"
+				params.ProviderFeePoolAddrStr = "provider-fee-pool-address"
 				gomock.InOrder(
 					testkeeper.ExpectGetCapabilityMock(ctx, mocks),
 					testkeeper.ExpectLatestConsensusStateMock(ctx, mocks, provClientID, provConsState),
@@ -139,7 +143,8 @@ func TestInitGenesis(t *testing.T) {
 				HeightToValsetUpdateId: []consumertypes.HeightToValsetUpdateID{
 					{ValsetUpdateId: matPacket.VscId, Height: uint64(0)},
 				},
-				MaturingPackets: []consumertypes.MaturingVSCPacket{matPacket},
+				MaturingPackets:             []consumertypes.MaturingVSCPacket{matPacket},
+				LastTransmissionBlockHeight: consumertypes.LastTransmissionBlockHeight{Height: 1000},
 			},
 			assertStates: func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
@@ -152,7 +157,11 @@ func TestInitGenesis(t *testing.T) {
 				require.Equal(t, matPacket.VscId, ck.GetHeightValsetUpdateID(ctx, uint64(0)))
 
 				require.Equal(t, matPacket.MaturityTime, ck.GetPacketMaturityTime(ctx, matPacket.VscId))
+				ltbh, err := ck.GetLastTransmissionBlockHeight(ctx)
+				require.NoError(t, err)
+				require.Equal(t, gs.LastTransmissionBlockHeight, *ltbh)
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
+				require.Equal(t, gs.OutstandingDowntimeSlashing, getOutStandingDowntime(ctx, &ck))
 			},
 		},
 	}
@@ -309,4 +318,17 @@ func TestExportGenesis(t *testing.T) {
 			require.EqualValues(t, tc.expGenesis, gotGen)
 		})
 	}
+}
+
+func getOutStandingDowntime(ctx sdk.Context, ck *consumerkeeper.Keeper) []consumertypes.OutstandingDowntime {
+	outstandingDowntimes := []types.OutstandingDowntime{}
+
+	ck.IterateOutstandingDowntime(ctx, func(addr string) bool {
+		od := types.OutstandingDowntime{
+			ValidatorConsensusAddress: addr,
+		}
+		outstandingDowntimes = append(outstandingDowntimes, od)
+		return false
+	})
+	return outstandingDowntimes
 }

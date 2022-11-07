@@ -46,7 +46,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 
 		// Set default value for valset update ID
 		k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()), uint64(0))
-		// set provider client id.
+		// Set provider client id.
 		k.SetProviderClientID(ctx, clientID)
 	} else {
 		// verify that latest consensus state on provider client matches the initial validator set of restarted chain
@@ -85,6 +85,16 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		for _, mp := range state.MaturingPackets {
 			k.SetPacketMaturityTime(ctx, mp.VscId, mp.MaturityTime)
 		}
+		// set outstanding downtime
+		for _, od := range state.OutstandingDowntimeSlashing {
+			consAddr, err := sdk.ConsAddressFromBech32(od.ValidatorConsensusAddress)
+			if err != nil {
+				panic(err)
+			}
+			k.SetOutstandingDowntime(ctx, consAddr)
+		}
+		// set last transmission block height
+		k.SetLastTransmissionBlockHeight(ctx, state.LastTransmissionBlockHeight)
 	}
 
 	// populate cross chain validators states with initial valset
@@ -102,7 +112,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 	}
 
 	// export the current validator set
-	valset, err := k.GetCurrentValidatorsAsABCIpdates(ctx)
+	valset, err := k.GetCurrentValidatorsAsABCIUpdates(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("fail to retrieve the validator set: %s", err))
 	}
