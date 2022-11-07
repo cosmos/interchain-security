@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -307,6 +308,17 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		k.stakingKeeper.Jail(ctx, consAddr)
 	}
 	k.slashingKeeper.JailUntil(ctx, consAddr, jailTime)
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			ccv.EventExecuteConsumerChainSlash,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(ccv.AttributeValidatorAddres, consAddr.String()),
+			sdk.NewAttribute(ccv.AttributeInfraction, data.Infraction.String()),
+			sdk.NewAttribute(ccv.AttributeInfractionHeight, strconv.Itoa(int(infractionHeight))),
+			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))),
+		),
+	)
 
 	return true, nil
 }

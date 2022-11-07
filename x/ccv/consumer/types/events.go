@@ -2,9 +2,10 @@ package types
 
 // CCV events
 const (
-	EventTypeFirstVSCPacket  = "ccv_first_vsc_packet"
-	EventTypeFeeDistribution = "ccv_fee_distribution"
-	EventTypeSendSlashPacket = "ccv_send_slash_packet"
+	EventTypeFirstVSCPacket       = "ccv_first_vsc_packet"
+	EventTypeFeeDistribution      = "ccv_fee_distribution"
+	EventTypeSendSlashPacket      = "ccv_send_slash_packet"
+	EventTypeSendMaturedVSCPacket = "ccv_send_maturec_vsc_packet"
 
 	AttributeDistributionCurrentHeight = "current_distribution_height"
 	AttributeDistributionNextHeight    = "next_distribution_height"
@@ -16,4 +17,7 @@ const (
 	AttributeValAddress     = "validator_address"
 	AttributeValSetUpdateID = "valset_update_id"
 	AttributeInfraction     = "infraction"
+	AttributeTimestamp      = "timestamp"
+	AttributeConsumerHeight = "consumer_height"
+	AttributeChainID        = "chain_id"
 )

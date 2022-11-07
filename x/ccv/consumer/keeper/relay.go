@@ -124,6 +124,16 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 				return err
 			}
 			k.DeletePacketMaturityTime(ctx, vscId)
+			ctx.EventManager().EmitEvent(
+				sdk.NewEvent(
+					types.EventTypeSendMaturedVSCPacket,
+					sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+					sdk.NewAttribute(consumertypes.AttributeChainID, ctx.ChainID()),
+					sdk.NewAttribute(consumertypes.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
+					sdk.NewAttribute(consumertypes.AttributeValSetUpdateID, strconv.Itoa(int(vscId))),
+					sdk.NewAttribute(consumertypes.AttributeTimestamp, strconv.Itoa(int(currentTime))),
+				),
+			)
 		} else {
 			break
 		}
