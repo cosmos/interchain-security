@@ -25,9 +25,9 @@ func (k *Keeper) Hooks() Hooks {
 func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
 	var consumerChainIDS []string
 
-	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
+	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (cont bool) {
 		consumerChainIDS = append(consumerChainIDS, chainID)
-		return false
+		return true
 	})
 	if len(consumerChainIDS) == 0 {
 		// Do not put the unbonding op on hold if there are no consumer chains
