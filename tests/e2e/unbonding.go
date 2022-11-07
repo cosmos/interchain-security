@@ -9,11 +9,130 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-// TestUndelegationProviderFirst checks that an unbonding operation completes
-// when the unbonding period elapses first on the provider chain
-func (s *CCVTestSuite) TestUndelegationProviderFirst() {
+// TestUndelegationNormalOperation tests that undelegations complete after 
+// the unbonding period elapses on both the consumer and provider, without 
+// VSC packets timing out.
+func (s *CCVTestSuite) TestUndelegationNormalOperation() {
+	unbondConsumer := func(expectedPackets int) {
+		// relay 1 VSC packet from provider to consumer
+		relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, expectedPackets)
+		// increment time so that the unbonding period ends on the consumer
+		incrementTimeByUnbondingPeriod(s, Consumer)
+		// relay 1 VSCMatured packet from consumer to provider
+		relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, expectedPackets)
+	}
+
+	testCases := []struct {
+		name     string
+		shareDiv int64
+		unbond   func(expBalance, balance sdk.Int)
+	}{
+		{
+			"provider unbonding period elapses first", 2, func(expBalance, balance sdk.Int) {
+				// increment time so that the unbonding period ends on the provider
+				incrementTimeByUnbondingPeriod(s, Provider)
+
+				// check that onHold is true
+				checkStakingUnbondingOps(s, 1, true, true, "unbonding should be on hold")
+
+				// check that the unbonding is not complete
+				s.Require().Equal(expBalance, balance, "unexpected balance after provider unbonding")
+
+				// undelegation complete on consumer
+				unbondConsumer(1)
+			},
+		},
+		{
+			"consumer unbonding period elapses first", 2, func(expBalance, balance sdk.Int) {
+				// undelegation complete on consumer
+				unbondConsumer(1)
+
+				// check that onHold is false
+				checkStakingUnbondingOps(s, 1, true, false, "unbonding should be not be on hold")
+
+				// check that the unbonding is not complete
+				s.Require().Equal(expBalance, balance, "unexpected balance after consumer unbonding")
+
+				// increment time so that the unbonding period ends on the provider
+				incrementTimeByUnbondingPeriod(s, Provider)
+			},
+		},
+		{
+			"no valset changes", 1, func(expBalance, balance sdk.Int) {
+				// undelegation complete on consumer
+				unbondConsumer(1)
+
+				// check that onHold is false
+				checkStakingUnbondingOps(s, 1, true, false, "unbonding should be not be on hold")
+
+				// check that the unbonding is not complete
+				s.Require().Equal(expBalance, balance, "unexpected balance after consumer unbonding")
+
+				// increment time so that the unbonding period ends on the provider
+				incrementTimeByUnbondingPeriod(s, Provider)
+			},
+		},
+	}
+
+	for i, tc := range testCases {
+		providerKeeper := s.providerApp.GetProviderKeeper()
+		consumerKeeper := s.consumerApp.GetConsumerKeeper()
+		stakingKeeper := s.providerApp.GetE2eStakingKeeper()
+
+		s.SetupCCVChannel()
+
+		// set VSC timeout period to not trigger the removal of the consumer chain
+		providerUnbondingPeriod := stakingKeeper.UnbondingTime(s.providerCtx())
+		consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(s.consumerCtx())
+		providerKeeper.SetVscTimeoutPeriod(s.providerCtx(), providerUnbondingPeriod+consumerUnbondingPeriod+24*time.Hour)
+
+		// delegate bondAmt and undelegate tc.shareDiv of it
+		bondAmt := sdk.NewInt(10000000)
+		delAddr := s.providerChain.SenderAccount.GetAddress()
+		initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, tc.shareDiv)
+		// - check that staking unbonding op was created and onHold is true
+		checkStakingUnbondingOps(s, 1, true, true, "test: "+tc.name)
+		// - check that CCV unbonding op was created
+		checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true, "test: "+tc.name)
+
+		// call NextBlock on the provider (which increments the height)
+		s.providerChain.NextBlock()
+
+		// unbond both on provider and consumer and check that
+		// the balance remains unchanged in between
+		tc.unbond(initBalance.Sub(bondAmt), getBalance(s, s.providerCtx(), delAddr))
+
+		// check that the unbonding operation completed
+		// - check that ccv unbonding op has been deleted
+		checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false, "test: "+tc.name)
+		// - check that staking unbonding op has been deleted
+		checkStakingUnbondingOps(s, valsetUpdateID, false, false, "test: "+tc.name)
+		// - check that necessary delegated coins have been returned
+		unbondAmt := bondAmt.Sub(bondAmt.Quo(sdk.NewInt(tc.shareDiv)))
+		s.Require().Equal(
+			initBalance.Sub(unbondAmt),
+			getBalance(s, s.providerCtx(), delAddr),
+			"unexpected initial balance after unbonding; test: %s", tc.name,
+		)
+
+		if i+1 < len(testCases) {
+			// reset suite to reset provider client
+			s.SetupTest()
+		}
+	}
+}
+
+// TestUndelegationVscTimeout tests that an undelegation
+// completes after vscTimeoutPeriod even if it does not
+// reach maturity on the consumer chain. In this case,
+// the consumer chain is removed.
+func (s *CCVTestSuite) TestUndelegationVscTimeout() {
+	providerKeeper := s.providerApp.GetProviderKeeper()
+
 	s.SetupCCVChannel()
-	s.SetupTransferChannel()
+
+	// set VSC timeout period to trigger the removal of the consumer chain
+	vscTimeout := providerKeeper.GetVscTimeoutPeriod(s.providerCtx())
 
 	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)
@@ -26,115 +145,42 @@ func (s *CCVTestSuite) TestUndelegationProviderFirst() {
 
 	// call NextBlock on the provider (which increments the height)
 	s.providerChain.NextBlock()
-
-	// relay 1 VSC packet from provider to consumer
-	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
 	// increment time so that the unbonding period ends on the provider
 	incrementTimeByUnbondingPeriod(s, Provider)
 
 	// check that onHold is true
-	checkStakingUnbondingOps(s, 1, true, true)
+	checkStakingUnbondingOps(s, 1, true, true, "unbonding should be on hold")
+
 	// check that the unbonding is not complete
-	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
+	s.Require().Equal(
+		initBalance.Sub(bondAmt),
+		getBalance(s, s.providerCtx(), delAddr),
+		"unexpected balance after provider unbonding")
 
-	// increment time so that the unbonding period ends on the consumer
-	incrementTimeByUnbondingPeriod(s, Consumer)
+	// increment time
+	incrementTimeBy(s, vscTimeout)
 
-	// relay 1 VSCMatured packet from consumer to provider
-	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
+	// check whether the chain was removed
+	chainID := s.consumerChain.ChainID
+	_, found := providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
+	s.Require().Equal(false, found, "consumer chain was not removed")
+
+	// check if the chain was properly removed
+	s.checkConsumerChainIsRemoved(chainID, false, true)
 
 	// check that the unbonding operation completed
 	// - check that ccv unbonding op has been deleted
 	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
 	// - check that staking unbonding op has been deleted
 	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
-	// - check that half the delegated coins have been returned
-	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
-}
-
-// TestUndelegationConsumerFirst checks that an unbonding operation completes
-// when the unbonding period elapses first on the consumer chain
-func (s *CCVTestSuite) TestUndelegationConsumerFirst() {
-	s.SetupCCVChannel()
-	s.SetupTransferChannel()
-
-	// delegate bondAmt and undelegate 1/2 of it
-	bondAmt := sdk.NewInt(10000000)
-	delAddr := s.providerChain.SenderAccount.GetAddress()
-	initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, 2)
-	// - check that staking unbonding op was created and onHold is true
-	checkStakingUnbondingOps(s, 1, true, true)
-	// - check that CCV unbonding op was created
-	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true)
-
-	// call NextBlock on the provider (which increments the height)
-	s.providerChain.NextBlock()
-
-	// relay 1 VSC packet from provider to consumer
-	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
-
-	// increment time so that the unbonding period ends on the consumer
-	incrementTimeByUnbondingPeriod(s, Consumer)
-
-	// relay 1 VSCMatured packet from consumer to provider
-	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
-
-	// check that the unbonding is not complete
-	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
-
-	// increment time so that the unbonding period ends on the provider
-	incrementTimeByUnbondingPeriod(s, Provider)
-
-	// check that the unbonding operation completed
-	// - check that ccv unbonding op has been deleted
-	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
-	// - check that staking unbonding op has been deleted
-	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
-	// - check that half the delegated coins have been returned
-	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt.Quo(sdk.NewInt(2)))))
-}
-
-// TestUndelegationNoValsetChange checks that an unbonding operation completes
-// even when the validator set is not changed
-func (s *CCVTestSuite) TestUndelegationNoValsetChange() {
-	s.SetupCCVChannel()
-	s.SetupTransferChannel()
-
-	// delegate bondAmt and undelegate all of it
-	bondAmt := sdk.NewInt(10000000)
-	delAddr := s.providerChain.SenderAccount.GetAddress()
-	initBalance, valsetUpdateID := delegateAndUndelegate(s, delAddr, bondAmt, 1)
-	// - check that staking unbonding op was created and onHold is true
-	checkStakingUnbondingOps(s, 1, true, true)
-	// - check that CCV unbonding op was created
-	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, true)
-
-	// call NextBlock on the provider (which increments the height)
-	s.providerChain.NextBlock()
-
-	// relay 1 VSC packet from provider to consumer
-	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
-
-	// check that the unbonding is not complete
-	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance.Sub(bondAmt)))
-
-	// increment time so that the unbonding period ends on the consumer
-	incrementTimeByUnbondingPeriod(s, Consumer)
-
-	// relay 1 VSCMatured packet from consumer to provider
-	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
-
-	// increment time so that the unbonding period ends on the provider
-	incrementTimeByUnbondingPeriod(s, Provider)
-
-	// check that the unbonding operation completed
-	// - check that ccv unbonding op has been deleted
-	checkCCVUnbondingOp(s, s.providerCtx(), s.consumerChain.ChainID, valsetUpdateID, false)
-	// - check that staking unbonding op has been deleted
-	checkStakingUnbondingOps(s, valsetUpdateID, false, false)
-	// - check that all the delegated coins have been returned
-	s.Require().True(getBalance(s, s.providerCtx(), delAddr).Equal(initBalance))
+	// - check that necessary delegated coins have been returned
+	unbondAmt := bondAmt.Sub(bondAmt.Quo(sdk.NewInt(2)))
+	s.Require().Equal(
+		initBalance.Sub(unbondAmt),
+		getBalance(s, s.providerCtx(), delAddr),
+		"unexpected initial balance after VSC timeout",
+	)
 }
 
 // TestUndelegationDuringInit checks that before the CCV channel is established
@@ -337,7 +383,13 @@ func (s *CCVTestSuite) TestRedelegationProviderFirst() {
 	s.SetupTransferChannel()
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
+
+	// set VSC timeout period to not trigger the removal of the consumer chain
+	providerUnbondingPeriod := stakingKeeper.UnbondingTime(s.providerCtx())
+	consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(s.consumerCtx())
+	providerKeeper.SetVscTimeoutPeriod(s.providerCtx(), providerUnbondingPeriod+consumerUnbondingPeriod+24*time.Hour)
 
 	// Setup delegator, bond amount, and src/dst validators
 	bondAmt := sdk.NewInt(10000000)

@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -359,18 +360,15 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 // IterateOverUnbondingOpIndex iterates over the unbonding indexes for a given chain id.
 func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb func(vscID uint64, ubdIndex []uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
-	iterationPrefix := append([]byte{types.UnbondingOpIndexBytePrefix}, types.HashString(chainID)...)
-	iterator := sdk.KVStorePrefixIterator(store, iterationPrefix)
-
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.UnbondingOpIndexBytePrefix, chainID))
 	defer iterator.Close()
+
 	for ; iterator.Valid(); iterator.Next() {
 		// parse key to get the current VSC ID
-		var vscID uint64
-		vscBytes, err := types.ParseUnbondingOpIndexKey(iterator.Key())
+		_, vscID, err := types.ParseUnbondingOpIndexKey(iterator.Key())
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("failed to parse UnbondingOpIndexKey: %w", err))
 		}
-		vscID = binary.BigEndian.Uint64(vscBytes)
 
 		var index ccv.UnbondingOpsIndex
 		if err = index.Unmarshal(iterator.Value()); err != nil {
@@ -854,6 +852,56 @@ func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID str
 		chainID := string(iterator.Key()[1:])
 		ts := binary.BigEndian.Uint64(iterator.Value())
 		if !cb(chainID, ts) {
+			return
+		}
+	}
+}
+
+// SetVscSendTimestamp sets the VSC send timestamp
+// for a VSCPacket with ID vscID sent to a chain with ID chainID
+func (k Keeper) SetVscSendTimestamp(
+	ctx sdk.Context,
+	chainID string,
+	vscID uint64,
+	timestamp time.Time,
+) {
+	store := ctx.KVStore(k.storeKey)
+
+	// Convert timestamp into bytes for storage
+	timeBz := sdk.FormatTimeBytes(timestamp)
+
+	store.Set(types.VscSendingTimestampKey(chainID, vscID), timeBz)
+}
+
+// DeleteVscSendTimestamp removes from the store a specific VSC send timestamp
+// for the given chainID and vscID.
+func (k Keeper) DeleteVscSendTimestamp(ctx sdk.Context, chainID string, vscID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.VscSendingTimestampKey(chainID, vscID))
+}
+
+// IterateVscSendTimestamps iterates in order (lowest first)
+// over the vsc send timestamps of the given chainID.
+func (k Keeper) IterateVscSendTimestamps(
+	ctx sdk.Context,
+	chainID string,
+	cb func(vscID uint64, ts time.Time) bool,
+) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		key := iterator.Key()
+		_, vscID, err := types.ParseVscSendingTimestampKey(key)
+		if err != nil {
+			panic(fmt.Errorf("failed to parse VscSendTimestampKey: %w", err))
+		}
+		ts, err := sdk.ParseTimeBytes(iterator.Value())
+		if err != nil {
+			panic(fmt.Errorf("failed to parse timestamp value: %w", err))
+		}
+		if !cb(vscID, ts) {
 			return
 		}
 	}

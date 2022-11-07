@@ -18,6 +18,7 @@ var happyPathSteps = concatSteps(
 	stepsDelegate("consu"),
 	stepsUnbondRedelegate("consu"),
 	stepsDowntime("consu"),
+	stepsStopChain("consu"),
 )
 
 var democracySteps = concatSteps(

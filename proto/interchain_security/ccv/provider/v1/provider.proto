@@ -66,6 +66,12 @@ message Params {
   // The channel initialization (IBC channel opening handshake) will timeout after this duration
   google.protobuf.Duration init_timeout_period = 4
       [(gogoproto.nullable) = false, (gogoproto.stdduration) = true]; 
+  // The VSC packets sent by the provider will timeout after this duration.
+  // Note that unlike ccv_timeout_period which is an IBC param, 
+  // the vsc_timeout_period is a provider-side param that enables the provider 
+  // to timeout VSC packets even when a consumer chain is not live. 
+  google.protobuf.Duration vsc_timeout_period = 5
+      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 }
 
 message HandshakeMetadata {
