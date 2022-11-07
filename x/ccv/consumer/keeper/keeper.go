@@ -218,7 +218,7 @@ func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs
 
 		timeNs := binary.BigEndian.Uint64(iterator.Value())
 
-		if cb(seq, timeNs) {
+		if !cb(seq, timeNs) {
 			break
 		}
 	}

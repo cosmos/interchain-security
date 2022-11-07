@@ -107,7 +107,7 @@ func TestPacketMaturityTime(t *testing.T) {
 		require.Equal(t, orderedTimes[i][0], seq)
 		require.Equal(t, orderedTimes[i][1], time)
 		i++
-		return false
+		return true
 	})
 }
 

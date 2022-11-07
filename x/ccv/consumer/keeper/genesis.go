@@ -121,7 +121,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 				MaturityTime: timeNs,
 			}
 			maturingPackets = append(maturingPackets, mat)
-			return false
+			return true
 		})
 
 		heightToVCIDs := []types.HeightToValsetUpdateID{}

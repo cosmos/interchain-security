@@ -388,7 +388,7 @@ func (s *CoreSuite) TestAssumptions() {
 	s.consumerKeeper().IteratePacketMaturityTime(s.ctx(C),
 		func(vscId uint64, timeNs uint64) bool {
 			s.T().Fatal(FAIL_MSG)
-			return false // Don't stop
+			return true // Don't stop
 		})
 
 	// Consumer power
