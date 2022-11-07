@@ -57,8 +57,9 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{providertypes.SlashAcksBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.InitChainHeightBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.PendingVSCsBytePrefix}, i+1
+	keys[i], i = []byte{providertypes.VscSendTimestampBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.LockUnbondingOnTimeoutBytePrefix}, i+1
-	keys[i], i = []byte{VscSendTimestampBytePrefix}, i+1
+	keys[i], i = []byte{providertypes.PendingPacketDataBytePrefix}, i+1
 	keys[i] = []byte{providertypes.PendingSlashPacketEntryBytePrefix}
 
 	return keys[:i]
@@ -116,27 +117,27 @@ func TestChainIdAndTsKeyAndParse(t *testing.T) {
 	}
 }
 
-// Tests the construction and parsing of ChainIdAndVscId keys
-func TestChainIdAndVscIdAndParse(t *testing.T) {
+// Tests the construction and parsing of ChainIdAndUintId keys
+func TestChainIdAndUintIdAndParse(t *testing.T) {
 	tests := []struct {
 		prefix  byte
 		chainID string
-		vscID   uint64
+		uintID  uint64
 	}{
-		{prefix: 0x01, chainID: "1", vscID: 1},
-		{prefix: 0x02, chainID: "some other ID", vscID: 2},
-		{prefix: 0x03, chainID: "some other other chain ID", vscID: 3},
+		{prefix: 0x01, chainID: "1", uintID: 1},
+		{prefix: 0x02, chainID: "some other ID", uintID: 2},
+		{prefix: 0x03, chainID: "some other other chain ID", uintID: 3},
 	}
 
 	for _, test := range tests {
-		key := providertypes.ChainIdAndVscIdKey(test.prefix, test.chainID, test.vscID)
+		key := providertypes.ChainIdAndUintIdKey(test.prefix, test.chainID, test.uintID)
 		require.NotEmpty(t, key)
 		// Expected bytes = prefix + chainID length + chainID + vscId bytes
 		expectedLen := 1 + 8 + len(test.chainID) + 8
 		require.Equal(t, expectedLen, len(key))
-		parsedID, parsedVscID, err := providertypes.ParseChainIdAndVscIdKey(test.prefix, key)
-		require.Equal(t, test.chainID, parsedID)
-		require.Equal(t, test.vscID, parsedVscID)
+		parsedChainID, parsedUintID, err := providertypes.ParseChainIdAndUintIdKey(test.prefix, key)
+		require.Equal(t, test.chainID, parsedChainID)
+		require.Equal(t, test.uintID, parsedUintID)
 		require.NoError(t, err)
 	}
 }

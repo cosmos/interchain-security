@@ -29,16 +29,16 @@ const (
 // Iota generated keys/byte prefixes (as a byte), supports 256 possible values
 const (
 
-	// PortKey defines the key to store the port ID in store
-	PortByteKey byte = iota
+	// PortBytePrefix defines the byte prefix to store the port ID in store
+	PortBytePrefix byte = iota
 
-	// MaturedUnbondingOpsByteKey is the byte key that stores the list of all unbonding operations ids
+	// MaturedUnbondingOpsBytePrefix is the byte prefix that stores the list of all unbonding operations ids
 	// that have matured from a consumer chain perspective,
 	// i.e., no longer waiting on the unbonding period to elapse on any consumer chain
-	MaturedUnbondingOpsByteKey
+	MaturedUnbondingOpsBytePrefix
 
-	// ValidatorSetUpdateIdByteKey is the byte key that stores the current validator set update id
-	ValidatorSetUpdateIdByteKey
+	// ValidatorSetUpdateIdBytePrefix is the byte prefix that stores the current validator set update id
+	ValidatorSetUpdateIdBytePrefix
 
 	// SlashMeterBytePrefix is the byte prefix for storing the slash meter
 	SlashMeterBytePrefix
@@ -46,9 +46,6 @@ const (
 	// LastSlashMeterReplenishTimeBytePrefix is the byte prefix for storing
 	// the last time the slash meter was replenished
 	LastSlashMeterReplenishTimeBytePrefix
-
-	// NumPendingSlashPacketsBytePrefix is the byte prefix for storing the number of pending slash packets in the queue
-	NumPendingSlashPacketsBytePrefix
 
 	// ChainToChannelBytePrefix is the byte prefix for storing mapping
 	// from chainID to the channel ID that is used to send over validator set changes.
@@ -113,17 +110,17 @@ const (
 
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {
-	return []byte{PortByteKey}
+	return []byte{PortBytePrefix}
 }
 
 // MaturedUnbondingOpsKey returns the key for storing the list of matured unbonding operations.
 func MaturedUnbondingOpsKey() []byte {
-	return []byte{MaturedUnbondingOpsByteKey}
+	return []byte{MaturedUnbondingOpsBytePrefix}
 }
 
 // ValidatorSetUpdateIdKey is the key that stores the current validator set update id
 func ValidatorSetUpdateIdKey() []byte {
-	return []byte{ValidatorSetUpdateIdByteKey}
+	return []byte{ValidatorSetUpdateIdBytePrefix}
 }
 
 // SlashMeterKey returns the key storing the slash meter
@@ -158,36 +155,36 @@ func InitTimeoutTimestampKey(chainID string) []byte {
 
 // PendingCAPKey returns the key under which a pending consumer addition proposal is stored
 func PendingCAPKey(timestamp time.Time, chainID string) []byte {
-	return tsAndChainIdKey(PendingCAPBytePrefix, timestamp, chainID)
+	return TsAndChainIdKey(PendingCAPBytePrefix, timestamp, chainID)
 }
 
 // ParsePendingCAPKey returns the time and chain ID for a pending consumer addition proposal key
 // or an error if unparsable
 func ParsePendingCAPKey(bz []byte) (time.Time, string, error) {
-	return parseTsAndChainIdKey(PendingCAPBytePrefix, bz)
+	return ParseTsAndChainIdKey(PendingCAPBytePrefix, bz)
 }
 
 // PendingCRPKey returns the key under which pending consumer removal proposals are stored
 func PendingCRPKey(timestamp time.Time, chainID string) []byte {
-	return tsAndChainIdKey(PendingCRPBytePrefix, timestamp, chainID)
+	return TsAndChainIdKey(PendingCRPBytePrefix, timestamp, chainID)
 }
 
 // ParsePendingCRPKey returns the time and chain ID for a pending consumer removal proposal key or an error if unparseable
 func ParsePendingCRPKey(bz []byte) (time.Time, string, error) {
-	return parseTsAndChainIdKey(PendingCRPBytePrefix, bz)
+	return ParseTsAndChainIdKey(PendingCRPBytePrefix, bz)
 }
 
 // UnbondingOpIndexKey returns an unbonding op index key
 // Note: chainId is hashed to a fixed length sequence of bytes here to prevent
 // injection attack between chainIDs.
 func UnbondingOpIndexKey(chainID string, vscID uint64) []byte {
-	return chainIdAndVscIdKey(UnbondingOpIndexBytePrefix, chainID, vscID)
+	return ChainIdAndUintIdKey(UnbondingOpIndexBytePrefix, chainID, vscID)
 }
 
 // ParseUnbondingOpIndexKey parses an unbonding op index key for VSC ID
 // Removes the prefix + chainID from index key and returns only the key part.
 func ParseUnbondingOpIndexKey(key []byte) (string, uint64, error) {
-	return parseChainIdAndVscIdKey(UnbondingOpIndexBytePrefix, key)
+	return ParseChainIdAndUintIdKey(UnbondingOpIndexBytePrefix, key)
 }
 
 // UnbondingOpKey returns the key that stores a record of all the ids of consumer chains that
@@ -230,13 +227,13 @@ func PendingVSCsKey(chainID string) []byte {
 // VscSendingTimestampKey returns the key under which the
 // sending timestamp of the VSCPacket with vsc ID is stored
 func VscSendingTimestampKey(chainID string, vscID uint64) []byte {
-	return chainIdAndVscIdKey(VscSendTimestampBytePrefix, chainID, vscID)
+	return ChainIdAndUintIdKey(VscSendTimestampBytePrefix, chainID, vscID)
 }
 
 // ParseVscTimeoutTimestampKey returns chain ID and vsc ID
 // for a VscSendingTimestampKey or an error if unparsable
 func ParseVscSendingTimestampKey(bz []byte) (string, uint64, error) {
-	return parseChainIdAndVscIdKey(VscSendTimestampBytePrefix, bz)
+	return ParseChainIdAndUintIdKey(VscSendTimestampBytePrefix, bz)
 }
 
 // LockUnbondingOnTimeoutKey returns the key that will store the consumer chain id which unbonding operations are locked
@@ -245,18 +242,13 @@ func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return append([]byte{LockUnbondingOnTimeoutBytePrefix}, []byte(chainID)...)
 }
 
-// TODO: tests
 func PendingPacketDataKey(consumerChainID string, ibcSeqNum uint64) []byte {
-	return AppendMany(
-		[]byte{PendingPacketDataBytePrefix},
-		HashString(consumerChainID),
-		sdk.Uint64ToBigEndian(ibcSeqNum),
-	)
+	return ChainIdAndUintIdKey(PendingPacketDataBytePrefix, consumerChainID, ibcSeqNum)
 }
 
 // ParsePendingPacketDataKey parses a pending packet data key for IBC sequence number
-func ParsePendingPacketDataKey(key []byte) uint64 {
-	return sdk.BigEndianToUint64(key[1+32:])
+func ParsePendingPacketDataKey(key []byte) (string, uint64, error) {
+	return ParseChainIdAndUintIdKey(PendingPacketDataBytePrefix, key)
 }
 
 // PendingSlashPacketEntryKey returns the key for storing a pending slash packet entry.
@@ -392,20 +384,20 @@ func ParseChainIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
 	return chainID, timestamp, nil
 }
 
-// chainIdAndVscIdKey returns the key with the following format:
-// bytePrefix | len(chainID) | chainID | vscID
-func ChainIdAndVscIdKey(prefix byte, chainID string, vscID uint64) []byte {
+// ChainIdAndUintIdKey returns the key with the following format:
+// bytePrefix | len(chainID) | chainID | uint64(ID)
+func ChainIdAndUintIdKey(prefix byte, chainID string, uintId uint64) []byte {
 	partialKey := ChainIdWithLenKey(prefix, chainID)
 	return AppendMany(
 		// Append the partialKey
 		partialKey,
-		// Append the vscID bytes
-		sdk.Uint64ToBigEndian(vscID),
+		// Append the uint id bytes
+		sdk.Uint64ToBigEndian(uintId),
 	)
 }
 
-// parseChainIdAndVscIdKey returns the chain ID and vsc ID for a ChainIdAndVscId key
-func ParseChainIdAndVscIdKey(prefix byte, bz []byte) (string, uint64, error) {
+// ParseChainIdAndUintIdKey returns the chain ID and uint ID for a ChainIdAndUintId key
+func ParseChainIdAndUintIdKey(prefix byte, bz []byte) (string, uint64, error) {
 	expectedPrefix := []byte{prefix}
 	prefixL := len(expectedPrefix)
 	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
@@ -413,6 +405,6 @@ func ParseChainIdAndVscIdKey(prefix byte, bz []byte) (string, uint64, error) {
 	}
 	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
 	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
-	vscID := sdk.BigEndianToUint64(bz[prefixL+8+int(chainIdL):])
-	return chainID, vscID, nil
+	uintID := sdk.BigEndianToUint64(bz[prefixL+8+int(chainIdL):])
+	return chainID, uintID, nil
 }

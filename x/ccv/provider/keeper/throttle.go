@@ -250,7 +250,7 @@ func (k Keeper) QueuePendingVSCMaturedPacketData(
 // (ordered by ibc seq number) and calls the provided callback
 func (k Keeper) IteratePendingPacketData(ctx sdktypes.Context, consumerChainID string, cb func(uint64, interface{}) bool) {
 	store := ctx.KVStore(k.storeKey)
-	iteratorPrefix := append([]byte{providertypes.PendingPacketDataBytePrefix}, providertypes.HashString(consumerChainID)...)
+	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.PendingPacketDataBytePrefix, consumerChainID)
 	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -272,7 +272,10 @@ func (k Keeper) IteratePendingPacketData(ctx sdktypes.Context, consumerChainID s
 		if err != nil {
 			panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
 		}
-		ibcSeqNum := providertypes.ParsePendingPacketDataKey(iterator.Key())
+		_, ibcSeqNum, err := providertypes.ParsePendingPacketDataKey(iterator.Key())
+		if err != nil {
+			panic(fmt.Sprintf("failed to parse pending packet data key: %v", err))
+		}
 		if cb(ibcSeqNum, packetData) {
 			break
 		}
