@@ -101,6 +101,9 @@ const (
 	// LockUnbondingOnTimeoutBytePrefix is the byte prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
 	LockUnbondingOnTimeoutBytePrefix
 
+	// PendingPacketDataSizeBytePrefix is the byte prefix for storing the size of pending packet data queues per chain
+	PendingPacketDataSizeBytePrefix
+
 	// PendingPacketDataBytePrefix is the byte prefix storing pending packet data
 	PendingPacketDataBytePrefix
 
@@ -242,6 +245,12 @@ func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return append([]byte{LockUnbondingOnTimeoutBytePrefix}, []byte(chainID)...)
 }
 
+// PendingPacketDataSizeKey returns the key storing the size of the pending packet data queue for a given chain ID
+func PendingPacketDataSizeKey(consumerChainID string) []byte {
+	return append([]byte{PendingPacketDataSizeBytePrefix}, []byte(consumerChainID)...)
+}
+
+// PendingPacketDataKey returns the key storing the pending packet data queue for a given chain ID and ibc seq num
 func PendingPacketDataKey(consumerChainID string, ibcSeqNum uint64) []byte {
 	return ChainIdAndUintIdKey(PendingPacketDataBytePrefix, consumerChainID, ibcSeqNum)
 }

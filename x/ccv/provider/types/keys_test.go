@@ -59,6 +59,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{providertypes.PendingVSCsBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.VscSendTimestampBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.LockUnbondingOnTimeoutBytePrefix}, i+1
+	keys[i], i = []byte{providertypes.PendingPacketDataSizeBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.PendingPacketDataBytePrefix}, i+1
 	keys[i] = []byte{providertypes.PendingSlashPacketEntryBytePrefix}
 
@@ -140,6 +141,32 @@ func TestChainIdAndUintIdAndParse(t *testing.T) {
 		require.Equal(t, test.uintID, parsedUintID)
 		require.NoError(t, err)
 	}
+}
+
+// Tests the construction and parsing of keys for pending packet data
+func TestPendingPacketDataKeyAndParse(t *testing.T) {
+	tests := []struct {
+		consumerChainID string
+		ibcSeqNum       uint64
+	}{
+		{consumerChainID: "some chain id", ibcSeqNum: 45},
+		{consumerChainID: "some chain id that is longer", ibcSeqNum: 54038},
+		{consumerChainID: "some chain id that is longer-er     ", ibcSeqNum: 9999999999999999999},
+	}
+
+	for _, test := range tests {
+		key := providertypes.PendingPacketDataKey(test.consumerChainID, test.ibcSeqNum)
+		require.NotEmpty(t, key)
+		// This key should be of set length: prefix + hashed chain ID + uint64
+		require.Equal(t, 1+32+8, len(key))
+		parsedSeqNum := providertypes.ParsePendingPacketDataKey(key)
+		require.Equal(t, test.ibcSeqNum, parsedSeqNum)
+	}
+
+	// Sanity check that two keys with different chain ids but same seq num are different
+	key1 := providertypes.PendingPacketDataKey("chain-7", 45)
+	key2 := providertypes.PendingPacketDataKey("chain-8", 45)
+	require.NotEqual(t, key1, key2)
 }
 
 // Tests the construction and parsing of keys for pending slash packet entries

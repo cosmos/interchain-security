@@ -209,11 +209,11 @@ const (
 
 // PanicIfTooMuchPendingPacketData is a sanity check to ensure that the pending packet data queue
 // does not grow too large for a single consumer chain.
+// TODO: Make this use a param, for now it's 15 (for tests you'll set param to 15 later on)
 func (k Keeper) PanicIfTooMuchPendingPacketData(ctx sdktypes.Context, consumerChainID string) {
-	// TODO, implement, and test?
-	// if k.GetPendingPacketDataQueueSize(ctx) > 1000 {
-	// 	panic(fmt.Sprintf("pending packet data queue size is too large: %d", k.GetPendingPacketDataQueueSize(ctx)))
-	// }
+	if k.GetPendingPacketDataQueueSize(ctx) > 15 {
+		panic(fmt.Sprintf("pending packet data queue size is too large: %d", k.GetPendingPacketDataQueueSize(ctx)))
+	}
 }
 
 // QueuePendingSlashPacketData queues the given slash packet data for the given consumer chain's queue
@@ -288,6 +288,7 @@ func (k Keeper) DeletePendingPacketData(ctx sdktypes.Context, consumerChainID st
 	for _, ibcSeqNum := range ibcSeqNumbers {
 		store.Delete(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum))
 	}
+	// TODO: decremenet size
 }
 
 // GetSlashMeter returns a meter (persisted as a signed int) which stores an amount of voting power, corresponding

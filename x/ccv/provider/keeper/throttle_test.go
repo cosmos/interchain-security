@@ -457,6 +457,10 @@ func TestPendingPacketData(t *testing.T) {
 	}
 }
 
+// TestPanicIfTooMuchPendingPacketData
+func TestPanicIfTooMuchPendingPacketData(t *testing.T) {
+	
+
 // TestSlashMeter tests the getter and setter for the slash gas meter
 func TestSlashMeter(t *testing.T) {
 
