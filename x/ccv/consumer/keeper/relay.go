@@ -11,7 +11,6 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -42,8 +41,8 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		// emit first VSC packet to signal that CCV is working
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
-				types.EventTypeFirstVSCPacket,
-				sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
+				ccv.EventTypeFirstVSCPacket,
+				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 				sdk.NewAttribute(channeltypes.AttributeKeySrcChannel, packet.SourceChannel),
 				sdk.NewAttribute(channeltypes.AttributeKeySrcPort, packet.SourcePort),
 				sdk.NewAttribute(channeltypes.AttributeKeyDstChannel, packet.DestinationChannel),
@@ -126,12 +125,12 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 			k.DeletePacketMaturityTime(ctx, vscId)
 			ctx.EventManager().EmitEvent(
 				sdk.NewEvent(
-					types.EventTypeSendMaturedVSCPacket,
+					ccv.EventTypeSendMaturedVSCPacket,
 					sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-					sdk.NewAttribute(consumertypes.AttributeChainID, ctx.ChainID()),
-					sdk.NewAttribute(consumertypes.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
-					sdk.NewAttribute(consumertypes.AttributeValSetUpdateID, strconv.Itoa(int(vscId))),
-					sdk.NewAttribute(consumertypes.AttributeTimestamp, strconv.Itoa(int(currentTime))),
+					sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
+					sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
+					sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(vscId))),
+					sdk.NewAttribute(ccv.AttributeTimestamp, strconv.Itoa(int(currentTime))),
 				),
 			)
 		} else {
@@ -189,11 +188,11 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 	// will instead take place in SendPendingSlashRequests
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			types.EventTypeSendSlashPacket,
-			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
-			sdk.NewAttribute(types.AttributeValAddress, sdk.ConsAddress(validator.Address).String()),
-			sdk.NewAttribute(types.AttributeValSetUpdateID, strconv.Itoa(int(valsetUpdateID))),
-			sdk.NewAttribute(types.AttributeInfraction, infraction.String()),
+			ccv.EventTypeSendSlashPacket,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(ccv.AttributeValidatorAddress, sdk.ConsAddress(validator.Address).String()),
+			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(valsetUpdateID))),
+			sdk.NewAttribute(ccv.AttributeInfractionType, infraction.String()),
 		),
 	)
 }
@@ -236,11 +235,11 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 
 			ctx.EventManager().EmitEvent(
 				sdk.NewEvent(
-					types.EventTypeSendSlashPacket,
-					sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
-					sdk.NewAttribute(types.AttributeValAddress, sdk.ConsAddress(slashReq.Packet.Validator.Address).String()),
-					sdk.NewAttribute(types.AttributeValSetUpdateID, strconv.Itoa(int(slashReq.Packet.ValsetUpdateId))),
-					sdk.NewAttribute(types.AttributeInfraction, slashReq.Packet.Infraction.String()),
+					ccv.EventTypeSendSlashPacket,
+					sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+					sdk.NewAttribute(ccv.AttributeValidatorAddress, sdk.ConsAddress(slashReq.Packet.Validator.Address).String()),
+					sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(slashReq.Packet.ValsetUpdateId))),
+					sdk.NewAttribute(ccv.AttributeInfractionType, slashReq.Packet.Infraction.String()),
 				),
 			)
 		}

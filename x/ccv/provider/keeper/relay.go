@@ -313,8 +313,8 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		sdk.NewEvent(
 			ccv.EventExecuteConsumerChainSlash,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(ccv.AttributeValidatorAddres, consAddr.String()),
-			sdk.NewAttribute(ccv.AttributeInfraction, data.Infraction.String()),
+			sdk.NewAttribute(ccv.AttributeValidatorAddress, consAddr.String()),
+			sdk.NewAttribute(ccv.AttributeInfractionType, data.Infraction.String()),
 			sdk.NewAttribute(ccv.AttributeInfractionHeight, strconv.Itoa(int(infractionHeight))),
 			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))),
 		),
