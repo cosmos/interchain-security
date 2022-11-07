@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -173,6 +174,18 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 	if downtime {
 		k.SetOutstandingDowntime(ctx, consAddr)
 	}
+
+	// if provider channel is not established the emmission
+	// will instead take place in SendPendingSlashRequests
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeSendSlashPacket,
+			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
+			sdk.NewAttribute(types.AttributeValAddress, sdk.ConsAddress(validator.Address).String()),
+			sdk.NewAttribute(types.AttributeValSetUpdateID, strconv.Itoa(int(valsetUpdateID))),
+			sdk.NewAttribute(types.AttributeInfraction, infraction.String()),
+		),
+	)
 }
 
 // SendPendingSlashRequests iterates over the stored pending slash requests in reverse order
@@ -210,6 +223,16 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 			if downtime {
 				k.SetOutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address))
 			}
+
+			ctx.EventManager().EmitEvent(
+				sdk.NewEvent(
+					types.EventTypeSendSlashPacket,
+					sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
+					sdk.NewAttribute(types.AttributeValAddress, sdk.ConsAddress(slashReq.Packet.Validator.Address).String()),
+					sdk.NewAttribute(types.AttributeValSetUpdateID, strconv.Itoa(int(slashReq.Packet.ValsetUpdateId))),
+					sdk.NewAttribute(types.AttributeInfraction, slashReq.Packet.Infraction.String()),
+				),
+			)
 		}
 	}
 
