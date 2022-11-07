@@ -41,7 +41,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		// emit first VSC packet to signal that CCV is working
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
-				ccv.EventTypeFirstVSCPacket,
+				types.EventTypeFirstVSCPacket,
 				sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
 				sdk.NewAttribute(channeltypes.AttributeKeySrcChannel, packet.SourceChannel),
 				sdk.NewAttribute(channeltypes.AttributeKeySrcPort, packet.SourcePort),

@@ -8,7 +8,6 @@ const (
 
 	EventTypeConsumerChainAdded       = "ccv_consumer_added"
 	EventTypeFeeTransferChannelOpened = "ccv_fee_channel_opened"
-	EventTypeFirstVSCPacket           = "ccv_first_vsc_packet"
 
 	AttributeKeyAckSuccess = "success"
 	AttributeKeyAck        = "acknowledgement"
