@@ -107,19 +107,21 @@ func (suite *CCVTestSuite) SetupTest() {
 	// create path for the CCV channel
 	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
 
-	// update CCV path with correct info
-	// - set provider endpoint's clientID
-	consumerClient, found := providerKeeper.GetConsumerClientId(
+	// Set provider endpoint's clientID
+	providerEndpointClientID, found := providerKeeper.GetConsumerClientId(
 		suite.providerCtx(),
 		suite.consumerChain.ChainID,
 	)
+	suite.Require().True(found, "provider endpoint clientID not found")
+	suite.path.EndpointB.ClientID = providerEndpointClientID
 
-	suite.Require().True(found, "consumer client not found")
-	suite.path.EndpointB.ClientID = consumerClient
-	// - set consumer endpoint's clientID
-	providerClient, found := consumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
-	suite.Require().True(found, "provider client not found")
-	suite.path.EndpointA.ClientID = providerClient
+	// Set consumer endpoint's clientID
+	consumerEndpointClientID, found := consumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
+	suite.Require().True(found, "consumer endpoint clientID not found")
+	suite.path.EndpointA.ClientID = consumerEndpointClientID
+
+	// Confirm client config is now correct
+	suite.TestEndpointsClientConfig()
 
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
@@ -198,4 +200,27 @@ func (suite *CCVTestSuite) SetupTransferChannel() {
 	// ensure counterparty is up to date
 	err = suite.transferPath.EndpointA.UpdateClient()
 	suite.Require().NoError(err)
+}
+
+func (s CCVTestSuite) TestEndpointsClientConfig() {
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
+	providerStakingKeeper := s.providerApp.GetStakingKeeper()
+
+	consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(s.consumerCtx())
+	cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointB.ClientID)
+	s.Require().True(ok)
+	s.Require().Equal(
+		consumerUnbondingPeriod,
+		cs.(*ibctmtypes.ClientState).UnbondingPeriod,
+		"unexpected unbonding period in consumer client state",
+	)
+
+	providerUnbondingPeriod := providerStakingKeeper.UnbondingTime(s.providerCtx())
+	cs, ok = s.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.consumerCtx(), s.path.EndpointA.ClientID)
+	s.Require().True(ok)
+	s.Require().Equal(
+		providerUnbondingPeriod,
+		cs.(*ibctmtypes.ClientState).UnbondingPeriod,
+		"unexpected unbonding period in provider client state",
+	)
 }
