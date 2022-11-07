@@ -38,14 +38,14 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	chains := []*types.Chain{}
-	cb := func(ctx sdk.Context, chainID, clientID string) bool {
+	doContinue := func(ctx sdk.Context, chainID, clientID string) bool {
 		chains = append(chains, &types.Chain{
 			ChainId:  chainID,
 			ClientId: clientID,
 		})
 		return true
 	}
-	k.IterateConsumerChains(ctx, cb)
+	k.IterateConsumerChains(ctx, doContinue)
 
 	return &types.QueryConsumerChainsResponse{Chains: chains}, nil
 }
