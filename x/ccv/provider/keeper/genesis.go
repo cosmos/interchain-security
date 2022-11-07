@@ -71,9 +71,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 				k.SetUnbondingOpIndex(ctx, chainID, ubdOpIndex.ValsetUpdateId, ubdOpIndex.UnbondingOpIndex)
 			}
 		} else {
-			for _, vsc := range cs.PendingValsetChanges {
-				k.AppendPendingVSC(ctx, chainID, vsc)
-			}
+			k.AppendPendingVSC(ctx, chainID, cs.PendingValsetChanges)
 		}
 	}
 
