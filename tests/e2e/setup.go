@@ -1,8 +1,6 @@
 package e2e
 
 import (
-	"time"
-
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 
 	"bytes"
@@ -94,14 +92,17 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.providerChain.NextBlock()
 
 	// initialize the consumer chain with the genesis state stored on the provider
-	consumerGenesis, found := providerKeeper.GetConsumerGenesis(
+	consumerGenesisState, found := providerKeeper.GetConsumerGenesis(
 		suite.providerCtx(),
 		suite.consumerChain.ChainID,
 	)
 	suite.Require().True(found, "consumer genesis not found")
-	consumerKeeper.InitGenesis(suite.consumerCtx(), &consumerGenesis)
-	suite.providerClient = consumerGenesis.ProviderClientState
-	suite.providerConsState = consumerGenesis.ProviderConsensusState
+	consumerKeeper.InitGenesis(suite.consumerCtx(), &consumerGenesisState)
+
+	// Confirm client and cons state for consumer were set correctly in InitGenesis
+	consumerEndpointClientState, consumerEndpointConsState := suite.GetConsumerEndpointClientAndConsState()
+	suite.Require().Equal(consumerGenesisState.ProviderClientState, consumerEndpointClientState)
+	suite.Require().Equal(consumerGenesisState.ProviderConsensusState, consumerEndpointConsState)
 
 	// create path for the CCV channel
 	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
@@ -119,15 +120,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	providerClient, found := consumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
 	suite.Require().True(found, "provider client not found")
 	suite.path.EndpointA.ClientID = providerClient
-	// - client config
 
-	trustingPeriodFraction := suite.providerApp.GetProviderKeeper().GetTrustingPeriodFraction(suite.providerCtx())
-	providerUnbondingPeriod := suite.providerApp.GetStakingKeeper().UnbondingTime(suite.providerCtx())
-	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = providerUnbondingPeriod
-	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / time.Duration(trustingPeriodFraction)
-	consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(suite.consumerCtx())
-	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
-	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / time.Duration(trustingPeriodFraction)
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
 	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
