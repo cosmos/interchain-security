@@ -210,8 +210,8 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 	height := clienttypes.GetSelfHeight(ctx)
 
 	clientState := k.GetTemplateClient(ctx)
-	clientState.ChainId = ctx.ChainID()
-	clientState.LatestHeight = height //(+-1???)
+	clientState.ChainId = ctx.ChainID() // This will be the counter party chain ID for the consumer
+	clientState.LatestHeight = height   //(+-1???)
 	clientState.TrustingPeriod = providerUnbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
 	clientState.UnbondingPeriod = providerUnbondingPeriod
 
@@ -224,6 +224,7 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 
 	gen.Params.Enabled = true
 	gen.NewChain = true
+	// This will become the ccv client state for the consumer
 	gen.ProviderClientState = clientState
 	gen.ProviderConsensusState = consState.(*ibctmtypes.ConsensusState)
 
