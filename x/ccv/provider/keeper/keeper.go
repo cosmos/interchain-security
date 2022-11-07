@@ -267,7 +267,7 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
 	}
 	connectionID := channel.ConnectionHops[0]
-	_, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
+	clientID, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
 	if err != nil {
 		return err
 	}
@@ -285,6 +285,17 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	k.SetInitChainHeight(ctx, chainID, uint64(ctx.BlockHeight()))
 	// - remove init timeout timestamp
 	k.DeleteInitTimeoutTimestamp(ctx, chainID)
+
+	// emit event on successful addition
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			ccv.EventTypeConsumerChainAdded,
+			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
+			sdk.NewAttribute(ccv.AttributeChainID, chainID),
+			sdk.NewAttribute(conntypes.AttributeKeyClientID, clientID),
+			sdk.NewAttribute(conntypes.AttributeKeyConnectionID, connectionID),
+		),
+	)
 	return nil
 }
 
