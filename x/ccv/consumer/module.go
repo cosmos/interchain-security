@@ -149,9 +149,6 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 // ConsensusVersion implements AppModule/ConsensusVersion.
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
-// TODO: add events
-// maybe emit event if panic is about to happen
-// baybe emit blockheight and valupdateId
 // BeginBlock implements the AppModule interface
 // Set the VSC ID for the subsequent block to the same value as the current block
 // Panic if the provider's channel was established and then closed
@@ -173,9 +170,6 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 	am.keeper.TrackHistoricalInfo(ctx)
 }
 
-// TODO: add events
-// - provider fee distribution transmission
-// - matured validator updates (the consumer could emit in keeper.EndBlockVSU)
 // EndBlock implements the AppModule interface
 // Flush PendingChanges to ABCI, and write acknowledgements for any packets that have finished unbonding.
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {

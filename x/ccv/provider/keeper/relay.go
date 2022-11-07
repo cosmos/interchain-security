@@ -120,9 +120,6 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 	return k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID), false)
 }
 
-// TODO: add events
-// - emit matured unbonding ops
-// - emit validator updates
 // EndBlockVSU contains the EndBlock logic needed for
 // the Validator Set Update sub-protocol
 func (k Keeper) EndBlockVSU(ctx sdk.Context) {
@@ -205,8 +202,6 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 	}
 }
 
-// TODO: add events
-// - emit valupdateId and block height
 // EndBlockCIS contains the EndBlock logic needed for
 // the Consumer Initiated Slashing sub-protocol
 func (k Keeper) EndBlockCIS(ctx sdk.Context) {
@@ -323,7 +318,6 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	return true, nil
 }
 
-// TODO: emit removed chain ids
 // EndBlockCIS contains the EndBlock logic needed for
 // the Consumer Chain Removal sub-protocol
 func (k Keeper) EndBlockCCR(ctx sdk.Context) {

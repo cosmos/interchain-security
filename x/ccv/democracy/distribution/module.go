@@ -59,8 +59,6 @@ func NewAppModule(
 	}
 }
 
-// TODO: add events
-// - maybe emit amount added to fee pool
 // BeginBlocker mirror functionality of cosmos-sdk/distribution BeginBlocker
 // however it allocates no proposer reward
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {

@@ -41,8 +41,6 @@ func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak govtypes.AccountKeep
 	}
 }
 
-// TODO: add events
-// - maybe emit ids of forbidden proposals
 func (am AppModule) EndBlock(ctx sdk.Context, request abci.RequestEndBlock) []abci.ValidatorUpdate {
 
 	am.keeper.IterateActiveProposalsQueue(ctx, ctx.BlockHeader().Time, func(proposal govtypes.Proposal) bool {
