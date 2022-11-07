@@ -10,6 +10,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -36,6 +37,18 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		k.SetProviderChannel(ctx, packet.DestinationChannel)
 		// - send pending slash requests in states
 		k.SendPendingSlashRequests(ctx)
+
+		// emit first VSC packet to signal that CCV is working
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				ccv.EventTypeFirstVSCPacket,
+				sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
+				sdk.NewAttribute(channeltypes.AttributeKeySrcChannel, packet.SourceChannel),
+				sdk.NewAttribute(channeltypes.AttributeKeySrcPort, packet.SourcePort),
+				sdk.NewAttribute(channeltypes.AttributeKeyDstChannel, packet.DestinationChannel),
+				sdk.NewAttribute(channeltypes.AttributeKeyDstPort, packet.DestinationPort),
+			),
+		)
 	}
 	// Set pending changes by accumulating changes from this packet with all prior changes
 	var pendingChanges []abci.ValidatorUpdate
