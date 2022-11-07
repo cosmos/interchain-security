@@ -337,7 +337,7 @@ func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.Consumer
 	return propsToExecute
 }
 
-func (k Keeper) IteratePendingConsumerAdditionProps(ctx sdk.Context, cb func(spawnTime time.Time, prop types.ConsumerAdditionProposal) bool) {
+func (k Keeper) IteratePendingConsumerAdditionProps(ctx sdk.Context, doContinue func(spawnTime time.Time, prop types.ConsumerAdditionProposal) bool) {
 	iterator := k.PendingConsumerAdditionPropIterator(ctx)
 	defer iterator.Close()
 
@@ -351,7 +351,7 @@ func (k Keeper) IteratePendingConsumerAdditionProps(ctx sdk.Context, cb func(spa
 		var prop types.ConsumerAdditionProposal
 		k.cdc.MustUnmarshal(iterator.Value(), &prop)
 
-		if !cb(spawnTime, prop) {
+		if !doContinue(spawnTime, prop) {
 			return
 		}
 	}
@@ -457,7 +457,7 @@ func (k Keeper) ConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerR
 	return propsToExecute
 }
 
-func (k Keeper) IteratePendingConsumerRemovalProps(ctx sdk.Context, cb func(stopTime time.Time, prop types.ConsumerRemovalProposal) bool) {
+func (k Keeper) IteratePendingConsumerRemovalProps(ctx sdk.Context, doContinue func(stopTime time.Time, prop types.ConsumerRemovalProposal) bool) {
 	iterator := k.PendingConsumerRemovalPropIterator(ctx)
 	defer iterator.Close()
 
@@ -469,7 +469,7 @@ func (k Keeper) IteratePendingConsumerRemovalProps(ctx sdk.Context, cb func(stop
 			panic(fmt.Errorf("failed to parse pending consumer removal proposal key: %w", err))
 		}
 
-		if !cb(stopTime, types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime}) {
+		if !doContinue(stopTime, types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime}) {
 			return
 		}
 	}

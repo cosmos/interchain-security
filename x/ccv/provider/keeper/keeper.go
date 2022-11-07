@@ -138,7 +138,7 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 // IterateConsumerChains iterates over all of the consumer chains that the provider module controls
 // It calls the provided callback function which takes in a chainID and client ID to return
 // a stop boolean which will stop the iteration.
-func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID, clientID string) (stop bool)) {
+func (k Keeper) IterateConsumerChains(ctx sdk.Context, doContinue func(ctx sdk.Context, chainID, clientID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
 	defer iterator.Close()
@@ -152,7 +152,7 @@ func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, 
 		chainID := string(iterator.Key()[1:])
 		clientID := string(iterator.Value())
 
-		if !cb(ctx, chainID, clientID) {
+		if !doContinue(ctx, chainID, clientID) {
 			return
 		}
 	}
@@ -182,7 +182,7 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 
 // IterateChannelToChain iterates over the channel to chain mappings and calls the provided callback until the iteration ends
 // or the callback returns stop=true
-func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, channelID, chainID string) (stop bool)) {
+func (k Keeper) IterateChannelToChain(ctx sdk.Context, doContinue func(ctx sdk.Context, channelID, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
 	defer iterator.Close()
@@ -197,7 +197,7 @@ func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, 
 
 		chainID := string(iterator.Value())
 
-		if !cb(ctx, channelID, chainID) {
+		if !doContinue(ctx, channelID, chainID) {
 			break
 		}
 	}
@@ -323,7 +323,7 @@ func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 	store.Delete(types.UnbondingOpKey(id))
 }
 
-func (k Keeper) IterateOverUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdOp ccv.UnbondingOp) bool) {
+func (k Keeper) IterateOverUnbondingOps(ctx sdk.Context, doContinue func(id uint64, ubdOp ccv.UnbondingOp) bool) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.UnbondingOpBytePrefix})
 
@@ -336,7 +336,7 @@ func (k Keeper) IterateOverUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdO
 		}
 		ubdOp := types.MustUnmarshalUnbondingOp(k.cdc, bz)
 
-		if !cb(id, ubdOp) {
+		if !doContinue(id, ubdOp) {
 			break
 		}
 	}
@@ -358,7 +358,7 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 }
 
 // IterateOverUnbondingOpIndex iterates over the unbonding indexes for a given chain id.
-func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb func(vscID uint64, ubdIndex []uint64) bool) {
+func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, doContinue func(vscID uint64, ubdIndex []uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.UnbondingOpIndexBytePrefix, chainID))
 	defer iterator.Close()
@@ -375,7 +375,7 @@ func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb 
 			panic("Failed to unmarshal JSON")
 		}
 
-		if !cb(vscID, index.GetIds()) {
+		if !doContinue(vscID, index.GetIds()) {
 			return
 		}
 	}
@@ -561,7 +561,7 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint6
 }
 
 // IterateSlashAcks iterates through the slash acks set in the store
-func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(valsetUpdateId, height uint64) bool) {
+func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, doContinue func(valsetUpdateId, height uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
 
@@ -571,7 +571,7 @@ func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(valsetUp
 		valsetUpdateId := binary.BigEndian.Uint64(iterator.Key()[1:])
 		height := binary.BigEndian.Uint64(iterator.Value())
 
-		if !cb(valsetUpdateId, height) {
+		if !doContinue(valsetUpdateId, height) {
 			return
 		}
 	}
@@ -624,7 +624,7 @@ func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []string
 }
 
 // IterateSlashAcks iterates through the slash acks set in the store
-func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) bool) {
+func (k Keeper) IterateSlashAcks(ctx sdk.Context, doContinue func(chainID string, acks []string) bool) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.SlashAcksBytePrefix})
 
@@ -639,7 +639,7 @@ func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks [
 			panic(fmt.Errorf("failed to unmarshal SlashAcks: %w", err))
 		}
 
-		if !cb(chainID, sa.GetAddresses()) {
+		if !doContinue(chainID, sa.GetAddresses()) {
 			return
 		}
 	}
@@ -808,7 +808,7 @@ func (k Keeper) DeleteInitTimeoutTimestamp(ctx sdk.Context, chainID string) {
 }
 
 // IterateInitTimeoutTimestamp iterates through the init timeout timestamps in the store
-func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID string, ts uint64) bool) {
+func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, doContinue func(chainID string, ts uint64) bool) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.InitTimeoutTimestampBytePrefix})
 
@@ -816,7 +816,7 @@ func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID str
 	for ; iterator.Valid(); iterator.Next() {
 		chainID := string(iterator.Key()[1:])
 		ts := binary.BigEndian.Uint64(iterator.Value())
-		if !cb(chainID, ts) {
+		if !doContinue(chainID, ts) {
 			return
 		}
 	}
@@ -850,7 +850,7 @@ func (k Keeper) DeleteVscSendTimestamp(ctx sdk.Context, chainID string, vscID ui
 func (k Keeper) IterateVscSendTimestamps(
 	ctx sdk.Context,
 	chainID string,
-	cb func(vscID uint64, ts time.Time) bool,
+	doContinue func(vscID uint64, ts time.Time) bool,
 ) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
@@ -866,7 +866,7 @@ func (k Keeper) IterateVscSendTimestamps(
 		if err != nil {
 			panic(fmt.Errorf("failed to parse timestamp value: %w", err))
 		}
-		if !cb(vscID, ts) {
+		if !doContinue(vscID, ts) {
 			return
 		}
 	}
