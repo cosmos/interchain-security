@@ -785,6 +785,11 @@ func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
 	return app.EvidenceKeeper
 }
 
+// GetUpgradeKeeper implements the ConsumerApp interface.
+func (app *App) GetUpgradeKeeper() upgradekeeper.Keeper {
+	return app.UpgradeKeeper
+}
+
 // GetE2eStakingKeeper implements the ConsumerApp interface.
 func (app *App) GetE2eStakingKeeper() e2e.E2eStakingKeeper {
 	return app.StakingKeeper
