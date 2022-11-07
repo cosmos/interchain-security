@@ -59,7 +59,7 @@ func (k Keeper) GetSlashMeterReplenishPeriod(ctx sdk.Context) time.Duration {
 	return p
 }
 
-// GetSlashGasReplenishFraction returns the string fraction of total voting power that is replenished
+// GetSlashMeterReplenishFraction returns the string fraction of total voting power that is replenished
 // to the slash meter every replenish period. This param also serves as a maximum fraction of total
 // voting power that the slash meter can hold.
 func (k Keeper) GetSlashMeterReplenishFraction(ctx sdk.Context) string {
