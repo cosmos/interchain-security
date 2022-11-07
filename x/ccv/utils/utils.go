@@ -51,20 +51,21 @@ func SendIBCPacket(
 	portID string,
 	packetData []byte,
 	timeoutPeriod time.Duration,
-) error {
+) (expiredClient bool, err error) {
+	expiredClient = false
 	channel, ok := channelKeeper.GetChannel(ctx, portID, channelID)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
+		return expiredClient, sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "channel not found for channel ID: %s", channelID)
 	}
 	channelCap, ok := scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portID, channelID))
 	if !ok {
-		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
+		return expiredClient, sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
 	}
 
 	// get the next sequence
 	sequence, found := channelKeeper.GetNextSequenceSend(ctx, portID, channelID)
 	if !found {
-		return sdkerrors.Wrapf(
+		return expiredClient, sdkerrors.Wrapf(
 			channeltypes.ErrSequenceSendNotFound,
 			"source port: %s, source channel: %s", portID, channelID,
 		)
@@ -75,5 +76,11 @@ func SendIBCPacket(
 		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
 		clienttypes.Height{}, uint64(ctx.BlockTime().Add(timeoutPeriod).UnixNano()),
 	)
-	return channelKeeper.SendPacket(ctx, channelCap, packet)
+	// send packet over IBC channel
+	err = channelKeeper.SendPacket(ctx, channelCap, packet)
+	if clienttypes.ErrClientNotActive.Is(err) {
+		// IBC client expired
+		expiredClient = true
+	}
+	return expiredClient, err
 }

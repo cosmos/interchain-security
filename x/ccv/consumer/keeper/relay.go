@@ -108,7 +108,7 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 			// - construct validator set change packet data
 			packetData := ccv.NewVSCMaturedPacketData(vscId)
 			// - send packet over IBC
-			err := utils.SendIBCPacket(
+			_, err := utils.SendIBCPacket(
 				ctx,
 				k.scopedKeeper,
 				k.channelKeeper,
@@ -164,7 +164,7 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 	}
 
 	// send packet over IBC
-	err := utils.SendIBCPacket(
+	_, err := utils.SendIBCPacket(
 		ctx,
 		k.scopedKeeper,
 		k.channelKeeper,
@@ -213,7 +213,7 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 		downtime := slashReq.Infraction == stakingtypes.Downtime
 		if !downtime || !k.OutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address)) {
 			// send packet over IBC
-			err := utils.SendIBCPacket(
+			_, err := utils.SendIBCPacket(
 				ctx,
 				k.scopedKeeper,
 				k.channelKeeper,
