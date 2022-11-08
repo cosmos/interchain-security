@@ -26,22 +26,17 @@ import (
 func GetMocksForCreateConsumerClient(ctx sdk.Context, mocks *MockedKeepers,
 	expectedChainID string, expectedLatestHeight clienttypes.Height) []*gomock.Call {
 
-	expectations := []*gomock.Call{
-
-		mocks.MockClientKeeper.EXPECT().CreateClient(
-			ctx,
-			// Allows us to expect a match by field. These are the only two client state values
-			// that are dependant on parameters passed to CreateConsumerClient.
-			extra.StructMatcher().Field(
-				"ChainId", expectedChainID).Field(
-				"LatestHeight", expectedLatestHeight,
-			),
-			gomock.Any(),
-		).Return("clientID", nil).Times(1),
-	}
-
-	expectations = append(expectations, GetMocksForMakeConsumerGenesis(ctx, mocks, time.Hour)...)
-	return expectations
+	expectations := GetMocksForMakeConsumerGenesis(ctx, mocks, time.Hour)
+	return append(expectations, mocks.MockClientKeeper.EXPECT().CreateClient(
+		ctx,
+		// Allows us to expect a match by field. These are the only two client state values
+		// that are dependant on parameters passed to CreateConsumerClient.
+		extra.StructMatcher().Field(
+			"ChainId", expectedChainID).Field(
+			"LatestHeight", expectedLatestHeight,
+		),
+		gomock.Any(),
+	).Return("clientID", nil).Times(1))
 }
 
 // GetMocksForMakeConsumerGenesis returns mock expectations needed to call MakeConsumerGenesis().
