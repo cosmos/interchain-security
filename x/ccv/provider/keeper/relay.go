@@ -184,7 +184,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				k.AppendPendingVSC(ctx, chainID, packetData)
 			}
 		}
-		return false // do not stop the iteration
+		return true // do not stop the iteration
 	})
 	k.IncrementValidatorSetUpdateId(ctx)
 }
@@ -381,7 +381,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 			return false
 		})
 		// continue to iterate through all consumers
-		return true
+		return false
 	})
 	// remove consumers that timed out
 	for _, chainID := range chainIdsToRemove {
