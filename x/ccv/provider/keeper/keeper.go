@@ -143,10 +143,6 @@ func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, 
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
 	defer iterator.Close()
 
-	if !iterator.Valid() {
-		return
-	}
-
 	for ; iterator.Valid(); iterator.Next() {
 		// remove 1 byte prefix from key to retrieve chainID
 		chainID := string(iterator.Key()[1:])
@@ -186,10 +182,6 @@ func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, 
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
 	defer iterator.Close()
-
-	if !iterator.Valid() {
-		return
-	}
 
 	for ; iterator.Valid(); iterator.Next() {
 		// remove prefix from key to retrieve channelID
