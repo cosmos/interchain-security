@@ -242,13 +242,23 @@ func MultiConsumerTestRun() TestRun {
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
-			chainID("democ"): {
-				chainId:        chainID("democ"),
-				binaryName:     "interchain-security-cdd",
+			chainID("consu"): {
+				chainId:        chainID("consu"),
+				binaryName:     "interchain-security-cd",
+				ipPrefix:       "7.7.8",
+				votingWaitTime: 10,
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+			},
+			chainID("densu"): {
+				chainId:        chainID("densu"),
+				binaryName:     "interchain-security-cd",
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"10\" | " +
-					".app_state.gov.voting_params.voting_period = \"10s\" | " +
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
