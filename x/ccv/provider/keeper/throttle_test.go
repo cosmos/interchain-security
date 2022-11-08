@@ -473,6 +473,10 @@ func TestPanicIfTooMuchPendingPacketData(t *testing.T) {
 		defer ctrl.Finish()
 		rand.Seed(time.Now().UnixNano())
 
+		// Queuing up a couple data instances for another chain shouldn't matter
+		queuePendingPacketData(ctx, &providerKeeper, "chain-17", 0, testkeeper.GetNewSlashPacketData())
+		queuePendingPacketData(ctx, &providerKeeper, "chain-17", 1, testkeeper.GetNewVSCMaturedPacketData())
+
 		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
 		reachedMax := false
 		for i := 0; i < int(tc.max+2); i++ { // iterate up to tc.max+1
@@ -486,11 +490,11 @@ func TestPanicIfTooMuchPendingPacketData(t *testing.T) {
 			// Panic only if we've reached the max
 			if i == int(tc.max+1) {
 				require.Panics(t, func() {
-					queuePendingPacketData(ctx, &providerKeeper, "chain-0", uint64(i), data)
+					queuePendingPacketData(ctx, &providerKeeper, "chain-88", uint64(i), data)
 				})
 				reachedMax = true
 			} else {
-				queuePendingPacketData(ctx, &providerKeeper, "chain-0", uint64(i), data)
+				queuePendingPacketData(ctx, &providerKeeper, "chain-88", uint64(i), data)
 			}
 		}
 		require.True(t, reachedMax)
