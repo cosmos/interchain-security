@@ -97,7 +97,7 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 			// - construct validator set change packet data
 			packetData := ccv.NewVSCMaturedPacketData(vscId)
 			// - send packet over IBC
-			_, err := utils.SendIBCPacket(
+			expiredClient, err := utils.SendIBCPacket(
 				ctx,
 				k.scopedKeeper,
 				k.channelKeeper,
@@ -106,6 +106,11 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 				packetData.GetBytes(),
 				k.GetCCVTimeoutPeriod(ctx),
 			)
+			if expiredClient {
+				// IBC client expired:
+				// AppendPacketData(CONSUMER_PACKET_TYPE_VSCM, packetData.GetBytes())
+				// TODO
+			}
 			if err != nil {
 				return err
 			}
@@ -139,11 +144,14 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 			Packet:     &packetData,
 			Infraction: infraction},
 		)
+		if downtime {
+			k.SetOutstandingDowntime(ctx, consAddr)
+		}
 		return
 	}
 
 	// send packet over IBC
-	_, err := utils.SendIBCPacket(
+	expiredClient, err := utils.SendIBCPacket(
 		ctx,
 		k.scopedKeeper,
 		k.channelKeeper,
@@ -152,6 +160,11 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 		packetData.GetBytes(),
 		k.GetCCVTimeoutPeriod(ctx),
 	)
+	if expiredClient {
+		// IBC client expired:
+		// TODO
+
+	}
 	if err != nil {
 		panic(err)
 	}
@@ -177,10 +190,10 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 
 		// send the emebdded slash packet to the CCV channel
 		// if the outstanding downtime flag is false for the validator
-		downtime := slashReq.Infraction == stakingtypes.Downtime
+		downtime := slashReq.Packet.Infraction == stakingtypes.Downtime
 		if !downtime || !k.OutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address)) {
 			// send packet over IBC
-			_, err := utils.SendIBCPacket(
+			expiredClient, err := utils.SendIBCPacket(
 				ctx,
 				k.scopedKeeper,
 				k.channelKeeper,
@@ -189,6 +202,11 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 				slashReq.Packet.GetBytes(),
 				k.GetCCVTimeoutPeriod(ctx),
 			)
+			if expiredClient {
+				// IBC client expired:
+				// TODO
+				break
+			}
 			if err != nil {
 				panic(err)
 			}

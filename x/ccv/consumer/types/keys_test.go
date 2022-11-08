@@ -32,7 +32,7 @@ func TestNoDuplicates(t *testing.T) {
 // any of which should be a single, unique byte.
 func getSingleByteKeys() [][]byte {
 
-	keys := make([][]byte, 12)
+	keys := make([][]byte, 32)
 	i := 0
 
 	keys[i], i = PortKey(), i+1
@@ -46,7 +46,8 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{HeightValsetUpdateIDBytePrefix}, i+1
 	keys[i], i = []byte{OutstandingDowntimeBytePrefix}, i+1
 	keys[i], i = []byte{PendingSlashRequestsBytePrefix}, i+1
-	keys[i] = []byte{CrossChainValidatorBytePrefix}
+	keys[i], i = []byte{PendingDataPacketsBytePrefix}, i+1
+	keys[i], i = []byte{CrossChainValidatorBytePrefix}, i+1
 
-	return keys
+	return keys[:i]
 }

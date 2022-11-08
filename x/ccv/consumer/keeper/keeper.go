@@ -433,3 +433,44 @@ func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashReque
 	srArray = append(srArray, req)
 	k.SetPendingSlashRequests(ctx, types.SlashRequests{Requests: srArray})
 }
+
+// SetPendingDataPackets sets the pending data packets in store
+func (k Keeper) SetPendingDataPackets(ctx sdk.Context, dataPackets types.DataPackets) {
+	store := ctx.KVStore(k.storeKey)
+	bz, err := dataPackets.Marshal()
+	if err != nil {
+		panic(fmt.Errorf("failed to encode slash request json: %w", err))
+	}
+	store.Set([]byte{types.PendingDataPacketsBytePrefix}, bz)
+}
+
+// GetPendingDataPackets returns the pending data packets from the store
+func (k Keeper) GetPendingDataPackets(ctx sdk.Context) types.DataPackets {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get([]byte{types.PendingDataPacketsBytePrefix})
+	if bz == nil {
+		return types.DataPackets{}
+	}
+
+	var dataPackets types.DataPackets
+	err := dataPackets.Unmarshal(bz)
+	if err != nil {
+		panic(fmt.Errorf("failed to unmarshal pending data packets: %w", err))
+	}
+
+	return dataPackets
+}
+
+// DeletePendingDataPackets clears the pending data packets in store
+func (k Keeper) DeletePendingDataPackets(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete([]byte{types.PendingDataPacketsBytePrefix})
+}
+
+// AppendPendingDataPacket appends the given data packet to the pending data packets in store
+func (k Keeper) AppendPendingDataPacket(ctx sdk.Context, dataPacket types.DataPacket) {
+	dp := k.GetPendingDataPackets(ctx)
+	dpArray := dp.GetList()
+	dpArray = append(dpArray, dataPacket)
+	k.SetPendingDataPackets(ctx, types.DataPackets{List: dpArray})
+}

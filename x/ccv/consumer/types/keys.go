@@ -63,6 +63,12 @@ const (
 	// to the provider chain once the CCV channel is established
 	PendingSlashRequestsBytePrefix
 
+	// PendingDataPacketsBytePrefix is the byte prefix for storing
+	// a list of data packets that cannot be sent yet to the provider
+	// chain either because the CCV channel is not established or
+	// because the client is expired
+	PendingDataPacketsBytePrefix
+
 	// CrossChainValidatorPrefix is the byte prefix that will store cross-chain validators by consensus address
 	CrossChainValidatorBytePrefix
 )

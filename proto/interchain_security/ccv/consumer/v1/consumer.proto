@@ -80,3 +80,27 @@ message SlashRequests {
   repeated SlashRequest requests = 1
   [ (gogoproto.nullable) = false ];
 }
+
+// ConsumerPacketType indicates the consumer packet type.
+enum ConsumerPacketType {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // UNSPECIFIED packet type
+  CONSUMER_PACKET_TYPE_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "UnspecifiedPacket"];
+  // Slash packet
+  CONSUMER_PACKET_TYPE_SLASH = 1 [(gogoproto.enumvalue_customname) = "SlashPacket"];
+  // VSCMatured packet
+  CONSUMER_PACKET_TYPE_VSCM = 2 [(gogoproto.enumvalue_customname) = "VscMaturedPacket"];
+}
+
+// DataPacket is a data packet for a specific type of packet
+message DataPacket {
+  ConsumerPacketType type = 1; 
+  bytes data = 2;
+}
+
+// DataPackets is a list of data packets
+message DataPackets {
+  repeated DataPacket list = 1
+  [ (gogoproto.nullable) = false ];
+}

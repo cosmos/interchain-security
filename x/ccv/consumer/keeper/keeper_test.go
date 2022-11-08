@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -187,6 +188,61 @@ func TestPendingSlashRequests(t *testing.T) {
 		requests := consumerKeeper.GetPendingSlashRequests(ctx)
 		require.Len(t, requests.Requests, tc.expLen)
 	}
+}
+
+func TestPendingDataPackets(t *testing.T) {
+
+	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// prepare test setup
+	dataPackets := []types.DataPacket{
+		{
+			Type: types.VscMaturedPacket,
+			Data: ccv.NewVSCMaturedPacketData(1).GetBytes(),
+		},
+		{
+			Type: types.VscMaturedPacket,
+			Data: ccv.NewVSCMaturedPacketData(2).GetBytes(),
+		},
+		{
+			Type: types.SlashPacket,
+			Data: ccv.NewSlashPacketData(
+				abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(), Power: int64(0)},
+				3,
+				stakingtypes.DoubleSign,
+			).GetBytes(),
+		},
+		{
+			Type: types.VscMaturedPacket,
+			Data: ccv.NewVSCMaturedPacketData(3).GetBytes(),
+		},
+	}
+	consumerKeeper.SetPendingDataPackets(ctx, types.DataPackets{List: dataPackets})
+
+	storedDataPackets := consumerKeeper.GetPendingDataPackets(ctx)
+	require.Equal(t, dataPackets, storedDataPackets.List)
+
+	slashPacket := ccv.NewSlashPacketData(
+		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
+			Power: int64(2)},
+		uint64(4),
+		stakingtypes.Downtime,
+	)
+	dataPackets = append(dataPackets, types.DataPacket{Type: types.SlashPacket, Data: slashPacket.GetBytes()})
+	consumerKeeper.AppendPendingDataPacket(ctx, dataPackets[len(dataPackets)-1])
+	storedDataPackets = consumerKeeper.GetPendingDataPackets(ctx)
+	require.Equal(t, dataPackets, storedDataPackets.List)
+
+	vscMaturedPakcet := ccv.NewVSCMaturedPacketData(4)
+	dataPackets = append(dataPackets, types.DataPacket{Type: types.VscMaturedPacket, Data: vscMaturedPakcet.GetBytes()})
+	consumerKeeper.AppendPendingDataPacket(ctx, dataPackets[len(dataPackets)-1])
+	storedDataPackets = consumerKeeper.GetPendingDataPackets(ctx)
+	require.Equal(t, dataPackets, storedDataPackets.List)
+
+	consumerKeeper.DeletePendingDataPackets(ctx)
+	storedDataPackets = consumerKeeper.GetPendingDataPackets(ctx)
+	require.Len(t, storedDataPackets.List, 0)
 }
 
 // TestVerifyProviderChain tests the VerifyProviderChain method for the consumer keeper
