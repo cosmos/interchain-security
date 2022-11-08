@@ -354,7 +354,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 			return false
 		})
 		// continue to iterate through all consumers
-		return true
+		return false
 	})
 	// remove consumers that timed out
 	for _, chainID := range chainIdsToRemove {
