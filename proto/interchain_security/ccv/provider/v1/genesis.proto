@@ -9,6 +9,7 @@ import "interchain_security/ccv/v1/ccv.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
 import "interchain_security/ccv/consumer/v1/consumer.proto";
 import "interchain_security/ccv/consumer/v1/genesis.proto";
+import "interchain_security/ccv/provider/v1/keyassignment.proto";
 
 
 // GenesisState defines the CCV provider chain genesis state
