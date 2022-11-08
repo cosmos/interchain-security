@@ -714,7 +714,7 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 	// check that outstanding downtime flags
 	// are all set to true for validators slashed for downtime requests
 	for _, r := range requests.GetRequests() {
-		downtime := r.Infraction == stakingtypes.Downtime
+		downtime := r.Packet.Infraction == stakingtypes.Downtime
 		if downtime {
 			consAddr := sdk.ConsAddress(r.Packet.Validator.Address)
 			suite.Require().True(consumerKeeper.OutstandingDowntime(ctx, consAddr))

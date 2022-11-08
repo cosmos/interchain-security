@@ -5,7 +5,6 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
@@ -42,7 +41,7 @@ func TestInitGenesis(t *testing.T) {
 	consensusState := testutil.GetConsensusState(clientID, time.Time{}, validator)
 
 	slashRequests := consumertypes.SlashRequests{
-		Requests: []consumertypes.SlashRequest{{Infraction: stakingtypes.Downtime}},
+		Requests: []consumertypes.SlashRequest{{}},
 	}
 	matPacket := consumertypes.MaturingVSCPacket{
 		VscId:        uint64(1),
@@ -150,7 +149,7 @@ func TestExportGenesis(t *testing.T) {
 
 	// define the states exported into genesis
 	slashRequests := consumertypes.SlashRequests{
-		Requests: []consumertypes.SlashRequest{{Infraction: stakingtypes.Downtime}},
+		Requests: []consumertypes.SlashRequest{{}},
 	}
 	restartHeight := uint64(0)
 	matPacket := consumertypes.MaturingVSCPacket{
