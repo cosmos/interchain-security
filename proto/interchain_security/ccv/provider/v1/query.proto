@@ -65,13 +65,13 @@ message QueryConsumerChainsResponse { repeated Chain chains = 1; }
 
 message QueryConsumerChainStartProposalsRequest {}
 
-message QueryConsumerChainStartProposalsResponse {
+message QueryConsumerChainStartProposalsResponse { 
   ConsumerAdditionProposals proposals = 1;
 }
 
 message QueryConsumerChainStopProposalsRequest {}
 
-message QueryConsumerChainStopProposalsResponse {
+message QueryConsumerChainStopProposalsResponse { 
   ConsumerRemovalProposals proposals = 1;
 }
 
