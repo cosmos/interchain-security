@@ -12,6 +12,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 // In this branch I am icing things for a few days.
@@ -634,6 +635,19 @@ func (k Keeper) DeleteKeyAssignment(ctx sdk.Context, chainID string) {
 			store.Delete(iter.Key())
 		}
 	}
+}
+
+// GetProviderConsAddrForSlashing returns the cons address of the validator to be slashed
+// on the provider chain. It looks up the provider's consensus address from past key assignments.
+func (k Keeper) GetProviderConsAddrForSlashing(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (sdk.ConsAddress, error) {
+	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
+	providerPublicKey, found := k.KeyAssignment(ctx, chainID).GetProviderPubKeyFromConsumerConsAddress(consumerConsAddr)
+	if !found {
+		// TODO: add comment to explain that slash can come from a faulty consumer and that is why
+		// we don't panic.
+		return nil, errors.New("could not find provider address for slashing")
+	}
+	return TMCryptoPublicKeyToConsAddr(providerPublicKey), nil
 }
 
 func (k Keeper) KeyAssignment(ctx sdk.Context, chainID string) *KeyAssignment {
