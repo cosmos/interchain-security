@@ -37,10 +37,10 @@ func main() {
 	dmc.ValidateStringLiterals()
 	dmc.startDocker()
 
-	sov := DefaultTestRun()
-	sov.SetLocalSDKPath(*localSdkPath)
-	sov.ValidateStringLiterals()
-	sov.startDocker()
+	mul := MultiConsumerTestRun()
+	mul.SetLocalSDKPath(*localSdkPath)
+	mul.ValidateStringLiterals()
+	mul.startDocker()
 
 	ds := DoubleSignTestRun()
 	ds.SetLocalSDKPath(*localSdkPath)
@@ -54,7 +54,7 @@ func main() {
 	go dmc.ExecuteSteps(&wg, democracySteps)
 
 	wg.Add(1)
-	go sov.ExecuteSteps(&wg, withSovereignChain(&tr, []string{}))
+	go mul.ExecuteSteps(&wg, multipleConsumers)
 
 	wg.Add(1)
 	go ds.ExecuteSteps(&wg, doubleSignProviderSteps)

@@ -88,7 +88,7 @@ func startSovereignChain(tr *TestRun, ibcChains []string) []Step {
 	return s
 }
 
-func stepsStartConsumerChain(consumerName string, proposalIndex uint, setupTransferChan bool) []Step {
+func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint, setupTransferChans bool) []Step {
 	s := []Step{
 		{
 			action: submitConsumerAdditionProposalAction{
@@ -190,7 +190,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex uint, setupTrans
 				chainA:  chainID(consumerName),
 				chainB:  chainID("provi"),
 				clientA: 0,
-				clientB: 0,
+				clientB: chainIndex,
 			},
 			state: State{},
 		},
@@ -208,7 +208,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex uint, setupTrans
 	}
 
 	// currently only used in democracy tests
-	if setupTransferChan {
+	if setupTransferChans {
 		s = append(s, Step{
 			action: transferChannelCompleteAction{
 				chainA:      chainID(consumerName),
@@ -218,7 +218,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex uint, setupTrans
 				portB:       "transfer",
 				order:       "unordered",
 				channelA:    1,
-				channelB:    1,
+				channelB:    chainIndex + 1,
 			},
 			state: State{},
 		})
@@ -229,10 +229,10 @@ func stepsStartConsumerChain(consumerName string, proposalIndex uint, setupTrans
 // starts provider and single consumer chain
 // * genesisParams overrides consumer genesis params
 // * setupTransferChan creates a transfer channel between provider and consumer
-func stepsStartChains(consumerNames []string, setupTransferChan bool) []Step {
+func stepsStartChains(consumerNames []string, setupTransferChans bool) []Step {
 	s := stepStartProviderChain()
 	for i, consumerName := range consumerNames {
-		s = append(s, stepsStartConsumerChain(consumerName, uint(i+1), false)...)
+		s = append(s, stepsStartConsumerChain(consumerName, uint(i+1), uint(i), false)...)
 	}
 
 	return s

@@ -15,7 +15,7 @@ func concatSteps(steps ...[]Step) []Step {
 
 var happyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
-	stepsDelegate("consu"),
+	stepsDelegate([]string{"consu"}),
 	stepsUnbondRedelegate("consu"),
 	stepsDowntime("consu"),
 )
@@ -23,14 +23,11 @@ var happyPathSteps = concatSteps(
 var democracySteps = concatSteps(
 	// democracySteps requires a transfer channel
 	stepsStartChains([]string{"democ"}, true),
-	stepsDelegate("democ"),
+	stepsDelegate([]string{"democ"}),
 	stepsDemocracy("democ"),
 )
 
-func withSovereignChain(tr *TestRun, consumerNames []string) []Step {
-	return concatSteps(
-		stepsStartChains(consumerNames, false),
-		startSovereignChain(tr, append([]string{"provi"}, consumerNames...)),
-		stepsIBCSend(),
-	)
-}
+var multipleConsumers = concatSteps(
+	stepsStartChains([]string{"consu", "densu"}, false),
+	stepsDelegate([]string{"consu", "densu"}),
+)
