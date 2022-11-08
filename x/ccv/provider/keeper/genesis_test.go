@@ -15,6 +15,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 func TestIniAndExportGenesis(t *testing.T) {
@@ -25,6 +26,18 @@ func TestIniAndExportGenesis(t *testing.T) {
 	initHeight, vscID := uint64(5), uint64(1)
 	ubdIndex := []uint64{0, 1, 2}
 	params := providertypes.DefaultParams()
+	keyAssignments := []providertypes.KeyAssignment{
+		{
+			ProviderConsAddrToConsumerKey:    []providertypes.ConsAddrToKey{{ConsAddr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
+			ConsumerKeyToProviderKey:         []providertypes.KeyToKey{},
+			ConsumerConsAddrToLastUpdateMemo: []providertypes.ConsAddrToLastUpdateMemo{},
+		},
+		{
+			ProviderConsAddrToConsumerKey:    []providertypes.ConsAddrToKey{},
+			ConsumerKeyToProviderKey:         []providertypes.KeyToKey{},
+			ConsumerConsAddrToLastUpdateMemo: []providertypes.ConsAddrToLastUpdateMemo{},
+		},
+	}
 
 	// create genesis struct
 	pGenesis := providertypes.NewGenesisState(vscID,
@@ -42,6 +55,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 				},
 				nil,
 				[]string{"slashedValidatorConsAddress"},
+				&keyAssignments[0],
 			),
 			providertypes.NewConsumerStates(
 				cChainIDs[1],
@@ -53,6 +67,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 				nil,
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
 				nil,
+				&keyAssignments[1],
 			),
 		},
 		[]ccv.UnbondingOp{{
@@ -103,6 +118,11 @@ func TestIniAndExportGenesis(t *testing.T) {
 	require.Equal(t, pGenesis.ConsumerAdditionProposals[0], addProp)
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, pGenesis.Params, pk.GetParams(ctx))
+
+	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).Store.GetProviderConsAddrToConsumerPublicKey(sdk.ConsAddress{})
+	require.True(t, found)
+	_, found = pk.KeyAssignment(ctx, cChainIDs[1]).Store.GetProviderConsAddrToConsumerPublicKey(sdk.ConsAddress{})
+	require.False(t, found)
 
 	// check provider chain's consumer chain states
 	assertConsumerChainStates(ctx, t, pk, pGenesis.ConsumerStates...)
