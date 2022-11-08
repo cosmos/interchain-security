@@ -157,10 +157,12 @@ func TestPendingPacketDataKeyAndParse(t *testing.T) {
 	for _, test := range tests {
 		key := providertypes.PendingPacketDataKey(test.consumerChainID, test.ibcSeqNum)
 		require.NotEmpty(t, key)
-		// This key should be of set length: prefix + hashed chain ID + uint64
-		require.Equal(t, 1+32+8, len(key))
-		parsedSeqNum := providertypes.ParsePendingPacketDataKey(key)
+		// This key should be of len: prefix + chainID length + chainID + ibcSeqNum
+		require.Equal(t, 1+8+len(test.consumerChainID)+8, len(key))
+		parsedChainID, parsedSeqNum, err := providertypes.ParsePendingPacketDataKey(key)
+		require.Equal(t, test.consumerChainID, parsedChainID)
 		require.Equal(t, test.ibcSeqNum, parsedSeqNum)
+		require.NoError(t, err)
 	}
 
 	// Sanity check that two keys with different chain ids but same seq num are different
