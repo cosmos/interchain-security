@@ -61,6 +61,7 @@ message ConsumerState {
   // UnbondingOpsIndex defines the unbonding operations on the consumer chain
   repeated UnbondingOpIndex unbonding_ops_index = 9
   [ (gogoproto.nullable) = false ];
+  KeyAssignment key_assignment = 10;
 }
 
 // UnbondingOpIndex defines the genesis information for each unbonding operations index 
