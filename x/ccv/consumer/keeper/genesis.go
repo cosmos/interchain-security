@@ -10,6 +10,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // InitGenesis initializes the CCV consumer state and binds to PortID.
@@ -47,6 +48,23 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		// set provider client id.
 		k.SetProviderClientID(ctx, clientID)
 	} else {
+		// verify that latest consensus state on provider client matches the initial validator set of restarted chain
+		// thus, IBC genesis MUST run before CCV consumer genesis
+		consState, ok := k.clientKeeper.GetLatestClientConsensusState(ctx, state.ProviderClientId)
+		if !ok {
+			panic("consensus state for provider client not found. MUST run IBC genesis before CCV consumer genesis")
+		}
+		_, ok = consState.(*ibctmtypes.ConsensusState)
+		if !ok {
+			panic(fmt.Sprintf("consensus state has wrong type. expected: %T, got: %T", &ibctmtypes.ConsensusState{}, consState))
+		}
+
+		// ensure that initial validator set is same as initial consensus state on provider client.
+		// this will be verified by provider module on channel handshake.
+		_, err := tmtypes.PB2TM.ValidatorUpdates(state.InitialValSet)
+		if err != nil {
+			panic(err)
+		}
 
 		// set height to valset update id mapping
 		for _, h2v := range state.HeightToValsetUpdateId {
