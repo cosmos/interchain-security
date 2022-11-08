@@ -23,8 +23,13 @@ var happyPathSteps = concatSteps(
 var democracySteps = concatSteps(
 	// democracySteps requires a transfer channel
 	stepsStartChains([]string{"democ"}, true),
-	stepsDelegate([]string{"democ"}),
+	// stepsDelegate([]string{"democ"}),
 	stepsDemocracy("democ"),
+)
+
+var doubleSignProviderSteps = concatSteps(
+	stepsStartChains([]string{"consu"}, false),
+	stepsDoubleSign("consu", "provi", "carol"),
 )
 
 var multipleConsumers = concatSteps(

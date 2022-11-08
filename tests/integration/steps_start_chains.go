@@ -77,7 +77,6 @@ func startSovereignChain(tr *TestRun, ibcChains []string) []Step {
 					portA:       "transfer",
 					portB:       "transfer",
 					order:       "unordered",
-					noVersion:   true,
 				},
 				state: State{},
 			},
@@ -106,7 +105,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 						validatorID("bob"):   9500000000,
 					},
 					Proposals: &map[uint]Proposal{
-						proposalIndex: ConsumerProposal{
+						proposalIndex: ConsumerAdditionProposal{
 							Deposit:       10000001,
 							Chain:         chainID(consumerName),
 							SpawnTime:     0,
@@ -127,7 +126,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			state: State{
 				chainID("provi"): ChainState{
 					Proposals: &map[uint]Proposal{
-						proposalIndex: ConsumerProposal{
+						proposalIndex: ConsumerAdditionProposal{
 							Deposit:       10000001,
 							Chain:         chainID(consumerName),
 							SpawnTime:     0,
@@ -218,7 +217,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				portB:       "transfer",
 				order:       "unordered",
 				channelA:    1,
-				channelB:    chainIndex + 1,
+				channelB:    1,
 			},
 			state: State{},
 		})

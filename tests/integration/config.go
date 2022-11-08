@@ -164,6 +164,28 @@ func DefaultTestRun() TestRun {
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
+			chainID("densu"): {
+				chainId:        chainID("densu"),
+				binaryName:     "interchain-security-cd",
+				ipPrefix:       "7.7.9",
+				votingWaitTime: 10,
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+			},
+			// chainID("sover"): {
+			// 	chainId:        chainID("sover"),
+			// 	binaryName:     "gaiad",
+			// 	ipPrefix:       "7.7.1",
+			// 	votingWaitTime: 10,
+			// 	genesisChanges: ".app_state.gov.voting_params.voting_period = \"120s\" | " +
+			// 		".app_state.slashing.params.signed_blocks_window = \"10\" | " +
+			// 		".app_state.slashing.params.min_signed_per_window = \"0.300000000000000000\" | " +
+			// 		".app_state.slashing.params.downtime_jail_duration = \"120s\" | " +
+			// 		".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+			// },
 		},
 	}
 }
@@ -192,23 +214,13 @@ func DemocracyTestRun() TestRun {
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},
-			chainID("consu"): {
-				chainId:        chainID("consu"),
-				binaryName:     "interchain-security-cd",
-				ipPrefix:       "7.7.8",
-				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
-					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
-			},
-			chainID("densu"): {
-				chainId:        chainID("densu"),
-				binaryName:     "interchain-security-cd",
+			chainID("democ"): {
+				chainId:        chainID("democ"),
+				binaryName:     "interchain-security-cdd",
 				ipPrefix:       "7.7.9",
 				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
+				genesisChanges: ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"10\" | " +
+					".app_state.gov.voting_params.voting_period = \"10s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
@@ -218,55 +230,6 @@ func DemocracyTestRun() TestRun {
 	}
 }
 
-func MultiConsumerTestRun() TestRun {
-	return TestRun{
-		name: "multiconsumer",
-		containerConfig: ContainerConfig{
-			containerName: "interchain-security-mulc-container",
-			instanceName:  "interchain-security-mulc-instance",
-			ccvVersion:    "1",
-			now:           time.Now(),
-		},
-		validatorConfigs: getDefaultValidators(),
-		chainConfigs: map[chainID]ChainConfig{
-			chainID("provi"): {
-				chainId:        chainID("provi"),
-				binaryName:     "interchain-security-pd",
-				ipPrefix:       "7.7.7",
-				votingWaitTime: 5,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\" | " +
-					// Custom slashing parameters for testing validator downtime functionality
-					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
-					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
-			},
-			chainID("consu"): {
-				chainId:        chainID("consu"),
-				binaryName:     "interchain-security-cd",
-				ipPrefix:       "7.7.8",
-				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
-					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
-			},
-			chainID("densu"): {
-				chainId:        chainID("densu"),
-				binaryName:     "interchain-security-cd",
-				ipPrefix:       "7.7.9",
-				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
-					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
-			},
-		},
-	}
-}
 func (s *TestRun) SetLocalSDKPath(path string) {
 	if path != "" {
 		fmt.Println("USING LOCAL SDK", path)
