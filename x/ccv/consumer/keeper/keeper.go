@@ -393,33 +393,6 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 	return validators
 }
 
-// SetPendingSlashRequests sets the pending slash requests in store
-func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests types.SlashRequests) {
-	store := ctx.KVStore(k.storeKey)
-	bz, err := requests.Marshal()
-	if err != nil {
-		panic(fmt.Errorf("failed to encode slash request json: %w", err))
-	}
-	store.Set([]byte{types.PendingSlashRequestsBytePrefix}, bz)
-}
-
-// GetPendingSlashRequest returns the pending slash requests in store
-func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) types.SlashRequests {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get([]byte{types.PendingSlashRequestsBytePrefix})
-	if bz == nil {
-		return types.SlashRequests{}
-	}
-
-	var sr types.SlashRequests
-	err := sr.Unmarshal(bz)
-	if err != nil {
-		panic(fmt.Errorf("failed to decode slash request json: %w", err))
-	}
-
-	return sr
-}
-
 // SetPendingDataPackets sets the pending data packets in store
 func (k Keeper) SetPendingDataPackets(ctx sdk.Context, dataPackets types.DataPackets) {
 	store := ctx.KVStore(k.storeKey)

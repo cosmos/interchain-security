@@ -5,7 +5,6 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
@@ -41,9 +40,6 @@ func TestInitGenesis(t *testing.T) {
 	// create consensus state using a single validator
 	consensusState := testutil.GetConsensusState(clientID, time.Time{}, validator)
 
-	slashRequests := consumertypes.SlashRequests{
-		Requests: []consumertypes.SlashRequest{{Infraction: stakingtypes.Downtime}},
-	}
 	matPacket := consumertypes.MaturingVSCPacket{
 		VscId:        uint64(1),
 		MaturityTime: uint64(time.Now().UnixNano()),
@@ -76,7 +72,7 @@ func TestInitGenesis(t *testing.T) {
 				)
 			},
 			genesis: consumertypes.NewInitialGenesisState(testutil.GetClientState(""), consensusState,
-				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}, slashRequests, params),
+				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}, params),
 
 			assertStates: func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
@@ -149,9 +145,6 @@ func TestExportGenesis(t *testing.T) {
 	channelID := "channelID"
 
 	// define the states exported into genesis
-	slashRequests := consumertypes.SlashRequests{
-		Requests: []consumertypes.SlashRequest{{Infraction: stakingtypes.Downtime}},
-	}
 	restartHeight := uint64(0)
 	matPacket := consumertypes.MaturingVSCPacket{
 		VscId:        uint64(1),
@@ -192,10 +185,6 @@ func TestExportGenesis(t *testing.T) {
 				require.NoError(t, err)
 				ck.SetCCValidator(ctx, cVal)
 				ck.SetProviderClientID(ctx, clientID)
-				ck.SetPendingSlashRequests(
-					ctx,
-					slashRequests,
-				)
 
 				// set the mock calls executed during the export
 				gomock.InOrder(
@@ -205,7 +194,7 @@ func TestExportGenesis(t *testing.T) {
 			},
 
 			expGenesis: consumertypes.NewInitialGenesisState(testutil.GetClientState(""), consensusState,
-				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}, slashRequests, params),
+				[]abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}, params),
 		},
 		{
 			name: "export a chain that has an established CCV channel",
