@@ -30,63 +30,6 @@ func stepStartProviderChain() []Step {
 	}
 }
 
-// startSovereignChain starts a sovereign chain not participating in ICS
-// transfer channels will be setup with chains provided in ibcChains and
-// stored inside "sover" chainConfig
-func startSovereignChain(tr *TestRun, ibcChains []string) []Step {
-	config := tr.chainConfigs[chainID("sover")]
-	s := []Step{
-		{
-			action: StartChainAction{
-				chain: chainID("sover"),
-				validators: []StartChainValidator{
-					{id: validatorID("bob"), stake: 500000000, allocation: 10000000000},
-					{id: validatorID("alice"), stake: 500000000, allocation: 10000000000},
-					{id: validatorID("carol"), stake: 500000000, allocation: 10000000000},
-				},
-			},
-			state: State{
-				chainID("sover"): ChainState{
-					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9500000000,
-						validatorID("bob"):   9500000000,
-						validatorID("carol"): 9500000000,
-					},
-				},
-			},
-		},
-	}
-
-	m := map[chainID]string{}
-	for i, chain := range ibcChains {
-		m[chainID(chain)] = fmt.Sprintf("channel-%d", i)
-		s = append(s,
-			Step{
-				action: addIbcConnectionAction{
-					chainA:        chainID("sover"),
-					chainB:        chainID(chain),
-					createClients: true,
-				},
-				state: State{},
-			},
-			Step{
-				action: addIbcChannelAction{
-					chainA:      chainID("sover"),
-					chainB:      chainID(chain),
-					connectionA: uint(i),
-					portA:       "transfer",
-					portB:       "transfer",
-					order:       "unordered",
-				},
-				state: State{},
-			},
-		)
-	}
-	config.transferChannels = m
-	tr.chainConfigs[chainID("sover")] = config
-	return s
-}
-
 func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint, setupTransferChans bool) []Step {
 	s := []Step{
 		{
@@ -189,7 +132,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				chainA:  chainID(consumerName),
 				chainB:  chainID("provi"),
 				clientA: 0,
-				clientB: chainIndex,
+				clientB: 0,
 			},
 			state: State{},
 		},
@@ -231,8 +174,65 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 func stepsStartChains(consumerNames []string, setupTransferChans bool) []Step {
 	s := stepStartProviderChain()
 	for i, consumerName := range consumerNames {
-		s = append(s, stepsStartConsumerChain(consumerName, uint(i+1), uint(i), false)...)
+		s = append(s, stepsStartConsumerChain(consumerName, uint(i+1), uint(i), setupTransferChans)...)
 	}
 
+	return s
+}
+
+// startSovereignChain starts a sovereign chain not participating in ICS
+// transfer channels will be setup with chains provided in ibcChains and
+// stored inside "sover" chainConfig
+func startSovereignChain(tr *TestRun, ibcChains []string) []Step {
+	config := tr.chainConfigs[chainID("sover")]
+	s := []Step{
+		{
+			action: StartChainAction{
+				chain: chainID("sover"),
+				validators: []StartChainValidator{
+					{id: validatorID("bob"), stake: 500000000, allocation: 10000000000},
+					{id: validatorID("alice"), stake: 500000000, allocation: 10000000000},
+					{id: validatorID("carol"), stake: 500000000, allocation: 10000000000},
+				},
+			},
+			state: State{
+				chainID("sover"): ChainState{
+					ValBalances: &map[validatorID]uint{
+						validatorID("alice"): 9500000000,
+						validatorID("bob"):   9500000000,
+						validatorID("carol"): 9500000000,
+					},
+				},
+			},
+		},
+	}
+
+	m := map[chainID]string{}
+	for i, chain := range ibcChains {
+		m[chainID(chain)] = fmt.Sprintf("channel-%d", i)
+		s = append(s,
+			Step{
+				action: addIbcConnectionAction{
+					chainA:        chainID("sover"),
+					chainB:        chainID(chain),
+					createClients: true,
+				},
+				state: State{},
+			},
+			Step{
+				action: addIbcChannelAction{
+					chainA:      chainID("sover"),
+					chainB:      chainID(chain),
+					connectionA: uint(i),
+					portA:       "transfer",
+					portB:       "transfer",
+					order:       "unordered",
+				},
+				state: State{},
+			},
+		)
+	}
+	config.transferChannels = m
+	tr.chainConfigs[chainID("sover")] = config
 	return s
 }

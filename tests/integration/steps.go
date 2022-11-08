@@ -23,7 +23,8 @@ var happyPathSteps = concatSteps(
 var democracySteps = concatSteps(
 	// democracySteps requires a transfer channel
 	stepsStartChains([]string{"democ"}, true),
-	// stepsDelegate([]string{"democ"}),
+	// delegation needs to happen so the first VSC packet can be delivered
+	stepsDelegate([]string{"democ"}),
 	stepsDemocracy("democ"),
 )
 
