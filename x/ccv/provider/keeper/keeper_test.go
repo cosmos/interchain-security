@@ -20,6 +20,7 @@ import (
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	"github.com/stretchr/testify/require"
+	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 )
 
 // TestValsetUpdateBlockHeight tests the getter, setter, and deletion methods for valset updates mapped to block height
@@ -198,8 +199,10 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	ctx := keeperParams.Ctx
 
+	testVal := testcrypto.NewValidatorFromIntSeed(0)
+
 	slashPacket := ccv.NewSlashPacketData(
-		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
+		abci.Validator{Address: testVal.ABCIAddressBytes(),
 			Power: int64(0)},
 		uint64(0),
 		stakingtypes.DoubleSign,
@@ -245,6 +248,7 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 
 	providerKeeper.SetInitChainHeight(ctx, chainId, uint64(infractionHeight))
+	providerKeeper.KeyAssignment(ctx, chainId).AssignDefaultsAndComputeUpdates(0, []abci.ValidatorUpdate{{PubKey: testVal.TMProtoCryptoPublicKey(), Power: 1}})
 
 	success, err := providerKeeper.HandleSlashPacket(ctx, chainId, slashPacket)
 	require.NoError(t, err)
