@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -25,6 +26,13 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	// increment time without updating the client;
 	// this will result in the client to the consumer to expire
 	incrementTimeByWithoutUpdate(s, trustingPeriod+time.Hour, Consumer)
+
+	// check that the client to the consumer is not active
+	cs, ok = s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointB.ClientID)
+	s.Require().True(ok)
+	clientStore := s.providerApp.GetIBCKeeper().ClientKeeper.ClientStore(s.providerCtx(), s.path.EndpointB.ClientID)
+	status := cs.Status(s.providerCtx(), clientStore, s.providerChain.App.AppCodec())
+	s.Require().NotEqual(ibcexported.Active, status, "")
 
 	// bond some tokens on provider to change validator powers
 	bondAmt := sdk.NewInt(1000000)
