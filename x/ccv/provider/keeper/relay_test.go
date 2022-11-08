@@ -65,8 +65,42 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 	require.Equal(t, uint64(0), providerKeeper.GetPendingPacketDataSize(ctx, "chain-1"))
 }
 
+// TestOnRecvSlashPacket tests the OnRecvSlashPacket method, and how it interacts with the
+// parent and per-chain slash packet queues.
+func TestOnRecvSlashPacket(t *testing.T) {
+
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Set channel to chain (faking multiple established channels)
+	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
+	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
+
+	// Receive a slash packet for chain-1
+	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1)
+	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
+
+	// Confirm an entry was added to the parent queue, and pending packet data was added to the per-chain queue
+	packetEntries := providerKeeper.GetAllPendingSlashPacketEntries(ctx) // parent queue
+	require.Equal(t, 1, len(packetEntries))
+	require.Equal(t, "chain-1", packetEntries[0].ConsumerChainID)
+	require.Equal(t, uint64(1), providerKeeper.GetPendingPacketDataSize(ctx, "chain-1")) // per chain queue
+
+	// Receive a slash packet for chain-2
+	ack = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2)
+	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
+
+	// Confirm sizes of parent queue and both per-chain queues
+	packetEntries = providerKeeper.GetAllPendingSlashPacketEntries(ctx) // parent queue
+	require.Equal(t, 2, len(packetEntries))
+	require.Equal(t, "chain-1", packetEntries[0].ConsumerChainID)
+	require.Equal(t, "chain-2", packetEntries[1].ConsumerChainID)
+	require.Equal(t, uint64(1), providerKeeper.GetPendingPacketDataSize(ctx, "chain-1")) // per chain queue
+	require.Equal(t, uint64(1), providerKeeper.GetPendingPacketDataSize(ctx, "chain-2")) // per chain queue
+}
+
 func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
-	chanID string, ibcSeqNum uint64) exported.Acknowledgement {
+	channelID string, ibcSeqNum uint64) exported.Acknowledgement {
 
 	// Instantiate vsc matured packet data and bytes
 	data := testkeeper.GetNewVSCMaturedPacketData()
@@ -75,7 +109,22 @@ func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, 
 
 	return providerKeeper.OnRecvVSCMaturedPacket(
 		ctx,
-		channeltypes.NewPacket(dataBz, ibcSeqNum, "srcPort", "srcChan", "provider-port", chanID, clienttypes.Height{}, 1),
+		channeltypes.NewPacket(dataBz, ibcSeqNum, "srcPort", "srcChan", "provider-port", channelID, clienttypes.Height{}, 1),
+		data,
+	)
+}
+
+func executeOnRecvSlashPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
+	channelID string, ibcSeqNum uint64) exported.Acknowledgement {
+
+	// Instantiate slash packet data and bytes
+	data := testkeeper.GetNewSlashPacketData()
+	dataBz, err := data.Marshal()
+	require.NoError(t, err)
+
+	return providerKeeper.OnRecvSlashPacket(
+		ctx,
+		channeltypes.NewPacket(dataBz, ibcSeqNum, "srcPort", "srcChan", "provider-port", channelID, clienttypes.Height{}, 1),
 		data,
 	)
 }

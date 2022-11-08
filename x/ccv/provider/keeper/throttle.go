@@ -21,9 +21,7 @@ import (
 // 1. How slash packets relate to other slash packets over time (regardless of chain) -> global queue
 // 2. How slash packets relate to vsc matured packets from the same chain -> chain specific queue
 
-// QueuePendingSlashPacket queues an entry in the parent queue, and queues the slash packet data to the chain specific queue.
-// TODO: the onrecv handlers for both slash (calls this method) and vsc matured packets should be e2e tested with the method below.
-// TODO: This method deserves a unit test? Or just incorporate unit like stuff into the e2e test?
+// TODO: the onrecv handlers for both slash and vsc matured packets should be e2e tested with the method below.
 
 // HandlePendingSlashPackets handles all or some portion of pending slash packets received by any consumer chain,
 // depending on circuit breaker logic. This method executes every end block routine.

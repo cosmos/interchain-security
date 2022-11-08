@@ -227,7 +227,6 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 
 // OnRecvSlashPacket receives a slash packet and determines whether the channel is established,
 // then queues the slash packet as pending if the channel is established and found.
-// TODO: More unit tests, e2e? Do this after design is more finalized
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
 	// check that the channel is established
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
@@ -237,28 +236,20 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	// apply slashing
-	// TODO: will be removed for below.
-	if _, err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement(err.Error())
-		return &errAck
-	}
-
-	// TODO: uncomment the below code and make tests pass
-
 	// Queue a pending slash packet entry to the parent queue, which will be seen by the throttling logic
-	// k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
-	// 	ctx.BlockTime(), // recv time
-	// 	chainID,         // consumer chain id that sent the packet
-	// 	data.Validator.Address))
+	k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
+		ctx.BlockTime(), // recv time
+		chainID,         // consumer chain id that sent the packet
+		data.Validator.Address))
 
-	// // Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
-	// // to enforce order of handling between the two packet types.
-	// k.QueuePendingSlashPacketData(ctx,
-	// 	chainID,         // consumer chain id that sent the packet
-	// 	packet.Sequence, // IBC sequence number of the packet
-	// 	data)
+	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
+	// to enforce order of handling between the two packet types.
+	k.QueuePendingSlashPacketData(ctx,
+		chainID,         // consumer chain id that sent the packet
+		packet.Sequence, // IBC sequence number of the packet
+		data)
 
+	// TODO: ack is always success for now, is this correct?
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
 
