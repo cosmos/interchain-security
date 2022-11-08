@@ -124,8 +124,10 @@ func upgradeExpiredClient(s *CCVTestSuite, clientTo ChainType) {
 	substitute := hostNewEndpoint.ClientID
 
 	// update substitute twice
-	hostNewEndpoint.UpdateClient()
-	hostNewEndpoint.UpdateClient()
+	err := hostNewEndpoint.UpdateClient()
+	s.Require().NoError(err)
+	err = hostNewEndpoint.UpdateClient()
+	s.Require().NoError(err)
 	substituteClientState := hostChain.GetClientState(substitute)
 
 	tmClientState, ok := subjectClientState.(*ibctm.ClientState)
@@ -145,6 +147,6 @@ func upgradeExpiredClient(s *CCVTestSuite, clientTo ChainType) {
 
 	updateProp, ok := content.(*clienttypes.ClientUpdateProposal)
 	s.Require().True(ok)
-	err := hostChain.App.GetIBCKeeper().ClientKeeper.ClientUpdateProposal(hostChain.GetContext(), updateProp)
+	err = hostChain.App.GetIBCKeeper().ClientKeeper.ClientUpdateProposal(hostChain.GetContext(), updateProp)
 	s.Require().NoError(err)
 }
