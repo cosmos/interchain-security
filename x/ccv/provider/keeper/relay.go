@@ -69,6 +69,10 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	// remove the VSC timeout timestamp for this chainID and vscID
 	k.DeleteVscSendTimestamp(ctx, chainID, data.ValsetUpdateId)
 
+	// It is now possible to delete keys from the KeyAssignment which the consumer chain
+	// is no longer able to reference in slash requests.
+	k.KeyAssignment(ctx, chainID).PruneUnusedKeys(data.ValsetUpdateId)
+
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
 }
