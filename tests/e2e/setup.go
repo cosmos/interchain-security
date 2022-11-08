@@ -118,6 +118,9 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.Require().True(found, "consumer endpoint clientID not found")
 	suite.path.EndpointA.ClientID = consumerEndpointClientID
 
+	// Note: suite.path.EndpointA.ClientConfig and suite.path.EndpointB.ClientConfig are not populated,
+	// since these IBC testing package fields are unused in our tests.
+
 	// Confirm client config is now correct
 	suite.TestEndpointsClientConfig()
 
