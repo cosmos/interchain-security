@@ -5,9 +5,10 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "cosmos_proto/cosmos.proto";
 import "interchain_security/ccv/consumer/v1/genesis.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
-
 
 service Query {
   // ConsumerGenesis queries the genesis state needed to start a consumer chain
@@ -39,6 +40,16 @@ service Query {
     option (google.api.http).get =
         "/interchain_security/ccv/provider/consumer_chain_stop_proposals";
   }
+
+  // QueryConsumerChainValidatorKeyAssignment queries the consensus key
+  // assigned by a validator for a consumer chain.
+  rpc QueryConsumerChainValidatorKeyAssignment(
+      QueryConsumerChainValidatorKeyAssignmentRequest)
+      returns (QueryConsumerChainValidatorKeyAssignmentResponse) {
+    // TODO: make sure path is correct.
+    option (google.api.http).get = "/interchain_security/ccv/provider/"
+                                   "consumer_chain_validator_key_assignment";
+  }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
@@ -54,17 +65,30 @@ message QueryConsumerChainsResponse { repeated Chain chains = 1; }
 
 message QueryConsumerChainStartProposalsRequest {}
 
-message QueryConsumerChainStartProposalsResponse { 
+message QueryConsumerChainStartProposalsResponse {
   ConsumerAdditionProposals proposals = 1;
 }
 
 message QueryConsumerChainStopProposalsRequest {}
 
-message QueryConsumerChainStopProposalsResponse { 
+message QueryConsumerChainStopProposalsResponse {
   ConsumerRemovalProposals proposals = 1;
 }
 
 message Chain {
   string chain_id = 1;
   string client_id = 2;
+}
+
+message QueryConsumerChainValidatorKeyAssignmentRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  string chain_id = 1;
+  string provider_validator_address = 2
+      [ (gogoproto.moretags) = "yaml:\"address\"" ];
+}
+
+message QueryConsumerChainValidatorKeyAssignmentResponse {
+  google.protobuf.Any consumer_consensus_pub_key = 1
+      [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
 }
