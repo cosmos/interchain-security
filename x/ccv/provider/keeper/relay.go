@@ -150,6 +150,11 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 		// note that this also entails unbonding operations
 		// w/o changes in the voting power of the validators in the validator set
 		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
+
+		// Map the validator updates through assigned validator consensus keys to get a list of updates
+		// to send to the consumer chain.
+		valUpdates := k.KeyAssignment(ctx,chainID).AssignDefaultsAndComputeUpdates(valUpdateID, valUpdates)
+
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			// construct validator set change packet data
 			packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
