@@ -482,6 +482,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		consumertypes.DefaultHistoricalEntries,
 		consumertypes.DefaultConsumerUnbondingPeriod,
 	)
+	b.providerKeeper().KeyAssignment(b.ctx(P), b.consumerChain().ChainID).AssignDefaultsAndComputeUpdates(0, valUpdates)
 	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, consumertypes.SlashRequests{}, params)
 }
 
