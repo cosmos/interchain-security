@@ -140,7 +140,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 				ValidatorConsensusAddress: addr,
 			}
 			outstandingDowntimes = append(outstandingDowntimes, od)
-			return false
+			return true
 		})
 
 		genesis = types.NewRestartGenesisState(

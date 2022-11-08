@@ -43,7 +43,7 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 			ChainId:  chainID,
 			ClientId: clientID,
 		})
-		return false
+		return true
 	}
 	k.IterateConsumerChains(ctx, cb)
 
