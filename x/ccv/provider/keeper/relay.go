@@ -26,7 +26,6 @@ func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemo
 }
 
 // OnRecvVSCMaturedPacket handles a VSCMatured packet
-// Unit tests about queuing behavior
 func (k Keeper) OnRecvVSCMaturedPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
@@ -40,16 +39,13 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	// TODO: change tests to uncomment the below code
-	k.HandleVSCMaturedPacket(ctx, chainID, data)
-
 	// If no packets are in the per chain queue, immediately handle the vsc matured packet data
-	// if k.GetPendingPacketDataSize(ctx, chainID) == 0 {
-	// 	k.HandleVSCMaturedPacket(ctx, chainID, data)
-	// } else {
-	// 	// Otherwise queue the packet data as pending (behind one or more pending slash packet data instances)
-	// 	k.QueuePendingVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
-	// }
+	if k.GetPendingPacketDataSize(ctx, chainID) == 0 {
+		k.HandleVSCMaturedPacket(ctx, chainID, data)
+	} else {
+		// Otherwise queue the packet data as pending (behind one or more pending slash packet data instances)
+		k.QueuePendingVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
+	}
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
