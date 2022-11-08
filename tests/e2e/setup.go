@@ -122,7 +122,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	// since these IBC testing package fields are unused in our tests.
 
 	// Confirm client config is now correct
-	suite.TestEndpointsClientConfig()
+	suite.ValidateEndpointsClientConfig()
 
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
@@ -203,7 +203,7 @@ func (suite *CCVTestSuite) SetupTransferChannel() {
 	suite.Require().NoError(err)
 }
 
-func (s CCVTestSuite) TestEndpointsClientConfig() {
+func (s CCVTestSuite) ValidateEndpointsClientConfig() {
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 	providerStakingKeeper := s.providerApp.GetStakingKeeper()
 
