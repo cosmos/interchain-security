@@ -88,17 +88,6 @@ func (gs GenesisState) Validate() error {
 		if len(gs.MaturingPackets) != 0 {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "maturing packets must be empty for new chain")
 		}
-
-		// ensure that initial validator set is same as initial consensus state on provider client.
-		// this will be verified by provider module on channel handshake.
-		vals, err := tmtypes.PB2TM.ValidatorUpdates(gs.InitialValSet)
-		if err != nil {
-			return sdkerrors.Wrap(err, "could not convert val updates to validator set")
-		}
-		valSet := tmtypes.NewValidatorSet(vals)
-		if !bytes.Equal(gs.ProviderConsensusState.NextValidatorsHash, valSet.Hash()) {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "initial validators does not hash to NextValidatorsHash on provider client")
-		}
 	} else {
 		// NOTE: For restart genesis, we will verify initial validator set in InitGenesis.
 		if gs.ProviderClientId == "" {
