@@ -59,10 +59,6 @@ const (
 	// OutstandingDowntimePrefix is the byte prefix that will store the validators outstanding downtime by consensus address
 	OutstandingDowntimeBytePrefix
 
-	// PendingSlashRequestsPrefix is the byte prefix that will store a list of slash request that must be sent
-	// to the provider chain once the CCV channel is established
-	PendingSlashRequestsBytePrefix
-
 	// PendingDataPacketsBytePrefix is the byte prefix for storing
 	// a list of data packets that cannot be sent yet to the provider
 	// chain either because the CCV channel is not established or

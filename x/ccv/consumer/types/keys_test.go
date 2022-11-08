@@ -45,7 +45,6 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{PacketMaturityTimeBytePrefix}, i+1
 	keys[i], i = []byte{HeightValsetUpdateIDBytePrefix}, i+1
 	keys[i], i = []byte{OutstandingDowntimeBytePrefix}, i+1
-	keys[i], i = []byte{PendingSlashRequestsBytePrefix}, i+1
 	keys[i], i = []byte{PendingDataPacketsBytePrefix}, i+1
 	keys[i], i = []byte{CrossChainValidatorBytePrefix}, i+1
 
