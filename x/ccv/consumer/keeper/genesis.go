@@ -49,28 +49,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		// set provider client id.
 		k.SetProviderClientID(ctx, clientID)
 	} else {
-		// verify that latest consensus state on provider client matches the initial validator set of restarted chain
-		// thus, IBC genesis MUST run before CCV consumer genesis
-		consState, ok := k.clientKeeper.GetLatestClientConsensusState(ctx, state.ProviderClientId)
-		if !ok {
-			panic("consensus state for provider client not found. MUST run IBC genesis before CCV consumer genesis")
-		}
-		tmConsState, ok := consState.(*ibctmtypes.ConsensusState)
-		if !ok {
-			panic(fmt.Sprintf("consensus state has wrong type. expected: %T, got: %T", &ibctmtypes.ConsensusState{}, consState))
-		}
-
-		// ensure that initial validator set is same as initial consensus state on provider client.
-		// this will be verified by provider module on channel handshake.
-		vals, err := tmtypes.PB2TM.ValidatorUpdates(state.InitialValSet)
-		if err != nil {
-			panic(err)
-		}
-		valSet := tmtypes.NewValidatorSet(vals)
-
-		if !bytes.Equal(tmConsState.NextValidatorsHash, valSet.Hash()) {
-			panic("initial validator set does not match last consensus state of the provider client")
-		}
 
 		// set height to valset update id mapping
 		for _, h2v := range state.HeightToValsetUpdateId {
