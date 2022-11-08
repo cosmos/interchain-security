@@ -203,7 +203,6 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 		)
 		if expiredClient {
 			// IBC client expired:
-			// store the packet data to be sent once the client is upgraded
 			if i != 0 {
 				// this should never happen
 				panic(fmt.Errorf("client expired while sending pending packets: %w", err))

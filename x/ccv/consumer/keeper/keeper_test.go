@@ -154,42 +154,6 @@ func TestCrossChainValidator(t *testing.T) {
 	require.False(t, found)
 }
 
-// TestPendingSlashRequests tests the getter, setter, appending method, and deletion method for pending slash requests
-func TestPendingSlashRequests(t *testing.T) {
-
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	// prepare test setup by storing 10 pending slash requests
-	requests := []types.SlashRequest{}
-	for i := 0; i < 10; i++ {
-		requests = append(requests, types.SlashRequest{})
-		consumerKeeper.SetPendingSlashRequests(ctx, types.SlashRequests{Requests: requests})
-	}
-
-	// test set, append and clear operations
-	testCases := []struct {
-		operation func()
-		expLen    int
-	}{{
-		operation: func() {},
-		expLen:    10,
-	}, {
-		operation: func() { consumerKeeper.AppendPendingSlashRequests(ctx, types.SlashRequest{}) },
-		expLen:    11,
-	}, {
-		operation: func() { consumerKeeper.DeletePendingSlashRequests(ctx) },
-		expLen:    0,
-	},
-	}
-
-	for _, tc := range testCases {
-		tc.operation()
-		requests := consumerKeeper.GetPendingSlashRequests(ctx)
-		require.Len(t, requests.Requests, tc.expLen)
-	}
-}
-
 func TestPendingDataPackets(t *testing.T) {
 
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))

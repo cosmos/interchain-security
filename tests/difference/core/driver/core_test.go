@@ -381,8 +381,8 @@ func (s *CoreSuite) TestAssumptions() {
 		s.T().Fatal(FAIL_MSG)
 	}
 
-	// Consumer has no slash requests
-	s.Require().Empty(s.consumerKeeper().GetPendingSlashRequests(s.ctx(C)))
+	// Consumer has no pending data packets
+	s.Require().Empty(s.consumerKeeper().GetPendingDataPackets(s.ctx(C)))
 
 	// Consumer has no maturities
 	s.consumerKeeper().IteratePacketMaturityTime(s.ctx(C),

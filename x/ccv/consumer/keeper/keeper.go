@@ -420,20 +420,6 @@ func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) types.SlashRequests {
 	return sr
 }
 
-// ClearPendingSlashRequests clears the pending slash requests in store
-func (k Keeper) DeletePendingSlashRequests(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete([]byte{types.PendingSlashRequestsBytePrefix})
-}
-
-// AppendPendingSlashRequests appends the given slash request to the pending slash requests in store
-func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashRequest) {
-	sr := k.GetPendingSlashRequests(ctx)
-	srArray := sr.GetRequests()
-	srArray = append(srArray, req)
-	k.SetPendingSlashRequests(ctx, types.SlashRequests{Requests: srArray})
-}
-
 // SetPendingDataPackets sets the pending data packets in store
 func (k Keeper) SetPendingDataPackets(ctx sdk.Context, dataPackets types.DataPackets) {
 	store := ctx.KVStore(k.storeKey)
