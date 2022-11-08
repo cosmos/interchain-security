@@ -10,6 +10,7 @@ import (
 
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
+	abci "github.com/tendermint/tendermint/abci/types"
 
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -145,6 +146,15 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.transferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
 	suite.transferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
 	suite.transferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
+
+	for _, validator := range suite.providerChain.Vals.Validators {
+		// Assign a mapping from the validator consensus key to itself to be able to lookup
+		// the provider chain validator address from the consumer chain validator address.
+		val, err := validator.ToProto()
+		suite.Require().NoError(err)
+		providerKeeper.KeyAssignment(suite.providerCtx(), suite.consumerChain.ChainID).
+			AssignDefaultsAndComputeUpdates(0, []abci.ValidatorUpdate{{PubKey: val.PubKey, Power: 1}})
+	}
 }
 
 func (suite *CCVTestSuite) SetupCCVChannel() {
