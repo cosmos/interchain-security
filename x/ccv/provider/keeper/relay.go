@@ -172,7 +172,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				k.AppendPendingVSC(ctx, chainID, packetData)
 			}
 		}
-		return false // do not stop the iteration
+		return true // do not stop the iteration
 	})
 	k.IncrementValidatorSetUpdateId(ctx)
 }
