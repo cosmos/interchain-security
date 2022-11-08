@@ -1,8 +1,6 @@
 package e2e
 
 import (
-	"time"
-
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 
 	"bytes"
@@ -28,16 +26,14 @@ import (
 // Any method implemented for this struct will be ran when suite.Run() is called.
 type CCVTestSuite struct {
 	suite.Suite
-	coordinator       *ibctesting.Coordinator
-	providerChain     *ibctesting.TestChain
-	consumerChain     *ibctesting.TestChain
-	providerApp       e2e.ProviderApp
-	consumerApp       e2e.ConsumerApp
-	providerClient    *ibctmtypes.ClientState
-	providerConsState *ibctmtypes.ConsensusState
-	path              *ibctesting.Path
-	transferPath      *ibctesting.Path
-	setupCallback     SetupCallback
+	coordinator   *ibctesting.Coordinator
+	providerChain *ibctesting.TestChain
+	consumerChain *ibctesting.TestChain
+	providerApp   e2e.ProviderApp
+	consumerApp   e2e.ConsumerApp
+	path          *ibctesting.Path
+	transferPath  *ibctesting.Path
+	setupCallback SetupCallback
 }
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
@@ -94,40 +90,40 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.providerChain.NextBlock()
 
 	// initialize the consumer chain with the genesis state stored on the provider
-	consumerGenesis, found := providerKeeper.GetConsumerGenesis(
+	consumerGenesisState, found := providerKeeper.GetConsumerGenesis(
 		suite.providerCtx(),
 		suite.consumerChain.ChainID,
 	)
 	suite.Require().True(found, "consumer genesis not found")
-	consumerKeeper.InitGenesis(suite.consumerCtx(), &consumerGenesis)
-	suite.providerClient = consumerGenesis.ProviderClientState
-	suite.providerConsState = consumerGenesis.ProviderConsensusState
+	consumerKeeper.InitGenesis(suite.consumerCtx(), &consumerGenesisState)
+
+	// Confirm client and cons state for consumer were set correctly in InitGenesis
+	consumerEndpointClientState, consumerEndpointConsState := suite.GetConsumerEndpointClientAndConsState()
+	suite.Require().Equal(consumerGenesisState.ProviderClientState, consumerEndpointClientState)
+	suite.Require().Equal(consumerGenesisState.ProviderConsensusState, consumerEndpointConsState)
 
 	// create path for the CCV channel
 	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
 
-	// update CCV path with correct info
-	// - set provider endpoint's clientID
-	consumerClient, found := providerKeeper.GetConsumerClientId(
+	// Set provider endpoint's clientID
+	providerEndpointClientID, found := providerKeeper.GetConsumerClientId(
 		suite.providerCtx(),
 		suite.consumerChain.ChainID,
 	)
+	suite.Require().True(found, "provider endpoint clientID not found")
+	suite.path.EndpointB.ClientID = providerEndpointClientID
 
-	suite.Require().True(found, "consumer client not found")
-	suite.path.EndpointB.ClientID = consumerClient
-	// - set consumer endpoint's clientID
-	providerClient, found := consumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
-	suite.Require().True(found, "provider client not found")
-	suite.path.EndpointA.ClientID = providerClient
-	// - client config
+	// Set consumer endpoint's clientID
+	consumerEndpointClientID, found := consumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
+	suite.Require().True(found, "consumer endpoint clientID not found")
+	suite.path.EndpointA.ClientID = consumerEndpointClientID
 
-	trustingPeriodFraction := suite.providerApp.GetProviderKeeper().GetTrustingPeriodFraction(suite.providerCtx())
-	providerUnbondingPeriod := suite.providerApp.GetStakingKeeper().UnbondingTime(suite.providerCtx())
-	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = providerUnbondingPeriod
-	suite.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / time.Duration(trustingPeriodFraction)
-	consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(suite.consumerCtx())
-	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
-	suite.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / time.Duration(trustingPeriodFraction)
+	// Note: suite.path.EndpointA.ClientConfig and suite.path.EndpointB.ClientConfig are not populated,
+	// since these IBC testing package fields are unused in our tests.
+
+	// Confirm client config is now correct
+	suite.ValidateEndpointsClientConfig()
+
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
 	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
@@ -205,4 +201,27 @@ func (suite *CCVTestSuite) SetupTransferChannel() {
 	// ensure counterparty is up to date
 	err = suite.transferPath.EndpointA.UpdateClient()
 	suite.Require().NoError(err)
+}
+
+func (s CCVTestSuite) ValidateEndpointsClientConfig() {
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
+	providerStakingKeeper := s.providerApp.GetStakingKeeper()
+
+	consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(s.consumerCtx())
+	cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointB.ClientID)
+	s.Require().True(ok)
+	s.Require().Equal(
+		consumerUnbondingPeriod,
+		cs.(*ibctmtypes.ClientState).UnbondingPeriod,
+		"unexpected unbonding period in consumer client state",
+	)
+
+	providerUnbondingPeriod := providerStakingKeeper.UnbondingTime(s.providerCtx())
+	cs, ok = s.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.consumerCtx(), s.path.EndpointA.ClientID)
+	s.Require().True(ok)
+	s.Require().Equal(
+		providerUnbondingPeriod,
+		cs.(*ibctmtypes.ClientState).UnbondingPeriod,
+		"unexpected unbonding period in provider client state",
+	)
 }
