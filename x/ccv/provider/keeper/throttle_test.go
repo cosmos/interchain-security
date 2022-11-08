@@ -457,9 +457,62 @@ func TestPendingPacketData(t *testing.T) {
 	}
 }
 
-// TestPanicIfTooMuchPendingPacketData
+// TestPanicIfTooMuchPendingPacketData tests the PanicIfTooMuchPendingPacketData method.
 func TestPanicIfTooMuchPendingPacketData(t *testing.T) {
-	
+
+	// todo: set param to max and test more cases
+	testCases := []struct {
+		max uint64
+	}{
+		{max: 15},
+	}
+
+	for _, tc := range testCases {
+
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
+		rand.Seed(time.Now().UnixNano())
+
+		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
+		reachedMax := false
+		for i := 0; i < int(tc.max+2); i++ { // iterate up to tc.max+1
+			randBool := rand.Intn(2) == 0
+			var data interface{}
+			if randBool {
+				data = testkeeper.GetNewSlashPacketData()
+			} else {
+				data = testkeeper.GetNewVSCMaturedPacketData()
+			}
+			// Panic only if we've reached the max
+			if i == int(tc.max+1) {
+				require.Panics(t, func() {
+					queuePendingPacketData(ctx, &providerKeeper, "chain-0", uint64(i), data)
+				})
+				reachedMax = true
+			} else {
+				queuePendingPacketData(ctx, &providerKeeper, "chain-0", uint64(i), data)
+			}
+		}
+		require.True(t, reachedMax)
+	}
+}
+
+// TestPendingPacketDataSize tests the getter, setter and incrementer for pending packet data size.
+func TestPendingPacketDataSize(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Confirm initial size is 0
+	require.Equal(t, uint64(0), providerKeeper.GetPendingPacketDataSize(ctx, "chain-0"))
+
+	// Set pending packet data size and confirm it was set
+	providerKeeper.SetPendingPacketDataSize(ctx, "chain-0", 10)
+	require.Equal(t, uint64(10), providerKeeper.GetPendingPacketDataSize(ctx, "chain-0"))
+
+	// Increment pending packet data size and confirm it was incremented
+	providerKeeper.IncrementPendingPacketDataSize(ctx, "chain-0")
+	require.Equal(t, uint64(11), providerKeeper.GetPendingPacketDataSize(ctx, "chain-0"))
+}
 
 // TestSlashMeter tests the getter and setter for the slash gas meter
 func TestSlashMeter(t *testing.T) {

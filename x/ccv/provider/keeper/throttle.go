@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -211,9 +212,39 @@ const (
 // does not grow too large for a single consumer chain.
 // TODO: Make this use a param, for now it's 15 (for tests you'll set param to 15 later on)
 func (k Keeper) PanicIfTooMuchPendingPacketData(ctx sdktypes.Context, consumerChainID string) {
-	if k.GetPendingPacketDataQueueSize(ctx) > 15 {
-		panic(fmt.Sprintf("pending packet data queue size is too large: %d", k.GetPendingPacketDataQueueSize(ctx)))
+	size := k.GetPendingPacketDataSize(ctx, consumerChainID)
+	if size > 15 {
+		panic(fmt.Sprintf("pending packet data queue for chain %s is too large: %d", consumerChainID, size))
 	}
+}
+
+// GetPendingPacketDataSize returns the size of the pending packet data queue for the given consumer chain
+func (k Keeper) GetPendingPacketDataSize(ctx sdktypes.Context, consumerChainID string) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	key := providertypes.PendingPacketDataSizeKey(consumerChainID)
+	var size uint64
+	bz := store.Get(key)
+	if bz == nil {
+		size = 0
+	} else {
+		size = binary.LittleEndian.Uint64(bz)
+	}
+	return size
+}
+
+// SetPendingPacketDataSize sets the size of the pending packet data queue for the given consumer chain
+func (k Keeper) SetPendingPacketDataSize(ctx sdktypes.Context, consumerChainID string, size uint64) {
+	store := ctx.KVStore(k.storeKey)
+	key := providertypes.PendingPacketDataSizeKey(consumerChainID)
+	bz := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bz, size)
+	store.Set(key, bz)
+}
+
+// IncrementPendingPacketDataSize increments the size of the pending packet data queue for the given consumer chain
+func (k Keeper) IncrementPendingPacketDataSize(ctx sdktypes.Context, consumerChainID string) {
+	size := k.GetPendingPacketDataSize(ctx, consumerChainID)
+	k.SetPendingPacketDataSize(ctx, consumerChainID, size+1)
 }
 
 // QueuePendingSlashPacketData queues the given slash packet data for the given consumer chain's queue
@@ -222,6 +253,7 @@ func (k Keeper) QueuePendingSlashPacketData(
 	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData) {
 
 	k.PanicIfTooMuchPendingPacketData(ctx, consumerChainID)
+
 	store := ctx.KVStore(k.storeKey)
 	bz, err := data.Marshal()
 	if err != nil {
@@ -229,6 +261,8 @@ func (k Keeper) QueuePendingSlashPacketData(
 	}
 	bz = append([]byte{slashPacketData}, bz...)
 	store.Set(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum), bz)
+
+	k.IncrementPendingPacketDataSize(ctx, consumerChainID)
 }
 
 // QueuePendingVSCMaturedPacketData queues the given vsc matured packet data for the given consumer chain's queue
@@ -237,6 +271,7 @@ func (k Keeper) QueuePendingVSCMaturedPacketData(
 	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData) {
 
 	k.PanicIfTooMuchPendingPacketData(ctx, consumerChainID)
+
 	store := ctx.KVStore(k.storeKey)
 	bz, err := data.Marshal()
 	if err != nil {
@@ -244,6 +279,8 @@ func (k Keeper) QueuePendingVSCMaturedPacketData(
 	}
 	bz = append([]byte{vscMaturedPacketData}, bz...)
 	store.Set(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum), bz)
+
+	k.IncrementPendingPacketDataSize(ctx, consumerChainID)
 }
 
 // IteratePendingPacketData iterates over the pending packet data queue for a specific consumer chain
@@ -288,14 +325,15 @@ func (k Keeper) DeletePendingPacketData(ctx sdktypes.Context, consumerChainID st
 	for _, ibcSeqNum := range ibcSeqNumbers {
 		store.Delete(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum))
 	}
-	// TODO: decremenet size
+	// Decrement the size of the pending packet data queue
+	sizeBeforeDeletion := k.GetPendingPacketDataSize(ctx, consumerChainID)
+	k.SetPendingPacketDataSize(ctx, consumerChainID, sizeBeforeDeletion-uint64(len(ibcSeqNumbers)))
 }
 
 // GetSlashMeter returns a meter (persisted as a signed int) which stores an amount of voting power, corresponding
 // to an allowance of validators that can be jailed/tombstoned over time.
 //
 // Note: the value of this int should always be in the range of tendermint's [-MaxVotingPower, MaxVotingPower]
-// TODO: If you keep slash gas meter as a percent, make sure it's clear that the param is a percent (put in name)
 func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(providertypes.SlashMeterKey())
