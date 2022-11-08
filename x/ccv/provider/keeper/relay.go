@@ -26,6 +26,7 @@ func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemo
 }
 
 // OnRecvVSCMaturedPacket handles a VSCMatured packet
+// Unit tests about queuing behavior
 func (k Keeper) OnRecvVSCMaturedPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
@@ -39,13 +40,16 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	// TODO: if no packets are in the per chain queue, immediately handle vsc matured packet
-	// TODO: else queue that bish up
+	// TODO: change tests to uncomment the below code
 	k.HandleVSCMaturedPacket(ctx, chainID, data)
 
-	// TODO: if queue for this chain is empty (no pending slash packets), handle vsc matured packet immediately
-	// else queue it
-	// k.QueuePendingVSCMaturedPacketData(ctx, consumerChainID, 7, data) // TODO: hook seq number into this
+	// If no packets are in the per chain queue, immediately handle the vsc matured packet data
+	// if k.GetPendingPacketDataSize(ctx, chainID) == 0 {
+	// 	k.HandleVSCMaturedPacket(ctx, chainID, data)
+	// } else {
+	// 	// Otherwise queue the packet data as pending (behind one or more pending slash packet data instances)
+	// 	k.QueuePendingVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
+	// }
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
@@ -238,20 +242,26 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	}
 
 	// apply slashing
+	// TODO: will be removed for below.
 	if _, err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
 		errAck := channeltypes.NewErrorAcknowledgement(err.Error())
 		return &errAck
 	}
 
-	// TODO: make this get queued up, making tests still pass
-	// k.QueuePendingSlashPacket(ctx, chainID, packet, data)
+	// TODO: uncomment the below code and make tests pass
 
-	// TODO: this below should be on the per chain queue
-	// if k.GetNumPendingSlashPackets(ctx) > 1000 {
-	// 	// TODO: If the queue has gotten too large, iterate through it and handle/drop any packets that are relevant
-	// 	// to validators which have a duplicate slash packet earlier in the queue. For now, we panic
-	// 	panic("there are more than 1000 pending slash packets, something is wrong")
-	// }
+	// Queue a pending slash packet entry to the parent queue, which will be seen by the throttling logic
+	// k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
+	// 	ctx.BlockTime(), // recv time
+	// 	chainID,         // consumer chain id that sent the packet
+	// 	data.Validator.Address))
+
+	// // Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
+	// // to enforce order of handling between the two packet types.
+	// k.QueuePendingSlashPacketData(ctx,
+	// 	chainID,         // consumer chain id that sent the packet
+	// 	packet.Sequence, // IBC sequence number of the packet
+	// 	data)
 
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }

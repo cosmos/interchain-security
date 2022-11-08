@@ -6,7 +6,6 @@ import (
 	"time"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -15,7 +14,6 @@ import (
 // This file contains functionality relevant to the throttling of slash and vsc matured packets, aka circuit breaker logic.
 
 // High level TODOs
-// TODO: still implement X amount of packets that halt the provider
 // TODO: write up a readme explaining the design (no spec stuff, Marius can put this in ADR)
 // TODO: in write up, explain that the feature could have been done with a single queue, but you'd need to
 // periodically iterate over the queue to insert vsc matured packets, etc. With one global queue, and another queue
@@ -24,26 +22,13 @@ import (
 // 2. How slash packets relate to vsc matured packets from the same chain -> chain specific queue
 
 // QueuePendingSlashPacket queues an entry in the parent queue, and queues the slash packet data to the chain specific queue.
-func (k Keeper) QueuePendingSlashPacket(
-	ctx sdktypes.Context, consumerChainID string, packet channeltypes.Packet, data ccvtypes.SlashPacketData) {
-
-	// Queue a pending slash packet entry to the parent queue, which will be seen by the throttling logic
-	k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
-		ctx.BlockTime(), // recv time
-		consumerChainID, // consumer chain id that sent the packet
-		data.Validator.Address))
-
-	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
-	// to enforce order of handling between the two packet types.
-	k.QueuePendingSlashPacketData(ctx,
-		consumerChainID, // consumer chain id that sent the packet
-		packet.Sequence, // IBC sequence number of the packet
-		data)
-}
+// TODO: the onrecv handlers for both slash (calls this method) and vsc matured packets should be e2e tested with the method below.
+// TODO: This method deserves a unit test? Or just incorporate unit like stuff into the e2e test?
 
 // HandlePendingSlashPackets handles all or some portion of pending slash packets received by any consumer chain,
 // depending on circuit breaker logic. This method executes every end block routine.
 // TODO: This deserves an e2e test, not unit. You'll prob need to setup some staking module stuff tho.
+// ^ do this in next commit, start with no packets to handle. No unit needed since HandlePacketDataForChain is unit tested.
 func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
