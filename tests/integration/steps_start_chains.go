@@ -132,7 +132,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				chainA:  chainID(consumerName),
 				chainB:  chainID("provi"),
 				clientA: 0,
-				clientB: 0,
+				clientB: chainIndex,
 			},
 			state: State{},
 		},
