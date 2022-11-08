@@ -15,6 +15,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 )
@@ -54,6 +55,15 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 		return nil
 	}
 
+	consumerGen, validatorSetHash, err := k.MakeConsumerGenesis(ctx, chainID)
+	if err != nil {
+		return err
+	}
+	err = k.SetConsumerGenesis(ctx, chainID, consumerGen)
+	if err != nil {
+		return err
+	}
+
 	// Consumers always start out with the default unbonding period
 	consumerUnbondingPeriod := consumertypes.DefaultConsumerUnbondingPeriod
 
@@ -68,7 +78,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 	consensusState := ibctmtypes.NewConsensusState(
 		ctx.BlockTime(),
 		commitmenttypes.NewMerkleRoot([]byte(ibctmtypes.SentinelRoot)),
-		ctx.BlockHeader().NextValidatorsHash,
+		validatorSetHash,
 	)
 
 	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)
@@ -76,15 +86,6 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 		return err
 	}
 	k.SetConsumerClientId(ctx, chainID, clientID)
-
-	consumerGen, err := k.MakeConsumerGenesis(ctx)
-	if err != nil {
-		return err
-	}
-	err = k.SetConsumerGenesis(ctx, chainID, consumerGen)
-	if err != nil {
-		return err
-	}
 
 	// add the init timeout timestamp for this consumer chain
 	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
@@ -205,7 +206,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 }
 
 // MakeConsumerGenesis constructs a consumer genesis state.
-func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisState, err error) {
+func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
 
@@ -217,7 +218,7 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 
 	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
 	if err != nil {
-		return gen, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
+		return gen, nil, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
 	}
 
 	gen = *consumertypes.DefaultGenesisState()
@@ -259,9 +260,19 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 		})
 	}
 
+	// Compute the initial validator set for the consumer chain from the provider chain's validator set
+	// and consensus key assignments.
+	updates = k.KeyAssignment(ctx, chainID).AssignDefaultsAndComputeUpdates(0, updates) // TODO: vscid?
+	// Get a hash of the consumer validator set from the update.
+	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(updates)
+	if err != nil {
+		panic("TODO: handle error")
+	}
+	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
+
 	gen.InitialValSet = updates
 
-	return gen, nil
+	return gen, hash, nil
 }
 
 // SetPendingConsumerAdditionProp stores a pending proposal to create a consumer chain client
