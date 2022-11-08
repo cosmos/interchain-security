@@ -24,7 +24,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 
 	// increment time without updating the client;
 	// this will result in the client to the consumer to expire
-	s.coordinator.IncrementTimeBy(trustingPeriod + time.Hour)
+	incrementTimeByWithoutUpdate(s, trustingPeriod+time.Hour, Consumer)
 
 	// bond some tokens on provider to change validator powers
 	bondAmt := sdk.NewInt(1000000)
