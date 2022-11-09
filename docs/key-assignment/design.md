@@ -54,7 +54,7 @@ Once a validator is created on the provider chain it is possible for the validat
 
 ### Channel initialisation
 
-TODO: describe
+Once a consumer addition proposal is submitted it is possible for validators to assign keys for the chain in question. When a proposal voting period expires and the proposal doesn't pass, the assigned keys are deleted. When the proposal _does_ pass, the channel initialisation sub protocol creates a ibc client for the consumer chain on the provider and produces a genesis state for the consumer chain. The initial validator set in the consumer genesis state is computed according to the assigned keys, much like in the 'Validator set update' sub protocol. A hash of the this set is included.
 
 ### Validator set update
 
