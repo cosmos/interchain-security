@@ -13,7 +13,7 @@ import (
 
 // NewInitialGenesisState returns a consumer GenesisState for a completely new consumer chain.
 func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
-	initValSet []abci.ValidatorUpdate, slashRequests SlashRequests, params Params) *GenesisState {
+	initValSet []abci.ValidatorUpdate, params Params) *GenesisState {
 
 	return &GenesisState{
 		Params:                 params,
@@ -21,7 +21,6 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 		ProviderClientState:    cs,
 		ProviderConsensusState: consState,
 		InitialValSet:          initValSet,
-		PendingSlashRequests:   slashRequests,
 	}
 }
 
@@ -30,7 +29,9 @@ func NewRestartGenesisState(clientID, channelID string,
 	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate,
 	heightToValsetUpdateIDs []HeightToValsetUpdateID,
+	pendingSlashRequests SlashRequests,
 	outstandingDowntimes []OutstandingDowntime,
+	lastTransBlockHeight LastTransmissionBlockHeight,
 	params Params,
 ) *GenesisState {
 
@@ -42,6 +43,7 @@ func NewRestartGenesisState(clientID, channelID string,
 		NewChain:                    false,
 		InitialValSet:               initValSet,
 		HeightToValsetUpdateId:      heightToValsetUpdateIDs,
+		PendingSlashRequests:        pendingSlashRequests,
 		OutstandingDowntimeSlashing: outstandingDowntimes,
 	}
 }
@@ -107,9 +109,9 @@ func (gs GenesisState) Validate() error {
 		if gs.ProviderClientId == "" {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client id must be set for a restarting consumer genesis state")
 		}
-		if gs.ProviderChannelId == "" {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider channel id must be set for a restarting consumer genesis state")
-		}
+		// if gs.ProviderChannelId == "" {
+		// 	return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider channel id must be set for a restarting consumer genesis state")
+		// }
 		if gs.ProviderClientState != nil || gs.ProviderConsensusState != nil {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client state and consensus states must be nil for a restarting genesis state")
 		}

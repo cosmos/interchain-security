@@ -177,7 +177,7 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 
 		// send the emebdded slash packet to the CCV channel
 		// if the outstanding downtime flag is false for the validator
-		downtime := slashReq.Infraction == stakingtypes.Downtime
+		downtime := slashReq.Packet.Infraction == stakingtypes.Downtime
 		if !downtime || !k.OutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address)) {
 			// send packet over IBC
 			err := utils.SendIBCPacket(

@@ -482,7 +482,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		consumertypes.DefaultHistoricalEntries,
 		consumertypes.DefaultConsumerUnbondingPeriod,
 	)
-	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, consumertypes.SlashRequests{}, params)
+	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, params)
 }
 
 func (b *Builder) createLink() {

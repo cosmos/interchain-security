@@ -15,6 +15,11 @@ import (
 )
 
 // InitGenesis initializes the CCV consumer state and binds to PortID.
+// The three states in which a consumer chain can start/restart:
+//
+//  1. A client to the provider was never created, i.e. a consumer chain is started for the first time.
+//  2. A consumer chain restarts after a client to the provider was created, but the CCV channel handshake is still in progress
+//  3. A consumer chain restarts after the CCV channel handshake was completed.
 func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) []abci.ValidatorUpdate {
 	k.SetParams(ctx, state.Params)
 	// TODO: Remove enabled flag and find a better way to setup e2e tests
@@ -37,39 +42,46 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 	}
 
 	// initialValSet is checked in NewChain case by ValidateGenesis
+	// chain first start without client or CCV channel established (1)
 	if state.NewChain {
-		// Create the provider client in InitGenesis for new consumer chain. CCV Handshake must be established with this client id.
+		// create the provider client in InitGenesis for new consumer chain. CCV Handshake must be established with this client id.
 		clientID, err := k.clientKeeper.CreateClient(ctx, state.ProviderClientState, state.ProviderConsensusState)
 		if err != nil {
 			panic(err)
 		}
-
-		// Set default value for valset update ID
+		// set default value for valset update ID
 		k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()), uint64(0))
-		// Set provider client id.
+
+		// set provider client id.
 		k.SetProviderClientID(ctx, clientID)
 	} else {
-		// verify that latest consensus state on provider client matches the initial validator set of restarted chain
-		// thus, IBC genesis MUST run before CCV consumer genesis
-		consState, ok := k.clientKeeper.GetLatestClientConsensusState(ctx, state.ProviderClientId)
-		if !ok {
-			panic("consensus state for provider client not found. MUST run IBC genesis before CCV consumer genesis")
-		}
-		tmConsState, ok := consState.(*ibctmtypes.ConsensusState)
-		if !ok {
-			panic(fmt.Sprintf("consensus state has wrong type. expected: %T, got: %T", &ibctmtypes.ConsensusState{}, consState))
-		}
-
-		// ensure that initial validator set is same as initial consensus state on provider client.
-		// this will be verified by provider module on channel handshake.
-		vals, err := tmtypes.PB2TM.ValidatorUpdates(state.InitialValSet)
-		if err != nil {
+		// verify genesis initial valset against the latest consensus state
+		// IBC genesis MUST run before CCV consumer genesis
+		if err := k.verifyGenesisInitValset(ctx, state); err != nil {
 			panic(err)
 		}
-		valSet := tmtypes.NewValidatorSet(vals)
+		// chain restarts without a CCV channel established (2)
+		if state.ProviderChannelId == "" {
+			k.SetPendingSlashRequests(ctx, state.PendingSlashRequests)
 
-		if !bytes.Equal(tmConsState.NextValidatorsHash, valSet.Hash()) {
-			panic("initial validator set does not match last consensus state of the provider client")
+			// chain restarts with a CCV channel established (3)
+		} else {
+			// set provider channel ID
+			k.SetProviderChannel(ctx, state.ProviderChannelId)
+			// set all unbonding sequences
+			for _, mp := range state.MaturingPackets {
+				k.SetPacketMaturityTime(ctx, mp.VscId, mp.MaturityTime)
+			}
+			// set outstanding downtime slashing requests
+			for _, od := range state.OutstandingDowntimeSlashing {
+				consAddr, err := sdk.ConsAddressFromBech32(od.ValidatorConsensusAddress)
+				if err != nil {
+					panic(err)
+				}
+				k.SetOutstandingDowntime(ctx, consAddr)
+			}
+			// set last transmission block height
+			k.SetLastTransmissionBlockHeight(ctx, state.LastTransmissionBlockHeight)
 		}
 
 		// set height to valset update id mapping
@@ -79,22 +91,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 
 		// set provider client id
 		k.SetProviderClientID(ctx, state.ProviderClientId)
-		// set provider channel id.
-		k.SetProviderChannel(ctx, state.ProviderChannelId)
-		// set all unbonding sequences
-		for _, mp := range state.MaturingPackets {
-			k.SetPacketMaturityTime(ctx, mp.VscId, mp.MaturityTime)
-		}
-		// set outstanding downtime
-		for _, od := range state.OutstandingDowntimeSlashing {
-			consAddr, err := sdk.ConsAddressFromBech32(od.ValidatorConsensusAddress)
-			if err != nil {
-				panic(err)
-			}
-			k.SetOutstandingDowntime(ctx, consAddr)
-		}
-		// set last transmission block height
-		k.SetLastTransmissionBlockHeight(ctx, state.LastTransmissionBlockHeight)
+
 	}
 
 	// populate cross chain validators states with initial valset
@@ -159,7 +156,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			maturingPackets,
 			valset,
 			heightToVCIDs,
+			consumertypes.SlashRequests{},
 			outstandingDowntimes,
+			consumertypes.LastTransmissionBlockHeight{},
 			params,
 		)
 	} else {
@@ -186,8 +185,35 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			panic("provider consensus state is not tendermint consensus state")
 		}
 		// export client states and pending slashing requests into a new chain genesis
-		genesis = consumertypes.NewInitialGenesisState(tmCs, tmConsState, valset, k.GetPendingSlashRequests(ctx), params)
+		genesis = consumertypes.NewInitialGenesisState(tmCs, tmConsState, valset, params)
 	}
 
 	return
+}
+
+// VerifyGenesisInitValset verifies the latest consensus state on provider client matches
+// the initial validator set of restarted chain thus
+func (k Keeper) verifyGenesisInitValset(ctx sdk.Context, genState *consumertypes.GenesisState) error {
+
+	consState, ok := k.clientKeeper.GetLatestClientConsensusState(ctx, genState.ProviderClientId)
+	if !ok {
+		return fmt.Errorf("consensus state for provider client not found. MUST run IBC genesis before CCV consumer genesis")
+	}
+	tmConsState, ok := consState.(*ibctmtypes.ConsensusState)
+	if !ok {
+		return fmt.Errorf(fmt.Sprintf("consensus state has wrong type. expected: %T, got: %T", &ibctmtypes.ConsensusState{}, consState))
+	}
+
+	// ensure that initial validator set is same as initial consensus state on provider client.
+	// this will be verified by provider module on channel handshake.
+	vals, err := tmtypes.PB2TM.ValidatorUpdates(genState.InitialValSet)
+	if err != nil {
+		return err
+	}
+	valSet := tmtypes.NewValidatorSet(vals)
+
+	if !bytes.Equal(tmConsState.NextValidatorsHash, valSet.Hash()) {
+		return fmt.Errorf("initial validator set does not match last consensus state of the provider client")
+	}
+	return nil
 }
