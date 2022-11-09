@@ -339,7 +339,7 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 }
 
 // IterateOutstandingDowntime iterates over the validator addresses of outstanding downtime flags
-func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address string) bool) {
+func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
 
@@ -347,7 +347,8 @@ func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address stri
 	for ; iterator.Valid(); iterator.Next() {
 		addrBytes := iterator.Key()[1:]
 		addr := sdk.ConsAddress(addrBytes).String()
-		if !cb(addr) {
+		stop := cb(addr)
+		if stop {
 			break
 		}
 	}

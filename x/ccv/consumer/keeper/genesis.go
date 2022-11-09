@@ -135,12 +135,12 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 		})
 
 		outstandingDowntimes := []types.OutstandingDowntime{}
-		k.IterateOutstandingDowntime(ctx, func(addr string) bool {
+		k.IterateOutstandingDowntime(ctx, func(addr string) (stop bool) {
 			od := types.OutstandingDowntime{
 				ValidatorConsensusAddress: addr,
 			}
 			outstandingDowntimes = append(outstandingDowntimes, od)
-			return true
+			return false // do not stop the iteration
 		})
 
 		genesis = types.NewRestartGenesisState(
