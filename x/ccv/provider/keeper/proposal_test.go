@@ -29,6 +29,8 @@ import (
 // Tests the HandleConsumerAdditionProposal method against the SpawnConsumerChainProposalHandler spec.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-spccprop1
 // Spec tag: [CCV-PCF-SPCCPROP.1]
+//
+// NOTE: immediate handling of proposals is not necessary - all proposals are executed in BeginBlock.
 func TestHandleConsumerAdditionProposal(t *testing.T) {
 
 	type testCase struct {
@@ -36,8 +38,6 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 		prop        *providertypes.ConsumerAdditionProposal
 		// Time when prop is handled
 		blockTime time.Time
-		// Whether it's expected that the spawn time has passed and client should be created
-		expCreatedClient bool
 	}
 
 	// Snapshot times asserted in tests
@@ -298,6 +298,8 @@ func TestPendingConsumerAdditionPropOrder(t *testing.T) {
 //
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stccprop1
 // Spec tag: [CCV-PCF-STCCPROP.1]
+//
+// NOTE: immediate handling of proposals is not necessary - all proposals are executed in BeginBlock.
 func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 	type testCase struct {
@@ -306,8 +308,6 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 		prop *types.ConsumerRemovalProposal
 		// Time when prop is handled
 		blockTime time.Time
-		// Whether consumer chain should have been stopped
-		expStop bool
 	}
 
 	// Snapshot times asserted in tests
