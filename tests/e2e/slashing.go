@@ -14,249 +14,174 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/types"
-
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
-// TestSendDowntimePacket tests consumer initiated slashing
-func (s *CCVTestSuite) TestSendSlashPacketDowntime() {
-	s.SetupCCVChannel()
-	s.SetupTransferChannel()
-	validatorsPerChain := len(s.consumerChain.Vals.Validators)
+const (
+	downtimeTestCase = iota
+	doubleSignTestCase
+)
 
-	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
-	providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
-	consumerKeeper := s.consumerApp.GetConsumerKeeper()
-	providerKeeper := s.providerApp.GetProviderKeeper()
+func (s *CCVTestSuite) TestSendAndApplySlashPacket() {
 
-	// get a cross-chain validator address, pubkey and balance
-	tmVals := s.consumerChain.Vals.Validators
-	tmVal := tmVals[0]
+	// TODO: make separate pr for these slashing test refactors, remember to mention parent pr, hacks make it fail
+	// TODO: make issue or just fix the slash fraction business below
 
-	val, err := tmVal.ToProto()
-	s.Require().NoError(err)
-	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
-	s.Require().Nil(err)
-	consAddr := sdk.GetConsAddress(pubkey)
-	valData, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
-	s.Require().True(found)
-	valOldBalance := valData.Tokens
-
-	// create the validator's signing info record to allow jailing
-	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, s.providerCtx().BlockHeight(),
-		s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
-	providerSlashingKeeper.SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
-
-	// get valseUpdateId for current block height
-	valsetUpdateId := consumerKeeper.GetHeightValsetUpdateID(s.consumerCtx(),
-		uint64(s.consumerCtx().BlockHeight()))
-
-	// construct the downtime packet with the validator address and power along
-	// with the slashing and jailing parameters
-	validator := abci.Validator{
-		Address: tmVal.Address,
-		Power:   tmVal.VotingPower,
+	testCases := []int{
+		downtimeTestCase,
+		doubleSignTestCase,
 	}
 
-	oldBlockTime := s.consumerCtx().BlockTime()
-	slashFraction := int64(100)
-	packetData := types.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.Downtime)
-	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID,
-		s.path.EndpointA.ChannelID, ccv.ProviderPortID, s.path.EndpointB.ChannelID,
-		clienttypes.Height{}, timeout)
+	for _, tc := range testCases {
 
-	// Send the downtime packet through CCV
-	err = s.path.EndpointA.SendPacket(packet)
-	s.Require().NoError(err)
+		s.SetupTest()
+		s.SetupCCVChannel()
+		s.SetupTransferChannel()
+		validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
-	// Set outstanding slashing flag
-	consumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consAddr)
+		providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+		providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
+		providerKeeper := s.providerApp.GetProviderKeeper()
+		consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
-	// save next VSC packet info
-	oldBlockTime = s.providerCtx().BlockTime()
-	timeout = uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
-	valsetUpdateID := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+		// get a cross-chain validator address, pubkey and balance
+		tmVals := s.consumerChain.Vals.Validators
+		tmVal := tmVals[0]
 
-	// receive the downtime packet on the provider chain;
-	// RecvPacket() calls the provider endblocker thus sends a VSC packet to the consumer
-	err = s.path.EndpointB.RecvPacket(packet)
-	s.Require().NoError(err)
+		val, err := tmVal.ToProto()
+		s.Require().NoError(err)
+		pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
+		s.Require().Nil(err)
+		consAddr := sdk.GetConsAddress(pubkey)
+		valData, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
+		s.Require().True(found)
+		valOldBalance := valData.Tokens
 
-	// check that the validator was removed from the provider validator set
-	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
-	// check that the VSC ID is updated on the consumer chain
+		// create the validator's signing info record to allow jailing
+		valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, s.providerCtx().BlockHeight(),
+			s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
+		providerSlashingKeeper.SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
 
-	// update consumer client on the VSC packet sent from provider
-	err = s.path.EndpointA.UpdateClient()
-	s.Require().NoError(err)
+		// get valseUpdateId for current block height
+		valsetUpdateId := consumerKeeper.GetHeightValsetUpdateID(
+			s.consumerCtx(), uint64(s.consumerCtx().BlockHeight()))
 
-	// reconstruct VSC packet
-	valUpdates := []abci.ValidatorUpdate{
-		{
-			PubKey: val.GetPubKey(),
-			Power:  int64(0),
-		},
+		// construct the slash packet with the validator address and power
+		validator := abci.Validator{
+			Address: tmVal.Address,
+			Power:   tmVal.VotingPower,
+		}
+
+		// Construct packet data depending on the test case
+		var infractionType stakingtypes.InfractionType
+
+		if tc == downtimeTestCase {
+			infractionType = stakingtypes.Downtime
+		} else if tc == doubleSignTestCase {
+			infractionType = stakingtypes.DoubleSign
+		}
+		packetData := ccv.NewSlashPacketData(validator, valsetUpdateId, infractionType).GetBytes()
+
+		oldBlockTime := s.consumerCtx().BlockTime()
+		timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
+		packet := channeltypes.NewPacket(packetData, 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
+			ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
+
+		// Send the slash packet through CCV
+		err = s.path.EndpointA.SendPacket(packet)
+		s.Require().NoError(err)
+
+		if tc == downtimeTestCase {
+			// Set outstanding slashing flag if testing a downtime slash packet
+			consumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consAddr)
+		}
+
+		// Note: RecvPacket advances two blocks. Let's say the provider is currently at height n.
+		// The received slash packet will be handled during n, and the staking module will then
+		// register a validator update from that packet during the endblocker of n. Then the ccv
+		// module sends a VSC packet during the endblocker of n. The new validator set will be
+		// committed to in block n+1, and will be in effect for block n+2.
+
+		valsetUpdateN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+
+		// receive the downtime packet on the provider chain. RecvPacket() calls the provider endblocker twice
+		err = s.path.EndpointB.RecvPacket(packet)
+		s.Require().NoError(err)
+
+		// We've now advanced two blocks.
+
+		// One VSC packet should have been sent during block n
+		expectedSentValsetUpdateId := valsetUpdateN
+		_, found = providerKeeper.GetVscSendTimestamp(s.providerCtx(),
+			s.consumerChain.ChainID, expectedSentValsetUpdateId)
+		s.Require().True(found)
+
+		// Confirm the valset update Id was incremented twice.
+		valsetUpdateNPlus2 := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+		s.Require().Equal(valsetUpdateN+2, valsetUpdateNPlus2)
+
+		// check that the validator was removed from the provider validator set
+		s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
+
+		// Relay the VSC packet to the consumer
+		relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
+
+		// check that the consumer updated its VSC ID for the subsequent block
+		actualValsetUpdateID := consumerKeeper.GetHeightValsetUpdateID(
+			s.consumerCtx(), uint64(s.consumerCtx().BlockHeight())+1)
+		s.Require().Equal(expectedSentValsetUpdateId, actualValsetUpdateID)
+
+		// check that the validator was removed from the consumer validator set
+		s.Require().Len(s.consumerChain.Vals.Validators, validatorsPerChain-1)
+
+		err = s.path.EndpointB.UpdateClient()
+		s.Require().NoError(err)
+
+		// check that the validator is successfully jailed on provider
+		validatorJailed, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
+		s.Require().True(ok)
+		s.Require().True(validatorJailed.Jailed)
+		s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
+
+		// check that the validator's tokens were slashed
+		var slashedAmount sdk.Dec
+
+		if tc == downtimeTestCase {
+			slashFraction := int64(100) // TODO: make issue about this
+			slashedAmount = sdk.NewDec(1).QuoInt64(slashFraction).Mul(valOldBalance.ToDec())
+
+		} else if tc == doubleSignTestCase {
+			slashedAmount = providerSlashingKeeper.SlashFractionDoubleSign(s.providerCtx()).Mul(valOldBalance.ToDec())
+		}
+
+		resultingTokens := valOldBalance.Sub(slashedAmount.TruncateInt())
+		s.Require().Equal(resultingTokens, validatorJailed.GetTokens())
+
+		// check that the validator's unjailing time is updated
+		valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), consAddr)
+		s.Require().True(found)
+		s.Require().True(valSignInfo.JailedUntil.After(s.providerCtx().BlockHeader().Time))
+
+		if tc == downtimeTestCase {
+			// check that the outstanding slashing flag is reset on the consumer
+			pFlag := consumerKeeper.OutstandingDowntime(s.consumerCtx(), consAddr)
+			s.Require().False(pFlag)
+
+			// check that slashing packet gets acknowledged
+			ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+			err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
+			s.Require().NoError(err)
+
+		} else if tc == doubleSignTestCase {
+			// check that validator was tombstoned
+			s.Require().True(valSignInfo.Tombstoned)
+			s.Require().True(valSignInfo.JailedUntil.Equal(evidencetypes.DoubleSignJailEndTime))
+		}
 	}
-	packetData2 := ccv.NewValidatorSetChangePacketData(valUpdates, valsetUpdateID, []string{consAddr.String()})
-	packet2 := channeltypes.NewPacket(packetData2.GetBytes(), 1, ccv.ProviderPortID, s.path.EndpointB.ChannelID,
-		ccv.ConsumerPortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
-
-	// receive VSC packet about jailing on the consumer chain
-	err = s.path.EndpointA.RecvPacket(packet2)
-	s.Require().NoError(err)
-
-	// check that the consumer update its VSC ID for the subsequent block
-	s.Require().Equal(consumerKeeper.GetHeightValsetUpdateID(s.consumerCtx(), uint64(s.consumerCtx().BlockHeight())+1), valsetUpdateID)
-
-	// check that the validator was removed from the consumer validator set
-	s.Require().Len(s.consumerChain.Vals.Validators, validatorsPerChain-1)
-
-	err = s.path.EndpointB.UpdateClient()
-	s.Require().NoError(err)
-
-	// check that the validator is successfully jailed on provider
-
-	validatorJailed, ok := s.providerApp.GetE2eStakingKeeper().GetValidatorByConsAddr(s.providerCtx(), consAddr)
-	s.Require().True(ok)
-	s.Require().True(validatorJailed.Jailed)
-	s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
-
-	// check that the validator's token was slashed
-	slashedAmout := sdk.NewDec(1).QuoInt64(slashFraction).Mul(valOldBalance.ToDec())
-	resultingTokens := valOldBalance.Sub(slashedAmout.TruncateInt())
-	s.Require().Equal(resultingTokens, validatorJailed.GetTokens())
-
-	// check that the validator's unjailing time is updated
-	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), consAddr)
-	s.Require().True(found)
-	s.Require().True(valSignInfo.JailedUntil.After(s.providerCtx().BlockHeader().Time))
-
-	// check that the outstanding slashing flag is reset on the consumer
-	pFlag := consumerKeeper.OutstandingDowntime(s.consumerCtx(), consAddr)
-	s.Require().False(pFlag)
-
-	// check that slashing packet gets acknowledged
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
-	s.Require().NoError(err)
 }
 
-func (s *CCVTestSuite) TestSendSlashPacketDoubleSign() {
-	s.SetupCCVChannel()
-	s.SetupTransferChannel()
-	validatorsPerChain := len(s.consumerChain.Vals.Validators)
-
-	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
-	providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
-	providerKeeper := s.providerApp.GetProviderKeeper()
-	consumerKeeper := s.consumerApp.GetConsumerKeeper()
-
-	// get a cross-chain validator address, pubkey and balance
-	tmVals := s.consumerChain.Vals.Validators
-	tmVal := tmVals[0]
-
-	val, err := tmVal.ToProto()
-	s.Require().NoError(err)
-	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
-	s.Require().Nil(err)
-	consAddr := sdk.GetConsAddress(pubkey)
-	valData, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
-	s.Require().True(found)
-	valOldBalance := valData.Tokens
-
-	// create the validator's signing info record to allow jailing
-	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, s.providerCtx().BlockHeight(),
-		s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
-	providerSlashingKeeper.SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
-
-	// get valseUpdateId for current block height
-	valsetUpdateId := consumerKeeper.GetHeightValsetUpdateID(s.consumerCtx(), uint64(s.consumerCtx().BlockHeight()))
-
-	// construct the downtime packet with the validator address and power along
-	// with the slashing and jailing parameters
-	validator := abci.Validator{
-		Address: tmVal.Address,
-		Power:   tmVal.VotingPower,
-	}
-
-	oldBlockTime := s.consumerCtx().BlockTime()
-	packetData := types.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.DoubleSign)
-
-	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
-	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
-		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
-
-	// Send the downtime packet through CCV
-	err = s.path.EndpointA.SendPacket(packet)
-	s.Require().NoError(err)
-
-	// save next VSC packet info
-	oldBlockTime = s.providerCtx().BlockTime()
-	timeout = uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
-	valsetUpdateID := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
-
-	// receive the downtime packet on the provider chain;
-	// RecvPacket() calls the provider endblocker and thus sends a VSC packet to the consumer
-	err = s.path.EndpointB.RecvPacket(packet)
-	s.Require().NoError(err)
-
-	// check that the validator was removed from the provider validator set
-	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
-	// check that the VSC ID is updated on the consumer chain
-
-	// update consumer client on the VSC packet sent from provider
-	err = s.path.EndpointA.UpdateClient()
-	s.Require().NoError(err)
-
-	// reconstruct VSC packet
-	valUpdates := []abci.ValidatorUpdate{
-		{
-			PubKey: val.GetPubKey(),
-			Power:  int64(0),
-		},
-	}
-	packetData2 := ccv.NewValidatorSetChangePacketData(valUpdates, valsetUpdateID, []string{})
-	packet2 := channeltypes.NewPacket(packetData2.GetBytes(), 1, ccv.ProviderPortID, s.path.EndpointB.ChannelID,
-		ccv.ConsumerPortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
-
-	// receive VSC packet about jailing on the consumer chain
-	err = s.path.EndpointA.RecvPacket(packet2)
-	s.Require().NoError(err)
-
-	// check that the consumer update its VSC ID for the subsequent block
-	s.Require().Equal(consumerKeeper.GetHeightValsetUpdateID(s.consumerCtx(), uint64(s.consumerCtx().BlockHeight())+1), valsetUpdateID)
-
-	// check that the validator was removed from the consumer validator set
-	s.Require().Len(s.consumerChain.Vals.Validators, validatorsPerChain-1)
-
-	err = s.path.EndpointB.UpdateClient()
-	s.Require().NoError(err)
-
-	// check that the validator is successfully jailed on provider
-	validatorJailed, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
-	s.Require().True(ok)
-	s.Require().True(validatorJailed.Jailed)
-	s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
-
-	// check that the validator's token was slashed
-	slashedAmout := providerSlashingKeeper.SlashFractionDoubleSign(s.providerCtx()).Mul(valOldBalance.ToDec())
-	resultingTokens := valOldBalance.Sub(slashedAmout.TruncateInt())
-	s.Require().Equal(resultingTokens, validatorJailed.GetTokens())
-
-	// check that the validator's unjailing time is updated
-	valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), consAddr)
-	s.Require().True(found)
-	s.Require().True(valSignInfo.JailedUntil.After(s.providerCtx().BlockHeader().Time))
-
-	// check that validator was tombstoned
-	s.Require().True(valSignInfo.Tombstoned)
-	s.Require().True(valSignInfo.JailedUntil.Equal(evidencetypes.DoubleSignJailEndTime))
-}
-
-func (s *CCVTestSuite) TestSlashPacketAcknowldgement() {
+func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
