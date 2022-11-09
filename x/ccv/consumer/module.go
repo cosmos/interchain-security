@@ -1,7 +1,6 @@
 package consumer
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -20,9 +19,7 @@ import (
 
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 
-	"github.com/cosmos/interchain-security/x/ccv/consumer/client/cli"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 )
 
@@ -74,10 +71,6 @@ func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Rout
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-consumer module.
 // TODO
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	err := consumertypes.RegisterQueryHandlerClient(context.Background(), mux, consumertypes.NewQueryClient(clientCtx))
-	if err != nil {
-		panic(err)
-	}
 }
 
 // GetTxCmd implements AppModuleBasic interface
@@ -89,7 +82,7 @@ func (AppModuleBasic) GetTxCmd() *cobra.Command {
 // GetQueryCmd implements AppModuleBasic interface
 // TODO
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return cli.NewQueryCmd()
+	return nil
 }
 
 // AppModule represents the AppModule for this module
@@ -128,7 +121,6 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 // RegisterServices registers module services.
 // TODO
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	consumertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
 // InitGenesis performs genesis initialization for the consumer module. It returns

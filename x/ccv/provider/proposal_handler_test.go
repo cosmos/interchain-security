@@ -15,7 +15,6 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
 // TestConsumerChainProposalHandler tests the highest level handler for proposals concerning both
@@ -65,8 +64,8 @@ func TestConsumerChainProposalHandler(t *testing.T) {
 
 		// Setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
+		keeperParams.SetTemplateClientState(nil)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
-		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		// Mock expectations depending on expected outcome

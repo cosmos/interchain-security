@@ -34,6 +34,7 @@ func (am AppModule) OnChanOpenInit(
 
 // OnChanOpenTry implements the IBCModule interface
 //
+//
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-cotry1
 // Spec tag: [CCV-PCF-COTRY.1]
 func (am AppModule) OnChanOpenTry(

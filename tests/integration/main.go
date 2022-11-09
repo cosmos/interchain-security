@@ -37,19 +37,11 @@ func main() {
 	dmc.ValidateStringLiterals()
 	dmc.startDocker()
 
-	ds := DoubleSignTestRun()
-	ds.SetLocalSDKPath(*localSdkPath)
-	ds.ValidateStringLiterals()
-	ds.startDocker()
-
 	wg.Add(1)
 	go tr.ExecuteSteps(&wg, happyPathSteps)
 
 	wg.Add(1)
 	go dmc.ExecuteSteps(&wg, democracySteps)
-
-	wg.Add(1)
-	go ds.ExecuteSteps(&wg, doubleSignProviderSteps)
 
 	wg.Wait()
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
@@ -63,10 +55,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.sendTokens(action, verbose)
 	case submitTextProposalAction:
 		tr.submitTextProposal(action, verbose)
-	case submitConsumerAdditionProposalAction:
+	case submitConsumerProposalAction:
 		tr.submitConsumerAdditionProposal(action, verbose)
-	case submitConsumerRemovalProposalAction:
-		tr.submitConsumerRemovalProposal(action, verbose)
 	case submitParamChangeProposalAction:
 		tr.submitParamChangeProposal(action, verbose)
 	case voteGovProposalAction:
@@ -95,8 +85,6 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.invokeDowntimeSlash(action, verbose)
 	case unjailValidatorAction:
 		tr.unjailValidator(action, verbose)
-	case doublesignSlashAction:
-		tr.invokeDoublesignSlash(action, verbose)
 	case registerRepresentativeAction:
 		tr.registerRepresentative(action, verbose)
 	default:
@@ -108,7 +96,6 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
-		fmt.Println("action", reflect.TypeOf(step.action).Name())
 		pretty.Print("actual state", actualState)
 		pretty.Print("model state", modelState)
 		log.Fatal(`actual state (-) not equal to model state (+): ` + pretty.Compare(actualState, modelState))
@@ -123,8 +110,9 @@ func (tr *TestRun) ExecuteSteps(wg *sync.WaitGroup, steps []Step) {
 	start := time.Now()
 	for i, step := range steps {
 		// print something the show the test is alive
-		fmt.Printf("running %s: step %d == %s \n",
-			tr.name, i+1, reflect.TypeOf(step.action).Name())
+		if i%10 == 0 {
+			fmt.Printf("running %s: step %d\n", tr.name, i+1)
+		}
 		tr.runStep(step, *verbose)
 	}
 

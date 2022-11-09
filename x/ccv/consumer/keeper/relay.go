@@ -54,7 +54,11 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	}
 
 	// Save maturity time and packet
-	maturityTime := ctx.BlockTime().Add(k.GetUnbondingPeriod(ctx))
+	unbondingPeriod, found := k.GetUnbondingTime(ctx)
+	if !found {
+		panic("the unbonding period is not set on the consumer chain")
+	}
+	maturityTime := ctx.BlockTime().Add(unbondingPeriod)
 	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, uint64(maturityTime.UnixNano()))
 
 	// set height to VSC id mapping
@@ -104,7 +108,6 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 				channelID,          // source channel id
 				ccv.ConsumerPortID, // source port id
 				packetData.GetBytes(),
-				k.GetCCVTimeoutPeriod(ctx),
 			)
 			if err != nil {
 				return err
@@ -150,7 +153,6 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 		channelID,          // source channel id
 		ccv.ConsumerPortID, // source port id
 		packetData.GetBytes(),
-		k.GetCCVTimeoutPeriod(ctx),
 	)
 	if err != nil {
 		panic(err)
@@ -177,7 +179,7 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 
 		// send the emebdded slash packet to the CCV channel
 		// if the outstanding downtime flag is false for the validator
-		downtime := slashReq.Packet.Infraction == stakingtypes.Downtime
+		downtime := slashReq.Infraction == stakingtypes.Downtime
 		if !downtime || !k.OutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address)) {
 			// send packet over IBC
 			err := utils.SendIBCPacket(
@@ -187,7 +189,6 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 				channelID,          // source channel id
 				ccv.ConsumerPortID, // source port id
 				slashReq.Packet.GetBytes(),
-				k.GetCCVTimeoutPeriod(ctx),
 			)
 			if err != nil {
 				panic(err)

@@ -14,6 +14,7 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -45,24 +46,22 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 //
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
 // Spec tag: [CCV-PCF-CRCLIENT.1]
-func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
-	initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
-
+func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string, initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
 	// check that a client for this chain does not exist
 	if _, found := k.GetConsumerClientId(ctx, chainID); found {
 		// drop the proposal
 		return nil
 	}
 
-	// Consumers always start out with the default unbonding period
-	consumerUnbondingPeriod := consumertypes.DefaultConsumerUnbondingPeriod
+	// Use the unbonding period on the provider to compute the unbonding period on the consumer
+	unbondingPeriod := utils.ComputeConsumerUnbondingPeriod(k.stakingKeeper.UnbondingTime(ctx))
 
 	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = chainID
 	clientState.LatestHeight = initialHeight
-	clientState.TrustingPeriod = consumerUnbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
-	clientState.UnbondingPeriod = consumerUnbondingPeriod
+	clientState.TrustingPeriod = unbondingPeriod / utils.TrustingPeriodFraction
+	clientState.UnbondingPeriod = unbondingPeriod
 
 	// TODO: Allow for current validators to set different keys
 	consensusState := ibctmtypes.NewConsensusState(
@@ -85,10 +84,6 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 	if err != nil {
 		return err
 	}
-
-	// add the init timeout timestamp for this consumer chain
-	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
-	k.SetInitTimeoutTimestamp(ctx, chainID, uint64(ts.UnixNano()))
 
 	// store LockUnbondingOnTimeout flag
 	if lockUbdOnTimeout {
@@ -130,7 +125,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	k.DeleteConsumerClientId(ctx, chainID)
 	k.DeleteConsumerGenesis(ctx, chainID)
 	k.DeleteLockUnbondingOnTimeout(ctx, chainID)
-	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
 	if channelID, found := k.GetChainToChannel(ctx, chainID); found {
@@ -139,16 +133,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 		}
 		k.DeleteChainToChannel(ctx, chainID)
 		k.DeleteChannelToChain(ctx, channelID)
-
-		// delete VSC send timestamps
-		var ids []uint64
-		k.IterateVscSendTimestamps(ctx, chainID, func(vscID uint64, ts time.Time) bool {
-			ids = append(ids, vscID)
-			return true
-		})
-		for _, vscID := range ids {
-			k.DeleteVscSendTimestamp(ctx, chainID, vscID)
-		}
 	}
 
 	k.DeleteInitChainHeight(ctx, chainID)
@@ -206,14 +190,14 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 
 // MakeConsumerGenesis constructs a consumer genesis state.
 func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisState, err error) {
-	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
+	unbondingTime := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
 
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = ctx.ChainID()
 	clientState.LatestHeight = height //(+-1???)
-	clientState.TrustingPeriod = providerUnbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
-	clientState.UnbondingPeriod = providerUnbondingPeriod
+	clientState.TrustingPeriod = unbondingTime / utils.TrustingPeriodFraction
+	clientState.UnbondingPeriod = unbondingTime
 
 	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
 	if err != nil {
@@ -323,12 +307,14 @@ func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.Consumer
 	// store the (to be) executed proposals in order
 	propsToExecute := []types.ConsumerAdditionProposal{}
 
+	iterator := k.PendingConsumerAdditionPropIterator(ctx)
+	defer iterator.Close()
+
 	k.IteratePendingConsumerAdditionProps(ctx, func(spawnTime time.Time, prop types.ConsumerAdditionProposal) bool {
 		if !ctx.BlockTime().Before(spawnTime) {
 			propsToExecute = append(propsToExecute, prop)
 			return true
 		}
-		// No more proposals to check, since they're stored/ordered by timestamp.
 		return false
 	})
 
@@ -355,24 +341,8 @@ func (k Keeper) IteratePendingConsumerAdditionProps(ctx sdk.Context, cb func(spa
 	}
 }
 
-// GetAllConsumerAdditionProps returns all consumer addition proposals separated into matured and pending.
-func (k Keeper) GetAllConsumerAdditionProps(ctx sdk.Context) types.ConsumerAdditionProposals {
-	props := types.ConsumerAdditionProposals{}
-
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		var prop types.ConsumerAdditionProposal
-		k.cdc.MustUnmarshal(iterator.Value(), &prop)
-
-		props.Pending = append(props.Pending, &prop)
-	}
-	return props
-}
-
-// DeletePendingConsumerAdditionProps deletes the given consumer addition proposals
+// DeletePendingConsumerAdditionProps deletes the given consumer addition proposals.
+// This method should be called once the proposal has been acted upon.
 func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ...types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -446,9 +416,10 @@ func (k Keeper) ConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerR
 		if !ctx.BlockTime().Before(stopTime) {
 			propsToExecute = append(propsToExecute, prop)
 			return true
+		} else {
+			// No more proposals to check, since they're stored/ordered by timestamp.
+			return false
 		}
-		// No more proposals to check, since they're stored/ordered by timestamp.
-		return false
 	})
 
 	return propsToExecute
@@ -470,28 +441,6 @@ func (k Keeper) IteratePendingConsumerRemovalProps(ctx sdk.Context, cb func(stop
 			return
 		}
 	}
-}
-
-// GetAllConsumerRemovalProps returns all consumer removal proposals separated into matured and pending.
-func (k Keeper) GetAllConsumerRemovalProps(ctx sdk.Context) types.ConsumerRemovalProposals {
-	props := types.ConsumerRemovalProposals{}
-
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		key := iterator.Key()
-		stopTime, chainID, err := types.ParsePendingCRPKey(key)
-		if err != nil {
-			panic(fmt.Errorf("failed to parse pending consumer removal proposal key: %w", err))
-		}
-
-		props.Pending = append(props.Pending,
-			&types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime})
-	}
-
-	return props
 }
 
 // CloseChannel closes the channel for the given channel ID on the condition

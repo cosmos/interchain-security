@@ -13,7 +13,6 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
@@ -115,11 +114,7 @@ func TestOnRecvVSCPacket(t *testing.T) {
 
 	// Set channel to provider, still in context of consumer chain
 	consumerKeeper.SetProviderChannel(ctx, consumerCCVChannelID)
-
-	// Set module params with custom unbonding period
-	moduleParams := consumertypes.DefaultParams()
-	moduleParams.UnbondingPeriod = 100 * time.Hour
-	consumerKeeper.SetParams(ctx, moduleParams)
+	consumerKeeper.SetUnbondingTime(ctx, 100*time.Hour)
 
 	for _, tc := range testCases {
 		ack := consumerKeeper.OnRecvVSCPacket(ctx, tc.packet, tc.newChanges)
@@ -143,7 +138,9 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		})
 		require.Equal(t, tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
 
-		expectedTime := uint64(ctx.BlockTime().Add(consumerKeeper.GetUnbondingPeriod(ctx)).UnixNano())
+		unbondingPeriod, found := consumerKeeper.GetUnbondingTime(ctx)
+		require.True(t, found)
+		expectedTime := uint64(ctx.BlockTime().Add(unbondingPeriod).UnixNano())
 		maturityTime := consumerKeeper.GetPacketMaturityTime(ctx, tc.newChanges.ValsetUpdateId)
 		require.Equal(t, expectedTime, maturityTime, "packet maturity time has unexpected value for case: %s", tc.name)
 	}

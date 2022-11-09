@@ -11,15 +11,12 @@ import (
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 }
 
-// RegisterInterfaces registers the provider proposal structs to the interface registry
+// RegisterInterfaces register the ibc transfer module interfaces to protobuf
+// Any.
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*govtypes.Content)(nil),
 		&ConsumerAdditionProposal{},
-	)
-	registry.RegisterImplementations(
-		(*govtypes.Content)(nil),
-		&ConsumerRemovalProposal{},
 	)
 }
 

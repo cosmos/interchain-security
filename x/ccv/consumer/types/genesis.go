@@ -13,7 +13,7 @@ import (
 
 // NewInitialGenesisState returns a consumer GenesisState for a completely new consumer chain.
 func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.ConsensusState,
-	initValSet []abci.ValidatorUpdate, params Params) *GenesisState {
+	initValSet []abci.ValidatorUpdate, slashRequests SlashRequests, params Params) *GenesisState {
 
 	return &GenesisState{
 		Params:                 params,
@@ -21,6 +21,7 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 		ProviderClientState:    cs,
 		ProviderConsensusState: consState,
 		InitialValSet:          initValSet,
+		PendingSlashRequests:   slashRequests,
 	}
 }
 
@@ -29,9 +30,7 @@ func NewRestartGenesisState(clientID, channelID string,
 	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate,
 	heightToValsetUpdateIDs []HeightToValsetUpdateID,
-	pendingSlashRequests SlashRequests,
 	outstandingDowntimes []OutstandingDowntime,
-	lastTransBlockHeight LastTransmissionBlockHeight,
 	params Params,
 ) *GenesisState {
 
@@ -43,9 +42,7 @@ func NewRestartGenesisState(clientID, channelID string,
 		NewChain:                    false,
 		InitialValSet:               initValSet,
 		HeightToValsetUpdateId:      heightToValsetUpdateIDs,
-		PendingSlashRequests:        pendingSlashRequests,
 		OutstandingDowntimeSlashing: outstandingDowntimes,
-		LastTransmissionBlockHeight: lastTransBlockHeight,
 	}
 }
 
@@ -64,9 +61,6 @@ func (gs GenesisState) Validate() error {
 	}
 	if len(gs.InitialValSet) == 0 {
 		return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "initial validator set is empty")
-	}
-	if err := gs.Params.Validate(); err != nil {
-		return err
 	}
 
 	if gs.NewChain {
@@ -91,9 +85,6 @@ func (gs GenesisState) Validate() error {
 		if len(gs.MaturingPackets) != 0 {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "maturing packets must be empty for new chain")
 		}
-		if gs.LastTransmissionBlockHeight.Height != 0 {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "last transmission block height must be empty for new chain")
-		}
 
 		// ensure that initial validator set is same as initial consensus state on provider client.
 		// this will be verified by provider module on channel handshake.
@@ -110,7 +101,9 @@ func (gs GenesisState) Validate() error {
 		if gs.ProviderClientId == "" {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client id must be set for a restarting consumer genesis state")
 		}
-
+		if gs.ProviderChannelId == "" {
+			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider channel id must be set for a restarting consumer genesis state")
+		}
 		if gs.ProviderClientState != nil || gs.ProviderConsensusState != nil {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client state and consensus states must be nil for a restarting genesis state")
 		}

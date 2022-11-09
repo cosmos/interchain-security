@@ -13,7 +13,6 @@ import (
 )
 
 func TestValidateParams(t *testing.T) {
-
 	testCases := []struct {
 		name    string
 		params  types.Params
@@ -21,26 +20,11 @@ func TestValidateParams(t *testing.T) {
 	}{
 		{"default params", types.DefaultParams(), true},
 		{"custom valid params", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-			3, time.Hour, time.Hour, time.Hour), true},
+			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false)), true},
 		{"custom invalid params", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			0, clienttypes.Height{}, nil, []string{"ibc", "upgradedIBCState"}, true, false),
-			3, time.Hour, time.Hour, time.Hour), false},
-		{"blank client", types.NewParams(&ibctmtypes.ClientState{},
-			3, time.Hour, time.Hour, time.Hour), false},
-		{"nil client", types.NewParams(nil, 3, time.Hour, time.Hour, time.Hour), false},
-		{"0 trusting period fraction (denominator)", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-			0, time.Hour, time.Hour, time.Hour), false},
-		{"0 ccv timeout period", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-			3, 0, time.Hour, time.Hour), false},
-		{"0 init timeout period", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-			3, time.Hour, 0, time.Hour), false},
-		{"0 vsc timeout period", types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-			3, time.Hour, time.Hour, 0), false},
+			0, clienttypes.Height{}, nil, []string{"ibc", "upgradedIBCState"}, true, false)), false},
+		{"blank client", types.NewParams(&ibctmtypes.ClientState{}), false},
+		{"nil client", types.NewParams(nil), false},
 	}
 
 	for _, tc := range testCases {

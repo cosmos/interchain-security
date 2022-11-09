@@ -34,7 +34,7 @@ func TestNoDuplicates(t *testing.T) {
 // any of which should be a single, unique byte.
 func getSingleByteKeys() [][]byte {
 
-	keys := make([][]byte, 32)
+	keys := make([][]byte, 16)
 	i := 0
 
 	keys[i], i = PortKey(), i+1
@@ -43,7 +43,6 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{ChainToChannelBytePrefix}, i+1
 	keys[i], i = []byte{ChannelToChainBytePrefix}, i+1
 	keys[i], i = []byte{ChainToClientBytePrefix}, i+1
-	keys[i], i = []byte{InitTimeoutTimestampBytePrefix}, i+1
 	keys[i], i = []byte{PendingCAPBytePrefix}, i+1
 	keys[i], i = []byte{PendingCRPBytePrefix}, i+1
 	keys[i], i = []byte{UnbondingOpBytePrefix}, i+1
@@ -53,85 +52,81 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{SlashAcksBytePrefix}, i+1
 	keys[i], i = []byte{InitChainHeightBytePrefix}, i+1
 	keys[i], i = []byte{PendingVSCsBytePrefix}, i+1
-	keys[i], i = []byte{VscSendTimestampBytePrefix}, i+1
-	keys[i], i = []byte{LockUnbondingOnTimeoutBytePrefix}, i+1
+	keys[i] = []byte{LockUnbondingOnTimeoutBytePrefix}
 
-	return keys[:i]
+	return keys
 }
 
-// Tests the construction and parsing of TsAndChainId keys
-func TestTsAndChainIdKeyAndParse(t *testing.T) {
+// Tests the construction and parsing of keys for storing pending consumer addition proposals
+func TestPendingCAPKeyAndParse(t *testing.T) {
 	tests := []struct {
-		prefix    byte
 		timestamp time.Time
 		chainID   string
 	}{
-		{prefix: 0x01, timestamp: time.Now(), chainID: "1"},
-		{prefix: 0x02, timestamp: time.Date(
+		{timestamp: time.Now(), chainID: "1"},
+		{timestamp: time.Date(
 			2003, 11, 17, 20, 34, 58, 651387237, time.UTC), chainID: "some other ID"},
-		{prefix: 0x03, timestamp: time.Now().Add(5000 * time.Hour), chainID: "some other other chain ID"},
+		{timestamp: time.Now().Add(5000 * time.Hour), chainID: "some other other chain ID"},
 	}
 
 	for _, test := range tests {
-		key := tsAndChainIdKey(test.prefix, test.timestamp, test.chainID)
+		key := PendingCAPKey(test.timestamp, test.chainID)
 		require.NotEmpty(t, key)
 		// Expected bytes = prefix + time length + time bytes + length of chainID
-		expectedLen := 1 + 8 + len(sdk.FormatTimeBytes(time.Time{})) + len(test.chainID)
-		require.Equal(t, expectedLen, len(key))
-		parsedTime, parsedID, err := parseTsAndChainIdKey(test.prefix, key)
+		expectedBytes := 1 + 8 + len(sdk.FormatTimeBytes(time.Time{})) + len(test.chainID)
+		require.Equal(t, expectedBytes, len(key))
+		parsedTime, parsedID, err := ParsePendingCAPKey(key)
 		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
 		require.Equal(t, test.chainID, parsedID)
 		require.NoError(t, err)
 	}
 }
 
-// Tests the construction and parsing of ChainIdAndTs keys
-func TestChainIdAndTsKeyAndParse(t *testing.T) {
+// Tests the construction and parsing of keys for storing pending consumer removal proposals
+func TestPendingCRPKeyAndParse(t *testing.T) {
 	tests := []struct {
-		prefix    byte
-		chainID   string
 		timestamp time.Time
+		chainID   string
 	}{
-		{prefix: 0x01, chainID: "1", timestamp: time.Now()},
-		{prefix: 0x02, chainID: "some other ID", timestamp: time.Date(
-			2003, 11, 17, 20, 34, 58, 651387237, time.UTC)},
-		{prefix: 0x03, chainID: "some other other chain ID", timestamp: time.Now().Add(5000 * time.Hour)},
+		{timestamp: time.Now(), chainID: "5"},
+		{timestamp: time.Date(
+			2003, 11, 17, 20, 34, 58, 651387237, time.UTC), chainID: "some other ID"},
+		{timestamp: time.Now().Add(5000 * time.Hour), chainID: "some other other chain ID"},
 	}
 
 	for _, test := range tests {
-		key := chainIdAndTsKey(test.prefix, test.chainID, test.timestamp)
+		key := PendingCRPKey(test.timestamp, test.chainID)
 		require.NotEmpty(t, key)
-		// Expected bytes = prefix + chainID length + chainID + time bytes
-		expectedLen := 1 + 8 + len(test.chainID) + len(sdk.FormatTimeBytes(time.Time{}))
-		require.Equal(t, expectedLen, len(key))
-		parsedID, parsedTime, err := parseChainIdAndTsKey(test.prefix, key)
-		require.Equal(t, test.chainID, parsedID)
+		// Expected bytes = prefix + time length + time bytes + length of chainID
+		expectedBytes := 1 + 8 + len(sdk.FormatTimeBytes(time.Time{})) + len(test.chainID)
+		require.Equal(t, expectedBytes, len(key))
+		parsedTime, parsedID, err := ParsePendingCRPKey(key)
 		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
+		require.Equal(t, test.chainID, parsedID)
 		require.NoError(t, err)
 	}
 }
 
-// Tests the construction and parsing of ChainIdAndVscId keys
-func TestChainIdAndVscIdAndParse(t *testing.T) {
+func TestUnbondingOpIndexKeyAndParse(t *testing.T) {
 	tests := []struct {
-		prefix  byte
-		chainID string
-		vscID   uint64
+		chainID        string
+		valsetUpdateID uint64
 	}{
-		{prefix: 0x01, chainID: "1", vscID: 1},
-		{prefix: 0x02, chainID: "some other ID", vscID: 2},
-		{prefix: 0x03, chainID: "some other other chain ID", vscID: 3},
+		{chainID: " some chain id", valsetUpdateID: 45},
+		{chainID: " some chain id that is longer", valsetUpdateID: 54038},
+		{chainID: " some chain id that is longer-er     ", valsetUpdateID: 9999999999999999999},
+		{chainID: "2", valsetUpdateID: 0},
 	}
 
 	for _, test := range tests {
-		key := chainIdAndVscIdKey(test.prefix, test.chainID, test.vscID)
+		key := UnbondingOpIndexKey(test.chainID, test.valsetUpdateID)
 		require.NotEmpty(t, key)
-		// Expected bytes = prefix + chainID length + chainID + vscId bytes
-		expectedLen := 1 + 8 + len(test.chainID) + 8
-		require.Equal(t, expectedLen, len(key))
-		parsedID, parsedVscID, err := parseChainIdAndVscIdKey(test.prefix, key)
-		require.Equal(t, test.chainID, parsedID)
-		require.Equal(t, test.vscID, parsedVscID)
+		// This key should be of set length: prefix + hashed chain ID + uint64
+		require.Equal(t, 1+32+8, len(key))
+		parsedVSCID, err := ParseUnbondingOpIndexKey(key)
+		require.NotEmpty(t, parsedVSCID)
+		asUint64 := sdk.BigEndianToUint64(parsedVSCID)
+		require.Equal(t, test.valsetUpdateID, asUint64)
 		require.NoError(t, err)
 	}
 }
@@ -143,7 +138,6 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 		ChainToChannelKey,
 		ChannelToChainKey,
 		ChainToClientKey,
-		InitTimeoutTimestampKey,
 		ConsumerGenesisKey,
 		SlashAcksKey,
 		InitChainHeightKey,
@@ -155,7 +149,6 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 		ChainToChannelBytePrefix,
 		ChannelToChainBytePrefix,
 		ChainToClientBytePrefix,
-		InitTimeoutTimestampBytePrefix,
 		ConsumerGenesisBytePrefix,
 		SlashAcksBytePrefix,
 		InitChainHeightBytePrefix,

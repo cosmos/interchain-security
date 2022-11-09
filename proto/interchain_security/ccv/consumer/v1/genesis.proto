@@ -35,9 +35,6 @@ message GenesisState {
   // PendingSlashRequests filled in on new chain, nil on restart.
  interchain_security.ccv.consumer.v1.SlashRequests pending_slash_requests = 11
  [ (gogoproto.nullable) = false ];
-  // LastTransmissionBlockHeight nil on new chain, filled on restart.
-  interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight last_transmission_block_height = 12
-  [ (gogoproto.nullable) = false ];
 }
 
 // MaturingVSCPacket defines the genesis information for the
