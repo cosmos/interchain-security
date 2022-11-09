@@ -338,19 +338,25 @@ func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.Consumer
 
 	// store the (to be) executed proposals in order
 	propsToExecute := []types.ConsumerAdditionProposal{}
-	k.IteratePendingConsumerAdditionProps(ctx, func(spawnTime time.Time, prop types.ConsumerAdditionProposal) bool {
+
+	iterator := k.PendingConsumerAdditionPropIterator(ctx)
+	defer iterator.Close()
+
+	k.IteratePendingConsumerAdditionProps(ctx, func(spawnTime time.Time, prop types.ConsumerAdditionProposal) (stop bool) {
 		if !ctx.BlockTime().Before(spawnTime) {
 			propsToExecute = append(propsToExecute, prop)
-			return true
+			return false // do not stop the iteration
 		}
-		// No more proposals to check, since they're stored/ordered by timestamp.
-		return false
+		return true // stop
 	})
 
 	return propsToExecute
 }
 
-func (k Keeper) IteratePendingConsumerAdditionProps(ctx sdk.Context, cb func(spawnTime time.Time, prop types.ConsumerAdditionProposal) bool) {
+func (k Keeper) IteratePendingConsumerAdditionProps(
+	ctx sdk.Context,
+	cb func(spawnTime time.Time, prop types.ConsumerAdditionProposal) (stop bool),
+) {
 	iterator := k.PendingConsumerAdditionPropIterator(ctx)
 	defer iterator.Close()
 
@@ -364,8 +370,9 @@ func (k Keeper) IteratePendingConsumerAdditionProps(ctx sdk.Context, cb func(spa
 		var prop types.ConsumerAdditionProposal
 		k.cdc.MustUnmarshal(iterator.Value(), &prop)
 
-		if !cb(spawnTime, prop) {
-			return
+		stop := cb(spawnTime, prop)
+		if stop {
+			break
 		}
 	}
 }
