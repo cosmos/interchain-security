@@ -9,6 +9,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
@@ -160,8 +161,8 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				return true // go to next consumer chain
 			}
 
-			// send this validator set change packet data to the consumer chain
-			expiredClient, err := utils.SendIBCPacket(
+			// prepare to send the packetData to the consumer
+			packet, channelCap, err := utils.PrepareIBCPacketSend(
 				ctx,
 				k.scopedKeeper,
 				k.channelKeeper,
@@ -170,7 +171,14 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				packetData.GetBytes(),
 				k.GetParams(ctx).CcvTimeoutPeriod,
 			)
-			if expiredClient {
+			if err != nil {
+				// something went wrong when preparing the packet
+				panic(fmt.Errorf("packet could not be prepared for IBC send: %w", err))
+			}
+
+			// send packet over IBC channel
+			err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
+			if clienttypes.ErrClientNotActive.Is(err) {
 				// IBC client expired:
 				// store the packet data to be sent once the client is upgraded
 				k.AppendPendingVSCs(ctx, chainID, []ccv.ValidatorSetChangePacketData{packetData})
@@ -196,8 +204,8 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 		return
 	}
 	for i, data := range pendingPackets {
-		// send packet over IBC
-		expiredClient, err := utils.SendIBCPacket(
+		// prepare to send the data to the consumer
+		packet, channelCap, err := utils.PrepareIBCPacketSend(
 			ctx,
 			k.scopedKeeper,
 			k.channelKeeper,
@@ -206,7 +214,14 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 			data.GetBytes(),
 			k.GetParams(ctx).CcvTimeoutPeriod,
 		)
-		if expiredClient {
+		if err != nil {
+			// something went wrong when preparing the packet
+			panic(fmt.Errorf("packet could not be prepared for IBC send: %w", err))
+		}
+
+		// send packet over IBC channel
+		err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
+		if clienttypes.ErrClientNotActive.Is(err) {
 			// IBC client expired:
 			// store the packet data to be sent once the client is upgraded
 			if i != 0 {
