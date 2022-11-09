@@ -80,6 +80,10 @@ func (ka *KeyAssignment) SetProviderPubKeyToConsumerPubKey(pk ProviderPublicKey,
 	return nil
 }
 
+// DeleteProviderKey removes all KeyAssignment data associated to the provider validator
+// with key pca. This is called when a validator is destroyed in the staking module.
+// This is relatively expensive, but should be called rarely because validators are
+// destroyed rarely.
 func (ka *KeyAssignment) DeleteProviderKey(pca ProviderConsAddr) error {
 	// TODO: document expensive operation
 	// Delete the current mapping from the consumer key to the provider key
