@@ -329,7 +329,7 @@ func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 	store.Delete(types.UnbondingOpKey(id))
 }
 
-func (k Keeper) IterateOverUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdOp ccv.UnbondingOp) bool) {
+func (k Keeper) IterateOverUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdOp ccv.UnbondingOp) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.UnbondingOpBytePrefix})
 
@@ -342,7 +342,8 @@ func (k Keeper) IterateOverUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdO
 		}
 		ubdOp := types.MustUnmarshalUnbondingOp(k.cdc, bz)
 
-		if !cb(id, ubdOp) {
+		stop := cb(id, ubdOp)
+		if stop {
 			break
 		}
 	}
