@@ -25,8 +25,6 @@ import (
 
 // HandlePendingSlashPackets handles all or some portion of pending slash packets received by any consumer chain,
 // depending on circuit breaker logic. This method executes every end block routine.
-// TODO: This deserves an e2e test, not unit. You'll prob need to setup some staking module stuff tho.
-// ^ do this in next commit, start with no packets to handle. No unit needed since HandlePacketDataForChain is unit tested.
 func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
