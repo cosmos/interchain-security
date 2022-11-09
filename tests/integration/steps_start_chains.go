@@ -108,23 +108,6 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				},
 			},
 		},
-		// {
-		// 	action: SendTokensAction{
-		// 		chain:  chainID(consumerName),
-		// 		from:   validatorID("alice"),
-		// 		to:     validatorID("bob"),
-		// 		amount: 1,
-		// 	},
-		// 	state: State{
-		// 		chainID(consumerName): ChainState{
-		// 			// Tx on consumer chain should not go through before ICS channel is setup
-		// 			ValBalances: &map[validatorID]uint{
-		// 				validatorID("alice"): 10000000000,
-		// 				validatorID("bob"):   10000000000,
-		// 			},
-		// 		},
-		// 	},
-		// },
 		{
 			action: addIbcConnectionAction{
 				chainA:  chainID(consumerName),
