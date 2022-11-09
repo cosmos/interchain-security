@@ -319,11 +319,11 @@ func TestInitTimeoutTimestamp(t *testing.T) {
 	providerKeeper.SetInitTimeoutTimestamp(ctx, tc[2].chainID, tc[2].expected)
 
 	i := 0
-	providerKeeper.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) bool {
+	providerKeeper.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) (stop bool) {
 		require.Equal(t, chainID, tc[i].chainID)
 		require.Equal(t, ts, tc[i].expected)
 		i++
-		return true
+		return false // do not stop the iteration
 	})
 	require.Equal(t, len(tc), i)
 
