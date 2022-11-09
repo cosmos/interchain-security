@@ -168,7 +168,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				channelID,          // source channel id
 				ccv.ProviderPortID, // source port id
 				packetData.GetBytes(),
-				k.GetParams(ctx).CcvTimeoutPeriod,
+				k.GetCCVTimeoutPeriod(ctx),
 			)
 			if err != nil {
 				// something went wrong when preparing the packet
@@ -211,7 +211,7 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 			channelID,          // source channel id
 			ccv.ProviderPortID, // source port id
 			data.GetBytes(),
-			k.GetParams(ctx).CcvTimeoutPeriod,
+			k.GetCCVTimeoutPeriod(ctx),
 		)
 		if err != nil {
 			// something went wrong when preparing the packet
