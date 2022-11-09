@@ -337,7 +337,7 @@ func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.Sla
 	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
 }
 
-// incrementTimeBy increments the overall time by jumpPeriod
+// incrementTime increments the overall time by jumpPeriod
 // while updating to not expire the clients
 func incrementTime(s *CCVTestSuite, jumpPeriod time.Duration) {
 	// get trusting period of client on provider endpoint
@@ -348,12 +348,14 @@ func incrementTime(s *CCVTestSuite, jumpPeriod time.Duration) {
 	cs, ok = s.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.consumerCtx(), s.path.EndpointA.ClientID)
 	s.Require().True(ok)
 	consumerEndpointTP := cs.(*ibctm.ClientState).TrustingPeriod
+	// find the minimum trusting period
 	var minTP time.Duration
 	if providerEndpointTP < consumerEndpointTP {
 		minTP = providerEndpointTP
 	} else {
 		minTP = consumerEndpointTP
 	}
+	// jumpStep is the maximum interval at which both clients are updated
 	jumpStep := minTP / 2
 	for jumpPeriod > 0 {
 		var step time.Duration
@@ -363,17 +365,17 @@ func incrementTime(s *CCVTestSuite, jumpPeriod time.Duration) {
 			step = jumpStep
 		}
 		s.coordinator.IncrementTimeBy(step)
-		// Update the provider client on the consumer
+		// update the provider client on the consumer
 		err := s.path.EndpointA.UpdateClient()
 		s.Require().NoError(err)
-		// Update the consumer client on the provider
+		// update the consumer client on the provider
 		err = s.path.EndpointB.UpdateClient()
 		s.Require().NoError(err)
 		jumpPeriod -= step
 	}
 }
 
-// incrementTimeByWithoutUpdate increments the overall time by jumpPeriod
+// incrementTimeWithoutUpdate increments the overall time by jumpPeriod
 // without updating the client to the `noUpdate` chain
 func incrementTimeWithoutUpdate(s *CCVTestSuite, jumpPeriod time.Duration, noUpdate ChainType) {
 	var trustingPeriod time.Duration
@@ -389,6 +391,7 @@ func incrementTimeWithoutUpdate(s *CCVTestSuite, jumpPeriod time.Duration, noUpd
 		trustingPeriod = cs.(*ibctm.ClientState).TrustingPeriod
 		endpointToUpdate = s.path.EndpointB
 	}
+	// jumpStep is the maximum interval at which the client on endpointToUpdate is updated
 	jumpStep := trustingPeriod / 2
 	for jumpPeriod > 0 {
 		var step time.Duration
@@ -398,7 +401,7 @@ func incrementTimeWithoutUpdate(s *CCVTestSuite, jumpPeriod time.Duration, noUpd
 			step = jumpStep
 		}
 		s.coordinator.IncrementTimeBy(step)
-		// Update the client
+		// update the client
 		err := endpointToUpdate.UpdateClient()
 		s.Require().NoError(err)
 		jumpPeriod -= step
