@@ -624,8 +624,9 @@ func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []string
 	return
 }
 
-// IterateSlashAcks iterates through the slash acks set in the store
-func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) bool) {
+// IterateSlashAcks iterates through the slash acks set in the store.
+// Note: this method is only used in testing
+func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.SlashAcksBytePrefix})
 
@@ -640,7 +641,8 @@ func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks [
 			panic(fmt.Errorf("failed to unmarshal SlashAcks: %w", err))
 		}
 
-		if !cb(chainID, sa.GetAddresses()) {
+		stop := cb(chainID, sa.GetAddresses())
+		if stop {
 			return
 		}
 	}
