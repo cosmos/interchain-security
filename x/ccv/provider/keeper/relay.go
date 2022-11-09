@@ -383,7 +383,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	// exceed the current block time.
 	// Checking the first send timestamp for each chain is sufficient since
 	// timestamps are ordered by vsc ID.
-	k.IterateChannelToChain(ctx, func(ctx sdk.Context, _, chainID string) bool {
+	k.IterateChannelToChain(ctx, func(ctx sdk.Context, _, chainID string) (stop bool) {
 		k.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, ts time.Time) bool {
 			timeoutTimestamp := ts.Add(k.GetParams(ctx).VscTimeoutPeriod)
 			if currentTime.After(timeoutTimestamp) {
