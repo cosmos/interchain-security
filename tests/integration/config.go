@@ -210,7 +210,7 @@ func DemocracyTestRun() TestRun {
 
 func MultiConsumerTestRun() TestRun {
 	return TestRun{
-		name: "multic",
+		name: "multi-consumer",
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-multic-container",
 			instanceName:  "interchain-security-multic-instance",

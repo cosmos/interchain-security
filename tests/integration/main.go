@@ -27,34 +27,34 @@ func main() {
 	var wg sync.WaitGroup
 
 	start := time.Now()
-	// tr := DefaultTestRun()
-	// tr.SetLocalSDKPath(*localSdkPath)
-	// tr.ValidateStringLiterals()
-	// tr.startDocker()
+	tr := DefaultTestRun()
+	tr.SetLocalSDKPath(*localSdkPath)
+	tr.ValidateStringLiterals()
+	tr.startDocker()
 
-	// dmc := DemocracyTestRun()
-	// dmc.SetLocalSDKPath(*localSdkPath)
-	// dmc.ValidateStringLiterals()
-	// dmc.startDocker()
+	dmc := DemocracyTestRun()
+	dmc.SetLocalSDKPath(*localSdkPath)
+	dmc.ValidateStringLiterals()
+	dmc.startDocker()
 
-	// ds := DoubleSignTestRun()
-	// ds.SetLocalSDKPath(*localSdkPath)
-	// ds.ValidateStringLiterals()
-	// ds.startDocker()
+	ds := DoubleSignTestRun()
+	ds.SetLocalSDKPath(*localSdkPath)
+	ds.ValidateStringLiterals()
+	ds.startDocker()
 
 	mul := MultiConsumerTestRun()
 	mul.SetLocalSDKPath(*localSdkPath)
 	mul.ValidateStringLiterals()
 	mul.startDocker()
 
-	// wg.Add(1)
-	// go tr.ExecuteSteps(&wg, happyPathSteps)
+	wg.Add(1)
+	go tr.ExecuteSteps(&wg, happyPathSteps)
 
-	// wg.Add(1)
-	// go dmc.ExecuteSteps(&wg, democracySteps)
+	wg.Add(1)
+	go dmc.ExecuteSteps(&wg, democracySteps)
 
-	// wg.Add(1)
-	// go ds.ExecuteSteps(&wg, doubleSignProviderSteps)
+	wg.Add(1)
+	go ds.ExecuteSteps(&wg, doubleSignProviderSteps)
 
 	wg.Add(1)
 	go mul.ExecuteSteps(&wg, multipleConsumers)
@@ -118,7 +118,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 
 	// Check state
 	if !reflect.DeepEqual(actualState, modelState) {
-		fmt.Println("action", reflect.TypeOf(step.action).Name())
+		fmt.Printf("=============== %s FAILED ===============\n", tr.name)
+		fmt.Println("FAILED action", reflect.TypeOf(step.action).Name())
 		pretty.Print("actual state", actualState)
 		pretty.Print("model state", modelState)
 		log.Fatal(`actual state (-) not equal to model state (+): ` + pretty.Compare(actualState, modelState))

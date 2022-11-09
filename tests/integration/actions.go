@@ -860,6 +860,7 @@ func (tr TestRun) unbondTokens(
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.sender),
 		`--node`, tr.getValidatorNode(action.chain, action.sender),
+		`--gas`, "900000",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
