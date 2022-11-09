@@ -28,7 +28,7 @@ func (k msgServer) AssignConsensusPublicKeyToConsumerChain(goCtx context.Context
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if _, found := k.GetConsumerClientId(ctx, msg.ChainId); !found {
-		return nil, types.ErrNoConsumerChainFound
+		return nil, types.ErrUnknownConsumerChainId
 	}
 
 	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderValidatorAddress)
