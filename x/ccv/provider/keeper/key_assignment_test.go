@@ -18,7 +18,7 @@ import (
 )
 
 func key(seed int) tmprotocrypto.PublicKey {
-	v := testcrypto.NewValidatorFromIntSeed(seed)
+	v := testcrypto.NewCryptoIdentityFromIntSeed(seed)
 	return v.TMProtoCryptoPublicKey()
 }
 
@@ -655,9 +655,9 @@ func TestKeyAssignmentSetUseReplaceAndReverse(t *testing.T) {
 
 func TestKeyAssignmentDelete(t *testing.T) {
 	ka := newTestKeyAssignment(t)
-	providerIdentity := testcrypto.NewValidatorFromIntSeed(42)
-	consumerIdentity0 := testcrypto.NewValidatorFromIntSeed(43)
-	consumerIdentity1 := testcrypto.NewValidatorFromIntSeed(44)
+	providerIdentity := testcrypto.NewCryptoIdentityFromIntSeed(42)
+	consumerIdentity0 := testcrypto.NewCryptoIdentityFromIntSeed(43)
+	consumerIdentity1 := testcrypto.NewCryptoIdentityFromIntSeed(44)
 	pk := providerIdentity.TMProtoCryptoPublicKey()
 	ck0 := consumerIdentity0.TMProtoCryptoPublicKey()
 	ck1 := consumerIdentity1.TMProtoCryptoPublicKey()

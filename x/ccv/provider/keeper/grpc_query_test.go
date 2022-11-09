@@ -18,8 +18,8 @@ import (
 
 func TestGRPCQueryConsumerChainValidatorKeyAssignment(t *testing.T) {
 
-	testValProvider := testcrypto.NewValidatorFromIntSeed(0)
-	testValConsumer := testcrypto.NewValidatorFromIntSeed(1)
+	testValProvider := testcrypto.NewCryptoIdentityFromIntSeed(0)
+	testValConsumer := testcrypto.NewCryptoIdentityFromIntSeed(1)
 
 	testCases := []struct {
 		name string

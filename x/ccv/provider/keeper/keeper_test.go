@@ -18,8 +18,8 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
-	"github.com/stretchr/testify/require"
 	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
+	"github.com/stretchr/testify/require"
 )
 
 // TestValsetUpdateBlockHeight tests the getter, setter, and deletion methods for valset updates mapped to block height
@@ -198,7 +198,7 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	ctx := keeperParams.Ctx
 
-	testVal := testcrypto.NewValidatorFromIntSeed(0)
+	testVal := testcrypto.NewCryptoIdentityFromIntSeed(0)
 
 	slashPacket := ccv.NewSlashPacketData(
 		abci.Validator{Address: testVal.ABCIAddressBytes(),
