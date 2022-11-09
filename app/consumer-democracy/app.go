@@ -84,6 +84,7 @@ import (
 	ccvdistrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
 	ccvdistrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	ccvdistrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/cosmos/interchain-security/testutil/e2e"
 	ccvdistr "github.com/cosmos/interchain-security/x/ccv/democracy/distribution"
 
 	ccvstakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -755,6 +756,53 @@ func (app *App) GetSubspace(moduleName string) paramstypes.Subspace {
 // SimulationManager implements the SimulationApp interface
 func (app *App) SimulationManager() *module.SimulationManager {
 	return app.sm
+}
+
+// DemocConsumerApp interface implementations for e2e tests
+
+// GetConsumerKeeper implements the ConsumerApp interface.
+func (app *App) GetConsumerKeeper() ibcconsumerkeeper.Keeper {
+	return app.ConsumerKeeper
+}
+
+// GetE2eBankKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eBankKeeper() e2e.E2eBankKeeper {
+	return app.BankKeeper
+}
+
+// GetE2eAccountKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eAccountKeeper() e2e.E2eAccountKeeper {
+	return app.AccountKeeper
+}
+
+// GetE2eSlashingKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
+	return app.SlashingKeeper
+}
+
+// GetE2eEvidenceKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
+	return app.EvidenceKeeper
+}
+
+// GetE2eStakingKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eStakingKeeper() e2e.E2eStakingKeeper {
+	return app.StakingKeeper
+}
+
+// GetE2eDistributionKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eDistributionKeeper() e2e.E2eDistributionKeeper {
+	return app.DistrKeeper
+}
+
+// GetE2eMintKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eMintKeeper() e2e.E2eMintKeeper {
+	return app.MintKeeper
+}
+
+// GetE2eGovKeeper implements the ConsumerApp interface.
+func (app *App) GetE2eGovKeeper() e2e.E2eGovKeeper {
+	return app.GovKeeper
 }
 
 // TestingApp functions

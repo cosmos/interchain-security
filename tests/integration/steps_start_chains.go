@@ -46,7 +46,7 @@ func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
 			},
 		},
 		{
-			action: submitConsumerProposalAction{
+			action: submitConsumerAdditionProposalAction{
 				chain:         chainID("provi"),
 				from:          validatorID("alice"),
 				deposit:       10000001,
@@ -61,7 +61,7 @@ func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
 						validatorID("bob"):   9500000002,
 					},
 					Proposals: &map[uint]Proposal{
-						1: ConsumerProposal{
+						1: ConsumerAdditionProposal{
 							Deposit:       10000001,
 							Chain:         chainID(consumerName),
 							SpawnTime:     0,
@@ -82,7 +82,7 @@ func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
 			state: State{
 				chainID("provi"): ChainState{
 					Proposals: &map[uint]Proposal{
-						1: ConsumerProposal{
+						1: ConsumerAdditionProposal{
 							Deposit:       10000001,
 							Chain:         chainID(consumerName),
 							SpawnTime:     0,

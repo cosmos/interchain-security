@@ -18,6 +18,7 @@ var happyPathSteps = concatSteps(
 	stepsDelegate("consu"),
 	stepsUnbondRedelegate("consu"),
 	stepsDowntime("consu"),
+	stepsStopChain("consu"),
 )
 
 var democracySteps = concatSteps(
@@ -25,4 +26,9 @@ var democracySteps = concatSteps(
 	stepsStartChains("democ", true),
 	stepsDelegate("democ"),
 	stepsDemocracy("democ"),
+)
+
+var doubleSignProviderSteps = concatSteps(
+	stepsStartChains("consu", false),
+	stepsDoubleSign("consu", "provi", "carol"),
 )

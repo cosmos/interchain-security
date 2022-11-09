@@ -184,7 +184,7 @@ func (tr TestRun) submitTextProposal(
 	}
 }
 
-type submitConsumerProposalAction struct {
+type submitConsumerAdditionProposalAction struct {
 	chain         chainID
 	from          validatorID
 	deposit       uint
@@ -194,7 +194,7 @@ type submitConsumerProposalAction struct {
 }
 
 func (tr TestRun) submitConsumerAdditionProposal(
-	action submitConsumerProposalAction,
+	action submitConsumerAdditionProposalAction,
 	verbose bool,
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
@@ -231,6 +231,65 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
 		"tx", "gov", "submit-proposal", "consumer-addition",
+		"/temp-proposal.json",
+
+		`--from`, `validator`+fmt.Sprint(action.from),
+		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
+		`--home`, tr.getValidatorHome(action.chain, action.from),
+		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--keyring-backend`, `test`,
+		`-b`, `block`,
+		`-y`,
+	).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+}
+
+type submitConsumerRemovalProposalAction struct {
+	chain          chainID
+	from           validatorID
+	deposit        uint
+	consumerChain  chainID
+	stopTimeOffset time.Duration // offset from time.Now()
+}
+
+func (tr TestRun) submitConsumerRemovalProposal(
+	action submitConsumerRemovalProposalAction,
+	verbose bool,
+) {
+	stopTime := tr.containerConfig.now.Add(action.stopTimeOffset)
+	prop := client.ConsumerRemovalProposalJSON{
+		Title:       fmt.Sprintf("Stop the %v chain", action.consumerChain),
+		Description: "It was a great chain",
+		ChainId:     string(tr.chainConfigs[action.consumerChain].chainId),
+		StopTime:    stopTime,
+		Deposit:     fmt.Sprint(action.deposit) + `stake`,
+	}
+
+	bz, err := json.Marshal(prop)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	jsonStr := string(bz)
+	if strings.Contains(jsonStr, "'") {
+		log.Fatal("prop json contains single quote")
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName,
+		"/bin/bash", "-c", fmt.Sprintf(`echo '%s' > %s`, jsonStr, "/temp-proposal.json")).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err = exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
+
+		"tx", "gov", "submit-proposal", "consumer-removal",
 		"/temp-proposal.json",
 
 		`--from`, `validator`+fmt.Sprint(action.from),
@@ -961,4 +1020,36 @@ func (tr TestRun) registerRepresentative(
 	}
 
 	wg.Wait()
+}
+
+// Creates an additional node on selected chain
+// by copying an existing validator's home folder
+//
+// Steps needed to double sign:
+// - copy existing validator's state and configs
+// - use existing priv_validator_key.json
+// - use new node_key.json (otherwise node gets rejected)
+// - reset priv_validator_state.json to initial values
+// - start the new node
+// Double sign should be registered within couple blocks.
+type doublesignSlashAction struct {
+	// start another node for this validator
+	validator validatorID
+	chain     chainID
+}
+
+func (tr TestRun) invokeDoublesignSlash(
+	action doublesignSlashAction,
+	verbose bool,
+) {
+	chainConfig := tr.chainConfigs[action.chain]
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
+		"/testnet-scripts/cause-doublesign.sh", chainConfig.binaryName, string(action.validator),
+		string(chainConfig.chainId), chainConfig.ipPrefix).CombinedOutput()
+
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+	tr.waitBlocks("provi", 10, 2*time.Minute)
 }

@@ -1,203 +1,63 @@
-package e2e_test
+package e2e
 
 import (
-	"bytes"
 	"fmt"
 	"strconv"
 	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer-democracy"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
-	"github.com/cosmos/interchain-security/testutil/simapp"
-	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
+	"github.com/cosmos/interchain-security/testutil/e2e"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
-
-	tmtypes "github.com/tendermint/tendermint/types"
-
 	"github.com/stretchr/testify/suite"
 )
 
-var consumerFraction, _ = sdk.NewDecFromStr(consumerkeeper.ConsumerRedistributeFrac)
-
 type ConsumerDemocracyTestSuite struct {
 	suite.Suite
-
-	coordinator *ibctesting.Coordinator
-
-	// testing chains
-	providerChain *ibctesting.TestChain
+	coordinator   *ibctesting.Coordinator
 	consumerChain *ibctesting.TestChain
-
-	path         *ibctesting.Path
-	transferPath *ibctesting.Path
+	consumerApp   e2e.DemocConsumerApp
+	setupCallback DemocSetupCallback
 }
 
-func (s *ConsumerDemocracyTestSuite) SetupTest() {
-	s.coordinator, s.providerChain, s.consumerChain = simapp.NewProviderConsumerDemocracyCoordinator(s.T())
-
-	// valsets must match
-	providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(s.providerChain.Vals)
-	consumerValUpdates := tmtypes.TM2PB.ValidatorUpdates(s.consumerChain.Vals)
-	s.Require().True(len(providerValUpdates) == len(consumerValUpdates), "initial valset not matching")
-	for i := 0; i < len(providerValUpdates); i++ {
-		addr1 := utils.GetChangePubKeyAddress(providerValUpdates[i])
-		addr2 := utils.GetChangePubKeyAddress(consumerValUpdates[i])
-		s.Require().True(bytes.Equal(addr1, addr2), "validator mismatch")
-	}
-
-	// move both chains to the next block
-	s.providerChain.NextBlock()
-	s.consumerChain.NextBlock()
-
-	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
-	err := s.providerChain.App.(*appProvider.App).ProviderKeeper.CreateConsumerClient(
-		s.providerCtx(),
-		s.consumerChain.ChainID,
-		s.consumerChain.LastHeader.GetHeight().(clienttypes.Height),
-		false,
-	)
-	s.Require().NoError(err)
-
-	// move provider to next block to commit the state
-	s.providerChain.NextBlock()
-
-	// initialize the consumer chain with the genesis state stored on the provider
-	consumerGenesis, found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerGenesis(
-		s.providerCtx(),
-		s.consumerChain.ChainID,
-	)
-	s.Require().True(found, "consumer genesis not found")
-	s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.InitGenesis(s.consumerChain.GetContext(), &consumerGenesis)
-
-	// create path for the CCV channel
-	s.path = ibctesting.NewPath(s.consumerChain, s.providerChain)
-
-	// update CCV path with correct info
-	// - set provider endpoint's clientID
-	consumerClient, found := s.providerChain.App.(*appProvider.App).ProviderKeeper.GetConsumerClientId(
-		s.providerCtx(),
-		s.consumerChain.ChainID,
-	)
-	s.Require().True(found, "consumer client not found")
-	s.path.EndpointB.ClientID = consumerClient
-	// - set consumer endpoint's clientID
-	providerClient, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderClientID(s.consumerChain.GetContext())
-	s.Require().True(found, "provider client not found")
-	s.path.EndpointA.ClientID = providerClient
-	// - client config
-	providerUnbondingPeriod := s.providerChain.App.(*appProvider.App).GetStakingKeeper().UnbondingTime(s.providerCtx())
-	s.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = providerUnbondingPeriod
-	s.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = providerUnbondingPeriod / utils.TrustingPeriodFraction
-	consumerUnbondingPeriod := utils.ComputeConsumerUnbondingPeriod(providerUnbondingPeriod)
-	s.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).UnbondingPeriod = consumerUnbondingPeriod
-	s.path.EndpointA.ClientConfig.(*ibctesting.TendermintConfig).TrustingPeriod = consumerUnbondingPeriod / utils.TrustingPeriodFraction
-	// - channel config
-	s.path.EndpointA.ChannelConfig.PortID = types.ConsumerPortID
-	s.path.EndpointB.ChannelConfig.PortID = types.ProviderPortID
-	s.path.EndpointA.ChannelConfig.Version = types.Version
-	s.path.EndpointB.ChannelConfig.Version = types.Version
-	s.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
-	s.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-
-	// set chains sender account number
-	// TODO: to be fixed in #151
-	err = s.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	s.Require().NoError(err)
-	err = s.path.EndpointA.Chain.SenderAccount.SetAccountNumber(0)
-	s.Require().NoError(err)
-
-	// create path for the transfer channel
-	s.transferPath = ibctesting.NewPath(s.consumerChain, s.providerChain)
-	s.transferPath.EndpointA.ChannelConfig.PortID = transfertypes.PortID
-	s.transferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
-	s.transferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
-	s.transferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
+// NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite,
+// ready to be tested against using suite.Run().
+func NewConsumerDemocracyTestSuite(setupCallback DemocSetupCallback) *ConsumerDemocracyTestSuite {
+	democSuite := new(ConsumerDemocracyTestSuite)
+	democSuite.setupCallback = setupCallback
+	return democSuite
 }
 
-func (s *ConsumerDemocracyTestSuite) SetupCCVChannel() {
-	s.StartSetupCCVChannel()
-	s.CompleteSetupCCVChannel()
-	s.SetupTransferChannel()
+// Callback for instantiating a new coordinator, consumer test chain, and consumer app
+// before every test defined on the suite.
+type DemocSetupCallback func(t *testing.T) (
+	coord *ibctesting.Coordinator,
+	consumerChain *ibctesting.TestChain,
+	consumerApp e2e.DemocConsumerApp,
+)
+
+// SetupTest sets up in-mem state before every test relevant to ccv with a democracy consumer
+func (suite *ConsumerDemocracyTestSuite) SetupTest() {
+	// Instantiate new test utils using callback
+	suite.coordinator, suite.consumerChain,
+		suite.consumerApp = suite.setupCallback(suite.T())
 }
 
-func (s *ConsumerDemocracyTestSuite) StartSetupCCVChannel() {
-	s.coordinator.CreateConnections(s.path)
-
-	err := s.path.EndpointA.ChanOpenInit()
-	s.Require().NoError(err)
-
-	err = s.path.EndpointB.ChanOpenTry()
-	s.Require().NoError(err)
-}
-
-func (s *ConsumerDemocracyTestSuite) CompleteSetupCCVChannel() {
-	err := s.path.EndpointA.ChanOpenAck()
-	s.Require().NoError(err)
-
-	err = s.path.EndpointB.ChanOpenConfirm()
-	s.Require().NoError(err)
-
-	// ensure counterparty is up to date
-	err = s.path.EndpointA.UpdateClient()
-	s.Require().NoError(err)
-}
-
-func (s *ConsumerDemocracyTestSuite) SetupTransferChannel() {
-	// transfer path will use the same connection as ccv path
-
-	s.transferPath.EndpointA.ClientID = s.path.EndpointA.ClientID
-	s.transferPath.EndpointA.ConnectionID = s.path.EndpointA.ConnectionID
-	s.transferPath.EndpointB.ClientID = s.path.EndpointB.ClientID
-	s.transferPath.EndpointB.ConnectionID = s.path.EndpointB.ConnectionID
-
-	// CCV channel handshake will automatically initiate transfer channel handshake on ACK
-	// so transfer channel will be on stage INIT when CompleteSetupCCVChannel returns.
-	s.transferPath.EndpointA.ChannelID = s.consumerChain.App.(*appConsumer.App).
-		ConsumerKeeper.GetDistributionTransmissionChannel(s.consumerChain.GetContext())
-
-	// Complete TRY, ACK, CONFIRM for transfer path
-	err := s.transferPath.EndpointB.ChanOpenTry()
-	s.Require().NoError(err)
-
-	err = s.transferPath.EndpointA.ChanOpenAck()
-	s.Require().NoError(err)
-
-	err = s.transferPath.EndpointB.ChanOpenConfirm()
-	s.Require().NoError(err)
-
-	// ensure counterparty is up to date
-	err = s.transferPath.EndpointA.UpdateClient()
-	s.Require().NoError(err)
-}
-
-func TestConsumerDemocracyTestSuite(t *testing.T) {
-	suite.Run(t, new(ConsumerDemocracyTestSuite))
-}
-
-func (s *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
+func (s *ConsumerDemocracyTestSuite) TestDemocracyRewardsDistribution() {
 
 	s.consumerChain.NextBlock()
-	stakingKeeper := s.consumerChain.App.(*appConsumer.App).StakingKeeper
-	authKeeper := s.consumerChain.App.(*appConsumer.App).AccountKeeper
-	distrKeeper := s.consumerChain.App.(*appConsumer.App).DistrKeeper
-	bankKeeper := s.consumerChain.App.(*appConsumer.App).BankKeeper
+	stakingKeeper := s.consumerApp.GetE2eStakingKeeper()
+	accountKeeper := s.consumerApp.GetE2eAccountKeeper()
+	distrKeeper := s.consumerApp.GetE2eDistributionKeeper()
+	bankKeeper := s.consumerApp.GetE2eBankKeeper()
 	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
 
 	currentRepresentativesRewards := map[string]sdk.Dec{}
@@ -211,7 +71,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
 	}
 
 	distrModuleAccount := distrKeeper.GetDistributionAccount(s.consumerCtx())
-	providerRedistributeAccount := authKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName)
+	providerRedistributeAccount := accountKeeper.GetModuleAccount(s.consumerCtx(), consumertypes.ConsumerToSendToProviderName)
 	//balance of consumer redistribute address will always be 0 when checked between 2 NextBlock() calls
 
 	currentDistrModuleAccountBalance := sdk.NewDecFromInt(bankKeeper.GetBalance(s.consumerCtx(), distrModuleAccount.GetAddress(), bondDenom).Amount)
@@ -245,14 +105,21 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
 		consumerRedistributeDifference = consumerRedistributeDifference.Add(representativeDifference[key])
 	}
 
+	consumerRedistributionFraction := sdk.MustNewDecFromStr(s.consumerApp.GetConsumerKeeper().GetConsumerRedistributionFrac(s.consumerCtx()))
+
 	//confirm that the total amount given to the community pool plus all representatives is equal to the total amount taken out of distribution
 	s.Require().Equal(distrModuleDifference, consumerRedistributeDifference)
 	//confirm that the percentage given to the community pool is equal to the configured community tax percentage.
-	s.Require().Equal(communityPoolDifference.Quo(consumerRedistributeDifference), distrKeeper.GetCommunityTax(s.consumerCtx()))
+	s.Require().Equal(communityPoolDifference.Quo(consumerRedistributeDifference),
+		distrKeeper.GetCommunityTax(s.consumerCtx()))
 	//check that the fraction actually kept by the consumer is the correct fraction. using InEpsilon because the math code uses truncations
-	s.Require().InEpsilon(distrModuleDifference.Quo(providerDifference.Add(distrModuleDifference)).MustFloat64(), consumerFraction.MustFloat64(), float64(0.0001))
+	s.Require().InEpsilon(distrModuleDifference.Quo(
+		providerDifference.Add(distrModuleDifference)).MustFloat64(),
+		consumerRedistributionFraction.MustFloat64(), float64(0.0001))
 	//check that the fraction actually kept by the provider is the correct fraction. using InEpsilon because the math code uses truncations
-	s.Require().InEpsilon(providerDifference.Quo(providerDifference.Add(distrModuleDifference)).MustFloat64(), sdk.NewDec(1).Sub(consumerFraction).MustFloat64(), float64(0.0001))
+	s.Require().InEpsilon(providerDifference.Quo(
+		providerDifference.Add(distrModuleDifference)).MustFloat64(),
+		sdk.NewDec(1).Sub(consumerRedistributionFraction).MustFloat64(), float64(0.0001))
 
 	totalRepresentativePower := stakingKeeper.GetValidatorSet().TotalBondedTokens(s.consumerCtx())
 
@@ -264,11 +131,11 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyRewarsDistribution() {
 }
 
 func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
-	govKeeper := s.consumerChain.App.(*appConsumer.App).GovKeeper
-	stakingKeeper := s.consumerChain.App.(*appConsumer.App).StakingKeeper
-	bankKeeper := s.consumerChain.App.(*appConsumer.App).BankKeeper
-	authKeeper := s.consumerChain.App.(*appConsumer.App).AccountKeeper
-	mintKeeper := s.consumerChain.App.(*appConsumer.App).MintKeeper
+	govKeeper := s.consumerApp.GetE2eGovKeeper()
+	stakingKeeper := s.consumerApp.GetE2eStakingKeeper()
+	bankKeeper := s.consumerApp.GetE2eBankKeeper()
+	accountKeeper := s.consumerApp.GetE2eAccountKeeper()
+	mintKeeper := s.consumerApp.GetE2eMintKeeper()
 	newAuthParamValue := uint64(128)
 	newMintParamValue := sdk.NewDecWithPrec(1, 1) // "0.100000000000000000"
 	allowedChange := proposal.ParamChange{Subspace: minttypes.ModuleName, Key: "InflationMax", Value: fmt.Sprintf("\"%s\"", newMintParamValue)}
@@ -291,11 +158,11 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(votingParams.VotingPeriod)
 	s.consumerChain.NextBlock()
 	//at this moment, proposal is added, but not yet executed. we are saving old param values for comparison
-	oldAuthParamValue := authKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
+	oldAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
 	oldMintParamValue := mintKeeper.GetParams(s.consumerCtx()).InflationMax
 	s.consumerChain.NextBlock()
 	//at this moment, proposal is executed or deleted if forbidden
-	currentAuthParamValue := authKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
+	currentAuthParamValue := accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
 	currentMintParamValue := mintKeeper.GetParams(s.consumerCtx()).InflationMax
 	//check that parameters are not changed, since the proposal contained both forbidden and allowed changes
 	s.Assert().Equal(oldAuthParamValue, currentAuthParamValue)
@@ -326,9 +193,9 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().NoError(err)
 	s.consumerChain.CurrentHeader.Time = s.consumerChain.CurrentHeader.Time.Add(votingParams.VotingPeriod)
 	s.consumerChain.NextBlock()
-	oldAuthParamValue = authKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
+	oldAuthParamValue = accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
 	s.consumerChain.NextBlock()
-	currentAuthParamValue = authKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
+	currentAuthParamValue = accountKeeper.GetParams(s.consumerCtx()).MaxMemoCharacters
 	//check that parameters are not changed, since the proposal contained forbidden changes
 	s.Assert().Equal(oldAuthParamValue, currentAuthParamValue)
 	s.Assert().NotEqual(newAuthParamValue, currentAuthParamValue)
@@ -336,7 +203,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
-func submitProposalWithDepositAndVote(govKeeper govkeeper.Keeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
+func submitProposalWithDepositAndVote(govKeeper e2e.E2eGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
 	accounts []ibctesting.SenderAccount, depositAmount sdk.Coins) error {
 	proposal, err := govKeeper.SubmitProposal(ctx, &paramChange)
 	if err != nil {
@@ -356,7 +223,7 @@ func submitProposalWithDepositAndVote(govKeeper govkeeper.Keeper, ctx sdk.Contex
 	return nil
 }
 
-func getAccountsBalances(ctx sdk.Context, bankKeeper bankkeeper.Keeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]sdk.Int {
+func getAccountsBalances(ctx sdk.Context, bankKeeper e2e.E2eBankKeeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]sdk.Int {
 	accountsBalances := map[string]sdk.Int{}
 	for _, acc := range accounts {
 		accountsBalances[string(acc.SenderAccount.GetAddress())] =
@@ -364,10 +231,6 @@ func getAccountsBalances(ctx sdk.Context, bankKeeper bankkeeper.Keeper, bondDeno
 	}
 
 	return accountsBalances
-}
-
-func (s *ConsumerDemocracyTestSuite) providerCtx() sdk.Context {
-	return s.providerChain.GetContext()
 }
 
 func (s *ConsumerDemocracyTestSuite) consumerCtx() sdk.Context {

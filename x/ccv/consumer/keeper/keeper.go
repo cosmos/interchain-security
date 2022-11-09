@@ -3,7 +3,6 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
-	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -17,6 +16,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -134,30 +134,6 @@ func (k Keeper) AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Cap
 // ClaimCapability claims a capability that the IBC module passes to it
 func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error {
 	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
-}
-
-// SetUnbondingTime sets the unbonding period of the consumer chain
-func (k Keeper) SetUnbondingTime(ctx sdk.Context, unbondingTime time.Duration) {
-	store := ctx.KVStore(k.storeKey)
-	timeBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(timeBytes, uint64(unbondingTime.Nanoseconds()))
-	store.Set(types.UnbondingTimeKey(), timeBytes)
-}
-
-// GetUnbondingTime gets the unbonding period of the consumer chain
-func (k Keeper) GetUnbondingTime(ctx sdk.Context) (time.Duration, bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.UnbondingTimeKey())
-	if bz == nil {
-		return 0, false
-	}
-	return time.Duration(binary.BigEndian.Uint64(bz)), true
-}
-
-// DeleteUnbondingTime deletes the unbonding period of the consumer chain
-func (k Keeper) DeleteUnbondingTime(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.UnbondingTimeKey())
 }
 
 // SetProviderClientID sets the clientID for the client to the provider.
@@ -457,4 +433,32 @@ func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashReque
 	srArray := sr.GetRequests()
 	srArray = append(srArray, req)
 	k.SetPendingSlashRequests(ctx, types.SlashRequests{Requests: srArray})
+}
+
+// GetHeightToValsetUpdateIDs returns all height to valset update id pairs into a list
+func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToValsetUpdateID {
+	heightToVCIDs := []types.HeightToValsetUpdateID{}
+	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) bool {
+		hv := types.HeightToValsetUpdateID{
+			Height:         height,
+			ValsetUpdateId: vscID,
+		}
+		heightToVCIDs = append(heightToVCIDs, hv)
+		return true
+	})
+
+	return heightToVCIDs
+}
+
+// GetOutstandingDowntimes returns all outstanding downtimes in store
+func (k Keeper) GetOutstandingDowntimes(ctx sdk.Context) []consumertypes.OutstandingDowntime {
+	outstandingDowntimes := []types.OutstandingDowntime{}
+	k.IterateOutstandingDowntime(ctx, func(addr string) bool {
+		od := types.OutstandingDowntime{
+			ValidatorConsensusAddress: addr,
+		}
+		outstandingDowntimes = append(outstandingDowntimes, od)
+		return false
+	})
+	return outstandingDowntimes
 }

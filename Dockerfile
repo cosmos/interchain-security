@@ -9,8 +9,6 @@ ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOFLAGS="-buildvcs=false"
 
-WORKDIR /downloads
-
 # Copy in the repo under test
 ADD . /interchain-security
 
@@ -24,11 +22,13 @@ RUN go mod tidy
 RUN make install
 
 # Get Hermes build
-FROM informalsystems/hermes:1.0.0 AS hermes-builder
+# FROM informalsystems/hermes:1.0.0 AS hermes-builder
+# remove line below and use the line above once hermes is updated
+FROM majita/hermes-unofficial:latest AS hermes-builder
 
 FROM --platform=linux/amd64 fedora:36
 RUN dnf update -y
-RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools htop jq 
+RUN dnf install -y which iproute iputils procps-ng vim-minimal tmux net-tools htop jq openssl1.1
 USER root
 
 # Copy Hermes and IS binaries to final image
