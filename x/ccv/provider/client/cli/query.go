@@ -1,7 +1,11 @@
 package cli
 
 import (
+	"fmt"
+	"strings"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -147,11 +151,21 @@ func CmdConsumerStopProposals() *cobra.Command {
 }
 
 func CmdConsumerValidatorKeyAssignment() *cobra.Command {
+	bech32PrefixValAddr := sdk.GetConfig().GetBech32ValidatorAddrPrefix()
 	cmd := &cobra.Command{
 		Use:   "assigned-validator-key [chainid] [provider-validator-address]",
 		Short: "Query assigned validator consensus public key for a consumer chain",
-		Long:  `Returns the currently assigned validator consensus public key for a consumer chain, if one has been assigned.`,
-		Args:  cobra.ExactArgs(2),
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Returns the currently assigned validator consensus public key for a
+consumer chain, if one has been assigned.
+
+Example:
+$ %s query provider assigned-validator-key foochain %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
+`,
+				version.AppName, bech32PrefixValAddr,
+			),
+		),
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
