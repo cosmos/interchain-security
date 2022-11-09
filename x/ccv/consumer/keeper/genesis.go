@@ -125,13 +125,13 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 		})
 
 		heightToVCIDs := []types.HeightToValsetUpdateID{}
-		k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) bool {
+		k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
 			hv := types.HeightToValsetUpdateID{
 				Height:         height,
 				ValsetUpdateId: vscID,
 			}
 			heightToVCIDs = append(heightToVCIDs, hv)
-			return true
+			return false // do not stop the iteration
 		})
 
 		outstandingDowntimes := []types.OutstandingDowntime{}
