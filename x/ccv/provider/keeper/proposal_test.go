@@ -46,7 +46,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 
 	tests := []testCase{
 		{
-			description: "ctx block time is after proposal's spawn time, expected that client is created",
+			description: "ctx block time is after proposal's spawn time, expected that client is persisted as pending - execution is in BeginBlocker",
 			prop: providertypes.NewConsumerAdditionProposal(
 				"title",
 				"description",
@@ -56,8 +56,7 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				[]byte("bin_hash"),
 				now, // Spawn time
 			).(*providertypes.ConsumerAdditionProposal),
-			blockTime:        hourFromNow,
-			expCreatedClient: true,
+			blockTime: hourFromNow,
 		},
 		{
 			description: `ctx block time is before proposal's spawn time,
@@ -71,41 +70,29 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				[]byte("bin_hash"),
 				hourFromNow, // Spawn time
 			).(*types.ConsumerAdditionProposal),
-			blockTime:        now,
-			expCreatedClient: false,
+			blockTime: now,
 		},
 	}
 
 	for _, tc := range tests {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
-
-		if tc.expCreatedClient {
-			// Mock calls are only asserted if we expect a client to be created.
-			gomock.InOrder(
-				testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chainID", clienttypes.NewHeight(2, 3))...,
-			)
-		}
 
 		tc.prop.LockUnbondingOnTimeout = false // Full functionality not implemented yet.
 
 		err := providerKeeper.HandleConsumerAdditionProposal(ctx, tc.prop)
 		require.NoError(t, err)
 
-		if tc.expCreatedClient {
-			testCreatedConsumerClient(t, ctx, providerKeeper, tc.prop.ChainId, "clientID")
-		} else {
-			// check that stored pending prop is exactly the same as the initially instantiated prop
-			gotProposal, found := providerKeeper.GetPendingConsumerAdditionProp(ctx, tc.prop.SpawnTime, tc.prop.ChainId)
-			require.True(t, found)
-			require.Equal(t, *tc.prop, gotProposal)
-			// double check that a client for this chain does not exist
-			_, found = providerKeeper.GetConsumerClientId(ctx, tc.prop.ChainId)
-			require.False(t, found)
-		}
+		// check that stored pending prop is exactly the same as the initially instantiated prop
+		gotProposal, found := providerKeeper.GetPendingConsumerAdditionProp(ctx, tc.prop.SpawnTime, tc.prop.ChainId)
+		require.True(t, found)
+		require.Equal(t, *tc.prop, gotProposal)
+		// double check that a client for this chain does not exist
+		_, found = providerKeeper.GetConsumerClientId(ctx, tc.prop.ChainId)
+		require.False(t, found)
 		ctrl.Finish()
 	}
 }
@@ -337,7 +324,6 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 				now,
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime: hourFromNow, // After stop time.
-			expStop:   true,
 		},
 		{
 			description: "valid proposal: stop time has not yet been reached",
@@ -348,7 +334,6 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 				hourFromNow,
 			).(*providertypes.ConsumerRemovalProposal),
 			blockTime: now, // Before proposal's stop time
-			expStop:   false,
 		},
 	}
 
@@ -356,31 +341,16 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
-
-		// Mock expectations and setup for stopping the consumer chain, if applicable
-		if tc.expStop {
-			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
-		}
-		// Note: when expStop is false, no mocks are setup,
-		// meaning no external keeper methods are allowed to be called.
 
 		err := providerKeeper.HandleConsumerRemovalProposal(ctx, tc.prop)
 		require.NoError(t, err)
 
-		if tc.expStop {
-			// Expect no pending proposal to exist
-			found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
-			require.False(t, found)
-
-			testProviderStateIsCleaned(t, ctx, providerKeeper, tc.prop.ChainId, "channelID")
-		} else {
-			// Proposal should be stored as pending
-			found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
-			require.True(t, found)
-		}
+		// Proposal should be stored as pending
+		found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
+		require.True(t, found)
 
 		// Assert mock calls from setup function
 		ctrl.Finish()

@@ -20,20 +20,9 @@ import (
 )
 
 // HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
-// If the spawn time has already passed, then set the consumer chain. Otherwise store the client
-// as a pending client, and set once spawn time has passed.
-//
-// Note: This method implements SpawnConsumerChainProposalHandler in spec.
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-spccprop1
-// Spec tag: [CCV-PCF-SPCCPROP.1]
+// The proposal is stored into state and if spawn time has passed the client will be created set in the next BeginBlocker.
 func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
-	if !ctx.BlockTime().Before(p.SpawnTime) {
-		// lockUbdOnTimeout is set to be false, regardless of what the proposal says, until we can specify and test issues around this use case more thoroughly
-		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, false)
-	}
-
-	err := k.SetPendingConsumerAdditionProp(ctx, p)
-	if err != nil {
+	if err := k.SetPendingConsumerAdditionProp(ctx, p); err != nil {
 		return err
 	}
 
@@ -99,16 +88,8 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 
 // HandleConsumerRemovalProposal stops a consumer chain and released the outstanding unbonding operations.
 // If the stop time hasn't already passed, it stores the proposal as a pending proposal.
-//
-// This method implements StopConsumerChainProposalHandler from spec.
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stccprop1
-// Spec tag: [CCV-PCF-STCCPROP.1]
+// If the stop time has passed the proposal will be executed in BeginBlocker.
 func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.ConsumerRemovalProposal) error {
-
-	if !ctx.BlockTime().Before(p.StopTime) {
-		return k.StopConsumerChain(ctx, p.ChainId, false, true)
-	}
-
 	k.SetPendingConsumerRemovalProp(ctx, p.ChainId, p.StopTime)
 	return nil
 }

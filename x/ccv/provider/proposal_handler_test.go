@@ -3,7 +3,6 @@ package provider_test
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -27,26 +26,25 @@ func TestConsumerChainProposalHandler(t *testing.T) {
 	hourFromNow := now.Add(time.Hour).UTC()
 
 	testCases := []struct {
-		name                     string
-		content                  govtypes.Content
-		blockTime                time.Time
-		expValidConsumerAddition bool
-		expValidConsumerRemoval  bool
+		name             string
+		content          govtypes.Content
+		blockTime        time.Time
+		expValidProposal bool
 	}{
 		{
 			name: "valid consumer addition proposal",
 			content: types.NewConsumerAdditionProposal(
 				"title", "description", "chainID",
 				clienttypes.NewHeight(2, 3), []byte("gen_hash"), []byte("bin_hash"), now),
-			blockTime:                hourFromNow, // ctx blocktime is after proposal's spawn time
-			expValidConsumerAddition: true,
+			blockTime:        hourFromNow, // ctx blocktime is after proposal's spawn time
+			expValidProposal: true,
 		},
 		{
 			name: "valid consumer removal proposal",
 			content: types.NewConsumerRemovalProposal(
 				"title", "description", "chainID", now),
-			blockTime:               hourFromNow,
-			expValidConsumerRemoval: true,
+			blockTime:        hourFromNow,
+			expValidProposal: true,
 		},
 		{
 			name:      "nil proposal",
@@ -65,23 +63,15 @@ func TestConsumerChainProposalHandler(t *testing.T) {
 
 		// Setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
-
-		// Mock expectations depending on expected outcome
-		if tc.expValidConsumerAddition {
-			gomock.InOrder(testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chainID", clienttypes.NewHeight(2, 3))...)
-		}
-		if tc.expValidConsumerRemoval {
-			testkeeper.SetupForStoppingConsumerChain(t, ctx, &providerKeeper, mocks)
-		}
 
 		// Execution
 		proposalHandler := provider.NewConsumerChainProposalHandler(providerKeeper)
 		err := proposalHandler(ctx, tc.content)
 
-		if tc.expValidConsumerAddition || tc.expValidConsumerRemoval {
+		if tc.expValidProposal {
 			require.NoError(t, err)
 		} else {
 			require.Error(t, err)
