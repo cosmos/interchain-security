@@ -190,7 +190,8 @@ func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, 
 
 		chainID := string(iterator.Value())
 
-		if cb(ctx, channelID, chainID) {
+		stop := cb(ctx, channelID, chainID)
+		if stop {
 			break
 		}
 	}
