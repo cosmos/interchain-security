@@ -166,7 +166,7 @@ func (suite *CCVTestSuite) TestInitTimeout() {
 		suite.providerChain.NextBlock()
 
 		// increment time
-		incrementTimeBy(suite, initTimeout)
+		incrementTime(suite, initTimeout)
 
 		// check whether the chain was removed
 		_, found = providerKeeper.GetConsumerClientId(suite.providerCtx(), chainID)

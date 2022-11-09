@@ -25,7 +25,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 
 	// increment time without updating the client;
 	// this will result in the client to the consumer to expire
-	incrementTimeByWithoutUpdate(s, trustingPeriod+time.Hour, Consumer)
+	incrementTimeWithoutUpdate(s, trustingPeriod+time.Hour, Consumer)
 
 	// check that the client to the consumer is not active
 	cs, ok = s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointB.ClientID)

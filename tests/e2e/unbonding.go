@@ -9,8 +9,8 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-// TestUndelegationNormalOperation tests that undelegations complete after 
-// the unbonding period elapses on both the consumer and provider, without 
+// TestUndelegationNormalOperation tests that undelegations complete after
+// the unbonding period elapses on both the consumer and provider, without
 // VSC packets timing out.
 func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 	unbondConsumer := func(expectedPackets int) {
@@ -159,7 +159,7 @@ func (s *CCVTestSuite) TestUndelegationVscTimeout() {
 		"unexpected balance after provider unbonding")
 
 	// increment time
-	incrementTimeBy(s, vscTimeout)
+	incrementTime(s, vscTimeout)
 
 	// check whether the chain was removed
 	chainID := s.consumerChain.ChainID
