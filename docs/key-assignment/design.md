@@ -48,15 +48,15 @@ in the implementation of the wider system.
 
 ## Sub protocol interactions
 
-## Assigning a consumer consensus key
+### Assigning a consumer consensus key
 
 Once a validator is created on the provider chain it is possible for the validator to assign a consensus key for a particular consumer chain by submitting a transaction to the provider chain. The assigned key is stored, and all future validator set updates which are sent to the consumer chain are mapped through the assigned keys.
 
-## Channel initialisation
+### Channel initialisation
 
+TODO: describe
 
-
-## Validator set update
+### Validator set update
 
 When validator set updates are emitted by the staking module and sent by the VSU sub protocol, the updates are mapped through key assignments. Each provider consensus key referenced in an update is mapped to its assigned key. If no key is assigned, the default behavior is that a provider key is mapped to itself. Thus the VSU packets contain validator updates which, on delivery to the consumer, can immediately be passed to Tendermint (after aggregation). The update mapping algorithm takes care to produce a valid set of updates even when the assigned key is changed and the validator joins/leaves the active set.
 
@@ -64,7 +64,7 @@ When a VSUMaturity packet is delivered to the provider chain the KeyAssignment i
 structure is pruned by passing the matured VSCID as argument. The pruning step removes any keys which
 have not been used for consensus by the consumer chain  since the consumer received the VSU with vscid VSCID.
 
-## Consumer initiated slashing
+### Consumer initiated slashing
 
 When a double signing or downtime slash action occurs on the consumer chain the slash packet is sent as normal to the provider chain. On delivery to the provider chain, the consensus address referenced in the slash packet is mapped back to the address of the validator to be slashed on the provider. This is possible even in the presence of changes to the assigned key of a validator, as previously used keys are stored for some (sufficient) time.
 
@@ -73,16 +73,15 @@ A correct consumer chain will not send a double sign slash request for a consens
 
 In other words: correct consumer chains shall not send double sign slashes for validators which they have already unbonded. This assumption is supported by setting appropriate parameters in the evidence module (see [relevant code](https://github.com/cosmos/cosmos-sdk/blob/61effe82603006a7192cb311787ca8fc776a4461/x/evidence/keeper/infraction.go#L54)).
 
-## Reward distribution
+### Reward distribution
 
 There is no interaction with the rewards distribution sub protocol.
 
-## Cleanup
+### Consumer removal
 
 When a consumer chain is removed on the provider chain all the associated key assignment data is deleted. When a validator is destroyed (not merely unbonded) on the provider, its associated key assignment data is deleted.
 
-
-### System integration points
+## System integration points
 
 There are some integration points with the system
 
