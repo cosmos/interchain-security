@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -76,7 +77,8 @@ func TestOnRecvSlashPacket(t *testing.T) {
 	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
 	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
 
-	// Receive a slash packet for chain-1
+	// Receive a slash packet for chain-1 at time.Now()
+	ctx = ctx.WithBlockTime(time.Now())
 	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 
@@ -86,7 +88,8 @@ func TestOnRecvSlashPacket(t *testing.T) {
 	require.Equal(t, "chain-1", packetEntries[0].ConsumerChainID)
 	require.Equal(t, uint64(1), providerKeeper.GetPendingPacketDataSize(ctx, "chain-1")) // per chain queue
 
-	// Receive a slash packet for chain-2
+	// Receive a slash packet for chain-2 at time.Now(Add(1 *time.Hour))
+	ctx = ctx.WithBlockTime(time.Now().Add(1 * time.Hour))
 	ack = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 

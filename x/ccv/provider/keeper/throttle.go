@@ -89,7 +89,6 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 			haveHandledSlash = true
 
 		case ccvtypes.VSCMaturedPacketData:
-			// TODO: confirm this is safe, make tests around handling vsc matured packets immediately if no slash packets in queue
 			if !haveHandledSlash {
 				panic("data is corrupt, first data struct in queue should be slash packet data")
 			}
@@ -115,26 +114,31 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 	// TODO: Need to set initial replenishment time
 	if ctx.BlockTime().UTC().After(k.GetLastSlashMeterReplenishTime(ctx).Add(time.Hour)) {
-		// TODO: Use param for replenish period, allowance, etc.
-		// TODO: change code and documentation to reflect that this is a string fraction param
-		slashGasAllowanceFraction := sdktypes.NewDec(5).Quo(sdktypes.NewDec(100)) // This will be a string param, ex: "0.05"
-
-		// Compute slash gas allowance in units of tendermint voting power (integer), noting that total power changes over time
-		totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
-		slashGasAllowance := sdktypes.NewInt(slashGasAllowanceFraction.MulInt(totalPower).RoundInt64())
-
-		meter := k.GetSlashMeter(ctx)
-
-		// Replenish gas up to gas allowance per period. That is, if meter was negative
-		// before being replenished, it'll gain some additional gas. However, if the meter
-		// was 0 or positive in value, it'll be replenished only up to it's allowance for the period.
-		meter = meter.Add(slashGasAllowance)
-		if meter.GT(slashGasAllowance) {
-			meter = slashGasAllowance
-		}
-		k.SetSlashMeter(ctx, meter)
-		k.SetLastSlashMeterReplenishTime(ctx, ctx.BlockTime())
+		k.ReplenishSlashMeter(ctx)
 	}
+}
+
+// TODO: unit test
+func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
+	// TODO: Use param for replenish period, allowance, etc.
+	// TODO: change code and documentation to reflect that this is a string fraction param
+	slashGasAllowanceFraction := sdktypes.NewDec(1)
+
+	// Compute slash gas allowance in units of tendermint voting power (integer), noting that total power changes over time
+	totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
+	slashGasAllowance := sdktypes.NewInt(slashGasAllowanceFraction.MulInt(totalPower).RoundInt64())
+
+	meter := k.GetSlashMeter(ctx)
+
+	// Replenish gas up to gas allowance per period. That is, if meter was negative
+	// before being replenished, it'll gain some additional gas. However, if the meter
+	// was 0 or positive in value, it'll be replenished only up to it's allowance for the period.
+	meter = meter.Add(slashGasAllowance)
+	if meter.GT(slashGasAllowance) {
+		meter = slashGasAllowance
+	}
+	k.SetSlashMeter(ctx, meter)
+	k.SetLastSlashMeterReplenishTime(ctx, ctx.BlockTime())
 }
 
 //

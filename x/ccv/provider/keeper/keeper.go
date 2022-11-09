@@ -865,6 +865,23 @@ func (k Keeper) SetVscSendTimestamp(
 	store.Set(types.VscSendingTimestampKey(chainID, vscID), timeBz)
 }
 
+// GetVscSendTimestamp returns a VSC send timestamp.
+// This method is used only in testing.
+func (k Keeper) GetVscSendTimestamp(ctx sdk.Context, chainID string, vscID uint64) (time.Time, bool) {
+	store := ctx.KVStore(k.storeKey)
+
+	timeBz := store.Get(types.VscSendingTimestampKey(chainID, vscID))
+	if timeBz == nil {
+		return time.Time{}, false
+	}
+
+	ts, err := sdk.ParseTimeBytes(timeBz)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return ts, true
+}
+
 // DeleteVscSendTimestamp removes from the store a specific VSC send timestamp
 // for the given chainID and vscID.
 func (k Keeper) DeleteVscSendTimestamp(ctx sdk.Context, chainID string, vscID uint64) {

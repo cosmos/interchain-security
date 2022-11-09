@@ -13,6 +13,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	testutil "github.com/cosmos/interchain-security/testutil/keeper"
 
 	"github.com/cosmos/interchain-security/x/ccv/types"
 
@@ -21,7 +22,7 @@ import (
 )
 
 // TestSendDowntimePacket tests consumer initiated slashing
-func (s *CCVTestSuite) TestSendSlashPacketDowntime() {
+func (s *CCVTestSuite) SendSlashPacketDowntime() { // TODO: change naming back
 	s.SetupCCVChannel()
 	s.SetupTransferChannel()
 	validatorsPerChain := len(s.consumerChain.Vals.Validators)
@@ -193,41 +194,51 @@ func (s *CCVTestSuite) TestSendSlashPacketDoubleSign() {
 	err = s.path.EndpointA.SendPacket(packet)
 	s.Require().NoError(err)
 
-	// save next VSC packet info
-	oldBlockTime = s.providerCtx().BlockTime()
-	timeout = uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
-	valsetUpdateID := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	// Note: RecvPacket advances two blocks. Let's say the provider is currently at height n.
+	// The received slash packet will be queued during n, and handled by the ccv module during
+	// the endblocker of n. The staking module will then register a validator update from that
+	// packet during the endblocker of n+1. Then the ccv module sends a VSC packet during the
+	// endblocker of n+1. The new validator set will be committed to in block n+2, and will be
+	// in effect for block n+3.
+	// TODO: confirm the above is expected behavior
 
-	// receive the downtime packet on the provider chain;
-	// RecvPacket() calls the provider endblocker and thus sends a VSC packet to the consumer
+	valsetUpdateN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+
+	// receive the downtime packet on the provider chain. RecvPacket() calls the provider endblocker twice
 	err = s.path.EndpointB.RecvPacket(packet)
 	s.Require().NoError(err)
 
+	// We've now advanced two blocks.
+
+	// One VSC packet should have been sent during block n+1
+	expectedSentValsetUpdateId := valsetUpdateN + 1
+	_, found = providerKeeper.GetVscSendTimestamp(s.providerCtx(),
+		s.consumerChain.ChainID, expectedSentValsetUpdateId)
+	s.Require().True(found)
+
+	// Confirm the valset update Id was incremented twice.
+	valsetUpdateNPlus2 := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	s.Require().Equal(valsetUpdateN+2, valsetUpdateNPlus2)
+
+	// Validator should not be removed from the provider validator set yet
+	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain)
+
+	s.providerChain.NextBlock()
+
+	// We've now advanced another block.
+	valsetUpdateNPlus3 := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+	s.Require().Equal(valsetUpdateNPlus2+1, valsetUpdateNPlus3)
+
 	// check that the validator was removed from the provider validator set
 	s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
-	// check that the VSC ID is updated on the consumer chain
 
-	// update consumer client on the VSC packet sent from provider
-	err = s.path.EndpointA.UpdateClient()
-	s.Require().NoError(err)
+	// Relay the VSC packet to the consumer
+	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
 
-	// reconstruct VSC packet
-	valUpdates := []abci.ValidatorUpdate{
-		{
-			PubKey: val.GetPubKey(),
-			Power:  int64(0),
-		},
-	}
-	packetData2 := ccv.NewValidatorSetChangePacketData(valUpdates, valsetUpdateID, []string{})
-	packet2 := channeltypes.NewPacket(packetData2.GetBytes(), 1, ccv.ProviderPortID, s.path.EndpointB.ChannelID,
-		ccv.ConsumerPortID, s.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
-
-	// receive VSC packet about jailing on the consumer chain
-	err = s.path.EndpointA.RecvPacket(packet2)
-	s.Require().NoError(err)
-
-	// check that the consumer update its VSC ID for the subsequent block
-	s.Require().Equal(consumerKeeper.GetHeightValsetUpdateID(s.consumerCtx(), uint64(s.consumerCtx().BlockHeight())+1), valsetUpdateID)
+	// check that the consumer updated its VSC ID for the subsequent block
+	actualValsetUpdateID := consumerKeeper.GetHeightValsetUpdateID(
+		s.consumerCtx(), uint64(s.consumerCtx().BlockHeight())+1)
+	s.Require().Equal(expectedSentValsetUpdateId, actualValsetUpdateID)
 
 	// check that the validator was removed from the consumer validator set
 	s.Require().Len(s.consumerChain.Vals.Validators, validatorsPerChain-1)
@@ -256,7 +267,7 @@ func (s *CCVTestSuite) TestSendSlashPacketDoubleSign() {
 	s.Require().True(valSignInfo.JailedUntil.Equal(evidencetypes.DoubleSignJailEndTime))
 }
 
-func (s *CCVTestSuite) TestSlashPacketAcknowldgement() {
+func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
@@ -266,7 +277,7 @@ func (s *CCVTestSuite) TestSlashPacketAcknowldgement() {
 	packet := channeltypes.NewPacket([]byte{}, 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
 		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, 0)
 
-	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, ccv.SlashPacketData{})
+	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, testutil.GetNewSlashPacketData())
 	s.Require().NotNil(ack)
 
 	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))

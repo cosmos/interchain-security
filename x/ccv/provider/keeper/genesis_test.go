@@ -10,14 +10,13 @@ import (
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestIniAndExportGenesis(t *testing.T) {
+func TestInitAndExportGenesis(t *testing.T) {
 	// create a provider chain genesis populated with two consumer chains
 	cChainIDs := []string{"c0", "c1"}
 	expClientID := "client"
@@ -60,11 +59,11 @@ func TestIniAndExportGenesis(t *testing.T) {
 			UnbondingConsumerChains: []string{cChainIDs[0]},
 		}},
 		&ccv.MaturedUnbondingOps{Ids: ubdIndex},
-		[]providertypes.ConsumerAdditionProposal{types.ConsumerAdditionProposal{
+		[]providertypes.ConsumerAdditionProposal{{
 			ChainId:   cChainIDs[0],
 			SpawnTime: oneHourFromNow,
 		}},
-		[]providertypes.ConsumerRemovalProposal{types.ConsumerRemovalProposal{
+		[]providertypes.ConsumerRemovalProposal{{
 			ChainId:  cChainIDs[0],
 			StopTime: oneHourFromNow,
 		}},
@@ -79,10 +78,20 @@ func TestIniAndExportGenesis(t *testing.T) {
 		mocks.MockScopedKeeper.EXPECT().GetCapability(
 			ctx, host.PortPath(ccv.ProviderPortID),
 		).Return(nil, true).Times(1),
+		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+			ctx).Return(sdk.NewInt(100)).Times(1), // Return total voting power as 100
 	)
 
 	// init provider chain
 	pk.InitGenesis(ctx, pGenesis)
+
+	// Expect slash meter to be initialized to fraction param * total voting power mocked above
+	slashMeter := pk.GetSlashMeter(ctx)
+	require.Equal(t, slashMeter, sdk.NewInt(100).Mul(sdk.NewInt(1)))
+
+	// Expect last slash replenish time to be current block time
+	lastSlashReplenishTime := pk.GetLastSlashMeterReplenishTime(ctx)
+	require.Equal(t, lastSlashReplenishTime, ctx.BlockTime())
 
 	// check local provider chain states
 	ubdOps, found := pk.GetUnbondingOp(ctx, vscID)
