@@ -28,7 +28,7 @@ func (k msgServer) AssignConsensusPublicKeyToConsumerChain(goCtx context.Context
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if _, found := k.GetConsumerClientId(ctx, msg.ChainId); !found {
-		return nil, types.ErrNoConsumerChainFound
+		return nil, types.ErrUnknownConsumerChainId
 	}
 
 	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderValidatorAddress)
@@ -75,7 +75,13 @@ func (k msgServer) AssignConsensusPublicKeyToConsumerChain(goCtx context.Context
 		return nil, err
 	}
 
-	// TODO: emit events
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.EventTypeAssignConsensusPublicKeyToConsumerChain,
+			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderValidatorAddress),
+			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, consumerSDKPublicKey.String()),
+		),
+	})
 
 	return &types.MsgAssignConsensusPublicKeyToConsumerChainResponse{}, nil
 }

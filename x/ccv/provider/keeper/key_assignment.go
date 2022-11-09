@@ -80,8 +80,11 @@ func (ka *KeyAssignment) SetProviderPubKeyToConsumerPubKey(pk ProviderPublicKey,
 	return nil
 }
 
+// DeleteProviderKey removes all KeyAssignment data associated to the provider validator
+// with key pca. This is called when a validator is destroyed in the staking module.
+// This is relatively expensive, but should be called rarely because validators are
+// destroyed rarely.
 func (ka *KeyAssignment) DeleteProviderKey(pca ProviderConsAddr) error {
-	// TODO: document expensive operation
 	// Delete the current mapping from the consumer key to the provider key
 	if ck, ok := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca); ok {
 		ka.Store.DelConsumerPublicKeyToProviderPublicKey(ck)
@@ -584,8 +587,9 @@ func (k Keeper) GetProviderConsAddrForSlashing(ctx sdk.Context, chainID string, 
 	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
 	providerPublicKey, found := k.KeyAssignment(ctx, chainID).GetProviderPubKeyFromConsumerConsAddress(consumerConsAddr)
 	if !found {
-		// TODO: add comment to explain that slash can come from a faulty consumer and that is why
-		// we don't panic.
+		// It is possible for a faulty consumer chain to send a slash packet for a validator that does
+		// not have a key assignment on the provider chain. In this case, we do not slash the validator
+		// and do not panic.
 		return nil, errors.New("could not find provider address for slashing")
 	}
 	return TMCryptoPublicKeyToConsAddr(providerPublicKey), nil

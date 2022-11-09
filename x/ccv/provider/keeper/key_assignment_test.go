@@ -18,7 +18,7 @@ import (
 )
 
 func key(seed int) tmprotocrypto.PublicKey {
-	v := testcrypto.NewValidatorFromIntSeed(seed)
+	v := testcrypto.NewCryptoIdentityFromIntSeed(seed)
 	return v.TMProtoCryptoPublicKey()
 }
 
@@ -30,7 +30,7 @@ const NUM_TRACES = 400
 const TRACE_LEN = 400
 
 // Number of validators to simulate
-const NUM_VALS = 12
+const NUM_VALS = 6
 
 // Number of consumer keys in the universe
 // (This is constrained to ensure overlap edge cases are tested)
@@ -201,7 +201,7 @@ func (d *driver) run() {
 
 // Check invariants which are 'external' to the data structure being used.
 // That is: these invariants make sense in the context of the wider system,
-// and aren't specifically about the KeyDel data structure internal state.
+// and aren't specifically about the internal state of the data structure.
 //
 // There are three invariants
 //
@@ -217,13 +217,11 @@ func (d *driver) run() {
 //     data structure does not grow unboundedly'
 //
 //     Please see body for details.
-//
-// TODO: check invariant wording precision
 func (d *driver) externalInvariants() {
 
 	/*
-		For a consumer who has received updates up to vscid i, its
-		provider validator set must be equal to the set on the provider
+		For a consumer who has received updates up to and including vscid i,
+		its provider validator set must be equal to the set on the provider
 		when i was sent, mapped through the assignment at that time.
 	*/
 	validatorSetReplication := func() {
@@ -262,11 +260,9 @@ func (d *driver) externalInvariants() {
 	}
 
 	/*
-		For any key that the consumer is aware of, because it has
-		received that key at some time in the past, and has not yet
-		returned the maturity vscid for its removal:
-		the key is useable as a query parameter to lookup the key
-		of the validator which should be slashed for misbehavior.
+		For all keys that are known to the consumer chain, it is
+		possible to query the provider chain for corresponding
+		provider key in order to do slashing.
 	*/
 	queries := func() {
 		// For each key known to the consumer
@@ -319,8 +315,8 @@ func (d *driver) externalInvariants() {
 		A consumer can still reference a key if the last abci.ValidatorUpdate it received
 		for the key had a positive power associated to it, OR the last abci.ValidatorUpdate
 		had a 0 power associated (deletion) but the maturity period for that
-		abci.ValidatorUpdate has not yet elapsed (and the maturity was not yet received
-		on the provider chain).
+		abci.ValidatorUpdate has not yet elapsed on the consumer, and thus a corresponding
+		maturity packet has not been sent to the provider.
 	*/
 	pruning := func() {
 
@@ -336,7 +332,7 @@ func (d *driver) externalInvariants() {
 				//    zero power abci.ValidatorUpdate can have matured. Thus the key should be
 				//    queryable.
 				// 2) if that abci.ValidatorUpdate was a zero positive power abci.ValidatorUpdate then the
-				//    key should not be queryable unless it was used in a subsquent
+				//    key should not be queryable unless it was used in a subsequent
 				//    abci.ValidatorUpdate (see next block).
 				expectQueryable[providerkeeper.DeterministicStringify(u.PubKey)] = 0 < u.Power
 			}
@@ -351,7 +347,6 @@ func (d *driver) externalInvariants() {
 
 		// Simply check every consumer key for the correct queryable-ness.
 		for ck := 0; ck < NUM_CKS; ck++ {
-			ck += 100 //TODO: fix with others
 			cca := providerkeeper.TMCryptoPublicKeyToConsAddr(key(ck))
 			_, actualQueryable := d.ka.GetProviderPubKeyFromConsumerConsAddress(cca)
 			if expect, found := expectQueryable[providerkeeper.DeterministicStringify(key(ck))]; found && expect {
@@ -382,7 +377,7 @@ func getTrace(t *testing.T) []traceStep {
 			// include none (to) all validators
 			pks := rand.Perm(NUM_VALS)[0:rand.Intn(NUM_VALS+1)]
 			for _, pk := range pks {
-				ck := rand.Intn(NUM_CKS) + 100 // differentiate from pk
+				ck := rand.Intn(NUM_CKS)
 				ret = append(ret, keyAssignmentEntry{key(pk), key(ck)})
 			}
 		}
@@ -409,7 +404,7 @@ func getTrace(t *testing.T) []traceStep {
 	// The real system may use some manual set defaults.
 	initialAssignment := []keyAssignmentEntry{}
 	for pk := 0; pk < NUM_VALS; pk++ {
-		ck := pk + 100 // differentiate from i
+		ck := pk
 		initialAssignment = append(initialAssignment, keyAssignmentEntry{key(pk), key(ck)})
 	}
 
@@ -651,6 +646,40 @@ func TestKeyAssignmentSetUseReplaceAndReverse(t *testing.T) {
 	require.False(t, found)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
 	require.Equal(t, key(42), actual)
+}
+
+func TestKeyAssignmentDelete(t *testing.T) {
+	ka := newTestKeyAssignment(t)
+	providerIdentity := testcrypto.NewCryptoIdentityFromIntSeed(42)
+	consumerIdentity0 := testcrypto.NewCryptoIdentityFromIntSeed(43)
+	consumerIdentity1 := testcrypto.NewCryptoIdentityFromIntSeed(44)
+	pk := providerIdentity.TMProtoCryptoPublicKey()
+	ck0 := consumerIdentity0.TMProtoCryptoPublicKey()
+	ck1 := consumerIdentity1.TMProtoCryptoPublicKey()
+
+	err := ka.SetProviderPubKeyToConsumerPubKey(pk, ck0)
+	require.NoError(t, err)
+
+	updates := []abci.ValidatorUpdate{{PubKey: pk, Power: 999}}
+	ka.ComputeUpdates(100, updates)
+
+	err = ka.SetProviderPubKeyToConsumerPubKey(pk, ck1) // New consumer key
+	require.NoError(t, err)
+	ka.ComputeUpdates(101, updates)
+
+	err = ka.DeleteProviderKey(providerIdentity.SDKConsAddress())
+	require.NoError(t, err)
+
+	_, found := ka.GetCurrentConsumerPubKeyFromProviderPubKey(pk)
+	require.False(t, found)
+	_, found = ka.GetProviderPubKeyFromConsumerPubKey(ck0)
+	require.False(t, found)
+	_, found = ka.GetProviderPubKeyFromConsumerPubKey(ck1)
+	require.False(t, found)
+	_, found = ka.GetProviderPubKeyFromConsumerConsAddress(consumerIdentity0.SDKConsAddress())
+	require.False(t, found)
+	_, found = ka.GetProviderPubKeyFromConsumerConsAddress(consumerIdentity1.SDKConsAddress())
+	require.False(t, found)
 }
 
 func TestKeyAssignmentSetUseReplaceAndPrune(t *testing.T) {

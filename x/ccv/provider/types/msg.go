@@ -71,7 +71,7 @@ func (msg MsgAssignConsensusPublicKeyToConsumerChain) ValidateBasic() error {
 		return ErrEmptyValidatorAddr
 	}
 	if msg.ConsumerConsensusPubKey == nil {
-		return ErrEmptyValidatorPubKey
+		return ErrInvalidConsumerConsensusPubKey
 	}
 	return nil
 }

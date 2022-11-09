@@ -82,7 +82,7 @@ func (k Keeper) QueryConsumerChainValidatorKeyAssignment(goCtx context.Context, 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if _, found := k.GetConsumerClientId(ctx, req.ChainId); !found {
-		return nil, types.ErrNoConsumerChainFound
+		return nil, types.ErrUnknownConsumerChainId
 	}
 
 	providerValidatorAddr, err := sdk.ValAddressFromBech32(req.ProviderValidatorAddress)
@@ -102,7 +102,7 @@ func (k Keeper) QueryConsumerChainValidatorKeyAssignment(goCtx context.Context, 
 
 	consumerTMPublicKey, found := k.KeyAssignment(ctx, req.ChainId).GetCurrentConsumerPubKeyFromProviderPubKey(providerTMPublicKey)
 	if !found {
-		return nil, types.ErrNoAssignedConsumerKeyFoundForValidator
+		return nil, types.ErrNoAssignedConsumerConsensusKeyFoundForValidator
 	}
 
 	consumerSDKPublicKey, err := sdkcryptocodec.FromTmProtoPublicKey(consumerTMPublicKey)
@@ -117,13 +117,11 @@ func (k Keeper) QueryConsumerChainValidatorKeyAssignment(goCtx context.Context, 
 			return nil, err
 		}
 	} else {
-		// TODO: improve err info
-		return nil, types.ErrInvalidValidatorPubKey
+		return nil, types.ErrInvalidConsumerConsensusPubKey
 	}
 
 	if pubKeyAny == nil {
-		// TODO: improve err info
-		return nil, types.ErrInvalidValidatorPubKey
+		return nil, types.ErrInvalidConsumerConsensusPubKey
 	}
 
 	return &types.QueryConsumerChainValidatorKeyAssignmentResponse{

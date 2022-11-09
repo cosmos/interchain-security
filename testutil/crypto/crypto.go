@@ -18,32 +18,35 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-type Validator struct {
+// CryptoIdentity is a test helper for generating keys and addresses of
+// various interfaces and types used by the SDK and Tendermint from a single
+// 'root' private key.
+type CryptoIdentity struct {
 	mock.PV
 }
 
-func NewValidatorFromBytesSeed(seed []byte) Validator {
+func NewCryptoIdentityFromBytesSeed(seed []byte) CryptoIdentity {
 	//lint:ignore SA1019 We don't care because this is only a test.
 	privKey := mock.PV{PrivKey: &sdkcryptokeys.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
-	return Validator{PV: privKey}
+	return CryptoIdentity{PV: privKey}
 }
 
-func NewValidatorFromIntSeed(i int) Validator {
+func NewCryptoIdentityFromIntSeed(i int) CryptoIdentity {
 	iUint64 := uint64(i)
 	seed := []byte("AAAAAAAAabcdefghijklmnopqrstuvwx") // 8+24 bytes
 	binary.LittleEndian.PutUint64(seed[:8], iUint64)
-	return NewValidatorFromBytesSeed(seed)
+	return NewCryptoIdentityFromBytesSeed(seed)
 }
 
-func (v *Validator) ABCIAddressBytes() []byte {
+func (v *CryptoIdentity) ABCIAddressBytes() []byte {
 	return v.SDKPubKey().Address()
 }
 
-func (v *Validator) TMValidator(power int64) *tmtypes.Validator {
+func (v *CryptoIdentity) TMValidator(power int64) *tmtypes.Validator {
 	return tmtypes.NewValidator(v.TMCryptoPubKey(), power)
 }
 
-func (v *Validator) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
+func (v *CryptoIdentity) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
 	ret, err := sdkcryptocodec.ToTmProtoPublicKey(v.SDKPubKey())
 	if err != nil {
 		panic(err)
@@ -51,7 +54,7 @@ func (v *Validator) TMProtoCryptoPublicKey() tmprotocrypto.PublicKey {
 	return ret
 }
 
-func (v *Validator) TMCryptoPubKey() tmcrypto.PubKey {
+func (v *CryptoIdentity) TMCryptoPubKey() tmcrypto.PubKey {
 	ret, err := v.GetPubKey()
 	if err != nil {
 		panic(err)
@@ -59,7 +62,7 @@ func (v *Validator) TMCryptoPubKey() tmcrypto.PubKey {
 	return ret
 }
 
-func (v *Validator) SDKStakingValidator() sdkstakingtypes.Validator {
+func (v *CryptoIdentity) SDKStakingValidator() sdkstakingtypes.Validator {
 	ret, err := sdkstakingtypes.NewValidator(v.SDKValAddress(), v.SDKPubKey(), sdkstakingtypes.Description{})
 	if err != nil {
 		panic(err)
@@ -67,7 +70,7 @@ func (v *Validator) SDKStakingValidator() sdkstakingtypes.Validator {
 	return ret
 }
 
-func (v *Validator) SDKPubKey() sdkcryptotypes.PubKey {
+func (v *CryptoIdentity) SDKPubKey() sdkcryptotypes.PubKey {
 	tmcryptoPubKey := v.TMCryptoPubKey()
 	ret, err := sdkcryptocodec.FromTmPubKeyInterface(tmcryptoPubKey)
 	if err != nil {
@@ -76,14 +79,18 @@ func (v *Validator) SDKPubKey() sdkcryptotypes.PubKey {
 	return ret
 }
 
-func (v *Validator) SDKValAddressString() string {
+func (v *CryptoIdentity) SDKValAddressString() string {
 	return v.TMCryptoPubKey().Address().String()
 }
 
-func (v *Validator) SDKValAddress() sdktypes.ValAddress {
+func (v *CryptoIdentity) SDKValAddress() sdktypes.ValAddress {
 	ret, err := sdktypes.ValAddressFromHex(v.SDKValAddressString())
 	if err != nil {
 		panic(err)
 	}
 	return ret
+}
+
+func (v *CryptoIdentity) SDKConsAddress() sdktypes.ConsAddress {
+	return sdktypes.GetConsAddress(v.SDKPubKey())
 }

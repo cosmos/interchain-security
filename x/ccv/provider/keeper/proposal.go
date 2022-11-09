@@ -263,11 +263,11 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consum
 
 	// Compute the initial validator set for the consumer chain from the provider chain's validator set
 	// and consensus key assignments.
-	updates = k.KeyAssignment(ctx, chainID).AssignDefaultsAndComputeUpdates(0, updates) // TODO: vscid?
+	updates = k.KeyAssignment(ctx, chainID).AssignDefaultsAndComputeUpdates(k.GetValidatorSetUpdateId(ctx), updates)
 	// Get a hash of the consumer validator set from the update.
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(updates)
 	if err != nil {
-		panic("TODO: handle error")
+		panic("unable to create validator set from updates computed from key assignment in MakeConsumerGenesis")
 	}
 	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
 
