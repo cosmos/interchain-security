@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"testing"
-	time "time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -25,9 +24,6 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
 // Parameters needed to instantiate an in-memory keeper
@@ -162,27 +158,6 @@ func GetConsumerKeeperAndCtx(t *testing.T, params InMemKeeperParams) (
 	ctrl := gomock.NewController(t)
 	mocks := NewMockedKeepers(ctrl)
 	return NewInMemConsumerKeeper(params, mocks), params.Ctx, ctrl, mocks
-}
-
-// Sets a template client state for a params subspace so that the provider's
-// GetTemplateClient method will be satisfied.
-func (params *InMemKeeperParams) SetTemplateClientState(customState *ibctmtypes.ClientState) {
-
-	keyTable := paramstypes.NewKeyTable(paramstypes.NewParamSetPair(
-		providertypes.KeyTemplateClient, &ibctmtypes.ClientState{},
-		func(value interface{}) error { return nil }))
-
-	newSubspace := params.ParamsSubspace.WithKeyTable(keyTable)
-	params.ParamsSubspace = &newSubspace
-
-	// Default template client state if none provided
-	if customState == nil {
-		customState = ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-			time.Second*10, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(),
-			[]string{"upgrade", "upgradedIBCState"}, true, true)
-	}
-
-	params.ParamsSubspace.Set(params.Ctx, providertypes.KeyTemplateClient, customState)
 }
 
 // Registers proto interfaces for params.Cdc

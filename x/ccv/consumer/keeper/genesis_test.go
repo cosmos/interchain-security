@@ -13,7 +13,6 @@ import (
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -67,8 +66,17 @@ func TestInitGenesis(t *testing.T) {
 		MaturityTime: uint64(time.Now().UnixNano()),
 	}
 
-	// create paramameters for a new chain
-	params := types.NewParams(true, types.DefaultBlocksPerDistributionTransmission, "", "")
+	// create parameters for a new chain
+	params := types.NewParams(true,
+		types.DefaultBlocksPerDistributionTransmission,
+		"",
+		"",
+		ccv.DefaultCCVTimeoutPeriod,
+		consumertypes.DefaultTransferTimeoutPeriod,
+		consumertypes.DefaultConsumerRedistributeFrac,
+		consumertypes.DefaultHistoricalEntries,
+		consumertypes.DefaultConsumerUnbondingPeriod,
+	)
 
 	// define two test cases which respectively create a genesis struct, use it to call InitGenesis
 	// and finally check that the genesis states are imported in the consumer keeper stores
@@ -99,12 +107,8 @@ func TestInitGenesis(t *testing.T) {
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
 				require.Equal(t, ccv.ConsumerPortID, ck.GetPort(ctx))
 
-				// compute the consumer unbonding period as done in InitGenesis (x/ccv/consumer/keeper/genesis.go)
-				expectedUbdPeriod := utils.ComputeConsumerUnbondingPeriod(gs.ProviderClientState.UnbondingPeriod)
-				gotUbdPeriod, found := ck.GetUnbondingTime(ctx)
-
-				require.True(t, found)
-				require.Equal(t, expectedUbdPeriod, gotUbdPeriod)
+				ubdPeriod := ck.GetUnbondingPeriod(ctx)
+				require.Equal(t, consumertypes.DefaultConsumerUnbondingPeriod, ubdPeriod)
 
 				require.Zero(t, ck.GetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())))
 
@@ -118,7 +122,6 @@ func TestInitGenesis(t *testing.T) {
 				gomock.InOrder(
 					testkeeper.ExpectGetCapabilityMock(ctx, mocks),
 					testkeeper.ExpectLatestConsensusStateMock(ctx, mocks, provClientID, provConsState),
-					testkeeper.ExpectGetClientStateMock(ctx, mocks, provClientID, provClientState),
 				)
 			},
 			// create a genesis for a restarted chain
@@ -142,12 +145,8 @@ func TestInitGenesis(t *testing.T) {
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
 				require.Equal(t, ccv.ConsumerPortID, ck.GetPort(ctx))
 
-				// compute the consumer unbonding period as done in InitGenesis (x/ccv/consumer/keeper/genesis.go)
-				expectedUbdPeriod := utils.ComputeConsumerUnbondingPeriod(gs.ProviderClientState.UnbondingPeriod)
-				gotUbdPeriod, found := ck.GetUnbondingTime(ctx)
-
-				require.True(t, found)
-				require.Equal(t, expectedUbdPeriod, gotUbdPeriod)
+				ubdPeriod := ck.GetUnbondingPeriod(ctx)
+				require.Equal(t, consumertypes.DefaultConsumerUnbondingPeriod, ubdPeriod)
 
 				// export states to genesis
 				require.Equal(t, matPacket.VscId, ck.GetHeightValsetUpdateID(ctx, uint64(0)))
@@ -195,6 +194,19 @@ func TestExportGenesis(t *testing.T) {
 		VscId:        uint64(1),
 		MaturityTime: uint64(time.Now().UnixNano()),
 	}
+
+	params := types.NewParams(
+		true,
+		types.DefaultBlocksPerDistributionTransmission,
+		"",
+		"",
+		ccv.DefaultCCVTimeoutPeriod,
+		consumertypes.DefaultTransferTimeoutPeriod,
+		consumertypes.DefaultConsumerRedistributeFrac,
+		consumertypes.DefaultHistoricalEntries,
+		consumertypes.DefaultConsumerUnbondingPeriod,
+	)
+
 	// create a single validator
 	pubKey := ed25519.GenPrivKey().PubKey()
 	tmPK, err := cryptocodec.ToTmPubKeyInterface(pubKey)
@@ -219,8 +231,6 @@ func TestExportGenesis(t *testing.T) {
 		true,
 		true,
 	)
-	// create paramameters for an enabled consumer chain
-	params := types.NewParams(true, types.DefaultBlocksPerDistributionTransmission, "", "")
 
 	// define two test cases which respectively populate the consumer chain store
 	// using the states declared above then call ExportGenesis to finally check

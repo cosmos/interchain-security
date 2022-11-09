@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"time"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -13,13 +11,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
-
-const TransferTimeDelay = 1 * 7 * 24 * time.Hour // 1 weeks
-
-// The fraction of tokens allocated to the consumer redistribution address
-// during distribution events. The fraction is a string representing a
-// decimal number. For example "0.75" would represent 75%.
-const ConsumerRedistributeFrac = "0.75"
 
 // Simple model, send tokens to the fee pool of the provider validator set
 // reference: cosmos/ibc-go/v3/modules/apps/transfer/keeper/msg_server.go
@@ -34,7 +25,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	fpTokens := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
 
 	// split the fee pool, send the consumer's fraction to the consumer redistribution address
-	frac, err := sdk.NewDecFromStr(ConsumerRedistributeFrac)
+	frac, err := sdk.NewDecFromStr(k.GetConsumerRedistributionFrac(ctx))
 	if err != nil {
 		return err
 	}
@@ -76,7 +67,8 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		tstProviderTokens := k.bankKeeper.GetAllBalances(ctx, tstProviderAddr)
 		providerAddr := k.GetProviderFeePoolAddrStr(ctx)
 		timeoutHeight := clienttypes.ZeroHeight()
-		timeoutTimestamp := uint64(ctx.BlockTime().Add(TransferTimeDelay).UnixNano())
+		transferTimeoutPeriod := k.GetTransferTimeoutPeriod(ctx)
+		timeoutTimestamp := uint64(ctx.BlockTime().Add(transferTimeoutPeriod).UnixNano())
 		for _, token := range tstProviderTokens {
 			err := k.ibcTransferKeeper.SendTransfer(ctx,
 				transfertypes.PortID,
@@ -139,4 +131,39 @@ func (k Keeper) GetConnectionHops(ctx sdk.Context, srcPort, srcChan string) ([]s
 			"cannot get connection hops from non-existent channel")
 	}
 	return ch.ConnectionHops, nil
+}
+
+// GetEstimatedNextFeeDistribution returns data about next fee distribution. Data represents an estimation of
+// accumulated fees at the current block height.
+func (k Keeper) GetEstimatedNextFeeDistribution(ctx sdk.Context) (types.NextFeeDistributionEstimate, error) {
+	lastH, err := k.GetLastTransmissionBlockHeight(ctx)
+	if err != nil {
+		return types.NextFeeDistributionEstimate{}, err
+	}
+
+	nextH := lastH.GetHeight() + k.GetBlocksPerDistributionTransmission(ctx)
+
+	consumerFeePoolAddr := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName).GetAddress()
+	total := k.bankKeeper.GetAllBalances(ctx, consumerFeePoolAddr)
+
+	fracParam := k.GetConsumerRedistributionFrac(ctx)
+	frac, err := sdk.NewDecFromStr(fracParam)
+	if err != nil {
+		return types.NextFeeDistributionEstimate{}, err
+	}
+
+	totalTokens := sdk.NewDecCoinsFromCoins(total...)
+	// truncated decimals are implicitly added to provider
+	consumerTokens, _ := totalTokens.MulDec(frac).TruncateDecimal()
+	providerTokens := total.Sub(consumerTokens)
+
+	return types.NextFeeDistributionEstimate{
+		CurrentHeight:        ctx.BlockHeight(),
+		LastHeight:           lastH.GetHeight(),
+		NextHeight:           nextH,
+		DistributionFraction: fracParam,
+		Total:                totalTokens.String(),
+		ToProvider:           sdk.NewDecCoinsFromCoins(providerTokens...).String(),
+		ToConsumer:           sdk.NewDecCoinsFromCoins(consumerTokens...).String(),
+	}, nil
 }

@@ -22,6 +22,7 @@ type ChainState struct {
 	RepresentativePowers *map[validatorID]uint
 	Params               *[]Param
 	Rewards              *Rewards
+	ConsumerChains       *map[chainID]bool
 }
 
 type Proposal interface {
@@ -36,13 +37,24 @@ type TextProposal struct {
 
 func (p TextProposal) isProposal() {}
 
-type ConsumerProposal struct {
+type ConsumerAdditionProposal struct {
 	Deposit       uint
 	Chain         chainID
 	SpawnTime     int
 	InitialHeight clienttypes.Height
 	Status        string
 }
+
+func (p ConsumerAdditionProposal) isProposal() {}
+
+type ConsumerRemovalProposal struct {
+	Deposit  uint
+	Chain    chainID
+	StopTime int
+	Status   string
+}
+
+func (p ConsumerRemovalProposal) isProposal() {}
 
 type Rewards struct {
 	IsRewarded map[validatorID]bool
@@ -53,8 +65,6 @@ type Rewards struct {
 	//other chains (e.g. false is used to check if provider received rewards from a consumer chain)
 	IsNativeDenom bool
 }
-
-func (p ConsumerProposal) isProposal() {}
 
 type ParamsProposal struct {
 	Deposit  uint
@@ -113,6 +123,11 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 	if modelState.Rewards != nil {
 		rewards := tr.getRewards(chain, *modelState.Rewards)
 		chainState.Rewards = &rewards
+	}
+
+	if modelState.ConsumerChains != nil {
+		chains := tr.getConsumerChains(chain)
+		chainState.ConsumerChains = &chains
 	}
 
 	return chainState
@@ -315,7 +330,7 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 			}
 		}
 
-		return ConsumerProposal{
+		return ConsumerAdditionProposal{
 			Deposit:   uint(deposit),
 			Status:    status,
 			Chain:     chain,
@@ -325,6 +340,25 @@ func (tr TestRun) getProposal(chain chainID, proposal uint) Proposal {
 				RevisionHeight: gjson.Get(string(bz), `content.initial_height.revision_height`).Uint(),
 			},
 		}
+	case "/interchain_security.ccv.provider.v1.ConsumerRemovalProposal":
+		chainId := gjson.Get(string(bz), `content.chain_id`).String()
+		stopTime := gjson.Get(string(bz), `content.stop_time`).Time().Sub(tr.containerConfig.now)
+
+		var chain chainID
+		for i, conf := range tr.chainConfigs {
+			if string(conf.chainId) == chainId {
+				chain = i
+				break
+			}
+		}
+
+		return ConsumerRemovalProposal{
+			Deposit:  uint(deposit),
+			Status:   status,
+			Chain:    chain,
+			StopTime: int(stopTime.Milliseconds()),
+		}
+
 	case "/cosmos.params.v1beta1.ParameterChangeProposal":
 		return ParamsProposal{
 			Deposit:  uint(deposit),
@@ -437,6 +471,32 @@ func (tr TestRun) getParam(chain chainID, param Param) string {
 	value := gjson.Get(string(bz), `value`)
 
 	return value.String()
+}
+
+// getConsumerChains returns a list of consumer chains that're being secured by the provider chain,
+// determined by querying the provider chain.
+func (tr TestRun) getConsumerChains(chain chainID) map[chainID]bool {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
+
+		"query", "provider", "list-consumer-chains",
+		`--node`, tr.getQueryNode(chain),
+		`-o`, `json`,
+	)
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	arr := gjson.Get(string(bz), "chains").Array()
+	chains := make(map[chainID]bool)
+	for _, c := range arr {
+		id := c.Get("chain_id").String()
+		chains[chainID(id)] = true
+	}
+
+	return chains
 }
 
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {

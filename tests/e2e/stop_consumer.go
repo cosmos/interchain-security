@@ -1,17 +1,18 @@
-package e2e_test
+package e2e
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	appConsumer "github.com/cosmos/interchain-security/app/consumer"
-	appProvider "github.com/cosmos/interchain-security/app/provider"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // Tests the functionality of stopping a consumer chain at a higher level than unit tests
 func (s *CCVTestSuite) TestStopConsumerChain() {
+
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
 	// default consumer chain ID
 	consumerChainID := s.consumerChain.ChainID
@@ -21,7 +22,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
 	s.Require().NoError(err)
 
-	validator, found := s.providerChain.App.(*appProvider.App).StakingKeeper.GetValidator(s.providerCtx(), valAddr)
+	validator, found := providerStakingKeeper.GetValidator(s.providerCtx(), valAddr)
 	s.Require().True(found)
 
 	// get delegator address
@@ -54,7 +55,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 		},
 		{
 			func(suite *CCVTestSuite) error {
-				testShares, err = s.providerChain.App.(*appProvider.App).StakingKeeper.Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
+				testShares, err = providerStakingKeeper.Delegate(s.providerCtx(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
 				return err
 			},
 		},
@@ -62,7 +63,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 			func(suite *CCVTestSuite) error {
 				for i := 0; i < ubdOpsNum; i++ {
 					// undelegate one quarter of the shares
-					_, err := s.providerChain.App.(*appProvider.App).StakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, testShares.QuoInt64(int64(ubdOpsNum)))
+					_, err := providerStakingKeeper.Undelegate(s.providerCtx(), delAddr, valAddr, testShares.QuoInt64(int64(ubdOpsNum)))
 					if err != nil {
 						return err
 					}
@@ -74,9 +75,9 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 		},
 		{
 			func(suite *CCVTestSuite) error {
-				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetSlashAcks(s.providerCtx(), consumerChainID, []string{"validator-1", "validator-2", "validator-3"})
-				s.providerChain.App.(*appProvider.App).ProviderKeeper.SetLockUnbondingOnTimeout(s.providerCtx(), consumerChainID)
-				s.providerChain.App.(*appProvider.App).ProviderKeeper.AppendPendingVSC(s.providerCtx(), consumerChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
+				providerKeeper.SetSlashAcks(s.providerCtx(), consumerChainID, []string{"validator-1", "validator-2", "validator-3"})
+				providerKeeper.SetLockUnbondingOnTimeout(s.providerCtx(), consumerChainID)
+				providerKeeper.AppendPendingVSC(s.providerCtx(), consumerChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
 				return nil
 			},
 		},
@@ -88,11 +89,11 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	}
 
 	// stop the consumer chain
-	err = s.providerChain.App.(*appProvider.App).ProviderKeeper.StopConsumerChain(s.providerCtx(), consumerChainID, false, true)
+	err = providerKeeper.StopConsumerChain(s.providerCtx(), consumerChainID, false, true)
 	s.Require().NoError(err)
 
 	// check all states are removed and the unbonding operation released
-	s.checkConsumerChainIsRemoved(consumerChainID, false)
+	s.checkConsumerChainIsRemoved(consumerChainID, false, true)
 }
 
 // TODO Simon: implement OnChanCloseConfirm in IBC-GO testing to close the consumer chain's channel end
@@ -102,8 +103,10 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	s.SetupTransferChannel()
 	s.SendEmptyVSCPacket()
 
+	providerKeeper := s.providerApp.GetProviderKeeper()
+
 	// stop the consumer chain
-	err := s.providerChain.App.(*appProvider.App).ProviderKeeper.StopConsumerChain(s.providerCtx(), s.consumerChain.ChainID, true, true)
+	err := providerKeeper.StopConsumerChain(s.providerCtx(), s.consumerChain.ChainID, true, true)
 	s.Require().NoError(err)
 
 	err = s.path.EndpointA.UpdateClient()
@@ -120,20 +123,23 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	//s.consumerChain.NextBlock()
 
 	// check that the provider's channel is removed
-	// _, found := s.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(s.consumerCtx())
+	// _, found := s.consumerApp.GetConsumerKeeper().GetProviderChannel(s.consumerCtx())
 	// s.Require().False(found)
 }
 
-func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd bool) {
+func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd bool, checkChannel bool) {
 	channelID := s.path.EndpointB.ChannelID
-	providerKeeper := s.providerChain.App.(*appProvider.App).ProviderKeeper
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
-	// check channel's state is closed
-	s.Require().Equal(channeltypes.CLOSED, s.path.EndpointB.GetChannel().State)
+	if checkChannel {
+		// check channel's state is closed
+		s.Require().Equal(channeltypes.CLOSED, s.path.EndpointB.GetChannel().State)
+	}
 
 	// check UnbondingOps were deleted and undelegation entries aren't onHold
 	if !lockUbd {
-		s.providerChain.App.(*appProvider.App).ProviderKeeper.IterateOverUnbondingOpIndex(
+		providerKeeper.IterateOverUnbondingOpIndex(
 			s.providerCtx(),
 			chainID,
 			func(vscID uint64, ubdIndex []uint64) bool {
@@ -142,7 +148,7 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd bool)
 				for _, ubdID := range ubdIndex {
 					_, found = providerKeeper.GetUnbondingOp(s.providerCtx(), ubdIndex[ubdID])
 					s.Require().False(found)
-					ubd, _ := s.providerChain.App.(*appProvider.App).StakingKeeper.GetUnbondingDelegationByUnbondingId(s.providerCtx(), ubdIndex[ubdID])
+					ubd, _ := providerStakingKeeper.GetUnbondingDelegationByUnbondingId(s.providerCtx(), ubdIndex[ubdID])
 					s.Require().Zero(ubd.Entries[ubdID].UnbondingOnHoldRefCount)
 				}
 				return true
@@ -177,13 +183,15 @@ func (suite *CCVTestSuite) TestProviderChannelClosed() {
 	// establish provider channel with a first VSC packet
 	suite.SendEmptyVSCPacket()
 
-	channelID, found := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
+	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
+
+	channelID, found := consumerKeeper.GetProviderChannel(suite.consumerChain.GetContext())
 	suite.Require().True(found)
 
 	// close provider channel
-	err := suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.ChanCloseInit(suite.consumerChain.GetContext(), ccv.ConsumerPortID, channelID)
+	err := consumerKeeper.ChanCloseInit(suite.consumerChain.GetContext(), ccv.ConsumerPortID, channelID)
 	suite.Require().NoError(err)
-	suite.Require().True(suite.consumerChain.App.(*appConsumer.App).ConsumerKeeper.IsChannelClosed(suite.consumerChain.GetContext(), channelID))
+	suite.Require().True(consumerKeeper.IsChannelClosed(suite.consumerChain.GetContext(), channelID))
 
 	// assert begin blocker did panics
 	defer func() {
@@ -192,5 +200,5 @@ func (suite *CCVTestSuite) TestProviderChannelClosed() {
 		}
 		suite.Require().Fail("Begin blocker did not panic with a closed channel")
 	}()
-	suite.consumerChain.App.(*appConsumer.App).BeginBlocker(suite.consumerChain.GetContext(), abci.RequestBeginBlock{})
+	suite.consumerApp.BeginBlocker(suite.consumerChain.GetContext(), abci.RequestBeginBlock{})
 }

@@ -19,6 +19,7 @@ import (
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 //
@@ -78,8 +79,8 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 	for _, tc := range tests {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		keeperParams.SetTemplateClientState(nil)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		if tc.expCreatedClient {
@@ -154,8 +155,8 @@ func TestCreateConsumerClient(t *testing.T) {
 	for _, tc := range tests {
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		keeperParams.SetTemplateClientState(nil)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 		// Test specific setup
 		tc.setup(&providerKeeper, ctx, &mocks)
@@ -355,8 +356,8 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		keeperParams.SetTemplateClientState(nil)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 		ctx = ctx.WithBlockTime(tc.blockTime)
 
 		// Mock expectations and setup for stopping the consumer chain, if applicable
@@ -374,7 +375,7 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 			found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
 			require.False(t, found)
 
-			testConsumerStateIsCleaned(t, ctx, providerKeeper, tc.prop.ChainId, "channelID")
+			testProviderStateIsCleaned(t, ctx, providerKeeper, tc.prop.ChainId, "channelID")
 		} else {
 			// Proposal should be stored as pending
 			found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
@@ -431,8 +432,8 @@ func TestStopConsumerChain(t *testing.T) {
 
 		// Common setup
 		keeperParams := testkeeper.NewInMemKeeperParams(t)
-		keeperParams.SetTemplateClientState(nil)
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 		// Setup specific to test case
 		tc.setup(ctx, &providerKeeper, mocks)
@@ -445,14 +446,14 @@ func TestStopConsumerChain(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		testConsumerStateIsCleaned(t, ctx, providerKeeper, "chainID", "channelID")
+		testProviderStateIsCleaned(t, ctx, providerKeeper, "chainID", "channelID")
 
 		ctrl.Finish()
 	}
 }
 
-// testConsumerStateIsCleaned executes test assertions for a stopped consumer chain's state being cleaned.
-func testConsumerStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
+// testProviderStateIsCleaned executes test assertions for the proposer's state being cleaned after a stopped consumer chain.
+func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper providerkeeper.Keeper,
 	expectedChainID string, expectedChannelID string) {
 
 	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
@@ -467,6 +468,14 @@ func testConsumerStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 	require.False(t, found)
 	acks := providerKeeper.GetSlashAcks(ctx, expectedChainID)
 	require.Empty(t, acks)
+	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, expectedChainID)
+	require.False(t, found)
+	found = false
+	providerKeeper.IterateVscSendTimestamps(ctx, expectedChainID, func(_ uint64, _ time.Time) bool {
+		found = true
+		return false
+	})
+	require.False(t, found)
 }
 
 // TestPendingConsumerRemovalPropDeletion tests the getting/setting
@@ -570,14 +579,15 @@ func TestPendingConsumerRemovalPropOrder(t *testing.T) {
 	}
 }
 
-// TestMakeConsumerGenesis tests the MakeConsumerGenesis keeper method
-//
-// Note: the initial intention of this test wasn't very clear, it was migrated with best effort
+// TestMakeConsumerGenesis tests the MakeConsumerGenesis keeper method.
+// An expected genesis state is hardcoded in json, unmarshaled, and compared
+// against an actual consumer genesis state constructed by a provider keeper.
 func TestMakeConsumerGenesis(t *testing.T) {
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	keeperParams.SetTemplateClientState(
-		&ibctmtypes.ClientState{
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	moduleParams := providertypes.Params{
+		TemplateClient: &ibctmtypes.ClientState{
 			TrustLevel:    ibctmtypes.DefaultTrustLevel,
 			MaxClockDrift: 10000000000,
 			ProofSpecs: []*_go.ProofSpec{
@@ -621,8 +631,14 @@ func TestMakeConsumerGenesis(t *testing.T) {
 			AllowUpdateAfterExpiry:       true,
 			AllowUpdateAfterMisbehaviour: true,
 		},
-	)
-	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+		// Note these are unused provider parameters for this test, and not actually asserted against
+		// They must be populated with reasonable values to satisfy SetParams though.
+		TrustingPeriodFraction: providertypes.DefaultTrustingPeriodFraction,
+		CcvTimeoutPeriod:       ccvtypes.DefaultCCVTimeoutPeriod,
+		InitTimeoutPeriod:      types.DefaultInitTimeoutPeriod,
+		VscTimeoutPeriod:       types.DefaultVscTimeoutPeriod,
+	}
+	providerKeeper.SetParams(ctx, moduleParams)
 	defer ctrl.Finish()
 
 	//
@@ -635,7 +651,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	actualGenesis, err := providerKeeper.MakeConsumerGenesis(ctx)
 	require.NoError(t, err)
 
-	jsonString := `{"params":{"enabled":true, "blocks_per_distribution_transmission":1000, "lock_unbonding_on_timeout": false},"new_chain":true,"provider_client_state":{"chain_id":"testchain1","trust_level":{"numerator":1,"denominator":3},"trusting_period":907200000000000,"unbonding_period":1814400000000000,"max_clock_drift":10000000000,"frozen_height":{},"latest_height":{"revision_height":5},"proof_specs":[{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":33,"min_prefix_length":4,"max_prefix_length":12,"hash":1}},{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":32,"min_prefix_length":1,"max_prefix_length":1,"hash":1}}],"upgrade_path":["upgrade","upgradedIBCState"],"allow_update_after_expiry":true,"allow_update_after_misbehaviour":true},"provider_consensus_state":{"timestamp":"2020-01-02T00:00:10Z","root":{"hash":"LpGpeyQVLUo9HpdsgJr12NP2eCICspcULiWa5u9udOA="},"next_validators_hash":"E30CE736441FB9101FADDAF7E578ABBE6DFDB67207112350A9A904D554E1F5BE"},"unbonding_sequences":null,"initial_val_set":[{"pub_key":{"type":"tendermint/PubKeyEd25519","value":"dcASx5/LIKZqagJWN0frOlFtcvz91frYmj/zmoZRWro="},"power":1}]}`
+	jsonString := `{"params":{"enabled":true, "blocks_per_distribution_transmission":1000, "ccv_timeout_period":2419200000000000, "transfer_timeout_period": 3600000000000, "consumer_redistribution_fraction":"0.75", "historical_entries":10000, "unbonding_period": 1728000000000000},"new_chain":true,"provider_client_state":{"chain_id":"testchain1","trust_level":{"numerator":1,"denominator":3},"trusting_period":907200000000000,"unbonding_period":1814400000000000,"max_clock_drift":10000000000,"frozen_height":{},"latest_height":{"revision_height":5},"proof_specs":[{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":33,"min_prefix_length":4,"max_prefix_length":12,"hash":1}},{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":32,"min_prefix_length":1,"max_prefix_length":1,"hash":1}}],"upgrade_path":["upgrade","upgradedIBCState"],"allow_update_after_expiry":true,"allow_update_after_misbehaviour":true},"provider_consensus_state":{"timestamp":"2020-01-02T00:00:10Z","root":{"hash":"LpGpeyQVLUo9HpdsgJr12NP2eCICspcULiWa5u9udOA="},"next_validators_hash":"E30CE736441FB9101FADDAF7E578ABBE6DFDB67207112350A9A904D554E1F5BE"},"unbonding_sequences":null,"initial_val_set":[{"pub_key":{"type":"tendermint/PubKeyEd25519","value":"dcASx5/LIKZqagJWN0frOlFtcvz91frYmj/zmoZRWro="},"power":1}]}`
 
 	var expectedGenesis consumertypes.GenesisState
 	err = json.Unmarshal([]byte(jsonString), &expectedGenesis)
@@ -647,7 +663,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	actualGenesis.ProviderConsensusState = &ibctmtypes.ConsensusState{}
 	expectedGenesis.ProviderConsensusState = &ibctmtypes.ConsensusState{}
 
-	require.Equal(t, actualGenesis, expectedGenesis, "consumer chain genesis created incorrectly")
+	require.Equal(t, expectedGenesis, actualGenesis, "consumer chain genesis created incorrectly")
 }
 
 // TestBeginBlockInit directly tests BeginBlockInit against the spec using helpers defined above.
@@ -659,8 +675,8 @@ func TestBeginBlockInit(t *testing.T) {
 	now := time.Now().UTC()
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	keeperParams.SetTemplateClientState(nil)
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockTime(now)
 
@@ -709,8 +725,8 @@ func TestBeginBlockCCR(t *testing.T) {
 	now := time.Now().UTC()
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	keeperParams.SetTemplateClientState(nil)
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 	defer ctrl.Finish()
 	ctx = ctx.WithBlockTime(now)
 
@@ -771,4 +787,60 @@ func TestBeginBlockCCR(t *testing.T) {
 	found = providerKeeper.GetPendingConsumerRemovalProp(
 		ctx, pendingProps[2].ChainId, pendingProps[2].StopTime)
 	require.True(t, found)
+}
+
+// Test getting both matured and pending comnsumer addition proposals
+func TestGetAllConsumerAdditionProps(t *testing.T) {
+	now := time.Now().UTC()
+
+	props := []types.ConsumerAdditionProposal{
+		{ChainId: "1", SpawnTime: now.Add(1 * time.Hour)},
+		{ChainId: "2", SpawnTime: now.Add(2 * time.Hour)},
+		{ChainId: "3", SpawnTime: now.Add(3 * time.Hour)},
+		{ChainId: "4", SpawnTime: now.Add(4 * time.Hour)},
+	}
+
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	defer ctrl.Finish()
+
+	for _, prop := range props {
+		cpProp := prop // bring into loop scope - avoids using iterator pointer instead of value pointer
+		err := providerKeeper.SetPendingConsumerAdditionProp(ctx, &cpProp)
+		require.NoError(t, err)
+	}
+
+	// advance the clock to be 1 minute after first proposal
+	ctx = ctx.WithBlockTime(now.Add(time.Minute))
+	res := providerKeeper.GetAllConsumerAdditionProps(ctx)
+	require.NotEmpty(t, res, "GetAllConsumerAdditionProps returned empty result")
+	require.Len(t, res.Pending, 4, "wrong len for pending addition props")
+	require.Equal(t, props[0].ChainId, res.Pending[0].ChainId, "wrong chain ID for pending addition prop")
+}
+
+// Test getting both matured and pending consumer removal proposals
+func TestGetAllConsumerRemovalProps(t *testing.T) {
+	now := time.Now().UTC()
+
+	props := []types.ConsumerRemovalProposal{
+		{ChainId: "1", StopTime: now.Add(1 * time.Hour)},
+		{ChainId: "2", StopTime: now.Add(2 * time.Hour)},
+		{ChainId: "3", StopTime: now.Add(3 * time.Hour)},
+		{ChainId: "4", StopTime: now.Add(4 * time.Hour)},
+	}
+
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
+	defer ctrl.Finish()
+
+	for _, prop := range props {
+		providerKeeper.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
+	}
+
+	// advance the clock to be 1 minute after first proposal
+	ctx = ctx.WithBlockTime(now.Add(time.Minute))
+	res := providerKeeper.GetAllConsumerRemovalProps(ctx)
+	require.NotEmpty(t, res, "GetAllConsumerRemovalProps returned empty result")
+	require.Len(t, res.Pending, 4, "wrong len for pending removal props")
+	require.Equal(t, props[0].ChainId, res.Pending[0].ChainId, "wrong chain ID for pending removal prop")
 }

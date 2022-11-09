@@ -6,6 +6,7 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
 import "ibc/core/client/v1/client.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
 
@@ -39,7 +40,6 @@ message ConsumerAdditionProposal {
     // on the provider chain would be necessary to release the locked funds.
     bool lock_unbonding_on_timeout = 8;   
   }
- 
 // ConsumerRemovalProposal is a governance proposal on the provider chain to remove (and stop) a consumer chain.
 // If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
 // operation funds are released if the LockUnbondingOnTimeout parameter is set to false for the consumer chain ID.
@@ -58,6 +58,20 @@ message ConsumerAdditionProposal {
 // Params defines the parameters for CCV Provider module
 message Params {
   ibc.lightclients.tendermint.v1.ClientState template_client = 1;
+  // TrustingPeriodFraction is used to compute the consumer and provider IBC client's TrustingPeriod from the chain defined UnbondingPeriod
+  int64 trusting_period_fraction = 2;
+  // Sent IBC packets will timeout after this duration
+  google.protobuf.Duration ccv_timeout_period = 3
+      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  // The channel initialization (IBC channel opening handshake) will timeout after this duration
+  google.protobuf.Duration init_timeout_period = 4
+      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true]; 
+  // The VSC packets sent by the provider will timeout after this duration.
+  // Note that unlike ccv_timeout_period which is an IBC param, 
+  // the vsc_timeout_period is a provider-side param that enables the provider 
+  // to timeout VSC packets even when a consumer chain is not live. 
+  google.protobuf.Duration vsc_timeout_period = 5
+      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 }
 
 message HandshakeMetadata {
@@ -69,4 +83,16 @@ message HandshakeMetadata {
 // successfully slashed on the provider chain
 message SlashAcks {
   repeated string addresses = 1;
+}
+
+// ConsumerAdditionProposals holds pending governance proposals on the provider chain to spawn a new chain.
+message ConsumerAdditionProposals {
+  // proposals waiting for spawn_time to pass
+  repeated ConsumerAdditionProposal pending = 1;
+}
+
+// ConsumerRemovalProposals holds pending governance proposals on the provider chain to remove (and stop) a consumer chain.
+message ConsumerRemovalProposals {
+  // proposals waiting for stop_time to pass
+  repeated ConsumerRemovalProposal pending = 1;
 }

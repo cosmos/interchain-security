@@ -66,12 +66,15 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	// clean up index
 	k.DeleteUnbondingOpIndex(ctx, chainID, data.ValsetUpdateId)
 
+	// remove the VSC timeout timestamp for this chainID and vscID
+	k.DeleteVscSendTimestamp(ctx, chainID, data.ValsetUpdateId)
+
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
 }
 
 // CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
-func (k Keeper) CompleteMaturedUnbondingOps(ctx sdk.Context) {
+func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
 	ids, err := k.ConsumeMaturedUnbondingOps(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("could not get the list of matured unbonding ops: %s", err.Error()))
@@ -116,8 +119,18 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 	return k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID), false)
 }
 
+// EndBlockVSU contains the EndBlock logic needed for
+// the Validator Set Update sub-protocol
+func (k Keeper) EndBlockVSU(ctx sdk.Context) {
+	// notify the staking module to complete all matured unbonding ops
+	k.completeMaturedUnbondingOps(ctx)
+
+	// send latest validator updates to every registered consumer chain
+	k.sendValidatorUpdates(ctx)
+}
+
 // SendValidatorUpdates sends latest validator updates to every registered consumer chain
-func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
+func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 	// get current ValidatorSetUpdateId
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	// get the validator updates from the staking module
@@ -147,18 +160,20 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 					channelID,          // source channel id
 					ccv.ProviderPortID, // source port id
 					packetData.GetBytes(),
+					k.GetParams(ctx).CcvTimeoutPeriod,
 				)
 				if err != nil {
 					panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 				}
+				// set the VSC send timestamp for this packet
+				k.SetVscSendTimestamp(ctx, chainID, packetData.ValsetUpdateId, ctx.BlockTime())
 			} else {
 				// store the packet data to be sent once the CCV channel is established
 				k.AppendPendingVSC(ctx, chainID, packetData)
 			}
 		}
-		return false // do not stop the iteration
+		return true // do not stop the iteration
 	})
-	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
 	k.IncrementValidatorSetUpdateId(ctx)
 }
 
@@ -174,11 +189,25 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 			channelID,          // source channel id
 			ccv.ProviderPortID, // source port id
 			data.GetBytes(),
+			k.GetParams(ctx).CcvTimeoutPeriod,
 		)
 		if err != nil {
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
+		// set the VSC send timestamp for this packet;
+		// note that the VSC send timestamp are set when the packets
+		// are actually sent over IBC
+		k.SetVscSendTimestamp(ctx, chainID, data.ValsetUpdateId, ctx.BlockTime())
 	}
+}
+
+// EndBlockCIS contains the EndBlock logic needed for
+// the Consumer Initiated Slashing sub-protocol
+func (k Keeper) EndBlockCIS(ctx sdk.Context) {
+	// get current ValidatorSetUpdateId
+	valUpdateID := k.GetValidatorSetUpdateId(ctx)
+	// set the ValsetUpdateBlockHeight
+	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
 }
 
 // OnRecvSlashPacket slashes and jails the given validator in the packet data
@@ -275,4 +304,70 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	k.slashingKeeper.JailUntil(ctx, consAddr, jailTime)
 
 	return true, nil
+}
+
+// EndBlockCIS contains the EndBlock logic needed for
+// the Consumer Chain Removal sub-protocol
+func (k Keeper) EndBlockCCR(ctx sdk.Context) {
+	currentTime := ctx.BlockTime()
+	currentTimeUint64 := uint64(currentTime.UnixNano())
+
+	// iterate over initTimeoutTimestamps
+	var chainIdsToRemove []string
+	k.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) bool {
+		if currentTimeUint64 > ts {
+			// initTimeout expired
+			chainIdsToRemove = append(chainIdsToRemove, chainID)
+			// continue to iterate through all timed out consumers
+			return true
+		}
+		// break iteration since the timeout timestamps are in order
+		return false
+	})
+	// remove consumers that timed out
+	for _, chainID := range chainIdsToRemove {
+		// stop the consumer chain and unlock the unbonding.
+		// Note that the CCV channel was not established,
+		// thus closeChan is irrelevant
+		err := k.StopConsumerChain(ctx, chainID, false, false)
+		if err != nil {
+			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+		}
+	}
+
+	// empty slice
+	chainIdsToRemove = nil
+
+	// Iterate over all consumers with established CCV channels and
+	// check if the first vscSendTimestamp in iterator + VscTimeoutPeriod
+	// exceed the current block time.
+	// Checking the first send timestamp for each chain is sufficient since
+	// timestamps are ordered by vsc ID.
+	k.IterateChannelToChain(ctx, func(ctx sdk.Context, _, chainID string) bool {
+		k.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, ts time.Time) bool {
+			timeoutTimestamp := ts.Add(k.GetParams(ctx).VscTimeoutPeriod)
+			if currentTime.After(timeoutTimestamp) {
+				// vscTimeout expired
+				chainIdsToRemove = append(chainIdsToRemove, chainID)
+			}
+			// break iteration since the send timestamps are in order
+			return false
+		})
+		// continue to iterate through all consumers
+		return false
+	})
+	// remove consumers that timed out
+	for _, chainID := range chainIdsToRemove {
+		// stop the consumer chain and use lockUnbondingOnTimeout
+		// to decide whether to lock the unbonding
+		err := k.StopConsumerChain(
+			ctx,
+			chainID,
+			k.GetLockUnbondingOnTimeout(ctx, chainID),
+			true,
+		)
+		if err != nil {
+			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+		}
+	}
 }

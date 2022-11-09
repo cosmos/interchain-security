@@ -8,6 +8,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -77,7 +78,8 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false)),
+					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
+					3, time.Hour, time.Hour, time.Hour),
 			),
 			true,
 		},
@@ -92,7 +94,84 @@ func TestValidateGenesisState(t *testing.T) {
 				nil,
 				nil,
 				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-					0, clienttypes.Height{}, nil, []string{"ibc", "upgradedIBCState"}, true, false)),
+					0, clienttypes.Height{}, nil, []string{"ibc", "upgradedIBCState"}, true, false),
+					types.DefaultTrustingPeriodFraction, ccv.DefaultCCVTimeoutPeriod, types.DefaultInitTimeoutPeriod, types.DefaultVscTimeoutPeriod),
+			),
+			false,
+		},
+		{
+			"invalid params, zero trusting period fraction",
+			types.NewGenesisState(
+				0,
+				nil,
+				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid"}},
+				nil,
+				nil,
+				nil,
+				nil,
+				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
+					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
+					0, // 0 trusting period fraction here
+					ccv.DefaultCCVTimeoutPeriod,
+					types.DefaultInitTimeoutPeriod,
+					types.DefaultVscTimeoutPeriod),
+			),
+			false,
+		},
+		{
+			"invalid params, zero ccv timeout",
+			types.NewGenesisState(
+				0,
+				nil,
+				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid"}},
+				nil,
+				nil,
+				nil,
+				nil,
+				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
+					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
+					types.DefaultTrustingPeriodFraction,
+					0, // 0 ccv timeout here
+					types.DefaultInitTimeoutPeriod,
+					types.DefaultVscTimeoutPeriod),
+			),
+			false,
+		},
+		{
+			"invalid params, zero init timeout",
+			types.NewGenesisState(
+				0,
+				nil,
+				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid"}},
+				nil,
+				nil,
+				nil,
+				nil,
+				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
+					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
+					types.DefaultTrustingPeriodFraction,
+					ccv.DefaultCCVTimeoutPeriod,
+					0, // 0 init timeout here
+					types.DefaultVscTimeoutPeriod),
+			),
+			false,
+		},
+		{
+			"invalid params, zero vsc timeout",
+			types.NewGenesisState(
+				0,
+				nil,
+				[]types.ConsumerState{{ChainId: "chainid-1", ChannelId: "channelid"}},
+				nil,
+				nil,
+				nil,
+				nil,
+				types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
+					time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
+					types.DefaultTrustingPeriodFraction,
+					ccv.DefaultCCVTimeoutPeriod,
+					types.DefaultInitTimeoutPeriod,
+					0), // 0 vsc timeout here
 			),
 			false,
 		},
