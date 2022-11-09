@@ -268,11 +268,11 @@ func TestIterateOverUnbondingOpIndex(t *testing.T) {
 
 	// check iterator returns expected entries
 	i := 1
-	providerKeeper.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) bool {
+	providerKeeper.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) (stop bool) {
 		require.Equal(t, uint64(i), vscID)
 		require.EqualValues(t, unbondingOpIndex[:i], ubdIndex)
 		i++
-		return true
+		return false // do not stop the iteration
 	})
 	require.Equal(t, len(unbondingOpIndex), i)
 }

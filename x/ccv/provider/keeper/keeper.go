@@ -353,7 +353,11 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 }
 
 // IterateOverUnbondingOpIndex iterates over the unbonding indexes for a given chain id.
-func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb func(vscID uint64, ubdIndex []uint64) bool) {
+func (k Keeper) IterateOverUnbondingOpIndex(
+	ctx sdk.Context,
+	chainID string,
+	cb func(vscID uint64, ubdIndex []uint64) (stop bool),
+) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.UnbondingOpIndexBytePrefix, chainID))
 	defer iterator.Close()
@@ -370,7 +374,8 @@ func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string, cb 
 			panic("Failed to unmarshal JSON")
 		}
 
-		if !cb(vscID, index.GetIds()) {
+		stop := cb(vscID, index.GetIds())
+		if stop {
 			return
 		}
 	}
