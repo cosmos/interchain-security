@@ -693,7 +693,8 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 
 	// verify that all requests are stored except for
 	// the downtime slash request duplicates
-	dataPackets := consumerKeeper.GetPendingDataPackets(ctx)
+	dataPackets, found := consumerKeeper.GetPendingDataPackets(ctx)
+	suite.Require().True(found)
 	suite.Require().Len(dataPackets.GetList(), 12)
 
 	// save consumer next sequence
@@ -716,13 +717,15 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 	}
 
 	// check that pending data packets get cleared after being sent
-	dataPackets = consumerKeeper.GetPendingDataPackets(ctx)
+	dataPackets, found = consumerKeeper.GetPendingDataPackets(ctx)
+	suite.Require().False(found)
 	suite.Require().Len(dataPackets.GetList(), 0)
 
 	// check that slash requests aren't stored when channel is established
 	consumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.Downtime)
 	consumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.DoubleSign)
 
-	dataPackets = consumerKeeper.GetPendingDataPackets(ctx)
+	dataPackets, found = consumerKeeper.GetPendingDataPackets(ctx)
+	suite.Require().False(found)
 	suite.Require().Len(dataPackets.GetList(), 0)
 }

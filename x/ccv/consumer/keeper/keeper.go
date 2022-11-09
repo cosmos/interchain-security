@@ -404,20 +404,19 @@ func (k Keeper) SetPendingDataPackets(ctx sdk.Context, dataPackets types.DataPac
 }
 
 // GetPendingDataPackets returns the pending data packets from the store
-func (k Keeper) GetPendingDataPackets(ctx sdk.Context) types.DataPackets {
+func (k Keeper) GetPendingDataPackets(ctx sdk.Context) (dataPackets types.DataPackets, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get([]byte{types.PendingDataPacketsBytePrefix})
 	if bz == nil {
-		return types.DataPackets{}
+		return types.DataPackets{}, false
 	}
 
-	var dataPackets types.DataPackets
 	err := dataPackets.Unmarshal(bz)
 	if err != nil {
 		panic(fmt.Errorf("failed to unmarshal pending data packets: %w", err))
 	}
 
-	return dataPackets
+	return dataPackets, true
 }
 
 // DeletePendingDataPackets clears the pending data packets in store
@@ -428,7 +427,7 @@ func (k Keeper) DeletePendingDataPackets(ctx sdk.Context) {
 
 // AppendPendingDataPacket appends the given data packet to the pending data packets in store
 func (k Keeper) AppendPendingDataPacket(ctx sdk.Context, dataPacket types.DataPacket) {
-	dp := k.GetPendingDataPackets(ctx)
+	dp, _ := k.GetPendingDataPackets(ctx)
 	dpArray := dp.GetList()
 	dpArray = append(dpArray, dataPacket)
 	k.SetPendingDataPackets(ctx, types.DataPackets{List: dpArray})

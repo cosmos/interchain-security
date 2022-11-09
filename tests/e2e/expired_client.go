@@ -3,36 +3,25 @@ package e2e
 import (
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// TestVSCPacketSendWithExpiredClient tests the providers sending VSCPackets
+// TestVSCPacketSendWithExpiredClient tests the provider sending VSCPackets
 // when the consumer client is expired
 func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	s.SetupCCVChannel()
-	s.SetupTransferChannel()
 
-	cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointB.ClientID)
-	s.Require().True(ok)
-	trustingPeriod := cs.(*ibctm.ClientState).TrustingPeriod
-
-	// increment time without updating the client;
-	// this will result in the client to the consumer to expire
-	incrementTimeByWithoutUpdate(s, trustingPeriod+time.Hour, Consumer)
-
-	// check that the client to the consumer is not active
-	cs, ok = s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointB.ClientID)
-	s.Require().True(ok)
-	clientStore := s.providerApp.GetIBCKeeper().ClientKeeper.ClientStore(s.providerCtx(), s.path.EndpointB.ClientID)
-	status := cs.Status(s.providerCtx(), clientStore, s.providerChain.App.AppCodec())
-	s.Require().NotEqual(ibcexported.Active, status, "")
+	expireClient(s, Consumer)
 
 	// bond some tokens on provider to change validator powers
 	bondAmt := sdk.NewInt(1000000)
@@ -76,20 +65,148 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	_, found = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
 	s.Require().False(found, "pending VSC packets found")
 
-	// bond more tokens on provider to change validator powers
+	// check that validator updates work
+	// - bond more tokens on provider to change validator powers
+	delegate(s, delAddr, bondAmt)
+	// - send CCV packet to consumer
+	s.providerChain.NextBlock()
+	// - relay all VSC packet from provider to consumer
+	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 3)
+	// - increment time so that the unbonding period ends on the consumer
+	incrementTimeByUnbondingPeriod(s, Consumer)
+	// - relay all VSCMatured packet from consumer to provider
+	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 3)
+}
+
+// TestConsumerPacketSendExpiredClient tests the consumer sending packets
+// when the provider client is expired
+func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	consumerKeeper := s.consumerApp.GetConsumerKeeper()
+
+	s.SetupCCVChannel()
+
+	// bond some tokens on provider to change validator powers
+	bondAmt := sdk.NewInt(1000000)
+	delAddr := s.providerChain.SenderAccount.GetAddress()
 	delegate(s, delAddr, bondAmt)
 
 	// send CCV packet to consumer
 	s.providerChain.NextBlock()
 
-	// Relay 3 VSC packet from provider to consumer
-	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 3)
+	// bond more tokens on provider to change validator powers
+	delegate(s, delAddr, bondAmt)
 
-	// Increment time so that the unbonding period ends on the provider
-	incrementTimeByUnbondingPeriod(s, Provider)
+	// send CCV packets to consumer
+	s.providerChain.NextBlock()
 
-	// Relay 3 VSCMatured packet from consumer to provider
-	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 3)
+	// check that the packets are not in the list of pending VSC packets
+	_, found := providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+	s.Require().False(found, "pending VSC packets found")
+
+	// relay all VSC packet from provider to consumer
+	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 2)
+
+	// expire client to provider
+	expireClient(s, Provider)
+
+	// check that the client to the consumer is active
+	checkClientExpired(s, Consumer, false)
+
+	// increment time so that the unbonding period ends on the consumer;
+	// do not try to update the client to the provider since it's expired
+	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerCtx())
+	incrementTimeByWithoutUpdate(s, consumerUnbondingPeriod+time.Hour, Provider)
+
+	// check that the packets were added to the list of pending data packets
+	dataPackets, found := consumerKeeper.GetPendingDataPackets(s.consumerCtx())
+	s.Require().True(found)
+	s.Require().Equal(2, len(dataPackets.GetList()), "unexpected number of pending data packets")
+
+	// try to send slash packet for downtime infraction
+	addr := ed25519.GenPrivKey().PubKey().Address()
+	val := abci.Validator{Address: addr}
+	consumerKeeper.SendSlashPacket(s.consumerCtx(), val, 2, stakingtypes.Downtime)
+	// try to send slash packet for the same downtime infraction
+	consumerKeeper.SendSlashPacket(s.consumerCtx(), val, 3, stakingtypes.Downtime)
+	// try to send slash packet for the double-sign infraction
+	consumerKeeper.SendSlashPacket(s.consumerCtx(), val, 3, stakingtypes.DoubleSign)
+
+	// check that the packets were added to the list of pending data packets
+	dataPackets, found = consumerKeeper.GetPendingDataPackets(s.consumerCtx())
+	s.Require().True(found)
+	s.Require().Equal(4, len(dataPackets.GetList()), "unexpected number of pending data packets")
+
+	// upgrade expired client to the consumer
+	upgradeExpiredClient(s, Provider)
+
+	// go to next block to trigger SendPendingDataPackets
+	s.consumerChain.NextBlock()
+
+	// check that the list of pending data packets is emptied
+	dataPackets, found = consumerKeeper.GetPendingDataPackets(s.consumerCtx())
+	s.Require().False(found)
+	s.Require().Equal(0, len(dataPackets.GetList()), "unexpected number of pending data packets")
+
+	// relay all  packet from consumer to provider
+	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 4)
+
+	// check that everything works
+	// - bond more tokens on provider to change validator powers
+	delegate(s, delAddr, bondAmt)
+	// - send CCV packet to consumer
+	s.providerChain.NextBlock()
+	// - relay 1 VSC packet from provider to consumer
+	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
+	// - increment time so that the unbonding period ends on the provider
+	incrementTimeByUnbondingPeriod(s, Consumer)
+	// - relay 1 VSCMatured packet from consumer to provider
+	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
+}
+
+// expireClient expires the client the `clientTo`
+func expireClient(s *CCVTestSuite, clientTo ChainType) {
+	var hostEndpoint *ibctesting.Endpoint
+	var hostChain *ibctesting.TestChain
+	if clientTo == Consumer {
+		hostEndpoint = s.path.EndpointB
+		hostChain = s.providerChain
+	} else {
+		hostEndpoint = s.path.EndpointA
+		hostChain = s.consumerChain
+	}
+	cs, ok := hostChain.App.GetIBCKeeper().ClientKeeper.GetClientState(hostChain.GetContext(), hostEndpoint.ClientID)
+	s.Require().True(ok)
+	trustingPeriod := cs.(*ibctm.ClientState).TrustingPeriod
+
+	// increment time without updating the `clientTo` client
+	incrementTimeByWithoutUpdate(s, trustingPeriod+time.Hour, clientTo)
+
+	// check that the client is not active
+	checkClientExpired(s, clientTo, true)
+}
+
+// checkClientIsExpired checks whether the client to `clientTo` is expired
+func checkClientExpired(s *CCVTestSuite, clientTo ChainType, expectedExpired bool) {
+	var hostEndpoint *ibctesting.Endpoint
+	var hostChain *ibctesting.TestChain
+	if clientTo == Consumer {
+		hostEndpoint = s.path.EndpointB
+		hostChain = s.providerChain
+	} else {
+		hostEndpoint = s.path.EndpointA
+		hostChain = s.consumerChain
+	}
+	// check that the client to the consumer is not active
+	cs, ok := hostChain.App.GetIBCKeeper().ClientKeeper.GetClientState(hostChain.GetContext(), hostEndpoint.ClientID)
+	s.Require().True(ok)
+	clientStore := hostChain.App.GetIBCKeeper().ClientKeeper.ClientStore(hostChain.GetContext(), hostEndpoint.ClientID)
+	status := cs.Status(hostChain.GetContext(), clientStore, hostChain.App.AppCodec())
+	if expectedExpired {
+		s.Require().NotEqual(ibcexported.Active, status, "client is active")
+	} else {
+		s.Require().Equal(ibcexported.Active, status, "client is not active")
+	}
 }
 
 // upgradeExpiredClient upgrades an expired client to `clientTo`

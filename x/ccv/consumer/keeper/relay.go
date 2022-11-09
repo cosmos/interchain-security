@@ -34,7 +34,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		// the first packet from the provider chain
 		// - mark the CCV channel as established
 		k.SetProviderChannel(ctx, packet.DestinationChannel)
-		// - send pending slash requests in states
+		// - send pending data packets
 		k.SendPendingDataPackets(ctx, packet.DestinationChannel)
 	}
 	// Set pending changes by accumulating changes from this packet with all prior changes
@@ -84,6 +84,9 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 		return nil
 	}
 
+	// try sending pending data packets first
+	k.SendPendingDataPackets(ctx, channelID)
+
 	store := ctx.KVStore(k.storeKey)
 	maturityIterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 	defer maturityIterator.Close()
@@ -108,10 +111,13 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 			)
 			if expiredClient {
 				// IBC client expired:
-				// AppendPacketData(CONSUMER_PACKET_TYPE_VSCM, packetData.GetBytes())
-				// TODO
-			}
-			if err != nil {
+				// append the VSCMatured packet data to pending data packets
+				// to be sent once the client is upgraded
+				k.AppendPendingDataPacket(ctx, types.DataPacket{
+					Type: types.VscMaturedPacket,
+					Data: packetData.GetBytes(),
+				})
+			} else if err != nil {
 				return err
 			}
 			k.DeletePacketMaturityTime(ctx, vscId)
@@ -143,15 +149,20 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 	packetData := ccv.NewSlashPacketData(validator, valsetUpdateID, infraction)
 
 	// check that provider channel is established
-	// if not, append to pending data packets
 	channelID, ok := k.GetProviderChannel(ctx)
 	if !ok {
+		// CCV channel not established:
+		// append the Slash packet data to pending data packets
+		// to be sent once the CCV channel is established
 		k.AppendPendingDataPacket(ctx, types.DataPacket{
 			Type: types.SlashPacket,
 			Data: packetData.GetBytes(),
 		})
 		return
 	}
+
+	// try sending pending data packets first
+	k.SendPendingDataPackets(ctx, channelID)
 
 	// send packet over IBC
 	expiredClient, err := utils.SendIBCPacket(
@@ -165,17 +176,25 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 	)
 	if expiredClient {
 		// IBC client expired:
-		// TODO
-	}
-	if err != nil {
+		// append the Slash packet data to pending data packets
+		// to be sent once the client is upgraded
+		k.AppendPendingDataPacket(ctx, types.DataPacket{
+			Type: types.SlashPacket,
+			Data: packetData.GetBytes(),
+		})
+	} else if err != nil {
 		panic(err)
 	}
 }
 
 // SendPendingDataPackets sends the stored pending data packet to the provider chain
 func (k Keeper) SendPendingDataPackets(ctx sdk.Context, channelID string) {
-	dataPackets := k.GetPendingDataPackets(ctx).List
-	for i, dp := range dataPackets {
+	dataPackets, found := k.GetPendingDataPackets(ctx)
+	if !found {
+		// This method is a no-op if there are no pending data packets
+		return
+	}
+	for i, dp := range dataPackets.GetList() {
 		// send packet over IBC
 		expiredClient, err := utils.SendIBCPacket(
 			ctx,
@@ -200,7 +219,6 @@ func (k Keeper) SendPendingDataPackets(ctx sdk.Context, channelID string) {
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
 	}
-
 	// clear pending data packets
 	k.DeletePendingDataPackets(ctx)
 }
