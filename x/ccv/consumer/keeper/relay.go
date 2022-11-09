@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -96,11 +97,11 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 	for maturityIterator.Valid() {
 		vscId := types.IdFromPacketMaturityTimeKey(maturityIterator.Key())
 		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
-			// send VSCMatured packet
-			// - construct validator set change packet data
+			// construct validator set change packet data
 			packetData := ccv.NewVSCMaturedPacketData(vscId)
-			// - send packet over IBC
-			expiredClient, err := utils.SendIBCPacket(
+
+			// prepare to send the packetData to the consumer
+			packet, channelCap, err := utils.PrepareIBCPacketSend(
 				ctx,
 				k.scopedKeeper,
 				k.channelKeeper,
@@ -109,7 +110,14 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 				packetData.GetBytes(),
 				k.GetCCVTimeoutPeriod(ctx),
 			)
-			if expiredClient {
+			if err != nil {
+				// something went wrong when preparing the packet
+				return err
+			}
+
+			// send packet over IBC channel
+			err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
+			if clienttypes.ErrClientNotActive.Is(err) {
 				// IBC client expired:
 				// append the VSCMatured packet data to pending data packets
 				// to be sent once the client is upgraded
@@ -164,8 +172,8 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 	// try sending pending data packets first
 	k.SendPendingDataPackets(ctx, channelID)
 
-	// send packet over IBC
-	expiredClient, err := utils.SendIBCPacket(
+	// prepare to send the packetData to the consumer
+	packet, channelCap, err := utils.PrepareIBCPacketSend(
 		ctx,
 		k.scopedKeeper,
 		k.channelKeeper,
@@ -174,7 +182,14 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 		packetData.GetBytes(),
 		k.GetCCVTimeoutPeriod(ctx),
 	)
-	if expiredClient {
+	if err != nil {
+		// something went wrong when preparing the packet
+		panic(fmt.Errorf("packet could not be prepared for IBC send: %w", err))
+	}
+
+	// send packet over IBC channel
+	err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
+	if clienttypes.ErrClientNotActive.Is(err) {
 		// IBC client expired:
 		// append the Slash packet data to pending data packets
 		// to be sent once the client is upgraded
@@ -183,7 +198,8 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 			Data: packetData.GetBytes(),
 		})
 	} else if err != nil {
-		panic(err)
+		// something went wrong when sending the packet
+		panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 	}
 }
 
@@ -195,8 +211,8 @@ func (k Keeper) SendPendingDataPackets(ctx sdk.Context, channelID string) {
 		return
 	}
 	for i, dp := range dataPackets.GetList() {
-		// send packet over IBC
-		expiredClient, err := utils.SendIBCPacket(
+		// prepare to send the packetData to the consumer
+		packet, channelCap, err := utils.PrepareIBCPacketSend(
 			ctx,
 			k.scopedKeeper,
 			k.channelKeeper,
@@ -205,7 +221,14 @@ func (k Keeper) SendPendingDataPackets(ctx sdk.Context, channelID string) {
 			dp.Data,
 			k.GetCCVTimeoutPeriod(ctx),
 		)
-		if expiredClient {
+		if err != nil {
+			// something went wrong when preparing the packet
+			panic(fmt.Errorf("packet could not be prepared for IBC send: %w", err))
+		}
+
+		// send packet over IBC channel
+		err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
+		if clienttypes.ErrClientNotActive.Is(err) {
 			// IBC client expired:
 			if i != 0 {
 				// this should never happen
