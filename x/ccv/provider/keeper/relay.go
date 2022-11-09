@@ -157,7 +157,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				// CCV channel not established:
 				// store the packet data to be sent once the CCV channel is established
 				k.AppendPendingVSCs(ctx, chainID, []ccv.ValidatorSetChangePacketData{packetData})
-				return true // go to next consumer chain
+				return false // go to next consumer chain
 			}
 
 			// prepare to send the packetData to the consumer
@@ -190,7 +190,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 			}
 		}
-		return true // do not stop the iteration
+		return false // do not stop the iteration
 	})
 	k.IncrementValidatorSetUpdateId(ctx)
 }
