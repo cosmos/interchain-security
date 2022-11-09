@@ -6,6 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
@@ -127,14 +128,14 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			panic("provider client does not exist")
 		}
 
-		maturingPackets := []consumertypes.MaturingVSCPacket{}
-		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) bool {
-			mat := consumertypes.MaturingVSCPacket{
+		maturingPackets := []types.MaturingVSCPacket{}
+		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) (stop bool) {
+			mat := types.MaturingVSCPacket{
 				VscId:        vscId,
 				MaturityTime: timeNs,
 			}
 			maturingPackets = append(maturingPackets, mat)
-			return false
+			return false // do not stop the iteration
 		})
 
 		outstandingDowntimes := []consumertypes.OutstandingDowntime{}
