@@ -881,7 +881,7 @@ func (k Keeper) DeleteVscSendTimestamp(ctx sdk.Context, chainID string, vscID ui
 func (k Keeper) IterateVscSendTimestamps(
 	ctx sdk.Context,
 	chainID string,
-	cb func(vscID uint64, ts time.Time) bool,
+	cb func(vscID uint64, ts time.Time) (stop bool),
 ) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
@@ -897,7 +897,9 @@ func (k Keeper) IterateVscSendTimestamps(
 		if err != nil {
 			panic(fmt.Errorf("failed to parse timestamp value: %w", err))
 		}
-		if !cb(vscID, ts) {
+
+		stop := cb(vscID, ts)
+		if stop {
 			return
 		}
 	}

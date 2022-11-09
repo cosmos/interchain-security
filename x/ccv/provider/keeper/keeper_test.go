@@ -356,9 +356,9 @@ func TestVscSendTimestamp(t *testing.T) {
 
 	i := 0
 	chainID := "chain"
-	providerKeeper.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, _ time.Time) bool {
+	providerKeeper.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, _ time.Time) (stop bool) {
 		i++
-		return true
+		return false // do not stop
 	})
 	require.Equal(t, 0, i)
 
@@ -367,28 +367,28 @@ func TestVscSendTimestamp(t *testing.T) {
 	}
 
 	i = 0
-	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(vscID uint64, ts time.Time) bool {
+	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(vscID uint64, ts time.Time) (stop bool) {
 		require.Equal(t, vscID, testCases[i].vscID)
 		require.Equal(t, ts, testCases[i].ts)
 		i++
-		return true
+		return false // do not stop
 	})
 	require.Equal(t, 2, i)
 
 	// delete VSC send timestamps
 	var ids []uint64
-	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(vscID uint64, _ time.Time) bool {
+	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(vscID uint64, _ time.Time) (stop bool) {
 		ids = append(ids, vscID)
-		return true
+		return false // do not stop
 	})
 	for _, vscID := range ids {
 		providerKeeper.DeleteVscSendTimestamp(ctx, testCases[0].chainID, vscID)
 	}
 
 	i = 0
-	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(_ uint64, _ time.Time) bool {
+	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(_ uint64, _ time.Time) (stop bool) {
 		i++
-		return true
+		return false // do not stop
 	})
 	require.Equal(t, 0, i)
 }

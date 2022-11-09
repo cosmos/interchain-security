@@ -357,14 +357,14 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	// Checking the first send timestamp for each chain is sufficient since
 	// timestamps are ordered by vsc ID.
 	k.IterateChannelToChain(ctx, func(ctx sdk.Context, _, chainID string) (stop bool) {
-		k.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, ts time.Time) bool {
+		k.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, ts time.Time) (stop bool) {
 			timeoutTimestamp := ts.Add(k.GetParams(ctx).VscTimeoutPeriod)
 			if currentTime.After(timeoutTimestamp) {
 				// vscTimeout expired
 				chainIdsToRemove = append(chainIdsToRemove, chainID)
 			}
 			// break iteration since the send timestamps are in order
-			return false
+			return true
 		})
 		// continue to iterate through all consumers
 		return false

@@ -157,9 +157,9 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 
 		// delete VSC send timestamps
 		var ids []uint64
-		k.IterateVscSendTimestamps(ctx, chainID, func(vscID uint64, ts time.Time) bool {
+		k.IterateVscSendTimestamps(ctx, chainID, func(vscID uint64, ts time.Time) (stop bool) {
 			ids = append(ids, vscID)
-			return true
+			return false // do not stop the iteration
 		})
 		for _, vscID := range ids {
 			k.DeleteVscSendTimestamp(ctx, chainID, vscID)
