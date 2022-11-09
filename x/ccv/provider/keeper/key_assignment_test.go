@@ -30,7 +30,7 @@ const NUM_TRACES = 400
 const TRACE_LEN = 400
 
 // Number of validators to simulate
-const NUM_VALS = 12
+const NUM_VALS = 6
 
 // Number of consumer keys in the universe
 // (This is constrained to ensure overlap edge cases are tested)
