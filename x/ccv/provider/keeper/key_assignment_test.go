@@ -653,6 +653,40 @@ func TestKeyAssignmentSetUseReplaceAndReverse(t *testing.T) {
 	require.Equal(t, key(42), actual)
 }
 
+func TestKeyAssignmentDelete(t *testing.T) {
+	ka := newTestKeyAssignment(t)
+	providerIdentity := testcrypto.NewValidatorFromIntSeed(42)
+	consumerIdentity0 := testcrypto.NewValidatorFromIntSeed(43)
+	consumerIdentity1 := testcrypto.NewValidatorFromIntSeed(44)
+	pk := providerIdentity.TMProtoCryptoPublicKey()
+	ck0 := consumerIdentity0.TMProtoCryptoPublicKey()
+	ck1 := consumerIdentity1.TMProtoCryptoPublicKey()
+
+	err := ka.SetProviderPubKeyToConsumerPubKey(pk, ck0)
+	require.NoError(t, err)
+
+	updates := []abci.ValidatorUpdate{{PubKey: pk, Power: 999}}
+	ka.ComputeUpdates(100, updates)
+
+	err = ka.SetProviderPubKeyToConsumerPubKey(pk, ck1) // New consumer key
+	require.NoError(t, err)
+	ka.ComputeUpdates(101, updates)
+
+	err = ka.DeleteProviderKey(providerIdentity.SDKConsAddress())
+	require.NoError(t, err)
+
+	_, found := ka.GetCurrentConsumerPubKeyFromProviderPubKey(pk)
+	require.False(t, found)
+	_, found = ka.GetProviderPubKeyFromConsumerPubKey(ck0)
+	require.False(t, found)
+	_, found = ka.GetProviderPubKeyFromConsumerPubKey(ck1)
+	require.False(t, found)
+	_, found = ka.GetProviderPubKeyFromConsumerConsAddress(consumerIdentity0.SDKConsAddress())
+	require.False(t, found)
+	_, found = ka.GetProviderPubKeyFromConsumerConsAddress(consumerIdentity1.SDKConsAddress())
+	require.False(t, found)
+}
+
 func TestKeyAssignmentSetUseReplaceAndPrune(t *testing.T) {
 	ka := newTestKeyAssignment(t)
 	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
