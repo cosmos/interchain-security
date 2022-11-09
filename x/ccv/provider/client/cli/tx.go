@@ -32,8 +32,8 @@ func GetTxCmd() *cobra.Command {
 
 func NewAssignConsensusPublicKeyToConsumerChainCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "designate-consensus-key [consumer-chain-id] [consumer-pubkey]",
-		Short: "designate a consensus public key to use for a consumer chain",
+		Use:   "assign-consensus-key [consumer-chain-id] [consumer-pubkey]",
+		Short: "assign a consensus public key to use for a consumer chain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
