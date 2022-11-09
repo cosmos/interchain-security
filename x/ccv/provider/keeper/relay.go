@@ -137,8 +137,10 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
 		// check whether there is an established CCV channel to this consumer chain
-		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
-			// Send pending VSC packets to consumer chain
+		channelID, found := k.GetChainToChannel(ctx, chainID)
+		if found {
+			// CCV channel established:
+			// try sending the pending VSC packets, if any
 			k.SendPendingVSCPackets(ctx, chainID, channelID)
 		}
 
@@ -150,33 +152,34 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 			// construct validator set change packet data
 			packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
 
-			// check whether there is an established CCV channel to this consumer chain
-			if channelID, found := k.GetChainToChannel(ctx, chainID); found {
-				// send this validator set change packet data to the consumer chain
-				expiredClient, err := utils.SendIBCPacket(
-					ctx,
-					k.scopedKeeper,
-					k.channelKeeper,
-					channelID,          // source channel id
-					ccv.ProviderPortID, // source port id
-					packetData.GetBytes(),
-					k.GetParams(ctx).CcvTimeoutPeriod,
-				)
-				if expiredClient {
-					// IBC client expired:
-					// store the packet data to be sent once the client is upgraded
-					k.AppendPendingVSCs(ctx, chainID, []ccv.ValidatorSetChangePacketData{packetData})
-				} else if err == nil {
-					// successful send:
-					// set the VSC send timestamp for this packet
-					k.SetVscSendTimestamp(ctx, chainID, packetData.ValsetUpdateId, ctx.BlockTime())
-				} else {
-					// something went wrong when sending the packet
-					panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
-				}
-			} else {
+			if !found {
+				// CCV channel not established:
 				// store the packet data to be sent once the CCV channel is established
 				k.AppendPendingVSCs(ctx, chainID, []ccv.ValidatorSetChangePacketData{packetData})
+				return true // go to next consumer chain
+			}
+
+			// send this validator set change packet data to the consumer chain
+			expiredClient, err := utils.SendIBCPacket(
+				ctx,
+				k.scopedKeeper,
+				k.channelKeeper,
+				channelID,          // source channel id
+				ccv.ProviderPortID, // source port id
+				packetData.GetBytes(),
+				k.GetParams(ctx).CcvTimeoutPeriod,
+			)
+			if expiredClient {
+				// IBC client expired:
+				// store the packet data to be sent once the client is upgraded
+				k.AppendPendingVSCs(ctx, chainID, []ccv.ValidatorSetChangePacketData{packetData})
+			} else if err == nil {
+				// successful send:
+				// set the VSC send timestamp for this packet
+				k.SetVscSendTimestamp(ctx, chainID, packetData.ValsetUpdateId, ctx.BlockTime())
+			} else {
+				// something went wrong when sending the packet
+				panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 			}
 		}
 		return true // do not stop the iteration
@@ -184,10 +187,11 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 	k.IncrementValidatorSetUpdateId(ctx)
 }
 
-// Sends all pending ValidatorSetChangePackets to the specified chain
+// SendPendingVSCPackets sends all pending ValidatorSetChangePackets to the specified chain
 func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string) {
 	pendingPackets, found := k.GetPendingVSCs(ctx, chainID)
 	if !found {
+		// this method is a no-op if there are no pending packets
 		return
 	}
 	for i, data := range pendingPackets {
