@@ -26,9 +26,6 @@ const (
 
 func (s *CCVTestSuite) TestSendAndApplySlashPacket() {
 
-	// TODO: make separate pr for these slashing test refactors, remember to mention parent pr, hacks make it fail
-	// TODO: make issue or just fix the slash fraction business below
-
 	testCases := []int{
 		downtimeTestCase,
 		doubleSignTestCase,
@@ -157,15 +154,14 @@ func (s *CCVTestSuite) TestSendAndApplySlashPacket() {
 		s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
 
 		// check that the validator's tokens were slashed
-		var slashedAmount sdk.Dec
-
+		var slashFraction sdk.Dec
 		if tc == downtimeTestCase {
-			slashFraction := int64(100) // TODO: make issue about this
-			slashedAmount = sdk.NewDec(1).QuoInt64(slashFraction).Mul(valOldBalance.ToDec())
+			slashFraction = providerSlashingKeeper.SlashFractionDowntime(s.providerCtx())
 
 		} else if tc == doubleSignTestCase {
-			slashedAmount = providerSlashingKeeper.SlashFractionDoubleSign(s.providerCtx()).Mul(valOldBalance.ToDec())
+			slashFraction = providerSlashingKeeper.SlashFractionDoubleSign(s.providerCtx())
 		}
+		slashedAmount := slashFraction.Mul(valOldBalance.ToDec())
 
 		resultingTokens := valOldBalance.Sub(slashedAmount.TruncateInt())
 		s.Require().Equal(resultingTokens, validatorJailed.GetTokens())
