@@ -178,14 +178,14 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 
 			// send packet over IBC channel
 			err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
-			if clienttypes.ErrClientNotActive.Is(err) {
-				// IBC client expired:
-				// store the packet data to be sent once the client is upgraded
-				k.AppendPendingVSCs(ctx, chainID, []ccv.ValidatorSetChangePacketData{packetData})
-			} else if err == nil {
+			if err == nil {
 				// successful send:
 				// set the VSC send timestamp for this packet
 				k.SetVscSendTimestamp(ctx, chainID, packetData.ValsetUpdateId, ctx.BlockTime())
+			} else if clienttypes.ErrClientNotActive.Is(err) {
+				// IBC client expired:
+				// store the packet data to be sent once the client is upgraded
+				k.AppendPendingVSCs(ctx, chainID, []ccv.ValidatorSetChangePacketData{packetData})
 			} else {
 				// something went wrong when sending the packet
 				panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
@@ -221,17 +221,17 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 
 		// send packet over IBC channel
 		err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
-		if clienttypes.ErrClientNotActive.Is(err) {
-			// IBC client expired:
-			// store the packet data to be sent once the client is upgraded
-			if i != 0 {
-				// this should never happen
-				panic(fmt.Errorf("client expired while sending pending packets: %w", err))
-			}
-			// leave the packet data stored to be sent once the client is upgraded
-			return
-		}
 		if err != nil {
+			if clienttypes.ErrClientNotActive.Is(err) {
+				// IBC client expired:
+				// store the packet data to be sent once the client is upgraded
+				if i != 0 {
+					// this should never happen
+					panic(fmt.Errorf("client expired while sending pending packets: %w", err))
+				}
+				// leave the packet data stored to be sent once the client is upgraded
+				return
+			}
 			// something went wrong when sending the packet
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
