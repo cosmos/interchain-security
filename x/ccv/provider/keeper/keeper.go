@@ -561,7 +561,7 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint6
 }
 
 // IterateSlashAcks iterates through the slash acks set in the store
-func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(valsetUpdateId, height uint64) bool) {
+func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(valsetUpdateId, height uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
 
@@ -571,7 +571,8 @@ func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(valsetUp
 		valsetUpdateId := binary.BigEndian.Uint64(iterator.Key()[1:])
 		height := binary.BigEndian.Uint64(iterator.Value())
 
-		if !cb(valsetUpdateId, height) {
+		stop := cb(valsetUpdateId, height)
+		if stop {
 			return
 		}
 	}
