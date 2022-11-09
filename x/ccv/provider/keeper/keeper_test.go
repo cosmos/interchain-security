@@ -142,7 +142,7 @@ func TestPendingVSCs(t *testing.T) {
 			ValsetUpdateId: 2,
 		},
 	}
-	providerKeeper.AppendPendingVSC(ctx, chainID, packetList)
+	providerKeeper.AppendPendingVSCs(ctx, chainID, packetList)
 
 	packets, found := providerKeeper.GetPendingVSCs(ctx, chainID)
 	require.True(t, found)
@@ -154,7 +154,7 @@ func TestPendingVSCs(t *testing.T) {
 		},
 		ValsetUpdateId: 3,
 	}
-	providerKeeper.AppendPendingVSC(ctx, chainID, []ccv.ValidatorSetChangePacketData{newPacket})
+	providerKeeper.AppendPendingVSCs(ctx, chainID, []ccv.ValidatorSetChangePacketData{newPacket})
 	vscs, found := providerKeeper.GetPendingVSCs(ctx, chainID)
 	require.True(t, found)
 	require.Len(t, vscs, 3)
