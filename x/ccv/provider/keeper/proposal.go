@@ -347,7 +347,7 @@ func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.Consumer
 			propsToExecute = append(propsToExecute, prop)
 			return false // do not stop the iteration
 		}
-		return true // stop
+		return true // stop iteration, proposals are ordered by spawn time, so no additional pending props are ready to act upon
 	})
 
 	return propsToExecute
