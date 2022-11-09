@@ -201,7 +201,7 @@ func (d *driver) run() {
 
 // Check invariants which are 'external' to the data structure being used.
 // That is: these invariants make sense in the context of the wider system,
-// and aren't specifically about the KeyDel data structure internal state.
+// and aren't specifically about the internal state of the data structure.
 //
 // There are three invariants
 //
@@ -217,13 +217,11 @@ func (d *driver) run() {
 //     data structure does not grow unboundedly'
 //
 //     Please see body for details.
-//
-// TODO: check invariant wording precision
 func (d *driver) externalInvariants() {
 
 	/*
-		For a consumer who has received updates up to vscid i, its
-		provider validator set must be equal to the set on the provider
+		For a consumer who has received updates up to and including vscid i,
+		its provider validator set must be equal to the set on the provider
 		when i was sent, mapped through the assignment at that time.
 	*/
 	validatorSetReplication := func() {
@@ -262,11 +260,9 @@ func (d *driver) externalInvariants() {
 	}
 
 	/*
-		For any key that the consumer is aware of, because it has
-		received that key at some time in the past, and has not yet
-		returned the maturity vscid for its removal:
-		the key is useable as a query parameter to lookup the key
-		of the validator which should be slashed for misbehavior.
+		For all keys that are known to the consumer chain, it is
+		possible to query the provider chain for corresponding
+		provider key in order to do slashing.
 	*/
 	queries := func() {
 		// For each key known to the consumer
@@ -319,8 +315,8 @@ func (d *driver) externalInvariants() {
 		A consumer can still reference a key if the last abci.ValidatorUpdate it received
 		for the key had a positive power associated to it, OR the last abci.ValidatorUpdate
 		had a 0 power associated (deletion) but the maturity period for that
-		abci.ValidatorUpdate has not yet elapsed (and the maturity was not yet received
-		on the provider chain).
+		abci.ValidatorUpdate has not yet elapsed on the consumer, and thus a corresponding
+		maturity packet has not been sent to the provider.
 	*/
 	pruning := func() {
 
@@ -336,7 +332,7 @@ func (d *driver) externalInvariants() {
 				//    zero power abci.ValidatorUpdate can have matured. Thus the key should be
 				//    queryable.
 				// 2) if that abci.ValidatorUpdate was a zero positive power abci.ValidatorUpdate then the
-				//    key should not be queryable unless it was used in a subsquent
+				//    key should not be queryable unless it was used in a subsequent
 				//    abci.ValidatorUpdate (see next block).
 				expectQueryable[providerkeeper.DeterministicStringify(u.PubKey)] = 0 < u.Power
 			}
