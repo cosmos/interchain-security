@@ -166,7 +166,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				if expiredClient {
 					// IBC client expired:
 					// store the packet data to be sent once the client is upgraded
-					k.AppendPendingVSC(ctx, chainID, []ccv.ValidatorSetChangePacketData{packetData})
+					k.AppendPendingVSCs(ctx, chainID, []ccv.ValidatorSetChangePacketData{packetData})
 				} else if err == nil {
 					// successful send:
 					// set the VSC send timestamp for this packet
@@ -177,7 +177,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				}
 			} else {
 				// store the packet data to be sent once the CCV channel is established
-				k.AppendPendingVSC(ctx, chainID, []ccv.ValidatorSetChangePacketData{packetData})
+				k.AppendPendingVSCs(ctx, chainID, []ccv.ValidatorSetChangePacketData{packetData})
 			}
 		}
 		return true // do not stop the iteration
