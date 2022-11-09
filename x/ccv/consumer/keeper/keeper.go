@@ -298,7 +298,7 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 }
 
 // IterateHeightToValsetUpdateID iterates over the block height to valset update ID mapping in store
-func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64) bool) {
+func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
 
@@ -309,7 +309,8 @@ func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, v
 
 		vscID := binary.BigEndian.Uint64(iterator.Value())
 
-		if !cb(height, vscID) {
+		stop := cb(height, vscID)
+		if stop {
 			break
 		}
 	}

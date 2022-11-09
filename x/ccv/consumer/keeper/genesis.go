@@ -138,7 +138,17 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			return false // do not stop the iteration
 		})
 
-		outstandingDowntimes := []consumertypes.OutstandingDowntime{}
+		heightToVCIDs := []types.HeightToValsetUpdateID{}
+		k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
+			hv := types.HeightToValsetUpdateID{
+				Height:         height,
+				ValsetUpdateId: vscID,
+			}
+			heightToVCIDs = append(heightToVCIDs, hv)
+			return false // do not stop the iteration
+		})
+
+		outstandingDowntimes := []types.OutstandingDowntime{}
 		k.IterateOutstandingDowntime(ctx, func(addr string) bool {
 			od := consumertypes.OutstandingDowntime{
 				ValidatorConsensusAddress: addr,
