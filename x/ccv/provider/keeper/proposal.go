@@ -464,19 +464,22 @@ func (k Keeper) ConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerR
 	// store the (to be) executed consumer removal proposals in order
 	propsToExecute := []types.ConsumerRemovalProposal{}
 
-	k.IteratePendingConsumerRemovalProps(ctx, func(stopTime time.Time, prop types.ConsumerRemovalProposal) bool {
+	k.IteratePendingConsumerRemovalProps(ctx, func(stopTime time.Time, prop types.ConsumerRemovalProposal) (stop bool) {
 		if !ctx.BlockTime().Before(stopTime) {
 			propsToExecute = append(propsToExecute, prop)
-			return true
+			return false // do not stop the iteration
 		}
 		// No more proposals to check, since they're stored/ordered by timestamp.
-		return false
+		return true // stop
 	})
 
 	return propsToExecute
 }
 
-func (k Keeper) IteratePendingConsumerRemovalProps(ctx sdk.Context, cb func(stopTime time.Time, prop types.ConsumerRemovalProposal) bool) {
+func (k Keeper) IteratePendingConsumerRemovalProps(
+	ctx sdk.Context,
+	cb func(stopTime time.Time, prop types.ConsumerRemovalProposal) (stop bool),
+) {
 	iterator := k.PendingConsumerRemovalPropIterator(ctx)
 	defer iterator.Close()
 
@@ -488,8 +491,9 @@ func (k Keeper) IteratePendingConsumerRemovalProps(ctx sdk.Context, cb func(stop
 			panic(fmt.Errorf("failed to parse pending consumer removal proposal key: %w", err))
 		}
 
-		if !cb(stopTime, types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime}) {
-			return
+		stop := cb(stopTime, types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime})
+		if stop {
+			break
 		}
 	}
 }

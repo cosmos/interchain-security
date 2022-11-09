@@ -147,9 +147,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	})
 
 	remProps := []types.ConsumerRemovalProposal{}
-	k.IteratePendingConsumerRemovalProps(ctx, func(_ time.Time, prop types.ConsumerRemovalProposal) bool {
+	k.IteratePendingConsumerRemovalProps(ctx, func(_ time.Time, prop types.ConsumerRemovalProposal) (stop bool) {
 		remProps = append(remProps, prop)
-		return true
+		return false // do not stop the iteration
 	})
 
 	params := k.GetParams(ctx)
