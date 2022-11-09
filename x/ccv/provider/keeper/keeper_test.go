@@ -56,9 +56,9 @@ func TestSlashAcks(t *testing.T) {
 	var chainsAcks [][]string
 
 	penaltiesfN := func() (penalties []string) {
-		providerKeeper.IterateSlashAcks(ctx, func(id string, acks []string) bool {
+		providerKeeper.IterateSlashAcks(ctx, func(id string, acks []string) (stop bool) {
 			chainsAcks = append(chainsAcks, acks)
-			return true
+			return false // do not stop iteration
 		})
 		return
 	}
