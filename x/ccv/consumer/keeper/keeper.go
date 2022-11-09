@@ -16,6 +16,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -432,4 +433,32 @@ func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashReque
 	srArray := sr.GetRequests()
 	srArray = append(srArray, req)
 	k.SetPendingSlashRequests(ctx, types.SlashRequests{Requests: srArray})
+}
+
+// GetHeightToValsetUpdateIDs returns all height to valset update id pairs into a list
+func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToValsetUpdateID {
+	heightToVCIDs := []types.HeightToValsetUpdateID{}
+	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) bool {
+		hv := types.HeightToValsetUpdateID{
+			Height:         height,
+			ValsetUpdateId: vscID,
+		}
+		heightToVCIDs = append(heightToVCIDs, hv)
+		return true
+	})
+
+	return heightToVCIDs
+}
+
+// GetOutstandingDowntimes returns all outstanding downtimes in store
+func (k Keeper) GetOutstandingDowntimes(ctx sdk.Context) []consumertypes.OutstandingDowntime {
+	outstandingDowntimes := []types.OutstandingDowntime{}
+	k.IterateOutstandingDowntime(ctx, func(addr string) bool {
+		od := types.OutstandingDowntime{
+			ValidatorConsensusAddress: addr,
+		}
+		outstandingDowntimes = append(outstandingDowntimes, od)
+		return false
+	})
+	return outstandingDowntimes
 }

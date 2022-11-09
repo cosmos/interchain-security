@@ -131,16 +131,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			return false
 		})
 
-		heightToVCIDs := []types.HeightToValsetUpdateID{}
-		k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) bool {
-			hv := types.HeightToValsetUpdateID{
-				Height:         height,
-				ValsetUpdateId: vscID,
-			}
-			heightToVCIDs = append(heightToVCIDs, hv)
-			return true
-		})
-
 		outstandingDowntimes := []types.OutstandingDowntime{}
 		k.IterateOutstandingDowntime(ctx, func(addr string) bool {
 			od := types.OutstandingDowntime{
@@ -155,7 +145,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			channelID,
 			maturingPackets,
 			valset,
-			heightToVCIDs,
+			k.GetHeightToValsetUpdateIDs(ctx),
 			consumertypes.SlashRequests{},
 			outstandingDowntimes,
 			consumertypes.LastTransmissionBlockHeight{},
@@ -163,29 +153,24 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 		)
 	} else {
 		clientID, ok := k.GetProviderClientID(ctx)
-		// if provider clientID and channelID don't exist on the consumer chain, then CCV protocol is disabled for this chain
-		// return a disabled genesis state
+		// if provider clientID and channelID don't exist on the consumer chain,
+		// then CCV protocol is disabled for this chain return a default genesis state
 		if !ok {
 			return consumertypes.DefaultGenesisState()
 		}
-		cs, ok := k.clientKeeper.GetClientState(ctx, clientID)
-		if !ok {
-			panic("provider client not set on already running consumer chain")
-		}
-		tmCs, ok := cs.(*ibctmtypes.ClientState)
-		if !ok {
-			panic("provider client consensus state is not tendermint client state")
-		}
-		consState, ok := k.clientKeeper.GetLatestClientConsensusState(ctx, clientID)
-		if !ok {
-			panic("provider consensus state not set on already running consumer chain")
-		}
-		tmConsState, ok := consState.(*ibctmtypes.ConsensusState)
-		if !ok {
-			panic("provider consensus state is not tendermint consensus state")
-		}
+
 		// export client states and pending slashing requests into a new chain genesis
-		genesis = consumertypes.NewInitialGenesisState(tmCs, tmConsState, valset, params)
+		genesis = consumertypes.NewRestartGenesisState(
+			clientID,
+			"",
+			nil,
+			valset,
+			k.GetHeightToValsetUpdateIDs(ctx),
+			k.GetPendingSlashRequests(ctx),
+			nil,
+			consumertypes.LastTransmissionBlockHeight{},
+			params,
+		)
 	}
 
 	return
