@@ -221,7 +221,7 @@ func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
 	} else {
 		jumpPeriod = consumerUnbondingPeriod
 	}
-	incrementTimeBy(s, jumpPeriod)
+	incrementTime(s, jumpPeriod)
 }
 
 func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold bool, msgAndArgs ...interface{}) {
@@ -339,7 +339,7 @@ func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.Sla
 
 // incrementTimeBy increments the overall time by jumpPeriod
 // while updating to not expire the clients
-func incrementTimeBy(s *CCVTestSuite, jumpPeriod time.Duration) {
+func incrementTime(s *CCVTestSuite, jumpPeriod time.Duration) {
 	// get trusting period of client on provider endpoint
 	cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointB.ClientID)
 	s.Require().True(ok)
@@ -375,7 +375,7 @@ func incrementTimeBy(s *CCVTestSuite, jumpPeriod time.Duration) {
 
 // incrementTimeByWithoutUpdate increments the overall time by jumpPeriod
 // without updating the client to the `noUpdate` chain
-func incrementTimeByWithoutUpdate(s *CCVTestSuite, jumpPeriod time.Duration, noUpdate ChainType) {
+func incrementTimeWithoutUpdate(s *CCVTestSuite, jumpPeriod time.Duration, noUpdate ChainType) {
 	var trustingPeriod time.Duration
 	var endpointToUpdate *ibctesting.Endpoint
 	if noUpdate == Consumer {
@@ -438,4 +438,20 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 
 	endpoint.ClientID, err = ibctesting.ParseClientIDFromEvents(res.GetEvents())
 	require.NoError(endpoint.Chain.T, err)
+}
+
+func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState() (exported.ClientState, exported.ConsensusState) {
+
+	clientID, found := suite.consumerApp.GetConsumerKeeper().GetProviderClientID(suite.consumerCtx())
+	suite.Require().True(found)
+
+	clientState, found := suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(
+		suite.consumerCtx(), clientID)
+	suite.Require().True(found)
+
+	consState, found := suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientConsensusState(
+		suite.consumerCtx(), clientID, clientState.GetLatestHeight())
+	suite.Require().True(found)
+
+	return clientState, consState
 }

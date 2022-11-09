@@ -21,8 +21,10 @@ func (suite *CCVTestSuite) TestConsumerGenesis() {
 
 	genesis := consumerKeeper.ExportGenesis(suite.consumerChain.GetContext())
 
-	suite.Require().Equal(suite.providerClient, genesis.ProviderClientState)
-	suite.Require().Equal(suite.providerConsState, genesis.ProviderConsensusState)
+	// Confirm that client and cons state are exported from consumer keeper properly
+	consumerEndpointClientState, consumerEndpointConsState := suite.GetConsumerEndpointClientAndConsState()
+	suite.Require().Equal(consumerEndpointClientState, genesis.ProviderClientState)
+	suite.Require().Equal(consumerEndpointConsState, genesis.ProviderConsensusState)
 
 	suite.Require().NotPanics(func() {
 		consumerKeeper.InitGenesis(suite.consumerChain.GetContext(), genesis)
@@ -83,15 +85,6 @@ func (suite *CCVTestSuite) TestConsumerGenesis() {
 	suite.Require().NotPanics(func() {
 		consumerKeeper.InitGenesis(suite.consumerChain.GetContext(), restartGenesis)
 	})
-}
-
-// TestProviderClientMatches tests that the provider client managed by the consumer keeper matches the client keeper's client state
-func (suite *CCVTestSuite) TestProviderClientMatches() {
-	providerClientID, ok := suite.consumerApp.GetConsumerKeeper().GetProviderClientID(suite.consumerCtx())
-	suite.Require().True(ok)
-
-	clientState, _ := suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(suite.consumerCtx(), providerClientID)
-	suite.Require().Equal(suite.providerClient, clientState, "stored client state does not match genesis provider client")
 }
 
 // TestInitTimeout tests the init timeout
@@ -173,7 +166,7 @@ func (suite *CCVTestSuite) TestInitTimeout() {
 		suite.providerChain.NextBlock()
 
 		// increment time
-		incrementTimeBy(suite, initTimeout)
+		incrementTime(suite, initTimeout)
 
 		// check whether the chain was removed
 		_, found = providerKeeper.GetConsumerClientId(suite.providerCtx(), chainID)

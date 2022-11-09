@@ -116,7 +116,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	// increment time so that the unbonding period ends on the consumer;
 	// do not try to update the client to the provider since it's expired
 	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerCtx())
-	incrementTimeByWithoutUpdate(s, consumerUnbondingPeriod+time.Hour, Provider)
+	incrementTimeWithoutUpdate(s, consumerUnbondingPeriod+time.Hour, Provider)
 
 	// check that the packets were added to the list of pending data packets
 	dataPackets, found := consumerKeeper.GetPendingDataPackets(s.consumerCtx())
@@ -180,7 +180,7 @@ func expireClient(s *CCVTestSuite, clientTo ChainType) {
 	trustingPeriod := cs.(*ibctm.ClientState).TrustingPeriod
 
 	// increment time without updating the `clientTo` client
-	incrementTimeByWithoutUpdate(s, trustingPeriod+time.Hour, clientTo)
+	incrementTimeWithoutUpdate(s, trustingPeriod+time.Hour, clientTo)
 
 	// check that the client is not active
 	checkClientExpired(s, clientTo, true)
