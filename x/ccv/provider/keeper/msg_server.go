@@ -75,7 +75,13 @@ func (k msgServer) AssignConsensusPublicKeyToConsumerChain(goCtx context.Context
 		return nil, err
 	}
 
-	// TODO: emit events
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.EventTypeAssignConsensusPublicKeyToConsumerChain,
+			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderValidatorAddress),
+			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, consumerSDKPublicKey.String()),
+		),
+	})
 
 	return &types.MsgAssignConsensusPublicKeyToConsumerChainResponse{}, nil
 }
