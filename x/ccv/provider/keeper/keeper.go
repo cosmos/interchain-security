@@ -148,7 +148,8 @@ func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, 
 		chainID := string(iterator.Key()[1:])
 		clientID := string(iterator.Value())
 
-		if !cb(ctx, chainID, clientID) {
+		stop := cb(ctx, chainID, clientID)
+		if stop {
 			return
 		}
 	}

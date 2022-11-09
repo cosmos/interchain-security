@@ -85,7 +85,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	var consumerStates []types.ConsumerState
 	// export states for each consumer chains
-	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) bool {
+	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
 		gen, found := k.GetConsumerGenesis(ctx, chainID)
 		if !found {
 			panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chainID, clientID))
@@ -118,7 +118,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 		cs.PendingValsetChanges = k.GetPendingPackets(ctx, chainID)
 		consumerStates = append(consumerStates, cs)
-		return true
+		return false // do not stop the iteration
 	})
 
 	// export provider chain states

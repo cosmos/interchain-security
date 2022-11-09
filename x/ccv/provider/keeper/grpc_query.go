@@ -38,12 +38,12 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	chains := []*types.Chain{}
-	cb := func(ctx sdk.Context, chainID, clientID string) bool {
+	cb := func(ctx sdk.Context, chainID, clientID string) (stop bool) {
 		chains = append(chains, &types.Chain{
 			ChainId:  chainID,
 			ClientId: clientID,
 		})
-		return true
+		return false // do not stop the iteration
 	}
 	k.IterateConsumerChains(ctx, cb)
 
