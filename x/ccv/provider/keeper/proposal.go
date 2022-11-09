@@ -267,7 +267,7 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consum
 	// Get a hash of the consumer validator set from the update.
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(updates)
 	if err != nil {
-		panic("TODO: handle error")
+		panic("unable to create validator set from updates computed from key assignment in MakeConsumerGenesis")
 	}
 	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
 
