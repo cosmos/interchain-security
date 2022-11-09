@@ -439,3 +439,19 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	endpoint.ClientID, err = ibctesting.ParseClientIDFromEvents(res.GetEvents())
 	require.NoError(endpoint.Chain.T, err)
 }
+
+func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState() (exported.ClientState, exported.ConsensusState) {
+
+	clientID, found := suite.consumerApp.GetConsumerKeeper().GetProviderClientID(suite.consumerCtx())
+	suite.Require().True(found)
+
+	clientState, found := suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(
+		suite.consumerCtx(), clientID)
+	suite.Require().True(found)
+
+	consState, found := suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientConsensusState(
+		suite.consumerCtx(), clientID, clientState.GetLatestHeight())
+	suite.Require().True(found)
+
+	return clientState, consState
+}
