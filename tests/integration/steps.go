@@ -16,7 +16,8 @@ func concatSteps(steps ...[]Step) []Step {
 var happyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate([]string{"consu"}),
-	stepsUnbondRedelegate("consu"),
+	stepsUnbond([]string{"consu"}),
+	stepsRedelegate([]string{"consu"}),
 	stepsDowntime("consu"),
 	stepsStopChain("consu"),
 )
@@ -37,4 +38,6 @@ var doubleSignProviderSteps = concatSteps(
 var multipleConsumers = concatSteps(
 	stepsStartChains([]string{"consu", "densu"}, false),
 	stepsDelegate([]string{"consu", "densu"}),
+	stepsUnbond([]string{"consu", "densu"}),
+	stepsRedelegate([]string{"consu", "densu"}),
 )
