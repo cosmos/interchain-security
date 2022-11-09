@@ -15,8 +15,6 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	testutil "github.com/cosmos/interchain-security/testutil/keeper"
 
-	"github.com/cosmos/interchain-security/x/ccv/types"
-
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 )
@@ -63,7 +61,7 @@ func (s *CCVTestSuite) SendSlashPacketDowntime() { // TODO: change naming back
 
 	oldBlockTime := s.consumerCtx().BlockTime()
 	slashFraction := int64(100)
-	packetData := types.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.Downtime)
+	packetData := ccv.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.Downtime)
 	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID,
 		s.path.EndpointA.ChannelID, ccv.ProviderPortID, s.path.EndpointB.ChannelID,
@@ -184,7 +182,7 @@ func (s *CCVTestSuite) TestSendSlashPacketDoubleSign() {
 	}
 
 	oldBlockTime := s.consumerCtx().BlockTime()
-	packetData := types.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.DoubleSign)
+	packetData := ccv.NewSlashPacketData(validator, valsetUpdateId, stakingtypes.DoubleSign)
 
 	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 	packet := channeltypes.NewPacket(packetData.GetBytes(), 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
