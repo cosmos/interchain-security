@@ -87,3 +87,7 @@ func (v *Validator) SDKValAddress() sdktypes.ValAddress {
 	}
 	return ret
 }
+
+func (v *Validator) SDKConsAddress() sdktypes.ConsAddress {
+	return sdktypes.GetConsAddress(v.SDKPubKey())
+}
