@@ -41,7 +41,8 @@ func TestGRPCQueryConsumerChainValidatorKeyAssignment(t *testing.T) {
 					).Return(testValProvider.SDKStakingValidator(), true).Times(1),
 				)
 				// Set a mapping
-				k.KeyAssignment(ctx, chainID).SetProviderPubKeyToConsumerPubKey(testValProvider.TMProtoCryptoPublicKey(), testValConsumer.TMProtoCryptoPublicKey())
+				err := k.KeyAssignment(ctx, chainID).SetProviderPubKeyToConsumerPubKey(testValProvider.TMProtoCryptoPublicKey(), testValConsumer.TMProtoCryptoPublicKey())
+				require.NoError(t, err)
 			},
 			expError: false,
 			chainID:  "chainid",

@@ -11,8 +11,8 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 // In this branch I am icing things for a few days.
@@ -82,11 +82,15 @@ func (ka *KeyAssignment) SetProviderPubKeyToConsumerPubKey(pk ProviderPublicKey,
 
 func (ka *KeyAssignment) DeleteProviderKey(pca ProviderConsAddr) error {
 	// TODO: document expensive operation
+	// Delete the current mapping from the consumer key to the provider key
 	if ck, ok := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca); ok {
 		ka.Store.DelConsumerPublicKeyToProviderPublicKey(ck)
 	}
+	// Delete the current mapping from the provider key to the consumer key
 	ka.Store.DelProviderConsAddrToConsumerPublicKey(pca)
 	toDelete := []ConsumerConsAddr{}
+	// Find all the consumer keys which were mapped to by the provider key
+	// in order to delete them
 	ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(cca ConsumerConsAddr, lum providertypes.LastUpdateMemo) bool {
 		pcaInMemo := TMCryptoPublicKeyToConsAddr(*lum.ProviderKey)
 		if pca.Equals(pcaInMemo) {
@@ -94,6 +98,7 @@ func (ka *KeyAssignment) DeleteProviderKey(pca ProviderConsAddr) error {
 		}
 		return false
 	})
+	// Delete the mappings from the consumer keys to the provider keys
 	for _, cca := range toDelete {
 		ka.Store.DelConsumerConsAddrToLastUpdateMemo(cca)
 	}
@@ -269,70 +274,6 @@ func fromMap(consumerUpdates map[ConsumerPublicKey]int64) []abci.ValidatorUpdate
 	return ret
 }
 
-//
-// A per-consumer chain instance of KeyAssignment enables mapping updates from the provider
-// to updates for the consumer
-// ComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) (consumerUpdates []abci.ValidatorUpdate){
-
-// 	updatesToSend <- map<key, power>
-
-// 	// Step 1
-// 	// Get a list of provider consensus keys for which, either,
-// 	// a) the assigned key has changed and the consumer has the old assigned key
-// 	// b) the voting power has changed
-// 	keys <- getProviderKeysForUpdate(stakingUpdates)
-
-// 	// Step 2
-// 	// For each provider consensus key for which
-// 	// a) the consumer has the old assigned key
-// 	// retrieve the last voting power associated to that key, that the consumer was sent
-// 	// (since the consumer 'has' the old assigned key, the power will be positive)
-// 	lastPositiveUpdates <- getProviderKeysLastPositiveUpdate(keys)
-
-// 	// Step 3
-// 	// For each provider consensus key for which
-// 	// a) the consumer has the old assigned key
-// 	// note a ZERO power update in updatesToSend.
-// 	// After this step, updatesToSend contains a zero power update for
-// 	// each consensus key that the consumer chain tendermint instance is aware of.
-// 	// In this manner, these updates, when handed to tendermint, DELETE the validator
-// 	// from the active set.
-// 	for key in keys {
-// 		if there is an update in lastPositiveUpdates for key {
-// 			updatesToSend[consumerKey(key)] <- 0
-// 		}
-// 	}
-
-// 	// Step 4
-// 	// For each provider consensus key for which
-// 	// a) the assigned key has changed and the consumer has the old assigned key
-// 	// b) the voting power has changed
-// 	// If the voting power changed, create an update for that key with the latest
-// 	// voting power. If the voting power did not change, create an update for that
-// 	// key with the LAST voting power associated to that key.
-// 	for key in keys {
-// 		power <- 0
-// 		if there is an update in lastPositiveUpdates for key {
-// 			power <- update.power
-// 		}
-// 		if there is an update in stakingUpdates for key {
-// 			power <- update.power
-// 		}
-// 		if 0 < power {
-// 			updatesToSend[consumerKey(key)] <- power
-// 		}
-// 	}
-
-// 	// Step 5
-// 	for <key, power> in updatesToSend {
-// 		if 0 < power {
-// 			// Store the update, so that it will be retrieved in future calls to
-// 			// getProviderKeysLastPositiveUpdate(..)
-// 		}
-// 	}
-
-//		return mapToList(updatesToSend)
-//	}
 func (ka *KeyAssignment) ComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) (consumerUpdates []abci.ValidatorUpdate) {
 	return fromMap(ka.getConsumerUpdates(vscid, toMap(stakingUpdates)))
 }
@@ -342,7 +283,7 @@ func (ka *KeyAssignment) AssignDefaultsForProviderKeysWithoutExplicitAssignments
 		if _, found := ka.GetCurrentConsumerPubKeyFromProviderPubKey(u.PubKey); !found {
 			// The provider has not designated a key to use for the consumer chain. Use the provider key
 			// by default.
-			ka.SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
+			_ = ka.SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
 		}
 	}
 }

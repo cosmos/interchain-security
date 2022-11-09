@@ -586,7 +586,8 @@ func TestKeyAssignmentDifferentKeyComparison(t *testing.T) {
 	bz, err := k.Marshal()
 	require.Nil(t, err)
 	other := tmprotocrypto.PublicKey{}
-	other.Unmarshal(bz)
+	err = other.Unmarshal(bz)
+	require.Nil(t, err)
 	require.Equal(t, k, other)
 	require.True(t, k.Equal(other))
 	// No == comparison allowed!
@@ -596,7 +597,8 @@ func TestKeyAssignmentDifferentKeyComparison(t *testing.T) {
 
 func TestKeyAssignmentSetCurrentQueryWithIdenticalKey(t *testing.T) {
 	ka := newTestKeyAssignment(t)
-	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	require.NoError(t, err)
 	actual, _ := ka.GetCurrentConsumerPubKeyFromProviderPubKey(key(42)) // Queryable
 	require.Equal(t, key(43), actual)
 }
@@ -604,7 +606,8 @@ func TestKeyAssignmentSetCurrentQueryWithIdenticalKey(t *testing.T) {
 func TestKeyAssignmentSetCurrentQueryWithEqualKey(t *testing.T) {
 	ka := newTestKeyAssignment(t)
 	k := key(42)
-	ka.SetProviderPubKeyToConsumerPubKey(k, key(43))
+	err := ka.SetProviderPubKeyToConsumerPubKey(k, key(43))
+	require.NoError(t, err)
 
 	kbz, err := k.Marshal()
 	require.Nil(t, err)
@@ -624,17 +627,20 @@ func TestKeyAssignmentNoSetReverseQuery(t *testing.T) {
 
 func TestKeyAssignmentSetReverseQuery(t *testing.T) {
 	ka := newTestKeyAssignment(t)
-	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	require.NoError(t, err)
 	actual, _ := ka.GetProviderPubKeyFromConsumerPubKey(key(43)) // Queryable
 	require.Equal(t, key(42), actual)
 }
 
 func TestKeyAssignmentSetUseReplaceAndReverse(t *testing.T) {
 	ka := newTestKeyAssignment(t)
-	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	require.NoError(t, err)
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 	ka.ComputeUpdates(100, updates)
-	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // New consumer key
+	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // New consumer key
+	require.NoError(t, err)
 	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // New is queryable
@@ -649,10 +655,12 @@ func TestKeyAssignmentSetUseReplaceAndReverse(t *testing.T) {
 
 func TestKeyAssignmentSetUseReplaceAndPrune(t *testing.T) {
 	ka := newTestKeyAssignment(t)
-	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	require.NoError(t, err)
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 	ka.ComputeUpdates(100, updates)
-	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44))
+	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44))
+	require.NoError(t, err)
 	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // Queryable
@@ -666,18 +674,22 @@ func TestKeyAssignmentSetUseReplaceAndPrune(t *testing.T) {
 
 func TestKeyAssignmentSetUnsetReverseQuery(t *testing.T) {
 	ka := newTestKeyAssignment(t)
-	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
-	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44))      // Set to different value
+	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	require.NoError(t, err)
+	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // Set to different value
+	require.NoError(t, err)
 	_, found := ka.GetProviderPubKeyFromConsumerPubKey(key(43)) // Ealier value not queryable
 	require.False(t, found)
 }
 
 func TestKeyAssignmentGCUpdateIsEmitted(t *testing.T) {
 	ka := newTestKeyAssignment(t)
-	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	require.NoError(t, err)
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 	ka.ComputeUpdates(100, updates)
-	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // Now use a different consumer key
+	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // Now use a different consumer key
+	require.NoError(t, err)
 	consumerUpdates := ka.ComputeUpdates(100, []abci.ValidatorUpdate{})
 	good := false
 	for _, u := range consumerUpdates {
@@ -695,17 +707,21 @@ func TestValidatorRemoval(t *testing.T) {
 
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
 
-	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
+	require.NoError(t, err)
 	ka.ComputeUpdates(0, updates)
 
-	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // Now use a different consumer key
+	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // Now use a different consumer key
+	require.NoError(t, err)
 	ka.ComputeUpdates(1, updates)
 
-	ka.SetProviderPubKeyToConsumerPubKey(key(42), key(45)) // Now use a different consumer key
+	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(45)) // Now use a different consumer key
+	require.NoError(t, err)
 	ka.ComputeUpdates(2, updates)
 
 	pca := providerkeeper.TMCryptoPublicKeyToConsAddr(key(42))
-	ka.DeleteProviderKey(pca)
+	err = ka.DeleteProviderKey(pca)
+	require.NoError(t, err)
 
 	_, found := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca)
 	require.False(t, found)
