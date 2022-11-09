@@ -117,16 +117,18 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 
 			// send packet over IBC channel
 			err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
-			if clienttypes.ErrClientNotActive.Is(err) {
-				// IBC client expired:
-				// append the VSCMatured packet data to pending data packets
-				// to be sent once the client is upgraded
-				k.AppendPendingDataPacket(ctx, types.DataPacket{
-					Type: types.VscMaturedPacket,
-					Data: packetData.GetBytes(),
-				})
-			} else if err != nil {
-				return err
+			if err != nil {
+				if clienttypes.ErrClientNotActive.Is(err) {
+					// IBC client expired:
+					// append the VSCMatured packet data to pending data packets
+					// to be sent once the client is upgraded
+					k.AppendPendingDataPacket(ctx, types.DataPacket{
+						Type: types.VscMaturedPacket,
+						Data: packetData.GetBytes(),
+					})
+				} else {
+					return err
+				}
 			}
 			k.DeletePacketMaturityTime(ctx, vscId)
 		} else {
@@ -189,17 +191,19 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 
 	// send packet over IBC channel
 	err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
-	if clienttypes.ErrClientNotActive.Is(err) {
-		// IBC client expired:
-		// append the Slash packet data to pending data packets
-		// to be sent once the client is upgraded
-		k.AppendPendingDataPacket(ctx, types.DataPacket{
-			Type: types.SlashPacket,
-			Data: packetData.GetBytes(),
-		})
-	} else if err != nil {
-		// something went wrong when sending the packet
-		panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
+	if err != nil {
+		if clienttypes.ErrClientNotActive.Is(err) {
+			// IBC client expired:
+			// append the Slash packet data to pending data packets
+			// to be sent once the client is upgraded
+			k.AppendPendingDataPacket(ctx, types.DataPacket{
+				Type: types.SlashPacket,
+				Data: packetData.GetBytes(),
+			})
+		} else {
+			// something went wrong when sending the packet
+			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
+		}
 	}
 }
 
@@ -228,16 +232,16 @@ func (k Keeper) SendPendingDataPackets(ctx sdk.Context, channelID string) {
 
 		// send packet over IBC channel
 		err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
-		if clienttypes.ErrClientNotActive.Is(err) {
-			// IBC client expired:
-			if i != 0 {
-				// this should never happen
-				panic(fmt.Errorf("client expired while sending pending packets: %w", err))
-			}
-			// leave the packet data stored to be sent once the client is upgraded
-			return
-		}
 		if err != nil {
+			if clienttypes.ErrClientNotActive.Is(err) {
+				// IBC client expired:
+				if i != 0 {
+					// this should never happen
+					panic(fmt.Errorf("client expired while sending pending packets: %w", err))
+				}
+				// leave the packet data stored to be sent once the client is upgraded
+				return
+			}
 			// something went wrong when sending the packet
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
