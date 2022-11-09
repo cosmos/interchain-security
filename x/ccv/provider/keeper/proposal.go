@@ -174,14 +174,14 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	var vscIDs []uint64
 	if !lockUbd {
 		// iterate over the consumer chain's unbonding operation VSC ids
-		k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ids []uint64) bool {
+		k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ids []uint64) (stop bool) {
 			// iterate over the unbonding operations for the current VSC ID
 			var maturedIds []uint64
 			for _, id := range ids {
 				unbondingOp, found := k.GetUnbondingOp(ctx, id)
 				if !found {
 					err = fmt.Errorf("could not find UnbondingOp according to index - id: %d", id)
-					return false
+					return true // stop the iteration
 				}
 				// remove consumer chain ID from unbonding op record
 				unbondingOp.UnbondingConsumerChains, _ = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
@@ -203,7 +203,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 			}
 
 			vscIDs = append(vscIDs, vscID)
-			return true
+			return false // do not stop the iteration
 		})
 	}
 
