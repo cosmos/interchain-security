@@ -129,9 +129,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	})
 
 	ubdOps := []ccv.UnbondingOp{}
-	k.IterateOverUnbondingOps(ctx, func(id uint64, ubdOp ccv.UnbondingOp) bool {
+	k.IterateOverUnbondingOps(ctx, func(id uint64, ubdOp ccv.UnbondingOp) (stop bool) {
 		ubdOps = append(ubdOps, ubdOp)
-		return true
+		return false // do not stop the iteration
 	})
 
 	matureUbdOps, err := k.GetMaturedUnbondingOps(ctx)
