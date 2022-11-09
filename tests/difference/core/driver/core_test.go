@@ -386,7 +386,7 @@ func (s *CoreSuite) TestAssumptions() {
 
 	// Consumer has no maturities
 	s.consumerKeeper().IteratePacketMaturityTime(s.ctx(C),
-		func(vscId uint64, timeNs uint64) bool {
+		func(vscId uint64, timeNs uint64) (stop bool) {
 			s.T().Fatal(FAIL_MSG)
 			return false // Don't stop
 		})

@@ -206,7 +206,7 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 }
 
 // IteratePacketMaturityTime iterates through the VSC packet maturity times set in the store
-func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs uint64) bool) {
+func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
@@ -218,7 +218,8 @@ func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs
 
 		timeNs := binary.BigEndian.Uint64(iterator.Value())
 
-		if cb(seq, timeNs) {
+		stop := cb(seq, timeNs)
+		if stop {
 			break
 		}
 	}

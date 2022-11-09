@@ -115,13 +115,13 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 		}
 
 		maturingPackets := []types.MaturingVSCPacket{}
-		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) bool {
+		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) (stop bool) {
 			mat := types.MaturingVSCPacket{
 				VscId:        vscId,
 				MaturityTime: timeNs,
 			}
 			maturingPackets = append(maturingPackets, mat)
-			return false
+			return false // do not stop the iteration
 		})
 
 		heightToVCIDs := []types.HeightToValsetUpdateID{}
