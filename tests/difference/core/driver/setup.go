@@ -335,14 +335,14 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 
 func (b *Builder) createChains() {
 
-	coordinator := ibctestingutils.NewBasicCoordinator(b.suite.T())
+	coordinator := ibctesting.NewCoordinator(b.suite.T(), 0)
 
 	// Create validators
 	validators, signers, addresses := b.createValidators()
 	// Create provider
-	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, ibctestingutils.SetupProviderTestingApp, ibctesting.GetChainID(0), validators, signers)
+	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, ibctestingutils.ProviderAppIniter, ibctesting.GetChainID(0), validators, signers)
 	// Create consumer, using the same validators.
-	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, ibctestingutils.SetupConsumerTestingApp, ibctesting.GetChainID(1), validators, signers)
+	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, ibctestingutils.ConsumerAppIniter, ibctesting.GetChainID(1), validators, signers)
 
 	b.coordinator = coordinator
 	b.valAddresses = addresses
