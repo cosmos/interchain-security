@@ -143,3 +143,7 @@ Please see [api.tla](./api.tla) and [key_assignment_test.go::externalInvariants]
 This document (at v4) describes a minimally complex and minimally invasive minimal-viable-product. Some extensions can be made to the protocol and implementation in future to address feature / UX requirements.
 
 The most obvious extension would be to provider a way for the consumer chain to locally identify consensus addresses that it receives in VSU packets to validators on the provider chain. This might be desirable for UX reasons.
+
+## Limitations of current version
+
+It is possible for validators to assign keys for chainIDs that are not yet consumer chains or active proposals. This is to give validators enough time to assign a key before the consumer genesis state is produced. In future, assignment may be restricted to chainIDs that have an associated active proposal, or for which the proposal has passed and is pending processing. It will always be possible to assign keys to active chains.

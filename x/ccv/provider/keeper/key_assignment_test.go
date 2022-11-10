@@ -30,11 +30,11 @@ const NUM_TRACES = 400
 const TRACE_LEN = 400
 
 // Number of validators to simulate
-const NUM_VALS = 6
+const NUM_VALS = 8
 
 // Number of consumer keys in the universe
 // (This is constrained to ensure overlap edge cases are tested)
-const NUM_CKS = 50
+const NUM_CKS = 30
 
 type keyAssignmentEntry struct {
 	pk providerkeeper.ProviderPublicKey
@@ -56,11 +56,15 @@ type driver struct {
 	lastTimeProvider int
 	lastTimeConsumer int
 	lastTimeMaturity int
-	// indexed by time (starting at 0)
+	// A historical record of assignments, it is used for checking
+	// temporal properties.
+	// indexed by a unit of time (starting at 0)
 	assignments []map[string]providerkeeper.ConsumerPublicKey
-	// indexed by time (starting at 0)
+	// Another historical record.
+	// indexed by a unit of time (starting at 0)
 	consumerUpdates [][]abci.ValidatorUpdate
-	// indexed by time (starting at 0)
+	// Another historical record.
+	// indexed by a unit of time (starting at 0)
 	providerValsets []valset
 	// The validator set from the perspective of
 	// the consumer chain.
