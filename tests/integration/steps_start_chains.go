@@ -149,9 +149,8 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 	return s
 }
 
-// starts provider and single consumer chain
-// * genesisParams overrides consumer genesis params
-// * setupTransferChan creates a transfer channel between provider and consumer
+// starts provider and consumer chains specified in consumerNames
+// setupTransferChans will establish a channel for fee transfers between consumer and provider
 func stepsStartChains(consumerNames []string, setupTransferChans bool) []Step {
 	s := stepStartProviderChain()
 	for i, consumerName := range consumerNames {

@@ -551,32 +551,19 @@ type addIbcConnectionAction struct {
 	chainB  chainID
 	clientA uint
 	clientB uint
-	// create new clients on both chains
-	createClients bool
 }
 
 func (tr TestRun) addIbcConnection(
 	action addIbcConnectionAction,
 	verbose bool,
 ) {
-	var cmd *exec.Cmd
-	if action.createClients {
-		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-		cmd = exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
-			"create", "connection",
-			"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
-			"--b-chain", string(tr.chainConfigs[action.chainB].chainId),
-		)
-	} else {
-		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-		cmd = exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
-			"create", "connection",
-			"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
-			"--a-client", "07-tendermint-"+fmt.Sprint(action.clientA),
-			"--b-client", "07-tendermint-"+fmt.Sprint(action.clientB),
-		)
-
-	}
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
+		"create", "connection",
+		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--a-client", "07-tendermint-"+fmt.Sprint(action.clientA),
+		"--b-client", "07-tendermint-"+fmt.Sprint(action.clientB),
+	)
 
 	cmdReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -611,38 +598,22 @@ type addIbcChannelAction struct {
 	portA       string
 	portB       string
 	order       string
-	// don't use configured channel version
-	// useful for non-ICS chains
-	noVersion bool
 }
 
 func (tr TestRun) addIbcChannel(
 	action addIbcChannelAction,
 	verbose bool,
 ) {
-	var cmd *exec.Cmd
-	if action.noVersion {
-		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-		cmd = exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
-			"create", "channel",
-			"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
-			"--a-connection", "connection-"+fmt.Sprint(action.connectionA),
-			"--a-port", action.portA,
-			"--b-port", action.portB,
-			"--order", action.order,
-		)
-	} else {
-		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-		cmd = exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
-			"create", "channel",
-			"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
-			"--a-connection", "connection-"+fmt.Sprint(action.connectionA),
-			"--a-port", action.portA,
-			"--b-port", action.portB,
-			"--channel-version", tr.containerConfig.ccvVersion,
-			"--order", action.order,
-		)
-	}
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "hermes",
+		"create", "channel",
+		"--a-chain", string(tr.chainConfigs[action.chainA].chainId),
+		"--a-connection", "connection-"+fmt.Sprint(action.connectionA),
+		"--a-port", action.portA,
+		"--b-port", action.portB,
+		"--channel-version", tr.containerConfig.ccvVersion,
+		"--order", action.order,
+	)
 
 	if verbose {
 		fmt.Println("addIbcChannel cmd:", cmd.String())
