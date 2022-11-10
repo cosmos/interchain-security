@@ -29,6 +29,8 @@ import (
 
 // TODO: test slash meter replenishment in context of the e2e test
 
+// TODO: will eventually need to fix integration and diff tests to work with this branch
+
 // HandlePendingSlashPackets handles all or some portion of pending slash packets received by consumer chains,
 // depending on throttling logic. The slash meter is decremented appropriately in this method, and periodically
 // replenished according to the slash meter replenish period param.
@@ -120,8 +122,6 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 
 // CheckForSlashMeterReplenishment checks if the slash gas meter should be replenished, and if so, replenishes it.
 // Note: initial slash meter replenish time is set in InitGenesis
-//
-// TODO: unit and e2e tests, tests must include odd time formats, since UTC is is used
 func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 	lastReplenishTime := k.GetLastSlashMeterReplenishTime(ctx)
 	replenishPeriod := k.GetSlashMeterReplenishPeriod(ctx)
@@ -130,7 +130,6 @@ func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 	}
 }
 
-// TODO: unit test
 func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
@@ -153,7 +152,6 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 
 	slashMeterReplenishFrac, err := sdktypes.NewDecFromStr(k.GetSlashMeterReplenishFraction(ctx))
 	if err != nil {
-		// TODO: confirm this is safe
 		panic(fmt.Sprintf("failed to parse slash meter replenish fraction: %s", err))
 	}
 

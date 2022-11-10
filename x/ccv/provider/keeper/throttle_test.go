@@ -245,23 +245,31 @@ func TestHandlePacketDataForChainPanic(t *testing.T) {
 	}
 }
 
-// TestSlashMeterReplenishment tests the CheckForSlashMeterReplenishment and ReplenishSlashMeter methods.
+// TestSlashMeterReplenishment tests the CheckForSlashMeterReplenishment, ReplenishSlashMeter,
+// and InitializeSlashMeter methods.
 func TestSlashMeterReplenishment(t *testing.T) {
 	testCases := []struct {
 		replenishPeriod   time.Duration
 		replenishFraction string
 		totalPower        sdktypes.Int
+		// Replenish fraction * total power
+		expectedAllowance sdktypes.Int
 	}{
 		{
 			replenishPeriod:   time.Minute,
 			replenishFraction: "0.01",
-			totalPower:        sdktypes.NewInt(100),
+			totalPower:        sdktypes.NewInt(1000),
+			expectedAllowance: sdktypes.NewInt(10),
 		},
+		// TODO: Add more test cases
 	}
 	for _, tc := range testCases {
 
 		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
+
+		now := time.Now()
+		ctx = ctx.WithBlockTime(now)
 
 		// Set desired params
 		params := providertypes.DefaultParams()
@@ -270,15 +278,50 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.SetParams(ctx, params)
 
 		// Mock total power from staking keeper using test case value
+		// Any ctx is accepted, and the method will be called multiple times during the tests
 		gomock.InOrder(
 			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
-				ctx).Return(tc.totalPower).Times(1),
+				gomock.Any()).Return(tc.totalPower).AnyTimes(),
 		)
+
+		// TODO: Test the changing of total powers after slash has happened, and how this affects replenishment
+		// Ex: 1000 becomes 900 because vals were slashed.
 
 		// Now we can initialize the slash meter (this would happen in InitGenesis)
 		providerKeeper.InitializeSlashMeter(ctx)
 
-		fmt.Println("total power", tc.totalPower)
+		// Confirm meter value is initialized to expected allowance
+		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
+
+		// Decrement slash meter
+		providerKeeper.SetSlashMeter(ctx, providerKeeper.GetSlashMeter(ctx).Sub(sdktypes.NewInt(3)))
+		require.Equal(t, tc.expectedAllowance.Sub(sdktypes.NewInt(3)), providerKeeper.GetSlashMeter(ctx))
+
+		// Check for replenishment, confirm meter is not replenished (since no time has passed since init)
+		meterBefore := providerKeeper.GetSlashMeter(ctx)
+		providerKeeper.CheckForSlashMeterReplenishment(ctx)
+		require.Equal(t, meterBefore, providerKeeper.GetSlashMeter(ctx))
+
+		// Note: odd time formats are used as an extra sanity check that UTC format is persisted
+
+		// Increment block time by half replenish period
+		ctx = ctx.WithBlockTime(now.Add(tc.replenishPeriod / 2).Local())
+
+		// Confirm meter is not still not replenished
+		meterBefore = providerKeeper.GetSlashMeter(ctx)
+		providerKeeper.CheckForSlashMeterReplenishment(ctx)
+		require.Equal(t, meterBefore, providerKeeper.GetSlashMeter(ctx))
+
+		// Increment block time by more than replenish period
+		ctx = ctx.WithBlockTime(now.Add(tc.replenishPeriod * 2).In(time.FixedZone("UTC-8", -8*60*60)))
+
+		// Confirm meter is now replenished to max value
+		providerKeeper.CheckForSlashMeterReplenishment(ctx)
+		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
+
+		// TODO: tests around the meter going negative. How many replenishes that'd take to make it max again, etc.
+		// TODO: also test that the meter never goes above max even if multiple replenishes go by
+
 	}
 }
 
