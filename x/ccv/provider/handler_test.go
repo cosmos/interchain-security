@@ -43,9 +43,6 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
 
-				// Make chain queryable
-				k.SetConsumerClientId(ctx, "chainid", "")
-
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, testValProvider.SDKValAddress(),
@@ -57,20 +54,9 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			chainID:  "chainid",
 		},
 		{
-			name: "fail: missing chain",
-			setup: func(ctx sdk.Context, k keeper.Keeper, mocks testkeeper.MockedKeepers) {
-				// Do not make chain queryable
-			},
-			expError: true,
-			chainID:  "chainid",
-		},
-		{
 			name: "fail: missing validator",
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
-
-				// Make chain queryable
-				k.SetConsumerClientId(ctx, "chainid", "")
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
@@ -86,9 +72,6 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			name: "fail: consumer key in use",
 			setup: func(ctx sdk.Context,
 				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
-
-				// Make chain queryable
-				k.SetConsumerClientId(ctx, "chainid", "")
 
 				// Use the consumer key already
 				err := k.KeyAssignment(ctx, "chainid").SetProviderPubKeyToConsumerPubKey(testValProvider.TMProtoCryptoPublicKey(), testValConsumer.TMProtoCryptoPublicKey())

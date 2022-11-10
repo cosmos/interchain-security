@@ -27,9 +27,11 @@ var _ types.MsgServer = msgServer{}
 func (k msgServer) AssignConsensusPublicKeyToConsumerChain(goCtx context.Context, msg *types.MsgAssignConsensusPublicKeyToConsumerChain) (*types.MsgAssignConsensusPublicKeyToConsumerChainResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if _, found := k.GetConsumerClientId(ctx, msg.ChainId); !found {
-		return nil, types.ErrUnknownConsumerChainId
-	}
+	// It is possible to assign keys for consumer chains that are not yet approved.
+	// TODO: In future, a mechanism will be added to limit assigning keys to chains
+	// which are approved or pending approval, only.
+	// Note that current attack potential is restricted because validators must sign
+	// the transaction, and the chainID size is limited.
 
 	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderValidatorAddress)
 	if err != nil {
