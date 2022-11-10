@@ -27,11 +27,12 @@ import (
 // TODO: ie. the staking updates to voting power need to occur before circuit breaker logic, so circuit breaker has most up to date val powers.
 // From looking at app.go, this seems to be the case ^^
 
+// TODO: test slash meter replenishment in context of the e2e test
+
 // HandlePendingSlashPackets handles all or some portion of pending slash packets received by consumer chains,
 // depending on throttling logic. The slash meter is decremented appropriately in this method, and periodically
 // replenished according to the slash meter replenish period param.
 //
-// TODO: test replenishment in context of the e2e test
 func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
@@ -132,6 +133,24 @@ func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
 // TODO: unit test
 func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 
+	meter := k.GetSlashMeter(ctx)
+	allowance := k.GetSlashMeterAllowance(ctx)
+
+	// Replenish gas up to gas allowance per period. That is, if meter was negative
+	// before being replenished, it'll gain some additional gas. However, if the meter
+	// was 0 or positive in value, it'll be replenished only up to it's allowance for the period.
+	meter = meter.Add(allowance)
+	if meter.GT(allowance) {
+		meter = allowance
+	}
+	k.SetSlashMeter(ctx, meter)
+	k.SetLastSlashMeterReplenishTime(ctx, ctx.BlockTime())
+}
+
+// GetSlashMeterAllowance returns the allowance of voting power units (int) that the slash meter
+// is given per replenish period, this also serves as the max value for the meter.
+func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
+
 	slashMeterReplenishFrac, err := sdktypes.NewDecFromStr(k.GetSlashMeterReplenishFraction(ctx))
 	if err != nil {
 		// TODO: confirm this is safe
@@ -141,19 +160,8 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 	// Compute slash gas allowance in units of tendermint voting power (integer),
 	// noting that total power changes over time
 	totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
-	slashGasAllowance := sdktypes.NewInt(slashMeterReplenishFrac.MulInt(totalPower).RoundInt64())
 
-	meter := k.GetSlashMeter(ctx)
-
-	// Replenish gas up to gas allowance per period. That is, if meter was negative
-	// before being replenished, it'll gain some additional gas. However, if the meter
-	// was 0 or positive in value, it'll be replenished only up to it's allowance for the period.
-	meter = meter.Add(slashGasAllowance)
-	if meter.GT(slashGasAllowance) {
-		meter = slashGasAllowance
-	}
-	k.SetSlashMeter(ctx, meter)
-	k.SetLastSlashMeterReplenishTime(ctx, ctx.BlockTime())
+	return sdktypes.NewInt(slashMeterReplenishFrac.MulInt(totalPower).RoundInt64())
 }
 
 //
@@ -352,6 +360,13 @@ func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
 		panic(fmt.Sprintf("failed to unmarshal slash meter: %v", err))
 	}
 	return value
+}
+
+// InitializeSlashMeter initializes the slash meter to it's max value (also its allowance
+// per replenish period), and sets the last replenish time to the current block time.
+func (k Keeper) InitializeSlashMeter(ctx sdktypes.Context) {
+	k.SetSlashMeter(ctx, k.GetSlashMeterAllowance(ctx))
+	k.SetLastSlashMeterReplenishTime(ctx, ctx.BlockTime())
 }
 
 // SetSlashMeter sets the slash meter to the given signed int value

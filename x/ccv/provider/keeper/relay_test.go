@@ -10,6 +10,7 @@ import (
 	exported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,6 +23,7 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Set channel to chain (faking multiple established channels)
 	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
@@ -72,6 +74,7 @@ func TestOnRecvSlashPacket(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Set channel to chain (faking multiple established channels)
 	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")

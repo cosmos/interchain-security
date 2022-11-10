@@ -170,9 +170,13 @@ func TestInitGenesis(t *testing.T) {
 
 		require.Empty(t, valUpdates, "InitGenesis should return no validator updates")
 
-		// Expect slash meter to be initialized to fraction param * total voting power mocked above
+		// Expect slash meter to be initialized to it's allowance value
+		// (replenish fraction * mocked value defined above)
 		slashMeter := providerKeeper.GetSlashMeter(ctx)
-		require.Equal(t, slashMeter, sdk.NewInt(100).Mul(sdk.NewInt(1)))
+		replenishFraction, err := sdk.NewDecFromStr(providerKeeper.GetParams(ctx).SlashMeterReplenishFraction)
+		require.NoError(t, err)
+		expectedSlashMeterValue := sdk.NewInt(replenishFraction.MulInt(sdk.NewInt(100)).RoundInt64())
+		require.Equal(t, expectedSlashMeterValue, slashMeter)
 
 		// Expect last slash replenish time to be current block time
 		lastSlashReplenishTime := providerKeeper.GetLastSlashMeterReplenishTime(ctx)

@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/golang/mock/gomock"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
@@ -121,6 +122,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 	for _, tc := range testCases {
 		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
+		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 		// Queue pending packet data, where chainID is arbitrary, and ibc seq number is index of the data instance
 		for i, data := range tc.dataToQueue {
@@ -209,10 +211,29 @@ func TestHandlePacketDataForChainPanic(t *testing.T) {
 				return false, errors.New("error")
 			},
 		},
+		{
+			"panic when too many packets are queued",
+			[]interface{}{
+				// 6 packets is more than the max allowed set below
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewSlashPacketData(),
+				testkeeper.GetNewVSCMaturedPacketData(),
+			},
+			func(ctx sdktypes.Context, chainID string,
+				data ccvtypes.SlashPacketData) (bool, error) {
+				return false, errors.New("error")
+			},
+		},
 	}
 	for _, tc := range testCases {
 		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
+		params := providertypes.DefaultParams()
+		params.MaxPendingSlashPackets = 5
+		providerKeeper.SetParams(ctx, params)
 
 		for i, data := range tc.dataToQueue {
 			queuePendingPacketData(ctx, &providerKeeper, "chainID", uint64(i), data)
@@ -224,7 +245,42 @@ func TestHandlePacketDataForChainPanic(t *testing.T) {
 	}
 }
 
-// TODO: test for CheckForSlashMeterReplenishment. This could prob use a unit and e2e test
+// TestSlashMeterReplenishment tests the CheckForSlashMeterReplenishment and ReplenishSlashMeter methods.
+func TestSlashMeterReplenishment(t *testing.T) {
+	testCases := []struct {
+		replenishPeriod   time.Duration
+		replenishFraction string
+		totalPower        sdktypes.Int
+	}{
+		{
+			replenishPeriod:   time.Minute,
+			replenishFraction: "0.01",
+			totalPower:        sdktypes.NewInt(100),
+		},
+	}
+	for _, tc := range testCases {
+
+		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
+
+		// Set desired params
+		params := providertypes.DefaultParams()
+		params.SlashMeterReplenishPeriod = tc.replenishPeriod
+		params.SlashMeterReplenishFraction = tc.replenishFraction
+		providerKeeper.SetParams(ctx, params)
+
+		// Mock total power from staking keeper using test case value
+		gomock.InOrder(
+			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+				ctx).Return(tc.totalPower).Times(1),
+		)
+
+		// Now we can initialize the slash meter (this would happen in InitGenesis)
+		providerKeeper.InitializeSlashMeter(ctx)
+
+		fmt.Println("total power", tc.totalPower)
+	}
+}
 
 // TestPendingSlashPacket tests the queue and iteration functions for pending slash packet entries,
 // with assertion of FIFO ordering
@@ -373,6 +429,7 @@ func TestPendingPacketData(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	packetDataForMultipleConsumers := []struct {
 		chainID   string
