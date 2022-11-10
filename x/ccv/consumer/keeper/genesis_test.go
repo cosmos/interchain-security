@@ -26,7 +26,8 @@ import (
 )
 
 // TestInitGenesis tests that a consumer chain is correctly initialised from genesis.
-// It covers the cases where a chain is new or restarted
+// It covers the start of a new chain, the restart of a chain during a CCV channel handshake
+// and finally the restart of chain when a CCV channel is already established.
 func TestInitGenesis(t *testing.T) {
 
 	// mock the consumer genesis state values
@@ -82,7 +83,7 @@ func TestInitGenesis(t *testing.T) {
 	params := types.DefaultParams()
 	params.Enabled = true
 
-	// define two test cases which respectively create a genesis struct, use it to call InitGenesis
+	// define three test cases which respectively create a genesis struct, use it to call InitGenesis
 	// and finally check that the genesis states are successfully imported in the consumer keeper stores
 	testCases := []struct {
 		name         string
@@ -106,16 +107,16 @@ func TestInitGenesis(t *testing.T) {
 				params,
 			),
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
-				assertPortIsSetAndBonded(t, ctx, &ck)
+				assertConsumerPortIsBound(t, ctx, &ck)
 
 				assertProviderClientID(t, ctx, &ck, provClientID)
-				assertHeightValsetUpdateID(t, ctx, &ck, defaultHeightValsetUpdateIDs)
+				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
 			},
 		}, {
-			"restart a chain with a client on provider without an established CCV channel",
+			"restart a chain without an established CCV channel",
 			func(ctx sdk.Context, mocks testutil.MockedKeepers) {
 				gomock.InOrder(
 					testkeeper.ExpectGetCapabilityMock(ctx, mocks),
@@ -135,9 +136,9 @@ func TestInitGenesis(t *testing.T) {
 				params,
 			),
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
-				assertPortIsSetAndBonded(t, ctx, &ck)
+				assertConsumerPortIsBound(t, ctx, &ck)
 				require.Equal(t, slashRequests, ck.GetPendingSlashRequests(ctx))
-				assertHeightValsetUpdateID(t, ctx, &ck, defaultHeightValsetUpdateIDs)
+				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
@@ -169,7 +170,7 @@ func TestInitGenesis(t *testing.T) {
 				params,
 			),
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
-				assertPortIsSetAndBonded(t, ctx, &ck)
+				assertConsumerPortIsBound(t, ctx, &ck)
 
 				gotChannelID, ok := ck.GetProviderChannel(ctx)
 				require.True(t, ok)
@@ -183,7 +184,7 @@ func TestInitGenesis(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, gs.LastTransmissionBlockHeight, *ltbh)
 
-				assertHeightValsetUpdateID(t, ctx, &ck, updatedHeightValsetUpdateIDs)
+				assertHeightValsetUpdateIDs(t, ctx, &ck, updatedHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 
 				require.Equal(t, gs.Params, ck.GetParams(ctx))
@@ -194,7 +195,7 @@ func TestInitGenesis(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			keeperParams := testkeeper.NewInMemKeeperParams(t)
-			// Explicitly register codec with public key interface
+			// explicitly register codec with public key interface
 			keeperParams.RegisterSdkCryptoCodecInterfaces()
 			consumerKeeper, ctx, ctrl, mocks := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 			defer ctrl.Finish()
@@ -212,7 +213,7 @@ func TestInitGenesis(t *testing.T) {
 }
 
 // TestExportGenesis tests that a consumer chain genesis is correctly exported to genesis
-// It covers the cases where the chain's CCV channel is or isn't established
+// It covers the restart of chain when a CCV channel is or isn't established yet.
 func TestExportGenesis(t *testing.T) {
 
 	// create provider channel and client ids
@@ -245,19 +246,10 @@ func TestExportGenesis(t *testing.T) {
 	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs,
 		consumertypes.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
 	)
-	lbth := consumertypes.LastTransmissionBlockHeight{Height: int64(blockHeight)}
-	// create paramameters for an enabled consumer chain
-	params := types.NewParams(
-		true,
-		types.DefaultBlocksPerDistributionTransmission,
-		"",
-		"",
-		ccv.DefaultCCVTimeoutPeriod,
-		consumertypes.DefaultTransferTimeoutPeriod,
-		consumertypes.DefaultConsumerRedistributeFrac,
-		consumertypes.DefaultHistoricalEntries,
-		consumertypes.DefaultConsumerUnbondingPeriod,
-	)
+	ltbh := consumertypes.LastTransmissionBlockHeight{Height: int64(blockHeight)}
+	// create default parameters for a new chain
+	params := types.DefaultParams()
+	params.Enabled = true
 
 	// define two test cases which respectively populate the consumer chain store
 	// using the states declared above then call ExportGenesis to finally check
@@ -311,7 +303,7 @@ func TestExportGenesis(t *testing.T) {
 				// populate the required states for an established CCV channel
 				ck.SetPacketMaturityTime(ctx, matPackets[0].VscId, matPackets[0].MaturityTime)
 				ck.SetOutstandingDowntime(ctx, sdk.ConsAddress(validator.Address.Bytes()))
-				ck.SetLastTransmissionBlockHeight(ctx, lbth)
+				ck.SetLastTransmissionBlockHeight(ctx, ltbh)
 			},
 			consumertypes.NewRestartGenesisState(
 				provClientID,
@@ -323,7 +315,7 @@ func TestExportGenesis(t *testing.T) {
 				[]consumertypes.OutstandingDowntime{
 					{ValidatorConsensusAddress: sdk.ConsAddress(validator.Address.Bytes()).String()},
 				},
-				lbth,
+				ltbh,
 				params,
 			),
 		},
@@ -350,11 +342,22 @@ func TestExportGenesis(t *testing.T) {
 		})
 	}
 }
-func assertPortIsSetAndBonded(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper) {
+
+// assert that the default CCV consumer port ID is stored and bounded
+func assertConsumerPortIsBound(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper) {
 	require.Equal(t, ck.GetPort(ctx), string(ccv.ConsumerPortID))
 	require.True(t, ck.IsBound(ctx, ccv.ConsumerPortID))
 }
-func assertHeightValsetUpdateID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, heighValsetUpdateIDs []consumertypes.HeightToValsetUpdateID) {
+
+// assert that the given client ID matches the provider client ID in the store
+func assertProviderClientID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, clientID string) {
+	cid, ok := ck.GetProviderClientID(ctx)
+	require.True(t, ok)
+	require.Equal(t, clientID, cid)
+}
+
+// assert that the given input match the height to valset update ID mappings in the store
+func assertHeightValsetUpdateIDs(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, heighValsetUpdateIDs []consumertypes.HeightToValsetUpdateID) {
 	ctr := 0
 	ck.IterateHeightToValsetUpdateID(ctx, func(height uint64, vscID uint64) bool {
 		require.Equal(t, heighValsetUpdateIDs[ctr].Height, height)
@@ -362,9 +365,4 @@ func assertHeightValsetUpdateID(t *testing.T, ctx sdk.Context, ck *consumerkeepe
 		ctr++
 		return true
 	})
-}
-func assertProviderClientID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, clientID string) {
-	cid, ok := ck.GetProviderClientID(ctx)
-	require.True(t, ok)
-	require.Equal(t, clientID, cid)
 }
