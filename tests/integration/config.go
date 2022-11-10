@@ -34,8 +34,6 @@ type ChainConfig struct {
 	// Example: ".app_state.gov.voting_params.voting_period = \"5s\" | .app_state.slashing.params.signed_blocks_window = \"2\" | .app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\""
 	genesisChanges string
 	binaryName     string
-	// Maintains a mapping between chain names and ibc transfer channels.
-	transferChannels map[chainID]string
 }
 
 type ContainerConfig struct {
@@ -85,46 +83,6 @@ func getDefaultValidators() map[validatorID]ValidatorConfig {
 			privValidatorKey: `{"address":"C888306A908A217B9A943D1DAD8790044D0947A4","pub_key":{"type":"tendermint/PubKeyEd25519","value":"IHo4QEikWZfIKmM0X+N+BjKttz8HOzGs2npyjiba3Xk="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"z08bmSB91uFVpVmR3t2ewd/bDjZ/AzwQpe5rKjWiPG0gejhASKRZl8gqYzRf434GMq23Pwc7MazaenKOJtrdeQ=="}}`,
 			nodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"WLTcHEjbwB24Wp3z5oBSYTvtGQonz/7IQabOFw85BN0UkkyY5HDf38o8oHlFxVI26f+DFVeICuLbe9aXKGnUeg=="}}`,
 			ipSuffix:         "6",
-		},
-	}
-}
-
-func DoubleSignTestRun() TestRun {
-	return TestRun{
-		name: "double-sign",
-		containerConfig: ContainerConfig{
-			containerName: "interchain-security-ds-container",
-			instanceName:  "interchain-security-ds-instance",
-			ccvVersion:    "1",
-			now:           time.Now(),
-		},
-		validatorConfigs: getDefaultValidators(),
-		chainConfigs: map[chainID]ChainConfig{
-			chainID("provi"): {
-				chainId:        chainID("provi"),
-				binaryName:     "interchain-security-pd",
-				ipPrefix:       "7.7.7",
-				votingWaitTime: 5,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\" | " +
-					// Custom slashing parameters for testing validator downtime functionality
-					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
-					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
-					".app_state.slashing.params.slash_fraction_double_sign = \"0.100000000000000000\"",
-			},
-			chainID("consu"): {
-				chainId:        chainID("consu"),
-				binaryName:     "interchain-security-cd",
-				ipPrefix:       "7.7.8",
-				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
-					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
-			},
 		},
 	}
 }

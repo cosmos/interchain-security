@@ -80,8 +80,8 @@ func stepsDelegate(consumerName string) []Step {
 	}
 }
 
-// stepsDelegate tests validatod unbonding, redelegation and resulting validator power changes.
-func stepsUnbondRedelegate(consumerName string) []Step {
+// stepsDelegate tests unbonding and resulting validator power changes.
+func stepsUnbond(consumerName string) []Step {
 	return []Step{
 		{
 			action: unbondTokensAction{
@@ -124,6 +124,12 @@ func stepsUnbondRedelegate(consumerName string) []Step {
 				},
 			},
 		},
+	}
+}
+
+// stepsRedelegate tests redelegation and resulting validator power changes.
+func stepsRedelegate(consumerName string) []Step {
+	return []Step{
 		{
 			action: redelegateTokensAction{
 				chain:    chainID("provi"),
