@@ -503,7 +503,7 @@ func (s *KeyAssignmentStore) DelConsumerConsAddrToLastUpdateMemo(k ConsumerConsA
 	s.Store.Delete(providertypes.KeyAssignmentConsumerConsAddrToLastUpdateMemoKey(s.ChainID, kbz))
 }
 
-func (s *KeyAssignmentStore) IterateProviderConsAddrToConsumerPublicKey(cb func(ProviderConsAddr, ConsumerPublicKey) bool) {
+func (s *KeyAssignmentStore) IterateProviderConsAddrToConsumerPublicKey(stop func(ProviderConsAddr, ConsumerPublicKey) (stop bool)) {
 	prefix := providertypes.KeyAssignmentProviderConsAddrToConsumerPublicKeyChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
@@ -518,13 +518,13 @@ func (s *KeyAssignmentStore) IterateProviderConsAddrToConsumerPublicKey(cb func(
 		if err != nil {
 			panic(err)
 		}
-		if cb(k, v) {
+		if stop(k, v) {
 			return
 		}
 	}
 }
 
-func (s *KeyAssignmentStore) IterateConsumerPublicKeyToProviderPublicKey(cb func(ConsumerPublicKey, ProviderPublicKey) bool) {
+func (s *KeyAssignmentStore) IterateConsumerPublicKeyToProviderPublicKey(stop func(ConsumerPublicKey, ProviderPublicKey) (stop bool)) {
 	prefix := providertypes.KeyAssignmentConsumerPublicKeyToProviderPublicKeyChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
@@ -539,13 +539,13 @@ func (s *KeyAssignmentStore) IterateConsumerPublicKeyToProviderPublicKey(cb func
 		if err != nil {
 			panic(err)
 		}
-		if cb(k, v) {
+		if stop(k, v) {
 			return
 		}
 	}
 }
 
-func (s *KeyAssignmentStore) IterateConsumerConsAddrToLastUpdateMemo(cb func(ConsumerConsAddr, providertypes.LastUpdateMemo) bool) {
+func (s *KeyAssignmentStore) IterateConsumerConsAddrToLastUpdateMemo(stop func(ConsumerConsAddr, providertypes.LastUpdateMemo) (stop bool)) {
 	prefix := providertypes.KeyAssignmentConsumerConsAddrToLastUpdateMemoChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
@@ -560,7 +560,7 @@ func (s *KeyAssignmentStore) IterateConsumerConsAddrToLastUpdateMemo(cb func(Con
 		if err != nil {
 			panic(err)
 		}
-		if cb(k, v) {
+		if stop(k, v) {
 			return
 		}
 	}
