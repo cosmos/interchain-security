@@ -30,10 +30,13 @@ func TestCCVTestSuite(t *testing.T) {
 			e2etestutil.ProviderApp,
 			e2etestutil.ConsumerApp,
 		) {
+			coordinator, provider := ibctestingutils.NewCoordinatorWithProvider(t)
+			consumers := ibctestingutils.AddConsumersToCoordinator(coordinator, t, 1, ibctestingutils.ConsumerAppIniter)
+			consumer := consumers[0]
 			// Here we pass the concrete types that must implement the necessary interfaces
 			// to be ran with e2e tests.
-			coord, prov, cons := ibctestingutils.NewProviderConsumerCoordinator(t)
-			return coord, prov, cons, prov.App.(*appProvider.App), cons.App.(*appConsumer.App)
+			// TODO: Allow e2e tests to accept multiple consumers
+			return coordinator, provider, consumers[0], provider.App.(*appProvider.App), consumer.App.(*appConsumer.App)
 		},
 	)
 	suite.Run(t, ccvSuite)
@@ -49,10 +52,16 @@ func TestConsumerDemocracyTestSuite(t *testing.T) {
 			*ibctesting.TestChain,
 			e2etestutil.DemocConsumerApp,
 		) {
+			coordinator := ibctesting.NewCoordinator(t, 0)
+			chainID := ibctesting.GetChainID(2)
+
+			democracyConsumer := ibctesting.NewTestChain(t, coordinator,
+				ibctestingutils.DemocracyConsumerAppIniter, chainID)
+
+			coordinator.Chains[chainID] = democracyConsumer
 			// Here we pass the concrete types that must implement the necessary interfaces
 			// to be ran with e2e tests.
-			coord, _, cons := ibctestingutils.NewProviderConsumerDemocracyCoordinator(t)
-			return coord, cons, cons.App.(*appConsumerDemocracy.App)
+			return coordinator, democracyConsumer, democracyConsumer.App.(*appConsumerDemocracy.App)
 		},
 	)
 	suite.Run(t, democSuite)
