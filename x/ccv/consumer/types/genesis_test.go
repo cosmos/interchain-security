@@ -237,11 +237,6 @@ func TestValidateRestartGenesisState(t *testing.T) {
 			true,
 		},
 		{
-			"invalid restart consumer genesis state: channel id is empty",
-			types.NewRestartGenesisState("ccvclient", "", nil, valUpdates, nil, types.SlashRequests{}, nil, types.LastTransmissionBlockHeight{}, params),
-			true,
-		},
-		{
 			"invalid restart consumer genesis state: maturing packet vscId is invalid",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", []types.MaturingVSCPacket{
 				{0, uint64(time.Now().UnixNano())},
