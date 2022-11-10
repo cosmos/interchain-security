@@ -460,17 +460,26 @@ func TestPendingPacketData(t *testing.T) {
 // TestPanicIfTooMuchPendingPacketData tests the PanicIfTooMuchPendingPacketData method.
 func TestPanicIfTooMuchPendingPacketData(t *testing.T) {
 
-	// todo: set param to max and test more cases
 	testCases := []struct {
-		max uint64
+		max int64
 	}{
+		{max: 1},
+		{max: 5},
+		{max: 10},
 		{max: 15},
+		{max: 25},
 	}
 
 	for _, tc := range testCases {
 
 		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
+
+		// Set max pending slash packets param
+		defaultParams := providertypes.DefaultParams()
+		defaultParams.MaxPendingSlashPackets = tc.max
+		providerKeeper.SetParams(ctx, defaultParams)
+
 		rand.Seed(time.Now().UnixNano())
 
 		// Queuing up a couple data instances for another chain shouldn't matter
