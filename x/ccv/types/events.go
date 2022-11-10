@@ -2,17 +2,17 @@ package types
 
 // CCV events
 const (
-	EventTypeTimeout      = "timeout"
-	EventTypePacket       = "ccv_packet"
-	EventTypeChannelClose = "channel_closed"
-
-	EventTypeConsumerChainAdded       = "consumer_added"
+	EventTypeTimeout                  = "timeout"
+	EventTypePacket                   = "ccv_packet"
+	EventTypeChannelClose             = "channel_closed"
+	EventTypeChannelEstablished       = "channel_established"
 	EventTypeFeeTransferChannelOpened = "fee_channel_opened"
-	EventExecuteConsumerChainSlash    = "execute_consumer_chain_slash"
-	EventTypeFirstVSCPacket           = "first_vsc_packet"
-	EventTypeFeeDistribution          = "fee_distribution"
-	EventTypeSendSlashPacket          = "send_slash_packet"
-	EventTypeSendMaturedVSCPacket     = "send_matured_vsc_packet"
+	EventTypeConsumerClientCreated    = "consumer_client_created"
+
+	EventExecuteConsumerChainSlash = "execute_consumer_chain_slash"
+	EventTypeFeeDistribution       = "fee_distribution"
+	EventTypeSendSlashPacket       = "send_slash_packet"
+	EventTypeSendMaturedVSCPacket  = "send_matured_vsc_packet"
 
 	AttributeKeyAckSuccess = "success"
 	AttributeKeyAck        = "acknowledgement"

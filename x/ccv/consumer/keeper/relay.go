@@ -38,15 +38,13 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		// - send pending slash requests in states
 		k.SendPendingSlashRequests(ctx)
 
-		// emit first VSC packet to signal that CCV is working
+		// emit event on first VSC packet to signal that CCV is working
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
-				ccv.EventTypeFirstVSCPacket,
+				ccv.EventTypeChannelEstablished,
 				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-				sdk.NewAttribute(channeltypes.AttributeKeySrcChannel, packet.SourceChannel),
-				sdk.NewAttribute(channeltypes.AttributeKeySrcPort, packet.SourcePort),
-				sdk.NewAttribute(channeltypes.AttributeKeyDstChannel, packet.DestinationChannel),
-				sdk.NewAttribute(channeltypes.AttributeKeyDstPort, packet.DestinationPort),
+				sdk.NewAttribute(channeltypes.AttributeKeyChannelID, packet.DestinationChannel),
+				sdk.NewAttribute(channeltypes.AttributeKeyPortID, packet.DestinationPort),
 			),
 		)
 	}

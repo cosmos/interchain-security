@@ -289,10 +289,11 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	// emit event on successful addition
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			ccv.EventTypeConsumerChainAdded,
+			ccv.EventTypeChannelEstablished,
 			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
 			sdk.NewAttribute(ccv.AttributeChainID, chainID),
 			sdk.NewAttribute(conntypes.AttributeKeyClientID, clientID),
+			sdk.NewAttribute(channeltypes.AttributeKeyChannelID, channelID),
 			sdk.NewAttribute(conntypes.AttributeKeyConnectionID, connectionID),
 		),
 	)
