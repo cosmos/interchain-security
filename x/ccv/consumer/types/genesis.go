@@ -109,9 +109,6 @@ func (gs GenesisState) Validate() error {
 		if gs.ProviderClientId == "" {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client id must be set for a restarting consumer genesis state")
 		}
-		// if gs.ProviderChannelId == "" {
-		// 	return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider channel id must be set for a restarting consumer genesis state")
-		// }
 		if gs.ProviderClientState != nil || gs.ProviderConsensusState != nil {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client state and consensus states must be nil for a restarting genesis state")
 		}
