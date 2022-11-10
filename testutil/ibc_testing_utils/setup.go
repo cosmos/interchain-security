@@ -24,34 +24,32 @@ var (
 )
 
 func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	db := tmdb.NewMemDB()
 	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
-	testApp := appProvider.New(log.NewNopLogger(), db, nil, true, map[int64]bool{},
+	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
 }
 
 func DemocracyConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	db := tmdb.NewMemDB()
 	encoding := cosmoscmd.MakeEncodingConfig(appConsumerDemocracy.ModuleBasics)
-	testApp := appConsumerDemocracy.New(log.NewNopLogger(), db, nil, true, map[int64]bool{},
+	testApp := appConsumerDemocracy.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
 	return testApp, appConsumerDemocracy.NewDefaultGenesisState(encoding.Marshaler)
 }
 
 func ConsumerAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	db := tmdb.NewMemDB()
 	encoding := cosmoscmd.MakeEncodingConfig(appConsumer.ModuleBasics)
-	testApp := appConsumer.New(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
+	testApp := appConsumer.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
 	return testApp, appConsumer.NewDefaultGenesisState(encoding.Marshaler)
 }
 
 // NewCoordinatorWithProvider initializes an IBC testing Coordinator with a properly setup provider
 func NewCoordinatorWithProvider(t *testing.T) (*ibctesting.Coordinator, *ibctesting.TestChain) {
 	coordinator := ibctesting.NewCoordinator(t, 0)
-	coordinator.Chains[provChainID] = ibctesting.NewTestChain(t, coordinator, ProviderAppIniter, provChainID)
-	providerChain := coordinator.GetChain(provChainID)
-	return coordinator, providerChain
+	provider := ibctesting.NewTestChain(t, coordinator, ProviderAppIniter, provChainID)
+	coordinator.Chains[provChainID] = provider
+	return coordinator, provider
 }
 
 func AddConsumersToCoordinator(coordinator *ibctesting.Coordinator,
