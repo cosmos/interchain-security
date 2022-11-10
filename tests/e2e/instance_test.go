@@ -9,7 +9,7 @@ import (
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/tests/e2e"
 	e2etestutil "github.com/cosmos/interchain-security/testutil/e2e"
-	"github.com/cosmos/interchain-security/testutil/simapp"
+	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing_utils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -32,7 +32,7 @@ func TestCCVTestSuite(t *testing.T) {
 		) {
 			// Here we pass the concrete types that must implement the necessary interfaces
 			// to be ran with e2e tests.
-			coord, prov, cons := simapp.NewProviderConsumerCoordinator(t)
+			coord, prov, cons := ibctestingutils.NewProviderConsumerCoordinator(t)
 			return coord, prov, cons, prov.App.(*appProvider.App), cons.App.(*appConsumer.App)
 		},
 	)
@@ -51,7 +51,7 @@ func TestConsumerDemocracyTestSuite(t *testing.T) {
 		) {
 			// Here we pass the concrete types that must implement the necessary interfaces
 			// to be ran with e2e tests.
-			coord, _, cons := simapp.NewProviderConsumerDemocracyCoordinator(t)
+			coord, _, cons := ibctestingutils.NewProviderConsumerDemocracyCoordinator(t)
 			return coord, cons, cons.App.(*appConsumerDemocracy.App)
 		},
 	)
