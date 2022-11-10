@@ -435,7 +435,7 @@ func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashReque
 	k.SetPendingSlashRequests(ctx, types.SlashRequests{Requests: srArray})
 }
 
-// GetHeightToValsetUpdateIDs returns all height to valset update id pairs into a list
+// GetHeightToValsetUpdateIDs returns all height to valset update id mappings in store
 func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToValsetUpdateID {
 	heightToVCIDs := []types.HeightToValsetUpdateID{}
 	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) bool {

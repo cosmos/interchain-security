@@ -44,8 +44,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 	}
 
-	// Note that MatureUnbondingOps aren't store across blocks but they
-	// might be if after implementing sovereign to consumer transition
+	// Note that MatureUnbondingOps aren't stored across blocks, but it
+	// might be used after implementing sovereign to consumer transition
 	if genState.MatureUnbondingOps != nil {
 		if err := k.AppendMaturedUnbondingOps(ctx, genState.MatureUnbondingOps.Ids); err != nil {
 			panic(err)

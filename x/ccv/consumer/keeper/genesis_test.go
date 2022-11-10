@@ -26,8 +26,8 @@ import (
 )
 
 // TestInitGenesis tests that a consumer chain is correctly initialised from genesis.
-// It covers the start of a new chain, the restart of a chain during a CCV channel handshake
-// and finally the restart of chain when a CCV channel is already established.
+// It covers the start of a new chain, the restart of a chain during the CCV channel handshake
+// and finally the restart of chain when the CCV channel is already established.
 func TestInitGenesis(t *testing.T) {
 
 	// mock the consumer genesis state values
