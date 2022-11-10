@@ -710,7 +710,7 @@ func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) (packets []ccv.V
 
 // AppendPendingVSC adds the given ValidatorSetChange packet to the list
 // of pending ValidatorSetChange packets stored under chain ID
-func (k Keeper) AppendPendingVSCs(ctx sdk.Context, chainID string, newPackets []ccv.ValidatorSetChangePacketData) {
+func (k Keeper) AppendPendingVSCs(ctx sdk.Context, chainID string, newPackets ...ccv.ValidatorSetChangePacketData) {
 	packets, _ := k.GetPendingVSCs(ctx, chainID)
 	// append works also on a nil list
 	packets = append(packets, newPackets...)
