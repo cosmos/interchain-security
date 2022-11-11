@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -94,6 +95,20 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 	if lockUbdOnTimeout {
 		k.SetLockUnbondingOnTimeout(ctx, chainID)
 	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			ccv.EventTypeConsumerClientCreated,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(ccv.AttributeChainID, chainID),
+			sdk.NewAttribute(clienttypes.AttributeKeyClientID, clientID),
+			sdk.NewAttribute(ccv.AttributeInitialHeight, initialHeight.String()),
+			sdk.NewAttribute(ccv.AttributeInitializationTimeout, strconv.Itoa(int(ts.UnixNano()))),
+			sdk.NewAttribute(ccv.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),
+			sdk.NewAttribute(ccv.AttributeUnbondingPeriod, clientState.UnbondingPeriod.String()),
+		),
+	)
+
 	return nil
 }
 
