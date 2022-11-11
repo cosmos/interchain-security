@@ -8,11 +8,9 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 
+	ccvcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
-
 	tmtypes "github.com/tendermint/tendermint/types"
-
-	testutil "github.com/cosmos/interchain-security/testutil/keeper"
 
 	"github.com/stretchr/testify/require"
 )
@@ -32,9 +30,8 @@ var (
 // TestValidateInitialGenesisState tests a NewInitialGenesisState instantiation,
 // and its Validate() method over different genesis scenarios
 func TestValidateInitialGenesisState(t *testing.T) {
-	// generate validator public key
-	pubKey, err := testutil.GenPubKey()
-	require.NoError(t, err)
+	cryptoId := ccvcrypto.NewCryptoIdentityFromRandSeed()
+	pubKey := cryptoId.TMCryptoPubKey()
 
 	// create validator set with single validator
 	validator := tmtypes.NewValidator(pubKey, 1)
@@ -175,9 +172,8 @@ func TestValidateInitialGenesisState(t *testing.T) {
 // TestValidateRestartGenesisState tests a NewRestartGenesisState instantiation,
 // and its Validate() method over different genesis scenarios
 func TestValidateRestartGenesisState(t *testing.T) {
-	// generate validator private/public key
-	pubKey, err := testutil.GenPubKey()
-	require.NoError(t, err)
+	cryptoId := ccvcrypto.NewCryptoIdentityFromRandSeed()
+	pubKey := cryptoId.TMCryptoPubKey()
 
 	// create validator set with single validator
 	validator := tmtypes.NewValidator(pubKey, 1)

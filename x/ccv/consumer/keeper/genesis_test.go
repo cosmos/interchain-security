@@ -20,6 +20,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
+	ccvcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 	testutil "github.com/cosmos/interchain-security/testutil/keeper"
 )
 
@@ -32,8 +33,8 @@ func TestInitGenesis(t *testing.T) {
 	clientID := "tendermint-07"
 
 	// generate validator public key
-	pubKey, err := testutil.GenPubKey()
-	require.NoError(t, err)
+	cryptoId := ccvcrypto.NewCryptoIdentityFromRandSeed()
+	pubKey := cryptoId.TMCryptoPubKey()
 
 	// create validator set with single validator
 	validator := tmtypes.NewValidator(pubKey, 1)

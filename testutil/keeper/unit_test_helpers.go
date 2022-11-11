@@ -17,14 +17,11 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmdb "github.com/tendermint/tm-db"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
@@ -175,16 +172,6 @@ func (params *InMemKeeperParams) RegisterSdkCryptoCodecInterfaces() {
 	cryptocodec.RegisterInterfaces(ir)
 	// Replace default cdc, with a custom (registered) codec
 	params.Cdc = codec.NewProtoCodec(ir)
-}
-
-type PrivateKey struct {
-	PrivKey cryptotypes.PrivKey
-}
-
-// Generates a public key for unit tests (abiding by tricky interface implementations from tm/sdk)
-func GenPubKey() (crypto.PubKey, error) {
-	privKey := PrivateKey{ed25519.GenPrivKey()}
-	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
 }
 
 func GetClientState(chainID string) *ibctmtypes.ClientState {

@@ -6,6 +6,7 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ccvcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -165,8 +166,8 @@ func GenerateValidators(t testing.TB) []*tmtypes.Validator {
 	numValidators := 4
 	validators := []*tmtypes.Validator{}
 	for i := 0; i < numValidators; i++ {
-		pubKey, err := testkeeper.GenPubKey()
-		require.NoError(t, err)
+		cryptoId := ccvcrypto.NewCryptoIdentityFromRandSeed()
+		pubKey := cryptoId.TMCryptoPubKey()
 
 		votingPower := int64(i + 1)
 		validator := tmtypes.NewValidator(pubKey, votingPower)

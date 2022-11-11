@@ -2,6 +2,8 @@ package crypto
 
 import (
 	"encoding/binary"
+	"math/rand"
+	"time"
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
 
@@ -29,6 +31,11 @@ func NewCryptoIdentityFromBytesSeed(seed []byte) CryptoIdentity {
 	//lint:ignore SA1019 We don't care because this is only a test.
 	privKey := mock.PV{PrivKey: &sdkcryptokeys.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 	return CryptoIdentity{PV: privKey}
+}
+
+func NewCryptoIdentityFromRandSeed() CryptoIdentity {
+	rand.Seed(time.Now().UnixMicro())
+	return NewCryptoIdentityFromIntSeed(rand.Int())
 }
 
 func NewCryptoIdentityFromIntSeed(i int) CryptoIdentity {
