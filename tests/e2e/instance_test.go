@@ -15,9 +15,9 @@ import (
 
 // This file can be used as an example e2e testing instance for any provider/consumer applications.
 // In the case of this repo, we're testing the dummy provider/consumer applications,
-// but to test any arbitrary app, you only need to replicate this file, and pass in the
-// appropriate callback to the testing suites. Note that any provider/consumer applications
-// must implement the interfaces defined in /testutil/e2e/interfaces.go
+// but to test any arbitrary app, one only needs to replicate this file and "specific_setup.go",
+// then pass in the appropriate callback to the testing suites. Note that any provider/consumer
+// applications must implement the interfaces defined in /testutil/e2e/interfaces.go to compile.
 
 // Executes the standard group of ccv tests against a consumer and provider app.go implementation.
 func TestCCVTestSuite(t *testing.T) {
@@ -30,13 +30,22 @@ func TestCCVTestSuite(t *testing.T) {
 			e2etestutil.ProviderApp,
 			e2etestutil.ConsumerApp,
 		) {
-			coordinator, provider := ibctestingutils.NewCoordinatorWithProvider(t)
-			consumers := ibctestingutils.AddConsumersToCoordinator(coordinator, t, 1, ibctestingutils.ConsumerAppIniter)
-			consumer := consumers[0]
-			// Here we pass the concrete types that must implement the necessary interfaces
-			// to be ran with e2e tests.
-			// TODO: Allow e2e tests to accept multiple consumers
-			return coordinator, provider, consumers[0], provider.App.(*appProvider.App), consumer.App.(*appConsumer.App)
+			// Instantiate the test coordinator.
+			coordinator := ibctesting.NewCoordinator(t, 0)
+
+			// Add provider to coordinator, store returned test chain and app.
+			// Concrete provider app type is passed to the generic function here.
+			provider, providerApp := ibctestingutils.AddProvider[*appProvider.App](
+				coordinator, t, ibctestingutils.ProviderAppIniter)
+
+			// Add specified number of consumers to coordinator, store returned test chains and apps.
+			// Concrete consumer app type is passed to the generic function here.
+			consumers, consumerApps := ibctestingutils.AddConsumers[*appConsumer.App](
+				coordinator, t, 1, ibctestingutils.ConsumerAppIniter)
+
+			// Pass variables to suite.
+			// TODO: accept multiple consumers here
+			return coordinator, provider, consumers[0], providerApp, consumerApps[0]
 		},
 	)
 	suite.Run(t, ccvSuite)
@@ -52,16 +61,15 @@ func TestConsumerDemocracyTestSuite(t *testing.T) {
 			*ibctesting.TestChain,
 			e2etestutil.DemocConsumerApp,
 		) {
+			// Instantiate the test coordinator
 			coordinator := ibctesting.NewCoordinator(t, 0)
-			chainID := ibctesting.GetChainID(2)
 
-			democracyConsumer := ibctesting.NewTestChain(t, coordinator,
-				ibctestingutils.DemocracyConsumerAppIniter, chainID)
+			// Add single democracy consumer to coordinator, store returned test chain and app.
+			democConsumer, democConsumerApp := ibctestingutils.AddDemocracyConsumer[*appConsumerDemocracy.App](
+				coordinator, t, ibctestingutils.DemocracyConsumerAppIniter)
 
-			coordinator.Chains[chainID] = democracyConsumer
-			// Here we pass the concrete types that must implement the necessary interfaces
-			// to be ran with e2e tests.
-			return coordinator, democracyConsumer, democracyConsumer.App.(*appConsumerDemocracy.App)
+			// Pass variables to suite.
+			return coordinator, democConsumer, democConsumerApp
 		},
 	)
 	suite.Run(t, democSuite)
