@@ -55,7 +55,7 @@ Unit tests are useful for simple standalone functionality, and CRUD operations. 
 
 [e2e-tests](./tests/e2e/) utilize the [IBC Testing Package](https://github.com/cosmos/ibc-go/tree/main/testing), and test functionality that is wider in scope than a unit test, but still able to be validated in-memory. Ie. code where advancing blocks would be useful, simulated handshakes, simulated packet relays, etc.
 
-To run e2e tests against your own consumer/provider implementations, use [instance_test.go](./tests/e2e/instance_test.go) as an example. All you'll need to do is make sure your applications implements the necessary interfaces defined in [interfaces.go](./testutil/e2e/interfaces.go), pattern match [specific_setup.go](./testutil/ibc_testing/specific_setup.go), then pass in an appropriate callback to the testing suites, as is done in `instance_test.go` for the dummy provider/consumer implementations.
+To run e2e tests against your own consumer/provider implementations, use [instance_test.go](./tests/e2e/instance_test.go) as an example. All you'll need to do is make sure your applications implement the necessary interfaces defined in [interfaces.go](./testutil/e2e/interfaces.go), pattern match [specific_setup.go](./testutil/ibc_testing/specific_setup.go), then pass in an appropriate callback to the testing suites, as is done in `instance_test.go` for the dummy provider/consumer implementations.
 
 ### Differential Tests (WIP)
 
