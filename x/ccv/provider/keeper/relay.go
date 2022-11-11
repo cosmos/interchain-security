@@ -157,7 +157,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 				// CCV channel not established:
 				// store the packet data to be sent once the CCV channel is established
 				k.AppendPendingVSCs(ctx, chainID, packetData)
-				return false // go to next consumer chain
+				return false // do not stop iteration, go to next consumer chain
 			}
 
 			// prepare to send the packetData to the consumer
