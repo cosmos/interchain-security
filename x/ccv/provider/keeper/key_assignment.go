@@ -15,7 +15,6 @@ import (
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
-// In this branch I am icing things for a few days.
 
 type VSCID = uint64
 type ProviderPublicKey = tmprotocrypto.PublicKey
