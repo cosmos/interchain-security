@@ -34,7 +34,7 @@ func NewCryptoIdentityFromBytesSeed(seed []byte) CryptoIdentity {
 
 func NewCryptoIdentityFromRandSeed() CryptoIdentity {
 	b := make([]byte, 8)
-	rand.Read(b)
+	_, _ = rand.Read(b)
 	seed := binary.BigEndian.Uint64(b)
 	return NewCryptoIdentityFromIntSeed(seed)
 }
