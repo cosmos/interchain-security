@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -36,6 +37,16 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		k.SetProviderChannel(ctx, packet.DestinationChannel)
 		// - send pending slash requests in states
 		k.SendPendingSlashRequests(ctx)
+
+		// emit event on first VSC packet to signal that CCV is working
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				ccv.EventTypeChannelEstablished,
+				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+				sdk.NewAttribute(channeltypes.AttributeKeyChannelID, packet.DestinationChannel),
+				sdk.NewAttribute(channeltypes.AttributeKeyPortID, packet.DestinationPort),
+			),
+		)
 	}
 	// Set pending changes by accumulating changes from this packet with all prior changes
 	var pendingChanges []abci.ValidatorUpdate
@@ -110,6 +121,16 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 				return err
 			}
 			k.DeletePacketMaturityTime(ctx, vscId)
+			ctx.EventManager().EmitEvent(
+				sdk.NewEvent(
+					ccv.EventTypeSendMaturedVSCPacket,
+					sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+					sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
+					sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
+					sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(vscId))),
+					sdk.NewAttribute(ccv.AttributeTimestamp, strconv.Itoa(int(currentTime))),
+				),
+			)
 		} else {
 			break
 		}
@@ -160,6 +181,18 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 	if downtime {
 		k.SetOutstandingDowntime(ctx, consAddr)
 	}
+
+	// if provider channel is not established the emmission
+	// will instead take place in SendPendingSlashRequests
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			ccv.EventTypeSendSlashPacket,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(ccv.AttributeValidatorAddress, sdk.ConsAddress(validator.Address).String()),
+			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(valsetUpdateID))),
+			sdk.NewAttribute(ccv.AttributeInfractionType, infraction.String()),
+		),
+	)
 }
 
 // SendPendingSlashRequests iterates over the stored pending slash requests in reverse order
@@ -197,6 +230,16 @@ func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
 			if downtime {
 				k.SetOutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address))
 			}
+
+			ctx.EventManager().EmitEvent(
+				sdk.NewEvent(
+					ccv.EventTypeSendSlashPacket,
+					sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+					sdk.NewAttribute(ccv.AttributeValidatorAddress, sdk.ConsAddress(slashReq.Packet.Validator.Address).String()),
+					sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(slashReq.Packet.ValsetUpdateId))),
+					sdk.NewAttribute(ccv.AttributeInfractionType, slashReq.Packet.Infraction.String()),
+				),
+			)
 		}
 	}
 
