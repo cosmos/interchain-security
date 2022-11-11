@@ -229,7 +229,7 @@ func (k Keeper) SendPendingDataPackets(ctx sdk.Context, channelID string) (clien
 		// This method is a no-op if there are no pending data packets
 		return false
 	}
-	for i, dp := range dataPackets.GetList() {
+	for _, dp := range dataPackets.GetList() {
 		// prepare to send the packetData to the consumer
 		packet, channelCap, err := utils.PrepareIBCPacketSend(
 			ctx,
@@ -250,10 +250,6 @@ func (k Keeper) SendPendingDataPackets(ctx sdk.Context, channelID string) (clien
 		if err != nil {
 			if clienttypes.ErrClientNotActive.Is(err) {
 				// IBC client expired:
-				if i != 0 {
-					// this should never happen
-					panic(fmt.Errorf("client expired while sending pending packets: %w", err))
-				}
 				// leave the packet data stored to be sent once the client is upgraded
 				return true
 			}
