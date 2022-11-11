@@ -4,15 +4,15 @@ package types
 const (
 	EventTypeTimeout                  = "timeout"
 	EventTypePacket                   = "ccv_packet"
-	EventTypeChannelClose             = "channel_closed"
+	EventTypeChannelClosed            = "channel_closed"
 	EventTypeChannelEstablished       = "channel_established"
-	EventTypeFeeTransferChannelOpened = "fee_channel_opened"
+	EventTypeFeeTransferChannelOpened = "fee_transfer_channel_opened"
 	EventTypeConsumerClientCreated    = "consumer_client_created"
 
-	EventExecuteConsumerChainSlash = "execute_consumer_chain_slash"
-	EventTypeFeeDistribution       = "fee_distribution"
-	EventTypeSendSlashPacket       = "send_slash_packet"
-	EventTypeSendMaturedVSCPacket  = "send_matured_vsc_packet"
+	EventTypeExecuteConsumerChainSlash = "execute_consumer_chain_slash"
+	EventTypeFeeDistribution           = "fee_distribution"
+	EventTypeSendSlashPacket           = "send_slash_packet"
+	EventTypeSendMaturedVSCPacket      = "send_matured_vsc_packet"
 
 	AttributeKeyAckSuccess = "success"
 	AttributeKeyAck        = "acknowledgement"
