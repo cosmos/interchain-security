@@ -41,6 +41,7 @@ func TestInitGenesis(t *testing.T) {
 	pubKey, err := testutil.GenPubKey()
 	require.NoError(t, err)
 	validator := tmtypes.NewValidator(pubKey, 1)
+	abciValidator := abci.Validator{Address: pubKey.Address(), Power: int64(1)}
 	valset := []abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}
 
 	// create ibc client and last consensus states
@@ -62,9 +63,7 @@ func TestInitGenesis(t *testing.T) {
 		true,
 		true,
 	)
-	slashRequests := consumertypes.SlashRequests{
-		Requests: []consumertypes.SlashRequest{{Infraction: stakingtypes.Downtime}},
-	}
+
 	matPackets := []consumertypes.MaturingVSCPacket{
 		{
 			VscId:        uint64(1),
@@ -78,6 +77,18 @@ func TestInitGenesis(t *testing.T) {
 	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs,
 		consumertypes.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
 	)
+
+	pendingDataPackets := consumertypes.DataPackets{
+		List: []consumertypes.DataPacket{
+			{
+				Type: consumertypes.SlashPacket,
+				Data: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Downtime).GetBytes()},
+			{
+				Type: consumertypes.VscMaturedPacket,
+				Data: ccv.NewVSCMaturedPacketData(vscID).GetBytes(),
+			},
+		},
+	}
 
 	// create default parameters for a new chain
 	params := types.DefaultParams()
@@ -130,14 +141,16 @@ func TestInitGenesis(t *testing.T) {
 				matPackets,
 				valset,
 				defaultHeightValsetUpdateIDs,
-				slashRequests,
+				pendingDataPackets,
 				nil,
 				consumertypes.LastTransmissionBlockHeight{},
 				params,
 			),
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
 				assertConsumerPortIsBound(t, ctx, &ck)
-				require.Equal(t, slashRequests, ck.GetPendingSlashRequests(ctx))
+				gotPdp, ok := ck.GetPendingDataPackets(ctx)
+				require.True(t, ok)
+				require.Equal(t, pendingDataPackets, gotPdp)
 				assertHeightValsetUpdateIDs(t, ctx, &ck, defaultHeightValsetUpdateIDs)
 				assertProviderClientID(t, ctx, &ck, provClientID)
 				require.Equal(t, validator.Address.Bytes(), ck.GetAllCCValidator(ctx)[0].Address)
@@ -162,7 +175,7 @@ func TestInitGenesis(t *testing.T) {
 				matPackets,
 				valset,
 				updatedHeightValsetUpdateIDs,
-				consumertypes.SlashRequests{},
+				consumertypes.DataPackets{},
 				[]consumertypes.OutstandingDowntime{
 					{ValidatorConsensusAddress: sdk.ConsAddress(validator.Bytes()).String()},
 				},
@@ -223,20 +236,12 @@ func TestExportGenesis(t *testing.T) {
 	vscID := uint64(0)
 	blockHeight := uint64(0)
 
-	slashRequests := consumertypes.SlashRequests{
-		Requests: []consumertypes.SlashRequest{{Infraction: stakingtypes.Downtime}},
-	}
-	matPackets := []consumertypes.MaturingVSCPacket{
-		{
-			VscId:        uint64(1),
-			MaturityTime: uint64(time.Now().UnixNano()),
-		},
-	}
 	// mock a validator set
 	pubKey := ed25519.GenPrivKey().PubKey()
 	tmPK, err := cryptocodec.ToTmPubKeyInterface(pubKey)
 	require.NoError(t, err)
 	validator := tmtypes.NewValidator(tmPK, 1)
+	abciValidator := abci.Validator{Address: pubKey.Address(), Power: int64(1)}
 	valset := []abci.ValidatorUpdate{tmtypes.TM2PB.ValidatorUpdate(validator)}
 
 	// mock height to valset update ID values
@@ -247,6 +252,24 @@ func TestExportGenesis(t *testing.T) {
 		consumertypes.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
 	)
 	ltbh := consumertypes.LastTransmissionBlockHeight{Height: int64(blockHeight)}
+	pendingDataPackets := consumertypes.DataPackets{
+		List: []consumertypes.DataPacket{
+			{
+				Type: consumertypes.SlashPacket,
+				Data: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Downtime).GetBytes()},
+			{
+				Type: consumertypes.VscMaturedPacket,
+				Data: ccv.NewVSCMaturedPacketData(vscID).GetBytes(),
+			},
+		},
+	}
+	matPackets := []consumertypes.MaturingVSCPacket{
+		{
+			VscId:        uint64(1),
+			MaturityTime: uint64(time.Now().UnixNano()),
+		},
+	}
+
 	// create default parameters for a new chain
 	params := types.DefaultParams()
 	params.Enabled = true
@@ -269,7 +292,7 @@ func TestExportGenesis(t *testing.T) {
 				ck.SetCCValidator(ctx, cVal)
 				ck.SetParams(ctx, params)
 
-				ck.SetPendingSlashRequests(ctx, slashRequests)
+				ck.SetPendingDataPackets(ctx, pendingDataPackets)
 				ck.SetHeightValsetUpdateID(ctx, defaultHeightValsetUpdateIDs[0].Height, defaultHeightValsetUpdateIDs[0].ValsetUpdateId)
 
 			},
@@ -279,7 +302,7 @@ func TestExportGenesis(t *testing.T) {
 				nil,
 				valset,
 				defaultHeightValsetUpdateIDs,
-				slashRequests,
+				pendingDataPackets,
 				nil,
 				consumertypes.LastTransmissionBlockHeight{},
 				params,
@@ -311,7 +334,7 @@ func TestExportGenesis(t *testing.T) {
 				matPackets,
 				valset,
 				updatedHeightValsetUpdateIDs,
-				types.SlashRequests{},
+				types.DataPackets{},
 				[]consumertypes.OutstandingDowntime{
 					{ValidatorConsensusAddress: sdk.ConsAddress(validator.Address.Bytes()).String()},
 				},

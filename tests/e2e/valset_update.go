@@ -75,7 +75,7 @@ func (suite *CCVTestSuite) TestSendVSCMaturedPackets() {
 	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
 	// increase time
-	incrementTimeBy(suite, time.Hour)
+	incrementTime(suite, time.Hour)
 
 	// update time and send second packet
 	pd.ValidatorUpdates[0].Power = 15
@@ -87,7 +87,7 @@ func (suite *CCVTestSuite) TestSendVSCMaturedPackets() {
 	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
 	// increase time
-	incrementTimeBy(suite, 24*time.Hour)
+	incrementTime(suite, 24*time.Hour)
 
 	// update time and send third packet
 	pd.ValidatorUpdates[1].Power = 40
@@ -101,7 +101,7 @@ func (suite *CCVTestSuite) TestSendVSCMaturedPackets() {
 	// increase time such that first two packets are unbonded but third is not.
 	unbondingPeriod := consumerKeeper.GetUnbondingPeriod(suite.consumerChain.GetContext())
 	// increase time
-	incrementTimeBy(suite, unbondingPeriod-time.Hour)
+	incrementTime(suite, unbondingPeriod-time.Hour)
 
 	err = consumerKeeper.SendVSCMaturedPackets(suite.consumerChain.GetContext())
 	suite.Require().NoError(err)

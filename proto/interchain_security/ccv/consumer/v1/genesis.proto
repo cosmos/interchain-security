@@ -32,8 +32,8 @@ message GenesisState {
   // OutstandingDowntimes nil on new chain, filled  in on restart.
   repeated OutstandingDowntime outstanding_downtime_slashing = 10
       [ (gogoproto.nullable) = false ];
-  // PendingSlashRequests nil on new chain, filled in on restart.
- interchain_security.ccv.consumer.v1.SlashRequests pending_slash_requests = 11
+  // PendingDataPackets nil on new chain, filled in on restart.
+ interchain_security.ccv.consumer.v1.DataPackets pending_data_packets = 11
  [ (gogoproto.nullable) = false ];
   // LastTransmissionBlockHeight nil on new chain, filled in on restart.
   interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight last_transmission_block_height = 12

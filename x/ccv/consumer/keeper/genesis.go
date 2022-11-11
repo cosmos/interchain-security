@@ -63,7 +63,10 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		}
 		// chain restarts without the CCV channel established
 		if state.ProviderChannelId == "" {
-			k.SetPendingSlashRequests(ctx, state.PendingSlashRequests)
+
+			if len(state.PendingDataPackets.List) != 0 {
+				k.SetPendingDataPackets(ctx, state.PendingDataPackets)
+			}
 
 			// chain restarts with the CCV channel established
 		} else {
@@ -146,7 +149,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			maturingPackets,
 			valset,
 			k.GetHeightToValsetUpdateIDs(ctx),
-			consumertypes.SlashRequests{},
+			consumertypes.DataPackets{},
 			outstandingDowntimes,
 			consumertypes.LastTransmissionBlockHeight{},
 			params,
@@ -159,6 +162,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			return consumertypes.DefaultGenesisState()
 		}
 
+		pdp, _ := k.GetPendingDataPackets(ctx)
+
 		// export client states and pending slashing requests into a new chain genesis
 		genesis = consumertypes.NewRestartGenesisState(
 			clientID,
@@ -166,7 +171,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			nil,
 			valset,
 			k.GetHeightToValsetUpdateIDs(ctx),
-			k.GetPendingSlashRequests(ctx),
+			pdp,
 			nil,
 			consumertypes.LastTransmissionBlockHeight{},
 			params,
