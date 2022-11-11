@@ -4,7 +4,6 @@ package types
 const (
 	EventTypeTimeout                  = "timeout"
 	EventTypePacket                   = "ccv_packet"
-	EventTypeChannelClosed            = "channel_closed"
 	EventTypeChannelEstablished       = "channel_established"
 	EventTypeFeeTransferChannelOpened = "fee_transfer_channel_opened"
 	EventTypeConsumerClientCreated    = "consumer_client_created"

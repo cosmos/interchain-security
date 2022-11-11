@@ -98,7 +98,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			clienttypes.EventTypeCreateClient,
+			ccv.EventTypeConsumerClientCreated,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(ccv.AttributeChainID, chainID),
 			sdk.NewAttribute(clienttypes.AttributeKeyClientID, clientID),
