@@ -1,9 +1,8 @@
 package crypto
 
 import (
+	"crypto/rand"
 	"encoding/binary"
-	"math/rand"
-	"time"
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
 
@@ -34,14 +33,15 @@ func NewCryptoIdentityFromBytesSeed(seed []byte) CryptoIdentity {
 }
 
 func NewCryptoIdentityFromRandSeed() CryptoIdentity {
-	rand.Seed(time.Now().UnixMicro())
-	return NewCryptoIdentityFromIntSeed(rand.Int())
+	b := make([]byte, 8)
+	rand.Read(b)
+	seed := binary.BigEndian.Uint64(b)
+	return NewCryptoIdentityFromIntSeed(seed)
 }
 
-func NewCryptoIdentityFromIntSeed(i int) CryptoIdentity {
-	iUint64 := uint64(i)
+func NewCryptoIdentityFromIntSeed(i uint64) CryptoIdentity {
 	seed := []byte("AAAAAAAAabcdefghijklmnopqrstuvwx") // 8+24 bytes
-	binary.LittleEndian.PutUint64(seed[:8], iUint64)
+	binary.LittleEndian.PutUint64(seed[:8], i)
 	return NewCryptoIdentityFromBytesSeed(seed)
 }
 
