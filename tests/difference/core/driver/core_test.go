@@ -18,7 +18,7 @@ import (
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 
-	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing_utils"
+	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
@@ -31,7 +31,7 @@ type CoreSuite struct {
 	traces Traces
 
 	// simulate a relayed path
-	simibc ibctestingutils.RelayedPath
+	simibc simibc.RelayedPath
 
 	// keep around validators for easy access
 	valAddresses []sdk.ValAddress
@@ -464,5 +464,5 @@ func (s *CoreSuite) SetupTest() {
 	s.valAddresses = valAddresses
 	s.offsetHeight = offsetHeight
 	s.offsetTimeUnix = offsetTimeUnix
-	s.simibc = ibctestingutils.MakeRelayedPath(s.Suite.T(), path)
+	s.simibc = simibc.MakeRelayedPath(s.Suite.T(), path)
 }

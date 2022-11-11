@@ -1,4 +1,4 @@
-package ibc_testing_utils
+package simibc
 
 import (
 	"time"

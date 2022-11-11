@@ -9,7 +9,7 @@ import (
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/tests/e2e"
 	e2etestutil "github.com/cosmos/interchain-security/testutil/e2e"
-	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing_utils"
+	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	"github.com/stretchr/testify/suite"
 )
 

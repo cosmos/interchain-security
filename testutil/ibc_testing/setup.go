@@ -1,4 +1,4 @@
-package ibc_testing_utils
+package ibc_testing
 
 // Contains util functions for using the IBC testing package with CCV.
 

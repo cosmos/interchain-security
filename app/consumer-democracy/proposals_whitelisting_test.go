@@ -5,7 +5,7 @@ import (
 
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer-democracy"
-	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing_utils"
+	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	"github.com/stretchr/testify/require"
 )
 
