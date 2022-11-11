@@ -202,7 +202,7 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 		// this method is a no-op if there are no pending packets
 		return
 	}
-	for i, data := range pendingPackets {
+	for _, data := range pendingPackets {
 		// prepare to send the data to the consumer
 		packet, channelCap, err := utils.PrepareIBCPacketSend(
 			ctx,
@@ -223,11 +223,6 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 		if err != nil {
 			if clienttypes.ErrClientNotActive.Is(err) {
 				// IBC client expired:
-				// store the packet data to be sent once the client is upgraded
-				if i != 0 {
-					// this should never happen
-					panic(fmt.Errorf("client expired while sending pending packets: %w", err))
-				}
 				// leave the packet data stored to be sent once the client is upgraded
 				return
 			}
