@@ -164,7 +164,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
 }
 
-// expireClient expires the client the `clientTo`
+// expireClient expires the client to the `clientTo` chain
 func expireClient(s *CCVTestSuite, clientTo ChainType) {
 	var hostEndpoint *ibctesting.Endpoint
 	var hostChain *ibctesting.TestChain
