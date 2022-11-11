@@ -77,7 +77,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 			func(suite *CCVTestSuite) error {
 				providerKeeper.SetSlashAcks(s.providerCtx(), consumerChainID, []string{"validator-1", "validator-2", "validator-3"})
 				providerKeeper.SetLockUnbondingOnTimeout(s.providerCtx(), consumerChainID)
-				providerKeeper.AppendPendingVSCs(s.providerCtx(), consumerChainID, []ccv.ValidatorSetChangePacketData{{ValsetUpdateId: 1}})
+				providerKeeper.AppendPendingVSCs(s.providerCtx(), consumerChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
 				return nil
 			},
 		},
