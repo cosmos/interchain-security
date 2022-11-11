@@ -156,7 +156,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 			if !found {
 				// CCV channel not established:
 				// store the packet data to be sent once the CCV channel is established
-				k.AppendPendingVSCs(ctx, chainID, []ccv.ValidatorSetChangePacketData{packetData})
+				k.AppendPendingVSCs(ctx, chainID, packetData)
 				return false // go to next consumer chain
 			}
 
@@ -184,7 +184,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 			} else if clienttypes.ErrClientNotActive.Is(err) {
 				// IBC client expired:
 				// store the packet data to be sent once the client is upgraded
-				k.AppendPendingVSCs(ctx, chainID, []ccv.ValidatorSetChangePacketData{packetData})
+				k.AppendPendingVSCs(ctx, chainID, packetData)
 			} else {
 				// something went wrong when sending the packet
 				panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
