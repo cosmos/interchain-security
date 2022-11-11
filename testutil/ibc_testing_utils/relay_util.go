@@ -1,4 +1,4 @@
-package simibc
+package ibc_testing_utils
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"

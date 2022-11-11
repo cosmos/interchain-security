@@ -23,7 +23,6 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
-	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 
 	cryptoEd25519 "crypto/ed25519"
 
@@ -49,7 +48,7 @@ import (
 
 type Builder struct {
 	suite          *suite.Suite
-	link           simibc.OrderedLink
+	link           ibctestingutils.OrderedLink
 	path           *ibctesting.Path
 	coordinator    *ibctesting.Coordinator
 	clientHeaders  map[string][]*ibctmtypes.Header
@@ -485,7 +484,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 }
 
 func (b *Builder) createLink() {
-	b.link = simibc.MakeOrderedLink()
+	b.link = ibctestingutils.MakeOrderedLink()
 	// init utility data structures
 	b.mustBeginBlock = map[string]bool{P: true, C: true}
 	b.clientHeaders = map[string][]*ibctmtypes.Header{}
@@ -568,7 +567,7 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 
 	b.updateClient(b.chainID(C))
 
-	ack, err := simibc.TryRecvPacket(b.endpoint(P), b.endpoint(C), packet)
+	ack, err := ibctestingutils.TryRecvPacket(b.endpoint(P), b.endpoint(C), packet)
 
 	b.link.AddAck(b.chainID(C), ack, packet)
 
@@ -600,7 +599,7 @@ func (b *Builder) beginBlock(chainID string) {
 
 func (b *Builder) updateClient(chainID string) {
 	for _, header := range b.clientHeaders[b.otherID(chainID)] {
-		err := simibc.UpdateReceiverClient(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), header)
+		err := ibctestingutils.UpdateReceiverClient(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), header)
 		if err != nil {
 			b.coordinator.Fatal("updateClient")
 		}
@@ -613,7 +612,7 @@ func (b *Builder) deliver(chainID string) {
 	for _, p := range packets {
 		receiver := b.endpointFromID(chainID)
 		sender := receiver.Counterparty
-		ack, err := simibc.TryRecvPacket(sender, receiver, p.Packet)
+		ack, err := ibctestingutils.TryRecvPacket(sender, receiver, p.Packet)
 		if err != nil {
 			b.coordinator.Fatal("deliver")
 		}
@@ -623,7 +622,7 @@ func (b *Builder) deliver(chainID string) {
 
 func (b *Builder) deliverAcks(chainID string) {
 	for _, ack := range b.link.ConsumeAcks(b.otherID(chainID), 999999) {
-		err := simibc.TryRecvAck(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), ack.Packet, ack.Ack)
+		err := ibctestingutils.TryRecvAck(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), ack.Packet, ack.Ack)
 		if err != nil {
 			b.coordinator.Fatal("deliverAcks")
 		}

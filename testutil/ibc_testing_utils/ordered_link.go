@@ -1,4 +1,4 @@
-package simibc
+package ibc_testing_utils
 
 import channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
