@@ -10,7 +10,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -23,7 +22,6 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	simapp "github.com/cosmos/interchain-security/testutil/simapp"
 
 	cryptoEd25519 "crypto/ed25519"
 
@@ -39,6 +37,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
+	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -337,14 +336,14 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 
 func (b *Builder) createChains() {
 
-	coordinator := simapp.NewBasicCoordinator(b.suite.T())
+	coordinator := ibctesting.NewCoordinator(b.suite.T(), 0)
 
 	// Create validators
 	validators, signers, addresses := b.createValidators()
 	// Create provider
-	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, simapp.SetupTestingappProvider, ibctesting.GetChainID(0), validators, signers)
+	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, ibctestingutils.ProviderAppIniter, ibctesting.GetChainID(0), validators, signers)
 	// Create consumer, using the same validators.
-	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, simapp.SetupTestingAppConsumer, ibctesting.GetChainID(1), validators, signers)
+	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, ibctestingutils.ConsumerAppIniter, ibctesting.GetChainID(1), validators, signers)
 
 	b.coordinator = coordinator
 	b.valAddresses = addresses
@@ -539,7 +538,7 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 
 	timeout := uint64(b.chain(P).CurrentHeader.Time.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 
-	pd := types.NewValidatorSetChangePacketData(
+	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{},
 		vscID,
 		nil,
