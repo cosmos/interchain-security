@@ -14,7 +14,7 @@ import (
 // This file can be used as an example e2e testing instance for any provider/consumer applications.
 // In the case of this repo, we're testing the dummy provider/consumer applications,
 // but to test any arbitrary app, one only needs to replicate this file and "specific_setup.go",
-// then pass in the appropriate types and parameters to the suite. Note that provider consumer
+// then pass in the appropriate types and parameters to the suite. Note that provider and consumer
 // applications types must implement the interfaces defined in /testutil/e2e/interfaces.go to compile.
 
 // Executes the standard group of ccv tests against a consumer and provider app.go implementation.
