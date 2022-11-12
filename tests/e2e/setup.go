@@ -28,9 +28,15 @@ type CCVTestSuite struct {
 	suite.Suite
 	coordinator   *ibctesting.Coordinator
 	providerChain *ibctesting.TestChain
+	// The first consumer chain among multiple.
 	consumerChain *ibctesting.TestChain
-	providerApp   e2eutil.ProviderApp
-	consumerApp   e2eutil.ConsumerApp
+	// The preferred way to access consumer chains when designing tests around multiple consumers.
+	consumerChains []*ibctesting.TestChain
+	providerApp    e2eutil.ProviderApp
+	// The first consumer app among multiple.
+	consumerApp e2eutil.ConsumerApp
+	// The preferred way to access consumer apps when designing tests around multiple consumers.
+	consumerApps  []e2eutil.ConsumerApp
 	path          *ibctesting.Path
 	transferPath  *ibctesting.Path
 	setupCallback SetupCallback
@@ -45,9 +51,9 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 	ccvSuite.setupCallback = func(t *testing.T) (
 		*ibctesting.Coordinator,
 		*ibctesting.TestChain,
-		*ibctesting.TestChain,
+		[]*ibctesting.TestChain,
 		e2eutil.ProviderApp,
-		e2eutil.ConsumerApp,
+		[]e2eutil.ConsumerApp,
 	) {
 		// Instantiate the test coordinator.
 		coordinator := ibctesting.NewCoordinator(t, 0)
@@ -57,14 +63,21 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 		provider, providerApp := ibctestingutils.AddProvider[Tp](
 			coordinator, t, providerAppIniter)
 
+		numConsumers := 5
+
 		// Add specified number of consumers to coordinator, store returned test chains and apps.
 		// Concrete consumer app type is passed to the generic function here.
 		consumers, consumerApps := ibctestingutils.AddConsumers[Tc](
-			coordinator, t, 1, consumerAppIniter)
+			coordinator, t, numConsumers, consumerAppIniter)
+
+		// Apparently Go doesn't currently allow implicit conversion of []Tc to []e2eutil.ConsumerApp
+		consumerAppsI := []e2eutil.ConsumerApp{}
+		for _, consumer := range consumerApps {
+			consumerAppsI = append(consumerAppsI, consumer)
+		}
 
 		// Pass variables to suite.
-		// TODO: accept multiple consumers here
-		return coordinator, provider, consumers[0], providerApp, consumerApps[0]
+		return coordinator, provider, consumers, providerApp, consumerAppsI
 	}
 	return ccvSuite
 }
@@ -74,9 +87,9 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 type SetupCallback func(t *testing.T) (
 	coord *ibctesting.Coordinator,
 	providerChain *ibctesting.TestChain,
-	consumerChain *ibctesting.TestChain,
+	consumerChains []*ibctesting.TestChain,
 	providerApp e2eutil.ProviderApp,
-	consumerApp e2eutil.ConsumerApp,
+	consumerApps []e2eutil.ConsumerApp,
 )
 
 // SetupTest sets up in-mem state before every test
@@ -84,8 +97,13 @@ func (suite *CCVTestSuite) SetupTest() {
 
 	// Instantiate new test utils using callback
 	suite.coordinator, suite.providerChain,
-		suite.consumerChain, suite.providerApp,
-		suite.consumerApp = suite.setupCallback(suite.T())
+		suite.consumerChains, suite.providerApp,
+		suite.consumerApps = suite.setupCallback(suite.T())
+
+	// Set consumerChain and consumerApp to first consumer in list
+	// (most tests were not previously written for multiple consumers)
+	suite.consumerChain = suite.consumerChains[0]
+	suite.consumerApp = suite.consumerApps[0]
 
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
