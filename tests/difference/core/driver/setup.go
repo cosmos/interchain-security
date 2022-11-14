@@ -451,15 +451,16 @@ func (b *Builder) setProviderSlashParams() {
 	b.providerSlashingKeeper().SetParams(b.ctx(P), params)
 }
 
-func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *consumertypes.GenesisState {
-	// Create Provider client
-	providerClient := ibctmtypes.NewClientState(
+func (b *Builder) createConsumerClient(tmConfig *ibctesting.TendermintConfig) *ibctmtypes.ClientState {
+	return ibctmtypes.NewClientState(
 		b.providerChain().ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 		b.providerChain().LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
 		[]string{"upgrade", "upgradedIBCState"}, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
 	)
-	providerConsState := b.providerChain().LastHeader.ConsensusState()
+}
 
+func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState) *consumertypes.GenesisState {
+	providerConsState := b.providerChain().LastHeader.ConsensusState()
 	// Create Consumer genesis
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.providerChain().Vals)
 	params := consumertypes.NewParams(
@@ -473,7 +474,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		consumertypes.DefaultHistoricalEntries,
 		initState.UnbondingC,
 	)
-	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, consumertypes.SlashRequests{}, params)
+	return consumertypes.NewInitialGenesisState(client, providerConsState, valUpdates, consumertypes.SlashRequests{}, params)
 }
 
 func (b *Builder) createLink() {
@@ -678,10 +679,12 @@ func (b *Builder) build() {
 	tmConfig.TrustingPeriod = b.initState.Trusting
 	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
 
-	// Init consumer
-	b.consumerKeeper().InitGenesis(b.ctx(C), b.createConsumerGenesis(tmConfig))
+	// Init consumer chain state
+	consumerChainClientForProvider := b.createConsumerClient(tmConfig)
+	consumerChainGenesis := b.createConsumerGenesis(consumerChainClientForProvider)
+	b.consumerKeeper().InitGenesis(b.ctx(C), consumerChainGenesis)
 
-	// Create a simulated network link link
+	// Create a simulated network link
 	b.createLink()
 
 	// Establish connection, channel
