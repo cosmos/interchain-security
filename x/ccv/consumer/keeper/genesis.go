@@ -82,7 +82,11 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 				k.SetOutstandingDowntime(ctx, consAddr)
 			}
 			// set last transmission block height
-			k.SetLastTransmissionBlockHeight(ctx, state.LastTransmissionBlockHeight)
+			err := k.SetLastTransmissionBlockHeight(ctx, state.LastTransmissionBlockHeight)
+			if err != nil {
+				panic(fmt.Sprintf("could not set last transmission block height: %v", err))
+			}
+
 		}
 
 		// set height to valset update id mapping

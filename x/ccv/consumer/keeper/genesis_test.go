@@ -303,7 +303,8 @@ func TestExportGenesis(t *testing.T) {
 				// populate the required states for an established CCV channel
 				ck.SetPacketMaturityTime(ctx, matPackets[0].VscId, matPackets[0].MaturityTime)
 				ck.SetOutstandingDowntime(ctx, sdk.ConsAddress(validator.Address.Bytes()))
-				ck.SetLastTransmissionBlockHeight(ctx, ltbh)
+				err = ck.SetLastTransmissionBlockHeight(ctx, ltbh)
+				require.NoError(t, err)
 			},
 			consumertypes.NewRestartGenesisState(
 				provClientID,
