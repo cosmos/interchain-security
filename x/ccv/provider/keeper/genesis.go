@@ -9,6 +9,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
+// InitGenesis initializes the CCV provider state and binds to PortID.
 func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	k.SetPort(ctx, ccv.ProviderPortID)
 
@@ -82,6 +83,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	k.SetParams(ctx, genState.Params)
 }
 
+// ExportGenesis returns the CCV provider module's exported genesis
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	var consumerStates []types.ConsumerState
 	// export states for each consumer chains
