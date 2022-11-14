@@ -5,13 +5,12 @@ import (
 	"testing"
 	"time"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
@@ -27,31 +26,28 @@ func TestOnRecvVSCPacket(t *testing.T) {
 	consumerCCVChannelID := "consumerCCVChannelID"
 	providerCCVChannelID := "providerCCVChannelID"
 
-	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	require.NoError(t, err)
-	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	require.NoError(t, err)
-	pk3, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	require.NoError(t, err)
+	cId1 := crypto.NewCryptoIdentityFromRandSeed()
+	cId2 := crypto.NewCryptoIdentityFromRandSeed()
+	cId3 := crypto.NewCryptoIdentityFromRandSeed()
 
 	changes1 := []abci.ValidatorUpdate{
 		{
-			PubKey: pk1,
+			PubKey: cId1.TMProtoCryptoPublicKey(),
 			Power:  30,
 		},
 		{
-			PubKey: pk2,
+			PubKey: cId2.TMProtoCryptoPublicKey(),
 			Power:  20,
 		},
 	}
 
 	changes2 := []abci.ValidatorUpdate{
 		{
-			PubKey: pk2,
+			PubKey: cId2.TMProtoCryptoPublicKey(),
 			Power:  40,
 		},
 		{
-			PubKey: pk3,
+			PubKey: cId3.TMProtoCryptoPublicKey(),
 			Power:  10,
 		},
 	}
@@ -95,15 +91,15 @@ func TestOnRecvVSCPacket(t *testing.T) {
 			types.ValidatorSetChangePacketData{ValidatorUpdates: changes2},
 			types.ValidatorSetChangePacketData{ValidatorUpdates: []abci.ValidatorUpdate{
 				{
-					PubKey: pk1,
+					PubKey: cId1.TMProtoCryptoPublicKey(),
 					Power:  30,
 				},
 				{
-					PubKey: pk2,
+					PubKey: cId2.TMProtoCryptoPublicKey(),
 					Power:  40,
 				},
 				{
-					PubKey: pk3,
+					PubKey: cId3.TMProtoCryptoPublicKey(),
 					Power:  10,
 				},
 			}},

@@ -3,18 +3,16 @@ package types_test
 import (
 	"testing"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/cosmos/interchain-security/testutil/crypto"
 	"github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 func TestPacketDataValidateBasic(t *testing.T) {
-	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	require.NoError(t, err)
-	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	require.NoError(t, err)
+
+	cId1 := crypto.NewCryptoIdentityFromRandSeed()
+	cId2 := crypto.NewCryptoIdentityFromRandSeed()
 
 	cases := []struct {
 		name       string
@@ -37,11 +35,11 @@ func TestPacketDataValidateBasic(t *testing.T) {
 			types.NewValidatorSetChangePacketData(
 				[]abci.ValidatorUpdate{
 					{
-						PubKey: pk1,
+						PubKey: cId1.TMProtoCryptoPublicKey(),
 						Power:  30,
 					},
 					{
-						PubKey: pk2,
+						PubKey: cId2.TMProtoCryptoPublicKey(),
 						Power:  20,
 					},
 				},
@@ -62,19 +60,18 @@ func TestPacketDataValidateBasic(t *testing.T) {
 }
 
 func TestMarshalPacketData(t *testing.T) {
-	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	require.NoError(t, err)
-	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	require.NoError(t, err)
+
+	cId1 := crypto.NewCryptoIdentityFromRandSeed()
+	cId2 := crypto.NewCryptoIdentityFromRandSeed()
 
 	vpd := types.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{
 			{
-				PubKey: pk1,
+				PubKey: cId1.TMProtoCryptoPublicKey(),
 				Power:  30,
 			},
 			{
-				PubKey: pk2,
+				PubKey: cId2.TMProtoCryptoPublicKey(),
 				Power:  20,
 			},
 		},

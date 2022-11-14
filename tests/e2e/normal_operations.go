@@ -1,7 +1,7 @@
 package e2e
 
 import (
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/cosmos/interchain-security/testutil/crypto"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
@@ -20,8 +20,8 @@ func (k CCVTestSuite) TestHistoricalInfo() {
 	// and then call track historical info in the next block
 	createVal := func(k CCVTestSuite) {
 		// add new validator to consumer states
-		pk := ed25519.GenPrivKey().PubKey()
-		cVal, err := consumertypes.NewCCValidator(pk.Address(), int64(1), pk)
+		cId := crypto.NewCryptoIdentityFromRandSeed()
+		cVal, err := consumertypes.NewCCValidator(cId.SDKValAddress(), int64(1), cId.SDKPubKey())
 		k.Require().NoError(err)
 
 		consumerKeeper.SetCCValidator(k.consumerChain.GetContext(), cVal)

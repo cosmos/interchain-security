@@ -3,17 +3,15 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
+	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
-
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 )
 
 // TestProviderClientID tests getter and setter functionality for the client ID stored on consumer keeper
@@ -46,19 +44,17 @@ func TestProviderChannel(t *testing.T) {
 
 // TestPendingChanges tests getter, setter, and delete functionality for pending VSCs on a consumer chain
 func TestPendingChanges(t *testing.T) {
-	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	require.NoError(t, err)
-	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	require.NoError(t, err)
+	cId1 := crypto.NewCryptoIdentityFromRandSeed()
+	cId2 := crypto.NewCryptoIdentityFromRandSeed()
 
 	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{
 			{
-				PubKey: pk1,
+				PubKey: cId1.TMProtoCryptoPublicKey(),
 				Power:  30,
 			},
 			{
-				PubKey: pk2,
+				PubKey: cId2.TMProtoCryptoPublicKey(),
 				Power:  20,
 			},
 		},
@@ -69,7 +65,7 @@ func TestPendingChanges(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	err = consumerKeeper.SetPendingChanges(ctx, pd)
+	err := consumerKeeper.SetPendingChanges(ctx, pd)
 	require.NoError(t, err)
 	gotPd, ok := consumerKeeper.GetPendingChanges(ctx)
 	require.True(t, ok)
@@ -120,15 +116,14 @@ func TestCrossChainValidator(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
+	cId := crypto.NewCryptoIdentityFromRandSeed()
+
 	// should return false
-	_, found := consumerKeeper.GetCCValidator(ctx, ed25519.GenPrivKey().PubKey().Address())
+	_, found := consumerKeeper.GetCCValidator(ctx, cId.SDKValAddress())
 	require.False(t, found)
 
-	// Obtain derived private key
-	privKey := ed25519.GenPrivKey()
-
 	// Set cross chain validator
-	ccVal, err := types.NewCCValidator(privKey.PubKey().Address(), 1000, privKey.PubKey())
+	ccVal, err := types.NewCCValidator(cId.SDKValAddress(), 1000, cId.SDKPubKey())
 	require.NoError(t, err)
 	consumerKeeper.SetCCValidator(ctx, ccVal)
 

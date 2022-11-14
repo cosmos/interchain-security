@@ -16,8 +16,6 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 
 	ccvcrypto "github.com/cosmos/interchain-security/testutil/crypto"
@@ -172,10 +170,8 @@ func TestExportGenesis(t *testing.T) {
 	)
 
 	// create a single validator
-	pubKey := ed25519.GenPrivKey().PubKey()
-	tmPK, err := cryptocodec.ToTmPubKeyInterface(pubKey)
-	require.NoError(t, err)
-	validator := tmtypes.NewValidator(tmPK, 1)
+	cId := ccvcrypto.NewCryptoIdentityFromRandSeed()
+	validator := tmtypes.NewValidator(cId.TMCryptoPubKey(), 1)
 
 	// create consensus state using a single validator
 	consensusState := testutil.GetConsensusState(clientID, time.Time{}, validator)
@@ -189,7 +185,7 @@ func TestExportGenesis(t *testing.T) {
 			name: "export a new chain",
 			malleate: func(ctx sdk.Context, ck consumerkeeper.Keeper, mocks testutil.MockedKeepers) {
 				// populate the states used by a new consumer chain
-				cVal, err := consumertypes.NewCCValidator(validator.Address.Bytes(), 1, pubKey)
+				cVal, err := consumertypes.NewCCValidator(validator.Address.Bytes(), 1, cId.SDKPubKey())
 				require.NoError(t, err)
 				ck.SetCCValidator(ctx, cVal)
 				ck.SetProviderClientID(ctx, clientID)
@@ -212,7 +208,7 @@ func TestExportGenesis(t *testing.T) {
 			name: "export a chain that has an established CCV channel",
 			malleate: func(ctx sdk.Context, ck consumerkeeper.Keeper, mocks testutil.MockedKeepers) {
 				// populate the states used by a running chain
-				cVal, err := consumertypes.NewCCValidator(validator.Address.Bytes(), 1, pubKey)
+				cVal, err := consumertypes.NewCCValidator(validator.Address.Bytes(), 1, cId.SDKPubKey())
 				require.NoError(t, err)
 				ck.SetCCValidator(ctx, cVal)
 				ck.SetOutstandingDowntime(ctx, sdk.ConsAddress(validator.Address.Bytes()))

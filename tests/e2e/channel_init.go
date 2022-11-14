@@ -1,13 +1,11 @@
 package e2e
 
 import (
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
+	"github.com/cosmos/interchain-security/testutil/crypto"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -47,18 +45,16 @@ func (suite *CCVTestSuite) TestConsumerGenesis() {
 
 	origTime := suite.consumerChain.GetContext().BlockTime()
 
-	pk1, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	suite.Require().NoError(err)
-	pk2, err := cryptocodec.ToTmProtoPublicKey(ed25519.GenPrivKey().PubKey())
-	suite.Require().NoError(err)
+	cId1 := crypto.NewCryptoIdentityFromRandSeed()
+	cId2 := crypto.NewCryptoIdentityFromRandSeed()
 	pd := ccv.NewValidatorSetChangePacketData(
 		[]abci.ValidatorUpdate{
 			{
-				PubKey: pk1,
+				PubKey: cId1.TMProtoCryptoPublicKey(),
 				Power:  30,
 			},
 			{
-				PubKey: pk2,
+				PubKey: cId2.TMProtoCryptoPublicKey(),
 				Power:  20,
 			},
 		},

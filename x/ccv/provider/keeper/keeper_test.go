@@ -8,12 +8,12 @@ import (
 	"github.com/golang/mock/gomock"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
 
+	"github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -198,8 +198,9 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	ctx := keeperParams.Ctx
 
+	cId := crypto.NewCryptoIdentityFromRandSeed()
 	slashPacket := ccv.NewSlashPacketData(
-		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
+		abci.Validator{Address: cId.SDKValAddress(),
 			Power: int64(0)},
 		uint64(0),
 		stakingtypes.DoubleSign,
