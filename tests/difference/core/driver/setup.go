@@ -64,47 +64,64 @@ func (b *Builder) ctx(chain string) sdk.Context {
 }
 
 func (b *Builder) chainID(chain string) string {
-	return map[string]string{P: ibctesting.GetChainID(0), C: ibctesting.GetChainID(1)}[chain]
+	if chain == P {
+		return ibctesting.GetChainID(0)
+	}
+	return ibctesting.GetChainID(1)
 }
 
 func (b *Builder) otherID(chainID string) string {
-	return map[string]string{ibctesting.GetChainID(0): ibctesting.GetChainID(1), ibctesting.GetChainID(1): ibctesting.GetChainID(0)}[chainID]
+	if chainID == b.chainID(P) {
+		return b.chainID(C)
+	}
+	return b.chainID(P)
 }
 
 func (b *Builder) chain(chain string) *ibctesting.TestChain {
-	return map[string]*ibctesting.TestChain{P: b.providerChain(), C: b.consumerChain()}[chain]
+	return b.coordinator.GetChain(b.chainID(chain))
 }
 
 func (b *Builder) providerChain() *ibctesting.TestChain {
-	return b.coordinator.GetChain(ibctesting.GetChainID(0))
+	return b.chain(P)
 }
 
 func (b *Builder) consumerChain() *ibctesting.TestChain {
-	return b.coordinator.GetChain(ibctesting.GetChainID(1))
+	return b.chain(C)
+}
+
+func (b *Builder) providerApp() *appProvider.App {
+	return b.providerChain().App.(*appProvider.App)
+}
+
+func (b *Builder) consumerApp() *appConsumer.App {
+	return b.consumerChain().App.(*appConsumer.App)
 }
 
 func (b *Builder) providerStakingKeeper() stakingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).StakingKeeper
+	return b.providerApp().StakingKeeper
 }
 
 func (b *Builder) providerSlashingKeeper() slashingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).SlashingKeeper
+	return b.providerApp().SlashingKeeper
 }
 
 func (b *Builder) providerKeeper() providerkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).ProviderKeeper
+	return b.providerApp().ProviderKeeper
 }
 
 func (b *Builder) consumerKeeper() consumerkeeper.Keeper {
-	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
+	return b.consumerApp().ConsumerKeeper
 }
 
 func (b *Builder) endpointFromID(chainID string) *ibctesting.Endpoint {
-	return map[string]*ibctesting.Endpoint{ibctesting.GetChainID(0): b.path.EndpointB, ibctesting.GetChainID(1): b.path.EndpointA}[chainID]
+	if chainID == b.chainID(P) {
+		return b.path.EndpointB
+	}
+	return b.path.EndpointA
 }
 
 func (b *Builder) endpoint(chain string) *ibctesting.Endpoint {
-	return map[string]*ibctesting.Endpoint{P: b.path.EndpointB, C: b.path.EndpointA}[chain]
+	return b.endpointFromID(b.chainID(chain))
 }
 
 func (b *Builder) validator(i int64) sdk.ValAddress {
@@ -545,7 +562,7 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 		nil,
 	)
 
-	seq, ok := b.providerChain().App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
+	seq, ok := b.providerApp().GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
 		b.ctx(P), ccv.ProviderPortID, b.path.EndpointB.ChannelID)
 
 	b.suite.Require().True(ok)
