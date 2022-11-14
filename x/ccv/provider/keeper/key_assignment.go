@@ -134,19 +134,97 @@ func (ka *KeyAssignment) PruneUnusedKeys(latestVscid VSCID) {
 	}
 }
 
+type KeyToPower struct {
+	inner     map[tmprotocrypto.PublicKey]int64
+	canonical map[string]tmprotocrypto.PublicKey
+}
+
+func MakeKeyToPower() KeyToPower {
+	return KeyToPower{
+		inner:     map[tmprotocrypto.PublicKey]int64{},
+		canonical: map[string]tmprotocrypto.PublicKey{},
+	}
+}
+
+func (m *KeyToPower) Set(pk tmprotocrypto.PublicKey, power int64) {
+	stringified := DeterministicStringify(pk)
+	if k, found := m.canonical[stringified]; found {
+		pk = k
+	} else {
+		m.canonical[stringified] = pk
+	}
+	m.inner[pk] = power
+}
+
+type KeyToLastUpdateMemo struct {
+	inner     map[tmprotocrypto.PublicKey]providertypes.LastUpdateMemo
+	canonical map[string]tmprotocrypto.PublicKey
+}
+
+func MakeKeyToLastUpdateMemo() KeyToLastUpdateMemo {
+	return KeyToLastUpdateMemo{
+		inner:     map[tmprotocrypto.PublicKey]providertypes.LastUpdateMemo{},
+		canonical: map[string]tmprotocrypto.PublicKey{},
+	}
+}
+
+func (m *KeyToLastUpdateMemo) Set(pk tmprotocrypto.PublicKey, memo providertypes.LastUpdateMemo) {
+	stringified := DeterministicStringify(pk)
+	if k, found := m.canonical[stringified]; found {
+		pk = k
+	} else {
+		m.canonical[stringified] = pk
+	}
+	m.inner[pk] = memo
+}
+
+func (m *KeyToLastUpdateMemo) Get(pk tmprotocrypto.PublicKey) (providertypes.LastUpdateMemo, bool) {
+	if k, found := m.canonical[DeterministicStringify(pk)]; found {
+		memo, found := m.inner[k]
+		if !found {
+			panic("found canonical key but key not present in inner map")
+		}
+		return memo, true
+	}
+	return providertypes.LastUpdateMemo{}, false
+}
+
+type KeySet struct {
+	inner     map[tmprotocrypto.PublicKey]struct{}
+	canonical map[string]tmprotocrypto.PublicKey
+}
+
+func MakeKeySet() KeySet {
+	return KeySet{
+		inner:     map[tmprotocrypto.PublicKey]struct{}{},
+		canonical: map[string]tmprotocrypto.PublicKey{},
+	}
+}
+
+func (s *KeySet) Add(pk tmprotocrypto.PublicKey) {
+	stringified := DeterministicStringify(pk)
+	if k, found := s.canonical[stringified]; found {
+		pk = k
+	} else {
+		s.canonical[stringified] = pk
+	}
+	s.inner[pk] = struct{}{}
+}
+
+func (s *KeySet) Has(pk tmprotocrypto.PublicKey) bool {
+	_, found := s.canonical[DeterministicStringify(pk)]
+	return found
+}
+
 // getProviderKeysForUpdate returns the all the provider keys of validators for which
 // an update must be sent. An update must be sent to the consumer if, either:
 //  1. The consumer has the validator in its active set AND the assigned key for the
 //     validator has changed since the last update.
 //  2. The voting power of the validator has changed, and the validator is in the active
 //     set.
-func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates map[ProviderPublicKey]int64) ([]ProviderPublicKey, map[string]bool) {
+func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates map[ProviderPublicKey]int64) KeySet {
 
-	// Return a list of provider keys that need to be updated
-	keys := []ProviderPublicKey{}
-	// Key types cannot be used for map lookup so use this string indexed
-	// map to check if a key is already in the list
-	included := map[string]bool{}
+	ret := MakeKeySet()
 
 	// Get provider keys which the consumer is aware of, because the
 	// last update sent to the consumer was a positive power update
@@ -156,8 +234,7 @@ func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates map[ProviderPub
 		if newCk, ok := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca); ok {
 			oldCk := lum.ConsumerKey
 			if !oldCk.Equal(newCk) && 0 < lum.Power {
-				keys = append(keys, *lum.ProviderKey)
-				included[DeterministicStringify(*lum.ProviderKey)] = true
+				ret.Add(*lum.ProviderKey)
 			}
 		}
 		return false
@@ -165,23 +242,18 @@ func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates map[ProviderPub
 
 	// Get provider keys where the validator power has changed
 	for providerPublicKey := range stakingUpdates {
-		s := DeterministicStringify(providerPublicKey)
-		if !included[s] {
-			keys = append(keys, providerPublicKey)
-			included[s] = true
-		}
+		ret.Add(providerPublicKey)
 	}
 
-	return keys, included
+	return ret
 }
 
-func (ka KeyAssignment) getProviderKeysLastPositiveUpdate(mustCreateUpdate map[string]bool) map[string]providertypes.LastUpdateMemo {
-	lastUpdate := map[string]providertypes.LastUpdateMemo{}
+func (ka KeyAssignment) getProviderKeysLastPositiveUpdate(mustCreateUpdate KeySet) KeyToLastUpdateMemo {
+	lastUpdate := MakeKeyToLastUpdateMemo()
 	ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(_ ConsumerConsAddr, lum providertypes.LastUpdateMemo) bool {
-		s := DeterministicStringify(*lum.ProviderKey)
 		if 0 < lum.Power {
-			if _, found := mustCreateUpdate[s]; found {
-				lastUpdate[s] = lum
+			if mustCreateUpdate.Has(*lum.ProviderKey) {
+				lastUpdate.Set(*lum.ProviderKey, lum)
 			}
 		}
 		return false
@@ -189,36 +261,14 @@ func (ka KeyAssignment) getProviderKeysLastPositiveUpdate(mustCreateUpdate map[s
 	return lastUpdate
 }
 
-type KeyToPowerMap struct {
-	inner     map[tmprotocrypto.PublicKey]int64
-	canonical map[string]tmprotocrypto.PublicKey
-}
-
-func MakeKeyToPowerMap() KeyToPowerMap {
-	return KeyToPowerMap{
-		inner:     map[tmprotocrypto.PublicKey]int64{},
-		canonical: map[string]tmprotocrypto.PublicKey{},
-	}
-}
-
-func (m *KeyToPowerMap) Set(pk tmprotocrypto.PublicKey, power int64) {
-	s := DeterministicStringify(pk)
-	if k, found := m.canonical[s]; found {
-		pk = k
-	} else {
-		m.canonical[s] = pk
-	}
-	m.inner[pk] = power
-}
-
 // do inner work as part of ComputeUpdates
 func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates map[ProviderPublicKey]int64) map[ConsumerPublicKey]int64 {
 
 	// Init the return value
-	consumerUpdates := MakeKeyToPowerMap()
+	consumerUpdates := MakeKeyToPower()
 
-	providerKeysForUpdate, mustUpdate := ka.getProviderKeysForUpdate(stakingUpdates)
-	providerKeysLastPositivePowerUpdateMemo := ka.getProviderKeysLastPositiveUpdate(mustUpdate)
+	providerKeysForUpdate := ka.getProviderKeysForUpdate(stakingUpdates)
+	providerKeysLastPositivePowerUpdateMemo := ka.getProviderKeysLastPositiveUpdate(providerKeysForUpdate)
 
 	/*
 		Create a deletion (zero power) update for any consumer key known to the consumer
@@ -228,11 +278,11 @@ func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates map[Prov
 		The purpose of *this* step is to create a clean slate. The *next* step will
 		amend the updates for any validators with a positive power.
 	*/
-	for i := range providerKeysForUpdate {
+	for loopPk := range providerKeysForUpdate.inner {
 		// For each provider key for which there was already a positive update
 		// create a deletion update for the associated consumer key.
-		pk := providerKeysForUpdate[i] // Avoid taking address to loop variable
-		if lum, found := providerKeysLastPositivePowerUpdateMemo[DeterministicStringify(pk)]; found {
+		pk := loopPk // Avoid taking the address of the loop variable
+		if lum, found := providerKeysLastPositivePowerUpdateMemo.Get(pk); found {
 			cca := TMCryptoPublicKeyToConsAddr(*lum.ConsumerKey)
 			ka.Store.SetConsumerConsAddrToLastUpdateMemo(cca, providertypes.LastUpdateMemo{ConsumerKey: lum.ConsumerKey, ProviderKey: &pk, Vscid: vscid, Power: 0})
 			consumerUpdates.Set(*lum.ConsumerKey, 0)
@@ -245,8 +295,8 @@ func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates map[Prov
 		The purpose of this step is to ensure that the consumer is sent the latest
 		positive power update for any validator for which the power is positive.
 	*/
-	for i := range providerKeysForUpdate {
-		pk := providerKeysForUpdate[i] // Avoid taking address to loop variable
+	for loopPk := range providerKeysForUpdate.inner {
+		pk := loopPk // Avoid taking the address of the loop variable
 
 		// For each provider key where there was either
 		// 1) already a positive power update
@@ -255,7 +305,7 @@ func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates map[Prov
 
 		var power int64 = 0
 
-		if lum, found := providerKeysLastPositivePowerUpdateMemo[DeterministicStringify(pk)]; found {
+		if lum, found := providerKeysLastPositivePowerUpdateMemo.Get(pk); found {
 			// There was previously a positive power update: copy it.
 			power = lum.Power
 		}
