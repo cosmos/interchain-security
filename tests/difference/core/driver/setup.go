@@ -120,6 +120,10 @@ func (b *Builder) endpoint(chain string) *ibctesting.Endpoint {
 	return b.endpointFromID(b.chainID(chain))
 }
 
+func (b *Builder) tmConfig(chain string) *ibctesting.TendermintConfig {
+	return b.endpoint(chain).ClientConfig.(*ibctesting.TendermintConfig)
+}
+
 func (b *Builder) validator(i int64) sdk.ValAddress {
 	return b.valAddresses[i]
 }
@@ -453,14 +457,20 @@ func (b *Builder) setProviderSlashParams() {
 
 func (b *Builder) createConsumerClient() *ibctmtypes.ClientState {
 	// Set light client params to match model
-	tmConfig := ibctesting.NewTendermintConfig()
-	tmConfig.UnbondingPeriod = b.initState.UnbondingP
-	tmConfig.TrustingPeriod = b.initState.Trusting
-	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
+	b.tmConfig(C).UnbondingPeriod = b.initState.UnbondingP
+	b.tmConfig(C).TrustingPeriod = b.initState.Trusting
+	b.tmConfig(C).MaxClockDrift = b.initState.MaxClockDrift
 	return ibctmtypes.NewClientState(
-		b.providerChain().ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
-		b.providerChain().LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
-		[]string{"upgrade", "upgradedIBCState"}, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
+		b.providerChain().ChainID,
+		b.tmConfig(C).TrustLevel,
+		b.tmConfig(C).TrustingPeriod,
+		b.tmConfig(C).UnbondingPeriod,
+		b.tmConfig(C).MaxClockDrift,
+		b.providerChain().LastHeader.GetHeight().(clienttypes.Height),
+		commitmenttypes.GetSDKSpecs(),
+		[]string{"upgrade", "upgradedIBCState"},
+		b.tmConfig(C).AllowUpdateAfterExpiry,
+		b.tmConfig(C).AllowUpdateAfterMisbehaviour,
 	)
 }
 
@@ -665,10 +675,9 @@ func (b *Builder) build() {
 	b.suite.Require().NoError(err)
 
 	// Configure and create the consumer Client
-	tmConfig := b.endpoint(P).ClientConfig.(*ibctesting.TendermintConfig)
-	tmConfig.UnbondingPeriod = b.initState.UnbondingC
-	tmConfig.TrustingPeriod = b.initState.Trusting
-	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
+	b.tmConfig(P).UnbondingPeriod = b.initState.UnbondingC
+	b.tmConfig(P).TrustingPeriod = b.initState.Trusting
+	b.tmConfig(P).MaxClockDrift = b.initState.MaxClockDrift
 	err = b.endpoint(P).CreateClient()
 	b.suite.Require().NoError(err)
 
