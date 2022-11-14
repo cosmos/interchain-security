@@ -15,7 +15,6 @@ import (
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
-
 type VSCID = uint64
 type ProviderPublicKey = tmprotocrypto.PublicKey
 type ConsumerPublicKey = tmprotocrypto.PublicKey
@@ -135,6 +134,12 @@ func (ka *KeyAssignment) PruneUnusedKeys(latestVscid VSCID) {
 	}
 }
 
+// getProviderKeysForUpdate returns the all the provider keys of validators for which
+// an update must be sent. An update must be sent to the consumer if, either:
+//  1. The consumer has the validator in its active set AND the assigned key for the
+//     validator has changed since the last update.
+//  2. The voting power of the validator has changed, and the validator is in the active
+//     set.
 func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates map[ProviderPublicKey]int64) ([]ProviderPublicKey, map[string]bool) {
 
 	// Return a list of provider keys that need to be updated
@@ -184,36 +189,61 @@ func (ka KeyAssignment) getProviderKeysLastPositiveUpdate(mustCreateUpdate map[s
 	return lastUpdate
 }
 
+type KeyToPowerMap struct {
+	inner     map[tmprotocrypto.PublicKey]int64
+	canonical map[string]tmprotocrypto.PublicKey
+}
+
+func MakeKeyToPowerMap() KeyToPowerMap {
+	return KeyToPowerMap{
+		inner:     map[tmprotocrypto.PublicKey]int64{},
+		canonical: map[string]tmprotocrypto.PublicKey{},
+	}
+}
+
+func (m *KeyToPowerMap) Set(pk tmprotocrypto.PublicKey, power int64) {
+	s := DeterministicStringify(pk)
+	if k, found := m.canonical[s]; found {
+		pk = k
+	} else {
+		m.canonical[s] = pk
+	}
+	m.inner[pk] = power
+}
+
 // do inner work as part of ComputeUpdates
-func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates map[ProviderPublicKey]int64) (consumerUpdates map[ConsumerPublicKey]int64) {
+func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates map[ProviderPublicKey]int64) map[ConsumerPublicKey]int64 {
 
 	// Init the return value
-	consumerUpdates = map[ConsumerPublicKey]int64{}
+	consumerUpdates := MakeKeyToPowerMap()
 
 	providerKeysForUpdate, mustUpdate := ka.getProviderKeysForUpdate(stakingUpdates)
 	providerKeysLastPositivePowerUpdateMemo := ka.getProviderKeysLastPositiveUpdate(mustUpdate)
 
-	canonicalConsumerKey := map[string]ConsumerPublicKey{}
-
 	/*
 		Create a deletion (zero power) update for any consumer key known to the consumer
-		that is no longer in use, or for which the power has changed.
+		that is no longer in use, or for which the power has changed to zero or a positive
+		number.
+
+		The purpose of *this* step is to create a clean slate. The *next* step will
+		amend the updates for any validators with a positive power.
 	*/
 	for i := range providerKeysForUpdate {
 		// For each provider key for which there was already a positive update
 		// create a deletion update for the associated consumer key.
 		pk := providerKeysForUpdate[i] // Avoid taking address to loop variable
 		if lum, found := providerKeysLastPositivePowerUpdateMemo[DeterministicStringify(pk)]; found {
-			s := DeterministicStringify(*lum.ConsumerKey)
-			canonicalConsumerKey[s] = *lum.ConsumerKey
-			consumerUpdates[*lum.ConsumerKey] = 0
 			cca := TMCryptoPublicKeyToConsAddr(*lum.ConsumerKey)
 			ka.Store.SetConsumerConsAddrToLastUpdateMemo(cca, providertypes.LastUpdateMemo{ConsumerKey: lum.ConsumerKey, ProviderKey: &pk, Vscid: vscid, Power: 0})
+			consumerUpdates.Set(*lum.ConsumerKey, 0)
 		}
 	}
 
 	/*
 		Create a positive power update for any consumer key which is in use.
+
+		The purpose of this step is to ensure that the consumer is sent the latest
+		positive power update for any validator for which the power is positive.
 	*/
 	for i := range providerKeysForUpdate {
 		pk := providerKeysForUpdate[i] // Avoid taking address to loop variable
@@ -243,15 +273,11 @@ func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates map[Prov
 			}
 			cca := TMCryptoPublicKeyToConsAddr(ck)
 			ka.Store.SetConsumerConsAddrToLastUpdateMemo(cca, providertypes.LastUpdateMemo{ConsumerKey: &ck, ProviderKey: &pk, Vscid: vscid, Power: power})
-			if k, found := canonicalConsumerKey[DeterministicStringify(ck)]; found {
-				consumerUpdates[k] = power
-			} else {
-				consumerUpdates[ck] = power
-			}
+			consumerUpdates.Set(ck, power)
 		}
 	}
 
-	return consumerUpdates
+	return consumerUpdates.inner
 }
 
 func toMap(providerUpdates []abci.ValidatorUpdate) map[ProviderPublicKey]int64 {
