@@ -17,17 +17,13 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/ibc-go/v3/testing/mock"
-
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	simapp "github.com/cosmos/interchain-security/testutil/simapp"
 
-	cryptoEd25519 "crypto/ed25519"
-
-	cosmosEd25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -132,11 +128,9 @@ func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 	return sdk.ConsAddress(b.validator(i))
 }
 
-// getValidatorPK returns the validator private key using the given seed index
-func (b *Builder) getValidatorPK(seedIx int) mock.PV {
-	seed := []byte(b.initState.PKSeeds[seedIx])
-	//lint:ignore SA1019 We don't care because this is only a test.
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+// getTestValidator returns the validator private key using the given seed index
+func (b *Builder) getTestValidator(seedIx int) testcrypto.CryptoIdentity {
+	return testcrypto.NewCryptoIdentityFromBytesSeed([]byte(b.initState.PKSeeds[seedIx]))
 }
 
 func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingApp, genesis map[string]json.RawMessage,
@@ -332,21 +326,10 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 		if b.initState.ValStates.Status[i] != stakingtypes.Bonded {
 			continue
 		}
-		privVal := b.getValidatorPK(i)
-
-		pubKey, err := privVal.GetPubKey()
-		require.NoError(b.suite.T(), err)
-
-		// Compute address
-		addr, err := sdk.ValAddressFromHex(pubKey.Address().String())
-		require.NoError(b.suite.T(), err)
-		addresses = append(addresses, addr)
-
-		// Save signer
-		signers[pubKey.Address().String()] = privVal
-
-		// Save validator with power
-		validators = append(validators, tmtypes.NewValidator(pubKey, int64(power)))
+		testVal := b.getTestValidator(i)
+		signers[testVal.SDKValAddressString()] = testVal
+		addresses = append(addresses, testVal.SDKValAddress())
+		validators = append(validators, testVal.TMValidator(int64(power)))
 	}
 
 	return tmtypes.NewValidatorSet(validators), signers, addresses
