@@ -9,6 +9,7 @@ import (
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/cosmos/interchain-security/testutil/crypto"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -17,7 +18,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
 // TestSendDowntimePacket tests consumer initiated slashing
@@ -342,8 +342,9 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 	suite.Require().Error(err, "slash with height mapping to zero")
 
 	// construct slashing packet with non existing validator
+	cryptoId := crypto.NewCryptoIdentityFromRandSeed()
 	slashingPkt := ccv.NewSlashPacketData(
-		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
+		abci.Validator{Address: cryptoId.ABCIAddressBytes(),
 			Power: int64(0)}, uint64(0), stakingtypes.Downtime,
 	)
 
@@ -606,8 +607,7 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 
 	// create a validator pubkey and address
 	// note that the validator wont't necessarily be in valset to due the TM delay
-	pubkey := ed25519.GenPrivKey().PubKey()
-	consAddr := sdk.ConsAddress(pubkey.Address())
+	cryptoId := crypto.NewCryptoIdentityFromRandSeed()
 
 	// set an arbitrary infraction height
 	infractionHeight := ctx.BlockHeight() - 1
@@ -618,14 +618,15 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 		Height:           infractionHeight,
 		Power:            power,
 		Time:             time.Now().UTC(),
-		ConsensusAddress: consAddr.String(),
+		ConsensusAddress: cryptoId.SDKConsAddress().String(),
 	}
 
 	// add validator signing-info to the store
-	suite.consumerApp.GetE2eSlashingKeeper().SetValidatorSigningInfo(ctx, consAddr, slashingtypes.ValidatorSigningInfo{
-		Address:    consAddr.String(),
-		Tombstoned: false,
-	})
+	suite.consumerApp.GetE2eSlashingKeeper().SetValidatorSigningInfo(
+		ctx, cryptoId.SDKConsAddress(), slashingtypes.ValidatorSigningInfo{
+			Address:    cryptoId.SDKConsAddress().String(),
+			Tombstoned: false,
+		})
 
 	// save next sequence before sending a slash packet
 	seq, ok := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(ctx, ccv.ConsumerPortID, channelID)
@@ -633,7 +634,7 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 
 	// construct slash packet data and get the expcted commit hash
 	packetData := ccv.NewSlashPacketData(
-		abci.Validator{Address: consAddr.Bytes(), Power: power},
+		abci.Validator{Address: cryptoId.ABCIAddressBytes(), Power: power},
 		// get VSC ID mapping to the infraction height with the TM delay substracted
 		suite.consumerApp.GetConsumerKeeper().GetHeightValsetUpdateID(ctx, uint64(infractionHeight-sdk.ValidatorUpdateDelay)),
 		stakingtypes.DoubleSign,
@@ -675,9 +676,9 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 	infraction := stakingtypes.Downtime
 	for j := 0; j < 2; j++ {
 		for i := 0; i < 4; i++ {
-			addr := ed25519.GenPrivKey().PubKey().Address()
+			cryptoId := crypto.NewCryptoIdentityFromRandSeed()
 			val := abci.Validator{
-				Address: addr}
+				Address: cryptoId.ABCIAddressBytes()}
 			consumerKeeper.SendSlashPacket(ctx, val, 0, infraction)
 			slashedVals = append(slashedVals, slashedVal{validator: val, infraction: infraction})
 		}
