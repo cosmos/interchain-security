@@ -189,7 +189,7 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 		if e.Type == channeltypes.EventTypeSendPacket {
 			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
-			s.simibc.Link.AddPacket(s.chainID(C), packet)
+			s.simibc.Link.AddOutboundPacket(s.chainID(C), packet)
 		}
 	}
 }

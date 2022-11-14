@@ -31,14 +31,14 @@ func MakeOrderedLink() OrderedLink {
 	}
 }
 
-// AddPacket adds an outbound packet from the sender to the counterparty.
-func (n OrderedLink) AddPacket(sender string, packet channeltypes.Packet) {
+// AddOutboundPacket adds an outbound packet from the sender to the counterparty.
+func (n OrderedLink) AddOutboundPacket(sender string, packet channeltypes.Packet) {
 	n.OutboxPackets[sender] = append(n.OutboxPackets[sender], Packet{packet, 0})
 }
 
-// AddAck adds an outbound ack, for future delivery to the sender of the packet
+// AddOutboundAck adds an outbound ack, for future delivery to the sender of the packet
 // being acked.
-func (n OrderedLink) AddAck(sender string, ack []byte, packet channeltypes.Packet) {
+func (n OrderedLink) AddOutboundAck(sender string, ack []byte, packet channeltypes.Packet) {
 	n.OutboxAcks[sender] = append(n.OutboxAcks[sender], Ack{ack, packet, 0})
 }
 

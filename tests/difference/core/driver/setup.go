@@ -571,7 +571,7 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 
 	ack, err := simibc.TryRecvPacket(b.endpoint(P), b.endpoint(C), packet)
 
-	b.link.AddAck(b.chainID(C), ack, packet)
+	b.link.AddOutboundAck(b.chainID(C), ack, packet)
 
 	b.suite.Require().NoError(err)
 }
@@ -618,7 +618,7 @@ func (b *Builder) deliver(chainID string) {
 		if err != nil {
 			b.coordinator.Fatal("deliver")
 		}
-		b.link.AddAck(chainID, ack, p.Packet)
+		b.link.AddOutboundAck(chainID, ack, p.Packet)
 	}
 }
 
@@ -650,7 +650,7 @@ func (b *Builder) endBlock(chainID string) {
 		if e.Type == channeltypes.EventTypeSendPacket {
 			packet, _ := channelkeeper.ReconstructPacketFromEvent(e)
 			// Collect packets
-			b.link.AddPacket(chainID, packet)
+			b.link.AddOutboundPacket(chainID, packet)
 		}
 	}
 

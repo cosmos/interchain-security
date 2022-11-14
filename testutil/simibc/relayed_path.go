@@ -73,7 +73,7 @@ func (f *RelayedPath) DeliverPackets(chainID string, num int) {
 		if err != nil {
 			f.t.Fatal("deliver")
 		}
-		f.Link.AddAck(chainID, ack, p.Packet)
+		f.Link.AddOutboundAck(chainID, ack, p.Packet)
 	}
 }
 
@@ -112,7 +112,7 @@ func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preComm
 		if e.Type == channeltypes.EventTypeSendPacket {
 			packet, _ := channelkeeper.ReconstructPacketFromEvent(e)
 			// Collect packets
-			f.Link.AddPacket(chainID, packet)
+			f.Link.AddOutboundPacket(chainID, packet)
 		}
 	}
 
