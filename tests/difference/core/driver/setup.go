@@ -417,7 +417,7 @@ func (b *Builder) addValidatorToStakingModule(testVal testcrypto.CryptoIdentity)
 	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
 }
 
-func (b *Builder) addExtraValidatorsOnProvider() {
+func (b *Builder) addExtraProviderValidators() {
 
 	for i, status := range b.initState.ValStates.Status {
 		if status == stakingtypes.Unbonded {
@@ -654,7 +654,7 @@ func (b *Builder) build() {
 	b.setProviderSlashParams()
 	// Add validators to provider that are not present on consumer
 	// NOTE: this should be refactored away in the future
-	b.addExtraValidatorsOnProvider()
+	b.addExtraProviderValidators()
 	// Commit the additional provider validators
 	b.coordinator.CommitBlock(b.providerChain())
 
@@ -671,9 +671,9 @@ func (b *Builder) build() {
 		panic("must already have provider client on consumer chain")
 	}
 	b.endpoint(C).ClientID = providerClientID
-	err := b.endpoint(P).Chain.SenderAccount.SetAccountNumber(6)
+	err := b.endpoint(C).Chain.SenderAccount.SetAccountNumber(1)
 	b.suite.Require().NoError(err)
-	err = b.endpoint(C).Chain.SenderAccount.SetAccountNumber(1)
+	err = b.endpoint(P).Chain.SenderAccount.SetAccountNumber(6)
 	b.suite.Require().NoError(err)
 
 	// Configure and create the consumer Client
