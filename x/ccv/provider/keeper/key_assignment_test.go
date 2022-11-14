@@ -526,6 +526,27 @@ func TestKeyAssignmentMemo(t *testing.T) {
 	require.True(t, pk.Equal(key(0)))
 }
 
+func TestNonDeterministicMapIteration(t *testing.T) {
+	m := map[int]int{}
+	for j := 0; j < 5; j++ {
+		m[j] = j
+	}
+	k := map[int][]int{}
+	for i := 0; i < 100; i++ {
+		k[i] = []int{}
+		for key := range m {
+			k[i] = append(k[i], key)
+		}
+	}
+	for j := 0; j < 5; j++ {
+		for i := 0; i < 99; i++ {
+			if k[i][j] != k[i+1][j] {
+				t.Fatal()
+			}
+		}
+	}
+}
+
 func TestKeyAssignmentMemoLoopIteration(t *testing.T) {
 	m := providertypes.LastUpdateMemo{}
 	{
