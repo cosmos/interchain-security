@@ -34,14 +34,15 @@ type CCVTestSuite struct {
 	path          *ibctesting.Path
 	transferPath  *ibctesting.Path
 	setupCallback SetupCallback
+	skippedTests  map[string]bool
 }
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
 func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
-	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter) *CCVTestSuite {
+	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string) *CCVTestSuite {
 
 	ccvSuite := new(CCVTestSuite)
-
+	
 	ccvSuite.setupCallback = func(t *testing.T) (
 		*ibctesting.Coordinator,
 		*ibctesting.TestChain,
@@ -66,6 +67,11 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 		// TODO: accept multiple consumers here
 		return coordinator, provider, consumers[0], providerApp, consumerApps[0]
 	}
+
+	ccvSuite.skippedTests = make(map[string]bool)
+	for _, testName := range skippedTests {
+		ccvSuite.skippedTests[testName] = true
+	}
 	return ccvSuite
 }
 
@@ -78,6 +84,12 @@ type SetupCallback func(t *testing.T) (
 	providerApp e2eutil.ProviderApp,
 	consumerApp e2eutil.ConsumerApp,
 )
+
+func (suite *CCVTestSuite) BeforeTest(suiteName, testName string) {
+	if suite.skippedTests[testName] {
+		suite.T().Skip()
+	}
+}
 
 // SetupTest sets up in-mem state before every test
 func (suite *CCVTestSuite) SetupTest() {
@@ -157,13 +169,6 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-
-	// set chains sender account number
-	// TODO: to be fixed in #151
-	err = suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	suite.Require().NoError(err)
-	err = suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
-	suite.Require().NoError(err)
 
 	// create path for the transfer channel
 	suite.transferPath = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
