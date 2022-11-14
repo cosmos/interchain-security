@@ -154,6 +154,15 @@ func (am AppModule) OnChanOpenAck(
 	}
 	am.keeper.SetDistributionTransmissionChannel(ctx, resp.ChannelId)
 
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			ccv.EventTypeFeeTransferChannelOpened,
+			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
+			sdk.NewAttribute(channeltypes.AttributeKeyChannelID, channelID),
+			sdk.NewAttribute(channeltypes.AttributeKeyPortID, transfertypes.PortID),
+		),
+	)
+
 	return nil
 }
 
