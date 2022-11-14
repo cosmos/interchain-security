@@ -356,20 +356,22 @@ func (ka *KeyAssignment) ComputeUpdates(vscid VSCID, stakingUpdates []abci.Valid
 	// Get the consumerUpdates to send to the consumer
 	consumerUpdates := ka.getConsumerUpdates(vscid, keyToPower)
 
-	// Transform the consumer updates back into a list for tendermint
-	ret := []abci.ValidatorUpdate{}
+	// Transform the consumer updates back into a list for sending to the consumer
+	// The consumer will aggregate updates and ultimately send them to tendermint.
+	tendermintUpdates := []abci.ValidatorUpdate{}
 	for ck, power := range consumerUpdates.inner {
-		ret = append(ret, abci.ValidatorUpdate{PubKey: ck, Power: power})
+		tendermintUpdates = append(tendermintUpdates, abci.ValidatorUpdate{PubKey: ck, Power: power})
 	}
-	// Sort for determinism (TODO:, necessary?)
-	sort.Slice(ret, func(i, j int) bool {
-		if ret[i].Power > ret[j].Power {
+
+	// Sort for determinism
+	sort.Slice(tendermintUpdates, func(i, j int) bool {
+		if tendermintUpdates[i].Power > tendermintUpdates[j].Power {
 			return true
 		}
-		return ret[i].PubKey.String() > ret[j].PubKey.String()
+		return tendermintUpdates[i].PubKey.String() > tendermintUpdates[j].PubKey.String()
 	})
-	return ret
 
+	return tendermintUpdates
 }
 
 func (ka *KeyAssignment) AssignDefaultsForProviderKeysWithoutExplicitAssignments(updates []abci.ValidatorUpdate) {
