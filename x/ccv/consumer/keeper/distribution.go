@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"strconv"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -88,6 +90,19 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 	newLtbh := types.LastTransmissionBlockHeight{
 		Height: ctx.BlockHeight(),
 	}
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			ccv.EventTypeFeeDistribution,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(ccv.AttributeDistributionCurrentHeight, strconv.Itoa(int(curHeight))),
+			sdk.NewAttribute(ccv.AttributeDistributionNextHeight, strconv.Itoa(int(curHeight+k.GetBlocksPerDistributionTransmission(ctx)))),
+			sdk.NewAttribute(ccv.AttributeDistributionFraction, (k.GetConsumerRedistributionFrac(ctx))),
+			sdk.NewAttribute(ccv.AttributeDistributionTotal, fpTokens.String()),
+			sdk.NewAttribute(ccv.AttributeDistributionToConsumer, consRedistrTokens.String()),
+			sdk.NewAttribute(ccv.AttributeDistributionToProvider, remainingTokens.String()),
+		),
+	)
 
 	return k.SetLastTransmissionBlockHeight(ctx, newLtbh)
 }
