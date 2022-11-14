@@ -455,7 +455,7 @@ func (b *Builder) setProviderSlashParams() {
 	b.providerSlashingKeeper().SetParams(b.ctx(P), params)
 }
 
-func (b *Builder) createConsumerClient() *ibctmtypes.ClientState {
+func (b *Builder) createConsumerClientGenesisState() *ibctmtypes.ClientState {
 	// Set light client params to match model
 	b.tmConfig(C).UnbondingPeriod = b.initState.UnbondingP
 	b.tmConfig(C).TrustingPeriod = b.initState.Trusting
@@ -654,6 +654,37 @@ func (b *Builder) endBlock(chainID string) {
 	c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
 }
 
+func (b *Builder) setProviderAccountNumber() {
+
+	err := b.endpoint(P).Chain.SenderAccount.SetAccountNumber(6)
+	b.suite.Require().NoError(err)
+}
+
+func (b *Builder) setConsumerAccountNumber() {
+	err := b.endpoint(C).Chain.SenderAccount.SetAccountNumber(1)
+	b.suite.Require().NoError(err)
+}
+
+func (b *Builder) configureProviderIBCTestingEndpoint() {
+	// Configure and create the consumer Client
+	b.tmConfig(P).UnbondingPeriod = b.initState.UnbondingC
+	b.tmConfig(P).TrustingPeriod = b.initState.Trusting
+	b.tmConfig(P).MaxClockDrift = b.initState.MaxClockDrift
+	err := b.endpoint(P).CreateClient()
+	b.suite.Require().NoError(err)
+
+	// Create the Consumer chain ID mapping in the provider state
+	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.endpoint(P).ClientID)
+}
+
+func (b *Builder) configureConsumerIBCTestingEndpoint() {
+	consumerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
+	if !ok {
+		panic("must already have provider client on consumer chain")
+	}
+	b.endpoint(C).ClientID = consumerClientID
+}
+
 func (b *Builder) build() {
 
 	// Create the test chain data structures (without any ibc)
@@ -668,37 +699,18 @@ func (b *Builder) build() {
 	// Commit the additional provider validators
 	b.coordinator.CommitBlock(b.providerChain())
 
-	/////////////////////////////////////////
 	b.configureIBCTestingPath()
 
-	err := b.endpoint(P).Chain.SenderAccount.SetAccountNumber(6)
-	b.suite.Require().NoError(err)
+	b.setProviderAccountNumber()
+	b.configureProviderIBCTestingEndpoint()
 
-	// Configure and create the consumer Client
-	b.tmConfig(P).UnbondingPeriod = b.initState.UnbondingC
-	b.tmConfig(P).TrustingPeriod = b.initState.Trusting
-	b.tmConfig(P).MaxClockDrift = b.initState.MaxClockDrift
-	err = b.endpoint(P).CreateClient()
-	b.suite.Require().NoError(err)
-
-	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.endpoint(P).ClientID)
-
-	/////////////////
-	err = b.endpoint(C).Chain.SenderAccount.SetAccountNumber(1)
-	b.suite.Require().NoError(err)
-	// Init consumer chain state
-	consumerClient := b.createConsumerClient()
-	consumerGenesis := b.createConsumerGenesis(consumerClient)
+	b.setConsumerAccountNumber()
+	consumerClientGenesisState := b.createConsumerClientGenesisState()
+	consumerGenesis := b.createConsumerGenesis(consumerClientGenesisState)
+	// Reboot the consumer application state from its genesis data
+	// this will create a client for the provider on the consumer.
 	b.consumerKeeper().InitGenesis(b.ctx(C), consumerGenesis)
-
-	consumerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
-	if !ok {
-		panic("must already have provider client on consumer chain")
-	}
-	b.endpoint(C).ClientID = consumerClientID
-
-	////////////////////////////////////////////
+	b.configureConsumerIBCTestingEndpoint()
 
 	// Handshake
 	b.coordinator.CreateConnections(b.path)
