@@ -489,33 +489,33 @@ func (b *Builder) createLink() {
 func (b *Builder) doIBCHandshake() {
 	// Configure the ibc path
 	b.path = ibctesting.NewPath(b.consumerChain(), b.providerChain())
-	b.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
-	b.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
-	b.path.EndpointA.ChannelConfig.Version = ccv.Version
-	b.path.EndpointB.ChannelConfig.Version = ccv.Version
-	b.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
-	b.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
+	b.endpoint(C).ChannelConfig.PortID = ccv.ConsumerPortID
+	b.endpoint(P).ChannelConfig.PortID = ccv.ProviderPortID
+	b.endpoint(C).ChannelConfig.Version = ccv.Version
+	b.endpoint(P).ChannelConfig.Version = ccv.Version
+	b.endpoint(C).ChannelConfig.Order = channeltypes.ORDERED
+	b.endpoint(P).ChannelConfig.Order = channeltypes.ORDERED
 
 	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
-	b.path.EndpointA.ClientID = providerClientID
-	err := b.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
+	b.endpoint(C).ClientID = providerClientID
+	err := b.endpoint(P).Chain.SenderAccount.SetAccountNumber(6)
 	b.suite.Require().NoError(err)
-	err = b.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
+	err = b.endpoint(C).Chain.SenderAccount.SetAccountNumber(1)
 	b.suite.Require().NoError(err)
 
 	// Configure and create the consumer Client
-	tmConfig := b.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
+	tmConfig := b.endpoint(P).ClientConfig.(*ibctesting.TendermintConfig)
 	tmConfig.UnbondingPeriod = b.initState.UnbondingC
 	tmConfig.TrustingPeriod = b.initState.Trusting
 	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
-	err = b.path.EndpointB.CreateClient()
+	err = b.endpoint(P).CreateClient()
 	b.suite.Require().NoError(err)
 
 	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.path.EndpointB.ClientID)
+	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.endpoint(P).ClientID)
 
 	// Handshake
 	b.coordinator.CreateConnections(b.path)
@@ -537,7 +537,7 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 	)
 
 	seq, ok := b.providerApp().GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
-		b.ctx(P), ccv.ProviderPortID, b.path.EndpointB.ChannelID)
+		b.ctx(P), ccv.ProviderPortID, b.endpoint(P).ChannelID)
 
 	b.suite.Require().True(ok)
 
