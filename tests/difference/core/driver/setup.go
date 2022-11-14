@@ -451,7 +451,12 @@ func (b *Builder) setProviderSlashParams() {
 	b.providerSlashingKeeper().SetParams(b.ctx(P), params)
 }
 
-func (b *Builder) createConsumerClient(tmConfig *ibctesting.TendermintConfig) *ibctmtypes.ClientState {
+func (b *Builder) createConsumerClient() *ibctmtypes.ClientState {
+	// Set light client params to match model
+	tmConfig := ibctesting.NewTendermintConfig()
+	tmConfig.UnbondingPeriod = b.initState.UnbondingP
+	tmConfig.TrustingPeriod = b.initState.Trusting
+	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
 	return ibctmtypes.NewClientState(
 		b.providerChain().ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 		b.providerChain().LastHeader.GetHeight().(clienttypes.Height), commitmenttypes.GetSDKSpecs(),
@@ -487,7 +492,7 @@ func (b *Builder) createLink() {
 	}
 }
 
-func (b *Builder) doIBCHandshake() {
+func (b *Builder) configureIBCTestingPath() {
 	// Configure the ibc path
 	b.path = ibctesting.NewPath(b.consumerChain(), b.providerChain())
 	b.endpoint(C).ChannelConfig.PortID = ccv.ConsumerPortID
@@ -496,31 +501,6 @@ func (b *Builder) doIBCHandshake() {
 	b.endpoint(P).ChannelConfig.Version = ccv.Version
 	b.endpoint(C).ChannelConfig.Order = channeltypes.ORDERED
 	b.endpoint(P).ChannelConfig.Order = channeltypes.ORDERED
-
-	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
-	if !ok {
-		panic("must already have provider client on consumer chain")
-	}
-	b.endpoint(C).ClientID = providerClientID
-	err := b.endpoint(P).Chain.SenderAccount.SetAccountNumber(6)
-	b.suite.Require().NoError(err)
-	err = b.endpoint(C).Chain.SenderAccount.SetAccountNumber(1)
-	b.suite.Require().NoError(err)
-
-	// Configure and create the consumer Client
-	tmConfig := b.endpoint(P).ClientConfig.(*ibctesting.TendermintConfig)
-	tmConfig.UnbondingPeriod = b.initState.UnbondingC
-	tmConfig.TrustingPeriod = b.initState.Trusting
-	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
-	err = b.endpoint(P).CreateClient()
-	b.suite.Require().NoError(err)
-
-	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.endpoint(P).ClientID)
-
-	// Handshake
-	b.coordinator.CreateConnections(b.path)
-	b.coordinator.CreateChannels(b.path)
 }
 
 // Manually construct and send an empty VSC packet from the provider
@@ -673,22 +653,41 @@ func (b *Builder) build() {
 	// Commit the additional validators
 	b.coordinator.CommitBlock(b.providerChain())
 
-	// Set light client params to match model
-	tmConfig := ibctesting.NewTendermintConfig()
-	tmConfig.UnbondingPeriod = b.initState.UnbondingP
-	tmConfig.TrustingPeriod = b.initState.Trusting
-	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
-
 	// Init consumer chain state
-	consumerChainClientForProvider := b.createConsumerClient(tmConfig)
+	consumerChainClientForProvider := b.createConsumerClient()
 	consumerChainGenesis := b.createConsumerGenesis(consumerChainClientForProvider)
 	b.consumerKeeper().InitGenesis(b.ctx(C), consumerChainGenesis)
 
 	// Create a simulated network link
 	b.createLink()
 
-	// Establish connection, channel
-	b.doIBCHandshake()
+	b.configureIBCTestingPath()
+	///////////////////////////////////////////////////////////////////////////
+	// TODO: refactor
+	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
+	if !ok {
+		panic("must already have provider client on consumer chain")
+	}
+	b.endpoint(C).ClientID = providerClientID
+	err := b.endpoint(P).Chain.SenderAccount.SetAccountNumber(6)
+	b.suite.Require().NoError(err)
+	err = b.endpoint(C).Chain.SenderAccount.SetAccountNumber(1)
+	b.suite.Require().NoError(err)
+
+	// Configure and create the consumer Client
+	tmConfig := b.endpoint(P).ClientConfig.(*ibctesting.TendermintConfig)
+	tmConfig.UnbondingPeriod = b.initState.UnbondingC
+	tmConfig.TrustingPeriod = b.initState.Trusting
+	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
+	err = b.endpoint(P).CreateClient()
+	b.suite.Require().NoError(err)
+
+	// Create the Consumer chain ID mapping in the provider state
+	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.endpoint(P).ClientID)
+	///////////////////////////////////////////////////////////////////////////
+	// Handshake
+	b.coordinator.CreateConnections(b.path)
+	b.coordinator.CreateChannels(b.path)
 
 	// Send an empty VSC packet from the provider to the consumer to finish
 	// the handshake. This is necessary because the model starts from a
