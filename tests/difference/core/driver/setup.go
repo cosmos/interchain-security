@@ -654,16 +654,16 @@ func (b *Builder) build() {
 	b.coordinator.CommitBlock(b.providerChain())
 
 	// Init consumer chain state
-	consumerChainClientForProvider := b.createConsumerClient()
-	consumerChainGenesis := b.createConsumerGenesis(consumerChainClientForProvider)
-	b.consumerKeeper().InitGenesis(b.ctx(C), consumerChainGenesis)
+	consumerClient := b.createConsumerClient()
+	consumerGenesis := b.createConsumerGenesis(consumerClient)
+	b.consumerKeeper().InitGenesis(b.ctx(C), consumerGenesis)
 
 	// Create a simulated network link
 	b.createLink()
 
 	b.configureIBCTestingPath()
 	///////////////////////////////////////////////////////////////////////////
-	// TODO: refactor
+	// TODO: refactor this
 	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
 	if !ok {
 		panic("must already have provider client on consumer chain")
@@ -684,7 +684,9 @@ func (b *Builder) build() {
 
 	// Create the Consumer chain ID mapping in the provider state
 	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.endpoint(P).ClientID)
+	//////////////////////////
 	///////////////////////////////////////////////////////////////////////////
+
 	// Handshake
 	b.coordinator.CreateConnections(b.path)
 	b.coordinator.CreateChannels(b.path)
