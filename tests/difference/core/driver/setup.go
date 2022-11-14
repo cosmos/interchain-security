@@ -417,7 +417,7 @@ func (b *Builder) addValidatorToStakingModule(testVal testcrypto.CryptoIdentity)
 	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
 }
 
-func (b *Builder) addExtraValidators() {
+func (b *Builder) addExtraValidatorsOnProvider() {
 
 	for i, status := range b.initState.ValStates.Status {
 		if status == stakingtypes.Unbonded {
@@ -646,20 +646,22 @@ func (b *Builder) endBlock(chainID string) {
 
 func (b *Builder) build() {
 
+	// Create the test chain data structures (without any ibc)
 	b.createChains()
+	// Create a simulated network link
+	b.createLink()
+	// Configure provider according to model values
 	b.setProviderSlashParams()
-	b.addExtraValidators()
-
-	// Commit the additional validators
+	// Add validators to provider that are not present on consumer
+	// NOTE: this should be refactored away in the future
+	b.addExtraValidatorsOnProvider()
+	// Commit the additional provider validators
 	b.coordinator.CommitBlock(b.providerChain())
 
 	// Init consumer chain state
 	consumerClient := b.createConsumerClient()
 	consumerGenesis := b.createConsumerGenesis(consumerClient)
 	b.consumerKeeper().InitGenesis(b.ctx(C), consumerGenesis)
-
-	// Create a simulated network link
-	b.createLink()
 
 	b.configureIBCTestingPath()
 	///////////////////////////////////////////////////////////////////////////
