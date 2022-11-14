@@ -675,6 +675,9 @@ func (b *Builder) build() {
 	// Create the Consumer chain ID mapping in the provider state
 	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.endpoint(P).ClientID)
 
+	/////////////////
+	err = b.endpoint(C).Chain.SenderAccount.SetAccountNumber(1)
+	b.suite.Require().NoError(err)
 	// Init consumer chain state
 	consumerClient := b.createConsumerClient()
 	consumerGenesis := b.createConsumerGenesis(consumerClient)
@@ -685,8 +688,6 @@ func (b *Builder) build() {
 		panic("must already have provider client on consumer chain")
 	}
 	b.endpoint(C).ClientID = consumerClientID
-	err = b.endpoint(C).Chain.SenderAccount.SetAccountNumber(1)
-	b.suite.Require().NoError(err)
 
 	////////////////////////////////////////////
 
