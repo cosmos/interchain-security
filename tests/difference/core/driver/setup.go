@@ -658,22 +658,10 @@ func (b *Builder) build() {
 	// Commit the additional provider validators
 	b.coordinator.CommitBlock(b.providerChain())
 
-	// Init consumer chain state
-	consumerClient := b.createConsumerClient()
-	consumerGenesis := b.createConsumerGenesis(consumerClient)
-	b.consumerKeeper().InitGenesis(b.ctx(C), consumerGenesis)
-
+	/////////////////////////////////////////
 	b.configureIBCTestingPath()
-	///////////////////////////////////////////////////////////////////////////
-	// TODO: refactor this
-	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
-	if !ok {
-		panic("must already have provider client on consumer chain")
-	}
-	b.endpoint(C).ClientID = providerClientID
-	err := b.endpoint(C).Chain.SenderAccount.SetAccountNumber(1)
-	b.suite.Require().NoError(err)
-	err = b.endpoint(P).Chain.SenderAccount.SetAccountNumber(6)
+
+	err := b.endpoint(P).Chain.SenderAccount.SetAccountNumber(6)
 	b.suite.Require().NoError(err)
 
 	// Configure and create the consumer Client
@@ -686,8 +674,21 @@ func (b *Builder) build() {
 
 	// Create the Consumer chain ID mapping in the provider state
 	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.endpoint(P).ClientID)
-	//////////////////////////
-	///////////////////////////////////////////////////////////////////////////
+
+	// Init consumer chain state
+	consumerClient := b.createConsumerClient()
+	consumerGenesis := b.createConsumerGenesis(consumerClient)
+	b.consumerKeeper().InitGenesis(b.ctx(C), consumerGenesis)
+
+	consumerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
+	if !ok {
+		panic("must already have provider client on consumer chain")
+	}
+	b.endpoint(C).ClientID = consumerClientID
+	err = b.endpoint(C).Chain.SenderAccount.SetAccountNumber(1)
+	b.suite.Require().NoError(err)
+
+	////////////////////////////////////////////
 
 	// Handshake
 	b.coordinator.CreateConnections(b.path)
