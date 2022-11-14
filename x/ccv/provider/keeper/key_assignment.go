@@ -156,6 +156,17 @@ func (m *KeyToPower) Set(pk tmprotocrypto.PublicKey, power int64) {
 	m.inner[pk] = power
 }
 
+func (m *KeyToPower) Get(pk tmprotocrypto.PublicKey) (int64, bool) {
+	if k, found := m.canonical[DeterministicStringify(pk)]; found {
+		power, found := m.inner[k]
+		if !found {
+			panic("found canonical key but key not present in inner map")
+		}
+		return power, true
+	}
+	return -1, false
+}
+
 type KeyToLastUpdateMemo struct {
 	inner     map[tmprotocrypto.PublicKey]providertypes.LastUpdateMemo
 	canonical map[string]tmprotocrypto.PublicKey
@@ -222,7 +233,7 @@ func (s *KeySet) Has(pk tmprotocrypto.PublicKey) bool {
 //     validator has changed since the last update.
 //  2. The voting power of the validator has changed, and the validator is in the active
 //     set.
-func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates map[ProviderPublicKey]int64) KeySet {
+func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates KeyToPower) KeySet {
 
 	ret := MakeKeySet()
 
@@ -233,6 +244,7 @@ func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates map[ProviderPub
 		pca := TMCryptoPublicKeyToConsAddr(*lum.ProviderKey)
 		if newCk, ok := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca); ok {
 			oldCk := lum.ConsumerKey
+			// Key changed? Last power was positive?
 			if !oldCk.Equal(newCk) && 0 < lum.Power {
 				ret.Add(*lum.ProviderKey)
 			}
@@ -241,7 +253,7 @@ func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates map[ProviderPub
 	})
 
 	// Get provider keys where the validator power has changed
-	for providerPublicKey := range stakingUpdates {
+	for providerPublicKey := range stakingUpdates.inner {
 		ret.Add(providerPublicKey)
 	}
 
@@ -262,12 +274,15 @@ func (ka KeyAssignment) getProviderKeysLastPositiveUpdate(mustCreateUpdate KeySe
 }
 
 // do inner work as part of ComputeUpdates
-func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates map[ProviderPublicKey]int64) map[ConsumerPublicKey]int64 {
+func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates KeyToPower) KeyToPower {
 
-	// Init the return value
+	// Init the return data structure
 	consumerUpdates := MakeKeyToPower()
 
+	// Get a set of all the provider validator keys for which an update must be sent
 	providerKeysForUpdate := ka.getProviderKeysForUpdate(stakingUpdates)
+
+	// Get the LAST positive update for each provider validator key that needs an update
 	providerKeysLastPositivePowerUpdateMemo := ka.getProviderKeysLastPositiveUpdate(providerKeysForUpdate)
 
 	/*
@@ -311,7 +326,7 @@ func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates map[Prov
 		}
 
 		// There is a new validator power: use it. It takes precedence.
-		if updatedVotingPower, ok := stakingUpdates[pk]; ok {
+		if updatedVotingPower, ok := stakingUpdates.Get(pk); ok {
 			power = updatedVotingPower
 		}
 
@@ -327,22 +342,26 @@ func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates map[Prov
 		}
 	}
 
-	return consumerUpdates.inner
+	return consumerUpdates
 }
 
-func toMap(providerUpdates []abci.ValidatorUpdate) map[ProviderPublicKey]int64 {
-	ret := map[ProviderPublicKey]int64{}
-	for _, u := range providerUpdates {
-		ret[u.PubKey] = u.Power
+func (ka *KeyAssignment) ComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) []abci.ValidatorUpdate {
+
+	// Create a map of provider keys to power
+	keyToPower := MakeKeyToPower()
+	for _, u := range stakingUpdates {
+		keyToPower.Set(u.PubKey, u.Power)
 	}
-	return ret
-}
 
-func fromMap(consumerUpdates map[ConsumerPublicKey]int64) []abci.ValidatorUpdate {
+	// Get the consumerUpdates to send to the consumer
+	consumerUpdates := ka.getConsumerUpdates(vscid, keyToPower)
+
+	// Transform the consumer updates back into a list for tendermint
 	ret := []abci.ValidatorUpdate{}
-	for ck, power := range consumerUpdates {
+	for ck, power := range consumerUpdates.inner {
 		ret = append(ret, abci.ValidatorUpdate{PubKey: ck, Power: power})
 	}
+	// Sort for determinism (TODO:, necessary?)
 	sort.Slice(ret, func(i, j int) bool {
 		if ret[i].Power > ret[j].Power {
 			return true
@@ -350,10 +369,7 @@ func fromMap(consumerUpdates map[ConsumerPublicKey]int64) []abci.ValidatorUpdate
 		return ret[i].PubKey.String() > ret[j].PubKey.String()
 	})
 	return ret
-}
 
-func (ka *KeyAssignment) ComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) (consumerUpdates []abci.ValidatorUpdate) {
-	return fromMap(ka.getConsumerUpdates(vscid, toMap(stakingUpdates)))
 }
 
 func (ka *KeyAssignment) AssignDefaultsForProviderKeysWithoutExplicitAssignments(updates []abci.ValidatorUpdate) {
