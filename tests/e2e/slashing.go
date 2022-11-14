@@ -23,7 +23,14 @@ const (
 	doubleSignTestCase
 )
 
-func (s *CCVTestSuite) TestSendAndApplySlashPacket() {
+// TestRelayAndApplySlashPacket tests that slash packets can be properly relayed
+// from consumer to provider, handled by provider, with a VSC and jailing/tombstoning
+// eventually effective on consumer and provider.
+//
+// Note: This method does not test the actual slash packet sending logic for downtime
+// and double-signing, see TestValidatorDowntime and TestValidatorDoubleSigning for
+// those types of tests.
+func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 
 	testCases := []int{
 		downtimeTestCase,
