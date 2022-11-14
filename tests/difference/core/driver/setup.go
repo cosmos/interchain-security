@@ -145,7 +145,7 @@ func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingAp
 	senderAccounts := []ibctesting.SenderAccount{}
 
 	// Create genesis accounts.
-	for i := 0; i < 2; i++ {
+	for i := 0; i < b.initState.MaxValidators; i++ {
 		pk := secp256k1.GenPrivKey()
 		acc := authtypes.NewBaseAccount(pk.PubKey().Address().Bytes(), pk.PubKey(), uint64(i), 0)
 
@@ -414,8 +414,13 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 // and zero tokens (zero voting power).
 func (b *Builder) addValidatorToStakingModule(testVal testcrypto.CryptoIdentity) {
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
-	msg, err := stakingtypes.NewMsgCreateValidator(testVal.SDKValAddress(), testVal.SDKPubKey(), coin, stakingtypes.Description{},
-		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
+	msg, err := stakingtypes.NewMsgCreateValidator(
+		testVal.SDKValAddress(),
+		testVal.SDKPubKey(),
+		coin,
+		stakingtypes.Description{},
+		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
+		sdk.ZeroInt())
 	b.suite.Require().NoError(err)
 	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
 	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
@@ -513,10 +518,41 @@ func (b *Builder) configureIBCTestingPath() {
 	b.endpoint(P).ChannelConfig.Order = channeltypes.ORDERED
 }
 
+func (b *Builder) setProviderAccountNumber() {
+
+	err := b.endpoint(P).Chain.SenderAccount.SetAccountNumber(6)
+	b.suite.Require().NoError(err)
+}
+
+func (b *Builder) setConsumerAccountNumber() {
+	err := b.endpoint(C).Chain.SenderAccount.SetAccountNumber(1)
+	b.suite.Require().NoError(err)
+}
+
+func (b *Builder) configureProviderIBCTestingEndpoint() {
+	// Configure and create the consumer Client
+	b.tmConfig(P).UnbondingPeriod = b.initState.UnbondingC
+	b.tmConfig(P).TrustingPeriod = b.initState.Trusting
+	b.tmConfig(P).MaxClockDrift = b.initState.MaxClockDrift
+	err := b.endpoint(P).CreateClient()
+	b.suite.Require().NoError(err)
+
+	// Create the Consumer chain ID mapping in the provider state
+	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.endpoint(P).ClientID)
+}
+
+func (b *Builder) configureConsumerIBCTestingEndpoint() {
+	consumerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
+	if !ok {
+		panic("must already have provider client on consumer chain")
+	}
+	b.endpoint(C).ClientID = consumerClientID
+}
+
 // Manually construct and send an empty VSC packet from the provider
 // to the consumer. This is necessary to complete the handshake, and thus
 // match the model init state, without any additional validator power changes.
-func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
+func (b *Builder) sendEmptyVSCPacket() {
 	vscID := b.providerKeeper().GetValidatorSetUpdateId(b.providerChain().GetContext())
 
 	timeout := uint64(b.chain(P).CurrentHeader.Time.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
@@ -654,72 +690,7 @@ func (b *Builder) endBlock(chainID string) {
 	c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
 }
 
-func (b *Builder) setProviderAccountNumber() {
-
-	err := b.endpoint(P).Chain.SenderAccount.SetAccountNumber(6)
-	b.suite.Require().NoError(err)
-}
-
-func (b *Builder) setConsumerAccountNumber() {
-	err := b.endpoint(C).Chain.SenderAccount.SetAccountNumber(1)
-	b.suite.Require().NoError(err)
-}
-
-func (b *Builder) configureProviderIBCTestingEndpoint() {
-	// Configure and create the consumer Client
-	b.tmConfig(P).UnbondingPeriod = b.initState.UnbondingC
-	b.tmConfig(P).TrustingPeriod = b.initState.Trusting
-	b.tmConfig(P).MaxClockDrift = b.initState.MaxClockDrift
-	err := b.endpoint(P).CreateClient()
-	b.suite.Require().NoError(err)
-
-	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.endpoint(P).ClientID)
-}
-
-func (b *Builder) configureConsumerIBCTestingEndpoint() {
-	consumerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
-	if !ok {
-		panic("must already have provider client on consumer chain")
-	}
-	b.endpoint(C).ClientID = consumerClientID
-}
-
-func (b *Builder) build() {
-
-	// Create the test chain data structures (without any ibc)
-	b.createChains()
-	// Create a simulated network link
-	b.createLink()
-	// Configure provider according to model values
-	b.setProviderSlashParams()
-	// Add validators to provider that are not present on consumer
-	// NOTE: this should be refactored away in the future
-	b.addExtraProviderValidators()
-	// Commit the additional provider validators
-	b.coordinator.CommitBlock(b.providerChain())
-
-	b.configureIBCTestingPath()
-
-	b.setProviderAccountNumber()
-	b.configureProviderIBCTestingEndpoint()
-
-	b.setConsumerAccountNumber()
-	consumerClientGenesisState := b.createConsumerClientGenesisState()
-	consumerGenesis := b.createConsumerGenesis(consumerClientGenesisState)
-	// Reboot the consumer application state from its genesis data
-	// this will create a client for the provider on the consumer.
-	b.consumerKeeper().InitGenesis(b.ctx(C), consumerGenesis)
-	b.configureConsumerIBCTestingEndpoint()
-
-	// Handshake
-	b.coordinator.CreateConnections(b.path)
-	b.coordinator.CreateChannels(b.path)
-
-	// Send an empty VSC packet from the provider to the consumer to finish
-	// the handshake. This is necessary because the model starts from a
-	// completely initialized state, with a completed handshake.
-	b.sendEmptyVSCPacketToFinishHandshake()
+func (b *Builder) runSomeProtocolSteps() {
 
 	// Catch up consumer to have the same height and timestamp as provider
 	b.endBlock(b.chainID(C))
@@ -777,7 +748,44 @@ func (b *Builder) build() {
 func GetZeroState(suite *suite.Suite, initState InitState) (
 	*ibctesting.Path, []sdk.ValAddress, int64, int64) {
 	b := Builder{initState: initState, suite: suite}
-	b.build()
+
+	// Create the test chain data structures (without any ibc)
+	b.createChains()
+	// Create a simulated network link
+	b.createLink()
+	// Configure provider according to model values
+	b.setProviderSlashParams()
+	// Add validators to provider that are not present on consumer
+	// NOTE: this should be refactored away in the future
+	b.addExtraProviderValidators()
+	// Commit the additional provider validators
+	b.coordinator.CommitBlock(b.providerChain())
+
+	b.configureIBCTestingPath()
+
+	b.setProviderAccountNumber() // TODO: this is magic. To be removed.
+	b.configureProviderIBCTestingEndpoint()
+
+	b.setConsumerAccountNumber() // TODO: this is magic. To be removed.
+	consumerClientGenesisState := b.createConsumerClientGenesisState()
+	consumerGenesis := b.createConsumerGenesis(consumerClientGenesisState)
+	// Reboot the consumer application state from its genesis data
+	// this will create a client for the provider on the consumer.
+	b.consumerKeeper().InitGenesis(b.ctx(C), consumerGenesis)
+	b.configureConsumerIBCTestingEndpoint()
+
+	// Handshake
+	b.coordinator.CreateConnections(b.path)
+	b.coordinator.CreateChannels(b.path)
+
+	// Send an empty VSC packet from the provider to the consumer to finish
+	// the handshake. This is necessary because the model starts from a
+	// completely initialized state, with a completed handshake.
+	b.sendEmptyVSCPacket() // TODO: this will be removed
+	// Run some protocol steps to allow the first VSC to mature and for the
+	// handshake to complete.
+	b.runSomeProtocolSteps() // TODO: this will be removed
+
 	// Height of the last committed block (current header is not committed)
 	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
 	// Time of the last committed block (current header is not committed)
