@@ -326,6 +326,7 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 		if b.initState.ValStates.Status[i] != stakingtypes.Bonded {
 			continue
 		}
+
 		testVal := b.getTestValidator(i)
 		signers[testVal.SDKValAddressString()] = testVal
 		addresses = append(addresses, testVal.SDKValAddress())
@@ -339,40 +340,20 @@ func (b *Builder) createChains() {
 
 	coordinator := simapp.NewBasicCoordinator(b.suite.T())
 
-	// Create validators
-	validators, signers, addresses := b.createValidators()
+	// Create tmValidators
+	tmValidators, signers, sdkValAddresses := b.createValidators()
 	// Create provider
-	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, simapp.SetupTestingappProvider, ibctesting.GetChainID(0), validators, signers)
+	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, simapp.SetupTestingappProvider, ibctesting.GetChainID(0), tmValidators, signers)
 	// Create consumer, using the same validators.
-	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, simapp.SetupTestingAppConsumer, ibctesting.GetChainID(1), validators, signers)
+	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, simapp.SetupTestingAppConsumer, ibctesting.GetChainID(1), tmValidators, signers)
 
 	b.coordinator = coordinator
-	b.valAddresses = addresses
-
-}
-
-// createValidator creates an additional validator with zero commission
-// and zero tokens (zero voting power).
-func (b *Builder) createValidator(seedIx int) (tmtypes.PrivValidator, sdk.ValAddress) {
-	privVal := b.getValidatorPK(seedIx)
-	pubKey, err := privVal.GetPubKey()
-	b.suite.Require().NoError(err)
-	val := tmtypes.NewValidator(pubKey, 0)
-	addr, err := sdk.ValAddressFromHex(val.Address.String())
-	b.suite.Require().NoError(err)
-	PK := privVal.PrivKey.PubKey()
-	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
-	msg, err := stakingtypes.NewMsgCreateValidator(addr, PK, coin, stakingtypes.Description{},
-		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
-	b.suite.Require().NoError(err)
-	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
-	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
-	return privVal, addr
+	b.valAddresses = sdkValAddresses
 }
 
 // setSigningInfos sets the validator signing info in the provider Slashing module
 func (b *Builder) setSigningInfos() {
-	for i := 0; i < 4; i++ { // TODO: unhardcode
+	for i := 0; i < b.initState.NumValidators; i++ {
 		info := slashingtypes.NewValidatorSigningInfo(
 			b.consAddr(int64(i)),
 			b.chain(P).CurrentHeader.GetHeight(),
@@ -425,16 +406,26 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	b.suite.Require().NoError(err)
 }
 
+// addValidatorToStakingModule creates an additional validator with zero commission
+// and zero tokens (zero voting power).
+func (b *Builder) addValidatorToStakingModule(testVal testcrypto.CryptoIdentity) {
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(0))
+	msg, err := stakingtypes.NewMsgCreateValidator(testVal.SDKValAddress(), testVal.SDKPubKey(), coin, stakingtypes.Description{},
+		stakingtypes.NewCommissionRates(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()), sdk.ZeroInt())
+	b.suite.Require().NoError(err)
+	pskServer := stakingkeeper.NewMsgServerImpl(b.providerStakingKeeper())
+	_, _ = pskServer.CreateValidator(sdk.WrapSDKContext(b.ctx(P)), msg)
+}
+
 func (b *Builder) addExtraValidators() {
 
 	for i, status := range b.initState.ValStates.Status {
 		if status == stakingtypes.Unbonded {
-			val, addr := b.createValidator(i)
-			pubKey, err := val.GetPubKey()
-			b.suite.Require().Nil(err)
-			b.valAddresses = append(b.valAddresses, addr)
-			b.providerChain().Signers[pubKey.Address().String()] = val
-			b.consumerChain().Signers[pubKey.Address().String()] = val
+			testVal := b.getTestValidator(i)
+			b.addValidatorToStakingModule(testVal)
+			b.valAddresses = append(b.valAddresses, testVal.SDKValAddress())
+			b.chain(P).Signers[testVal.SDKValAddressString()] = testVal
+			b.chain(C).Signers[testVal.SDKValAddressString()] = testVal
 		}
 	}
 
