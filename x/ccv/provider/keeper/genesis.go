@@ -112,10 +112,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			})
 		}
 
-		if pendingVSC, found := k.GetPendingVSCs(ctx, chainID); found {
-			cs.PendingValsetChanges = pendingVSC
-		}
-
+		cs.PendingValsetChanges = k.GetPendingVSCs(ctx, chainID)
 		consumerStates = append(consumerStates, cs)
 		return true
 	})

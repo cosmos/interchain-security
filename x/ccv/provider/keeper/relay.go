@@ -131,7 +131,7 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	k.sendValidatorUpdates(ctx)
 }
 
-// SendValidatorUpdates sends latest validator updates to every registered consumer chain
+// sendValidatorUpdates sends latest validator updates to every registered consumer chain
 func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 	// get current ValidatorSetUpdateId
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
@@ -198,11 +198,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 
 // SendPendingVSCPackets sends all pending ValidatorSetChangePackets to the specified chain
 func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string) {
-	pendingPackets, found := k.GetPendingVSCs(ctx, chainID)
-	if !found {
-		// this method is a no-op if there are no pending packets
-		return
-	}
+	pendingPackets := k.GetPendingVSCs(ctx, chainID)
 	for _, data := range pendingPackets {
 		// prepare to send the data to the consumer
 		packet, channelCap, err := utils.PrepareIBCPacketSend(

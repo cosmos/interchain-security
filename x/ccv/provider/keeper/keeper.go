@@ -683,11 +683,13 @@ func (k Keeper) DeleteInitChainHeight(ctx sdk.Context, chainID string) {
 }
 
 // GetPendingVSCs returns the list of pending ValidatorSetChange packets stored under chain ID
-func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) (packets []ccv.ValidatorSetChangePacketData, found bool) {
+func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) []ccv.ValidatorSetChangePacketData {
+	var packets []ccv.ValidatorSetChangePacketData
+
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingVSCsKey(chainID))
 	if bz == nil {
-		return nil, false
+		return packets
 	}
 	buf := bytes.NewBuffer(bz)
 
@@ -705,15 +707,15 @@ func (k Keeper) GetPendingVSCs(ctx sdk.Context, chainID string) (packets []ccv.V
 		packets = append(packets, p)
 	}
 
-	return packets, true
+	return packets
 }
 
 // AppendPendingVSC adds the given ValidatorSetChange packet to the list
 // of pending ValidatorSetChange packets stored under chain ID
 func (k Keeper) AppendPendingVSCs(ctx sdk.Context, chainID string, newPackets ...ccv.ValidatorSetChangePacketData) {
-	packets, _ := k.GetPendingVSCs(ctx, chainID)
-	// append works also on a nil list
-	packets = append(packets, newPackets...)
+	packets := append(
+		k.GetPendingVSCs(ctx, chainID),
+		newPackets...)
 
 	store := ctx.KVStore(k.storeKey)
 	var data [][]byte

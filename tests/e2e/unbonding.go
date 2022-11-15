@@ -233,8 +233,8 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 		s.providerChain.NextBlock()
 
 		// check that the VSC packet is stored in state as pending
-		pendingVSCs, _ := providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
-		s.Require().True(len(pendingVSCs) == 1, "no pending VSC packet found; test: %s", tc.name)
+		pendingVSCs := providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+		s.Require().Lenf(pendingVSCs, 1, "no pending VSC packet found; test: %s", tc.name)
 
 		// delegate again to create another VSC packet
 		delegate(s, delAddr, bondAmt)
@@ -243,8 +243,8 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 		s.providerChain.NextBlock()
 
 		// check that the VSC packet is stored in state as pending
-		pendingVSCs, _ = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
-		s.Require().True(len(pendingVSCs) == 2, "only one pending VSC packet found; test: %s", tc.name)
+		pendingVSCs = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+		s.Require().Lenf(pendingVSCs, 2, "only one pending VSC packet found; test: %s", tc.name)
 
 		// increment time so that the unbonding period ends on the provider
 		incrementTimeByUnbondingPeriod(s, Provider)

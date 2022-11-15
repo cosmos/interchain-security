@@ -43,16 +43,16 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	s.providerChain.NextBlock()
 
 	// check that the packet was added to the list of pending VSC packets
-	packets, found := providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
-	s.Require().True(found, "no pending VSC packets found")
+	packets := providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+	s.Require().NotEmpty(packets, "no pending VSC packets found")
 	s.Require().Equal(1, len(packets), "unexpected number of pending VSC packets")
 
 	// try again to send CCV packet to consumer
 	s.providerChain.NextBlock()
 
 	// check that the packet is still in the list of pending VSC packets
-	packets, found = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
-	s.Require().True(found, "no pending VSC packets found")
+	packets = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+	s.Require().NotEmpty(packets, "no pending VSC packets found")
 	s.Require().Equal(1, len(packets), "unexpected number of pending VSC packets")
 
 	// bond more tokens on provider to change validator powers
@@ -62,8 +62,8 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	s.providerChain.NextBlock()
 
 	// check that the packets are still in the list of pending VSC packets
-	packets, found = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
-	s.Require().True(found, "no pending VSC packets found")
+	packets = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+	s.Require().NotEmpty(packets, "no pending VSC packets found")
 	s.Require().Equal(2, len(packets), "unexpected number of pending VSC packets")
 
 	// upgrade expired client to the consumer
@@ -73,8 +73,8 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	s.providerChain.NextBlock()
 
 	// check that the packets are not in the list of pending VSC packets
-	_, found = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
-	s.Require().False(found, "pending VSC packets found")
+	packets = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+	s.Require().Empty(packets, "unexpected pending VSC packets found")
 
 	// bond more tokens on provider to change validator powers
 	delegate(s, delAddr, bondAmt)
