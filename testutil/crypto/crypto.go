@@ -2,9 +2,12 @@ package crypto
 
 import (
 	"crypto/rand"
+
 	"encoding/binary"
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
+
+	ibcmock "github.com/cosmos/ibc-go/v3/testing/mock"
 
 	cryptoEd25519 "crypto/ed25519"
 
@@ -23,7 +26,7 @@ import (
 // various interfaces and types used by the SDK and Tendermint from a single
 // 'root' private key.
 type CryptoIdentity struct {
-	mock.PV
+	ibcmock.PV
 }
 
 func NewCryptoIdentityFromBytesSeed(seed []byte) CryptoIdentity {

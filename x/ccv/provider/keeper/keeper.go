@@ -267,7 +267,7 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 		return sdkerrors.Wrap(channeltypes.ErrTooManyConnectionHops, "must have direct connection to consumer chain")
 	}
 	connectionID := channel.ConnectionHops[0]
-	_, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
+	clientID, tmClient, err := k.getUnderlyingClient(ctx, connectionID)
 	if err != nil {
 		return err
 	}
@@ -285,6 +285,18 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	k.SetInitChainHeight(ctx, chainID, uint64(ctx.BlockHeight()))
 	// - remove init timeout timestamp
 	k.DeleteInitTimeoutTimestamp(ctx, chainID)
+
+	// emit event on successful addition
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			ccv.EventTypeChannelEstablished,
+			sdk.NewAttribute(sdk.AttributeKeyModule, consumertypes.ModuleName),
+			sdk.NewAttribute(ccv.AttributeChainID, chainID),
+			sdk.NewAttribute(conntypes.AttributeKeyClientID, clientID),
+			sdk.NewAttribute(channeltypes.AttributeKeyChannelID, channelID),
+			sdk.NewAttribute(conntypes.AttributeKeyConnectionID, connectionID),
+		),
+	)
 	return nil
 }
 
@@ -828,6 +840,24 @@ func (k Keeper) SetVscSendTimestamp(
 	timeBz := sdk.FormatTimeBytes(timestamp)
 
 	store.Set(types.VscSendingTimestampKey(chainID, vscID), timeBz)
+}
+
+// GetVscSendTimestamp returns a VSC send timestamp by chainID and vscID
+//
+// Note: This method is used only for testing.
+func (k Keeper) GetVscSendTimestamp(ctx sdk.Context, chainID string, vscID uint64) (time.Time, bool) {
+	store := ctx.KVStore(k.storeKey)
+
+	timeBz := store.Get(types.VscSendingTimestampKey(chainID, vscID))
+	if timeBz == nil {
+		return time.Time{}, false
+	}
+
+	ts, err := sdk.ParseTimeBytes(timeBz)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return ts, true
 }
 
 // DeleteVscSendTimestamp removes from the store a specific VSC send timestamp

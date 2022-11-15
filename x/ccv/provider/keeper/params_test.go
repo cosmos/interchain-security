@@ -8,8 +8,7 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,14 +20,32 @@ func TestParams(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, keeperParams)
 	defer ctrl.Finish()
 
-	defaultParams := types.DefaultParams()
+	defaultParams := providertypes.DefaultParams()
 	providerKeeper.SetParams(ctx, defaultParams)
 	params := providerKeeper.GetParams(ctx)
 	require.Equal(t, defaultParams, params)
 
-	newParams := types.NewParams(ibctmtypes.NewClientState("", ibctmtypes.DefaultTrustLevel, 0, 0,
-		time.Second*40, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(), []string{"ibc", "upgradedIBCState"}, true, false),
-		types.DefaultTrustingPeriodFraction, ccvtypes.DefaultCCVTimeoutPeriod, types.DefaultInitTimeoutPeriod, types.DefaultVscTimeoutPeriod)
+	newParams := providertypes.NewParams(
+		ibctmtypes.NewClientState(
+			"",
+			ibctmtypes.DefaultTrustLevel,
+			0,
+			0,
+			time.Second*40,
+			clienttypes.Height{},
+			commitmenttypes.GetSDKSpecs(),
+			[]string{"ibc", "upgradedIBCState"},
+			true,
+			false,
+		),
+		4,
+		7*24*time.Hour,
+		5*time.Hour,
+		10*time.Minute,
+		time.Hour,
+		"0.4",
+		100,
+	)
 	providerKeeper.SetParams(ctx, newParams)
 	params = providerKeeper.GetParams(ctx)
 	require.Equal(t, newParams, params)
