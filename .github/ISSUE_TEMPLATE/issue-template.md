@@ -9,15 +9,15 @@ assignees: ''
 
 # Problem
 
-Please write a concise 1-3 line problem. 
+Please write a **concise 1-3 line** problem. 
 
 # Closing criteria
 
-Please write a concrete criteria for closing this issue.
+Please write a **satisfiable criteria** for closing this issue.
 
 # Problem details
 
-Please describe the problem in full detail.
+Please describe the problem in all detail.
 
 # TODOs
 - [ ] Labels have been added for issue
