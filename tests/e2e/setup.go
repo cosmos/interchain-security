@@ -7,6 +7,7 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
 
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 
@@ -42,7 +43,7 @@ type CCVTestSuite struct {
 
 	// A map from consumer chain ID to its consumer bundle.
 	// The preferred way to access chains, apps, and paths when designing tests around multiple consumers.
-	consumerBundles map[string]*ibctestingutils.ConsumerBundle
+	consumerBundles map[string]*icstestingutils.ConsumerBundle
 }
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
@@ -56,21 +57,21 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 		*ibctesting.Coordinator,
 		*ibctesting.TestChain,
 		e2eutil.ProviderApp,
-		map[string]*ibctestingutils.ConsumerBundle,
+		map[string]*icstestingutils.ConsumerBundle,
 	) {
 		// Instantiate the test coordinator.
 		coordinator := ibctesting.NewCoordinator(t, 0)
 
 		// Add provider to coordinator, store returned test chain and app.
 		// Concrete provider app type is passed to the generic function here.
-		provider, providerApp := ibctestingutils.AddProvider[Tp](
+		provider, providerApp := icstestingutils.AddProvider[Tp](
 			coordinator, t, providerAppIniter)
 
 		numConsumers := 5
 
 		// Add specified number of consumers to coordinator, store returned test chains and apps.
 		// Concrete consumer app type is passed to the generic function here.
-		consumerBundles := ibctestingutils.AddConsumers[Tc](
+		consumerBundles := icstestingutils.AddConsumers[Tc](
 			coordinator, t, numConsumers, consumerAppIniter)
 
 		// Pass variables to suite.
@@ -86,7 +87,7 @@ type SetupCallback func(t *testing.T) (
 	coord *ibctesting.Coordinator,
 	providerChain *ibctesting.TestChain,
 	providerApp e2eutil.ProviderApp,
-	consumerBundles map[string]*ibctestingutils.ConsumerBundle,
+	consumerBundles map[string]*icstestingutils.ConsumerBundle,
 )
 
 // SetupTest sets up in-mem state before every test
@@ -196,7 +197,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	}
 
 	// Support tests that were written before multiple consumers were supported.
-	firstBundle := suite.consumerBundles[ibctestingutils.FirstConsumerChainID]
+	firstBundle := suite.consumerBundles[icstestingutils.FirstConsumerChainID]
 	suite.consumerApp = firstBundle.App
 	suite.consumerChain = firstBundle.Chain
 	suite.path = firstBundle.Path
@@ -259,7 +260,7 @@ func (suite *CCVTestSuite) SetupTransferChannel() {
 	suite.Require().NoError(err)
 }
 
-func (s CCVTestSuite) ValidateEndpointsClientConfig(consumerBundle ibctestingutils.ConsumerBundle) {
+func (s CCVTestSuite) ValidateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) {
 	consumerKeeper := consumerBundle.GetKeeper()
 	providerStakingKeeper := s.providerApp.GetStakingKeeper()
 
