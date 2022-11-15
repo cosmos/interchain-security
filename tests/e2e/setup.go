@@ -197,7 +197,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	}
 
 	// Support tests that were written before multiple consumers were supported.
-	firstBundle := suite.consumerBundles[icstestingutils.FirstConsumerChainID]
+	firstBundle := suite.getFirstBundle()
 	suite.consumerApp = firstBundle.App
 	suite.consumerChain = firstBundle.Chain
 	suite.path = firstBundle.Path
