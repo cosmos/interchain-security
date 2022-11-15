@@ -1,10 +1,8 @@
 package types
 
 import (
-	fmt "fmt"
 	time "time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
@@ -110,7 +108,7 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidateDuration(p.TransferTimeoutPeriod); err != nil {
 		return err
 	}
-	if err := validateConsumerRedistributionFraction(p.ConsumerRedistributionFraction); err != nil {
+	if err := ccvtypes.ValidateStringFraction(p.ConsumerRedistributionFraction); err != nil {
 		return err
 	}
 	if err := ccvtypes.ValidatePositiveInt64(p.HistoricalEntries); err != nil {
@@ -137,7 +135,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyTransferTimeoutPeriod,
 			p.TransferTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyConsumerRedistributionFrac,
-			p.ConsumerRedistributionFraction, validateConsumerRedistributionFraction),
+			p.ConsumerRedistributionFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(KeyHistoricalEntries,
 			p.HistoricalEntries, ccvtypes.ValidatePositiveInt64),
 		paramtypes.NewParamSetPair(KeyConsumerUnbondingPeriod,
@@ -161,22 +159,4 @@ func validateProviderFeePoolAddrStr(i interface{}) error {
 	}
 	// Otherwise validate as usual for a bech32 address
 	return ccvtypes.ValidateBech32(i)
-}
-
-func validateConsumerRedistributionFraction(i interface{}) error {
-	str, ok := i.(string)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-	dec, err := sdk.NewDecFromStr(str)
-	if err != nil {
-		return err
-	}
-	if dec.IsNegative() {
-		return fmt.Errorf("consumer redistribution fraction is negative")
-	}
-	if dec.Sub(sdk.NewDec(1)).IsPositive() {
-		return fmt.Errorf("consumer redistribution fraction cannot be above 1.0")
-	}
-	return nil
 }

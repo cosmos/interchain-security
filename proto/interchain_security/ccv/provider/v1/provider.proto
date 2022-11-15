@@ -72,6 +72,18 @@ message Params {
   // to timeout VSC packets even when a consumer chain is not live. 
   google.protobuf.Duration vsc_timeout_period = 5
       [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // The period for which the slash meter is replenished
+  google.protobuf.Duration slash_meter_replenish_period = 6
+  [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // The fraction of total voting power that is replenished to the slash meter every replenish period.
+  // This param also serves as a maximum fraction of total voting power that the slash meter can hold.
+  string slash_meter_replenish_fraction = 7;
+
+  // The maximum amount of pending slash packets that can be queued for a consumer
+  // before the provider chain halts.
+  int64 max_pending_slash_packets = 8;
 }
 
 message HandshakeMetadata {
