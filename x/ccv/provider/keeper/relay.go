@@ -127,77 +127,31 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	// notify the staking module to complete all matured unbonding ops
 	k.completeMaturedUnbondingOps(ctx)
 
-	// send latest validator updates to every registered consumer chain
+	// collect validator updates
+	k.queueValidatorUpdates(ctx)
+
+	// try sending updates to all chains
+	// if ccv channel is not established for consumer chain
+	// the updates will remain queued until the channel is established
 	k.sendValidatorUpdates(ctx)
 }
 
-// sendValidatorUpdates sends latest validator updates to every registered consumer chain
+// sendValidatorUpdates iterates over chains and sends VSCs to
+// consumer chains with established CCV channels
+// if ccv channel is not established for consumer chain
+// the updates will remain queued until the channel is established
 func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
-	// get current ValidatorSetUpdateId
-	valUpdateID := k.GetValidatorSetUpdateId(ctx)
-	// get the validator updates from the staking module
-	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		// check whether there is an established CCV channel to this consumer chain
-		channelID, found := k.GetChainToChannel(ctx, chainID)
-		if found {
-			// CCV channel established:
-			// try sending the pending VSC packets, if any
-			k.SendPendingVSCPackets(ctx, chainID, channelID)
+		// check if CCV channel is establish and send
+		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
+			k.sendVSCPacketsToChain(ctx, chainID, channelID)
 		}
-
-		// check whether there are changes in the validator set;
-		// note that this also entails unbonding operations
-		// w/o changes in the voting power of the validators in the validator set
-		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
-		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
-			// construct validator set change packet data
-			packetData := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
-
-			if !found {
-				// CCV channel not established:
-				// store the packet data to be sent once the CCV channel is established
-				k.AppendPendingVSCs(ctx, chainID, packetData)
-				return true // go to next consumer chain
-			}
-
-			// prepare to send the packetData to the consumer
-			packet, channelCap, err := utils.PrepareIBCPacketSend(
-				ctx,
-				k.scopedKeeper,
-				k.channelKeeper,
-				channelID,          // source channel id
-				ccv.ProviderPortID, // source port id
-				packetData.GetBytes(),
-				k.GetCCVTimeoutPeriod(ctx),
-			)
-			if err != nil {
-				// something went wrong when preparing the packet
-				panic(fmt.Errorf("packet could not be prepared for IBC send: %w", err))
-			}
-
-			// send packet over IBC channel
-			err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
-			if err == nil {
-				// successful send:
-				// set the VSC send timestamp for this packet
-				k.SetVscSendTimestamp(ctx, chainID, packetData.ValsetUpdateId, ctx.BlockTime())
-			} else if clienttypes.ErrClientNotActive.Is(err) {
-				// IBC client expired:
-				// store the packet data to be sent once the client is upgraded
-				k.AppendPendingVSCs(ctx, chainID, packetData)
-			} else {
-				// something went wrong when sending the packet
-				panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
-			}
-		}
-		return true // do not stop the iteration
+		return true // continue iterating chains
 	})
-	k.IncrementValidatorSetUpdateId(ctx)
 }
 
-// SendPendingVSCPackets sends all pending ValidatorSetChangePackets to the specified chain
-func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string) {
+// sendVSCPacketsToChain sends all queued ValidatorSetChangePackets to the specified chain
+func (k Keeper) sendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string) {
 	pendingPackets := k.GetPendingVSCs(ctx, chainID)
 	for _, data := range pendingPackets {
 		// prepare to send the data to the consumer
@@ -215,16 +169,16 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 			panic(fmt.Errorf("packet could not be prepared for IBC send: %w", err))
 		}
 
-		// send packet over IBC channel
 		err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
-		if err != nil {
-			if clienttypes.ErrClientNotActive.Is(err) {
-				// IBC client expired:
-				// leave the packet data stored to be sent once the client is upgraded
-				return
-			}
-			// something went wrong when sending the packet
+
+		if err != nil && clienttypes.ErrClientNotActive.Is(err) {
+			// IBC client is expired!
+			// leave the packet data stored to be sent once the client is upgraded
+			// the client cannot expire during iteration (in the middle of a block)
+			return
+		} else if err != nil {
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
+
 		}
 		// set the VSC send timestamp for this packet;
 		// note that the VSC send timestamp are set when the packets
@@ -232,6 +186,27 @@ func (k Keeper) SendPendingVSCPackets(ctx sdk.Context, chainID, channelID string
 		k.SetVscSendTimestamp(ctx, chainID, data.ValsetUpdateId, ctx.BlockTime())
 	}
 	k.DeletePendingVSCs(ctx, chainID)
+}
+
+// queueVSCPackets queues latest validator updates for every registered consumer chain
+func (k Keeper) queueValidatorUpdates(ctx sdk.Context) {
+	valUpdateID := k.GetValidatorSetUpdateId(ctx) // curent valset update ID
+	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
+
+	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
+		// check whether there are changes in the validator set;
+		// note that this also entails unbonding operations
+		// w/o changes in the voting power of the validators in the validator set
+		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
+		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
+			// construct validator set change packet data
+			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
+			k.AppendPendingVSCs(ctx, chainID, packet)
+		}
+		return true // do not stop the iteration
+	})
+
+	k.IncrementValidatorSetUpdateId(ctx)
 }
 
 // EndBlockCIS contains the EndBlock logic needed for
