@@ -5,8 +5,6 @@ import (
 
 	"encoding/binary"
 
-	"github.com/cosmos/ibc-go/v3/testing/mock"
-
 	ibcmock "github.com/cosmos/ibc-go/v3/testing/mock"
 
 	cryptoEd25519 "crypto/ed25519"
@@ -31,7 +29,7 @@ type CryptoIdentity struct {
 
 func NewCryptoIdentityFromBytesSeed(seed []byte) CryptoIdentity {
 	//lint:ignore SA1019 We don't care because this is only a test.
-	privKey := mock.PV{PrivKey: &sdkcryptokeys.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+	privKey := ibcmock.PV{PrivKey: &sdkcryptokeys.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
 	return CryptoIdentity{PV: privKey}
 }
 
