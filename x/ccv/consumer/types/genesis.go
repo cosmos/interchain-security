@@ -45,6 +45,7 @@ func NewRestartGenesisState(clientID, channelID string,
 		HeightToValsetUpdateId:      heightToValsetUpdateIDs,
 		PendingSlashRequests:        pendingSlashRequests,
 		OutstandingDowntimeSlashing: outstandingDowntimes,
+		LastTransmissionBlockHeight: lastTransBlockHeight,
 	}
 }
 
@@ -108,6 +109,19 @@ func (gs GenesisState) Validate() error {
 		// NOTE: For restart genesis, we will verify initial validator set in InitGenesis.
 		if gs.ProviderClientId == "" {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client id must be set for a restarting consumer genesis state")
+		}
+		// handshake is still in progress
+		if gs.ProviderChannelId == "" && (len(gs.MaturingPackets) != 0 || len(gs.OutstandingDowntimeSlashing) != 0 || gs.LastTransmissionBlockHeight.Height != 0) {
+			return sdkerrors.Wrap(
+				ccv.ErrInvalidGenesis,
+				"maturing packets, outstanding downtime slashing and last transmission block height must be empty when handshake isn't completed",
+			)
+		}
+		if gs.HeightToValsetUpdateId == nil {
+			return sdkerrors.Wrap(
+				ccv.ErrInvalidGenesis,
+				"empty height to validator set update id mapping",
+			)
 		}
 		if gs.ProviderClientState != nil || gs.ProviderConsensusState != nil {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client state and consensus states must be nil for a restarting genesis state")

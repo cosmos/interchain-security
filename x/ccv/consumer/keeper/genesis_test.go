@@ -166,7 +166,7 @@ func TestInitGenesis(t *testing.T) {
 				[]consumertypes.OutstandingDowntime{
 					{ValidatorConsensusAddress: sdk.ConsAddress(validator.Bytes()).String()},
 				},
-				consumertypes.LastTransmissionBlockHeight{Height: int64(blockHeight)},
+				consumertypes.LastTransmissionBlockHeight{Height: int64(100)},
 				params,
 			),
 			func(ctx sdk.Context, ck consumerkeeper.Keeper, gs *consumertypes.GenesisState) {
@@ -246,7 +246,7 @@ func TestExportGenesis(t *testing.T) {
 	updatedHeightValsetUpdateIDs := append(defaultHeightValsetUpdateIDs,
 		consumertypes.HeightToValsetUpdateID{ValsetUpdateId: vscID + 1, Height: blockHeight + 1},
 	)
-	ltbh := consumertypes.LastTransmissionBlockHeight{Height: int64(blockHeight)}
+	ltbh := consumertypes.LastTransmissionBlockHeight{Height: int64(1000)}
 	// create default parameters for a new chain
 	params := types.DefaultParams()
 	params.Enabled = true

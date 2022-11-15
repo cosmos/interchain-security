@@ -158,10 +158,18 @@ func TestValidateInitialGenesisState(t *testing.T) {
 			true,
 		},
 		{
+			"invalid new consumer genesis state: invalid consensus state validator set hash",
+			types.NewInitialGenesisState(
+				cs, ibctmtypes.NewConsensusState(
+					time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), []byte("wrong_length_hash")),
+				valUpdates, params),
+			true,
+		},
+		{
 			"invalid new consumer genesis state: initial validator set does not match validator set hash",
 			types.NewInitialGenesisState(
 				cs, ibctmtypes.NewConsensusState(
-					time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), []byte("wrong_hash")),
+					time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), []byte("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")),
 				valUpdates, params),
 			true,
 		},
@@ -206,6 +214,11 @@ func TestValidateRestartGenesisState(t *testing.T) {
 	valHash := valSet.Hash()
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(valSet)
 
+	// create default height to validator set update id mapping
+	heightToValsetUpdateID := []types.HeightToValsetUpdateID{
+		{Height: 0, ValsetUpdateId: 0},
+	}
+
 	cs := ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, trustingPeriod, ubdPeriod, maxClockDrift, height, commitmenttypes.GetSDKSpecs(), upgradePath, false, false)
 	consensusState := ibctmtypes.NewConsensusState(time.Now(), commitmenttypes.NewMerkleRoot([]byte("apphash")), valHash[:])
 
@@ -219,7 +232,7 @@ func TestValidateRestartGenesisState(t *testing.T) {
 	}{
 		{
 			"valid restart consumer genesis state: empty maturing packets",
-			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, valUpdates, nil, types.SlashRequests{}, nil, types.LastTransmissionBlockHeight{}, params),
+			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, valUpdates, heightToValsetUpdateID, types.SlashRequests{}, nil, types.LastTransmissionBlockHeight{}, params),
 			false,
 		},
 		{
@@ -228,12 +241,12 @@ func TestValidateRestartGenesisState(t *testing.T) {
 				{1, uint64(time.Now().UnixNano())},
 				{3, uint64(time.Now().UnixNano())},
 				{5, uint64(time.Now().UnixNano())},
-			}, valUpdates, nil, types.SlashRequests{}, nil, types.LastTransmissionBlockHeight{}, params),
+			}, valUpdates, heightToValsetUpdateID, types.SlashRequests{}, nil, types.LastTransmissionBlockHeight{}, params),
 			false,
 		},
 		{
-			"invalid restart consumer genesis state: channel id is empty",
-			types.NewRestartGenesisState("", "ccvchannel", nil, valUpdates, nil, types.SlashRequests{}, nil, types.LastTransmissionBlockHeight{}, params),
+			"invalid restart consumer genesis state: provider id is empty",
+			types.NewRestartGenesisState("", "ccvchannel", nil, valUpdates, heightToValsetUpdateID, types.SlashRequests{}, nil, types.LastTransmissionBlockHeight{}, params),
 			true,
 		},
 		{
@@ -289,6 +302,30 @@ func TestValidateRestartGenesisState(t *testing.T) {
 		{
 			"invalid restart consumer genesis state: nil initial validator set",
 			types.NewRestartGenesisState("ccvclient", "ccvchannel", nil, nil, nil, types.SlashRequests{}, nil, types.LastTransmissionBlockHeight{}, params),
+			true,
+		},
+		{
+			"invalid restart consumer genesis state: nil height to validator set id mapping",
+			types.NewRestartGenesisState("ccvclient", "",
+				[]types.MaturingVSCPacket{{1, 0}}, valUpdates, nil, types.SlashRequests{}, nil, types.LastTransmissionBlockHeight{}, params),
+			true,
+		}, {
+			"invalid restart consumer genesis state: maturing packet defined when handshake is still in progress",
+			types.NewRestartGenesisState("ccvclient", "",
+				[]types.MaturingVSCPacket{{1, 0}}, valUpdates, heightToValsetUpdateID, types.SlashRequests{}, nil, types.LastTransmissionBlockHeight{}, params),
+			true,
+		},
+		{
+			"invalid restart consumer genesis state: outstanding downtime defined when handshake is still in progress",
+			types.NewRestartGenesisState("ccvclient", "",
+				nil, valUpdates, heightToValsetUpdateID, types.SlashRequests{}, []types.OutstandingDowntime{{ValidatorConsensusAddress: "cosmosvalconsxxx"}},
+				types.LastTransmissionBlockHeight{}, params),
+			true,
+		},
+		{
+			"invalid restart consumer genesis state: last transmission block height defined when handshake is still in progress",
+			types.NewRestartGenesisState("ccvclient", "",
+				nil, valUpdates, heightToValsetUpdateID, types.SlashRequests{}, nil, types.LastTransmissionBlockHeight{Height: int64(1)}, params),
 			true,
 		},
 		{

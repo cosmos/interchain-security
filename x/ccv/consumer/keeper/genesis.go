@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
@@ -125,9 +124,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			panic("provider client does not exist")
 		}
 
-		maturingPackets := []types.MaturingVSCPacket{}
+		maturingPackets := []consumertypes.MaturingVSCPacket{}
 		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) bool {
-			mat := types.MaturingVSCPacket{
+			mat := consumertypes.MaturingVSCPacket{
 				VscId:        vscId,
 				MaturityTime: timeNs,
 			}
@@ -135,16 +134,22 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			return false
 		})
 
-		outstandingDowntimes := []types.OutstandingDowntime{}
+		outstandingDowntimes := []consumertypes.OutstandingDowntime{}
 		k.IterateOutstandingDowntime(ctx, func(addr string) bool {
-			od := types.OutstandingDowntime{
+			od := consumertypes.OutstandingDowntime{
 				ValidatorConsensusAddress: addr,
 			}
 			outstandingDowntimes = append(outstandingDowntimes, od)
 			return true
 		})
 
-		genesis = types.NewRestartGenesisState(
+		// TODO: update GetLastTransmissionBlockHeight to not return an error
+		ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
+		if err != nil {
+			panic(err)
+		}
+
+		genesis = consumertypes.NewRestartGenesisState(
 			clientID,
 			channelID,
 			maturingPackets,
@@ -152,7 +157,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			k.GetHeightToValsetUpdateIDs(ctx),
 			consumertypes.SlashRequests{},
 			outstandingDowntimes,
-			consumertypes.LastTransmissionBlockHeight{},
+			*ltbh,
 			params,
 		)
 	} else {
