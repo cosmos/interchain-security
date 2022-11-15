@@ -16,7 +16,7 @@ func stepsStopChain(consumerName string) []Step {
 			state: State{
 				chainID("provi"): ChainState{
 					ValBalances: &map[validatorID]uint{
-						validatorID("bob"): 9490000001,
+						validatorID("bob"): 9489999999,
 					},
 					Proposals: &map[uint]Proposal{
 						2: ConsumerRemovalProposal{
@@ -48,7 +48,7 @@ func stepsStopChain(consumerName string) []Step {
 						},
 					},
 					ValBalances: &map[validatorID]uint{
-						validatorID("bob"): 9500000002,
+						validatorID("bob"): 9500000000,
 					},
 					ConsumerChains: &map[chainID]bool{}, // Consumer chain is now removed
 				},
