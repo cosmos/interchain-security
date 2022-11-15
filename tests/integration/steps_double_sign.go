@@ -146,7 +146,7 @@ func stepsDoubleSign(consumer1, consumer2 string) []Step {
 				chainID(consumer1): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
-						validatorID("bob"):   495, // from 495 to 0
+						validatorID("bob"):   495, // not slashed yet
 						validatorID("carol"): 0,
 					},
 				},
@@ -191,7 +191,7 @@ func stepsDoubleSign(consumer1, consumer2 string) []Step {
 			},
 		},
 		{
-			// consumer1 learns about the slash and powerchanges
+			// consumer2 learns about the slash and powerchanges
 			action: relayPacketsAction{
 				chain:   chainID("provi"),
 				port:    "provider",

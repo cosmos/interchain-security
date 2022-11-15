@@ -90,7 +90,7 @@ func stepsMultiConsumerDelegate(consumer1, consumer2 string) []Step {
 				},
 				chainID(consumer2): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 511, // unchanged
+						validatorID("alice"): 511, // changed
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},

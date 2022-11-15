@@ -264,6 +264,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 						validatorID("carol"): 0,
 					},
 				},
+				// powers now changed
 				chainID(consumer1): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -303,7 +304,7 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 						validatorID("carol"): 0,
 					},
 				},
-				// not relayed yet - powers unchanged
+				// powers now changed
 				chainID(consumer2): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
@@ -394,7 +395,6 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 						validatorID("carol"): 495,
 					},
 				},
-				// not relayed yet
 				chainID(consumer2): ChainState{
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
