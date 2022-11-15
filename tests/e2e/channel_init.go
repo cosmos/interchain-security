@@ -24,6 +24,7 @@ func (suite *CCVTestSuite) TestConsumerGenesis() {
 
 	// Confirm that client and cons state are exported from consumer keeper properly
 	consumerEndpointClientState, consumerEndpointConsState := suite.GetConsumerEndpointClientAndConsState(
+		// Pass in first consumer bundle since we're testing only one consumer
 		*suite.consumerBundles[icstestingutils.FirstConsumerChainID],
 	)
 	suite.Require().Equal(consumerEndpointClientState, genesis.ProviderClientState)

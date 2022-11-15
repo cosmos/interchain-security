@@ -409,6 +409,8 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	require.NoError(endpoint.Chain.T, err)
 }
 
+// GetConsumerEndpointClientAndConsState returns the client and consensus state
+// for a particular consumer endpoint, as specified by the consumer's bundle.
 func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
 	consumerBundle icstestingutils.ConsumerBundle) (exported.ClientState, exported.ConsensusState) {
 

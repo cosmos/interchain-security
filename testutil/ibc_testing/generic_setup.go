@@ -67,7 +67,7 @@ func AddConsumers[T e2eutil.ConsumerApp](coordinator *ibctesting.Coordinator,
 
 	providerChain := coordinator.GetChain(provChainID)
 
-	// Instantiate specified number of consumer bundles, add chain to coordinator, and return bundles
+	// Instantiate specified number of consumer bundles, add each consumer chain to coordinator
 	consumerBundles := make(map[string]*ConsumerBundle)
 	for i := 0; i < numConsumers; i++ {
 		chainID := ibctesting.GetChainID(i + 2)
