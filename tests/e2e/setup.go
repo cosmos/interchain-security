@@ -204,30 +204,30 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.transferPath = firstBundle.TransferPath
 }
 
-func (suite *CCVTestSuite) SetupCCVChannel() {
-	suite.StartSetupCCVChannel()
-	suite.CompleteSetupCCVChannel()
+func (suite *CCVTestSuite) SetupCCVChannel(path *ibctesting.Path) {
+	suite.StartSetupCCVChannel(path)
+	suite.CompleteSetupCCVChannel(path)
 }
 
-func (suite *CCVTestSuite) StartSetupCCVChannel() {
-	suite.coordinator.CreateConnections(suite.path)
+func (suite *CCVTestSuite) StartSetupCCVChannel(path *ibctesting.Path) {
+	suite.coordinator.CreateConnections(path)
 
-	err := suite.path.EndpointA.ChanOpenInit()
+	err := path.EndpointA.ChanOpenInit()
 	suite.Require().NoError(err)
 
-	err = suite.path.EndpointB.ChanOpenTry()
+	err = path.EndpointB.ChanOpenTry()
 	suite.Require().NoError(err)
 }
 
-func (suite *CCVTestSuite) CompleteSetupCCVChannel() {
-	err := suite.path.EndpointA.ChanOpenAck()
+func (suite *CCVTestSuite) CompleteSetupCCVChannel(path *ibctesting.Path) {
+	err := path.EndpointA.ChanOpenAck()
 	suite.Require().NoError(err)
 
-	err = suite.path.EndpointB.ChanOpenConfirm()
+	err = path.EndpointB.ChanOpenConfirm()
 	suite.Require().NoError(err)
 
 	// ensure counterparty is up to date
-	err = suite.path.EndpointA.UpdateClient()
+	err = path.EndpointA.UpdateClient()
 	suite.Require().NoError(err)
 }
 

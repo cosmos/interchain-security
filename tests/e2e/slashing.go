@@ -40,7 +40,7 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 	for _, tc := range testCases {
 
 		s.SetupTest()
-		s.SetupCCVChannel()
+		s.SetupCCVChannel(s.path)
 		s.SetupTransferChannel()
 		validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
@@ -188,7 +188,7 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
-	s.SetupCCVChannel()
+	s.SetupCCVChannel(s.path)
 	s.SetupTransferChannel()
 
 	packet := channeltypes.NewPacket([]byte{}, 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
@@ -435,7 +435,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDistribution() {
 // when a validator has downtime on the slashing module
 func (suite *CCVTestSuite) TestValidatorDowntime() {
 	// initial setup
-	suite.SetupCCVChannel()
+	suite.SetupCCVChannel(suite.path)
 	suite.SendEmptyVSCPacket()
 
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
@@ -524,7 +524,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 // when a double-signing evidence is handled by the evidence module
 func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	// initial setup
-	suite.SetupCCVChannel()
+	suite.SetupCCVChannel(suite.path)
 	suite.SendEmptyVSCPacket()
 
 	// sync suite context after CCV channel is established
@@ -580,7 +580,7 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 
 // TestSendSlashPacket tests the functionality of SendSlashPacket and asserts state changes related to that method
 func (suite *CCVTestSuite) TestSendSlashPacket() {
-	suite.SetupCCVChannel()
+	suite.SetupCCVChannel(suite.path)
 
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 	consumerIBCKeeper := suite.consumerApp.GetIBCKeeper()

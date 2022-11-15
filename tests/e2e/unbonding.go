@@ -79,7 +79,7 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 		consumerKeeper := s.consumerApp.GetConsumerKeeper()
 		stakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
-		s.SetupCCVChannel()
+		s.SetupCCVChannel(s.path)
 
 		// set VSC timeout period to not trigger the removal of the consumer chain
 		providerUnbondingPeriod := stakingKeeper.UnbondingTime(s.providerCtx())
@@ -129,7 +129,7 @@ func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 func (s *CCVTestSuite) TestUndelegationVscTimeout() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
-	s.SetupCCVChannel()
+	s.SetupCCVChannel(s.path)
 
 	// set VSC timeout period to trigger the removal of the consumer chain
 	vscTimeout := providerKeeper.GetVscTimeoutPeriod(s.providerCtx())
@@ -263,7 +263,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 			)
 
 			// complete CCV channel setup
-			s.SetupCCVChannel()
+			s.SetupCCVChannel(s.path)
 
 			// relay VSC packets from provider to consumer
 			relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 2)
@@ -381,7 +381,7 @@ func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 // TestRedelegationWithConsumer tests a redelegate transaction submitted on a provider chain
 // when the unbonding period elapses first on the provider chain
 func (s *CCVTestSuite) TestRedelegationProviderFirst() {
-	s.SetupCCVChannel()
+	s.SetupCCVChannel(s.path)
 	s.SetupTransferChannel()
 
 	providerKeeper := s.providerApp.GetProviderKeeper()

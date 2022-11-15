@@ -30,6 +30,11 @@ const (
 	Consumer
 )
 
+// firstConsumerBundle returns the bundle of the first consumer chain
+func (s *CCVTestSuite) getFirstBundle() icstestingutils.ConsumerBundle {
+	return *s.consumerBundles[icstestingutils.FirstConsumerChainID]
+}
+
 func (s *CCVTestSuite) providerCtx() sdk.Context {
 	return s.providerChain.GetContext()
 }

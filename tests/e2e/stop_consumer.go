@@ -48,7 +48,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	}{
 		{
 			func(suite *CCVTestSuite) error {
-				suite.SetupCCVChannel()
+				suite.SetupCCVChannel(s.path)
 				suite.SetupTransferChannel()
 				return nil
 			},
@@ -99,7 +99,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 // TODO Simon: implement OnChanCloseConfirm in IBC-GO testing to close the consumer chain's channel end
 func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	// init the CCV channel states
-	s.SetupCCVChannel()
+	s.SetupCCVChannel(s.path)
 	s.SetupTransferChannel()
 	s.SendEmptyVSCPacket()
 
@@ -179,7 +179,7 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd bool,
 // when the provider channel was established and then closed
 func (suite *CCVTestSuite) TestProviderChannelClosed() {
 
-	suite.SetupCCVChannel()
+	suite.SetupCCVChannel(suite.path)
 	// establish provider channel with a first VSC packet
 	suite.SendEmptyVSCPacket()
 

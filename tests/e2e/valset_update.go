@@ -13,7 +13,7 @@ import (
 
 // TestPacketRoundtrip tests a CCV packet roundtrip when tokens are bonded on provider
 func (s *CCVTestSuite) TestPacketRoundtrip() {
-	s.SetupCCVChannel()
+	s.SetupCCVChannel(s.path)
 	s.SetupTransferChannel()
 
 	// Bond some tokens on provider to change validator powers
@@ -40,7 +40,7 @@ func (suite *CCVTestSuite) TestSendVSCMaturedPackets() {
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 
 	// setup CCV channel
-	suite.SetupCCVChannel()
+	suite.SetupCCVChannel(suite.path)
 
 	// send 3 packets to consumer chain at different times
 	pk, err := cryptocodec.FromTmPubKeyInterface(suite.providerChain.Vals.Validators[0].PubKey)

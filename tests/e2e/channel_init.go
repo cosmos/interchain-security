@@ -47,7 +47,7 @@ func (suite *CCVTestSuite) TestConsumerGenesis() {
 	suite.Require().True(ok)
 	suite.Require().Equal(genesis.ProviderClientState, clientState, "client state not set correctly after InitGenesis")
 
-	suite.SetupCCVChannel()
+	suite.SetupCCVChannel(suite.path)
 
 	origTime := suite.consumerChain.GetContext().BlockTime()
 
