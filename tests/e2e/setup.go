@@ -231,6 +231,7 @@ func (suite *CCVTestSuite) CompleteSetupCCVChannel(path *ibctesting.Path) {
 	suite.Require().NoError(err)
 }
 
+// TODO: Make this work for multiple consumers.
 func (suite *CCVTestSuite) SetupTransferChannel() {
 	// transfer path will use the same connection as ccv path
 
