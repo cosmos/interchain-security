@@ -75,3 +75,21 @@ func ValidateBech32(i interface{}) error {
 	_, err := sdktypes.AccAddressFromBech32(value)
 	return err
 }
+
+func ValidateStringFraction(i interface{}) error {
+	str, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	dec, err := sdktypes.NewDecFromStr(str)
+	if err != nil {
+		return err
+	}
+	if dec.IsNegative() {
+		return fmt.Errorf("consumer redistribution fraction is negative")
+	}
+	if dec.Sub(sdktypes.NewDec(1)).IsPositive() {
+		return fmt.Errorf("consumer redistribution fraction cannot be above 1.0")
+	}
+	return nil
+}
