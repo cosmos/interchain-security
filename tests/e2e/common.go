@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/testutil/e2e"
+	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -33,6 +34,7 @@ func (s *CCVTestSuite) providerCtx() sdk.Context {
 	return s.providerChain.GetContext()
 }
 
+// consumerCtx returns the context of only the FIRST consumer chain
 func (s *CCVTestSuite) consumerCtx() sdk.Context {
 	return s.consumerChain.GetContext()
 }
@@ -407,17 +409,19 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	require.NoError(endpoint.Chain.T, err)
 }
 
-func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState() (exported.ClientState, exported.ConsensusState) {
+func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
+	consumerBundle ibctestingutils.ConsumerBundle) (exported.ClientState, exported.ConsensusState) {
 
-	clientID, found := suite.consumerApp.GetConsumerKeeper().GetProviderClientID(suite.consumerCtx())
+	ctx := consumerBundle.GetCtx()
+
+	clientID, found := consumerBundle.App.GetConsumerKeeper().GetProviderClientID(ctx)
 	suite.Require().True(found)
 
-	clientState, found := suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(
-		suite.consumerCtx(), clientID)
+	clientState, found := consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientID)
 	suite.Require().True(found)
 
-	consState, found := suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientConsensusState(
-		suite.consumerCtx(), clientID, clientState.GetLatestHeight())
+	consState, found := consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientConsensusState(
+		ctx, clientID, clientState.GetLatestHeight())
 	suite.Require().True(found)
 
 	return clientState, consState

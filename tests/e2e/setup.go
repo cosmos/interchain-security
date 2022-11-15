@@ -27,19 +27,23 @@ import (
 type CCVTestSuite struct {
 	suite.Suite
 	coordinator   *ibctesting.Coordinator
+	setupCallback SetupCallback
+
 	providerChain *ibctesting.TestChain
+	providerApp   e2eutil.ProviderApp
+
 	// The first consumer chain among multiple.
 	consumerChain *ibctesting.TestChain
-	// The preferred way to access consumer chains when designing tests around multiple consumers.
-	consumerChains []*ibctesting.TestChain
-	providerApp    e2eutil.ProviderApp
 	// The first consumer app among multiple.
 	consumerApp e2eutil.ConsumerApp
-	// The preferred way to access consumer apps when designing tests around multiple consumers.
-	consumerApps  []e2eutil.ConsumerApp
-	path          *ibctesting.Path
-	transferPath  *ibctesting.Path
-	setupCallback SetupCallback
+	// The ccv path to the first consumer among multiple.
+	path *ibctesting.Path
+	// The transfer path to the first consumer among multiple.
+	transferPath *ibctesting.Path
+
+	// A map from consumer chain ID to its consumer bundle.
+	// The preferred way to access chains, apps, and paths when designing tests around multiple consumers.
+	consumerBundles map[string]*ibctestingutils.ConsumerBundle
 }
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
@@ -48,12 +52,12 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 
 	ccvSuite := new(CCVTestSuite)
 
+	// Define callback called before each test.
 	ccvSuite.setupCallback = func(t *testing.T) (
 		*ibctesting.Coordinator,
 		*ibctesting.TestChain,
-		[]*ibctesting.TestChain,
 		e2eutil.ProviderApp,
-		[]e2eutil.ConsumerApp,
+		map[string]*ibctestingutils.ConsumerBundle,
 	) {
 		// Instantiate the test coordinator.
 		coordinator := ibctesting.NewCoordinator(t, 0)
@@ -67,18 +71,13 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 
 		// Add specified number of consumers to coordinator, store returned test chains and apps.
 		// Concrete consumer app type is passed to the generic function here.
-		consumers, consumerApps := ibctestingutils.AddConsumers[Tc](
+		consumerBundles := ibctestingutils.AddConsumers[Tc](
 			coordinator, t, numConsumers, consumerAppIniter)
 
-		// Apparently Go doesn't currently allow implicit conversion of []Tc to []e2eutil.ConsumerApp
-		consumerAppsI := []e2eutil.ConsumerApp{}
-		for _, consumer := range consumerApps {
-			consumerAppsI = append(consumerAppsI, consumer)
-		}
-
 		// Pass variables to suite.
-		return coordinator, provider, consumers, providerApp, consumerAppsI
+		return coordinator, provider, providerApp, consumerBundles
 	}
+
 	return ccvSuite
 }
 
@@ -87,9 +86,8 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 type SetupCallback func(t *testing.T) (
 	coord *ibctesting.Coordinator,
 	providerChain *ibctesting.TestChain,
-	consumerChains []*ibctesting.TestChain,
 	providerApp e2eutil.ProviderApp,
-	consumerApps []e2eutil.ConsumerApp,
+	consumerBundles map[string]*ibctestingutils.ConsumerBundle,
 )
 
 // SetupTest sets up in-mem state before every test
@@ -97,13 +95,11 @@ func (suite *CCVTestSuite) SetupTest() {
 
 	// Instantiate new test utils using callback
 	suite.coordinator, suite.providerChain,
-		suite.consumerChains, suite.providerApp,
-		suite.consumerApps = suite.setupCallback(suite.T())
+		suite.providerApp, suite.consumerBundles = suite.setupCallback(suite.T())
 
-	// Set consumerChain and consumerApp to first consumer in list
-	// (most tests were not previously written for multiple consumers)
-	suite.consumerChain = suite.consumerChains[0]
-	suite.consumerApp = suite.consumerApps[0]
+	firstBundle := suite.consumerBundles[ibctestingutils.FirstConsumerChainID]
+	suite.consumerApp = firstBundle.App
+	suite.consumerChain = firstBundle.Chain
 
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
@@ -142,12 +138,13 @@ func (suite *CCVTestSuite) SetupTest() {
 	consumerKeeper.InitGenesis(suite.consumerCtx(), &consumerGenesisState)
 
 	// Confirm client and cons state for consumer were set correctly in InitGenesis
-	consumerEndpointClientState, consumerEndpointConsState := suite.GetConsumerEndpointClientAndConsState()
+	consumerEndpointClientState, consumerEndpointConsState := suite.GetConsumerEndpointClientAndConsState(*firstBundle)
 	suite.Require().Equal(consumerGenesisState.ProviderClientState, consumerEndpointClientState)
 	suite.Require().Equal(consumerGenesisState.ProviderConsensusState, consumerEndpointConsState)
 
 	// create path for the CCV channel
 	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
+	firstBundle.Path = suite.path
 
 	// Set provider endpoint's clientID
 	providerEndpointClientID, found := providerKeeper.GetConsumerClientId(
@@ -166,7 +163,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	// since these IBC testing package fields are unused in our tests.
 
 	// Confirm client config is now correct
-	suite.ValidateEndpointsClientConfig()
+	suite.ValidateEndpointsClientConfig(*firstBundle)
 
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
@@ -185,11 +182,130 @@ func (suite *CCVTestSuite) SetupTest() {
 
 	// create path for the transfer channel
 	suite.transferPath = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
+	firstBundle.TransferPath = suite.transferPath
 	suite.transferPath.EndpointA.ChannelConfig.PortID = transfertypes.PortID
 	suite.transferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
 	suite.transferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
 	suite.transferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
 }
+
+// SetupTest sets up in-mem state before every test
+// func (suite *CCVTestSuite) SetupTestNewwwww() {
+
+// 	// Instantiate new test utils using callback
+// 	suite.coordinator, suite.providerChain,
+// 		suite.providerApp, suite.consumerBundles = suite.setupCallback(suite.T())
+
+// 	// Set consumerChain and consumerApp to first consumer in map
+// 	// (most tests were not previously written for multiple consumers)
+// 	suite.consumerChain = suite.consumerBundles[ibctestingutils.FirstConsumerChainID].Chain
+// 	suite.consumerApp = suite.consumerBundles[ibctestingutils.FirstConsumerChainID].App
+
+// 	// valsets must match between provider and each consumer
+// 	providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
+// 	for _, consumerBundle := range suite.consumerBundles {
+
+// 		consumerValUpdates := tmtypes.TM2PB.ValidatorUpdates(consumerBundle.Chain.Vals)
+// 		suite.Require().True(len(providerValUpdates) == len(consumerValUpdates), "initial valset not matching")
+// 		for i := 0; i < len(providerValUpdates); i++ {
+// 			addr1 := utils.GetChangePubKeyAddress(providerValUpdates[i])
+// 			addr2 := utils.GetChangePubKeyAddress(consumerValUpdates[i])
+// 			suite.Require().True(bytes.Equal(addr1, addr2), "validator mismatch")
+// 		}
+
+// 		// Move all consumers to the next block
+// 		consumerBundle.Chain.NextBlock()
+// 	}
+// 	// Move provider to the next block
+// 	suite.providerChain.NextBlock()
+
+// 	providerKeeper := suite.providerApp.GetProviderKeeper()
+// 	for consumerChainID, consumerBundle := range suite.consumerBundles {
+
+// 		// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
+// 		err := providerKeeper.CreateConsumerClient(
+// 			suite.providerCtx(),
+// 			consumerChainID,
+// 			consumerBundle.Chain.LastHeader.GetHeight().(clienttypes.Height),
+// 			false,
+// 		)
+// 		suite.Require().NoError(err)
+// 	}
+// 	// move provider to next block to commit the state
+// 	suite.providerChain.NextBlock()
+
+// 	// initialize each consumer chain with the genesis state stored on the provider
+// 	for consumerChainID, consumerBundle := range suite.consumerBundles {
+
+// 		consumerKeeper := consumerBundle.GetKeeper()
+// 		consumerGenesisState, found := providerKeeper.GetConsumerGenesis(
+// 			suite.providerCtx(),
+// 			consumerChainID,
+// 		)
+// 		suite.Require().True(found, "consumer genesis not found")
+// 		consumerKeeper.InitGenesis(consumerBundle.GetCtx(), &consumerGenesisState)
+
+// 		// Confirm client and cons state for consumer were set correctly in InitGenesis
+// 		consumerEndpointClientState, consumerEndpointConsState := suite.GetConsumerEndpointClientAndConsState(*consumerBundle)
+// 		suite.Require().Equal(consumerGenesisState.ProviderClientState, consumerEndpointClientState)
+// 		suite.Require().Equal(consumerGenesisState.ProviderConsensusState, consumerEndpointConsState)
+// 	}
+
+// 	// create paths for each CCV channel
+// 	for _, consumerBundle := range suite.consumerBundles {
+// 		consumerBundle.Path = ibctesting.NewPath(suite.providerChain, consumerBundle.Chain)
+
+// 		// Set provider endpoint's clientID for each consumer
+// 		providerEndpointClientID, found := providerKeeper.GetConsumerClientId(
+// 			suite.providerCtx(),
+// 			suite.consumerChain.ChainID,
+// 		)
+// 		suite.Require().True(found, "provider endpoint clientID not found")
+
+// 		consumerBundle.Path.EndpointB.ClientID = providerEndpointClientID
+// 	}
+
+// 	// Support legacy path for tests that don't use multiple consumers
+// 	suite.path = suite.consumerBundles[ibctestingutils.FirstConsumerChainID].Path
+
+// 	for _, consumerBundle := range suite.consumerBundles {
+
+// 		consumerKeeper := consumerBundle.GetKeeper()
+
+// 		// Set counterparty clientID on provider endpoint for each consumer
+// 		consumerEndpointClientID, found := consumerKeeper.GetProviderClientID(consumerBundle.GetCtx())
+// 		suite.Require().True(found, "consumer endpoint clientID not found")
+// 		consumerBundle.Path.EndpointA.ClientID = consumerEndpointClientID
+
+// 		// Note: suite.path.EndpointA.ClientConfig and suite.path.EndpointB.ClientConfig are not populated,
+// 		// since these IBC testing package fields are unused in our tests.
+
+// 		// Confirm client config is now correct
+// 		suite.ValidateEndpointsClientConfig(*consumerBundle)
+
+// 		// - channel config
+// 		consumerBundle.Path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
+// 		consumerBundle.Path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
+// 		consumerBundle.Path.EndpointA.ChannelConfig.Version = ccv.Version
+// 		consumerBundle.Path.EndpointB.ChannelConfig.Version = ccv.Version
+// 		consumerBundle.Path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
+// 		consumerBundle.Path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
+
+// 		// set chains sender account number
+// 		// TODO: to be fixed in #151
+// 		err := suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
+// 		suite.Require().NoError(err)
+// 		err = suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
+// 		suite.Require().NoError(err)
+
+// 		// create path for the transfer channel
+// 		consumerBundle.TransferPath = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
+// 		consumerBundle.TransferPath.EndpointA.ChannelConfig.PortID = transfertypes.PortID
+// 		consumerBundle.TransferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
+// 		consumerBundle.TransferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
+// 		consumerBundle.TransferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
+// 	}
+// }
 
 func (suite *CCVTestSuite) SetupCCVChannel() {
 	suite.StartSetupCCVChannel()
@@ -247,12 +363,13 @@ func (suite *CCVTestSuite) SetupTransferChannel() {
 	suite.Require().NoError(err)
 }
 
-func (s CCVTestSuite) ValidateEndpointsClientConfig() {
-	consumerKeeper := s.consumerApp.GetConsumerKeeper()
+func (s CCVTestSuite) ValidateEndpointsClientConfig(consumerBundle ibctestingutils.ConsumerBundle) {
+	consumerKeeper := consumerBundle.GetKeeper()
 	providerStakingKeeper := s.providerApp.GetStakingKeeper()
 
-	consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(s.consumerCtx())
-	cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointB.ClientID)
+	consumerUnbondingPeriod := consumerKeeper.GetUnbondingPeriod(consumerBundle.GetCtx())
+	cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(),
+		consumerBundle.Path.EndpointB.ClientID)
 	s.Require().True(ok)
 	s.Require().Equal(
 		consumerUnbondingPeriod,
@@ -261,7 +378,8 @@ func (s CCVTestSuite) ValidateEndpointsClientConfig() {
 	)
 
 	providerUnbondingPeriod := providerStakingKeeper.UnbondingTime(s.providerCtx())
-	cs, ok = s.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.consumerCtx(), s.path.EndpointA.ClientID)
+	cs, ok = consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientState(
+		consumerBundle.GetCtx(), consumerBundle.Path.EndpointA.ClientID)
 	s.Require().True(ok)
 	s.Require().Equal(
 		providerUnbondingPeriod,
