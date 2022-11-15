@@ -171,14 +171,14 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 
 		err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
 
-		if err != nil && clienttypes.ErrClientNotActive.Is(err) {
-			// IBC client is expired!
-			// leave the packet data stored to be sent once the client is upgraded
-			// the client cannot expire during iteration (in the middle of a block)
-			return
-		} else if err != nil {
+		if err != nil {
+			if clienttypes.ErrClientNotActive.Is(err) {
+				// IBC client is expired!
+				// leave the packet data stored to be sent once the client is upgraded
+				// the client cannot expire during iteration (in the middle of a block)
+				return
+			}
 			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
-
 		}
 		// set the VSC send timestamp for this packet;
 		// note that the VSC send timestamp are set when the packets
@@ -188,13 +188,13 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 	k.DeletePendingVSCs(ctx, chainID)
 }
 
-// queueVSCPackets queues latest validator updates for every registered consumer chain
+// QueueVSCPackets queues latest validator updates for every registered consumer chain
 func (k Keeper) QueueValidatorUpdates(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // curent valset update ID
+	// check whether there are changes in the validator set;
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations
 		// w/o changes in the voting power of the validators in the validator set
 		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)

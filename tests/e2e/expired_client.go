@@ -23,7 +23,7 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	s.Require().True(ok)
 	trustingPeriod := cs.(*ibctm.ClientState).TrustingPeriod
 
-	// increment time without updating the client;
+	// increment time on consumer without updating the provider's client
 	// this will result in the client to the consumer to expire
 	incrementTimeWithoutUpdate(s, trustingPeriod+time.Hour, Consumer)
 
@@ -101,15 +101,15 @@ func upgradeExpiredClient(s *CCVTestSuite, clientTo ChainType) {
 	var hostChain *ibctesting.TestChain
 	var targetChain *ibctesting.TestChain
 	if clientTo == Consumer {
-		subject = subjectPath.EndpointB.ClientID             // client to consumer
-		subjectCounterparty = subjectPath.EndpointA.ClientID // client to provider
+		subject = subjectPath.EndpointB.ClientID             // provider endpoint client
+		subjectCounterparty = subjectPath.EndpointA.ClientID // consumer endpoint client
 		hostNewEndpoint = substitutePath.EndpointB
 		targetNewEndpoint = substitutePath.EndpointA
 		hostChain = s.providerChain
 		targetChain = s.consumerChain
 	} else {
-		subject = subjectPath.EndpointA.ClientID             // client to provider
-		subjectCounterparty = subjectPath.EndpointB.ClientID // client to consumer
+		subject = subjectPath.EndpointA.ClientID             // consumer endpoint client
+		subjectCounterparty = subjectPath.EndpointB.ClientID // provider endpoint client
 		hostNewEndpoint = substitutePath.EndpointA
 		targetNewEndpoint = substitutePath.EndpointB
 		hostChain = s.consumerChain
