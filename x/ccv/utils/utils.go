@@ -86,6 +86,8 @@ func PrepareIBCPacketSend(
 	return &packet, channelCap, nil
 }
 
+// DEPRECATED
+// TODO: Remove
 // SendIBCPacket sends an IBC packet with packetData
 // over the source channelID and portID
 func SendIBCPacket(

@@ -128,30 +128,30 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	k.completeMaturedUnbondingOps(ctx)
 
 	// collect validator updates
-	k.queueValidatorUpdates(ctx)
+	k.QueueValidatorUpdates(ctx)
 
 	// try sending updates to all chains
 	// if ccv channel is not established for consumer chain
 	// the updates will remain queued until the channel is established
-	k.sendValidatorUpdates(ctx)
+	k.SendValidatorUpdates(ctx)
 }
 
 // sendValidatorUpdates iterates over chains and sends VSCs to
 // consumer chains with established CCV channels
 // if ccv channel is not established for consumer chain
 // the updates will remain queued until the channel is established
-func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
+func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
 		// check if CCV channel is establish and send
 		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
-			k.sendVSCPacketsToChain(ctx, chainID, channelID)
+			k.SendVSCPacketsToChain(ctx, chainID, channelID)
 		}
 		return true // continue iterating chains
 	})
 }
 
-// sendVSCPacketsToChain sends all queued ValidatorSetChangePackets to the specified chain
-func (k Keeper) sendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string) {
+// SendVSCPacketsToChain sends all queued ValidatorSetChangePackets to the specified chain
+func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string) {
 	pendingPackets := k.GetPendingVSCs(ctx, chainID)
 	for _, data := range pendingPackets {
 		// prepare to send the data to the consumer
@@ -189,7 +189,7 @@ func (k Keeper) sendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 }
 
 // queueVSCPackets queues latest validator updates for every registered consumer chain
-func (k Keeper) queueValidatorUpdates(ctx sdk.Context) {
+func (k Keeper) QueueValidatorUpdates(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // curent valset update ID
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 
