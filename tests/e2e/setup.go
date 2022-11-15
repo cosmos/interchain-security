@@ -136,20 +136,25 @@ func (suite *CCVTestSuite) SetupTest() {
 	// move provider to next block to commit the state
 	suite.providerChain.NextBlock()
 
-	// initialize each consumer chain with the genesis state stored on the provider
-	consumerGenesisState, found := providerKeeper.GetConsumerGenesis(
-		suite.providerCtx(),
-		suite.consumerChain.ChainID,
-	)
-	suite.Require().True(found, "consumer genesis not found")
+	// initialize each consumer chain with it's corresponding genesis state
+	// stored on the provider.
+	for chainID, bundle := range suite.consumerBundles {
 
-	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
-	consumerKeeper.InitGenesis(suite.consumerCtx(), &consumerGenesisState)
+		consumerGenesisState, found := providerKeeper.GetConsumerGenesis(
+			suite.providerCtx(),
+			chainID,
+		)
+		suite.Require().True(found, "consumer genesis not found")
 
-	// Confirm client and cons state for consumer were set correctly in InitGenesis
-	consumerEndpointClientState, consumerEndpointConsState := suite.GetConsumerEndpointClientAndConsState(*firstBundle)
-	suite.Require().Equal(consumerGenesisState.ProviderClientState, consumerEndpointClientState)
-	suite.Require().Equal(consumerGenesisState.ProviderConsensusState, consumerEndpointConsState)
+		consumerKeeper := bundle.GetKeeper()
+		consumerKeeper.InitGenesis(bundle.GetCtx(), &consumerGenesisState)
+
+		// Confirm client and cons state for consumer were set correctly in InitGenesis
+		consumerEndpointClientState,
+			consumerEndpointConsState := suite.GetConsumerEndpointClientAndConsState(*bundle)
+		suite.Require().Equal(consumerGenesisState.ProviderClientState, consumerEndpointClientState)
+		suite.Require().Equal(consumerGenesisState.ProviderConsensusState, consumerEndpointConsState)
+	}
 
 	// create path for the CCV channel
 	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
@@ -164,6 +169,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.path.EndpointB.ClientID = providerEndpointClientID
 
 	// Set consumer endpoint's clientID
+	consumerKeeper := firstBundle.GetKeeper()
 	consumerEndpointClientID, found := consumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
 	suite.Require().True(found, "consumer endpoint clientID not found")
 	suite.path.EndpointA.ClientID = consumerEndpointClientID
