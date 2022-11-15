@@ -9,8 +9,8 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-// TestUndelegationNormalOperation tests that undelegations complete after 
-// the unbonding period elapses on both the consumer and provider, without 
+// TestUndelegationNormalOperation tests that undelegations complete after
+// the unbonding period elapses on both the consumer and provider, without
 // VSC packets timing out.
 func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 	unbondConsumer := func(expectedPackets int) {
@@ -304,8 +304,10 @@ func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
-	// remove the consumer chain, which was already registered during setup
-	providerKeeper.DeleteConsumerClientId(s.providerCtx(), s.consumerChain.ChainID)
+	// remove all consumer chains, which were already registered during setup
+	for chainID := range s.consumerBundles {
+		providerKeeper.DeleteConsumerClientId(s.providerCtx(), chainID)
+	}
 
 	// delegate bondAmt and undelegate 1/2 of it
 	bondAmt := sdk.NewInt(10000000)

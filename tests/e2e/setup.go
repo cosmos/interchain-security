@@ -120,20 +120,23 @@ func (suite *CCVTestSuite) SetupTest() {
 	// move provider to next block
 	suite.providerChain.NextBlock()
 
-	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
 	providerKeeper := suite.providerApp.GetProviderKeeper()
-	err := providerKeeper.CreateConsumerClient(
-		suite.providerCtx(),
-		suite.consumerChain.ChainID,
-		suite.consumerChain.LastHeader.GetHeight().(clienttypes.Height),
-		false,
-	)
-	suite.Require().NoError(err)
+
+	for chainID, bundle := range suite.consumerBundles {
+		// For each consumer, create client to that consumer on the provider chain.
+		err := providerKeeper.CreateConsumerClient(
+			suite.providerCtx(),
+			chainID,
+			bundle.Chain.LastHeader.GetHeight().(clienttypes.Height),
+			false,
+		)
+		suite.Require().NoError(err)
+	}
 
 	// move provider to next block to commit the state
 	suite.providerChain.NextBlock()
 
-	// initialize the consumer chain with the genesis state stored on the provider
+	// initialize each consumer chain with the genesis state stored on the provider
 	consumerGenesisState, found := providerKeeper.GetConsumerGenesis(
 		suite.providerCtx(),
 		suite.consumerChain.ChainID,
@@ -181,7 +184,7 @@ func (suite *CCVTestSuite) SetupTest() {
 
 	// set chains sender account number
 	// TODO: to be fixed in #151
-	err = suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
+	err := suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
 	suite.Require().NoError(err)
 	err = suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
 	suite.Require().NoError(err)
