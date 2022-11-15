@@ -6,7 +6,6 @@ import (
 
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
-	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"

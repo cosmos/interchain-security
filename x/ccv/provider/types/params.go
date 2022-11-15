@@ -26,14 +26,29 @@ const (
 
 	// DefaultVscTimeoutPeriod defines the VSC timeout period
 	DefaultVscTimeoutPeriod = 5 * 7 * 24 * time.Hour
+
+	// DefaultSlashMeterReplenishPeriod defines the default period for which the slash gas meter is replenished
+	DefaultSlashMeterReplenishPeriod = time.Hour
+
+	// DefaultSlashMeterReplenishFraction defines the default fraction of total voting power
+	// that is replenished to the slash meter every replenish period. This param also serves as a maximum
+	// fraction of total voting power that the slash meter can hold.
+	DefaultSlashMeterReplenishFraction = "0.05"
+
+	// DefaultMaxPendingSlashPackets defines the default maximum amount of pending slash packets that can
+	// be queued for a consumer before the provider chain halts.
+	DefaultMaxPendingSlashPackets = 1000
 )
 
 // Reflection based keys for params subspace
 var (
-	KeyTemplateClient         = []byte("TemplateClient")
-	KeyTrustingPeriodFraction = []byte("TrustingPeriodFraction")
-	KeyInitTimeoutPeriod      = []byte("InitTimeoutPeriod")
-	KeyVscTimeoutPeriod       = []byte("VscTimeoutPeriod")
+	KeyTemplateClient              = []byte("TemplateClient")
+	KeyTrustingPeriodFraction      = []byte("TrustingPeriodFraction")
+	KeyInitTimeoutPeriod           = []byte("InitTimeoutPeriod")
+	KeyVscTimeoutPeriod            = []byte("VscTimeoutPeriod")
+	KeySlashMeterReplenishPeriod   = []byte("SlashMeterReplenishPeriod")
+	KeySlashMeterReplenishFraction = []byte("SlashMeterReplenishFraction")
+	KeyMaxPendingSlashPackets      = []byte("MaxPendingSlashPackets")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -48,13 +63,19 @@ func NewParams(
 	ccvTimeoutPeriod time.Duration,
 	initTimeoutPeriod time.Duration,
 	vscTimeoutPeriod time.Duration,
+	slashMeterReplenishPeriod time.Duration,
+	slashMeterReplenishFraction string,
+	maxPendingSlashPackets int64,
 ) Params {
 	return Params{
-		TemplateClient:         cs,
-		TrustingPeriodFraction: trustingPeriodFraction,
-		CcvTimeoutPeriod:       ccvTimeoutPeriod,
-		InitTimeoutPeriod:      initTimeoutPeriod,
-		VscTimeoutPeriod:       vscTimeoutPeriod,
+		TemplateClient:              cs,
+		TrustingPeriodFraction:      trustingPeriodFraction,
+		CcvTimeoutPeriod:            ccvTimeoutPeriod,
+		InitTimeoutPeriod:           initTimeoutPeriod,
+		VscTimeoutPeriod:            vscTimeoutPeriod,
+		SlashMeterReplenishPeriod:   slashMeterReplenishPeriod,
+		SlashMeterReplenishFraction: slashMeterReplenishFraction,
+		MaxPendingSlashPackets:      maxPendingSlashPackets,
 	}
 }
 
@@ -79,6 +100,9 @@ func DefaultParams() Params {
 		ccvtypes.DefaultCCVTimeoutPeriod,
 		DefaultInitTimeoutPeriod,
 		DefaultVscTimeoutPeriod,
+		DefaultSlashMeterReplenishPeriod,
+		DefaultSlashMeterReplenishFraction,
+		DefaultMaxPendingSlashPackets,
 	)
 }
 
@@ -102,6 +126,15 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidateDuration(p.VscTimeoutPeriod); err != nil {
 		return fmt.Errorf("vsc timeout period is invalid: %s", err)
 	}
+	if err := ccvtypes.ValidateDuration(p.SlashMeterReplenishPeriod); err != nil {
+		return fmt.Errorf("slash meter replenish period is invalid: %s", err)
+	}
+	if err := ccvtypes.ValidateStringFraction(p.SlashMeterReplenishFraction); err != nil {
+		return fmt.Errorf("slash meter replenish fraction is invalid: %s", err)
+	}
+	if err := ccvtypes.ValidatePositiveInt64(p.MaxPendingSlashPackets); err != nil {
+		return fmt.Errorf("max pending slash packets is invalid: %s", err)
+	}
 	return nil
 }
 
@@ -113,6 +146,9 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyInitTimeoutPeriod, p.InitTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyVscTimeoutPeriod, p.VscTimeoutPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(KeySlashMeterReplenishPeriod, p.SlashMeterReplenishPeriod, ccvtypes.ValidateDuration),
+		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
+		paramtypes.NewParamSetPair(KeyMaxPendingSlashPackets, p.MaxPendingSlashPackets, ccvtypes.ValidatePositiveInt64),
 	}
 }
 
