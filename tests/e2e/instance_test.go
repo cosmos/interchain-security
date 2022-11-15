@@ -7,7 +7,7 @@ import (
 	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/tests/e2e"
-	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -23,7 +23,7 @@ func TestCCVTestSuite(t *testing.T) {
 	// Pass in concrete app types that implement the interfaces defined in /testutil/e2e/interfaces.go
 	ccvSuite := e2e.NewCCVTestSuite[*appProvider.App, *appConsumer.App](
 		// Pass in ibctesting.AppIniters for provider and consumer.
-		ibctestingutils.ProviderAppIniter, ibctestingutils.ConsumerAppIniter)
+		icstestingutils.ProviderAppIniter, icstestingutils.ConsumerAppIniter)
 
 	// Run tests
 	suite.Run(t, ccvSuite)
@@ -38,7 +38,7 @@ func TestConsumerDemocracyTestSuite(t *testing.T) {
 	// Pass in concrete app type that implement the interface defined in /testutil/e2e/interfaces.go
 	democSuite := e2e.NewConsumerDemocracyTestSuite[*appConsumerDemocracy.App](
 		// Pass in ibctesting.AppIniter for democracy consumer.
-		ibctestingutils.DemocracyConsumerAppIniter)
+		icstestingutils.DemocracyConsumerAppIniter)
 
 	// Run tests
 	suite.Run(t, democSuite)

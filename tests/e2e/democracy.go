@@ -8,7 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
-	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -43,7 +43,7 @@ func NewConsumerDemocracyTestSuite[T e2eutil.DemocConsumerApp](
 		coordinator := ibctesting.NewCoordinator(t, 0)
 
 		// Add single democracy consumer to coordinator, store returned test chain and app.
-		democConsumer, democConsumerApp := ibctestingutils.AddDemocracyConsumer[T](
+		democConsumer, democConsumerApp := icstestingutils.AddDemocracyConsumer[T](
 			coordinator, t, democConsumerAppIniter)
 
 		// Pass variables to suite.

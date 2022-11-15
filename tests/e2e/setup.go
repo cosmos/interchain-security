@@ -6,7 +6,7 @@ import (
 
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
-	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
@@ -54,12 +54,12 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 
 		// Add provider to coordinator, store returned test chain and app.
 		// Concrete provider app type is passed to the generic function here.
-		provider, providerApp := ibctestingutils.AddProvider[Tp](
+		provider, providerApp := icstestingutils.AddProvider[Tp](
 			coordinator, t, providerAppIniter)
 
 		// Add specified number of consumers to coordinator, store returned test chains and apps.
 		// Concrete consumer app type is passed to the generic function here.
-		consumers, consumerApps := ibctestingutils.AddConsumers[Tc](
+		consumers, consumerApps := icstestingutils.AddConsumers[Tc](
 			coordinator, t, 1, consumerAppIniter)
 
 		// Pass variables to suite.
