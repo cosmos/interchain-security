@@ -177,33 +177,32 @@ func (suite *CCVTestSuite) SetupTest() {
 
 		// Confirm client config is now correct
 		suite.ValidateEndpointsClientConfig(*bundle)
+
+		// - channel config
+		bundle.Path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
+		bundle.Path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
+		bundle.Path.EndpointA.ChannelConfig.Version = ccv.Version
+		bundle.Path.EndpointB.ChannelConfig.Version = ccv.Version
+		bundle.Path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
+		bundle.Path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
+
+		// set chains sender account number
+		// TODO: to be fixed in #151
+		err := bundle.Path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
+		suite.Require().NoError(err)
+		err = bundle.Path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
+		suite.Require().NoError(err)
+
+		// create path for the transfer channel
+		bundle.TransferPath = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
+		bundle.TransferPath.EndpointA.ChannelConfig.PortID = transfertypes.PortID
+		bundle.TransferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
+		bundle.TransferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
+		bundle.TransferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
 	}
-
-	// TODO - remove crutch
 	suite.path = firstBundle.Path
+	suite.transferPath = firstBundle.TransferPath
 
-	// - channel config
-	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
-	suite.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
-	suite.path.EndpointA.ChannelConfig.Version = ccv.Version
-	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
-	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
-	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-
-	// set chains sender account number
-	// TODO: to be fixed in #151
-	err := suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	suite.Require().NoError(err)
-	err = suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
-	suite.Require().NoError(err)
-
-	// create path for the transfer channel
-	suite.transferPath = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
-	firstBundle.TransferPath = suite.transferPath
-	suite.transferPath.EndpointA.ChannelConfig.PortID = transfertypes.PortID
-	suite.transferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
-	suite.transferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
-	suite.transferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
 }
 
 // SetupTest sets up in-mem state before every test
