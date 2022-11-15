@@ -47,15 +47,15 @@ Inspect the [Makefile](./Makefile) if curious.
 
 ### Unit Tests
 
-Unit tests are useful for simple standalone functionality, and CRUD operations. Unit tests should use golang's standard testing package, and be defined in files formatted as ```<file being tested>_test.go``` in the same directory as the file being tested, following standard conventions. 
+Unit tests are useful for simple standalone functionality, and CRUD operations. Unit tests should use golang's standard testing package, and be defined in files formatted as ```<file being tested>_test.go``` in the same directory as the file being tested, following standard conventions.
 
-[Mocked external keepers](./testutil/keeper/mocks.go) (implemented with [gomock](https://github.com/golang/mock)) are available for testing more complex functionality, but still only relevant to execution within a single node. Ie. no internode or interchain communication. 
+[Mocked external keepers](./testutil/keeper/mocks.go) (implemented with [gomock](https://github.com/golang/mock)) are available for testing code that briefly interacts with external modules, but still only a single function/method relevant to ccv, and a single chain. Ie. do not use mocked external keepers to test the integration of the ccv module with external modules, or integration between consumer and provider.
 
 ### End to End (e2e) Tests
 
 [e2e-tests](./tests/e2e/) utilize the [IBC Testing Package](https://github.com/cosmos/ibc-go/tree/main/testing), and test functionality that is wider in scope than a unit test, but still able to be validated in-memory. Ie. code where advancing blocks would be useful, simulated handshakes, simulated packet relays, etc.
 
-To run e2e tests against your own consumer/provider implementations, use [instance_test.go](./tests/e2e/instance_test.go) as an example. All you'll need to do is make sure your applications implement the necessary interfaces defined in [interfaces.go](./testutil/e2e/interfaces.go), then pass in an appropriate callback to the testing suites.
+To run e2e tests against your own consumer/provider implementations, use [instance_test.go](./tests/e2e/instance_test.go) as an example. All you'll need to do is make sure your applications implement the necessary interfaces defined in [interfaces.go](./testutil/e2e/interfaces.go), pattern match [specific_setup.go](./testutil/ibc_testing/specific_setup.go), then pass in the appropriate types and parameters to the suite, as is done in `instance_test.go` for the dummy provider/consumer implementations.
 
 ### Differential Tests (WIP)
 

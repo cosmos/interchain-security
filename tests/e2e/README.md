@@ -14,4 +14,4 @@ E2e tests are categorized into files as follows:
 - `normal_operations.go` - e2e tests for _normal operations_ of ICS enabled chains
 - `instance_test.go` - ties the e2e test structure into golang's standard test mechanism, with appropriate definitions for concrete app types and setup callback
 
-To run the e2e tests defined in this repo on any arbitrary consumer and provider implementation, copy the pattern exemplified in `instance_test.go`
+To run the e2e tests defined in this repo on any arbitrary consumer and provider implementation, copy the pattern exemplified in `instance_test.go` and `specific_setup.go`
