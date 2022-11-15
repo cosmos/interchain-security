@@ -154,31 +154,33 @@ func (suite *CCVTestSuite) SetupTest() {
 			consumerEndpointConsState := suite.GetConsumerEndpointClientAndConsState(*bundle)
 		suite.Require().Equal(consumerGenesisState.ProviderClientState, consumerEndpointClientState)
 		suite.Require().Equal(consumerGenesisState.ProviderConsensusState, consumerEndpointConsState)
+
+		// create path for the CCV channel
+		bundle.Path = ibctesting.NewPath(bundle.Chain, suite.providerChain)
+
+		// Set provider endpoint's clientID for each consumer
+		providerEndpointClientID, found := providerKeeper.GetConsumerClientId(
+			suite.providerCtx(),
+			chainID,
+		)
+		suite.Require().True(found, "provider endpoint clientID not found")
+		bundle.Path.EndpointB.ClientID = providerEndpointClientID
+
+		// Set consumer endpoint's clientID
+		consumerKeeper = bundle.GetKeeper()
+		consumerEndpointClientID, found := consumerKeeper.GetProviderClientID(bundle.GetCtx())
+		suite.Require().True(found, "consumer endpoint clientID not found")
+		bundle.Path.EndpointA.ClientID = consumerEndpointClientID
+
+		// Note: suite.path.EndpointA.ClientConfig and suite.path.EndpointB.ClientConfig are not populated,
+		// since these IBC testing package fields are unused in our tests.
+
+		// Confirm client config is now correct
+		suite.ValidateEndpointsClientConfig(*bundle)
 	}
 
-	// create path for the CCV channel
-	suite.path = ibctesting.NewPath(suite.consumerChain, suite.providerChain)
-	firstBundle.Path = suite.path
-
-	// Set provider endpoint's clientID
-	providerEndpointClientID, found := providerKeeper.GetConsumerClientId(
-		suite.providerCtx(),
-		suite.consumerChain.ChainID,
-	)
-	suite.Require().True(found, "provider endpoint clientID not found")
-	suite.path.EndpointB.ClientID = providerEndpointClientID
-
-	// Set consumer endpoint's clientID
-	consumerKeeper := firstBundle.GetKeeper()
-	consumerEndpointClientID, found := consumerKeeper.GetProviderClientID(suite.consumerChain.GetContext())
-	suite.Require().True(found, "consumer endpoint clientID not found")
-	suite.path.EndpointA.ClientID = consumerEndpointClientID
-
-	// Note: suite.path.EndpointA.ClientConfig and suite.path.EndpointB.ClientConfig are not populated,
-	// since these IBC testing package fields are unused in our tests.
-
-	// Confirm client config is now correct
-	suite.ValidateEndpointsClientConfig(*firstBundle)
+	// TODO - remove crutch
+	suite.path = firstBundle.Path
 
 	// - channel config
 	suite.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
