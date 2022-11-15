@@ -97,28 +97,31 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.coordinator, suite.providerChain,
 		suite.providerApp, suite.consumerBundles = suite.setupCallback(suite.T())
 
+	// Support tests that were written before multiple consumers were supported.
 	firstBundle := suite.consumerBundles[ibctestingutils.FirstConsumerChainID]
 	suite.consumerApp = firstBundle.App
 	suite.consumerChain = firstBundle.Chain
 
-	providerKeeper := suite.providerApp.GetProviderKeeper()
-	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
+	// valsets must match between provider and all consumers
+	for _, bundle := range suite.consumerBundles {
 
-	// valsets must match
-	providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
-	consumerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.consumerChain.Vals)
-	suite.Require().True(len(providerValUpdates) == len(consumerValUpdates), "initial valset not matching")
-	for i := 0; i < len(providerValUpdates); i++ {
-		addr1 := utils.GetChangePubKeyAddress(providerValUpdates[i])
-		addr2 := utils.GetChangePubKeyAddress(consumerValUpdates[i])
-		suite.Require().True(bytes.Equal(addr1, addr2), "validator mismatch")
+		providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
+		consumerValUpdates := tmtypes.TM2PB.ValidatorUpdates(bundle.Chain.Vals)
+		suite.Require().True(len(providerValUpdates) == len(consumerValUpdates), "initial valset not matching")
+		for i := 0; i < len(providerValUpdates); i++ {
+			addr1 := utils.GetChangePubKeyAddress(providerValUpdates[i])
+			addr2 := utils.GetChangePubKeyAddress(consumerValUpdates[i])
+			suite.Require().True(bytes.Equal(addr1, addr2), "validator mismatch")
+		}
+		// Move each consumer to next block
+		bundle.Chain.NextBlock()
 	}
 
-	// move both chains to the next block
+	// move provider to next block
 	suite.providerChain.NextBlock()
-	suite.consumerChain.NextBlock()
 
 	// create consumer client on provider chain and set as consumer client for consumer chainID in provider keeper.
+	providerKeeper := suite.providerApp.GetProviderKeeper()
 	err := providerKeeper.CreateConsumerClient(
 		suite.providerCtx(),
 		suite.consumerChain.ChainID,
@@ -126,6 +129,7 @@ func (suite *CCVTestSuite) SetupTest() {
 		false,
 	)
 	suite.Require().NoError(err)
+
 	// move provider to next block to commit the state
 	suite.providerChain.NextBlock()
 
@@ -135,6 +139,8 @@ func (suite *CCVTestSuite) SetupTest() {
 		suite.consumerChain.ChainID,
 	)
 	suite.Require().True(found, "consumer genesis not found")
+
+	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 	consumerKeeper.InitGenesis(suite.consumerCtx(), &consumerGenesisState)
 
 	// Confirm client and cons state for consumer were set correctly in InitGenesis
