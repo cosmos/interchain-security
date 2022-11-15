@@ -8,7 +8,7 @@ import (
 
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
-	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -24,7 +24,7 @@ func (suite *CCVTestSuite) TestConsumerGenesis() {
 
 	// Confirm that client and cons state are exported from consumer keeper properly
 	consumerEndpointClientState, consumerEndpointConsState := suite.GetConsumerEndpointClientAndConsState(
-		*suite.consumerBundles[ibctestingutils.FirstConsumerChainID],
+		*suite.consumerBundles[icstestingutils.FirstConsumerChainID],
 	)
 	suite.Require().Equal(consumerEndpointClientState, genesis.ProviderClientState)
 	suite.Require().Equal(consumerEndpointConsState, genesis.ProviderConsensusState)

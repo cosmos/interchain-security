@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/testutil/e2e"
-	ibctestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -410,7 +410,7 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 }
 
 func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
-	consumerBundle ibctestingutils.ConsumerBundle) (exported.ClientState, exported.ConsensusState) {
+	consumerBundle icstestingutils.ConsumerBundle) (exported.ClientState, exported.ConsensusState) {
 
 	ctx := consumerBundle.GetCtx()
 	consumerKeeper := consumerBundle.GetKeeper()
