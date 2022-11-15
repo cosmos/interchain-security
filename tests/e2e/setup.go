@@ -99,8 +99,6 @@ func (suite *CCVTestSuite) SetupTest() {
 
 	// Support tests that were written before multiple consumers were supported.
 	firstBundle := suite.consumerBundles[ibctestingutils.FirstConsumerChainID]
-	suite.consumerApp = firstBundle.App
-	suite.consumerChain = firstBundle.Chain
 
 	// valsets must match between provider and all consumers
 	for _, bundle := range suite.consumerBundles {
@@ -135,6 +133,9 @@ func (suite *CCVTestSuite) SetupTest() {
 
 	// move provider to next block to commit the state
 	suite.providerChain.NextBlock()
+
+	suite.consumerApp = firstBundle.App
+	suite.consumerChain = firstBundle.Chain
 
 	// initialize each consumer chain with it's corresponding genesis state
 	// stored on the provider.

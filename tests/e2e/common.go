@@ -413,8 +413,9 @@ func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
 	consumerBundle ibctestingutils.ConsumerBundle) (exported.ClientState, exported.ConsensusState) {
 
 	ctx := consumerBundle.GetCtx()
+	consumerKeeper := consumerBundle.GetKeeper()
 
-	clientID, found := consumerBundle.App.GetConsumerKeeper().GetProviderClientID(ctx)
+	clientID, found := consumerKeeper.GetProviderClientID(ctx)
 	suite.Require().True(found)
 
 	clientState, found := consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientID)
