@@ -251,11 +251,25 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	consAddr := sdk.ConsAddress(data.Validator.Address)
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
 
-	// make sure the validator is not yet unbonded;
-	// stakingKeeper.Slash() panics otherwise
-	if !found || validator.IsUnbonded() {
-		// TODO add warning log message
-		// fmt.Sprintf("consumer chain %s trying to slash unbonded validator %s", chainID, consAddr.String())
+	/*
+		ATTENTION. If the validator is not found then either the provider chain
+		is faulty and a validator was removed while a consumer still had a handle
+		on it, or the consumer chain is faulty and the slash packet is invalid.
+		It is not easy to determine which, so we just ignore the packet.
+	*/
+	if !found {
+		// TODO: Log this at FATAL/ERROR level
+		return false, nil
+	}
+
+	/*
+		ATTENTION. If the validator is unbonded then either the provider chain
+		is faulty and a validator was removed while a consumer still had a handle
+		on it, or the consumer chain is faulty and the slash packet is invalid.
+		It is not easy to determine which, so we just ignore the packet.
+	*/
+	if validator.IsUnbonded() {
+		// TODO: Log this at FATAL/ERROR level
 		return false, nil
 	}
 
