@@ -19,15 +19,14 @@ var (
 	democConsumerChainID = ibctesting.GetChainID(5000)
 )
 
+// ConsumerBundle serves as a way to store useful in-mem consumer app chain state
+// and relevant IBC paths in the context of CCV e2e testing.
 type ConsumerBundle struct {
 	Chain        *ibctesting.TestChain
 	App          e2eutil.ConsumerApp
 	Path         *ibctesting.Path
 	TransferPath *ibctesting.Path
 }
-
-// TODO: wrapper around ibc testing path to have consumer and provider syntax?
-// or too big of a refactor?
 
 // GetCtx returns the context for the ConsumerBundle
 func (cb ConsumerBundle) GetCtx() sdk.Context {
