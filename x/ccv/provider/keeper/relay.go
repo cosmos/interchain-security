@@ -164,6 +164,15 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 			data.GetBytes(),
 			k.GetCCVTimeoutPeriod(ctx),
 		)
+		if expiredClient {
+			// IBC client expired:
+			if i != 0 {
+				// this should never happen
+				panic(fmt.Errorf("client expired while sending pending packets: %w", err))
+			}
+			// leave the packet data stored to be sent once the client is upgraded
+			return
+		}
 		if err != nil {
 			// something went wrong when preparing the packet
 			panic(fmt.Errorf("packet could not be prepared for IBC send: %w", err))

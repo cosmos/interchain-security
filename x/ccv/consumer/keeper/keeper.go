@@ -393,43 +393,42 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 	return validators
 }
 
-// SetPendingSlashRequests sets the pending slash requests in store
-func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests types.SlashRequests) {
+// SetPendingDataPackets sets the pending data packets in store
+func (k Keeper) SetPendingDataPackets(ctx sdk.Context, dataPackets types.DataPackets) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := requests.Marshal()
+	bz, err := dataPackets.Marshal()
 	if err != nil {
 		panic(fmt.Errorf("failed to encode slash request json: %w", err))
 	}
-	store.Set([]byte{types.PendingSlashRequestsBytePrefix}, bz)
+	store.Set([]byte{types.PendingDataPacketsBytePrefix}, bz)
 }
 
-// GetPendingSlashRequest returns the pending slash requests in store
-func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) types.SlashRequests {
+// GetPendingDataPackets returns the pending data packets from the store
+func (k Keeper) GetPendingDataPackets(ctx sdk.Context) (dataPackets types.DataPackets, found bool) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get([]byte{types.PendingSlashRequestsBytePrefix})
+	bz := store.Get([]byte{types.PendingDataPacketsBytePrefix})
 	if bz == nil {
-		return types.SlashRequests{}
+		return types.DataPackets{}, false
 	}
 
-	var sr types.SlashRequests
-	err := sr.Unmarshal(bz)
+	err := dataPackets.Unmarshal(bz)
 	if err != nil {
-		panic(fmt.Errorf("failed to decode slash request json: %w", err))
+		panic(fmt.Errorf("failed to unmarshal pending data packets: %w", err))
 	}
 
-	return sr
+	return dataPackets, true
 }
 
-// ClearPendingSlashRequests clears the pending slash requests in store
-func (k Keeper) DeletePendingSlashRequests(ctx sdk.Context) {
+// DeletePendingDataPackets clears the pending data packets in store
+func (k Keeper) DeletePendingDataPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete([]byte{types.PendingSlashRequestsBytePrefix})
+	store.Delete([]byte{types.PendingDataPacketsBytePrefix})
 }
 
-// AppendPendingSlashRequests appends the given slash request to the pending slash requests in store
-func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashRequest) {
-	sr := k.GetPendingSlashRequests(ctx)
-	srArray := sr.GetRequests()
-	srArray = append(srArray, req)
-	k.SetPendingSlashRequests(ctx, types.SlashRequests{Requests: srArray})
+// AppendPendingDataPacket appends the given data packet to the pending data packets in store
+func (k Keeper) AppendPendingDataPacket(ctx sdk.Context, dataPacket types.DataPacket) {
+	dp, _ := k.GetPendingDataPackets(ctx)
+	dpArray := dp.GetList()
+	dpArray = append(dpArray, dataPacket)
+	k.SetPendingDataPackets(ctx, types.DataPackets{List: dpArray})
 }

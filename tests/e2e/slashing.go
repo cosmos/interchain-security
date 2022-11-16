@@ -578,7 +578,8 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	suite.Require().EqualValues(expCommit, gotCommit)
 }
 
-// TestSendSlashPacket tests the functionality of SendSlashPacket and asserts state changes related to that method
+// TestSendSlashPacket tests the functionality of SendSlashPacket
+// and asserts state changes related to that method
 func (suite *CCVTestSuite) TestSendSlashPacket() {
 	suite.SetupCCVChannel()
 
@@ -618,9 +619,11 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 		consumerKeeper.SendSlashPacket(ctx, sv.validator, 0, sv.infraction)
 	}
 
-	// verify that all requests are stored
-	requests := consumerKeeper.GetPendingSlashRequests(ctx)
-	suite.Require().Len(requests.GetRequests(), 16)
+	// verify that all requests are stored except for
+	// the downtime slash request duplicates
+	dataPackets, found := consumerKeeper.GetPendingDataPackets(ctx)
+	suite.Require().True(found)
+	suite.Require().Len(dataPackets.GetList(), 12)
 
 	// save consumer next sequence
 	seq, _ := consumerIBCKeeper.ChannelKeeper.GetNextSequenceSend(ctx, ccv.ConsumerPortID, channelID)
@@ -628,35 +631,29 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 	// establish ccv channel by sending an empty VSC packet to consumer endpoint
 	suite.SendEmptyVSCPacket()
 
-	// check that each pending slash requests is sent once
-	// and that the downtime slash request duplicates are skipped (due to the outstanding downtime flag)
-	for i := 0; i < 16; i++ {
+	// check that each pending data packet is sent once
+	for i := 0; i < 12; i++ {
 		commit := consumerIBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq+uint64(i))
-		if i > 11 {
-			suite.Require().Nil(commit)
-			continue
-		}
 		suite.Require().NotNil(commit)
 	}
 
 	// check that outstanding downtime flags
 	// are all set to true for validators slashed for downtime requests
-	for _, r := range requests.GetRequests() {
-		downtime := r.Infraction == stakingtypes.Downtime
-		if downtime {
-			consAddr := sdk.ConsAddress(r.Packet.Validator.Address)
-			suite.Require().True(consumerKeeper.OutstandingDowntime(ctx, consAddr))
-		}
+	for i := 0; i < 4; i++ {
+		consAddr := sdk.ConsAddress(slashedVals[i].validator.Address)
+		suite.Require().True(consumerKeeper.OutstandingDowntime(ctx, consAddr))
 	}
 
-	// check that pending slash requests get cleared after being sent
-	requests = consumerKeeper.GetPendingSlashRequests(ctx)
-	suite.Require().Len(requests.GetRequests(), 0)
+	// check that pending data packets get cleared after being sent
+	dataPackets, found = consumerKeeper.GetPendingDataPackets(ctx)
+	suite.Require().False(found)
+	suite.Require().Len(dataPackets.GetList(), 0)
 
 	// check that slash requests aren't stored when channel is established
 	consumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.Downtime)
 	consumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.DoubleSign)
 
-	requests = consumerKeeper.GetPendingSlashRequests(ctx)
-	suite.Require().Len(requests.GetRequests(), 0)
+	dataPackets, found = consumerKeeper.GetPendingDataPackets(ctx)
+	suite.Require().False(found)
+	suite.Require().Len(dataPackets.GetList(), 0)
 }

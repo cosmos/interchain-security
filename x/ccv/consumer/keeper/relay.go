@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -35,18 +36,8 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		// the first packet from the provider chain
 		// - mark the CCV channel as established
 		k.SetProviderChannel(ctx, packet.DestinationChannel)
-		// - send pending slash requests in states
-		k.SendPendingSlashRequests(ctx)
-
-		// emit event on first VSC packet to signal that CCV is working
-		ctx.EventManager().EmitEvent(
-			sdk.NewEvent(
-				ccv.EventTypeChannelEstablished,
-				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-				sdk.NewAttribute(channeltypes.AttributeKeyChannelID, packet.DestinationChannel),
-				sdk.NewAttribute(channeltypes.AttributeKeyPortID, packet.DestinationPort),
-			),
-		)
+		// - send pending data packets
+		k.SendPendingDataPackets(ctx, packet.DestinationChannel)
 	}
 	// Set pending changes by accumulating changes from this packet with all prior changes
 	var pendingChanges []abci.ValidatorUpdate
@@ -95,6 +86,12 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 		return nil
 	}
 
+	// try sending pending data packets first
+	if clientExpired := k.SendPendingDataPackets(ctx, channelID); clientExpired {
+		// the client is expired; try again later
+		return nil
+	}
+
 	store := ctx.KVStore(k.storeKey)
 	maturityIterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 	defer maturityIterator.Close()
@@ -104,11 +101,11 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 	for maturityIterator.Valid() {
 		vscId := types.IdFromPacketMaturityTimeKey(maturityIterator.Key())
 		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
-			// send VSCMatured packet
-			// - construct validator set change packet data
+			// construct validator set change packet data
 			packetData := ccv.NewVSCMaturedPacketData(vscId)
-			// - send packet over IBC
-			_, err := utils.SendIBCPacket(
+
+			// prepare to send the packetData to the consumer
+			packet, channelCap, err := utils.PrepareIBCPacketSend(
 				ctx,
 				k.scopedKeeper,
 				k.channelKeeper,
@@ -118,7 +115,25 @@ func (k Keeper) SendVSCMaturedPackets(ctx sdk.Context) error {
 				k.GetCCVTimeoutPeriod(ctx),
 			)
 			if err != nil {
+				// something went wrong when preparing the packet
 				return err
+			}
+
+			// send packet over IBC channel
+			err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
+			if err != nil {
+				// note that the client could be expired
+				if clienttypes.ErrClientNotActive.Is(err) {
+					// IBC client expired:
+					// append the VSCMatured packet data to pending data packets
+					// to be sent once the client is upgraded
+					k.AppendPendingDataPacket(ctx, types.DataPacket{
+						Type: types.VscMaturedPacket,
+						Data: packetData.GetBytes(),
+					})
+				} else {
+					return err
+				}
 			}
 			k.DeletePacketMaturityTime(ctx, vscId)
 			ctx.EventManager().EmitEvent(
@@ -149,22 +164,42 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 		return
 	}
 
+	if downtime {
+		// set outstanding downtime to not send multiple
+		// slashing requests for the same downtime infraction
+		k.SetOutstandingDowntime(ctx, consAddr)
+	}
+
 	// construct slash packet data
 	packetData := ccv.NewSlashPacketData(validator, valsetUpdateID, infraction)
 
 	// check that provider channel is established
-	// if not, append slashing packet to pending slash requests
-	channelID, ok := k.GetProviderChannel(ctx)
-	if !ok {
-		k.AppendPendingSlashRequests(ctx, types.SlashRequest{
-			Packet:     &packetData,
-			Infraction: infraction},
-		)
+	channelID, found := k.GetProviderChannel(ctx)
+	if !found {
+		// CCV channel not established:
+		// append the Slash packet data to pending data packets
+		// to be sent once the CCV channel is established
+		k.AppendPendingDataPacket(ctx, types.DataPacket{
+			Type: types.SlashPacket,
+			Data: packetData.GetBytes(),
+		})
 		return
 	}
 
-	// send packet over IBC
-	_, err := utils.SendIBCPacket(
+	// try sending pending data packets first
+	if clientExpired := k.SendPendingDataPackets(ctx, channelID); clientExpired {
+		// IBC client expired:
+		// append the Slash packet data to pending data packets
+		// to be sent once the client is upgraded
+		k.AppendPendingDataPacket(ctx, types.DataPacket{
+			Type: types.SlashPacket,
+			Data: packetData.GetBytes(),
+		})
+		return
+	}
+
+	// prepare to send the packetData to the consumer
+	packet, channelCap, err := utils.PrepareIBCPacketSend(
 		ctx,
 		k.scopedKeeper,
 		k.channelKeeper,
@@ -174,77 +209,72 @@ func (k Keeper) SendSlashPacket(ctx sdk.Context, validator abci.Validator, valse
 		k.GetCCVTimeoutPeriod(ctx),
 	)
 	if err != nil {
-		panic(err)
+		// something went wrong when preparing the packet
+		panic(fmt.Errorf("packet could not be prepared for IBC send: %w", err))
 	}
 
-	// set outstanding downtime if slash request sent is for downtime
-	if downtime {
-		k.SetOutstandingDowntime(ctx, consAddr)
-	}
-
-	// if provider channel is not established the emmission
-	// will instead take place in SendPendingSlashRequests
-	ctx.EventManager().EmitEvent(
-		sdk.NewEvent(
-			ccv.EventTypeSendSlashPacket,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(ccv.AttributeValidatorAddress, sdk.ConsAddress(validator.Address).String()),
-			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(valsetUpdateID))),
-			sdk.NewAttribute(ccv.AttributeInfractionType, infraction.String()),
-		),
-	)
-}
-
-// SendPendingSlashRequests iterates over the stored pending slash requests in reverse order
-// and sends the embedded slash packets to the provider chain
-func (k Keeper) SendPendingSlashRequests(ctx sdk.Context) {
-	channelID, ok := k.GetProviderChannel(ctx)
-	if !ok {
-		panic(fmt.Errorf("%s: CCV channel not set", channeltypes.ErrChannelNotFound))
-	}
-
-	// iterate over pending slash requests in reverse order
-	requests := k.GetPendingSlashRequests(ctx).Requests
-	for i := len(requests) - 1; i >= 0; i-- {
-		slashReq := requests[i]
-
-		// send the emebdded slash packet to the CCV channel
-		// if the outstanding downtime flag is false for the validator
-		downtime := slashReq.Infraction == stakingtypes.Downtime
-		if !downtime || !k.OutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address)) {
-			// send packet over IBC
-			_, err := utils.SendIBCPacket(
-				ctx,
-				k.scopedKeeper,
-				k.channelKeeper,
-				channelID,          // source channel id
-				ccv.ConsumerPortID, // source port id
-				slashReq.Packet.GetBytes(),
-				k.GetCCVTimeoutPeriod(ctx),
-			)
-			if err != nil {
-				panic(err)
-			}
-
-			// set validator outstanding downtime flag to true
-			if downtime {
-				k.SetOutstandingDowntime(ctx, sdk.ConsAddress(slashReq.Packet.Validator.Address))
-			}
-
-			ctx.EventManager().EmitEvent(
-				sdk.NewEvent(
-					ccv.EventTypeSendSlashPacket,
-					sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-					sdk.NewAttribute(ccv.AttributeValidatorAddress, sdk.ConsAddress(slashReq.Packet.Validator.Address).String()),
-					sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(slashReq.Packet.ValsetUpdateId))),
-					sdk.NewAttribute(ccv.AttributeInfractionType, slashReq.Packet.Infraction.String()),
-				),
-			)
+	// send packet over IBC channel
+	err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
+	if err != nil {
+		// note that the client could be expired
+		if clienttypes.ErrClientNotActive.Is(err) {
+			// IBC client expired:
+			// append the Slash packet data to pending data packets
+			// to be sent once the client is upgraded
+			k.AppendPendingDataPacket(ctx, types.DataPacket{
+				Type: types.SlashPacket,
+				Data: packetData.GetBytes(),
+			})
+		} else {
+			// something went wrong when sending the packet
+			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
 		}
 	}
+}
 
-	// clear pending slash requests
-	k.DeletePendingSlashRequests(ctx)
+// SendPendingDataPackets sends the stored pending data packet to the provider chain.
+// Returns true if the client is expired.
+func (k Keeper) SendPendingDataPackets(ctx sdk.Context, channelID string) (clientExpired bool) {
+	dataPackets, found := k.GetPendingDataPackets(ctx)
+	if !found {
+		// This method is a no-op if there are no pending data packets
+		return false
+	}
+	for i, dp := range dataPackets.GetList() {
+		// prepare to send the packetData to the consumer
+		packet, channelCap, err := utils.PrepareIBCPacketSend(
+			ctx,
+			k.scopedKeeper,
+			k.channelKeeper,
+			channelID,          // source channel id
+			ccv.ConsumerPortID, // source port id
+			dp.Data,
+			k.GetCCVTimeoutPeriod(ctx),
+		)
+		if err != nil {
+			// something went wrong when preparing the packet
+			panic(fmt.Errorf("packet could not be prepared for IBC send: %w", err))
+		}
+
+		// send packet over IBC channel
+		err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
+		if err != nil {
+			if clienttypes.ErrClientNotActive.Is(err) {
+				// IBC client expired:
+				if i != 0 {
+					// this should never happen
+					panic(fmt.Errorf("client expired while sending pending packets: %w", err))
+				}
+				// leave the packet data stored to be sent once the client is upgraded
+				return true
+			}
+			// something went wrong when sending the packet
+			panic(fmt.Errorf("packet could not be sent over IBC: %w", err))
+		}
+	}
+	// clear pending data packets
+	k.DeletePendingDataPackets(ctx)
+	return false
 }
 
 // OnAcknowledgementPacket executes application logic for acknowledgments of sent VSCMatured and Slash packets
