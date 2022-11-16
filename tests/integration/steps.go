@@ -14,21 +14,28 @@ func concatSteps(steps ...[]Step) []Step {
 }
 
 var happyPathSteps = concatSteps(
-	stepsStartChains("consu", false),
+	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
-	stepsUnbondRedelegate("consu"),
+	stepsUnbond("consu"),
+	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
 	stepsStopChain("consu"),
 )
 
 var democracySteps = concatSteps(
 	// democracySteps requires a transfer channel
-	stepsStartChains("democ", true),
+	stepsStartChains([]string{"democ"}, true),
+	// delegation needs to happen so the first VSC packet can be delivered
 	stepsDelegate("democ"),
 	stepsDemocracy("democ"),
 )
 
-var doubleSignProviderSteps = concatSteps(
-	stepsStartChains("consu", false),
-	stepsDoubleSign("consu", "provi", "carol"),
+var multipleConsumers = concatSteps(
+	stepsStartChains([]string{"consu", "densu"}, false),
+	stepsMultiConsumerDelegate("consu", "densu"),
+	stepsMultiConsumerUnbond("consu", "densu"),
+	stepsMultiConsumerRedelegate("consu", "densu"),
+	stepsMultiConsumerDowntimeFromConsumer("consu", "densu"),
+	stepsMultiConsumerDowntimeFromProvider("consu", "densu"),
+	stepsDoubleSign("consu", "densu"), // double sign on one of the chains
 )
