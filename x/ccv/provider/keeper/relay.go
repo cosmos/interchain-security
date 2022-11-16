@@ -131,18 +131,18 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	k.QueueValidatorUpdates(ctx)
 
 	// try sending updates to all chains
-	// if ccv channel is not established for consumer chain
+	// if CCV channel is not established for consumer chain
 	// the updates will remain queued until the channel is established
 	k.SendValidatorUpdates(ctx)
 }
 
-// sendValidatorUpdates iterates over chains and sends VSCs to
+// SendValidatorUpdates iterates over chains and sends VSCs to
 // consumer chains with established CCV channels
-// if ccv channel is not established for consumer chain
+// if CCV channel is not established for consumer chain
 // the updates will remain queued until the channel is established
 func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		// check if CCV channel is establish and send
+		// check if CCV channel is established and send
 		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
 			k.SendVSCPacketsToChain(ctx, chainID, channelID)
 		}
@@ -152,8 +152,8 @@ func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
 
 // SendVSCPacketsToChain sends all queued ValidatorSetChangePackets to the specified chain
 func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string) {
-	pendingPackets := k.GetPendingVSCs(ctx, chainID)
-	for _, data := range pendingPackets {
+	pendingVSCs := k.GetPendingVSCs(ctx, chainID)
+	for _, data := range pendingVSCs {
 		// prepare to send the data to the consumer
 		packet, channelCap, err := utils.PrepareIBCPacketSend(
 			ctx,
