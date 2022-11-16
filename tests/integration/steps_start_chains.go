@@ -4,11 +4,8 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
-// starts provider and single consumer chain
-// * genesisParams overrides consumer genesis params
-// * setupTransferChan creates a transfer channel between provider and consumer
-func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
-	s := []Step{
+func stepStartProviderChain() []Step {
+	return []Step{
 		{
 			action: StartChainAction{
 				chain: chainID("provi"),
@@ -17,34 +14,22 @@ func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
 					{id: validatorID("alice"), stake: 500000000, allocation: 10000000000},
 					{id: validatorID("carol"), stake: 500000000, allocation: 10000000000},
 				},
-				genesisChanges: "", // No custom genesis changes for this action
-				skipGentx:      false,
 			},
 			state: State{
 				chainID("provi"): ChainState{
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 9500000000,
 						validatorID("bob"):   9500000000,
+						validatorID("carol"): 9500000000,
 					},
 				},
 			},
 		},
-		{
-			action: SendTokensAction{
-				chain:  chainID("provi"),
-				from:   validatorID("alice"),
-				to:     validatorID("bob"),
-				amount: 2,
-			},
-			state: State{
-				chainID("provi"): ChainState{
-					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9499999998,
-						validatorID("bob"):   9500000002,
-					},
-				},
-			},
-		},
+	}
+}
+
+func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint, setupTransferChans bool) []Step {
+	s := []Step{
 		{
 			action: submitConsumerAdditionProposalAction{
 				chain:         chainID("provi"),
@@ -57,11 +42,11 @@ func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
 			state: State{
 				chainID("provi"): ChainState{
 					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9489999997,
-						validatorID("bob"):   9500000002,
+						validatorID("alice"): 9489999999,
+						validatorID("bob"):   9500000000,
 					},
 					Proposals: &map[uint]Proposal{
-						1: ConsumerAdditionProposal{
+						proposalIndex: ConsumerAdditionProposal{
 							Deposit:       10000001,
 							Chain:         chainID(consumerName),
 							SpawnTime:     0,
@@ -77,12 +62,12 @@ func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
 				chain:      chainID("provi"),
 				from:       []validatorID{validatorID("alice"), validatorID("bob"), validatorID("carol")},
 				vote:       []string{"yes", "yes", "yes"},
-				propNumber: 1,
+				propNumber: proposalIndex,
 			},
 			state: State{
 				chainID("provi"): ChainState{
 					Proposals: &map[uint]Proposal{
-						1: ConsumerAdditionProposal{
+						proposalIndex: ConsumerAdditionProposal{
 							Deposit:       10000001,
 							Chain:         chainID(consumerName),
 							SpawnTime:     0,
@@ -91,8 +76,8 @@ func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
 						},
 					},
 					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9499999998,
-						validatorID("bob"):   9500000002,
+						validatorID("alice"): 9500000000,
+						validatorID("bob"):   9500000000,
 					},
 				},
 			},
@@ -111,28 +96,11 @@ func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
 			state: State{
 				chainID("provi"): ChainState{
 					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 9499999998,
-						validatorID("bob"):   9500000002,
+						validatorID("alice"): 9500000000,
+						validatorID("bob"):   9500000000,
 					},
 				},
 				chainID(consumerName): ChainState{
-					ValBalances: &map[validatorID]uint{
-						validatorID("alice"): 10000000000,
-						validatorID("bob"):   10000000000,
-					},
-				},
-			},
-		},
-		{
-			action: SendTokensAction{
-				chain:  chainID(consumerName),
-				from:   validatorID("alice"),
-				to:     validatorID("bob"),
-				amount: 1,
-			},
-			state: State{
-				chainID(consumerName): ChainState{
-					// Tx on consumer chain should not go through before ICS channel is setup
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 10000000000,
 						validatorID("bob"):   10000000000,
@@ -145,8 +113,7 @@ func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
 				chainA:  chainID(consumerName),
 				chainB:  chainID("provi"),
 				clientA: 0,
-				clientB: 0,
-				order:   "ordered",
+				clientB: chainIndex,
 			},
 			state: State{},
 		},
@@ -164,7 +131,7 @@ func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
 	}
 
 	// currently only used in democracy tests
-	if setupTransferChan {
+	if setupTransferChans {
 		s = append(s, Step{
 			action: transferChannelCompleteAction{
 				chainA:      chainID(consumerName),
@@ -178,6 +145,16 @@ func stepsStartChains(consumerName string, setupTransferChan bool) []Step {
 			},
 			state: State{},
 		})
+	}
+	return s
+}
+
+// starts provider and consumer chains specified in consumerNames
+// setupTransferChans will establish a channel for fee transfers between consumer and provider
+func stepsStartChains(consumerNames []string, setupTransferChans bool) []Step {
+	s := stepStartProviderChain()
+	for i, consumerName := range consumerNames {
+		s = append(s, stepsStartConsumerChain(consumerName, uint(i+1), uint(i), setupTransferChans)...)
 	}
 
 	return s
