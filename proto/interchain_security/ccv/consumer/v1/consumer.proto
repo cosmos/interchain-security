@@ -68,7 +68,7 @@ message CrossChainValidator {
   ];
 }
 
-// ConsumerPacketType indicates the consumer packet type.
+// ConsumerPacketType indicates interchain security specific packet types.
 enum ConsumerPacketType {
   option (gogoproto.goproto_enum_prefix) = false;
 
@@ -80,14 +80,14 @@ enum ConsumerPacketType {
   CONSUMER_PACKET_TYPE_VSCM = 2 [(gogoproto.enumvalue_customname) = "VscMaturedPacket"];
 }
 
-// DataPacket is a data packet for a specific type of packet
-message DataPacket {
+// ConsumerPacket contains raw packet bytes and packet type.
+message ConsumerPacket {
   ConsumerPacketType type = 1; 
   bytes data = 2;
 }
 
-// DataPackets is a list of data packets
-message DataPackets {
-  repeated DataPacket list = 1
+// ConsumerPackets is a list of data packets.
+message ConsumerPackets {
+  repeated ConsumerPacket list = 1
   [ (gogoproto.nullable) = false ];
 }

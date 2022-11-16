@@ -154,13 +154,13 @@ func TestCrossChainValidator(t *testing.T) {
 	require.False(t, found)
 }
 
-func TestPendingDataPackets(t *testing.T) {
+func TestSetPendingPackets(t *testing.T) {
 
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// prepare test setup
-	dataPackets := []types.DataPacket{
+	dataPackets := []types.ConsumerPacket{
 		{
 			Type: types.VscMaturedPacket,
 			Data: ccv.NewVSCMaturedPacketData(1).GetBytes(),
@@ -182,10 +182,10 @@ func TestPendingDataPackets(t *testing.T) {
 			Data: ccv.NewVSCMaturedPacketData(3).GetBytes(),
 		},
 	}
-	consumerKeeper.SetPendingDataPackets(ctx, types.DataPackets{List: dataPackets})
+	consumerKeeper.SetPendingPackets(ctx, types.ConsumerPackets{List: dataPackets})
 
-	storedDataPackets, found := consumerKeeper.GetPendingDataPackets(ctx)
-	require.True(t, found)
+	storedDataPackets := consumerKeeper.GetPendingPackets(ctx)
+	require.NotEmpty(t, storedDataPackets)
 	require.Equal(t, dataPackets, storedDataPackets.List)
 
 	slashPacket := ccv.NewSlashPacketData(
@@ -194,22 +194,22 @@ func TestPendingDataPackets(t *testing.T) {
 		uint64(4),
 		stakingtypes.Downtime,
 	)
-	dataPackets = append(dataPackets, types.DataPacket{Type: types.SlashPacket, Data: slashPacket.GetBytes()})
-	consumerKeeper.AppendPendingDataPacket(ctx, dataPackets[len(dataPackets)-1])
-	storedDataPackets, found = consumerKeeper.GetPendingDataPackets(ctx)
-	require.True(t, found)
+	dataPackets = append(dataPackets, types.ConsumerPacket{Type: types.SlashPacket, Data: slashPacket.GetBytes()})
+	consumerKeeper.AppendPendingPacket(ctx, dataPackets[len(dataPackets)-1])
+	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
+	require.NotEmpty(t, storedDataPackets)
 	require.Equal(t, dataPackets, storedDataPackets.List)
 
 	vscMaturedPakcet := ccv.NewVSCMaturedPacketData(4)
-	dataPackets = append(dataPackets, types.DataPacket{Type: types.VscMaturedPacket, Data: vscMaturedPakcet.GetBytes()})
-	consumerKeeper.AppendPendingDataPacket(ctx, dataPackets[len(dataPackets)-1])
-	storedDataPackets, found = consumerKeeper.GetPendingDataPackets(ctx)
-	require.True(t, found)
+	dataPackets = append(dataPackets, types.ConsumerPacket{Type: types.VscMaturedPacket, Data: vscMaturedPakcet.GetBytes()})
+	consumerKeeper.AppendPendingPacket(ctx, dataPackets[len(dataPackets)-1])
+	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
+	require.NotEmpty(t, storedDataPackets)
 	require.Equal(t, dataPackets, storedDataPackets.List)
 
 	consumerKeeper.DeletePendingDataPackets(ctx)
-	storedDataPackets, found = consumerKeeper.GetPendingDataPackets(ctx)
-	require.False(t, found)
+	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
+	require.Empty(t, storedDataPackets)
 	require.Len(t, storedDataPackets.List, 0)
 }
 

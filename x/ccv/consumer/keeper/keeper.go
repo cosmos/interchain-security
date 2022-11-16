@@ -393,30 +393,32 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 	return validators
 }
 
-// SetPendingDataPackets sets the pending data packets in store
-func (k Keeper) SetPendingDataPackets(ctx sdk.Context, dataPackets types.DataPackets) {
+// SetPendingPackets sets the pending CCV packets
+func (k Keeper) SetPendingPackets(ctx sdk.Context, packets types.ConsumerPackets) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := dataPackets.Marshal()
+	bz, err := packets.Marshal()
 	if err != nil {
-		panic(fmt.Errorf("failed to encode slash request json: %w", err))
+		panic(fmt.Errorf("failed to encode packet: %w", err))
 	}
 	store.Set([]byte{types.PendingDataPacketsBytePrefix}, bz)
 }
 
-// GetPendingDataPackets returns the pending data packets from the store
-func (k Keeper) GetPendingDataPackets(ctx sdk.Context) (dataPackets types.DataPackets, found bool) {
+// GetPendingPackets returns the pending CCV packets from the store
+func (k Keeper) GetPendingPackets(ctx sdk.Context) types.ConsumerPackets {
+	var packets types.ConsumerPackets
+
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get([]byte{types.PendingDataPacketsBytePrefix})
 	if bz == nil {
-		return types.DataPackets{}, false
+		return packets
 	}
 
-	err := dataPackets.Unmarshal(bz)
+	err := packets.Unmarshal(bz)
 	if err != nil {
 		panic(fmt.Errorf("failed to unmarshal pending data packets: %w", err))
 	}
 
-	return dataPackets, true
+	return packets
 }
 
 // DeletePendingDataPackets clears the pending data packets in store
@@ -426,9 +428,8 @@ func (k Keeper) DeletePendingDataPackets(ctx sdk.Context) {
 }
 
 // AppendPendingDataPacket appends the given data packet to the pending data packets in store
-func (k Keeper) AppendPendingDataPacket(ctx sdk.Context, dataPacket types.DataPacket) {
-	dp, _ := k.GetPendingDataPackets(ctx)
-	dpArray := dp.GetList()
-	dpArray = append(dpArray, dataPacket)
-	k.SetPendingDataPackets(ctx, types.DataPackets{List: dpArray})
+func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet types.ConsumerPacket) {
+	pending := k.GetPendingPackets(ctx)
+	list := append(pending.GetList(), packet)
+	k.SetPendingPackets(ctx, types.ConsumerPackets{List: list})
 }
