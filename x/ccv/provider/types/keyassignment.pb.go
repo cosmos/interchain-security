@@ -24,11 +24,19 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Store the LAST update used to update the validator set on a consumer chain
+// using a particular assigned consensus key (consumer_key)
 type LastUpdateMemo struct {
+	// The consensus key used to update the validator set on the consumer chain
 	ConsumerKey *crypto.PublicKey `protobuf:"bytes,1,opt,name=consumer_key,json=consumerKey,proto3" json:"consumer_key,omitempty"`
+	// The consensus key of the validator on the provider chain
 	ProviderKey *crypto.PublicKey `protobuf:"bytes,2,opt,name=provider_key,json=providerKey,proto3" json:"provider_key,omitempty"`
-	Vscid       uint64            `protobuf:"varint,4,opt,name=vscid,proto3" json:"vscid,omitempty"`
-	Power       int64             `protobuf:"varint,5,opt,name=power,proto3" json:"power,omitempty"`
+	// The vscid of the update, used to determine prunability of this data
+	// Data cannot be pruned until the vscid is matured
+	Vscid uint64 `protobuf:"varint,4,opt,name=vscid,proto3" json:"vscid,omitempty"`
+	// The voting power of the update, used to determine prunability of this data
+	// Data cannot be pruned if the power was positive
+	Power int64 `protobuf:"varint,5,opt,name=power,proto3" json:"power,omitempty"`
 }
 
 func (m *LastUpdateMemo) Reset()         { *m = LastUpdateMemo{} }

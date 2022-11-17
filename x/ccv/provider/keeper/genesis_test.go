@@ -29,8 +29,8 @@ func TestIniAndExportGenesis(t *testing.T) {
 	keyAssignments := []providertypes.KeyAssignment{
 		{
 			ProviderConsAddrToConsumerKey:    []providertypes.ConsAddrToKey{{ConsAddr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
-			ConsumerKeyToProviderKey:         []providertypes.KeyToKey{},
-			ConsumerConsAddrToLastUpdateMemo: []providertypes.ConsAddrToLastUpdateMemo{},
+			ConsumerKeyToProviderKey:         []providertypes.KeyToKey{{From: &tmprotocrypto.PublicKey{}, To: &tmprotocrypto.PublicKey{}}},
+			ConsumerConsAddrToLastUpdateMemo: []providertypes.ConsAddrToLastUpdateMemo{{ConsAddr: sdk.ConsAddress{}, LastUpdateMemo: &providertypes.LastUpdateMemo{}}},
 		},
 		{
 			ProviderConsAddrToConsumerKey:    []providertypes.ConsAddrToKey{},
@@ -120,6 +120,10 @@ func TestIniAndExportGenesis(t *testing.T) {
 	require.Equal(t, pGenesis.Params, pk.GetParams(ctx))
 
 	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).Store.GetProviderConsAddrToConsumerPublicKey(sdk.ConsAddress{})
+	require.True(t, found)
+	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).Store.GetConsumerPublicKeyToProviderPublicKey(tmprotocrypto.PublicKey{})
+	require.True(t, found)
+	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).Store.GetConsumerConsAddrToLastUpdateMemo(sdk.ConsAddress{})
 	require.True(t, found)
 	_, found = pk.KeyAssignment(ctx, cChainIDs[1]).Store.GetProviderConsAddrToConsumerPublicKey(sdk.ConsAddress{})
 	require.False(t, found)
