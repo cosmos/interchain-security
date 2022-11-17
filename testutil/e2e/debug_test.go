@@ -42,7 +42,7 @@ func findAndCallMethod(t *testing.T, suite any, methodName string) {
 	methodFinder := reflect.TypeOf(suite)
 	method, found := methodFinder.MethodByName(methodName)
 	if !found {
-		t.Errorf("Method %s is not defined for CCVTestSuite", methodName)
+		t.Errorf("Method %s is not defined for suite type", methodName)
 	}
 
 	method.Func.Call([]reflect.Value{reflect.ValueOf(suite)})
