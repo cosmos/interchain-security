@@ -48,12 +48,12 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 
 	// Set unbondingOp
 	if err := h.k.SetUnbondingOp(ctx, unbondingOp); err != nil {
-		return fmt.Errorf("unbonding op could not be persisted: %w", err)
+		panic(fmt.Errorf("unbonding op could not be persisted: %w", err))
 	}
 
 	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
 	if err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, ID); err != nil {
-		return fmt.Errorf("unbonding could not be put on hold: %w", err)
+		panic(fmt.Errorf("unbonding could not be put on hold: %w", err))
 	}
 	return nil
 }
