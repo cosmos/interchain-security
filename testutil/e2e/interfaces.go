@@ -88,7 +88,7 @@ type E2eStakingKeeper interface {
 	) (time.Time, error)
 	BeginRedelegation(ctx sdk.Context, delAddr sdk.AccAddress, valSrcAddr, valDstAddr sdk.ValAddress,
 		sharesAmount sdk.Dec) (completionTime time.Time, err error)
-	GetUnbondingDelegationByUnbondingId(ctx sdk.Context, id uint64,
+	GetUnbondingDelegationByUnbondingID(ctx sdk.Context, id uint64,
 	) (ubd types.UnbondingDelegation, found bool)
 	GetRedelegations(ctx sdk.Context, delegator sdk.AccAddress,
 		maxRetrieve uint16) (redelegations []types.Redelegation)
