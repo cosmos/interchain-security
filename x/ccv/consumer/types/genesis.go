@@ -58,6 +58,22 @@ func DefaultGenesisState() *GenesisState {
 }
 
 // Validate performs basic genesis state validation returning an error upon any failure.
+//
+// The three cases where a consumer chain starts/restarts
+// expect the following optional and mandatory genesis states:
+//
+// 1. New chain starts:
+//   - Params, InitialValset, IBC provider client state, IBC provider consensus state // mandatory
+//
+// 2. Chain restarts with CCV handshake still in progress:
+//   - Params, InitialValset, ProviderID, HeightToValidatorSetUpdateID // mandatory
+//   - PendingSlashRequest // optional
+//
+// 3. Chain restarts with CCV handshake completed:
+//   - Params, InitialValset, ProviderID, channelID, HeightToValidatorSetUpdateID // mandatory
+//   - MaturingVSCPackets, OutstandingDowntime, LastTransmissionBlockHeight // optional
+//
+
 func (gs GenesisState) Validate() error {
 	if !gs.Params.Enabled {
 		return nil
@@ -111,11 +127,20 @@ func (gs GenesisState) Validate() error {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client id must be set for a restarting consumer genesis state")
 		}
 		// handshake is still in progress
-		if gs.ProviderChannelId == "" && (len(gs.MaturingPackets) != 0 || len(gs.OutstandingDowntimeSlashing) != 0 || gs.LastTransmissionBlockHeight.Height != 0) {
-			return sdkerrors.Wrap(
-				ccv.ErrInvalidGenesis,
-				"maturing packets, outstanding downtime slashing and last transmission block height must be empty when handshake isn't completed",
-			)
+		handshakeInProgress := gs.ProviderChannelId == ""
+		if handshakeInProgress {
+			if len(gs.MaturingPackets) != 0 {
+				return sdkerrors.Wrap(
+					ccv.ErrInvalidGenesis, "maturing packets must be empty when handshake isn't completed")
+			}
+			if len(gs.OutstandingDowntimeSlashing) != 0 {
+				return sdkerrors.Wrap(
+					ccv.ErrInvalidGenesis, "outstanding downtime must be empty when handshake isn't completed")
+			}
+			if gs.LastTransmissionBlockHeight.Height != 0 {
+				return sdkerrors.Wrap(
+					ccv.ErrInvalidGenesis, "last transmission block height must be zero when handshake isn't completed")
+			}
 		}
 		if gs.HeightToValsetUpdateId == nil {
 			return sdkerrors.Wrap(
@@ -124,7 +149,7 @@ func (gs GenesisState) Validate() error {
 			)
 		}
 		if gs.ProviderClientState != nil || gs.ProviderConsensusState != nil {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client state and consensus states must be nil for a restarting genesis state")
+			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "provider client state and consensus state must be nil for a restarting genesis state")
 		}
 		for _, mat := range gs.MaturingPackets {
 			if err := mat.Validate(); err != nil {
