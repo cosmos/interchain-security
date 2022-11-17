@@ -179,6 +179,10 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		panic(err)
 	}
 
+	// NOTE: Slash packets are queued in BeginBlock
+	// Packet ordering is managed by the PendingPackets queue.
+	am.keeper.QueueVSCMaturedPackets(ctx)
+
 	// panics on invalid packets and unexpected send errors
 	am.keeper.SendPackets(ctx)
 

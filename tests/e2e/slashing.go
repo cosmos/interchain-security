@@ -496,6 +496,18 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 		return false
 	})
 
+	// check that slash packet is queued
+	pendingPackets := consumerKeeper.GetPendingPackets(ctx)
+	suite.Require().NotEmpty(pendingPackets.List, "pending packets empty")
+	suite.Require().Len(pendingPackets.List, 1, "pending packets len should be 1 is %d", len(pendingPackets.List))
+
+	// clear queue, commit packets
+	suite.consumerApp.GetConsumerKeeper().SendPackets(ctx)
+
+	// check queue was cleared
+	pendingPackets = suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
+	suite.Require().Empty(pendingPackets.List, "pending packets NOT empty")
+
 	// verify that the slash packet was sent
 	gotCommit := consumerIBCKeeper.ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq)
 	suite.Require().NotNil(gotCommit, "did not found slash packet commitment")
@@ -571,16 +583,28 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	// expect to send slash packet when handling double-sign evidence
 	suite.consumerApp.GetE2eEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
 
-	// check that slash packet is sent
+	// check slash packet is queued
+	pendingPackets := suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
+	suite.Require().NotEmpty(pendingPackets.List, "pending packets empty")
+	suite.Require().Len(pendingPackets.List, 1, "pending packets len should be 1 is %d", len(pendingPackets.List))
+
+	// clear queue, commit packets
+	suite.consumerApp.GetConsumerKeeper().SendPackets(ctx)
+
+	// check queue was cleared
+	pendingPackets = suite.consumerApp.GetConsumerKeeper().GetPendingPackets(ctx)
+	suite.Require().Empty(pendingPackets.List, "pending packets NOT empty")
+
+	// check slash packet is sent
 	gotCommit := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(ctx, ccv.ConsumerPortID, channelID, seq)
 	suite.NotNil(gotCommit)
 
 	suite.Require().EqualValues(expCommit, gotCommit)
 }
 
-// TestSendSlashPacket tests the functionality of SendSlashPacket
-// and asserts state changes related to that method
-func (suite *CCVTestSuite) TestSendSlashPacket() {
+// TestQueueAndSendSlashPacket tests the integration of QueueSlashPacket with SendPackets.
+// In normal operation slash packets are queued in BeginBlock and sent in EndBlock.
+func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
 	suite.SetupCCVChannel()
 
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
@@ -607,7 +631,7 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 			addr := ed25519.GenPrivKey().PubKey().Address()
 			val := abci.Validator{
 				Address: addr}
-			consumerKeeper.SendSlashPacket(ctx, val, 0, infraction)
+			consumerKeeper.QueueSlashPacket(ctx, val, 0, infraction)
 			slashedVals = append(slashedVals, slashedVal{validator: val, infraction: infraction})
 		}
 		infraction = stakingtypes.DoubleSign
@@ -616,13 +640,13 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 	// expect to store a duplicate for each slash request
 	// in order to test the outstanding downtime logic
 	for _, sv := range slashedVals {
-		consumerKeeper.SendSlashPacket(ctx, sv.validator, 0, sv.infraction)
+		consumerKeeper.QueueSlashPacket(ctx, sv.validator, 0, sv.infraction)
 	}
 
 	// verify that all requests are stored except for
 	// the downtime slash request duplicates
-	dataPackets, found := consumerKeeper.GetPendingDataPackets(ctx)
-	suite.Require().True(found)
+	dataPackets := consumerKeeper.GetPendingPackets(ctx)
+	suite.Require().NotEmpty(dataPackets)
 	suite.Require().Len(dataPackets.GetList(), 12)
 
 	// save consumer next sequence
@@ -644,16 +668,11 @@ func (suite *CCVTestSuite) TestSendSlashPacket() {
 		suite.Require().True(consumerKeeper.OutstandingDowntime(ctx, consAddr))
 	}
 
-	// check that pending data packets get cleared after being sent
-	dataPackets, found = consumerKeeper.GetPendingDataPackets(ctx)
-	suite.Require().False(found)
-	suite.Require().Len(dataPackets.GetList(), 0)
+	// send all pending packets - only slash packets should be queued in this test
+	consumerKeeper.SendPackets(ctx)
 
-	// check that slash requests aren't stored when channel is established
-	consumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.Downtime)
-	consumerKeeper.SendSlashPacket(ctx, abci.Validator{}, 0, stakingtypes.DoubleSign)
-
-	dataPackets, found = consumerKeeper.GetPendingDataPackets(ctx)
-	suite.Require().False(found)
+	// check that pending data packets got cleared
+	dataPackets = consumerKeeper.GetPendingPackets(ctx)
+	suite.Require().Empty(dataPackets)
 	suite.Require().Len(dataPackets.GetList(), 0)
 }

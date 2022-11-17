@@ -34,8 +34,9 @@ func (s *CCVTestSuite) TestPacketRoundtrip() {
 	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
 }
 
-// TestSendVSCMaturedPackets tests the behavior of SendVSCMaturedPackets and related state checks
-func (suite *CCVTestSuite) TestSendVSCMaturedPackets() {
+// TestQueueAndSendVSCMaturedPackets tests the behavior of EndBlock QueueVSCMaturedPackets call
+// and its integration with SendPackets call.
+func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
 
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 
@@ -103,15 +104,13 @@ func (suite *CCVTestSuite) TestSendVSCMaturedPackets() {
 	// increase time
 	incrementTime(suite, unbondingPeriod-time.Hour)
 
-	err = consumerKeeper.SendVSCMaturedPackets(suite.consumerChain.GetContext())
-	suite.Require().NoError(err)
-
-	// ensure first two packets are unbonded and VSCMatured packets are sent
+	// ensure first two packets are unbonded and VSCMatured packets are queued
 	// unbonded time is deleted
 	time1 := consumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 1)
 	time2 := consumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 2)
 	suite.Require().Equal(uint64(0), time1, "maturity time not deleted for mature packet 1")
 	suite.Require().Equal(uint64(0), time2, "maturity time not deleted for mature packet 2")
+
 	// ensure that third packet did not get unbonded and is still in store
 	time3 := consumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 3)
 	suite.Require().True(time3 > uint64(suite.consumerChain.GetContext().BlockTime().UnixNano()), "maturity time for packet 3 is not after current time")

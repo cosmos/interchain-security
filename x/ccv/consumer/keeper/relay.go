@@ -84,7 +84,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // Note: Per spec, a VSC reaching maturity on a consumer chain means that all the unbonding
 // operations that resulted in validator updates included in that VSC have matured on
 // the consumer chain.
-func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) error {
+func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 	maturityIterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 	defer maturityIterator.Close()
@@ -110,7 +110,6 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) error {
 		}
 		maturityIterator.Next()
 	}
-	return nil
 }
 
 // QueueSlashPacket appends a slash packet containing the given validator data and slashing info to queue.

@@ -382,7 +382,7 @@ func (s *CoreSuite) TestAssumptions() {
 	}
 
 	// Consumer has no pending data packets
-	s.Require().Empty(s.consumerKeeper().GetPendingDataPackets(s.ctx(C)))
+	s.Require().Empty(s.consumerKeeper().GetPendingPackets(s.ctx(C)))
 
 	// Consumer has no maturities
 	s.consumerKeeper().IteratePacketMaturityTime(s.ctx(C),

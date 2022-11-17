@@ -14,8 +14,9 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// TestVSCPacketSendWithExpiredClient tests the provider sending VSCPackets
-// when the consumer client is expired
+// TestVSCPacketSendWithExpiredClient tests queueing of VSCPackets when the consumer client is expired.
+// While the consumer client is expired (or inactive for some reason) all packets will be queued and
+// and cleared once the consumer client is established.
 func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
@@ -78,8 +79,8 @@ func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 3)
 }
 
-// TestConsumerPacketSendExpiredClient tests the consumer sending packets
-// when the provider client is expired
+// TestConsumerPacketSendExpiredClient tests the consumer sending packets when the provider client is expired.
+// While the provider client is expired  all packets will be queued and and cleared once the provider client is upgraded.
 func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
@@ -101,8 +102,8 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	s.providerChain.NextBlock()
 
 	// check that the packets are not in the list of pending VSC packets
-	_, found := providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
-	s.Require().False(found, "pending VSC packets found")
+	providerPackets := providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
+	s.Require().Empty(providerPackets, "pending VSC packets found")
 
 	// relay all VSC packet from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 2)
@@ -116,26 +117,26 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	// increment time so that the unbonding period ends on the consumer;
 	// do not try to update the client to the provider since it's expired
 	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerCtx())
-	incrementTimeByWithoutUpdate(s, consumerUnbondingPeriod+time.Hour, Provider)
+	incrementTimeWithoutUpdate(s, consumerUnbondingPeriod+time.Hour, Provider)
 
 	// check that the packets were added to the list of pending data packets
-	dataPackets, found := consumerKeeper.GetPendingDataPackets(s.consumerCtx())
-	s.Require().True(found)
-	s.Require().Equal(2, len(dataPackets.GetList()), "unexpected number of pending data packets")
+	consumerPackets := consumerKeeper.GetPendingPackets(s.consumerCtx())
+	s.Require().NotEmpty(consumerPackets)
+	s.Require().Equal(2, len(consumerPackets.GetList()), "unexpected number of pending data packets")
 
 	// try to send slash packet for downtime infraction
 	addr := ed25519.GenPrivKey().PubKey().Address()
 	val := abci.Validator{Address: addr}
-	consumerKeeper.SendSlashPacket(s.consumerCtx(), val, 2, stakingtypes.Downtime)
+	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 2, stakingtypes.Downtime)
 	// try to send slash packet for the same downtime infraction
-	consumerKeeper.SendSlashPacket(s.consumerCtx(), val, 3, stakingtypes.Downtime)
+	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.Downtime)
 	// try to send slash packet for the double-sign infraction
-	consumerKeeper.SendSlashPacket(s.consumerCtx(), val, 3, stakingtypes.DoubleSign)
+	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.DoubleSign)
 
 	// check that the packets were added to the list of pending data packets
-	dataPackets, found = consumerKeeper.GetPendingDataPackets(s.consumerCtx())
-	s.Require().True(found)
-	s.Require().Equal(4, len(dataPackets.GetList()), "unexpected number of pending data packets")
+	consumerPackets = consumerKeeper.GetPendingPackets(s.consumerCtx())
+	s.Require().NotEmpty(consumerPackets)
+	s.Require().Equal(4, len(consumerPackets.GetList()), "unexpected number of pending data packets")
 
 	// upgrade expired client to the consumer
 	upgradeExpiredClient(s, Provider)
@@ -144,9 +145,9 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	s.consumerChain.NextBlock()
 
 	// check that the list of pending data packets is emptied
-	dataPackets, found = consumerKeeper.GetPendingDataPackets(s.consumerCtx())
-	s.Require().False(found)
-	s.Require().Equal(0, len(dataPackets.GetList()), "unexpected number of pending data packets")
+	consumerPackets = consumerKeeper.GetPendingPackets(s.consumerCtx())
+	s.Require().Empty(consumerPackets)
+	s.Require().Equal(0, len(consumerPackets.GetList()), "unexpected number of pending data packets")
 
 	// relay all  packet from consumer to provider
 	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 4)
@@ -180,7 +181,7 @@ func expireClient(s *CCVTestSuite, clientTo ChainType) {
 	trustingPeriod := cs.(*ibctm.ClientState).TrustingPeriod
 
 	// increment time without updating the `clientTo` client
-	incrementTimeByWithoutUpdate(s, trustingPeriod+time.Hour, clientTo)
+	incrementTimeWithoutUpdate(s, trustingPeriod+time.Hour, clientTo)
 
 	// check that the client is not active
 	checkClientExpired(s, clientTo, true)
