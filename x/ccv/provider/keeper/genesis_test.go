@@ -119,12 +119,6 @@ func TestIniAndExportGenesis(t *testing.T) {
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, pGenesis.Params, pk.GetParams(ctx))
 
-	/*
-		ProviderConsAddrToConsumerKey:    []providertypes.ConsAddrToKey{{ConsAddr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
-		ConsumerKeyToProviderKey:         []providertypes.KeyToKey{{From: &tmprotocrypto.PublicKey{}, To: &tmprotocrypto.PublicKey{}}},
-		ConsumerConsAddrToLastUpdateMemo: []providertypes.ConsAddrToLastUpdateMemo{{ConsAddr: sdk.ConsAddress{}, LastUpdateMemo: &providertypes.LastUpdateMemo{}}},
-	*/
-
 	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).Store.GetProviderConsAddrToConsumerPublicKey(sdk.ConsAddress{})
 	require.True(t, found)
 	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).Store.GetConsumerPublicKeyToProviderPublicKey(tmprotocrypto.PublicKey{})
