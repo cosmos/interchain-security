@@ -283,7 +283,7 @@ func checkRedelegationEntryCompletionTime(
 }
 
 func getStakingUnbondingDelegationEntry(ctx sdk.Context, k e2e.E2eStakingKeeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
-	stakingUbd, found := k.GetUnbondingDelegationByUnbondingId(ctx, id)
+	stakingUbd, found := k.GetUnbondingDelegationByUnbondingID(ctx, id)
 
 	for _, entry := range stakingUbd.Entries {
 		if entry.UnbondingId == id {
