@@ -128,34 +128,34 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	k.completeMaturedUnbondingOps(ctx)
 
 	// collect validator updates
-	k.QueueValidatorUpdates(ctx)
+	k.QueueVSCPackets(ctx)
 
-	// try sending updates to all chains
+	// try sending packets to all chains
 	// if CCV channel is not established for consumer chain
 	// the updates will remain queued until the channel is established
-	k.SendValidatorUpdates(ctx)
+	k.SendPackets(ctx)
 }
 
-// SendValidatorUpdates iterates over chains and sends VSCs to
+// SendPackets iterates over chains and sends pending packets (VSCs) to
 // consumer chains with established CCV channels
 // if CCV channel is not established for consumer chain
 // the updates will remain queued until the channel is established
-func (k Keeper) SendValidatorUpdates(ctx sdk.Context) {
+func (k Keeper) SendPackets(ctx sdk.Context) {
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
 		// check if CCV channel is established and send
 		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
-			k.SendVSCPacketsToChain(ctx, chainID, channelID)
+			k.SendPacketsToChain(ctx, chainID, channelID)
 		}
 		return true // continue iterating chains
 	})
 }
 
-// SendVSCPacketsToChain sends all queued ValidatorSetChangePackets to the specified chain
-func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string) {
+// SendPacketsToChain sends all queued packets to the specified chain
+func (k Keeper) SendPacketsToChain(ctx sdk.Context, chainID, channelID string) {
 	pendingVSCs := k.GetPendingVSCs(ctx, chainID)
 	for _, data := range pendingVSCs {
-		// prepare to send the data to the consumer
-		packet, channelCap, err := utils.PrepareIBCPacketSend(
+		// send packet over IBC
+		err := utils.SendIBCPacket(
 			ctx,
 			k.scopedKeeper,
 			k.channelKeeper,
@@ -164,13 +164,6 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 			data.GetBytes(),
 			k.GetCCVTimeoutPeriod(ctx),
 		)
-
-		if err != nil {
-			// something went wrong when preparing the packet
-			panic(fmt.Errorf("packet could not be prepared for IBC send: %w", err))
-		}
-
-		err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
 
 		if err != nil {
 			if clienttypes.ErrClientNotActive.Is(err) {
@@ -190,7 +183,7 @@ func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string
 }
 
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
-func (k Keeper) QueueValidatorUpdates(ctx sdk.Context) {
+func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx) // curent valset update ID
 	// check whether there are changes in the validator set;
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)

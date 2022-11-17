@@ -14,8 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestQueueVSCs tests queueing validator set updates.
-func TestQueueValidatorUpdates(t *testing.T) {
+// TestQueueVSCPackets tests queueing validator set updates.
+func TestQueueVSCPackets(t *testing.T) {
 	key := ibcsimapp.CreateTestPubKeys(1)[0]
 	tmPubKey, _ := cryptocodec.ToTmProtoPublicKey(key)
 
@@ -71,7 +71,7 @@ func TestQueueValidatorUpdates(t *testing.T) {
 		// no-op if tc.packets is empty
 		pk.AppendPendingVSCs(ctx, chainID, tc.packets...)
 
-		pk.QueueValidatorUpdates(ctx)
+		pk.QueueVSCPackets(ctx)
 		pending := pk.GetPendingVSCs(ctx, chainID)
 		require.Len(t, pending, tc.expectedQueueSize, "pending vsc queue mismatch (%v != %v) in case: '%s'", tc.expectedQueueSize, len(pending), tc.name)
 

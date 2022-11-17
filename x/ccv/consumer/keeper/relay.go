@@ -156,8 +156,8 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 
 	pending := k.GetPendingPackets(ctx)
 	for _, p := range pending.GetList() {
-		// prepare to send the packetData to the consumer
-		packet, channelCap, err := utils.PrepareIBCPacketSend(
+		// send packet over IBC
+		err := utils.SendIBCPacket(
 			ctx,
 			k.scopedKeeper,
 			k.channelKeeper,
@@ -166,13 +166,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			p.Data,
 			k.GetCCVTimeoutPeriod(ctx),
 		)
-		if err != nil {
-			// something went wrong when preparing the packet
-			panic(fmt.Errorf("packet could not be prepared for IBC send: %w", err))
-		}
 
-		// send packet over IBC channel
-		err = k.channelKeeper.SendPacket(ctx, channelCap, packet)
 		if err != nil {
 			if clienttypes.ErrClientNotActive.Is(err) {
 				// leave the packet data stored to be sent once the client is upgraded
