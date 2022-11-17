@@ -1,39 +1,51 @@
-// Contains native golang tests relevant to individual CCVTestSuite tests,
+// Contains native golang tests relevant to individual e2e tests,
 // enabling easier debugging of individual e2e tests in VSCode.
 package e2e_test
 
 import (
-	"os"
 	"reflect"
-	"strings"
 	"testing"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
+	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 	"github.com/cosmos/interchain-security/tests/e2e"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 )
 
-// runE2eTestByName runs a single e2e test by name, using a CCVTestSuite
+// runCCVTestByName runs a single CCV e2e test by name, using a CCVTestSuite
 // initialized with the dummy provider and consumer defined in this repo.
-func runE2eTestByName(t *testing.T, testName string) {
+func runCCVTestByName(t *testing.T, methodName string) {
 
-	if strings.Contains(os.Args[0], "/_test/") {
-		t.Skip("Skipping e2e test in test binary")
-	}
-
-	s := e2e.NewCCVTestSuite[*appProvider.App, *appConsumer.App](
+	suite := e2e.NewCCVTestSuite[*appProvider.App, *appConsumer.App](
 		icstestingutils.ProviderAppIniter, icstestingutils.ConsumerAppIniter)
-	s.SetT(t)
+	suite.SetT(t)
+	suite.SetupTest()
 
-	methodFinder := reflect.TypeOf(s)
-	method, found := methodFinder.MethodByName(testName)
+	findAndCallMethod(t, suite, methodName)
+}
+
+// runConsumerDemocracyTestByName runs a single consumer democracy e2e test by name,
+// using a ConsumerDemocracyTestSuite initialized with the dummy
+// democracy consumer defined in this repo.
+func runConsumerDemocracyTestByName(t *testing.T, methodName string) {
+
+	suite := e2e.NewConsumerDemocracyTestSuite[*appConsumerDemocracy.App](
+		icstestingutils.DemocracyConsumerAppIniter)
+	suite.SetT(t)
+	suite.SetupTest()
+
+	findAndCallMethod(t, suite, methodName)
+}
+
+func findAndCallMethod(t *testing.T, suite any, methodName string) {
+	methodFinder := reflect.TypeOf(suite)
+	method, found := methodFinder.MethodByName(methodName)
 	if !found {
-		t.Errorf("Method %s is not defined for CCVTestSuite", testName)
+		t.Errorf("Method %s is not defined for CCVTestSuite", methodName)
 	}
 
-	s.SetupTest()
-	method.Func.Call([]reflect.Value{reflect.ValueOf(s)})
+	method.Func.Call([]reflect.Value{reflect.ValueOf(suite)})
 }
 
 //
@@ -41,11 +53,23 @@ func runE2eTestByName(t *testing.T, testName string) {
 //
 
 func TestConsumerGenesis(t *testing.T) {
-	runE2eTestByName(t, "TestConsumerGenesis")
+	runCCVTestByName(t, "TestConsumerGenesis")
 }
 
 func TestInitTimeout(t *testing.T) {
-	runE2eTestByName(t, "TestInitTimeout")
+	runCCVTestByName(t, "TestInitTimeout")
+}
+
+//
+// Consumer democracy tests
+//
+
+func TestDemocracyRewardsDistribution(t *testing.T) {
+	runConsumerDemocracyTestByName(t, "TestDemocracyRewardsDistribution")
+}
+
+func TestDemocracyGovernanceWhitelisting(t *testing.T) {
+	runConsumerDemocracyTestByName(t, "TestDemocracyGovernanceWhitelisting")
 }
 
 //
@@ -53,14 +77,14 @@ func TestInitTimeout(t *testing.T) {
 //
 
 func TestRewardsDistribution(t *testing.T) {
-	runE2eTestByName(t, "TestRewardsDistribution")
+	runCCVTestByName(t, "TestRewardsDistribution")
 }
 
 //
 // Normal operations tests
 //
 func TestHistoricalInfo(t *testing.T) {
-	runE2eTestByName(t, "TestHistoricalInfo")
+	runCCVTestByName(t, "TestHistoricalInfo")
 }
 
 //
@@ -68,35 +92,35 @@ func TestHistoricalInfo(t *testing.T) {
 //
 
 func TestRelayAndApplySlashPacket(t *testing.T) {
-	runE2eTestByName(t, "TestRelayAndApplySlashPacket")
+	runCCVTestByName(t, "TestRelayAndApplySlashPacket")
 }
 
 func TestSlashPacketAcknowledgement(t *testing.T) {
-	runE2eTestByName(t, "TestSlashPacketAcknowledgement")
+	runCCVTestByName(t, "TestSlashPacketAcknowledgement")
 }
 
 func TestHandleSlashPacketDoubleSigning(t *testing.T) {
-	runE2eTestByName(t, "TestHandleSlashPacketDoubleSigning")
+	runCCVTestByName(t, "TestHandleSlashPacketDoubleSigning")
 }
 
 func TestHandleSlashPacketErrors(t *testing.T) {
-	runE2eTestByName(t, "TestHandleSlashPacketErrors")
+	runCCVTestByName(t, "TestHandleSlashPacketErrors")
 }
 
 func TestHandleSlashPacketDistribution(t *testing.T) {
-	runE2eTestByName(t, "TestHandleSlashPacketDistribution")
+	runCCVTestByName(t, "TestHandleSlashPacketDistribution")
 }
 
 func TestValidatorDowntime(t *testing.T) {
-	runE2eTestByName(t, "TestValidatorDowntime")
+	runCCVTestByName(t, "TestValidatorDowntime")
 }
 
 func TestValidatorDoubleSigning(t *testing.T) {
-	runE2eTestByName(t, "TestValidatorDoubleSigning")
+	runCCVTestByName(t, "TestValidatorDoubleSigning")
 }
 
 func TestSendSlashPacket(t *testing.T) {
-	runE2eTestByName(t, "TestSendSlashPacket")
+	runCCVTestByName(t, "TestSendSlashPacket")
 }
 
 //
@@ -104,15 +128,15 @@ func TestSendSlashPacket(t *testing.T) {
 //
 
 func TestStopConsumerChain(t *testing.T) {
-	runE2eTestByName(t, "TestStopConsumerChain")
+	runCCVTestByName(t, "TestStopConsumerChain")
 }
 
 func TestStopConsumerOnChannelClosed(t *testing.T) {
-	runE2eTestByName(t, "TestStopConsumerOnChannelClosed")
+	runCCVTestByName(t, "TestStopConsumerOnChannelClosed")
 }
 
 func TestProviderChannelClosed(t *testing.T) {
-	runE2eTestByName(t, "TestProviderChannelClosed")
+	runCCVTestByName(t, "TestProviderChannelClosed")
 }
 
 //
@@ -120,27 +144,27 @@ func TestProviderChannelClosed(t *testing.T) {
 //
 
 func TestUndelegationNormalOperation(t *testing.T) {
-	runE2eTestByName(t, "TestUndelegationNormalOperation")
+	runCCVTestByName(t, "TestUndelegationNormalOperation")
 }
 
 func TestUndelegationVscTimeout(t *testing.T) {
-	runE2eTestByName(t, "TestUndelegationVscTimeout")
+	runCCVTestByName(t, "TestUndelegationVscTimeout")
 }
 
 func TestUndelegationDuringInit(t *testing.T) {
-	runE2eTestByName(t, "TestUndelegationDuringInit")
+	runCCVTestByName(t, "TestUndelegationDuringInit")
 }
 
 func TestUnbondingNoConsumer(t *testing.T) {
-	runE2eTestByName(t, "TestUnbondingNoConsumer")
+	runCCVTestByName(t, "TestUnbondingNoConsumer")
 }
 
 func TestRedelegationNoConsumer(t *testing.T) {
-	runE2eTestByName(t, "TestRedelegationNoConsumer")
+	runCCVTestByName(t, "TestRedelegationNoConsumer")
 }
 
 func TestRedelegationProviderFirst(t *testing.T) {
-	runE2eTestByName(t, "TestRedelegationProviderFirst")
+	runCCVTestByName(t, "TestRedelegationProviderFirst")
 }
 
 //
@@ -148,9 +172,9 @@ func TestRedelegationProviderFirst(t *testing.T) {
 //
 
 func TestPacketRoundtrip(t *testing.T) {
-	runE2eTestByName(t, "TestPacketRoundtrip")
+	runCCVTestByName(t, "TestPacketRoundtrip")
 }
 
 func TestSendVSCMaturedPackets(t *testing.T) {
-	runE2eTestByName(t, "TestSendVSCMaturedPackets")
+	runCCVTestByName(t, "TestSendVSCMaturedPackets")
 }
