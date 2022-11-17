@@ -118,7 +118,7 @@ func TestPendingVSCs(t *testing.T) {
 
 	chainID := "consumer"
 
-	pending := providerKeeper.GetPendingVSCs(ctx, chainID)
+	pending := providerKeeper.GetPendingPackets(ctx, chainID)
 	require.Len(t, pending, 0)
 
 	pks := ibcsimapp.CreateTestPubKeys(4)
@@ -142,9 +142,9 @@ func TestPendingVSCs(t *testing.T) {
 			ValsetUpdateId: 2,
 		},
 	}
-	providerKeeper.AppendPendingVSCs(ctx, chainID, packetList...)
+	providerKeeper.AppendPendingPackets(ctx, chainID, packetList...)
 
-	packets := providerKeeper.GetPendingVSCs(ctx, chainID)
+	packets := providerKeeper.GetPendingPackets(ctx, chainID)
 	require.Len(t, packets, 2)
 
 	newPacket := ccv.ValidatorSetChangePacketData{
@@ -153,14 +153,14 @@ func TestPendingVSCs(t *testing.T) {
 		},
 		ValsetUpdateId: 3,
 	}
-	providerKeeper.AppendPendingVSCs(ctx, chainID, newPacket)
-	vscs := providerKeeper.GetPendingVSCs(ctx, chainID)
+	providerKeeper.AppendPendingPackets(ctx, chainID, newPacket)
+	vscs := providerKeeper.GetPendingPackets(ctx, chainID)
 	require.Len(t, vscs, 3)
 	require.True(t, vscs[len(vscs)-1].ValsetUpdateId == 3)
 	require.True(t, vscs[len(vscs)-1].GetValidatorUpdates()[0].PubKey.String() == ppks[3].String())
 
-	providerKeeper.DeletePendingVSCs(ctx, chainID)
-	pending = providerKeeper.GetPendingVSCs(ctx, chainID)
+	providerKeeper.DeletePendingPackets(ctx, chainID)
+	pending = providerKeeper.GetPendingPackets(ctx, chainID)
 	require.Len(t, pending, 0)
 }
 

@@ -152,8 +152,8 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 
 // SendPacketsToChain sends all queued packets to the specified chain
 func (k Keeper) SendPacketsToChain(ctx sdk.Context, chainID, channelID string) {
-	pendingVSCs := k.GetPendingVSCs(ctx, chainID)
-	for _, data := range pendingVSCs {
+	pendingPackets := k.GetPendingPackets(ctx, chainID)
+	for _, data := range pendingPackets {
 		// send packet over IBC
 		err := utils.SendIBCPacket(
 			ctx,
@@ -179,7 +179,7 @@ func (k Keeper) SendPacketsToChain(ctx sdk.Context, chainID, channelID string) {
 		// are actually sent over IBC
 		k.SetVscSendTimestamp(ctx, chainID, data.ValsetUpdateId, ctx.BlockTime())
 	}
-	k.DeletePendingVSCs(ctx, chainID)
+	k.DeletePendingPackets(ctx, chainID)
 }
 
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
@@ -195,7 +195,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			// construct validator set change packet data
 			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
-			k.AppendPendingVSCs(ctx, chainID, packet)
+			k.AppendPendingPackets(ctx, chainID, packet)
 		}
 		return true // do not stop the iteration
 	})

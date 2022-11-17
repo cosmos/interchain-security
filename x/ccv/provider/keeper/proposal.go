@@ -168,7 +168,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 
 	k.DeleteInitChainHeight(ctx, chainID)
 	k.ConsumeSlashAcks(ctx, chainID)
-	k.DeletePendingVSCs(ctx, chainID)
+	k.DeletePendingPackets(ctx, chainID)
 
 	// release unbonding operations if they aren't locked
 	var vscIDs []uint64

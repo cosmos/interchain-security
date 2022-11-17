@@ -77,7 +77,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 			func(suite *CCVTestSuite) error {
 				providerKeeper.SetSlashAcks(s.providerCtx(), consumerChainID, []string{"validator-1", "validator-2", "validator-3"})
 				providerKeeper.SetLockUnbondingOnTimeout(s.providerCtx(), consumerChainID)
-				providerKeeper.AppendPendingVSCs(s.providerCtx(), consumerChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
+				providerKeeper.AppendPendingPackets(s.providerCtx(), consumerChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
 				return nil
 			},
 		},
@@ -172,7 +172,7 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd bool,
 
 	s.Require().Nil(providerKeeper.GetSlashAcks(s.providerCtx(), chainID))
 	s.Require().Zero(providerKeeper.GetInitChainHeight(s.providerCtx(), chainID))
-	s.Require().Nil(providerKeeper.GetPendingVSCs(s.providerCtx(), chainID))
+	s.Require().Nil(providerKeeper.GetPendingPackets(s.providerCtx(), chainID))
 }
 
 // TestProviderChannelClosed checks that a consumer chain panics

@@ -71,7 +71,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 				k.SetUnbondingOpIndex(ctx, chainID, ubdOpIndex.ValsetUpdateId, ubdOpIndex.UnbondingOpIndex)
 			}
 		} else {
-			k.AppendPendingVSCs(ctx, chainID, cs.PendingValsetChanges...)
+			k.AppendPendingPackets(ctx, chainID, cs.PendingValsetChanges...)
 		}
 	}
 
@@ -112,7 +112,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			})
 		}
 
-		cs.PendingValsetChanges = k.GetPendingVSCs(ctx, chainID)
+		cs.PendingValsetChanges = k.GetPendingPackets(ctx, chainID)
 		consumerStates = append(consumerStates, cs)
 		return true
 	})
