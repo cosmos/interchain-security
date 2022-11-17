@@ -7,10 +7,18 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types"
 import "gogoproto/gogo.proto";
 import "tendermint/crypto/keys.proto";
 
+// Store the LAST update used to update the validator set on a consumer chain
+// using a particular assigned consensus key (consumer_key)
 message LastUpdateMemo {
+  // The consensus key used to update the validator set on the consumer chain
   tendermint.crypto.PublicKey consumer_key = 1;
+  // The consensus key of the validator on the provider chain
   tendermint.crypto.PublicKey provider_key = 2;
+  // The vscid of the update, used to determine prunability of this data
+  // Data cannot be pruned until the vscid is matured
   uint64 vscid = 4;
+  // The voting power of the update, used to determine prunability of this data
+  // Data cannot be pruned if the power was positive
   int64 power = 5;
 }
 
