@@ -503,9 +503,41 @@ func DeterministicStringify(k tmprotocrypto.PublicKey) string {
 	return string(sdkPubKey.Bytes())
 }
 
+// KeySet is an implementation of a set of public keys.
+// It is used because public keys are not comparable in Go
+// using '==' so they cannot be used as builtin map keys.
+type KeySet struct {
+	inner     map[tmprotocrypto.PublicKey]struct{}
+	canonical map[string]tmprotocrypto.PublicKey
+}
+
+func MakeKeySet() KeySet {
+	return KeySet{
+		inner:     map[tmprotocrypto.PublicKey]struct{}{},
+		canonical: map[string]tmprotocrypto.PublicKey{},
+	}
+}
+
+// Add is a typical set add operation.
+func (s *KeySet) Add(pk tmprotocrypto.PublicKey) {
+	stringified := DeterministicStringify(pk)
+	if k, found := s.canonical[stringified]; found {
+		pk = k
+	} else {
+		s.canonical[stringified] = pk
+	}
+	s.inner[pk] = struct{}{}
+}
+
+// Add is a typical set has/contains operation.
+func (s *KeySet) Has(pk tmprotocrypto.PublicKey) bool {
+	_, found := s.canonical[DeterministicStringify(pk)]
+	return found
+}
+
 // KeyToPower is an implementation of a map from a public key to a power.
-// It is used because public keys are not comparable in Go, so they cannot be
-// used as builtin map keys.
+// It is used because public keys are not comparable in Go
+// using '==' so they cannot be used as builtin map keys.
 type KeyToPower struct {
 	inner     map[tmprotocrypto.PublicKey]int64
 	canonical map[string]tmprotocrypto.PublicKey
@@ -543,8 +575,8 @@ func (m *KeyToPower) Get(pk tmprotocrypto.PublicKey) (int64, bool) {
 
 // KeyToLastUpdateInfo is an implementation of a map from a public key to a
 // memo storing the last update.
-// It is used because public keys are not comparable in Go, so they cannot be
-// used as builtin map keys.
+// It is used because public keys are not comparable in Go
+// using '==' so they cannot be used as builtin map keys.
 type KeyToLastUpdateInfo struct {
 	inner     map[tmprotocrypto.PublicKey]providertypes.LastUpdateInfo
 	canonical map[string]tmprotocrypto.PublicKey
@@ -578,38 +610,6 @@ func (m *KeyToLastUpdateInfo) Get(pk tmprotocrypto.PublicKey) (providertypes.Las
 		return memo, true
 	}
 	return providertypes.LastUpdateInfo{}, false
-}
-
-// KeySet is an implementation of a set of public keys.
-// It is used because public keys are not comparable in Go
-// so they cannot be used as builtin map keys.
-type KeySet struct {
-	inner     map[tmprotocrypto.PublicKey]struct{}
-	canonical map[string]tmprotocrypto.PublicKey
-}
-
-func MakeKeySet() KeySet {
-	return KeySet{
-		inner:     map[tmprotocrypto.PublicKey]struct{}{},
-		canonical: map[string]tmprotocrypto.PublicKey{},
-	}
-}
-
-// Add is a typical set add operation.
-func (s *KeySet) Add(pk tmprotocrypto.PublicKey) {
-	stringified := DeterministicStringify(pk)
-	if k, found := s.canonical[stringified]; found {
-		pk = k
-	} else {
-		s.canonical[stringified] = pk
-	}
-	s.inner[pk] = struct{}{}
-}
-
-// Add is a typical set has/contains operation.
-func (s *KeySet) Has(pk tmprotocrypto.PublicKey) bool {
-	_, found := s.canonical[DeterministicStringify(pk)]
-	return found
 }
 
 // Returns true iff internal invariants hold. For testing. Expensive.
