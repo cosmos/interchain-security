@@ -41,6 +41,7 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 
 		s.SetupTest()
 		s.SetupCCVChannel(s.path)
+		s.SetupTransferChannel() // TODO: remove this, once other shit is working
 		validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
 		providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
