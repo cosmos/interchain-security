@@ -429,9 +429,9 @@ func (k Keeper) DeletePendingDataPackets(ctx sdk.Context) {
 }
 
 // AppendPendingDataPacket appends the given data packet to the pending data packets in store
-func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet types.ConsumerPacket) {
+func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...types.ConsumerPacket) {
 	pending := k.GetPendingPackets(ctx)
-	list := append(pending.GetList(), packet)
+	list := append(pending.GetList(), packet...)
 	k.SetPendingPackets(ctx, types.ConsumerPackets{List: list})
 }
 

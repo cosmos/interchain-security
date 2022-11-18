@@ -29,11 +29,15 @@ message GenesisState {
   // HeightToValsetUpdateId nil on new chain, filled in on restart.
   repeated HeightToValsetUpdateID height_to_valset_update_id = 9
       [ (gogoproto.nullable) = false ];
-  // OutstandingDowntimes nil on new chain, filled in on restart.
+  // OutstandingDowntimes nil on new chain, filled  in on restart.
   repeated OutstandingDowntime outstanding_downtime_slashing = 10
       [ (gogoproto.nullable) = false ];
-  // PendingConsumerPackets nil on new chain, filled in on restart.
-  ConsumerPackets pending_consumer_packets = 11;
+   // PendingConsumerPackets nil on new chain, filled in on restart.
+   ConsumerPackets pending_consumer_packets = 11
+   [ (gogoproto.nullable) = false ];
+  // LastTransmissionBlockHeight nil on new chain, filled in on restart.
+  interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight last_transmission_block_height = 12
+  [ (gogoproto.nullable) = false ];
 }
 
 // MaturingVSCPacket defines the genesis information for the

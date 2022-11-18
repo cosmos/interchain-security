@@ -30,7 +30,7 @@ func NewRestartGenesisState(
 	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate,
 	heightToValsetUpdateIDs []HeightToValsetUpdateID,
-	pendingSlashRequests SlashRequests,
+	pendingConsumerPackets ConsumerPackets,
 	outstandingDowntimes []OutstandingDowntime,
 	lastTransBlockHeight LastTransmissionBlockHeight,
 	params Params,
@@ -44,7 +44,7 @@ func NewRestartGenesisState(
 		NewChain:                    false,
 		InitialValSet:               initValSet,
 		HeightToValsetUpdateId:      heightToValsetUpdateIDs,
-		PendingSlashRequests:        pendingSlashRequests,
+		PendingConsumerPackets:      pendingConsumerPackets,
 		OutstandingDowntimeSlashing: outstandingDowntimes,
 		LastTransmissionBlockHeight: lastTransBlockHeight,
 	}
@@ -108,6 +108,9 @@ func (gs GenesisState) Validate() error {
 		if len(gs.MaturingPackets) != 0 {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "maturing packets must be empty for new chain")
 		}
+		if len(gs.PendingConsumerPackets.List) != 0 {
+			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "pending consumer packets must be empty for new chain")
+		}
 		if gs.LastTransmissionBlockHeight.Height != 0 {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "last transmission block height must be empty for new chain")
 		}
@@ -141,6 +144,13 @@ func (gs GenesisState) Validate() error {
 			if gs.LastTransmissionBlockHeight.Height != 0 {
 				return sdkerrors.Wrap(
 					ccv.ErrInvalidGenesis, "last transmission block height must be zero when handshake isn't completed")
+			}
+			if len(gs.PendingConsumerPackets.List) != 0 {
+				for _, packet := range gs.PendingConsumerPackets.List {
+					if packet.Type == VscMaturedPacket {
+						return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "pending maturing packets must be empty for new chain")
+					}
+				}
 			}
 		}
 		if gs.HeightToValsetUpdateId == nil {

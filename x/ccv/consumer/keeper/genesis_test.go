@@ -74,7 +74,8 @@ func TestInitGenesis(t *testing.T) {
 		List: []consumertypes.ConsumerPacket{
 			{
 				Type: consumertypes.SlashPacket,
-				Data: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Downtime).GetBytes()},
+				Data: ccv.NewSlashPacketData(abciValidator, vscID, stakingtypes.Downtime).GetBytes(),
+			},
 			{
 				Type: consumertypes.VscMaturedPacket,
 				Data: ccv.NewVSCMaturedPacketData(1).GetBytes(),
