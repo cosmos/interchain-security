@@ -713,8 +713,8 @@ func (k Keeper) DeleteKeyAssignment(ctx sdk.Context, chainID string) {
 
 // GetProviderConsAddrForSlashing returns the cons address of the validator to be slashed
 // on the provider chain. It looks up the provider's consensus address from past key assignments.
-func (k Keeper) GetProviderConsAddrForSlashing(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (sdk.ConsAddress, error) {
-	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
+func (k Keeper) GetProviderConsAddrForSlashing(ctx sdk.Context, chainID string, consumerAddress []byte) (sdk.ConsAddress, error) {
+	consumerConsAddr := sdk.ConsAddress(consumerAddress)
 	providerPublicKey, found := k.KeyAssignment(ctx, chainID).GetProviderPubKeyFromConsumerConsAddress(consumerConsAddr)
 	if !found {
 		// It is possible for a faulty consumer chain to send a slash packet for a validator that does
