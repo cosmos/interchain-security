@@ -175,6 +175,6 @@ func TestPacketRoundtrip(t *testing.T) {
 	runCCVTestByName(t, "TestPacketRoundtrip")
 }
 
-func TestSendVSCMaturedPackets(t *testing.T) {
-	runCCVTestByName(t, "TestSendVSCMaturedPackets")
+func TestQueueAndSendVSCMaturedPackets(t *testing.T) {
+	runCCVTestByName(t, "TestQueueAndSendVSCMaturedPackets")
 }
