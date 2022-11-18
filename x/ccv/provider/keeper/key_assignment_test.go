@@ -156,7 +156,7 @@ func (d *driver) run() {
 		// Set the initial provider set
 		d.providerValsets = append(d.providerValsets, applyUpdates(valset{}, init.providerUpdates))
 		// Set the initial consumer set
-		d.consumerUpdates = append(d.consumerUpdates, d.ka.ComputeUpdates(uint64(init.timeProvider), init.providerUpdates))
+		d.consumerUpdates = append(d.consumerUpdates, d.ka.ProviderUpdatesToConsumerUpdates(uint64(init.timeProvider), init.providerUpdates))
 		// The first consumer set equal to the provider set at time 0
 		d.consumerValset = applyUpdates(valset{}, d.consumerUpdates[init.timeConsumer])
 		d.ka.PruneUnusedKeys(uint64(init.timeMaturity))
@@ -177,7 +177,7 @@ func (d *driver) run() {
 			d.applyProviderUpdates(s.providerUpdates)
 
 			// Store the updates, to reference later in tests.
-			d.consumerUpdates = append(d.consumerUpdates, d.ka.ComputeUpdates(uint64(s.timeProvider), s.providerUpdates))
+			d.consumerUpdates = append(d.consumerUpdates, d.ka.ProviderUpdatesToConsumerUpdates(uint64(s.timeProvider), s.providerUpdates))
 			d.lastTimeProvider = s.timeProvider
 		}
 		if d.lastTimeConsumer < s.timeConsumer {
@@ -605,15 +605,15 @@ func TestKeyAssignmentSetUseReplaceAndReverse(t *testing.T) {
 	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	require.NoError(t, err)
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
-	ka.ComputeUpdates(100, updates)
+	ka.ProviderUpdatesToConsumerUpdates(100, updates)
 	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // New consumer key
 	require.NoError(t, err)
 	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(utils.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // New is queryable
 	require.Equal(t, key(42), actual)
-	ka.ComputeUpdates(101, updates) // Old is no longer known to consumer
-	ka.PruneUnusedKeys(102)         // Old is garbage collected on provider
+	ka.ProviderUpdatesToConsumerUpdates(101, updates) // Old is no longer known to consumer
+	ka.PruneUnusedKeys(102)                           // Old is garbage collected on provider
 	_, found := ka.GetProviderPubKeyFromConsumerConsAddress(utils.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.False(t, found)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
@@ -633,11 +633,11 @@ func TestKeyAssignmentDelete(t *testing.T) {
 	require.NoError(t, err)
 
 	updates := []abci.ValidatorUpdate{{PubKey: pk, Power: 999}}
-	ka.ComputeUpdates(100, updates)
+	ka.ProviderUpdatesToConsumerUpdates(100, updates)
 
 	err = ka.SetProviderPubKeyToConsumerPubKey(pk, ck1) // New consumer key
 	require.NoError(t, err)
-	ka.ComputeUpdates(101, updates)
+	ka.ProviderUpdatesToConsumerUpdates(101, updates)
 
 	ka.DeleteProviderKey(providerIdentity.SDKConsAddress())
 
@@ -658,7 +658,7 @@ func TestKeyAssignmentSetUseReplaceAndPrune(t *testing.T) {
 	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	require.NoError(t, err)
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
-	ka.ComputeUpdates(100, updates)
+	ka.ProviderUpdatesToConsumerUpdates(100, updates)
 	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44))
 	require.NoError(t, err)
 	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(utils.TMCryptoPublicKeyToConsAddr(key(43)))
@@ -687,10 +687,10 @@ func TestKeyAssignmentGCUpdateIsEmitted(t *testing.T) {
 	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	require.NoError(t, err)
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
-	ka.ComputeUpdates(100, updates)
+	ka.ProviderUpdatesToConsumerUpdates(100, updates)
 	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // Now use a different consumer key
 	require.NoError(t, err)
-	consumerUpdates := ka.ComputeUpdates(100, []abci.ValidatorUpdate{})
+	consumerUpdates := ka.ProviderUpdatesToConsumerUpdates(100, []abci.ValidatorUpdate{})
 	good := false
 	for _, u := range consumerUpdates {
 		if u.PubKey.Equal(key(43)) {
@@ -709,15 +709,15 @@ func TestValidatorRemoval(t *testing.T) {
 
 	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	require.NoError(t, err)
-	ka.ComputeUpdates(0, updates)
+	ka.ProviderUpdatesToConsumerUpdates(0, updates)
 
 	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // Now use a different consumer key
 	require.NoError(t, err)
-	ka.ComputeUpdates(1, updates)
+	ka.ProviderUpdatesToConsumerUpdates(1, updates)
 
 	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(45)) // Now use a different consumer key
 	require.NoError(t, err)
-	ka.ComputeUpdates(2, updates)
+	ka.ProviderUpdatesToConsumerUpdates(2, updates)
 
 	pca := utils.TMCryptoPublicKeyToConsAddr(key(42))
 	ka.DeleteProviderKey(pca)

@@ -313,7 +313,7 @@ func (ka KeyAssignment) getProviderKeysLastPositiveUpdate(mustCreateUpdate KeySe
 }
 
 // do inner work as part of ComputeUpdates
-func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates KeyToPower) KeyToPower {
+func (ka *KeyAssignment) calculateConsumerUpdates(vscid VSCID, stakingUpdates KeyToPower) KeyToPower {
 
 	// Init the return data structure
 	consumerUpdates := MakeKeyToPower()
@@ -384,13 +384,13 @@ func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates KeyToPow
 	return consumerUpdates
 }
 
-// ComputeUpdates takes a validator power updates as produced by the staking module and returns a set of updates
+// ProviderUpdatesToConsumerUpdates takes a validator power updates as produced by the staking module and returns a set of updates
 // which can be sent to the consumer. This is a stateful operation. The updates produced ensure that the consumer
 // updates represent a consistent validator set in the presence of validator set changes and validator key
 // assignment changes.
 // The vscid is used in the pruning mechanism. Positive power updates produced by a call to this function with a
 // given vscid will not be prunable until the vscid matures.
-func (ka *KeyAssignment) ComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) []abci.ValidatorUpdate {
+func (ka *KeyAssignment) ProviderUpdatesToConsumerUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) []abci.ValidatorUpdate {
 
 	// Create a map of provider keys to power
 	// Create a map data structure from the staking module updates
@@ -402,7 +402,7 @@ func (ka *KeyAssignment) ComputeUpdates(vscid VSCID, stakingUpdates []abci.Valid
 
 	// Use the latest staking updates to compute a list of consumer updates. The consumer updates
 	// are calculated to ensure a replicated validator set on the consumer.
-	consumerUpdatesMap := ka.getConsumerUpdates(vscid, stakingUpdatesMap)
+	consumerUpdatesMap := ka.calculateConsumerUpdates(vscid, stakingUpdatesMap)
 
 	// Transform the consumer updates back into a list for sending to the consumer
 	// The consumer will aggregate updates and ultimately send them to tendermint.
@@ -433,7 +433,7 @@ func (ka *KeyAssignment) AssignDefaultsAndComputeUpdates(vscid VSCID, stakingUpd
 			_ = ka.SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
 		}
 	}
-	return ka.ComputeUpdates(vscid, stakingUpdates)
+	return ka.ProviderUpdatesToConsumerUpdates(vscid, stakingUpdates)
 }
 
 func (s *KeyAssignment) SetProviderAddrToConsumerKey(k ProviderAddr, v ConsumerKey) {
