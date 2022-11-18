@@ -20,23 +20,6 @@ type ConsumerKey = tmprotocrypto.PublicKey
 type ProviderAddr = sdk.ConsAddress
 type ConsumerAddr = sdk.ConsAddress
 
-type Store interface {
-	SetProviderConsAddrToConsumerPublicKey(ProviderAddr, ConsumerKey)
-	GetProviderConsAddrToConsumerPublicKey(ProviderAddr) (ConsumerKey, bool)
-	DelProviderConsAddrToConsumerPublicKey(ProviderAddr)
-	IterateProviderConsAddrToConsumerPublicKey(func(ProviderAddr, ConsumerKey) bool)
-
-	SetConsumerPublicKeyToProviderPublicKey(ConsumerKey, ProviderKey)
-	GetConsumerPublicKeyToProviderPublicKey(ConsumerKey) (ProviderKey, bool)
-	DelConsumerPublicKeyToProviderPublicKey(ConsumerKey)
-	IterateConsumerPublicKeyToProviderPublicKey(func(ConsumerKey, ProviderKey) bool)
-
-	SetConsumerConsAddrToLastUpdateMemo(ConsumerAddr, providertypes.LastUpdateMemo)
-	GetConsumerConsAddrToLastUpdateMemo(ConsumerAddr) (providertypes.LastUpdateMemo, bool)
-	DelConsumerConsAddrToLastUpdateMemo(ConsumerAddr)
-	IterateConsumerConsAddrToLastUpdateMemo(func(ConsumerAddr, providertypes.LastUpdateMemo) bool)
-}
-
 // KeyAssignment is a wrapper around a storage API which implements the key assignment features
 // allowing a provider to assign a consumer key to a provider key and vice versa.
 // Please see docs/key-assignment/design.md for more details.
@@ -53,6 +36,7 @@ func (k Keeper) KeyAssignment(ctx sdk.Context, chainID string) *KeyAssignment {
 func (k Keeper) DeleteKeyAssignment(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	for _, pref := range [][]byte{
+		// There are three indexes
 		providertypes.KeyAssignmentProviderConsAddrToConsumerPublicKeyChainPrefix(chainID),
 		providertypes.KeyAssignmentConsumerPublicKeyToProviderPublicKeyChainPrefix(chainID),
 		providertypes.KeyAssignmentConsumerConsAddrToLastUpdateMemoChainPrefix(chainID),
@@ -414,7 +398,8 @@ func (ka *KeyAssignment) ComputeUpdates(vscid VSCID, stakingUpdates []abci.Valid
 		keyToPower.Set(u.PubKey, u.Power)
 	}
 
-	// Get the consumerUpdates to send to the consumer
+	// Use the latest staking updates to compute a list of consumer updates. The consumer updates
+	// are calculated to ensure a replicated validator set on the consumer.
 	consumerUpdates := ka.getConsumerUpdates(vscid, keyToPower)
 
 	// Transform the consumer updates back into a list for sending to the consumer
@@ -424,7 +409,8 @@ func (ka *KeyAssignment) ComputeUpdates(vscid VSCID, stakingUpdates []abci.Valid
 		tendermintUpdates = append(tendermintUpdates, abci.ValidatorUpdate{PubKey: ck, Power: power})
 	}
 
-	// Sort for determinism across nodes.
+	// The list of tendermint updates should hash the same across all consensus nodes
+	// that means it is necessary to sort for determinism.
 	sort.Slice(tendermintUpdates, func(i, j int) bool {
 		if tendermintUpdates[i].Power > tendermintUpdates[j].Power {
 			return true
