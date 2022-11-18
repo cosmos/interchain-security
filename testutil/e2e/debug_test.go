@@ -119,8 +119,8 @@ func TestValidatorDoubleSigning(t *testing.T) {
 	runCCVTestByName(t, "TestValidatorDoubleSigning")
 }
 
-func TestSendSlashPacket(t *testing.T) {
-	runCCVTestByName(t, "TestSendSlashPacket")
+func TestQueueAndSendSlashPacket(t *testing.T) {
+	runCCVTestByName(t, "TestQueueAndSendSlashPacket")
 }
 
 //
