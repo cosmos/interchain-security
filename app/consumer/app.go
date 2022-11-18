@@ -450,6 +450,7 @@ func New(
 	// can do so safely.
 	app.MM.SetOrderInitGenesis(
 		capabilitytypes.ModuleName,
+		authtypes.ModuleName,
 		banktypes.ModuleName,
 		slashingtypes.ModuleName,
 		crisistypes.ModuleName,
@@ -458,7 +459,6 @@ func New(
 		ibctransfertypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
-		authtypes.ModuleName,
 
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
@@ -677,6 +677,11 @@ func (app *App) GetE2eSlashingKeeper() e2e.E2eSlashingKeeper {
 // GetE2eEvidenceKeeper implements the ConsumerApp interface.
 func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
 	return app.EvidenceKeeper
+}
+
+// GetUpgradeKeeper implements the ConsumerApp interface.
+func (app *App) GetUpgradeKeeper() upgradekeeper.Keeper {
+	return app.UpgradeKeeper
 }
 
 // TestingApp functions

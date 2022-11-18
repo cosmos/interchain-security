@@ -8,7 +8,6 @@ import (
 
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 
-	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -21,14 +20,6 @@ func (suite *CCVTestSuite) TestConsumerGenesis() {
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 
 	genesis := consumerKeeper.ExportGenesis(suite.consumerChain.GetContext())
-
-	// Confirm that client and cons state are exported from consumer keeper properly
-	consumerEndpointClientState, consumerEndpointConsState := suite.GetConsumerEndpointClientAndConsState(
-		// Pass in first consumer bundle since we're testing only one consumer
-		*suite.consumerBundles[icstestingutils.FirstConsumerChainID],
-	)
-	suite.Require().Equal(consumerEndpointClientState, genesis.ProviderClientState)
-	suite.Require().Equal(consumerEndpointConsState, genesis.ProviderConsensusState)
 
 	suite.Require().NotPanics(func() {
 		consumerKeeper.InitGenesis(suite.consumerChain.GetContext(), genesis)
@@ -43,9 +34,8 @@ func (suite *CCVTestSuite) TestConsumerGenesis() {
 
 	clientId, ok := consumerKeeper.GetProviderClientID(ctx)
 	suite.Require().True(ok)
-	clientState, ok := suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientId)
+	_, ok = suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientId)
 	suite.Require().True(ok)
-	suite.Require().Equal(genesis.ProviderClientState, clientState, "client state not set correctly after InitGenesis")
 
 	suite.SetupCCVChannel(suite.path)
 
@@ -170,7 +160,7 @@ func (suite *CCVTestSuite) TestInitTimeout() {
 		suite.providerChain.NextBlock()
 
 		// increment time
-		incrementTimeBy(suite, initTimeout)
+		incrementTime(suite, initTimeout)
 
 		// check whether the chain was removed
 		_, found = providerKeeper.GetConsumerClientId(suite.providerCtx(), chainID)

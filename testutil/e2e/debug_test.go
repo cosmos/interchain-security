@@ -18,7 +18,7 @@ import (
 func runCCVTestByName(t *testing.T, methodName string) {
 
 	suite := e2e.NewCCVTestSuite[*appProvider.App, *appConsumer.App](
-		icstestingutils.ProviderAppIniter, icstestingutils.ConsumerAppIniter)
+		icstestingutils.ProviderAppIniter, icstestingutils.ConsumerAppIniter, []string{})
 	suite.SetT(t)
 	suite.SetupTest()
 
@@ -119,8 +119,8 @@ func TestValidatorDoubleSigning(t *testing.T) {
 	runCCVTestByName(t, "TestValidatorDoubleSigning")
 }
 
-func TestSendSlashPacket(t *testing.T) {
-	runCCVTestByName(t, "TestSendSlashPacket")
+func TestQueueAndSendSlashPacket(t *testing.T) {
+	runCCVTestByName(t, "TestQueueAndSendSlashPacket")
 }
 
 //
@@ -175,6 +175,6 @@ func TestPacketRoundtrip(t *testing.T) {
 	runCCVTestByName(t, "TestPacketRoundtrip")
 }
 
-func TestSendVSCMaturedPackets(t *testing.T) {
-	runCCVTestByName(t, "TestSendVSCMaturedPackets")
+func TestQueueAndSendVSCMaturedPackets(t *testing.T) {
+	runCCVTestByName(t, "TestQueueAndSendVSCMaturedPackets")
 }

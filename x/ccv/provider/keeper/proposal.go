@@ -168,7 +168,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 
 	k.DeleteInitChainHeight(ctx, chainID)
 	k.ConsumeSlashAcks(ctx, chainID)
-	k.ConsumePendingVSCs(ctx, chainID)
+	k.DeletePendingPackets(ctx, chainID)
 
 	// release unbonding operations if they aren't locked
 	var vscIDs []uint64
@@ -338,15 +338,12 @@ func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.Consumer
 
 	// store the (to be) executed proposals in order
 	propsToExecute := []types.ConsumerAdditionProposal{}
-
-	iterator := k.PendingConsumerAdditionPropIterator(ctx)
-	defer iterator.Close()
-
 	k.IteratePendingConsumerAdditionProps(ctx, func(spawnTime time.Time, prop types.ConsumerAdditionProposal) bool {
 		if !ctx.BlockTime().Before(spawnTime) {
 			propsToExecute = append(propsToExecute, prop)
 			return true
 		}
+		// No more proposals to check, since they're stored/ordered by timestamp.
 		return false
 	})
 
@@ -464,10 +461,9 @@ func (k Keeper) ConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerR
 		if !ctx.BlockTime().Before(stopTime) {
 			propsToExecute = append(propsToExecute, prop)
 			return true
-		} else {
-			// No more proposals to check, since they're stored/ordered by timestamp.
-			return false
 		}
+		// No more proposals to check, since they're stored/ordered by timestamp.
+		return false
 	})
 
 	return propsToExecute

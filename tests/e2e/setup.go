@@ -44,11 +44,12 @@ type CCVTestSuite struct {
 	// A map from consumer chain ID to its consumer bundle.
 	// The preferred way to access chains, apps, and paths when designing tests around multiple consumers.
 	consumerBundles map[string]*icstestingutils.ConsumerBundle
+	skippedTests    map[string]bool
 }
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
 func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
-	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter) *CCVTestSuite {
+	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string) *CCVTestSuite {
 
 	ccvSuite := new(CCVTestSuite)
 
@@ -78,6 +79,10 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 		return coordinator, provider, providerApp, consumerBundles
 	}
 
+	ccvSuite.skippedTests = make(map[string]bool)
+	for _, testName := range skippedTests {
+		ccvSuite.skippedTests[testName] = true
+	}
 	return ccvSuite
 }
 
@@ -89,6 +94,12 @@ type SetupCallback func(t *testing.T) (
 	providerApp e2eutil.ProviderApp,
 	consumerBundles map[string]*icstestingutils.ConsumerBundle,
 )
+
+func (suite *CCVTestSuite) BeforeTest(suiteName, testName string) {
+	if suite.skippedTests[testName] {
+		suite.T().Skip()
+	}
+}
 
 // SetupTest sets up in-mem state before every test
 func (suite *CCVTestSuite) SetupTest() {
@@ -180,13 +191,6 @@ func (suite *CCVTestSuite) SetupTest() {
 		bundle.Path.EndpointB.ChannelConfig.Version = ccv.Version
 		bundle.Path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 		bundle.Path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-
-		// set chains sender account number
-		// TODO: to be fixed in #151
-		err := bundle.Path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-		suite.Require().NoError(err)
-		err = bundle.Path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
-		suite.Require().NoError(err)
 
 		// create path for the transfer channel
 		bundle.TransferPath = ibctesting.NewPath(bundle.Chain, suite.providerChain)

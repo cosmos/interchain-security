@@ -23,13 +23,24 @@ func TestCCVTestSuite(t *testing.T) {
 	// Pass in concrete app types that implement the interfaces defined in /testutil/e2e/interfaces.go
 	ccvSuite := e2e.NewCCVTestSuite[*appProvider.App, *appConsumer.App](
 		// Pass in ibctesting.AppIniters for provider and consumer.
-		icstestingutils.ProviderAppIniter, icstestingutils.ConsumerAppIniter)
+		icstestingutils.ProviderAppIniter, icstestingutils.ConsumerAppIniter, []string{})
 
 	// Run tests
 	suite.Run(t, ccvSuite)
 }
 
-// TODO: Run the gov enabled consumer against the standard suite of tests: https://github.com/cosmos/interchain-security/issues/397
+// Executes a standard suite of tests, against a democracy consumer app.go implementation.
+func TestConsumerDemocracyCCVTestSuite(t *testing.T) {
+	// Pass in concrete app type that implement the interface defined in /testutil/e2e/interfaces.go
+	democSuite := e2e.NewCCVTestSuite[*appProvider.App, *appConsumerDemocracy.App](
+		// Pass in ibctesting.AppIniter for provider and democracy consumer.
+		// TestRewardsDistribution needs to be skipped since the democracy specific distribution test is in ConsumerDemocracyTestSuite,
+		// while this one tests consumer app without minter
+		icstestingutils.ProviderAppIniter, icstestingutils.DemocracyConsumerAppIniter, []string{"TestRewardsDistribution"})
+
+	// Run tests
+	suite.Run(t, democSuite)
+}
 
 // Executes a specialized group of tests specific to a democracy consumer,
 // against a democracy consumer app.go implementation.

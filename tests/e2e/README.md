@@ -12,6 +12,7 @@ E2e tests are categorized into files as follows:
 - `distribution.go` - e2e tests for the _Reward Distribution_ sub-protocol
 - `stop_consumer.go` - e2e tests for the _Consumer Chain Removal_ sub-protocol
 - `normal_operations.go` - e2e tests for _normal operations_ of ICS enabled chains
+- `expired_client.go` - e2e tests for testing expired clients
 - `instance_test.go` - ties the e2e test structure into golang's standard test mechanism, with appropriate definitions for concrete app types and setup callback
 
 To run the e2e tests defined in this repo on any arbitrary consumer and provider implementation, copy the pattern exemplified in `instance_test.go` and `specific_setup.go`
