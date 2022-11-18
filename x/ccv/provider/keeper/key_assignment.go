@@ -9,7 +9,6 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
@@ -76,10 +75,11 @@ func (ka *KeyAssignment) SetProviderPubKeyToConsumerPubKey(pk ProviderPublicKey,
 func (ka *KeyAssignment) DeleteProviderKey(pca ProviderConsAddr) error {
 	// Delete the current mapping from the consumer key to the provider key
 	if ck, ok := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca); ok {
+		// Delete the current mapping from the provider key to the consumer key
+		ka.Store.DelProviderConsAddrToConsumerPublicKey(pca)
+		// and the current mapping from the consumer key to the provider key
 		ka.Store.DelConsumerPublicKeyToProviderPublicKey(ck)
 	}
-	// Delete the current mapping from the provider key to the consumer key
-	ka.Store.DelProviderConsAddrToConsumerPublicKey(pca)
 	toDelete := []ConsumerConsAddr{}
 	// Find all the consumer keys which were mapped to by the provider key
 	// in order to delete them
