@@ -41,12 +41,28 @@ type Store interface {
 // allowing a provider to assign a consumer key to a provider key and vice versa.
 // Please see docs/key-assignment/design.md for more details.
 type KeyAssignment struct {
-	ctx     sdk.Context
+	Store   sdk.KVStore
 	ChainID string
 }
 
 func (k Keeper) KeyAssignment(ctx sdk.Context, chainID string) *KeyAssignment {
-	return &KeyAssignment{ctx, chainID}
+	return &KeyAssignment{ctx.KVStore(k.storeKey), chainID}
+}
+
+// Delete all of the key assignment data associated to the given chain ID.
+func (k Keeper) DeleteKeyAssignment(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	for _, pref := range [][]byte{
+		providertypes.KeyAssignmentProviderConsAddrToConsumerPublicKeyChainPrefix(chainID),
+		providertypes.KeyAssignmentConsumerPublicKeyToProviderPublicKeyChainPrefix(chainID),
+		providertypes.KeyAssignmentConsumerConsAddrToLastUpdateMemoChainPrefix(chainID),
+	} {
+		iter := sdk.KVStorePrefixIterator(store, pref)
+		defer iter.Close()
+		for ; iter.Valid(); iter.Next() {
+			store.Delete(iter.Key())
+		}
+	}
 }
 
 // SetProviderPubKeyToConsumerPubKey tries to assign a mapping from the provider key to the consumer key.
@@ -113,6 +129,20 @@ func (ka *KeyAssignment) GetProviderPubKeyFromConsumerConsAddress(cca sdk.ConsAd
 		return *lum.ProviderKey, true
 	}
 	return pk, false
+}
+
+// GetProviderConsAddrForSlashing returns the cons address of the validator to be slashed
+// on the provider chain. It looks up the provider's consensus address from past key assignments.
+func (k Keeper) GetProviderConsAddrForSlashing(ctx sdk.Context, chainID string, consumerAddress []byte) (sdk.ConsAddress, error) {
+	consumerConsAddr := sdk.ConsAddress(consumerAddress)
+	providerPublicKey, found := k.KeyAssignment(ctx, chainID).GetProviderPubKeyFromConsumerConsAddress(consumerConsAddr)
+	if !found {
+		// It is possible for a faulty consumer chain to send a slash packet for a validator that does
+		// not have a key assignment on the provider chain. In this case, we do not slash the validator
+		// and do not panic.
+		return nil, errors.New("could not find provider address for slashing")
+	}
+	return utils.TMCryptoPublicKeyToConsAddr(providerPublicKey), nil
 }
 
 // PruneUnusedKeys deletes from the store all of the consumer keys which the consumer chain has matured, based
@@ -520,12 +550,7 @@ func (ka *KeyAssignment) InternalInvariants() bool {
 
 }
 
-type KeyAssignmentStore struct {
-	Store   sdk.KVStore
-	ChainID string
-}
-
-func (s *KeyAssignmentStore) SetProviderConsAddrToConsumerPublicKey(k ProviderAddr, v ConsumerKey) {
+func (s *KeyAssignment) SetProviderConsAddrToConsumerPublicKey(k ProviderAddr, v ConsumerKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -537,7 +562,7 @@ func (s *KeyAssignmentStore) SetProviderConsAddrToConsumerPublicKey(k ProviderAd
 	s.Store.Set(providertypes.KeyAssignmentProviderConsAddrToConsumerPublicKeyKey(s.ChainID, kbz), vbz)
 }
 
-func (s *KeyAssignmentStore) SetConsumerPublicKeyToProviderPublicKey(k ConsumerKey, v ProviderKey) {
+func (s *KeyAssignment) SetConsumerPublicKeyToProviderPublicKey(k ConsumerKey, v ProviderKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -549,7 +574,7 @@ func (s *KeyAssignmentStore) SetConsumerPublicKeyToProviderPublicKey(k ConsumerK
 	s.Store.Set(providertypes.KeyAssignmentConsumerPublicKeyToProviderPublicKeyKey(s.ChainID, kbz), vbz)
 }
 
-func (s *KeyAssignmentStore) SetConsumerConsAddrToLastUpdateMemo(k ConsumerAddr, v providertypes.LastUpdateMemo) {
+func (s *KeyAssignment) SetConsumerConsAddrToLastUpdateMemo(k ConsumerAddr, v providertypes.LastUpdateMemo) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -561,7 +586,7 @@ func (s *KeyAssignmentStore) SetConsumerConsAddrToLastUpdateMemo(k ConsumerAddr,
 	s.Store.Set(providertypes.KeyAssignmentConsumerConsAddrToLastUpdateMemoKey(s.ChainID, kbz), vbz)
 }
 
-func (s *KeyAssignmentStore) GetProviderConsAddrToConsumerPublicKey(k ProviderAddr) (v ConsumerKey, found bool) {
+func (s *KeyAssignment) GetProviderConsAddrToConsumerPublicKey(k ProviderAddr) (v ConsumerKey, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -576,7 +601,7 @@ func (s *KeyAssignmentStore) GetProviderConsAddrToConsumerPublicKey(k ProviderAd
 	return v, false
 }
 
-func (s *KeyAssignmentStore) GetConsumerPublicKeyToProviderPublicKey(k ConsumerKey) (v ProviderKey, found bool) {
+func (s *KeyAssignment) GetConsumerPublicKeyToProviderPublicKey(k ConsumerKey) (v ProviderKey, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -591,7 +616,7 @@ func (s *KeyAssignmentStore) GetConsumerPublicKeyToProviderPublicKey(k ConsumerK
 	return v, false
 }
 
-func (s *KeyAssignmentStore) GetConsumerConsAddrToLastUpdateMemo(k ConsumerAddr) (v providertypes.LastUpdateMemo, found bool) {
+func (s *KeyAssignment) GetConsumerConsAddrToLastUpdateMemo(k ConsumerAddr) (v providertypes.LastUpdateMemo, found bool) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -607,7 +632,7 @@ func (s *KeyAssignmentStore) GetConsumerConsAddrToLastUpdateMemo(k ConsumerAddr)
 	return v, false
 }
 
-func (s *KeyAssignmentStore) DelProviderConsAddrToConsumerPublicKey(k ProviderAddr) {
+func (s *KeyAssignment) DelProviderConsAddrToConsumerPublicKey(k ProviderAddr) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -615,7 +640,7 @@ func (s *KeyAssignmentStore) DelProviderConsAddrToConsumerPublicKey(k ProviderAd
 	s.Store.Delete(providertypes.KeyAssignmentProviderConsAddrToConsumerPublicKeyKey(s.ChainID, kbz))
 }
 
-func (s *KeyAssignmentStore) DelConsumerPublicKeyToProviderPublicKey(k ConsumerKey) {
+func (s *KeyAssignment) DelConsumerPublicKeyToProviderPublicKey(k ConsumerKey) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -623,7 +648,7 @@ func (s *KeyAssignmentStore) DelConsumerPublicKeyToProviderPublicKey(k ConsumerK
 	s.Store.Delete(providertypes.KeyAssignmentConsumerPublicKeyToProviderPublicKeyKey(s.ChainID, kbz))
 }
 
-func (s *KeyAssignmentStore) DelConsumerConsAddrToLastUpdateMemo(k ConsumerAddr) {
+func (s *KeyAssignment) DelConsumerConsAddrToLastUpdateMemo(k ConsumerAddr) {
 	kbz, err := k.Marshal()
 	if err != nil {
 		panic(err)
@@ -631,7 +656,7 @@ func (s *KeyAssignmentStore) DelConsumerConsAddrToLastUpdateMemo(k ConsumerAddr)
 	s.Store.Delete(providertypes.KeyAssignmentConsumerConsAddrToLastUpdateMemoKey(s.ChainID, kbz))
 }
 
-func (s *KeyAssignmentStore) IterateProviderConsAddrToConsumerPublicKey(stop func(ProviderAddr, ConsumerKey) (stop bool)) {
+func (s *KeyAssignment) IterateProviderConsAddrToConsumerPublicKey(stop func(ProviderAddr, ConsumerKey) (stop bool)) {
 	prefix := providertypes.KeyAssignmentProviderConsAddrToConsumerPublicKeyChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
@@ -652,7 +677,7 @@ func (s *KeyAssignmentStore) IterateProviderConsAddrToConsumerPublicKey(stop fun
 	}
 }
 
-func (s *KeyAssignmentStore) IterateConsumerPublicKeyToProviderPublicKey(stop func(ConsumerKey, ProviderKey) (stop bool)) {
+func (s *KeyAssignment) IterateConsumerPublicKeyToProviderPublicKey(stop func(ConsumerKey, ProviderKey) (stop bool)) {
 	prefix := providertypes.KeyAssignmentConsumerPublicKeyToProviderPublicKeyChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
@@ -673,7 +698,7 @@ func (s *KeyAssignmentStore) IterateConsumerPublicKeyToProviderPublicKey(stop fu
 	}
 }
 
-func (s *KeyAssignmentStore) IterateConsumerConsAddrToLastUpdateMemo(stop func(ConsumerAddr, providertypes.LastUpdateMemo) (stop bool)) {
+func (s *KeyAssignment) IterateConsumerConsAddrToLastUpdateMemo(stop func(ConsumerAddr, providertypes.LastUpdateMemo) (stop bool)) {
 	prefix := providertypes.KeyAssignmentConsumerConsAddrToLastUpdateMemoChainPrefix(s.ChainID)
 	iterator := sdk.KVStorePrefixIterator(s.Store, prefix)
 	defer iterator.Close()
@@ -692,34 +717,4 @@ func (s *KeyAssignmentStore) IterateConsumerConsAddrToLastUpdateMemo(stop func(C
 			return
 		}
 	}
-}
-
-// Delete all of the key assignment data associated to the given chain ID.
-func (k Keeper) DeleteKeyAssignment(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
-	for _, pref := range [][]byte{
-		providertypes.KeyAssignmentProviderConsAddrToConsumerPublicKeyChainPrefix(chainID),
-		providertypes.KeyAssignmentConsumerPublicKeyToProviderPublicKeyChainPrefix(chainID),
-		providertypes.KeyAssignmentConsumerConsAddrToLastUpdateMemoChainPrefix(chainID),
-	} {
-		iter := sdk.KVStorePrefixIterator(store, pref)
-		defer iter.Close()
-		for ; iter.Valid(); iter.Next() {
-			store.Delete(iter.Key())
-		}
-	}
-}
-
-// GetProviderConsAddrForSlashing returns the cons address of the validator to be slashed
-// on the provider chain. It looks up the provider's consensus address from past key assignments.
-func (k Keeper) GetProviderConsAddrForSlashing(ctx sdk.Context, chainID string, consumerAddress []byte) (sdk.ConsAddress, error) {
-	consumerConsAddr := sdk.ConsAddress(consumerAddress)
-	providerPublicKey, found := k.KeyAssignment(ctx, chainID).GetProviderPubKeyFromConsumerConsAddress(consumerConsAddr)
-	if !found {
-		// It is possible for a faulty consumer chain to send a slash packet for a validator that does
-		// not have a key assignment on the provider chain. In this case, we do not slash the validator
-		// and do not panic.
-		return nil, errors.New("could not find provider address for slashing")
-	}
-	return utils.TMCryptoPublicKeyToConsAddr(providerPublicKey), nil
 }
