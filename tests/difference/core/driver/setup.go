@@ -509,17 +509,13 @@ func (b *Builder) doIBCHandshake() {
 		panic("must already have provider client on consumer chain")
 	}
 	b.path.EndpointA.ClientID = providerClientID
-	err := b.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	b.suite.Require().NoError(err)
-	err = b.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
-	b.suite.Require().NoError(err)
 
 	// Configure and create the consumer Client
 	tmConfig := b.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
 	tmConfig.UnbondingPeriod = b.initState.UnbondingC
 	tmConfig.TrustingPeriod = b.initState.Trusting
 	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
-	err = b.path.EndpointB.CreateClient()
+	err := b.path.EndpointB.CreateClient()
 	b.suite.Require().NoError(err)
 
 	// Create the Consumer chain ID mapping in the provider state
