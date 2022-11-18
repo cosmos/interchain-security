@@ -390,6 +390,6 @@ func assertHeightValsetUpdateIDs(t *testing.T, ctx sdk.Context, ck *consumerkeep
 		require.Equal(t, heighValsetUpdateIDs[ctr].Height, height)
 		require.Equal(t, heighValsetUpdateIDs[ctr].ValsetUpdateId, vscID)
 		ctr++
-		return true
+		return false
 	})
 }

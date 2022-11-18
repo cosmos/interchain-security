@@ -447,7 +447,7 @@ func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToVals
 			ValsetUpdateId: vscID,
 		}
 		heightToVCIDs = append(heightToVCIDs, hv)
-		return true
+		return false // do not stop iteration
 	})
 
 	return heightToVCIDs

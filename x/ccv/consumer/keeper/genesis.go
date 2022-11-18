@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
@@ -128,9 +127,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			panic("provider client does not exist")
 		}
 
-		maturingPackets := []types.MaturingVSCPacket{}
+		maturingPackets := []consumertypes.MaturingVSCPacket{}
 		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) (stop bool) {
-			mat := types.MaturingVSCPacket{
+			mat := consumertypes.MaturingVSCPacket{
 				VscId:        vscId,
 				MaturityTime: timeNs,
 			}
@@ -138,9 +137,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			return false // do not stop the iteration
 		})
 
-		heightToVCIDs := []types.HeightToValsetUpdateID{}
+		heightToVCIDs := []consumertypes.HeightToValsetUpdateID{}
 		k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
-			hv := types.HeightToValsetUpdateID{
+			hv := consumertypes.HeightToValsetUpdateID{
 				Height:         height,
 				ValsetUpdateId: vscID,
 			}
@@ -148,9 +147,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			return false // do not stop the iteration
 		})
 
-		outstandingDowntimes := []types.OutstandingDowntime{}
+		outstandingDowntimes := []consumertypes.OutstandingDowntime{}
 		k.IterateOutstandingDowntime(ctx, func(addr string) (stop bool) {
-			od := types.OutstandingDowntime{
+			od := consumertypes.OutstandingDowntime{
 				ValidatorConsensusAddress: addr,
 			}
 			outstandingDowntimes = append(outstandingDowntimes, od)
