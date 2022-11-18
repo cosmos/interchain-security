@@ -59,11 +59,11 @@ func (ka *KeyAssignment) SetProviderPubKeyToConsumerPubKey(pk ProviderKey, ck Co
 	if _, ok := ka.GetConsumerAddrToLastUpdateInfo(utils.TMCryptoPublicKeyToConsAddr(ck)); ok {
 		return errors.New(`cannot reuse key which is in use or was recently in use`)
 	}
-	pca := utils.TMCryptoPublicKeyToConsAddr(pk)
-	if oldCk, ok := ka.GetProviderAddrToConsumerKey(pca); ok {
-		ka.DelConsumerKeyToProviderKey(oldCk)
+	pAddr := utils.TMCryptoPublicKeyToConsAddr(pk)
+	if oldConsumerKey, ok := ka.GetProviderAddrToConsumerKey(pAddr); ok {
+		ka.DelConsumerKeyToProviderKey(oldConsumerKey)
 	}
-	ka.SetProviderAddrToConsumerKey(pca, ck)
+	ka.SetProviderAddrToConsumerKey(pAddr, ck)
 	ka.SetConsumerKeyToProviderKey(ck, pk)
 	return nil
 }
@@ -134,145 +134,33 @@ func (k Keeper) GetProviderConsAddrForSlashing(ctx sdk.Context, chainID string, 
 // in a downtime or double sign slash instruction.
 func (ka *KeyAssignment) PruneUnusedKeys(latestMatureVscid VSCID) {
 	toDel := []ConsumerAddr{}
-	ka.IterateConsumerAddrToLastUpdateInfo(func(cca ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
+	ka.IterateConsumerAddrToLastUpdateInfo(func(ca ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
+		// If, for a given consumer key, the last update sent to the consumer for that key has 0 power and
+		// the consumer has matured that update, then the consumer chain can no longer reference that key
+		// in a slash packet and so the key can be pruned.
 		if lum.Power == 0 && lum.Vscid <= latestMatureVscid {
-			toDel = append(toDel, cca)
+			toDel = append(toDel, ca)
 		}
 		return false
 	})
-	for _, cca := range toDel {
-		ka.DelConsumerAddrToLastUpdateInfo(cca)
+	for _, ca := range toDel {
+		ka.DelConsumerAddrToLastUpdateInfo(ca)
 	}
 }
 
-// DeterministicStringify returns a deterministic string representation of the
-// key. This is useful to identify like keys with different representations.
-func DeterministicStringify(k tmprotocrypto.PublicKey) string {
-	sdkPubKey, err := cryptocodec.FromTmProtoPublicKey(k)
-	if err != nil {
-		panic("could not get sdk public key from tm proto public key")
-	}
-	return string(sdkPubKey.Bytes())
-}
-
-// KeyToPower is an implementation of a map from a public key to a power.
-// It is used because public keys are not comparable in Go, so they cannot be
-// used as builtin map keys.
-type KeyToPower struct {
-	inner     map[tmprotocrypto.PublicKey]int64
-	canonical map[string]tmprotocrypto.PublicKey
-}
-
-func MakeKeyToPower() KeyToPower {
-	return KeyToPower{
-		inner:     map[tmprotocrypto.PublicKey]int64{},
-		canonical: map[string]tmprotocrypto.PublicKey{},
-	}
-}
-
-// Set is a typical map set operation.
-func (m *KeyToPower) Set(pk tmprotocrypto.PublicKey, power int64) {
-	stringified := DeterministicStringify(pk)
-	if k, found := m.canonical[stringified]; found {
-		pk = k
-	} else {
-		m.canonical[stringified] = pk
-	}
-	m.inner[pk] = power
-}
-
-// Get is a typical map get operation.
-func (m *KeyToPower) Get(pk tmprotocrypto.PublicKey) (int64, bool) {
-	if k, found := m.canonical[DeterministicStringify(pk)]; found {
-		power, found := m.inner[k]
-		if !found {
-			panic("found canonical key but key not present in inner map")
-		}
-		return power, true
-	}
-	return -1, false
-}
-
-// KeyToLastUpdateMemo is an implementation of a map from a public key to a
-// memo storing the last update.
-// It is used because public keys are not comparable in Go, so they cannot be
-// used as builtin map keys.
-type KeyToLastUpdateMemo struct {
-	inner     map[tmprotocrypto.PublicKey]providertypes.LastUpdateInfo
-	canonical map[string]tmprotocrypto.PublicKey
-}
-
-func MakeKeyToLastUpdateMemo() KeyToLastUpdateMemo {
-	return KeyToLastUpdateMemo{
-		inner:     map[tmprotocrypto.PublicKey]providertypes.LastUpdateInfo{},
-		canonical: map[string]tmprotocrypto.PublicKey{},
-	}
-}
-
-// Set is a typical map set operation.
-func (m *KeyToLastUpdateMemo) Set(pk tmprotocrypto.PublicKey, memo providertypes.LastUpdateInfo) {
-	stringified := DeterministicStringify(pk)
-	if k, found := m.canonical[stringified]; found {
-		pk = k
-	} else {
-		m.canonical[stringified] = pk
-	}
-	m.inner[pk] = memo
-}
-
-// Get is a typical map get operation.
-func (m *KeyToLastUpdateMemo) Get(pk tmprotocrypto.PublicKey) (providertypes.LastUpdateInfo, bool) {
-	if k, found := m.canonical[DeterministicStringify(pk)]; found {
-		memo, found := m.inner[k]
-		if !found {
-			panic("found canonical key but key not present in inner map")
-		}
-		return memo, true
-	}
-	return providertypes.LastUpdateInfo{}, false
-}
-
-// KeySet is an implementation of a set of public keys.
-// It is used because public keys are not comparable in Go
-// so they cannot be used as builtin map keys.
-type KeySet struct {
-	inner     map[tmprotocrypto.PublicKey]struct{}
-	canonical map[string]tmprotocrypto.PublicKey
-}
-
-func MakeKeySet() KeySet {
-	return KeySet{
-		inner:     map[tmprotocrypto.PublicKey]struct{}{},
-		canonical: map[string]tmprotocrypto.PublicKey{},
-	}
-}
-
-// Add is a typical set add operation.
-func (s *KeySet) Add(pk tmprotocrypto.PublicKey) {
-	stringified := DeterministicStringify(pk)
-	if k, found := s.canonical[stringified]; found {
-		pk = k
-	} else {
-		s.canonical[stringified] = pk
-	}
-	s.inner[pk] = struct{}{}
-}
-
-// Add is a typical set has/contains operation.
-func (s *KeySet) Has(pk tmprotocrypto.PublicKey) bool {
-	_, found := s.canonical[DeterministicStringify(pk)]
-	return found
-}
-
-// getProviderKeysForUpdate returns the all the provider keys of validators for which
+// getProviderKeysForConsumerUpdates returns the all the provider keys of validators for which
 // an update must be sent. An update must be sent to the consumer if, either:
-//  1. The consumer has the validator in its active set AND the assigned key for the
+//  1. The voting power of the validator has changed.
+//  2. The consumer has the validator in its active set AND the assigned key for the
 //     validator has changed since the last update.
-//  2. The voting power of the validator has changed, and the validator is in the active
-//     set.
-func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates KeyToPower) KeySet {
+func (ka *KeyAssignment) getProviderKeysForConsumerUpdates(stakingUpdates KeyToPower) KeySet {
 
 	ret := MakeKeySet()
+
+	// Get provider keys where the validator power has changed
+	for providerPublicKey := range stakingUpdates.inner {
+		ret.Add(providerPublicKey)
+	}
 
 	// Get provider keys which the consumer is aware of, because the
 	// last update sent to the consumer was a positive power update
@@ -289,18 +177,13 @@ func (ka *KeyAssignment) getProviderKeysForUpdate(stakingUpdates KeyToPower) Key
 		return false
 	})
 
-	// Get provider keys where the validator power has changed
-	for providerPublicKey := range stakingUpdates.inner {
-		ret.Add(providerPublicKey)
-	}
-
 	return ret
 }
 
 // getProviderKeysLastPositiveUpdate returns a map of provider keys to a memo of the last update
 // associated to the key, if that update was positive, and that update is included in mustCreateUpdate.
-func (ka KeyAssignment) getProviderKeysLastPositiveUpdate(mustCreateUpdate KeySet) KeyToLastUpdateMemo {
-	lastUpdate := MakeKeyToLastUpdateMemo()
+func (ka KeyAssignment) getProviderKeysLastPositiveUpdate(mustCreateUpdate KeySet) KeyToLastUpdateInfo {
+	lastUpdate := MakeKeyToLastUpdateInfo()
 	ka.IterateConsumerAddrToLastUpdateInfo(func(_ ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
 		if 0 < lum.Power {
 			if mustCreateUpdate.Has(*lum.ProviderKey) {
@@ -319,7 +202,7 @@ func (ka *KeyAssignment) calculateConsumerUpdates(vscid VSCID, stakingUpdates Ke
 	consumerUpdates := MakeKeyToPower()
 
 	// Get a set of all the provider validator keys for which an update must be sent
-	providerKeysForUpdate := ka.getProviderKeysForUpdate(stakingUpdates)
+	providerKeysForUpdate := ka.getProviderKeysForConsumerUpdates(stakingUpdates)
 
 	// Get the LAST positive update for each provider validator key that needs an update
 	providerKeysLastPositivePowerUpdateMemo := ka.getProviderKeysLastPositiveUpdate(providerKeysForUpdate)
@@ -332,13 +215,18 @@ func (ka *KeyAssignment) calculateConsumerUpdates(vscid VSCID, stakingUpdates Ke
 		The purpose of *this* step is to create a clean slate. The *next* step will
 		amend the updates for any validators with a positive power.
 	*/
-	for loopPk := range providerKeysForUpdate.inner {
+	for pk := range providerKeysForUpdate.inner {
 		// For each provider key for which there was already a positive update
 		// create a deletion update for the associated consumer key.
-		pk := loopPk // Avoid taking the address of the loop variable
+		pk := pk // Avoid taking the address of the loop variable
 		if lum, found := providerKeysLastPositivePowerUpdateMemo.Get(pk); found {
 			cca := utils.TMCryptoPublicKeyToConsAddr(*lum.ConsumerKey)
-			ka.SetConsumerAddrToLastUpdateInfo(cca, providertypes.LastUpdateInfo{ConsumerKey: lum.ConsumerKey, ProviderKey: &pk, Vscid: vscid, Power: 0})
+			ka.SetConsumerAddrToLastUpdateInfo(cca, providertypes.LastUpdateInfo{
+				ConsumerKey: lum.ConsumerKey,
+				ProviderKey: &pk,
+				Vscid:       vscid,
+				Power:       0,
+			})
 			consumerUpdates.Set(*lum.ConsumerKey, 0)
 		}
 	}
@@ -349,8 +237,8 @@ func (ka *KeyAssignment) calculateConsumerUpdates(vscid VSCID, stakingUpdates Ke
 		The purpose of this step is to ensure that the consumer is sent the latest
 		positive power update for any validator for which the power is positive.
 	*/
-	for loopPk := range providerKeysForUpdate.inner {
-		pk := loopPk // Avoid taking the address of the loop variable
+	for pk := range providerKeysForUpdate.inner {
+		pk := pk // Avoid taking the address of the loop variable
 
 		// For each provider key where there was either
 		// 1) already a positive power update
@@ -423,17 +311,17 @@ func (ka *KeyAssignment) ProviderUpdatesToConsumerUpdates(vscid VSCID, stakingUp
 	return consumerUpdatesAsList
 }
 
-// AssignDefaultsAndComputeUpdates assigns default keys for any validators
+// AssignDefaultsAndGetConsumerUpdates assigns default keys for any validators
 // without explicit assignments and computes the updates to send to the consumer.
-func (ka *KeyAssignment) AssignDefaultsAndComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) (consumerUpdates []abci.ValidatorUpdate) {
-	for _, u := range stakingUpdates {
+func (ka *KeyAssignment) AssignDefaultsAndGetConsumerUpdates(vscid VSCID, providerUpdates []abci.ValidatorUpdate) (consumerUpdates []abci.ValidatorUpdate) {
+	for _, u := range providerUpdates {
 		if _, found := ka.GetCurrentConsumerPubKeyFromProviderPubKey(u.PubKey); !found {
 			// The provider has not designated a key to use for the consumer chain. Use the provider key
 			// by default.
 			_ = ka.SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
 		}
 	}
-	return ka.ProviderUpdatesToConsumerUpdates(vscid, stakingUpdates)
+	return ka.ProviderUpdatesToConsumerUpdates(vscid, providerUpdates)
 }
 
 func (s *KeyAssignment) SetProviderAddrToConsumerKey(k ProviderAddr, v ConsumerKey) {
@@ -603,6 +491,125 @@ func (s *KeyAssignment) IterateConsumerAddrToLastUpdateInfo(stop func(ConsumerAd
 			return
 		}
 	}
+}
+
+// DeterministicStringify returns a deterministic string representation of the
+// key. This is useful to identify like keys with different representations.
+func DeterministicStringify(k tmprotocrypto.PublicKey) string {
+	sdkPubKey, err := cryptocodec.FromTmProtoPublicKey(k)
+	if err != nil {
+		panic("could not get sdk public key from tm proto public key")
+	}
+	return string(sdkPubKey.Bytes())
+}
+
+// KeyToPower is an implementation of a map from a public key to a power.
+// It is used because public keys are not comparable in Go, so they cannot be
+// used as builtin map keys.
+type KeyToPower struct {
+	inner     map[tmprotocrypto.PublicKey]int64
+	canonical map[string]tmprotocrypto.PublicKey
+}
+
+func MakeKeyToPower() KeyToPower {
+	return KeyToPower{
+		inner:     map[tmprotocrypto.PublicKey]int64{},
+		canonical: map[string]tmprotocrypto.PublicKey{},
+	}
+}
+
+// Set is a typical map set operation.
+func (m *KeyToPower) Set(pk tmprotocrypto.PublicKey, power int64) {
+	stringified := DeterministicStringify(pk)
+	if k, found := m.canonical[stringified]; found {
+		pk = k
+	} else {
+		m.canonical[stringified] = pk
+	}
+	m.inner[pk] = power
+}
+
+// Get is a typical map get operation.
+func (m *KeyToPower) Get(pk tmprotocrypto.PublicKey) (int64, bool) {
+	if k, found := m.canonical[DeterministicStringify(pk)]; found {
+		power, found := m.inner[k]
+		if !found {
+			panic("found canonical key but key not present in inner map")
+		}
+		return power, true
+	}
+	return -1, false
+}
+
+// KeyToLastUpdateInfo is an implementation of a map from a public key to a
+// memo storing the last update.
+// It is used because public keys are not comparable in Go, so they cannot be
+// used as builtin map keys.
+type KeyToLastUpdateInfo struct {
+	inner     map[tmprotocrypto.PublicKey]providertypes.LastUpdateInfo
+	canonical map[string]tmprotocrypto.PublicKey
+}
+
+func MakeKeyToLastUpdateInfo() KeyToLastUpdateInfo {
+	return KeyToLastUpdateInfo{
+		inner:     map[tmprotocrypto.PublicKey]providertypes.LastUpdateInfo{},
+		canonical: map[string]tmprotocrypto.PublicKey{},
+	}
+}
+
+// Set is a typical map set operation.
+func (m *KeyToLastUpdateInfo) Set(pk tmprotocrypto.PublicKey, memo providertypes.LastUpdateInfo) {
+	stringified := DeterministicStringify(pk)
+	if k, found := m.canonical[stringified]; found {
+		pk = k
+	} else {
+		m.canonical[stringified] = pk
+	}
+	m.inner[pk] = memo
+}
+
+// Get is a typical map get operation.
+func (m *KeyToLastUpdateInfo) Get(pk tmprotocrypto.PublicKey) (providertypes.LastUpdateInfo, bool) {
+	if k, found := m.canonical[DeterministicStringify(pk)]; found {
+		memo, found := m.inner[k]
+		if !found {
+			panic("found canonical key but key not present in inner map")
+		}
+		return memo, true
+	}
+	return providertypes.LastUpdateInfo{}, false
+}
+
+// KeySet is an implementation of a set of public keys.
+// It is used because public keys are not comparable in Go
+// so they cannot be used as builtin map keys.
+type KeySet struct {
+	inner     map[tmprotocrypto.PublicKey]struct{}
+	canonical map[string]tmprotocrypto.PublicKey
+}
+
+func MakeKeySet() KeySet {
+	return KeySet{
+		inner:     map[tmprotocrypto.PublicKey]struct{}{},
+		canonical: map[string]tmprotocrypto.PublicKey{},
+	}
+}
+
+// Add is a typical set add operation.
+func (s *KeySet) Add(pk tmprotocrypto.PublicKey) {
+	stringified := DeterministicStringify(pk)
+	if k, found := s.canonical[stringified]; found {
+		pk = k
+	} else {
+		s.canonical[stringified] = pk
+	}
+	s.inner[pk] = struct{}{}
+}
+
+// Add is a typical set has/contains operation.
+func (s *KeySet) Has(pk tmprotocrypto.PublicKey) bool {
+	_, found := s.canonical[DeterministicStringify(pk)]
+	return found
 }
 
 // Returns true iff internal invariants hold. For testing. Expensive.

@@ -154,7 +154,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 
 		// Map the validator updates through assigned validator consensus keys to get a list of updates
 		// to send to the consumer chain.
-		valUpdates := k.KeyAssignment(ctx, chainID).AssignDefaultsAndComputeUpdates(valUpdateID, valUpdates)
+		valUpdates := k.KeyAssignment(ctx, chainID).AssignDefaultsAndGetConsumerUpdates(valUpdateID, valUpdates)
 
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			// construct validator set change packet data
