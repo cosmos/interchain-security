@@ -736,8 +736,8 @@ func TestValidatorRemoval(t *testing.T) {
 		require.False(t, found)
 
 	}
-	ka.IterateConsumerAddrToLastUpdateInfo(func(cca providerkeeper.ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
-		pcaQueried := utils.TMCryptoPublicKeyToConsAddr(*lum.ProviderKey)
+	ka.IterateConsumerAddrToLastUpdateInfo(func(cca providerkeeper.ConsumerAddr, info providertypes.LastUpdateInfo) bool {
+		pcaQueried := utils.TMCryptoPublicKeyToConsAddr(*info.ProviderKey)
 		require.False(t, pca.Equals(pcaQueried))
 		return false
 	})

@@ -83,8 +83,8 @@ func (ka *KeyAssignment) DeleteProviderKey(pca ProviderAddr) {
 	toDelete := []ConsumerAddr{}
 	// Find all the consumer keys which were mapped to by the provider key
 	// in order to delete them
-	ka.IterateConsumerAddrToLastUpdateInfo(func(cca ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
-		pcaInMemo := utils.TMCryptoPublicKeyToConsAddr(*lum.ProviderKey)
+	ka.IterateConsumerAddrToLastUpdateInfo(func(cca ConsumerAddr, info providertypes.LastUpdateInfo) bool {
+		pcaInMemo := utils.TMCryptoPublicKeyToConsAddr(*info.ProviderKey)
 		if pca.Equals(pcaInMemo) {
 			toDelete = append(toDelete, cca)
 		}
@@ -109,8 +109,8 @@ func (ka *KeyAssignment) GetProviderPubKeyFromConsumerPubKey(ck ConsumerKey) (pk
 // GetProviderPubKeyFromConsumerConsAddress returns the provider key which was associated to the consumer key with
 // consensus address cca at the last update that used the consumer key.
 func (ka *KeyAssignment) GetProviderPubKeyFromConsumerConsAddress(cca sdk.ConsAddress) (pk ProviderKey, found bool) {
-	if lum, found := ka.GetConsumerAddrToLastUpdateInfo(cca); found {
-		return *lum.ProviderKey, true
+	if info, found := ka.GetConsumerAddrToLastUpdateInfo(cca); found {
+		return *info.ProviderKey, true
 	}
 	return pk, false
 }
@@ -134,11 +134,11 @@ func (k Keeper) GetProviderConsAddrForSlashing(ctx sdk.Context, chainID string, 
 // in a downtime or double sign slash instruction.
 func (ka *KeyAssignment) PruneUnusedKeys(latestMatureVscid VSCID) {
 	toDel := []ConsumerAddr{}
-	ka.IterateConsumerAddrToLastUpdateInfo(func(ca ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
+	ka.IterateConsumerAddrToLastUpdateInfo(func(ca ConsumerAddr, info providertypes.LastUpdateInfo) bool {
 		// If, for a given consumer key, the last update sent to the consumer for that key has 0 power and
 		// the consumer has matured that update, then the consumer chain can no longer reference that key
 		// in a slash packet and so the key can be pruned.
-		if lum.Power == 0 && lum.Vscid <= latestMatureVscid {
+		if info.Power == 0 && info.Vscid <= latestMatureVscid {
 			toDel = append(toDel, ca)
 		}
 		return false
@@ -165,13 +165,13 @@ func (ka *KeyAssignment) getProviderKeysForConsumerUpdates(stakingUpdates KeyToP
 	// Get provider keys which the consumer is aware of, because the
 	// last update sent to the consumer was a positive power update
 	// and the assigned key has changed since that update.
-	ka.IterateConsumerAddrToLastUpdateInfo(func(cca ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
-		pca := utils.TMCryptoPublicKeyToConsAddr(*lum.ProviderKey)
+	ka.IterateConsumerAddrToLastUpdateInfo(func(cca ConsumerAddr, info providertypes.LastUpdateInfo) bool {
+		pca := utils.TMCryptoPublicKeyToConsAddr(*info.ProviderKey)
 		if newCk, ok := ka.GetProviderAddrToConsumerKey(pca); ok {
-			oldCk := lum.ConsumerKey
+			oldCk := info.ConsumerKey
 			// Key changed? Last power was positive?
-			if !oldCk.Equal(newCk) && 0 < lum.Power {
-				ret.Add(*lum.ProviderKey)
+			if !oldCk.Equal(newCk) && 0 < info.Power {
+				ret.Add(*info.ProviderKey)
 			}
 		}
 		return false
@@ -184,10 +184,10 @@ func (ka *KeyAssignment) getProviderKeysForConsumerUpdates(stakingUpdates KeyToP
 // associated to the key, if that update was positive, and that update is included in mustCreateUpdate.
 func (ka KeyAssignment) getProviderKeysLastPositiveUpdate(mustCreateUpdate KeySet) KeyToLastUpdateInfo {
 	lastUpdate := MakeKeyToLastUpdateInfo()
-	ka.IterateConsumerAddrToLastUpdateInfo(func(_ ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
-		if 0 < lum.Power {
-			if mustCreateUpdate.Has(*lum.ProviderKey) {
-				lastUpdate.Set(*lum.ProviderKey, lum)
+	ka.IterateConsumerAddrToLastUpdateInfo(func(_ ConsumerAddr, info providertypes.LastUpdateInfo) bool {
+		if 0 < info.Power {
+			if mustCreateUpdate.Has(*info.ProviderKey) {
+				lastUpdate.Set(*info.ProviderKey, info)
 			}
 		}
 		return false
@@ -219,15 +219,15 @@ func (ka *KeyAssignment) calculateConsumerUpdates(vscid VSCID, stakingUpdates Ke
 		// For each provider key for which there was already a positive update
 		// create a deletion update for the associated consumer key.
 		pk := pk // Avoid taking the address of the loop variable
-		if lum, found := providerKeysLastPositivePowerUpdateMemo.Get(pk); found {
-			cca := utils.TMCryptoPublicKeyToConsAddr(*lum.ConsumerKey)
+		if info, found := providerKeysLastPositivePowerUpdateMemo.Get(pk); found {
+			cca := utils.TMCryptoPublicKeyToConsAddr(*info.ConsumerKey)
 			ka.SetConsumerAddrToLastUpdateInfo(cca, providertypes.LastUpdateInfo{
-				ConsumerKey: lum.ConsumerKey,
+				ConsumerKey: info.ConsumerKey,
 				ProviderKey: &pk,
 				Vscid:       vscid,
 				Power:       0,
 			})
-			consumerUpdates.Set(*lum.ConsumerKey, 0)
+			consumerUpdates.Set(*info.ConsumerKey, 0)
 		}
 	}
 
@@ -247,9 +247,9 @@ func (ka *KeyAssignment) calculateConsumerUpdates(vscid VSCID, stakingUpdates Ke
 
 		var power int64 = 0
 
-		if lum, found := providerKeysLastPositivePowerUpdateMemo.Get(pk); found {
+		if info, found := providerKeysLastPositivePowerUpdateMemo.Get(pk); found {
 			// There was previously a positive power update: copy it.
-			power = lum.Power
+			power = info.Power
 		}
 
 		// There is a new validator power: use it. It takes precedence.
@@ -680,8 +680,8 @@ func (ka *KeyAssignment) InternalInvariants() bool {
 	{
 		// All entries in ConsumerAddrToLastUpdateInfo have a consumer consensus
 		// address which is the address held inside
-		ka.IterateConsumerAddrToLastUpdateInfo(func(cca ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
-			consAddr := utils.TMCryptoPublicKeyToConsAddr(*lum.ConsumerKey)
+		ka.IterateConsumerAddrToLastUpdateInfo(func(cca ConsumerAddr, info providertypes.LastUpdateInfo) bool {
+			consAddr := utils.TMCryptoPublicKeyToConsAddr(*info.ConsumerKey)
 			good = good && cca.Equals(consAddr)
 			return false
 		})
@@ -691,9 +691,9 @@ func (ka *KeyAssignment) InternalInvariants() bool {
 		// The set of all LastUpdateMemos with positive power
 		// has pairwise unique provider keys
 		seen := map[string]bool{}
-		ka.IterateConsumerAddrToLastUpdateInfo(func(_ ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
-			if 0 < lum.Power {
-				s := DeterministicStringify(*lum.ProviderKey)
+		ka.IterateConsumerAddrToLastUpdateInfo(func(_ ConsumerAddr, info providertypes.LastUpdateInfo) bool {
+			if 0 < info.Power {
+				s := DeterministicStringify(*info.ProviderKey)
 				if _, ok := seen[s]; ok {
 					good = false
 				}
