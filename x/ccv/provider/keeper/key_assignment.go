@@ -393,147 +393,47 @@ func (ka *KeyAssignment) getConsumerUpdates(vscid VSCID, stakingUpdates KeyToPow
 func (ka *KeyAssignment) ComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) []abci.ValidatorUpdate {
 
 	// Create a map of provider keys to power
-	keyToPower := MakeKeyToPower()
+	// Create a map data structure from the staking module updates
+	// This allows us to look up the power for a given provider key
+	stakingUpdatesMap := MakeKeyToPower()
 	for _, u := range stakingUpdates {
-		keyToPower.Set(u.PubKey, u.Power)
+		stakingUpdatesMap.Set(u.PubKey, u.Power)
 	}
 
 	// Use the latest staking updates to compute a list of consumer updates. The consumer updates
 	// are calculated to ensure a replicated validator set on the consumer.
-	consumerUpdates := ka.getConsumerUpdates(vscid, keyToPower)
+	consumerUpdatesMap := ka.getConsumerUpdates(vscid, stakingUpdatesMap)
 
 	// Transform the consumer updates back into a list for sending to the consumer
 	// The consumer will aggregate updates and ultimately send them to tendermint.
-	tendermintUpdates := []abci.ValidatorUpdate{}
-	for ck, power := range consumerUpdates.inner {
-		tendermintUpdates = append(tendermintUpdates, abci.ValidatorUpdate{PubKey: ck, Power: power})
+	consumerUpdatesAsList := []abci.ValidatorUpdate{}
+	for ck, power := range consumerUpdatesMap.inner {
+		consumerUpdatesAsList = append(consumerUpdatesAsList, abci.ValidatorUpdate{PubKey: ck, Power: power})
 	}
 
 	// The list of tendermint updates should hash the same across all consensus nodes
 	// that means it is necessary to sort for determinism.
-	sort.Slice(tendermintUpdates, func(i, j int) bool {
-		if tendermintUpdates[i].Power > tendermintUpdates[j].Power {
+	sort.Slice(consumerUpdatesAsList, func(i, j int) bool {
+		if consumerUpdatesAsList[i].Power > consumerUpdatesAsList[j].Power {
 			return true
 		}
-		return tendermintUpdates[i].PubKey.String() > tendermintUpdates[j].PubKey.String()
+		return consumerUpdatesAsList[i].PubKey.String() > consumerUpdatesAsList[j].PubKey.String()
 	})
 
-	return tendermintUpdates
+	return consumerUpdatesAsList
 }
 
-// AssignDefaultsForProviderKeysWithoutExplicitAssignments assigns the default consumer key to any provider key
-// for which a consumer key has not been explicitly assigned.
-func (ka *KeyAssignment) AssignDefaultsForProviderKeysWithoutExplicitAssignments(updates []abci.ValidatorUpdate) {
-	for _, u := range updates {
+// AssignDefaultsAndComputeUpdates assigns default keys for any validators
+// without explicit assignments and computes the updates to send to the consumer.
+func (ka *KeyAssignment) AssignDefaultsAndComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) (consumerUpdates []abci.ValidatorUpdate) {
+	for _, u := range stakingUpdates {
 		if _, found := ka.GetCurrentConsumerPubKeyFromProviderPubKey(u.PubKey); !found {
 			// The provider has not designated a key to use for the consumer chain. Use the provider key
 			// by default.
 			_ = ka.SetProviderPubKeyToConsumerPubKey(u.PubKey, u.PubKey)
 		}
 	}
-}
-
-// AssignDefaultsAndComputeUpdates is a convenience function which calls AssignDefaultsForProviderKeysWithoutExplicitAssignments
-// and also computes the latest set of updates to send to the consumer using ComputeUpdates.
-func (ka *KeyAssignment) AssignDefaultsAndComputeUpdates(vscid VSCID, stakingUpdates []abci.ValidatorUpdate) (consumerUpdates []abci.ValidatorUpdate) {
-	ka.AssignDefaultsForProviderKeysWithoutExplicitAssignments(stakingUpdates)
 	return ka.ComputeUpdates(vscid, stakingUpdates)
-}
-
-// Returns true iff internal invariants hold. For testing. Expensive.
-func (ka *KeyAssignment) InternalInvariants() bool {
-
-	good := true
-
-	{
-		// No two provider keys can map to the same consumer key
-		// (ProviderAddrToConsumerKey is sane)
-		seen := map[string]bool{}
-		ka.IterateProviderAddrToConsumerKey(func(_ ProviderAddr, ck ConsumerKey) bool {
-			if seen[DeterministicStringify(ck)] {
-				good = false
-			}
-			seen[DeterministicStringify(ck)] = true
-			return false
-		})
-	}
-
-	{
-		// All values of ProviderAddrToConsumerKey is a key of ConsumerKeyToProviderKey
-		// (reverse lookup is always possible)
-		ka.IterateProviderAddrToConsumerKey(func(pca ProviderAddr, ck ConsumerKey) bool {
-			if pkQueried, ok := ka.GetConsumerKeyToProviderKey(ck); ok {
-				pcaQueried := utils.TMCryptoPublicKeyToConsAddr(pkQueried)
-				good = good && string(pcaQueried) == string(pca)
-			} else {
-				good = false
-			}
-			return false
-		})
-	}
-
-	{
-		// All consumer keys mapping to provider keys are actually
-		// mapped to by the provider key.
-		// (ckToPk is sane)
-		ka.IterateConsumerKeyToProviderKey(func(ck ConsumerKey, _ ProviderKey) bool {
-			found := false
-			ka.IterateProviderAddrToConsumerKey(func(_ ProviderAddr, candidateCk ConsumerKey) bool {
-				if candidateCk.Equal(ck) {
-					found = true
-					return true
-				}
-				return false
-			})
-			good = good && found
-			return false
-		})
-	}
-
-	{
-		// If a consumer key is mapped to a provider key (currently)
-		// any last update memo containing the same consumer key has the same
-		// mapping.
-		// (Ensures lookups are correct)
-		ka.IterateConsumerKeyToProviderKey(func(ck ConsumerKey, pk ProviderKey) bool {
-			if m, ok := ka.GetConsumerAddrToLastUpdateInfo(utils.TMCryptoPublicKeyToConsAddr(ck)); ok {
-				if !pk.Equal(m.ProviderKey) {
-					good = false
-				}
-			}
-			return false
-		})
-	}
-
-	{
-		// All entries in ConsumerAddrToLastUpdateInfo have a consumer consensus
-		// address which is the address held inside
-		ka.IterateConsumerAddrToLastUpdateInfo(func(cca ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
-			consAddr := utils.TMCryptoPublicKeyToConsAddr(*lum.ConsumerKey)
-			good = good && cca.Equals(consAddr)
-			return false
-		})
-	}
-
-	{
-		// The set of all LastUpdateMemos with positive power
-		// has pairwise unique provider keys
-		seen := map[string]bool{}
-		ka.IterateConsumerAddrToLastUpdateInfo(func(_ ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
-			if 0 < lum.Power {
-				s := DeterministicStringify(*lum.ProviderKey)
-				if _, ok := seen[s]; ok {
-					good = false
-				}
-				seen[s] = true
-
-			}
-			return false
-		})
-	}
-
-	return good
-
 }
 
 func (s *KeyAssignment) SetProviderAddrToConsumerKey(k ProviderAddr, v ConsumerKey) {
@@ -703,4 +603,100 @@ func (s *KeyAssignment) IterateConsumerAddrToLastUpdateInfo(stop func(ConsumerAd
 			return
 		}
 	}
+}
+
+// Returns true iff internal invariants hold. For testing. Expensive.
+func (ka *KeyAssignment) InternalInvariants() bool {
+
+	good := true
+
+	{
+		// No two provider keys can map to the same consumer key
+		// (ProviderAddrToConsumerKey is sane)
+		seen := map[string]bool{}
+		ka.IterateProviderAddrToConsumerKey(func(_ ProviderAddr, ck ConsumerKey) bool {
+			if seen[DeterministicStringify(ck)] {
+				good = false
+			}
+			seen[DeterministicStringify(ck)] = true
+			return false
+		})
+	}
+
+	{
+		// All values of ProviderAddrToConsumerKey is a key of ConsumerKeyToProviderKey
+		// (reverse lookup is always possible)
+		ka.IterateProviderAddrToConsumerKey(func(pca ProviderAddr, ck ConsumerKey) bool {
+			if pkQueried, ok := ka.GetConsumerKeyToProviderKey(ck); ok {
+				pcaQueried := utils.TMCryptoPublicKeyToConsAddr(pkQueried)
+				good = good && string(pcaQueried) == string(pca)
+			} else {
+				good = false
+			}
+			return false
+		})
+	}
+
+	{
+		// All consumer keys mapping to provider keys are actually
+		// mapped to by the provider key.
+		// (ckToPk is sane)
+		ka.IterateConsumerKeyToProviderKey(func(ck ConsumerKey, _ ProviderKey) bool {
+			found := false
+			ka.IterateProviderAddrToConsumerKey(func(_ ProviderAddr, candidateCk ConsumerKey) bool {
+				if candidateCk.Equal(ck) {
+					found = true
+					return true
+				}
+				return false
+			})
+			good = good && found
+			return false
+		})
+	}
+
+	{
+		// If a consumer key is mapped to a provider key (currently)
+		// any last update memo containing the same consumer key has the same
+		// mapping.
+		// (Ensures lookups are correct)
+		ka.IterateConsumerKeyToProviderKey(func(ck ConsumerKey, pk ProviderKey) bool {
+			if m, ok := ka.GetConsumerAddrToLastUpdateInfo(utils.TMCryptoPublicKeyToConsAddr(ck)); ok {
+				if !pk.Equal(m.ProviderKey) {
+					good = false
+				}
+			}
+			return false
+		})
+	}
+
+	{
+		// All entries in ConsumerAddrToLastUpdateInfo have a consumer consensus
+		// address which is the address held inside
+		ka.IterateConsumerAddrToLastUpdateInfo(func(cca ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
+			consAddr := utils.TMCryptoPublicKeyToConsAddr(*lum.ConsumerKey)
+			good = good && cca.Equals(consAddr)
+			return false
+		})
+	}
+
+	{
+		// The set of all LastUpdateMemos with positive power
+		// has pairwise unique provider keys
+		seen := map[string]bool{}
+		ka.IterateConsumerAddrToLastUpdateInfo(func(_ ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
+			if 0 < lum.Power {
+				s := DeterministicStringify(*lum.ProviderKey)
+				if _, ok := seen[s]; ok {
+					good = false
+				}
+				seen[s] = true
+
+			}
+			return false
+		})
+	}
+
+	return good
+
 }
