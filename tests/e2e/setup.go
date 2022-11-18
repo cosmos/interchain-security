@@ -204,6 +204,12 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.transferPath = firstBundle.TransferPath
 }
 
+func (suite *CCVTestSuite) SetupAllCCVChannels() {
+	for _, bundle := range suite.consumerBundles {
+		suite.SetupCCVChannel(bundle.Path)
+	}
+}
+
 func (suite *CCVTestSuite) SetupCCVChannel(path *ibctesting.Path) {
 	suite.StartSetupCCVChannel(path)
 	suite.CompleteSetupCCVChannel(path)
