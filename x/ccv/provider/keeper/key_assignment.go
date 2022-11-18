@@ -9,6 +9,7 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
@@ -134,11 +135,11 @@ func (ka *KeyAssignment) PruneUnusedKeys(latestMatureVscid VSCID) {
 // DeterministicStringify returns a deterministic string representation of the
 // key. This is useful to identify like keys with different representations.
 func DeterministicStringify(k tmprotocrypto.PublicKey) string {
-	bz, err := k.Marshal()
+	sdkPubKey, err := cryptocodec.FromTmProtoPublicKey(k)
 	if err != nil {
-		panic(err)
+		panic("could not get sdk public key from tm proto public key")
 	}
-	return string(bz)
+	return string(sdkPubKey.Bytes())
 }
 
 // KeyToPower is an implementation of a map from a public key to a power.

@@ -517,6 +517,13 @@ func TestKeyAssignmentKeySerialization(t *testing.T) {
 		require.Equal(t, bz0[i], bz1[i])
 	}
 }
+func TestKeyAssignmentDeterministicStringify(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		k0 := key(i)
+		k1 := key(i)
+		require.True(t, providerkeeper.DeterministicStringify(k0) == providerkeeper.DeterministicStringify(k1))
+	}
+}
 
 func TestKeyAssignmentKeyComparison(t *testing.T) {
 	// Marshall a key
