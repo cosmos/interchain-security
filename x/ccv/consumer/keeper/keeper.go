@@ -16,6 +16,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -428,8 +429,36 @@ func (k Keeper) DeletePendingDataPackets(ctx sdk.Context) {
 }
 
 // AppendPendingDataPacket appends the given data packet to the pending data packets in store
-func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet types.ConsumerPacket) {
+func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...types.ConsumerPacket) {
 	pending := k.GetPendingPackets(ctx)
-	list := append(pending.GetList(), packet)
+	list := append(pending.GetList(), packet...)
 	k.SetPendingPackets(ctx, types.ConsumerPackets{List: list})
+}
+
+// GetHeightToValsetUpdateIDs returns all height to valset update id mappings in store
+func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToValsetUpdateID {
+	heightToVCIDs := []types.HeightToValsetUpdateID{}
+	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) bool {
+		hv := types.HeightToValsetUpdateID{
+			Height:         height,
+			ValsetUpdateId: vscID,
+		}
+		heightToVCIDs = append(heightToVCIDs, hv)
+		return true
+	})
+
+	return heightToVCIDs
+}
+
+// GetOutstandingDowntimes returns all outstanding downtimes in store
+func (k Keeper) GetOutstandingDowntimes(ctx sdk.Context) []consumertypes.OutstandingDowntime {
+	outstandingDowntimes := []types.OutstandingDowntime{}
+	k.IterateOutstandingDowntime(ctx, func(addr string) bool {
+		od := types.OutstandingDowntime{
+			ValidatorConsensusAddress: addr,
+		}
+		outstandingDowntimes = append(outstandingDowntimes, od)
+		return false
+	})
+	return outstandingDowntimes
 }

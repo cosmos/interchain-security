@@ -40,7 +40,7 @@ message GenesisState {
 
 // consumer chain
 message ConsumerState {
-  // ChannelID defines the chain ID for the consumer chain
+  // ChainID defines the chain ID for the consumer chain
   string chain_id = 1;
   // ChannelID defines the IBC channel ID for the consumer chain
   string channel_id = 2;

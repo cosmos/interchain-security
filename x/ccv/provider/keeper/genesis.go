@@ -9,6 +9,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
+// InitGenesis initializes the CCV provider state and binds to PortID.
 func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	k.SetPort(ctx, ccv.ProviderPortID)
 
@@ -28,15 +29,15 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		k.SetValsetUpdateBlockHeight(ctx, v2h.ValsetUpdateId, v2h.Height)
 	}
 
-	for _, cccp := range genState.ConsumerAdditionProposals {
+	for _, prop := range genState.ConsumerAdditionProposals {
 		// prevent implicit memory aliasing
-		cccp := cccp
-		if err := k.SetPendingConsumerAdditionProp(ctx, &cccp); err != nil {
+		prop := prop
+		if err := k.SetPendingConsumerAdditionProp(ctx, &prop); err != nil {
 			panic(fmt.Errorf("pending create consumer chain proposal could not be persisted: %w", err))
 		}
 	}
-	for _, sccp := range genState.ConsumerRemovalProposals {
-		k.SetPendingConsumerRemovalProp(ctx, sccp.ChainId, sccp.StopTime)
+	for _, prop := range genState.ConsumerRemovalProposals {
+		k.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
 	}
 	for _, ubdOp := range genState.UnbondingOps {
 		if err := k.SetUnbondingOp(ctx, ubdOp); err != nil {
@@ -44,6 +45,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 	}
 
+	// Note that MatureUnbondingOps aren't stored across blocks, but it
+	// might be used after implementing sovereign to consumer transition
 	if genState.MatureUnbondingOps != nil {
 		if err := k.AppendMaturedUnbondingOps(ctx, genState.MatureUnbondingOps.Ids); err != nil {
 			panic(err)
@@ -78,6 +81,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	k.SetParams(ctx, genState.Params)
 }
 
+// ExportGenesis returns the CCV provider module's exported genesis
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	var consumerStates []types.ConsumerState
 	// export states for each consumer chains

@@ -6,7 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
@@ -15,6 +14,11 @@ import (
 )
 
 // InitGenesis initializes the CCV consumer state and binds to PortID.
+// The three states in which a consumer chain can start/restart:
+//
+//  1. A client to the provider was never created, i.e. a new consumer chain is started for the first time.
+//  2. A consumer chain restarts after a client to the provider was created, but the CCV channel handshake is still in progress
+//  3. A consumer chain restarts after the CCV channel handshake was completed.
 func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) []abci.ValidatorUpdate {
 	k.SetParams(ctx, state.Params)
 	// TODO: Remove enabled flag and find a better way to setup e2e tests
@@ -37,40 +41,55 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 	}
 
 	// initialValSet is checked in NewChain case by ValidateGenesis
+	// start a new chain
 	if state.NewChain {
-		// Create the provider client in InitGenesis for new consumer chain. CCV Handshake must be established with this client id.
+		// create the provider client in InitGenesis for new consumer chain. CCV Handshake must be established with this client id.
 		clientID, err := k.clientKeeper.CreateClient(ctx, state.ProviderClientState, state.ProviderConsensusState)
 		if err != nil {
 			panic(err)
 		}
 
-		// Set default value for valset update ID
-		k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()), uint64(0))
 		// set provider client id.
 		k.SetProviderClientID(ctx, clientID)
-	} else {
-		// verify that latest consensus state on provider client matches the initial validator set of restarted chain
-		// thus, IBC genesis MUST run before CCV consumer genesis
-		consState, ok := k.clientKeeper.GetLatestClientConsensusState(ctx, state.ProviderClientId)
-		if !ok {
-			panic("consensus state for provider client not found. MUST run IBC genesis before CCV consumer genesis")
-		}
-		tmConsState, ok := consState.(*ibctmtypes.ConsensusState)
-		if !ok {
-			panic(fmt.Sprintf("consensus state has wrong type. expected: %T, got: %T", &ibctmtypes.ConsensusState{}, consState))
-		}
 
-		// ensure that initial validator set is same as initial consensus state on provider client.
-		// this will be verified by provider module on channel handshake.
-		vals, err := tmtypes.PB2TM.ValidatorUpdates(state.InitialValSet)
-		if err != nil {
+		// set default value for valset update ID
+		k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()), uint64(0))
+
+	} else {
+		// verify genesis initial valset against the latest consensus state
+		// IBC genesis MUST run before CCV consumer genesis
+		if err := k.verifyGenesisInitValset(ctx, state); err != nil {
 			panic(err)
 		}
-		valSet := tmtypes.NewValidatorSet(vals)
 
-		if !bytes.Equal(tmConsState.NextValidatorsHash, valSet.Hash()) {
-			panic("initial validator set does not match last consensus state of the provider client")
+		// chain restarts with the CCV channel established
+		if state.ProviderChannelId != "" {
+			// set provider channel ID
+			k.SetProviderChannel(ctx, state.ProviderChannelId)
+			// set all unbonding sequences
+			for _, mp := range state.MaturingPackets {
+				k.SetPacketMaturityTime(ctx, mp.VscId, mp.MaturityTime)
+			}
+			// set outstanding downtime slashing requests
+			for _, od := range state.OutstandingDowntimeSlashing {
+				consAddr, err := sdk.ConsAddressFromBech32(od.ValidatorConsensusAddress)
+				if err != nil {
+					panic(err)
+				}
+				k.SetOutstandingDowntime(ctx, consAddr)
+			}
+
+			// set last transmission block height
+			err := k.SetLastTransmissionBlockHeight(ctx, state.LastTransmissionBlockHeight)
+			if err != nil {
+				panic(fmt.Sprintf("could not set last transmission block height: %v", err))
+			}
+
 		}
+
+		// set pending consumer pending packets
+		// note that the list includes pending mature VSC packet only if the handshake is completed
+		k.AppendPendingPacket(ctx, state.PendingConsumerPackets.List...)
 
 		// set height to valset update id mapping
 		for _, h2v := range state.HeightToValsetUpdateId {
@@ -79,12 +98,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 
 		// set provider client id
 		k.SetProviderClientID(ctx, state.ProviderClientId)
-		// set provider channel id.
-		k.SetProviderChannel(ctx, state.ProviderChannelId)
-		// set all unbonding sequences
-		for _, mp := range state.MaturingPackets {
-			k.SetPacketMaturityTime(ctx, mp.VscId, mp.MaturityTime)
-		}
+
 	}
 
 	// populate cross chain validators states with initial valset
@@ -93,8 +107,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 	return state.InitialValSet
 }
 
-// ExportGenesis exports the CCV consumer state. If the channel has already been established, then we export
-// provider chain. Otherwise, this is still considered a new chain and we export latest client state.
+// ExportGenesis returns the CCV consumer module's exported genesis
 func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisState) {
 	params := k.GetParams(ctx)
 	if !params.Enabled {
@@ -102,7 +115,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 	}
 
 	// export the current validator set
-	valset, err := k.GetValidatorUpdates(ctx)
+	valset, err := k.GetCurrentValidatorsAsABCIUpdates(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("fail to retrieve the validator set: %s", err))
 	}
@@ -114,9 +127,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			panic("provider client does not exist")
 		}
 
-		maturingPackets := []types.MaturingVSCPacket{}
+		maturingPackets := []consumertypes.MaturingVSCPacket{}
 		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) bool {
-			mat := types.MaturingVSCPacket{
+			mat := consumertypes.MaturingVSCPacket{
 				VscId:        vscId,
 				MaturityTime: timeNs,
 			}
@@ -124,60 +137,80 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			return false
 		})
 
-		heightToVCIDs := []types.HeightToValsetUpdateID{}
-		k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) bool {
-			hv := types.HeightToValsetUpdateID{
-				Height:         height,
-				ValsetUpdateId: vscID,
-			}
-			heightToVCIDs = append(heightToVCIDs, hv)
-			return true
-		})
-
-		outstandingDowntimes := []types.OutstandingDowntime{}
+		outstandingDowntimes := []consumertypes.OutstandingDowntime{}
 		k.IterateOutstandingDowntime(ctx, func(addr string) bool {
-			od := types.OutstandingDowntime{
+			od := consumertypes.OutstandingDowntime{
 				ValidatorConsensusAddress: addr,
 			}
 			outstandingDowntimes = append(outstandingDowntimes, od)
 			return true
 		})
 
-		genesis = types.NewRestartGenesisState(
+		// TODO: update GetLastTransmissionBlockHeight to not return an error
+		ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
+		if err != nil {
+			panic(err)
+		}
+
+		genesis = consumertypes.NewRestartGenesisState(
 			clientID,
 			channelID,
 			maturingPackets,
 			valset,
-			heightToVCIDs,
+			k.GetHeightToValsetUpdateIDs(ctx),
+			k.GetPendingPackets(ctx),
 			outstandingDowntimes,
+			*ltbh,
 			params,
 		)
 	} else {
 		clientID, ok := k.GetProviderClientID(ctx)
-		// if provider clientID and channelID don't exist on the consumer chain, then CCV protocol is disabled for this chain
-		// return a disabled genesis state
+		// if provider clientID and channelID don't exist on the consumer chain,
+		// then CCV protocol is disabled for this chain return a default genesis state
 		if !ok {
 			return consumertypes.DefaultGenesisState()
 		}
-		cs, ok := k.clientKeeper.GetClientState(ctx, clientID)
-		if !ok {
-			panic("provider client not set on already running consumer chain")
-		}
-		tmCs, ok := cs.(*ibctmtypes.ClientState)
-		if !ok {
-			panic("provider client consensus state is not tendermint client state")
-		}
-		consState, ok := k.clientKeeper.GetLatestClientConsensusState(ctx, clientID)
-		if !ok {
-			panic("provider consensus state not set on already running consumer chain")
-		}
-		tmConsState, ok := consState.(*ibctmtypes.ConsensusState)
-		if !ok {
-			panic("provider consensus state is not tendermint consensus state")
-		}
+
 		// export client states and pending slashing requests into a new chain genesis
-		genesis = consumertypes.NewInitialGenesisState(tmCs, tmConsState, valset, params)
+		genesis = consumertypes.NewRestartGenesisState(
+			clientID,
+			"",
+			nil,
+			valset,
+			k.GetHeightToValsetUpdateIDs(ctx),
+			k.GetPendingPackets(ctx),
+			nil,
+			consumertypes.LastTransmissionBlockHeight{},
+			params,
+		)
 	}
 
 	return
+}
+
+// verifyGenesisInitValset verifies the latest consensus state on provider client matches
+// the initial validator set of restarted chain thus
+func (k Keeper) verifyGenesisInitValset(ctx sdk.Context, genState *consumertypes.GenesisState) error {
+
+	consState, ok := k.clientKeeper.GetLatestClientConsensusState(ctx, genState.ProviderClientId)
+	if !ok {
+		return fmt.Errorf("consensus state for provider client not found. MUST run IBC genesis before CCV consumer genesis")
+	}
+	tmConsState, ok := consState.(*ibctmtypes.ConsensusState)
+	if !ok {
+		return fmt.Errorf(fmt.Sprintf("consensus state has wrong type. expected: %T, got: %T", &ibctmtypes.ConsensusState{}, consState))
+	}
+
+	// ensure that initial validator set is same as initial consensus state on provider client.
+	// this will be verified by provider module on channel handshake.
+	vals, err := tmtypes.PB2TM.ValidatorUpdates(genState.InitialValSet)
+	if err != nil {
+		return err
+	}
+	valSet := tmtypes.NewValidatorSet(vals)
+
+	if !bytes.Equal(tmConsState.NextValidatorsHash, valSet.Hash()) {
+		return fmt.Errorf("initial validator set does not match last consensus state of the provider client")
+	}
+	return nil
 }
