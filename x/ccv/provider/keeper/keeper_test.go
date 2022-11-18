@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -391,4 +392,43 @@ func TestVscSendTimestamp(t *testing.T) {
 		return false // do not stop
 	})
 	require.Equal(t, 0, i)
+}
+
+// TestIterateConsumerChains iterates over consumer chains
+func TestIterateConsumerChains(t *testing.T) {
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	chainIDs := []string{"chain-1", "chain-2"}
+	for _, c := range chainIDs {
+		pk.SetConsumerClientId(ctx, c, fmt.Sprintf("client-%s", c))
+	}
+
+	result := []string{}
+	testIterateAll := func(ctx sdk.Context, chainID, clientID string) (stop bool) {
+		result = append(result, chainID)
+		return false // will not stop iteration
+	}
+
+	require.Empty(t, result, "initial result not empty")
+	require.Len(t, chainIDs, 2, "initial chainIDs not len 2")
+
+	// iterate and check all chains are returned
+	pk.IterateConsumerChains(ctx, testIterateAll)
+	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
+	require.Contains(t, result, chainIDs[0], "result does not contain '%s'", chainIDs[0])
+	require.Contains(t, result, chainIDs[1], "result does not contain '%s'", chainIDs[1])
+
+	result = []string{}
+	testGetFirst := func(ctx sdk.Context, chainID, clientID string) (stop bool) {
+		result = append(result, chainID)
+		return true // will stop iteration after iterating 1 element
+	}
+	require.Empty(t, result, "initial result not empty")
+	// iterate and check first chain is
+	pk.IterateConsumerChains(ctx, testGetFirst)
+	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
+	require.Contains(t, result, chainIDs[0], "result does not contain '%s'", chainIDs[0])
+	require.NotContains(t, result, chainIDs[1], "result should not contain '%s'", chainIDs[1])
+
 }
