@@ -148,7 +148,7 @@ func (gs GenesisState) Validate() error {
 			if len(gs.PendingConsumerPackets.List) != 0 {
 				for _, packet := range gs.PendingConsumerPackets.List {
 					if packet.Type == VscMaturedPacket {
-						return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "pending maturing packets must be empty for new chain")
+						return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "pending maturing packets must be empty when handshake isn't completed")
 					}
 				}
 			}
