@@ -13,6 +13,7 @@ import (
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
+	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
@@ -24,7 +25,7 @@ func key(seed int) tmprotocrypto.PublicKey {
 
 // Num traces to run for heuristic testing
 // About 1.5 secs per trace when using real store
-const NUM_TRACES = 400
+const NUM_TRACES = 200
 
 // Len of trace for a single heuristic testing run
 const TRACE_LEN = 400
@@ -34,7 +35,7 @@ const NUM_VALS = 8
 
 // Number of consumer keys in the universe
 // (This is constrained to ensure overlap edge cases are tested)
-const NUM_CKS = 30
+const NUM_CKS = 24
 
 type keyAssignmentEntry struct {
 	pk providerkeeper.ProviderPublicKey
@@ -276,7 +277,7 @@ func (d *driver) externalInvariants() {
 			// The query must return a result
 			pkQueried, found := d.ka.GetProviderPubKeyFromConsumerPubKey(ckOnConsumer)
 			require.True(d.t, found)
-			pkQueriedByConsAddr, found := d.ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(ckOnConsumer))
+			pkQueriedByConsAddr, found := d.ka.GetProviderPubKeyFromConsumerConsAddress(utils.TMCryptoPublicKeyToConsAddr(ckOnConsumer))
 			require.True(d.t, found)
 			require.Equal(d.t, pkQueried, pkQueriedByConsAddr)
 
@@ -351,7 +352,7 @@ func (d *driver) externalInvariants() {
 
 		// Simply check every consumer key for the correct queryable-ness.
 		for ck := 0; ck < NUM_CKS; ck++ {
-			cca := providerkeeper.TMCryptoPublicKeyToConsAddr(key(ck))
+			cca := utils.TMCryptoPublicKeyToConsAddr(key(ck))
 			_, actualQueryable := d.ka.GetProviderPubKeyFromConsumerConsAddress(cca)
 			if expect, found := expectQueryable[providerkeeper.DeterministicStringify(key(ck))]; found && expect {
 				require.True(d.t, actualQueryable)
@@ -640,13 +641,13 @@ func TestKeyAssignmentSetUseReplaceAndReverse(t *testing.T) {
 	ka.ComputeUpdates(100, updates)
 	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // New consumer key
 	require.NoError(t, err)
-	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
+	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(utils.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // New is queryable
 	require.Equal(t, key(42), actual)
 	ka.ComputeUpdates(101, updates) // Old is no longer known to consumer
 	ka.PruneUnusedKeys(102)         // Old is garbage collected on provider
-	_, found := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
+	_, found := ka.GetProviderPubKeyFromConsumerConsAddress(utils.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.False(t, found)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
 	require.Equal(t, key(42), actual)
@@ -694,12 +695,12 @@ func TestKeyAssignmentSetUseReplaceAndPrune(t *testing.T) {
 	ka.ComputeUpdates(100, updates)
 	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44))
 	require.NoError(t, err)
-	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
+	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(utils.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // Queryable
 	require.Equal(t, key(42), actual)
 	ka.PruneUnusedKeys(101) // Should not be pruned
-	_, found := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
+	_, found := ka.GetProviderPubKeyFromConsumerConsAddress(utils.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.True(t, found)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
 	require.Equal(t, key(42), actual)
@@ -752,7 +753,7 @@ func TestValidatorRemoval(t *testing.T) {
 	require.NoError(t, err)
 	ka.ComputeUpdates(2, updates)
 
-	pca := providerkeeper.TMCryptoPublicKeyToConsAddr(key(42))
+	pca := utils.TMCryptoPublicKeyToConsAddr(key(42))
 	err = ka.DeleteProviderKey(pca)
 	require.NoError(t, err)
 
@@ -766,12 +767,12 @@ func TestValidatorRemoval(t *testing.T) {
 	require.False(t, found)
 
 	for i := 43; i < 46; i++ {
-		_, found = ka.Store.GetConsumerConsAddrToLastUpdateMemo(providerkeeper.TMCryptoPublicKeyToConsAddr(key(i)))
+		_, found = ka.Store.GetConsumerConsAddrToLastUpdateMemo(utils.TMCryptoPublicKeyToConsAddr(key(i)))
 		require.False(t, found)
 
 	}
 	ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(cca providerkeeper.ConsumerConsAddr, lum providertypes.LastUpdateMemo) bool {
-		pcaQueried := providerkeeper.TMCryptoPublicKeyToConsAddr(*lum.ProviderKey)
+		pcaQueried := utils.TMCryptoPublicKeyToConsAddr(*lum.ProviderKey)
 		require.False(t, pca.Equals(pcaQueried))
 		return false
 	})
@@ -844,17 +845,17 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 	ckToPk := map[providerkeeper.ConsumerPublicKey]providerkeeper.ProviderPublicKey{}
 	ccaToLastUpdateMemo := map[string]providertypes.LastUpdateMemo{}
 
-	pcaToCk[string(providerkeeper.TMCryptoPublicKeyToConsAddr(keys[0]))] = keys[1]
-	pcaToCk[string(providerkeeper.TMCryptoPublicKeyToConsAddr(keys[2]))] = keys[3]
+	pcaToCk[string(utils.TMCryptoPublicKeyToConsAddr(keys[0]))] = keys[1]
+	pcaToCk[string(utils.TMCryptoPublicKeyToConsAddr(keys[2]))] = keys[3]
 	ckToPk[keys[4]] = keys[5]
 	ckToPk[keys[6]] = keys[7]
-	ccaToLastUpdateMemo[string(providerkeeper.TMCryptoPublicKeyToConsAddr(keys[8]))] = providertypes.LastUpdateMemo{
+	ccaToLastUpdateMemo[string(utils.TMCryptoPublicKeyToConsAddr(keys[8]))] = providertypes.LastUpdateMemo{
 		ConsumerKey: &keys[9],
 		ProviderKey: &keys[10],
 		Vscid:       uint64_0,
 		Power:       int64_0,
 	}
-	ccaToLastUpdateMemo[string(providerkeeper.TMCryptoPublicKeyToConsAddr(keys[11]))] = providertypes.LastUpdateMemo{
+	ccaToLastUpdateMemo[string(utils.TMCryptoPublicKeyToConsAddr(keys[11]))] = providertypes.LastUpdateMemo{
 		ConsumerKey: &keys[12],
 		ProviderKey: &keys[13],
 		Vscid:       uint64_1,
