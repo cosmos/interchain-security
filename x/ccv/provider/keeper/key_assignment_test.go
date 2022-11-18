@@ -494,63 +494,27 @@ func TestKeyAssignmentPropertiesRandomlyHeuristically(t *testing.T) {
 	}
 }
 
-func TestKeyAssignmentKeySerialization(t *testing.T) {
+func TestKeyAssignmentSameSeedEquality(t *testing.T) {
+	// Keys compare using Equal
 	k0 := key(0)
 	k1 := key(0)
+	require.True(t, k0.Equal(k1))
+	require.False(t, k0 == k1)
+}
+
+func TestKeyAssignmentKeySerialization(t *testing.T) {
+	// Equal keys serialize to the same bytes
+	k0 := key(0)
+	k1 := key(0)
+
 	bz0, err := k0.Marshal()
 	require.NoError(t, err)
 	bz1, err := k1.Marshal()
 	require.NoError(t, err)
+
 	require.Equal(t, len(bz0), len(bz1))
 	for i := range bz0 {
 		require.Equal(t, bz0[i], bz1[i])
-	}
-}
-
-func TestKeyAssignmentMemo(t *testing.T) {
-	arr := []providertypes.LastUpdateMemo{
-		{}, {},
-	}
-	{
-		k0 := key(0)
-		k1 := key(1)
-		arr[0].ProviderKey = &k0
-		arr[1].ProviderKey = &k1
-	}
-	k2 := key(2)
-	pk := &k2
-	for i, m := range arr {
-		if i < 1 {
-			pk = m.ProviderKey
-		}
-	}
-	require.True(t, pk.Equal(key(0)))
-}
-
-func TestKeyAssignmentMemoLoopIteration(t *testing.T) {
-	m := providertypes.LastUpdateMemo{}
-	{
-		k0 := key(0)
-		m.ProviderKey = &k0
-	}
-	arr := []tmprotocrypto.PublicKey{key(0), key(1)}
-	for i, pk := range arr {
-		if i < 1 {
-			m.ProviderKey = &pk
-		}
-	}
-	require.False(t, m.ProviderKey.Equal(arr[0]))
-	require.True(t, m.ProviderKey.Equal(arr[1]))
-}
-
-func TestKeyAssignmentSameSeedDeterministicStringify(t *testing.T) {
-	// This doesn't prove anything
-	for i := 0; i < 100; i++ {
-		k0 := key(i)
-		k1 := key(i)
-		s0 := providerkeeper.DeterministicStringify(k0)
-		s1 := providerkeeper.DeterministicStringify(k1)
-		require.Equal(t, s0, s1)
 	}
 }
 
@@ -576,16 +540,13 @@ func TestKeyAssignmentKeyComparison(t *testing.T) {
 	// Golang maps use == for comparison
 	// https://go.dev/ref/spec#Comparison_operators
 	// This means that we can't use a map to store keys directly
-}
 
-func TestKeyAssignmentSameSeedEquality(t *testing.T) {
-	k0 := key(0)
-	k1 := key(0)
-	require.True(t, k0.Equal(k1))
-	require.Equal(t, k0, k1)
+	// Use DeterministicStringify to implement map keys
+	require.True(t, providerkeeper.DeterministicStringify(k) == providerkeeper.DeterministicStringify(other))
 }
 
 func TestKeyAssignmentSameSeedMapLength(t *testing.T) {
+	// Demonstrates problem with using == for map keys
 	k0 := key(0)
 	k1 := key(0)
 	m := map[tmprotocrypto.PublicKey]bool{}
@@ -593,16 +554,6 @@ func TestKeyAssignmentSameSeedMapLength(t *testing.T) {
 	m[k1] = true
 	require.Equal(t, k0, k1)
 	require.Len(t, m, 2)
-}
-
-func TestKeyAssignmentSameSeedMapLengthCopy(t *testing.T) {
-	k0 := key(0)
-	arr := []tmprotocrypto.PublicKey{k0}
-	m := map[tmprotocrypto.PublicKey]bool{}
-	m[k0] = true
-	m[arr[0]] = true
-	require.Equal(t, k0, arr[0])
-	require.Len(t, m, 1)
 }
 
 func TestKeyAssignmentSetCurrentQueryWithIdenticalKey(t *testing.T) {
