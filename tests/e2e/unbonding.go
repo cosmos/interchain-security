@@ -9,8 +9,8 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
-// TestUndelegationNormalOperation tests that undelegations complete after 
-// the unbonding period elapses on both the consumer and provider, without 
+// TestUndelegationNormalOperation tests that undelegations complete after
+// the unbonding period elapses on both the consumer and provider, without
 // VSC packets timing out.
 func (s *CCVTestSuite) TestUndelegationNormalOperation() {
 	unbondConsumer := func(expectedPackets int) {
@@ -159,7 +159,7 @@ func (s *CCVTestSuite) TestUndelegationVscTimeout() {
 		"unexpected balance after provider unbonding")
 
 	// increment time
-	incrementTimeBy(s, vscTimeout)
+	incrementTime(s, vscTimeout)
 
 	// check whether the chain was removed
 	chainID := s.consumerChain.ChainID
@@ -233,8 +233,8 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 		s.providerChain.NextBlock()
 
 		// check that the VSC packet is stored in state as pending
-		pendingVSCs, _ := providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
-		s.Require().True(len(pendingVSCs) == 1, "no pending VSC packet found; test: %s", tc.name)
+		pendingVSCs := providerKeeper.GetPendingPackets(s.providerCtx(), s.consumerChain.ChainID)
+		s.Require().Lenf(pendingVSCs, 1, "no pending VSC packet found; test: %s", tc.name)
 
 		// delegate again to create another VSC packet
 		delegate(s, delAddr, bondAmt)
@@ -243,8 +243,8 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 		s.providerChain.NextBlock()
 
 		// check that the VSC packet is stored in state as pending
-		pendingVSCs, _ = providerKeeper.GetPendingVSCs(s.providerCtx(), s.consumerChain.ChainID)
-		s.Require().True(len(pendingVSCs) == 2, "only one pending VSC packet found; test: %s", tc.name)
+		pendingVSCs = providerKeeper.GetPendingPackets(s.providerCtx(), s.consumerChain.ChainID)
+		s.Require().Lenf(pendingVSCs, 2, "only one pending VSC packet found; test: %s", tc.name)
 
 		// increment time so that the unbonding period ends on the provider
 		incrementTimeByUnbondingPeriod(s, Provider)

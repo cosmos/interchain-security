@@ -176,7 +176,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			panic("provider consensus state is not tendermint consensus state")
 		}
 		// export client states and pending slashing requests into a new chain genesis
-		genesis = consumertypes.NewInitialGenesisState(tmCs, tmConsState, valset, k.GetPendingSlashRequests(ctx), params)
+		genesis = consumertypes.NewInitialGenesisState(tmCs, tmConsState, valset, params)
 	}
 
 	return
