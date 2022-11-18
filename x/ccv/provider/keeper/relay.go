@@ -146,7 +146,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
 			k.SendPacketsToChain(ctx, chainID, channelID)
 		}
-		return true // continue iterating chains
+		return false // continue iterating chains
 	})
 }
 
@@ -197,7 +197,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
 			k.AppendPendingPackets(ctx, chainID, packet)
 		}
-		return true // do not stop the iteration
+		return false // do not stop the iteration
 	})
 
 	k.IncrementValidatorSetUpdateId(ctx)
@@ -363,7 +363,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				// vscTimeout expired
 				chainIdsToRemove = append(chainIdsToRemove, chainID)
 			}
-			// break iteration since the send timestamps are in order
+			// break iteration since the send timestamps are sorted in descending order
 			return true
 		})
 		// continue to iterate through all consumers
