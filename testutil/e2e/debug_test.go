@@ -81,8 +81,21 @@ func TestRewardsDistribution(t *testing.T) {
 }
 
 //
+// Expired client tests
+//
+
+func TestVSCPacketSendExpiredClient(t *testing.T) {
+	runCCVTestByName(t, "TestVSCPacketSendExpiredClient")
+}
+
+func TestConsumerPacketSendExpiredClient(t *testing.T) {
+	runCCVTestByName(t, "TestConsumerPacketSendExpiredClient")
+}
+
+//
 // Normal operations tests
 //
+
 func TestHistoricalInfo(t *testing.T) {
 	runCCVTestByName(t, "TestHistoricalInfo")
 }
