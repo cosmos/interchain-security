@@ -8,8 +8,8 @@ import "gogoproto/gogo.proto";
 import "tendermint/crypto/keys.proto";
 
 // Store the LAST update used to update the validator set on a consumer chain
-// using a particular assigned consensus key (consumer_key)
-message LastUpdateMemo {
+// using a particular assigned consensus key
+message LastUpdateInfo {
   // The consensus key used to update the validator set on the consumer chain
   tendermint.crypto.PublicKey consumer_key = 1;
   // The consensus key of the validator on the provider chain
@@ -22,8 +22,8 @@ message LastUpdateMemo {
   int64 power = 5;
 }
 
-message ConsAddrToKey {
-  bytes cons_addr = 1;
+message AddrToKey {
+  bytes addr = 1;
   tendermint.crypto.PublicKey key = 2;
 }
 
@@ -32,16 +32,16 @@ message KeyToKey {
   tendermint.crypto.PublicKey to = 2;
 }
 
-message ConsAddrToLastUpdateMemo {
+message AddrToLastUpdateInfo {
   bytes cons_addr = 1;
-  LastUpdateMemo last_update_memo = 2;
+  LastUpdateInfo last_update_info = 2;
 }
 
 message KeyAssignment {
-  repeated ConsAddrToKey provider_cons_addr_to_consumer_key = 1
+  repeated AddrToKey provider_addr_to_consumer_key = 1
       [ (gogoproto.nullable) = false ];
   repeated KeyToKey consumer_key_to_provider_key = 2
       [ (gogoproto.nullable) = false ];
-  repeated ConsAddrToLastUpdateMemo consumer_cons_addr_to_last_update_memo = 3
+  repeated AddrToLastUpdateInfo consumer_addr_to_last_update_info = 3
       [ (gogoproto.nullable) = false ];
 }

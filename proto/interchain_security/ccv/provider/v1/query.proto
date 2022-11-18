@@ -42,11 +42,11 @@ service Query {
         "/interchain_security/ccv/provider/consumer_chain_stop_proposals";
   }
 
-  // QueryConsumerChainValidatorKeyAssignment queries the consensus key
+  // QueryConsumerKeyAssignment queries the consensus key
   // assigned by a validator for a consumer chain.
-  rpc QueryConsumerChainValidatorKeyAssignment(
-      QueryConsumerChainValidatorKeyAssignmentRequest)
-      returns (QueryConsumerChainValidatorKeyAssignmentResponse) {
+  rpc QueryConsumerKeyAssignment(
+      QueryConsumerKeyAssignmentRequest)
+      returns (QueryConsumerKeyAssignmentResponse) {
     // TODO: make sure path is correct.
     option (google.api.http).get = "/interchain_security/ccv/provider/"
                                    "consumer_chain_validator_key_assignment";
@@ -81,15 +81,18 @@ message Chain {
   string client_id = 2;
 }
 
-message QueryConsumerChainValidatorKeyAssignmentRequest {
+message QueryConsumerKeyAssignmentRequest {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
+  // The id of the consumer chain
   string chain_id = 1;
+  // The consensus address of the validator on the provider chain
   string provider_validator_address = 2
       [ (gogoproto.moretags) = "yaml:\"address\"" ];
 }
 
-message QueryConsumerChainValidatorKeyAssignmentResponse {
-  google.protobuf.Any consumer_consensus_pub_key = 1
+message QueryConsumerKeyAssignmentResponse {
+  // The consensus public key of the validator on the consumer chain
+  google.protobuf.Any consumer_key = 1
       [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
 }
