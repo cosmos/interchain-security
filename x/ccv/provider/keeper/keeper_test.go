@@ -118,8 +118,8 @@ func TestPendingVSCs(t *testing.T) {
 
 	chainID := "consumer"
 
-	_, found := providerKeeper.GetPendingVSCs(ctx, chainID)
-	require.False(t, found)
+	pending := providerKeeper.GetPendingPackets(ctx, chainID)
+	require.Len(t, pending, 0)
 
 	pks := ibcsimapp.CreateTestPubKeys(4)
 	var ppks [4]tmprotocrypto.PublicKey
@@ -142,12 +142,9 @@ func TestPendingVSCs(t *testing.T) {
 			ValsetUpdateId: 2,
 		},
 	}
-	for _, packet := range packetList {
-		providerKeeper.AppendPendingVSC(ctx, chainID, packet)
-	}
+	providerKeeper.AppendPendingPackets(ctx, chainID, packetList...)
 
-	packets, found := providerKeeper.GetPendingVSCs(ctx, chainID)
-	require.True(t, found)
+	packets := providerKeeper.GetPendingPackets(ctx, chainID)
 	require.Len(t, packets, 2)
 
 	newPacket := ccv.ValidatorSetChangePacketData{
@@ -156,14 +153,15 @@ func TestPendingVSCs(t *testing.T) {
 		},
 		ValsetUpdateId: 3,
 	}
-	providerKeeper.AppendPendingVSC(ctx, chainID, newPacket)
-	vscs := providerKeeper.ConsumePendingVSCs(ctx, chainID)
+	providerKeeper.AppendPendingPackets(ctx, chainID, newPacket)
+	vscs := providerKeeper.GetPendingPackets(ctx, chainID)
 	require.Len(t, vscs, 3)
 	require.True(t, vscs[len(vscs)-1].ValsetUpdateId == 3)
 	require.True(t, vscs[len(vscs)-1].GetValidatorUpdates()[0].PubKey.String() == ppks[3].String())
 
-	_, found = providerKeeper.GetPendingVSCs(ctx, chainID)
-	require.False(t, found)
+	providerKeeper.DeletePendingPackets(ctx, chainID)
+	pending = providerKeeper.GetPendingPackets(ctx, chainID)
+	require.Len(t, pending, 0)
 }
 
 // TestInitHeight tests the getter and setter methods for the stored block heights (on provider) when a given consumer chain was started
