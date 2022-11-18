@@ -119,13 +119,13 @@ func TestIniAndExportGenesis(t *testing.T) {
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, pGenesis.Params, pk.GetParams(ctx))
 
-	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetProviderConsAddrToConsumerPublicKey(sdk.ConsAddress{})
+	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetProviderAddrToConsumerKey(sdk.ConsAddress{})
 	require.True(t, found)
-	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetConsumerPublicKeyToProviderPublicKey(tmprotocrypto.PublicKey{})
+	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetConsumerKeyToProviderKey(tmprotocrypto.PublicKey{})
 	require.True(t, found)
-	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetConsumerConsAddrToLastUpdateMemo(sdk.ConsAddress{})
+	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetConsumerAddrToLastUpdateInfo(sdk.ConsAddress{})
 	require.True(t, found)
-	_, found = pk.KeyAssignment(ctx, cChainIDs[1]).GetProviderConsAddrToConsumerPublicKey(sdk.ConsAddress{})
+	_, found = pk.KeyAssignment(ctx, cChainIDs[1]).GetProviderAddrToConsumerKey(sdk.ConsAddress{})
 	require.False(t, found)
 
 	// check provider chain's consumer chain states

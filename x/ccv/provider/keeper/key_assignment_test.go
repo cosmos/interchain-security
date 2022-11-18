@@ -105,7 +105,7 @@ func (d *driver) applyKeyAssignmentEntries(entries []keyAssignmentEntry) {
 	}
 	// Duplicate the assignment for referencing later in tests.
 	copy := map[string]providerkeeper.ConsumerKey{}
-	d.ka.IterateProviderConsAddrToConsumerPublicKey(func(pca providerkeeper.ProviderAddr, ck providerkeeper.ConsumerKey) bool {
+	d.ka.IterateProviderAddrToConsumerKey(func(pca providerkeeper.ProviderAddr, ck providerkeeper.ConsumerKey) bool {
 		copy[string(pca)] = ck
 		return false
 	})
@@ -722,21 +722,21 @@ func TestValidatorRemoval(t *testing.T) {
 	pca := utils.TMCryptoPublicKeyToConsAddr(key(42))
 	ka.DeleteProviderKey(pca)
 
-	_, found := ka.GetProviderConsAddrToConsumerPublicKey(pca)
+	_, found := ka.GetProviderAddrToConsumerKey(pca)
 	require.False(t, found)
-	_, found = ka.GetConsumerPublicKeyToProviderPublicKey(key(43))
+	_, found = ka.GetConsumerKeyToProviderKey(key(43))
 	require.False(t, found)
-	_, found = ka.GetConsumerPublicKeyToProviderPublicKey(key(44))
+	_, found = ka.GetConsumerKeyToProviderKey(key(44))
 	require.False(t, found)
-	_, found = ka.GetConsumerPublicKeyToProviderPublicKey(key(45))
+	_, found = ka.GetConsumerKeyToProviderKey(key(45))
 	require.False(t, found)
 
 	for i := 43; i < 46; i++ {
-		_, found = ka.GetConsumerConsAddrToLastUpdateMemo(utils.TMCryptoPublicKeyToConsAddr(key(i)))
+		_, found = ka.GetConsumerAddrToLastUpdateInfo(utils.TMCryptoPublicKeyToConsAddr(key(i)))
 		require.False(t, found)
 
 	}
-	ka.IterateConsumerConsAddrToLastUpdateMemo(func(cca providerkeeper.ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
+	ka.IterateConsumerAddrToLastUpdateInfo(func(cca providerkeeper.ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
 		pcaQueried := utils.TMCryptoPublicKeyToConsAddr(*lum.ProviderKey)
 		require.False(t, pca.Equals(pcaQueried))
 		return false
@@ -751,39 +751,39 @@ func compareForEquality(t *testing.T,
 	ccaToLastUpdateMemo map[string]providertypes.LastUpdateInfo) {
 
 	cnt := 0
-	ka.IterateProviderConsAddrToConsumerPublicKey(func(_ providerkeeper.ProviderAddr, _ providerkeeper.ConsumerKey) bool {
+	ka.IterateProviderAddrToConsumerKey(func(_ providerkeeper.ProviderAddr, _ providerkeeper.ConsumerKey) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(pcaToCk), cnt)
 
 	cnt = 0
-	ka.IterateConsumerPublicKeyToProviderPublicKey(func(_, _ providerkeeper.ConsumerKey) bool {
+	ka.IterateConsumerKeyToProviderKey(func(_, _ providerkeeper.ConsumerKey) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(ckToPk), cnt)
 
 	cnt = 0
-	ka.IterateConsumerConsAddrToLastUpdateMemo(func(_ providerkeeper.ConsumerAddr, _ providertypes.LastUpdateInfo) bool {
+	ka.IterateConsumerAddrToLastUpdateInfo(func(_ providerkeeper.ConsumerAddr, _ providertypes.LastUpdateInfo) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(ccaToLastUpdateMemo), cnt)
 
 	for k, vExpect := range pcaToCk {
-		vActual, found := ka.GetProviderConsAddrToConsumerPublicKey(providerkeeper.ProviderAddr(k))
+		vActual, found := ka.GetProviderAddrToConsumerKey(providerkeeper.ProviderAddr(k))
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
 	for k, vExpect := range ckToPk {
-		vActual, found := ka.GetConsumerPublicKeyToProviderPublicKey(k)
+		vActual, found := ka.GetConsumerKeyToProviderKey(k)
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
 	for k, vExpect := range ccaToLastUpdateMemo {
 		k := sdktypes.ConsAddress(k)
-		m, found := ka.GetConsumerConsAddrToLastUpdateMemo(k)
+		m, found := ka.GetConsumerAddrToLastUpdateInfo(k)
 		require.True(t, found)
 		require.Equal(t, vExpect.ProviderKey, m.ProviderKey)
 		require.Equal(t, vExpect.ConsumerKey, m.ConsumerKey)
@@ -831,13 +831,13 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 		// Use one KeyAssignment instance to serialize the data
 		ka := providerkeeper.KeyAssignment{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
 		for k, v := range pcaToCk {
-			ka.SetProviderConsAddrToConsumerPublicKey(sdktypes.ConsAddress(k), v)
+			ka.SetProviderAddrToConsumerKey(sdktypes.ConsAddress(k), v)
 		}
 		for k, v := range ckToPk {
-			ka.SetConsumerPublicKeyToProviderPublicKey(k, v)
+			ka.SetConsumerKeyToProviderKey(k, v)
 		}
 		for k, v := range ccaToLastUpdateMemo {
-			ka.SetConsumerConsAddrToLastUpdateMemo(sdktypes.ConsAddress(k), v)
+			ka.SetConsumerAddrToLastUpdateInfo(sdktypes.ConsAddress(k), v)
 		}
 	}
 
