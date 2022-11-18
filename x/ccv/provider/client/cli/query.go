@@ -180,11 +180,11 @@ $ %s query provider assigned-validator-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 				return err
 			}
 
-			req := &types.QueryConsumerChainValidatorKeyAssignmentRequest{
+			req := &types.QueryConsumerKeyAssignmentRequest{
 				ChainId:                  consumerChainID,
 				ProviderValidatorAddress: addr.String(),
 			}
-			res, err := queryClient.QueryConsumerChainValidatorKeyAssignment(cmd.Context(), req)
+			res, err := queryClient.QueryConsumerKeyAssignment(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

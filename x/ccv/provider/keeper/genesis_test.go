@@ -28,14 +28,14 @@ func TestIniAndExportGenesis(t *testing.T) {
 	params := providertypes.DefaultParams()
 	keyAssignments := []providertypes.KeyAssignment{
 		{
-			ProviderConsAddrToConsumerKey:    []providertypes.ConsAddrToKey{{ConsAddr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
-			ConsumerKeyToProviderKey:         []providertypes.KeyToKey{{From: &tmprotocrypto.PublicKey{}, To: &tmprotocrypto.PublicKey{}}},
-			ConsumerConsAddrToLastUpdateMemo: []providertypes.ConsAddrToLastUpdateMemo{{ConsAddr: sdk.ConsAddress{}, LastUpdateMemo: &providertypes.LastUpdateMemo{}}},
+			ProviderAddrToConsumerKey:    []providertypes.AddrToKey{{Addr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
+			ConsumerKeyToProviderKey:     []providertypes.KeyToKey{{From: &tmprotocrypto.PublicKey{}, To: &tmprotocrypto.PublicKey{}}},
+			ConsumerAddrToLastUpdateInfo: []providertypes.AddrToLastUpdateInfo{{ConsAddr: sdk.ConsAddress{}, LastUpdateInfo: &providertypes.LastUpdateInfo{}}},
 		},
 		{
-			ProviderConsAddrToConsumerKey:    []providertypes.ConsAddrToKey{},
-			ConsumerKeyToProviderKey:         []providertypes.KeyToKey{},
-			ConsumerConsAddrToLastUpdateMemo: []providertypes.ConsAddrToLastUpdateMemo{},
+			ProviderAddrToConsumerKey:    []providertypes.AddrToKey{},
+			ConsumerKeyToProviderKey:     []providertypes.KeyToKey{},
+			ConsumerAddrToLastUpdateInfo: []providertypes.AddrToLastUpdateInfo{},
 		},
 	}
 

@@ -24,7 +24,7 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 var _ types.MsgServer = msgServer{}
 
 // CreateValidator defines a method for creating a new validator
-func (k msgServer) AssignConsensusPublicKeyToConsumerChain(goCtx context.Context, msg *types.MsgAssignConsensusPublicKeyToConsumerChain) (*types.MsgAssignConsensusPublicKeyToConsumerChainResponse, error) {
+func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssignConsumerKey) (*types.MsgAssignConsumerKeyResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// It is possible to assign keys for consumer chains that are not yet approved.
@@ -33,7 +33,7 @@ func (k msgServer) AssignConsensusPublicKeyToConsumerChain(goCtx context.Context
 	// Note that current attack potential is restricted because validators must sign
 	// the transaction, and the chainID size is limited.
 
-	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderValidatorAddress)
+	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (k msgServer) AssignConsensusPublicKeyToConsumerChain(goCtx context.Context
 		return nil, err
 	}
 
-	consumerSDKPublicKey, ok := msg.ConsumerConsensusPubKey.GetCachedValue().(cryptotypes.PubKey)
+	consumerSDKPublicKey, ok := msg.ConsumerKey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "Expecting cryptotypes.PubKey, got %T", consumerSDKPublicKey)
 	}
@@ -80,10 +80,10 @@ func (k msgServer) AssignConsensusPublicKeyToConsumerChain(goCtx context.Context
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeAssignConsensusPublicKeyToConsumerChain,
-			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderValidatorAddress),
+			sdk.NewAttribute(types.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(types.AttributeConsumerConsensusPubKey, consumerSDKPublicKey.String()),
 		),
 	})
 
-	return &types.MsgAssignConsensusPublicKeyToConsumerChainResponse{}, nil
+	return &types.MsgAssignConsumerKeyResponse{}, nil
 }

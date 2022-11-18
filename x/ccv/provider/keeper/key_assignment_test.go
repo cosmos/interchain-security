@@ -736,7 +736,7 @@ func TestValidatorRemoval(t *testing.T) {
 		require.False(t, found)
 
 	}
-	ka.IterateConsumerConsAddrToLastUpdateMemo(func(cca providerkeeper.ConsumerAddr, lum providertypes.LastUpdateMemo) bool {
+	ka.IterateConsumerConsAddrToLastUpdateMemo(func(cca providerkeeper.ConsumerAddr, lum providertypes.LastUpdateInfo) bool {
 		pcaQueried := utils.TMCryptoPublicKeyToConsAddr(*lum.ProviderKey)
 		require.False(t, pca.Equals(pcaQueried))
 		return false
@@ -748,7 +748,7 @@ func compareForEquality(t *testing.T,
 	ka providerkeeper.KeyAssignment,
 	pcaToCk map[string]providerkeeper.ConsumerKey,
 	ckToPk map[providerkeeper.ConsumerKey]providerkeeper.ProviderKey,
-	ccaToLastUpdateMemo map[string]providertypes.LastUpdateMemo) {
+	ccaToLastUpdateMemo map[string]providertypes.LastUpdateInfo) {
 
 	cnt := 0
 	ka.IterateProviderConsAddrToConsumerPublicKey(func(_ providerkeeper.ProviderAddr, _ providerkeeper.ConsumerKey) bool {
@@ -765,7 +765,7 @@ func compareForEquality(t *testing.T,
 	require.Equal(t, len(ckToPk), cnt)
 
 	cnt = 0
-	ka.IterateConsumerConsAddrToLastUpdateMemo(func(_ providerkeeper.ConsumerAddr, _ providertypes.LastUpdateMemo) bool {
+	ka.IterateConsumerConsAddrToLastUpdateMemo(func(_ providerkeeper.ConsumerAddr, _ providertypes.LastUpdateInfo) bool {
 		cnt += 1
 		return false
 	})
@@ -808,19 +808,19 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 
 	pcaToCk := map[string]providerkeeper.ConsumerKey{}
 	ckToPk := map[providerkeeper.ConsumerKey]providerkeeper.ProviderKey{}
-	ccaToLastUpdateMemo := map[string]providertypes.LastUpdateMemo{}
+	ccaToLastUpdateMemo := map[string]providertypes.LastUpdateInfo{}
 
 	pcaToCk[string(utils.TMCryptoPublicKeyToConsAddr(keys[0]))] = keys[1]
 	pcaToCk[string(utils.TMCryptoPublicKeyToConsAddr(keys[2]))] = keys[3]
 	ckToPk[keys[4]] = keys[5]
 	ckToPk[keys[6]] = keys[7]
-	ccaToLastUpdateMemo[string(utils.TMCryptoPublicKeyToConsAddr(keys[8]))] = providertypes.LastUpdateMemo{
+	ccaToLastUpdateMemo[string(utils.TMCryptoPublicKeyToConsAddr(keys[8]))] = providertypes.LastUpdateInfo{
 		ConsumerKey: &keys[9],
 		ProviderKey: &keys[10],
 		Vscid:       uint64_0,
 		Power:       int64_0,
 	}
-	ccaToLastUpdateMemo[string(utils.TMCryptoPublicKeyToConsAddr(keys[11]))] = providertypes.LastUpdateMemo{
+	ccaToLastUpdateMemo[string(utils.TMCryptoPublicKeyToConsAddr(keys[11]))] = providertypes.LastUpdateInfo{
 		ConsumerKey: &keys[12],
 		ProviderKey: &keys[13],
 		Vscid:       uint64_1,

@@ -76,13 +76,13 @@ func TestGRPCQueryConsumerChainValidatorKeyAssignment(t *testing.T) {
 
 		tc.setup(ctx, k, mocks, tc.chainID)
 
-		req := providertypes.QueryConsumerChainValidatorKeyAssignmentRequest{
+		req := providertypes.QueryConsumerKeyAssignmentRequest{
 			ChainId:                  tc.chainID,
 			ProviderValidatorAddress: testValProvider.SDKValAddress().String(),
 		}
 
 		goCtx := sdktypes.WrapSDKContext(ctx)
-		res, err := queryClient.QueryConsumerChainValidatorKeyAssignment(goCtx, &req)
+		res, err := queryClient.QueryConsumerKeyAssignment(goCtx, &req)
 
 		if tc.expError {
 			require.Error(t, err, "invalid case did not return error")
@@ -90,7 +90,7 @@ func TestGRPCQueryConsumerChainValidatorKeyAssignment(t *testing.T) {
 			require.NoError(t, err, "valid case returned error")
 			consumerValidatorPubKeyAnyExpect, err := sdkcodectypes.NewAnyWithValue(testValConsumer.SDKPubKey())
 			require.NoError(t, err, "faulty test")
-			require.Equal(t, consumerValidatorPubKeyAnyExpect.Value, res.ConsumerConsensusPubKey.Value)
+			require.Equal(t, consumerValidatorPubKeyAnyExpect.Value, res.ConsumerKey.Value)
 		}
 
 		ctrl.Finish()

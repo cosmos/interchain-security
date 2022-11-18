@@ -23,17 +23,23 @@ message LastUpdateInfo {
 }
 
 message AddrToKey {
+  // Validator consensus address
   bytes addr = 1;
+  // Validator consensus public key
   tendermint.crypto.PublicKey key = 2;
 }
 
 message KeyToKey {
+  // Validator consensus public key
   tendermint.crypto.PublicKey from = 1;
+  // Validator consensus public key
   tendermint.crypto.PublicKey to = 2;
 }
 
 message AddrToLastUpdateInfo {
+  // Validator consensus address
   bytes cons_addr = 1;
+  // Info for the last update sent to a consumer chain for a validator
   LastUpdateInfo last_update_info = 2;
 }
 

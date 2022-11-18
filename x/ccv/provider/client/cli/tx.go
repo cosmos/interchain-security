@@ -25,12 +25,12 @@ func GetTxCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	cmd.AddCommand(NewAssignConsensusPublicKeyToConsumerChainCmd())
+	cmd.AddCommand(NewAssignConsumerKeyCmd())
 
 	return cmd
 }
 
-func NewAssignConsensusPublicKeyToConsumerChainCmd() *cobra.Command {
+func NewAssignConsumerKeyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "assign-consensus-key [consumer-chain-id] [consumer-pubkey]",
 		Short: "assign a consensus public key to use for a consumer chain",
@@ -42,7 +42,7 @@ func NewAssignConsensusPublicKeyToConsumerChainCmd() *cobra.Command {
 
 			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).
 				WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
-			txf, msg, err := newAssignConsensusPublicKeyToConsumerChainMsg(clientCtx, txf, cmd.Flags())
+			txf, msg, err := newAssignConsumerKey(clientCtx, txf, cmd.Flags())
 			if err != nil {
 				return err
 			}
@@ -65,7 +65,7 @@ func NewAssignConsensusPublicKeyToConsumerChainCmd() *cobra.Command {
 	return cmd
 }
 
-func newAssignConsensusPublicKeyToConsumerChainMsg(clientCtx client.Context, txf tx.Factory, fs *flag.FlagSet) (tx.Factory, *types.MsgAssignConsensusPublicKeyToConsumerChain, error) {
+func newAssignConsumerKey(clientCtx client.Context, txf tx.Factory, fs *flag.FlagSet) (tx.Factory, *types.MsgAssignConsumerKey, error) {
 
 	providerValAddr := clientCtx.GetFromAddress()
 	consumerPubKeyStr, err := fs.GetString(FlagConsumerPubKey)
@@ -80,7 +80,7 @@ func newAssignConsensusPublicKeyToConsumerChainMsg(clientCtx client.Context, txf
 
 	chainId, _ := fs.GetString(FlagConsumerChainId)
 
-	msg, err := types.NewMsgAssignConsensusPublicKeyToConsumerChain(chainId, sdk.ValAddress(providerValAddr), consumerPubKey)
+	msg, err := types.NewMsgAssignConsumerKey(chainId, sdk.ValAddress(providerValAddr), consumerPubKey)
 	if err != nil {
 		return txf, nil, err
 	}
