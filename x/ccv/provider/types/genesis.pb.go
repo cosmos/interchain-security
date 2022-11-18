@@ -153,7 +153,8 @@ type ConsumerState struct {
 	SlashDowntimeAck     []string                             `protobuf:"bytes,8,rep,name=slash_downtime_ack,json=slashDowntimeAck,proto3" json:"slash_downtime_ack,omitempty"`
 	// UnbondingOpsIndex defines the unbonding operations on the consumer chain
 	UnbondingOpsIndex []UnbondingOpIndex `protobuf:"bytes,9,rep,name=unbonding_ops_index,json=unbondingOpsIndex,proto3" json:"unbonding_ops_index"`
-	KeyAssignment     *KeyAssignment     `protobuf:"bytes,10,opt,name=key_assignment,json=keyAssignment,proto3" json:"key_assignment,omitempty"`
+	// Data used to assign keys to validators to validate on the consumer chain
+	KeyAssignment *KeyAssignment `protobuf:"bytes,10,opt,name=key_assignment,json=keyAssignment,proto3" json:"key_assignment,omitempty"`
 }
 
 func (m *ConsumerState) Reset()         { *m = ConsumerState{} }

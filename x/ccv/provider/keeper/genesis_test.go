@@ -28,14 +28,14 @@ func TestIniAndExportGenesis(t *testing.T) {
 	params := providertypes.DefaultParams()
 	keyAssignments := []providertypes.KeyAssignment{
 		{
-			ProviderConsAddrToConsumerKey:    []providertypes.ConsAddrToKey{{ConsAddr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
-			ConsumerKeyToProviderKey:         []providertypes.KeyToKey{{From: &tmprotocrypto.PublicKey{}, To: &tmprotocrypto.PublicKey{}}},
-			ConsumerConsAddrToLastUpdateMemo: []providertypes.ConsAddrToLastUpdateMemo{{ConsAddr: sdk.ConsAddress{}, LastUpdateMemo: &providertypes.LastUpdateMemo{}}},
+			ProviderAddrToConsumerKey:    []providertypes.AddrToKey{{Addr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
+			ConsumerKeyToProviderKey:     []providertypes.KeyToKey{{From: &tmprotocrypto.PublicKey{}, To: &tmprotocrypto.PublicKey{}}},
+			ConsumerAddrToLastUpdateInfo: []providertypes.AddrToLastUpdateInfo{{Addr: sdk.ConsAddress{}, LastUpdateInfo: &providertypes.LastUpdateInfo{}}},
 		},
 		{
-			ProviderConsAddrToConsumerKey:    []providertypes.ConsAddrToKey{},
-			ConsumerKeyToProviderKey:         []providertypes.KeyToKey{},
-			ConsumerConsAddrToLastUpdateMemo: []providertypes.ConsAddrToLastUpdateMemo{},
+			ProviderAddrToConsumerKey:    []providertypes.AddrToKey{},
+			ConsumerKeyToProviderKey:     []providertypes.KeyToKey{},
+			ConsumerAddrToLastUpdateInfo: []providertypes.AddrToLastUpdateInfo{},
 		},
 	}
 
@@ -119,13 +119,13 @@ func TestIniAndExportGenesis(t *testing.T) {
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, pGenesis.Params, pk.GetParams(ctx))
 
-	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).Store.GetProviderConsAddrToConsumerPublicKey(sdk.ConsAddress{})
+	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetProviderAddrToConsumerKey(sdk.ConsAddress{})
 	require.True(t, found)
-	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).Store.GetConsumerPublicKeyToProviderPublicKey(tmprotocrypto.PublicKey{})
+	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetConsumerKeyToProviderKey(tmprotocrypto.PublicKey{})
 	require.True(t, found)
-	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).Store.GetConsumerConsAddrToLastUpdateMemo(sdk.ConsAddress{})
+	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetConsumerAddrToLastUpdateInfo(sdk.ConsAddress{})
 	require.True(t, found)
-	_, found = pk.KeyAssignment(ctx, cChainIDs[1]).Store.GetProviderConsAddrToConsumerPublicKey(sdk.ConsAddress{})
+	_, found = pk.KeyAssignment(ctx, cChainIDs[1]).GetProviderAddrToConsumerKey(sdk.ConsAddress{})
 	require.False(t, found)
 
 	// check provider chain's consumer chain states

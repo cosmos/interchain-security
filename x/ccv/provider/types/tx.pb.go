@@ -31,28 +31,27 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type MsgAssignConsensusPublicKeyToConsumerChain struct {
-	ChainId                  string     `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	ProviderValidatorAddress string     `protobuf:"bytes,2,opt,name=provider_validator_address,json=providerValidatorAddress,proto3" json:"provider_validator_address,omitempty" yaml:"address"`
-	ConsumerConsensusPubKey  *types.Any `protobuf:"bytes,3,opt,name=consumer_consensus_pub_key,json=consumerConsensusPubKey,proto3" json:"consumer_consensus_pub_key,omitempty"`
+type MsgAssignConsumerKey struct {
+	// The chain id of the consumer chain to assign a consensus public key to
+	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// The validator address on the provider
+	ProviderAddr string `protobuf:"bytes,2,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty" yaml:"address"`
+	// The consensus public key to use on the consumer
+	ConsumerKey *types.Any `protobuf:"bytes,3,opt,name=consumer_key,json=consumerKey,proto3" json:"consumer_key,omitempty"`
 }
 
-func (m *MsgAssignConsensusPublicKeyToConsumerChain) Reset() {
-	*m = MsgAssignConsensusPublicKeyToConsumerChain{}
-}
-func (m *MsgAssignConsensusPublicKeyToConsumerChain) String() string {
-	return proto.CompactTextString(m)
-}
-func (*MsgAssignConsensusPublicKeyToConsumerChain) ProtoMessage() {}
-func (*MsgAssignConsensusPublicKeyToConsumerChain) Descriptor() ([]byte, []int) {
+func (m *MsgAssignConsumerKey) Reset()         { *m = MsgAssignConsumerKey{} }
+func (m *MsgAssignConsumerKey) String() string { return proto.CompactTextString(m) }
+func (*MsgAssignConsumerKey) ProtoMessage()    {}
+func (*MsgAssignConsumerKey) Descriptor() ([]byte, []int) {
 	return fileDescriptor_43221a4391e9fbf4, []int{0}
 }
-func (m *MsgAssignConsensusPublicKeyToConsumerChain) XXX_Unmarshal(b []byte) error {
+func (m *MsgAssignConsumerKey) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgAssignConsensusPublicKeyToConsumerChain) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgAssignConsumerKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgAssignConsensusPublicKeyToConsumerChain.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgAssignConsumerKey.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -62,37 +61,33 @@ func (m *MsgAssignConsensusPublicKeyToConsumerChain) XXX_Marshal(b []byte, deter
 		return b[:n], nil
 	}
 }
-func (m *MsgAssignConsensusPublicKeyToConsumerChain) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgAssignConsensusPublicKeyToConsumerChain.Merge(m, src)
+func (m *MsgAssignConsumerKey) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgAssignConsumerKey.Merge(m, src)
 }
-func (m *MsgAssignConsensusPublicKeyToConsumerChain) XXX_Size() int {
+func (m *MsgAssignConsumerKey) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgAssignConsensusPublicKeyToConsumerChain) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgAssignConsensusPublicKeyToConsumerChain.DiscardUnknown(m)
+func (m *MsgAssignConsumerKey) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgAssignConsumerKey.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgAssignConsensusPublicKeyToConsumerChain proto.InternalMessageInfo
+var xxx_messageInfo_MsgAssignConsumerKey proto.InternalMessageInfo
 
-type MsgAssignConsensusPublicKeyToConsumerChainResponse struct {
+type MsgAssignConsumerKeyResponse struct {
 }
 
-func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) Reset() {
-	*m = MsgAssignConsensusPublicKeyToConsumerChainResponse{}
-}
-func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) String() string {
-	return proto.CompactTextString(m)
-}
-func (*MsgAssignConsensusPublicKeyToConsumerChainResponse) ProtoMessage() {}
-func (*MsgAssignConsensusPublicKeyToConsumerChainResponse) Descriptor() ([]byte, []int) {
+func (m *MsgAssignConsumerKeyResponse) Reset()         { *m = MsgAssignConsumerKeyResponse{} }
+func (m *MsgAssignConsumerKeyResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgAssignConsumerKeyResponse) ProtoMessage()    {}
+func (*MsgAssignConsumerKeyResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_43221a4391e9fbf4, []int{1}
 }
-func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgAssignConsumerKeyResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgAssignConsumerKeyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgAssignConsensusPublicKeyToConsumerChainResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgAssignConsumerKeyResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -102,21 +97,21 @@ func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) XXX_Marshal(b []byt
 		return b[:n], nil
 	}
 }
-func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgAssignConsensusPublicKeyToConsumerChainResponse.Merge(m, src)
+func (m *MsgAssignConsumerKeyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgAssignConsumerKeyResponse.Merge(m, src)
 }
-func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) XXX_Size() int {
+func (m *MsgAssignConsumerKeyResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgAssignConsensusPublicKeyToConsumerChainResponse.DiscardUnknown(m)
+func (m *MsgAssignConsumerKeyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgAssignConsumerKeyResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgAssignConsensusPublicKeyToConsumerChainResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgAssignConsumerKeyResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgAssignConsensusPublicKeyToConsumerChain)(nil), "interchain_security.ccv.provider.v1.MsgAssignConsensusPublicKeyToConsumerChain")
-	proto.RegisterType((*MsgAssignConsensusPublicKeyToConsumerChainResponse)(nil), "interchain_security.ccv.provider.v1.MsgAssignConsensusPublicKeyToConsumerChainResponse")
+	proto.RegisterType((*MsgAssignConsumerKey)(nil), "interchain_security.ccv.provider.v1.MsgAssignConsumerKey")
+	proto.RegisterType((*MsgAssignConsumerKeyResponse)(nil), "interchain_security.ccv.provider.v1.MsgAssignConsumerKeyResponse")
 }
 
 func init() {
@@ -124,36 +119,33 @@ func init() {
 }
 
 var fileDescriptor_43221a4391e9fbf4 = []byte{
-	// 454 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x92, 0x4d, 0x6b, 0xd4, 0x40,
-	0x18, 0xc7, 0x93, 0x16, 0xb4, 0x46, 0xf0, 0x10, 0x16, 0x4c, 0x83, 0x64, 0xcb, 0x7a, 0xb0, 0x88,
-	0x9d, 0xa1, 0xab, 0x20, 0xec, 0x6d, 0xb7, 0x27, 0x59, 0x8a, 0xcb, 0x52, 0x14, 0xbc, 0x84, 0xc9,
-	0x64, 0x4c, 0x87, 0xdd, 0xcc, 0x13, 0x66, 0x26, 0xa1, 0xf3, 0x0d, 0x3c, 0xf6, 0x23, 0xf4, 0x43,
-	0xf8, 0x21, 0xc4, 0xd3, 0x82, 0x17, 0x41, 0x10, 0xd9, 0xbd, 0x78, 0xf6, 0x13, 0x48, 0x5e, 0xc6,
-	0x17, 0xf0, 0x90, 0x83, 0xb7, 0x79, 0xde, 0xfe, 0xf9, 0x3d, 0x4f, 0xfe, 0xde, 0x13, 0x2e, 0x34,
-	0x93, 0xf4, 0x92, 0x70, 0x11, 0x2b, 0x46, 0x4b, 0xc9, 0xb5, 0xc1, 0x94, 0x56, 0xb8, 0x90, 0x50,
-	0xf1, 0x94, 0x49, 0x5c, 0x9d, 0x62, 0x7d, 0x85, 0x0a, 0x09, 0x1a, 0xfc, 0x87, 0xff, 0xe8, 0x46,
-	0x94, 0x56, 0xc8, 0x76, 0xa3, 0xea, 0x34, 0x7c, 0x90, 0x01, 0x64, 0x6b, 0x86, 0x49, 0xc1, 0x31,
-	0x11, 0x02, 0x34, 0xd1, 0x1c, 0x84, 0x6a, 0x25, 0xc2, 0x41, 0x06, 0x19, 0x34, 0x4f, 0x5c, 0xbf,
-	0xba, 0xec, 0xf3, 0x3e, 0x18, 0x2b, 0x66, 0x88, 0x52, 0x3c, 0x13, 0x39, 0x13, 0xba, 0x1b, 0x3c,
-	0xa4, 0xa0, 0x72, 0x50, 0x71, 0xab, 0xd8, 0x06, 0xb6, 0xd4, 0x71, 0x34, 0x51, 0x52, 0xbe, 0xc5,
-	0x44, 0x98, 0xb6, 0x34, 0xba, 0xde, 0xf3, 0x1e, 0x9f, 0xab, 0x6c, 0xda, 0xa8, 0x9d, 0x81, 0x50,
-	0x4c, 0xa8, 0x52, 0x2d, 0xca, 0x64, 0xcd, 0xe9, 0x9c, 0x99, 0x0b, 0xa8, 0x73, 0x65, 0xce, 0xe4,
-	0x59, 0x4d, 0xe4, 0x1f, 0x7a, 0x07, 0x2d, 0x1a, 0x4f, 0x03, 0xf7, 0xc8, 0x3d, 0xbe, 0xb3, 0xbc,
-	0xdd, 0xc4, 0x2f, 0x52, 0x7f, 0xe1, 0x85, 0x16, 0x31, 0xae, 0xc8, 0x9a, 0xa7, 0x44, 0x83, 0x8c,
-	0x49, 0x9a, 0x4a, 0xa6, 0x54, 0xb0, 0x57, 0x37, 0xcf, 0xfc, 0x1f, 0x5f, 0x87, 0xf7, 0x0c, 0xc9,
-	0xd7, 0x93, 0x51, 0x57, 0x18, 0x2d, 0x03, 0x3b, 0xf5, 0xca, 0x0e, 0x4d, 0xdb, 0x92, 0xbf, 0xf2,
-	0x42, 0xda, 0x7d, 0x3d, 0xa6, 0x16, 0x2d, 0x2e, 0xca, 0x24, 0x5e, 0x31, 0x13, 0xec, 0x1f, 0xb9,
-	0xc7, 0x77, 0xc7, 0x03, 0xd4, 0xee, 0x86, 0xec, 0x6e, 0x68, 0x2a, 0xcc, 0x2c, 0xf8, 0xf8, 0xfe,
-	0x64, 0xd0, 0x9d, 0x80, 0x4a, 0x53, 0x68, 0x40, 0x8b, 0x32, 0x99, 0x33, 0xb3, 0xbc, 0x6f, 0x15,
-	0xff, 0xdc, 0x75, 0xce, 0xcc, 0xe4, 0xe0, 0xdd, 0xcd, 0xd0, 0xf9, 0x7e, 0x33, 0x74, 0x46, 0xcf,
-	0xbc, 0x71, 0xff, 0x8b, 0x2c, 0x99, 0x2a, 0xea, 0x9e, 0xf1, 0x17, 0xd7, 0xdb, 0x3f, 0x57, 0x99,
-	0xff, 0xc9, 0xf5, 0x1e, 0xf5, 0xbd, 0xe6, 0x4b, 0xd4, 0xc3, 0x45, 0xa8, 0x3f, 0x4c, 0xf8, 0xfa,
-	0x3f, 0x0b, 0xda, 0xed, 0x66, 0x17, 0x1f, 0xb6, 0x91, 0xbb, 0xd9, 0x46, 0xee, 0xb7, 0x6d, 0xe4,
-	0x5e, 0xef, 0x22, 0x67, 0xb3, 0x8b, 0x9c, 0xcf, 0xbb, 0xc8, 0x79, 0x33, 0xc9, 0xb8, 0xbe, 0x2c,
-	0x13, 0x44, 0x21, 0xef, 0x4c, 0x87, 0x7f, 0x33, 0x9c, 0xfc, 0x72, 0xf0, 0xd5, 0xdf, 0x1e, 0xd6,
-	0xa6, 0x60, 0x2a, 0xb9, 0xd5, 0xfc, 0xb4, 0xa7, 0x3f, 0x03, 0x00, 0x00, 0xff, 0xff, 0x81, 0x04,
-	0x6f, 0xce, 0x7b, 0x03, 0x00, 0x00,
+	// 416 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0x3d, 0x6f, 0xd4, 0x30,
+	0x18, 0xc7, 0x63, 0x2a, 0x41, 0x71, 0x0b, 0x12, 0x51, 0x86, 0xf4, 0x54, 0xe5, 0xaa, 0xb0, 0x74,
+	0xa0, 0xb6, 0x5a, 0x86, 0x8a, 0xdb, 0x72, 0x4c, 0xa8, 0xaa, 0x04, 0x11, 0x13, 0x4b, 0xe4, 0x38,
+	0xc6, 0xb5, 0xda, 0xd8, 0x91, 0xed, 0x44, 0xf5, 0x37, 0x60, 0x84, 0x91, 0xed, 0x3e, 0x04, 0xdf,
+	0x01, 0xc4, 0x74, 0x23, 0x13, 0x42, 0x77, 0x0b, 0x33, 0x9f, 0x00, 0x5d, 0x5e, 0x38, 0x21, 0x6e,
+	0x38, 0xb1, 0xf9, 0x79, 0xff, 0xfd, 0xfd, 0x3c, 0xf0, 0x89, 0x90, 0x96, 0x69, 0x7a, 0x45, 0x84,
+	0xcc, 0x0c, 0xa3, 0xb5, 0x16, 0xd6, 0x61, 0x4a, 0x1b, 0x5c, 0x69, 0xd5, 0x88, 0x82, 0x69, 0xdc,
+	0x9c, 0x62, 0x7b, 0x8b, 0x2a, 0xad, 0xac, 0xf2, 0x1f, 0x6f, 0xc8, 0x46, 0x94, 0x36, 0x68, 0xc8,
+	0x46, 0xcd, 0xe9, 0xe8, 0x90, 0x2b, 0xc5, 0x6f, 0x18, 0x26, 0x95, 0xc0, 0x44, 0x4a, 0x65, 0x89,
+	0x15, 0x4a, 0x9a, 0xae, 0xc5, 0x28, 0xe0, 0x8a, 0xab, 0xf6, 0x89, 0x57, 0xaf, 0xde, 0x7b, 0xbe,
+	0x0d, 0xc6, 0x35, 0x73, 0xc4, 0x18, 0xc1, 0x65, 0xc9, 0xa4, 0xed, 0x0b, 0x0f, 0xa8, 0x32, 0xa5,
+	0x32, 0x59, 0xd7, 0xb1, 0x33, 0x86, 0x50, 0xcf, 0xd1, 0x5a, 0x79, 0xfd, 0x16, 0x13, 0xe9, 0xba,
+	0x50, 0xfc, 0x19, 0xc0, 0xe0, 0xd2, 0xf0, 0xa4, 0xed, 0xf6, 0x5c, 0x49, 0x53, 0x97, 0x4c, 0x5f,
+	0x30, 0xe7, 0x1f, 0xc0, 0xdd, 0x0e, 0x42, 0x14, 0x21, 0x38, 0x02, 0xc7, 0xf7, 0xd3, 0x7b, 0xad,
+	0xfd, 0xa2, 0xf0, 0xcf, 0xe1, 0x83, 0x01, 0x26, 0x23, 0x45, 0xa1, 0xc3, 0x3b, 0xab, 0xf8, 0xd4,
+	0xff, 0xf5, 0x7d, 0xfc, 0xd0, 0x91, 0xf2, 0x66, 0x12, 0xaf, 0xbc, 0xcc, 0x98, 0x38, 0xdd, 0x1f,
+	0x12, 0x93, 0xa2, 0xd0, 0xfe, 0x2b, 0xb8, 0x4f, 0xfb, 0x11, 0xd9, 0x35, 0x73, 0xe1, 0xce, 0x11,
+	0x38, 0xde, 0x3b, 0x0b, 0x50, 0x87, 0x87, 0x06, 0x3c, 0x94, 0x48, 0x37, 0x0d, 0xbf, 0x7e, 0x3a,
+	0x09, 0x7a, 0x15, 0x54, 0xbb, 0xca, 0x2a, 0xf4, 0xb2, 0xce, 0x2f, 0x98, 0x4b, 0xf7, 0xe8, 0x1a,
+	0x73, 0xb2, 0xfb, 0x6e, 0x36, 0xf6, 0x7e, 0xce, 0xc6, 0x5e, 0x1c, 0xc1, 0xc3, 0x4d, 0x42, 0x52,
+	0x66, 0x2a, 0x25, 0x0d, 0x3b, 0xfb, 0x08, 0xe0, 0xce, 0xa5, 0xe1, 0xfe, 0x07, 0x00, 0x1f, 0xfd,
+	0x2b, 0xf7, 0x19, 0xda, 0x62, 0xa1, 0x68, 0xd3, 0x80, 0x51, 0xf2, 0xdf, 0xa5, 0x03, 0xdb, 0xf4,
+	0xf5, 0x97, 0x45, 0x04, 0xe6, 0x8b, 0x08, 0xfc, 0x58, 0x44, 0xe0, 0xfd, 0x32, 0xf2, 0xe6, 0xcb,
+	0xc8, 0xfb, 0xb6, 0x8c, 0xbc, 0x37, 0x13, 0x2e, 0xec, 0x55, 0x9d, 0x23, 0xaa, 0xca, 0x7e, 0xa7,
+	0x78, 0x3d, 0xed, 0xe4, 0xcf, 0x81, 0xdc, 0xfe, 0x7d, 0x22, 0xd6, 0x55, 0xcc, 0xe4, 0x77, 0xdb,
+	0x0f, 0x7d, 0xfa, 0x3b, 0x00, 0x00, 0xff, 0xff, 0x29, 0xcb, 0xd2, 0x8a, 0xda, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -168,7 +160,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	AssignConsensusPublicKeyToConsumerChain(ctx context.Context, in *MsgAssignConsensusPublicKeyToConsumerChain, opts ...grpc.CallOption) (*MsgAssignConsensusPublicKeyToConsumerChainResponse, error)
+	AssignConsumerKey(ctx context.Context, in *MsgAssignConsumerKey, opts ...grpc.CallOption) (*MsgAssignConsumerKeyResponse, error)
 }
 
 type msgClient struct {
@@ -179,9 +171,9 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 	return &msgClient{cc}
 }
 
-func (c *msgClient) AssignConsensusPublicKeyToConsumerChain(ctx context.Context, in *MsgAssignConsensusPublicKeyToConsumerChain, opts ...grpc.CallOption) (*MsgAssignConsensusPublicKeyToConsumerChainResponse, error) {
-	out := new(MsgAssignConsensusPublicKeyToConsumerChainResponse)
-	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Msg/AssignConsensusPublicKeyToConsumerChain", in, out, opts...)
+func (c *msgClient) AssignConsumerKey(ctx context.Context, in *MsgAssignConsumerKey, opts ...grpc.CallOption) (*MsgAssignConsumerKeyResponse, error) {
+	out := new(MsgAssignConsumerKeyResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Msg/AssignConsumerKey", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -190,35 +182,35 @@ func (c *msgClient) AssignConsensusPublicKeyToConsumerChain(ctx context.Context,
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	AssignConsensusPublicKeyToConsumerChain(context.Context, *MsgAssignConsensusPublicKeyToConsumerChain) (*MsgAssignConsensusPublicKeyToConsumerChainResponse, error)
+	AssignConsumerKey(context.Context, *MsgAssignConsumerKey) (*MsgAssignConsumerKeyResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
 type UnimplementedMsgServer struct {
 }
 
-func (*UnimplementedMsgServer) AssignConsensusPublicKeyToConsumerChain(ctx context.Context, req *MsgAssignConsensusPublicKeyToConsumerChain) (*MsgAssignConsensusPublicKeyToConsumerChainResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AssignConsensusPublicKeyToConsumerChain not implemented")
+func (*UnimplementedMsgServer) AssignConsumerKey(ctx context.Context, req *MsgAssignConsumerKey) (*MsgAssignConsumerKeyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AssignConsumerKey not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
 	s.RegisterService(&_Msg_serviceDesc, srv)
 }
 
-func _Msg_AssignConsensusPublicKeyToConsumerChain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgAssignConsensusPublicKeyToConsumerChain)
+func _Msg_AssignConsumerKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgAssignConsumerKey)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).AssignConsensusPublicKeyToConsumerChain(ctx, in)
+		return srv.(MsgServer).AssignConsumerKey(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/interchain_security.ccv.provider.v1.Msg/AssignConsensusPublicKeyToConsumerChain",
+		FullMethod: "/interchain_security.ccv.provider.v1.Msg/AssignConsumerKey",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).AssignConsensusPublicKeyToConsumerChain(ctx, req.(*MsgAssignConsensusPublicKeyToConsumerChain))
+		return srv.(MsgServer).AssignConsumerKey(ctx, req.(*MsgAssignConsumerKey))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -228,15 +220,15 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "AssignConsensusPublicKeyToConsumerChain",
-			Handler:    _Msg_AssignConsensusPublicKeyToConsumerChain_Handler,
+			MethodName: "AssignConsumerKey",
+			Handler:    _Msg_AssignConsumerKey_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "interchain_security/ccv/provider/v1/tx.proto",
 }
 
-func (m *MsgAssignConsensusPublicKeyToConsumerChain) Marshal() (dAtA []byte, err error) {
+func (m *MsgAssignConsumerKey) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -246,19 +238,19 @@ func (m *MsgAssignConsensusPublicKeyToConsumerChain) Marshal() (dAtA []byte, err
 	return dAtA[:n], nil
 }
 
-func (m *MsgAssignConsensusPublicKeyToConsumerChain) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgAssignConsumerKey) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgAssignConsensusPublicKeyToConsumerChain) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgAssignConsumerKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.ConsumerConsensusPubKey != nil {
+	if m.ConsumerKey != nil {
 		{
-			size, err := m.ConsumerConsensusPubKey.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.ConsumerKey.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -268,10 +260,10 @@ func (m *MsgAssignConsensusPublicKeyToConsumerChain) MarshalToSizedBuffer(dAtA [
 		i--
 		dAtA[i] = 0x1a
 	}
-	if len(m.ProviderValidatorAddress) > 0 {
-		i -= len(m.ProviderValidatorAddress)
-		copy(dAtA[i:], m.ProviderValidatorAddress)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.ProviderValidatorAddress)))
+	if len(m.ProviderAddr) > 0 {
+		i -= len(m.ProviderAddr)
+		copy(dAtA[i:], m.ProviderAddr)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ProviderAddr)))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -285,7 +277,7 @@ func (m *MsgAssignConsensusPublicKeyToConsumerChain) MarshalToSizedBuffer(dAtA [
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgAssignConsumerKeyResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -295,12 +287,12 @@ func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) Marshal() (dAtA []b
 	return dAtA[:n], nil
 }
 
-func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgAssignConsumerKeyResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgAssignConsumerKeyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -319,7 +311,7 @@ func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *MsgAssignConsensusPublicKeyToConsumerChain) Size() (n int) {
+func (m *MsgAssignConsumerKey) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -329,18 +321,18 @@ func (m *MsgAssignConsensusPublicKeyToConsumerChain) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	l = len(m.ProviderValidatorAddress)
+	l = len(m.ProviderAddr)
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	if m.ConsumerConsensusPubKey != nil {
-		l = m.ConsumerConsensusPubKey.Size()
+	if m.ConsumerKey != nil {
+		l = m.ConsumerKey.Size()
 		n += 1 + l + sovTx(uint64(l))
 	}
 	return n
 }
 
-func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) Size() (n int) {
+func (m *MsgAssignConsumerKeyResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -355,7 +347,7 @@ func sovTx(x uint64) (n int) {
 func sozTx(x uint64) (n int) {
 	return sovTx(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *MsgAssignConsensusPublicKeyToConsumerChain) Unmarshal(dAtA []byte) error {
+func (m *MsgAssignConsumerKey) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -378,10 +370,10 @@ func (m *MsgAssignConsensusPublicKeyToConsumerChain) Unmarshal(dAtA []byte) erro
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgAssignConsensusPublicKeyToConsumerChain: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgAssignConsumerKey: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgAssignConsensusPublicKeyToConsumerChain: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgAssignConsumerKey: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -418,7 +410,7 @@ func (m *MsgAssignConsensusPublicKeyToConsumerChain) Unmarshal(dAtA []byte) erro
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProviderValidatorAddress", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddr", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -446,11 +438,11 @@ func (m *MsgAssignConsensusPublicKeyToConsumerChain) Unmarshal(dAtA []byte) erro
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ProviderValidatorAddress = string(dAtA[iNdEx:postIndex])
+			m.ProviderAddr = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerConsensusPubKey", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerKey", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -477,10 +469,10 @@ func (m *MsgAssignConsensusPublicKeyToConsumerChain) Unmarshal(dAtA []byte) erro
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ConsumerConsensusPubKey == nil {
-				m.ConsumerConsensusPubKey = &types.Any{}
+			if m.ConsumerKey == nil {
+				m.ConsumerKey = &types.Any{}
 			}
-			if err := m.ConsumerConsensusPubKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ConsumerKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -505,7 +497,7 @@ func (m *MsgAssignConsensusPublicKeyToConsumerChain) Unmarshal(dAtA []byte) erro
 	}
 	return nil
 }
-func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgAssignConsumerKeyResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -528,10 +520,10 @@ func (m *MsgAssignConsensusPublicKeyToConsumerChainResponse) Unmarshal(dAtA []by
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgAssignConsensusPublicKeyToConsumerChainResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgAssignConsumerKeyResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgAssignConsensusPublicKeyToConsumerChainResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgAssignConsumerKeyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

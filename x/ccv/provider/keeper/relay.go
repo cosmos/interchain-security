@@ -154,7 +154,7 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 
 		// Map the validator updates through assigned validator consensus keys to get a list of updates
 		// to send to the consumer chain.
-		valUpdates := k.KeyAssignment(ctx,chainID).AssignDefaultsAndComputeUpdates(valUpdateID, valUpdates)
+		valUpdates := k.KeyAssignment(ctx, chainID).AssignDefaultsAndGetConsumerUpdates(valUpdateID, valUpdates)
 
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			// construct validator set change packet data
@@ -259,12 +259,12 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// The slash packet validator address is the address known to the consumer chain
 	// so it must be mapped back to the consensus address on the provider chain to be
 	// able to slash the validator.
-	consAddr, err := k.GetProviderConsAddrForSlashing(ctx, chainID, data)
+	consAddr, err := k.GetProviderConsAddrForSlashing(ctx, chainID, data.Validator.Address)
 
 	if err != nil {
 		return false, nil
 	}
-	
+
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
 
 	// make sure the validator is not yet unbonded;

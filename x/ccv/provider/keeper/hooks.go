@@ -64,7 +64,7 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, ca sdk.ConsAddress, valAdd
 	// Delete any key assignments that are associated with this
 	// validator across all consumer chains.
 	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		_ = h.k.KeyAssignment(ctx, chainID).DeleteProviderKey(ca)
+		h.k.KeyAssignment(ctx, chainID).DeleteProviderKey(ca)
 		// It is possible for the Delete call to fail if a validator is added and removed without
 		// ever becoming active or having a key assigned.
 		return true

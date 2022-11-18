@@ -25,8 +25,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Store the LAST update used to update the validator set on a consumer chain
-// using a particular assigned consensus key (consumer_key)
-type LastUpdateMemo struct {
+// using a particular assigned consensus key
+type LastUpdateInfo struct {
 	// The consensus key used to update the validator set on the consumer chain
 	ConsumerKey *crypto.PublicKey `protobuf:"bytes,1,opt,name=consumer_key,json=consumerKey,proto3" json:"consumer_key,omitempty"`
 	// The consensus key of the validator on the provider chain
@@ -39,18 +39,18 @@ type LastUpdateMemo struct {
 	Power int64 `protobuf:"varint,5,opt,name=power,proto3" json:"power,omitempty"`
 }
 
-func (m *LastUpdateMemo) Reset()         { *m = LastUpdateMemo{} }
-func (m *LastUpdateMemo) String() string { return proto.CompactTextString(m) }
-func (*LastUpdateMemo) ProtoMessage()    {}
-func (*LastUpdateMemo) Descriptor() ([]byte, []int) {
+func (m *LastUpdateInfo) Reset()         { *m = LastUpdateInfo{} }
+func (m *LastUpdateInfo) String() string { return proto.CompactTextString(m) }
+func (*LastUpdateInfo) ProtoMessage()    {}
+func (*LastUpdateInfo) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d36beb32b6cd555b, []int{0}
 }
-func (m *LastUpdateMemo) XXX_Unmarshal(b []byte) error {
+func (m *LastUpdateInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *LastUpdateMemo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *LastUpdateInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_LastUpdateMemo.Marshal(b, m, deterministic)
+		return xxx_messageInfo_LastUpdateInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -60,63 +60,65 @@ func (m *LastUpdateMemo) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return b[:n], nil
 	}
 }
-func (m *LastUpdateMemo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_LastUpdateMemo.Merge(m, src)
+func (m *LastUpdateInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LastUpdateInfo.Merge(m, src)
 }
-func (m *LastUpdateMemo) XXX_Size() int {
+func (m *LastUpdateInfo) XXX_Size() int {
 	return m.Size()
 }
-func (m *LastUpdateMemo) XXX_DiscardUnknown() {
-	xxx_messageInfo_LastUpdateMemo.DiscardUnknown(m)
+func (m *LastUpdateInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_LastUpdateInfo.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_LastUpdateMemo proto.InternalMessageInfo
+var xxx_messageInfo_LastUpdateInfo proto.InternalMessageInfo
 
-func (m *LastUpdateMemo) GetConsumerKey() *crypto.PublicKey {
+func (m *LastUpdateInfo) GetConsumerKey() *crypto.PublicKey {
 	if m != nil {
 		return m.ConsumerKey
 	}
 	return nil
 }
 
-func (m *LastUpdateMemo) GetProviderKey() *crypto.PublicKey {
+func (m *LastUpdateInfo) GetProviderKey() *crypto.PublicKey {
 	if m != nil {
 		return m.ProviderKey
 	}
 	return nil
 }
 
-func (m *LastUpdateMemo) GetVscid() uint64 {
+func (m *LastUpdateInfo) GetVscid() uint64 {
 	if m != nil {
 		return m.Vscid
 	}
 	return 0
 }
 
-func (m *LastUpdateMemo) GetPower() int64 {
+func (m *LastUpdateInfo) GetPower() int64 {
 	if m != nil {
 		return m.Power
 	}
 	return 0
 }
 
-type ConsAddrToKey struct {
-	ConsAddr []byte            `protobuf:"bytes,1,opt,name=cons_addr,json=consAddr,proto3" json:"cons_addr,omitempty"`
-	Key      *crypto.PublicKey `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+type AddrToKey struct {
+	// Validator consensus address
+	Addr []byte `protobuf:"bytes,1,opt,name=addr,proto3" json:"addr,omitempty"`
+	// Validator consensus public key
+	Key *crypto.PublicKey `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
 }
 
-func (m *ConsAddrToKey) Reset()         { *m = ConsAddrToKey{} }
-func (m *ConsAddrToKey) String() string { return proto.CompactTextString(m) }
-func (*ConsAddrToKey) ProtoMessage()    {}
-func (*ConsAddrToKey) Descriptor() ([]byte, []int) {
+func (m *AddrToKey) Reset()         { *m = AddrToKey{} }
+func (m *AddrToKey) String() string { return proto.CompactTextString(m) }
+func (*AddrToKey) ProtoMessage()    {}
+func (*AddrToKey) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d36beb32b6cd555b, []int{1}
 }
-func (m *ConsAddrToKey) XXX_Unmarshal(b []byte) error {
+func (m *AddrToKey) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ConsAddrToKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *AddrToKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ConsAddrToKey.Marshal(b, m, deterministic)
+		return xxx_messageInfo_AddrToKey.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -126,26 +128,26 @@ func (m *ConsAddrToKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return b[:n], nil
 	}
 }
-func (m *ConsAddrToKey) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ConsAddrToKey.Merge(m, src)
+func (m *AddrToKey) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AddrToKey.Merge(m, src)
 }
-func (m *ConsAddrToKey) XXX_Size() int {
+func (m *AddrToKey) XXX_Size() int {
 	return m.Size()
 }
-func (m *ConsAddrToKey) XXX_DiscardUnknown() {
-	xxx_messageInfo_ConsAddrToKey.DiscardUnknown(m)
+func (m *AddrToKey) XXX_DiscardUnknown() {
+	xxx_messageInfo_AddrToKey.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ConsAddrToKey proto.InternalMessageInfo
+var xxx_messageInfo_AddrToKey proto.InternalMessageInfo
 
-func (m *ConsAddrToKey) GetConsAddr() []byte {
+func (m *AddrToKey) GetAddr() []byte {
 	if m != nil {
-		return m.ConsAddr
+		return m.Addr
 	}
 	return nil
 }
 
-func (m *ConsAddrToKey) GetKey() *crypto.PublicKey {
+func (m *AddrToKey) GetKey() *crypto.PublicKey {
 	if m != nil {
 		return m.Key
 	}
@@ -153,8 +155,10 @@ func (m *ConsAddrToKey) GetKey() *crypto.PublicKey {
 }
 
 type KeyToKey struct {
+	// Validator consensus public key
 	From *crypto.PublicKey `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
-	To   *crypto.PublicKey `protobuf:"bytes,2,opt,name=to,proto3" json:"to,omitempty"`
+	// Validator consensus public key
+	To *crypto.PublicKey `protobuf:"bytes,2,opt,name=to,proto3" json:"to,omitempty"`
 }
 
 func (m *KeyToKey) Reset()         { *m = KeyToKey{} }
@@ -204,23 +208,25 @@ func (m *KeyToKey) GetTo() *crypto.PublicKey {
 	return nil
 }
 
-type ConsAddrToLastUpdateMemo struct {
-	ConsAddr       []byte          `protobuf:"bytes,1,opt,name=cons_addr,json=consAddr,proto3" json:"cons_addr,omitempty"`
-	LastUpdateMemo *LastUpdateMemo `protobuf:"bytes,2,opt,name=last_update_memo,json=lastUpdateMemo,proto3" json:"last_update_memo,omitempty"`
+type AddrToLastUpdateInfo struct {
+	// Validator consensus address
+	Addr []byte `protobuf:"bytes,1,opt,name=addr,proto3" json:"addr,omitempty"`
+	// Info for the last update sent to a consumer chain for a validator
+	LastUpdateInfo *LastUpdateInfo `protobuf:"bytes,2,opt,name=last_update_info,json=lastUpdateInfo,proto3" json:"last_update_info,omitempty"`
 }
 
-func (m *ConsAddrToLastUpdateMemo) Reset()         { *m = ConsAddrToLastUpdateMemo{} }
-func (m *ConsAddrToLastUpdateMemo) String() string { return proto.CompactTextString(m) }
-func (*ConsAddrToLastUpdateMemo) ProtoMessage()    {}
-func (*ConsAddrToLastUpdateMemo) Descriptor() ([]byte, []int) {
+func (m *AddrToLastUpdateInfo) Reset()         { *m = AddrToLastUpdateInfo{} }
+func (m *AddrToLastUpdateInfo) String() string { return proto.CompactTextString(m) }
+func (*AddrToLastUpdateInfo) ProtoMessage()    {}
+func (*AddrToLastUpdateInfo) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d36beb32b6cd555b, []int{3}
 }
-func (m *ConsAddrToLastUpdateMemo) XXX_Unmarshal(b []byte) error {
+func (m *AddrToLastUpdateInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ConsAddrToLastUpdateMemo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *AddrToLastUpdateInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ConsAddrToLastUpdateMemo.Marshal(b, m, deterministic)
+		return xxx_messageInfo_AddrToLastUpdateInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -230,36 +236,39 @@ func (m *ConsAddrToLastUpdateMemo) XXX_Marshal(b []byte, deterministic bool) ([]
 		return b[:n], nil
 	}
 }
-func (m *ConsAddrToLastUpdateMemo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ConsAddrToLastUpdateMemo.Merge(m, src)
+func (m *AddrToLastUpdateInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AddrToLastUpdateInfo.Merge(m, src)
 }
-func (m *ConsAddrToLastUpdateMemo) XXX_Size() int {
+func (m *AddrToLastUpdateInfo) XXX_Size() int {
 	return m.Size()
 }
-func (m *ConsAddrToLastUpdateMemo) XXX_DiscardUnknown() {
-	xxx_messageInfo_ConsAddrToLastUpdateMemo.DiscardUnknown(m)
+func (m *AddrToLastUpdateInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_AddrToLastUpdateInfo.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ConsAddrToLastUpdateMemo proto.InternalMessageInfo
+var xxx_messageInfo_AddrToLastUpdateInfo proto.InternalMessageInfo
 
-func (m *ConsAddrToLastUpdateMemo) GetConsAddr() []byte {
+func (m *AddrToLastUpdateInfo) GetAddr() []byte {
 	if m != nil {
-		return m.ConsAddr
+		return m.Addr
 	}
 	return nil
 }
 
-func (m *ConsAddrToLastUpdateMemo) GetLastUpdateMemo() *LastUpdateMemo {
+func (m *AddrToLastUpdateInfo) GetLastUpdateInfo() *LastUpdateInfo {
 	if m != nil {
-		return m.LastUpdateMemo
+		return m.LastUpdateInfo
 	}
 	return nil
 }
 
 type KeyAssignment struct {
-	ProviderConsAddrToConsumerKey    []ConsAddrToKey            `protobuf:"bytes,1,rep,name=provider_cons_addr_to_consumer_key,json=providerConsAddrToConsumerKey,proto3" json:"provider_cons_addr_to_consumer_key"`
-	ConsumerKeyToProviderKey         []KeyToKey                 `protobuf:"bytes,2,rep,name=consumer_key_to_provider_key,json=consumerKeyToProviderKey,proto3" json:"consumer_key_to_provider_key"`
-	ConsumerConsAddrToLastUpdateMemo []ConsAddrToLastUpdateMemo `protobuf:"bytes,3,rep,name=consumer_cons_addr_to_last_update_memo,json=consumerConsAddrToLastUpdateMemo,proto3" json:"consumer_cons_addr_to_last_update_memo"`
+	// Map of provider validator consensus address to consumer consensus public key
+	ProviderAddrToConsumerKey []AddrToKey `protobuf:"bytes,1,rep,name=provider_addr_to_consumer_key,json=providerAddrToConsumerKey,proto3" json:"provider_addr_to_consumer_key"`
+	// Map of consumer consensus public to key to provider consensus public key
+	ConsumerKeyToProviderKey []KeyToKey `protobuf:"bytes,2,rep,name=consumer_key_to_provider_key,json=consumerKeyToProviderKey,proto3" json:"consumer_key_to_provider_key"`
+	// Map of consumer validator consensus address to last update info
+	ConsumerAddrToLastUpdateInfo []AddrToLastUpdateInfo `protobuf:"bytes,3,rep,name=consumer_addr_to_last_update_info,json=consumerAddrToLastUpdateInfo,proto3" json:"consumer_addr_to_last_update_info"`
 }
 
 func (m *KeyAssignment) Reset()         { *m = KeyAssignment{} }
@@ -295,9 +304,9 @@ func (m *KeyAssignment) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_KeyAssignment proto.InternalMessageInfo
 
-func (m *KeyAssignment) GetProviderConsAddrToConsumerKey() []ConsAddrToKey {
+func (m *KeyAssignment) GetProviderAddrToConsumerKey() []AddrToKey {
 	if m != nil {
-		return m.ProviderConsAddrToConsumerKey
+		return m.ProviderAddrToConsumerKey
 	}
 	return nil
 }
@@ -309,18 +318,18 @@ func (m *KeyAssignment) GetConsumerKeyToProviderKey() []KeyToKey {
 	return nil
 }
 
-func (m *KeyAssignment) GetConsumerConsAddrToLastUpdateMemo() []ConsAddrToLastUpdateMemo {
+func (m *KeyAssignment) GetConsumerAddrToLastUpdateInfo() []AddrToLastUpdateInfo {
 	if m != nil {
-		return m.ConsumerConsAddrToLastUpdateMemo
+		return m.ConsumerAddrToLastUpdateInfo
 	}
 	return nil
 }
 
 func init() {
-	proto.RegisterType((*LastUpdateMemo)(nil), "interchain_security.ccv.provider.v1.LastUpdateMemo")
-	proto.RegisterType((*ConsAddrToKey)(nil), "interchain_security.ccv.provider.v1.ConsAddrToKey")
+	proto.RegisterType((*LastUpdateInfo)(nil), "interchain_security.ccv.provider.v1.LastUpdateInfo")
+	proto.RegisterType((*AddrToKey)(nil), "interchain_security.ccv.provider.v1.AddrToKey")
 	proto.RegisterType((*KeyToKey)(nil), "interchain_security.ccv.provider.v1.KeyToKey")
-	proto.RegisterType((*ConsAddrToLastUpdateMemo)(nil), "interchain_security.ccv.provider.v1.ConsAddrToLastUpdateMemo")
+	proto.RegisterType((*AddrToLastUpdateInfo)(nil), "interchain_security.ccv.provider.v1.AddrToLastUpdateInfo")
 	proto.RegisterType((*KeyAssignment)(nil), "interchain_security.ccv.provider.v1.KeyAssignment")
 }
 
@@ -329,43 +338,42 @@ func init() {
 }
 
 var fileDescriptor_d36beb32b6cd555b = []byte{
-	// 518 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0xcd, 0x6e, 0xd3, 0x40,
-	0x18, 0xcc, 0xc6, 0x29, 0x2a, 0x9b, 0xb6, 0x42, 0x56, 0x0f, 0x56, 0x09, 0x26, 0x32, 0x12, 0xca,
-	0x81, 0xae, 0x69, 0x7a, 0x40, 0x42, 0x42, 0xa8, 0xf4, 0x18, 0x90, 0x2a, 0x2b, 0x5c, 0x10, 0xc8,
-	0x72, 0xd6, 0x4b, 0x6a, 0x1a, 0xfb, 0xb3, 0x76, 0xd7, 0x06, 0x9f, 0x79, 0x01, 0x2e, 0xf0, 0x00,
-	0x3c, 0x08, 0xe7, 0x1e, 0x73, 0xe4, 0x84, 0x50, 0xf2, 0x22, 0x68, 0xed, 0xd8, 0x89, 0xc3, 0x8f,
-	0xcc, 0x2d, 0x9b, 0x9d, 0x6f, 0x66, 0x3e, 0xcf, 0x68, 0xf1, 0xa3, 0x20, 0x92, 0x8c, 0xd3, 0x4b,
-	0x2f, 0x88, 0x5c, 0xc1, 0x68, 0xc2, 0x03, 0x99, 0xd9, 0x94, 0xa6, 0x76, 0xcc, 0x21, 0x0d, 0x7c,
-	0xc6, 0xed, 0xf4, 0xc4, 0xbe, 0x62, 0x99, 0x27, 0x44, 0x30, 0x8d, 0x42, 0x16, 0x49, 0x12, 0x73,
-	0x90, 0xa0, 0xdf, 0xfb, 0xc3, 0x20, 0xa1, 0x34, 0x25, 0xe5, 0x20, 0x49, 0x4f, 0x8e, 0x0e, 0xa7,
-	0x30, 0x85, 0x1c, 0x6f, 0xab, 0x5f, 0xc5, 0xe8, 0x51, 0x4f, 0xb2, 0xc8, 0x67, 0x3c, 0x0c, 0x22,
-	0x69, 0x53, 0x9e, 0xc5, 0x12, 0x94, 0x82, 0x28, 0x6e, 0xad, 0x6f, 0x08, 0x1f, 0x3c, 0xf7, 0x84,
-	0x7c, 0x19, 0xfb, 0x9e, 0x64, 0x2f, 0x58, 0x08, 0xfa, 0x53, 0xbc, 0x47, 0x21, 0x12, 0x49, 0xc8,
-	0xb8, 0x7b, 0xc5, 0x32, 0x03, 0xf5, 0xd1, 0xa0, 0x3b, 0xec, 0x91, 0x35, 0x0f, 0x29, 0x78, 0xc8,
-	0x45, 0x32, 0x99, 0x05, 0x74, 0xc4, 0x32, 0xa7, 0x5b, 0x4e, 0x8c, 0x58, 0xa6, 0x08, 0x4a, 0x5b,
-	0x39, 0x41, 0xbb, 0x09, 0x41, 0x39, 0xa1, 0x08, 0x0e, 0xf1, 0x4e, 0x2a, 0x68, 0xe0, 0x1b, 0x9d,
-	0x3e, 0x1a, 0x74, 0x9c, 0xe2, 0xa0, 0xfe, 0x8d, 0xe1, 0x3d, 0xe3, 0xc6, 0x4e, 0x1f, 0x0d, 0x34,
-	0xa7, 0x38, 0x58, 0xaf, 0xf1, 0xfe, 0x39, 0x44, 0xe2, 0xcc, 0xf7, 0xf9, 0x18, 0xd4, 0xf0, 0x6d,
-	0x7c, 0x53, 0x99, 0x71, 0x3d, 0xdf, 0xe7, 0xb9, 0xf7, 0x3d, 0x67, 0x97, 0xae, 0x10, 0x3a, 0xc1,
-	0x5a, 0x53, 0x47, 0x0a, 0x68, 0xbd, 0xc3, 0xbb, 0x23, 0x96, 0x15, 0xc4, 0x0f, 0x71, 0xe7, 0x2d,
-	0x87, 0xb0, 0xd1, 0xf7, 0xc8, 0x91, 0xfa, 0x03, 0xdc, 0x96, 0xd0, 0x48, 0xac, 0x2d, 0xc1, 0xfa,
-	0x82, 0xb0, 0xb1, 0x5e, 0x65, 0x2b, 0x94, 0x7f, 0x6e, 0xf5, 0x06, 0xdf, 0x9a, 0x79, 0x42, 0xba,
-	0x49, 0x8e, 0x77, 0x43, 0x16, 0x96, 0xaa, 0xa7, 0xa4, 0x41, 0x71, 0x48, 0x5d, 0xcb, 0x39, 0x98,
-	0xd5, 0xce, 0xd6, 0x57, 0x0d, 0xef, 0x8f, 0x58, 0x76, 0x56, 0x95, 0x52, 0xff, 0x88, 0xb0, 0x55,
-	0x45, 0x5c, 0xf9, 0x72, 0x25, 0xb8, 0x5b, 0xcd, 0xd1, 0x06, 0xdd, 0xe1, 0xb0, 0x91, 0x87, 0x5a,
-	0x88, 0xcf, 0x3a, 0xd7, 0x3f, 0xee, 0xb6, 0x9c, 0x3b, 0x25, 0x60, 0x7d, 0x79, 0xbe, 0xd1, 0x33,
-	0x81, 0x7b, 0x9b, 0x72, 0x4a, 0x7e, 0xab, 0x77, 0x4a, 0xfe, 0xb8, 0x91, 0x7c, 0x99, 0xf2, 0x4a,
-	0xd9, 0xd8, 0xe8, 0xf3, 0x18, 0x2e, 0x36, 0xba, 0xf9, 0x19, 0xe1, 0xfb, 0x95, 0x6a, 0x6d, 0xf5,
-	0xdf, 0x22, 0xd0, 0x72, 0xfd, 0x27, 0xff, 0xb9, 0x7e, 0x3d, 0x8c, 0x95, 0x9f, 0x7e, 0x29, 0xf9,
-	0x57, 0xdc, 0xf8, 0x7a, 0x61, 0xa2, 0xf9, 0xc2, 0x44, 0x3f, 0x17, 0x26, 0xfa, 0xb4, 0x34, 0x5b,
-	0xf3, 0xa5, 0xd9, 0xfa, 0xbe, 0x34, 0x5b, 0xaf, 0x1e, 0x4f, 0x03, 0x79, 0x99, 0x4c, 0x08, 0x85,
-	0xd0, 0xa6, 0x20, 0x42, 0x10, 0xf6, 0xda, 0xd1, 0x71, 0xf5, 0x0c, 0x7d, 0xa8, 0x3f, 0x44, 0x32,
-	0x8b, 0x99, 0x98, 0xdc, 0xc8, 0x5f, 0x89, 0xd3, 0x5f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xe1, 0x25,
-	0x97, 0xf2, 0xb9, 0x04, 0x00, 0x00,
+	// 503 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0x4f, 0x6f, 0xd3, 0x30,
+	0x14, 0xaf, 0x9b, 0x0c, 0x81, 0x3b, 0x26, 0x14, 0xf5, 0x50, 0xa6, 0x12, 0x4a, 0xb8, 0xf4, 0xc0,
+	0x1c, 0xb6, 0x1d, 0x10, 0x5c, 0xd0, 0xe0, 0x84, 0x8a, 0xc4, 0x14, 0x95, 0x0b, 0x12, 0x8a, 0x52,
+	0xc7, 0xed, 0xcc, 0x9a, 0xbc, 0xc8, 0x76, 0x02, 0xf9, 0x04, 0xc0, 0x8d, 0x4f, 0xc4, 0x79, 0xc7,
+	0x1d, 0x39, 0x21, 0xd4, 0x7e, 0x11, 0xe4, 0x64, 0x49, 0xff, 0xd0, 0x43, 0xb8, 0xd9, 0xf1, 0xfb,
+	0xfd, 0x79, 0x7e, 0xbf, 0x18, 0x3f, 0xe3, 0xb1, 0x62, 0x82, 0x5e, 0x04, 0x3c, 0xf6, 0x25, 0xa3,
+	0xa9, 0xe0, 0x2a, 0x77, 0x29, 0xcd, 0xdc, 0x44, 0x40, 0xc6, 0x43, 0x26, 0xdc, 0xec, 0xd8, 0xbd,
+	0x64, 0x79, 0x20, 0x25, 0x9f, 0xc5, 0x11, 0x8b, 0x15, 0x49, 0x04, 0x28, 0xb0, 0x1e, 0xef, 0x00,
+	0x12, 0x4a, 0x33, 0x52, 0x01, 0x49, 0x76, 0x7c, 0xd8, 0x9d, 0xc1, 0x0c, 0x8a, 0x7a, 0x57, 0xaf,
+	0x4a, 0xe8, 0x61, 0x5f, 0xb1, 0x38, 0x64, 0x22, 0xe2, 0xb1, 0x72, 0xa9, 0xc8, 0x13, 0x05, 0x5a,
+	0x41, 0x96, 0xa7, 0xce, 0x4f, 0x84, 0x0f, 0xde, 0x06, 0x52, 0xbd, 0x4f, 0xc2, 0x40, 0xb1, 0x37,
+	0xf1, 0x14, 0xac, 0x97, 0x78, 0x9f, 0x42, 0x2c, 0xd3, 0x88, 0x09, 0xff, 0x92, 0xe5, 0x3d, 0x34,
+	0x40, 0xc3, 0xce, 0x49, 0x9f, 0xac, 0x78, 0x48, 0xc9, 0x43, 0xce, 0xd3, 0xc9, 0x9c, 0xd3, 0x11,
+	0xcb, 0xbd, 0x4e, 0x85, 0x18, 0xb1, 0x5c, 0x13, 0x54, 0xb6, 0x0a, 0x82, 0x76, 0x13, 0x82, 0x0a,
+	0xa1, 0x09, 0xba, 0x78, 0x2f, 0x93, 0x94, 0x87, 0x3d, 0x73, 0x80, 0x86, 0xa6, 0x57, 0x6e, 0xf4,
+	0xd7, 0x04, 0x3e, 0x33, 0xd1, 0xdb, 0x1b, 0xa0, 0xa1, 0xe1, 0x95, 0x1b, 0xe7, 0x1d, 0xbe, 0x73,
+	0x16, 0x86, 0x62, 0x0c, 0x1a, 0x68, 0x61, 0x33, 0x08, 0x43, 0x51, 0x58, 0xde, 0xf7, 0x8a, 0xb5,
+	0x45, 0xb0, 0xd1, 0xd4, 0x84, 0x2e, 0x74, 0x3e, 0xe1, 0xdb, 0x23, 0x96, 0x97, 0x7c, 0x4f, 0xb1,
+	0x39, 0x15, 0x10, 0x35, 0xba, 0x82, 0xa2, 0xd2, 0x7a, 0x82, 0xdb, 0x0a, 0x1a, 0x89, 0xb5, 0x15,
+	0x38, 0xdf, 0x11, 0xee, 0x96, 0xee, 0xb7, 0x66, 0xb0, 0xab, 0x91, 0x8f, 0xf8, 0xde, 0x3c, 0x90,
+	0xca, 0x4f, 0x8b, 0x32, 0x9f, 0xc7, 0xd3, 0x4a, 0xe8, 0x94, 0x34, 0x88, 0x07, 0xd9, 0x94, 0xf0,
+	0x0e, 0xe6, 0x1b, 0x7b, 0xe7, 0xab, 0x81, 0xef, 0x8e, 0x58, 0x7e, 0x56, 0x47, 0xcf, 0xca, 0xf0,
+	0x83, 0x7a, 0x8e, 0xda, 0x81, 0xaf, 0xc0, 0xdf, 0x4a, 0x86, 0x31, 0xec, 0x9c, 0x90, 0x46, 0xea,
+	0xf5, 0x90, 0x5e, 0x99, 0x57, 0xbf, 0x1f, 0xb6, 0xbc, 0xfb, 0xd5, 0x61, 0x79, 0xf0, 0x7a, 0x2d,
+	0x3f, 0x12, 0xf7, 0xd7, 0x65, 0xb4, 0xec, 0x56, 0x9e, 0xb4, 0xec, 0x51, 0x23, 0xd9, 0x6a, 0x94,
+	0x37, 0xaa, 0xbd, 0xb5, 0x9c, 0x8e, 0xe1, 0x7c, 0x2d, 0x73, 0xdf, 0x10, 0x7e, 0x54, 0xab, 0x56,
+	0xdd, 0xfe, 0x73, 0xdf, 0x46, 0x21, 0xfd, 0xfc, 0x3f, 0x3a, 0xde, 0xbc, 0xf5, 0x1b, 0x1b, 0x75,
+	0x7f, 0x3b, 0x6b, 0xc6, 0x57, 0x0b, 0x1b, 0x5d, 0x2f, 0x6c, 0xf4, 0x67, 0x61, 0xa3, 0x1f, 0x4b,
+	0xbb, 0x75, 0xbd, 0xb4, 0x5b, 0xbf, 0x96, 0x76, 0xeb, 0xc3, 0x8b, 0x19, 0x57, 0x17, 0xe9, 0x84,
+	0x50, 0x88, 0x5c, 0x0a, 0x32, 0x02, 0xe9, 0xae, 0x9c, 0x1c, 0xd5, 0x2f, 0xca, 0x97, 0xcd, 0x37,
+	0x45, 0xe5, 0x09, 0x93, 0x93, 0x5b, 0xc5, 0x0f, 0x7f, 0xfa, 0x37, 0x00, 0x00, 0xff, 0xff, 0x92,
+	0x05, 0xce, 0x6e, 0x84, 0x04, 0x00, 0x00,
 }
 
-func (m *LastUpdateMemo) Marshal() (dAtA []byte, err error) {
+func (m *LastUpdateInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -375,12 +383,12 @@ func (m *LastUpdateMemo) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *LastUpdateMemo) MarshalTo(dAtA []byte) (int, error) {
+func (m *LastUpdateInfo) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *LastUpdateMemo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *LastUpdateInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -422,7 +430,7 @@ func (m *LastUpdateMemo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ConsAddrToKey) Marshal() (dAtA []byte, err error) {
+func (m *AddrToKey) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -432,12 +440,12 @@ func (m *ConsAddrToKey) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ConsAddrToKey) MarshalTo(dAtA []byte) (int, error) {
+func (m *AddrToKey) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ConsAddrToKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *AddrToKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -454,10 +462,10 @@ func (m *ConsAddrToKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.ConsAddr) > 0 {
-		i -= len(m.ConsAddr)
-		copy(dAtA[i:], m.ConsAddr)
-		i = encodeVarintKeyassignment(dAtA, i, uint64(len(m.ConsAddr)))
+	if len(m.Addr) > 0 {
+		i -= len(m.Addr)
+		copy(dAtA[i:], m.Addr)
+		i = encodeVarintKeyassignment(dAtA, i, uint64(len(m.Addr)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -511,7 +519,7 @@ func (m *KeyToKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ConsAddrToLastUpdateMemo) Marshal() (dAtA []byte, err error) {
+func (m *AddrToLastUpdateInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -521,19 +529,19 @@ func (m *ConsAddrToLastUpdateMemo) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ConsAddrToLastUpdateMemo) MarshalTo(dAtA []byte) (int, error) {
+func (m *AddrToLastUpdateInfo) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ConsAddrToLastUpdateMemo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *AddrToLastUpdateInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.LastUpdateMemo != nil {
+	if m.LastUpdateInfo != nil {
 		{
-			size, err := m.LastUpdateMemo.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.LastUpdateInfo.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -543,10 +551,10 @@ func (m *ConsAddrToLastUpdateMemo) MarshalToSizedBuffer(dAtA []byte) (int, error
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.ConsAddr) > 0 {
-		i -= len(m.ConsAddr)
-		copy(dAtA[i:], m.ConsAddr)
-		i = encodeVarintKeyassignment(dAtA, i, uint64(len(m.ConsAddr)))
+	if len(m.Addr) > 0 {
+		i -= len(m.Addr)
+		copy(dAtA[i:], m.Addr)
+		i = encodeVarintKeyassignment(dAtA, i, uint64(len(m.Addr)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -573,10 +581,10 @@ func (m *KeyAssignment) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.ConsumerConsAddrToLastUpdateMemo) > 0 {
-		for iNdEx := len(m.ConsumerConsAddrToLastUpdateMemo) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.ConsumerAddrToLastUpdateInfo) > 0 {
+		for iNdEx := len(m.ConsumerAddrToLastUpdateInfo) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.ConsumerConsAddrToLastUpdateMemo[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.ConsumerAddrToLastUpdateInfo[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -601,10 +609,10 @@ func (m *KeyAssignment) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x12
 		}
 	}
-	if len(m.ProviderConsAddrToConsumerKey) > 0 {
-		for iNdEx := len(m.ProviderConsAddrToConsumerKey) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.ProviderAddrToConsumerKey) > 0 {
+		for iNdEx := len(m.ProviderAddrToConsumerKey) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.ProviderConsAddrToConsumerKey[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.ProviderAddrToConsumerKey[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -629,7 +637,7 @@ func encodeVarintKeyassignment(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *LastUpdateMemo) Size() (n int) {
+func (m *LastUpdateInfo) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -652,13 +660,13 @@ func (m *LastUpdateMemo) Size() (n int) {
 	return n
 }
 
-func (m *ConsAddrToKey) Size() (n int) {
+func (m *AddrToKey) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.ConsAddr)
+	l = len(m.Addr)
 	if l > 0 {
 		n += 1 + l + sovKeyassignment(uint64(l))
 	}
@@ -686,18 +694,18 @@ func (m *KeyToKey) Size() (n int) {
 	return n
 }
 
-func (m *ConsAddrToLastUpdateMemo) Size() (n int) {
+func (m *AddrToLastUpdateInfo) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.ConsAddr)
+	l = len(m.Addr)
 	if l > 0 {
 		n += 1 + l + sovKeyassignment(uint64(l))
 	}
-	if m.LastUpdateMemo != nil {
-		l = m.LastUpdateMemo.Size()
+	if m.LastUpdateInfo != nil {
+		l = m.LastUpdateInfo.Size()
 		n += 1 + l + sovKeyassignment(uint64(l))
 	}
 	return n
@@ -709,8 +717,8 @@ func (m *KeyAssignment) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if len(m.ProviderConsAddrToConsumerKey) > 0 {
-		for _, e := range m.ProviderConsAddrToConsumerKey {
+	if len(m.ProviderAddrToConsumerKey) > 0 {
+		for _, e := range m.ProviderAddrToConsumerKey {
 			l = e.Size()
 			n += 1 + l + sovKeyassignment(uint64(l))
 		}
@@ -721,8 +729,8 @@ func (m *KeyAssignment) Size() (n int) {
 			n += 1 + l + sovKeyassignment(uint64(l))
 		}
 	}
-	if len(m.ConsumerConsAddrToLastUpdateMemo) > 0 {
-		for _, e := range m.ConsumerConsAddrToLastUpdateMemo {
+	if len(m.ConsumerAddrToLastUpdateInfo) > 0 {
+		for _, e := range m.ConsumerAddrToLastUpdateInfo {
 			l = e.Size()
 			n += 1 + l + sovKeyassignment(uint64(l))
 		}
@@ -736,7 +744,7 @@ func sovKeyassignment(x uint64) (n int) {
 func sozKeyassignment(x uint64) (n int) {
 	return sovKeyassignment(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *LastUpdateMemo) Unmarshal(dAtA []byte) error {
+func (m *LastUpdateInfo) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -759,10 +767,10 @@ func (m *LastUpdateMemo) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: LastUpdateMemo: wiretype end group for non-group")
+			return fmt.Errorf("proto: LastUpdateInfo: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LastUpdateMemo: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: LastUpdateInfo: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -896,7 +904,7 @@ func (m *LastUpdateMemo) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ConsAddrToKey) Unmarshal(dAtA []byte) error {
+func (m *AddrToKey) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -919,15 +927,15 @@ func (m *ConsAddrToKey) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ConsAddrToKey: wiretype end group for non-group")
+			return fmt.Errorf("proto: AddrToKey: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ConsAddrToKey: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AddrToKey: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ConsAddr", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Addr", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -954,9 +962,9 @@ func (m *ConsAddrToKey) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ConsAddr = append(m.ConsAddr[:0], dAtA[iNdEx:postIndex]...)
-			if m.ConsAddr == nil {
-				m.ConsAddr = []byte{}
+			m.Addr = append(m.Addr[:0], dAtA[iNdEx:postIndex]...)
+			if m.Addr == nil {
+				m.Addr = []byte{}
 			}
 			iNdEx = postIndex
 		case 2:
@@ -1138,7 +1146,7 @@ func (m *KeyToKey) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ConsAddrToLastUpdateMemo) Unmarshal(dAtA []byte) error {
+func (m *AddrToLastUpdateInfo) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1161,15 +1169,15 @@ func (m *ConsAddrToLastUpdateMemo) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ConsAddrToLastUpdateMemo: wiretype end group for non-group")
+			return fmt.Errorf("proto: AddrToLastUpdateInfo: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ConsAddrToLastUpdateMemo: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AddrToLastUpdateInfo: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ConsAddr", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Addr", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -1196,14 +1204,14 @@ func (m *ConsAddrToLastUpdateMemo) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ConsAddr = append(m.ConsAddr[:0], dAtA[iNdEx:postIndex]...)
-			if m.ConsAddr == nil {
-				m.ConsAddr = []byte{}
+			m.Addr = append(m.Addr[:0], dAtA[iNdEx:postIndex]...)
+			if m.Addr == nil {
+				m.Addr = []byte{}
 			}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastUpdateMemo", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field LastUpdateInfo", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1230,10 +1238,10 @@ func (m *ConsAddrToLastUpdateMemo) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.LastUpdateMemo == nil {
-				m.LastUpdateMemo = &LastUpdateMemo{}
+			if m.LastUpdateInfo == nil {
+				m.LastUpdateInfo = &LastUpdateInfo{}
 			}
-			if err := m.LastUpdateMemo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.LastUpdateInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1289,7 +1297,7 @@ func (m *KeyAssignment) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProviderConsAddrToConsumerKey", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddrToConsumerKey", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1316,8 +1324,8 @@ func (m *KeyAssignment) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ProviderConsAddrToConsumerKey = append(m.ProviderConsAddrToConsumerKey, ConsAddrToKey{})
-			if err := m.ProviderConsAddrToConsumerKey[len(m.ProviderConsAddrToConsumerKey)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.ProviderAddrToConsumerKey = append(m.ProviderAddrToConsumerKey, AddrToKey{})
+			if err := m.ProviderAddrToConsumerKey[len(m.ProviderAddrToConsumerKey)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1357,7 +1365,7 @@ func (m *KeyAssignment) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerConsAddrToLastUpdateMemo", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerAddrToLastUpdateInfo", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1384,8 +1392,8 @@ func (m *KeyAssignment) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ConsumerConsAddrToLastUpdateMemo = append(m.ConsumerConsAddrToLastUpdateMemo, ConsAddrToLastUpdateMemo{})
-			if err := m.ConsumerConsAddrToLastUpdateMemo[len(m.ConsumerConsAddrToLastUpdateMemo)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.ConsumerAddrToLastUpdateInfo = append(m.ConsumerAddrToLastUpdateInfo, AddrToLastUpdateInfo{})
+			if err := m.ConsumerAddrToLastUpdateInfo[len(m.ConsumerAddrToLastUpdateInfo)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

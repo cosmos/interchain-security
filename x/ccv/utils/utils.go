@@ -4,6 +4,7 @@ import (
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -11,6 +12,7 @@ import (
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci.ValidatorUpdate {
@@ -39,6 +41,14 @@ func GetChangePubKeyAddress(change abci.ValidatorUpdate) (addr []byte) {
 	}
 
 	return pk.Address()
+}
+
+func TMCryptoPublicKeyToConsAddr(k tmprotocrypto.PublicKey) sdk.ConsAddress {
+	sdkK, err := sdkcryptocodec.FromTmProtoPublicKey(k)
+	if err != nil {
+		panic("could not get public key from tm proto public key")
+	}
+	return sdk.GetConsAddress(sdkK)
 }
 
 // SendIBCPacket sends an IBC packet with packetData

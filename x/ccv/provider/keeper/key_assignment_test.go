@@ -13,6 +13,7 @@ import (
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
+	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
@@ -24,7 +25,7 @@ func key(seed int) tmprotocrypto.PublicKey {
 
 // Num traces to run for heuristic testing
 // About 1.5 secs per trace when using real store
-const NUM_TRACES = 400
+const NUM_TRACES = 50
 
 // Len of trace for a single heuristic testing run
 const TRACE_LEN = 400
@@ -34,11 +35,11 @@ const NUM_VALS = 8
 
 // Number of consumer keys in the universe
 // (This is constrained to ensure overlap edge cases are tested)
-const NUM_CKS = 30
+const NUM_CKS = 24
 
 type keyAssignmentEntry struct {
-	pk providerkeeper.ProviderPublicKey
-	ck providerkeeper.ConsumerPublicKey
+	pk providerkeeper.ProviderKey
+	ck providerkeeper.ConsumerKey
 }
 
 type traceStep struct {
@@ -59,7 +60,7 @@ type driver struct {
 	// A historical record of assignments, it is used for checking
 	// temporal properties.
 	// indexed by a unit of time (starting at 0)
-	assignments []map[string]providerkeeper.ConsumerPublicKey
+	assignments []map[string]providerkeeper.ConsumerKey
 	// Another historical record.
 	// indexed by a unit of time (starting at 0)
 	consumerUpdates [][]abci.ValidatorUpdate
@@ -74,8 +75,7 @@ type driver struct {
 func newTestKeyAssignment(t *testing.T) *providerkeeper.KeyAssignment {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	chainID := "foobar"
-	store := providerkeeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
-	ka := providerkeeper.MakeKeyAssignment(&store)
+	ka := providerkeeper.KeyAssignment{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
 	return &ka
 }
 
@@ -89,7 +89,7 @@ func makeDriver(t *testing.T, trace []traceStep) driver {
 	d.lastTimeProvider = 0
 	d.lastTimeConsumer = 0
 	d.lastTimeMaturity = 0
-	d.assignments = []map[string]providerkeeper.ConsumerPublicKey{}
+	d.assignments = []map[string]providerkeeper.ConsumerKey{}
 	d.consumerUpdates = [][]abci.ValidatorUpdate{}
 	d.providerValsets = []valset{}
 	d.consumerValset = valset{}
@@ -104,8 +104,8 @@ func (d *driver) applyKeyAssignmentEntries(entries []keyAssignmentEntry) {
 		_ = d.ka.SetProviderPubKeyToConsumerPubKey(e.pk, e.ck)
 	}
 	// Duplicate the assignment for referencing later in tests.
-	copy := map[string]providerkeeper.ConsumerPublicKey{}
-	d.ka.Store.IterateProviderConsAddrToConsumerPublicKey(func(pca providerkeeper.ProviderConsAddr, ck providerkeeper.ConsumerPublicKey) bool {
+	copy := map[string]providerkeeper.ConsumerKey{}
+	d.ka.IterateProviderAddrToConsumerKey(func(pca providerkeeper.ProviderAddr, ck providerkeeper.ConsumerKey) bool {
 		copy[string(pca)] = ck
 		return false
 	})
@@ -156,7 +156,7 @@ func (d *driver) run() {
 		// Set the initial provider set
 		d.providerValsets = append(d.providerValsets, applyUpdates(valset{}, init.providerUpdates))
 		// Set the initial consumer set
-		d.consumerUpdates = append(d.consumerUpdates, d.ka.ComputeUpdates(uint64(init.timeProvider), init.providerUpdates))
+		d.consumerUpdates = append(d.consumerUpdates, d.ka.ProviderUpdatesToConsumerUpdates(uint64(init.timeProvider), init.providerUpdates))
 		// The first consumer set equal to the provider set at time 0
 		d.consumerValset = applyUpdates(valset{}, d.consumerUpdates[init.timeConsumer])
 		d.ka.PruneUnusedKeys(uint64(init.timeMaturity))
@@ -177,7 +177,7 @@ func (d *driver) run() {
 			d.applyProviderUpdates(s.providerUpdates)
 
 			// Store the updates, to reference later in tests.
-			d.consumerUpdates = append(d.consumerUpdates, d.ka.ComputeUpdates(uint64(s.timeProvider), s.providerUpdates))
+			d.consumerUpdates = append(d.consumerUpdates, d.ka.ProviderUpdatesToConsumerUpdates(uint64(s.timeProvider), s.providerUpdates))
 			d.lastTimeProvider = s.timeProvider
 		}
 		if d.lastTimeConsumer < s.timeConsumer {
@@ -244,13 +244,13 @@ func (d *driver) externalInvariants() {
 			pk := u.PubKey
 			expectedPower := u.Power
 			found := false
-			ck := providerkeeper.ConsumerPublicKey{}
+			ck := providerkeeper.ConsumerKey{}
 			for k, v := range d.assignments[d.lastTimeConsumer] {
 				if pk.Equal(k) {
 					ck = v
 				}
 			}
-			require.NotEqualf(d.t, ck, providerkeeper.ConsumerPublicKey{}, "bad test, a assignment must exist")
+			require.NotEqualf(d.t, ck, providerkeeper.ConsumerKey{}, "bad test, a assignment must exist")
 
 			// Check that the mapped through validator has the correct power
 			for _, u := range cSet {
@@ -276,14 +276,14 @@ func (d *driver) externalInvariants() {
 			// The query must return a result
 			pkQueried, found := d.ka.GetProviderPubKeyFromConsumerPubKey(ckOnConsumer)
 			require.True(d.t, found)
-			pkQueriedByConsAddr, found := d.ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(ckOnConsumer))
+			pkQueriedByConsAddr, found := d.ka.GetProviderPubKeyFromConsumerConsAddress(utils.TMCryptoPublicKeyToConsAddr(ckOnConsumer))
 			require.True(d.t, found)
 			require.Equal(d.t, pkQueried, pkQueriedByConsAddr)
 
 			// The provider key must be the one that was actually referenced
 			// in the latest actualAssignment used to compute updates sent to the
 			// consumer.
-			ckWasActuallyMappedTo := map[providerkeeper.ConsumerPublicKey]bool{}
+			ckWasActuallyMappedTo := map[providerkeeper.ConsumerKey]bool{}
 			actualAssignment := d.assignments[d.lastTimeConsumer]
 			for pk, ck := range actualAssignment {
 
@@ -351,7 +351,7 @@ func (d *driver) externalInvariants() {
 
 		// Simply check every consumer key for the correct queryable-ness.
 		for ck := 0; ck < NUM_CKS; ck++ {
-			cca := providerkeeper.TMCryptoPublicKeyToConsAddr(key(ck))
+			cca := utils.TMCryptoPublicKeyToConsAddr(key(ck))
 			_, actualQueryable := d.ka.GetProviderPubKeyFromConsumerConsAddress(cca)
 			if expect, found := expectQueryable[providerkeeper.DeterministicStringify(key(ck))]; found && expect {
 				require.True(d.t, actualQueryable)
@@ -493,74 +493,66 @@ func TestKeyAssignmentPropertiesRandomlyHeuristically(t *testing.T) {
 	}
 }
 
-func TestKeyAssignmentKeySerialization(t *testing.T) {
+func TestKeyAssignmentSameSeedEquality(t *testing.T) {
+	// Keys compare using Equal
 	k0 := key(0)
 	k1 := key(0)
+	require.True(t, k0.Equal(k1))
+	require.False(t, k0 == k1)
+}
+
+func TestKeyAssignmentKeySerialization(t *testing.T) {
+	// Equal keys serialize to the same bytes
+	k0 := key(0)
+	k1 := key(0)
+
 	bz0, err := k0.Marshal()
 	require.NoError(t, err)
 	bz1, err := k1.Marshal()
 	require.NoError(t, err)
+
 	require.Equal(t, len(bz0), len(bz1))
 	for i := range bz0 {
 		require.Equal(t, bz0[i], bz1[i])
 	}
 }
-
-func TestKeyAssignmentMemo(t *testing.T) {
-	arr := []providertypes.LastUpdateMemo{
-		{}, {},
-	}
-	{
-		k0 := key(0)
-		k1 := key(1)
-		arr[0].ProviderKey = &k0
-		arr[1].ProviderKey = &k1
-	}
-	k2 := key(2)
-	pk := &k2
-	for i, m := range arr {
-		if i < 1 {
-			pk = m.ProviderKey
-		}
-	}
-	require.True(t, pk.Equal(key(0)))
-}
-
-func TestKeyAssignmentMemoLoopIteration(t *testing.T) {
-	m := providertypes.LastUpdateMemo{}
-	{
-		k0 := key(0)
-		m.ProviderKey = &k0
-	}
-	arr := []tmprotocrypto.PublicKey{key(0), key(1)}
-	for i, pk := range arr {
-		if i < 1 {
-			m.ProviderKey = &pk
-		}
-	}
-	require.False(t, m.ProviderKey.Equal(arr[0]))
-	require.True(t, m.ProviderKey.Equal(arr[1]))
-}
-
-func TestKeyAssignmentSameSeedDeterministicStringify(t *testing.T) {
-	// This doesn't prove anything
-	for i := 0; i < 1000; i++ {
+func TestKeyAssignmentDeterministicStringify(t *testing.T) {
+	for i := 0; i < 100; i++ {
 		k0 := key(i)
 		k1 := key(i)
-		s0 := providerkeeper.DeterministicStringify(k0)
-		s1 := providerkeeper.DeterministicStringify(k1)
-		require.Equal(t, s0, s1)
+		require.True(t, providerkeeper.DeterministicStringify(k0) == providerkeeper.DeterministicStringify(k1))
 	}
 }
 
-func TestKeyAssignmentSameSeedEquality(t *testing.T) {
-	k0 := key(0)
-	k1 := key(0)
-	require.True(t, k0.Equal(k1))
-	require.Equal(t, k0, k1)
+func TestKeyAssignmentKeyComparison(t *testing.T) {
+	// Marshall a key
+	k := key(0)
+	bz, err := k.Marshal()
+	require.Nil(t, err)
+
+	// Deserialize the bytes
+	other := tmprotocrypto.PublicKey{}
+	err = other.Unmarshal(bz)
+	require.Nil(t, err)
+
+	// Equals method works!
+	require.Equal(t, k, other)
+	require.True(t, k.Equal(other))
+
+	// == does not work!
+	require.False(t, k == other)
+	require.True(t, k != other)
+
+	// Golang maps use == for comparison
+	// https://go.dev/ref/spec#Comparison_operators
+	// This means that we can't use a map to store keys directly
+
+	// Use DeterministicStringify to implement map keys
+	require.True(t, providerkeeper.DeterministicStringify(k) == providerkeeper.DeterministicStringify(other))
 }
 
 func TestKeyAssignmentSameSeedMapLength(t *testing.T) {
+	// Demonstrates problem with using == for map keys
 	k0 := key(0)
 	k1 := key(0)
 	m := map[tmprotocrypto.PublicKey]bool{}
@@ -568,30 +560,6 @@ func TestKeyAssignmentSameSeedMapLength(t *testing.T) {
 	m[k1] = true
 	require.Equal(t, k0, k1)
 	require.Len(t, m, 2)
-}
-
-func TestKeyAssignmentSameSeedMapLengthCopy(t *testing.T) {
-	k0 := key(0)
-	arr := []tmprotocrypto.PublicKey{k0}
-	m := map[tmprotocrypto.PublicKey]bool{}
-	m[k0] = true
-	m[arr[0]] = true
-	require.Equal(t, k0, arr[0])
-	require.Len(t, m, 1)
-}
-
-func TestKeyAssignmentDifferentKeyComparison(t *testing.T) {
-	k := key(0)
-	bz, err := k.Marshal()
-	require.Nil(t, err)
-	other := tmprotocrypto.PublicKey{}
-	err = other.Unmarshal(bz)
-	require.Nil(t, err)
-	require.Equal(t, k, other)
-	require.True(t, k.Equal(other))
-	// No == comparison allowed!
-	require.False(t, k == other)
-	require.True(t, k != other)
 }
 
 func TestKeyAssignmentSetCurrentQueryWithIdenticalKey(t *testing.T) {
@@ -637,16 +605,16 @@ func TestKeyAssignmentSetUseReplaceAndReverse(t *testing.T) {
 	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	require.NoError(t, err)
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
-	ka.ComputeUpdates(100, updates)
+	ka.ProviderUpdatesToConsumerUpdates(100, updates)
 	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // New consumer key
 	require.NoError(t, err)
-	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
+	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(utils.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // New is queryable
 	require.Equal(t, key(42), actual)
-	ka.ComputeUpdates(101, updates) // Old is no longer known to consumer
-	ka.PruneUnusedKeys(102)         // Old is garbage collected on provider
-	_, found := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
+	ka.ProviderUpdatesToConsumerUpdates(101, updates) // Old is no longer known to consumer
+	ka.PruneUnusedKeys(102)                           // Old is garbage collected on provider
+	_, found := ka.GetProviderPubKeyFromConsumerConsAddress(utils.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.False(t, found)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
 	require.Equal(t, key(42), actual)
@@ -665,14 +633,13 @@ func TestKeyAssignmentDelete(t *testing.T) {
 	require.NoError(t, err)
 
 	updates := []abci.ValidatorUpdate{{PubKey: pk, Power: 999}}
-	ka.ComputeUpdates(100, updates)
+	ka.ProviderUpdatesToConsumerUpdates(100, updates)
 
 	err = ka.SetProviderPubKeyToConsumerPubKey(pk, ck1) // New consumer key
 	require.NoError(t, err)
-	ka.ComputeUpdates(101, updates)
+	ka.ProviderUpdatesToConsumerUpdates(101, updates)
 
-	err = ka.DeleteProviderKey(providerIdentity.SDKConsAddress())
-	require.NoError(t, err)
+	ka.DeleteProviderKey(providerIdentity.SDKConsAddress())
 
 	_, found := ka.GetCurrentConsumerPubKeyFromProviderPubKey(pk)
 	require.False(t, found)
@@ -691,15 +658,15 @@ func TestKeyAssignmentSetUseReplaceAndPrune(t *testing.T) {
 	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	require.NoError(t, err)
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
-	ka.ComputeUpdates(100, updates)
+	ka.ProviderUpdatesToConsumerUpdates(100, updates)
 	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44))
 	require.NoError(t, err)
-	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
+	actual, _ := ka.GetProviderPubKeyFromConsumerConsAddress(utils.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.Equal(t, key(42), actual)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // Queryable
 	require.Equal(t, key(42), actual)
 	ka.PruneUnusedKeys(101) // Should not be pruned
-	_, found := ka.GetProviderPubKeyFromConsumerConsAddress(providerkeeper.TMCryptoPublicKeyToConsAddr(key(43)))
+	_, found := ka.GetProviderPubKeyFromConsumerConsAddress(utils.TMCryptoPublicKeyToConsAddr(key(43)))
 	require.True(t, found)
 	actual, _ = ka.GetProviderPubKeyFromConsumerPubKey(key(44)) // New key is still queryable
 	require.Equal(t, key(42), actual)
@@ -720,10 +687,10 @@ func TestKeyAssignmentGCUpdateIsEmitted(t *testing.T) {
 	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	require.NoError(t, err)
 	updates := []abci.ValidatorUpdate{{PubKey: key(42), Power: 999}}
-	ka.ComputeUpdates(100, updates)
+	ka.ProviderUpdatesToConsumerUpdates(100, updates)
 	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // Now use a different consumer key
 	require.NoError(t, err)
-	consumerUpdates := ka.ComputeUpdates(100, []abci.ValidatorUpdate{})
+	consumerUpdates := ka.ProviderUpdatesToConsumerUpdates(100, []abci.ValidatorUpdate{})
 	good := false
 	for _, u := range consumerUpdates {
 		if u.PubKey.Equal(key(43)) {
@@ -742,36 +709,35 @@ func TestValidatorRemoval(t *testing.T) {
 
 	err := ka.SetProviderPubKeyToConsumerPubKey(key(42), key(43))
 	require.NoError(t, err)
-	ka.ComputeUpdates(0, updates)
+	ka.ProviderUpdatesToConsumerUpdates(0, updates)
 
 	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(44)) // Now use a different consumer key
 	require.NoError(t, err)
-	ka.ComputeUpdates(1, updates)
+	ka.ProviderUpdatesToConsumerUpdates(1, updates)
 
 	err = ka.SetProviderPubKeyToConsumerPubKey(key(42), key(45)) // Now use a different consumer key
 	require.NoError(t, err)
-	ka.ComputeUpdates(2, updates)
+	ka.ProviderUpdatesToConsumerUpdates(2, updates)
 
-	pca := providerkeeper.TMCryptoPublicKeyToConsAddr(key(42))
-	err = ka.DeleteProviderKey(pca)
-	require.NoError(t, err)
+	pca := utils.TMCryptoPublicKeyToConsAddr(key(42))
+	ka.DeleteProviderKey(pca)
 
-	_, found := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca)
+	_, found := ka.GetProviderAddrToConsumerKey(pca)
 	require.False(t, found)
-	_, found = ka.Store.GetConsumerPublicKeyToProviderPublicKey(key(43))
+	_, found = ka.GetConsumerKeyToProviderKey(key(43))
 	require.False(t, found)
-	_, found = ka.Store.GetConsumerPublicKeyToProviderPublicKey(key(44))
+	_, found = ka.GetConsumerKeyToProviderKey(key(44))
 	require.False(t, found)
-	_, found = ka.Store.GetConsumerPublicKeyToProviderPublicKey(key(45))
+	_, found = ka.GetConsumerKeyToProviderKey(key(45))
 	require.False(t, found)
 
 	for i := 43; i < 46; i++ {
-		_, found = ka.Store.GetConsumerConsAddrToLastUpdateMemo(providerkeeper.TMCryptoPublicKeyToConsAddr(key(i)))
+		_, found = ka.GetConsumerAddrToLastUpdateInfo(utils.TMCryptoPublicKeyToConsAddr(key(i)))
 		require.False(t, found)
 
 	}
-	ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(cca providerkeeper.ConsumerConsAddr, lum providertypes.LastUpdateMemo) bool {
-		pcaQueried := providerkeeper.TMCryptoPublicKeyToConsAddr(*lum.ProviderKey)
+	ka.IterateConsumerAddrToLastUpdateInfo(func(cca providerkeeper.ConsumerAddr, info providertypes.LastUpdateInfo) bool {
+		pcaQueried := utils.TMCryptoPublicKeyToConsAddr(*info.ProviderKey)
 		require.False(t, pca.Equals(pcaQueried))
 		return false
 	})
@@ -780,44 +746,44 @@ func TestValidatorRemoval(t *testing.T) {
 
 func compareForEquality(t *testing.T,
 	ka providerkeeper.KeyAssignment,
-	pcaToCk map[string]providerkeeper.ConsumerPublicKey,
-	ckToPk map[providerkeeper.ConsumerPublicKey]providerkeeper.ProviderPublicKey,
-	ccaToLastUpdateMemo map[string]providertypes.LastUpdateMemo) {
+	pcaToCk map[string]providerkeeper.ConsumerKey,
+	ckToPk map[providerkeeper.ConsumerKey]providerkeeper.ProviderKey,
+	ccaToLastUpdateMemo map[string]providertypes.LastUpdateInfo) {
 
 	cnt := 0
-	ka.Store.IterateProviderConsAddrToConsumerPublicKey(func(_ providerkeeper.ProviderConsAddr, _ providerkeeper.ConsumerPublicKey) bool {
+	ka.IterateProviderAddrToConsumerKey(func(_ providerkeeper.ProviderAddr, _ providerkeeper.ConsumerKey) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(pcaToCk), cnt)
 
 	cnt = 0
-	ka.Store.IterateConsumerPublicKeyToProviderPublicKey(func(_, _ providerkeeper.ConsumerPublicKey) bool {
+	ka.IterateConsumerKeyToProviderKey(func(_, _ providerkeeper.ConsumerKey) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(ckToPk), cnt)
 
 	cnt = 0
-	ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(_ providerkeeper.ConsumerConsAddr, _ providertypes.LastUpdateMemo) bool {
+	ka.IterateConsumerAddrToLastUpdateInfo(func(_ providerkeeper.ConsumerAddr, _ providertypes.LastUpdateInfo) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(ccaToLastUpdateMemo), cnt)
 
 	for k, vExpect := range pcaToCk {
-		vActual, found := ka.Store.GetProviderConsAddrToConsumerPublicKey(providerkeeper.ProviderConsAddr(k))
+		vActual, found := ka.GetProviderAddrToConsumerKey(providerkeeper.ProviderAddr(k))
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
 	for k, vExpect := range ckToPk {
-		vActual, found := ka.Store.GetConsumerPublicKeyToProviderPublicKey(k)
+		vActual, found := ka.GetConsumerKeyToProviderKey(k)
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
 	for k, vExpect := range ccaToLastUpdateMemo {
 		k := sdktypes.ConsAddress(k)
-		m, found := ka.Store.GetConsumerConsAddrToLastUpdateMemo(k)
+		m, found := ka.GetConsumerAddrToLastUpdateInfo(k)
 		require.True(t, found)
 		require.Equal(t, vExpect.ProviderKey, m.ProviderKey)
 		require.Equal(t, vExpect.ConsumerKey, m.ConsumerKey)
@@ -840,21 +806,21 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 ) {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 
-	pcaToCk := map[string]providerkeeper.ConsumerPublicKey{}
-	ckToPk := map[providerkeeper.ConsumerPublicKey]providerkeeper.ProviderPublicKey{}
-	ccaToLastUpdateMemo := map[string]providertypes.LastUpdateMemo{}
+	pcaToCk := map[string]providerkeeper.ConsumerKey{}
+	ckToPk := map[providerkeeper.ConsumerKey]providerkeeper.ProviderKey{}
+	ccaToLastUpdateMemo := map[string]providertypes.LastUpdateInfo{}
 
-	pcaToCk[string(providerkeeper.TMCryptoPublicKeyToConsAddr(keys[0]))] = keys[1]
-	pcaToCk[string(providerkeeper.TMCryptoPublicKeyToConsAddr(keys[2]))] = keys[3]
+	pcaToCk[string(utils.TMCryptoPublicKeyToConsAddr(keys[0]))] = keys[1]
+	pcaToCk[string(utils.TMCryptoPublicKeyToConsAddr(keys[2]))] = keys[3]
 	ckToPk[keys[4]] = keys[5]
 	ckToPk[keys[6]] = keys[7]
-	ccaToLastUpdateMemo[string(providerkeeper.TMCryptoPublicKeyToConsAddr(keys[8]))] = providertypes.LastUpdateMemo{
+	ccaToLastUpdateMemo[string(utils.TMCryptoPublicKeyToConsAddr(keys[8]))] = providertypes.LastUpdateInfo{
 		ConsumerKey: &keys[9],
 		ProviderKey: &keys[10],
 		Vscid:       uint64_0,
 		Power:       int64_0,
 	}
-	ccaToLastUpdateMemo[string(providerkeeper.TMCryptoPublicKeyToConsAddr(keys[11]))] = providertypes.LastUpdateMemo{
+	ccaToLastUpdateMemo[string(utils.TMCryptoPublicKeyToConsAddr(keys[11]))] = providertypes.LastUpdateInfo{
 		ConsumerKey: &keys[12],
 		ProviderKey: &keys[13],
 		Vscid:       uint64_1,
@@ -863,22 +829,20 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 
 	{
 		// Use one KeyAssignment instance to serialize the data
-		store := providerkeeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
-		ka := providerkeeper.MakeKeyAssignment(&store)
+		ka := providerkeeper.KeyAssignment{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
 		for k, v := range pcaToCk {
-			ka.Store.SetProviderConsAddrToConsumerPublicKey(sdktypes.ConsAddress(k), v)
+			ka.SetProviderAddrToConsumerKey(sdktypes.ConsAddress(k), v)
 		}
 		for k, v := range ckToPk {
-			ka.Store.SetConsumerPublicKeyToProviderPublicKey(k, v)
+			ka.SetConsumerKeyToProviderKey(k, v)
 		}
 		for k, v := range ccaToLastUpdateMemo {
-			ka.Store.SetConsumerConsAddrToLastUpdateMemo(sdktypes.ConsAddress(k), v)
+			ka.SetConsumerAddrToLastUpdateInfo(sdktypes.ConsAddress(k), v)
 		}
 	}
 
 	// Use another KeyAssignment instance to deserialize the data
-	store := providerkeeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
-	ka := providerkeeper.MakeKeyAssignment(&store)
+	ka := providerkeeper.KeyAssignment{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
 
 	// Check that the data is the same
 

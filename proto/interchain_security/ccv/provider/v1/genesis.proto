@@ -62,6 +62,7 @@ message ConsumerState {
   // UnbondingOpsIndex defines the unbonding operations on the consumer chain
   repeated UnbondingOpIndex unbonding_ops_index = 9
   [ (gogoproto.nullable) = false ];
+  // Data used to assign keys to validators to validate on the consumer chain
   KeyAssignment key_assignment = 10;
 }
 
