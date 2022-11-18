@@ -672,8 +672,7 @@ func TestKeyAssignmentDelete(t *testing.T) {
 	require.NoError(t, err)
 	ka.ComputeUpdates(101, updates)
 
-	err = ka.DeleteProviderKey(providerIdentity.SDKConsAddress())
-	require.NoError(t, err)
+	ka.DeleteProviderKey(providerIdentity.SDKConsAddress())
 
 	_, found := ka.GetCurrentConsumerPubKeyFromProviderPubKey(pk)
 	require.False(t, found)
@@ -754,8 +753,7 @@ func TestValidatorRemoval(t *testing.T) {
 	ka.ComputeUpdates(2, updates)
 
 	pca := utils.TMCryptoPublicKeyToConsAddr(key(42))
-	err = ka.DeleteProviderKey(pca)
-	require.NoError(t, err)
+	ka.DeleteProviderKey(pca)
 
 	_, found := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca)
 	require.False(t, found)

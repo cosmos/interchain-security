@@ -72,7 +72,7 @@ func (ka *KeyAssignment) SetProviderPubKeyToConsumerPubKey(pk ProviderPublicKey,
 // with key pca. This is called when a validator is destroyed in the staking module.
 // This is relatively expensive, but should be called rarely because validators are
 // destroyed rarely.
-func (ka *KeyAssignment) DeleteProviderKey(pca ProviderConsAddr) error {
+func (ka *KeyAssignment) DeleteProviderKey(pca ProviderConsAddr) {
 	// Delete the current mapping from the consumer key to the provider key
 	if ck, ok := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca); ok {
 		// Delete the current mapping from the provider key to the consumer key
@@ -94,7 +94,6 @@ func (ka *KeyAssignment) DeleteProviderKey(pca ProviderConsAddr) error {
 	for _, cca := range toDelete {
 		ka.Store.DelConsumerConsAddrToLastUpdateMemo(cca)
 	}
-	return nil
 }
 
 // GetCurrentConsumerPubKeyFromProviderPubKey returns the current consumer key assigned to the provider key.
