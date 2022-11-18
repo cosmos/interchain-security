@@ -75,8 +75,7 @@ type driver struct {
 func newTestKeyAssignment(t *testing.T) *providerkeeper.KeyAssignment {
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
 	chainID := "foobar"
-	store := providerkeeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
-	ka := providerkeeper.MakeKeyAssignment(&store)
+	ka := providerkeeper.KeyAssignment{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
 	return &ka
 }
 
@@ -106,7 +105,7 @@ func (d *driver) applyKeyAssignmentEntries(entries []keyAssignmentEntry) {
 	}
 	// Duplicate the assignment for referencing later in tests.
 	copy := map[string]providerkeeper.ConsumerKey{}
-	d.ka.Store.IterateProviderConsAddrToConsumerPublicKey(func(pca providerkeeper.ProviderAddr, ck providerkeeper.ConsumerKey) bool {
+	d.ka.IterateProviderConsAddrToConsumerPublicKey(func(pca providerkeeper.ProviderAddr, ck providerkeeper.ConsumerKey) bool {
 		copy[string(pca)] = ck
 		return false
 	})
@@ -723,21 +722,21 @@ func TestValidatorRemoval(t *testing.T) {
 	pca := utils.TMCryptoPublicKeyToConsAddr(key(42))
 	ka.DeleteProviderKey(pca)
 
-	_, found := ka.Store.GetProviderConsAddrToConsumerPublicKey(pca)
+	_, found := ka.GetProviderConsAddrToConsumerPublicKey(pca)
 	require.False(t, found)
-	_, found = ka.Store.GetConsumerPublicKeyToProviderPublicKey(key(43))
+	_, found = ka.GetConsumerPublicKeyToProviderPublicKey(key(43))
 	require.False(t, found)
-	_, found = ka.Store.GetConsumerPublicKeyToProviderPublicKey(key(44))
+	_, found = ka.GetConsumerPublicKeyToProviderPublicKey(key(44))
 	require.False(t, found)
-	_, found = ka.Store.GetConsumerPublicKeyToProviderPublicKey(key(45))
+	_, found = ka.GetConsumerPublicKeyToProviderPublicKey(key(45))
 	require.False(t, found)
 
 	for i := 43; i < 46; i++ {
-		_, found = ka.Store.GetConsumerConsAddrToLastUpdateMemo(utils.TMCryptoPublicKeyToConsAddr(key(i)))
+		_, found = ka.GetConsumerConsAddrToLastUpdateMemo(utils.TMCryptoPublicKeyToConsAddr(key(i)))
 		require.False(t, found)
 
 	}
-	ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(cca providerkeeper.ConsumerAddr, lum providertypes.LastUpdateMemo) bool {
+	ka.IterateConsumerConsAddrToLastUpdateMemo(func(cca providerkeeper.ConsumerAddr, lum providertypes.LastUpdateMemo) bool {
 		pcaQueried := utils.TMCryptoPublicKeyToConsAddr(*lum.ProviderKey)
 		require.False(t, pca.Equals(pcaQueried))
 		return false
@@ -752,39 +751,39 @@ func compareForEquality(t *testing.T,
 	ccaToLastUpdateMemo map[string]providertypes.LastUpdateMemo) {
 
 	cnt := 0
-	ka.Store.IterateProviderConsAddrToConsumerPublicKey(func(_ providerkeeper.ProviderAddr, _ providerkeeper.ConsumerKey) bool {
+	ka.IterateProviderConsAddrToConsumerPublicKey(func(_ providerkeeper.ProviderAddr, _ providerkeeper.ConsumerKey) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(pcaToCk), cnt)
 
 	cnt = 0
-	ka.Store.IterateConsumerPublicKeyToProviderPublicKey(func(_, _ providerkeeper.ConsumerKey) bool {
+	ka.IterateConsumerPublicKeyToProviderPublicKey(func(_, _ providerkeeper.ConsumerKey) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(ckToPk), cnt)
 
 	cnt = 0
-	ka.Store.IterateConsumerConsAddrToLastUpdateMemo(func(_ providerkeeper.ConsumerAddr, _ providertypes.LastUpdateMemo) bool {
+	ka.IterateConsumerConsAddrToLastUpdateMemo(func(_ providerkeeper.ConsumerAddr, _ providertypes.LastUpdateMemo) bool {
 		cnt += 1
 		return false
 	})
 	require.Equal(t, len(ccaToLastUpdateMemo), cnt)
 
 	for k, vExpect := range pcaToCk {
-		vActual, found := ka.Store.GetProviderConsAddrToConsumerPublicKey(providerkeeper.ProviderAddr(k))
+		vActual, found := ka.GetProviderConsAddrToConsumerPublicKey(providerkeeper.ProviderAddr(k))
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
 	for k, vExpect := range ckToPk {
-		vActual, found := ka.Store.GetConsumerPublicKeyToProviderPublicKey(k)
+		vActual, found := ka.GetConsumerPublicKeyToProviderPublicKey(k)
 		require.True(t, found)
 		require.Equal(t, vExpect, vActual)
 	}
 	for k, vExpect := range ccaToLastUpdateMemo {
 		k := sdktypes.ConsAddress(k)
-		m, found := ka.Store.GetConsumerConsAddrToLastUpdateMemo(k)
+		m, found := ka.GetConsumerConsAddrToLastUpdateMemo(k)
 		require.True(t, found)
 		require.Equal(t, vExpect.ProviderKey, m.ProviderKey)
 		require.Equal(t, vExpect.ConsumerKey, m.ConsumerKey)
@@ -830,22 +829,20 @@ func checkCorrectSerializationAndDeserialization(t *testing.T,
 
 	{
 		// Use one KeyAssignment instance to serialize the data
-		store := providerkeeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
-		ka := providerkeeper.MakeKeyAssignment(&store)
+		ka := providerkeeper.KeyAssignment{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
 		for k, v := range pcaToCk {
-			ka.Store.SetProviderConsAddrToConsumerPublicKey(sdktypes.ConsAddress(k), v)
+			ka.SetProviderConsAddrToConsumerPublicKey(sdktypes.ConsAddress(k), v)
 		}
 		for k, v := range ckToPk {
-			ka.Store.SetConsumerPublicKeyToProviderPublicKey(k, v)
+			ka.SetConsumerPublicKeyToProviderPublicKey(k, v)
 		}
 		for k, v := range ccaToLastUpdateMemo {
-			ka.Store.SetConsumerConsAddrToLastUpdateMemo(sdktypes.ConsAddress(k), v)
+			ka.SetConsumerConsAddrToLastUpdateMemo(sdktypes.ConsAddress(k), v)
 		}
 	}
 
 	// Use another KeyAssignment instance to deserialize the data
-	store := providerkeeper.KeyAssignmentStore{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
-	ka := providerkeeper.MakeKeyAssignment(&store)
+	ka := providerkeeper.KeyAssignment{keeperParams.Ctx.KVStore(keeperParams.StoreKey), chainID}
 
 	// Check that the data is the same
 

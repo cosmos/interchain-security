@@ -77,13 +77,13 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 		if cs.KeyAssignment != nil {
 			for _, pcaToCk := range cs.KeyAssignment.ProviderConsAddrToConsumerKey {
-				k.KeyAssignment(ctx, cs.ChainId).Store.SetProviderConsAddrToConsumerPublicKey(pcaToCk.ConsAddr, *pcaToCk.Key)
+				k.KeyAssignment(ctx, cs.ChainId).SetProviderConsAddrToConsumerPublicKey(pcaToCk.ConsAddr, *pcaToCk.Key)
 			}
 			for _, ckToPk := range cs.KeyAssignment.ConsumerKeyToProviderKey {
-				k.KeyAssignment(ctx, cs.ChainId).Store.SetConsumerPublicKeyToProviderPublicKey(*ckToPk.From, *ckToPk.To)
+				k.KeyAssignment(ctx, cs.ChainId).SetConsumerPublicKeyToProviderPublicKey(*ckToPk.From, *ckToPk.To)
 			}
 			for _, ccaToLastUpdateMemo := range cs.KeyAssignment.ConsumerConsAddrToLastUpdateMemo {
-				k.KeyAssignment(ctx, cs.ChainId).Store.SetConsumerConsAddrToLastUpdateMemo(ccaToLastUpdateMemo.ConsAddr, *ccaToLastUpdateMemo.LastUpdateMemo)
+				k.KeyAssignment(ctx, cs.ChainId).SetConsumerConsAddrToLastUpdateMemo(ccaToLastUpdateMemo.ConsAddr, *ccaToLastUpdateMemo.LastUpdateMemo)
 			}
 		}
 	}
@@ -134,15 +134,15 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			km.ProviderConsAddrToConsumerKey = []types.ConsAddrToKey{}
 			km.ConsumerKeyToProviderKey = []types.KeyToKey{}
 			km.ConsumerConsAddrToLastUpdateMemo = []types.ConsAddrToLastUpdateMemo{}
-			k.KeyAssignment(ctx, chainID).Store.IterateProviderConsAddrToConsumerPublicKey(func(pca ProviderAddr, ck ConsumerKey) bool {
+			k.KeyAssignment(ctx, chainID).IterateProviderConsAddrToConsumerPublicKey(func(pca ProviderAddr, ck ConsumerKey) bool {
 				km.ProviderConsAddrToConsumerKey = append(km.ProviderConsAddrToConsumerKey, types.ConsAddrToKey{ConsAddr: pca, Key: &ck})
 				return false
 			})
-			k.KeyAssignment(ctx, chainID).Store.IterateConsumerPublicKeyToProviderPublicKey(func(ck ConsumerKey, pk ProviderKey) bool {
+			k.KeyAssignment(ctx, chainID).IterateConsumerPublicKeyToProviderPublicKey(func(ck ConsumerKey, pk ProviderKey) bool {
 				km.ConsumerKeyToProviderKey = append(km.ConsumerKeyToProviderKey, types.KeyToKey{From: &ck, To: &pk})
 				return false
 			})
-			k.KeyAssignment(ctx, chainID).Store.IterateConsumerConsAddrToLastUpdateMemo(func(ck ConsumerAddr, m types.LastUpdateMemo) bool {
+			k.KeyAssignment(ctx, chainID).IterateConsumerConsAddrToLastUpdateMemo(func(ck ConsumerAddr, m types.LastUpdateMemo) bool {
 				km.ConsumerConsAddrToLastUpdateMemo = append(km.ConsumerConsAddrToLastUpdateMemo, types.ConsAddrToLastUpdateMemo{ConsAddr: ck, LastUpdateMemo: &m})
 				return false
 			})
