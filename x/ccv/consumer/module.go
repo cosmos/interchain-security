@@ -171,7 +171,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 }
 
 // EndBlock implements the AppModule interface
-// Flush PendingChanges to ABCI, and write acknowledgements for any packets that have finished unbonding.
+// Flush PendingChanges to ABCI, send pending packets, write acknowledgements for packets that have finished unbonding.
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
 	// distribution transmission
 	err := am.keeper.DistributeToProviderValidatorSet(ctx)
@@ -179,10 +179,12 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 		panic(err)
 	}
 
-	err = am.keeper.SendVSCMaturedPackets(ctx)
-	if err != nil {
-		panic(err)
-	}
+	// NOTE: Slash packets are queued in BeginBlock
+	// Packet ordering is managed by the PendingPackets queue.
+	am.keeper.QueueVSCMaturedPackets(ctx)
+
+	// panics on invalid packets and unexpected send errors
+	am.keeper.SendPackets(ctx)
 
 	data, ok := am.keeper.GetPendingChanges(ctx)
 	if !ok {

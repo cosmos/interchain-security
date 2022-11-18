@@ -54,18 +54,16 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 
 		// set default value for valset update ID
 		k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()), uint64(0))
+
 	} else {
 		// verify genesis initial valset against the latest consensus state
 		// IBC genesis MUST run before CCV consumer genesis
 		if err := k.verifyGenesisInitValset(ctx, state); err != nil {
 			panic(err)
 		}
-		// chain restarts without the CCV channel established
-		if state.ProviderChannelId == "" {
-			k.SetPendingSlashRequests(ctx, state.PendingSlashRequests)
 
-			// chain restarts with the CCV channel established
-		} else {
+		// chain restarts with the CCV channel established
+		if state.ProviderChannelId != "" {
 			// set provider channel ID
 			k.SetProviderChannel(ctx, state.ProviderChannelId)
 			// set all unbonding sequences
@@ -80,6 +78,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 				}
 				k.SetOutstandingDowntime(ctx, consAddr)
 			}
+
 			// set last transmission block height
 			err := k.SetLastTransmissionBlockHeight(ctx, state.LastTransmissionBlockHeight)
 			if err != nil {
@@ -87,6 +86,10 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 			}
 
 		}
+
+		// set pending consumer pending packets
+		// note that the list includes pending mature VSC packet only if the handshake is completed
+		k.AppendPendingPacket(ctx, state.PendingConsumerPackets.List...)
 
 		// set height to valset update id mapping
 		for _, h2v := range state.HeightToValsetUpdateId {
@@ -155,7 +158,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			maturingPackets,
 			valset,
 			k.GetHeightToValsetUpdateIDs(ctx),
-			consumertypes.SlashRequests{},
+			k.GetPendingPackets(ctx),
 			outstandingDowntimes,
 			*ltbh,
 			params,
@@ -175,7 +178,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			nil,
 			valset,
 			k.GetHeightToValsetUpdateIDs(ctx),
-			k.GetPendingSlashRequests(ctx),
+			k.GetPendingPackets(ctx),
 			nil,
 			consumertypes.LastTransmissionBlockHeight{},
 			params,

@@ -25,11 +25,12 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 }
 
 // NewRestartGenesisState returns a consumer GenesisState that has already been established.
-func NewRestartGenesisState(clientID, channelID string,
+func NewRestartGenesisState(
+	clientID, channelID string,
 	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate,
 	heightToValsetUpdateIDs []HeightToValsetUpdateID,
-	pendingSlashRequests SlashRequests,
+	pendingConsumerPackets ConsumerPackets,
 	outstandingDowntimes []OutstandingDowntime,
 	lastTransBlockHeight LastTransmissionBlockHeight,
 	params Params,
@@ -43,7 +44,7 @@ func NewRestartGenesisState(clientID, channelID string,
 		NewChain:                    false,
 		InitialValSet:               initValSet,
 		HeightToValsetUpdateId:      heightToValsetUpdateIDs,
-		PendingSlashRequests:        pendingSlashRequests,
+		PendingConsumerPackets:      pendingConsumerPackets,
 		OutstandingDowntimeSlashing: outstandingDowntimes,
 		LastTransmissionBlockHeight: lastTransBlockHeight,
 	}
@@ -63,15 +64,15 @@ func DefaultGenesisState() *GenesisState {
 // expect the following optional and mandatory genesis states:
 //
 // 1. New chain starts:
-//   - Params, InitialValset, IBC provider client state, IBC provider consensus state // mandatory
+//   - Params, InitialValset, provider client state, provider consensus state // mandatory
 //
 // 2. Chain restarts with CCV handshake still in progress:
-//   - Params, InitialValset,  ProviderID, HeightToValidatorSetUpdateID // mandatory
-//   - PendingSlashRequest // optional
+//   - Params, InitialValset, ProviderID, HeightToValidatorSetUpdateID // mandatory
+//   - PendingConsumerPacket // optional
 //
 // 3. Chain restarts with CCV handshake completed:
 //   - Params, InitialValset, ProviderID, channelID, HeightToValidatorSetUpdateID // mandatory
-//   - MaturingVSCPackets, OutstandingDowntime, LastTransmissionBlockHeight // optional
+//   - MaturingVSCPackets, OutstandingDowntime, PendingConsumerPacket, LastTransmissionBlockHeight // optional
 //
 
 func (gs GenesisState) Validate() error {
@@ -107,6 +108,9 @@ func (gs GenesisState) Validate() error {
 		if len(gs.MaturingPackets) != 0 {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "maturing packets must be empty for new chain")
 		}
+		if len(gs.PendingConsumerPackets.List) != 0 {
+			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "pending consumer packets must be empty for new chain")
+		}
 		if gs.LastTransmissionBlockHeight.Height != 0 {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "last transmission block height must be empty for new chain")
 		}
@@ -140,6 +144,13 @@ func (gs GenesisState) Validate() error {
 			if gs.LastTransmissionBlockHeight.Height != 0 {
 				return sdkerrors.Wrap(
 					ccv.ErrInvalidGenesis, "last transmission block height must be zero when handshake isn't completed")
+			}
+			if len(gs.PendingConsumerPackets.List) != 0 {
+				for _, packet := range gs.PendingConsumerPackets.List {
+					if packet.Type == VscMaturedPacket {
+						return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "pending maturing packets must be empty for new chain")
+					}
+				}
 			}
 		}
 		if gs.HeightToValsetUpdateId == nil {

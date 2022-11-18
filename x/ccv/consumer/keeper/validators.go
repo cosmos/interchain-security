@@ -78,13 +78,14 @@ func (k Keeper) ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.V
 	return stakingtypes.Validator{}
 }
 
-// Slash sends a slashing request to the provider chain
+// Slash queues a slashing request for the the provider chain
+// All queued slashing requests will be cleared in EndBlock
 func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, power int64, _ sdk.Dec, infraction stakingtypes.InfractionType) {
 	if infraction == stakingtypes.InfractionEmpty {
 		return
 	}
 
-	k.SendSlashPacket(
+	k.QueueSlashPacket(
 		ctx,
 		abci.Validator{
 			Address: addr.Bytes(),

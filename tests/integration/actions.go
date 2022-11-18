@@ -367,6 +367,7 @@ func (tr TestRun) submitParamChangeProposal(
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
+		`--gas`, "900000",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
@@ -405,6 +406,7 @@ func (tr TestRun) voteGovProposal(
 				`--home`, tr.getValidatorHome(action.chain, val),
 				`--node`, tr.getValidatorNode(action.chain, val),
 				`--keyring-backend`, `test`,
+				`--gas`, "900000",
 				`-b`, `block`,
 				`-y`,
 			).CombinedOutput()
@@ -549,7 +551,6 @@ type addIbcConnectionAction struct {
 	chainB  chainID
 	clientA uint
 	clientB uint
-	order   string
 }
 
 func (tr TestRun) addIbcConnection(
@@ -832,6 +833,7 @@ func (tr TestRun) unbondTokens(
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
 		`--home`, tr.getValidatorHome(action.chain, action.sender),
 		`--node`, tr.getValidatorNode(action.chain, action.sender),
+		`--gas`, "900000",
 		`--keyring-backend`, `test`,
 		`-b`, `block`,
 		`-y`,
