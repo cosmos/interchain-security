@@ -83,7 +83,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 				k.KeyAssignment(ctx, cs.ChainId).SetConsumerPublicKeyToProviderPublicKey(*ckToPk.From, *ckToPk.To)
 			}
 			for _, ccaToLastUpdateMemo := range cs.KeyAssignment.ConsumerAddrToLastUpdateInfo {
-				k.KeyAssignment(ctx, cs.ChainId).SetConsumerConsAddrToLastUpdateMemo(ccaToLastUpdateMemo.ConsAddr, *ccaToLastUpdateMemo.LastUpdateInfo)
+				k.KeyAssignment(ctx, cs.ChainId).SetConsumerConsAddrToLastUpdateMemo(ccaToLastUpdateMemo.Addr, *ccaToLastUpdateMemo.LastUpdateInfo)
 			}
 		}
 	}
@@ -143,7 +143,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 				return false
 			})
 			k.KeyAssignment(ctx, chainID).IterateConsumerConsAddrToLastUpdateMemo(func(ck ConsumerAddr, m types.LastUpdateInfo) bool {
-				km.ConsumerAddrToLastUpdateInfo = append(km.ConsumerAddrToLastUpdateInfo, types.AddrToLastUpdateInfo{ConsAddr: ck, LastUpdateInfo: &m})
+				km.ConsumerAddrToLastUpdateInfo = append(km.ConsumerAddrToLastUpdateInfo, types.AddrToLastUpdateInfo{Addr: ck, LastUpdateInfo: &m})
 				return false
 			})
 

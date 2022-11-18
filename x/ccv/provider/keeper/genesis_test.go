@@ -30,7 +30,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 		{
 			ProviderAddrToConsumerKey:    []providertypes.AddrToKey{{Addr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
 			ConsumerKeyToProviderKey:     []providertypes.KeyToKey{{From: &tmprotocrypto.PublicKey{}, To: &tmprotocrypto.PublicKey{}}},
-			ConsumerAddrToLastUpdateInfo: []providertypes.AddrToLastUpdateInfo{{ConsAddr: sdk.ConsAddress{}, LastUpdateInfo: &providertypes.LastUpdateInfo{}}},
+			ConsumerAddrToLastUpdateInfo: []providertypes.AddrToLastUpdateInfo{{Addr: sdk.ConsAddress{}, LastUpdateInfo: &providertypes.LastUpdateInfo{}}},
 		},
 		{
 			ProviderAddrToConsumerKey:    []providertypes.AddrToKey{},
