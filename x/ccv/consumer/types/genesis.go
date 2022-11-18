@@ -25,7 +25,8 @@ func NewInitialGenesisState(cs *ibctmtypes.ClientState, consState *ibctmtypes.Co
 }
 
 // NewRestartGenesisState returns a consumer GenesisState that has already been established.
-func NewRestartGenesisState(clientID, channelID string,
+func NewRestartGenesisState(
+	clientID, channelID string,
 	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate,
 	heightToValsetUpdateIDs []HeightToValsetUpdateID,

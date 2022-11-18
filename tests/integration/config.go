@@ -87,46 +87,6 @@ func getDefaultValidators() map[validatorID]ValidatorConfig {
 	}
 }
 
-func DoubleSignTestRun() TestRun {
-	return TestRun{
-		name: "double-sign",
-		containerConfig: ContainerConfig{
-			containerName: "interchain-security-ds-container",
-			instanceName:  "interchain-security-ds-instance",
-			ccvVersion:    "1",
-			now:           time.Now(),
-		},
-		validatorConfigs: getDefaultValidators(),
-		chainConfigs: map[chainID]ChainConfig{
-			chainID("provi"): {
-				chainId:        chainID("provi"),
-				binaryName:     "interchain-security-pd",
-				ipPrefix:       "7.7.7",
-				votingWaitTime: 5,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\" | " +
-					// Custom slashing parameters for testing validator downtime functionality
-					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
-					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
-					".app_state.slashing.params.slash_fraction_double_sign = \"0.100000000000000000\"",
-			},
-			chainID("consu"): {
-				chainId:        chainID("consu"),
-				binaryName:     "interchain-security-cd",
-				ipPrefix:       "7.7.8",
-				votingWaitTime: 10,
-				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
-					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
-					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
-			},
-		},
-	}
-}
-
 func DefaultTestRun() TestRun {
 	return TestRun{
 		name: "default",
@@ -197,6 +157,56 @@ func DemocracyTestRun() TestRun {
 				votingWaitTime: 10,
 				genesisChanges: ".app_state.ccvconsumer.params.blocks_per_distribution_transmission = \"10\" | " +
 					".app_state.gov.voting_params.voting_period = \"10s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+			},
+		},
+	}
+}
+
+func MultiConsumerTestRun() TestRun {
+	return TestRun{
+		name: "multi-consumer",
+		containerConfig: ContainerConfig{
+			containerName: "interchain-security-multic-container",
+			instanceName:  "interchain-security-multic-instance",
+			ccvVersion:    "1",
+			now:           time.Now(),
+		},
+		validatorConfigs: getDefaultValidators(),
+		chainConfigs: map[chainID]ChainConfig{
+			chainID("provi"): {
+				chainId:        chainID("provi"),
+				binaryName:     "interchain-security-pd",
+				ipPrefix:       "7.7.7",
+				votingWaitTime: 5,
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"5s\" | " +
+					// Custom slashing parameters for testing validator downtime functionality
+					// See https://docs.cosmos.network/main/modules/slashing/04_begin_block.html#uptime-tracking
+					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+			},
+			chainID("consu"): {
+				chainId:        chainID("consu"),
+				binaryName:     "interchain-security-cd",
+				ipPrefix:       "7.7.8",
+				votingWaitTime: 10,
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+			},
+			chainID("densu"): {
+				chainId:        chainID("densu"),
+				binaryName:     "interchain-security-cd",
+				ipPrefix:       "7.7.9",
+				votingWaitTime: 10,
+				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
