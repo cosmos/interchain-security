@@ -13,6 +13,7 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
@@ -61,6 +62,8 @@ type ConsumerApp interface {
 	GetE2eSlashingKeeper() E2eSlashingKeeper
 	// Returns an evidence keeper interface with more capabilities than the expected_keepers interface
 	GetE2eEvidenceKeeper() E2eEvidenceKeeper
+	// Returns the upgrade keeper interface
+	GetUpgradeKeeper() upgradekeeper.Keeper
 }
 
 type DemocConsumerApp interface {
