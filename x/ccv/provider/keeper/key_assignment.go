@@ -41,13 +41,12 @@ type Store interface {
 // allowing a provider to assign a consumer key to a provider key and vice versa.
 // Please see docs/key-assignment/design.md for more details.
 type KeyAssignment struct {
-	Store Store
+	ctx     sdk.Context
+	ChainID string
 }
 
-func MakeKeyAssignment(store Store) KeyAssignment {
-	return KeyAssignment{
-		Store: store,
-	}
+func (k Keeper) KeyAssignment(ctx sdk.Context, chainID string) *KeyAssignment {
+	return &KeyAssignment{ctx, chainID}
 }
 
 // SetProviderPubKeyToConsumerPubKey tries to assign a mapping from the provider key to the consumer key.
@@ -723,10 +722,4 @@ func (k Keeper) GetProviderConsAddrForSlashing(ctx sdk.Context, chainID string, 
 		return nil, errors.New("could not find provider address for slashing")
 	}
 	return utils.TMCryptoPublicKeyToConsAddr(providerPublicKey), nil
-}
-
-func (k Keeper) KeyAssignment(ctx sdk.Context, chainID string) *KeyAssignment {
-	store := KeyAssignmentStore{ctx.KVStore(k.storeKey), chainID}
-	ka := MakeKeyAssignment(&store)
-	return &ka
 }
