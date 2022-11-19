@@ -153,7 +153,8 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 			}
 		}
 
-		s.path.RelayPacket(packetToRelay)
+		err = s.path.RelayPacket(packetToRelay)
+		s.Require().NoError(err)
 
 		// TODO: expand the below logic to validate all consumers' state
 

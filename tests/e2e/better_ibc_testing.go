@@ -77,7 +77,10 @@ func SendMsgsGetEvents(chain *ibctesting.TestChain, msgs ...sdk.Msg) ([]abci.Eve
 	events = append(events, result.Events...)
 
 	// increment sequence for successful transaction execution
-	chain.SenderAccount.SetSequence(chain.SenderAccount.GetSequence() + 1)
+	err = chain.SenderAccount.SetSequence(chain.SenderAccount.GetSequence() + 1)
+	if err != nil {
+		return []abci.Event{}, err
+	}
 
 	chain.Coordinator.IncrementTime()
 
