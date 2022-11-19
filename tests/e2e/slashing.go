@@ -39,9 +39,17 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 
 	for _, tc := range testCases {
 
+		// Reset test state
 		s.SetupTest()
-		s.SetupCCVChannel(s.path)
-		s.SetupTransferChannel() // TODO: remove this, once other shit is working
+
+		// Setup CCV channel for all instantiated consumer bundles
+		for _, bundle := range s.consumerBundles {
+			s.SetupCCVChannel(bundle.Path)
+		}
+
+		// TODO: PR comment, setting up transfer channel is not necessary for this test
+
+		numConsumers := len(s.consumerBundles)
 		validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
 		providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
@@ -92,8 +100,8 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		packet := channeltypes.NewPacket(packetData, 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
 			ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
-		// Send the slash packet through CCV
-		err = s.path.EndpointA.SendPacket(packet)
+		// Send slash packet from the first consumer chain
+		err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
 		s.Require().NoError(err)
 
 		if tc == downtimeTestCase {
@@ -101,35 +109,53 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 			consumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consAddr)
 		}
 
-		// Note: RecvPacket advances two blocks. Let's say the provider is currently at height n.
-		// The received slash packet will be handled during n, and the staking module will then
-		// register a validator update from that packet during the endblocker of n. Then the ccv
-		// module sends a VSC packet during the endblocker of n. The new validator set will be
-		// committed to in block n+1, and will be in effect for block n+2.
+		// Note: RecvPacket advances two blocks. Let's say the provider is currently at height N.
+		// The received slash packet will be handled during N, and the staking module will then
+		// register a validator update from that packet during the endblocker of N. Then the ccv
+		// module sends VSC packets during the endblocker of N. The new validator set will be
+		// committed to in block N+1, and will be in effect for block N+2.
 
 		valsetUpdateN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
-		// receive the downtime packet on the provider chain. RecvPacket() calls the provider endblocker twice
-		err = s.path.EndpointB.RecvPacket(packet)
+		// receive the downtime packet on the provider chain.
+		// This method calls the provider endblocker twice.
+		providerEvents, err := RecvPacketGetEvents(s.getFirstBundle().Path.EndpointB, packet)
 		s.Require().NoError(err)
 
 		// We've now advanced two blocks.
 
-		// One VSC packet should have been sent during block n
+		// VSC packets should have been sent during block N for each consumer
 		expectedSentValsetUpdateId := valsetUpdateN
-		_, found = providerKeeper.GetVscSendTimestamp(s.providerCtx(),
-			s.consumerChain.ChainID, expectedSentValsetUpdateId)
-		s.Require().True(found)
+		for _, bundle := range s.consumerBundles {
+			_, found = providerKeeper.GetVscSendTimestamp(s.providerCtx(),
+				bundle.Chain.ChainID, expectedSentValsetUpdateId)
+			s.Require().True(found)
+		}
 
-		// Confirm the valset update Id was incremented twice.
+		// Confirm the valset update Id was incremented twice on provider,
+		// since two endblockers have passed.
 		valsetUpdateNPlus2 := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 		s.Require().Equal(valsetUpdateN+2, valsetUpdateNPlus2)
 
 		// check that the validator was removed from the provider validator set
 		s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
 
-		// Relay the VSC packet to the consumer
-		relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
+		// Extract sent VSC packets from provider events
+		sentPackets := GetSentPacketsFromEvents(s, providerEvents)
+		s.Require().Len(sentPackets, numConsumers)
+
+		// Temporary: only relay packet to the first consumer chain
+		// TODO: relay to all consumers
+		var packetToRelay channeltypes.Packet
+		for _, sentPacket := range sentPackets {
+			if sentPacket.SourceChannel == s.path.EndpointB.ChannelID {
+				packetToRelay = sentPacket
+			}
+		}
+
+		s.path.RelayPacket(packetToRelay)
+
+		// TODO: expand the below logic to validate all consumers' state
 
 		// check that the consumer updated its VSC ID for the subsequent block
 		actualValsetUpdateID := consumerKeeper.GetHeightValsetUpdateID(

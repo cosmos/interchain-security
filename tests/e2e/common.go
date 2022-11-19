@@ -183,6 +183,8 @@ func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddre
 }
 
 // relayAllCommittedPackets relays all committed packets from `srcChain` on `path`
+// TODO: this function needs to be deprecated and/or refactored to use simibc dir.
+// ibctesting.GetSentPacket does not work for multiple consumers!
 func relayAllCommittedPackets(
 	s *CCVTestSuite,
 	srcChain *ibctesting.TestChain,
