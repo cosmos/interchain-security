@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package interchain_security.ccv.provider.v1;
+
+option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types";
+
+import "gogoproto/gogo.proto";
+import "tendermint/crypto/keys.proto";
+
+message PendingKeyAssignment {
+    tendermint.crypto.PublicKey consumer_key = 1;
+    int64 power = 2;
+}
+
+message ConsumerAddrsToPrune {
+    repeated bytes consumer_addrs = 1;
+}

@@ -16,4 +16,7 @@ var (
 	ErrBlankConsumerChainID                            = sdkerrors.Register(ModuleName, 8, "consumer chain id must not be blank")
 	ErrValidatorPubKeyTypeNotSupported                 = sdkerrors.Register(ModuleName, 9, "validator pubkey type is not supported")
 	ErrNoAssignedConsumerConsensusKeyFoundForValidator = sdkerrors.Register(ModuleName, 10, "no assigned consumer key found for validator on consumer chain")
+	ErrValidatorNotFound                               = sdkerrors.Register(ModuleName, 11, "validator not found")
+	ErrConsumerKeyAlreadyAssigned                      = sdkerrors.Register(ModuleName, 12, "consumer key already assigned")
+	ErrConsumerKeyNotFound                             = sdkerrors.Register(ModuleName, 13, "consumer key not found")
 )

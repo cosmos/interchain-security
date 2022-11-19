@@ -101,7 +101,37 @@ const (
 
 	// ConsumerAddrToLastUpdateInfoPrefix is the byte prefix that will store the mapping from provider chain consensus address to last update memo
 	ConsumerAddrToLastUpdateInfoPrefix
+
+	ConsumerKeysPrefix
+
+	ValidatorsByConsumerAddrPrefix
+
+	PendingKeyAssignmentPrefix
+
+	ConsumerAddrsToPrunePrefix
 )
+
+// ConsumerKeysKey returns the key under which a consumer key is stored
+func ConsumerKeysKey(chainID string, providerAddr sdk.ConsAddress) []byte {
+	return append(ChainIdWithLenKey(ConsumerKeysPrefix, chainID), providerAddr.Bytes()...)
+}
+
+// ValidatorsByConsumerAddrKey returns the key under which the validator for a given consumer key is stored
+func ValidatorsByConsumerAddrKey(chainID string, providerAddr sdk.ConsAddress) []byte {
+	return append(ChainIdWithLenKey(ValidatorsByConsumerAddrPrefix, chainID), providerAddr.Bytes()...)
+}
+
+// PendingKeyAssignmentKey returns the key under which the pending key assignment is stored
+func PendingKeyAssignmentKey(chainID string, providerAddr sdk.ConsAddress) []byte {
+	return append(ChainIdWithLenKey(PendingKeyAssignmentPrefix, chainID), providerAddr.Bytes()...)
+}
+
+// ConsumerAddrsToPruneKey returns the key under which the list of consumer addresses to prune is stored
+func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
+	bz := make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, vscID)
+	return append(ChainIdWithLenKey(ConsumerAddrsToPrunePrefix, chainID), bz...)
+}
 
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {
