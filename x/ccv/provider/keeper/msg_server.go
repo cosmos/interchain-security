@@ -68,7 +68,8 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		return nil, err
 	}
 
-	err = k.KeyAssignment(ctx, msg.ChainId).SetProviderPubKeyToConsumerPubKey(
+	err = k.Keeper.AssignConsumerKey(ctx,
+		msg.ChainId,
 		providerTMPublicKey,
 		consumerTMPublicKey,
 	)

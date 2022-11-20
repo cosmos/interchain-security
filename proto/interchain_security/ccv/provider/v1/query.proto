@@ -42,14 +42,22 @@ service Query {
         "/interchain_security/ccv/provider/consumer_chain_stop_proposals";
   }
 
-  // QueryConsumerKeyAssignment queries the consensus key
+  // QueryAssignedConsumerAddr queries the address
   // assigned by a validator for a consumer chain.
-  rpc QueryConsumerKeyAssignment(
-      QueryConsumerKeyAssignmentRequest)
-      returns (QueryConsumerKeyAssignmentResponse) {
+  rpc QueryAssignedConsumerAddr(
+      QueryAssignedConsumerAddrRequest)
+      returns (QueryAssignedConsumerAddrResponse) {
     // TODO: make sure path is correct.
-    option (google.api.http).get = "/interchain_security/ccv/provider/"
-                                   "consumer_chain_validator_key_assignment";
+    option (google.api.http).get = "/interchain_security/ccv/provider/consumer_key";
+  }
+
+  // QueryProviderAddr returns the provider chain validator
+  // given a consumer chain validator address
+  rpc QueryAssignedProviderAddr(
+      QueryAssignedProviderAddrRequest)
+      returns (QueryAssignedProviderAddrResponse) {
+    // TODO: make sure path is correct.
+    option (google.api.http).get = "/interchain_security/ccv/provider/provider_addr";
   }
 }
 
@@ -81,18 +89,34 @@ message Chain {
   string client_id = 2;
 }
 
-message QueryConsumerKeyAssignmentRequest {
+message QueryAssignedConsumerAddrRequest {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
   // The id of the consumer chain
   string chain_id = 1;
   // The consensus address of the validator on the provider chain
-  string provider_validator_address = 2
+  string provider_address = 2
       [ (gogoproto.moretags) = "yaml:\"address\"" ];
 }
 
-message QueryConsumerKeyAssignmentResponse {
-  // The consensus public key of the validator on the consumer chain
-  google.protobuf.Any consumer_key = 1
+message QueryAssignedConsumerAddrResponse {
+  // The address of the validator on the consumer chain
+  string consumer_address = 1
+      [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
+}
+
+message QueryAssignedProviderAddrRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  // The id of the provider chain
+  string chain_id = 1;
+  // The consensus address of the validator on the consumer chain
+  string consumer_address = 2
+      [ (gogoproto.moretags) = "yaml:\"address\"" ];
+}
+
+message QueryAssignedProviderAddrResponse {
+  // The address of the validator on the provider chain
+  string provider_address = 1
       [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
 }

@@ -19,4 +19,6 @@ var (
 	ErrValidatorNotFound                               = sdkerrors.Register(ModuleName, 11, "validator not found")
 	ErrConsumerKeyAlreadyAssigned                      = sdkerrors.Register(ModuleName, 12, "consumer key already assigned")
 	ErrConsumerKeyNotFound                             = sdkerrors.Register(ModuleName, 13, "consumer key not found")
+	ErrNoAssignedConsumerAddress                       = sdkerrors.Register(ModuleName, 14, "no assigned consumer address")
+	ErrNoAssignedProviderAddress                       = sdkerrors.Register(ModuleName, 15, "no assigned provider address")
 )

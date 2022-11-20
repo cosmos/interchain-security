@@ -72,7 +72,8 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 
 	// It is now possible to delete keys from the KeyAssignment which the consumer chain
 	// is no longer able to reference in slash requests.
-	k.KeyAssignment(ctx, chainID).PruneUnusedKeys(data.ValsetUpdateId)
+	// k.KeyAssignment(ctx, chainID).PruneUnusedKeys(data.ValsetUpdateId)
+	k.PruneKeyAssignments(ctx, chainID, data.ValsetUpdateId)
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
@@ -154,7 +155,12 @@ func (k Keeper) sendValidatorUpdates(ctx sdk.Context) {
 
 		// Map the validator updates through assigned validator consensus keys to get a list of updates
 		// to send to the consumer chain.
-		valUpdates := k.KeyAssignment(ctx, chainID).AssignDefaultsAndGetConsumerUpdates(valUpdateID, valUpdates)
+		// valUpdates := k.KeyAssignment(ctx, chainID).AssignDefaultsAndGetConsumerUpdates(valUpdateID, valUpdates)
+		valUpdates, err := k.ApplyKeyAssignmentToValUpdates(ctx, chainID, valUpdates)
+
+		if err != nil {
+			panic(fmt.Sprintf("could not apply key assignment to validator updates: %s", err.Error()))
+		}
 
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			// construct validator set change packet data
@@ -259,9 +265,11 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// The slash packet validator address is the address known to the consumer chain
 	// so it must be mapped back to the consensus address on the provider chain to be
 	// able to slash the validator.
-	consAddr, err := k.GetProviderConsAddrForSlashing(ctx, chainID, data.Validator.Address)
+	// consAddr, err := k.GetProviderConsAddrForSlashing(ctx, chainID, data.Validator.Address)
 
-	if err != nil {
+	consAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, data.Validator.Address)
+
+	if !found {
 		return false, nil
 	}
 

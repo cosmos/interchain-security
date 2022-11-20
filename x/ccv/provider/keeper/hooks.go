@@ -61,14 +61,17 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
 func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
 }
 func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, ca sdk.ConsAddress, valAddr sdk.ValAddress) {
-	// Delete any key assignments that are associated with this
-	// validator across all consumer chains.
-	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		h.k.KeyAssignment(ctx, chainID).DeleteProviderKey(ca)
-		// It is possible for the Delete call to fail if a validator is added and removed without
-		// ever becoming active or having a key assigned.
-		return true
-	})
+	// TODO JEHAN: I'm not sure about pruning here. What if the validator comes back and wants to use the
+	// same consumer key?
+
+	// // Delete any key assignments that are associated with this
+	// // validator across all consumer chains.
+	// h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
+	// 	h.k.KeyAssignment(ctx, chainID).DeleteProviderKey(ca)
+	// 	// It is possible for the Delete call to fail if a validator is added and removed without
+	// 	// ever becoming active or having a key assigned.
+	// 	return true
+	// })
 }
 func (h Hooks) BeforeDelegationCreated(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) {
 }

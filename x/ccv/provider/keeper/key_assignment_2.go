@@ -6,7 +6,14 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
+
+type VSCID = uint64
+type ProviderKey = tmprotocrypto.PublicKey
+type ConsumerKey = tmprotocrypto.PublicKey
+type ProviderAddr = sdk.ConsAddress
+type ConsumerAddr = sdk.ConsAddress
 
 // Indexes
 //
@@ -243,7 +250,7 @@ func (k Keeper) AssignConsumerKey(ctx sdk.Context, chainID string, pKey Provider
 //   }
 // }
 
-func (k Keeper) ApplyKeyAssignmentToValUpdates(ctx sdk.Context, valUpdates []abci.ValidatorUpdate, chainID string) (newUpdates []abci.ValidatorUpdate, err error) {
+func (k Keeper) ApplyKeyAssignmentToValUpdates(ctx sdk.Context, chainID string, valUpdates []abci.ValidatorUpdate) (newUpdates []abci.ValidatorUpdate, err error) {
 	var updatesToRemove []int
 	var updatesToAdd []abci.ValidatorUpdate
 
@@ -342,7 +349,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(ctx sdk.Context, valUpdates []abc
 //	for cAddr := range ConsumerAddrsToPrune[chainID, data.vscID] {
 //		delete ValidatorsByConsumerAddr[chainID, cAddr]
 //	}
-func (k Keeper) PruneValidatorsByConsumerAddr(ctx sdk.Context, chainID string, vscID uint64) {
+func (k Keeper) PruneKeyAssignments(ctx sdk.Context, chainID string, vscID uint64) {
 	k.IterateConsumerAddrsToPrune(ctx, chainID, vscID, func(cAddr sdk.ConsAddress) (stop bool) {
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, cAddr)
 		return false

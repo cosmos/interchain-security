@@ -3,11 +3,10 @@ package keeper
 import (
 	"context"
 
-	sdkcodectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdkcryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -74,7 +73,7 @@ func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryC
 	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &props}, nil
 }
 
-func (k Keeper) QueryConsumerKeyAssignment(goCtx context.Context, req *types.QueryConsumerKeyAssignmentRequest) (*types.QueryConsumerKeyAssignmentResponse, error) {
+func (k Keeper) QueryAssignedConsumerAddr(goCtx context.Context, req *types.QueryAssignedConsumerAddrRequest) (*types.QueryAssignedConsumerAddrResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -85,46 +84,43 @@ func (k Keeper) QueryConsumerKeyAssignment(goCtx context.Context, req *types.Que
 		return nil, types.ErrUnknownConsumerChainId
 	}
 
-	providerValidatorAddr, err := sdk.ValAddressFromBech32(req.ProviderValidatorAddress)
+	providerAddr, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	validator, found := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
+	consumerKey, found := k.GetConsumerKey(ctx, req.ChainId, providerAddr)
 	if !found {
-		return nil, types.ErrNoValidatorFound
+		return nil, types.ErrNoAssignedConsumerAddress
 	}
 
-	providerTMPublicKey, err := validator.TmConsPublicKey()
+	return &types.QueryAssignedConsumerAddrResponse{
+		ConsumerAddress: utils.TMCryptoPublicKeyToConsAddr(consumerKey).String(),
+	}, nil
+}
+
+func (k Keeper) QueryAssignedProviderAddr(goCtx context.Context, req *types.QueryAssignedProviderAddrRequest) (*types.QueryAssignedProviderAddrResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if _, found := k.GetConsumerClientId(ctx, req.ChainId); !found {
+		return nil, types.ErrUnknownConsumerChainId
+	}
+
+	consumerAddr, err := sdk.ConsAddressFromBech32(req.ConsumerAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	consumerTMPublicKey, found := k.KeyAssignment(ctx, req.ChainId).GetCurrentConsumerPubKeyFromProviderPubKey(providerTMPublicKey)
+	providerAddr, found := k.GetValidatorByConsumerAddr(ctx, req.ChainId, consumerAddr)
 	if !found {
-		return nil, types.ErrNoAssignedConsumerConsensusKeyFoundForValidator
+		return nil, types.ErrNoAssignedProviderAddress
 	}
 
-	consumerSDKPublicKey, err := sdkcryptocodec.FromTmProtoPublicKey(consumerTMPublicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	var pubKeyAny *sdkcodectypes.Any
-	if consumerSDKPublicKey != nil {
-		var err error
-		if pubKeyAny, err = sdkcodectypes.NewAnyWithValue(consumerSDKPublicKey); err != nil {
-			return nil, err
-		}
-	} else {
-		return nil, types.ErrInvalidConsumerConsensusPubKey
-	}
-
-	if pubKeyAny == nil {
-		return nil, types.ErrInvalidConsumerConsensusPubKey
-	}
-
-	return &types.QueryConsumerKeyAssignmentResponse{
-		ConsumerKey: pubKeyAny,
+	return &types.QueryAssignedProviderAddrResponse{
+		ProviderAddress: providerAddr.String(),
 	}, nil
 }
