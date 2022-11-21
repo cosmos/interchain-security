@@ -23,10 +23,6 @@ import (
 
 // TODO: the onrecv handlers for both slash and vsc matured packets should be e2e tested with the method below.
 
-// TODO: Make an e2e test that asserts that the order of endblockers is correct between staking and ccv
-// TODO: ie. the staking updates to voting power need to occur before circuit breaker logic, so circuit breaker has most up to date val powers.
-// From looking at app.go, this seems to be the case ^^
-
 // TODO: test slash meter replenishment in context of the e2e test
 
 // TODO: will eventually need to fix integration and diff tests to work with this branch
