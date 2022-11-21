@@ -21,7 +21,7 @@ func (s *CCVTestSuite) TestSlashPacketThrottling() {
 		// mas
 	}
 
-	s.SetupCCVChannel()
+	s.SetupCCVChannel(s.path)
 	// s.SetupTransferChannel()
 
 	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()

@@ -105,12 +105,14 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		}
 
 		// Note: RecvPacket advances two blocks. Let's say the provider is currently at height N.
-		// The received slash packet will be handled during N, and the staking module will then
-		// register a validator update from that packet during the endblocker of N. Then the ccv
-		// module sends VSC packets during the endblocker of N. The new validator set will be
-		// committed to in block N+1, and will be in effect for block N+2.
+		// The received slash packet will be queued during N, and handled by the ccv module during
+		// the endblocker of N. The staking module will then register a validator update from that
+		// packet during the endblocker of N+1 (note that staking endblocker runs before ccv endblocker,
+		// hence why the VSC is registered on N+1). Then the ccv module sends VSC packets to each consumer
+		// during the endblocker of N+1. The new validator set will be committed to in block N+2,
+		// and will be in effect for the provider during block N+3.
 
-		valsetUpdateN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+		valsetUpdateIdN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 		// receive the downtime packet on the provider chain.
 		// RecvPacket() calls the provider endblocker twice
@@ -119,8 +121,8 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 
 		// We've now advanced two blocks.
 
-		// VSC packets should have been sent from provider during block N to each consumer
-		expectedSentValsetUpdateId := valsetUpdateN
+		// VSC packets should have been sent from provider during block N+1 to each consumer
+		expectedSentValsetUpdateId := valsetUpdateIdN + 1
 		for _, bundle := range s.consumerBundles {
 			_, found = providerKeeper.GetVscSendTimestamp(s.providerCtx(),
 				bundle.Chain.ChainID, expectedSentValsetUpdateId)
@@ -129,10 +131,13 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 
 		// Confirm the valset update Id was incremented twice on provider,
 		// since two endblockers have passed.
-		valsetUpdateNPlus2 := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
-		s.Require().Equal(valsetUpdateN+2, valsetUpdateNPlus2)
+		s.Require().Equal(valsetUpdateIdN+2,
+			providerKeeper.GetValidatorSetUpdateId(s.providerCtx()))
 
-		// check that the validator was removed from the provider validator set
+		// Call next block so provider is now on block N + 3 mentioned above
+		s.providerChain.NextBlock()
+
+		// check that the validator was removed from the provider validator set by N + 3
 		s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
 
 		for _, bundle := range s.consumerBundles {
