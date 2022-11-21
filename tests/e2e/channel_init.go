@@ -37,7 +37,7 @@ func (suite *CCVTestSuite) TestConsumerGenesis() {
 	_, ok = suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientId)
 	suite.Require().True(ok)
 
-	suite.SetupCCVChannel()
+	suite.SetupCCVChannel(suite.path)
 
 	origTime := suite.consumerChain.GetContext().BlockTime()
 

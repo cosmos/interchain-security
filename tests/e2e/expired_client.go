@@ -20,7 +20,7 @@ import (
 func (s *CCVTestSuite) TestVSCPacketSendExpiredClient() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
-	s.SetupCCVChannel()
+	s.SetupCCVChannel(s.path)
 
 	expireClient(s, Consumer)
 
@@ -85,7 +85,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
-	s.SetupCCVChannel()
+	s.SetupCCVChannel(s.path)
 
 	// bond some tokens on provider to change validator powers
 	bondAmt := sdk.NewInt(1000000)
