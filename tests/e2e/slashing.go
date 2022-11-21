@@ -42,10 +42,8 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		// Reset test state
 		s.SetupTest()
 
-		// Setup CCV channel for all instantiated consumer bundles
-		for _, bundle := range s.consumerBundles {
-			s.SetupCCVChannel(bundle.Path)
-		}
+		// Setup CCV channel for all instantiated consumers
+		s.SetupAllCCVChannels()
 
 		validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
