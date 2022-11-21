@@ -241,8 +241,8 @@ func (suite *CCVTestSuite) CompleteSetupCCVChannel(path *ibctesting.Path) {
 	suite.Require().NoError(err)
 }
 
-// TODO: Make this work for multiple consumers.
-// TODO: Make issue with more info on this, don't make changes in this PR tho.
+// TODO: Make SetupTransferChannel functional for multiple consumers by pattern matching SetupCCVChannel.
+// See: https://github.com/cosmos/interchain-security/issues/506
 func (suite *CCVTestSuite) SetupTransferChannel() {
 	// transfer path will use the same connection as ccv path
 

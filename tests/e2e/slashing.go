@@ -47,8 +47,6 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 			s.SetupCCVChannel(bundle.Path)
 		}
 
-		// TODO: PR comment, setting up transfer channel is not necessary for this test
-
 		validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
 		providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
@@ -154,8 +152,6 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 			// check that slashed validator was removed from each consumer validator set
 			s.Require().Len(bundle.Chain.Vals.Validators, validatorsPerChain-1)
 		}
-
-		// TODO: PR comment is that update client used to be called here but it's not needed anymore
 
 		// check that the validator is successfully jailed on provider
 		validatorJailed, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
