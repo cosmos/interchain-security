@@ -157,9 +157,9 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 
 		// delete VSC send timestamps
 		var ids []uint64
-		k.IterateVscSendTimestamps(ctx, chainID, func(vscID uint64, ts time.Time) bool {
+		k.IterateVscSendTimestamps(ctx, chainID, func(vscID uint64, ts time.Time) (stop bool) {
 			ids = append(ids, vscID)
-			return true
+			return false // do not stop the iteration
 		})
 		for _, vscID := range ids {
 			k.DeleteVscSendTimestamp(ctx, chainID, vscID)
@@ -174,14 +174,14 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	var vscIDs []uint64
 	if !lockUbd {
 		// iterate over the consumer chain's unbonding operation VSC ids
-		k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ids []uint64) bool {
+		k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ids []uint64) (stop bool) {
 			// iterate over the unbonding operations for the current VSC ID
 			var maturedIds []uint64
 			for _, id := range ids {
 				unbondingOp, found := k.GetUnbondingOp(ctx, id)
 				if !found {
 					err = fmt.Errorf("could not find UnbondingOp according to index - id: %d", id)
-					return false
+					return true // stop the iteration
 				}
 				// remove consumer chain ID from unbonding op record
 				unbondingOp.UnbondingConsumerChains, _ = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
@@ -203,7 +203,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 			}
 
 			vscIDs = append(vscIDs, vscID)
-			return true
+			return false // do not stop the iteration
 		})
 	}
 
@@ -338,19 +338,25 @@ func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.Consumer
 
 	// store the (to be) executed proposals in order
 	propsToExecute := []types.ConsumerAdditionProposal{}
-	k.IteratePendingConsumerAdditionProps(ctx, func(spawnTime time.Time, prop types.ConsumerAdditionProposal) bool {
+
+	iterator := k.PendingConsumerAdditionPropIterator(ctx)
+	defer iterator.Close()
+
+	k.IteratePendingConsumerAdditionProps(ctx, func(spawnTime time.Time, prop types.ConsumerAdditionProposal) (stop bool) {
 		if !ctx.BlockTime().Before(spawnTime) {
 			propsToExecute = append(propsToExecute, prop)
-			return true
+			return false // do not stop the iteration
 		}
-		// No more proposals to check, since they're stored/ordered by timestamp.
-		return false
+		return true // stop iteration, proposals are ordered by spawn time, so no additional pending props are ready to act upon
 	})
 
 	return propsToExecute
 }
 
-func (k Keeper) IteratePendingConsumerAdditionProps(ctx sdk.Context, cb func(spawnTime time.Time, prop types.ConsumerAdditionProposal) bool) {
+func (k Keeper) IteratePendingConsumerAdditionProps(
+	ctx sdk.Context,
+	cb func(spawnTime time.Time, prop types.ConsumerAdditionProposal) (stop bool),
+) {
 	iterator := k.PendingConsumerAdditionPropIterator(ctx)
 	defer iterator.Close()
 
@@ -364,8 +370,9 @@ func (k Keeper) IteratePendingConsumerAdditionProps(ctx sdk.Context, cb func(spa
 		var prop types.ConsumerAdditionProposal
 		k.cdc.MustUnmarshal(iterator.Value(), &prop)
 
-		if !cb(spawnTime, prop) {
-			return
+		stop := cb(spawnTime, prop)
+		if stop {
+			break
 		}
 	}
 }
@@ -457,19 +464,22 @@ func (k Keeper) ConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerR
 	// store the (to be) executed consumer removal proposals in order
 	propsToExecute := []types.ConsumerRemovalProposal{}
 
-	k.IteratePendingConsumerRemovalProps(ctx, func(stopTime time.Time, prop types.ConsumerRemovalProposal) bool {
+	k.IteratePendingConsumerRemovalProps(ctx, func(stopTime time.Time, prop types.ConsumerRemovalProposal) (stop bool) {
 		if !ctx.BlockTime().Before(stopTime) {
 			propsToExecute = append(propsToExecute, prop)
-			return true
+			return false // do not stop the iteration
 		}
 		// No more proposals to check, since they're stored/ordered by timestamp.
-		return false
+		return true // stop
 	})
 
 	return propsToExecute
 }
 
-func (k Keeper) IteratePendingConsumerRemovalProps(ctx sdk.Context, cb func(stopTime time.Time, prop types.ConsumerRemovalProposal) bool) {
+func (k Keeper) IteratePendingConsumerRemovalProps(
+	ctx sdk.Context,
+	cb func(stopTime time.Time, prop types.ConsumerRemovalProposal) (stop bool),
+) {
 	iterator := k.PendingConsumerRemovalPropIterator(ctx)
 	defer iterator.Close()
 
@@ -481,8 +491,9 @@ func (k Keeper) IteratePendingConsumerRemovalProps(ctx sdk.Context, cb func(stop
 			panic(fmt.Errorf("failed to parse pending consumer removal proposal key: %w", err))
 		}
 
-		if !cb(stopTime, types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime}) {
-			return
+		stop := cb(stopTime, types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime})
+		if stop {
+			break
 		}
 	}
 }
