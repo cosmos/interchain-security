@@ -205,9 +205,6 @@ func relayAllCommittedPackets(
 		packet, found := srcChain.GetSentPacket(commitment.Sequence, srcChannelID)
 		s.Require().True(found, "did not find sent packet")
 
-		s.Require().Equal(srcChannelID, packet.SourceChannel,
-			"Malformed packet commitment on source chain! Source channel does not match expectation")
-
 		// - relay the packet
 		err := path.RelayPacket(packet)
 		s.Require().NoError(err)
