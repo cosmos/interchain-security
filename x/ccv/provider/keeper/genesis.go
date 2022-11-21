@@ -85,7 +85,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	var consumerStates []types.ConsumerState
 	// export states for each consumer chains
-	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) bool {
+	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
 		gen, found := k.GetConsumerGenesis(ctx, chainID)
 		if !found {
 			panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chainID, clientID))
@@ -108,31 +108,31 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 				panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chainID, clientID))
 			}
 			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chainID)
-			k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) bool {
+			k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) (stop bool) {
 				cs.UnbondingOpsIndex = append(cs.UnbondingOpsIndex,
 					types.UnbondingOpIndex{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex},
 				)
-				return true
+				return false // do not stop the iteration
 			})
 		}
 
 		cs.PendingValsetChanges = k.GetPendingPackets(ctx, chainID)
 		consumerStates = append(consumerStates, cs)
-		return true
+		return false // do not stop the iteration
 	})
 
 	// export provider chain states
 	vscID := k.GetValidatorSetUpdateId(ctx)
 	vscIDToHeights := []types.ValsetUpdateIdToHeight{}
-	k.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) bool {
+	k.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) (stop bool) {
 		vscIDToHeights = append(vscIDToHeights, types.ValsetUpdateIdToHeight{ValsetUpdateId: vscID, Height: height})
-		return true
+		return false // do not stop the iteration
 	})
 
 	ubdOps := []ccv.UnbondingOp{}
-	k.IterateOverUnbondingOps(ctx, func(id uint64, ubdOp ccv.UnbondingOp) bool {
+	k.IterateOverUnbondingOps(ctx, func(id uint64, ubdOp ccv.UnbondingOp) (stop bool) {
 		ubdOps = append(ubdOps, ubdOp)
-		return true
+		return false // do not stop the iteration
 	})
 
 	matureUbdOps, err := k.GetMaturedUnbondingOps(ctx)
@@ -141,15 +141,15 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	addProps := []types.ConsumerAdditionProposal{}
-	k.IteratePendingConsumerAdditionProps(ctx, func(_ time.Time, prop types.ConsumerAdditionProposal) bool {
+	k.IteratePendingConsumerAdditionProps(ctx, func(_ time.Time, prop types.ConsumerAdditionProposal) (stop bool) {
 		addProps = append(addProps, prop)
-		return true
+		return false // do not stop the iteration
 	})
 
 	remProps := []types.ConsumerRemovalProposal{}
-	k.IteratePendingConsumerRemovalProps(ctx, func(_ time.Time, prop types.ConsumerRemovalProposal) bool {
+	k.IteratePendingConsumerRemovalProps(ctx, func(_ time.Time, prop types.ConsumerRemovalProposal) (stop bool) {
 		remProps = append(remProps, prop)
-		return true
+		return false // do not stop the iteration
 	})
 
 	params := k.GetParams(ctx)
