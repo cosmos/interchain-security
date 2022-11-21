@@ -27,9 +27,13 @@ message ConsumerAdditionProposal {
     // the proposed initial height of new consumer chain.
     // For a completely new chain, this will be {0,1}. However, it may be different if this is a chain that is converting to a consumer chain.
     ibc.core.client.v1.Height initial_height = 4 [(gogoproto.nullable) = false];
-    // genesis hash with no staking information included.
+    // genesis hash contains initial chain genesis state without the cross-chain validating validator set
+    // it is used for off-chain confirmation of genesis.json validity by validators and other parties.
+    // i.e. hashing the genesis.json provided by the consumer chain project staff should produce this value.
     bytes genesis_hash = 5 ;
     // binary hash is the hash of the binary that should be used by validators on chain initialization.
+    // it is used for off-chain confirmation of binary validity by validators and other parties
+    // ie. the validators may build the consumer chain's binary from source and check if the resulting binary's hash matches this value.
     bytes binary_hash = 6 ;
     // spawn time is the time on the provider chain at which the consumer chain genesis is finalized and all validators
     // will be responsible for starting their consumer chain validator node.
