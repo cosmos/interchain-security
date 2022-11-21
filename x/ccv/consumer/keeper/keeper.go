@@ -441,7 +441,7 @@ func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...types.ConsumerPac
 // GetHeightToValsetUpdateIDs returns all height to valset update id mappings in store
 func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToValsetUpdateID {
 	heightToVCIDs := []types.HeightToValsetUpdateID{}
-	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) bool {
+	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
 		hv := types.HeightToValsetUpdateID{
 			Height:         height,
 			ValsetUpdateId: vscID,
