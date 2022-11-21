@@ -49,7 +49,7 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 
 		// TODO: PR comment, setting up transfer channel is not necessary for this test
 
-		numConsumers := len(s.consumerBundles)
+		// numConsumers := len(s.consumerBundles)
 		validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
 		providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
@@ -118,13 +118,13 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		valsetUpdateN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 		// receive the downtime packet on the provider chain.
-		// This method calls the provider endblocker twice.
-		providerEvents, err := RecvPacketGetEvents(s.getFirstBundle().Path.EndpointB, packet)
+		// RecvPacket() calls the provider endblocker twice
+		err = s.path.EndpointB.RecvPacket(packet)
 		s.Require().NoError(err)
 
 		// We've now advanced two blocks.
 
-		// VSC packets should have been sent during block N for each consumer
+		// VSC packets should have been sent from provider during block N to each consumer
 		expectedSentValsetUpdateId := valsetUpdateN
 		for _, bundle := range s.consumerBundles {
 			_, found = providerKeeper.GetVscSendTimestamp(s.providerCtx(),
@@ -140,21 +140,10 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		// check that the validator was removed from the provider validator set
 		s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
 
-		// Extract sent VSC packets from provider events
-		sentPackets := GetSentPacketsFromEvents(s, providerEvents)
-		s.Require().Len(sentPackets, numConsumers)
-
 		// Temporary: only relay packet to the first consumer chain
 		// TODO: relay to all consumers
-		var packetToRelay channeltypes.Packet
-		for _, sentPacket := range sentPackets {
-			if sentPacket.SourceChannel == s.path.EndpointB.ChannelID {
-				packetToRelay = sentPacket
-			}
-		}
-
-		err = s.path.RelayPacket(packetToRelay)
-		s.Require().NoError(err)
+		relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID,
+			s.path.EndpointB.ChannelID, 1)
 
 		// TODO: expand the below logic to validate all consumers' state
 
