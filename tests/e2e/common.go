@@ -11,7 +11,6 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	"github.com/cosmos/interchain-security/testutil/e2e"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
@@ -183,8 +182,6 @@ func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddre
 }
 
 // relayAllCommittedPackets relays all committed packets from `srcChain` on `path`
-// TODO: this function needs to be deprecated and/or refactored to use simibc dir.
-// ibctesting.GetSentPacket does not work for multiple consumers!
 func relayAllCommittedPackets(
 	s *CCVTestSuite,
 	srcChain *ibctesting.TestChain,
@@ -437,7 +434,7 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 
 	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
-	clientState := ibctmtypes.NewClientState(
+	clientState := ibctm.NewClientState(
 		endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
 	)
