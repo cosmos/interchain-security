@@ -128,22 +128,32 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 		}
 
 		maturingPackets := []consumertypes.MaturingVSCPacket{}
-		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) bool {
+		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) (stop bool) {
 			mat := consumertypes.MaturingVSCPacket{
 				VscId:        vscId,
 				MaturityTime: timeNs,
 			}
 			maturingPackets = append(maturingPackets, mat)
-			return false
+			return false // do not stop the iteration
+		})
+
+		heightToVCIDs := []consumertypes.HeightToValsetUpdateID{}
+		k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
+			hv := consumertypes.HeightToValsetUpdateID{
+				Height:         height,
+				ValsetUpdateId: vscID,
+			}
+			heightToVCIDs = append(heightToVCIDs, hv)
+			return false // do not stop the iteration
 		})
 
 		outstandingDowntimes := []consumertypes.OutstandingDowntime{}
-		k.IterateOutstandingDowntime(ctx, func(addr string) bool {
+		k.IterateOutstandingDowntime(ctx, func(addr string) (stop bool) {
 			od := consumertypes.OutstandingDowntime{
 				ValidatorConsensusAddress: addr,
 			}
 			outstandingDowntimes = append(outstandingDowntimes, od)
-			return true
+			return false // do not stop the iteration
 		})
 
 		// TODO: update GetLastTransmissionBlockHeight to not return an error

@@ -103,12 +103,12 @@ func TestPacketMaturityTime(t *testing.T) {
 	orderedTimes := [][]uint64{{1, 10}, {2, 25}, {5, 15}}
 	i := 0
 
-	consumerKeeper.IteratePacketMaturityTime(ctx, func(seq, time uint64) bool {
+	consumerKeeper.IteratePacketMaturityTime(ctx, func(seq, time uint64) (stop bool) {
 		// require that we iterate through unbonding time in order of sequence
 		require.Equal(t, orderedTimes[i][0], seq)
 		require.Equal(t, orderedTimes[i][1], time)
 		i++
-		return false
+		return false // do not stop the iteration
 	})
 }
 

@@ -146,7 +146,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
 			k.SendPacketsToChain(ctx, chainID, channelID)
 		}
-		return true // continue iterating chains
+		return false // continue iterating chains
 	})
 }
 
@@ -197,7 +197,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
 			k.AppendPendingPackets(ctx, chainID, packet)
 		}
-		return true // do not stop the iteration
+		return false // do not stop the iteration
 	})
 
 	k.IncrementValidatorSetUpdateId(ctx)
@@ -327,15 +327,15 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 
 	// iterate over initTimeoutTimestamps
 	var chainIdsToRemove []string
-	k.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) bool {
+	k.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) (stop bool) {
 		if currentTimeUint64 > ts {
 			// initTimeout expired
 			chainIdsToRemove = append(chainIdsToRemove, chainID)
 			// continue to iterate through all timed out consumers
-			return true
+			return false
 		}
 		// break iteration since the timeout timestamps are in order
-		return false
+		return true
 	})
 	// remove consumers that timed out
 	for _, chainID := range chainIdsToRemove {
@@ -356,15 +356,15 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	// exceed the current block time.
 	// Checking the first send timestamp for each chain is sufficient since
 	// timestamps are ordered by vsc ID.
-	k.IterateChannelToChain(ctx, func(ctx sdk.Context, _, chainID string) bool {
-		k.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, ts time.Time) bool {
+	k.IterateChannelToChain(ctx, func(ctx sdk.Context, _, chainID string) (stop bool) {
+		k.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, ts time.Time) (stop bool) {
 			timeoutTimestamp := ts.Add(k.GetParams(ctx).VscTimeoutPeriod)
 			if currentTime.After(timeoutTimestamp) {
 				// vscTimeout expired
 				chainIdsToRemove = append(chainIdsToRemove, chainID)
 			}
-			// break iteration since the send timestamps are in order
-			return false
+			// break iteration since the send timestamps are sorted in descending order
+			return true
 		})
 		// continue to iterate through all consumers
 		return false
