@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	conntypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
@@ -102,12 +103,12 @@ func TestPacketMaturityTime(t *testing.T) {
 	orderedTimes := [][]uint64{{1, 10}, {2, 25}, {5, 15}}
 	i := 0
 
-	consumerKeeper.IteratePacketMaturityTime(ctx, func(seq, time uint64) bool {
+	consumerKeeper.IteratePacketMaturityTime(ctx, func(seq, time uint64) (stop bool) {
 		// require that we iterate through unbonding time in order of sequence
 		require.Equal(t, orderedTimes[i][0], seq)
 		require.Equal(t, orderedTimes[i][1], time)
 		i++
-		return false
+		return false // do not stop the iteration
 	})
 }
 
@@ -153,40 +154,63 @@ func TestCrossChainValidator(t *testing.T) {
 	require.False(t, found)
 }
 
-// TestPendingSlashRequests tests the getter, setter, appending method, and deletion method for pending slash requests
-func TestPendingSlashRequests(t *testing.T) {
+func TestSetPendingPackets(t *testing.T) {
 
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	// prepare test setup by storing 10 pending slash requests
-	requests := []types.SlashRequest{}
-	for i := 0; i < 10; i++ {
-		requests = append(requests, types.SlashRequest{})
-		consumerKeeper.SetPendingSlashRequests(ctx, types.SlashRequests{Requests: requests})
+	// prepare test setup
+	dataPackets := []types.ConsumerPacket{
+		{
+			Type: types.VscMaturedPacket,
+			Data: ccv.NewVSCMaturedPacketData(1).GetBytes(),
+		},
+		{
+			Type: types.VscMaturedPacket,
+			Data: ccv.NewVSCMaturedPacketData(2).GetBytes(),
+		},
+		{
+			Type: types.SlashPacket,
+			Data: ccv.NewSlashPacketData(
+				abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(), Power: int64(0)},
+				3,
+				stakingtypes.DoubleSign,
+			).GetBytes(),
+		},
+		{
+			Type: types.VscMaturedPacket,
+			Data: ccv.NewVSCMaturedPacketData(3).GetBytes(),
+		},
 	}
+	consumerKeeper.SetPendingPackets(ctx, types.ConsumerPackets{List: dataPackets})
 
-	// test set, append and clear operations
-	testCases := []struct {
-		operation func()
-		expLen    int
-	}{{
-		operation: func() {},
-		expLen:    10,
-	}, {
-		operation: func() { consumerKeeper.AppendPendingSlashRequests(ctx, types.SlashRequest{}) },
-		expLen:    11,
-	}, {
-		operation: func() { consumerKeeper.DeletePendingSlashRequests(ctx) },
-		expLen:    0,
-	},
-	}
+	storedDataPackets := consumerKeeper.GetPendingPackets(ctx)
+	require.NotEmpty(t, storedDataPackets)
+	require.Equal(t, dataPackets, storedDataPackets.List)
 
-	for _, tc := range testCases {
-		tc.operation()
-		requests := consumerKeeper.GetPendingSlashRequests(ctx)
-		require.Len(t, requests.Requests, tc.expLen)
-	}
+	slashPacket := ccv.NewSlashPacketData(
+		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
+			Power: int64(2)},
+		uint64(4),
+		stakingtypes.Downtime,
+	)
+	dataPackets = append(dataPackets, types.ConsumerPacket{Type: types.SlashPacket, Data: slashPacket.GetBytes()})
+	consumerKeeper.AppendPendingPacket(ctx, dataPackets[len(dataPackets)-1])
+	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
+	require.NotEmpty(t, storedDataPackets)
+	require.Equal(t, dataPackets, storedDataPackets.List)
+
+	vscMaturedPakcet := ccv.NewVSCMaturedPacketData(4)
+	dataPackets = append(dataPackets, types.ConsumerPacket{Type: types.VscMaturedPacket, Data: vscMaturedPakcet.GetBytes()})
+	consumerKeeper.AppendPendingPacket(ctx, dataPackets[len(dataPackets)-1])
+	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
+	require.NotEmpty(t, storedDataPackets)
+	require.Equal(t, dataPackets, storedDataPackets.List)
+
+	consumerKeeper.DeletePendingDataPackets(ctx)
+	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
+	require.Empty(t, storedDataPackets)
+	require.Len(t, storedDataPackets.List, 0)
 }
 
 // TestVerifyProviderChain tests the VerifyProviderChain method for the consumer keeper

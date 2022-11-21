@@ -49,10 +49,10 @@ IBC packets:
 | -- | ------- | ----------- | ------------ | ----------- | ------------- | ------- |
 | 2.01 | Create IBC clients | `Scheduled` (ibc-go) | `Done` [TestCreateConsumerClient](../x/ccv/provider/keeper/proposal_test.go#117), [TestInitGenesis](../x/ccv/consumer/keeper/genesis_test.go#26) | `Done` [SetupTest](../tests/e2e/setup_test.go#39), [TestConsumerGenesis](../tests/e2e/channel_init_test.go#21) | `Future work` | `Scheduled` |
 | 2.02 | Create CCV channel (handshake) | `Scheduled` (ibc-go) | `Done` [provider/ibc_module_test.go](../x/ccv/provider/ibc_module_test.go), [consumer/ibc_module_test.go](../x/ccv/consumer/ibc_module_test.go) | `Done` [SetupCCVChannel](../tests/e2e/setup_test.go#125) | `Future work` | `Scheduled` |
-| 2.03 | Sending IBC packets <br> [SendIBCPacket](../x/ccv/utils/utils.go#40) | `Scheduled` (ibc-go) | `NA` | `Done` [TestSendVSCMaturedPackets](../tests/e2e/valset_update_test.go#39), [TestSendSlashPacket](../tests/e2e/slashing_test.go#648) | `Done` | `Scheduled` |
+| 2.03 | Sending IBC packets | `Scheduled` (ibc-go) | `NA` | `Done` [TestSendVSCMaturedPackets](../tests/e2e/valset_update_test.go#39), [TestSendSlashPacket](../tests/e2e/slashing_test.go#648) | `Done` | `Scheduled` |
 | 2.04 | Handling acknowledgments | `Scheduled` (ibc-go) | [Scheduled](https://github.com/cosmos/interchain-security/issues/362) | `Partial coverage` [TestOnAcknowledgementPacket](../x/ccv/consumer/keeper/relay_test.go#152), [TestSlashPacketAcknowldgement](../tests/e2e/slashing_test.go#258) | `Done` | `Scheduled` |
 | 2.05 | Handling timeouts | `Scheduled` (ibc-go) | [Scheduled](https://github.com/cosmos/interchain-security/issues/362) |`NA` | `Future work` | `Scheduled` |
-| 2.06 | Handling IBC client expiration <br> - high priority| `Scheduled` (ibc-go)  | `NA` | `NA` | `Future work` | `Scheduled` |
+| 2.06 | Handling IBC client expiration | `Scheduled` (ibc-go)  | `NA` | `Done` [expired_client.go](../tests/e2e/expired_client.go) | `Future work` | `Scheduled` |
 | 2.07 | ICS-20 channel creation | `Scheduled` (ibc-go) | `NA` | `Done` [SetupTransferChannel](../tests/e2e/setup_test.go#152) |`Future work` | `Scheduled` |
 | 2.08 | ICS-20 transfer | `Scheduled` (ibc-go) | `NA` | `Done` [TestRewardsDistribution](../tests/e2e/distribution_test.go#17) | `NA` | `Scheduled` |
 | 2.09 | Changes in IBC-GO testing suite | `Scheduled` (ibc-go) | `NA` | `NA` | `Partial coverage` | `NA` |
@@ -63,7 +63,7 @@ IBC packets:
 
 | ID | Concern | Code Review | Unit Testing | E2E Testing | Diff. Testing | Testnet |
 | -- | ------- | ----------- | ------------ | ----------- | ------------- | ------- |
-| 3.01 | Changes to staking module | `Done` | `Done` (Cosmos-SDK side) | `Partial coverage` <br> [unbonding_test.go](../tests/e2e/unbonding_test.go) <br> redelegation could be expanded, validator unbonding missing | `Partial coverage` | `Scheduled` |
+| 3.01 | Changes to staking module | `Done` | `Done` [unbonding_test.go](https://github.com/cosmos/cosmos-sdk/blob/interchain-security-rebase.0.45.6/x/staking/keeper/unbonding_test.go) | `Partial coverage` <br> [unbonding_test.go](../tests/e2e/unbonding_test.go) <br> redelegation could be expanded, validator unbonding missing | `Partial coverage` | `Scheduled` |
 | 3.02 | Changes to slashing module | `Done` | `NA` | `Done` <br> [TestValidatorDowntime](../tests/e2e/slashing_test.go#L502) <br>  | `Partial coverage` | `Scheduled` |
 | 3.03 | Changes to evidence module | `Done` | `NA` | `Done` <br> [TestValidatorDoubleSigning](../tests/e2e/slashing_test.go#L584) <br>  | `NA` | `Scheduled` |
 

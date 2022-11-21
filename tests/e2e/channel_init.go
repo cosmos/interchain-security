@@ -21,11 +21,6 @@ func (suite *CCVTestSuite) TestConsumerGenesis() {
 
 	genesis := consumerKeeper.ExportGenesis(suite.consumerChain.GetContext())
 
-	// Confirm that client and cons state are exported from consumer keeper properly
-	consumerEndpointClientState, consumerEndpointConsState := suite.GetConsumerEndpointClientAndConsState()
-	suite.Require().Equal(consumerEndpointClientState, genesis.ProviderClientState)
-	suite.Require().Equal(consumerEndpointConsState, genesis.ProviderConsensusState)
-
 	suite.Require().NotPanics(func() {
 		consumerKeeper.InitGenesis(suite.consumerChain.GetContext(), genesis)
 		// reset suite to reset provider client
@@ -39,9 +34,8 @@ func (suite *CCVTestSuite) TestConsumerGenesis() {
 
 	clientId, ok := consumerKeeper.GetProviderClientID(ctx)
 	suite.Require().True(ok)
-	clientState, ok := suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientId)
+	_, ok = suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientId)
 	suite.Require().True(ok)
-	suite.Require().Equal(genesis.ProviderClientState, clientState, "client state not set correctly after InitGenesis")
 
 	suite.SetupCCVChannel()
 
@@ -166,7 +160,7 @@ func (suite *CCVTestSuite) TestInitTimeout() {
 		suite.providerChain.NextBlock()
 
 		// increment time
-		incrementTimeBy(suite, initTimeout)
+		incrementTime(suite, initTimeout)
 
 		// check whether the chain was removed
 		_, found = providerKeeper.GetConsumerClientId(suite.providerCtx(), chainID)

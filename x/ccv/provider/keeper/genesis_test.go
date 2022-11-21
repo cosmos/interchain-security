@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestInitAndExportGenesis tests the export and the initialisation of a provider chain genesis
 func TestInitAndExportGenesis(t *testing.T) {
 	// create a provider chain genesis populated with two consumer chains
 	cChainIDs := []string{"c0", "c1"}
@@ -26,7 +27,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	params := providertypes.DefaultParams()
 
 	// create genesis struct
-	pGenesis := providertypes.NewGenesisState(vscID,
+	provGenesis := providertypes.NewGenesisState(vscID,
 		[]providertypes.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
 		[]providertypes.ConsumerState{
 			providertypes.NewConsumerStates(
@@ -83,7 +84,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	)
 
 	// init provider chain
-	pk.InitGenesis(ctx, pGenesis)
+	pk.InitGenesis(ctx, provGenesis)
 
 	// Expect slash meter to be initialized to it's allowance value
 	// (replenish fraction * mocked value defined above)
@@ -100,11 +101,11 @@ func TestInitAndExportGenesis(t *testing.T) {
 	// check local provider chain states
 	ubdOps, found := pk.GetUnbondingOp(ctx, vscID)
 	require.True(t, found)
-	require.Equal(t, pGenesis.UnbondingOps[0], ubdOps)
+	require.Equal(t, provGenesis.UnbondingOps[0], ubdOps)
 	matureUbdOps, err := pk.GetMaturedUnbondingOps(ctx)
 	require.NoError(t, err)
 	require.Equal(t, ubdIndex, matureUbdOps)
-	chainID, found := pk.GetChannelToChain(ctx, pGenesis.ConsumerStates[0].ChannelId)
+	chainID, found := pk.GetChannelToChain(ctx, provGenesis.ConsumerStates[0].ChannelId)
 	require.True(t, found)
 	require.Equal(t, cChainIDs[0], chainID)
 	require.Equal(t, vscID, pk.GetValidatorSetUpdateId(ctx))
@@ -113,15 +114,15 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, initHeight, height)
 	addProp, found := pk.GetPendingConsumerAdditionProp(ctx, oneHourFromNow, cChainIDs[0])
 	require.True(t, found)
-	require.Equal(t, pGenesis.ConsumerAdditionProposals[0], addProp)
+	require.Equal(t, provGenesis.ConsumerAdditionProposals[0], addProp)
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
-	require.Equal(t, pGenesis.Params, pk.GetParams(ctx))
+	require.Equal(t, provGenesis.Params, pk.GetParams(ctx))
 
 	// check provider chain's consumer chain states
-	assertConsumerChainStates(ctx, t, pk, pGenesis.ConsumerStates...)
+	assertConsumerChainStates(ctx, t, pk, provGenesis.ConsumerStates...)
 
 	// check the exported genesis
-	require.Equal(t, pGenesis, pk.ExportGenesis(ctx))
+	require.Equal(t, provGenesis, pk.ExportGenesis(ctx))
 
 }
 
@@ -150,8 +151,7 @@ func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, 
 		require.Equal(t, cs.LockUnbondingOnTimeout, pk.GetLockUnbondingOnTimeout(ctx, chainID))
 
 		if expVSC := cs.GetPendingValsetChanges(); expVSC != nil {
-			gotVSC, found := pk.GetPendingVSCs(ctx, chainID)
-			require.True(t, found)
+			gotVSC := pk.GetPendingPackets(ctx, chainID)
 			require.Equal(t, expVSC, gotVSC)
 		}
 

@@ -30,8 +30,6 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 )
 
 // Parameters needed to instantiate an in-memory keeper
@@ -207,17 +205,6 @@ func GetNewSlashPacketData() ccvtypes.SlashPacketData {
 func GetNewVSCMaturedPacketData() ccvtypes.VSCMaturedPacketData {
 	rand.Seed(time.Now().UnixNano())
 	return ccvtypes.VSCMaturedPacketData{ValsetUpdateId: rand.Uint64()}
-}
-
-func GetClientState(chainID string) *ibctmtypes.ClientState {
-	return ibctmtypes.NewClientState(chainID, ibctmtypes.DefaultTrustLevel, 0, 0,
-		time.Second*10, clienttypes.Height{}, commitmenttypes.GetSDKSpecs(),
-		[]string{"upgrade", "upgradedIBCState"}, true, true)
-}
-
-func GetConsensusState(clientID string, timestamp time.Time, vals ...*tmtypes.Validator) *ibctmtypes.ConsensusState {
-	return ibctmtypes.NewConsensusState(timestamp, commitmenttypes.NewMerkleRoot([]byte("apphash")),
-		tmtypes.NewValidatorSet(vals).Hash()[:])
 }
 
 // SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup

@@ -22,16 +22,16 @@ func (k *Keeper) Hooks() Hooks {
 }
 
 // This stores a record of each unbonding op from staking, allowing us to track which consumer chains have unbonded
-func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
+func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 	var consumerChainIDS []string
 
 	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
 		consumerChainIDS = append(consumerChainIDS, chainID)
-		return true
+		return false // do not stop the iteration
 	})
 	if len(consumerChainIDS) == 0 {
 		// Do not put the unbonding op on hold if there are no consumer chains
-		return
+		return nil
 	}
 	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
 	unbondingOp := ccv.UnbondingOp{
@@ -48,13 +48,18 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) {
 
 	// Set unbondingOp
 	if err := h.k.SetUnbondingOp(ctx, unbondingOp); err != nil {
+		// If there was an error persisting the unbonding op, panic to end execution for
+		// the current tx and prevent committal of this invalid state.
 		panic(fmt.Errorf("unbonding op could not be persisted: %w", err))
 	}
 
 	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
 	if err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, ID); err != nil {
+		// If there was an error putting the unbonding on hold, panic to end execution for
+		// the current tx and prevent committal of this invalid state.
 		panic(fmt.Errorf("unbonding could not be put on hold: %w", err))
 	}
+	return nil
 }
 
 // Define unimplemented methods to satisfy the StakingHooks contract

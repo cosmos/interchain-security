@@ -7,7 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/interchain-security/testutil/e2e"
-	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
@@ -17,6 +16,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 )
@@ -212,29 +212,16 @@ func relayAllCommittedPackets(
 // Note that it is expected for the provider unbonding period
 // to be one day larger than the consumer unbonding period.
 func incrementTimeByUnbondingPeriod(s *CCVTestSuite, chainType ChainType) {
-	// Get unboding period from staking keeper
+	// Get unboding periods
 	providerUnbondingPeriod := s.providerApp.GetStakingKeeper().UnbondingTime(s.providerCtx())
 	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerCtx())
-	// Note: the assertions below are not strictly necessary, and rely on default values
-	s.Require().Equal(consumertypes.DefaultConsumerUnbondingPeriod+24*time.Hour, providerUnbondingPeriod, "unexpected provider unbonding period")
-	s.Require().Equal(consumertypes.DefaultConsumerUnbondingPeriod, consumerUnbondingPeriod, "unexpected consumer unbonding period")
 	var jumpPeriod time.Duration
 	if chainType == Provider {
 		jumpPeriod = providerUnbondingPeriod
 	} else {
 		jumpPeriod = consumerUnbondingPeriod
 	}
-	// Make sure the clients do not expire
-	jumpPeriod = jumpPeriod/4 + time.Hour
-	for i := 0; i < 4; i++ {
-		s.coordinator.IncrementTimeBy(jumpPeriod)
-		// Update the provider client on the consumer
-		err := s.path.EndpointA.UpdateClient()
-		s.Require().NoError(err)
-		// Update the consumer client on the provider
-		err = s.path.EndpointB.UpdateClient()
-		s.Require().NoError(err)
-	}
+	incrementTime(s, jumpPeriod)
 }
 
 func checkStakingUnbondingOps(s *CCVTestSuite, id uint64, found bool, onHold bool, msgAndArgs ...interface{}) {
@@ -296,7 +283,7 @@ func checkRedelegationEntryCompletionTime(
 }
 
 func getStakingUnbondingDelegationEntry(ctx sdk.Context, k e2e.E2eStakingKeeper, id uint64) (stakingUnbondingOp stakingtypes.UnbondingDelegationEntry, found bool) {
-	stakingUbd, found := k.GetUnbondingDelegationByUnbondingId(ctx, id)
+	stakingUbd, found := k.GetUnbondingDelegationByUnbondingID(ctx, id)
 
 	for _, entry := range stakingUbd.Entries {
 		if entry.UnbondingId == id {
@@ -350,25 +337,74 @@ func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.Sla
 	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
 }
 
-// incrementTimeBy increments the overall time by jumpPeriod
-func incrementTimeBy(s *CCVTestSuite, jumpPeriod time.Duration) {
-	// Get unboding period from staking keeper
-	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerChain.GetContext())
-	split := 1
-	trustingPeriodFraction := s.providerApp.GetProviderKeeper().GetTrustingPeriodFraction(s.providerCtx())
-	if jumpPeriod > consumerUnbondingPeriod/time.Duration(trustingPeriodFraction) {
-		// Make sure the clients do not expire
-		split = 4
-		jumpPeriod = jumpPeriod / 4
+// incrementTime increments the overall time by jumpPeriod
+// while updating to not expire the clients
+func incrementTime(s *CCVTestSuite, jumpPeriod time.Duration) {
+	// get trusting period of client on provider endpoint
+	cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointB.ClientID)
+	s.Require().True(ok)
+	providerEndpointTP := cs.(*ibctm.ClientState).TrustingPeriod
+	// get trusting period of client on consumer endpoint
+	cs, ok = s.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.consumerCtx(), s.path.EndpointA.ClientID)
+	s.Require().True(ok)
+	consumerEndpointTP := cs.(*ibctm.ClientState).TrustingPeriod
+	// find the minimum trusting period
+	var minTP time.Duration
+	if providerEndpointTP < consumerEndpointTP {
+		minTP = providerEndpointTP
+	} else {
+		minTP = consumerEndpointTP
 	}
-	for i := 0; i < split; i++ {
-		s.coordinator.IncrementTimeBy(jumpPeriod)
-		// Update the provider client on the consumer
+	// jumpStep is the maximum interval at which both clients are updated
+	jumpStep := minTP / 2
+	for jumpPeriod > 0 {
+		var step time.Duration
+		if jumpPeriod < jumpStep {
+			step = jumpPeriod
+		} else {
+			step = jumpStep
+		}
+		s.coordinator.IncrementTimeBy(step)
+		// update the provider client on the consumer
 		err := s.path.EndpointA.UpdateClient()
 		s.Require().NoError(err)
-		// Update the consumer client on the provider
+		// update the consumer client on the provider
 		err = s.path.EndpointB.UpdateClient()
 		s.Require().NoError(err)
+		jumpPeriod -= step
+	}
+}
+
+// incrementTimeWithoutUpdate increments the overall time by jumpPeriod
+// without updating the client to the `noUpdate` chain
+func incrementTimeWithoutUpdate(s *CCVTestSuite, jumpPeriod time.Duration, noUpdate ChainType) {
+	var trustingPeriod time.Duration
+	var endpointToUpdate *ibctesting.Endpoint
+	if noUpdate == Consumer {
+		cs, ok := s.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.consumerCtx(), s.path.EndpointA.ClientID)
+		s.Require().True(ok)
+		trustingPeriod = cs.(*ibctm.ClientState).TrustingPeriod
+		endpointToUpdate = s.path.EndpointA
+	} else {
+		cs, ok := s.providerApp.GetIBCKeeper().ClientKeeper.GetClientState(s.providerCtx(), s.path.EndpointB.ClientID)
+		s.Require().True(ok)
+		trustingPeriod = cs.(*ibctm.ClientState).TrustingPeriod
+		endpointToUpdate = s.path.EndpointB
+	}
+	// jumpStep is the maximum interval at which the client on endpointToUpdate is updated
+	jumpStep := trustingPeriod / 2
+	for jumpPeriod > 0 {
+		var step time.Duration
+		if jumpPeriod < jumpStep {
+			step = jumpPeriod
+		} else {
+			step = jumpStep
+		}
+		s.coordinator.IncrementTimeBy(step)
+		// update the client
+		err := endpointToUpdate.UpdateClient()
+		s.Require().NoError(err)
+		jumpPeriod -= step
 	}
 }
 

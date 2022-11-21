@@ -137,9 +137,6 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 
 	am.keeper.InitGenesis(ctx, &genesisState)
 
-	// initialize validator update id
-	// TODO: Include in genesis and initialize from genesis value
-	am.keeper.SetValidatorSetUpdateId(ctx, 1)
 	return []abci.ValidatorUpdate{}
 }
 

@@ -1,12 +1,12 @@
 package e2e
 
 import (
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-
 	"bytes"
 	"testing"
 
-	e2e "github.com/cosmos/interchain-security/testutil/e2e"
+	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
+	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
@@ -29,29 +29,67 @@ type CCVTestSuite struct {
 	coordinator   *ibctesting.Coordinator
 	providerChain *ibctesting.TestChain
 	consumerChain *ibctesting.TestChain
-	providerApp   e2e.ProviderApp
-	consumerApp   e2e.ConsumerApp
+	providerApp   e2eutil.ProviderApp
+	consumerApp   e2eutil.ConsumerApp
 	path          *ibctesting.Path
 	transferPath  *ibctesting.Path
 	setupCallback SetupCallback
+	skippedTests  map[string]bool
 }
 
 // NewCCVTestSuite returns a new instance of CCVTestSuite, ready to be tested against using suite.Run().
-func NewCCVTestSuite(setupCallback SetupCallback) *CCVTestSuite {
+func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
+	providerAppIniter ibctesting.AppIniter, consumerAppIniter ibctesting.AppIniter, skippedTests []string) *CCVTestSuite {
+
 	ccvSuite := new(CCVTestSuite)
-	ccvSuite.setupCallback = setupCallback
+	
+	ccvSuite.setupCallback = func(t *testing.T) (
+		*ibctesting.Coordinator,
+		*ibctesting.TestChain,
+		*ibctesting.TestChain,
+		e2eutil.ProviderApp,
+		e2eutil.ConsumerApp,
+	) {
+		// Instantiate the test coordinator.
+		coordinator := ibctesting.NewCoordinator(t, 0)
+
+		// Add provider to coordinator, store returned test chain and app.
+		// Concrete provider app type is passed to the generic function here.
+		provider, providerApp := icstestingutils.AddProvider[Tp](
+			coordinator, t, providerAppIniter)
+
+		// Add specified number of consumers to coordinator, store returned test chains and apps.
+		// Concrete consumer app type is passed to the generic function here.
+		consumers, consumerApps := icstestingutils.AddConsumers[Tc](
+			coordinator, t, 1, consumerAppIniter)
+
+		// Pass variables to suite.
+		// TODO: accept multiple consumers here
+		return coordinator, provider, consumers[0], providerApp, consumerApps[0]
+	}
+
+	ccvSuite.skippedTests = make(map[string]bool)
+	for _, testName := range skippedTests {
+		ccvSuite.skippedTests[testName] = true
+	}
 	return ccvSuite
 }
 
-// Callback for instantiating a new coordinator, provider/consumer test chains, and provider/consumer app
+// Callback for instantiating a new coordinator, provider/consumer test chains, and provider/consumer apps
 // before every test defined on the suite.
 type SetupCallback func(t *testing.T) (
 	coord *ibctesting.Coordinator,
 	providerChain *ibctesting.TestChain,
 	consumerChain *ibctesting.TestChain,
-	providerApp e2e.ProviderApp,
-	consumerApp e2e.ConsumerApp,
+	providerApp e2eutil.ProviderApp,
+	consumerApp e2eutil.ConsumerApp,
 )
+
+func (suite *CCVTestSuite) BeforeTest(suiteName, testName string) {
+	if suite.skippedTests[testName] {
+		suite.T().Skip()
+	}
+}
 
 // SetupTest sets up in-mem state before every test
 func (suite *CCVTestSuite) SetupTest() {
@@ -131,13 +169,6 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.path.EndpointB.ChannelConfig.Version = ccv.Version
 	suite.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	suite.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-
-	// set chains sender account number
-	// TODO: to be fixed in #151
-	err = suite.path.EndpointB.Chain.SenderAccount.SetAccountNumber(6)
-	suite.Require().NoError(err)
-	err = suite.path.EndpointA.Chain.SenderAccount.SetAccountNumber(1)
-	suite.Require().NoError(err)
 
 	// create path for the transfer channel
 	suite.transferPath = ibctesting.NewPath(suite.consumerChain, suite.providerChain)

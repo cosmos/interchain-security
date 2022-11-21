@@ -7,15 +7,14 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	"github.com/cosmos/interchain-security/testutil/e2e"
+	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/stretchr/testify/suite"
 )
@@ -24,15 +23,32 @@ type ConsumerDemocracyTestSuite struct {
 	suite.Suite
 	coordinator   *ibctesting.Coordinator
 	consumerChain *ibctesting.TestChain
-	consumerApp   e2e.DemocConsumerApp
+	consumerApp   e2eutil.DemocConsumerApp
 	setupCallback DemocSetupCallback
 }
 
 // NewCCVTestSuite returns a new instance of ConsumerDemocracyTestSuite,
 // ready to be tested against using suite.Run().
-func NewConsumerDemocracyTestSuite(setupCallback DemocSetupCallback) *ConsumerDemocracyTestSuite {
+func NewConsumerDemocracyTestSuite[T e2eutil.DemocConsumerApp](
+	democConsumerAppIniter ibctesting.AppIniter) *ConsumerDemocracyTestSuite {
+
 	democSuite := new(ConsumerDemocracyTestSuite)
-	democSuite.setupCallback = setupCallback
+
+	democSuite.setupCallback = func(t *testing.T) (
+		*ibctesting.Coordinator,
+		*ibctesting.TestChain,
+		e2eutil.DemocConsumerApp,
+	) {
+		// Instantiate the test coordinator
+		coordinator := ibctesting.NewCoordinator(t, 0)
+
+		// Add single democracy consumer to coordinator, store returned test chain and app.
+		democConsumer, democConsumerApp := icstestingutils.AddDemocracyConsumer[T](
+			coordinator, t, democConsumerAppIniter)
+
+		// Pass variables to suite.
+		return coordinator, democConsumer, democConsumerApp
+	}
 	return democSuite
 }
 
@@ -41,7 +57,7 @@ func NewConsumerDemocracyTestSuite(setupCallback DemocSetupCallback) *ConsumerDe
 type DemocSetupCallback func(t *testing.T) (
 	coord *ibctesting.Coordinator,
 	consumerChain *ibctesting.TestChain,
-	consumerApp e2e.DemocConsumerApp,
+	consumerApp e2eutil.DemocConsumerApp,
 )
 
 // SetupTest sets up in-mem state before every test relevant to ccv with a democracy consumer
@@ -138,8 +154,8 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	mintKeeper := s.consumerApp.GetE2eMintKeeper()
 	newAuthParamValue := uint64(128)
 	newMintParamValue := sdk.NewDecWithPrec(1, 1) // "0.100000000000000000"
-	allowedChange := proposal.ParamChange{Subspace: minttypes.ModuleName, Key: "InflationMax", Value: fmt.Sprintf("\"%s\"", newMintParamValue)}
-	forbiddenChange := proposal.ParamChange{Subspace: authtypes.ModuleName, Key: "MaxMemoCharacters", Value: fmt.Sprintf("\"%s\"", strconv.FormatUint(newAuthParamValue, 10))}
+	allowedChange := proposaltypes.ParamChange{Subspace: minttypes.ModuleName, Key: "InflationMax", Value: fmt.Sprintf("\"%s\"", newMintParamValue)}
+	forbiddenChange := proposaltypes.ParamChange{Subspace: authtypes.ModuleName, Key: "MaxMemoCharacters", Value: fmt.Sprintf("\"%s\"", strconv.FormatUint(newAuthParamValue, 10))}
 	votingAccounts := s.consumerChain.SenderAccounts
 	bondDenom := stakingKeeper.BondDenom(s.consumerCtx())
 	depositAmount := govKeeper.GetDepositParams(s.consumerCtx()).MinDeposit
@@ -203,7 +219,7 @@ func (s *ConsumerDemocracyTestSuite) TestDemocracyGovernanceWhitelisting() {
 	s.Assert().Equal(votersOldBalances, getAccountsBalances(s.consumerCtx(), bankKeeper, bondDenom, votingAccounts))
 }
 
-func submitProposalWithDepositAndVote(govKeeper e2e.E2eGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
+func submitProposalWithDepositAndVote(govKeeper e2eutil.E2eGovKeeper, ctx sdk.Context, paramChange proposaltypes.ParameterChangeProposal,
 	accounts []ibctesting.SenderAccount, depositAmount sdk.Coins) error {
 	proposal, err := govKeeper.SubmitProposal(ctx, &paramChange)
 	if err != nil {
@@ -223,7 +239,7 @@ func submitProposalWithDepositAndVote(govKeeper e2e.E2eGovKeeper, ctx sdk.Contex
 	return nil
 }
 
-func getAccountsBalances(ctx sdk.Context, bankKeeper e2e.E2eBankKeeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]sdk.Int {
+func getAccountsBalances(ctx sdk.Context, bankKeeper e2eutil.E2eBankKeeper, bondDenom string, accounts []ibctesting.SenderAccount) map[string]sdk.Int {
 	accountsBalances := map[string]sdk.Int{}
 	for _, acc := range accounts {
 		accountsBalances[string(acc.SenderAccount.GetAddress())] =

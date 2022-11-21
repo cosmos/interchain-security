@@ -16,6 +16,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
@@ -206,7 +207,7 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 }
 
 // IteratePacketMaturityTime iterates through the VSC packet maturity times set in the store
-func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs uint64) bool) {
+func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
@@ -218,7 +219,8 @@ func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs
 
 		timeNs := binary.BigEndian.Uint64(iterator.Value())
 
-		if cb(seq, timeNs) {
+		stop := cb(seq, timeNs)
+		if stop {
 			break
 		}
 	}
@@ -296,7 +298,7 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 }
 
 // IterateHeightToValsetUpdateID iterates over the block height to valset update ID mapping in store
-func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64) bool) {
+func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
 
@@ -307,7 +309,8 @@ func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, v
 
 		vscID := binary.BigEndian.Uint64(iterator.Value())
 
-		if !cb(height, vscID) {
+		stop := cb(height, vscID)
+		if stop {
 			break
 		}
 	}
@@ -337,7 +340,7 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 }
 
 // IterateOutstandingDowntime iterates over the validator addresses of outstanding downtime flags
-func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address string) bool) {
+func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
 
@@ -345,7 +348,8 @@ func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address stri
 	for ; iterator.Valid(); iterator.Next() {
 		addrBytes := iterator.Key()[1:]
 		addr := sdk.ConsAddress(addrBytes).String()
-		if !cb(addr) {
+		stop := cb(addr)
+		if stop {
 			break
 		}
 	}
@@ -393,43 +397,71 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 	return validators
 }
 
-// SetPendingSlashRequests sets the pending slash requests in store
-func (k Keeper) SetPendingSlashRequests(ctx sdk.Context, requests types.SlashRequests) {
+// SetPendingPackets sets the pending CCV packets
+func (k Keeper) SetPendingPackets(ctx sdk.Context, packets types.ConsumerPackets) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := requests.Marshal()
+	bz, err := packets.Marshal()
 	if err != nil {
-		panic(fmt.Errorf("failed to encode slash request json: %w", err))
+		panic(fmt.Errorf("failed to encode packet: %w", err))
 	}
-	store.Set([]byte{types.PendingSlashRequestsBytePrefix}, bz)
+	store.Set([]byte{types.PendingDataPacketsBytePrefix}, bz)
 }
 
-// GetPendingSlashRequest returns the pending slash requests in store
-func (k Keeper) GetPendingSlashRequests(ctx sdk.Context) types.SlashRequests {
+// GetPendingPackets returns the pending CCV packets from the store
+func (k Keeper) GetPendingPackets(ctx sdk.Context) types.ConsumerPackets {
+	var packets types.ConsumerPackets
+
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get([]byte{types.PendingSlashRequestsBytePrefix})
+	bz := store.Get([]byte{types.PendingDataPacketsBytePrefix})
 	if bz == nil {
-		return types.SlashRequests{}
+		return packets
 	}
 
-	var sr types.SlashRequests
-	err := sr.Unmarshal(bz)
+	err := packets.Unmarshal(bz)
 	if err != nil {
-		panic(fmt.Errorf("failed to decode slash request json: %w", err))
+		panic(fmt.Errorf("failed to unmarshal pending data packets: %w", err))
 	}
 
-	return sr
+	return packets
 }
 
-// ClearPendingSlashRequests clears the pending slash requests in store
-func (k Keeper) DeletePendingSlashRequests(ctx sdk.Context) {
+// DeletePendingDataPackets clears the pending data packets in store
+func (k Keeper) DeletePendingDataPackets(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete([]byte{types.PendingSlashRequestsBytePrefix})
+	store.Delete([]byte{types.PendingDataPacketsBytePrefix})
 }
 
-// AppendPendingSlashRequests appends the given slash request to the pending slash requests in store
-func (k Keeper) AppendPendingSlashRequests(ctx sdk.Context, req types.SlashRequest) {
-	sr := k.GetPendingSlashRequests(ctx)
-	srArray := sr.GetRequests()
-	srArray = append(srArray, req)
-	k.SetPendingSlashRequests(ctx, types.SlashRequests{Requests: srArray})
+// AppendPendingDataPacket appends the given data packet to the pending data packets in store
+func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...types.ConsumerPacket) {
+	pending := k.GetPendingPackets(ctx)
+	list := append(pending.GetList(), packet...)
+	k.SetPendingPackets(ctx, types.ConsumerPackets{List: list})
+}
+
+// GetHeightToValsetUpdateIDs returns all height to valset update id mappings in store
+func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToValsetUpdateID {
+	heightToVCIDs := []types.HeightToValsetUpdateID{}
+	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
+		hv := types.HeightToValsetUpdateID{
+			Height:         height,
+			ValsetUpdateId: vscID,
+		}
+		heightToVCIDs = append(heightToVCIDs, hv)
+		return false // do not stop iteration
+	})
+
+	return heightToVCIDs
+}
+
+// GetOutstandingDowntimes returns all outstanding downtimes in store
+func (k Keeper) GetOutstandingDowntimes(ctx sdk.Context) []consumertypes.OutstandingDowntime {
+	outstandingDowntimes := []types.OutstandingDowntime{}
+	k.IterateOutstandingDowntime(ctx, func(addr string) bool {
+		od := types.OutstandingDowntime{
+			ValidatorConsensusAddress: addr,
+		}
+		outstandingDowntimes = append(outstandingDowntimes, od)
+		return false
+	})
+	return outstandingDowntimes
 }
