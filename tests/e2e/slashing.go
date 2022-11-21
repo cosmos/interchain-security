@@ -181,7 +181,7 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 			pFlag := firstConsumerKeeper.OutstandingDowntime(s.consumerCtx(), consAddr)
 			s.Require().False(pFlag)
 
-			// check that slashing packet gets acknowledged successfully for first consumer
+			// check that slashing packet gets acknowledged successfully
 			ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 			err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
 			s.Require().NoError(err)
