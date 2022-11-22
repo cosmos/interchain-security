@@ -326,15 +326,6 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 	return tmtypes.NewValidatorSet(validators), signers, addresses
 }
 
-func (b *Builder) createChains() {
-	coordinator := ibctesting.NewCoordinator(b.suite.T(), 0)
-	validators, signers, addresses := b.createValidators()
-	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, icstestingutils.ProviderAppIniter, ibctesting.GetChainID(0), validators, signers)
-	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, icstestingutils.ConsumerAppIniter, ibctesting.GetChainID(1), validators, signers)
-	b.coordinator = coordinator
-	b.sdkValAddresses = addresses
-}
-
 // addValidatorToStakingModule creates an additional validator with zero commission
 // and zero tokens (zero voting power).
 func (b *Builder) addValidatorToStakingModule(testVal testcrypto.CryptoIdentity) {
@@ -656,8 +647,12 @@ func (b *Builder) endBlock(chainID string) {
 }
 
 func (b *Builder) build() {
+	b.coordinator = ibctesting.NewCoordinator(b.suite.T(), 0)
+	validators, signers, addresses := b.createValidators()
+	b.sdkValAddresses = addresses
+	b.coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(b.coordinator, icstestingutils.ProviderAppIniter, ibctesting.GetChainID(0), validators, signers)
+	b.coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(b.coordinator, icstestingutils.ConsumerAppIniter, ibctesting.GetChainID(1), validators, signers)
 
-	b.createChains()
 	b.createLink()
 	b.setProviderSlashParams()
 	b.addExtraProviderValidators()
