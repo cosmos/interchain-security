@@ -264,24 +264,24 @@ func (b *Builder) getAppBytesAndSenders(
 func (b *Builder) getModifiedGenesisState(
 	app ibctesting.TestingApp, genesis map[string]json.RawMessage,
 	validators *tmtypes.ValidatorSet,
-	initState.MaxValidators,
-	initState.NumValidators,
-	initState.ValStates.Status,
-	initState.ValStates.Delegation,
-	initState.InitialDelegatorTokens,
-	initState.ValStates.ValidatorExtraTokens,
-	initState.MaxEntries,
-	initState.UnbondingP,
-	) ([]byte, []ibctesting.SenderAccount) {
+	maxValidators int,
+	numValidators int,
+	bondStatus []stakingtypes.BondStatus,
+	delegation []int,
+	initialDelegatorTokens int,
+	validatorExtraTokens []int,
+	maxEntries int,
+	unbondingP time.Duration,
+) ([]byte, []ibctesting.SenderAccount) {
 	stateBytes, senderAccounts := b.getAppBytesAndSenders(
-		initState.MaxValidators,
-		initState.NumValidators,
-		initState.ValStates.Status,
-		initState.ValStates.Delegation,
-		initState.InitialDelegatorTokens,
-		initState.ValStates.ValidatorExtraTokens,
-		initState.MaxEntries,
-		initState.UnbondingP,
+		maxValidators,
+		numValidators,
+		bondStatus,
+		delegation,
+		initialDelegatorTokens,
+		validatorExtraTokens,
+		maxEntries,
+		unbondingP,
 		app, genesis, validators)
 	return stateBytes, senderAccounts
 }
@@ -695,16 +695,34 @@ func (b *Builder) endBlock(chainID string, blockSeconds time.Duration) {
 func (b *Builder) build() {
 	b.coordinator = ibctesting.NewCoordinator(b.suite.T(), 0)
 	validators, signers, addresses := b.createValidators(
-		initState.ValStates.Tokens,
+		initState.ValStates.Tokens[:2], // TODO: unhardcode, number of initial bonded provider validators
 		initState.PKSeeds,
 	)
 	b.sdkValAddresses = addresses
 	pApp, pGenesis := icstestingutils.ProviderAppIniter()
-	pBytes, pSenders := b.getModifiedGenesisState(pApp, pGenesis, validators)
-	b.coordinator.Chains[ibctesting.GetChainID(0)] = b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(0), validators, signers, pApp, pBytes, pSenders)
+	pBytes, pSenders := b.getModifiedGenesisState(pApp, pGenesis, validators,
+		initState.MaxValidators,
+		initState.NumValidators,
+		initState.ValStates.Status,
+		initState.ValStates.Delegation,
+		initState.InitialDelegatorTokens,
+		initState.ValStates.ValidatorExtraTokens,
+		initState.MaxEntries,
+		initState.UnbondingP,
+	)
+	b.coordinator.Chains[ibctesting.GetChainID(0)] = b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(0), validators, signers, pApp, pBytes, pSenders, initState.ConsensusParams)
 	cApp, cGenesis := icstestingutils.ConsumerAppIniter()
-	cBytes, cSenders := b.getModifiedGenesisState(cApp, cGenesis, validators)
-	b.coordinator.Chains[ibctesting.GetChainID(1)] = b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(1), validators, signers, cApp, cBytes, cSenders)
+	cBytes, cSenders := b.getModifiedGenesisState(cApp, cGenesis, validators,
+		initState.MaxValidators,
+		initState.NumValidators,
+		initState.ValStates.Status,
+		initState.ValStates.Delegation,
+		initState.InitialDelegatorTokens,
+		initState.ValStates.ValidatorExtraTokens,
+		initState.MaxEntries,
+		initState.UnbondingP,
+	)
+	b.coordinator.Chains[ibctesting.GetChainID(1)] = b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(1), validators, signers, cApp, cBytes, cSenders, initState.ConsensusParams)
 
 	b.createLink()
 	b.setProviderSlashParams(initState.SlashDoublesign, initState.SlashDowntime)
@@ -720,9 +738,9 @@ func (b *Builder) build() {
 	b.coordinator.CommitBlock(b.chain(P))
 
 	client, cons := b.getClientConsState(
-		initState.UnbondingC,
+		initState.UnbondingP,
 		initState.Trusting,
-		ibctesting.MaxClockDrift,
+		initState.MaxClockDrift,
 	)
 	consumerGenesis := b.createConsumerGenesis(client, cons,
 		initState.UnbondingC,
@@ -732,9 +750,9 @@ func (b *Builder) build() {
 	b.createPath()
 	b.setProviderEndpointId()
 	b.createProviderClient(
-		initState.UnbondingP,
+		initState.UnbondingC,
 		initState.Trusting,
-		ibctesting.MaxClockDrift,
+		initState.MaxClockDrift,
 	)
 
 	// Create the Consumer chain ID mapping in the provider state
