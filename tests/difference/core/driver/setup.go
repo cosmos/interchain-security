@@ -44,14 +44,14 @@ import (
 )
 
 type Builder struct {
-	suite          *suite.Suite
-	link           simibc.OrderedLink
-	path           *ibctesting.Path
-	coordinator    *ibctesting.Coordinator
-	clientHeaders  map[string][]*ibctmtypes.Header
-	mustBeginBlock map[string]bool
-	valAddresses   []sdk.ValAddress
-	initState      InitState
+	suite           *suite.Suite
+	link            simibc.OrderedLink
+	path            *ibctesting.Path
+	coordinator     *ibctesting.Coordinator
+	clientHeaders   map[string][]*ibctmtypes.Header
+	mustBeginBlock  map[string]bool
+	sdkValAddresses []sdk.ValAddress
+	initState       InitState
 }
 
 func (b *Builder) ctx(chain string) sdk.Context {
@@ -102,12 +102,12 @@ func (b *Builder) endpoint(chain string) *ibctesting.Endpoint {
 	return map[string]*ibctesting.Endpoint{P: b.path.EndpointB, C: b.path.EndpointA}[chain]
 }
 
-func (b *Builder) validator(i int64) sdk.ValAddress {
-	return b.valAddresses[i]
+func (b *Builder) sdkValAddress(i int64) sdk.ValAddress {
+	return b.sdkValAddresses[i]
 }
 
-func (b *Builder) consAddr(i int64) sdk.ConsAddress {
-	return sdk.ConsAddress(b.validator(i))
+func (b *Builder) sdkConsAddr(i int64) sdk.ConsAddress {
+	return sdk.ConsAddress(b.sdkValAddress(i))
 }
 
 // getTestValidator returns the validator private key using the given seed index
@@ -329,7 +329,7 @@ func (b *Builder) createChains() {
 	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, icstestingutils.ConsumerAppIniter, ibctesting.GetChainID(1), validators, signers)
 
 	b.coordinator = coordinator
-	b.valAddresses = addresses
+	b.sdkValAddresses = addresses
 
 }
 
@@ -353,14 +353,14 @@ func (b *Builder) addValidatorToStakingModule(testVal testcrypto.CryptoIdentity)
 func (b *Builder) setSigningInfos() {
 	for i := 0; i < b.initState.NumValidators; i++ {
 		info := slashingtypes.NewValidatorSigningInfo(
-			b.consAddr(int64(i)),
+			b.sdkConsAddr(int64(i)),
 			b.chain(P).CurrentHeader.GetHeight(),
 			0,
 			time.Unix(0, 0),
 			false,
 			0,
 		)
-		b.providerSlashingKeeper().SetValidatorSigningInfo(b.ctx(P), b.consAddr(int64(i)), info)
+		b.providerSlashingKeeper().SetValidatorSigningInfo(b.ctx(P), b.sdkConsAddr(int64(i)), info)
 	}
 }
 
@@ -385,10 +385,10 @@ func (b *Builder) ensureValidatorLexicographicOrderingMatchesModel() {
 	// deciding the active validator set by comparing addresses lexicographically.
 	// Thus, we assert here that the ordering in the model matches the ordering
 	// in the SUT.
-	for i := range b.valAddresses[:len(b.valAddresses)-1] {
+	for i := range b.sdkValAddresses[:len(b.sdkValAddresses)-1] {
 		// validators are chosen sorted descending in the staking module
-		greater := b.valAddresses[i]
-		lesser := b.valAddresses[i+1]
+		greater := b.sdkValAddresses[i]
+		lesser := b.sdkValAddresses[i+1]
 		check(lesser, greater)
 	}
 }
@@ -410,7 +410,7 @@ func (b *Builder) addExtraProviderValidators() {
 		if status == stakingtypes.Unbonded {
 			testVal := b.getTestValidator(i)
 			b.addValidatorToStakingModule(testVal)
-			b.valAddresses = append(b.valAddresses, testVal.SDKValAddress())
+			b.sdkValAddresses = append(b.sdkValAddresses, testVal.SDKValAddress())
 			b.chain(P).Signers[testVal.SDKValAddressString()] = testVal
 			b.chain(C).Signers[testVal.SDKValAddressString()] = testVal
 		}
@@ -424,8 +424,8 @@ func (b *Builder) addExtraProviderValidators() {
 		if b.initState.ValStates.Status[i] == stakingtypes.Unbonded {
 			del := b.initState.ValStates.Delegation[i]
 			extra := b.initState.ValStates.ValidatorExtraTokens[i]
-			b.delegate(0, b.validator(int64(i)), int64(del))
-			b.delegate(1, b.validator(int64(i)), int64(extra))
+			b.delegate(0, b.sdkValAddress(int64(i)), int64(del))
+			b.delegate(1, b.sdkValAddress(int64(i)), int64(extra))
 		}
 	}
 }
@@ -751,5 +751,5 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
 	// Time of the last committed block (current header is not committed)
 	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(-b.initState.BlockSeconds).Unix()
-	return b.path, b.valAddresses, heightLastCommitted, timeLastCommitted
+	return b.path, b.sdkValAddresses, heightLastCommitted, timeLastCommitted
 }
