@@ -82,8 +82,11 @@ func (c *Coord) IncrementTimeOnly(duration time.Duration) {
 }
 
 func (c *Coord) CommitBlock(chain *ibctesting.TestChain) {
-	chain.NextBlock()
-	c.backing.IncrementTime()
+	simibc.EndBlock(chain, func() {})
+	c.IncrementTimeOnly(5 * time.Second)
+	for _, chain := range c.GetChains() {
+		simibc.BeginBlock(chain, 5*time.Second)
+	}
 }
 
 func (c *Coord) NewIBCTestingChain(
