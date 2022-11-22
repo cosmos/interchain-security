@@ -27,6 +27,9 @@ import (
 
 // TODO: will eventually need to fix integration and diff tests to work with this branch
 
+// TODO: For integration tests you could prob set params in such a way that most tests stay the same,
+// then setup a separate test run for validating slash packet throttling logic.
+
 // HandlePendingSlashPackets handles all or some portion of pending slash packets received by consumer chains,
 // depending on throttling logic. The slash meter is decremented appropriately in this method, and periodically
 // replenished according to the slash meter replenish period param.
@@ -147,8 +150,6 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 
 // GetSlashMeterAllowance returns the allowance of voting power units (int) that the slash meter
 // is given per replenish period, this also serves as the max value for the meter.
-//
-// TODO: Unit test to confirm rounding behavior
 func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 
 	strFrac := k.GetSlashMeterReplenishFraction(ctx)

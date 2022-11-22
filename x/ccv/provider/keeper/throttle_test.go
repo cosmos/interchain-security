@@ -252,7 +252,7 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		replenishPeriod   time.Duration
 		replenishFraction string
 		totalPower        sdktypes.Int
-		// Replenish fraction * total power
+		// Replenish fraction * total power, also serves as max slash meter value
 		expectedAllowance sdktypes.Int
 	}{
 		{
@@ -261,11 +261,23 @@ func TestSlashMeterReplenishment(t *testing.T) {
 			totalPower:        sdktypes.NewInt(1000),
 			expectedAllowance: sdktypes.NewInt(10),
 		},
-		// TODO: Add more test cases
+		{
+			replenishPeriod:   time.Hour,
+			replenishFraction: "0.1",
+			totalPower:        sdktypes.NewInt(100000),
+			expectedAllowance: sdktypes.NewInt(10000),
+		},
+		{
+			replenishPeriod:   30 * time.Minute,
+			replenishFraction: "0.5",
+			totalPower:        sdktypes.NewInt(1000000000000000),
+			expectedAllowance: sdktypes.NewInt(500000000000000),
+		},
 	}
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		now := time.Now()
@@ -283,9 +295,6 @@ func TestSlashMeterReplenishment(t *testing.T) {
 			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
 				gomock.Any()).Return(tc.totalPower).AnyTimes(),
 		)
-
-		// TODO: Test the changing of total powers after slash has happened, and how this affects replenishment
-		// Ex: 1000 becomes 900 because vals were slashed.
 
 		// Now we can initialize the slash meter (this would happen in InitGenesis)
 		providerKeeper.InitializeSlashMeter(ctx)
@@ -319,9 +328,191 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
 
-		// TODO: tests around the meter going negative. How many replenishes that'd take to make it max again, etc.
-		// TODO: also test that the meter never goes above max even if multiple replenishes go by
+		// Last slash meter replenish time should now be updated,
+		// increment block time by more than replenish period again
+		ctx = ctx.WithBlockTime(ctx.BlockTime().Add(tc.replenishPeriod * 2))
 
+		// Confirm that meter is capped at max value
+		providerKeeper.CheckForSlashMeterReplenishment(ctx)
+		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
+	}
+}
+
+// TestNegativeSlashMeter tests behavior of the slash meter when it goes negative,
+// and also the fact that the replenishment allowance becomes lower as total
+// voting power becomes lower from slashing.
+func TestNegativeSlashMeter(t *testing.T) {
+
+	testCases := []struct {
+		slashedPower           sdktypes.Int
+		totalPower             sdktypes.Int
+		replenishFraction      string
+		numReplenishesTillFull int
+		finalMeterValue        sdktypes.Int
+	}{
+		{
+			// Meter is initialized to a value of: 0.01*1000 = 10.
+			// Slashing 100 of voting power makes total voting power = 900, and meter = -90.
+			// Expected replenish allowance is then 9, meaning it'd take 10 replenishes
+			// for meter to reach 0 in value, and 11 replenishes for meter to reach a value of 9.
+			slashedPower:           sdktypes.NewInt(100),
+			totalPower:             sdktypes.NewInt(1000),
+			replenishFraction:      "0.01",
+			numReplenishesTillFull: 11,
+			finalMeterValue:        sdktypes.NewInt(9),
+		},
+		{
+			// Meter is initialized to a value of: 0.1*100 = 10.
+			// Slashing 30 of voting power makes total voting power = 70, and meter = -20.
+			// Expected replenish allowance is then 7, meaning it'd take 3 replenishes
+			// for meter to reach 1 in value, and 4 replenishes for meter to reach a value of 7.
+			slashedPower:           sdktypes.NewInt(30),
+			totalPower:             sdktypes.NewInt(100),
+			replenishFraction:      "0.1",
+			numReplenishesTillFull: 4,
+			finalMeterValue:        sdktypes.NewInt(7),
+		},
+		{
+			// Meter is initialized to a value of 1, since replenish fraction is too low, and min allowance is 1.
+			// Slashing 5 of voting power makes total voting power = 995, and meter = -4.
+			// Expected replenish allowance is then 1 (still minimum amount), meaning it'd take 4 replenishes
+			// for meter to reach 0 in value, and 5 replenishes for meter to reach a value of 1.
+			slashedPower:           sdktypes.NewInt(5),
+			totalPower:             sdktypes.NewInt(1000),
+			replenishFraction:      "0.0000001",
+			numReplenishesTillFull: 5,
+			finalMeterValue:        sdktypes.NewInt(1),
+		},
+	}
+
+	for _, tc := range testCases {
+		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+			t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
+
+		params := providertypes.DefaultParams()
+		params.SlashMeterReplenishFraction = tc.replenishFraction
+		providerKeeper.SetParams(ctx, params)
+
+		// Return mocked values: total power once,
+		// then total power minus slashed power any amount of times
+		gomock.InOrder(
+			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+				gomock.Any()).Return(tc.totalPower).Times(1),
+			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+				gomock.Any()).Return(tc.totalPower.Sub(tc.slashedPower)).AnyTimes(),
+		)
+
+		// Initialize the slash meter (using first mocked value)
+		providerKeeper.InitializeSlashMeter(ctx)
+
+		// remaining calls to GetLastTotalPower should return the second mocked value.
+
+		// Confirm that meter is initialized to expected initial allowance
+		decFrac, err := sdktypes.NewDecFromStr(tc.replenishFraction)
+		require.NoError(t, err)
+		expectedInitAllowance := sdktypes.NewInt(decFrac.MulInt(tc.totalPower).RoundInt64())
+		if expectedInitAllowance.IsZero() { // Allowances have a minimum of 1.
+			expectedInitAllowance = sdktypes.NewInt(1)
+		}
+		require.Equal(t, expectedInitAllowance, providerKeeper.GetSlashMeter(ctx))
+
+		// Decrement meter by slashed amount, simulating a validator getting slashed
+		before := providerKeeper.GetSlashMeter(ctx)
+		providerKeeper.SetSlashMeter(ctx, before.Sub(tc.slashedPower))
+		require.True(t, providerKeeper.GetSlashMeter(ctx).LT(before))
+
+		// New expected allowance is replenish fraction * (total power - slashed power)
+		expectedNewAllowance := sdktypes.NewInt(decFrac.MulInt(tc.totalPower.Sub(tc.slashedPower)).RoundInt64())
+		if expectedNewAllowance.IsZero() {
+			expectedNewAllowance = sdktypes.NewInt(1)
+		}
+		require.Equal(t, expectedNewAllowance, providerKeeper.GetSlashMeterAllowance(ctx))
+
+		// Execute all but last expected replenishment
+		for i := 0; i < tc.numReplenishesTillFull-1; i++ {
+			providerKeeper.ReplenishSlashMeter(ctx)
+			currValue := providerKeeper.GetSlashMeter(ctx)
+			if currValue.Equal(expectedNewAllowance) {
+				require.Fail(t, "slash meter should not be replenished to max value yet")
+			}
+		}
+
+		// Execute last expected replenishment
+		providerKeeper.ReplenishSlashMeter(ctx)
+
+		// Confirm meter is equal to new allowance (which is also new max value)
+		meter := providerKeeper.GetSlashMeter(ctx)
+		require.EqualValues(t, expectedNewAllowance, meter)
+
+		// Confirm meter is capped at max value even with another replenishment,
+		// and this matches the expected final value
+		providerKeeper.ReplenishSlashMeter(ctx)
+		require.Equal(t, meter, providerKeeper.GetSlashMeter(ctx),
+			"slash meter value should not have changed")
+		require.Equal(t, tc.finalMeterValue, providerKeeper.GetSlashMeter(ctx))
+	}
+}
+
+// TestGetSlashMeterAllowance is a granular unit test validating the behavior
+// (specifically around rounding) of the GetSlashMeterAllowance method.
+func TestGetSlashMeterAllowance(t *testing.T) {
+	testCases := []struct {
+		replenishFraction string
+		totalPower        sdktypes.Int
+		// Replenish fraction * total power
+		expectedAllowance sdktypes.Int
+	}{
+		{
+			replenishFraction: "0.00",
+			totalPower:        sdktypes.NewInt(100),
+			expectedAllowance: sdktypes.NewInt(1), // 0.0 * 100 = 0, 1 is returned
+		},
+		{
+			replenishFraction: "0.00000000001",
+			totalPower:        sdktypes.NewInt(100),
+			expectedAllowance: sdktypes.NewInt(1), // 0.00000000001 * 100 = 0 (bankers rounding), 1 is returned
+		},
+		{
+			replenishFraction: "0.01",
+			totalPower:        sdktypes.NewInt(100),
+			expectedAllowance: sdktypes.NewInt(1), // 0.00000000001 * 100 = 0 (bankers rounding), 1 is returned
+		},
+		{
+			replenishFraction: "0.015",
+			totalPower:        sdktypes.NewInt(100),
+			expectedAllowance: sdktypes.NewInt(2), // 0.015 * 10 = 2 (bankers rounding)
+		},
+		{
+			replenishFraction: "0.27",
+			totalPower:        sdktypes.NewInt(100),
+			expectedAllowance: sdktypes.NewInt(27),
+		},
+		{
+			replenishFraction: "0.34",
+			totalPower:        sdktypes.NewInt(10000000),
+			expectedAllowance: sdktypes.NewInt(3400000),
+		},
+	}
+	for _, tc := range testCases {
+
+		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(
+			t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
+
+		gomock.InOrder(
+			mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+				gomock.Any()).Return(tc.totalPower).Times(1),
+		)
+
+		// Set desired params
+		params := providertypes.DefaultParams()
+		params.SlashMeterReplenishFraction = tc.replenishFraction
+		providerKeeper.SetParams(ctx, params)
+
+		// Confirm allowance is calculated correctly
+		require.Equal(t, tc.expectedAllowance,
+			providerKeeper.GetSlashMeterAllowance(ctx))
 	}
 }
 
