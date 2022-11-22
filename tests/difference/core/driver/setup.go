@@ -430,7 +430,7 @@ func (b *Builder) addExtraValidators() {
 	}
 }
 
-func (b *Builder) setSlashParams() {
+func (b *Builder) setProviderSlashParams() {
 	// Set the slash factors on the provider to match the model
 	sparams := b.providerSlashingKeeper().GetParams(b.ctx(P))
 	sparams.SlashFractionDoubleSign = b.initState.SlashDoublesign
@@ -655,7 +655,7 @@ func (b *Builder) build() {
 	// Commit the additional validators
 	b.coordinator.CommitBlock(b.providerChain())
 
-	b.setSlashParams()
+	b.setProviderSlashParams()
 
 	// Set light client params to match model
 	tmConfig := ibctesting.NewTendermintConfig()
