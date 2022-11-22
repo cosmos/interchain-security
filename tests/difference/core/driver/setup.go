@@ -406,6 +406,14 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	b.suite.Require().NoError(err)
 }
 
+func (b *Builder) setProviderSlashParams() {
+	// Set the slash factors on the provider to match the model
+	sparams := b.providerSlashingKeeper().GetParams(b.ctx(P))
+	sparams.SlashFractionDoubleSign = b.initState.SlashDoublesign
+	sparams.SlashFractionDowntime = b.initState.SlashDowntime
+	b.providerSlashingKeeper().SetParams(b.ctx(P), sparams)
+}
+
 func (b *Builder) addExtraProviderValidators() {
 
 	for i, status := range b.initState.ValStates.Status {
@@ -430,14 +438,6 @@ func (b *Builder) addExtraProviderValidators() {
 			b.delegate(1, b.sdkValAddress(int64(i)), int64(extra))
 		}
 	}
-}
-
-func (b *Builder) setProviderSlashParams() {
-	// Set the slash factors on the provider to match the model
-	sparams := b.providerSlashingKeeper().GetParams(b.ctx(P))
-	sparams.SlashFractionDoubleSign = b.initState.SlashDoublesign
-	sparams.SlashFractionDowntime = b.initState.SlashDowntime
-	b.providerSlashingKeeper().SetParams(b.ctx(P), sparams)
 }
 
 func (b *Builder) getClientConsState() (*ibctmtypes.ClientState, *ibctmtypes.ConsensusState) {
@@ -470,7 +470,7 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState, cons *ib
 		consumertypes.DefaultTransferTimeoutPeriod,
 		consumertypes.DefaultConsumerRedistributeFrac,
 		consumertypes.DefaultHistoricalEntries,
-		consumertypes.DefaultConsumerUnbondingPeriod,
+		b.initState.UnbondingC,
 	)
 	return consumertypes.NewInitialGenesisState(client, cons, valUpdates, params)
 }
@@ -667,9 +667,6 @@ func (b *Builder) build() {
 	client, cons := b.getClientConsState()
 	consumerGenesis := b.createConsumerGenesis(client, cons)
 	b.consumerKeeper().InitGenesis(b.ctx(C), consumerGenesis)
-
-	// Set the unbonding time on the consumer to the model value
-	b.consumerKeeper().SetUnbondingPeriod(b.ctx(C), b.initState.UnbondingC)
 
 	b.createPath()
 	b.setProviderEndpointId()
