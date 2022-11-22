@@ -483,7 +483,7 @@ func (b *Builder) createLink() {
 	}
 }
 
-func (b *Builder) doIBCHandshake() {
+func (b *Builder) createPath() {
 	// Configure the ibc path
 	b.path = ibctesting.NewPath(b.consumerChain(), b.providerChain())
 	b.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
@@ -492,13 +492,17 @@ func (b *Builder) doIBCHandshake() {
 	b.path.EndpointB.ChannelConfig.Version = ccv.Version
 	b.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
 	b.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
+}
 
+func (b *Builder) setProviderEndpointId() {
 	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
 	b.path.EndpointA.ClientID = providerClientID
+}
 
+func (b *Builder) createProviderClient() {
 	// Configure and create the consumer Client
 	tmConfig := b.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
 	tmConfig.UnbondingPeriod = b.initState.UnbondingC
@@ -506,13 +510,6 @@ func (b *Builder) doIBCHandshake() {
 	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
 	err := b.path.EndpointB.CreateClient()
 	b.suite.Require().NoError(err)
-
-	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.path.EndpointB.ClientID)
-
-	// Handshake
-	b.coordinator.CreateConnections(b.path)
-	b.coordinator.CreateChannels(b.path)
 }
 
 // Manually construct and send an empty VSC packet from the provider
@@ -672,8 +669,16 @@ func (b *Builder) build() {
 	// Set the unbonding time on the consumer to the model value
 	b.consumerKeeper().SetUnbondingPeriod(b.ctx(C), b.initState.UnbondingC)
 
-	// Establish connection, channel
-	b.doIBCHandshake()
+	b.createPath()
+	b.setProviderEndpointId()
+	b.createProviderClient()
+
+	// Create the Consumer chain ID mapping in the provider state
+	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.consumerChain().ChainID, b.path.EndpointB.ClientID)
+
+	// Handshake
+	b.coordinator.CreateConnections(b.path)
+	b.coordinator.CreateChannels(b.path)
 
 	// Send an empty VSC packet from the provider to the consumer to finish
 	// the handshake. This is necessary because the model starts from a
