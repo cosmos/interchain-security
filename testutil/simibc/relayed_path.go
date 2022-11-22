@@ -87,12 +87,7 @@ func (f *RelayedPath) DeliverAcks(chainID string, num int) {
 	}
 }
 
-// EndAndBeginBlock calls EndBlock and commits block state, and then increments time and calls
-// BeginBlock, for the chain. preCommitCallback is called after EndBlock and before Commit,
-// allowing access to the sdk.Context after EndBlock.
-func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preCommitCallback func()) {
-	c := f.Chain(chainID)
-
+func EndBlock(c *ibctesting.TestChain, preCommitCallback func()) (*ibctmtypes.Header, []channeltypes.Packet) {
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
 
 	preCommitCallback()
@@ -105,19 +100,19 @@ func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preComm
 
 	c.LastHeader = c.CurrentTMClientHeader()
 
-	// Store header to be used in UpdateClient
-	f.clientHeaders[chainID] = append(f.clientHeaders[chainID], c.LastHeader)
+	packets := []channeltypes.Packet{}
 
 	for _, e := range ebRes.Events {
 		if e.Type == channeltypes.EventTypeSendPacket {
 			packet, _ := channelkeeper.ReconstructPacketFromEvent(e)
-			// Collect packets
-			f.Link.AddPacket(chainID, packet)
+			packets = append(packets, packet)
 		}
 	}
 
-	// Commit packets emmitted up to this point
-	f.Link.Commit(chainID)
+	return c.LastHeader, packets
+}
+
+func BeginBlock(c *ibctesting.TestChain, dt time.Duration) {
 
 	// increment the current header
 	c.CurrentHeader = tmproto.Header{
@@ -130,6 +125,20 @@ func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preComm
 	}
 
 	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
+}
+
+// EndAndBeginBlock calls EndBlock and commits block state, and then increments time and calls
+// BeginBlock, for the chain. preCommitCallback is called after EndBlock and before Commit,
+// allowing access to the sdk.Context after EndBlock.
+func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preCommitCallback func()) {
+	c := f.Chain(chainID)
+	header, packets := EndBlock(c, preCommitCallback)
+	f.clientHeaders[chainID] = append(f.clientHeaders[chainID], header)
+	for _, p := range packets {
+		f.Link.AddPacket(chainID, p)
+	}
+	f.Link.Commit(chainID)
+	BeginBlock(c, dt)
 }
 
 func (f *RelayedPath) other(chainID string) string {
