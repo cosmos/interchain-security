@@ -673,11 +673,6 @@ func (app *App) GetE2eEvidenceKeeper() e2e.E2eEvidenceKeeper {
 	return app.EvidenceKeeper
 }
 
-// GetUpgradeKeeper implements the ConsumerApp interface.
-func (app *App) GetUpgradeKeeper() upgradekeeper.Keeper {
-	return app.UpgradeKeeper
-}
-
 // TestingApp functions
 
 // GetBaseApp implements the TestingApp interface.
