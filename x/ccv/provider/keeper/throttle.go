@@ -34,6 +34,12 @@ import (
 func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
+
+	// Don't start iterating if meter is 0 or negative in value
+	if !meter.IsPositive() {
+		return
+	}
+
 	handledEntries := []providertypes.SlashPacketEntry{}
 
 	// Iterate through ordered (by received time) slash packet entries from any consumer chain
@@ -44,7 +50,7 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		valPower := k.stakingKeeper.GetLastValidatorPower(ctx, entry.ValAddr)
 
 		// Subtract this power from the slash meter
-		meter.Sub(sdktypes.NewInt(valPower))
+		meter = meter.Sub(sdktypes.NewInt(valPower))
 
 		// Handle slash packet by passing in chainID and appropriate callbacks, relevant packet data is deleted in this method
 		k.HandlePacketDataForChain(ctx, entry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
@@ -62,9 +68,6 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 	// Persist current value for slash gas meter
 	k.SetSlashMeter(ctx, meter)
-
-	// Replenish slash meter if necessary
-	k.CheckForSlashMeterReplenishment(ctx)
 }
 
 // HandlePacketDataForChain handles only the first queued slash packet relevant to the passed consumer chainID,
@@ -144,9 +147,12 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 
 // GetSlashMeterAllowance returns the allowance of voting power units (int) that the slash meter
 // is given per replenish period, this also serves as the max value for the meter.
+//
+// TODO: Unit test to confirm rounding behavior
 func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 
-	slashMeterReplenishFrac, err := sdktypes.NewDecFromStr(k.GetSlashMeterReplenishFraction(ctx))
+	strFrac := k.GetSlashMeterReplenishFraction(ctx)
+	decFrac, err := sdktypes.NewDecFromStr(strFrac)
 	if err != nil {
 		panic(fmt.Sprintf("failed to parse slash meter replenish fraction: %s", err))
 	}
@@ -155,7 +161,15 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 	// noting that total power changes over time
 	totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
 
-	return sdktypes.NewInt(slashMeterReplenishFrac.MulInt(totalPower).RoundInt64())
+	roundedInt := sdktypes.NewInt(decFrac.MulInt(totalPower).RoundInt64())
+	if roundedInt.IsZero() {
+		// TODO: Log warning that replenish fraction is too small to
+		// add any allowance to the meter, considering bankers rounding.
+
+		// Return non-zero allowance to guarantee some slash packets are eventually handled
+		return sdktypes.NewInt(1)
+	}
+	return roundedInt
 }
 
 //
