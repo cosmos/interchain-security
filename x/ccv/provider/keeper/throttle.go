@@ -27,8 +27,7 @@ import (
 
 // TODO: will eventually need to fix integration and diff tests to work with this branch
 
-// TODO: For integration tests you could prob set params in such a way that most tests stay the same,
-// then setup a separate test run for validating slash packet throttling logic.
+// TODO: independant integration test steps for slash packet throttling, with custom params
 
 // HandlePendingSlashPackets handles all or some portion of pending slash packets received by consumer chains,
 // depending on throttling logic. The slash meter is decremented appropriately in this method, and periodically
