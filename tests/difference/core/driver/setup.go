@@ -51,7 +51,6 @@ type Builder struct {
 	clientHeaders   map[string][]*ibctmtypes.Header
 	mustBeginBlock  map[string]bool
 	sdkValAddresses []sdk.ValAddress
-	// initState       InitState
 }
 
 func (b *Builder) consumerKeeper() consumerkeeper.Keeper {
