@@ -59,23 +59,29 @@ func (b *Builder) ctx(chain string) sdk.Context {
 }
 
 func (b *Builder) chainID(chain string) string {
-	return map[string]string{P: ibctesting.GetChainID(0), C: ibctesting.GetChainID(1)}[chain]
+	if chain == P {
+		return ibctesting.GetChainID(0)
+	}
+	return ibctesting.GetChainID(1)
 }
 
 func (b *Builder) otherID(chainID string) string {
-	return map[string]string{ibctesting.GetChainID(0): ibctesting.GetChainID(1), ibctesting.GetChainID(1): ibctesting.GetChainID(0)}[chainID]
+	if chainID == b.chainID(P) {
+		return b.chainID(C)
+	}
+	return b.chainID(P)
 }
 
 func (b *Builder) chain(chain string) *ibctesting.TestChain {
-	return map[string]*ibctesting.TestChain{P: b.providerChain(), C: b.consumerChain()}[chain]
+	return b.coordinator.GetChain(b.chainID(chain))
 }
 
 func (b *Builder) providerChain() *ibctesting.TestChain {
-	return b.coordinator.GetChain(ibctesting.GetChainID(0))
+	return b.chain(P)
 }
 
 func (b *Builder) consumerChain() *ibctesting.TestChain {
-	return b.coordinator.GetChain(ibctesting.GetChainID(1))
+	return b.chain(C)
 }
 
 func (b *Builder) providerStakingKeeper() stakingkeeper.Keeper {
