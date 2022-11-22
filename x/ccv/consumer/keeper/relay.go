@@ -91,6 +91,7 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 
 	currentTime := uint64(ctx.BlockTime().UnixNano())
 
+	maturedVscIds := []uint64{}
 	for maturityIterator.Valid() {
 		vscId := types.IdFromPacketMaturityTimeKey(maturityIterator.Key())
 		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
@@ -104,12 +105,14 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 				Type: types.VscMaturedPacket,
 				Data: vscPacket.GetBytes(),
 			})
-			k.DeletePacketMaturityTime(ctx, vscId)
+			maturedVscIds = append(maturedVscIds, vscId)
 		} else {
 			break
 		}
 		maturityIterator.Next()
 	}
+
+	k.DeletePacketMaturityTimes(ctx, maturedVscIds...)
 }
 
 // QueueSlashPacket appends a slash packet containing the given validator data and slashing info to queue.
