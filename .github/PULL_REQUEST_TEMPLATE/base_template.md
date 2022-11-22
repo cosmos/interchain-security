@@ -23,7 +23,7 @@ Closes: `#<issue>`
 Please delete options that are not relevant.
 
 - [ ] Non-breaking changes
-- [ ] New feature (non-breaking changes adding functionality)
+- [ ] New feature (adding functionality)
 - [ ] Breaking change (fix, feature or refactoring that changes existing functionality)
 - [ ] Requires state migrations
 - [ ] Profo files changes
@@ -39,6 +39,7 @@ Please delete options that are not relevant.
 - [ ] Unit tests
 - [ ] E2E tests
 - [ ] Integration tests/simulation
+- [ ] Custom difference tests
 
 
 # Issues and further questions
@@ -61,4 +62,5 @@ Please delete options that are not relevant.
 - [ ] `make proto-lint` was run (for changes in `.proto` files)
 - [ ] PR satisfies closing criteria defined in issue (remove if not applicable or issue has no criteria)
 - [ ] Added iterators follow SDK pattern (`IterateX(ctx sdk.Context, cb func(arg1, arg2) (stop bool))`)
+- [ ] testuil/e2e/debug_test.go is up-to-date with additional or changed e2e test names
 - [ ] Documentation has been updated
