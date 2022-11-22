@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -91,6 +92,7 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 
 	currentTime := uint64(ctx.BlockTime().UnixNano())
 
+	maturedVscIds := []uint64{}
 	for maturityIterator.Valid() {
 		vscId := types.IdFromPacketMaturityTimeKey(maturityIterator.Key())
 		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
@@ -104,12 +106,26 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 				Type: types.VscMaturedPacket,
 				Data: vscPacket.GetBytes(),
 			})
-			k.DeletePacketMaturityTime(ctx, vscId)
+
+			ctx.EventManager().EmitEvent(
+				sdk.NewEvent(
+					ccv.EventTypeVSCMatured,
+					sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+					sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
+					sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
+					sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(vscId))),
+					sdk.NewAttribute(ccv.AttributeTimestamp, strconv.Itoa(int(currentTime))),
+				),
+			)
+
+			maturedVscIds = append(maturedVscIds, vscId)
 		} else {
 			break
 		}
 		maturityIterator.Next()
 	}
+
+	k.DeletePacketMaturityTimes(ctx, maturedVscIds...)
 }
 
 // QueueSlashPacket appends a slash packet containing the given validator data and slashing info to queue.
@@ -137,6 +153,16 @@ func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, vals
 		Type: types.SlashPacket,
 		Data: slashPacket.GetBytes(),
 	})
+
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			ccv.EventTypeConsumerSlashRequest,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(ccv.AttributeValidatorAddress, sdk.ConsAddress(validator.Address).String()),
+			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(valsetUpdateID))),
+			sdk.NewAttribute(ccv.AttributeInfractionType, infraction.String()),
+		),
+	)
 }
 
 // SendPackets iterates queued packets and sends them in FIFO order.
