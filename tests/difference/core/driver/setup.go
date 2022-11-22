@@ -43,11 +43,47 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
+type Coord struct {
+	backing *ibctesting.Coordinator
+}
+
+func (c *Coord) SetChain(chainID string, chain *ibctesting.TestChain) {
+	c.backing.Chains[chainID] = chain
+}
+
+func (c *Coord) GetChain(chainID string) *ibctesting.TestChain {
+	return c.backing.GetChain(chainID)
+}
+
+func (c *Coord) GetChains() map[string]*ibctesting.TestChain {
+	return c.backing.Chains
+}
+
+func (c *Coord) GetCurrentTime() time.Time {
+	return c.backing.CurrentTime
+}
+
+func (c *Coord) SetCurrentTime(t time.Time) {
+	c.backing.CurrentTime = t
+}
+
+func (c *Coord) CreateConnections(path *ibctesting.Path) {
+	c.backing.CreateConnections(path)
+}
+
+func (c *Coord) CreateChannels(path *ibctesting.Path) {
+	c.backing.CreateChannels(path)
+}
+
+func (c *Coord) IncrementTimeOnly(duration time.Duration) {
+	c.SetCurrentTime(c.GetCurrentTime().Add(duration).UTC())
+}
+
 type Builder struct {
 	suite           *suite.Suite
 	link            simibc.OrderedLink
 	path            *ibctesting.Path
-	coordinator     *ibctesting.Coordinator
+	coordinator     *Coord
 	clientHeaders   map[string][]*ibctmtypes.Header
 	mustBeginBlock  map[string]bool
 	sdkValAddresses []sdk.ValAddress
@@ -522,7 +558,7 @@ func (b *Builder) createLink() {
 	// init utility data structures
 	b.mustBeginBlock = map[string]bool{P: true, C: true}
 	b.clientHeaders = map[string][]*ibctmtypes.Header{}
-	for chainID := range b.coordinator.Chains {
+	for chainID := range b.coordinator.GetChains() {
 		b.clientHeaders[chainID] = []*ibctmtypes.Header{}
 	}
 }
@@ -590,10 +626,10 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake(blockDuration time.Duratio
 
 	// Double commit the packet
 	b.endBlock(b.chainID(P), blockDuration)
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
+	b.coordinator.IncrementTimeOnly(time.Second * time.Duration(1))
 	b.beginBlock(b.chainID(P))
 	b.endBlock(b.chainID(P), blockDuration)
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
+	b.coordinator.IncrementTimeOnly(time.Second * time.Duration(1))
 	b.mustBeginBlock[P] = true
 
 	b.updateClient(b.chainID(C))
@@ -621,7 +657,7 @@ func (b *Builder) beginBlock(chainID string) {
 		ChainID:            c.ChainID,
 		Height:             c.App.LastBlockHeight() + 1,
 		AppHash:            c.App.LastCommitID().Hash,
-		Time:               b.coordinator.CurrentTime,
+		Time:               b.coordinator.GetCurrentTime(),
 		ValidatorsHash:     c.Vals.Hash(),
 		NextValidatorsHash: c.NextVals.Hash(),
 	}
@@ -632,7 +668,7 @@ func (b *Builder) updateClient(chainID string) {
 	for _, header := range b.clientHeaders[b.otherID(chainID)] {
 		err := simibc.UpdateReceiverClient(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), header)
 		if err != nil {
-			b.coordinator.Fatal("updateClient")
+			b.suite.T().Fatal("updateClient")
 		}
 	}
 	b.clientHeaders[b.otherID(chainID)] = []*ibctmtypes.Header{}
@@ -645,7 +681,7 @@ func (b *Builder) deliver(chainID string) {
 		sender := receiver.Counterparty
 		ack, err := simibc.TryRecvPacket(sender, receiver, p.Packet)
 		if err != nil {
-			b.coordinator.Fatal("deliver")
+			b.suite.T().Fatal("deliver")
 		}
 		b.link.AddAck(chainID, ack, p.Packet)
 	}
@@ -655,7 +691,7 @@ func (b *Builder) deliverAcks(chainID string) {
 	for _, ack := range b.link.ConsumeAcks(b.otherID(chainID), 999999) {
 		err := simibc.TryRecvAck(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), ack.Packet, ack.Ack)
 		if err != nil {
-			b.coordinator.Fatal("deliverAcks")
+			b.suite.T().Fatal("deliverAcks")
 		}
 	}
 }
@@ -686,7 +722,7 @@ func (b *Builder) endBlock(chainID string, blockDuration time.Duration) {
 	// Commit packets emmitted up to this point
 	b.link.Commit(chainID)
 
-	newT := b.coordinator.CurrentTime.Add(blockDuration).UTC()
+	newT := b.coordinator.GetCurrentTime().Add(blockDuration).UTC()
 
 	// increment the current header
 	c.CurrentHeader = tmproto.Header{
@@ -702,7 +738,7 @@ func (b *Builder) endBlock(chainID string, blockDuration time.Duration) {
 }
 
 func (b *Builder) build() {
-	b.coordinator = ibctesting.NewCoordinator(b.suite.T(), 0)
+	b.coordinator = &Coord{ibctesting.NewCoordinator(b.suite.T(), 0)}
 	validators, signers, addresses := b.createValidators(
 		initState.ValStates.Tokens[:2], // TODO: unhardcode, number of initial bonded provider validators
 		initState.PKSeeds,
@@ -720,7 +756,7 @@ func (b *Builder) build() {
 		initState.UnbondingP,
 	)
 	b.initChain(ibctesting.GetChainID(0), validators, pApp, pBytes, initState.ConsensusParams)
-	b.coordinator.Chains[ibctesting.GetChainID(0)] = b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(0), validators, signers, pApp, pSenders)
+	b.coordinator.SetChain(ibctesting.GetChainID(0), b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(0), validators, signers, pApp, pSenders))
 	cApp, cGenesis := icstestingutils.ConsumerAppIniter()
 	cBytes, cSenders := b.getModifiedGenesisState(cApp, cGenesis, validators,
 		initState.MaxValidators,
@@ -733,7 +769,7 @@ func (b *Builder) build() {
 		initState.UnbondingP,
 	)
 	b.initChain(ibctesting.GetChainID(1), validators, cApp, cBytes, initState.ConsensusParams)
-	b.coordinator.Chains[ibctesting.GetChainID(1)] = b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(1), validators, signers, cApp, cSenders)
+	b.coordinator.SetChain(ibctesting.GetChainID(1), b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(1), validators, signers, cApp, cSenders))
 
 	b.createLink()
 	b.setProviderSlashParams(initState.SlashDoublesign, initState.SlashDowntime)
@@ -785,13 +821,13 @@ func (b *Builder) build() {
 func (b *Builder) doTail(seconds time.Duration) {
 	// Catch up consumer to have the same height and timestamp as provider
 	b.endBlock(b.chainID(C), seconds)
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
+	b.coordinator.IncrementTimeOnly(time.Second * time.Duration(1))
 	b.beginBlock(b.chainID(C))
 	b.endBlock(b.chainID(C), seconds)
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
+	b.coordinator.IncrementTimeOnly(time.Second * time.Duration(1))
 	b.beginBlock(b.chainID(C))
 	b.endBlock(b.chainID(C), seconds)
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
+	b.coordinator.IncrementTimeOnly(time.Second * time.Duration(1))
 	b.mustBeginBlock[C] = true
 
 	// Progress chains in unison, allowing first VSC to mature.
@@ -801,7 +837,7 @@ func (b *Builder) doTail(seconds time.Duration) {
 		b.idempotentBeginBlock(C)
 		b.endBlock(b.chainID(C), seconds)
 		b.mustBeginBlock = map[string]bool{P: true, C: true}
-		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(seconds).UTC()
+		b.coordinator.IncrementTimeOnly(seconds)
 	}
 
 	b.idempotentBeginBlock(P)
@@ -817,7 +853,7 @@ func (b *Builder) doTail(seconds time.Duration) {
 		b.deliverAcks(b.chainID(C))
 		b.endBlock(b.chainID(C), seconds)
 		b.mustBeginBlock = map[string]bool{P: true, C: true}
-		b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(seconds).UTC()
+		b.coordinator.IncrementTimeOnly(seconds)
 	}
 
 	b.idempotentBeginBlock(P)
@@ -825,7 +861,7 @@ func (b *Builder) doTail(seconds time.Duration) {
 
 	b.endBlock(b.chainID(P), seconds)
 	b.endBlock(b.chainID(C), seconds)
-	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(seconds).UTC()
+	b.coordinator.IncrementTimeOnly(seconds)
 	b.beginBlock(b.chainID(P))
 	b.beginBlock(b.chainID(C))
 	b.updateClient(b.chainID(P))
