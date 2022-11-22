@@ -244,10 +244,12 @@ func (k Keeper) GetPacketMaturityTime(ctx sdk.Context, vscId uint64) uint64 {
 	return binary.BigEndian.Uint64(bz)
 }
 
-// DeletePacketMaturityTime deletes the packet maturity time for a given received VSC packet id
-func (k Keeper) DeletePacketMaturityTime(ctx sdk.Context, vscId uint64) {
+// DeletePacketMaturityTimes deletes the packet maturity time for given received VSC packet ids
+func (k Keeper) DeletePacketMaturityTimes(ctx sdk.Context, vscIds ...uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.PacketMaturityTimeKey(vscId))
+	for _, vscId := range vscIds {
+		store.Delete(types.PacketMaturityTimeKey(vscId))
+	}
 }
 
 // VerifyProviderChain verifies that the chain trying to connect on the channel handshake
