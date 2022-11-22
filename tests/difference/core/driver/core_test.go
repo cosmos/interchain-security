@@ -429,6 +429,7 @@ func (s *CoreSuite) TestTraces() {
 		Data: LoadTraces("traces.json"),
 	}
 	// s.traces.Data = []TraceData{s.traces.Data[69]}
+	s.traces.Data = s.traces.Data[:10]
 	for i := range s.traces.Data {
 		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
