@@ -285,13 +285,13 @@ func (b *Builder) getModifiedGenesisState(
 	return stateBytes, senderAccounts
 }
 
-func (b *Builder) newIBCTestingChain(coord *ibctesting.Coordinator, chainID string,
-	validators *tmtypes.ValidatorSet, signers map[string]tmtypes.PrivValidator,
-	app ibctesting.TestingApp, stateBytes []byte,
-	senderAccounts []ibctesting.SenderAccount,
+func (b *Builder) initChain(
+	chainID string,
+	validators *tmtypes.ValidatorSet,
+	app ibctesting.TestingApp,
+	stateBytes []byte,
 	consensusParams *abci.ConsensusParams,
-) *ibctesting.TestChain {
-
+) {
 	app.InitChain(
 		abci.RequestInitChain{
 			ChainId:         chainID,
@@ -314,6 +314,16 @@ func (b *Builder) newIBCTestingChain(coord *ibctesting.Coordinator, chainID stri
 			},
 		},
 	)
+}
+
+func (b *Builder) newIBCTestingChain(
+	coord *ibctesting.Coordinator,
+	chainID string,
+	validators *tmtypes.ValidatorSet,
+	signers map[string]tmtypes.PrivValidator,
+	app ibctesting.TestingApp,
+	senderAccounts []ibctesting.SenderAccount,
+) *ibctesting.TestChain {
 
 	chain := &ibctesting.TestChain{
 		T:           b.suite.T(),
@@ -709,7 +719,8 @@ func (b *Builder) build() {
 		initState.MaxEntries,
 		initState.UnbondingP,
 	)
-	b.coordinator.Chains[ibctesting.GetChainID(0)] = b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(0), validators, signers, pApp, pBytes, pSenders, initState.ConsensusParams)
+	b.initChain(ibctesting.GetChainID(0), validators, pApp, pBytes, initState.ConsensusParams)
+	b.coordinator.Chains[ibctesting.GetChainID(0)] = b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(0), validators, signers, pApp, pSenders)
 	cApp, cGenesis := icstestingutils.ConsumerAppIniter()
 	cBytes, cSenders := b.getModifiedGenesisState(cApp, cGenesis, validators,
 		initState.MaxValidators,
@@ -721,7 +732,8 @@ func (b *Builder) build() {
 		initState.MaxEntries,
 		initState.UnbondingP,
 	)
-	b.coordinator.Chains[ibctesting.GetChainID(1)] = b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(1), validators, signers, cApp, cBytes, cSenders, initState.ConsensusParams)
+	b.initChain(ibctesting.GetChainID(1), validators, cApp, cBytes, initState.ConsensusParams)
+	b.coordinator.Chains[ibctesting.GetChainID(1)] = b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(1), validators, signers, cApp, cSenders)
 
 	b.createLink()
 	b.setProviderSlashParams(initState.SlashDoublesign, initState.SlashDowntime)
