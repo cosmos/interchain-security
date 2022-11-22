@@ -563,7 +563,7 @@ func (b *Builder) createProviderClient(
 // Manually construct and send an empty VSC packet from the provider
 // to the consumer. This is necessary to complete the handshake, and thus
 // match the model init state, without any additional validator power changes.
-func (b *Builder) sendEmptyVSCPacketToFinishHandshake(blockSeconds time.Duration) {
+func (b *Builder) sendEmptyVSCPacketToFinishHandshake(blockDuration time.Duration) {
 	vscID := b.providerKeeper().GetValidatorSetUpdateId(b.chain(P).GetContext())
 
 	timeout := uint64(b.chain(P).CurrentHeader.Time.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
@@ -589,10 +589,10 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake(blockSeconds time.Duration
 	b.suite.Require().NoError(err)
 
 	// Double commit the packet
-	b.endBlock(b.chainID(P), blockSeconds)
+	b.endBlock(b.chainID(P), blockDuration)
 	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
 	b.beginBlock(b.chainID(P))
-	b.endBlock(b.chainID(P), blockSeconds)
+	b.endBlock(b.chainID(P), blockDuration)
 	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
 	b.mustBeginBlock[P] = true
 
@@ -660,7 +660,7 @@ func (b *Builder) deliverAcks(chainID string) {
 	}
 }
 
-func (b *Builder) endBlock(chainID string, blockSeconds time.Duration) {
+func (b *Builder) endBlock(chainID string, blockDuration time.Duration) {
 	c := b.coordinator.GetChain(chainID)
 
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
@@ -686,7 +686,7 @@ func (b *Builder) endBlock(chainID string, blockSeconds time.Duration) {
 	// Commit packets emmitted up to this point
 	b.link.Commit(chainID)
 
-	newT := b.coordinator.CurrentTime.Add(blockSeconds).UTC()
+	newT := b.coordinator.CurrentTime.Add(blockDuration).UTC()
 
 	// increment the current header
 	c.CurrentHeader = tmproto.Header{
