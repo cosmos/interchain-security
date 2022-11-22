@@ -404,7 +404,7 @@ func (b *Builder) delegate(del int, val sdk.ValAddress, amt int64) {
 	b.suite.Require().NoError(err)
 }
 
-func (b *Builder) addExtraValidators() {
+func (b *Builder) addExtraProviderValidators() {
 
 	for i, status := range b.initState.ValStates.Status {
 		if status == stakingtypes.Unbonded {
@@ -438,7 +438,13 @@ func (b *Builder) setProviderSlashParams() {
 	b.providerSlashingKeeper().SetParams(b.ctx(P), sparams)
 }
 
-func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *consumertypes.GenesisState {
+func (b *Builder) getClientConsState() (*ibctmtypes.ClientState, *ibctmtypes.ConsensusState) {
+	// Set light client params to match model
+	tmConfig := ibctesting.NewTendermintConfig()
+	tmConfig.UnbondingPeriod = b.initState.UnbondingP
+	tmConfig.TrustingPeriod = b.initState.Trusting
+	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
+
 	// Create Provider client
 	providerClient := ibctmtypes.NewClientState(
 		b.providerChain().ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
@@ -446,6 +452,10 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		[]string{"upgrade", "upgradedIBCState"}, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
 	)
 	providerConsState := b.providerChain().LastHeader.ConsensusState()
+	return providerClient, providerConsState
+}
+
+func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState, cons *ibctmtypes.ConsensusState) *consumertypes.GenesisState {
 
 	// Create Consumer genesis
 	valUpdates := tmtypes.TM2PB.ValidatorUpdates(b.providerChain().Vals)
@@ -460,7 +470,7 @@ func (b *Builder) createConsumerGenesis(tmConfig *ibctesting.TendermintConfig) *
 		consumertypes.DefaultHistoricalEntries,
 		consumertypes.DefaultConsumerUnbondingPeriod,
 	)
-	return consumertypes.NewInitialGenesisState(providerClient, providerConsState, valUpdates, params)
+	return consumertypes.NewInitialGenesisState(client, cons, valUpdates, params)
 }
 
 func (b *Builder) createLink() {
@@ -649,25 +659,15 @@ func (b *Builder) endBlock(chainID string) {
 func (b *Builder) build() {
 
 	b.createChains()
-
-	b.addExtraValidators()
-
+	b.createLink()
+	b.setProviderSlashParams()
+	b.addExtraProviderValidators()
 	// Commit the additional validators
 	b.coordinator.CommitBlock(b.providerChain())
 
-	b.setProviderSlashParams()
-
-	// Set light client params to match model
-	tmConfig := ibctesting.NewTendermintConfig()
-	tmConfig.UnbondingPeriod = b.initState.UnbondingP
-	tmConfig.TrustingPeriod = b.initState.Trusting
-	tmConfig.MaxClockDrift = b.initState.MaxClockDrift
-
-	// Init consumer
-	b.consumerKeeper().InitGenesis(b.ctx(C), b.createConsumerGenesis(tmConfig))
-
-	// Create a simulated network link link
-	b.createLink()
+	client, cons := b.getClientConsState()
+	consumerGenesis := b.createConsumerGenesis(client, cons)
+	b.consumerKeeper().InitGenesis(b.ctx(C), consumerGenesis)
 
 	// Set the unbonding time on the consumer to the model value
 	b.consumerKeeper().SetUnbondingPeriod(b.ctx(C), b.initState.UnbondingC)
