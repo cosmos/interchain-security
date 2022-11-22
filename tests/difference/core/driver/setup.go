@@ -121,41 +121,6 @@ func (c *Coord) NewIBCTestingChain(
 	return chain
 }
 
-// func (b *Builder) newIBCTestingChain(
-// 	coord *ibctesting.Coordinator,
-// 	chainID string,
-// 	validators *tmtypes.ValidatorSet,
-// 	signers map[string]tmtypes.PrivValidator,
-// 	app ibctesting.TestingApp,
-// 	senderAccounts []ibctesting.SenderAccount,
-// ) *ibctesting.TestChain {
-
-// 	chain := &ibctesting.TestChain{
-// 		T:           b.suite.T(),
-// 		Coordinator: coord,
-// 		ChainID:     chainID,
-// 		App:         app,
-// 		CurrentHeader: tmproto.Header{
-// 			ChainID: chainID,
-// 			Height:  1,
-// 			Time:    coord.CurrentTime.UTC(),
-// 		},
-// 		QueryServer:    app.GetIBCKeeper(),
-// 		TxConfig:       app.GetTxConfig(),
-// 		Codec:          app.AppCodec(),
-// 		Vals:           validators,
-// 		NextVals:       validators,
-// 		Signers:        signers,
-// 		SenderPrivKey:  senderAccounts[0].SenderPrivKey,
-// 		SenderAccount:  senderAccounts[0].SenderAccount,
-// 		SenderAccounts: senderAccounts,
-// 	}
-
-// 	coord.CommitBlock(chain)
-
-// 	return chain
-// }
-
 type Builder struct {
 	suite           *suite.Suite
 	link            simibc.OrderedLink
