@@ -776,8 +776,8 @@ func (b *Builder) build() {
 		initState.MaxEntries,
 		initState.UnbondingP,
 	)
-	b.initChain(ibctesting.GetChainID(0), validators, pApp, pBytes, initState.ConsensusParams)
-	b.coordinator.SetChain(ibctesting.GetChainID(0), b.coordinator.NewIBCTestingChain(b.suite.T(), ibctesting.GetChainID(0), validators, signers, pApp, pSenders))
+	b.initChain(b.chainID(P), validators, pApp, pBytes, initState.ConsensusParams)
+	b.coordinator.SetChain(b.chainID(P), b.coordinator.NewIBCTestingChain(b.suite.T(), b.chainID(P), validators, signers, pApp, pSenders))
 	cApp, cGenesis := icstestingutils.ConsumerAppIniter()
 	cBytes, cSenders := b.getModifiedGenesisState(cApp, cGenesis, validators,
 		initState.MaxValidators,
@@ -789,8 +789,8 @@ func (b *Builder) build() {
 		initState.MaxEntries,
 		initState.UnbondingP,
 	)
-	b.initChain(ibctesting.GetChainID(1), validators, cApp, cBytes, initState.ConsensusParams)
-	b.coordinator.SetChain(ibctesting.GetChainID(1), b.coordinator.NewIBCTestingChain(b.suite.T(), ibctesting.GetChainID(1), validators, signers, cApp, cSenders))
+	b.initChain(b.chainID(C), validators, cApp, cBytes, initState.ConsensusParams)
+	b.coordinator.SetChain(b.chainID(C), b.coordinator.NewIBCTestingChain(b.suite.T(), b.chainID(C), validators, signers, cApp, cSenders))
 
 	b.createLink()
 	b.setProviderSlashParams(initState.SlashDoublesign, initState.SlashDowntime)
