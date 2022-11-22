@@ -76,6 +76,17 @@ func (b *Builder) chain(chain string) *ibctesting.TestChain {
 	return b.coordinator.GetChain(b.chainID(chain))
 }
 
+func (b *Builder) endpointFromID(chainID string) *ibctesting.Endpoint {
+	if chainID == b.chainID(P) {
+		return b.path.EndpointB
+	}
+	return b.path.EndpointA
+}
+
+func (b *Builder) endpoint(chain string) *ibctesting.Endpoint {
+	return b.endpointFromID(b.chainID(chain))
+}
+
 func (b *Builder) providerChain() *ibctesting.TestChain {
 	return b.chain(P)
 }
@@ -84,28 +95,28 @@ func (b *Builder) consumerChain() *ibctesting.TestChain {
 	return b.chain(C)
 }
 
-func (b *Builder) providerStakingKeeper() stakingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).StakingKeeper
+func (b *Builder) providerApp() *appProvider.App {
+	return b.providerChain().App.(*appProvider.App)
+}
+
+func (b *Builder) consumerApp() *appConsumer.App {
+	return b.consumerChain().App.(*appConsumer.App)
 }
 
 func (b *Builder) providerSlashingKeeper() slashingkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).SlashingKeeper
+	return b.providerApp().SlashingKeeper
+}
+
+func (b *Builder) providerStakingKeeper() stakingkeeper.Keeper {
+	return b.providerApp().StakingKeeper
 }
 
 func (b *Builder) providerKeeper() providerkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).ProviderKeeper
+	return b.providerApp().ProviderKeeper
 }
 
 func (b *Builder) consumerKeeper() consumerkeeper.Keeper {
-	return b.consumerChain().App.(*appConsumer.App).ConsumerKeeper
-}
-
-func (b *Builder) endpointFromID(chainID string) *ibctesting.Endpoint {
-	return map[string]*ibctesting.Endpoint{ibctesting.GetChainID(0): b.path.EndpointB, ibctesting.GetChainID(1): b.path.EndpointA}[chainID]
-}
-
-func (b *Builder) endpoint(chain string) *ibctesting.Endpoint {
-	return map[string]*ibctesting.Endpoint{P: b.path.EndpointB, C: b.path.EndpointA}[chain]
+	return b.consumerApp().ConsumerKeeper
 }
 
 func (b *Builder) sdkValAddress(i int64) sdk.ValAddress {
