@@ -327,19 +327,12 @@ func (b *Builder) createValidators() (*tmtypes.ValidatorSet, map[string]tmtypes.
 }
 
 func (b *Builder) createChains() {
-
 	coordinator := ibctesting.NewCoordinator(b.suite.T(), 0)
-
-	// Create validators
 	validators, signers, addresses := b.createValidators()
-	// Create provider
 	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, icstestingutils.ProviderAppIniter, ibctesting.GetChainID(0), validators, signers)
-	// Create consumer, using the same validators.
 	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, icstestingutils.ConsumerAppIniter, ibctesting.GetChainID(1), validators, signers)
-
 	b.coordinator = coordinator
 	b.sdkValAddresses = addresses
-
 }
 
 // addValidatorToStakingModule creates an additional validator with zero commission
