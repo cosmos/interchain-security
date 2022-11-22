@@ -553,7 +553,7 @@ func (b *Builder) createProviderClient(
 // Manually construct and send an empty VSC packet from the provider
 // to the consumer. This is necessary to complete the handshake, and thus
 // match the model init state, without any additional validator power changes.
-func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
+func (b *Builder) sendEmptyVSCPacketToFinishHandshake(blockSeconds time.Duration) {
 	vscID := b.providerKeeper().GetValidatorSetUpdateId(b.chain(P).GetContext())
 
 	timeout := uint64(b.chain(P).CurrentHeader.Time.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
@@ -579,10 +579,10 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake() {
 	b.suite.Require().NoError(err)
 
 	// Double commit the packet
-	b.endBlock(b.chainID(P), initState.BlockSeconds)
+	b.endBlock(b.chainID(P), blockSeconds)
 	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
 	b.beginBlock(b.chainID(P))
-	b.endBlock(b.chainID(P), initState.BlockSeconds)
+	b.endBlock(b.chainID(P), blockSeconds)
 	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
 	b.mustBeginBlock[P] = true
 
@@ -764,9 +764,9 @@ func (b *Builder) build() {
 	// Send an empty VSC packet from the provider to the consumer to finish
 	// the handshake. This is necessary because the model starts from a
 	// completely initialized state, with a completed handshake.
-	b.sendEmptyVSCPacketToFinishHandshake()
+	b.sendEmptyVSCPacketToFinishHandshake(initState.BlockDuration)
 
-	b.doTail(initState.BlockSeconds)
+	b.doTail(initState.BlockDuration)
 
 }
 
@@ -831,6 +831,6 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	// Height of the last committed block (current header is not committed)
 	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
 	// Time of the last committed block (current header is not committed)
-	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(-initState.BlockSeconds).Unix()
+	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(-initState.BlockDuration).Unix()
 	return b.path, b.sdkValAddresses, heightLastCommitted, timeLastCommitted
 }

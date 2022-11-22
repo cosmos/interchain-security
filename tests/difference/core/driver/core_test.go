@@ -209,7 +209,7 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 }
 
 func (s *CoreSuite) endAndBeginBlock(chain string) {
-	s.simibc.EndAndBeginBlock(s.chainID(chain), initState.BlockSeconds, func() {
+	s.simibc.EndAndBeginBlock(s.chainID(chain), initState.BlockDuration, func() {
 		s.matchState()
 	})
 }
@@ -223,7 +223,7 @@ func (s *CoreSuite) matchState() {
 	chain := s.traces.Action().Chain
 
 	// Model time, height start at 0 so we need an offset for comparisons.
-	sutTimeOffset := time.Unix(s.offsetTimeUnix, 0).Add(-initState.BlockSeconds).UTC()
+	sutTimeOffset := time.Unix(s.offsetTimeUnix, 0).Add(-initState.BlockDuration).UTC()
 	modelTimeOffset := time.Duration(s.traces.Time()) * time.Second
 	sutHeightOffset := s.offsetHeight - 1
 	modelHeightOffset := int64(s.traces.Height())
@@ -408,8 +408,8 @@ func (s *CoreSuite) TestAssumptions() {
 	// The offset time is the last committed time, but the SUT is +1 block ahead
 	// because the currentHeader time is ahead of the last committed. Therefore sub
 	// the difference (duration of 1 block).
-	s.Require().Equal(int64(s.offsetTimeUnix), s.time(P).Add(-initState.BlockSeconds).Unix())
-	s.Require().Equal(int64(s.offsetTimeUnix), s.time(C).Add(-initState.BlockSeconds).Unix())
+	s.Require().Equal(int64(s.offsetTimeUnix), s.time(P).Add(-initState.BlockDuration).Unix())
+	s.Require().Equal(int64(s.offsetTimeUnix), s.time(C).Add(-initState.BlockDuration).Unix())
 
 	// The offset height is the last committed height, but the SUT is +1 because
 	// the currentHeader is +1 ahead of the last committed. Therefore sub 1.
