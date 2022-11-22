@@ -18,6 +18,8 @@ import (
 
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
+	"testing"
+
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -78,6 +80,81 @@ func (c *Coord) CreateChannels(path *ibctesting.Path) {
 func (c *Coord) IncrementTimeOnly(duration time.Duration) {
 	c.SetCurrentTime(c.GetCurrentTime().Add(duration).UTC())
 }
+
+func (c *Coord) CommitBlock(chain *ibctesting.TestChain) {
+	chain.NextBlock()
+	c.backing.IncrementTime()
+}
+
+func (c *Coord) NewIBCTestingChain(
+	t *testing.T,
+	chainID string,
+	validators *tmtypes.ValidatorSet,
+	signers map[string]tmtypes.PrivValidator,
+	app ibctesting.TestingApp,
+	senderAccounts []ibctesting.SenderAccount,
+) *ibctesting.TestChain {
+
+	chain := &ibctesting.TestChain{
+		T:           t,
+		Coordinator: c.backing,
+		ChainID:     chainID,
+		App:         app,
+		CurrentHeader: tmproto.Header{
+			ChainID: chainID,
+			Height:  1,
+			Time:    c.backing.CurrentTime.UTC(),
+		},
+		QueryServer:    app.GetIBCKeeper(),
+		TxConfig:       app.GetTxConfig(),
+		Codec:          app.AppCodec(),
+		Vals:           validators,
+		NextVals:       validators,
+		Signers:        signers,
+		SenderPrivKey:  senderAccounts[0].SenderPrivKey,
+		SenderAccount:  senderAccounts[0].SenderAccount,
+		SenderAccounts: senderAccounts,
+	}
+
+	c.backing.CommitBlock(chain)
+
+	return chain
+}
+
+// func (b *Builder) newIBCTestingChain(
+// 	coord *ibctesting.Coordinator,
+// 	chainID string,
+// 	validators *tmtypes.ValidatorSet,
+// 	signers map[string]tmtypes.PrivValidator,
+// 	app ibctesting.TestingApp,
+// 	senderAccounts []ibctesting.SenderAccount,
+// ) *ibctesting.TestChain {
+
+// 	chain := &ibctesting.TestChain{
+// 		T:           b.suite.T(),
+// 		Coordinator: coord,
+// 		ChainID:     chainID,
+// 		App:         app,
+// 		CurrentHeader: tmproto.Header{
+// 			ChainID: chainID,
+// 			Height:  1,
+// 			Time:    coord.CurrentTime.UTC(),
+// 		},
+// 		QueryServer:    app.GetIBCKeeper(),
+// 		TxConfig:       app.GetTxConfig(),
+// 		Codec:          app.AppCodec(),
+// 		Vals:           validators,
+// 		NextVals:       validators,
+// 		Signers:        signers,
+// 		SenderPrivKey:  senderAccounts[0].SenderPrivKey,
+// 		SenderAccount:  senderAccounts[0].SenderAccount,
+// 		SenderAccounts: senderAccounts,
+// 	}
+
+// 	coord.CommitBlock(chain)
+
+// 	return chain
+// }
 
 type Builder struct {
 	suite           *suite.Suite
@@ -350,41 +427,6 @@ func (b *Builder) initChain(
 			},
 		},
 	)
-}
-
-func (b *Builder) newIBCTestingChain(
-	coord *ibctesting.Coordinator,
-	chainID string,
-	validators *tmtypes.ValidatorSet,
-	signers map[string]tmtypes.PrivValidator,
-	app ibctesting.TestingApp,
-	senderAccounts []ibctesting.SenderAccount,
-) *ibctesting.TestChain {
-
-	chain := &ibctesting.TestChain{
-		T:           b.suite.T(),
-		Coordinator: coord,
-		ChainID:     chainID,
-		App:         app,
-		CurrentHeader: tmproto.Header{
-			ChainID: chainID,
-			Height:  1,
-			Time:    coord.CurrentTime.UTC(),
-		},
-		QueryServer:    app.GetIBCKeeper(),
-		TxConfig:       app.GetTxConfig(),
-		Codec:          app.AppCodec(),
-		Vals:           validators,
-		NextVals:       validators,
-		Signers:        signers,
-		SenderPrivKey:  senderAccounts[0].SenderPrivKey,
-		SenderAccount:  senderAccounts[0].SenderAccount,
-		SenderAccounts: senderAccounts,
-	}
-
-	coord.CommitBlock(chain)
-
-	return chain
 }
 
 func (b *Builder) createValidators(tokens []int, pkSeeds []string) (*tmtypes.ValidatorSet, map[string]tmtypes.PrivValidator, []sdk.ValAddress) {
@@ -756,7 +798,7 @@ func (b *Builder) build() {
 		initState.UnbondingP,
 	)
 	b.initChain(ibctesting.GetChainID(0), validators, pApp, pBytes, initState.ConsensusParams)
-	b.coordinator.SetChain(ibctesting.GetChainID(0), b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(0), validators, signers, pApp, pSenders))
+	b.coordinator.SetChain(ibctesting.GetChainID(0), b.coordinator.NewIBCTestingChain(b.suite.T(), ibctesting.GetChainID(0), validators, signers, pApp, pSenders))
 	cApp, cGenesis := icstestingutils.ConsumerAppIniter()
 	cBytes, cSenders := b.getModifiedGenesisState(cApp, cGenesis, validators,
 		initState.MaxValidators,
@@ -769,7 +811,7 @@ func (b *Builder) build() {
 		initState.UnbondingP,
 	)
 	b.initChain(ibctesting.GetChainID(1), validators, cApp, cBytes, initState.ConsensusParams)
-	b.coordinator.SetChain(ibctesting.GetChainID(1), b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(1), validators, signers, cApp, cSenders))
+	b.coordinator.SetChain(ibctesting.GetChainID(1), b.coordinator.NewIBCTestingChain(b.suite.T(), ibctesting.GetChainID(1), validators, signers, cApp, cSenders))
 
 	b.createLink()
 	b.setProviderSlashParams(initState.SlashDoublesign, initState.SlashDowntime)
