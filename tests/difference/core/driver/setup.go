@@ -123,7 +123,7 @@ func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingAp
 	senderAccounts := []ibctesting.SenderAccount{}
 
 	// Create genesis accounts.
-	for i := 0; i < 2; i++ {
+	for i := 0; i < b.initState.MaxValidators; i++ {
 		pk := secp256k1.GenPrivKey()
 		acc := authtypes.NewBaseAccount(pk.PubKey().Address().Bytes(), pk.PubKey(), uint64(i), 0)
 
@@ -351,7 +351,7 @@ func (b *Builder) addValidatorToStakingModule(testVal testcrypto.CryptoIdentity)
 
 // setSigningInfos sets the validator signing info in the provider Slashing module
 func (b *Builder) setSigningInfos() {
-	for i := 0; i < 4; i++ { // TODO: unhardcode
+	for i := 0; i < b.initState.NumValidators; i++ {
 		info := slashingtypes.NewValidatorSigningInfo(
 			b.consAddr(int64(i)),
 			b.chain(P).CurrentHeader.GetHeight(),
