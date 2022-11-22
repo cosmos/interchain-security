@@ -685,6 +685,11 @@ func (b *Builder) build() {
 	// completely initialized state, with a completed handshake.
 	b.sendEmptyVSCPacketToFinishHandshake()
 
+	b.doTail()
+
+}
+
+func (b *Builder) doTail() {
 	// Catch up consumer to have the same height and timestamp as provider
 	b.endBlock(b.chainID(C))
 	b.coordinator.CurrentTime = b.coordinator.CurrentTime.Add(time.Second * time.Duration(1)).UTC()
