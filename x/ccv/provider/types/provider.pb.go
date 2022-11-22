@@ -44,9 +44,11 @@ type ConsumerAdditionProposal struct {
 	// the proposed initial height of new consumer chain.
 	// For a completely new chain, this will be {0,1}. However, it may be different if this is a chain that is converting to a consumer chain.
 	InitialHeight types.Height `protobuf:"bytes,4,opt,name=initial_height,json=initialHeight,proto3" json:"initial_height"`
-	// genesis hash with no staking information included.
+	// The hash of the consumer chain genesis state without the consumer CCV module genesis params.
+	// It is used for off-chain confirmation of genesis.json validity by validators and other parties.
 	GenesisHash []byte `protobuf:"bytes,5,opt,name=genesis_hash,json=genesisHash,proto3" json:"genesis_hash,omitempty"`
-	// binary hash is the hash of the binary that should be used by validators on chain initialization.
+	// The hash of the consumer chain binary that should be run by validators on chain initialization.
+	// It is used for off-chain confirmation of binary validity by validators and other parties.
 	BinaryHash []byte `protobuf:"bytes,6,opt,name=binary_hash,json=binaryHash,proto3" json:"binary_hash,omitempty"`
 	// spawn time is the time on the provider chain at which the consumer chain genesis is finalized and all validators
 	// will be responsible for starting their consumer chain validator node.

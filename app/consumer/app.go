@@ -293,6 +293,9 @@ func New(
 		keys[feegrant.StoreKey],
 		app.AccountKeeper,
 	)
+
+	// consumer keeper satisfies the staking keeper interface
+	// of the slashing module
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
 		appCodec,
 		keys[slashingtypes.StoreKey],
@@ -337,15 +340,6 @@ func New(
 		&app.TransferKeeper,
 		app.IBCKeeper,
 		authtypes.FeeCollectorName,
-	)
-
-	// consumer keeper satisfies the staking keeper interface
-	// of the slashing module
-	app.SlashingKeeper = slashingkeeper.NewKeeper(
-		appCodec,
-		keys[slashingtypes.StoreKey],
-		&app.ConsumerKeeper,
-		app.GetSubspace(slashingtypes.ModuleName),
 	)
 
 	// register slashing module Slashing hooks to the consumer keeper
