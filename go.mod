@@ -134,10 +134,20 @@ require (
 	nhooyr.io/websocket v1.8.6 // indirect
 )
 
+// replace (
+// 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
+// 	github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-beta1.0.20221121181828-c75c185d20b2
+// 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+// 	github.com/stretchr/testify => github.com/stretchr/testify v1.7.1
+// 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
+// )
+
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
-	github.com/cosmos/ibc-go/v3 => github.com/informalsystems/ibc-go/v3 v3.0.0-beta1.0.20221121181828-c75c185d20b2
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	github.com/stretchr/testify => github.com/stretchr/testify v1.7.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
+	github.com/stretchr/testify => github.com/stretchr/testify v1.7.1
+	github.com/cosmos/ibc-go/v3 => /Users/danwt/Documents/work/informal-ibc-go // c75c185d20b2
+	github.com/cosmos/cosmos-sdk => /Users/danwt/Documents/work/cosmos-sdk // 9c145c827001
+	github.com/tendermint/tendermint => /Users/danwt/Documents/work/tendermint // v0.34.23
 )
