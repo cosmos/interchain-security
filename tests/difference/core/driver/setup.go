@@ -259,7 +259,7 @@ func (b *Builder) getModifiedGenesisState(
 	return stateBytes, senderAccounts
 }
 
-func (b *Builder) newChain(coord *ibctesting.Coordinator, chainID string,
+func (b *Builder) newIBCTestingChain(coord *ibctesting.Coordinator, chainID string,
 	validators *tmtypes.ValidatorSet, signers map[string]tmtypes.PrivValidator,
 	app ibctesting.TestingApp, stateBytes []byte,
 	senderAccounts []ibctesting.SenderAccount,
@@ -658,10 +658,10 @@ func (b *Builder) build() {
 	b.sdkValAddresses = addresses
 	pApp, pGenesis := icstestingutils.ProviderAppIniter()
 	pBytes, pSenders := b.getModifiedGenesisState(pApp, pGenesis, validators)
-	b.coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(b.coordinator, ibctesting.GetChainID(0), validators, signers, pApp, pBytes, pSenders)
+	b.coordinator.Chains[ibctesting.GetChainID(0)] = b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(0), validators, signers, pApp, pBytes, pSenders)
 	cApp, cGenesis := icstestingutils.ConsumerAppIniter()
 	cBytes, cSenders := b.getModifiedGenesisState(cApp, cGenesis, validators)
-	b.coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(b.coordinator, ibctesting.GetChainID(1), validators, signers, cApp, cBytes, cSenders)
+	b.coordinator.Chains[ibctesting.GetChainID(1)] = b.newIBCTestingChain(b.coordinator, ibctesting.GetChainID(1), validators, signers, cApp, cBytes, cSenders)
 
 	b.createLink()
 	b.setProviderSlashParams()
