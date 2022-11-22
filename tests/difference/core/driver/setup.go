@@ -69,12 +69,12 @@ func (c *Coord) SetCurrentTime(t time.Time) {
 	c.backing.CurrentTime = t
 }
 
-func (c *Coord) CreateConnections(path *ibctesting.Path) {
-	c.backing.CreateConnections(path)
+func (c *Coord) CreateConnections(path Pathz) {
+	c.backing.CreateConnections(path.backing)
 }
 
-func (c *Coord) CreateChannels(path *ibctesting.Path) {
-	c.backing.CreateChannels(path)
+func (c *Coord) CreateChannels(path Pathz) {
+	c.backing.CreateChannels(path.backing)
 }
 
 func (c *Coord) IncrementTimeOnly(duration time.Duration) {
@@ -121,10 +121,21 @@ func (c *Coord) NewIBCTestingChain(
 	return chain
 }
 
+type Pathz struct {
+	backing *ibctesting.Path
+}
+
+func (p *Pathz) Endpoint(chain string) *ibctesting.Endpoint {
+	if chain == P {
+		return p.backing.EndpointB
+	}
+	return p.backing.EndpointA
+}
+
 type Builder struct {
 	suite           *suite.Suite
 	link            simibc.OrderedLink
-	path            *ibctesting.Path
+	path            Pathz
 	coordinator     *Coord
 	clientHeaders   map[string][]*ibctmtypes.Header
 	mustBeginBlock  map[string]bool
@@ -163,9 +174,9 @@ func (b *Builder) chain(chain string) *ibctesting.TestChain {
 
 func (b *Builder) endpointFromID(chainID string) *ibctesting.Endpoint {
 	if chainID == b.chainID(P) {
-		return b.path.EndpointB
+		return b.path.Endpoint(P)
 	}
-	return b.path.EndpointA
+	return b.path.Endpoint(C)
 }
 
 func (b *Builder) endpoint(chain string) *ibctesting.Endpoint {
@@ -572,13 +583,13 @@ func (b *Builder) createLink() {
 
 func (b *Builder) createPath() {
 	// Configure the ibc path
-	b.path = ibctesting.NewPath(b.chain(C), b.chain(P))
-	b.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
-	b.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
-	b.path.EndpointA.ChannelConfig.Version = ccv.Version
-	b.path.EndpointB.ChannelConfig.Version = ccv.Version
-	b.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
-	b.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
+	b.path = Pathz{ibctesting.NewPath(b.chain(C), b.chain(P))}
+	b.path.Endpoint(C).ChannelConfig.PortID = ccv.ConsumerPortID
+	b.path.Endpoint(P).ChannelConfig.PortID = ccv.ProviderPortID
+	b.path.Endpoint(C).ChannelConfig.Version = ccv.Version
+	b.path.Endpoint(P).ChannelConfig.Version = ccv.Version
+	b.path.Endpoint(C).ChannelConfig.Order = channeltypes.ORDERED
+	b.path.Endpoint(P).ChannelConfig.Order = channeltypes.ORDERED
 }
 
 func (b *Builder) setProviderEndpointId() {
@@ -586,7 +597,7 @@ func (b *Builder) setProviderEndpointId() {
 	if !ok {
 		panic("must already have provider client on consumer chain")
 	}
-	b.path.EndpointA.ClientID = providerClientID
+	b.path.Endpoint(C).ClientID = providerClientID
 }
 
 func (b *Builder) createProviderClient(
@@ -595,11 +606,11 @@ func (b *Builder) createProviderClient(
 	maxClockDrift time.Duration,
 ) {
 	// Configure and create the consumer Client
-	tmConfig := b.path.EndpointB.ClientConfig.(*ibctesting.TendermintConfig)
+	tmConfig := b.path.Endpoint(P).ClientConfig.(*ibctesting.TendermintConfig)
 	tmConfig.UnbondingPeriod = unbondingC
 	tmConfig.TrustingPeriod = trusting
 	tmConfig.MaxClockDrift = maxClockDrift
-	err := b.path.EndpointB.CreateClient()
+	err := b.path.Endpoint(P).CreateClient()
 	b.suite.Require().NoError(err)
 }
 
@@ -618,7 +629,7 @@ func (b *Builder) sendEmptyVSCPacketToFinishHandshake(blockDuration time.Duratio
 	)
 
 	seq, ok := b.chain(P).App.(*appProvider.App).GetIBCKeeper().ChannelKeeper.GetNextSequenceSend(
-		b.ctx(P), ccv.ProviderPortID, b.path.EndpointB.ChannelID)
+		b.ctx(P), ccv.ProviderPortID, b.path.Endpoint(P).ChannelID)
 
 	b.suite.Require().True(ok)
 
@@ -810,7 +821,7 @@ func (b *Builder) build() {
 	)
 
 	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.chain(C).ChainID, b.path.EndpointB.ClientID)
+	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.chain(C).ChainID, b.path.Endpoint(P).ClientID)
 
 	// Handshake
 	b.coordinator.CreateConnections(b.path)
@@ -887,5 +898,5 @@ func GetZeroState(suite *suite.Suite, initState InitState) (
 	heightLastCommitted := b.chain(P).CurrentHeader.Height - 1
 	// Time of the last committed block (current header is not committed)
 	timeLastCommitted := b.chain(P).CurrentHeader.Time.Add(-initState.BlockDuration).Unix()
-	return b.path, b.sdkValAddresses, heightLastCommitted, timeLastCommitted
+	return b.path.backing, b.sdkValAddresses, heightLastCommitted, timeLastCommitted
 }
