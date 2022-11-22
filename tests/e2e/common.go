@@ -181,15 +181,15 @@ func relayAllCommittedPackets(
 	s *CCVTestSuite,
 	srcChain *ibctesting.TestChain,
 	path *ibctesting.Path,
-	portID string,
-	channelID string,
+	srcPortID string,
+	srcChannelID string,
 	expectedPackets int,
 ) {
 	// check that the packets are committed in  state
 	commitments := srcChain.App.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
 		srcChain.GetContext(),
-		portID,
-		channelID,
+		srcPortID,
+		srcChannelID,
 	)
 	s.Require().Equal(expectedPackets, len(commitments),
 		"actual number of packet commitments does not match expectation")
@@ -197,7 +197,7 @@ func relayAllCommittedPackets(
 	// relay all packets from srcChain to counterparty
 	for _, commitment := range commitments {
 		// - get packets
-		packet, found := srcChain.GetSentPacket(commitment.Sequence)
+		packet, found := srcChain.GetSentPacket(commitment.Sequence, srcChannelID)
 		s.Require().True(found, "did not find sent packet")
 		// - relay the packet
 		err := path.RelayPacket(packet)
