@@ -38,6 +38,7 @@ import (
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
 	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -485,17 +486,6 @@ func (b *Builder) createLink() {
 	}
 }
 
-func (b *Builder) createPath() {
-	// Configure the ibc path
-	b.path = ibctesting.NewPath(b.chain(C), b.chain(P))
-	b.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
-	b.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
-	b.path.EndpointA.ChannelConfig.Version = ccv.Version
-	b.path.EndpointB.ChannelConfig.Version = ccv.Version
-	b.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
-	b.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
-}
-
 func (b *Builder) setProviderEndpointId() {
 	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
 	if !ok {
@@ -655,6 +645,16 @@ func (b *Builder) endBlock(chainID string) {
 	c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
 }
 
+func (b *Builder) setProviderAccountNumber() {
+	err := b.chain(P).SenderAccount.SetAccountNumber(6)
+	b.suite.Require().NoError(err)
+}
+
+func (b *Builder) setConsumerAccountNumber() {
+	err := b.chain(C).SenderAccount.SetAccountNumber(1)
+	b.suite.Require().NoError(err)
+}
+
 func (b *Builder) build() {
 
 	b.createChains()
@@ -664,24 +664,74 @@ func (b *Builder) build() {
 	// Commit the additional validators
 	b.coordinator.CommitBlock(b.chain(P))
 
-	client, cons := b.getClientConsState()
-	consumerGenesis := b.createConsumerGenesis(client, cons)
-	b.consumerKeeper().InitGenesis(b.ctx(C), consumerGenesis)
+	height := clienttypes.NewHeight(0, uint64(b.chain(C).CurrentHeader.Height))
+	proposal := providertypes.NewConsumerAdditionProposal("", "",
+		b.chainID(C),
+		height,
+		[]byte("a"),
+		[]byte("a"),
+		b.chain(P).CurrentHeader.Time.Add(-time.Hour)).(*providertypes.ConsumerAdditionProposal)
 
-	b.createPath()
+	b.providerKeeper().HandleConsumerAdditionProposal(b.ctx(P), proposal)
+	consumerGenesis, found := b.providerKeeper().GetConsumerGenesis(b.ctx(P), b.chainID(C))
+
+	require.True(b.suite.T(), found)
+
+	b.coordinator.CommitBlock(b.chain(P))
+	b.coordinator.CommitBlock(b.chain(C))
+
+	// Configure the ibc path
+	b.path = ibctesting.NewPath(b.chain(C), b.chain(P))
+	b.path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
+	b.path.EndpointB.ChannelConfig.PortID = ccv.ProviderPortID
+	b.path.EndpointA.ChannelConfig.Version = ccv.Version
+	b.path.EndpointB.ChannelConfig.Version = ccv.Version
+	b.path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
+	b.path.EndpointB.ChannelConfig.Order = channeltypes.ORDERED
 	b.setProviderEndpointId()
 	b.createProviderClient()
 
-	// Create the Consumer chain ID mapping in the provider state
-	b.providerKeeper().SetConsumerClientId(b.ctx(P), b.chain(C).ChainID, b.path.EndpointB.ClientID)
+	b.setProviderAccountNumber()
+	clientID, found := b.providerKeeper().GetConsumerClientId(b.ctx(P), b.chainID(C))
+	require.True(b.suite.T(), found)
+	b.endpoint(P).ClientID = clientID
+	b.setConsumerAccountNumber()
+
+	b.consumerKeeper().InitGenesis(b.ctx(C), &consumerGenesis)
+	clientID, found = b.consumerKeeper().GetProviderClientID(b.ctx(C))
+	require.True(b.suite.T(), found)
+	b.endpoint(C).ClientID = clientID
+
+	b.coordinator.CommitBlock(b.chain(P), b.chain(C))
+	b.coordinator.CommitBlock(b.chain(P), b.chain(C))
+	b.endpoint(P).UpdateClient()
+	b.endpoint(C).UpdateClient()
+	// b.coordinator.CommitBlock(b.providerChain())
+	// b.coordinator.CommitBlock(b.consumerChain())
+
+	b.endpoint(C).UpdateClient()
 
 	// Handshake
+	err := b.endpoint(C).ConnOpenInit()
+	require.NoError(b.suite.T(), err)
+
+	err = b.endpoint(P).ConnOpenTry()
+	require.NoError(b.suite.T(), err)
+
+	err = b.endpoint(C).ConnOpenAck()
+	require.NoError(b.suite.T(), err)
+
+	err = b.endpoint(P).ConnOpenConfirm()
+	require.NoError(b.suite.T(), err)
+
+	// ensure counterparty is up to date
+	// err = path.EndpointA.UpdateClient()
+	// require.NoError(coord.T, err)
+
 	b.coordinator.CreateConnections(b.path)
+
 	b.coordinator.CreateChannels(b.path)
 
-	// Send an empty VSC packet from the provider to the consumer to finish
-	// the handshake. This is necessary because the model starts from a
-	// completely initialized state, with a completed handshake.
 	b.sendEmptyVSCPacketToFinishHandshake()
 
 	b.doTail()
