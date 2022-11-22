@@ -21,14 +21,6 @@ import (
 // 1. How slash packets relate to other slash packets over time (regardless of chain) -> global queue
 // 2. How slash packets relate to vsc matured packets from the same chain -> chain specific queue
 
-// TODO: the onrecv handlers for both slash and vsc matured packets should be e2e tested with the method below.
-
-// TODO: test slash meter replenishment in context of the e2e test
-
-// TODO: will eventually need to fix integration and diff tests to work with this branch
-
-// TODO: independant integration test steps for slash packet throttling, with custom params
-
 // HandlePendingSlashPackets handles all or some portion of pending slash packets received by consumer chains,
 // depending on throttling logic. The slash meter is decremented appropriately in this method, and periodically
 // replenished according to the slash meter replenish period param.

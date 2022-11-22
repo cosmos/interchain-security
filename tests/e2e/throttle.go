@@ -6,7 +6,10 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 )
 
-// TODO: PR for multiple consumers?
+// TODO: the onrecv handlers for both slash and vsc matured packets should be e2e tested with the method below.
+
+// TODO: test slash meter replenishment in context of the e2e test
+
 func (s *CCVTestSuite) TestSlashPacketThrottling() {
 	// TODO
 
