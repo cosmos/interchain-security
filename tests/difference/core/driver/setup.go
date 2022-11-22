@@ -252,12 +252,18 @@ func (b *Builder) getAppBytesAndSenders(app ibctesting.TestingApp, genesis map[s
 
 }
 
-func (b *Builder) newChain(coord *ibctesting.Coordinator, appInit ibctesting.AppIniter, chainID string,
-	validators *tmtypes.ValidatorSet, signers map[string]tmtypes.PrivValidator) *ibctesting.TestChain {
-
-	app, genesis := appInit()
-
+func (b *Builder) getModifiedGenesisState(
+	app ibctesting.TestingApp, genesis map[string]json.RawMessage,
+	validators *tmtypes.ValidatorSet) ([]byte, []ibctesting.SenderAccount) {
 	stateBytes, senderAccounts := b.getAppBytesAndSenders(app, genesis, validators)
+	return stateBytes, senderAccounts
+}
+
+func (b *Builder) newChain(coord *ibctesting.Coordinator, chainID string,
+	validators *tmtypes.ValidatorSet, signers map[string]tmtypes.PrivValidator,
+	app ibctesting.TestingApp, stateBytes []byte,
+	senderAccounts []ibctesting.SenderAccount,
+) *ibctesting.TestChain {
 
 	app.InitChain(
 		abci.RequestInitChain{
@@ -650,8 +656,12 @@ func (b *Builder) build() {
 	b.coordinator = ibctesting.NewCoordinator(b.suite.T(), 0)
 	validators, signers, addresses := b.createValidators()
 	b.sdkValAddresses = addresses
-	b.coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(b.coordinator, icstestingutils.ProviderAppIniter, ibctesting.GetChainID(0), validators, signers)
-	b.coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(b.coordinator, icstestingutils.ConsumerAppIniter, ibctesting.GetChainID(1), validators, signers)
+	pApp, pGenesis := icstestingutils.ProviderAppIniter()
+	pBytes, pSenders := b.getModifiedGenesisState(pApp, pGenesis, validators)
+	b.coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(b.coordinator, ibctesting.GetChainID(0), validators, signers, pApp, pBytes, pSenders)
+	cApp, cGenesis := icstestingutils.ConsumerAppIniter()
+	cBytes, cSenders := b.getModifiedGenesisState(cApp, cGenesis, validators)
+	b.coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(b.coordinator, ibctesting.GetChainID(1), validators, signers, cApp, cBytes, cSenders)
 
 	b.createLink()
 	b.setProviderSlashParams()
