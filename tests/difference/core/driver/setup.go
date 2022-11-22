@@ -124,7 +124,7 @@ func (b *Builder) getTestValidator(seedIx int) testcrypto.CryptoIdentity {
 	return testcrypto.NewCryptoIdentityFromBytesSeed([]byte(b.initState.PKSeeds[seedIx]))
 }
 
-func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingApp, genesis map[string]json.RawMessage,
+func (b *Builder) getAppBytesAndSenders(app ibctesting.TestingApp, genesis map[string]json.RawMessage,
 	validators *tmtypes.ValidatorSet) ([]byte, []ibctesting.SenderAccount) {
 
 	accounts := []authtypes.GenesisAccount{}
@@ -257,7 +257,7 @@ func (b *Builder) newChain(coord *ibctesting.Coordinator, appInit ibctesting.App
 
 	app, genesis := appInit()
 
-	stateBytes, senderAccounts := b.getAppBytesAndSenders(chainID, app, genesis, validators)
+	stateBytes, senderAccounts := b.getAppBytesAndSenders(app, genesis, validators)
 
 	app.InitChain(
 		abci.RequestInitChain{
