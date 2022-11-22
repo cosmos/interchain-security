@@ -2,7 +2,7 @@ package main
 
 // stepsDowntime tests validator jailing and slashing.
 //
-// Note: These tests are not affected by slash packet throttling since
+// Note: These steps are not affected by slash packet throttling since
 // only one consumer initiated slash is implemented.
 func stepsDowntime(consumerName string) []Step {
 	return []Step{
