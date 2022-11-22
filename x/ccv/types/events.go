@@ -10,8 +10,8 @@ const (
 
 	EventTypeExecuteConsumerChainSlash = "execute_consumer_chain_slash"
 	EventTypeFeeDistribution           = "fee_distribution"
-	EventTypeSendSlashPacket           = "send_slash_packet"
-	EventTypeSendMaturedVSCPacket      = "send_matured_vsc_packet"
+	EventTypeConsumerSlashRequest      = "consumer_slash_request"
+	EventTypeVSCMatured                = "vsc_matured"
 
 	AttributeKeyAckSuccess = "success"
 	AttributeKeyAck        = "acknowledgement"

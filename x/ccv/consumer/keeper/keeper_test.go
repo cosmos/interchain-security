@@ -92,7 +92,7 @@ func TestPacketMaturityTime(t *testing.T) {
 	consumerKeeper.SetPacketMaturityTime(ctx, 5, 15)
 	consumerKeeper.SetPacketMaturityTime(ctx, 6, 40)
 
-	consumerKeeper.DeletePacketMaturityTime(ctx, 6)
+	consumerKeeper.DeletePacketMaturityTimes(ctx, 6)
 
 	require.Equal(t, uint64(10), consumerKeeper.GetPacketMaturityTime(ctx, 1))
 	require.Equal(t, uint64(25), consumerKeeper.GetPacketMaturityTime(ctx, 2))
@@ -110,6 +110,12 @@ func TestPacketMaturityTime(t *testing.T) {
 		i++
 		return false // do not stop the iteration
 	})
+
+	// delete all vscs remaining in state
+	consumerKeeper.DeletePacketMaturityTimes(ctx, 1, 2, 5)
+	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 1))
+	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 2))
+	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 5))
 }
 
 // TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records

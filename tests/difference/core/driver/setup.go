@@ -145,6 +145,17 @@ type Builder struct {
 	sdkValAddresses []sdk.ValAddress
 }
 
+func (b *Builder) chain(chain string) *ibctesting.TestChain {
+	return b.coordinator.GetChain(b.chainID(chain))
+}
+
+func (b *Builder) endpointFromID(chainID string) *ibctesting.Endpoint {
+	if chainID == b.chainID(P) {
+		return b.path.Endpoint(P)
+	}
+	return b.path.Endpoint(C)
+}
+
 func (b *Builder) consumerKeeper() consumerkeeper.Keeper {
 	return b.consumerApp().ConsumerKeeper
 }
@@ -169,17 +180,6 @@ func (b *Builder) otherID(chainID string) string {
 		return b.chainID(C)
 	}
 	return b.chainID(P)
-}
-
-func (b *Builder) chain(chain string) *ibctesting.TestChain {
-	return b.coordinator.GetChain(b.chainID(chain))
-}
-
-func (b *Builder) endpointFromID(chainID string) *ibctesting.Endpoint {
-	if chainID == b.chainID(P) {
-		return b.path.Endpoint(P)
-	}
-	return b.path.Endpoint(C)
 }
 
 func (b *Builder) endpoint(chain string) *ibctesting.Endpoint {
@@ -574,27 +574,6 @@ func (b *Builder) createConsumerGenesis(client *ibctmtypes.ClientState, cons *ib
 	return consumertypes.NewInitialGenesisState(client, cons, valUpdates, params)
 }
 
-func (b *Builder) createLink() {
-	b.link = simibc.MakeOrderedLink()
-	// init utility data structures
-	b.mustBeginBlock = map[string]bool{P: true, C: true}
-	b.clientHeaders = map[string][]*ibctmtypes.Header{}
-	for chainID := range b.coordinator.GetChains() {
-		b.clientHeaders[chainID] = []*ibctmtypes.Header{}
-	}
-}
-
-func (b *Builder) createPath() {
-	// Configure the ibc path
-	b.path = Pathz{ibctesting.NewPath(b.chain(C), b.chain(P))}
-	b.path.Endpoint(C).ChannelConfig.PortID = ccv.ConsumerPortID
-	b.path.Endpoint(P).ChannelConfig.PortID = ccv.ProviderPortID
-	b.path.Endpoint(C).ChannelConfig.Version = ccv.Version
-	b.path.Endpoint(P).ChannelConfig.Version = ccv.Version
-	b.path.Endpoint(C).ChannelConfig.Order = channeltypes.ORDERED
-	b.path.Endpoint(P).ChannelConfig.Order = channeltypes.ORDERED
-}
-
 func (b *Builder) setProviderEndpointId() {
 	providerClientID, ok := b.consumerKeeper().GetProviderClientID(b.ctx(C))
 	if !ok {
@@ -615,6 +594,59 @@ func (b *Builder) createProviderClient(
 	tmConfig.MaxClockDrift = maxClockDrift
 	err := b.path.Endpoint(P).CreateClient()
 	b.suite.Require().NoError(err)
+}
+
+func (b *Builder) updateClient(chainID string) {
+	for _, header := range b.clientHeaders[b.otherID(chainID)] {
+		err := simibc.UpdateReceiverClient(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), header)
+		if err != nil {
+			b.suite.T().Fatal("updateClient")
+		}
+	}
+	b.clientHeaders[b.otherID(chainID)] = []*ibctmtypes.Header{}
+}
+
+func (b *Builder) deliver(chainID string) {
+	packets := b.link.ConsumePackets(b.otherID(chainID), 1)
+	for _, p := range packets {
+		receiver := b.endpointFromID(chainID)
+		sender := receiver.Counterparty
+		ack, err := simibc.TryRecvPacket(sender, receiver, p.Packet)
+		if err != nil {
+			b.suite.T().Fatal("deliver")
+		}
+		b.link.AddAck(chainID, ack, p.Packet)
+	}
+}
+
+func (b *Builder) deliverAcks(chainID string) {
+	for _, ack := range b.link.ConsumeAcks(b.otherID(chainID), 999999) {
+		err := simibc.TryRecvAck(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), ack.Packet, ack.Ack)
+		if err != nil {
+			b.suite.T().Fatal("deliverAcks")
+		}
+	}
+}
+
+func (b *Builder) createPath() {
+	// Configure the ibc path
+	b.path = Pathz{ibctesting.NewPath(b.chain(C), b.chain(P))}
+	b.path.Endpoint(C).ChannelConfig.PortID = ccv.ConsumerPortID
+	b.path.Endpoint(P).ChannelConfig.PortID = ccv.ProviderPortID
+	b.path.Endpoint(C).ChannelConfig.Version = ccv.Version
+	b.path.Endpoint(P).ChannelConfig.Version = ccv.Version
+	b.path.Endpoint(C).ChannelConfig.Order = channeltypes.ORDERED
+	b.path.Endpoint(P).ChannelConfig.Order = channeltypes.ORDERED
+}
+
+func (b *Builder) createLink() {
+	b.link = simibc.MakeOrderedLink()
+	// init utility data structures
+	b.mustBeginBlock = map[string]bool{P: true, C: true}
+	b.clientHeaders = map[string][]*ibctmtypes.Header{}
+	for chainID := range b.coordinator.GetChains() {
+		b.clientHeaders[chainID] = []*ibctmtypes.Header{}
+	}
 }
 
 // Manually construct and send an empty VSC packet from the provider
@@ -683,38 +715,6 @@ func (b *Builder) beginBlock(chainID string) {
 		NextValidatorsHash: c.NextVals.Hash(),
 	}
 	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
-}
-
-func (b *Builder) updateClient(chainID string) {
-	for _, header := range b.clientHeaders[b.otherID(chainID)] {
-		err := simibc.UpdateReceiverClient(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), header)
-		if err != nil {
-			b.suite.T().Fatal("updateClient")
-		}
-	}
-	b.clientHeaders[b.otherID(chainID)] = []*ibctmtypes.Header{}
-}
-
-func (b *Builder) deliver(chainID string) {
-	packets := b.link.ConsumePackets(b.otherID(chainID), 1)
-	for _, p := range packets {
-		receiver := b.endpointFromID(chainID)
-		sender := receiver.Counterparty
-		ack, err := simibc.TryRecvPacket(sender, receiver, p.Packet)
-		if err != nil {
-			b.suite.T().Fatal("deliver")
-		}
-		b.link.AddAck(chainID, ack, p.Packet)
-	}
-}
-
-func (b *Builder) deliverAcks(chainID string) {
-	for _, ack := range b.link.ConsumeAcks(b.otherID(chainID), 999999) {
-		err := simibc.TryRecvAck(b.endpointFromID(b.otherID(chainID)), b.endpointFromID(chainID), ack.Packet, ack.Ack)
-		if err != nil {
-			b.suite.T().Fatal("deliverAcks")
-		}
-	}
 }
 
 func (b *Builder) endBlock(chainID string, blockDuration time.Duration) {
