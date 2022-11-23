@@ -2,8 +2,11 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
@@ -251,4 +254,94 @@ func (k Keeper) GetConsumerValidatorByVscID(ctx sdk.Context, chainID string, vsc
 func (k Keeper) DeleteConsumerValidatorByVscID(ctx sdk.Context, chainID string, vscID uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerValidatorsByVscIDKey(chainID, vscID))
+}
+
+// AssignConsumerKey assigns the consumerKey to the validator with providerAddr
+// on the consumer chain with ID chainID
+func (k Keeper) AssignConsumerKey(
+	ctx sdk.Context,
+	chainID string,
+	providerAddr sdk.ConsAddress,
+	consumerKey tmprotocrypto.PublicKey,
+) error {
+	// validator must already be registered
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr)
+	if !found {
+		return stakingtypes.ErrNoValidatorFound
+	}
+
+	// check if the consumer chain is registered, i.e.,
+	// a client to the consumer was already created
+	_, consumerRegistered := k.GetConsumerClientId(ctx, chainID)
+
+	// get the previous key assigned for this validator on this consumer chain
+	oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
+	if !found {
+		// the validator had no key assigned on this consumer chain
+		providerKey, err := validator.TmConsPublicKey()
+		if err != nil {
+			return err
+		}
+		oldConsumerKey = providerKey
+	} else {
+		if consumerRegistered {
+			// mark this old consumer key as prunable once the VSCMaturedPacket
+			// for the current VSC ID is received;
+			// note: this state is removed on receiving the VSCMaturedPacket
+			k.AppendConsumerValidatorByVscID(
+				ctx,
+				chainID,
+				k.GetValidatorSetUpdateId(ctx),
+				utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey),
+			)
+		}
+	}
+
+	// get the previous power of this validator
+	oldPower := k.stakingKeeper.GetLastValidatorPower(ctx, sdk.ValAddress(validator.OperatorAddress))
+	// if the validator is active and the consumer is registered,
+	// then store old key and power for modifying the valset update in EndBlock;
+	// note: this state is deleted at the end of the block
+	if oldPower > 0 && consumerRegistered {
+		k.SetPendingKeyAssignment(
+			ctx,
+			chainID,
+			providerAddr,
+			abci.ValidatorUpdate{PubKey: oldConsumerKey, Power: oldPower},
+		)
+	}
+
+	// set the mapping from this validator's provider address to the new consumer key;
+	// overwrite if already exists
+	// note: this state is deleted when the validator is removed from the staking module
+	k.SetValidatorConsumerPubKey(ctx, chainID, providerAddr, consumerKey)
+
+	// if the consumer chain is already registered, set the mapping from
+	// this validator's new consensus address on the consumer
+	// to its consensus address on the provider;
+	// otherwise, the mapping is added when the consumer is registered
+	if consumerRegistered {
+		consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+		if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
+			// mapping already exists; return error
+			return sdkerrors.Wrapf(
+				types.ErrInvalidConsumerConsensusPubKey, "consumer key already exists",
+			)
+		}
+		// note: this state must be deleted through the pruning mechanism;
+		// see ConsumerValidatorsByVscID
+		k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
+	}
+
+	return nil
+}
+
+// PruneKeyAssignments prunes the consumer addresses no longer needed
+// as they cannot be referenced in slash requests (by a correct consumer)
+func (k Keeper) PruneKeyAssignments(ctx sdk.Context, chainID string, vscID uint64) {
+	consumerAddrs := k.GetConsumerValidatorByVscID(ctx, chainID, vscID)
+	for _, addr := range consumerAddrs {
+		k.DeleteValidatorByConsumerAddr(ctx, chainID, addr)
+	}
+	k.DeleteConsumerValidatorByVscID(ctx, chainID, vscID)
 }

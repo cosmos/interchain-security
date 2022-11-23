@@ -72,12 +72,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	k.DeleteVscSendTimestamp(ctx, chainID, data.ValsetUpdateId)
 
 	// prune previous consumer validator address that are no longer needed
-	// as they cannot be referenced in slash requests (by a correct consumer)
-	consumerAddrs := k.GetConsumerValidatorByVscID(ctx, chainID, data.ValsetUpdateId)
-	for _, addr := range consumerAddrs {
-		k.DeleteValidatorByConsumerAddr(ctx, chainID, addr)
-	}
-	k.DeleteConsumerValidatorByVscID(ctx, chainID, data.ValsetUpdateId)
+	k.PruneKeyAssignments(ctx, chainID, data.ValsetUpdateId)
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
