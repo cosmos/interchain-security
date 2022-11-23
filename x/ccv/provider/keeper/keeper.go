@@ -793,41 +793,6 @@ func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
 	store.Delete(types.ChainToClientKey(chainID))
 }
 
-// TODO: increment stuff should be on the per chain queue
-
-// TODO: decrement stuff too
-
-// Decrement the stored number of pending slash packets
-// numDeleted := uint64(len(packets))
-// k.setNumPendingSlashPackets(ctx, k.GetNumPendingSlashPackets(ctx)-numDeleted)
-
-// // GetNumPendingSlashPackets returns the number of pending slash packets in the queue
-// func (k Keeper) GetNumPendingSlashPackets(ctx sdk.Context) uint64 {
-// 	store := ctx.KVStore(k.storeKey)
-// 	bz := store.Get(types.NumPendingSlashPacketsKey())
-// 	if bz == nil {
-// 		// Queue starts with zero length by default
-// 		return 0
-// 	}
-// 	return binary.BigEndian.Uint64(bz)
-// }
-
-// // setNumPendingSlashPackets sets the number of pending slash packets in the queue
-// // Note: this should only be called by the increment and delete functions
-// func (k Keeper) setNumPendingSlashPackets(ctx sdk.Context, num uint64) {
-// 	store := ctx.KVStore(k.storeKey)
-// 	bz := make([]byte, 8)
-// 	binary.BigEndian.PutUint64(bz, num)
-// 	store.Set(types.NumPendingSlashPacketsKey(), bz)
-// }
-
-// // IncrementNumPendingSlashPackets increments the number of pending slash packets in the queue
-// func (k Keeper) IncrementNumPendingSlashPackets(ctx sdk.Context) {
-// 	num := k.GetNumPendingSlashPackets(ctx)
-// 	k.setNumPendingSlashPackets(ctx, num+1)
-// }
-// ------
-
 // SetInitTimeoutTimestamp sets the init timeout timestamp for the given chain ID
 func (k Keeper) SetInitTimeoutTimestamp(ctx sdk.Context, chainID string, ts uint64) {
 	store := ctx.KVStore(k.storeKey)
