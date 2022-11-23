@@ -22,8 +22,6 @@ import (
 
 // TestHandlePacketDataForChain tests the HandlePacketDataForChain function. Note: Only one consumer is tested here,
 // but multiple consumers are tested in TestPendingPacketData.
-// TODO: will need to separately test that no vsc matured packet is queued without a slash packet already in the queue
-// ^ make a corresponding test for the place that queues up that packet, gaurunteeing vsc matured will never be at the head.
 func TestHandlePacketDataForChain(t *testing.T) {
 
 	testCases := []struct {
