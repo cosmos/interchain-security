@@ -70,6 +70,9 @@ func TestInitAndExportGenesis(t *testing.T) {
 			StopTime: oneHourFromNow,
 		}},
 		params,
+		nil,
+		nil,
+		nil,
 	)
 
 	// Instantiate in-mem provider keeper with mocks

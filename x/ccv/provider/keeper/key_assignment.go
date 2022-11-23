@@ -169,6 +169,30 @@ func (k Keeper) IterateValidatorsByConsumerAddr(
 	}
 }
 
+func (k Keeper) IterateAllValidatorsByConsumerAddr(
+	ctx sdk.Context,
+	cb func(chainID string, consumerAddr sdk.ConsAddress, providerAddr sdk.ConsAddress) (stop bool),
+) {
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, []byte{types.ValidatorsByConsumerAddrBytePrefix})
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		chainID, consumerAddr, err := types.ParseChainIdAndConsAddrKey(types.ValidatorsByConsumerAddrBytePrefix, iter.Key())
+		if err != nil {
+			panic(err)
+		}
+		var providerAddr sdk.ConsAddress
+		err = providerAddr.Unmarshal(iter.Value())
+		if err != nil {
+			panic(err)
+		}
+		stop := cb(chainID, consumerAddr, providerAddr)
+		if stop {
+			break
+		}
+	}
+}
+
 // DeleteValidatorByConsumerAddr deletes the mapping from a validator's consensus address on a consumer
 // to the validator's consensus address on the provider
 func (k Keeper) DeleteValidatorByConsumerAddr(ctx sdk.Context, chainID string, consumerAddr sdk.ConsAddress) {
@@ -276,6 +300,30 @@ func (k Keeper) GetConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID u
 		panic(err)
 	}
 	return consumerAddrsToPrune.Addresses
+}
+
+func (k Keeper) IterateAllConsumerAddrsToPrune(
+	ctx sdk.Context,
+	cb func(chainID string, vscID uint64, consumerAddrsToPrune [][]byte) (stop bool),
+) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ConsumerValidatorsByVscIDBytePrefix})
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		chainID, vscID, err := types.ParseChainIdAndVscIdKey(types.ConsumerValidatorsByVscIDBytePrefix, iterator.Key())
+		if err != nil {
+			panic(err)
+		}
+		var consumerAddrsToPrune types.AddressList
+		err = consumerAddrsToPrune.Unmarshal(iterator.Value())
+		if err != nil {
+			panic(err)
+		}
+		stop := cb(chainID, vscID, consumerAddrsToPrune.Addresses)
+		if stop {
+			break
+		}
+	}
 }
 
 // DeleteConsumerAddrsToPrune deletes the list of consumer addresses mapped to a given VSC ID
