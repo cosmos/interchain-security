@@ -237,8 +237,6 @@ func (k Keeper) DeletePendingKeyAssignment(ctx sdk.Context, chainID string, prov
 	store.Delete(types.PendingKeyAssignmentsKey(chainID, providerAddr))
 }
 
-// TODO mpoke: setters and getters for ConsumerValidatorsByVscID
-
 // AppendConsumerValidatorByVscID appends a consumer validator address to the list of consumer addresses
 // that can be pruned once the VSCMaturedPacket with vscID is received
 func (k Keeper) AppendConsumerValidatorByVscID(ctx sdk.Context, chainID string, vscID uint64, consumerAddr sdk.ConsAddress) {

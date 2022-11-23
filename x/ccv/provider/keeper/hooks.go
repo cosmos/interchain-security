@@ -83,6 +83,9 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 		}
 		return false // do not stop
 	})
+	for _, key := range toDelete {
+		h.k.DeleteValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
+	}
 }
 
 func (h Hooks) BeforeDelegationCreated(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) {
