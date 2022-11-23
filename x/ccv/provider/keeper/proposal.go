@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 )
@@ -65,20 +66,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 	clientState.TrustingPeriod = consumerUnbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
 	clientState.UnbondingPeriod = consumerUnbondingPeriod
 
-	// TODO: Allow for current validators to set different keys
-	consensusState := ibctmtypes.NewConsensusState(
-		ctx.BlockTime(),
-		commitmenttypes.NewMerkleRoot([]byte(ibctmtypes.SentinelRoot)),
-		ctx.BlockHeader().NextValidatorsHash,
-	)
-
-	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)
-	if err != nil {
-		return err
-	}
-	k.SetConsumerClientId(ctx, chainID, clientID)
-
-	consumerGen, err := k.MakeConsumerGenesis(ctx, chainID)
+	consumerGen, validatorSetHash, err := k.MakeConsumerGenesis(ctx, chainID)
 	if err != nil {
 		return err
 	}
@@ -86,6 +74,19 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 	if err != nil {
 		return err
 	}
+
+	// Create consensus state
+	consensusState := ibctmtypes.NewConsensusState(
+		ctx.BlockTime(),
+		commitmenttypes.NewMerkleRoot([]byte(ibctmtypes.SentinelRoot)),
+		validatorSetHash, // use the hash of the updated initial valset
+	)
+
+	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)
+	if err != nil {
+		return err
+	}
+	k.SetConsumerClientId(ctx, chainID, clientID)
 
 	// add the init timeout timestamp for this consumer chain
 	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
@@ -222,7 +223,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 }
 
 // MakeConsumerGenesis constructs the consumer CCV module part of the genesis state.
-func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consumertypes.GenesisState, err error) {
+func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
 
@@ -237,7 +238,7 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consum
 
 	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
 	if err != nil {
-		return gen, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
+		return gen, nil, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
 	}
 
 	gen = *consumertypes.DefaultGenesisState()
@@ -283,7 +284,14 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consum
 	// apply key assignments to the initial valset
 	gen.InitialValSet = k.ApplyKeyAssignmentToInitialValset(ctx, chainID, updates)
 
-	return gen, nil
+	// Get a hash of the consumer validator set from the update.
+	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(gen.InitialValSet)
+	if err != nil {
+		panic("unable to create validator set from updates computed from key assignment in MakeConsumerGenesis")
+	}
+	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
+
+	return gen, hash, nil
 }
 
 // SetPendingConsumerAdditionProp stores a pending proposal to create a consumer chain client
