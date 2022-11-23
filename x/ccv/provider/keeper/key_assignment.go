@@ -432,10 +432,12 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 	// For any pending key assignments that did not have a corresponding validator update already,
 	// set the old consumer key's power to 0 and the new consumer key's power to the
 	// power in the pending key assignment.
+	var addrToRemove []sdk.ConsAddress
 	k.IteratePendingKeyAssignments(ctx, chainID, func(
 		pAddr sdk.ConsAddress,
 		pendingKeyAssignment abci.ValidatorUpdate,
 	) (stop bool) {
+		addrToRemove = append(addrToRemove, pAddr)
 		updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
 			PubKey: pendingKeyAssignment.PubKey,
 			Power:  0,
@@ -455,6 +457,11 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 	})
 	if err != nil {
 		return newUpdates, err
+	}
+
+	// Remove the pending key assignments
+	for _, addr := range addrToRemove {
+		k.DeletePendingKeyAssignment(ctx, chainID, addr)
 	}
 
 	// Remove the updates that need to be removed
