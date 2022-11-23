@@ -15,6 +15,7 @@ import (
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	keeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
 func TestInvalidMsg(t *testing.T) {
@@ -68,25 +69,24 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			expError: true,
 			chainID:  "chainid",
 		},
-		// TODO mpoke: fix test
-		// {
-		// 	name: "fail: consumer key in use",
-		// 	setup: func(ctx sdk.Context,
-		// 		k keeper.Keeper, mocks testkeeper.MockedKeepers) {
+		{
+			name: "fail: consumer key in use",
+			setup: func(ctx sdk.Context,
+				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
 
-		// 		// Use the consumer key already
-		// 		err := k.KeyAssignment(ctx, "chainid").SetProviderPubKeyToConsumerPubKey(testValProvider.TMProtoCryptoPublicKey(), testValConsumer.TMProtoCryptoPublicKey())
-		// 		require.NoError(t, err)
+				// Use the consumer key already
+				pAddr := utils.TMCryptoPublicKeyToConsAddr(testValProvider.TMProtoCryptoPublicKey())
+				k.SetValidatorConsumerPubKey(ctx, "chainid", pAddr, testValConsumer.TMProtoCryptoPublicKey())
 
-		// 		gomock.InOrder(
-		// 			mocks.MockStakingKeeper.EXPECT().GetValidator(
-		// 				ctx, testValProvider.SDKValAddress(),
-		// 			).Return(stakingtypes.Validator{}, false).Times(1),
-		// 		)
-		// 	},
-		// 	expError: true,
-		// 	chainID:  "chainid",
-		// },
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidator(
+						ctx, testValProvider.SDKValAddress(),
+					).Return(stakingtypes.Validator{}, false).Times(1),
+				)
+			},
+			expError: true,
+			chainID:  "chainid",
+		},
 	}
 
 	for _, tc := range testCases {
