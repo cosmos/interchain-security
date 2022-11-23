@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -70,4 +71,56 @@ func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryC
 	props := k.GetAllConsumerRemovalProps(ctx)
 
 	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &props}, nil
+}
+
+func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.QueryValidatorConsumerAddrRequest) (*types.QueryValidatorConsumerAddrResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if _, found := k.GetConsumerClientId(ctx, req.ChainId); !found {
+		return nil, types.ErrUnknownConsumerChainId
+	}
+
+	providerAddr, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	consumerKey, found := k.GetValidatorConsumerPubKey(ctx, req.ChainId, providerAddr)
+	if !found {
+		return nil, types.ErrNoValidatorConsumerAddress
+	}
+
+	return &types.QueryValidatorConsumerAddrResponse{
+		ConsumerAddress: utils.TMCryptoPublicKeyToConsAddr(consumerKey).String(),
+	}, nil
+}
+
+func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.QueryValidatorProviderAddrRequest) (*types.QueryValidatorProviderAddrResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if _, found := k.GetConsumerClientId(ctx, req.ChainId); !found {
+		return nil, types.ErrUnknownConsumerChainId
+	}
+
+	consumerAddr, err := sdk.ConsAddressFromBech32(req.ConsumerAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	providerAddr, found := k.GetValidatorByConsumerAddr(ctx, req.ChainId, consumerAddr)
+	if !found {
+		return nil, types.ErrNoValidatorProviderAddress
+	}
+
+	return &types.QueryValidatorProviderAddrResponse{
+		ProviderAddress: providerAddr.String(),
+	}, nil
 }

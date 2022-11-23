@@ -13,4 +13,6 @@ var (
 	ErrInvalidConsumerConsensusPubKey  = sdkerrors.Register(ModuleName, 5, "empty consumer consensus public key")
 	ErrBlankConsumerChainID            = sdkerrors.Register(ModuleName, 6, "consumer chain id must not be blank")
 	ErrConsumerKeyNotFound             = sdkerrors.Register(ModuleName, 7, "consumer key not found")
+	ErrNoValidatorConsumerAddress      = sdkerrors.Register(ModuleName, 8, "error getting validator consumer address")
+	ErrNoValidatorProviderAddress      = sdkerrors.Register(ModuleName, 9, "error getting validator provider address")
 )

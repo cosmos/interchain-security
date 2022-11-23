@@ -12,6 +12,11 @@ import (
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
+// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
+// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
+// PendingKeyAssignment: (chainID, providerAddr consAddr) -> pendingKeyAssignment abci.ValidatorUpdate
+// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrsToPrune [][]byte
+
 // GetValidatorConsumerPubKey returns a validator's public key assigned for a consumer chain
 func (k Keeper) GetValidatorConsumerPubKey(
 	ctx sdk.Context,
@@ -237,9 +242,9 @@ func (k Keeper) DeletePendingKeyAssignment(ctx sdk.Context, chainID string, prov
 	store.Delete(types.PendingKeyAssignmentsKey(chainID, providerAddr))
 }
 
-// AppendConsumerValidatorByVscID appends a consumer validator address to the list of consumer addresses
+// AppendConsumerAddrsToPrune appends a consumer validator address to the list of consumer addresses
 // that can be pruned once the VSCMaturedPacket with vscID is received
-func (k Keeper) AppendConsumerValidatorByVscID(ctx sdk.Context, chainID string, vscID uint64, consumerAddr sdk.ConsAddress) {
+func (k Keeper) AppendConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID uint64, consumerAddr sdk.ConsAddress) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerValidatorsByVscIDKey(chainID, vscID))
 	var consumerAddrsToPrune types.AddressList
@@ -257,9 +262,9 @@ func (k Keeper) AppendConsumerValidatorByVscID(ctx sdk.Context, chainID string, 
 	store.Set(types.ConsumerValidatorsByVscIDKey(chainID, vscID), bz)
 }
 
-// GetConsumerValidatorByVscID returns the list of consumer addresses
+// GetConsumerAddrsToPrune returns the list of consumer addresses
 // that can be pruned once the VSCMaturedPacket with vscID is received
-func (k Keeper) GetConsumerValidatorByVscID(ctx sdk.Context, chainID string, vscID uint64) [][]byte {
+func (k Keeper) GetConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID uint64) [][]byte {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerValidatorsByVscIDKey(chainID, vscID))
 	if bz == nil {
@@ -273,8 +278,8 @@ func (k Keeper) GetConsumerValidatorByVscID(ctx sdk.Context, chainID string, vsc
 	return consumerAddrsToPrune.Addresses
 }
 
-// DeleteConsumerValidatorByVscID deletes the list of consumer addresses mapped to a given VSC ID
-func (k Keeper) DeleteConsumerValidatorByVscID(ctx sdk.Context, chainID string, vscID uint64) {
+// DeleteConsumerAddrsToPrune deletes the list of consumer addresses mapped to a given VSC ID
+func (k Keeper) DeleteConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ConsumerValidatorsByVscIDKey(chainID, vscID))
 }
@@ -311,7 +316,7 @@ func (k Keeper) AssignConsumerKey(
 			// mark this old consumer key as prunable once the VSCMaturedPacket
 			// for the current VSC ID is received;
 			// note: this state is removed on receiving the VSCMaturedPacket
-			k.AppendConsumerValidatorByVscID(
+			k.AppendConsumerAddrsToPrune(
 				ctx,
 				chainID,
 				k.GetValidatorSetUpdateId(ctx),
@@ -492,9 +497,9 @@ func (k Keeper) GetProviderAddrFromConsumerAddr(
 // PruneKeyAssignments prunes the consumer addresses no longer needed
 // as they cannot be referenced in slash requests (by a correct consumer)
 func (k Keeper) PruneKeyAssignments(ctx sdk.Context, chainID string, vscID uint64) {
-	consumerAddrs := k.GetConsumerValidatorByVscID(ctx, chainID, vscID)
+	consumerAddrs := k.GetConsumerAddrsToPrune(ctx, chainID, vscID)
 	for _, addr := range consumerAddrs {
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, addr)
 	}
-	k.DeleteConsumerValidatorByVscID(ctx, chainID, vscID)
+	k.DeleteConsumerAddrsToPrune(ctx, chainID, vscID)
 }
