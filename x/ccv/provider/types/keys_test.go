@@ -1,10 +1,12 @@
-package types
+package types_test
 
 import (
 	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,24 +39,28 @@ func getSingleByteKeys() [][]byte {
 	keys := make([][]byte, 32)
 	i := 0
 
-	keys[i], i = PortKey(), i+1
-	keys[i], i = MaturedUnbondingOpsKey(), i+1
-	keys[i], i = ValidatorSetUpdateIdKey(), i+1
-	keys[i], i = []byte{ChainToChannelBytePrefix}, i+1
-	keys[i], i = []byte{ChannelToChainBytePrefix}, i+1
-	keys[i], i = []byte{ChainToClientBytePrefix}, i+1
-	keys[i], i = []byte{InitTimeoutTimestampBytePrefix}, i+1
-	keys[i], i = []byte{PendingCAPBytePrefix}, i+1
-	keys[i], i = []byte{PendingCRPBytePrefix}, i+1
-	keys[i], i = []byte{UnbondingOpBytePrefix}, i+1
-	keys[i], i = []byte{UnbondingOpIndexBytePrefix}, i+1
-	keys[i], i = []byte{ValsetUpdateBlockHeightBytePrefix}, i+1
-	keys[i], i = []byte{ConsumerGenesisBytePrefix}, i+1
-	keys[i], i = []byte{SlashAcksBytePrefix}, i+1
-	keys[i], i = []byte{InitChainHeightBytePrefix}, i+1
-	keys[i], i = []byte{PendingVSCsBytePrefix}, i+1
-	keys[i], i = []byte{VscSendTimestampBytePrefix}, i+1
-	keys[i], i = []byte{LockUnbondingOnTimeoutBytePrefix}, i+1
+	keys[i], i = types.PortKey(), i+1
+	keys[i], i = types.MaturedUnbondingOpsKey(), i+1
+	keys[i], i = types.ValidatorSetUpdateIdKey(), i+1
+	keys[i], i = []byte{types.ChainToChannelBytePrefix}, i+1
+	keys[i], i = []byte{types.ChannelToChainBytePrefix}, i+1
+	keys[i], i = []byte{types.ChainToClientBytePrefix}, i+1
+	keys[i], i = []byte{types.InitTimeoutTimestampBytePrefix}, i+1
+	keys[i], i = []byte{types.PendingCAPBytePrefix}, i+1
+	keys[i], i = []byte{types.PendingCRPBytePrefix}, i+1
+	keys[i], i = []byte{types.UnbondingOpBytePrefix}, i+1
+	keys[i], i = []byte{types.UnbondingOpIndexBytePrefix}, i+1
+	keys[i], i = []byte{types.ValsetUpdateBlockHeightBytePrefix}, i+1
+	keys[i], i = []byte{types.ConsumerGenesisBytePrefix}, i+1
+	keys[i], i = []byte{types.SlashAcksBytePrefix}, i+1
+	keys[i], i = []byte{types.InitChainHeightBytePrefix}, i+1
+	keys[i], i = []byte{types.PendingVSCsBytePrefix}, i+1
+	keys[i], i = []byte{types.VscSendTimestampBytePrefix}, i+1
+	keys[i], i = []byte{types.LockUnbondingOnTimeoutBytePrefix}, i+1
+	keys[i], i = []byte{types.ConsumerValidatorsBytePrefix}, i+1
+	keys[i], i = []byte{types.ValidatorsByConsumerAddrBytePrefix}, i+1
+	keys[i], i = []byte{types.PendingKeyAssignmentsBytePrefix}, i+1
+	keys[i], i = []byte{types.ConsumerValidatorsByVscIDBytePrefix}, i+1
 
 	return keys[:i]
 }
@@ -73,12 +79,12 @@ func TestTsAndChainIdKeyAndParse(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		key := tsAndChainIdKey(test.prefix, test.timestamp, test.chainID)
+		key := types.TsAndChainIdKey(test.prefix, test.timestamp, test.chainID)
 		require.NotEmpty(t, key)
 		// Expected bytes = prefix + time length + time bytes + length of chainID
 		expectedLen := 1 + 8 + len(sdk.FormatTimeBytes(time.Time{})) + len(test.chainID)
 		require.Equal(t, expectedLen, len(key))
-		parsedTime, parsedID, err := parseTsAndChainIdKey(test.prefix, key)
+		parsedTime, parsedID, err := types.ParseTsAndChainIdKey(test.prefix, key)
 		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
 		require.Equal(t, test.chainID, parsedID)
 		require.NoError(t, err)
@@ -99,12 +105,12 @@ func TestChainIdAndTsKeyAndParse(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		key := chainIdAndTsKey(test.prefix, test.chainID, test.timestamp)
+		key := types.ChainIdAndTsKey(test.prefix, test.chainID, test.timestamp)
 		require.NotEmpty(t, key)
 		// Expected bytes = prefix + chainID length + chainID + time bytes
 		expectedLen := 1 + 8 + len(test.chainID) + len(sdk.FormatTimeBytes(time.Time{}))
 		require.Equal(t, expectedLen, len(key))
-		parsedID, parsedTime, err := parseChainIdAndTsKey(test.prefix, key)
+		parsedID, parsedTime, err := types.ParseChainIdAndTsKey(test.prefix, key)
 		require.Equal(t, test.chainID, parsedID)
 		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
 		require.NoError(t, err)
@@ -124,14 +130,46 @@ func TestChainIdAndVscIdAndParse(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		key := chainIdAndVscIdKey(test.prefix, test.chainID, test.vscID)
+		key := types.ChainIdAndVscIdKey(test.prefix, test.chainID, test.vscID)
 		require.NotEmpty(t, key)
 		// Expected bytes = prefix + chainID length + chainID + vscId bytes
 		expectedLen := 1 + 8 + len(test.chainID) + 8
 		require.Equal(t, expectedLen, len(key))
-		parsedID, parsedVscID, err := parseChainIdAndVscIdKey(test.prefix, key)
+		parsedID, parsedVscID, err := types.ParseChainIdAndVscIdKey(test.prefix, key)
 		require.Equal(t, test.chainID, parsedID)
 		require.Equal(t, test.vscID, parsedVscID)
+		require.NoError(t, err)
+	}
+}
+
+// Tests the construction and parsing of ChainIdAndConsAddr keys
+func TestChainIdAndConsAddrAndParse(t *testing.T) {
+	pubKey1, err := testkeeper.GenPubKey()
+	require.NoError(t, err)
+	pubKey2, err := testkeeper.GenPubKey()
+	require.NoError(t, err)
+	pubKey3, err := testkeeper.GenPubKey()
+	require.NoError(t, err)
+
+	tests := []struct {
+		prefix  byte
+		chainID string
+		addr    sdk.ConsAddress
+	}{
+		{prefix: 0x01, chainID: "1", addr: sdk.ConsAddress(pubKey1.Address())},
+		{prefix: 0x02, chainID: "some other ID", addr: sdk.ConsAddress(pubKey2.Address())},
+		{prefix: 0x03, chainID: "some other other chain ID", addr: sdk.ConsAddress(pubKey3.Address())},
+	}
+
+	for _, test := range tests {
+		key := types.ChainIdAndConsAddrKey(test.prefix, test.chainID, test.addr)
+		require.NotEmpty(t, key)
+		// Expected bytes = prefix + chainID length + chainID + consAddr bytes
+		expectedLen := 1 + 8 + len(test.chainID) + len(test.addr)
+		require.Equal(t, expectedLen, len(key))
+		parsedID, parsedConsAddr, err := types.ParseChainIdAndConsAddrKey(test.prefix, key)
+		require.Equal(t, test.chainID, parsedID)
+		require.Equal(t, test.addr, parsedConsAddr)
 		require.NoError(t, err)
 	}
 }
@@ -140,27 +178,27 @@ func TestChainIdAndVscIdAndParse(t *testing.T) {
 func TestKeysWithPrefixAndId(t *testing.T) {
 
 	funcs := []func(string) []byte{
-		ChainToChannelKey,
-		ChannelToChainKey,
-		ChainToClientKey,
-		InitTimeoutTimestampKey,
-		ConsumerGenesisKey,
-		SlashAcksKey,
-		InitChainHeightKey,
-		PendingVSCsKey,
-		LockUnbondingOnTimeoutKey,
+		types.ChainToChannelKey,
+		types.ChannelToChainKey,
+		types.ChainToClientKey,
+		types.InitTimeoutTimestampKey,
+		types.ConsumerGenesisKey,
+		types.SlashAcksKey,
+		types.InitChainHeightKey,
+		types.PendingVSCsKey,
+		types.LockUnbondingOnTimeoutKey,
 	}
 
 	expectedBytePrefixes := []byte{
-		ChainToChannelBytePrefix,
-		ChannelToChainBytePrefix,
-		ChainToClientBytePrefix,
-		InitTimeoutTimestampBytePrefix,
-		ConsumerGenesisBytePrefix,
-		SlashAcksBytePrefix,
-		InitChainHeightBytePrefix,
-		PendingVSCsBytePrefix,
-		LockUnbondingOnTimeoutBytePrefix,
+		types.ChainToChannelBytePrefix,
+		types.ChannelToChainBytePrefix,
+		types.ChainToClientBytePrefix,
+		types.InitTimeoutTimestampBytePrefix,
+		types.ConsumerGenesisBytePrefix,
+		types.SlashAcksBytePrefix,
+		types.InitChainHeightBytePrefix,
+		types.PendingVSCsBytePrefix,
+		types.LockUnbondingOnTimeoutBytePrefix,
 	}
 
 	tests := []struct {
@@ -183,13 +221,13 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 func TestKeysWithUint64Payload(t *testing.T) {
 
 	funcs := []func(uint64) []byte{
-		UnbondingOpKey,
-		ValsetUpdateBlockHeightKey,
+		types.UnbondingOpKey,
+		types.ValsetUpdateBlockHeightKey,
 	}
 
 	expectedBytePrefixes := []byte{
-		UnbondingOpBytePrefix,
-		ValsetUpdateBlockHeightBytePrefix,
+		types.UnbondingOpBytePrefix,
+		types.ValsetUpdateBlockHeightBytePrefix,
 	}
 
 	tests := []struct {
