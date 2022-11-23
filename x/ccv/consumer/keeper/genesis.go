@@ -1,16 +1,13 @@
 package keeper
 
 import (
-	"bytes"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // InitGenesis initializes the CCV consumer state and binds to PortID.
@@ -56,12 +53,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 		k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()), uint64(0))
 
 	} else {
-		// verify genesis initial valset against the latest consensus state
-		// IBC genesis MUST run before CCV consumer genesis
-		if err := k.verifyGenesisInitValset(ctx, state); err != nil {
-			panic(err)
-		}
-
 		// chain restarts with the CCV channel established
 		if state.ProviderChannelId != "" {
 			// set provider channel ID
@@ -196,31 +187,4 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 	}
 
 	return
-}
-
-// verifyGenesisInitValset verifies the latest consensus state on provider client matches
-// the initial validator set of restarted chain thus
-func (k Keeper) verifyGenesisInitValset(ctx sdk.Context, genState *consumertypes.GenesisState) error {
-
-	consState, ok := k.clientKeeper.GetLatestClientConsensusState(ctx, genState.ProviderClientId)
-	if !ok {
-		return fmt.Errorf("consensus state for provider client not found. MUST run IBC genesis before CCV consumer genesis")
-	}
-	tmConsState, ok := consState.(*ibctmtypes.ConsensusState)
-	if !ok {
-		return fmt.Errorf(fmt.Sprintf("consensus state has wrong type. expected: %T, got: %T", &ibctmtypes.ConsensusState{}, consState))
-	}
-
-	// ensure that initial validator set is same as initial consensus state on provider client.
-	// this will be verified by provider module on channel handshake.
-	vals, err := tmtypes.PB2TM.ValidatorUpdates(genState.InitialValSet)
-	if err != nil {
-		return err
-	}
-	valSet := tmtypes.NewValidatorSet(vals)
-
-	if !bytes.Equal(tmConsState.NextValidatorsHash, valSet.Hash()) {
-		return fmt.Errorf("initial validator set does not match last consensus state of the provider client")
-	}
-	return nil
 }
