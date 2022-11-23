@@ -292,27 +292,40 @@ func (k Keeper) AssignConsumerKey(
 	providerAddr sdk.ConsAddress,
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
+	consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+
 	// validator must already be registered
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr)
 	if !found {
 		return stakingtypes.ErrNoValidatorFound
 	}
 
-	// check if the consumer chain is registered, i.e.,
-	// a client to the consumer was already created
-	_, consumerRegistered := k.GetConsumerClientId(ctx, chainID)
+	if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
+		// mapping already exists; return error
+		return sdkerrors.Wrapf(
+			types.ErrInvalidConsumerConsensusPubKey, "consumer key already exists",
+		)
+	}
 
-	// get the previous key assigned for this validator on this consumer chain
-	oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
-	if !found {
-		// the validator had no key assigned on this consumer chain
-		providerKey, err := validator.TmConsPublicKey()
-		if err != nil {
-			return err
-		}
-		oldConsumerKey = providerKey
-	} else {
-		if consumerRegistered {
+	// set the mapping from this validator's provider address to the new consumer key;
+	// overwrite if already exists
+	// note: this state is deleted when the validator is removed from the staking module
+	k.SetValidatorConsumerPubKey(ctx, chainID, providerAddr, consumerKey)
+
+	// if the consumer chain is already registered,
+	// i.e. a client to the consumer was already created, set the mapping from
+	// this validator's new consensus address on the consumer
+	// to its consensus address on the provider;
+	// otherwise, the mapping is added when the consumer is registered
+	_, consumerRegistered := k.GetConsumerClientId(ctx, chainID)
+	if consumerRegistered {
+		// note: this state must be deleted through the pruning mechanism;
+		// see ConsumerValidatorsByVscID
+		k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
+
+		// get the previous key assigned for this validator on this consumer chain
+		oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
+		if found {
 			// mark this old consumer key as prunable once the VSCMaturedPacket
 			// for the current VSC ID is received;
 			// note: this state is removed on receiving the VSCMaturedPacket
@@ -322,43 +335,28 @@ func (k Keeper) AssignConsumerKey(
 				k.GetValidatorSetUpdateId(ctx),
 				utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey),
 			)
+		} else {
+			// the validator had no key assigned on this consumer chain
+			providerKey, err := validator.TmConsPublicKey()
+			if err != nil {
+				return err
+			}
+			oldConsumerKey = providerKey
 		}
-	}
 
-	// get the previous power of this validator
-	oldPower := k.stakingKeeper.GetLastValidatorPower(ctx, sdk.ValAddress(validator.OperatorAddress))
-	// if the validator is active and the consumer is registered,
-	// then store old key and power for modifying the valset update in EndBlock;
-	// note: this state is deleted at the end of the block
-	if oldPower > 0 && consumerRegistered {
-		k.SetPendingKeyAssignment(
-			ctx,
-			chainID,
-			providerAddr,
-			abci.ValidatorUpdate{PubKey: oldConsumerKey, Power: oldPower},
-		)
-	}
-
-	// set the mapping from this validator's provider address to the new consumer key;
-	// overwrite if already exists
-	// note: this state is deleted when the validator is removed from the staking module
-	k.SetValidatorConsumerPubKey(ctx, chainID, providerAddr, consumerKey)
-
-	// if the consumer chain is already registered, set the mapping from
-	// this validator's new consensus address on the consumer
-	// to its consensus address on the provider;
-	// otherwise, the mapping is added when the consumer is registered
-	if consumerRegistered {
-		consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
-		if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
-			// mapping already exists; return error
-			return sdkerrors.Wrapf(
-				types.ErrInvalidConsumerConsensusPubKey, "consumer key already exists",
+		// if the validator is active and the consumer is registered,
+		// then store old key and power for modifying the valset update in EndBlock;
+		// note: this state is deleted at the end of the block
+		// get the previous power of this validator
+		oldPower := k.stakingKeeper.GetLastValidatorPower(ctx, sdk.ValAddress(validator.OperatorAddress))
+		if oldPower > 0 {
+			k.SetPendingKeyAssignment(
+				ctx,
+				chainID,
+				providerAddr,
+				abci.ValidatorUpdate{PubKey: oldConsumerKey, Power: oldPower},
 			)
 		}
-		// note: this state must be deleted through the pruning mechanism;
-		// see ConsumerValidatorsByVscID
-		k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
 	}
 
 	return nil
