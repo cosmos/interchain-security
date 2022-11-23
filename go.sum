@@ -602,8 +602,8 @@ github.com/inconshreveable/mousetrap v1.0.1 h1:U3uMjPSQEBMNp1lFxmllqCPM6P5u/Xq7P
 github.com/inconshreveable/mousetrap v1.0.1/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/influxdata/influxdb v1.2.3-0.20180221223340-01288bdb0883/go.mod h1:qZna6X/4elxqT3yI9iZYdZrWWdeFOOprn86kgg4+IzY=
 github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
-github.com/informalsystems/ibc-go/v3 v3.0.0-beta1.0.20221121181828-c75c185d20b2 h1:i9xbwqor18BxeFirWpH7N2qeJAl+VgydZN/R+S4KYks=
-github.com/informalsystems/ibc-go/v3 v3.0.0-beta1.0.20221121181828-c75c185d20b2/go.mod h1:HK6fQYzqivKkZ0Vgl/vh1kJz5D3dyKN2N/CWpEJvXgk=
+github.com/informalsystems/ibc-go/v3 v3.0.0-beta1.0.20221122235234-a397bc4b86ed h1:xsufzAB5+9ndxAT41xBzmtPcGUs0py+u3mBBFDNmxWo=
+github.com/informalsystems/ibc-go/v3 v3.0.0-beta1.0.20221122235234-a397bc4b86ed/go.mod h1:HK6fQYzqivKkZ0Vgl/vh1kJz5D3dyKN2N/CWpEJvXgk=
 github.com/jackpal/go-nat-pmp v1.0.2-0.20160603034137-1fa385a6f458/go.mod h1:QPH045xvCAeXUZOxsnwmrtiCoxIr9eob+4orBN1SBKc=
 github.com/jedisct1/go-minisign v0.0.0-20190909160543-45766022959e/go.mod h1:G1CVv03EnqU1wYL2dFwXxW2An0az9JTl/ZsqXQeBlkU=
 github.com/jessevdk/go-flags v0.0.0-20141203071132-1679536dcc89/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
