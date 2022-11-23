@@ -600,7 +600,7 @@ func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId ui
 func (k Keeper) SetSlashAcks(ctx sdk.Context, chainID string, acks []string) {
 	store := ctx.KVStore(k.storeKey)
 
-	sa := types.SlashAcks{
+	sa := types.AddressList{
 		Addresses: acks,
 	}
 	bz, err := sa.Marshal()
@@ -617,7 +617,7 @@ func (k Keeper) GetSlashAcks(ctx sdk.Context, chainID string) []string {
 	if bz == nil {
 		return nil
 	}
-	var acks types.SlashAcks
+	var acks types.AddressList
 	if err := acks.Unmarshal(bz); err != nil {
 		panic(fmt.Errorf("failed to decode json: %w", err))
 	}
@@ -647,7 +647,7 @@ func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks [
 
 		chainID := string(iterator.Key()[1:])
 
-		var sa types.SlashAcks
+		var sa types.AddressList
 		err := sa.Unmarshal(iterator.Value())
 		if err != nil {
 			panic(fmt.Errorf("failed to unmarshal SlashAcks: %w", err))

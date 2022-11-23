@@ -93,9 +93,8 @@ message HandshakeMetadata {
   string version = 2;
 }
 
-// SlashAcks contains addesses of consumer chain validators
-// successfully slashed on the provider chain
-message SlashAcks {
+// AddressList holds a list of consensus addesses
+message AddressList {
   repeated string addresses = 1;
 }
 
