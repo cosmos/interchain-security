@@ -357,6 +357,108 @@ func (k Keeper) ApplyKeyAssignmentToInitialValset(
 	return newUpdates
 }
 
+// ApplyKeyAssignmentToValUpdates applies the key assignment to the validator updates
+// received from the staking module
+func (k Keeper) ApplyKeyAssignmentToValUpdates(
+	ctx sdk.Context,
+	chainID string,
+	valUpdates []abci.ValidatorUpdate,
+) (newUpdates []abci.ValidatorUpdate, err error) {
+	var updatesToRemove []int
+	var updatesToAdd []abci.ValidatorUpdate
+
+	for i, valUpdate := range valUpdates {
+		providerAddr := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
+
+		// If a pending key assignment is found, we remove the valupdate with the old consumer key,
+		// create tow new valupdates,
+		//  - setting the old consumer key's power to 0
+		//  - and setting the new consumer key's power to the power in the update
+		pendingKeyAssignment, found := k.GetPendingKeyAssignment(ctx, chainID, providerAddr)
+		if found {
+			updatesToRemove = append(updatesToRemove, i)
+
+			updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+				PubKey: pendingKeyAssignment.PubKey,
+				Power:  0,
+			})
+
+			newConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
+			if !found {
+				return newUpdates, sdkerrors.Wrapf(types.ErrConsumerKeyNotFound, "consumer key not found for %s", providerAddr)
+			}
+			updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+				PubKey: newConsumerKey,
+				Power:  valUpdate.Power,
+			})
+			k.DeletePendingKeyAssignment(ctx, chainID, providerAddr)
+		} else {
+			// If a pending key assignment is not found, we check if the validator's key is assigned.
+			// If it is, we replace the update containing the provider key with the update containing the consumer key.
+			consumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
+			if found {
+				updatesToRemove = append(updatesToRemove, i)
+				updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+					PubKey: consumerKey,
+					Power:  valUpdate.Power,
+				})
+			}
+		}
+	}
+
+	// For any pending key assignments that did not have a corresponding validator update already,
+	// set the old consumer key's power to 0 and the new consumer key's power to the
+	// power in the pending key assignment.
+	k.IteratePendingKeyAssignments(ctx, chainID, func(
+		pAddr sdk.ConsAddress,
+		pendingKeyAssignment abci.ValidatorUpdate,
+	) (stop bool) {
+		updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+			PubKey: pendingKeyAssignment.PubKey,
+			Power:  0,
+		})
+
+		newConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, pAddr)
+		if !found {
+			err = sdkerrors.Wrapf(types.ErrConsumerKeyNotFound, "consumer key not found for %s", pAddr)
+			return true
+		}
+		updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+			PubKey: newConsumerKey,
+			Power:  pendingKeyAssignment.Power,
+		})
+
+		return false
+	})
+	if err != nil {
+		return newUpdates, err
+	}
+
+	// Remove the updates that need to be removed
+	for _, index := range updatesToRemove {
+		valUpdates = append(valUpdates[:index], valUpdates[index+1:]...)
+	}
+
+	// Add the updates that need to be added
+	valUpdates = append(valUpdates, updatesToAdd...)
+
+	return valUpdates, nil
+}
+
+// GetProviderAddrFromConsumerAddr returns the consensus address of a validator with
+// consAddr set as the consensus address on a consumer chain
+func (k Keeper) GetProviderAddrFromConsumerAddr(
+	ctx sdk.Context,
+	chainID string,
+	consAddr sdk.ConsAddress,
+) sdk.ConsAddress {
+	// check if this address is known only to the consumer chain
+	if providerConsAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consAddr); found {
+		return providerConsAddr
+	}
+	return consAddr
+}
+
 // PruneKeyAssignments prunes the consumer addresses no longer needed
 // as they cannot be referenced in slash requests (by a correct consumer)
 func (k Keeper) PruneKeyAssignments(ctx sdk.Context, chainID string, vscID uint64) {
