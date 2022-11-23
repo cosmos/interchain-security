@@ -39,15 +39,18 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 
 	for _, tc := range testCases {
 
+		// Reset test state
 		s.SetupTest()
-		s.SetupCCVChannel()
-		s.SetupTransferChannel()
+
+		// Setup CCV channel for all instantiated consumers
+		s.SetupAllCCVChannels()
+
 		validatorsPerChain := len(s.consumerChain.Vals.Validators)
 
 		providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
 		providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
 		providerKeeper := s.providerApp.GetProviderKeeper()
-		consumerKeeper := s.consumerApp.GetConsumerKeeper()
+		firstConsumerKeeper := s.getFirstBundle().GetKeeper()
 
 		// get a cross-chain validator address, pubkey and balance
 		tmVals := s.consumerChain.Vals.Validators
@@ -67,8 +70,8 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 			s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
 		providerSlashingKeeper.SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
 
-		// get valseUpdateId for current block height
-		valsetUpdateId := consumerKeeper.GetHeightValsetUpdateID(
+		// get valseUpdateId for current block height on first consumer
+		valsetUpdateId := firstConsumerKeeper.GetHeightValsetUpdateID(
 			s.consumerCtx(), uint64(s.consumerCtx().BlockHeight()))
 
 		// construct the slash packet with the validator address and power
@@ -92,55 +95,61 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		packet := channeltypes.NewPacket(packetData, 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
 			ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
-		// Send the slash packet through CCV
-		err = s.path.EndpointA.SendPacket(packet)
+		// Send slash packet from the first consumer chain
+		err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
 		s.Require().NoError(err)
 
 		if tc == downtimeTestCase {
-			// Set outstanding slashing flag if testing a downtime slash packet
-			consumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consAddr)
+			// Set outstanding slashing flag for first consumer if testing a downtime slash packet
+			firstConsumerKeeper.SetOutstandingDowntime(s.consumerCtx(), consAddr)
 		}
 
-		// Note: RecvPacket advances two blocks. Let's say the provider is currently at height n.
-		// The received slash packet will be handled during n, and the staking module will then
-		// register a validator update from that packet during the endblocker of n. Then the ccv
-		// module sends a VSC packet during the endblocker of n. The new validator set will be
-		// committed to in block n+1, and will be in effect for block n+2.
+		// Note: RecvPacket advances two blocks. Let's say the provider is currently at height N.
+		// The received slash packet will be handled during N, and the staking module will then
+		// register a validator update from that packet during the endblocker of N. Then the ccv
+		// module sends VSC packets during the endblocker of N. The new validator set will be
+		// committed to in block N+1, and will be in effect for block N+2.
 
 		valsetUpdateN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
-		// receive the downtime packet on the provider chain. RecvPacket() calls the provider endblocker twice
+		// receive the downtime packet on the provider chain.
+		// RecvPacket() calls the provider endblocker twice
 		err = s.path.EndpointB.RecvPacket(packet)
 		s.Require().NoError(err)
 
 		// We've now advanced two blocks.
 
-		// One VSC packet should have been sent during block n
+		// VSC packets should have been sent from provider during block N to each consumer
 		expectedSentValsetUpdateId := valsetUpdateN
-		_, found = providerKeeper.GetVscSendTimestamp(s.providerCtx(),
-			s.consumerChain.ChainID, expectedSentValsetUpdateId)
-		s.Require().True(found)
+		for _, bundle := range s.consumerBundles {
+			_, found = providerKeeper.GetVscSendTimestamp(s.providerCtx(),
+				bundle.Chain.ChainID, expectedSentValsetUpdateId)
+			s.Require().True(found)
+		}
 
-		// Confirm the valset update Id was incremented twice.
+		// Confirm the valset update Id was incremented twice on provider,
+		// since two endblockers have passed.
 		valsetUpdateNPlus2 := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 		s.Require().Equal(valsetUpdateN+2, valsetUpdateNPlus2)
 
 		// check that the validator was removed from the provider validator set
 		s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
 
-		// Relay the VSC packet to the consumer
-		relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
+		for _, bundle := range s.consumerBundles {
+			// Relay VSC packets from provider to each consumer
+			relayAllCommittedPackets(s, s.providerChain, bundle.Path,
+				ccv.ProviderPortID, bundle.Path.EndpointB.ChannelID, 1)
 
-		// check that the consumer updated its VSC ID for the subsequent block
-		actualValsetUpdateID := consumerKeeper.GetHeightValsetUpdateID(
-			s.consumerCtx(), uint64(s.consumerCtx().BlockHeight())+1)
-		s.Require().Equal(expectedSentValsetUpdateId, actualValsetUpdateID)
+			// check that each consumer updated its VSC ID for the subsequent block
+			consumerKeeper := bundle.GetKeeper()
+			ctx := bundle.GetCtx()
+			actualValsetUpdateID := consumerKeeper.GetHeightValsetUpdateID(
+				ctx, uint64(ctx.BlockHeight())+1)
+			s.Require().Equal(expectedSentValsetUpdateId, actualValsetUpdateID)
 
-		// check that the validator was removed from the consumer validator set
-		s.Require().Len(s.consumerChain.Vals.Validators, validatorsPerChain-1)
-
-		err = s.path.EndpointB.UpdateClient()
-		s.Require().NoError(err)
+			// check that slashed validator was removed from each consumer validator set
+			s.Require().Len(bundle.Chain.Vals.Validators, validatorsPerChain-1)
+		}
 
 		// check that the validator is successfully jailed on provider
 		validatorJailed, ok := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
@@ -148,7 +157,7 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		s.Require().True(validatorJailed.Jailed)
 		s.Require().Equal(validatorJailed.Status, stakingtypes.Unbonding)
 
-		// check that the validator's tokens were slashed
+		// check that the slashed validator's tokens were indeed slashed on provider
 		var slashFraction sdk.Dec
 		if tc == downtimeTestCase {
 			slashFraction = providerSlashingKeeper.SlashFractionDowntime(s.providerCtx())
@@ -161,23 +170,24 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		resultingTokens := valOldBalance.Sub(slashedAmount.TruncateInt())
 		s.Require().Equal(resultingTokens, validatorJailed.GetTokens())
 
-		// check that the validator's unjailing time is updated
+		// check that the validator's unjailing time is updated on provider
 		valSignInfo, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), consAddr)
 		s.Require().True(found)
 		s.Require().True(valSignInfo.JailedUntil.After(s.providerCtx().BlockHeader().Time))
 
 		if tc == downtimeTestCase {
-			// check that the outstanding slashing flag is reset on the consumer
-			pFlag := consumerKeeper.OutstandingDowntime(s.consumerCtx(), consAddr)
+			// check that the outstanding slashing flag is reset on first consumer,
+			// since that consumer originally sent the slash packet
+			pFlag := firstConsumerKeeper.OutstandingDowntime(s.consumerCtx(), consAddr)
 			s.Require().False(pFlag)
 
-			// check that slashing packet gets acknowledged
+			// check that slashing packet gets acknowledged successfully
 			ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 			err = s.path.EndpointA.AcknowledgePacket(packet, ack.Acknowledgement())
 			s.Require().NoError(err)
 
 		} else if tc == doubleSignTestCase {
-			// check that validator was tombstoned
+			// check that validator was tombstoned on provider
 			s.Require().True(valSignInfo.Tombstoned)
 			s.Require().True(valSignInfo.JailedUntil.Equal(evidencetypes.DoubleSignJailEndTime))
 		}
@@ -188,7 +198,7 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	consumerKeeper := s.consumerApp.GetConsumerKeeper()
 
-	s.SetupCCVChannel()
+	s.SetupCCVChannel(s.path)
 	s.SetupTransferChannel()
 
 	packet := channeltypes.NewPacket([]byte{}, 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
@@ -435,7 +445,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDistribution() {
 // when a validator has downtime on the slashing module
 func (suite *CCVTestSuite) TestValidatorDowntime() {
 	// initial setup
-	suite.SetupCCVChannel()
+	suite.SetupCCVChannel(suite.path)
 	suite.SendEmptyVSCPacket()
 
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
@@ -536,7 +546,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 // when a double-signing evidence is handled by the evidence module
 func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 	// initial setup
-	suite.SetupCCVChannel()
+	suite.SetupCCVChannel(suite.path)
 	suite.SendEmptyVSCPacket()
 
 	// sync suite context after CCV channel is established
@@ -605,7 +615,7 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 // TestQueueAndSendSlashPacket tests the integration of QueueSlashPacket with SendPackets.
 // In normal operation slash packets are queued in BeginBlock and sent in EndBlock.
 func (suite *CCVTestSuite) TestQueueAndSendSlashPacket() {
-	suite.SetupCCVChannel()
+	suite.SetupCCVChannel(suite.path)
 
 	consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 	consumerIBCKeeper := suite.consumerApp.GetIBCKeeper()
