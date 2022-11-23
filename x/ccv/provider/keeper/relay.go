@@ -249,9 +249,17 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		return false, fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
-	// get the validator
+	// the slash packet validator address may be known only on the consumer chain;
+	// in this case, it must be mapped back to the consensus address on the provider chain
 	consAddr := sdk.ConsAddress(data.Validator.Address)
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+	// check if this address is known only to the consumer chain
+	providerConsAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consAddr)
+	if !found {
+		// the validator has the same address on the consumer and the provider
+		providerConsAddr = consAddr
+	}
+	// get the validator
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr)
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
