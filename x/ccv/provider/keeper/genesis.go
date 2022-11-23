@@ -75,16 +75,19 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 				k.AppendPendingVSC(ctx, chainID, vsc)
 			}
 		}
-		if cs.KeyAssignment != nil {
-			for _, paToCk := range cs.KeyAssignment.ProviderAddrToConsumerKey {
-				k.KeyAssignment(ctx, cs.ChainId).SetProviderAddrToConsumerKey(paToCk.Addr, *paToCk.Key)
-			}
-			for _, ckToPk := range cs.KeyAssignment.ConsumerKeyToProviderKey {
-				k.KeyAssignment(ctx, cs.ChainId).SetConsumerKeyToProviderKey(*ckToPk.From, *ckToPk.To)
-			}
-			for _, ccaToLastUpdateMemo := range cs.KeyAssignment.ConsumerAddrToLastUpdateInfo {
-				k.KeyAssignment(ctx, cs.ChainId).SetConsumerAddrToLastUpdateInfo(ccaToLastUpdateMemo.Addr, *ccaToLastUpdateMemo.LastUpdateInfo)
-			}
+	}
+
+	for _, key := range genState.KeyAssignment.ConsumerKeys {
+		k.SetConsumerKey(ctx, key.ChainId, key.ProviderAddr, *key.ConsumerKey)
+	}
+
+	for _, val := range genState.KeyAssignment.ValidatorsByConsumerAddr {
+		k.SetValidatorByConsumerAddr(ctx, val.ChainId, val.ConsumerAddr, val.ProviderAddr)
+	}
+
+	for _, consAddrs := range genState.KeyAssignment.ConsumerAddrsToPrune {
+		for _, addr := range consAddrs.Addrs {
+			k.AppendConsumerAddrToPrune(ctx, consAddrs.ChainId, consAddrs.VscId, addr)
 		}
 	}
 
@@ -129,27 +132,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			}
 		}
 
-		cs.KeyAssignment = func() *types.KeyAssignment {
-			km := &types.KeyAssignment{}
-			km.ProviderAddrToConsumerKey = []types.AddrToKey{}
-			km.ConsumerKeyToProviderKey = []types.KeyToKey{}
-			km.ConsumerAddrToLastUpdateInfo = []types.AddrToLastUpdateInfo{}
-			k.KeyAssignment(ctx, chainID).IterateProviderAddrToConsumerKey(func(pca ProviderAddr, ck ConsumerKey) bool {
-				km.ProviderAddrToConsumerKey = append(km.ProviderAddrToConsumerKey, types.AddrToKey{Addr: pca, Key: &ck})
-				return false
-			})
-			k.KeyAssignment(ctx, chainID).IterateConsumerKeyToProviderKey(func(ck ConsumerKey, pk ProviderKey) bool {
-				km.ConsumerKeyToProviderKey = append(km.ConsumerKeyToProviderKey, types.KeyToKey{From: &ck, To: &pk})
-				return false
-			})
-			k.KeyAssignment(ctx, chainID).IterateConsumerAddrToLastUpdateInfo(func(ck ConsumerAddr, m types.LastUpdateInfo) bool {
-				km.ConsumerAddrToLastUpdateInfo = append(km.ConsumerAddrToLastUpdateInfo, types.AddrToLastUpdateInfo{Addr: ck, LastUpdateInfo: &m})
-				return false
-			})
-
-			return km
-		}()
-
 		consumerStates = append(consumerStates, cs)
 		return true
 	})
@@ -187,6 +169,12 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	params := k.GetParams(ctx)
 
+	keyAssignment := types.KeyAssignment{
+		ConsumerKeys:             k.ExportConsumerKeys(ctx),
+		ValidatorsByConsumerAddr: k.ExportValidatorsByConsumerAddr(ctx),
+		ConsumerAddrsToPrune:     k.ExportConsumerAddrsToPrune(ctx),
+	}
+
 	return types.NewGenesisState(
 		vscID,
 		vscIDToHeights,
@@ -196,5 +184,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		addProps,
 		remProps,
 		params,
+		keyAssignment,
 	)
 }

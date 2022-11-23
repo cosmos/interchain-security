@@ -26,19 +26,52 @@ func TestIniAndExportGenesis(t *testing.T) {
 	initHeight, vscID := uint64(5), uint64(1)
 	ubdIndex := []uint64{0, 1, 2}
 	params := providertypes.DefaultParams()
-	keyAssignments := []providertypes.KeyAssignment{
-		{
-			ProviderAddrToConsumerKey:    []providertypes.AddrToKey{{Addr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
-			ConsumerKeyToProviderKey:     []providertypes.KeyToKey{{From: &tmprotocrypto.PublicKey{}, To: &tmprotocrypto.PublicKey{}}},
-			ConsumerAddrToLastUpdateInfo: []providertypes.AddrToLastUpdateInfo{{Addr: sdk.ConsAddress{}, LastUpdateInfo: &providertypes.LastUpdateInfo{}}},
+	keyAssignment := providertypes.KeyAssignment{
+		ConsumerKeys: []*providertypes.ConsumerKeyRecord{
+			{
+				ChainId:      cChainIDs[0],
+				ProviderAddr: sdk.ConsAddress{},
+				ConsumerKey:  &tmprotocrypto.PublicKey{},
+			},
+			{
+				ChainId:      cChainIDs[1],
+				ProviderAddr: sdk.ConsAddress{},
+				ConsumerKey:  &tmprotocrypto.PublicKey{},
+			},
 		},
-		{
-			ProviderAddrToConsumerKey:    []providertypes.AddrToKey{},
-			ConsumerKeyToProviderKey:     []providertypes.KeyToKey{},
-			ConsumerAddrToLastUpdateInfo: []providertypes.AddrToLastUpdateInfo{},
+		ValidatorsByConsumerAddr: []*providertypes.ValidatorByConsumerAddrRecord{
+			{
+				ChainId:      cChainIDs[0],
+				ConsumerAddr: sdk.ConsAddress{},
+				ProviderAddr: sdk.ConsAddress{},
+			},
+			{
+				ChainId:      cChainIDs[1],
+				ConsumerAddr: sdk.ConsAddress{},
+				ProviderAddr: sdk.ConsAddress{},
+			},
+		},
+		ConsumerAddrsToPrune: []*providertypes.ConsumerAddrsToPruneRecord{
+			{
+				ChainId: cChainIDs[0],
+				VscId:   vscID,
+				Addrs: [][]byte{
+					[]byte{},
+				},
+			},
 		},
 	}
 
+	// {
+	// 	ProviderAddrToConsumerKey:    []providertypes.AddrToKey{{Addr: sdk.ConsAddress{}, Key: &tmprotocrypto.PublicKey{}}},
+	// 	ConsumerKeyToProviderKey:     []providertypes.KeyToKey{{From: &tmprotocrypto.PublicKey{}, To: &tmprotocrypto.PublicKey{}}},
+	// 	ConsumerAddrToLastUpdateInfo: []providertypes.AddrToLastUpdateInfo{{Addr: sdk.ConsAddress{}, LastUpdateInfo: &providertypes.LastUpdateInfo{}}},
+	// },
+	// {
+	// 	ProviderAddrToConsumerKey:    []providertypes.AddrToKey{},
+	// 	ConsumerKeyToProviderKey:     []providertypes.KeyToKey{},
+	// 	ConsumerAddrToLastUpdateInfo: []providertypes.AddrToLastUpdateInfo{},
+	// },
 	// create genesis struct
 	pGenesis := providertypes.NewGenesisState(vscID,
 		[]providertypes.ValsetUpdateIdToHeight{{ValsetUpdateId: vscID, Height: initHeight}},
@@ -55,7 +88,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 				},
 				nil,
 				[]string{"slashedValidatorConsAddress"},
-				&keyAssignments[0],
+				// &keyAssignments[0],
 			),
 			providertypes.NewConsumerStates(
 				cChainIDs[1],
@@ -67,7 +100,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 				nil,
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
 				nil,
-				&keyAssignments[1],
+				// &keyAssignments[1],
 			),
 		},
 		[]ccv.UnbondingOp{{
@@ -84,6 +117,7 @@ func TestIniAndExportGenesis(t *testing.T) {
 			StopTime: oneHourFromNow,
 		}},
 		params,
+		keyAssignment,
 	)
 
 	// Instantiate in-mem provider keeper with mocks
@@ -119,14 +153,21 @@ func TestIniAndExportGenesis(t *testing.T) {
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, pGenesis.Params, pk.GetParams(ctx))
 
-	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetProviderAddrToConsumerKey(sdk.ConsAddress{})
+	// _, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetProviderAddrToConsumerKey(sdk.ConsAddress{})
+	// require.True(t, found)
+	// _, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetConsumerKeyToProviderKey(tmprotocrypto.PublicKey{})
+	// require.True(t, found)
+	// _, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetConsumerAddrToLastUpdateInfo(sdk.ConsAddress{})
+	// require.True(t, found)
+	// _, found = pk.KeyAssignment(ctx, cChainIDs[1]).GetProviderAddrToConsumerKey(sdk.ConsAddress{})
+	// require.False(t, found)
+
+	_, found = pk.GetConsumerKey(ctx, cChainIDs[0], sdk.ConsAddress{})
 	require.True(t, found)
-	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetConsumerKeyToProviderKey(tmprotocrypto.PublicKey{})
+	_, found = pk.GetValidatorByConsumerAddr(ctx, cChainIDs[0], sdk.ConsAddress{})
 	require.True(t, found)
-	_, found = pk.KeyAssignment(ctx, cChainIDs[0]).GetConsumerAddrToLastUpdateInfo(sdk.ConsAddress{})
-	require.True(t, found)
-	_, found = pk.KeyAssignment(ctx, cChainIDs[1]).GetProviderAddrToConsumerKey(sdk.ConsAddress{})
-	require.False(t, found)
+	addrs := pk.GetConsumerAddrsToPrune(ctx, cChainIDs[0], vscID)
+	require.Equal(t, len(addrs), 1)
 
 	// check provider chain's consumer chain states
 	assertConsumerChainStates(ctx, t, pk, pGenesis.ConsumerStates...)

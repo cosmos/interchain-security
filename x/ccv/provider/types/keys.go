@@ -404,3 +404,31 @@ func parseChainIdAndVscIdKey(prefix byte, bz []byte) (string, uint64, error) {
 	vscID := sdk.BigEndianToUint64(bz[prefixL+8+int(chainIdL):])
 	return chainID, vscID, nil
 }
+
+// parseChainIdAndAddrKey returns the chain ID and address for a ChainIdAndAddr key
+func parseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress, error) {
+	expectedPrefix := []byte{prefix}
+	prefixL := len(expectedPrefix)
+	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
+		return "", nil, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+	}
+	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
+	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
+	addr := bz[prefixL+8+int(chainIdL):]
+	return chainID, addr, nil
+}
+
+// ParseConsumerKeysKey parses the chainID and provider address from the key
+func ParseConsumerKeysKey(key []byte) (string, sdk.ConsAddress, error) {
+	return parseChainIdAndConsAddrKey(ConsumerKeysPrefix, key)
+}
+
+// ParseValidatorsByConsumerAddrKey parses the chainID and consumer address from the key
+func ParseValidatorsByConsumerAddrKey(key []byte) (string, sdk.ConsAddress, error) {
+	return parseChainIdAndConsAddrKey(ValidatorsByConsumerAddrPrefix, key)
+}
+
+// ParseConsumerAddrsToPruneKey parses the chainID and vscID from the key
+func ParseConsumerAddrsToPruneKey(key []byte) (string, uint64, error) {
+	return parseChainIdAndVscIdKey(ConsumerAddrsToPrunePrefix, key)
+}

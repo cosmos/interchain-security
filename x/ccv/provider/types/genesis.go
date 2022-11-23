@@ -18,6 +18,7 @@ func NewGenesisState(
 	additionProposals []ConsumerAdditionProposal,
 	removalProposals []ConsumerRemovalProposal,
 	params Params,
+	keyAssignment KeyAssignment,
 ) *GenesisState {
 	return &GenesisState{
 		ValsetUpdateId:            vscID,
@@ -28,6 +29,7 @@ func NewGenesisState(
 		ConsumerAdditionProposals: additionProposals,
 		ConsumerRemovalProposals:  removalProposals,
 		Params:                    params,
+		KeyAssignment:             keyAssignment,
 	}
 }
 

@@ -7,50 +7,39 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types"
 import "gogoproto/gogo.proto";
 import "tendermint/crypto/keys.proto";
 
-// Store the LAST update used to update the validator set on a consumer chain
-// using a particular assigned consensus key
-message LastUpdateInfo {
-  // The consensus key used to update the validator set on the consumer chain
-  tendermint.crypto.PublicKey consumer_key = 1;
-  // The consensus key of the validator on the provider chain
-  tendermint.crypto.PublicKey provider_key = 2;
-  // The vscid of the update, used to determine prunability of this data
-  // Data cannot be pruned until the vscid is matured
-  uint64 vscid = 4;
-  // The voting power of the update, used to determine prunability of this data
-  // Data cannot be pruned if the power was positive
-  int64 power = 5;
+message ValidatorPower {
+    tendermint.crypto.PublicKey consumer_key = 1;
+    int64 power = 2;
 }
 
-message AddrToKey {
-  // Validator consensus address
-  bytes addr = 1;
-  // Validator consensus public key
-  tendermint.crypto.PublicKey key = 2;
+message AddrList {
+    repeated bytes addrs = 1;
 }
 
-message KeyToKey {
-  // Validator consensus public key
-  tendermint.crypto.PublicKey from = 1;
-  // Validator consensus public key
-  tendermint.crypto.PublicKey to = 2;
+// ConsumerKeys: chainID | providerAddr -> consumerKey
+// ValidatorsByConsumerAddr: chainID | consumerAddr -> providerAddr
+// ConsumerAddrsToPrune: chainID | vscID -> List(consumerAddr)
+
+message ConsumerKeyRecord {
+    string chain_id = 1;
+    bytes provider_addr = 2;
+    tendermint.crypto.PublicKey consumer_key = 3;
 }
 
-message AddrToLastUpdateInfo {
-  // Validator consensus address
-  bytes addr = 1;
-  // Info for the last update sent to a consumer chain for a validator
-  LastUpdateInfo last_update_info = 2;
+message ValidatorByConsumerAddrRecord {
+    string chain_id = 1;
+    bytes consumer_addr = 2;
+    bytes provider_addr = 3;
+}
+
+message ConsumerAddrsToPruneRecord {
+    string chain_id = 1;
+    uint64 vsc_id = 2;
+    repeated bytes addrs = 3;
 }
 
 message KeyAssignment {
-  // Map of provider validator consensus address to consumer consensus public key
-  repeated AddrToKey provider_addr_to_consumer_key = 1
-      [ (gogoproto.nullable) = false ];
-  // Map of consumer consensus public to key to provider consensus public key
-  repeated KeyToKey consumer_key_to_provider_key = 2
-      [ (gogoproto.nullable) = false ];
-  // Map of consumer validator consensus address to last update info
-  repeated AddrToLastUpdateInfo consumer_addr_to_last_update_info = 3
-      [ (gogoproto.nullable) = false ];
+    repeated ConsumerKeyRecord consumer_keys = 1;
+    repeated ValidatorByConsumerAddrRecord validators_by_consumer_addr = 2;
+    repeated ConsumerAddrsToPruneRecord consumer_addrs_to_prune = 4;
 }

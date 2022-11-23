@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	sdkcodectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
@@ -16,7 +15,7 @@ import (
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
-func TestGRPCQueryConsumerChainValidatorKeyAssignment(t *testing.T) {
+func TestQueryAssignedConsumerAddr(t *testing.T) {
 
 	testValProvider := testcrypto.NewCryptoIdentityFromIntSeed(0)
 	testValConsumer := testcrypto.NewCryptoIdentityFromIntSeed(1)
@@ -41,7 +40,7 @@ func TestGRPCQueryConsumerChainValidatorKeyAssignment(t *testing.T) {
 					).Return(testValProvider.SDKStakingValidator(), true).Times(1),
 				)
 				// Set a mapping
-				err := k.KeyAssignment(ctx, chainID).SetProviderPubKeyToConsumerPubKey(testValProvider.TMProtoCryptoPublicKey(), testValConsumer.TMProtoCryptoPublicKey())
+				err := k.AssignConsumerKey(ctx, chainID, testValProvider.TMProtoCryptoPublicKey(), testValConsumer.TMProtoCryptoPublicKey())
 				require.NoError(t, err)
 			},
 			expError: false,
@@ -76,21 +75,32 @@ func TestGRPCQueryConsumerChainValidatorKeyAssignment(t *testing.T) {
 
 		tc.setup(ctx, k, mocks, tc.chainID)
 
-		req := providertypes.QueryConsumerKeyAssignmentRequest{
-			ChainId:                  tc.chainID,
-			ProviderValidatorAddress: testValProvider.SDKValAddress().String(),
-		}
-
 		goCtx := sdktypes.WrapSDKContext(ctx)
-		res, err := queryClient.QueryConsumerKeyAssignment(goCtx, &req)
+
+		req := providertypes.QueryAssignedConsumerAddrRequest{
+			ChainId:         tc.chainID,
+			ProviderAddress: testValProvider.SDKConsAddress().String(),
+		}
+		res, err := queryClient.QueryAssignedConsumerAddr(goCtx, &req)
 
 		if tc.expError {
 			require.Error(t, err, "invalid case did not return error")
 		} else {
 			require.NoError(t, err, "valid case returned error")
-			consumerValidatorPubKeyAnyExpect, err := sdkcodectypes.NewAnyWithValue(testValConsumer.SDKPubKey())
-			require.NoError(t, err, "faulty test")
-			require.Equal(t, consumerValidatorPubKeyAnyExpect.Value, res.ConsumerKey.Value)
+			require.Equal(t, testValConsumer.SDKConsAddress(), res.ConsumerAddress)
+		}
+
+		req2 := providertypes.QueryAssignedProviderAddrRequest{
+			ChainId:         tc.chainID,
+			ConsumerAddress: testValConsumer.SDKConsAddress().String(),
+		}
+		res2, err := queryClient.QueryAssignedProviderAddr(goCtx, &req2)
+
+		if tc.expError {
+			require.Error(t, err, "invalid case did not return error")
+		} else {
+			require.NoError(t, err, "valid case returned error")
+			require.Equal(t, testValProvider.SDKConsAddress(), res2.ProviderAddress)
 		}
 
 		ctrl.Finish()

@@ -102,7 +102,9 @@ func TestInitGenesis(t *testing.T) {
 			nil,
 			nil,
 			nil,
-			nil, types.DefaultParams(),
+			nil,
+			types.DefaultParams(),
+			types.KeyAssignment{},
 		)
 
 		cdc := keeperParams.Cdc

@@ -26,7 +26,7 @@ message GenesisState {
   [ (gogoproto.nullable) = false ];
   // empty for a new chain
   interchain_security.ccv.v1.MaturedUnbondingOps mature_unbonding_ops = 4;
-    // empty for a new chain
+  // empty for a new chain
   repeated ValsetUpdateIdToHeight valset_update_id_to_height = 5
   [ (gogoproto.nullable) = false ];
   // empty for a new chain
@@ -36,6 +36,9 @@ message GenesisState {
   repeated ConsumerRemovalProposal consumer_removal_proposals = 7
   [ (gogoproto.nullable) = false ];
   Params params = 8
+  [ (gogoproto.nullable) = false ];
+  // Data used to assign keys to validators to validate on the consumer chain
+  KeyAssignment key_assignment = 9
   [ (gogoproto.nullable) = false ];
 }
 
@@ -62,8 +65,6 @@ message ConsumerState {
   // UnbondingOpsIndex defines the unbonding operations on the consumer chain
   repeated UnbondingOpIndex unbonding_ops_index = 9
   [ (gogoproto.nullable) = false ];
-  // Data used to assign keys to validators to validate on the consumer chain
-  KeyAssignment key_assignment = 10;
 }
 
 // UnbondingOpIndex defines the genesis information for each unbonding operations index 

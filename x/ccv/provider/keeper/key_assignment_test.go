@@ -13,6 +13,7 @@ import (
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
@@ -21,6 +22,16 @@ import (
 func key(seed int) tmprotocrypto.PublicKey {
 	v := testcrypto.NewCryptoIdentityFromIntSeed(seed)
 	return v.TMProtoCryptoPublicKey()
+}
+
+// DeterministicStringify returns a deterministic string representation of the
+// key. This is useful to identify like keys with different representations.
+func DeterministicStringify(k tmprotocrypto.PublicKey) string {
+	sdkPubKey, err := cryptocodec.FromTmProtoPublicKey(k)
+	if err != nil {
+		panic("could not get sdk public key from tm proto public key")
+	}
+	return string(sdkPubKey.Bytes())
 }
 
 // Num traces to run for heuristic testing
@@ -338,14 +349,14 @@ func (d *driver) externalInvariants() {
 				// 2) if that abci.ValidatorUpdate was a zero positive power abci.ValidatorUpdate then the
 				//    key should not be queryable unless it was used in a subsequent
 				//    abci.ValidatorUpdate (see next block).
-				expectQueryable[providerkeeper.DeterministicStringify(u.PubKey)] = 0 < u.Power
+				expectQueryable[DeterministicStringify(u.PubKey)] = 0 < u.Power
 			}
 		}
 		for i := d.lastTimeMaturity + 1; i <= d.lastTimeProvider; i++ {
 			for _, u := range d.consumerUpdates[i] {
 				// If a positive OR zero power abci.ValidatorUpdate was RECENTLY received
 				// for the consumer, then the key must be queryable.
-				expectQueryable[providerkeeper.DeterministicStringify(u.PubKey)] = true
+				expectQueryable[DeterministicStringify(u.PubKey)] = true
 			}
 		}
 
@@ -353,7 +364,7 @@ func (d *driver) externalInvariants() {
 		for ck := 0; ck < NUM_CKS; ck++ {
 			cca := utils.TMCryptoPublicKeyToConsAddr(key(ck))
 			_, actualQueryable := d.ka.GetProviderPubKeyFromConsumerConsAddress(cca)
-			if expect, found := expectQueryable[providerkeeper.DeterministicStringify(key(ck))]; found && expect {
+			if expect, found := expectQueryable[DeterministicStringify(key(ck))]; found && expect {
 				require.True(d.t, actualQueryable)
 			} else {
 				require.False(d.t, actualQueryable)
@@ -520,7 +531,7 @@ func TestKeyAssignmentDeterministicStringify(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		k0 := key(i)
 		k1 := key(i)
-		require.True(t, providerkeeper.DeterministicStringify(k0) == providerkeeper.DeterministicStringify(k1))
+		require.True(t, DeterministicStringify(k0) == DeterministicStringify(k1))
 	}
 }
 
@@ -548,7 +559,7 @@ func TestKeyAssignmentKeyComparison(t *testing.T) {
 	// This means that we can't use a map to store keys directly
 
 	// Use DeterministicStringify to implement map keys
-	require.True(t, providerkeeper.DeterministicStringify(k) == providerkeeper.DeterministicStringify(other))
+	require.True(t, DeterministicStringify(k) == DeterministicStringify(other))
 }
 
 func TestKeyAssignmentSameSeedMapLength(t *testing.T) {

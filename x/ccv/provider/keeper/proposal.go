@@ -147,7 +147,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	k.DeleteConsumerGenesis(ctx, chainID)
 	k.DeleteLockUnbondingOnTimeout(ctx, chainID)
 	k.DeleteInitTimeoutTimestamp(ctx, chainID)
-	k.DeleteKeyAssignment(ctx, chainID)
+	k.DeleteKeyAssignmentByChainId(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
 	if channelID, found := k.GetChainToChannel(ctx, chainID); found {
@@ -278,7 +278,11 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consum
 
 	// Compute the initial validator set for the consumer chain from the provider chain's validator set
 	// and consensus key assignments.
-	updates = k.KeyAssignment(ctx, chainID).AssignDefaultsAndGetConsumerUpdates(k.GetValidatorSetUpdateId(ctx), updates)
+	// updates = k.KeyAssignment(ctx, chainID).AssignDefaultsAndGetConsumerUpdates(k.GetValidatorSetUpdateId(ctx), updates)
+	updates, err = k.ApplyKeyAssignmentToValUpdates(ctx, chainID, updates)
+	if err != nil {
+		return gen, nil, err
+	}
 	// Get a hash of the consumer validator set from the update.
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(updates)
 	if err != nil {

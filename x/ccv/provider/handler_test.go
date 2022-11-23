@@ -74,7 +74,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
 
 				// Use the consumer key already
-				err := k.KeyAssignment(ctx, "chainid").SetProviderPubKeyToConsumerPubKey(testValProvider.TMProtoCryptoPublicKey(), testValConsumer.TMProtoCryptoPublicKey())
+				err := k.AssignConsumerKey(ctx, "chainid", testValProvider.TMProtoCryptoPublicKey(), testValConsumer.TMProtoCryptoPublicKey())
 				require.NoError(t, err)
 
 				gomock.InOrder(
