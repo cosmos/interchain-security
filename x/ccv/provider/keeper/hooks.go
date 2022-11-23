@@ -65,8 +65,12 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 // Define unimplemented methods to satisfy the StakingHooks contract
 func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
 }
-func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) {
+
+func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) {
+	// TODO mpoke: DeleteValidatorConsumerPubKey
+	// how to delete entries for all chains, even the ones not registered yet
 }
+
 func (h Hooks) BeforeDelegationCreated(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) {
 }
 func (h Hooks) BeforeDelegationSharesModified(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) {

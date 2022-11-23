@@ -93,8 +93,9 @@ message HandshakeMetadata {
   string version = 2;
 }
 
-// AddressList holds a list of consensus addesses
-message AddressList {
+// SlashAcks contains addesses of consumer chain validators
+// successfully slashed on the provider chain
+message SlashAcks {
   repeated string addresses = 1;
 }
 
@@ -108,4 +109,9 @@ message ConsumerAdditionProposals {
 message ConsumerRemovalProposals {
   // proposals waiting for stop_time to pass
   repeated ConsumerRemovalProposal pending = 1;
+}
+
+// AddressList contains a list of consensus addresses
+message AddressList {
+  repeated bytes addresses = 1;
 }

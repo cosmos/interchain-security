@@ -278,6 +278,8 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 		})
 	}
 
+	// TODO mpoke: replace keys in proposals and add mapping SetValidatorByConsumerAddr
+
 	gen.InitialValSet = updates
 
 	return gen, nil

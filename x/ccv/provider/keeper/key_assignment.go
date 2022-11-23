@@ -210,3 +210,23 @@ func (k Keeper) DeletePendingKeyAssignment(ctx sdk.Context, chainID string, prov
 }
 
 // TODO mpoke: setters and getters for ConsumerValidatorsByVscID
+
+// AppendConsumerValidatorByVscID appends a consumer validator address to the list of ValidatorByConsumerAddr
+// that can be pruned once the VSCMaturedPacket with vscID is received
+func (k Keeper) AppendConsumerValidatorByVscID(ctx sdk.Context, chainID string, vscID uint64, consumerAddr sdk.ConsAddress) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerValidatorsByVscIDKey(chainID, vscID))
+	var consumerAddrsToPrune types.AddressList
+	if bz != nil {
+		err := consumerAddrsToPrune.Unmarshal(bz)
+		if err != nil {
+			panic(err)
+		}
+	}
+	consumerAddrsToPrune.Addresses = append(consumerAddrsToPrune.Addresses, consumerAddr)
+	bz, err := consumerAddrsToPrune.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	store.Set(types.ConsumerValidatorsByVscIDKey(chainID, vscID), bz)
+}
