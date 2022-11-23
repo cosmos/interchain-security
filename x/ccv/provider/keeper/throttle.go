@@ -13,18 +13,8 @@ import (
 
 // This file contains functionality relevant to the throttling of slash and vsc matured packets, aka circuit breaker logic.
 
-// High level TODOs
-// TODO: write up a readme explaining the design (no spec stuff, Marius can put this in ADR)
-// TODO: in write up, explain that the feature could have been done with a single queue, but you'd need to
-// periodically iterate over the queue to insert vsc matured packets, etc. With one global queue, and another queue
-// for each chain, it's easy to reason about both:
-// 1. How slash packets relate to other slash packets over time (regardless of chain) -> global queue
-// 2. How slash packets relate to vsc matured packets from the same chain -> chain specific queue
-
 // HandlePendingSlashPackets handles all or some portion of pending slash packets received by consumer chains,
-// depending on throttling logic. The slash meter is decremented appropriately in this method, and periodically
-// replenished according to the slash meter replenish period param.
-//
+// depending on throttling logic. The slash meter is decremented appropriately in this method.
 func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
@@ -111,6 +101,13 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 
 	// Delete handled data after iteration is completed
 	k.DeletePendingPacketData(ctx, consumerChainID, seqNums...)
+}
+
+// InitializeSlashMeter initializes the slash meter to it's max value (also its allowance
+// per replenish period), and sets the last replenish time to the current block time.
+func (k Keeper) InitializeSlashMeter(ctx sdktypes.Context) {
+	k.SetSlashMeter(ctx, k.GetSlashMeterAllowance(ctx))
+	k.SetLastSlashMeterReplenishTime(ctx, ctx.BlockTime())
 }
 
 // CheckForSlashMeterReplenishment checks if the slash gas meter should be replenished, and if so, replenishes it.
@@ -360,13 +357,6 @@ func (k Keeper) GetSlashMeter(ctx sdktypes.Context) sdktypes.Int {
 		panic(fmt.Sprintf("failed to unmarshal slash meter: %v", err))
 	}
 	return value
-}
-
-// InitializeSlashMeter initializes the slash meter to it's max value (also its allowance
-// per replenish period), and sets the last replenish time to the current block time.
-func (k Keeper) InitializeSlashMeter(ctx sdktypes.Context) {
-	k.SetSlashMeter(ctx, k.GetSlashMeterAllowance(ctx))
-	k.SetLastSlashMeterReplenishTime(ctx, ctx.BlockTime())
 }
 
 // SetSlashMeter sets the slash meter to the given signed int value
