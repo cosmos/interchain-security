@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -67,8 +68,21 @@ func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
 }
 
 func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) {
-	// TODO mpoke: DeleteValidatorConsumerPubKey
-	// how to delete entries for all chains, even the ones not registered yet
+	type StoreKey struct {
+		ChainID      string
+		ProviderAddr sdk.ConsAddress
+	}
+	toDelete := []StoreKey{}
+	h.k.IterateAllValidatorConsumerPubKeys(ctx, func(
+		chainID string,
+		providerAddr sdk.ConsAddress,
+		consumerKey tmprotocrypto.PublicKey,
+	) (stop bool) {
+		if providerAddr.Equals(valConsAddr) {
+			toDelete = append(toDelete, StoreKey{ChainID: chainID, ProviderAddr: providerAddr})
+		}
+		return false // do not stop
+	})
 }
 
 func (h Hooks) BeforeDelegationCreated(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) {

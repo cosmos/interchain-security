@@ -72,6 +72,31 @@ func (k Keeper) IterateValidatorConsumerPubKeys(
 	}
 }
 
+// IterateValidatorConsumerPubKeys iterates over the validators public keys assigned for all consumer chain
+func (k Keeper) IterateAllValidatorConsumerPubKeys(
+	ctx sdk.Context,
+	cb func(chainID string, providerAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool),
+) {
+	store := ctx.KVStore(k.storeKey)
+	iter := sdk.KVStorePrefixIterator(store, []byte{types.ConsumerValidatorsBytePrefix})
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		chainID, providerAddr, err := types.ParseChainIdAndConsAddrKey(types.ConsumerValidatorsBytePrefix, iter.Key())
+		if err != nil {
+			panic(err)
+		}
+		var consumerKey tmprotocrypto.PublicKey
+		err = consumerKey.Unmarshal(iter.Value())
+		if err != nil {
+			panic(err)
+		}
+		stop := cb(chainID, providerAddr, consumerKey)
+		if stop {
+			break
+		}
+	}
+}
+
 // DeleteValidatorConsumerPubKey deletes a validator's public key assigned for a consumer chain
 func (k Keeper) DeleteValidatorConsumerPubKey(ctx sdk.Context, chainID string, providerAddr sdk.ConsAddress) {
 	store := ctx.KVStore(k.storeKey)
