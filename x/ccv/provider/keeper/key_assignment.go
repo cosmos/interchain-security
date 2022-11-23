@@ -211,7 +211,7 @@ func (k Keeper) DeletePendingKeyAssignment(ctx sdk.Context, chainID string, prov
 
 // TODO mpoke: setters and getters for ConsumerValidatorsByVscID
 
-// AppendConsumerValidatorByVscID appends a consumer validator address to the list of ValidatorByConsumerAddr
+// AppendConsumerValidatorByVscID appends a consumer validator address to the list of consumer addresses
 // that can be pruned once the VSCMaturedPacket with vscID is received
 func (k Keeper) AppendConsumerValidatorByVscID(ctx sdk.Context, chainID string, vscID uint64, consumerAddr sdk.ConsAddress) {
 	store := ctx.KVStore(k.storeKey)
@@ -229,4 +229,26 @@ func (k Keeper) AppendConsumerValidatorByVscID(ctx sdk.Context, chainID string, 
 		panic(err)
 	}
 	store.Set(types.ConsumerValidatorsByVscIDKey(chainID, vscID), bz)
+}
+
+// GetConsumerValidatorByVscID returns the list of consumer addresses
+// that can be pruned once the VSCMaturedPacket with vscID is received
+func (k Keeper) GetConsumerValidatorByVscID(ctx sdk.Context, chainID string, vscID uint64) [][]byte {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ConsumerValidatorsByVscIDKey(chainID, vscID))
+	if bz == nil {
+		return nil
+	}
+	var consumerAddrsToPrune types.AddressList
+	err := consumerAddrsToPrune.Unmarshal(bz)
+	if err != nil {
+		panic(err)
+	}
+	return consumerAddrsToPrune.Addresses
+}
+
+// DeleteConsumerValidatorByVscID deletes the list of consumer addresses mapped to a given VSC ID
+func (k Keeper) DeleteConsumerValidatorByVscID(ctx sdk.Context, chainID string, vscID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ConsumerValidatorsByVscIDKey(chainID, vscID))
 }

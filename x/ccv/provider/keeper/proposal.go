@@ -147,6 +147,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	k.DeleteLockUnbondingOnTimeout(ctx, chainID)
 	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 
+	// TODO mpoke: clean key assignment state
+
 	// close channel and delete the mappings between chain ID and channel ID
 	if channelID, found := k.GetChainToChannel(ctx, chainID); found {
 		if closeChan {

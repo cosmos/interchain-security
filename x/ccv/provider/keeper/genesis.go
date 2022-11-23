@@ -78,6 +78,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 	}
 
+	// TODO mpoke: import key assignment state
+
 	k.SetParams(ctx, genState.Params)
 }
 
@@ -151,6 +153,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		remProps = append(remProps, prop)
 		return false // do not stop the iteration
 	})
+
+	// TODO mpoke: export key assignment state
 
 	params := k.GetParams(ctx)
 
