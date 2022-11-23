@@ -336,6 +336,27 @@ func (k Keeper) AssignConsumerKey(
 	return nil
 }
 
+// ApplyKeyAssignmentToInitialValset applies the key assignment to the initial validator
+// for a consumer chain
+func (k Keeper) ApplyKeyAssignmentToInitialValset(
+	ctx sdk.Context,
+	chainID string,
+	updates []abci.ValidatorUpdate,
+) (newUpdates []abci.ValidatorUpdate) {
+	newUpdates = updates
+	for i, update := range updates {
+		providerAddr := utils.TMCryptoPublicKeyToConsAddr(update.PubKey)
+		if consumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
+			newUpdates[i].PubKey = consumerKey
+			consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+			// set the mapping from this validator's new consensus address on the consumer
+			// to its consensus address on the provider
+			k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
+		}
+	}
+	return newUpdates
+}
+
 // PruneKeyAssignments prunes the consumer addresses no longer needed
 // as they cannot be referenced in slash requests (by a correct consumer)
 func (k Keeper) PruneKeyAssignments(ctx sdk.Context, chainID string, vscID uint64) {

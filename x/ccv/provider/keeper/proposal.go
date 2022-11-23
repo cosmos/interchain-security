@@ -78,7 +78,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 	}
 	k.SetConsumerClientId(ctx, chainID, clientID)
 
-	consumerGen, err := k.MakeConsumerGenesis(ctx)
+	consumerGen, err := k.MakeConsumerGenesis(ctx, chainID)
 	if err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 }
 
 // MakeConsumerGenesis constructs the consumer CCV module part of the genesis state.
-func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisState, err error) {
+func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consumertypes.GenesisState, err error) {
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
 
@@ -280,9 +280,8 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisS
 		})
 	}
 
-	// TODO mpoke: replace keys in proposals and add mapping SetValidatorByConsumerAddr
-
-	gen.InitialValSet = updates
+	// apply key assignments to the initial valset
+	gen.InitialValSet = k.ApplyKeyAssignmentToInitialValset(ctx, chainID, updates)
 
 	return gen, nil
 }
