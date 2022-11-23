@@ -8,6 +8,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
 // Wrapper struct
@@ -84,7 +85,12 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 		return false // do not stop
 	})
 	for _, key := range toDelete {
-		h.k.DeleteValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
+		consumerKey, found := h.k.GetValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
+		if found {
+			consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+			h.k.DeleteValidatorByConsumerAddr(ctx, key.ChainID, consumerAddr)
+			h.k.DeleteValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
+		}
 	}
 }
 
