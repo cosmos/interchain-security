@@ -17,6 +17,7 @@ type testAssignment struct {
 	consumerAddr   sdk.ConsAddress
 	consumerPubKey tmprotocrypto.PublicKey
 	valsetUpdate   abci.ValidatorUpdate
+	vscID          uint64
 }
 
 func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
@@ -386,4 +387,108 @@ func TestIteratePendingKeyAssignments(t *testing.T) {
 	require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
 
 	require.Equal(t, testAssignments[0], result[0], "mismatched pending key assignment in iterate one")
+}
+
+func TestConsumerAddrsToPruneCRUD(t *testing.T) {
+	chainID := "consumer"
+	consumerAddr := sdk.ConsAddress([]byte("consumerAddr1"))
+	vscID := uint64(1)
+
+	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	keeper.AppendConsumerAddrsToPrune(ctx, chainID, vscID, consumerAddr)
+
+	addrToPrune := keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID)
+	require.NotEmpty(t, addrToPrune, "address to prune is empty")
+	require.Len(t, addrToPrune, 1, "address to prune is not len 1")
+	require.Equal(t, sdk.ConsAddress(addrToPrune[0]), consumerAddr)
+
+	keeper.DeleteConsumerAddrsToPrune(ctx, chainID, vscID)
+	addrToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID)
+	require.Empty(t, addrToPrune, "address to prune was returned")
+}
+
+func TestIterateAllConsumerAddrsToPrune(t *testing.T) {
+	testAssignments := []testAssignment{
+		{
+			chainID:      "consumer-1",
+			providerAddr: sdk.ConsAddress([]byte("validator-1")),
+			consumerAddr: sdk.ConsAddress([]byte("validator-1-consumer-1-key")),
+			vscID:        1,
+		},
+		{
+			chainID:      "consumer-1",
+			providerAddr: sdk.ConsAddress([]byte("validator-2")),
+			consumerAddr: sdk.ConsAddress([]byte("validator-2-consumer-1-key")),
+			vscID:        1,
+		},
+		{
+			chainID:      "consumer-3",
+			providerAddr: sdk.ConsAddress([]byte("validator-1")),
+			consumerAddr: sdk.ConsAddress([]byte("validator-1-consumer-3-key")),
+			vscID:        2,
+		},
+	}
+
+	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	for _, ta := range testAssignments {
+		keeper.AppendConsumerAddrsToPrune(ctx, ta.chainID, ta.vscID, ta.consumerAddr)
+	}
+
+	addrToPrune := keeper.GetConsumerAddrsToPrune(ctx, testAssignments[0].chainID, testAssignments[0].vscID)
+	require.NotEmpty(t, addrToPrune, "address to prune is empty")
+	require.Len(t, addrToPrune, 2, "address to prune is not len 2")
+	require.Equal(t, sdk.ConsAddress(addrToPrune[0]), testAssignments[0].consumerAddr)
+	require.Equal(t, sdk.ConsAddress(addrToPrune[1]), testAssignments[1].consumerAddr)
+
+	type iterResult struct {
+		vscID                uint64
+		consumerAddrsToPrune [][]byte
+	}
+	results := []iterResult{}
+	cbIterateAll := func(chainID string, vscID uint64, consumerAddrsToPrune [][]byte) (stop bool) {
+		results = append(results, iterResult{
+			vscID:                vscID,
+			consumerAddrsToPrune: consumerAddrsToPrune,
+		})
+		return false // continue iteration
+	}
+
+	keeper.IterateAllConsumerAddrsToPrune(ctx, cbIterateAll)
+	require.Len(t, results, 2, "incorrect results len - should be 2, got %d", len(results))
+
+	// 2 keys for vscID == 1
+	require.Equal(t, results[0].vscID, uint64(1), "mismatched vscID in iterate all")
+	vsc1Addrs := results[0].consumerAddrsToPrune
+	require.Len(t, vsc1Addrs, 2, "wrong len of addrs to prune")
+	require.Equal(t, testAssignments[0].consumerAddr, sdk.ConsAddress(vsc1Addrs[0]), "mismatched consumer address")
+	require.Equal(t, testAssignments[1].consumerAddr, sdk.ConsAddress(vsc1Addrs[1]), "mismatched consumer address")
+
+	// 1 key for vscID == 2
+	require.Equal(t, results[1].vscID, uint64(2), "mismatched vscID in iterate all")
+	vsc2Addrs := results[1].consumerAddrsToPrune
+	require.Len(t, vsc2Addrs, 1, "wrong len of addrs to prune")
+	require.Equal(t, testAssignments[2].consumerAddr, sdk.ConsAddress(vsc2Addrs[0]), "mismatched consumer address")
+
+	results = []iterResult{}
+	cbIterateOne := func(chainID string, vscID uint64, consumerAddrsToPrune [][]byte) (stop bool) {
+		results = append(results, iterResult{
+			vscID:                vscID,
+			consumerAddrsToPrune: consumerAddrsToPrune,
+		})
+		return true // stop iteration
+	}
+
+	keeper.IterateAllConsumerAddrsToPrune(ctx, cbIterateOne)
+	require.Len(t, results, 1, "incorrect results len - should be 1, got %d", len(results))
+
+	// 2 keys for vscID == 1
+	require.Equal(t, results[0].vscID, uint64(1), "mismatched vscID in iterate")
+	vsc1Addrs = results[0].consumerAddrsToPrune
+	require.Len(t, vsc1Addrs, 2, "wrong len of addrs to prune")
+	require.Equal(t, testAssignments[0].consumerAddr, sdk.ConsAddress(vsc1Addrs[0]), "mismatched consumer address")
+	require.Equal(t, testAssignments[1].consumerAddr, sdk.ConsAddress(vsc1Addrs[1]), "mismatched consumer address")
 }
