@@ -59,8 +59,8 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{types.LockUnbondingOnTimeoutBytePrefix}, i+1
 	keys[i], i = []byte{types.ConsumerValidatorsBytePrefix}, i+1
 	keys[i], i = []byte{types.ValidatorsByConsumerAddrBytePrefix}, i+1
-	keys[i], i = []byte{types.PendingKeyAssignmentsBytePrefix}, i+1
-	keys[i], i = []byte{types.ConsumerValidatorsByVscIDBytePrefix}, i+1
+	keys[i], i = []byte{types.KeyAssignmentReplacementsBytePrefix}, i+1
+	keys[i], i = []byte{types.ConsumerAddrsToPruneBytePrefix}, i+1
 
 	return keys[:i]
 }

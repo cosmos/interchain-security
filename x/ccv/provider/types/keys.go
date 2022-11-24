@@ -100,12 +100,12 @@ const (
 	// on consumer chains to validator addresses on the provider chain
 	ValidatorsByConsumerAddrBytePrefix
 
-	// PendingKeyAssignmentsBytePrefix is the byte prefix that will store the pending key assignments for the current block
-	PendingKeyAssignmentsBytePrefix
+	// KeyAssignmentReplacementsBytePrefix is the byte prefix that will store the key assignments that need to be replaced in the current block
+	KeyAssignmentReplacementsBytePrefix
 
-	// ConsumerValidatorsByVscIDBytePrefix is the byte prefix that will store the mapping from VSC ids
+	// ConsumerAddrsToPruneBytePrefix is the byte prefix that will store the mapping from VSC ids
 	// to consumer validators addresses needed for pruning
-	ConsumerValidatorsByVscIDBytePrefix
+	ConsumerAddrsToPruneBytePrefix
 )
 
 // PortKey returns the key to the port ID in the store
@@ -232,26 +232,28 @@ func LockUnbondingOnTimeoutKey(chainID string) []byte {
 	return append([]byte{LockUnbondingOnTimeoutBytePrefix}, []byte(chainID)...)
 }
 
-// ConsumerValidatorsKey returns the key under which the validator assigned keys for every consumer chain
+// ConsumerValidatorsKey returns the key under which the
+// validator assigned keys for every consumer chain are stored
 func ConsumerValidatorsKey(chainID string, addr sdk.ConsAddress) []byte {
 	return ChainIdAndConsAddrKey(ConsumerValidatorsBytePrefix, chainID, addr)
 }
 
 // ValidatorsByConsumerAddrKey returns the key under which the mapping from validator addresses
-// on consumer chains to validator addresses on the provider chain
+// on consumer chains to validator addresses on the provider chain is stored
 func ValidatorsByConsumerAddrKey(chainID string, addr sdk.ConsAddress) []byte {
 	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr)
 }
 
-// PendingKeyAssignmentsKey returns the key under which the pending key assignments for the current block
-func PendingKeyAssignmentsKey(chainID string, addr sdk.ConsAddress) []byte {
-	return ChainIdAndConsAddrKey(PendingKeyAssignmentsBytePrefix, chainID, addr)
+// KeyAssignmentReplacementsKey returns the key under which the
+// key assignments that need to be replaced in the current block are stored
+func KeyAssignmentReplacementsKey(chainID string, addr sdk.ConsAddress) []byte {
+	return ChainIdAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr)
 }
 
-// ConsumerValidatorsByVscIDKey returns the key under which the
+// ConsumerAddrsToPruneKey returns the key under which the
 // mapping from VSC ids to consumer validators addresses is stored
-func ConsumerValidatorsByVscIDKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndVscIdKey(ConsumerValidatorsByVscIDBytePrefix, chainID, vscID)
+func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
+	return ChainIdAndVscIdKey(ConsumerAddrsToPruneBytePrefix, chainID, vscID)
 }
 
 // AppendMany appends a variable number of byte slices together

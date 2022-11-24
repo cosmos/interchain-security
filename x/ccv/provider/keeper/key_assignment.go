@@ -14,7 +14,7 @@ import (
 
 // ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
 // ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
-// PendingKeyAssignment: (chainID, providerAddr consAddr) -> pendingKeyAssignment abci.ValidatorUpdate
+// KeyAssignmentReplacements: (chainID, providerAddr consAddr) -> replacement abci.ValidatorUpdate
 // ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrsToPrune [][]byte
 
 // GetValidatorConsumerPubKey returns a validator's public key assigned for a consumer chain
@@ -200,77 +200,81 @@ func (k Keeper) DeleteValidatorByConsumerAddr(ctx sdk.Context, chainID string, c
 	store.Delete(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr))
 }
 
-// GetPendingKeyAssignment returns the pending key assignment for a provider validator on a consumer chain
-func (k Keeper) GetPendingKeyAssignment(
+// GetKeyAssignmentReplacement returns the key assignment for a provider validator
+// that need to be replaced on a consumer chain in the current block
+func (k Keeper) GetKeyAssignmentReplacement(
 	ctx sdk.Context,
 	chainID string,
 	providerAddr sdk.ConsAddress,
-) (pendingKeyAssignment abci.ValidatorUpdate, found bool) {
+) (oldAssignment abci.ValidatorUpdate, found bool) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PendingKeyAssignmentsKey(chainID, providerAddr))
+	bz := store.Get(types.KeyAssignmentReplacementsKey(chainID, providerAddr))
 	if bz == nil {
-		return pendingKeyAssignment, false
+		return oldAssignment, false
 	}
-	err := pendingKeyAssignment.Unmarshal(bz)
+	err := oldAssignment.Unmarshal(bz)
 	if err != nil {
 		panic(err)
 	}
-	return pendingKeyAssignment, true
+	return oldAssignment, true
 }
 
-// SetPendingKeyAssignment sets the pending key assignment for a provider validator on a consumer chain
-func (k Keeper) SetPendingKeyAssignment(
+// SetKeyAssignmentReplacement sets the key assignment for a provider validator
+// that need to be replaced on a consumer chain in the current block
+func (k Keeper) SetKeyAssignmentReplacement(
 	ctx sdk.Context,
 	chainID string,
 	providerAddr sdk.ConsAddress,
-	pendingKeyAssignment abci.ValidatorUpdate,
+	oldAssignment abci.ValidatorUpdate,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := pendingKeyAssignment.Marshal()
+	bz, err := oldAssignment.Marshal()
 	if err != nil {
 		panic(err)
 	}
-	store.Set(types.PendingKeyAssignmentsKey(chainID, providerAddr), bz)
+	store.Set(types.KeyAssignmentReplacementsKey(chainID, providerAddr), bz)
 }
 
-// IteratePendingKeyAssignments iterates through all pending key assignment for provider validators on a consumer chain
-func (k Keeper) IteratePendingKeyAssignments(
+// IterateKeyAssignmentReplacements iterates through all the key assignments
+// that need to be replaced on a consumer chain in the current block
+func (k Keeper) IterateKeyAssignmentReplacements(
 	ctx sdk.Context,
 	chainID string,
-	cb func(providerAddr sdk.ConsAddress, pendingKeyAssignment abci.ValidatorUpdate) (stop bool),
+	cb func(providerAddr sdk.ConsAddress, oldAssignment abci.ValidatorUpdate) (stop bool),
 ) {
 	store := ctx.KVStore(k.storeKey)
-	iteratorPrefix := types.ChainIdWithLenKey(types.PendingKeyAssignmentsBytePrefix, chainID)
+	iteratorPrefix := types.ChainIdWithLenKey(types.KeyAssignmentReplacementsBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		_, providerAddr, err := types.ParseChainIdAndConsAddrKey(types.PendingKeyAssignmentsBytePrefix, iterator.Key())
+		_, providerAddr, err := types.ParseChainIdAndConsAddrKey(types.KeyAssignmentReplacementsBytePrefix, iterator.Key())
 		if err != nil {
 			panic(err)
 		}
-		var pendingKeyAssignment abci.ValidatorUpdate
-		err = pendingKeyAssignment.Unmarshal(iterator.Value())
+		var oldAssignment abci.ValidatorUpdate
+		err = oldAssignment.Unmarshal(iterator.Value())
 		if err != nil {
 			panic(err)
 		}
-		stop := cb(providerAddr, pendingKeyAssignment)
+		stop := cb(providerAddr, oldAssignment)
 		if stop {
 			break
 		}
 	}
 }
 
-// DeletePendingKeyAssignment deletes the pending key assignment for a provider validator on a consumer chain
-func (k Keeper) DeletePendingKeyAssignment(ctx sdk.Context, chainID string, providerAddr sdk.ConsAddress) {
+// DeleteKeyAssignmentReplacement deletes the key assignment for a provider validator
+// that need to be replaced on a consumer chain in the current block
+func (k Keeper) DeleteKeyAssignmentReplacement(ctx sdk.Context, chainID string, providerAddr sdk.ConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.PendingKeyAssignmentsKey(chainID, providerAddr))
+	store.Delete(types.KeyAssignmentReplacementsKey(chainID, providerAddr))
 }
 
 // AppendConsumerAddrsToPrune appends a consumer validator address to the list of consumer addresses
 // that can be pruned once the VSCMaturedPacket with vscID is received
 func (k Keeper) AppendConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID uint64, consumerAddr sdk.ConsAddress) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ConsumerValidatorsByVscIDKey(chainID, vscID))
+	bz := store.Get(types.ConsumerAddrsToPruneKey(chainID, vscID))
 	var consumerAddrsToPrune types.AddressList
 	if bz != nil {
 		err := consumerAddrsToPrune.Unmarshal(bz)
@@ -283,14 +287,14 @@ func (k Keeper) AppendConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscI
 	if err != nil {
 		panic(err)
 	}
-	store.Set(types.ConsumerValidatorsByVscIDKey(chainID, vscID), bz)
+	store.Set(types.ConsumerAddrsToPruneKey(chainID, vscID), bz)
 }
 
 // GetConsumerAddrsToPrune returns the list of consumer addresses
 // that can be pruned once the VSCMaturedPacket with vscID is received
 func (k Keeper) GetConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID uint64) [][]byte {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ConsumerValidatorsByVscIDKey(chainID, vscID))
+	bz := store.Get(types.ConsumerAddrsToPruneKey(chainID, vscID))
 	if bz == nil {
 		return nil
 	}
@@ -302,15 +306,41 @@ func (k Keeper) GetConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID u
 	return consumerAddrsToPrune.Addresses
 }
 
+func (k Keeper) IterateConsumerAddrsToPrune(
+	ctx sdk.Context,
+	chainID string,
+	cb func(vscID uint64, consumerAddrsToPrune [][]byte) (stop bool),
+) {
+	store := ctx.KVStore(k.storeKey)
+	iteratorPrefix := types.ChainIdWithLenKey(types.ConsumerAddrsToPruneBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, iteratorPrefix)
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		_, vscID, err := types.ParseChainIdAndVscIdKey(types.ConsumerAddrsToPruneBytePrefix, iterator.Key())
+		if err != nil {
+			panic(err)
+		}
+		var consumerAddrsToPrune types.AddressList
+		err = consumerAddrsToPrune.Unmarshal(iterator.Value())
+		if err != nil {
+			panic(err)
+		}
+		stop := cb(vscID, consumerAddrsToPrune.Addresses)
+		if stop {
+			break
+		}
+	}
+}
+
 func (k Keeper) IterateAllConsumerAddrsToPrune(
 	ctx sdk.Context,
 	cb func(chainID string, vscID uint64, consumerAddrsToPrune [][]byte) (stop bool),
 ) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ConsumerValidatorsByVscIDBytePrefix})
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ConsumerAddrsToPruneBytePrefix})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		chainID, vscID, err := types.ParseChainIdAndVscIdKey(types.ConsumerValidatorsByVscIDBytePrefix, iterator.Key())
+		chainID, vscID, err := types.ParseChainIdAndVscIdKey(types.ConsumerAddrsToPruneBytePrefix, iterator.Key())
 		if err != nil {
 			panic(err)
 		}
@@ -329,7 +359,7 @@ func (k Keeper) IterateAllConsumerAddrsToPrune(
 // DeleteConsumerAddrsToPrune deletes the list of consumer addresses mapped to a given VSC ID
 func (k Keeper) DeleteConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ConsumerValidatorsByVscIDKey(chainID, vscID))
+	store.Delete(types.ConsumerAddrsToPruneKey(chainID, vscID))
 }
 
 // AssignConsumerKey assigns the consumerKey to the validator with providerAddr
@@ -337,15 +367,14 @@ func (k Keeper) DeleteConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscI
 func (k Keeper) AssignConsumerKey(
 	ctx sdk.Context,
 	chainID string,
-	providerAddr sdk.ConsAddress,
+	validator stakingtypes.Validator,
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
 	consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
 
-	// validator must already be registered
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr)
-	if !found {
-		return stakingtypes.ErrNoValidatorFound
+	providerAddr, err := validator.GetConsAddr()
+	if err != nil {
+		return err
 	}
 
 	if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
@@ -358,13 +387,6 @@ func (k Keeper) AssignConsumerKey(
 	// check whether the consumer chain is already registered,
 	// i.e., a client to the consumer was already created
 	if _, consumerRegistered := k.GetConsumerClientId(ctx, chainID); consumerRegistered {
-		// set the mapping from this validator's new consensus address on the consumer
-		// to its consensus address on the provider;
-		// otherwise, the mapping is added when the consumer is registered
-		// note: this state must be deleted through the pruning mechanism;
-		// see ConsumerValidatorsByVscID
-		k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
-
 		// get the previous key assigned for this validator on this consumer chain
 		oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 		if found {
@@ -391,10 +413,10 @@ func (k Keeper) AssignConsumerKey(
 		if oldPower > 0 {
 			// to enable multiple calls of AssignConsumerKey in the same block by the same validator
 			// the pending key assignment should not be overwritten
-			if _, found := k.GetPendingKeyAssignment(ctx, chainID, providerAddr); !found {
+			if _, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr); !found {
 				// store old key and power for modifying the valset update in EndBlock;
 				// note: this state is deleted at the end of the block
-				k.SetPendingKeyAssignment(
+				k.SetKeyAssignmentReplacement(
 					ctx,
 					chainID,
 					providerAddr,
@@ -402,12 +424,29 @@ func (k Keeper) AssignConsumerKey(
 				)
 			}
 		}
+	} else {
+		// if the consumer chain is not registered, then remove the mapping
+		// from the old consumer address to the provider address (if any)
+		// get the previous key assigned for this validator on this consumer chain
+		oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
+		if found {
+			k.DeleteValidatorByConsumerAddr(
+				ctx,
+				chainID,
+				utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey),
+			)
+		}
 	}
 
 	// set the mapping from this validator's provider address to the new consumer key;
 	// overwrite if already exists
 	// note: this state is deleted when the validator is removed from the staking module
 	k.SetValidatorConsumerPubKey(ctx, chainID, providerAddr, consumerKey)
+
+	// set the mapping from this validator's new consensus address on the consumer
+	// to its consensus address on the provider;
+	// note: this state must be deleted through the pruning mechanism
+	k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
 
 	return nil
 }
@@ -424,10 +463,6 @@ func (k Keeper) ApplyKeyAssignmentToInitialValset(
 		providerAddr := utils.TMCryptoPublicKeyToConsAddr(update.PubKey)
 		if consumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
 			newUpdates[i].PubKey = consumerKey
-			consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
-			// set the mapping from this validator's new consensus address on the consumer
-			// to its consensus address on the provider
-			k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
 		}
 	}
 	return newUpdates
@@ -440,22 +475,17 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 	chainID string,
 	valUpdates []abci.ValidatorUpdate,
 ) (newUpdates []abci.ValidatorUpdate, err error) {
-	var updatesToRemove []int
-	var updatesToAdd []abci.ValidatorUpdate
-
-	for i, valUpdate := range valUpdates {
+	for _, valUpdate := range valUpdates {
 		providerAddr := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
 
-		// If a pending key assignment is found, we remove the valupdate with the old consumer key,
+		// If a key assignment replacement is found, we remove the valupdate with the old consumer key,
 		// create tow new valupdates,
 		//  - setting the old consumer key's power to 0
 		//  - and setting the new consumer key's power to the power in the update
-		pendingKeyAssignment, found := k.GetPendingKeyAssignment(ctx, chainID, providerAddr)
+		oldAssignment, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
 		if found {
-			updatesToRemove = append(updatesToRemove, i)
-
-			updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
-				PubKey: pendingKeyAssignment.PubKey,
+			newUpdates = append(newUpdates, abci.ValidatorUpdate{
+				PubKey: oldAssignment.PubKey,
 				Power:  0,
 			})
 
@@ -463,35 +493,37 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 			if !found {
 				return newUpdates, sdkerrors.Wrapf(types.ErrConsumerKeyNotFound, "consumer key not found for %s", providerAddr)
 			}
-			updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+			newUpdates = append(newUpdates, abci.ValidatorUpdate{
 				PubKey: newConsumerKey,
 				Power:  valUpdate.Power,
 			})
-			k.DeletePendingKeyAssignment(ctx, chainID, providerAddr)
+			k.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
 		} else {
 			// If a pending key assignment is not found, we check if the validator's key is assigned.
 			// If it is, we replace the update containing the provider key with the update containing the consumer key.
 			consumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 			if found {
-				updatesToRemove = append(updatesToRemove, i)
-				updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+				newUpdates = append(newUpdates, abci.ValidatorUpdate{
 					PubKey: consumerKey,
 					Power:  valUpdate.Power,
 				})
+			} else {
+				// keep the same update
+				newUpdates = append(newUpdates, valUpdate)
 			}
 		}
 	}
 
-	// For any pending key assignments that did not have a corresponding validator update already,
+	// For any key assignment replacements that did not have a corresponding validator update already,
 	// set the old consumer key's power to 0 and the new consumer key's power to the
 	// power in the pending key assignment.
 	var addrToRemove []sdk.ConsAddress
-	k.IteratePendingKeyAssignments(ctx, chainID, func(
+	k.IterateKeyAssignmentReplacements(ctx, chainID, func(
 		pAddr sdk.ConsAddress,
 		pendingKeyAssignment abci.ValidatorUpdate,
 	) (stop bool) {
 		addrToRemove = append(addrToRemove, pAddr)
-		updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+		newUpdates = append(newUpdates, abci.ValidatorUpdate{
 			PubKey: pendingKeyAssignment.PubKey,
 			Power:  0,
 		})
@@ -501,7 +533,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 			err = sdkerrors.Wrapf(types.ErrConsumerKeyNotFound, "consumer key not found for %s", pAddr)
 			return true
 		}
-		updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+		newUpdates = append(newUpdates, abci.ValidatorUpdate{
 			PubKey: newConsumerKey,
 			Power:  pendingKeyAssignment.Power,
 		})
@@ -512,20 +544,12 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 		return newUpdates, err
 	}
 
-	// Remove the pending key assignments
+	// Remove the key assignment replacements
 	for _, addr := range addrToRemove {
-		k.DeletePendingKeyAssignment(ctx, chainID, addr)
+		k.DeleteKeyAssignmentReplacement(ctx, chainID, addr)
 	}
 
-	// Remove the updates that need to be removed
-	for _, index := range updatesToRemove {
-		valUpdates = append(valUpdates[:index], valUpdates[index+1:]...)
-	}
-
-	// Add the updates that need to be added
-	valUpdates = append(valUpdates, updatesToAdd...)
-
-	return valUpdates, nil
+	return newUpdates, nil
 }
 
 // GetProviderAddrFromConsumerAddr returns the consensus address of a validator with
@@ -550,4 +574,44 @@ func (k Keeper) PruneKeyAssignments(ctx sdk.Context, chainID string, vscID uint6
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, addr)
 	}
 	k.DeleteConsumerAddrsToPrune(ctx, chainID, vscID)
+}
+
+// DeleteKeyAssignments deletes all the state needed for key assignments on a consumer chain
+func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
+	// delete ValidatorConsumerPubKey
+	var addrs []sdk.ConsAddress
+	k.IterateValidatorConsumerPubKeys(ctx, chainID, func(providerAddr sdk.ConsAddress, _ tmprotocrypto.PublicKey) (stop bool) {
+		addrs = append(addrs, providerAddr)
+		return false // do not stop the iteration
+	})
+	for _, addr := range addrs {
+		k.DeleteValidatorConsumerPubKey(ctx, chainID, addr)
+	}
+	// delete ValidatorsByConsumerAddr
+	addrs = nil
+	k.IterateValidatorsByConsumerAddr(ctx, chainID, func(consumerAddr sdk.ConsAddress, _ sdk.ConsAddress) (stop bool) {
+		addrs = append(addrs, consumerAddr)
+		return false // do not stop the iteration
+	})
+	for _, addr := range addrs {
+		k.DeleteValidatorByConsumerAddr(ctx, chainID, addr)
+	}
+	// delete KeyAssignmentReplacements
+	addrs = nil
+	k.IterateKeyAssignmentReplacements(ctx, chainID, func(providerAddr sdk.ConsAddress, _ abci.ValidatorUpdate) (stop bool) {
+		addrs = append(addrs, providerAddr)
+		return false // do not stop the iteration
+	})
+	for _, addr := range addrs {
+		k.DeleteKeyAssignmentReplacement(ctx, chainID, addr)
+	}
+	// delete ValidatorConsumerPubKey
+	var ids []uint64
+	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, _ [][]byte) (stop bool) {
+		ids = append(ids, vscID)
+		return false // do not stop the iteration
+	})
+	for _, id := range ids {
+		k.DeleteConsumerAddrsToPrune(ctx, chainID, id)
+	}
 }

@@ -38,6 +38,12 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
 		return nil, err
+  }
+
+	// validator must already be registered
+	validator, found := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
+	if !found {
+		return nil, stakingtypes.ErrNoValidatorFound
 	}
 
 	// validator must already be registered
@@ -75,8 +81,8 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		return nil, err
 	}
 
-	if err := k.Keeper.AssignConsumerKey(ctx, msg.ChainId, providerConsAddr, consumerTMPublicKey); err != nil {
-		return nil, err
+	if err := k.Keeper.AssignConsumerKey(ctx, msg.ChainId, validator, consumerTMPublicKey); err != nil {
+    return nil, err
 	}
 
 	ctx.EventManager().EmitEvents(sdk.Events{
