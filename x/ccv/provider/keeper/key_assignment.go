@@ -302,6 +302,32 @@ func (k Keeper) GetConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID u
 	return consumerAddrsToPrune.Addresses
 }
 
+func (k Keeper) IterateConsumerAddrsToPrune(
+	ctx sdk.Context,
+	chainID string,
+	cb func(vscID uint64, consumerAddrsToPrune [][]byte) (stop bool),
+) {
+	store := ctx.KVStore(k.storeKey)
+	iteratorPrefix := types.ChainIdWithLenKey(types.ConsumerValidatorsByVscIDBytePrefix, chainID)
+	iterator := sdk.KVStorePrefixIterator(store, iteratorPrefix)
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		_, vscID, err := types.ParseChainIdAndVscIdKey(types.ConsumerValidatorsByVscIDBytePrefix, iterator.Key())
+		if err != nil {
+			panic(err)
+		}
+		var consumerAddrsToPrune types.AddressList
+		err = consumerAddrsToPrune.Unmarshal(iterator.Value())
+		if err != nil {
+			panic(err)
+		}
+		stop := cb(vscID, consumerAddrsToPrune.Addresses)
+		if stop {
+			break
+		}
+	}
+}
+
 func (k Keeper) IterateAllConsumerAddrsToPrune(
 	ctx sdk.Context,
 	cb func(chainID string, vscID uint64, consumerAddrsToPrune [][]byte) (stop bool),
@@ -550,4 +576,44 @@ func (k Keeper) PruneKeyAssignments(ctx sdk.Context, chainID string, vscID uint6
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, addr)
 	}
 	k.DeleteConsumerAddrsToPrune(ctx, chainID, vscID)
+}
+
+// DeleteKeyAssignments deletes all the state needed for key assignments on a consumer chain
+func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
+	// delete ValidatorConsumerPubKey
+	var addrs []sdk.ConsAddress
+	k.IterateValidatorConsumerPubKeys(ctx, chainID, func(providerAddr sdk.ConsAddress, _ tmprotocrypto.PublicKey) (stop bool) {
+		addrs = append(addrs, providerAddr)
+		return false // do not stop the iteration
+	})
+	for _, addr := range addrs {
+		k.DeleteValidatorConsumerPubKey(ctx, chainID, addr)
+	}
+	// delete ValidatorsByConsumerAddr
+	addrs = nil
+	k.IterateValidatorsByConsumerAddr(ctx, chainID, func(consumerAddr sdk.ConsAddress, _ sdk.ConsAddress) (stop bool) {
+		addrs = append(addrs, consumerAddr)
+		return false // do not stop the iteration
+	})
+	for _, addr := range addrs {
+		k.DeleteValidatorByConsumerAddr(ctx, chainID, addr)
+	}
+	// delete PendingKeyAssignment
+	addrs = nil
+	k.IteratePendingKeyAssignments(ctx, chainID, func(providerAddr sdk.ConsAddress, _ abci.ValidatorUpdate) (stop bool) {
+		addrs = append(addrs, providerAddr)
+		return false // do not stop the iteration
+	})
+	for _, addr := range addrs {
+		k.DeletePendingKeyAssignment(ctx, chainID, addr)
+	}
+	// delete ValidatorConsumerPubKey
+	var ids []uint64
+	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, _ [][]byte) (stop bool) {
+		ids = append(ids, vscID)
+		return false // do not stop the iteration
+	})
+	for _, id := range ids {
+		k.DeleteConsumerAddrsToPrune(ctx, chainID, id)
+	}
 }

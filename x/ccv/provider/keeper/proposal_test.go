@@ -11,6 +11,7 @@ import (
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/golang/mock/gomock"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	"github.com/stretchr/testify/require"
 
@@ -472,6 +473,32 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 	require.False(t, found)
 	found = false
 	providerKeeper.IterateVscSendTimestamps(ctx, expectedChainID, func(_ uint64, _ time.Time) (stop bool) {
+		found = true
+		return true // stop the iteration
+	})
+	require.False(t, found)
+
+	// test key assignment state is cleaned
+	found = false
+	providerKeeper.IterateValidatorConsumerPubKeys(ctx, expectedChainID, func(_ sdk.ConsAddress, _ tmprotocrypto.PublicKey) (stop bool) {
+		found = true
+		return true // stop the iteration
+	})
+	require.False(t, found)
+	found = false
+	providerKeeper.IterateValidatorsByConsumerAddr(ctx, expectedChainID, func(_ sdk.ConsAddress, _ sdk.ConsAddress) (stop bool) {
+		found = true
+		return true // stop the iteration
+	})
+	require.False(t, found)
+	found = false
+	providerKeeper.IteratePendingKeyAssignments(ctx, expectedChainID, func(_ sdk.ConsAddress, _ abci.ValidatorUpdate) (stop bool) {
+		found = true
+		return true // stop the iteration
+	})
+	require.False(t, found)
+	found = false
+	providerKeeper.IterateConsumerAddrsToPrune(ctx, expectedChainID, func(_ uint64, _ [][]byte) (stop bool) {
 		found = true
 		return true // stop the iteration
 	})
