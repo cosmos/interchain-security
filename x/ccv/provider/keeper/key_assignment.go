@@ -50,6 +50,8 @@ func (k Keeper) SetValidatorConsumerPubKey(
 	store.Set(types.ConsumerValidatorsKey(chainID, providerAddr), bz)
 }
 
+// TODO: misleading name -> validator can have 1 consumer key at any given time
+// This function name can be interpreted as if the validator can have multiple consumer keys on one chain
 // IterateValidatorConsumerPubKeys iterates over the validators public keys assigned for a consumer chain
 func (k Keeper) IterateValidatorConsumerPubKeys(
 	ctx sdk.Context,
@@ -102,6 +104,7 @@ func (k Keeper) IterateAllValidatorConsumerPubKeys(
 	}
 }
 
+// TODO: maybe make variadic DeleteValidatorConsumerPubKey(ctx sdk.Context, providerAddr sdk.ConsAddress, chainIDs ...string)
 // DeleteValidatorConsumerPubKey deletes a validator's public key assigned for a consumer chain
 func (k Keeper) DeleteValidatorConsumerPubKey(ctx sdk.Context, chainID string, providerAddr sdk.ConsAddress) {
 	store := ctx.KVStore(k.storeKey)
