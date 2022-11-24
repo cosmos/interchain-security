@@ -153,6 +153,14 @@ func TestProviderChannelClosed(t *testing.T) {
 }
 
 //
+// Throttle tests
+//
+
+func TestSlashPacketThrottling(t *testing.T) {
+	runCCVTestByName(t, "TestSlashPacketThrottling")
+}
+
+//
 // Unbonding tests
 //
 
