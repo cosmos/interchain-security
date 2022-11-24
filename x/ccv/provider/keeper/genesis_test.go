@@ -4,18 +4,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 // TestInitAndExportGenesis tests the export and the initialisation of a provider chain genesis
@@ -27,6 +27,13 @@ func TestInitAndExportGenesis(t *testing.T) {
 	initHeight, vscID := uint64(5), uint64(1)
 	ubdIndex := []uint64{0, 1, 2}
 	params := providertypes.DefaultParams()
+
+	// create validator keys and addresses for key assignement
+	provAddr := sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Address().Bytes())
+	consPubKey := ed25519.GenPrivKey().PubKey()
+	consTmPubKey, err := cryptocodec.ToTmProtoPublicKey(consPubKey)
+	require.NoError(t, err)
+	consAddr := sdk.ConsAddress(consPubKey.Address().Bytes())
 
 	// create genesis struct
 	provGenesis := providertypes.NewGenesisState(vscID,
@@ -62,11 +69,11 @@ func TestInitAndExportGenesis(t *testing.T) {
 			UnbondingConsumerChains: []string{cChainIDs[0]},
 		}},
 		&ccv.MaturedUnbondingOps{Ids: ubdIndex},
-		[]providertypes.ConsumerAdditionProposal{types.ConsumerAdditionProposal{
+		[]providertypes.ConsumerAdditionProposal{{
 			ChainId:   cChainIDs[0],
 			SpawnTime: oneHourFromNow,
 		}},
-		[]providertypes.ConsumerRemovalProposal{types.ConsumerRemovalProposal{
+		[]providertypes.ConsumerRemovalProposal{{
 			ChainId:  cChainIDs[0],
 			StopTime: oneHourFromNow,
 		}},
@@ -74,22 +81,22 @@ func TestInitAndExportGenesis(t *testing.T) {
 		[]providertypes.ValidatorConsumerPubKey{
 			{
 				ChainId:      cChainIDs[0],
-				ProviderAddr: sdk.ConsAddress([]byte("providerAddr")),
-				ConsumerKey:  &tmprotocrypto.PublicKey{},
+				ProviderAddr: provAddr,
+				ConsumerKey:  &consTmPubKey,
 			},
 		},
 		[]providertypes.ValidatorByConsumerAddr{
 			{
 				ChainId:      cChainIDs[0],
-				ProviderAddr: sdk.ConsAddress([]byte("providerAddr")),
-				ConsumerAddr: sdk.ConsAddress([]byte("consumerAddr")),
+				ProviderAddr: provAddr,
+				ConsumerAddr: consAddr,
 			},
 		},
 		[]providertypes.ConsumerAddrsToPrune{
 			{
 				ChainId:       cChainIDs[0],
 				VscId:         vscID,
-				ConsumerAddrs: [][]byte{sdk.ConsAddress([]byte("consumerAddr"))},
+				ConsumerAddrs: [][]byte{consAddr},
 			},
 		},
 	)
@@ -127,16 +134,16 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, provGenesis.Params, pk.GetParams(ctx))
 
-	pubKey, found := pk.GetValidatorConsumerPubKey(ctx, cChainIDs[0], sdk.ConsAddress([]byte("providerAddr")))
+	gotConsTmPubKey, found := pk.GetValidatorConsumerPubKey(ctx, cChainIDs[0], provAddr)
 	require.True(t, found)
-	require.Equal(t, tmprotocrypto.PublicKey{}, pubKey)
+	require.True(t, consTmPubKey.Equal(gotConsTmPubKey))
 
-	providerAddr, found := pk.GetValidatorByConsumerAddr(ctx, cChainIDs[0], sdk.ConsAddress([]byte("consumerAddr")))
+	providerAddr, found := pk.GetValidatorByConsumerAddr(ctx, cChainIDs[0], consAddr)
 	require.True(t, found)
-	require.Equal(t, sdk.ConsAddress([]byte("providerAddr")), providerAddr)
+	require.Equal(t, provAddr, providerAddr)
 
 	addrs := pk.GetConsumerAddrsToPrune(ctx, cChainIDs[0], vscID)
-	require.Equal(t, [][]byte{sdk.ConsAddress([]byte("consumerAddr"))}, addrs)
+	require.Equal(t, [][]byte{consAddr}, addrs)
 
 	// check provider chain's consumer chain states
 	assertConsumerChainStates(ctx, t, pk, provGenesis.ConsumerStates...)

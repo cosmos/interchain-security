@@ -90,26 +90,28 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
 
-		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
-		tc.setup(ctx, k, mocks)
+			tc.setup(ctx, k, mocks)
 
-		msg, err := types.NewMsgAssignConsumerKey(tc.chainID,
-			testValProvider.SDKValAddress(), testValConsumer.SDKPubKey(),
-		)
+			msg, err := types.NewMsgAssignConsumerKey(tc.chainID,
+				testValProvider.SDKValAddress(), testValConsumer.SDKPubKey(),
+			)
 
-		require.NoError(t, err)
+			require.NoError(t, err)
 
-		// Try to handle the message
-		_, err = NewHandler(&k)(ctx, msg)
+			// Try to handle the message
+			_, err = NewHandler(&k)(ctx, msg)
 
-		if tc.expError {
-			require.Error(t, err, "invalid case did not return error")
-		} else {
-			require.NoError(t, err, "valid case returned error")
-		}
+			if tc.expError {
+				require.Error(t, err, "invalid case did not return error")
+			} else {
+				require.NoError(t, err, "valid case returned error")
+			}
 
-		ctrl.Finish()
+			ctrl.Finish()
+		})
 	}
 }
