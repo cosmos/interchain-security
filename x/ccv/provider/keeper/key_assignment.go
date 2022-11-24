@@ -172,6 +172,7 @@ func (k Keeper) IterateValidatorsByConsumerAddr(
 	}
 }
 
+// TODO: msalopek - what does this do exactly?
 func (k Keeper) IterateAllValidatorsByConsumerAddr(
 	ctx sdk.Context,
 	cb func(chainID string, consumerAddr sdk.ConsAddress, providerAddr sdk.ConsAddress) (stop bool),
