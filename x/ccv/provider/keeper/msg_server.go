@@ -40,6 +40,12 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		return nil, err
 	}
 
+	// validator must already be registered
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr)
+	if !found {
+		return nil, stakingtypes.ErrNoValidatorFound
+	}
+
 	// make sure the consumer key is in the correct format
 	consumerSDKPublicKey, ok := msg.ConsumerKey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
@@ -59,7 +65,7 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		return nil, err
 	}
 
-	k.Keeper.AssignConsumerKey(ctx, msg.ChainId, providerAddr, consumerTMPublicKey)
+	k.Keeper.AssignConsumerKey(ctx, msg.ChainId, validator, consumerTMPublicKey)
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(

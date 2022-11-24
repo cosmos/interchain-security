@@ -363,15 +363,14 @@ func (k Keeper) DeleteConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscI
 func (k Keeper) AssignConsumerKey(
 	ctx sdk.Context,
 	chainID string,
-	providerAddr sdk.ConsAddress,
+	validator stakingtypes.Validator,
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
 	consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
 
-	// validator must already be registered
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr)
-	if !found {
-		return stakingtypes.ErrNoValidatorFound
+	providerAddr, err := validator.GetConsAddr()
+	if err != nil {
+		return err
 	}
 
 	if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
@@ -466,10 +465,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 	chainID string,
 	valUpdates []abci.ValidatorUpdate,
 ) (newUpdates []abci.ValidatorUpdate, err error) {
-	var updatesToRemove []int
-	var updatesToAdd []abci.ValidatorUpdate
-
-	for i, valUpdate := range valUpdates {
+	for _, valUpdate := range valUpdates {
 		providerAddr := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
 
 		// If a pending key assignment is found, we remove the valupdate with the old consumer key,
@@ -478,9 +474,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 		//  - and setting the new consumer key's power to the power in the update
 		pendingKeyAssignment, found := k.GetPendingKeyAssignment(ctx, chainID, providerAddr)
 		if found {
-			updatesToRemove = append(updatesToRemove, i)
-
-			updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+			newUpdates = append(newUpdates, abci.ValidatorUpdate{
 				PubKey: pendingKeyAssignment.PubKey,
 				Power:  0,
 			})
@@ -489,7 +483,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 			if !found {
 				return newUpdates, sdkerrors.Wrapf(types.ErrConsumerKeyNotFound, "consumer key not found for %s", providerAddr)
 			}
-			updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+			newUpdates = append(newUpdates, abci.ValidatorUpdate{
 				PubKey: newConsumerKey,
 				Power:  valUpdate.Power,
 			})
@@ -499,11 +493,13 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 			// If it is, we replace the update containing the provider key with the update containing the consumer key.
 			consumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 			if found {
-				updatesToRemove = append(updatesToRemove, i)
-				updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+				newUpdates = append(newUpdates, abci.ValidatorUpdate{
 					PubKey: consumerKey,
 					Power:  valUpdate.Power,
 				})
+			} else {
+				// keep the same update
+				newUpdates = append(newUpdates, valUpdate)
 			}
 		}
 	}
@@ -517,7 +513,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 		pendingKeyAssignment abci.ValidatorUpdate,
 	) (stop bool) {
 		addrToRemove = append(addrToRemove, pAddr)
-		updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+		newUpdates = append(newUpdates, abci.ValidatorUpdate{
 			PubKey: pendingKeyAssignment.PubKey,
 			Power:  0,
 		})
@@ -527,7 +523,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 			err = sdkerrors.Wrapf(types.ErrConsumerKeyNotFound, "consumer key not found for %s", pAddr)
 			return true
 		}
-		updatesToAdd = append(updatesToAdd, abci.ValidatorUpdate{
+		newUpdates = append(newUpdates, abci.ValidatorUpdate{
 			PubKey: newConsumerKey,
 			Power:  pendingKeyAssignment.Power,
 		})
@@ -543,15 +539,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 		k.DeletePendingKeyAssignment(ctx, chainID, addr)
 	}
 
-	// Remove the updates that need to be removed
-	for _, index := range updatesToRemove {
-		valUpdates = append(valUpdates[:index], valUpdates[index+1:]...)
-	}
-
-	// Add the updates that need to be added
-	valUpdates = append(valUpdates, updatesToAdd...)
-
-	return valUpdates, nil
+	return newUpdates, nil
 }
 
 // GetProviderAddrFromConsumerAddr returns the consensus address of a validator with
