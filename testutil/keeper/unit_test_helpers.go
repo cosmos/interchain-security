@@ -1,9 +1,9 @@
 package keeper
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"encoding/binary"
 	"testing"
-	time "time"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -189,21 +189,27 @@ func GenPubKey() (crypto.PubKey, error) {
 
 // Obtains slash packet data with a newly generated key
 func GetNewSlashPacketData() ccvtypes.SlashPacketData {
-	rand.Seed(time.Now().UnixNano())
+	b1 := make([]byte, 8)
+	_, _ = rand.Read(b1)
+	b2 := make([]byte, 8)
+	_, _ = rand.Read(b2)
+	b3 := make([]byte, 8)
+	_, _ = rand.Read(b3)
 	return ccvtypes.SlashPacketData{
 		Validator: abci.Validator{
 			Address: ed25519.GenPrivKey().PubKey().Address(),
-			Power:   rand.Int63(),
+			Power:   int64(binary.BigEndian.Uint64(b1)),
 		},
-		ValsetUpdateId: rand.Uint64(),
-		Infraction:     stakingtypes.InfractionType(rand.Intn(3)),
+		ValsetUpdateId: binary.BigEndian.Uint64(b2),
+		Infraction:     stakingtypes.InfractionType(binary.BigEndian.Uint64(b2) % 3),
 	}
 }
 
 // Obtains vsc matured packet data with a newly generated key
 func GetNewVSCMaturedPacketData() ccvtypes.VSCMaturedPacketData {
-	rand.Seed(time.Now().UnixNano())
-	return ccvtypes.VSCMaturedPacketData{ValsetUpdateId: rand.Uint64()}
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
+	return ccvtypes.VSCMaturedPacketData{ValsetUpdateId: binary.BigEndian.Uint64(b)}
 }
 
 // SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
