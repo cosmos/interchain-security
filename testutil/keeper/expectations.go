@@ -99,8 +99,8 @@ func ExpectCreateClientMock(ctx sdk.Context, mocks MockedKeepers, clientID strin
 	return mocks.MockClientKeeper.EXPECT().CreateClient(ctx, clientState, consState).Return(clientID, nil).Times(1)
 }
 
-func ExpectGetCapabilityMock(ctx sdk.Context, mocks MockedKeepers) *gomock.Call {
+func ExpectGetCapabilityMock(ctx sdk.Context, mocks MockedKeepers, times int) *gomock.Call {
 	return mocks.MockScopedKeeper.EXPECT().GetCapability(
 		ctx, host.PortPath(ccv.ConsumerPortID),
-	).Return(nil, true).Times(1)
+	).Return(nil, true).Times(times)
 }

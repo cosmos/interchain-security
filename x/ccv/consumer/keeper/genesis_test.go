@@ -106,9 +106,9 @@ func TestInitGenesis(t *testing.T) {
 			"start a new chain",
 			func(ctx sdk.Context, mocks testutil.MockedKeepers) {
 				gomock.InOrder(
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks),
+					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 1),
 					testkeeper.ExpectCreateClientMock(ctx, mocks, provClientID, provClientState, provConsState),
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks),
+					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 1),
 				)
 			},
 			consumertypes.NewInitialGenesisState(
@@ -130,9 +130,7 @@ func TestInitGenesis(t *testing.T) {
 			"restart a chain without an established CCV channel",
 			func(ctx sdk.Context, mocks testutil.MockedKeepers) {
 				gomock.InOrder(
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks),
-					testkeeper.ExpectLatestConsensusStateMock(ctx, mocks, provClientID, provConsState),
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks),
+					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 2),
 				)
 			},
 			consumertypes.NewRestartGenesisState(
@@ -162,9 +160,7 @@ func TestInitGenesis(t *testing.T) {
 				params.DistributionTransmissionChannel = "distribution-channel"
 				params.ProviderFeePoolAddrStr = "provider-fee-pool-address"
 				gomock.InOrder(
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks),
-					testkeeper.ExpectLatestConsensusStateMock(ctx, mocks, provClientID, provConsState),
-					testkeeper.ExpectGetCapabilityMock(ctx, mocks),
+					testkeeper.ExpectGetCapabilityMock(ctx, mocks, 2),
 				)
 			},
 			// create a genesis for a restarted chain
