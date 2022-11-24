@@ -15,6 +15,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 // TestInitAndExportGenesis tests the export and the initialisation of a provider chain genesis
@@ -70,9 +71,27 @@ func TestInitAndExportGenesis(t *testing.T) {
 			StopTime: oneHourFromNow,
 		}},
 		params,
-		nil,
-		nil,
-		nil,
+		[]providertypes.ValidatorConsumerPubKey{
+			{
+				ChainId:      cChainIDs[0],
+				ProviderAddr: sdk.ConsAddress([]byte("providerAddr")),
+				ConsumerKey:  &tmprotocrypto.PublicKey{},
+			},
+		},
+		[]providertypes.ValidatorByConsumerAddr{
+			{
+				ChainId:      cChainIDs[0],
+				ProviderAddr: sdk.ConsAddress([]byte("providerAddr")),
+				ConsumerAddr: sdk.ConsAddress([]byte("consumerAddr")),
+			},
+		},
+		[]providertypes.ConsumerAddrsToPrune{
+			{
+				ChainId:       cChainIDs[0],
+				VscId:         vscID,
+				ConsumerAddrs: [][]byte{sdk.ConsAddress([]byte("consumerAddr"))},
+			},
+		},
 	)
 
 	// Instantiate in-mem provider keeper with mocks
@@ -107,6 +126,17 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, provGenesis.ConsumerAdditionProposals[0], addProp)
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, provGenesis.Params, pk.GetParams(ctx))
+
+	pubKey, found := pk.GetValidatorConsumerPubKey(ctx, cChainIDs[0], sdk.ConsAddress([]byte("providerAddr")))
+	require.True(t, found)
+	require.Equal(t, tmprotocrypto.PublicKey{}, pubKey)
+
+	providerAddr, found := pk.GetValidatorByConsumerAddr(ctx, cChainIDs[0], sdk.ConsAddress([]byte("consumerAddr")))
+	require.True(t, found)
+	require.Equal(t, sdk.ConsAddress([]byte("providerAddr")), providerAddr)
+
+	addrs := pk.GetConsumerAddrsToPrune(ctx, cChainIDs[0], vscID)
+	require.Equal(t, [][]byte{sdk.ConsAddress([]byte("consumerAddr"))}, addrs)
 
 	// check provider chain's consumer chain states
 	assertConsumerChainStates(ctx, t, pk, provGenesis.ConsumerStates...)
