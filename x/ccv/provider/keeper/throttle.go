@@ -50,7 +50,7 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 	// Handled entries are deleted after iteration is completed
 	k.DeletePendingSlashPacketEntries(ctx, handledEntries...)
 
-	// Persist current value for slash gas meter
+	// Persist current value for slash meter
 	k.SetSlashMeter(ctx, meter)
 }
 
