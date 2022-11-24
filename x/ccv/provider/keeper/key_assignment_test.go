@@ -7,6 +7,7 @@ import (
 	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
@@ -16,6 +17,7 @@ type assignedKeys struct {
 	providerAddr   sdk.ConsAddress
 	consumerAddr   sdk.ConsAddress
 	consumerPubKey tmprotocrypto.PublicKey
+	valsetUpdate   abci.ValidatorUpdate
 }
 
 func TestSetAndGetValidatorConsumerPubKey(t *testing.T) {
@@ -82,7 +84,7 @@ func TestIterateValidatorConsumerPubKeys(t *testing.T) {
 	}
 
 	result := []assignedKeys{}
-	cbFunc := func(iteratorProviderAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool) {
+	cbIterateAll := func(iteratorProviderAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool) {
 		result = append(result, assignedKeys{
 			providerAddr:   iteratorProviderAddr,
 			consumerPubKey: consumerKey,
@@ -90,12 +92,26 @@ func TestIterateValidatorConsumerPubKeys(t *testing.T) {
 		return false
 	}
 
-	keeper.IterateValidatorConsumerPubKeys(ctx, chainID, cbFunc)
+	keeper.IterateValidatorConsumerPubKeys(ctx, chainID, cbIterateAll)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
 
 	for i, res := range result {
 		require.Equal(t, testAssignments[i], res, "mismatched consumer key assignment in case %d", i)
 	}
+
+	result = []assignedKeys{}
+	cbIterateOne := func(iteratorProviderAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool) {
+		result = append(result, assignedKeys{
+			providerAddr:   iteratorProviderAddr,
+			consumerPubKey: consumerKey,
+		})
+		return true
+	}
+
+	keeper.IterateValidatorConsumerPubKeys(ctx, chainID, cbIterateOne)
+	require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
+
+	require.Equal(t, testAssignments[0], result[0], "mismatched consumer key assignment in iterate one")
 
 }
 
@@ -127,7 +143,7 @@ func TestIterateAllValidatorConsumerPubKeys(t *testing.T) {
 	}
 
 	result := []assignedKeys{}
-	cbFunc := func(chainID string, iteratorProviderAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool) {
+	cbIterateAll := func(chainID string, iteratorProviderAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool) {
 		require.Equal(t, providerAddr, iteratorProviderAddr, "unexpected provider address in iterator - expecting just 1 provider address")
 		result = append(result, assignedKeys{
 			chainID:        chainID,
@@ -137,12 +153,28 @@ func TestIterateAllValidatorConsumerPubKeys(t *testing.T) {
 		return false
 	}
 
-	keeper.IterateAllValidatorConsumerPubKeys(ctx, cbFunc)
+	keeper.IterateAllValidatorConsumerPubKeys(ctx, cbIterateAll)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
 
 	for i, res := range result {
 		require.Equal(t, testAssignments[i], res, "mismatched consumer key assignment in case %d", i)
 	}
+
+	result = []assignedKeys{}
+	cbIterateOne := func(chainID string, iteratorProviderAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool) {
+		require.Equal(t, providerAddr, iteratorProviderAddr, "unexpected provider address in iterator - expecting just 1 provider address")
+		result = append(result, assignedKeys{
+			chainID:        chainID,
+			providerAddr:   iteratorProviderAddr,
+			consumerPubKey: consumerKey,
+		})
+		return false
+	}
+
+	keeper.IterateAllValidatorConsumerPubKeys(ctx, cbIterateOne)
+	require.Len(t, result, len(testAssignments), "incorrect result len - should be 1, got %d", len(result))
+
+	require.Equal(t, testAssignments[0], result[0], "mismatched consumer key assignment in iterate one")
 }
 
 func TestSetAndGetValidatorByConsumerAddr(t *testing.T) {
@@ -300,9 +332,112 @@ func TestIterateAllValidatorsByConsumerAddr(t *testing.T) {
 }
 
 func TestSetAndGetPendingKeyAssignment(t *testing.T) {
+	chainID := "consumer"
+	providerAddr := sdk.ConsAddress([]byte("providerAddr"))
+	consumerPubKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
+	valUpdate := abci.ValidatorUpdate{
+		Power:  100,
+		PubKey: consumerPubKey,
+	}
 
+	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	keeper.SetPendingKeyAssignment(ctx, chainID, providerAddr, valUpdate)
+
+	pendingAssignment, found := keeper.GetPendingKeyAssignment(ctx, chainID, providerAddr)
+	require.True(t, found, "pending assignment not found")
+	require.NotEmpty(t, pendingAssignment, "pending assignment is empty")
+	require.Equal(t, pendingAssignment, valUpdate)
 }
 
-func TestDeletePendingKeyAssignment(t *testing.T) {}
+func TestDeletePendingKeyAssignment(t *testing.T) {
+	chainID := "consumer"
+	providerAddr := sdk.ConsAddress([]byte("providerAddr"))
+	consumerPubKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
+	valUpdate := abci.ValidatorUpdate{
+		Power:  100,
+		PubKey: consumerPubKey,
+	}
 
-func TestIteratePendingKeyAssignments(t *testing.T) {}
+	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	keeper.SetPendingKeyAssignment(ctx, chainID, providerAddr, valUpdate)
+
+	pendingAssignment, found := keeper.GetPendingKeyAssignment(ctx, chainID, providerAddr)
+	require.True(t, found, "pending assignment not found")
+	require.NotEmpty(t, pendingAssignment, "pending assignment is empty")
+	require.Equal(t, pendingAssignment, valUpdate)
+
+	keeper.DeletePendingKeyAssignment(ctx, chainID, providerAddr)
+	pendingAssignment, found = keeper.GetPendingKeyAssignment(ctx, chainID, providerAddr)
+	require.False(t, found, "pending assignment was found")
+	require.Empty(t, pendingAssignment, "pending assignment not empty")
+	require.NotEqual(t, pendingAssignment, valUpdate)
+}
+
+func TestIteratePendingKeyAssignments(t *testing.T) {
+	chainID := "consumer"
+	testAssignments := []assignedKeys{
+		{
+			providerAddr: sdk.ConsAddress([]byte("validator-1")),
+			valsetUpdate: abci.ValidatorUpdate{
+				Power:  100,
+				PubKey: cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey(),
+			},
+		},
+		{
+			providerAddr: sdk.ConsAddress([]byte("validator-2")),
+			valsetUpdate: abci.ValidatorUpdate{
+				Power:  100,
+				PubKey: cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey(),
+			},
+		},
+		{
+			providerAddr: sdk.ConsAddress([]byte("validator-3")),
+			valsetUpdate: abci.ValidatorUpdate{
+				Power:  100,
+				PubKey: cryptotestutil.NewCryptoIdentityFromIntSeed(3).TMProtoCryptoPublicKey(),
+			},
+		},
+	}
+
+	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	for _, assignment := range testAssignments {
+		keeper.SetPendingKeyAssignment(ctx, chainID, assignment.providerAddr, assignment.valsetUpdate)
+	}
+
+	result := []assignedKeys{}
+	cbIterateAll := func(providerAddr sdk.ConsAddress, pendingKeyAssignment abci.ValidatorUpdate) (stop bool) {
+		result = append(result, assignedKeys{
+			providerAddr: providerAddr,
+			valsetUpdate: pendingKeyAssignment,
+		})
+		return false // continue iteration
+	}
+
+	keeper.IteratePendingKeyAssignments(ctx, chainID, cbIterateAll)
+	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
+
+	for i, res := range result {
+		require.Equal(t, testAssignments[i], res, "mismatched pending key assignment in case %d", i)
+	}
+
+	result = []assignedKeys{}
+	cbIterateOne := func(providerAddr sdk.ConsAddress, pendingKeyAssignment abci.ValidatorUpdate) (stop bool) {
+		result = append(result, assignedKeys{
+			providerAddr: providerAddr,
+			valsetUpdate: pendingKeyAssignment,
+		})
+		return true // stop after first
+	}
+
+	keeper.IteratePendingKeyAssignments(ctx, chainID, cbIterateOne)
+	require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
+
+	require.Equal(t, testAssignments[0], result[0], "mismatched pending key assignment in iterate one")
+
+}
