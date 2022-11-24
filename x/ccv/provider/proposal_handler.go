@@ -9,6 +9,7 @@ import (
 )
 
 // NewConsumerChainProposalHandler defines the handler for consumer addition and consumer removal proposals.
+// Passed proposals are executed during EndBlock.
 func NewConsumerChainProposalHandler(k keeper.Keeper) govtypes.Handler {
 	return func(ctx sdk.Context, content govtypes.Content) error {
 		switch c := content.(type) {

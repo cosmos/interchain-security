@@ -219,7 +219,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	return nil
 }
 
-// MakeConsumerGenesis constructs a consumer genesis state.
+// MakeConsumerGenesis constructs the consumer CCV module part of the genesis state.
 func (k Keeper) MakeConsumerGenesis(ctx sdk.Context) (gen consumertypes.GenesisState, err error) {
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
