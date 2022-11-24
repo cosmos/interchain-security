@@ -50,11 +50,11 @@ func TestIterateValidatorConsumerPubKeys(t *testing.T) {
 			consumerPubKey: cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey(),
 		},
 		{
-			providerAddr:   sdk.ConsAddress([]byte("validator-1")),
+			providerAddr:   sdk.ConsAddress([]byte("validator-2")),
 			consumerPubKey: cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey(),
 		},
 		{
-			providerAddr:   sdk.ConsAddress([]byte("validator-2")),
+			providerAddr:   sdk.ConsAddress([]byte("validator-3")),
 			consumerPubKey: cryptotestutil.NewCryptoIdentityFromIntSeed(3).TMProtoCryptoPublicKey(),
 		},
 	}
