@@ -169,6 +169,7 @@ func (k Keeper) IterateValidatorsByConsumerAddr(
 	}
 }
 
+// IterateAllValidatorsByConsumerAddr iterates over all the mappings from consensus addresses on any consumer chain to consensus addresses on the provider chain
 func (k Keeper) IterateAllValidatorsByConsumerAddr(
 	ctx sdk.Context,
 	cb func(chainID string, consumerAddr sdk.ConsAddress, providerAddr sdk.ConsAddress) (stop bool),
