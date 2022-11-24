@@ -389,14 +389,18 @@ func (k Keeper) AssignConsumerKey(
 		// check whether the validator is valid, i.e., its power is positive
 		oldPower := k.stakingKeeper.GetLastValidatorPower(ctx, sdk.ValAddress(validator.OperatorAddress))
 		if oldPower > 0 {
-			// store old key and power for modifying the valset update in EndBlock;
-			// note: this state is deleted at the end of the block
-			k.SetPendingKeyAssignment(
-				ctx,
-				chainID,
-				providerAddr,
-				abci.ValidatorUpdate{PubKey: oldConsumerKey, Power: oldPower},
-			)
+			// to enable multiple calls of AssignConsumerKey in the same block by the same validator
+			// the pending key assignment should not be overwritten
+			if _, found := k.GetPendingKeyAssignment(ctx, chainID, providerAddr); !found {
+				// store old key and power for modifying the valset update in EndBlock;
+				// note: this state is deleted at the end of the block
+				k.SetPendingKeyAssignment(
+					ctx,
+					chainID,
+					providerAddr,
+					abci.ValidatorUpdate{PubKey: oldConsumerKey, Power: oldPower},
+				)
+			}
 		}
 	}
 
