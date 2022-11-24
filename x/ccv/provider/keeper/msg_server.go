@@ -35,13 +35,10 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	// Note that current attack potential is restricted because validators must sign
 	// the transaction, and the chainID size is limited.
 
-	providerAddr, err := sdk.ConsAddressFromBech32(msg.ProviderAddr)
-	if err != nil {
-		return nil, err
-	}
+	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 
 	// validator must already be registered
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr)
+	validator, found := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
 	if !found {
 		return nil, stakingtypes.ErrNoValidatorFound
 	}
