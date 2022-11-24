@@ -35,9 +35,15 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	// Note that current attack potential is restricted because validators must sign
 	// the transaction, and the chainID size is limited.
 
-	providerAddr, err := sdk.ConsAddressFromBech32(msg.ProviderAddr)
+	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
 		return nil, err
+	}
+
+	// validator must already be registered
+	validator, found := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
+	if !found {
+		return nil, stakingtypes.ErrNoValidatorFound
 	}
 
 	// make sure the consumer key is in the correct format
@@ -45,6 +51,8 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	if !ok {
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "Expecting cryptotypes.PubKey, got %T", consumerSDKPublicKey)
 	}
+
+	// make sure the consumer key type is supported
 	cp := ctx.ConsensusParams()
 	if cp != nil && cp.Validator != nil {
 		if !tmstrings.StringInSlice(consumerSDKPublicKey.Type(), cp.Validator.PubKeyTypes) {
@@ -54,17 +62,25 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 			)
 		}
 	}
+
+	// get provider validator consensus address
+	providerSDKPublicKey, ok := validator.ConsensusPubkey.GetCachedValue().(cryptotypes.PubKey)
+	if !ok {
+		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "Expecting cryptotypes.PubKey, got %T", providerSDKPublicKey)
+	}
+	providerConsAddr := sdk.ConsAddress(providerSDKPublicKey.Address().Bytes())
+
 	consumerTMPublicKey, err := cryptocodec.ToTmProtoPublicKey(consumerSDKPublicKey)
 	if err != nil {
 		return nil, err
 	}
 
-	k.Keeper.AssignConsumerKey(ctx, msg.ChainId, providerAddr, consumerTMPublicKey)
+	k.Keeper.AssignConsumerKey(ctx, msg.ChainId, providerConsAddr, consumerTMPublicKey)
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			ccvtypes.EventTypeAssignConsumerKey,
-			sdk.NewAttribute(ccvtypes.AttributeProviderValidatorAddress, msg.ProviderAddr),
+			sdk.NewAttribute(ccvtypes.AttributeProviderValidatorAddress, providerConsAddr.String()),
 			sdk.NewAttribute(ccvtypes.AttributeConsumerConsensusPubKey, consumerSDKPublicKey.String()),
 		),
 	})
