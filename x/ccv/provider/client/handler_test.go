@@ -49,10 +49,6 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 						ctx, testValProvider.SDKValAddress(),
 						// Return a valid validator, found!
 					).Return(testValProvider.SDKStakingValidator(), true).Times(1),
-					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-						ctx, testValProvider.SDKConsAddress(),
-						// Return a valid validator, found!
-					).Return(testValProvider.SDKStakingValidator(), true).Times(1),
 				)
 			},
 			expError: false,
