@@ -492,7 +492,7 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 	})
 	require.False(t, found)
 	found = false
-	providerKeeper.IteratePendingKeyAssignments(ctx, expectedChainID, func(_ sdk.ConsAddress, _ abci.ValidatorUpdate) (stop bool) {
+	providerKeeper.IterateKeyAssignmentReplacements(ctx, expectedChainID, func(_ sdk.ConsAddress, _ abci.ValidatorUpdate) (stop bool) {
 		found = true
 		return true // stop the iteration
 	})
