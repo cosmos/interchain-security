@@ -355,18 +355,12 @@ func (k Keeper) AssignConsumerKey(
 		)
 	}
 
-	// set the mapping from this validator's provider address to the new consumer key;
-	// overwrite if already exists
-	// note: this state is deleted when the validator is removed from the staking module
-	k.SetValidatorConsumerPubKey(ctx, chainID, providerAddr, consumerKey)
-
-	// if the consumer chain is already registered,
-	// i.e. a client to the consumer was already created, set the mapping from
-	// this validator's new consensus address on the consumer
-	// to its consensus address on the provider;
-	// otherwise, the mapping is added when the consumer is registered
-	_, consumerRegistered := k.GetConsumerClientId(ctx, chainID)
-	if consumerRegistered {
+	// check whether the consumer chain is already registered,
+	// i.e., a client to the consumer was already created
+	if _, consumerRegistered := k.GetConsumerClientId(ctx, chainID); consumerRegistered {
+		// set the mapping from this validator's new consensus address on the consumer
+		// to its consensus address on the provider;
+		// otherwise, the mapping is added when the consumer is registered
 		// note: this state must be deleted through the pruning mechanism;
 		// see ConsumerValidatorsByVscID
 		k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
@@ -392,12 +386,11 @@ func (k Keeper) AssignConsumerKey(
 			oldConsumerKey = providerKey
 		}
 
-		// if the validator is active and the consumer is registered,
-		// then store old key and power for modifying the valset update in EndBlock;
-		// note: this state is deleted at the end of the block
-		// get the previous power of this validator
+		// check whether the validator is valid, i.e., its power is positive
 		oldPower := k.stakingKeeper.GetLastValidatorPower(ctx, sdk.ValAddress(validator.OperatorAddress))
 		if oldPower > 0 {
+			// store old key and power for modifying the valset update in EndBlock;
+			// note: this state is deleted at the end of the block
 			k.SetPendingKeyAssignment(
 				ctx,
 				chainID,
@@ -406,6 +399,11 @@ func (k Keeper) AssignConsumerKey(
 			)
 		}
 	}
+
+	// set the mapping from this validator's provider address to the new consumer key;
+	// overwrite if already exists
+	// note: this state is deleted when the validator is removed from the staking module
+	k.SetValidatorConsumerPubKey(ctx, chainID, providerAddr, consumerKey)
 
 	return nil
 }
