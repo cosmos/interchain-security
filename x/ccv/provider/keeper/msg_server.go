@@ -75,7 +75,7 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			ccvtypes.EventTypeAssignConsumerKey,
-			sdk.NewAttribute(ccvtypes.AttributeProviderValidatorAddress, providerValidatorAddr.String()),
+			sdk.NewAttribute(ccvtypes.AttributeProviderValidatorAddress, msg.ProviderAddr),
 			sdk.NewAttribute(ccvtypes.AttributeConsumerConsensusPubKey, consumerSDKPublicKey.String()),
 		),
 	})
