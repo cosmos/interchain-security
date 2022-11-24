@@ -91,7 +91,7 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 
 	consumerKey, found := k.GetValidatorConsumerPubKey(ctx, req.ChainId, providerAddr)
 	if !found {
-		return nil, types.ErrNoValidatorConsumerAddress
+		return &types.QueryValidatorConsumerAddrResponse{}, nil
 	}
 
 	return &types.QueryValidatorConsumerAddrResponse{
@@ -117,7 +117,9 @@ func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.Que
 
 	providerAddr, found := k.GetValidatorByConsumerAddr(ctx, req.ChainId, consumerAddr)
 	if !found {
-		return nil, types.ErrNoValidatorProviderAddress
+		return &types.QueryValidatorProviderAddrResponse{
+			ProviderAddress: providerAddr.String(),
+		}, nil
 	}
 
 	return &types.QueryValidatorProviderAddrResponse{

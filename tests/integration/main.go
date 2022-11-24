@@ -32,24 +32,24 @@ func main() {
 	tr.ValidateStringLiterals()
 	tr.startDocker()
 
-	dmc := DemocracyTestRun()
-	dmc.SetLocalSDKPath(*localSdkPath)
-	dmc.ValidateStringLiterals()
-	dmc.startDocker()
+	// dmc := DemocracyTestRun()
+	// dmc.SetLocalSDKPath(*localSdkPath)
+	// dmc.ValidateStringLiterals()
+	// dmc.startDocker()
 
-	mul := MultiConsumerTestRun()
-	mul.SetLocalSDKPath(*localSdkPath)
-	mul.ValidateStringLiterals()
-	mul.startDocker()
-
-	wg.Add(1)
-	go tr.ExecuteSteps(&wg, happyPathSteps)
+	// mul := MultiConsumerTestRun()
+	// mul.SetLocalSDKPath(*localSdkPath)
+	// mul.ValidateStringLiterals()
+	// mul.startDocker()
 
 	wg.Add(1)
-	go dmc.ExecuteSteps(&wg, democracySteps)
+	go tr.ExecuteSteps(&wg, keyAssignment)
 
-	wg.Add(1)
-	go mul.ExecuteSteps(&wg, multipleConsumers)
+	// wg.Add(1)
+	// go dmc.ExecuteSteps(&wg, democracySteps)
+
+	// wg.Add(1)
+	// go mul.ExecuteSteps(&wg, multipleConsumers)
 
 	wg.Wait()
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
@@ -99,6 +99,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.invokeDoublesignSlash(action, verbose)
 	case registerRepresentativeAction:
 		tr.registerRepresentative(action, verbose)
+	case assignConsumerPubKeyAction:
+		tr.assignConsumerPubKey(action, verbose)
 	default:
 		log.Fatalf(fmt.Sprintf(`unknown action in testRun %s: %#v`, tr.name, action))
 	}

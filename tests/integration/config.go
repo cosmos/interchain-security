@@ -19,8 +19,19 @@ type ValidatorConfig struct {
 	valconsAddress   string
 	privValidatorKey string
 	nodeKey          string
-	// Must be an integer greater than 0 and less than 254
+	// Must be an integer greater than 0 and less than 253
 	ipSuffix string
+
+	// consumer chain key assignment data
+	// keys are used on a new node
+	consumerMnemonic         string
+	consumerDelAddress       string
+	consumerValoperAddress   string
+	consumerValconsAddress   string
+	consumerValPubKey        string
+	consumerPrivValidatorKey string
+	consumerNodeKey          string
+	useConsumerKey           bool // if true the validator node will start with consumer key
 }
 
 // Attributes that are unique to a chain. Allows us to map (part of)
@@ -83,6 +94,16 @@ func getDefaultValidators() map[validatorID]ValidatorConfig {
 			privValidatorKey: `{"address":"C888306A908A217B9A943D1DAD8790044D0947A4","pub_key":{"type":"tendermint/PubKeyEd25519","value":"IHo4QEikWZfIKmM0X+N+BjKttz8HOzGs2npyjiba3Xk="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"z08bmSB91uFVpVmR3t2ewd/bDjZ/AzwQpe5rKjWiPG0gejhASKRZl8gqYzRf434GMq23Pwc7MazaenKOJtrdeQ=="}}`,
 			nodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"WLTcHEjbwB24Wp3z5oBSYTvtGQonz/7IQabOFw85BN0UkkyY5HDf38o8oHlFxVI26f+DFVeICuLbe9aXKGnUeg=="}}`,
 			ipSuffix:         "6",
+
+			// consumer chain assigned key
+			consumerMnemonic:         "clip choose cake west range gun slam cry village receive juice galaxy lend ritual range provide ritual can since verify breeze vacant play dragon",
+			consumerDelAddress:       "cosmos1sx6j9g2rh324a342a5f0rnx7me34r9nwgf0mc7",
+			consumerValoperAddress:   "cosmosvaloper1sx6j9g2rh324a342a5f0rnx7me34r9nwdamw5d",
+			consumerValconsAddress:   "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
+			consumerValPubKey:        `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
+			consumerPrivValidatorKey: `{"address":"B41C3A40142963AA5B12DDD1C4E5890C0B3926B1","pub_key":{"type":"tendermint/PubKeyEd25519","value":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="},"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"3YaBAZLA+sl/E73lLfbFbG0u6DYm33ayr/0UpCt/vFBSLkZ/X6a1ZR0fy7fGWbN0ogP4Xc8rSx9dnvcZnqrqKw=="}}`,
+			consumerNodeKey:          `{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"rxBzFedtD3pqgfJQblbxGusKOr47oBfr8ba0Iz14gobtDRZQZlSZ/UGP4pSHkVf+4vtkrkO1vRHBYJobuiP+7A=="}}`,
+			useConsumerKey:           true,
 		},
 	}
 }
@@ -117,8 +138,10 @@ func DefaultTestRun() TestRun {
 				ipPrefix:       "7.7.8",
 				votingWaitTime: 10,
 				genesisChanges: ".app_state.gov.voting_params.voting_period = \"10s\" | " +
-					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
-					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					// ".app_state.slashing.params.signed_blocks_window = \"2\" | " +
+					// ".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
+					".app_state.slashing.params.signed_blocks_window = \"200000\" | " +
+					".app_state.slashing.params.min_signed_per_window = \"0.100000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
 					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
 			},

@@ -13,6 +13,13 @@ func concatSteps(steps ...[]Step) []Step {
 	return concat
 }
 
+var keyAssignment = concatSteps(
+	stepsStartChains([]string{"consu"}, false),
+	// stepsDelegate("consu"),
+	// stepsAssignConsumerKey("consu")
+)
+
+//lint:ignore U1000
 var happyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
@@ -22,6 +29,7 @@ var happyPathSteps = concatSteps(
 	stepsStopChain("consu"),
 )
 
+//lint:ignore U1000
 var democracySteps = concatSteps(
 	// democracySteps requires a transfer channel
 	stepsStartChains([]string{"democ"}, true),
@@ -30,6 +38,7 @@ var democracySteps = concatSteps(
 	stepsDemocracy("democ"),
 )
 
+//lint:ignore U1000
 var multipleConsumers = concatSteps(
 	stepsStartChains([]string{"consu", "densu"}, false),
 	stepsMultiConsumerDelegate("consu", "densu"),

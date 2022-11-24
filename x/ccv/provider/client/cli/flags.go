@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	FlagConsumerChainId  = "validator"
+	FlagConsumerChainId  = "consumer-chain-id"
 	FlagAddressValidator = "validator"
-	FlagConsumerPubKey   = "pubkey"
+	FlagConsumerPubKey   = "consumer-pubkey"
 	FlagNodeID           = "node-id"
 	FlagIP               = "ip"
 )

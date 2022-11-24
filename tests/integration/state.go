@@ -23,6 +23,7 @@ type ChainState struct {
 	Params               *[]Param
 	Rewards              *Rewards
 	ConsumerChains       *map[chainID]bool
+	AssignedKeys         *map[validatorID]string // TODO: support multiple chains
 }
 
 type Proposal interface {
@@ -128,6 +129,11 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 	if modelState.ConsumerChains != nil {
 		chains := tr.getConsumerChains(chain)
 		chainState.ConsumerChains = &chains
+	}
+
+	if modelState.AssignedKeys != nil {
+		assignedKeys := tr.getConsumerAddresses(chain, *modelState.AssignedKeys)
+		chainState.AssignedKeys = &assignedKeys
 	}
 
 	return chainState
@@ -497,6 +503,33 @@ func (tr TestRun) getConsumerChains(chain chainID) map[chainID]bool {
 	}
 
 	return chains
+}
+
+func (tr TestRun) getConsumerAddresses(chain chainID, modelState map[validatorID]string) map[validatorID]string {
+	actualState := map[validatorID]string{}
+	for k := range modelState {
+		actualState[k] = tr.getConsumerAddress(chain, k)
+	}
+
+	return actualState
+}
+
+func (tr TestRun) getConsumerAddress(consumerChain chainID, validator validatorID) string {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chainID("provi")].binaryName,
+
+		"query", "provider", "validator-consumer-key",
+		string(consumerChain), tr.validatorConfigs[validator].valconsAddress,
+		`--node`, tr.getQueryNode(chainID("provi")),
+		`-o`, `json`,
+	)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	addr := gjson.Get(string(bz), "consumer_address").String()
+	return addr
 }
 
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {

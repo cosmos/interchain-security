@@ -83,6 +83,23 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			},
 		},
 		{
+			action: assignConsumerPubKeyAction{
+				chain:     chainID(consumerName),
+				validator: validatorID("carol"),
+				// consumer chain has not started
+				// we don't need to reconfigure the node
+				// since it will start with consumer key
+				reconfigureNode: false,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					AssignedKeys: &map[validatorID]string{
+						validatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
+					},
+				},
+			},
+		},
+		{
 			action: startConsumerChainAction{
 				consumerChain: chainID(consumerName),
 				providerChain: chainID("provi"),
@@ -98,12 +115,14 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 9500000000,
 						validatorID("bob"):   9500000000,
+						validatorID("carol"): 0,
 					},
 				},
 				chainID(consumerName): ChainState{
 					ValBalances: &map[validatorID]uint{
 						validatorID("alice"): 10000000000,
 						validatorID("bob"):   10000000000,
+						validatorID("carol"): 0, // expecting carol to have 0 -> using consumer key
 					},
 				},
 			},
