@@ -18,6 +18,7 @@ import (
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // ChainType defines the type of chain (either provider or consumer)
@@ -119,9 +120,14 @@ func delegateAndRedelegate(s *CCVTestSuite, delAddr sdk.AccAddress,
 
 // delegate delegates bondAmt to the first validator
 func delegate(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int) (initBalance sdk.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
+	return delegateByIdx(s, delAddr, bondAmt, 0)
+}
+
+// delegateByIdx delegates bondAmt to the validator at specified index in provider val set
+func delegateByIdx(s *CCVTestSuite, delAddr sdk.AccAddress, bondAmt sdk.Int, idx int) (initBalance sdk.Int, shares sdk.Dec, valAddr sdk.ValAddress) {
 	initBalance = getBalance(s, s.providerCtx(), delAddr)
 	// choose a validator
-	validator, valAddr := s.getValByIdx(0)
+	validator, valAddr := s.getValByIdx(idx)
 	// delegate bondAmt tokens on provider to change validator powers
 	shares, err := s.providerApp.GetE2eStakingKeeper().Delegate(
 		s.providerCtx(),
@@ -468,4 +474,39 @@ func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
 	suite.Require().True(found)
 
 	return clientState, consState
+}
+
+// setupValidatorPowers delegates from the sender account to give all
+// validators on the provider chain 1000 power.
+func (s *CCVTestSuite) setupValidatorPowers() {
+
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	for idx := range s.providerChain.Vals.Validators {
+		delegateByIdx(s, delAddr, sdk.NewInt(999999999), idx)
+	}
+
+	s.providerChain.NextBlock()
+
+	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	for _, val := range s.providerChain.Vals.Validators {
+		power := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
+		s.Require().Equal(int64(1000), power)
+	}
+}
+
+// getValidatorsWithPower returns the provider val set with power
+// obtained from the staking module.
+func (s *CCVTestSuite) getValidatorsWithPower() []tmtypes.Validator {
+
+	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
+
+	// Return copy of validator set from the ibctesting package
+	// with correct voting power populated from staking module
+	valsCopy := []tmtypes.Validator{}
+	for _, val := range s.providerChain.Vals.Validators {
+		power := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
+		valsCopy = append(valsCopy, *tmtypes.NewValidator(val.PubKey, power))
+	}
+
+	return valsCopy
 }
