@@ -383,13 +383,6 @@ func (k Keeper) AssignConsumerKey(
 	// check whether the consumer chain is already registered,
 	// i.e., a client to the consumer was already created
 	if _, consumerRegistered := k.GetConsumerClientId(ctx, chainID); consumerRegistered {
-		// set the mapping from this validator's new consensus address on the consumer
-		// to its consensus address on the provider;
-		// otherwise, the mapping is added when the consumer is registered
-		// note: this state must be deleted through the pruning mechanism;
-		// see ConsumerValidatorsByVscID
-		k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
-
 		// get the previous key assigned for this validator on this consumer chain
 		oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 		if found {
@@ -427,12 +420,29 @@ func (k Keeper) AssignConsumerKey(
 				)
 			}
 		}
+	} else {
+		// if the consumer chain is not registered, then remove the mapping
+		// from the old consumer address to the provider address (if any)
+		// get the previous key assigned for this validator on this consumer chain
+		oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
+		if found {
+			k.DeleteValidatorByConsumerAddr(
+				ctx,
+				chainID,
+				utils.TMCryptoPublicKeyToConsAddr(oldConsumerKey),
+			)
+		}
 	}
 
 	// set the mapping from this validator's provider address to the new consumer key;
 	// overwrite if already exists
 	// note: this state is deleted when the validator is removed from the staking module
 	k.SetValidatorConsumerPubKey(ctx, chainID, providerAddr, consumerKey)
+
+	// set the mapping from this validator's new consensus address on the consumer
+	// to its consensus address on the provider;
+	// note: this state must be deleted through the pruning mechanism
+	k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
 
 	return nil
 }
@@ -449,10 +459,6 @@ func (k Keeper) ApplyKeyAssignmentToInitialValset(
 		providerAddr := utils.TMCryptoPublicKeyToConsAddr(update.PubKey)
 		if consumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
 			newUpdates[i].PubKey = consumerKey
-			consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
-			// set the mapping from this validator's new consensus address on the consumer
-			// to its consensus address on the provider
-			k.SetValidatorByConsumerAddr(ctx, chainID, consumerAddr, providerAddr)
 		}
 	}
 	return newUpdates
