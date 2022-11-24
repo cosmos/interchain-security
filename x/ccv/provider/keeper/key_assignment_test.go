@@ -299,7 +299,7 @@ func TestIterateAllValidatorsByConsumerAddr(t *testing.T) {
 	require.Equal(t, testAssignments[0], result[0], "mismatched consumer address assignment in iterate one")
 }
 
-func TestPendingKeyAssignmentCRUD(t *testing.T) {
+func TestKeyAssignmentReplacementCRUD(t *testing.T) {
 	chainID := "consumer"
 	providerAddr := sdk.ConsAddress([]byte("providerAddr"))
 	consumerPubKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
@@ -311,21 +311,21 @@ func TestPendingKeyAssignmentCRUD(t *testing.T) {
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	keeper.SetPendingKeyAssignment(ctx, chainID, providerAddr, valUpdate)
+	keeper.SetKeyAssignmentReplacement(ctx, chainID, providerAddr, valUpdate)
 
-	pendingAssignment, found := keeper.GetPendingKeyAssignment(ctx, chainID, providerAddr)
+	pendingAssignment, found := keeper.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
 	require.True(t, found, "pending assignment not found")
 	require.NotEmpty(t, pendingAssignment, "pending assignment is empty")
 	require.Equal(t, pendingAssignment, valUpdate)
 
-	keeper.DeletePendingKeyAssignment(ctx, chainID, providerAddr)
-	pendingAssignment, found = keeper.GetPendingKeyAssignment(ctx, chainID, providerAddr)
+	keeper.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
+	pendingAssignment, found = keeper.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
 	require.False(t, found, "pending assignment was found")
 	require.Empty(t, pendingAssignment, "pending assignment not empty")
 	require.NotEqual(t, pendingAssignment, valUpdate)
 }
 
-func TestIteratePendingKeyAssignments(t *testing.T) {
+func TestIterateKeyAssignmentReplacements(t *testing.T) {
 	chainID := "consumer"
 	testAssignments := []testAssignment{
 		{
@@ -355,7 +355,7 @@ func TestIteratePendingKeyAssignments(t *testing.T) {
 	defer ctrl.Finish()
 
 	for _, assignment := range testAssignments {
-		keeper.SetPendingKeyAssignment(ctx, chainID, assignment.providerAddr, assignment.valsetUpdate)
+		keeper.SetKeyAssignmentReplacement(ctx, chainID, assignment.providerAddr, assignment.valsetUpdate)
 	}
 
 	result := []testAssignment{}
@@ -367,7 +367,7 @@ func TestIteratePendingKeyAssignments(t *testing.T) {
 		return false // continue iteration
 	}
 
-	keeper.IteratePendingKeyAssignments(ctx, chainID, cbIterateAll)
+	keeper.IterateKeyAssignmentReplacements(ctx, chainID, cbIterateAll)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
 
 	for i, res := range result {
@@ -383,7 +383,7 @@ func TestIteratePendingKeyAssignments(t *testing.T) {
 		return true // stop after first
 	}
 
-	keeper.IteratePendingKeyAssignments(ctx, chainID, cbIterateOne)
+	keeper.IterateKeyAssignmentReplacements(ctx, chainID, cbIterateOne)
 	require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
 
 	require.Equal(t, testAssignments[0], result[0], "mismatched pending key assignment in iterate one")
