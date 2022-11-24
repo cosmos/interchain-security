@@ -38,12 +38,6 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	providerValidatorAddr, err := sdk.ValAddressFromBech32(msg.ProviderAddr)
 	if err != nil {
 		return nil, err
-  }
-
-	// validator must already be registered
-	validator, found := k.stakingKeeper.GetValidator(ctx, providerValidatorAddr)
-	if !found {
-		return nil, stakingtypes.ErrNoValidatorFound
 	}
 
 	// validator must already be registered
@@ -69,26 +63,19 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 		}
 	}
 
-	// get provider validator consensus address
-	providerSDKPublicKey, ok := validator.ConsensusPubkey.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "Expecting cryptotypes.PubKey, got %T", providerSDKPublicKey)
-	}
-	providerConsAddr := sdk.ConsAddress(providerSDKPublicKey.Address().Bytes())
-
 	consumerTMPublicKey, err := cryptocodec.ToTmProtoPublicKey(consumerSDKPublicKey)
 	if err != nil {
 		return nil, err
 	}
 
 	if err := k.Keeper.AssignConsumerKey(ctx, msg.ChainId, validator, consumerTMPublicKey); err != nil {
-    return nil, err
+		return nil, err
 	}
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			ccvtypes.EventTypeAssignConsumerKey,
-			sdk.NewAttribute(ccvtypes.AttributeProviderValidatorAddress, providerConsAddr.String()),
+			sdk.NewAttribute(ccvtypes.AttributeProviderValidatorAddress, providerValidatorAddr.String()),
 			sdk.NewAttribute(ccvtypes.AttributeConsumerConsensusPubKey, consumerSDKPublicKey.String()),
 		),
 	})
