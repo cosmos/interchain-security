@@ -281,7 +281,10 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consum
 	}
 
 	// apply key assignments to the initial valset
-	gen.InitialValSet = k.ApplyKeyAssignmentToInitialValset(ctx, chainID, updates)
+	gen.InitialValSet, err = k.ApplyKeyAssignmentToValUpdates(ctx, chainID, updates)
+	if err != nil {
+		panic("unable to apply key assignments to the initial valset")
+	}
 
 	// Get a hash of the consumer validator set from the update.
 	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(gen.InitialValSet)

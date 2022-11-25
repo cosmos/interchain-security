@@ -458,23 +458,6 @@ func (k Keeper) AssignConsumerKey(
 	return nil
 }
 
-// ApplyKeyAssignmentToInitialValset applies the key assignment to the initial validator
-// for a consumer chain
-func (k Keeper) ApplyKeyAssignmentToInitialValset(
-	ctx sdk.Context,
-	chainID string,
-	updates []abci.ValidatorUpdate,
-) (newUpdates []abci.ValidatorUpdate) {
-	newUpdates = updates
-	for i, update := range updates {
-		providerAddr := utils.TMCryptoPublicKeyToConsAddr(update.PubKey)
-		if consumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
-			newUpdates[i].PubKey = consumerKey
-		}
-	}
-	return newUpdates
-}
-
 // ApplyKeyAssignmentToValUpdates applies the key assignment to the validator updates
 // received from the staking module
 func (k Keeper) ApplyKeyAssignmentToValUpdates(
@@ -507,7 +490,10 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 			k.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
 		} else {
 			// If a pending key assignment is not found, we check if the validator's key is assigned.
-			// If it is, we replace the update containing the provider key with the update containing the consumer key.
+			// If it is, we replace the update containing the provider key with the update containing
+			// the consumer key.
+			// Note that this will always be the brach taken when creating the genesis state
+			// of a newly registered consumer chain.
 			consumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 			if found {
 				newUpdates = append(newUpdates, abci.ValidatorUpdate{
