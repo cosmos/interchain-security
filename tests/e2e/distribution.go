@@ -14,7 +14,7 @@ import (
 func (s *CCVTestSuite) TestRewardsDistribution() {
 
 	//set up channel and delegate some tokens in order for validator set update to be sent to the consumer chain
-	s.SetupCCVChannel()
+	s.SetupCCVChannel(s.path)
 	s.SetupTransferChannel()
 	bondAmt := sdk.NewInt(10000000)
 	delAddr := s.providerChain.SenderAccount.GetAddress()

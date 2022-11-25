@@ -6,19 +6,18 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/interchain-security/testutil/e2e"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	"github.com/cosmos/interchain-security/testutil/e2e"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // ChainType defines the type of chain (either provider or consumer)
@@ -29,10 +28,16 @@ const (
 	Consumer
 )
 
+// firstConsumerBundle returns the bundle of the first consumer chain
+func (s *CCVTestSuite) getFirstBundle() icstestingutils.ConsumerBundle {
+	return *s.consumerBundles[icstestingutils.FirstConsumerChainID]
+}
+
 func (s *CCVTestSuite) providerCtx() sdk.Context {
 	return s.providerChain.GetContext()
 }
 
+// consumerCtx returns the context of only the FIRST consumer chain
 func (s *CCVTestSuite) consumerCtx() sdk.Context {
 	return s.consumerChain.GetContext()
 }
@@ -199,6 +204,7 @@ func relayAllCommittedPackets(
 		// - get packets
 		packet, found := srcChain.GetSentPacket(commitment.Sequence, srcChannelID)
 		s.Require().True(found, "did not find sent packet")
+
 		// - relay the packet
 		err := path.RelayPacket(packet)
 		s.Require().NoError(err)
@@ -425,7 +431,7 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 
 	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
-	clientState := ibctmtypes.NewClientState(
+	clientState := ibctm.NewClientState(
 		endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 		height, commitmenttypes.GetSDKSpecs(), UpgradePath, tmConfig.AllowUpdateAfterExpiry, tmConfig.AllowUpdateAfterMisbehaviour,
 	)
@@ -443,17 +449,22 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	require.NoError(endpoint.Chain.T, err)
 }
 
-func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState() (exported.ClientState, exported.ConsensusState) {
+// GetConsumerEndpointClientAndConsState returns the client and consensus state
+// for a particular consumer endpoint, as specified by the consumer's bundle.
+func (suite *CCVTestSuite) GetConsumerEndpointClientAndConsState(
+	consumerBundle icstestingutils.ConsumerBundle) (exported.ClientState, exported.ConsensusState) {
 
-	clientID, found := suite.consumerApp.GetConsumerKeeper().GetProviderClientID(suite.consumerCtx())
+	ctx := consumerBundle.GetCtx()
+	consumerKeeper := consumerBundle.GetKeeper()
+
+	clientID, found := consumerKeeper.GetProviderClientID(ctx)
 	suite.Require().True(found)
 
-	clientState, found := suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientState(
-		suite.consumerCtx(), clientID)
+	clientState, found := consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientState(ctx, clientID)
 	suite.Require().True(found)
 
-	consState, found := suite.consumerApp.GetIBCKeeper().ClientKeeper.GetClientConsensusState(
-		suite.consumerCtx(), clientID, clientState.GetLatestHeight())
+	consState, found := consumerBundle.App.GetIBCKeeper().ClientKeeper.GetClientConsensusState(
+		ctx, clientID, clientState.GetLatestHeight())
 	suite.Require().True(found)
 
 	return clientState, consState
