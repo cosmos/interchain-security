@@ -130,8 +130,6 @@ func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sd
 	return ctx.WithBlockTime(lastReplenishTime.Add(replenishPeriod).Add(time.Minute))
 }
 
-// TODO: test replenishment logic on it's own test (change ctx time)
-
 // TODO: test logic of param being changed.
 
 // TODO: logic on meter being full?
@@ -145,5 +143,3 @@ func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sd
 // TODO: test vsc matured stuff too, or add to above test?
 
 // TODO: multiple consumers
-
-// TODO: Move to common.go and use in other slashing tests that you copied this from
