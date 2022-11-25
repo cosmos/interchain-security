@@ -558,20 +558,3 @@ func (s *CCVTestSuite) setupValidatorPowers() {
 		s.Require().Equal(int64(1000), power)
 	}
 }
-
-// getValidatorsWithPower returns the provider val set with power
-// obtained from the staking module.
-func (s *CCVTestSuite) getValidatorsWithPower() []tmtypes.Validator {
-
-	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
-
-	// Return copy of validator set from the ibctesting package
-	// with correct voting power populated from staking module
-	valsCopy := []tmtypes.Validator{}
-	for _, val := range s.providerChain.Vals.Validators {
-		power := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
-		valsCopy = append(valsCopy, *tmtypes.NewValidator(val.PubKey, power))
-	}
-
-	return valsCopy
-}

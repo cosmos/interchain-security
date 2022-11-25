@@ -8,75 +8,113 @@ import (
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
+// TestBasicSlashPacketThrottling tests slash packet throttling with a single consumer,
+// two slash packets, and no VSC matured packets. The most basic scenario.
 func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
-	s.SetupAllCCVChannels()
-	s.setupValidatorPowers()
 
-	// try different params in test cases
-	params := providertypes.DefaultParams()
-	params.SlashMeterReplenishFraction = "0.2" // Will take two replenishes for second slash
-	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerKeeper.SetParams(s.providerCtx(), params)
+	// setupValidatePowers gives the default 4 validators 25% power each (1000 power).
+	// Note this in test cases.
+	testCases := []struct {
+		replenishFraction                string
+		expectedMeterBeforeFirstSlash    int64
+		expectedMeterAfterFirstSlash     int64
+		expectedAllowanceAfterFirstSlash int64
+		expectedReplenishesTillPositive  int
+	}{
+		{"0.2", 800, -200, 600, 1},
+	}
 
-	valsBefore := s.getValidatorsWithPower()
+	for _, tc := range testCases {
 
-	// Send a slash packet from consumer to provider
-	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
-	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), 0, stakingtypes.Downtime, 1)
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
-	// Two blocks pass by from above function. We need one more block to pass before val powers are updated.
-	// See TestRelayAndApplySlashPacket for more in depth explanation.
-	s.providerChain.NextBlock()
+		s.SetupTest()
+		s.SetupAllCCVChannels()
+		s.setupValidatorPowers()
 
-	valsAfter := s.getValidatorsWithPower()
+		providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
-	// Require that slashed validator was removed from valset, ie. slash packet was handled.
-	s.Require().Equal(len(valsBefore)-1, len(valsAfter))
-	slashMeter := s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+		// Use default params (incl replenish period), but set replenish fraction to tc value.
+		params := providertypes.DefaultParams()
+		params.SlashMeterReplenishFraction = tc.replenishFraction
+		s.providerApp.GetProviderKeeper().SetParams(s.providerCtx(), params)
 
-	// Slash meter is now negative
-	s.Require().True(slashMeter.IsNegative())
+		// Elapse a replenish period and check for replenishment, so new param is fully in effect.
+		customCtx := s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
+		s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
 
-	// Now send a second slash packet from consumer to provider.
-	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
-	packet = s.constructSlashPacketFromConsumer(s.getFirstBundle(), 2, stakingtypes.Downtime, 2)
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
-	s.providerChain.NextBlock()
+		slashMeter := s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+		s.Require().Equal(tc.expectedMeterBeforeFirstSlash, slashMeter.Int64())
 
-	// Require that slash packet has not been handled, since val isn't removed from valset yet.
-	s.Require().Equal(len(valsAfter), len(s.getValidatorsWithPower()))
+		// Assert that we start out with no jailings
+		vals := providerStakingKeeper.GetAllValidators(s.providerCtx())
+		for _, val := range vals {
+			s.Require().False(val.IsJailed())
+		}
 
-	// Slash meter is still negative
-	slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
-	s.Require().True(slashMeter.IsNegative())
+		// Send a slash packet from consumer to provider
+		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
+		packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), 0, stakingtypes.Downtime, 1)
+		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
 
-	// Replenish slash meter by instantiating a context with a block time where replenish period has passed.
-	ctx := s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
+		// Assert validator 0 is jailed and has no power
+		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
+		slashedVal := vals[0]
+		s.Require().True(slashedVal.IsJailed())
+		lastValPower := providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), slashedVal.GetOperator())
+		s.Require().Equal(int64(0), lastValPower)
 
-	// CheckForSlashMeterReplenishment should replenish meter here. But it'll still be negative.
-	slashMeterBefore := providerKeeper.GetSlashMeter(ctx)
-	providerKeeper.CheckForSlashMeterReplenishment(ctx)
-	slashMeter = providerKeeper.GetSlashMeter(s.providerCtx())
-	s.Require().Greater(slashMeter.Int64(), slashMeterBefore.Int64())
-	s.Require().True(slashMeter.IsNegative())
+		// Assert expected slash meter and allowance value
+		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+		s.Require().Equal(tc.expectedMeterAfterFirstSlash, slashMeter.Int64())
+		s.Require().Equal(tc.expectedAllowanceAfterFirstSlash,
+			s.providerApp.GetProviderKeeper().GetSlashMeterAllowance(s.providerCtx()).Int64())
 
-	// Elapse another replenish period.
-	ctx = s.getCtxWithReplenishPeriodElapsed(ctx)
+		// Now send a second slash packet from consumer to provider for a different validator.
+		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
+		packet = s.constructSlashPacketFromConsumer(s.getFirstBundle(), 2, stakingtypes.Downtime, 2)
+		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
 
-	// CheckForSlashMeterReplenishment should replenish meter here. Meter should now be positive.
-	slashMeterBefore = providerKeeper.GetSlashMeter(ctx)
-	providerKeeper.CheckForSlashMeterReplenishment(ctx)
-	slashMeter = providerKeeper.GetSlashMeter(s.providerCtx())
-	s.Require().Greater(slashMeter.Int64(), slashMeterBefore.Int64())
-	s.Require().True(slashMeter.IsPositive())
+		// Require that slash packet has not been handled
+		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
+		s.Require().False(vals[2].IsJailed())
 
-	// Advance 3 blocks to commit new valset where the second slash packet is handled
-	s.providerChain.NextBlock()
-	s.providerChain.NextBlock()
-	s.providerChain.NextBlock()
+		// Assert slash meter value is still the same
+		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+		s.Require().Equal(tc.expectedMeterAfterFirstSlash, slashMeter.Int64())
 
-	// Assert val is removed
-	s.Require().Equal(len(valsBefore)-2, len(s.getValidatorsWithPower()))
+		// Replenish slash meter until it is positive
+		for i := 0; i < tc.expectedReplenishesTillPositive; i++ {
+
+			// Mutate context with a block time where replenish period has passed.
+			customCtx = s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
+
+			// CheckForSlashMeterReplenishment should replenish meter here.
+			slashMeterBefore := s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+			s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
+			slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+			s.Require().True(slashMeter.GT(slashMeterBefore))
+
+			// Check that slash meter is still negative, unless we are on the last iteration.
+			if i != tc.expectedReplenishesTillPositive-1 {
+				s.Require().True(slashMeter.IsNegative())
+			}
+		}
+
+		// Meter is positive at this point, and ready to handle the second slash packet.
+		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+		s.Require().True(slashMeter.IsPositive())
+
+		// Assert validator 2 is jailed once pending slash packets are handled in ccv endblocker.
+		s.providerChain.NextBlock()
+		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
+		slashedVal = vals[2]
+		s.Require().True(slashedVal.IsJailed())
+
+		// Assert validator 2 has no power, this should be apparent next block,
+		// since the staking endblocker runs before the ccv endblocker.
+		s.providerChain.NextBlock()
+		lastValPower = providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), slashedVal.GetOperator())
+		s.Require().Equal(int64(0), lastValPower)
+	}
 }
 
 func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sdktypes.Context {
@@ -87,6 +125,12 @@ func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sd
 
 	return ctx.WithBlockTime(lastReplenishTime.Add(replenishPeriod).Add(time.Minute))
 }
+
+// TODO: test replenishment logic on it's own test (change ctx time)
+
+// TODO: test logic of param being changed.
+
+// TODO: logic on meter being full?
 
 // TODO: assert more logic about meter level, etc.
 
