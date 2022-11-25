@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"math/rand"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -726,9 +727,39 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 	}
 }
 
+// TODO: optimize methods if necessary
+type ValSet struct {
+	power map
+	data []abci.ValidatorUpdate
+}
+
+// cons := sdk.ConsAddress(utils.GetChangePubKeyAddress())
+
+func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
+	// note: updates must all have unique keys
+	replacement := []abci.ValidatorUpdate{}
+	for _, old := range vs.data {
+		oldAddr := sdk.ConsAddress(utils.GetChangePubKeyAddress(old))
+		found := false
+		for _, new := range updates {
+			newAddr := sdk.ConsAddress(utils.GetChangePubKeyAddress(new))
+			if oldAddr.Equals(newAddr) {
+				replacement = append(replacement, new)
+				found = true
+				break
+			}
+		}
+		if !found {
+			replacement = append(replacement, old)
+		}
+	}
+}
+
 func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 
 	chainID := "chainID"
+
+	numValidators := 2
 	providerIdentities := []*cryptotestutil.CryptoIdentity{
 		cryptotestutil.NewCryptoIdentityFromIntSeed(0),
 		cryptotestutil.NewCryptoIdentityFromIntSeed(1),
@@ -738,49 +769,42 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 		cryptotestutil.NewCryptoIdentityFromIntSeed(3),
 	}
 
-	testCases := []struct {
-		name string
-		// State-mutating mockSetup specific to this test case
-		mockSetup func(sdk.Context, providerkeeper.Keeper, testkeeper.MockedKeepers)
-		doActions func(sdk.Context, providerkeeper.Keeper)
-	}{
-		/*
-			0. Consumer not registered: Assign PK0->CK0 and retrieve PK0->CK0
-			0. Consumer     registered: Assign PK0->CK0 and retrieve PK0->CK0
-		*/
-		{
-			name: "0",
-			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-				gomock.InOrder(
-					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-						ctx, providerIdentities[0].SDKValAddress(),
-					).Return(int64(0)),
-				)
-			},
-			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-				k.SetConsumerClientId(ctx, chainID, "")
-				err := k.AssignConsumerKey(ctx, chainID,
-					providerIdentities[0].SDKStakingValidator(),
-					consumerIdentities[0].TMProtoCryptoPublicKey(),
-				)
-				require.NoError(t, err)
-				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[0].SDKConsAddress())
-				require.True(t, found)
-				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
-			},
-		},
+	type keyAssignmentEntry struct {
+		pk *cryptotestutil.CryptoIdentity
+		ck *cryptotestutil.CryptoIdentity
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
-			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-
-			tc.mockSetup(ctx, k, mocks)
-			tc.doActions(ctx, k)
-			require.True(t, CheckCorrectPruningProperty(ctx, k, chainID))
-
-			ctrl.Finish()
-		})
+	stakingUpdates := func() (ret []abci.ValidatorUpdate) {
+		// Get a random set of validators to update
+		validators := rand.Perm(numValidators)[0:rand.Intn(numValidators+1)]
+		for _, i := range validators {
+			// Power 0, 1, or 2 represents
+			// deletion, update (from 0 or 2), update (from 0 or 1)
+			power := rand.Intn(3)
+			ret = append(ret, abci.ValidatorUpdate{
+				PubKey: providerIdentities[i].TMProtoCryptoPublicKey(),
+				Power:  int64(power),
+			})
+		}
+		return
 	}
+
+	// Get an initial set of validators on the provider chain
+	initialValidators := rand.Perm(numValidators)[0:rand.Intn(numValidators+1)]
+	numIts := rand.Intn(10)
+	for j := 0; j < numIts; j++ {
+		for i := range initialValidators {
+			// Do random assignments
+			val := providerIdentities[i].SDKStakingValidator()
+			ck := consumerIdentities[i].TMProtoCryptoPublicKey()
+			k.AssignConsumerKey(ctx, chainID, val, ck)
+		}
+	}
+	//
+
+	require.True(t, CheckCorrectPruningProperty(ctx, k, chainID))
+
+	ctrl.Finish()
 }
