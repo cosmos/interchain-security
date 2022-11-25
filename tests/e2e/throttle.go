@@ -22,6 +22,9 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		expectedReplenishesTillPositive  int
 	}{
 		{"0.2", 800, -200, 600, 1},
+		{"0.1", 400, -600, 300, 3}, // 600/300 = 2, so 3 replenishes to reach positive
+		{"0.05", 200, -800, 150, 6},
+		{"0.01", 40, -960, 30, 33}, // 960/30 = 32, so 33 replenishes to reach positive
 	}
 
 	for _, tc := range testCases {
@@ -93,9 +96,10 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 			slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
 			s.Require().True(slashMeter.GT(slashMeterBefore))
 
-			// Check that slash meter is still negative, unless we are on the last iteration.
+			// Check that slash meter is still negative or 0,
+			// unless we are on the last iteration.
 			if i != tc.expectedReplenishesTillPositive-1 {
-				s.Require().True(slashMeter.IsNegative())
+				s.Require().False(slashMeter.IsPositive())
 			}
 		}
 
