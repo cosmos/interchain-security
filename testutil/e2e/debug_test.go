@@ -156,8 +156,8 @@ func TestProviderChannelClosed(t *testing.T) {
 // Throttle tests
 //
 
-func TestSlashPacketThrottling(t *testing.T) {
-	runCCVTestByName(t, "TestSlashPacketThrottling")
+func TestBasicSlashPacketThrottling(t *testing.T) {
+	runCCVTestByName(t, "TestBasicSlashPacketThrottling")
 }
 
 //
