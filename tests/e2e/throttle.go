@@ -15,7 +15,7 @@ func (s *CCVTestSuite) TestSlashPacketThrottling() {
 	s.providerApp.GetProviderKeeper().SetParams(s.providerCtx(), params)
 
 	valsBefore := s.getValidatorsWithPower()
-	s.setValidatorSigningInfo(*s.providerChain.Vals.Validators[0])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
 	packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), 0, stakingtypes.Downtime, 1)
 
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
@@ -27,7 +27,7 @@ func (s *CCVTestSuite) TestSlashPacketThrottling() {
 	slashMeter := s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
 	s.Require().True(slashMeter.IsNegative())
 
-	s.setValidatorSigningInfo(*s.providerChain.Vals.Validators[2])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
 	packet = s.constructSlashPacketFromConsumer(s.getFirstBundle(), 2, stakingtypes.Downtime, 2)
 
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)

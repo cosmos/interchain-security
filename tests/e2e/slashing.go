@@ -52,9 +52,9 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		providerKeeper := s.providerApp.GetProviderKeeper()
 		firstConsumerKeeper := s.getFirstBundle().GetKeeper()
 
-		// Setup first val to be jailed on provider
+		// Setup first val to be jailed on provider by setting signing info
 		tmVal := s.consumerChain.Vals.Validators[0]
-		s.setValidatorSigningInfo(*tmVal)
+		s.setDefaultValSigningInfo(*tmVal)
 
 		consAddr := s.getValConsAddr(*tmVal)
 		valData, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)

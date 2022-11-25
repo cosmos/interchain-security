@@ -71,18 +71,13 @@ func (s *CCVTestSuite) getValConsAddr(tmVal tmtypes.Validator) sdk.ConsAddress {
 	return sdk.GetConsAddress(pubkey)
 }
 
-func (s *CCVTestSuite) setValidatorSigningInfo(tmVal tmtypes.Validator) {
-
+// setDefaultValSigningInfo sets the singing info on provider for tmVal,
+// some slashing tests set signing info in different ways than this method.
+func (s *CCVTestSuite) setDefaultValSigningInfo(tmVal tmtypes.Validator) {
 	consAddr := s.getValConsAddr(tmVal)
-
-	providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
-	_, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), consAddr)
-	if !found {
-		// create the validator's signing info record to allow jailing
-		valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, s.providerCtx().BlockHeight(),
-			s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
-		providerSlashingKeeper.SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
-	}
+	valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, s.providerCtx().BlockHeight(),
+		s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
+	s.providerApp.GetE2eSlashingKeeper().SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
 }
 
 func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
