@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -53,51 +52,26 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		providerKeeper := s.providerApp.GetProviderKeeper()
 		firstConsumerKeeper := s.getFirstBundle().GetKeeper()
 
-		// get a cross-chain validator address, pubkey and balance
-		tmVals := s.consumerChain.Vals.Validators
-		tmVal := tmVals[0]
+		// Setup first val to be jailed on provider
+		tmVal := s.consumerChain.Vals.Validators[0]
+		s.setValidatorSigningInfo(*tmVal)
 
-		val, err := tmVal.ToProto()
-		s.Require().NoError(err)
-		pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
-		s.Require().Nil(err)
-		consAddr := sdk.GetConsAddress(pubkey)
+		consAddr := s.getValConsAddr(*tmVal)
 		valData, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
 		s.Require().True(found)
 		valOldBalance := valData.Tokens
 
-		// create the validator's signing info record to allow jailing
-		valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, s.providerCtx().BlockHeight(),
-			s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
-		providerSlashingKeeper.SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
-
-		// get valseUpdateId for current block height on first consumer
-		valsetUpdateId := firstConsumerKeeper.GetHeightValsetUpdateID(
-			s.consumerCtx(), uint64(s.consumerCtx().BlockHeight()))
-
-		// construct the slash packet with the validator address and power
-		validator := abci.Validator{
-			Address: tmVal.Address,
-			Power:   tmVal.VotingPower,
-		}
-
-		// Construct packet data depending on the test case
+		// Construct packet depending on the test case
 		var infractionType stakingtypes.InfractionType
-
 		if tc == downtimeTestCase {
 			infractionType = stakingtypes.Downtime
 		} else if tc == doubleSignTestCase {
 			infractionType = stakingtypes.DoubleSign
 		}
-		packetData := ccv.NewSlashPacketData(validator, valsetUpdateId, infractionType).GetBytes()
-
-		oldBlockTime := s.consumerCtx().BlockTime()
-		timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
-		packet := channeltypes.NewPacket(packetData, 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
-			ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
 		// Send slash packet from the first consumer chain
-		err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
+		packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), 0, infractionType, 1)
+		err := s.getFirstBundle().Path.EndpointA.SendPacket(packet)
 		s.Require().NoError(err)
 
 		if tc == downtimeTestCase {
@@ -125,7 +99,7 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		// VSC packets should have been sent from provider during block N+1 to each consumer
 		expectedSentValsetUpdateId := valsetUpdateIdN + 1
 		for _, bundle := range s.consumerBundles {
-			_, found = providerKeeper.GetVscSendTimestamp(s.providerCtx(),
+			_, found := providerKeeper.GetVscSendTimestamp(s.providerCtx(),
 				bundle.Chain.ChainID, expectedSentValsetUpdateId)
 			s.Require().True(found)
 		}
