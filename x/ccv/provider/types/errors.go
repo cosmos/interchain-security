@@ -15,4 +15,5 @@ var (
 	ErrConsumerKeyNotFound             = sdkerrors.Register(ModuleName, 7, "consumer key not found")
 	ErrNoValidatorConsumerAddress      = sdkerrors.Register(ModuleName, 8, "error getting validator consumer address")
 	ErrNoValidatorProviderAddress      = sdkerrors.Register(ModuleName, 9, "error getting validator provider address")
+	ErrConsumerKeyExists               = sdkerrors.Register(ModuleName, 10, "consumer consensus public key already exists")
 )

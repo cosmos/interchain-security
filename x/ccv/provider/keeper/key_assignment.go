@@ -394,7 +394,7 @@ func (k Keeper) AssignConsumerKey(
 	if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
 		// mapping already exists; return error
 		return sdkerrors.Wrapf(
-			types.ErrInvalidConsumerConsensusPubKey, "consumer key already exists",
+			types.ErrConsumerKeyExists, "consumer key already exists",
 		)
 	}
 
