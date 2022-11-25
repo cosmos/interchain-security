@@ -7,6 +7,7 @@ import (
 	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -492,8 +493,46 @@ func TestIterateAllConsumerAddrsToPrune(t *testing.T) {
 
 // CheckCorrectPruningProperty checks that the pruning property is correct for a given
 // consumer chain. See AppendConsumerAddrsToPrune for a formulation of the property.
-func CheckCorrectPruningProperty(k providerkeeper.Keeper) bool {
-	panic("not implemented") // TODO:
+func CheckCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chainID string) bool {
+	/*
+		For each consumer address cAddr in ValidatorByConsumerAddr,
+		  - either there exists a provider address pAddr in ValidatorConsumerPubKey,
+		    s.t. hash(ValidatorConsumerPubKey(pAddr)) = cAddr
+		  - or there exists a vscID in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(vscID)
+	*/
+	willBePruned := map[string]bool{}
+	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, consumerAddrsToPrune [][]byte) (stop bool) {
+		for _, cAddr := range consumerAddrsToPrune {
+			addr := sdk.ConsAddress(cAddr)
+			willBePruned[addr.String()] = true
+		}
+		return false
+	})
+	good := true
+	k.IterateAllValidatorsByConsumerAddr(ctx, func(chainID string, consumerAddr sdk.ConsAddress, providerAddr sdk.ConsAddress) (stop bool) {
+		if _, ok := willBePruned[consumerAddr.String()]; ok {
+			// Address will be pruned, everything is fine.
+			return false
+		}
+		// Try to find a validator who has this consumer address currently assigned
+		isCurrentlyAssigned := false
+		k.IterateValidatorConsumerPubKeys(ctx, chainID,
+			func(_ sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool) {
+				if utils.TMCryptoPublicKeyToConsAddr(consumerKey).Equals(consumerAddr) {
+					isCurrentlyAssigned = true
+					return true // stop iterating early
+				}
+				return false
+			},
+		)
+		if !isCurrentlyAssigned {
+			// Will not be pruned, and is not currently assigned: violation
+			good = false
+			return true // breakout early
+		}
+		return false
+	})
+	return good
 }
 
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
@@ -680,6 +719,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 			tc.mockSetup(ctx, k, mocks)
 			tc.doActions(ctx, k)
+			require.True(t, CheckCorrectPruningProperty(ctx, k, chainID))
 
 			ctrl.Finish()
 		})
