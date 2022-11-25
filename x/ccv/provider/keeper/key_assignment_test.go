@@ -9,6 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+
+	"math/rand"
+
+	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	"github.com/cosmos/interchain-security/x/ccv/utils"
+	"github.com/golang/mock/gomock"
 )
 
 type testAssignment struct {
@@ -486,4 +492,405 @@ func TestIterateAllConsumerAddrsToPrune(t *testing.T) {
 	require.Len(t, vsc1Addrs, 2, "wrong len of addrs to prune")
 	require.Equal(t, testAssignments[0].consumerAddr, sdk.ConsAddress(vsc1Addrs[0]), "mismatched consumer address")
 	require.Equal(t, testAssignments[1].consumerAddr, sdk.ConsAddress(vsc1Addrs[1]), "mismatched consumer address")
+}
+
+// checkCorrectPruningProperty checks that the pruning property is correct for a given
+// consumer chain. See AppendConsumerAddrsToPrune for a formulation of the property.
+func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chainID string) bool {
+	/*
+		For each consumer address cAddr in ValidatorByConsumerAddr,
+		  - either there exists a provider address pAddr in ValidatorConsumerPubKey,
+		    s.t. hash(ValidatorConsumerPubKey(pAddr)) = cAddr
+		  - or there exists a vscID in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(vscID)
+	*/
+	willBePruned := map[string]bool{}
+	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, consumerAddrsToPrune [][]byte) (stop bool) {
+		for _, cAddr := range consumerAddrsToPrune {
+			addr := sdk.ConsAddress(cAddr)
+			willBePruned[addr.String()] = true
+		}
+		return false
+	})
+	good := true
+	k.IterateAllValidatorsByConsumerAddr(ctx, func(chainID string, consumerAddr sdk.ConsAddress, providerAddr sdk.ConsAddress) (stop bool) {
+		if _, ok := willBePruned[consumerAddr.String()]; ok {
+			// Address will be pruned, everything is fine.
+			return false
+		}
+		// Try to find a validator who has this consumer address currently assigned
+		isCurrentlyAssigned := false
+		k.IterateValidatorConsumerPubKeys(ctx, chainID,
+			func(_ sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool) {
+				if utils.TMCryptoPublicKeyToConsAddr(consumerKey).Equals(consumerAddr) {
+					isCurrentlyAssigned = true
+					return true // stop iterating early
+				}
+				return false
+			},
+		)
+		if !isCurrentlyAssigned {
+			// Will not be pruned, and is not currently assigned: violation
+			good = false
+			return true // breakout early
+		}
+		return false
+	})
+	return good
+}
+
+func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
+
+	chainID := "chainID"
+	providerIdentities := []*cryptotestutil.CryptoIdentity{
+		cryptotestutil.NewCryptoIdentityFromIntSeed(0),
+		cryptotestutil.NewCryptoIdentityFromIntSeed(1),
+	}
+	consumerIdentities := []*cryptotestutil.CryptoIdentity{
+		cryptotestutil.NewCryptoIdentityFromIntSeed(2),
+		cryptotestutil.NewCryptoIdentityFromIntSeed(3),
+	}
+
+	testCases := []struct {
+		name string
+		// State-mutating mockSetup specific to this test case
+		mockSetup func(sdk.Context, providerkeeper.Keeper, testkeeper.MockedKeepers)
+		doActions func(sdk.Context, providerkeeper.Keeper)
+	}{
+		/*
+			0. Consumer     registered: Assign PK0->CK0 and retrieve PK0->CK0
+			1. Consumer     registered: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
+			2. Consumer     registered: Assign PK0->CK0, PK1->CK0 and error
+			3. Consumer     registered: Assign PK1->PK0 and error (TODO: see https://github.com/cosmos/interchain-security/issues/503)
+			4. Consumer not registered: Assign PK0->CK0 and retrieve PK0->CK0
+			5. Consumer not registered: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
+			6. Consumer not registered: Assign PK0->CK0, PK1->CK0 and error
+			7. Consumer not registered: Assign PK1->PK0 and error (TODO: see https://github.com/cosmos/interchain-security/issues/503)
+		*/
+		{
+			name: "0",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
+						ctx, providerIdentities[0].SDKValAddress(),
+					).Return(int64(0)),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetConsumerClientId(ctx, chainID, "")
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[0].SDKConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
+			},
+		},
+		{
+			name: "1",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
+						ctx, providerIdentities[0].SDKValAddress(),
+					).Return(int64(0)),
+					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
+						ctx, providerIdentities[0].SDKValAddress(),
+					).Return(int64(0)),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetConsumerClientId(ctx, chainID, "")
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				err = k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[1].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[1].SDKConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
+			},
+		},
+		{
+			name: "2",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
+						ctx, providerIdentities[0].SDKValAddress(),
+					).Return(int64(0)),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetConsumerClientId(ctx, chainID, "")
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				err = k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[1].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.Error(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[0].SDKConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
+			},
+		},
+		// (TODO: see https://github.com/cosmos/interchain-security/issues/503)
+		// {
+		// 	name: "3",
+		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+		// 	},
+		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+		// 	},
+		// },
+		{
+			name: "4",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[0].SDKConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
+			},
+		},
+		{
+			name: "5",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				err = k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[1].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[1].SDKConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
+			},
+		},
+		{
+			name: "6",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				err = k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[1].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.Error(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[0].SDKConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
+			},
+		},
+		// (TODO: see https://github.com/cosmos/interchain-security/issues/503)
+		// {
+		// 	name: "7",
+		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+		// 	},
+		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+		// 	},
+		// },
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
+			tc.mockSetup(ctx, k, mocks)
+			tc.doActions(ctx, k)
+			require.True(t, checkCorrectPruningProperty(ctx, k, chainID))
+
+			ctrl.Finish()
+		})
+	}
+}
+
+type ValSet struct {
+	identities []*cryptotestutil.CryptoIdentity
+	// indexed by same index as identities
+	power []int64
+}
+
+func CreateValSet(identities []*cryptotestutil.CryptoIdentity) ValSet {
+	return ValSet{
+		identities: identities,
+		power:      make([]int64, len(identities)),
+	}
+}
+
+func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
+	// precondition: updates must all have unique keys
+	// note: an insertion index should always be found
+	for _, u := range updates {
+		for i, id := range vs.identities { // n2 looping but n is tiny
+			// cons := sdk.ConsAddress(utils.GetChangePubKeyAddress(u))
+			cons := utils.TMCryptoPublicKeyToConsAddr(u.PubKey)
+			if id.SDKConsAddress().Equals(cons) {
+				vs.power[i] = u.Power
+			}
+		}
+
+	}
+}
+
+// TODO:
+// 1. Address TODOs
+// 2. Unhardcode constants
+// 3. Call into prune
+func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
+
+	CHAINID := "chainID"
+	NUM_VALIDATORS := 2
+	NUM_ASSIGNABLE_KEYS := 4
+
+	providerIdentities := []*cryptotestutil.CryptoIdentity{}
+	consumerIdentities := []*cryptotestutil.CryptoIdentity{}
+	for i := 0; i < NUM_VALIDATORS; i++ {
+		providerIdentities = append(providerIdentities, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
+	}
+	for i := 0 + NUM_VALIDATORS; i < NUM_ASSIGNABLE_KEYS+NUM_VALIDATORS; i++ {
+		// ATTENTION: uses a different domain of keys for assignments
+		// TODO: allow consumer identities to overlap with provider identities
+		// this will be enabled after the testnet
+		// see https://github.com/cosmos/interchain-security/issues/503
+		consumerIdentities = append(consumerIdentities, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
+	}
+
+	k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	providerValset := CreateValSet(providerIdentities)
+	consumerValset := CreateValSet(consumerIdentities)
+
+	stakingUpdates := func() (ret []abci.ValidatorUpdate) {
+		// Get a random set of validators to update
+		validators := rand.Perm(NUM_VALIDATORS)[0:rand.Intn(NUM_VALIDATORS+1)]
+		for _, i := range validators {
+			// Power 0, 1, or 2 represents
+			// deletion, update (from 0 or 2), update (from 0 or 1)
+			power := rand.Intn(3)
+			ret = append(ret, abci.ValidatorUpdate{
+				PubKey: providerIdentities[i].TMProtoCryptoPublicKey(),
+				Power:  int64(power),
+			})
+		}
+		return
+	}
+
+	applyUpdates := func(updates []abci.ValidatorUpdate) {
+
+		providerValset.apply(updates)
+
+		for i, id := range providerValset.identities {
+			mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
+				ctx, id.SDKValAddress()).Return(providerValset.power[i]).AnyTimes()
+			_, _ = i, id
+		}
+
+		updates, err := k.ApplyKeyAssignmentToValUpdates(ctx, CHAINID, updates)
+		require.NoError(t, err)
+		consumerValset.apply(updates)
+	}
+
+	// Get an initial set of validators on the provider chain
+	initialValidators := rand.Perm(NUM_VALIDATORS)[0:rand.Intn(NUM_VALIDATORS+1)]
+	// For each initial validator, do some random consumer key actions
+	// this tests the case that the chain has not yet been registered.
+	for j, numIts := 0, rand.Intn(10); j < numIts; j++ {
+		for i := range initialValidators {
+			// Do random assignments
+			val := providerIdentities[i].SDKStakingValidator()
+			ck := consumerIdentities[i].TMProtoCryptoPublicKey() // TODO: randomize
+			k.AssignConsumerKey(ctx, CHAINID, val, ck)
+		}
+	}
+
+	// Register the consumer key
+	k.SetConsumerClientId(ctx, CHAINID, "")
+
+	// Initialise validator powers for, potentially, all validators
+	updates := stakingUpdates()
+	applyUpdates(updates)
+
+	lastPrunedVscid := -1
+
+	for i := 0; i < 100; i++ {
+		// Do some random key assignment actions
+		for j, numAssignments := 0, rand.Intn(10); j < numAssignments; j++ {
+			randomIx := rand.Intn(NUM_VALIDATORS)
+			val := providerIdentities[randomIx].SDKStakingValidator()
+			randomIx = rand.Intn(NUM_ASSIGNABLE_KEYS)
+			ck := consumerIdentities[randomIx].TMProtoCryptoPublicKey()
+			k.AssignConsumerKey(ctx, CHAINID, val, ck)
+		}
+
+		updates := stakingUpdates()
+		applyUpdates(updates)
+
+		// TODO: this will have to be moved/ rework in order to adequately test slash lookups
+		prunedVscid := lastPrunedVscid + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1)
+		k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
+		lastPrunedVscid = prunedVscid
+
+		// Check validator set replication forward direction
+		for i, idP := range providerValset.identities {
+			// For each active validator on the provider chain
+			if 0 < providerValset.power[i] {
+				// Get the assigned key
+				ck, found := k.GetValidatorConsumerPubKey(ctx, CHAINID, idP.SDKConsAddress())
+				if !found {
+					// Use default if unassigned
+					ck = idP.TMProtoCryptoPublicKey()
+				}
+				consC := utils.TMCryptoPublicKeyToConsAddr(ck)
+				// Find the corresponding consumer validator
+				for j, idC := range consumerValset.identities {
+					if consC.Equals(idC.SDKConsAddress()) {
+						require.Equal(t, providerValset.power[i], consumerValset.power[j])
+					}
+				}
+			}
+			// Check validator set replication backward direction
+			for i := range consumerValset.identities {
+				// For each active validator on the consumer chain
+				if 0 < consumerValset.power[i] {
+					// Get the provider who assigned the key
+					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consumerValset.identities[i].SDKConsAddress())
+					// Find the corresponding provider validator
+					for j, idP := range providerValset.identities {
+						if idP.SDKConsAddress().Equals(consP) {
+							require.Equal(t, providerValset.power[j], consumerValset.power[i])
+						}
+					}
+				}
+			}
+			checkCorrectPruningProperty(ctx, k, CHAINID)
+		}
+
+		require.True(t, checkCorrectPruningProperty(ctx, k, CHAINID))
+
+		ctrl.Finish()
+	}
 }
