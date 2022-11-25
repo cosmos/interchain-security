@@ -490,31 +490,61 @@ func TestIterateAllConsumerAddrsToPrune(t *testing.T) {
 	require.Equal(t, testAssignments[1].consumerAddr, sdk.ConsAddress(vsc1Addrs[1]), "mismatched consumer address")
 }
 
+// CheckCorrectPruningProperty checks that the pruning property is correct for a given
+// consumer chain. See AppendConsumerAddrsToPrune for a formulation of the property.
+func CheckCorrectPruningProperty(k providerkeeper.Keeper) bool {
+	panic("not implemented") // TODO:
+}
+
 func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 	chainID := "chainID"
-	testValProvider := cryptotestutil.NewCryptoIdentityFromIntSeed(0)
-	testValConsumer := cryptotestutil.NewCryptoIdentityFromIntSeed(1)
+	providerIdentities := []*cryptotestutil.CryptoIdentity{
+		cryptotestutil.NewCryptoIdentityFromIntSeed(0),
+		cryptotestutil.NewCryptoIdentityFromIntSeed(1),
+	}
+	consumerIdentities := []*cryptotestutil.CryptoIdentity{
+		cryptotestutil.NewCryptoIdentityFromIntSeed(2),
+		cryptotestutil.NewCryptoIdentityFromIntSeed(3),
+	}
 
 	testCases := []struct {
 		name string
-		// State-mutating setup specific to this test case
-		setup    func(sdk.Context, providerkeeper.Keeper, testkeeper.MockedKeepers)
-		expError bool
+		// State-mutating mockSetup specific to this test case
+		mockSetup func(sdk.Context, providerkeeper.Keeper, testkeeper.MockedKeepers)
+		doActions func(sdk.Context, providerkeeper.Keeper)
 	}{
+		/*
+			1. Consumer     registered: Assign PK0->CK0 and retrieve PK0->CK0
+			2. Consumer     registered: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
+			3. Consumer     registered: Assign PK0->CK0, PK1->CK0 and error
+			4. Consumer     registered: Assign PK1->PK0 and error (TODO: see https://github.com/cosmos/interchain-security/issues/503)
+			5. Consumer not registered: Assign PK0->CK0 and retrieve PK0->CK0
+			6. Consumer not registered: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
+			7. Consumer not registered: Assign PK0->CK0, PK1->CK0 and error
+			8. Consumer not registered: Assign PK1->PK0 and error (TODO: see https://github.com/cosmos/interchain-security/issues/503)
+		*/
 		{
 			name: "success",
-			setup: func(ctx sdk.Context,
-				k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
-					mocks.MockStakingKeeper.EXPECT().GetValidator(
-						ctx, testValProvider.SDKValAddress(),
-						// Return a valid validator, found!
-					).Return(testValProvider.SDKStakingValidator(), true).Times(1),
+					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
+						ctx, providerIdentities[0].SDKValAddress(),
+						// return false: not found!
+					).Return(int64(0)),
 				)
 			},
-			expError: false,
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetConsumerClientId(ctx, chainID, "")
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[0].SDKConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
+			},
 		},
 	}
 
@@ -523,16 +553,8 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 
 			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
-			tc.setup(ctx, k, mocks)
-
-			err := k.AssignConsumerKey(ctx, chainID, testValProvider.SDKStakingValidator(),
-				testValConsumer.TMProtoCryptoPublicKey())
-
-			if tc.expError {
-				require.Error(t, err, "invalid case did not return error")
-			} else {
-				require.NoError(t, err, "valid case returned error")
-			}
+			tc.mockSetup(ctx, k, mocks)
+			tc.doActions(ctx, k)
 
 			ctrl.Finish()
 		})
