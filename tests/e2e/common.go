@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -59,6 +61,28 @@ func (s *CCVTestSuite) getVal(ctx sdk.Context, valAddr sdk.ValAddress) stakingty
 	validator, found := s.providerApp.GetE2eStakingKeeper().GetValidator(s.providerCtx(), valAddr)
 	s.Require().True(found)
 	return validator
+}
+
+func (s *CCVTestSuite) getValConsAddr(tmVal tmtypes.Validator) sdk.ConsAddress {
+	val, err := tmVal.ToProto()
+	s.Require().NoError(err)
+	pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
+	s.Require().Nil(err)
+	return sdk.GetConsAddress(pubkey)
+}
+
+func (s *CCVTestSuite) setValidatorSigningInfo(tmVal tmtypes.Validator) {
+
+	consAddr := s.getValConsAddr(tmVal)
+
+	providerSlashingKeeper := s.providerApp.GetE2eSlashingKeeper()
+	_, found := providerSlashingKeeper.GetValidatorSigningInfo(s.providerCtx(), consAddr)
+	if !found {
+		// create the validator's signing info record to allow jailing
+		valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, s.providerCtx().BlockHeight(),
+			s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
+		providerSlashingKeeper.SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
+	}
 }
 
 func getBalance(s *CCVTestSuite, providerCtx sdk.Context, delAddr sdk.AccAddress) sdk.Int {
@@ -185,6 +209,22 @@ func redelegate(s *CCVTestSuite, delAddr sdk.AccAddress, valSrcAddr sdk.ValAddre
 	if valSrc.IsUnbonding() {
 		s.Require().Equal(valSrc.UnbondingTime, completionTime)
 	}
+}
+
+// sendOnProviderRecvOnConsumer sends a packet from the provider chain and receives it on the consumer chain
+func sendOnProviderRecvOnConsumer(s *CCVTestSuite, path *ibctesting.Path, packet channeltypes.Packet) {
+	err := path.EndpointB.SendPacket(packet)
+	s.Require().NoError(err)
+	err = path.EndpointA.RecvPacket(packet)
+	s.Require().NoError(err)
+}
+
+// sendOnConsumerRecvOnProvider sends a packet from the consumer chain and receives it on the provider chain
+func sendOnConsumerRecvOnProvider(s *CCVTestSuite, path *ibctesting.Path, packet channeltypes.Packet) {
+	err := path.EndpointA.SendPacket(packet)
+	s.Require().NoError(err)
+	err = path.EndpointB.RecvPacket(packet)
+	s.Require().NoError(err)
 }
 
 // relayAllCommittedPackets relays all committed packets from `srcChain` on `path`
@@ -331,10 +371,7 @@ func (suite *CCVTestSuite) SendEmptyVSCPacket() {
 	packet := channeltypes.NewPacket(pd.GetBytes(), seq, ccv.ProviderPortID, suite.path.EndpointB.ChannelID,
 		ccv.ConsumerPortID, suite.path.EndpointA.ChannelID, clienttypes.Height{}, timeout)
 
-	err := suite.path.EndpointB.SendPacket(packet)
-	suite.Require().NoError(err)
-	err = suite.path.EndpointA.RecvPacket(packet)
-	suite.Require().NoError(err)
+	sendOnProviderRecvOnConsumer(suite, suite.getFirstBundle().Path, packet)
 }
 
 // commitSlashPacket returns a commit hash for the given slash packet data
@@ -347,6 +384,39 @@ func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.Sla
 		ccv.ProviderPortID, suite.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
 	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
+}
+
+// constructSlashPacketFromConsumer constructs a slash packet to be sent from consumer to provider,
+func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
+	valIdx int, infractionType stakingtypes.InfractionType, ibcSeqNum uint64) channeltypes.Packet {
+
+	if valIdx >= len(bundle.Chain.Vals.Validators) {
+		panic("valIdx out of range")
+	}
+
+	tmVal := s.providerChain.Vals.Validators[valIdx]
+
+	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
+		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
+
+	data := ccv.SlashPacketData{
+		Validator: abci.Validator{
+			Address: tmVal.Address,
+			Power:   tmVal.VotingPower,
+		},
+		ValsetUpdateId: valsetUpdateId,
+		Infraction:     infractionType,
+	}
+
+	return channeltypes.NewPacket(data.GetBytes(),
+		ibcSeqNum,
+		ccv.ConsumerPortID,              // Src port
+		bundle.Path.EndpointA.ChannelID, // Src channel
+		ccv.ProviderPortID,              // Dst port
+		bundle.Path.EndpointB.ChannelID, // Dst channel
+		clienttypes.Height{},
+		uint64(bundle.GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano()),
+	)
 }
 
 // incrementTime increments the overall time by jumpPeriod
