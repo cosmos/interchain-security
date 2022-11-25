@@ -423,7 +423,11 @@ func (k Keeper) AssignConsumerKey(
 		}
 
 		// check whether the validator is valid, i.e., its power is positive
-		if power := k.stakingKeeper.GetLastValidatorPower(ctx, sdk.ValAddress(validator.OperatorAddress)); power > 0 {
+		providerValidatorAddr, err := sdk.ValAddressFromBech32(validator.OperatorAddress)
+		if err != nil {
+			return err
+		}
+		if power := k.stakingKeeper.GetLastValidatorPower(ctx, providerValidatorAddr); power > 0 {
 			// to enable multiple calls of AssignConsumerKey in the same block by the same validator
 			// the key assignment replacement should not be overwritten
 			if _, _, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr); !found {
