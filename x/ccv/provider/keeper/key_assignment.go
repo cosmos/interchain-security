@@ -279,7 +279,13 @@ func (k Keeper) DeleteKeyAssignmentReplacement(ctx sdk.Context, chainID string, 
 }
 
 // AppendConsumerAddrsToPrune appends a consumer validator address to the list of consumer addresses
-// that can be pruned once the VSCMaturedPacket with vscID is received
+// that can be pruned once the VSCMaturedPacket with vscID is received.
+//
+// The following invariant needs to hold:
+// For each consumer address cAddr in ValidatorByConsumerAddr,
+//   - either there exists a provider address pAddr in ValidatorConsumerPubKey,
+//     s.t. hash(ValidatorConsumerPubKey(pAddr)) = cAddr
+//   - or there exists a vscID in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(vscID)
 func (k Keeper) AppendConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID uint64, consumerAddr sdk.ConsAddress) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerAddrsToPruneKey(chainID, vscID))
