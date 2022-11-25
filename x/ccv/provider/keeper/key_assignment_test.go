@@ -6,6 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
@@ -486,4 +488,53 @@ func TestIterateAllConsumerAddrsToPrune(t *testing.T) {
 	require.Len(t, vsc1Addrs, 2, "wrong len of addrs to prune")
 	require.Equal(t, testAssignments[0].consumerAddr, sdk.ConsAddress(vsc1Addrs[0]), "mismatched consumer address")
 	require.Equal(t, testAssignments[1].consumerAddr, sdk.ConsAddress(vsc1Addrs[1]), "mismatched consumer address")
+}
+
+func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
+
+	chainID := "chainID"
+	testValProvider := cryptotestutil.NewCryptoIdentityFromIntSeed(0)
+	testValConsumer := cryptotestutil.NewCryptoIdentityFromIntSeed(1)
+
+	testCases := []struct {
+		name string
+		// State-mutating setup specific to this test case
+		setup    func(sdk.Context, providerkeeper.Keeper, testkeeper.MockedKeepers)
+		expError bool
+	}{
+		{
+			name: "success",
+			setup: func(ctx sdk.Context,
+				k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidator(
+						ctx, testValProvider.SDKValAddress(),
+						// Return a valid validator, found!
+					).Return(testValProvider.SDKStakingValidator(), true).Times(1),
+				)
+			},
+			expError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
+			tc.setup(ctx, k, mocks)
+
+			err := k.AssignConsumerKey(ctx, chainID, testValProvider.SDKStakingValidator(),
+				testValConsumer.TMProtoCryptoPublicKey())
+
+			if tc.expError {
+				require.Error(t, err, "invalid case did not return error")
+			} else {
+				require.NoError(t, err, "valid case returned error")
+			}
+
+			ctrl.Finish()
+		})
+	}
 }
