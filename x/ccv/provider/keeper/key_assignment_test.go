@@ -755,6 +755,10 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 	}
 }
 
+// TODO:
+// 1. Address TODOs
+// 2. Unhardcode constants
+// 3. Call into prune
 func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 
 	CHAINID := "chainID"
@@ -790,8 +794,6 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 				Power:  int64(power),
 			})
 		}
-		// TODO: is it necessary to filter out updates with power 0
-		// for which the provider already has 0 for that validator?
 		return
 	}
 
@@ -830,7 +832,10 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 	updates := stakingUpdates()
 	applyUpdates(updates)
 
+	lastPrunedVscid := -1
+
 	for i := 0; i < 100; i++ {
+		// Do some random key assignment actions
 		for j, numAssignments := 0, rand.Intn(10); j < numAssignments; j++ {
 			randomIx := rand.Intn(NUM_VALIDATORS)
 			val := providerIdentities[randomIx].SDKStakingValidator()
@@ -841,6 +846,11 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 
 		updates := stakingUpdates()
 		applyUpdates(updates)
+
+		// TODO: this will have to be moved/ rework in order to adequately test slash lookups
+		prunedVscid := lastPrunedVscid + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1)
+		k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
+		lastPrunedVscid = prunedVscid
 
 		// Check validator set replication forward direction
 		for i, idP := range providerValset.identities {
