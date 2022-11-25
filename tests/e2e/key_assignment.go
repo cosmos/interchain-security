@@ -245,6 +245,7 @@ func generateNewConsumerKey(s *CCVTestSuite, valIndex int) (stakingtypes.Validat
 	// generate new PrivValidator
 	privVal := mock.NewPV()
 	tmPubKey, err := privVal.GetPubKey()
+	s.Require().NoError(err)
 	pubKey, err := tmencoding.PubKeyToProto(tmPubKey)
 	s.Require().NoError(err)
 
