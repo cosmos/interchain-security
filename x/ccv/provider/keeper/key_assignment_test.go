@@ -725,3 +725,62 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 		})
 	}
 }
+
+func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
+
+	chainID := "chainID"
+	providerIdentities := []*cryptotestutil.CryptoIdentity{
+		cryptotestutil.NewCryptoIdentityFromIntSeed(0),
+		cryptotestutil.NewCryptoIdentityFromIntSeed(1),
+	}
+	consumerIdentities := []*cryptotestutil.CryptoIdentity{
+		cryptotestutil.NewCryptoIdentityFromIntSeed(2),
+		cryptotestutil.NewCryptoIdentityFromIntSeed(3),
+	}
+
+	testCases := []struct {
+		name string
+		// State-mutating mockSetup specific to this test case
+		mockSetup func(sdk.Context, providerkeeper.Keeper, testkeeper.MockedKeepers)
+		doActions func(sdk.Context, providerkeeper.Keeper)
+	}{
+		/*
+			0. Consumer not registered: Assign PK0->CK0 and retrieve PK0->CK0
+			0. Consumer     registered: Assign PK0->CK0 and retrieve PK0->CK0
+		*/
+		{
+			name: "0",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
+						ctx, providerIdentities[0].SDKValAddress(),
+					).Return(int64(0)),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetConsumerClientId(ctx, chainID, "")
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[0].SDKConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
+			tc.mockSetup(ctx, k, mocks)
+			tc.doActions(ctx, k)
+			require.True(t, CheckCorrectPruningProperty(ctx, k, chainID))
+
+			ctrl.Finish()
+		})
+	}
+}
