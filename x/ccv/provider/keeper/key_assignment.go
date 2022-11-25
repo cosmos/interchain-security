@@ -201,47 +201,53 @@ func (k Keeper) DeleteValidatorByConsumerAddr(ctx sdk.Context, chainID string, c
 	store.Delete(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr))
 }
 
-// GetKeyAssignmentReplacement returns the key assignment for a provider validator
-// that need to be replaced on a consumer chain in the current block
+// GetKeyAssignmentReplacement returns the previous assigned consumer key and the current power
+// for a provider validator for which a key assignment was received in this block. Both are
+// needed to update the validator's power on the consumer chain at the end of the current block.
 func (k Keeper) GetKeyAssignmentReplacement(
 	ctx sdk.Context,
 	chainID string,
 	providerAddr sdk.ConsAddress,
-) (oldAssignment abci.ValidatorUpdate, found bool) {
+) (prevCKey tmprotocrypto.PublicKey, power int64, found bool) {
+	var pubKeyAndPower abci.ValidatorUpdate
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.KeyAssignmentReplacementsKey(chainID, providerAddr))
 	if bz == nil {
-		return oldAssignment, false
+		return pubKeyAndPower.PubKey, pubKeyAndPower.Power, false
 	}
-	err := oldAssignment.Unmarshal(bz)
+
+	err := pubKeyAndPower.Unmarshal(bz)
 	if err != nil {
 		panic(err)
 	}
-	return oldAssignment, true
+	return pubKeyAndPower.PubKey, pubKeyAndPower.Power, true
 }
 
-// SetKeyAssignmentReplacement sets the key assignment for a provider validator
-// that need to be replaced on a consumer chain in the current block
+// SetKeyAssignmentReplacement sets the previous assigned consumer key and the current power
+// for a provider validator for which a key assignment was received in this block. Both are
+// needed to update the validator's power on the consumer chain at the end of the current block.
 func (k Keeper) SetKeyAssignmentReplacement(
 	ctx sdk.Context,
 	chainID string,
 	providerAddr sdk.ConsAddress,
-	oldAssignment abci.ValidatorUpdate,
+	prevCKey tmprotocrypto.PublicKey,
+	power int64,
 ) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := oldAssignment.Marshal()
+	pubKeyAndPower := abci.ValidatorUpdate{PubKey: prevCKey, Power: power}
+	bz, err := pubKeyAndPower.Marshal()
 	if err != nil {
 		panic(err)
 	}
 	store.Set(types.KeyAssignmentReplacementsKey(chainID, providerAddr), bz)
 }
 
-// IterateKeyAssignmentReplacements iterates through all the key assignments
-// that need to be replaced on a consumer chain in the current block
+// IterateKeyAssignmentReplacements iterates through all pairs of previous assigned consumer keys
+// and current powers for all provider validator for which key assignments were received in this block.
 func (k Keeper) IterateKeyAssignmentReplacements(
 	ctx sdk.Context,
 	chainID string,
-	cb func(providerAddr sdk.ConsAddress, oldAssignment abci.ValidatorUpdate) (stop bool),
+	cb func(providerAddr sdk.ConsAddress, prevCKey tmprotocrypto.PublicKey, power int64) (stop bool),
 ) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := types.ChainIdWithLenKey(types.KeyAssignmentReplacementsBytePrefix, chainID)
@@ -252,20 +258,21 @@ func (k Keeper) IterateKeyAssignmentReplacements(
 		if err != nil {
 			panic(err)
 		}
-		var oldAssignment abci.ValidatorUpdate
-		err = oldAssignment.Unmarshal(iterator.Value())
+		var pubKeyAndPower abci.ValidatorUpdate
+		err = pubKeyAndPower.Unmarshal(iterator.Value())
 		if err != nil {
 			panic(err)
 		}
-		stop := cb(providerAddr, oldAssignment)
+		stop := cb(providerAddr, pubKeyAndPower.PubKey, pubKeyAndPower.Power)
 		if stop {
 			break
 		}
 	}
 }
 
-// DeleteKeyAssignmentReplacement deletes the key assignment for a provider validator
-// that need to be replaced on a consumer chain in the current block
+// DeleteKeyAssignmentReplacement deletes the previous assigned consumer key and the current power
+// for a provider validator for which a key assignment was received in this block. Both are
+// needed to update the validator's power on the consumer chain at the end of the current block.
 func (k Keeper) DeleteKeyAssignmentReplacement(ctx sdk.Context, chainID string, providerAddr sdk.ConsAddress) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.KeyAssignmentReplacementsKey(chainID, providerAddr))
@@ -410,18 +417,18 @@ func (k Keeper) AssignConsumerKey(
 		}
 
 		// check whether the validator is valid, i.e., its power is positive
-		oldPower := k.stakingKeeper.GetLastValidatorPower(ctx, sdk.ValAddress(validator.OperatorAddress))
-		if oldPower > 0 {
+		if power := k.stakingKeeper.GetLastValidatorPower(ctx, sdk.ValAddress(validator.OperatorAddress)); power > 0 {
 			// to enable multiple calls of AssignConsumerKey in the same block by the same validator
-			// the pending key assignment should not be overwritten
-			if _, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr); !found {
-				// store old key and power for modifying the valset update in EndBlock;
+			// the key assignment replacement should not be overwritten
+			if _, _, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr); !found {
+				// store old key and current power for modifying the valset update in EndBlock;
 				// note: this state is deleted at the end of the block
 				k.SetKeyAssignmentReplacement(
 					ctx,
 					chainID,
 					providerAddr,
-					abci.ValidatorUpdate{PubKey: oldConsumerKey, Power: oldPower},
+					oldConsumerKey,
+					power,
 				)
 			}
 		}
@@ -429,8 +436,7 @@ func (k Keeper) AssignConsumerKey(
 		// if the consumer chain is not registered, then remove the mapping
 		// from the old consumer address to the provider address (if any)
 		// get the previous key assigned for this validator on this consumer chain
-		oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
-		if found {
+		if oldConsumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr); found {
 			k.DeleteValidatorByConsumerAddr(
 				ctx,
 				chainID,
@@ -483,10 +489,10 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 		// create tow new valupdates,
 		//  - setting the old consumer key's power to 0
 		//  - and setting the new consumer key's power to the power in the update
-		oldAssignment, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
+		prevConsumerKey, _, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
 		if found {
 			newUpdates = append(newUpdates, abci.ValidatorUpdate{
-				PubKey: oldAssignment.PubKey,
+				PubKey: prevConsumerKey,
 				Power:  0,
 			})
 
@@ -521,11 +527,12 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 	var addrToRemove []sdk.ConsAddress
 	k.IterateKeyAssignmentReplacements(ctx, chainID, func(
 		pAddr sdk.ConsAddress,
-		pendingKeyAssignment abci.ValidatorUpdate,
+		prevCKey tmprotocrypto.PublicKey,
+		power int64,
 	) (stop bool) {
 		addrToRemove = append(addrToRemove, pAddr)
 		newUpdates = append(newUpdates, abci.ValidatorUpdate{
-			PubKey: pendingKeyAssignment.PubKey,
+			PubKey: prevCKey,
 			Power:  0,
 		})
 
@@ -536,7 +543,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 		}
 		newUpdates = append(newUpdates, abci.ValidatorUpdate{
 			PubKey: newConsumerKey,
-			Power:  pendingKeyAssignment.Power,
+			Power:  power,
 		})
 
 		return false
@@ -599,7 +606,7 @@ func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
 	}
 	// delete KeyAssignmentReplacements
 	addrs = nil
-	k.IterateKeyAssignmentReplacements(ctx, chainID, func(providerAddr sdk.ConsAddress, _ abci.ValidatorUpdate) (stop bool) {
+	k.IterateKeyAssignmentReplacements(ctx, chainID, func(providerAddr sdk.ConsAddress, _ tmprotocrypto.PublicKey, _ int64) (stop bool) {
 		addrs = append(addrs, providerAddr)
 		return false // do not stop the iteration
 	})

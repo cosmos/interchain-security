@@ -16,7 +16,7 @@ type testAssignment struct {
 	providerAddr   sdk.ConsAddress
 	consumerAddr   sdk.ConsAddress
 	consumerPubKey tmprotocrypto.PublicKey
-	valsetUpdate   abci.ValidatorUpdate
+	pubKeyAndPower abci.ValidatorUpdate
 	vscID          uint64
 }
 
@@ -302,27 +302,22 @@ func TestIterateAllValidatorsByConsumerAddr(t *testing.T) {
 func TestKeyAssignmentReplacementCRUD(t *testing.T) {
 	chainID := "consumer"
 	providerAddr := sdk.ConsAddress([]byte("providerAddr"))
-	consumerPubKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
-	valUpdate := abci.ValidatorUpdate{
-		Power:  100,
-		PubKey: consumerPubKey,
-	}
+	expCPubKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
+	var expPower int64 = 100
 
 	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	keeper.SetKeyAssignmentReplacement(ctx, chainID, providerAddr, valUpdate)
+	keeper.SetKeyAssignmentReplacement(ctx, chainID, providerAddr, expCPubKey, expPower)
 
-	pendingAssignment, found := keeper.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
-	require.True(t, found, "pending assignment not found")
-	require.NotEmpty(t, pendingAssignment, "pending assignment is empty")
-	require.Equal(t, pendingAssignment, valUpdate)
+	cPubKey, power, found := keeper.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
+	require.True(t, found, "key assignment replacement not found")
+	require.Equal(t, expCPubKey, cPubKey, "previous consumer key not matching")
+	require.Equal(t, expPower, power, "power not matching")
 
 	keeper.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
-	pendingAssignment, found = keeper.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
-	require.False(t, found, "pending assignment was found")
-	require.Empty(t, pendingAssignment, "pending assignment not empty")
-	require.NotEqual(t, pendingAssignment, valUpdate)
+	_, _, found = keeper.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
+	require.False(t, found, "key assignment replacement found")
 }
 
 func TestIterateKeyAssignmentReplacements(t *testing.T) {
@@ -330,21 +325,21 @@ func TestIterateKeyAssignmentReplacements(t *testing.T) {
 	testAssignments := []testAssignment{
 		{
 			providerAddr: sdk.ConsAddress([]byte("validator-1")),
-			valsetUpdate: abci.ValidatorUpdate{
+			pubKeyAndPower: abci.ValidatorUpdate{
 				Power:  100,
 				PubKey: cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey(),
 			},
 		},
 		{
 			providerAddr: sdk.ConsAddress([]byte("validator-2")),
-			valsetUpdate: abci.ValidatorUpdate{
+			pubKeyAndPower: abci.ValidatorUpdate{
 				Power:  100,
 				PubKey: cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey(),
 			},
 		},
 		{
 			providerAddr: sdk.ConsAddress([]byte("validator-3")),
-			valsetUpdate: abci.ValidatorUpdate{
+			pubKeyAndPower: abci.ValidatorUpdate{
 				Power:  100,
 				PubKey: cryptotestutil.NewCryptoIdentityFromIntSeed(3).TMProtoCryptoPublicKey(),
 			},
@@ -355,14 +350,14 @@ func TestIterateKeyAssignmentReplacements(t *testing.T) {
 	defer ctrl.Finish()
 
 	for _, assignment := range testAssignments {
-		keeper.SetKeyAssignmentReplacement(ctx, chainID, assignment.providerAddr, assignment.valsetUpdate)
+		keeper.SetKeyAssignmentReplacement(ctx, chainID, assignment.providerAddr, assignment.pubKeyAndPower.PubKey, assignment.pubKeyAndPower.Power)
 	}
 
 	result := []testAssignment{}
-	cbIterateAll := func(providerAddr sdk.ConsAddress, pendingKeyAssignment abci.ValidatorUpdate) (stop bool) {
+	cbIterateAll := func(providerAddr sdk.ConsAddress, prevCKey tmprotocrypto.PublicKey, power int64) (stop bool) {
 		result = append(result, testAssignment{
-			providerAddr: providerAddr,
-			valsetUpdate: pendingKeyAssignment,
+			providerAddr:   providerAddr,
+			pubKeyAndPower: abci.ValidatorUpdate{PubKey: prevCKey, Power: power},
 		})
 		return false // continue iteration
 	}
@@ -371,14 +366,14 @@ func TestIterateKeyAssignmentReplacements(t *testing.T) {
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
 
 	for i, res := range result {
-		require.Equal(t, testAssignments[i], res, "mismatched pending key assignment in case %d", i)
+		require.Equal(t, testAssignments[i], res, "mismatched key assignment replacement in case %d", i)
 	}
 
 	result = []testAssignment{}
-	cbIterateOne := func(providerAddr sdk.ConsAddress, pendingKeyAssignment abci.ValidatorUpdate) (stop bool) {
+	cbIterateOne := func(providerAddr sdk.ConsAddress, prevCKey tmprotocrypto.PublicKey, power int64) (stop bool) {
 		result = append(result, testAssignment{
-			providerAddr: providerAddr,
-			valsetUpdate: pendingKeyAssignment,
+			providerAddr:   providerAddr,
+			pubKeyAndPower: abci.ValidatorUpdate{PubKey: prevCKey, Power: power},
 		})
 		return true // stop after first
 	}
@@ -386,7 +381,7 @@ func TestIterateKeyAssignmentReplacements(t *testing.T) {
 	keeper.IterateKeyAssignmentReplacements(ctx, chainID, cbIterateOne)
 	require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
 
-	require.Equal(t, testAssignments[0], result[0], "mismatched pending key assignment in iterate one")
+	require.Equal(t, testAssignments[0], result[0], "mismatched key assignment replacement in iterate one")
 }
 
 func TestConsumerAddrsToPruneCRUD(t *testing.T) {
