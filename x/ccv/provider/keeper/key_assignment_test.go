@@ -600,6 +600,77 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
 			},
 		},
+		// (TODO: see https://github.com/cosmos/interchain-security/issues/503)
+		// {
+		// 	name: "3",
+		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+		// 	},
+		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+		// 	},
+		// },
+		{
+			name: "4",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[0].SDKConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
+			},
+		},
+		{
+			name: "5",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				err = k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[1].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[1].SDKConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
+			},
+		},
+		{
+			name: "6",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[0].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.NoError(t, err)
+				err = k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[1].SDKStakingValidator(),
+					consumerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.Error(t, err)
+				providerAddr, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerIdentities[0].SDKConsAddress())
+				require.True(t, found)
+				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
+			},
+		},
+		// (TODO: see https://github.com/cosmos/interchain-security/issues/503)
+		// {
+		// 	name: "7",
+		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+		// 	},
+		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+		// 	},
+		// },
 	}
 
 	for _, tc := range testCases {
