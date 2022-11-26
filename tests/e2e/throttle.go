@@ -207,8 +207,6 @@ func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sd
 	return ctx.WithBlockTime(lastReplenishTime.Add(replenishPeriod).Add(time.Minute))
 }
 
-// TODO: assert more logic about meter level, etc.
-
 // TODO(Shawn): Add more e2e tests for edge cases
 
 // TODO: test vsc matured stuff too, or add to above test?
