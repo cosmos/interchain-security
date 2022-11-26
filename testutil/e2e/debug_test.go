@@ -160,6 +160,10 @@ func TestBasicSlashPacketThrottling(t *testing.T) {
 	runCCVTestByName(t, "TestBasicSlashPacketThrottling")
 }
 
+func TestSlashingSmallValidators(t *testing.T) {
+	runCCVTestByName(t, "TestSlashingSmallValidators")
+}
+
 //
 // Unbonding tests
 //

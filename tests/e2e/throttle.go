@@ -121,6 +121,60 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 	}
 }
 
+// TestSlashingSmallValidators tests that multiple slash packets from validators with small
+// power can be handled by the provider chain in a non-throttled manner.
+func (s *CCVTestSuite) TestSlashingSmallValidators() {
+
+	s.SetupAllCCVChannels()
+
+	// Setup first val with 1000 power and the rest with 10 power.
+	delAddr := s.providerChain.SenderAccount.GetAddress()
+	delegateByIdx(s, delAddr, sdktypes.NewInt(999999999), 0)
+	delegateByIdx(s, delAddr, sdktypes.NewInt(9999999), 1)
+	delegateByIdx(s, delAddr, sdktypes.NewInt(9999999), 2)
+	delegateByIdx(s, delAddr, sdktypes.NewInt(9999999), 3)
+	s.providerChain.NextBlock()
+
+	// Replenish slash meter with default params and new total voting power.
+	customCtx := s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
+	s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
+
+	// Assert that we start out with no jailings
+	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+	vals := providerStakingKeeper.GetAllValidators(s.providerCtx())
+	for _, val := range vals {
+		s.Require().False(val.IsJailed())
+	}
+
+	// Setup signing info for jailings
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[1])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[3])
+
+	// Send slash packets from consumer to provider for small validators.
+	packet1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), 1, stakingtypes.DoubleSign, 1)
+	packet2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), 2, stakingtypes.Downtime, 2)
+	packet3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), 3, stakingtypes.Downtime, 3)
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet1)
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet2)
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet3)
+
+	// Default slash meter replenish fraction is 0.05, so all sent packets should be handled immediately.
+	vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
+	s.Require().False(vals[0].IsJailed())
+	s.Require().Equal(int64(1000),
+		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[0].GetOperator()))
+	s.Require().True(vals[1].IsJailed())
+	s.Require().Equal(int64(0),
+		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[1].GetOperator()))
+	s.Require().True(vals[2].IsJailed())
+	s.Require().Equal(int64(0),
+		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[2].GetOperator()))
+	s.Require().True(vals[3].IsJailed())
+	s.Require().Equal(int64(0),
+		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[3].GetOperator()))
+}
+
 func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sdktypes.Context {
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
@@ -130,7 +184,7 @@ func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sd
 	return ctx.WithBlockTime(lastReplenishTime.Add(replenishPeriod).Add(time.Minute))
 }
 
-// TODO: test logic of param being changed.
+// TODO: test logic of params being changed.
 
 // TODO: logic on meter being full?
 
