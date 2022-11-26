@@ -175,6 +175,30 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[3].GetOperator()))
 }
 
+func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
+	s.SetupAllCCVChannels()
+
+	providerKeeper := s.providerApp.GetProviderKeeper()
+
+	// At first, allowance is based on 4 vals all with 1 power, min allowance is in effect.
+	s.Require().Equal(int64(1), providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
+
+	s.setupValidatorPowers()
+
+	// Now all 4 validators have 1000 power (4000 total power) so allowance should be:
+	// default replenish frac * 4000
+	expectedAllowance := sdktypes.MustNewDecFromStr(
+		providertypes.DefaultSlashMeterReplenishFraction).MulInt64(4000).RoundInt64()
+	s.Require().Equal(expectedAllowance, providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
+
+	// Now we change replenish fraction and assert new expected allowance.
+	params := providerKeeper.GetParams(s.providerCtx())
+	params.SlashMeterReplenishFraction = "0.3"
+	providerKeeper.SetParams(s.providerCtx(), params)
+	s.Require().Equal(int64(1200), providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
+
+}
+
 func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sdktypes.Context {
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
@@ -184,15 +208,9 @@ func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sd
 	return ctx.WithBlockTime(lastReplenishTime.Add(replenishPeriod).Add(time.Minute))
 }
 
-// TODO: test logic of params being changed.
-
-// TODO: logic on meter being full?
-
 // TODO: assert more logic about meter level, etc.
 
 // TODO(Shawn): Add more e2e tests for edge cases
-
-// TODO: write test around replenish fraction being too small and the allowance being 1 (min value)
 
 // TODO: test vsc matured stuff too, or add to above test?
 

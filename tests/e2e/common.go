@@ -557,4 +557,5 @@ func (s *CCVTestSuite) setupValidatorPowers() {
 		power := stakingKeeper.GetLastValidatorPower(s.providerCtx(), sdk.ValAddress(val.Address))
 		s.Require().Equal(int64(1000), power)
 	}
+	s.Require().Equal(int64(4000), stakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
 }

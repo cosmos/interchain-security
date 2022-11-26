@@ -164,6 +164,10 @@ func TestSlashingSmallValidators(t *testing.T) {
 	runCCVTestByName(t, "TestSlashingSmallValidators")
 }
 
+func TestSlashMeterAllowanceChanges(t *testing.T) {
+	runCCVTestByName(t, "TestSlashMeterAllowanceChanges")
+}
+
 //
 // Unbonding tests
 //
