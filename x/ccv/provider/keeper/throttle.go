@@ -31,7 +31,11 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 		// Obtain the validator power relevant to the slash packet that's about to be handled
 		// (this power will be removed via jailing or tombstoning)
-		valPower := k.stakingKeeper.GetLastValidatorPower(ctx, entry.ValAddr)
+		val, found := k.stakingKeeper.GetValidator(ctx, entry.ValAddr)
+		if !found {
+			panic(fmt.Sprintf("validator with addr %s not found", entry.ValAddr))
+		}
+		valPower := k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
 
 		// Subtract this power from the slash meter
 		meter = meter.Sub(sdktypes.NewInt(valPower))

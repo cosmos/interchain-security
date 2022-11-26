@@ -5,7 +5,9 @@ import (
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // TestBasicSlashPacketThrottling tests slash packet throttling with a single consumer,
@@ -55,7 +57,8 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 
 		// Send a slash packet from consumer to provider
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
-		packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), 0, stakingtypes.Downtime, 1)
+		tmVal := s.providerChain.Vals.Validators[0]
+		packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Downtime, 1)
 		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
 
 		// Assert validator 0 is jailed and has no power
@@ -73,7 +76,8 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 
 		// Now send a second slash packet from consumer to provider for a different validator.
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
-		packet = s.constructSlashPacketFromConsumer(s.getFirstBundle(), 2, stakingtypes.Downtime, 2)
+		tmVal = s.providerChain.Vals.Validators[2]
+		packet = s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Downtime, 2)
 		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
 
 		// Require that slash packet has not been handled
@@ -121,6 +125,140 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 	}
 }
 
+// TestMultiConsumerSlashPacketThrottling tests slash packet throttling in the context of multiple
+// consumers sending slash packets to the provider, with VSC matured packets sprinkled around.
+func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
+
+	// Setup test
+	s.SetupTest()
+	s.SetupAllCCVChannels()
+	s.setupValidatorPowers()
+
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+
+	// First confirm that VSC matured packets are handled immediately (not queued)
+	// when no slash packets are sent.
+
+	// Send 2 VSC matured packets from every consumer to provider
+	for consumerChainID, bundle := range s.consumerBundles {
+		packet := s.constructVSCMaturedPacketFromConsumer(*bundle, 1) // use sequence 1
+		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
+		packet = s.constructVSCMaturedPacketFromConsumer(*bundle, 2) // use sequence 2
+		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
+		// Confirm packets were not queued on provider for this consumer
+		s.Require().Equal(uint64(0),
+			providerKeeper.GetPendingPacketDataSize(s.providerCtx(), consumerChainID))
+	}
+
+	// Choose 3 consumer bundles. It doesn't matter which ones.
+	idx := 0
+	senderBundles := []*icstestingutils.ConsumerBundle{}
+	for _, bundle := range s.consumerBundles {
+		if idx > 2 {
+			break
+		}
+		senderBundles = append(senderBundles, bundle)
+		idx++
+	}
+
+	// Send some packets to provider from the 3 chosen consumers.
+	// They will each slash a different validator according to idx.
+	idx = 0
+	valsToSlash := []tmtypes.Validator{}
+	for _, bundle := range senderBundles {
+
+		// Alternate between downtime and double sign infractions
+		downtime := idx%2 == 0
+		var infractionType stakingtypes.InfractionType
+		if downtime {
+			infractionType = stakingtypes.Downtime
+		} else {
+			infractionType = stakingtypes.DoubleSign
+		}
+
+		// Setup signing info for validator to be jailed
+		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[idx])
+
+		// Send slash packet from consumer to provider
+
+		tmVal := s.providerChain.Vals.Validators[idx]
+		valsToSlash = append(valsToSlash, *tmVal)
+		packet := s.constructSlashPacketFromConsumer(
+			*bundle,
+			*tmVal,
+			infractionType,
+			3, // use sequence 3, 1 and 2 are used above.
+		)
+		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
+
+		// Send two trailing VSC matured packets from consumer to provider
+		packet = s.constructVSCMaturedPacketFromConsumer(*bundle, 4) // use sequence 4
+		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
+		packet = s.constructVSCMaturedPacketFromConsumer(*bundle, 5) // use sequence 5
+		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
+
+		idx++
+	}
+
+	// Confirm that the slash packet and trailing VSC matured packet
+	// were handled immediately for the first consumer (this packet was recv first).
+	s.confirmValidatorJailed(valsToSlash[0])
+	s.Require().Equal(uint64(0), providerKeeper.GetPendingPacketDataSize(
+		s.providerCtx(), senderBundles[0].Chain.ChainID))
+
+	// Packets were queued for the second and third consumers.
+	s.confirmValidatorNotJailed(valsToSlash[1], 1000)
+	s.Require().Equal(uint64(3), providerKeeper.GetPendingPacketDataSize(
+		s.providerCtx(), senderBundles[1].Chain.ChainID))
+	s.confirmValidatorNotJailed(valsToSlash[2], 1000)
+	s.Require().Equal(uint64(3), providerKeeper.GetPendingPacketDataSize(
+		s.providerCtx(), senderBundles[2].Chain.ChainID))
+
+	// Total power is now 3000
+	s.Require().Equal(int64(3000),
+		providerStakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
+
+	// Now replenish the slash meter and confirm one of two queued slash
+	// packet entries are then handled. Order is irrelevant here since those
+	// two packets were sent and recv at the same block time when being queued.
+	s.replenishSlashMeterTillPositive()
+
+	// 1st NextBlock will handle the slash packet, 2nd will update staking module val powers
+	s.providerChain.NextBlock()
+	s.providerChain.NextBlock()
+
+	// If one of the entires was handled, total power will be 2000 (1000 power was slashed)
+	s.Require().Equal(int64(2000),
+		providerStakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
+
+	// Now replenish one more time, and handle final slash packet.
+	s.replenishSlashMeterTillPositive()
+
+	// 1st NextBlock will handle the slash packet, 2nd will update last validator power
+	s.providerChain.NextBlock()
+	s.providerChain.NextBlock()
+
+	// Total power is now 1000 (just a single validator left)
+	s.Require().Equal(int64(1000),
+		providerStakingKeeper.GetLastTotalPower(s.providerCtx()).Int64())
+
+	// Now all 3 expected vals are jailed, and there are no more queued
+	// slash/vsc matured packets.
+	for _, val := range valsToSlash {
+		s.confirmValidatorJailed(val)
+	}
+	s.Require().Equal(uint64(0), providerKeeper.GetPendingPacketDataSize(
+		s.providerCtx(), senderBundles[0].Chain.ChainID))
+	s.Require().Equal(uint64(0), providerKeeper.GetPendingPacketDataSize(
+		s.providerCtx(), senderBundles[1].Chain.ChainID))
+	s.Require().Equal(uint64(0), providerKeeper.GetPendingPacketDataSize(
+		s.providerCtx(), senderBundles[2].Chain.ChainID))
+
+	// All global queue entries are gone too
+	s.Require().Empty(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx()))
+}
+
 // TestSlashingSmallValidators tests that multiple slash packets from validators with small
 // power can be handled by the provider chain in a non-throttled manner.
 func (s *CCVTestSuite) TestSlashingSmallValidators() {
@@ -152,9 +290,12 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[3])
 
 	// Send slash packets from consumer to provider for small validators.
-	packet1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), 1, stakingtypes.DoubleSign, 1)
-	packet2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), 2, stakingtypes.Downtime, 2)
-	packet3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), 3, stakingtypes.Downtime, 3)
+	tmval1 := s.providerChain.Vals.Validators[1]
+	tmval2 := s.providerChain.Vals.Validators[2]
+	tmval3 := s.providerChain.Vals.Validators[3]
+	packet1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 1)
+	packet2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2)
+	packet3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3)
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet1)
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet2)
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet3)
@@ -198,6 +339,37 @@ func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 
 }
 
+func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator) {
+	sdkVal, found := s.providerApp.GetE2eStakingKeeper().GetValidator(
+		s.providerCtx(), sdktypes.ValAddress(tmVal.Address))
+	s.Require().True(found)
+	valPower := s.providerApp.GetE2eStakingKeeper().GetLastValidatorPower(
+		s.providerCtx(), sdkVal.GetOperator())
+	s.Require().Equal(int64(0), valPower)
+	s.Require().True(sdkVal.IsJailed())
+}
+
+func (s *CCVTestSuite) confirmValidatorNotJailed(tmVal tmtypes.Validator, expectedPower int64) {
+	sdkVal, found := s.providerApp.GetE2eStakingKeeper().GetValidator(
+		s.providerCtx(), sdktypes.ValAddress(tmVal.Address))
+	s.Require().True(found)
+	valPower := s.providerApp.GetE2eStakingKeeper().GetLastValidatorPower(
+		s.providerCtx(), sdkVal.GetOperator())
+	s.Require().Equal(expectedPower, valPower)
+	s.Require().False(sdkVal.IsJailed())
+}
+
+func (s *CCVTestSuite) replenishSlashMeterTillPositive() {
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	idx := 0
+	for providerKeeper.GetSlashMeter(s.providerCtx()).IsNegative() {
+		if idx > 100 {
+			panic("replenishTillPositive: failed to replenish slash meter")
+		}
+		providerKeeper.ReplenishSlashMeter(s.providerCtx())
+	}
+}
+
 func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sdktypes.Context {
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
@@ -206,9 +378,3 @@ func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sd
 
 	return ctx.WithBlockTime(lastReplenishTime.Add(replenishPeriod).Add(time.Minute))
 }
-
-// TODO(Shawn): Add more e2e tests for edge cases
-
-// TODO: test vsc matured stuff too, or add to above test?
-
-// TODO: multiple consumers

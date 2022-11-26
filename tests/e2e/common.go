@@ -383,13 +383,7 @@ func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.Sla
 
 // constructSlashPacketFromConsumer constructs a slash packet to be sent from consumer to provider,
 func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
-	valIdx int, infractionType stakingtypes.InfractionType, ibcSeqNum uint64) channeltypes.Packet {
-
-	if valIdx >= len(bundle.Chain.Vals.Validators) {
-		panic("valIdx out of range")
-	}
-
-	tmVal := s.providerChain.Vals.Validators[valIdx]
+	tmVal tmtypes.Validator, infractionType stakingtypes.InfractionType, ibcSeqNum uint64) channeltypes.Packet {
 
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
@@ -402,6 +396,27 @@ func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.C
 		ValsetUpdateId: valsetUpdateId,
 		Infraction:     infractionType,
 	}
+
+	return channeltypes.NewPacket(data.GetBytes(),
+		ibcSeqNum,
+		ccv.ConsumerPortID,              // Src port
+		bundle.Path.EndpointA.ChannelID, // Src channel
+		ccv.ProviderPortID,              // Dst port
+		bundle.Path.EndpointB.ChannelID, // Dst channel
+		clienttypes.Height{},
+		uint64(bundle.GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano()),
+	)
+}
+
+// constructVSCMaturedPacketFromConsumer constructs a VSC Matured packet
+// to be sent from consumer to provider
+func (s *CCVTestSuite) constructVSCMaturedPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
+	ibcSeqNum uint64) channeltypes.Packet {
+
+	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
+		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
+
+	data := ccv.VSCMaturedPacketData{ValsetUpdateId: valsetUpdateId}
 
 	return channeltypes.NewPacket(data.GetBytes(),
 		ibcSeqNum,

@@ -160,6 +160,10 @@ func TestBasicSlashPacketThrottling(t *testing.T) {
 	runCCVTestByName(t, "TestBasicSlashPacketThrottling")
 }
 
+func TestMultiConsumerSlashPacketThrottling(t *testing.T) {
+	runCCVTestByName(t, "TestMultiConsumerSlashPacketThrottling")
+}
+
 func TestSlashingSmallValidators(t *testing.T) {
 	runCCVTestByName(t, "TestSlashingSmallValidators")
 }
