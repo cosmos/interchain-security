@@ -175,6 +175,7 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 		providerStakingKeeper.GetLastValidatorPower(s.providerCtx(), vals[3].GetOperator()))
 }
 
+// TestSlashMeterAllowanceChanges tests scenarios where the slash meter allowance is expected to change.
 func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 	s.SetupAllCCVChannels()
 
@@ -186,10 +187,8 @@ func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 	s.setupValidatorPowers()
 
 	// Now all 4 validators have 1000 power (4000 total power) so allowance should be:
-	// default replenish frac * 4000
-	expectedAllowance := sdktypes.MustNewDecFromStr(
-		providertypes.DefaultSlashMeterReplenishFraction).MulInt64(4000).RoundInt64()
-	s.Require().Equal(expectedAllowance, providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
+	// default replenish frac * 4000 = 200
+	s.Require().Equal(int64(200), providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
 
 	// Now we change replenish fraction and assert new expected allowance.
 	params := providerKeeper.GetParams(s.providerCtx())
