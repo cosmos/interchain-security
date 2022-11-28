@@ -23,6 +23,8 @@ type ChainState struct {
 	Params               *[]Param
 	Rewards              *Rewards
 	ConsumerChains       *map[chainID]bool
+	AssignedKeys         *map[validatorID]string
+	ProviderKeys         *map[validatorID]string // validatorID: validator provider key
 }
 
 type Proposal interface {
@@ -128,6 +130,16 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 	if modelState.ConsumerChains != nil {
 		chains := tr.getConsumerChains(chain)
 		chainState.ConsumerChains = &chains
+	}
+
+	if modelState.AssignedKeys != nil {
+		assignedKeys := tr.getConsumerAddresses(chain, *modelState.AssignedKeys)
+		chainState.AssignedKeys = &assignedKeys
+	}
+
+	if modelState.ProviderKeys != nil {
+		providerKeys := tr.getProviderAddresses(chain, *modelState.ProviderKeys)
+		chainState.ProviderKeys = &providerKeys
 	}
 
 	return chainState
@@ -236,11 +248,16 @@ func (tr TestRun) getRewards(chain chainID, modelState Rewards) Rewards {
 }
 
 func (tr TestRun) getReward(chain chainID, validator validatorID, blockHeight uint, isNativeDenom bool) float64 {
+
+	delAddresss := tr.validatorConfigs[validator].delAddress
+	if chain != chainID("provi") && tr.validatorConfigs[validator].useConsumerKey {
+		delAddresss = tr.validatorConfigs[validator].consumerDelAddress
+	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
 
 		"query", "distribution", "rewards",
-		tr.validatorConfigs[validator].delAddress,
+		delAddresss,
 
 		`--height`, fmt.Sprint(blockHeight),
 		`--node`, tr.getQueryNode(chain),
@@ -261,10 +278,14 @@ func (tr TestRun) getReward(chain chainID, validator validatorID, blockHeight ui
 
 func (tr TestRun) getBalance(chain chainID, validator validatorID) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	valDelAddress := tr.validatorConfigs[validator].delAddress
+	if chain != chainID("provi") && tr.validatorConfigs[validator].useConsumerKey {
+		valDelAddress = tr.validatorConfigs[validator].consumerDelAddress
+	}
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
 
 		"query", "bank", "balances",
-		tr.validatorConfigs[validator].delAddress,
+		valDelAddress,
 
 		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
@@ -418,7 +439,9 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 	}
 
 	for _, val := range valset.Validators {
-		if val.Address == tr.validatorConfigs[validator].valconsAddress {
+		if val.Address == tr.validatorConfigs[validator].valconsAddress ||
+			val.Address == tr.validatorConfigs[validator].consumerValconsAddress {
+
 			votingPower, err := strconv.Atoi(val.VotingPower)
 			if err != nil {
 				log.Fatalf("error: %v", err)
@@ -497,6 +520,60 @@ func (tr TestRun) getConsumerChains(chain chainID) map[chainID]bool {
 	}
 
 	return chains
+}
+
+func (tr TestRun) getConsumerAddresses(chain chainID, modelState map[validatorID]string) map[validatorID]string {
+	actualState := map[validatorID]string{}
+	for k := range modelState {
+		actualState[k] = tr.getConsumerAddress(chain, k)
+	}
+
+	return actualState
+}
+
+func (tr TestRun) getProviderAddresses(chain chainID, modelState map[validatorID]string) map[validatorID]string {
+	actualState := map[validatorID]string{}
+	for k := range modelState {
+		actualState[k] = tr.getProviderAddressFromConsumer(chain, k)
+	}
+
+	return actualState
+}
+
+func (tr TestRun) getConsumerAddress(consumerChain chainID, validator validatorID) string {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chainID("provi")].binaryName,
+
+		"query", "provider", "validator-consumer-key",
+		string(consumerChain), tr.validatorConfigs[validator].valconsAddress,
+		`--node`, tr.getQueryNode(chainID("provi")),
+		`-o`, `json`,
+	)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	addr := gjson.Get(string(bz), "consumer_address").String()
+	return addr
+}
+
+func (tr TestRun) getProviderAddressFromConsumer(consumerChain chainID, validator validatorID) string {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chainID("provi")].binaryName,
+
+		"query", "provider", "validator-provider-key",
+		string(consumerChain), tr.validatorConfigs[validator].consumerValconsAddress,
+		`--node`, tr.getQueryNode(chainID("provi")),
+		`-o`, `json`,
+	)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	addr := gjson.Get(string(bz), "provider_address").String()
+	return addr
 }
 
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {

@@ -42,6 +42,14 @@ func main() {
 	mul.ValidateStringLiterals()
 	mul.startDocker()
 
+	keys := KeyAssignmentTestRun()
+	keys.SetLocalSDKPath(*localSdkPath)
+	keys.ValidateStringLiterals()
+	keys.startDocker()
+
+	wg.Add(1)
+	go keys.ExecuteSteps(&wg, keyAssignmentSteps)
+
 	wg.Add(1)
 	go tr.ExecuteSteps(&wg, happyPathSteps)
 
@@ -99,6 +107,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.invokeDoublesignSlash(action, verbose)
 	case registerRepresentativeAction:
 		tr.registerRepresentative(action, verbose)
+	case assignConsumerPubKeyAction:
+		tr.assignConsumerPubKey(action, verbose)
 	default:
 		log.Fatalf(fmt.Sprintf(`unknown action in testRun %s: %#v`, tr.name, action))
 	}

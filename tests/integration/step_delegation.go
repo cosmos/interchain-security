@@ -145,6 +145,7 @@ func stepsRedelegate(consumerName string) []Step {
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   500,
+						// carol always uses a consumer assigned key
 						validatorID("carol"): 501,
 					},
 				},
