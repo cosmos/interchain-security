@@ -321,6 +321,7 @@ func preProposalKeyAssignment(s *CCVTestSuite, chainID string) {
 	for _, val := range s.providerChain.Vals.Validators {
 		// get SDK validator
 		valAddr, err := sdk.ValAddressFromHex(val.Address.String())
+		s.Require().NoError(err)
 		validator := s.getVal(s.providerCtx(), valAddr)
 
 		// generate new PrivValidator
