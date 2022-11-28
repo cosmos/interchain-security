@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -764,9 +763,7 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 // 3. Call into prune
 func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 
-	rand.Seed(2)
-
-	NUM_EXECUTIONS := 10
+	NUM_EXECUTIONS := 100
 	CHAINID := "chainID"
 	NUM_VALIDATORS := 2
 	NUM_ASSIGNABLE_KEYS := 4
@@ -786,15 +783,12 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 
 	// Mimic creation of staking module EndBlock updates
 	stakingUpdates := func() (ret []abci.ValidatorUpdate) {
-		fmt.Println("staking updates")
-
 		// Get a random set of validators to update
 		validators := rand.Perm(NUM_VALIDATORS)[0:rand.Intn(NUM_VALIDATORS+1)]
 		for _, i := range validators {
 			// Power 0, 1, or 2 represents
 			// deletion, update (from 0 or 2), update (from 0 or 1)
 			power := rand.Intn(3)
-			fmt.Printf("update (val,power):(%d,%d)\n", i, power)
 			ret = append(ret, abci.ValidatorUpdate{
 				PubKey: providerIdentities[i].TMProtoCryptoPublicKey(),
 				Power:  int64(power),
@@ -811,6 +805,7 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 		// TODO: tidy
 		consumerValset := CreateValSet(append(providerIdentities, consumerIdentities...))
 
+		// Mock calls to GetLastValidatorPower to return directly from the providerValset
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
 			gomock.Any(),
 			gomock.Any(),
@@ -857,16 +852,13 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 		lastPrunedVscid := -1
 
 		for ignore := 0; ignore < 100; ignore++ {
-			fmt.Println("ignore", ignore)
 
 			// Do some random key assignment actions
 			for i, numAssignments := 0, rand.Intn(6); i < numAssignments; i++ {
 				randomIxP := rand.Intn(NUM_VALIDATORS)
-				fmt.Println("randomIxP (provider valset ix)", randomIxP)
 				val := providerIdentities[randomIxP].SDKStakingValidator()
 
 				randomIxC := rand.Intn(NUM_ASSIGNABLE_KEYS)
-				fmt.Println("randomIxC (consumer valset ix)", randomIxC+NUM_VALIDATORS)
 
 				ck := consumerIdentities[randomIxC].TMProtoCryptoPublicKey()
 				// ignore err return, it can be possible for an error to occur
