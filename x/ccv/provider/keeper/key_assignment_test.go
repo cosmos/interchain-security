@@ -730,6 +730,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 	}
 }
 
+// Represents the validator set of a chain
 type ValSet struct {
 	identities []*cryptotestutil.CryptoIdentity
 	// indexed by same index as identities
@@ -743,6 +744,7 @@ func CreateValSet(identities []*cryptotestutil.CryptoIdentity) ValSet {
 	}
 }
 
+// Apply a list of validator power updates
 func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 	// precondition: updates must all have unique keys
 	// note: an insertion index should always be found
@@ -758,25 +760,39 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 	}
 }
 
+// A key assignment action to be done
 type Assignment struct {
 	val stakingtypes.Validator
 	ck  tmprotocrypto.PublicKey
 }
 
-// TODO:
-// 1. Address TODOs
-// 2. Unhardcode constants
-// 3. Call into prune
-func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
+// TestSimulatedAssignmentsAndUpdateApplication tests a series
+// of simulated scenarios where random key assignments and validator
+// set updates are generated.
+// TODO: this does not yet fully test the correct lookup of a provider
+// validator from a consumer consensus address, as is needed for handling
+// (double sign) slash packets.
+func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 	CHAINID := "chainID"
+	// The number of full test executions to run
 	NUM_EXECUTIONS := 100
-	NUM_BLOCKS_PER_EXECUTION := 100
+	// Each test execution mimics the adding of a consumer chain and the
+	// assignments and power updates of several blocks
+	NUM_BLOCKS_PER_EXECUTION := 40
+	// The number of validators to be simulated
 	NUM_VALIDATORS := 4
-	NUM_ASSIGNABLE_KEYS := 20
+	// The number of keys that can be used. Keeping this number small is
+	// good because it increases the chance that different assignments will
+	// use the same keys, which is something we want to test.
+	NUM_ASSIGNABLE_KEYS := 12
+	// The maximum number of key assignment actions to simulate in each
+	// simulated block, and before the consumer chain is registered.
 	NUM_ASSIGNMENTS_PER_BLOCK_MAX := 8
 
+	// Create some identities for the simulated provider validators to use
 	providerIdentities := []*cryptotestutil.CryptoIdentity{}
+	// Create some identities which the provider validators can assign to the consumer chain
 	consumerIdentities := []*cryptotestutil.CryptoIdentity{}
 	for i := 0; i < NUM_VALIDATORS; i++ {
 		providerIdentities = append(providerIdentities, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
@@ -791,9 +807,9 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 		consumerIdentities = append(consumerIdentities, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
 	}
 
-	// Mimics creation of staking module EndBlock updates
+	// Helper: simulates creation of staking module EndBlock updates.
 	getStakingUpdates := func() (ret []abci.ValidatorUpdate) {
-		// Get a random set of validators to update
+		// Get a random set of validators to update. It is important to test subsets of all validators.
 		validators := rand.Perm(NUM_VALIDATORS)[0:rand.Intn(NUM_VALIDATORS+1)]
 		for _, i := range validators {
 			// Power 0, 1, or 2 represents
@@ -807,6 +823,7 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 		return
 	}
 
+	// Helper: simulates creation of assignment tx's to be done.
 	getAssignments := func() (ret []Assignment) {
 		for i, numAssignments := 0, rand.Intn(NUM_ASSIGNMENTS_PER_BLOCK_MAX); i < numAssignments; i++ {
 			randomIxP := rand.Intn(NUM_VALIDATORS)
@@ -820,10 +837,16 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 	}
 
 	// Run a randomly simulated execution and test that desired properties hold
+	// Helper: run a randomly simulated scenario where a consumer chain is added
+	// (after key assignment actions are done), followed by a series of validator power updates
+	// and key assignments tx's. For each simulated 'block', the validator set replication
+	// properties and the pruning property are checked.
 	runRandomExecution := func() {
 
 		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 
+		// Create validator sets for the provider and consumer. These are used to check the validator set
+		// replication property.
 		providerValset := CreateValSet(providerIdentities)
 		// NOTE: consumer must have space for provider identities because default key assignments are to provider keys
 		consumerValset := CreateValSet(append(providerIdentities, consumerIdentities...))
@@ -833,14 +856,19 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 			gomock.Any(),
 			gomock.Any(),
 		).DoAndReturn(func(_ interface{}, valAddr sdk.ValAddress) int64 {
+			// When the mocked method is called, locate the appropriate validator
+			// in the provider valset and return its power.
 			for i, id := range providerIdentities {
 				if id.SDKStakingValidator().GetOperator().Equals(valAddr) {
 					return providerValset.power[i]
 				}
 			}
 			panic("must find validator")
+			// This can be called 0 or more times per block depending on the random
+			// assignments that occur
 		}).AnyTimes()
 
+		// Helper: apply some updates to both the provider and consumer valsets
 		applyUpdates := func(updates []abci.ValidatorUpdate) {
 			providerValset.apply(updates)
 			updates, err := k.ApplyKeyAssignmentToValUpdates(ctx, CHAINID, updates)
@@ -848,6 +876,7 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 			consumerValset.apply(updates)
 		}
 
+		// Helper: apply some key assignment transactions to the system
 		applyAssignments := func(assignments []Assignment) {
 			for _, a := range assignments {
 				// ignore err return, it can be possible for an error to occur
@@ -855,23 +884,46 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 			}
 		}
 
+		// The consumer chain has not yet been registered
+		// Apply some randomly generated key assignments
 		applyAssignments(getAssignments())
+		// And generate a random provider valset which, in the real system, will
+		// be put into the consumer genesis.
 		applyUpdates(getStakingUpdates())
 
-		// Register the consumer key
+		// Register the consumer chain
 		k.SetConsumerClientId(ctx, CHAINID, "")
 
+		// Analogous to the last vscid received from the consumer in a maturity
+		// Used to check the correct pruning property
 		greatestPrunedVSCID := -1
 
+		// Simulate a number of 'blocks'
+		// Each block consists of a number of random key assignment tx's
+		// and a random set of validator power updates
 		for block := 0; block < NUM_BLOCKS_PER_EXECUTION; block++ {
 
+			// Generate and apply assignments and power updates
 			applyAssignments(getAssignments())
 			applyUpdates(getStakingUpdates())
 
-			// Prune all assignments up to some vscid
+			// Randomly fast forward the greatest pruned VSCID. This simulates
+			// delivery of maturity packets from the consumer chain.
 			prunedVscid := greatestPrunedVSCID + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1)
 			k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
 			greatestPrunedVSCID = prunedVscid
+
+			/*
+
+				Properties: Validator Set Replication
+				Each validator set on the provider must be replicated on the consumer.
+				The property in the real system is somewhat weaker, because the consumer chain can
+				forward updates to tendermint in batches.
+				(See https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties)
+				We test the stronger property, because we abstract over implementation of the consumer
+				chain. The stronger property implies the weaker property.
+
+			*/
 
 			// Check validator set replication forward direction
 			for i, idP := range providerValset.identities {
@@ -908,7 +960,7 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 				}
 			}
 
-			checkCorrectPruningProperty(ctx, k, CHAINID)
+			// Check that all keys have been or will eventually be pruned.
 
 			require.True(t, checkCorrectPruningProperty(ctx, k, CHAINID))
 
