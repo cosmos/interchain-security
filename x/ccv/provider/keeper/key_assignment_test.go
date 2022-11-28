@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -763,6 +764,9 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 // 3. Call into prune
 func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 
+	rand.Seed(2)
+
+	NUM_EXECUTIONS := 10
 	CHAINID := "chainID"
 	NUM_VALIDATORS := 2
 	NUM_ASSIGNABLE_KEYS := 4
@@ -825,7 +829,8 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 				// Do random assignments
 				val := providerIdentities[i].SDKStakingValidator()
 				ck := consumerIdentities[i].TMProtoCryptoPublicKey() // TODO: randomize
-				k.AssignConsumerKey(ctx, CHAINID, val, ck)
+				// ignore err return, it can be possible for an error to occur
+				_ = k.AssignConsumerKey(ctx, CHAINID, val, ck)
 			}
 		}
 
@@ -845,7 +850,8 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 				val := providerIdentities[randomIx].SDKStakingValidator()
 				randomIx = rand.Intn(NUM_ASSIGNABLE_KEYS)
 				ck := consumerIdentities[randomIx].TMProtoCryptoPublicKey()
-				k.AssignConsumerKey(ctx, CHAINID, val, ck)
+				// ignore err return, it can be possible for an error to occur
+				_ = k.AssignConsumerKey(ctx, CHAINID, val, ck)
 			}
 
 			updates := stakingUpdates()
@@ -899,7 +905,9 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 		}
 	}
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < NUM_EXECUTIONS; i++ {
+		fmt.Println("i", i)
+
 		runRandomExecution()
 	}
 }
