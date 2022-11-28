@@ -811,20 +811,20 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 		// TODO: tidy
 		consumerValset := CreateValSet(append(providerIdentities, consumerIdentities...))
 
-		applyUpdates := func(updates []abci.ValidatorUpdate) {
-
-			providerValset.apply(updates)
-
-			for i, id := range providerValset.identities {
-				fmt.Println("set power for i", i, providerValset.power[i])
-
-				mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-					ctx,
-					id.SDKStakingValidator().GetOperator(),
-				).Return(providerValset.power[i]).MaxTimes(1)
-				_, _ = i, id
+		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
+			gomock.Any(),
+			gomock.Any(),
+		).DoAndReturn(func(_ interface{}, valAddr sdk.ValAddress) int64 {
+			for i, id := range providerIdentities {
+				if id.SDKStakingValidator().GetOperator().Equals(valAddr) {
+					return providerValset.power[i]
+				}
 			}
+			panic("not found")
+		}).AnyTimes()
 
+		applyUpdates := func(updates []abci.ValidatorUpdate) {
+			providerValset.apply(updates)
 			updates, err := k.ApplyKeyAssignmentToValUpdates(ctx, CHAINID, updates)
 			require.NoError(t, err)
 			consumerValset.apply(updates)
