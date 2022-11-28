@@ -88,9 +88,6 @@ func (k Keeper) HandleVSCMaturedPacket(
 
 	// prune previous consumer validator address that are no longer needed
 	k.PruneKeyAssignments(ctx, chainID, data.ValsetUpdateId)
-
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	return ack
 }
 
 // CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
@@ -349,7 +346,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypeExecuteConsumerChainSlash,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
 			sdk.NewAttribute(ccv.AttributeValidatorAddress, providerAddr.String()),
 			sdk.NewAttribute(ccv.AttributeValidatorConsumerAddress, consumerAddr.String()),
 			sdk.NewAttribute(ccv.AttributeInfractionType, data.Infraction.String()),

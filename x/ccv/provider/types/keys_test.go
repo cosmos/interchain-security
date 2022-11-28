@@ -5,8 +5,9 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 )
@@ -40,9 +41,9 @@ func getSingleByteKeys() [][]byte {
 	keys := make([][]byte, 32)
 	i := 0
 
-	keys[i], i = types.PortKey(), i+1
-	keys[i], i = types.MaturedUnbondingOpsKey(), i+1
-	keys[i], i = types.ValidatorSetUpdateIdKey(), i+1
+	keys[i], i = providertypes.PortKey(), i+1
+	keys[i], i = providertypes.MaturedUnbondingOpsKey(), i+1
+	keys[i], i = providertypes.ValidatorSetUpdateIdKey(), i+1
 	keys[i], i = []byte{providertypes.ChainToChannelBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChannelToChainBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChainToClientBytePrefix}, i+1
@@ -192,7 +193,7 @@ func TestPendingSlashPacketEntryKeyAndParse(t *testing.T) {
 		require.Equal(t, entry.RecvTime, parsedRecvTime)
 		require.Equal(t, entry.ConsumerChainID, parsedChainID)
 	}
- }
+}
 
 // Tests the construction and parsing of ChainIdAndConsAddr keys
 func TestChainIdAndConsAddrAndParse(t *testing.T) {

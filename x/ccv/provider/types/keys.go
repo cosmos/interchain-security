@@ -330,7 +330,7 @@ func KeyAssignmentReplacementsKey(chainID string, addr sdk.ConsAddress) []byte {
 // ConsumerAddrsToPruneKey returns the key under which the
 // mapping from VSC ids to consumer validators addresses is stored
 func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndVscIdKey(ConsumerAddrsToPruneBytePrefix, chainID, vscID)
+	return ChainIdAndUintIdKey(ConsumerAddrsToPruneBytePrefix, chainID, vscID)
 }
 
 // AppendMany appends a variable number of byte slices together
@@ -339,6 +339,12 @@ func AppendMany(byteses ...[]byte) (out []byte) {
 		out = append(out, bytes...)
 	}
 	return out
+}
+
+// HashBytes outputs a fixed length 32 byte hash for any byte slice
+func HashBytes(x []byte) []byte {
+	hash := sha256.Sum256(x)
+	return hash[:]
 }
 
 // TsAndChainIdKey returns the key with the following format:
