@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -85,6 +84,6 @@ func SendIBCPacket(
 		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
 		clienttypes.Height{}, uint64(ctx.BlockTime().Add(timeoutPeriod).UnixNano()),
 	)
-	fmt.Println("### PACKET ###", sequence, portID, channelID, string(packet.Data))
+
 	return channelKeeper.SendPacket(ctx, channelCap, packet)
 }
