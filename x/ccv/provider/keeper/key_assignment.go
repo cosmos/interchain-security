@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -425,11 +423,8 @@ func (k Keeper) AssignConsumerKey(
 		}
 
 		// check whether the validator is valid, i.e., its power is positive
-		// providerValidatorAddr, err := sdk.ValAddressFromBech32(validator.OperatorAddress)
 		power := k.stakingKeeper.GetLastValidatorPower(ctx, validator.GetOperator())
 		if 0 < power {
-			fmt.Println("expect2 power", power)
-
 			// to enable multiple calls of AssignConsumerKey in the same block by the same validator
 
 			// the key assignment replacement should not be overwritten
@@ -509,8 +504,6 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 			// of a newly registered consumer chain.
 			consumerKey, found := k.GetValidatorConsumerPubKey(ctx, chainID, providerAddr)
 			if found {
-				fmt.Println("expect 1")
-
 				newUpdates = append(newUpdates, abci.ValidatorUpdate{
 					PubKey: consumerKey,
 					Power:  valUpdate.Power,

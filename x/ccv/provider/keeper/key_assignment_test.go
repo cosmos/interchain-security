@@ -932,8 +932,6 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 	}
 
 	for i := 0; i < NUM_EXECUTIONS; i++ {
-		fmt.Println("i", i)
-
 		runRandomExecution()
 	}
 }
