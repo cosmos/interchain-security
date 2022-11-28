@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/stretchr/testify/require"
@@ -757,6 +758,11 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 	}
 }
 
+type Assignment struct {
+	val stakingtypes.Validator
+	ck  tmprotocrypto.PublicKey
+}
+
 // TODO:
 // 1. Address TODOs
 // 2. Unhardcode constants
@@ -766,9 +772,9 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 	CHAINID := "chainID"
 	NUM_EXECUTIONS := 100
 	NUM_BLOCKS_PER_EXECUTION := 100
-	NUM_VALIDATORS := 2
-	NUM_ASSIGNABLE_KEYS := 4
-	NUM_ASSIGNMENTS_PER_BLOCK_MAX := 6
+	NUM_VALIDATORS := 4
+	NUM_ASSIGNABLE_KEYS := 20
+	NUM_ASSIGNMENTS_PER_BLOCK_MAX := 8
 
 	providerIdentities := []*cryptotestutil.CryptoIdentity{}
 	consumerIdentities := []*cryptotestutil.CryptoIdentity{}
@@ -796,6 +802,18 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 			ret = append(ret, abci.ValidatorUpdate{
 				PubKey: providerIdentities[i].TMProtoCryptoPublicKey(),
 				Power:  int64(power),
+			})
+		}
+		return
+	}
+
+	getAssignments := func() (ret []Assignment) {
+		for i, numAssignments := 0, rand.Intn(NUM_ASSIGNMENTS_PER_BLOCK_MAX); i < numAssignments; i++ {
+			randomIxP := rand.Intn(NUM_VALIDATORS)
+			randomIxC := rand.Intn(NUM_ASSIGNABLE_KEYS)
+			ret = append(ret, Assignment{
+				val: providerIdentities[randomIxP].SDKStakingValidator(),
+				ck:  consumerIdentities[randomIxC].TMProtoCryptoPublicKey(),
 			})
 		}
 		return
@@ -830,47 +848,25 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 			consumerValset.apply(updates)
 		}
 
-		// Get an initial set of validators on the provider chain
-		initialValidators := rand.Perm(NUM_VALIDATORS)[0:rand.Intn(NUM_VALIDATORS+1)]
-		_ = initialValidators
-		// For each initial validator, do some random consumer key actions
-		// this tests the case that the chain has not yet been registered.
-		for j, numIts := 0, rand.Intn(10); j < numIts; j++ {
-			for i := range initialValidators {
-				//	Do random assignments
-				val := providerIdentities[i].SDKStakingValidator()
-				randomIxC := rand.Intn(NUM_ASSIGNABLE_KEYS)
-				ck := consumerIdentities[randomIxC].TMProtoCryptoPublicKey()
-				// ignore err return, we are testing both error and non error cases
-				_ = k.AssignConsumerKey(ctx, CHAINID, val, ck)
+		applyAssignments := func(assignments []Assignment) {
+			for _, a := range assignments {
+				// ignore err return, it can be possible for an error to occur
+				_ = k.AssignConsumerKey(ctx, CHAINID, a.val, a.ck)
 			}
 		}
 
+		applyAssignments(getAssignments())
+		applyUpdates(getStakingUpdates())
+
 		// Register the consumer key
 		k.SetConsumerClientId(ctx, CHAINID, "")
-
-		// Initialise validator powers for, potentially, all validators
-		updates := getStakingUpdates()
-		applyUpdates(updates)
 
 		greatestPrunedVSCID := -1
 
 		for block := 0; block < NUM_BLOCKS_PER_EXECUTION; block++ {
 
-			// Do some random key assignment actions
-			for i, numAssignments := 0, rand.Intn(NUM_ASSIGNMENTS_PER_BLOCK_MAX); i < numAssignments; i++ {
-				randomIxP := rand.Intn(NUM_VALIDATORS)
-				val := providerIdentities[randomIxP].SDKStakingValidator()
-
-				randomIxC := rand.Intn(NUM_ASSIGNABLE_KEYS)
-
-				ck := consumerIdentities[randomIxC].TMProtoCryptoPublicKey()
-				// ignore err return, it can be possible for an error to occur
-				_ = k.AssignConsumerKey(ctx, CHAINID, val, ck)
-			}
-
-			updates := getStakingUpdates()
-			applyUpdates(updates)
+			applyAssignments(getAssignments())
+			applyUpdates(getStakingUpdates())
 
 			// Prune all assignments up to some vscid
 			prunedVscid := greatestPrunedVSCID + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1)
