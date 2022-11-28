@@ -77,22 +77,6 @@ func stepsDelegate(consumerName string) []Step {
 				},
 			},
 		},
-		{
-			action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
-			},
-			state: State{
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 500,
-						validatorID("bob"):   500,
-						validatorID("carol"): 500,
-					},
-				},
-			},
-		},
 	}
 }
 
@@ -161,6 +145,7 @@ func stepsRedelegate(consumerName string) []Step {
 					ValPowers: &map[validatorID]uint{
 						validatorID("alice"): 509,
 						validatorID("bob"):   500,
+						// carol always uses a consumer assigned key
 						validatorID("carol"): 501,
 					},
 				},

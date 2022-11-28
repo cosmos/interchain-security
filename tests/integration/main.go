@@ -43,7 +43,7 @@ func main() {
 	// mul.startDocker()
 
 	wg.Add(1)
-	go tr.ExecuteSteps(&wg, keyAssignment)
+	go tr.ExecuteSteps(&wg, happyPathSteps)
 
 	// wg.Add(1)
 	// go dmc.ExecuteSteps(&wg, democracySteps)

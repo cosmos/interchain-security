@@ -267,10 +267,14 @@ func (tr TestRun) getReward(chain chainID, validator validatorID, blockHeight ui
 
 func (tr TestRun) getBalance(chain chainID, validator validatorID) uint {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	valDelAddress := tr.validatorConfigs[validator].delAddress
+	if chain != chainID("provi") && tr.validatorConfigs[validator].useConsumerKey {
+		valDelAddress = tr.validatorConfigs[validator].consumerDelAddress
+	}
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
 
 		"query", "bank", "balances",
-		tr.validatorConfigs[validator].delAddress,
+		valDelAddress,
 
 		`--node`, tr.getQueryNode(chain),
 		`-o`, `json`,
@@ -424,7 +428,9 @@ func (tr TestRun) getValPower(chain chainID, validator validatorID) uint {
 	}
 
 	for _, val := range valset.Validators {
-		if val.Address == tr.validatorConfigs[validator].valconsAddress {
+		if val.Address == tr.validatorConfigs[validator].valconsAddress ||
+			val.Address == tr.validatorConfigs[validator].consumerValconsAddress {
+
 			votingPower, err := strconv.Atoi(val.VotingPower)
 			if err != nil {
 				log.Fatalf("error: %v", err)

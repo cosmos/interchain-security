@@ -101,22 +101,6 @@ func (tr TestRun) startChain(
 			// if true node will be started with consumer key for each consumer chain
 			StartWithConsumerKey: tr.validatorConfigs[val.id].useConsumerKey,
 		})
-		a := jsonValAttrs{
-			Mnemonic:         tr.validatorConfigs[val.id].mnemonic,
-			NodeKey:          tr.validatorConfigs[val.id].nodeKey,
-			ValId:            fmt.Sprint(val.id),
-			PrivValidatorKey: tr.validatorConfigs[val.id].privValidatorKey,
-			Allocation:       fmt.Sprint(val.allocation) + "stake",
-			Stake:            fmt.Sprint(val.stake) + "stake",
-			IpSuffix:         tr.validatorConfigs[val.id].ipSuffix,
-
-			ConsumerMnemonic:         tr.validatorConfigs[val.id].consumerMnemonic,
-			ConsumerPrivValidatorKey: tr.validatorConfigs[val.id].consumerPrivValidatorKey,
-			// if true node will be started with consumer key for each consumer chain
-			StartWithConsumerKey: tr.validatorConfigs[val.id].useConsumerKey,
-		}
-		m, _ := json.MarshalIndent(a, "", "  ")
-		fmt.Println("#### VALIDATOR", val, "\n", string(m))
 	}
 
 	vals, err := json.Marshal(validators)

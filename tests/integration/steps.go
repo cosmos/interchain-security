@@ -13,11 +13,11 @@ func concatSteps(steps ...[]Step) []Step {
 	return concat
 }
 
-var keyAssignment = concatSteps(
-	stepsStartChains([]string{"consu"}, false),
-	// stepsDelegate("consu"),
-	// stepsAssignConsumerKey("consu")
-)
+// var keyAssignment = concatSteps(
+// 	stepsStartChains([]string{"consu"}, false),
+// 	stepsDelegate("consu"),
+// 	// stepsAssignConsumerKey("consu")
+// )
 
 //lint:ignore U1000
 var happyPathSteps = concatSteps(

@@ -29,9 +29,6 @@ func GetTxCmd() *cobra.Command {
 	return cmd
 }
 
-// TODO: msalopek -> pubkeys keys i'm trying look like this
-// {"@type":"/cosmos.crypto.secp256k1.PubKey","key":"ArCNXPLVvdpQPqkLRzgdFVu+eSXA/RVIbGB+fl8WzdpA"}
-// Unmarshal fails with err: "Error: Any JSON doesn't have '@type'"
 func NewAssignConsumerKeyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "assign-consensus-key [consumer-chain-id] [consumer-pubkey]",
@@ -55,12 +52,6 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().AddFlagSet(FlagSetConsumerChainId())
-	cmd.Flags().AddFlagSet(FlagSetPublicKey())
-
-	// TODO: Don't know why this is here but it's not needed for normal operation
-	// cmd.Flags().String(FlagIP, "", fmt.Sprintf("The node's public IP. It takes effect only when used in combination with --%s", flags.FlagGenerateOnly))
-	// cmd.Flags().String(FlagNodeID, "", "The node's ID")
 	flags.AddTxFlagsToCmd(cmd)
 
 	_ = cmd.MarkFlagRequired(flags.FlagFrom)
@@ -83,17 +74,6 @@ func newAssignConsumerKey(clientCtx client.Context, txf tx.Factory, chainId, con
 	if err := msg.ValidateBasic(); err != nil {
 		return txf, nil, err
 	}
-
-	// TODO: not sure this should be here
-	// genOnly, _ := fs.GetBool(flags.FlagGenerateOnly)
-	// if genOnly {
-	// 	ip, _ := fs.GetString(FlagIP)
-	// 	nodeID, _ := fs.GetString(FlagNodeID)
-
-	// 	if nodeID != "" && ip != "" {
-	// 		txf = txf.WithMemo(fmt.Sprintf("%s@%s:26656", nodeID, ip))
-	// 	}
-	// }
 
 	return txf, msg, nil
 }

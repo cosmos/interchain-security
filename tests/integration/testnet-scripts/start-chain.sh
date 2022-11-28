@@ -107,7 +107,6 @@ do
     # the --home parameter on gaiad
     # optionally start validator with a key different from provider chain key
     if [[ "$CHAIN_ID" != "provi" && "$START_WITH_CONSUMER_KEY" = "true" ]]; then
-        echo "################################################## $CHAIN_ID STARTING VALIDATOR $VAL_ID WITH CONSUMER KEY"
         echo "$VALIDATORS" | jq -r ".[$i].consumer_mnemonic" | $BIN keys add validator$VAL_ID \
             --home /$CHAIN_ID/validator$VAL_ID \
             --keyring-backend test \
@@ -149,7 +148,6 @@ do
 
     START_WITH_CONSUMER_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].start_with_consumer_key")
     if [[ "$CHAIN_ID" != "provi" && "$START_WITH_CONSUMER_KEY" = "true" ]]; then
-        echo "################################################## $CHAIN_ID USING CONSUMER KEY FOR $VAL_ID"
         # start with assigned consumer key
         PRIV_VALIDATOR_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].consumer_priv_validator_key")
         if [[ "$PRIV_VALIDATOR_KEY" ]]; then
