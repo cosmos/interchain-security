@@ -11,9 +11,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 )
@@ -42,6 +41,21 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
+	// If no packets are in the per chain queue, immediately handle the vsc matured packet data
+	if k.GetPendingPacketDataSize(ctx, chainID) == 0 {
+		k.HandleVSCMaturedPacket(ctx, chainID, data)
+	} else {
+		// Otherwise queue the packet data as pending (behind one or more pending slash packet data instances)
+		k.QueuePendingVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
+	}
+
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	return ack
+}
+
+func (k Keeper) HandleVSCMaturedPacket(
+	ctx sdk.Context, chainID string, data ccv.VSCMaturedPacketData) {
+
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
 	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
 	var maturedIds []uint64
@@ -61,6 +75,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 			}
 		}
 	}
+
 	if err := k.AppendMaturedUnbondingOps(ctx, maturedIds); err != nil {
 		panic(fmt.Errorf("mature unbonding ops could not be appended: %w", err))
 	}
@@ -73,9 +88,6 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 
 	// prune previous consumer validator address that are no longer needed
 	k.PruneKeyAssignments(ctx, chainID, data.ValsetUpdateId)
-
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	return ack
 }
 
 // CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
@@ -103,7 +115,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			// to decide whether the unbonding operations should be released
 			return k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID), false)
 		}
-		return sdkerrors.Wrapf(types.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
+		return sdkerrors.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
 	}
 	return nil
 }
@@ -220,9 +232,14 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	// set the ValsetUpdateBlockHeight
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
+	// Execute slash packet throttling logic
+	k.HandlePendingSlashPackets(ctx)
+	// Replenish slash meter if necessary
+	k.CheckForSlashMeterReplenishment(ctx)
 }
 
-// OnRecvSlashPacket slashes and jails the given validator in the packet data
+// OnRecvSlashPacket receives a slash packet and determines whether the channel is established,
+// then queues the slash packet as pending if the channel is established and found.
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
 	// check that the channel is established
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
@@ -232,18 +249,26 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	// apply slashing
-	if _, err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement(err.Error())
-		return &errAck
-	}
+	// Queue a pending slash packet entry to the parent queue, which will be seen by the throttling logic
+	k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
+		ctx.BlockTime(), // recv time
+		chainID,         // consumer chain id that sent the packet
+		data.Validator.Address))
 
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	return ack
+	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
+	// to enforce order of handling between the two packet types.
+	k.QueuePendingSlashPacketData(ctx,
+		chainID,         // consumer chain id that sent the packet
+		packet.Sequence, // IBC sequence number of the packet
+		data)
+
+	// TODO: ack is always success for now, is this correct?
+	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
 
-// HandleSlashPacket slash and jail a misbehaving validator according the infraction type
+// HandleSlashPacket potentially slashes, jails and/or tombstones a misbehaving validator according to infraction type
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
+
 	// map VSC ID to infraction height for the given chain ID
 	var infractionHeight uint64
 	var found bool
@@ -321,7 +346,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypeExecuteConsumerChainSlash,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
 			sdk.NewAttribute(ccv.AttributeValidatorAddress, providerAddr.String()),
 			sdk.NewAttribute(ccv.AttributeValidatorConsumerAddress, consumerAddr.String()),
 			sdk.NewAttribute(ccv.AttributeInfractionType, data.Infraction.String()),

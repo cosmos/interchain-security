@@ -1,7 +1,10 @@
 package main
 
 // simulates double signing on provider and vsc propagation to consumer chains
-// steps continue from downtime tests state
+// steps continue from downtime tests state.
+//
+// Note: These steps are not affected by slash packet throttling since
+// only one consumer initiated slash is implemented.
 func stepsDoubleSign(consumer1, consumer2 string) []Step {
 	return []Step{
 		{

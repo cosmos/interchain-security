@@ -180,14 +180,27 @@ func (mr *MockStakingKeeperMockRecorder) UnbondingTime(ctx interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnbondingTime", reflect.TypeOf((*MockStakingKeeper)(nil).UnbondingTime), ctx)
 }
 
+// GetLastTotalPower mocks base method.
+func (m *MockStakingKeeper) GetLastTotalPower(ctx types.Context) (val types.Int) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastTotalPower", ctx)
+	ret0, _ := ret[0].(types.Int)
+	return ret0
+}
+
+// GetLastTotalPower indicates an expected call of GetLastTotalPower.
+func (mr *MockStakingKeeperMockRecorder) GetLastTotalPower(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastTotalPower", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastTotalPower), ctx)
+}
+
 // GetLastValidatorPower mocks base method.
-func (m *MockStakingKeeper) GetLastValidatorPower(ctx types.Context, addr types.ValAddress) int64 {
+func (m *MockStakingKeeper) GetLastValidatorPower(ctx types.Context, addr types.ValAddress) (power int64) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLastValidatorPower", ctx, addr)
 	ret0, _ := ret[0].(int64)
 	return ret0
 }
-
 
 // GetLastValidatorPower indicates an expected call of GetLastValidatorPower.
 func (mr *MockStakingKeeperMockRecorder) GetLastValidatorPower(ctx, addr interface{}) *gomock.Call {

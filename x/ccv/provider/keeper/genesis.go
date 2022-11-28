@@ -95,6 +95,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 
 	k.SetParams(ctx, genState.Params)
+	k.InitializeSlashMeter(ctx)
 }
 
 // ExportGenesis returns the CCV provider module's exported genesis
