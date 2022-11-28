@@ -144,11 +144,9 @@ func (suite *CCVTestSuite) TestInitTimeout() {
 		initTimeout := providerKeeper.GetParams(suite.providerCtx()).InitTimeoutPeriod
 		chainID := suite.consumerChain.ChainID
 
-		// get init timeout timestamp
-		ts, found := providerKeeper.GetInitTimeoutTimestamp(suite.providerCtx(), chainID)
+		// check that the init timeout timestamp is set
+		_, found := providerKeeper.GetInitTimeoutTimestamp(suite.providerCtx(), chainID)
 		suite.Require().True(found, "cannot find init timeout timestamp; test: %s", tc.name)
-		expectedTs := suite.providerCtx().BlockTime().Add(initTimeout)
-		suite.Require().Equal(uint64(expectedTs.UnixNano()), ts, "unexpected init timeout timestamp; test: %s", tc.name)
 
 		// create connection
 		suite.coordinator.CreateConnections(suite.path)

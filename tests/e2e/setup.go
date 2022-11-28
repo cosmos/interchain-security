@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"bytes"
 	"testing"
 
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
@@ -9,16 +8,26 @@ import (
 
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
 
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
-	tmtypes "github.com/tendermint/tendermint/types"
-
 	"github.com/stretchr/testify/suite"
+)
+
+// Callback for instantiating a new coordinator with a provider test chains
+// and provider app before every test defined on the suite.
+type SetupProviderCallback func(t *testing.T) (
+	coord *ibctesting.Coordinator,
+	providerChain *ibctesting.TestChain,
+	providerApp e2eutil.ProviderApp,
+)
+
+// Callback for instantiating a new consumer test chain
+// and consumer app before every test defined on the suite.
+type SetupConsumerCallback func(s *suite.Suite, coord *ibctesting.Coordinator, index int) (
+	consumerBundle *icstestingutils.ConsumerBundle,
 )
 
 // CCVTestSuite is an in-mem test suite which implements the standard group of tests validating
@@ -26,8 +35,9 @@ import (
 // Any method implemented for this struct will be ran when suite.Run() is called.
 type CCVTestSuite struct {
 	suite.Suite
-	coordinator   *ibctesting.Coordinator
-	setupCallback SetupCallback
+	coordinator           *ibctesting.Coordinator
+	setupProviderCallback SetupProviderCallback
+	setupConsumerCallback SetupConsumerCallback
 
 	providerChain *ibctesting.TestChain
 	providerApp   e2eutil.ProviderApp
@@ -53,30 +63,29 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 
 	ccvSuite := new(CCVTestSuite)
 
-	// Define callback called before each test.
-	ccvSuite.setupCallback = func(t *testing.T) (
+	// Define callback to set up the provider chain
+	ccvSuite.setupProviderCallback = func(t *testing.T) (
 		*ibctesting.Coordinator,
 		*ibctesting.TestChain,
 		e2eutil.ProviderApp,
-		map[string]*icstestingutils.ConsumerBundle,
 	) {
 		// Instantiate the test coordinator.
 		coordinator := ibctesting.NewCoordinator(t, 0)
 
 		// Add provider to coordinator, store returned test chain and app.
 		// Concrete provider app type is passed to the generic function here.
-		provider, providerApp := icstestingutils.AddProvider[Tp](
-			coordinator, t, providerAppIniter)
-
-		numConsumers := 5
-
-		// Add specified number of consumers to coordinator, store returned test chains and apps.
-		// Concrete consumer app type is passed to the generic function here.
-		consumerBundles := icstestingutils.AddConsumers[Tc](
-			coordinator, t, numConsumers, consumerAppIniter)
+		provider, providerApp := icstestingutils.AddProvider[Tp](coordinator, t, providerAppIniter)
 
 		// Pass variables to suite.
-		return coordinator, provider, providerApp, consumerBundles
+		return coordinator, provider, providerApp
+	}
+
+	ccvSuite.setupConsumerCallback = func(
+		s *suite.Suite,
+		coordinator *ibctesting.Coordinator,
+		index int,
+	) *icstestingutils.ConsumerBundle {
+		return icstestingutils.AddConsumer[Tp, Tc](coordinator, s, index, consumerAppIniter)
 	}
 
 	ccvSuite.skippedTests = make(map[string]bool)
@@ -85,15 +94,6 @@ func NewCCVTestSuite[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 	}
 	return ccvSuite
 }
-
-// Callback for instantiating a new coordinator, provider/consumer test chains, and provider/consumer apps
-// before every test defined on the suite.
-type SetupCallback func(t *testing.T) (
-	coord *ibctesting.Coordinator,
-	providerChain *ibctesting.TestChain,
-	providerApp e2eutil.ProviderApp,
-	consumerBundles map[string]*icstestingutils.ConsumerBundle,
-)
 
 func (suite *CCVTestSuite) BeforeTest(suiteName, testName string) {
 	if suite.skippedTests[testName] {
@@ -104,43 +104,18 @@ func (suite *CCVTestSuite) BeforeTest(suiteName, testName string) {
 // SetupTest sets up in-mem state before every test
 func (suite *CCVTestSuite) SetupTest() {
 
-	// Instantiate new test utils using callback
+	// Instantiate new coordinator and provider chain using callback
 	suite.coordinator, suite.providerChain,
-		suite.providerApp, suite.consumerBundles = suite.setupCallback(suite.T())
-
-	// valsets must match between provider and all consumers
-	for _, bundle := range suite.consumerBundles {
-
-		providerValUpdates := tmtypes.TM2PB.ValidatorUpdates(suite.providerChain.Vals)
-		consumerValUpdates := tmtypes.TM2PB.ValidatorUpdates(bundle.Chain.Vals)
-		suite.Require().True(len(providerValUpdates) == len(consumerValUpdates), "initial valset not matching")
-		for i := 0; i < len(providerValUpdates); i++ {
-			addr1 := utils.GetChangePubKeyAddress(providerValUpdates[i])
-			addr2 := utils.GetChangePubKeyAddress(consumerValUpdates[i])
-			suite.Require().True(bytes.Equal(addr1, addr2), "validator mismatch")
-		}
-		// Move each consumer to next block
-		bundle.Chain.NextBlock()
-	}
-
-	// move provider to next block
-	suite.providerChain.NextBlock()
-
+		suite.providerApp = suite.setupProviderCallback(suite.T())
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 
-	for chainID, bundle := range suite.consumerBundles {
-		// For each consumer, create client to that consumer on the provider chain.
-		err := providerKeeper.CreateConsumerClient(
-			suite.providerCtx(),
-			chainID,
-			bundle.Chain.LastHeader.GetHeight().(clienttypes.Height),
-			false,
-		)
-		suite.Require().NoError(err)
+	// start consumer chains
+	numConsumers := 5
+	suite.consumerBundles = make(map[string]*icstestingutils.ConsumerBundle)
+	for i := 0; i < numConsumers; i++ {
+		bundle := suite.setupConsumerCallback(&suite.Suite, suite.coordinator, i)
+		suite.consumerBundles[bundle.Chain.ChainID] = bundle
 	}
-
-	// move provider to next block to commit the state
-	suite.providerChain.NextBlock()
 
 	// initialize each consumer chain with it's corresponding genesis state
 	// stored on the provider.
@@ -182,7 +157,7 @@ func (suite *CCVTestSuite) SetupTest() {
 		// since these IBC testing package fields are unused in our tests.
 
 		// Confirm client config is now correct
-		suite.ValidateEndpointsClientConfig(*bundle)
+		suite.validateEndpointsClientConfig(*bundle)
 
 		// - channel config
 		bundle.Path.EndpointA.ChannelConfig.PortID = ccv.ConsumerPortID
@@ -198,6 +173,20 @@ func (suite *CCVTestSuite) SetupTest() {
 		bundle.TransferPath.EndpointB.ChannelConfig.PortID = transfertypes.PortID
 		bundle.TransferPath.EndpointA.ChannelConfig.Version = transfertypes.Version
 		bundle.TransferPath.EndpointB.ChannelConfig.Version = transfertypes.Version
+
+		// commit state on this consumer chain
+		suite.coordinator.CommitBlock(bundle.Chain)
+	}
+
+	// try updating all clients
+	for _, bundle := range suite.consumerBundles {
+		// try updating this consumer client on the provider chain
+		err := bundle.Path.EndpointB.UpdateClient()
+		suite.Require().NoError(err)
+
+		// try updating the provider client on this consumer chain
+		err = bundle.Path.EndpointA.UpdateClient()
+		suite.Require().NoError(err)
 	}
 
 	// Support tests that were written before multiple consumers were supported.
@@ -206,6 +195,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	suite.consumerChain = firstBundle.Chain
 	suite.path = firstBundle.Path
 	suite.transferPath = firstBundle.TransferPath
+
 }
 
 func (suite *CCVTestSuite) SetupAllCCVChannels() {
@@ -215,11 +205,6 @@ func (suite *CCVTestSuite) SetupAllCCVChannels() {
 }
 
 func (suite *CCVTestSuite) SetupCCVChannel(path *ibctesting.Path) {
-	suite.StartSetupCCVChannel(path)
-	suite.CompleteSetupCCVChannel(path)
-}
-
-func (suite *CCVTestSuite) StartSetupCCVChannel(path *ibctesting.Path) {
 	suite.coordinator.CreateConnections(path)
 
 	err := path.EndpointA.ChanOpenInit()
@@ -227,10 +212,8 @@ func (suite *CCVTestSuite) StartSetupCCVChannel(path *ibctesting.Path) {
 
 	err = path.EndpointB.ChanOpenTry()
 	suite.Require().NoError(err)
-}
 
-func (suite *CCVTestSuite) CompleteSetupCCVChannel(path *ibctesting.Path) {
-	err := path.EndpointA.ChanOpenAck()
+	err = path.EndpointA.ChanOpenAck()
 	suite.Require().NoError(err)
 
 	err = path.EndpointB.ChanOpenConfirm()
@@ -272,7 +255,7 @@ func (suite *CCVTestSuite) SetupTransferChannel() {
 	suite.Require().NoError(err)
 }
 
-func (s CCVTestSuite) ValidateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) {
+func (s CCVTestSuite) validateEndpointsClientConfig(consumerBundle icstestingutils.ConsumerBundle) {
 	consumerKeeper := consumerBundle.GetKeeper()
 	providerStakingKeeper := s.providerApp.GetStakingKeeper()
 
