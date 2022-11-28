@@ -777,14 +777,16 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 	}
 	for i := NUM_VALIDATORS; i < NUM_ASSIGNABLE_KEYS+NUM_VALIDATORS; i++ {
 		// ATTENTION: uses a different domain of keys for assignments
-		// TODO: allow consumer identities to overlap with provider identities
+		//
+		// (TODO: allow consumer identities to overlap with provider identities
 		// this will be enabled after the testnet
-		// see https://github.com/cosmos/interchain-security/issues/503
+		// see https://github.com/cosmos/interchain-security/issues/503)
+		//
 		consumerIdentities = append(consumerIdentities, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
 	}
 
-	// Mimic creation of staking module EndBlock updates
-	stakingUpdates := func() (ret []abci.ValidatorUpdate) {
+	// Mimics creation of staking module EndBlock updates
+	getStakingUpdates := func() (ret []abci.ValidatorUpdate) {
 		// Get a random set of validators to update
 		validators := rand.Perm(NUM_VALIDATORS)[0:rand.Intn(NUM_VALIDATORS+1)]
 		for _, i := range validators {
@@ -799,6 +801,7 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 		return
 	}
 
+	// Run a randomly simulated execution and test that desired properties hold
 	runRandomExecution := func() {
 
 		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -847,12 +850,12 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 		k.SetConsumerClientId(ctx, CHAINID, "")
 
 		// Initialise validator powers for, potentially, all validators
-		updates := stakingUpdates()
+		updates := getStakingUpdates()
 		applyUpdates(updates)
 
-		lastPrunedVscid := -1
+		greatestPrunedVSCID := -1
 
-		for ignore := 0; ignore < NUM_BLOCKS_PER_EXECUTION; ignore++ {
+		for block := 0; block < NUM_BLOCKS_PER_EXECUTION; block++ {
 
 			// Do some random key assignment actions
 			for i, numAssignments := 0, rand.Intn(NUM_ASSIGNMENTS_PER_BLOCK_MAX); i < numAssignments; i++ {
@@ -864,16 +867,15 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 				ck := consumerIdentities[randomIxC].TMProtoCryptoPublicKey()
 				// ignore err return, it can be possible for an error to occur
 				_ = k.AssignConsumerKey(ctx, CHAINID, val, ck)
-				_, _ = val, ck
 			}
 
-			updates := stakingUpdates()
+			updates := getStakingUpdates()
 			applyUpdates(updates)
 
-			// TODO: this will have to be moved/ rework in order to adequately test slash lookups
-			prunedVscid := lastPrunedVscid + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1)
+			// Prune all assignments up to some vscid
+			prunedVscid := greatestPrunedVSCID + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1)
 			k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
-			lastPrunedVscid = prunedVscid
+			greatestPrunedVSCID = prunedVscid
 
 			// Check validator set replication forward direction
 			for i, idP := range providerValset.identities {
@@ -886,15 +888,12 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 						ck = idP.TMProtoCryptoPublicKey()
 					}
 					consC := utils.TMCryptoPublicKeyToConsAddr(ck)
-					// Find the corresponding consumer validator
-					didFind := false
+					// Find the corresponding consumer validator (must always be found)
 					for j, idC := range consumerValset.identities {
 						if consC.Equals(idC.SDKConsAddress()) {
-							didFind = true
 							require.Equal(t, providerValset.power[i], consumerValset.power[j])
 						}
 					}
-					require.True(t, didFind)
 				}
 			}
 			// Check validator set replication backward direction
@@ -904,15 +903,12 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 				if 0 < consumerValset.power[i] {
 					// Get the provider who assigned the key
 					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
-					// Find the corresponding provider validator
-					didFind := false
+					// Find the corresponding provider validator (must always be found)
 					for j, idP := range providerValset.identities {
 						if idP.SDKConsAddress().Equals(consP) {
-							didFind = true
 							require.Equal(t, providerValset.power[j], consumerValset.power[i])
 						}
 					}
-					require.True(t, didFind)
 				}
 			}
 
@@ -920,8 +916,8 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 
 			require.True(t, checkCorrectPruningProperty(ctx, k, CHAINID))
 
-			ctrl.Finish()
 		}
+		ctrl.Finish()
 	}
 
 	for i := 0; i < NUM_EXECUTIONS; i++ {
