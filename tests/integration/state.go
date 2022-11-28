@@ -23,7 +23,8 @@ type ChainState struct {
 	Params               *[]Param
 	Rewards              *Rewards
 	ConsumerChains       *map[chainID]bool
-	AssignedKeys         *map[validatorID]string // TODO: support multiple chains
+	AssignedKeys         *map[validatorID]string
+	ProviderKeys         *map[validatorID]string // validatorID: validator provider key
 }
 
 type Proposal interface {
@@ -134,6 +135,11 @@ func (tr TestRun) getChainState(chain chainID, modelState ChainState) ChainState
 	if modelState.AssignedKeys != nil {
 		assignedKeys := tr.getConsumerAddresses(chain, *modelState.AssignedKeys)
 		chainState.AssignedKeys = &assignedKeys
+	}
+
+	if modelState.ProviderKeys != nil {
+		providerKeys := tr.getProviderAddresses(chain, *modelState.ProviderKeys)
+		chainState.ProviderKeys = &providerKeys
 	}
 
 	return chainState
@@ -520,6 +526,15 @@ func (tr TestRun) getConsumerAddresses(chain chainID, modelState map[validatorID
 	actualState := map[validatorID]string{}
 	for k := range modelState {
 		actualState[k] = tr.getConsumerAddress(chain, k)
+	}
+
+	return actualState
+}
+
+func (tr TestRun) getProviderAddresses(chain chainID, modelState map[validatorID]string) map[validatorID]string {
+	actualState := map[validatorID]string{}
+	for k := range modelState {
+		actualState[k] = tr.getProviderAddressFromConsumer(chain, k)
 	}
 
 	return actualState

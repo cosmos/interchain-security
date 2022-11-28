@@ -154,7 +154,7 @@ func CmdConsumerStopProposals() *cobra.Command {
 
 // TODO: fix naming
 func CmdConsumerValidatorKeyAssignment() *cobra.Command {
-	bech32PrefixValAddr := sdk.GetConfig().GetBech32ValidatorAddrPrefix()
+	bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
 	cmd := &cobra.Command{
 		Use:   "validator-consumer-key [chainid] [provider-validator-address]",
 		Short: "Query assigned validator consensus public key for a consumer chain",
@@ -164,7 +164,7 @@ consumer chain, if one has been assigned.
 Example:
 $ %s query provider validator-consumer-key foochain %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 `,
-				version.AppName, bech32PrefixValAddr,
+				version.AppName, bech32PrefixConsAddr,
 			),
 		),
 		Args: cobra.ExactArgs(2),
@@ -202,7 +202,7 @@ $ %s query provider validator-consumer-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 
 // TODO: fix naming
 func CmdProviderValidatorKey() *cobra.Command {
-	bech32PrefixValAddr := sdk.GetConfig().GetBech32ValidatorAddrPrefix()
+	bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
 	cmd := &cobra.Command{
 		Use:   "validator-provider-key [chainid] [consumer-validator-address]",
 		Short: "Query validator consensus public key for the provider chain",
@@ -211,7 +211,7 @@ func CmdProviderValidatorKey() *cobra.Command {
 Example:
 $ %s query provider validator-provider-key foochain %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 `,
-				version.AppName, bech32PrefixValAddr,
+				version.AppName, bech32PrefixConsAddr,
 			),
 		),
 		Args: cobra.ExactArgs(2),
@@ -224,7 +224,7 @@ $ %s query provider validator-provider-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 
 			consumerChainID := args[0]
 
-			addr, err := sdk.ValAddressFromBech32(args[1])
+			addr, err := sdk.ConsAddressFromBech32(args[1])
 			if err != nil {
 				return err
 			}

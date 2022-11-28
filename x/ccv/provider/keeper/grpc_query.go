@@ -109,9 +109,7 @@ func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.Que
 
 	providerAddr, found := k.GetValidatorByConsumerAddr(ctx, req.ChainId, consumerAddr)
 	if !found {
-		return &types.QueryValidatorProviderAddrResponse{
-			ProviderAddress: providerAddr.String(),
-		}, nil
+		return &types.QueryValidatorProviderAddrResponse{}, nil
 	}
 
 	return &types.QueryValidatorProviderAddrResponse{

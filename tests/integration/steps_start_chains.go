@@ -73,6 +73,9 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 					AssignedKeys: &map[validatorID]string{
 						validatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
 					},
+					ProviderKeys: &map[validatorID]string{
+						validatorID("carol"): "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
+					},
 				},
 			},
 		},
@@ -203,6 +206,10 @@ func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step
 						validatorID("bob"):   "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
 						validatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
 					},
+					ProviderKeys: &map[validatorID]string{
+						validatorID("bob"):   "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+						validatorID("carol"): "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
+					},
 				},
 			},
 		},
@@ -224,6 +231,10 @@ func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step
 					AssignedKeys: &map[validatorID]string{
 						validatorID("bob"):   "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
 						validatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
+					},
+					ProviderKeys: &map[validatorID]string{
+						validatorID("bob"):   "cosmosvalcons1nx7n5uh0ztxsynn4sje6eyq2ud6rc6klc96w39",
+						validatorID("carol"): "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
 					},
 				},
 			},
