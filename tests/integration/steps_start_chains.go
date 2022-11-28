@@ -58,7 +58,7 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 			},
 		},
 		// add a consumer key before the chain starts
-		// the key will be presend in consumer genesis initial_val_set
+		// the key will be present in consumer genesis initial_val_set
 		{
 			action: assignConsumerPubKeyAction{
 				chain:     chainID(consumerName),
@@ -178,4 +178,55 @@ func stepsStartChains(consumerNames []string, setupTransferChans bool) []Step {
 	}
 
 	return s
+}
+
+func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step {
+	return []Step{
+		{
+			action: assignConsumerPubKeyAction{
+				chain:     chainID(consumerName),
+				validator: validatorID("bob"),
+				// reconfigure the node -> validator was using provider key
+				// until this point
+				reconfigureNode: true,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						// this happens after some delegations
+						// so that the chain does not halt if 1/3 of power is offline
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+					AssignedKeys: &map[validatorID]string{
+						validatorID("bob"):   "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
+						validatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chain:   chainID("provi"),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						// this happens after some delegations
+						// so that the chain does not halt if 1/3 of power is offline
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+					AssignedKeys: &map[validatorID]string{
+						validatorID("bob"):   "cosmosvalcons1uuec3cjxajv5te08p220usrjhkfhg9wyvqn0tm",
+						validatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
+					},
+				},
+			},
+		},
+	}
 }

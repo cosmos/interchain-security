@@ -152,8 +152,7 @@ func CmdConsumerStopProposals() *cobra.Command {
 	return cmd
 }
 
-// TODO: fix naming and query cmd name in
-// This query gets address on the consumer using the chainID and provider addr
+// TODO: fix naming
 func CmdConsumerValidatorKeyAssignment() *cobra.Command {
 	bech32PrefixValAddr := sdk.GetConfig().GetBech32ValidatorAddrPrefix()
 	cmd := &cobra.Command{
@@ -202,8 +201,6 @@ $ %s query provider validator-consumer-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 }
 
 // TODO: fix naming
-// This query gets provider address by checking consumer address on chainID
-// -> name something like validator-provider-key-from-consumer-key (to long...)
 func CmdProviderValidatorKey() *cobra.Command {
 	bech32PrefixValAddr := sdk.GetConfig().GetBech32ValidatorAddrPrefix()
 	cmd := &cobra.Command{

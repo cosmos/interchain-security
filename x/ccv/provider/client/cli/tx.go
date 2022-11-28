@@ -43,8 +43,17 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).
 				WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
-			txf, msg, err := newAssignConsumerKey(clientCtx, txf, args[0], args[1])
+			providerValAddr := clientCtx.GetFromAddress()
+			var consumerPubKey cryptotypes.PubKey
+			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(args[1]), &consumerPubKey); err != nil {
+				return err
+			}
+
+			msg, err := types.NewMsgAssignConsumerKey(args[0], sdk.ValAddress(providerValAddr), consumerPubKey)
 			if err != nil {
+				return err
+			}
+			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
 
@@ -57,23 +66,4 @@ func NewAssignConsumerKeyCmd() *cobra.Command {
 	_ = cmd.MarkFlagRequired(flags.FlagFrom)
 
 	return cmd
-}
-
-// TODO: maybe remove
-func newAssignConsumerKey(clientCtx client.Context, txf tx.Factory, chainId, consumerPubKeyStr string) (tx.Factory, *types.MsgAssignConsumerKey, error) {
-	providerValAddr := clientCtx.GetFromAddress()
-	var consumerPubKey cryptotypes.PubKey
-	if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(consumerPubKeyStr), &consumerPubKey); err != nil {
-		return txf, nil, err
-	}
-
-	msg, err := types.NewMsgAssignConsumerKey(chainId, sdk.ValAddress(providerValAddr), consumerPubKey)
-	if err != nil {
-		return txf, nil, err
-	}
-	if err := msg.ValidateBasic(); err != nil {
-		return txf, nil, err
-	}
-
-	return txf, msg, nil
 }

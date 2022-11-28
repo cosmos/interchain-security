@@ -868,24 +868,25 @@ func (tr TestRun) unbondTokens(
 }
 
 type redelegateTokensAction struct {
-	chain              chainID
-	src                validatorID
-	dst                validatorID
-	txSender           validatorID
-	amount             uint
-	useSrcConsumerKey  bool
-	useDestConsumerKey bool
+	chain    chainID
+	src      validatorID
+	dst      validatorID
+	txSender validatorID
+	amount   uint
 }
 
 func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) {
-	redelegateSrc := tr.validatorConfigs[action.src].valoperAddress
-	if action.chain != chainID("provi") && action.useSrcConsumerKey {
-		redelegateSrc = tr.validatorConfigs[action.src].consumerValoperAddress
+	srcCfg := tr.validatorConfigs[action.src]
+	dstCfg := tr.validatorConfigs[action.dst]
+
+	redelegateSrc := srcCfg.valoperAddress
+	if action.chain != chainID("provi") && srcCfg.useConsumerKey {
+		redelegateSrc = srcCfg.consumerValoperAddress
 	}
 
-	redelegateDst := tr.validatorConfigs[action.dst].valoperAddress
-	if action.chain != chainID("provi") && action.useDestConsumerKey {
-		redelegateDst = tr.validatorConfigs[action.dst].consumerValoperAddress
+	redelegateDst := dstCfg.valoperAddress
+	if action.chain != chainID("provi") && dstCfg.useConsumerKey {
+		redelegateDst = dstCfg.consumerValoperAddress
 	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
@@ -1096,27 +1097,6 @@ type assignConsumerPubKeyAction struct {
 func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbose bool) {
 	valCfg := tr.validatorConfigs[action.validator]
 
-	// node was started with provider key
-	// we swap the nodes's keys for consumer keys and restart it
-	if action.reconfigureNode {
-		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
-		configureNodeCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
-			"/testnet-scripts/reconfigure-node.sh", tr.chainConfigs[action.chain].binaryName,
-			string(action.validator), string(action.chain),
-			tr.chainConfigs[action.chain].ipPrefix, valCfg.ipSuffix,
-			valCfg.consumerMnemonic, valCfg.consumerPrivValidatorKey,
-		)
-		fmt.Println("assignConsumerPubKey - reconfigure node cmd:", configureNodeCmd.String())
-		if verbose {
-			fmt.Println("assignConsumerPubKey - reconfigure node cmd:", configureNodeCmd.String())
-		}
-
-		bz, err := configureNodeCmd.CombinedOutput()
-		if err != nil {
-			log.Fatal(err, "\n", string(bz))
-		}
-	}
-
 	assignKey := fmt.Sprintf(
 		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 900000 --keyring-backend test -b block -y`,
 		tr.chainConfigs[chainID("provi")].binaryName,
@@ -1134,8 +1114,6 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		assignKey,
 	)
 
-	fmt.Println("assignConsumerPubKey cmd:", cmd.String())
-
 	if verbose {
 		fmt.Println("assignConsumerPubKey cmd:", cmd.String())
 	}
@@ -1144,4 +1122,52 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
 	}
+
+	// node was started with provider key
+	// we swap the nodes's keys for consumer keys and restart it
+	if action.reconfigureNode {
+		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+		configureNodeCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
+			"/testnet-scripts/reconfigure-node.sh", tr.chainConfigs[action.chain].binaryName,
+			string(action.validator), string(action.chain),
+			tr.chainConfigs[action.chain].ipPrefix, valCfg.ipSuffix,
+			valCfg.consumerMnemonic, valCfg.consumerPrivValidatorKey,
+			valCfg.consumerNodeKey,
+		)
+
+		if verbose {
+			fmt.Println("assignConsumerPubKey - reconfigure node cmd:", configureNodeCmd.String())
+		}
+
+		cmdReader, err := configureNodeCmd.StdoutPipe()
+		if err != nil {
+			log.Fatal(err)
+		}
+		configureNodeCmd.Stderr = configureNodeCmd.Stdout
+
+		if err := configureNodeCmd.Start(); err != nil {
+			log.Fatal(err)
+		}
+
+		scanner := bufio.NewScanner(cmdReader)
+
+		for scanner.Scan() {
+			out := scanner.Text()
+			if verbose {
+				fmt.Println("assign key - reconfigure: " + out)
+
+			}
+			if out == "done!!!!!!!!" {
+				break
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+
+		// make the validator use consumer key
+		valCfg.useConsumerKey = true
+		tr.validatorConfigs[action.validator] = valCfg
+	}
+
 }
