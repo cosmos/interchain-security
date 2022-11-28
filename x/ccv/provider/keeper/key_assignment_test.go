@@ -776,7 +776,7 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 	for i := 0; i < NUM_VALIDATORS; i++ {
 		providerIdentities = append(providerIdentities, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
 	}
-	for i := NUM_VALIDATORS; i < NUM_VALIDATORS+NUM_ASSIGNABLE_KEYS; i++ {
+	for i := NUM_VALIDATORS; i < NUM_ASSIGNABLE_KEYS+NUM_VALIDATORS; i++ {
 		// ATTENTION: uses a different domain of keys for assignments
 		// TODO: allow consumer identities to overlap with provider identities
 		// this will be enabled after the testnet
@@ -786,12 +786,15 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 
 	// Mimic creation of staking module EndBlock updates
 	stakingUpdates := func() (ret []abci.ValidatorUpdate) {
+		fmt.Println("staking updates")
+
 		// Get a random set of validators to update
 		validators := rand.Perm(NUM_VALIDATORS)[0:rand.Intn(NUM_VALIDATORS+1)]
 		for _, i := range validators {
 			// Power 0, 1, or 2 represents
 			// deletion, update (from 0 or 2), update (from 0 or 1)
 			power := rand.Intn(3)
+			fmt.Printf("update (val,power):(%d,%d)\n", i, power)
 			ret = append(ret, abci.ValidatorUpdate{
 				PubKey: providerIdentities[i].TMProtoCryptoPublicKey(),
 				Power:  int64(power),
@@ -813,8 +816,12 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 			providerValset.apply(updates)
 
 			for i, id := range providerValset.identities {
+				fmt.Println("set power for i", i, providerValset.power[i])
+
 				mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
-					ctx, id.SDKValAddress()).Return(providerValset.power[i]).AnyTimes()
+					ctx,
+					id.SDKStakingValidator().GetOperator(),
+				).Return(providerValset.power[i]).MaxTimes(1)
 				_, _ = i, id
 			}
 
@@ -823,19 +830,21 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 			consumerValset.apply(updates)
 		}
 
+		// TODO: bring back
 		// Get an initial set of validators on the provider chain
 		initialValidators := rand.Perm(NUM_VALIDATORS)[0:rand.Intn(NUM_VALIDATORS+1)]
+		_ = initialValidators
 		// For each initial validator, do some random consumer key actions
 		// this tests the case that the chain has not yet been registered.
 		for j, numIts := 0, rand.Intn(10); j < numIts; j++ {
-			for i := range initialValidators {
-				// Do random assignments
-				val := providerIdentities[i].SDKStakingValidator()
-				ck := consumerIdentities[i].TMProtoCryptoPublicKey() // TODO: randomize
-				// ignore err return, it can be possible for an error to occur
-				// _ = k.AssignConsumerKey(ctx, CHAINID, val, ck)
-				_, _ = val, ck
-			}
+			// for i := range initialValidators {
+			// Do random assignments
+			// val := providerIdentities[i].SDKStakingValidator()
+			// ck := consumerIdentities[i].TMProtoCryptoPublicKey() // TODO: randomize
+			// ignore err return, it can be possible for an error to occur
+			// _ = k.AssignConsumerKey(ctx, CHAINID, val, ck)
+			// _, _ = val, ck
+			// }
 		}
 
 		// Register the consumer key
@@ -853,11 +862,11 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 			// Do some random key assignment actions
 			for i, numAssignments := 0, rand.Intn(6); i < numAssignments; i++ {
 				randomIxP := rand.Intn(NUM_VALIDATORS)
-				fmt.Println("randomIxP", randomIxP)
+				fmt.Println("randomIxP (provider valset ix)", randomIxP)
 				val := providerIdentities[randomIxP].SDKStakingValidator()
 
 				randomIxC := rand.Intn(NUM_ASSIGNABLE_KEYS)
-				fmt.Println("randomIxC", randomIxC)
+				fmt.Println("randomIxC (consumer valset ix)", randomIxC+NUM_VALIDATORS)
 
 				ck := consumerIdentities[randomIxC].TMProtoCryptoPublicKey()
 				// ignore err return, it can be possible for an error to occur
@@ -885,11 +894,14 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 					}
 					consC := utils.TMCryptoPublicKeyToConsAddr(ck)
 					// Find the corresponding consumer validator
+					didFind := false
 					for j, idC := range consumerValset.identities {
 						if consC.Equals(idC.SDKConsAddress()) {
+							didFind = true
 							require.Equal(t, providerValset.power[i], consumerValset.power[j])
 						}
 					}
+					require.True(t, didFind)
 				}
 			}
 			// Check validator set replication backward direction
@@ -900,11 +912,14 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 					// Get the provider who assigned the key
 					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
 					// Find the corresponding provider validator
+					didFind := false
 					for j, idP := range providerValset.identities {
 						if idP.SDKConsAddress().Equals(consP) {
+							didFind = true
 							require.Equal(t, providerValset.power[j], consumerValset.power[i])
 						}
 					}
+					require.True(t, didFind)
 				}
 			}
 
