@@ -1,14 +1,11 @@
 package types
 
 import (
-	"bytes"
-
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // NewInitialGenesisState returns a consumer GenesisState for a completely new consumer chain.
@@ -113,17 +110,6 @@ func (gs GenesisState) Validate() error {
 		}
 		if gs.LastTransmissionBlockHeight.Height != 0 {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "last transmission block height must be empty for new chain")
-		}
-
-		// ensure that initial validator set is same as initial consensus state on provider client.
-		// this will be verified by provider module on channel handshake.
-		vals, err := tmtypes.PB2TM.ValidatorUpdates(gs.InitialValSet)
-		if err != nil {
-			return sdkerrors.Wrap(err, "could not convert val updates to validator set")
-		}
-		valSet := tmtypes.NewValidatorSet(vals)
-		if !bytes.Equal(gs.ProviderConsensusState.NextValidatorsHash, valSet.Hash()) {
-			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "initial validators does not hash to NextValidatorsHash on provider client")
 		}
 	} else {
 		// NOTE: For restart genesis, we will verify initial validator set in InitGenesis.

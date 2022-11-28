@@ -80,7 +80,7 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *r
 // GetTxCmd implements AppModuleBasic interface
 // TODO
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
-	return nil
+	return cli.GetTxCmd()
 }
 
 // GetQueryCmd implements AppModuleBasic interface
@@ -125,6 +125,7 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 // RegisterServices registers module services.
 // TODO
 func (am AppModule) RegisterServices(cfg module.Configurator) {
+	providertypes.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 

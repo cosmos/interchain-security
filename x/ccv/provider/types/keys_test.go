@@ -6,6 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 )
@@ -39,11 +40,9 @@ func getSingleByteKeys() [][]byte {
 	keys := make([][]byte, 32)
 	i := 0
 
-	keys[i], i = providertypes.PortKey(), i+1
-	keys[i], i = providertypes.MaturedUnbondingOpsKey(), i+1
-	keys[i], i = providertypes.ValidatorSetUpdateIdKey(), i+1
-	keys[i], i = providertypes.SlashMeterKey(), i+1
-	keys[i], i = providertypes.LastSlashMeterReplenishTimeKey(), i+1
+	keys[i], i = types.PortKey(), i+1
+	keys[i], i = types.MaturedUnbondingOpsKey(), i+1
+	keys[i], i = types.ValidatorSetUpdateIdKey(), i+1
 	keys[i], i = []byte{providertypes.ChainToChannelBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChannelToChainBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChainToClientBytePrefix}, i+1
@@ -59,6 +58,10 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{providertypes.PendingVSCsBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.VscSendTimestampBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.LockUnbondingOnTimeoutBytePrefix}, i+1
+	keys[i], i = []byte{providertypes.ConsumerValidatorsBytePrefix}, i+1
+	keys[i], i = []byte{providertypes.ValidatorsByConsumerAddrBytePrefix}, i+1
+	keys[i], i = []byte{providertypes.KeyAssignmentReplacementsBytePrefix}, i+1
+	keys[i], i = []byte{providertypes.ConsumerAddrsToPruneBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.PendingPacketDataSizeBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.PendingPacketDataBytePrefix}, i+1
 	keys[i] = []byte{providertypes.PendingSlashPacketEntryBytePrefix}
@@ -188,6 +191,38 @@ func TestPendingSlashPacketEntryKeyAndParse(t *testing.T) {
 		parsedRecvTime, parsedChainID := providertypes.ParsePendingSlashPacketEntryKey(key)
 		require.Equal(t, entry.RecvTime, parsedRecvTime)
 		require.Equal(t, entry.ConsumerChainID, parsedChainID)
+	}
+ }
+
+// Tests the construction and parsing of ChainIdAndConsAddr keys
+func TestChainIdAndConsAddrAndParse(t *testing.T) {
+	pubKey1, err := testkeeper.GenPubKey()
+	require.NoError(t, err)
+	pubKey2, err := testkeeper.GenPubKey()
+	require.NoError(t, err)
+	pubKey3, err := testkeeper.GenPubKey()
+	require.NoError(t, err)
+
+	tests := []struct {
+		prefix  byte
+		chainID string
+		addr    sdk.ConsAddress
+	}{
+		{prefix: 0x01, chainID: "1", addr: sdk.ConsAddress(pubKey1.Address())},
+		{prefix: 0x02, chainID: "some other ID", addr: sdk.ConsAddress(pubKey2.Address())},
+		{prefix: 0x03, chainID: "some other other chain ID", addr: sdk.ConsAddress(pubKey3.Address())},
+	}
+
+	for _, test := range tests {
+		key := types.ChainIdAndConsAddrKey(test.prefix, test.chainID, test.addr)
+		require.NotEmpty(t, key)
+		// Expected bytes = prefix + chainID length + chainID + consAddr bytes
+		expectedLen := 1 + 8 + len(test.chainID) + len(test.addr)
+		require.Equal(t, expectedLen, len(key))
+		parsedID, parsedConsAddr, err := types.ParseChainIdAndConsAddrKey(test.prefix, key)
+		require.Equal(t, test.chainID, parsedID)
+		require.Equal(t, test.addr, parsedConsAddr)
+		require.NoError(t, err)
 	}
 }
 

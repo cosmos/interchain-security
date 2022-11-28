@@ -4,9 +4,11 @@ import (
 	"fmt"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
 // Wrapper struct
@@ -65,8 +67,33 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 // Define unimplemented methods to satisfy the StakingHooks contract
 func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
 }
-func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) {
+
+func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) {
+	type StoreKey struct {
+		ChainID      string
+		ProviderAddr sdk.ConsAddress
+	}
+	toDelete := []StoreKey{}
+	h.k.IterateAllValidatorConsumerPubKeys(ctx, func(
+		chainID string,
+		providerAddr sdk.ConsAddress,
+		consumerKey tmprotocrypto.PublicKey,
+	) (stop bool) {
+		if providerAddr.Equals(valConsAddr) {
+			toDelete = append(toDelete, StoreKey{ChainID: chainID, ProviderAddr: providerAddr})
+		}
+		return false // do not stop
+	})
+	for _, key := range toDelete {
+		consumerKey, found := h.k.GetValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
+		if found {
+			consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+			h.k.DeleteValidatorByConsumerAddr(ctx, key.ChainID, consumerAddr)
+			h.k.DeleteValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
+		}
+	}
 }
+
 func (h Hooks) BeforeDelegationCreated(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) {
 }
 func (h Hooks) BeforeDelegationSharesModified(_ sdk.Context, _ sdk.AccAddress, _ sdk.ValAddress) {

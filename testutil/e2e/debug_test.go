@@ -52,10 +52,6 @@ func findAndCallMethod(t *testing.T, suite any, methodName string) {
 // Channel init tests
 //
 
-func TestConsumerGenesis(t *testing.T) {
-	runCCVTestByName(t, "TestConsumerGenesis")
-}
-
 func TestInitTimeout(t *testing.T) {
 	runCCVTestByName(t, "TestInitTimeout")
 }

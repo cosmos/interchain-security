@@ -208,7 +208,6 @@ func (mr *MockStakingKeeperMockRecorder) GetLastValidatorPower(ctx, addr interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastValidatorPower", reflect.TypeOf((*MockStakingKeeper)(nil).GetLastValidatorPower), ctx, addr)
 }
 
-
 // MockSlashingKeeper is a mock of SlashingKeeper interface.
 type MockSlashingKeeper struct {
 	ctrl     *gomock.Controller

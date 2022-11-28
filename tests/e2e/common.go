@@ -230,6 +230,7 @@ func relayAllCommittedPackets(
 	srcPortID string,
 	srcChannelID string,
 	expectedPackets int,
+	msgAndArgs ...interface{},
 ) {
 	// check that the packets are committed in  state
 	commitments := srcChain.App.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
@@ -237,18 +238,26 @@ func relayAllCommittedPackets(
 		srcPortID,
 		srcChannelID,
 	)
-	s.Require().Equal(expectedPackets, len(commitments),
-		"actual number of packet commitments does not match expectation")
+	s.Require().Equal(
+		expectedPackets,
+		len(commitments),
+		fmt.Sprintf("actual number of packet commitments does not match expectation; %s", msgAndArgs...),
+	)
 
 	// relay all packets from srcChain to counterparty
 	for _, commitment := range commitments {
 		// - get packets
 		packet, found := srcChain.GetSentPacket(commitment.Sequence, srcChannelID)
-		s.Require().True(found, "did not find sent packet")
-
+		s.Require().True(
+			found,
+			fmt.Sprintf("did not find sent packet; %s", msgAndArgs...),
+		)
 		// - relay the packet
 		err := path.RelayPacket(packet)
-		s.Require().NoError(err)
+		s.Require().NoError(
+			err,
+			fmt.Sprintf("error while relaying packets; %s", msgAndArgs...),
+		)
 	}
 }
 
