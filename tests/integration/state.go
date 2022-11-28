@@ -543,6 +543,24 @@ func (tr TestRun) getConsumerAddress(consumerChain chainID, validator validatorI
 	return addr
 }
 
+func (tr TestRun) getProviderAddressFromConsumer(consumerChain chainID, validator validatorID) string {
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chainID("provi")].binaryName,
+
+		"query", "provider", "validator-provider-key",
+		string(consumerChain), tr.validatorConfigs[validator].consumerValconsAddress,
+		`--node`, tr.getQueryNode(chainID("provi")),
+		`-o`, `json`,
+	)
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	addr := gjson.Get(string(bz), "provider_address").String()
+	return addr
+}
+
 func (tr TestRun) getValidatorNode(chain chainID, validator validatorID) string {
 	return "tcp://" + tr.getValidatorIP(chain, validator) + ":26658"
 }
