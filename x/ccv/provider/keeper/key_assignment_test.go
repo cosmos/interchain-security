@@ -763,10 +763,12 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 // 3. Call into prune
 func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 
-	NUM_EXECUTIONS := 100
 	CHAINID := "chainID"
+	NUM_EXECUTIONS := 100
+	NUM_BLOCKS_PER_EXECUTION := 100
 	NUM_VALIDATORS := 2
 	NUM_ASSIGNABLE_KEYS := 4
+	NUM_ASSIGNMENTS_PER_BLOCK_MAX := 6
 
 	providerIdentities := []*cryptotestutil.CryptoIdentity{}
 	consumerIdentities := []*cryptotestutil.CryptoIdentity{}
@@ -800,9 +802,9 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 	runRandomExecution := func() {
 
 		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+
 		providerValset := CreateValSet(providerIdentities)
-		// NOTE: consumer must have space for provider identities because default assignment is to provider key
-		// TODO: tidy
+		// NOTE: consumer must have space for provider identities because default key assignments are to provider keys
 		consumerValset := CreateValSet(append(providerIdentities, consumerIdentities...))
 
 		// Mock calls to GetLastValidatorPower to return directly from the providerValset
@@ -815,7 +817,7 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 					return providerValset.power[i]
 				}
 			}
-			panic("not found")
+			panic("must find validator")
 		}).AnyTimes()
 
 		applyUpdates := func(updates []abci.ValidatorUpdate) {
@@ -825,21 +827,20 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 			consumerValset.apply(updates)
 		}
 
-		// TODO: bring back
 		// Get an initial set of validators on the provider chain
 		initialValidators := rand.Perm(NUM_VALIDATORS)[0:rand.Intn(NUM_VALIDATORS+1)]
 		_ = initialValidators
 		// For each initial validator, do some random consumer key actions
 		// this tests the case that the chain has not yet been registered.
 		for j, numIts := 0, rand.Intn(10); j < numIts; j++ {
-			// for i := range initialValidators {
-			// Do random assignments
-			// val := providerIdentities[i].SDKStakingValidator()
-			// ck := consumerIdentities[i].TMProtoCryptoPublicKey() // TODO: randomize
-			// ignore err return, it can be possible for an error to occur
-			// _ = k.AssignConsumerKey(ctx, CHAINID, val, ck)
-			// _, _ = val, ck
-			// }
+			for i := range initialValidators {
+				//	Do random assignments
+				val := providerIdentities[i].SDKStakingValidator()
+				randomIxC := rand.Intn(NUM_ASSIGNABLE_KEYS)
+				ck := consumerIdentities[randomIxC].TMProtoCryptoPublicKey()
+				// ignore err return, we are testing both error and non error cases
+				_ = k.AssignConsumerKey(ctx, CHAINID, val, ck)
+			}
 		}
 
 		// Register the consumer key
@@ -851,10 +852,10 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 
 		lastPrunedVscid := -1
 
-		for ignore := 0; ignore < 100; ignore++ {
+		for ignore := 0; ignore < NUM_BLOCKS_PER_EXECUTION; ignore++ {
 
 			// Do some random key assignment actions
-			for i, numAssignments := 0, rand.Intn(6); i < numAssignments; i++ {
+			for i, numAssignments := 0, rand.Intn(NUM_ASSIGNMENTS_PER_BLOCK_MAX); i < numAssignments; i++ {
 				randomIxP := rand.Intn(NUM_VALIDATORS)
 				val := providerIdentities[randomIxP].SDKStakingValidator()
 
@@ -871,7 +872,7 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 
 			// TODO: this will have to be moved/ rework in order to adequately test slash lookups
 			prunedVscid := lastPrunedVscid + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1)
-			// k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
+			k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
 			lastPrunedVscid = prunedVscid
 
 			// Check validator set replication forward direction
