@@ -776,7 +776,7 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 	for i := 0; i < NUM_VALIDATORS; i++ {
 		providerIdentities = append(providerIdentities, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
 	}
-	for i := 0 + NUM_VALIDATORS; i < NUM_ASSIGNABLE_KEYS+NUM_VALIDATORS; i++ {
+	for i := NUM_VALIDATORS; i < NUM_VALIDATORS+NUM_ASSIGNABLE_KEYS; i++ {
 		// ATTENTION: uses a different domain of keys for assignments
 		// TODO: allow consumer identities to overlap with provider identities
 		// this will be enabled after the testnet
@@ -784,26 +784,29 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 		consumerIdentities = append(consumerIdentities, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
 	}
 
+	// Mimic creation of staking module EndBlock updates
+	stakingUpdates := func() (ret []abci.ValidatorUpdate) {
+		// Get a random set of validators to update
+		validators := rand.Perm(NUM_VALIDATORS)[0:rand.Intn(NUM_VALIDATORS+1)]
+		for _, i := range validators {
+			// Power 0, 1, or 2 represents
+			// deletion, update (from 0 or 2), update (from 0 or 1)
+			power := rand.Intn(3)
+			ret = append(ret, abci.ValidatorUpdate{
+				PubKey: providerIdentities[i].TMProtoCryptoPublicKey(),
+				Power:  int64(power),
+			})
+		}
+		return
+	}
+
 	runRandomExecution := func() {
 
 		k, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		providerValset := CreateValSet(providerIdentities)
-		consumerValset := CreateValSet(consumerIdentities)
-
-		stakingUpdates := func() (ret []abci.ValidatorUpdate) {
-			// Get a random set of validators to update
-			validators := rand.Perm(NUM_VALIDATORS)[0:rand.Intn(NUM_VALIDATORS+1)]
-			for _, i := range validators {
-				// Power 0, 1, or 2 represents
-				// deletion, update (from 0 or 2), update (from 0 or 1)
-				power := rand.Intn(3)
-				ret = append(ret, abci.ValidatorUpdate{
-					PubKey: providerIdentities[i].TMProtoCryptoPublicKey(),
-					Power:  int64(power),
-				})
-			}
-			return
-		}
+		// NOTE: consumer must have space for provider identities because default assignment is to provider key
+		// TODO: tidy
+		consumerValset := CreateValSet(append(providerIdentities, consumerIdentities...))
 
 		applyUpdates := func(updates []abci.ValidatorUpdate) {
 
@@ -830,7 +833,8 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 				val := providerIdentities[i].SDKStakingValidator()
 				ck := consumerIdentities[i].TMProtoCryptoPublicKey() // TODO: randomize
 				// ignore err return, it can be possible for an error to occur
-				_ = k.AssignConsumerKey(ctx, CHAINID, val, ck)
+				// _ = k.AssignConsumerKey(ctx, CHAINID, val, ck)
+				_, _ = val, ck
 			}
 		}
 
@@ -844,14 +848,21 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 		lastPrunedVscid := -1
 
 		for ignore := 0; ignore < 100; ignore++ {
+			fmt.Println("ignore", ignore)
+
 			// Do some random key assignment actions
-			for i, numAssignments := 0, rand.Intn(10); i < numAssignments; i++ {
-				randomIx := rand.Intn(NUM_VALIDATORS)
-				val := providerIdentities[randomIx].SDKStakingValidator()
-				randomIx = rand.Intn(NUM_ASSIGNABLE_KEYS)
-				ck := consumerIdentities[randomIx].TMProtoCryptoPublicKey()
+			for i, numAssignments := 0, rand.Intn(6); i < numAssignments; i++ {
+				randomIxP := rand.Intn(NUM_VALIDATORS)
+				fmt.Println("randomIxP", randomIxP)
+				val := providerIdentities[randomIxP].SDKStakingValidator()
+
+				randomIxC := rand.Intn(NUM_ASSIGNABLE_KEYS)
+				fmt.Println("randomIxC", randomIxC)
+
+				ck := consumerIdentities[randomIxC].TMProtoCryptoPublicKey()
 				// ignore err return, it can be possible for an error to occur
 				_ = k.AssignConsumerKey(ctx, CHAINID, val, ck)
+				_, _ = val, ck
 			}
 
 			updates := stakingUpdates()
@@ -859,7 +870,7 @@ func TestApplyKeyAssignmentToValUpdates(t *testing.T) {
 
 			// TODO: this will have to be moved/ rework in order to adequately test slash lookups
 			prunedVscid := lastPrunedVscid + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1)
-			k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
+			// k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
 			lastPrunedVscid = prunedVscid
 
 			// Check validator set replication forward direction
