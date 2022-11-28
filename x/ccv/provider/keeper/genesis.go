@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 // InitGenesis initializes the CCV provider state and binds to PortID.
@@ -78,6 +79,21 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 	}
 
+	// Import key assignment state
+	for _, item := range genState.ValidatorConsumerPubkeys {
+		k.SetValidatorConsumerPubKey(ctx, item.ChainId, item.ProviderAddr, *item.ConsumerKey)
+	}
+
+	for _, item := range genState.ValidatorsByConsumerAddr {
+		k.SetValidatorByConsumerAddr(ctx, item.ChainId, item.ConsumerAddr, item.ProviderAddr)
+	}
+
+	for _, item := range genState.ConsumerAddrsToPrune {
+		for _, addr := range item.ConsumerAddrs {
+			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.VscId, addr)
+		}
+	}
+
 	k.SetParams(ctx, genState.Params)
 }
 
@@ -121,7 +137,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return false // do not stop the iteration
 	})
 
-	// export provider chain states
+	// export provider chain state
 	vscID := k.GetValidatorSetUpdateId(ctx)
 	vscIDToHeights := []types.ValsetUpdateIdToHeight{}
 	k.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) (stop bool) {
@@ -152,6 +168,37 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return false // do not stop the iteration
 	})
 
+	// Export key assignment states
+	validatorConsumerPubKeys := []types.ValidatorConsumerPubKey{}
+	k.IterateAllValidatorConsumerPubKeys(ctx, func(chainID string, providerAddr sdk.ConsAddress, consumerKey tmcrypto.PublicKey) (stop bool) {
+		validatorConsumerPubKeys = append(validatorConsumerPubKeys, types.ValidatorConsumerPubKey{
+			ChainId:      chainID,
+			ProviderAddr: providerAddr,
+			ConsumerKey:  &consumerKey,
+		})
+		return false // do not stop the iteration
+	})
+
+	validatorsByConsumerAddr := []types.ValidatorByConsumerAddr{}
+	k.IterateAllValidatorsByConsumerAddr(ctx, func(chainID string, consumerAddr sdk.ConsAddress, providerAddr sdk.ConsAddress) (stop bool) {
+		validatorsByConsumerAddr = append(validatorsByConsumerAddr, types.ValidatorByConsumerAddr{
+			ChainId:      chainID,
+			ConsumerAddr: consumerAddr,
+			ProviderAddr: providerAddr,
+		})
+		return false // do not stop the iteration
+	})
+
+	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
+	k.IterateAllConsumerAddrsToPrune(ctx, func(chainID string, vscID uint64, consumerAddrs [][]byte) (stop bool) {
+		consumerAddrsToPrune = append(consumerAddrsToPrune, types.ConsumerAddrsToPrune{
+			ChainId:       chainID,
+			VscId:         vscID,
+			ConsumerAddrs: consumerAddrs,
+		})
+		return false // do not stop the iteration
+	})
+
 	params := k.GetParams(ctx)
 
 	return types.NewGenesisState(
@@ -163,5 +210,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		addProps,
 		remProps,
 		params,
+		validatorConsumerPubKeys,
+		validatorsByConsumerAddr,
+		consumerAddrsToPrune,
 	)
 }

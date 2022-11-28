@@ -9,6 +9,7 @@ import "interchain_security/ccv/v1/ccv.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
 import "interchain_security/ccv/consumer/v1/consumer.proto";
 import "interchain_security/ccv/consumer/v1/genesis.proto";
+import "tendermint/crypto/keys.proto";
 
 
 // GenesisState defines the CCV provider chain genesis state
@@ -35,6 +36,15 @@ message GenesisState {
   repeated ConsumerRemovalProposal consumer_removal_proposals = 7
   [ (gogoproto.nullable) = false ];
   Params params = 8
+  [ (gogoproto.nullable) = false ];
+  // empty for a new chain
+  repeated ValidatorConsumerPubKey validator_consumer_pubkeys = 9
+  [ (gogoproto.nullable) = false ];
+  // empty for a new chain
+  repeated ValidatorByConsumerAddr validators_by_consumer_addr = 10
+  [ (gogoproto.nullable) = false ];
+  // empty for a new chain
+  repeated ConsumerAddrsToPrune consumer_addrs_to_prune = 11
   [ (gogoproto.nullable) = false ];
 }
 
@@ -75,4 +85,28 @@ message UnbondingOpIndex {
 message ValsetUpdateIdToHeight {
     uint64 valset_update_id = 1;
     uint64 height = 2;
+}
+
+// Used to serialize the ValidatorConsumerPubKey index from key assignment
+// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
+message ValidatorConsumerPubKey {
+    string chain_id = 1;
+    bytes provider_addr = 2;
+    tendermint.crypto.PublicKey consumer_key = 3;
+}
+
+// Used to serialize the ValidatorConsumerAddr index from key assignment
+// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
+message ValidatorByConsumerAddr {
+    string chain_id = 1;
+    bytes consumer_addr = 2;
+    bytes provider_addr = 3;
+}
+
+// Used to serialize the ConsumerAddrsToPrune index from key assignment
+// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrsToPrune [][]byte
+message ConsumerAddrsToPrune {
+    string chain_id = 1;
+    uint64 vsc_id = 2;
+    repeated bytes consumer_addrs = 3;
 }
