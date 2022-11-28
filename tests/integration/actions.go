@@ -785,20 +785,20 @@ func (tr TestRun) relayRewardPacketsToProvider(
 }
 
 type delegateTokensAction struct {
-	chain          chainID
-	from           validatorID
-	to             validatorID
-	amount         uint
-	useConsumerKey bool
+	chain  chainID
+	from   validatorID
+	to     validatorID
+	amount uint
 }
 
 func (tr TestRun) delegateTokens(
 	action delegateTokensAction,
 	verbose bool,
 ) {
-	delegateAddr := tr.validatorConfigs[action.to].valoperAddress
-	if action.chain != chainID("provi") && action.useConsumerKey {
-		delegateAddr = tr.validatorConfigs[action.to].consumerValoperAddress
+	toValCfg := tr.validatorConfigs[action.to]
+	delegateAddr := toValCfg.valoperAddress
+	if action.chain != chainID("provi") && toValCfg.useConsumerKey {
+		delegateAddr = toValCfg.consumerValoperAddress
 	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
