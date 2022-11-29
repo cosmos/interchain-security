@@ -65,7 +65,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{providertypes.ConsumerAddrsToPruneBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.PendingPacketDataSizeBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.PendingPacketDataBytePrefix}, i+1
-	keys[i] = []byte{providertypes.PendingSlashPacketEntryBytePrefix}
+	keys[i], i = []byte{providertypes.PendingSlashPacketEntryBytePrefix}, i+1
 
 	return keys[:i]
 }
