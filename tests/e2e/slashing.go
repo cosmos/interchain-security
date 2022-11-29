@@ -19,7 +19,9 @@ import (
 )
 
 const (
+	//nolint
 	downtimeTestCase = iota
+	//nolint
 	doubleSignTestCase
 )
 
