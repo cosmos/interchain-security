@@ -40,13 +40,6 @@ const (
 	// ValidatorSetUpdateIdBytePrefix is the byte prefix that stores the current validator set update id
 	ValidatorSetUpdateIdBytePrefix
 
-	// SlashMeterBytePrefix is the byte prefix for storing the slash meter
-	SlashMeterBytePrefix
-
-	// LastSlashMeterReplenishTimeBytePrefix is the byte prefix for storing
-	// the last time the slash meter was replenished
-	LastSlashMeterReplenishTimeBytePrefix
-
 	// ChainToChannelBytePrefix is the byte prefix for storing mapping
 	// from chainID to the channel ID that is used to send over validator set changes.
 	ChainToChannelBytePrefix
@@ -123,6 +116,13 @@ const (
 	// ConsumerAddrsToPruneBytePrefix is the byte prefix that will store the mapping from VSC ids
 	// to consumer validators addresses needed for pruning
 	ConsumerAddrsToPruneBytePrefix
+
+	// SlashMeterBytePrefix is the byte prefix for storing the slash meter
+	SlashMeterBytePrefix
+
+	// LastSlashMeterReplenishTimeBytePrefix is the byte prefix for storing
+	// the last time the slash meter was replenished
+	LastSlashMeterReplenishTimeBytePrefix
 )
 
 // PortKey returns the key to the port ID in the store
