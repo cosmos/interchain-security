@@ -38,6 +38,7 @@ var democracySteps = concatSteps(
 	stepsDemocracy("democ"),
 )
 
+//nolint
 var multipleConsumers = concatSteps(
 	stepsStartChains([]string{"consu", "densu"}, false),
 	stepsMultiConsumerDelegate("consu", "densu"),
