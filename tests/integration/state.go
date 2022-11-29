@@ -277,11 +277,11 @@ func (tr TestRun) getReward(chain chainID, validator validatorID, blockHeight ui
 }
 
 func (tr TestRun) getBalance(chain chainID, validator validatorID) uint {
-	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	valDelAddress := tr.validatorConfigs[validator].delAddress
 	if chain != chainID("provi") && tr.validatorConfigs[validator].useConsumerKey {
 		valDelAddress = tr.validatorConfigs[validator].consumerDelAddress
 	}
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	bz, err := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chain].binaryName,
 
 		"query", "bank", "balances",
