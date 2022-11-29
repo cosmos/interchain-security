@@ -267,35 +267,46 @@ func (k Keeper) IncrementPendingPacketDataSize(ctx sdktypes.Context, consumerCha
 // Note: This queue is shared between pending slash packet data and pending vsc matured packet data
 func (k Keeper) QueuePendingSlashPacketData(
 	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData) {
-
-	k.PanicIfTooMuchPendingPacketData(ctx, consumerChainID)
-
-	store := ctx.KVStore(k.storeKey)
-	bz, err := data.Marshal()
-	if err != nil {
-		panic(fmt.Sprintf("failed to marshal slash packet data: %v", err))
-	}
-	bz = append([]byte{slashPacketData}, bz...)
-	store.Set(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum), bz)
-
-	k.IncrementPendingPacketDataSize(ctx, consumerChainID)
+	k.QueuePendingPacketData(ctx, consumerChainID, ibcSeqNum, data)
 }
 
 // QueuePendingVSCMaturedPacketData queues the given vsc matured packet data for the given consumer chain's queue
 // Note: This queue is shared between pending slash packet data and pending vsc matured packet data
 func (k Keeper) QueuePendingVSCMaturedPacketData(
 	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData) {
+	k.QueuePendingPacketData(ctx, consumerChainID, ibcSeqNum, data)
+}
+
+// QueuePendingPacketData queues a slash packet data or vsc matured packet data instance
+// for the given consumer chain's queue. This method is either used by tests, or called
+// by higher level methods with type assertion.
+func (k Keeper) QueuePendingPacketData(
+	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{}) {
 
 	k.PanicIfTooMuchPendingPacketData(ctx, consumerChainID)
 
 	store := ctx.KVStore(k.storeKey)
-	bz, err := data.Marshal()
-	if err != nil {
-		panic(fmt.Sprintf("failed to marshal vsc matured packet data: %v", err))
-	}
-	bz = append([]byte{vscMaturedPacketData}, bz...)
-	store.Set(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum), bz)
 
+	var bz []byte
+	var err error
+	switch data := packetData.(type) {
+	case ccvtypes.SlashPacketData:
+		bz, err = data.Marshal()
+		if err != nil {
+			panic(fmt.Sprintf("failed to marshal slash packet data: %v", err))
+		}
+		bz = append([]byte{slashPacketData}, bz...)
+	case ccvtypes.VSCMaturedPacketData:
+		bz, err = data.Marshal()
+		if err != nil {
+			panic(fmt.Sprintf("failed to marshal vsc matured packet data: %v", err))
+		}
+		bz = append([]byte{vscMaturedPacketData}, bz...)
+	default:
+		panic(fmt.Sprintf("unexpected packet data type: %T", data))
+	}
+
+	store.Set(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum), bz)
 	k.IncrementPendingPacketDataSize(ctx, consumerChainID)
 }
 

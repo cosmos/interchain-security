@@ -116,7 +116,7 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 
 	// Now queue a slash packet data instance for chain-2, then confirm the on recv method
 	// queues the vsc matured behind the slash packet data
-	queuePendingPacketData(ctx, &providerKeeper, "chain-2", 1, testkeeper.GetNewSlashPacketData())
+	providerKeeper.QueuePendingPacketData(ctx, "chain-2", 1, testkeeper.GetNewSlashPacketData())
 	ack = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 2)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 	require.Equal(t, uint64(2), providerKeeper.GetPendingPacketDataSize(ctx, "chain-2"))

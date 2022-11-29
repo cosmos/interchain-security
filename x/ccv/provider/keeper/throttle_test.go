@@ -124,7 +124,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 
 		// Queue pending packet data, where chainID is arbitrary, and ibc seq number is index of the data instance
 		for i, data := range tc.dataToQueue {
-			queuePendingPacketData(ctx, &providerKeeper, tc.chainID, uint64(i), data)
+			providerKeeper.QueuePendingPacketData(ctx, tc.chainID, uint64(i), data)
 		}
 
 		// Define our handler callbacks to simply store the data instances that are handled
@@ -234,7 +234,7 @@ func TestHandlePacketDataForChainPanic(t *testing.T) {
 		providerKeeper.SetParams(ctx, params)
 
 		for i, data := range tc.dataToQueue {
-			queuePendingPacketData(ctx, &providerKeeper, "chainID", uint64(i), data)
+			providerKeeper.QueuePendingPacketData(ctx, "chainID", uint64(i), data)
 		}
 
 		require.Panics(t, func() {
@@ -736,7 +736,7 @@ func TestPendingPacketData(t *testing.T) {
 	// Queue all packet data at once
 	for _, chainData := range packetDataForMultipleConsumers {
 		for _, dataInstance := range chainData.instances {
-			queuePendingPacketData(ctx, &providerKeeper, chainData.chainID, dataInstance.IbcSeqNum, dataInstance.Data)
+			providerKeeper.QueuePendingPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, dataInstance.Data)
 		}
 	}
 
@@ -786,8 +786,8 @@ func TestPanicIfTooMuchPendingPacketData(t *testing.T) {
 		rand.Seed(time.Now().UnixNano())
 
 		// Queuing up a couple data instances for another chain shouldn't matter
-		queuePendingPacketData(ctx, &providerKeeper, "chain-17", 0, testkeeper.GetNewSlashPacketData())
-		queuePendingPacketData(ctx, &providerKeeper, "chain-17", 1, testkeeper.GetNewVSCMaturedPacketData())
+		providerKeeper.QueuePendingPacketData(ctx, "chain-17", 0, testkeeper.GetNewSlashPacketData())
+		providerKeeper.QueuePendingPacketData(ctx, "chain-17", 1, testkeeper.GetNewVSCMaturedPacketData())
 
 		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
 		reachedMax := false
@@ -802,11 +802,11 @@ func TestPanicIfTooMuchPendingPacketData(t *testing.T) {
 			// Panic only if we've reached the max
 			if i == int(tc.max+1) {
 				require.Panics(t, func() {
-					queuePendingPacketData(ctx, &providerKeeper, "chain-88", uint64(i), data)
+					providerKeeper.QueuePendingPacketData(ctx, "chain-88", uint64(i), data)
 				})
 				reachedMax = true
 			} else {
-				queuePendingPacketData(ctx, &providerKeeper, "chain-88", uint64(i), data)
+				providerKeeper.QueuePendingPacketData(ctx, "chain-88", uint64(i), data)
 			}
 		}
 		require.True(t, reachedMax)
@@ -900,20 +900,6 @@ func TestLastSlashMeterFullTime(t *testing.T) {
 type pendingPacketDataInstance struct {
 	IbcSeqNum uint64
 	Data      interface{}
-}
-
-// queuePendingPacketData queues the given pending packet data as it's appropriate concrete type
-func queuePendingPacketData(ctx sdktypes.Context, k *keeper.Keeper, chainID string, ibcSeqNum uint64, data interface{}) {
-	// Queue data differently depending on concrete type
-	if slashData, ok := data.(ccvtypes.SlashPacketData); ok {
-		k.QueuePendingSlashPacketData(ctx, chainID, ibcSeqNum, slashData)
-
-	} else if vscMaturedData, ok := data.(ccvtypes.VSCMaturedPacketData); ok {
-		k.QueuePendingVSCMaturedPacketData(ctx, chainID, ibcSeqNum, vscMaturedData)
-
-	} else {
-		panic("invalid data type")
-	}
 }
 
 // getAllPendingPacketDataInstances returns all pending packet data instances in order from the pending packet data queue
