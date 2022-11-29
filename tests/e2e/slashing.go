@@ -14,6 +14,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
+	tmtypes "github.com/tendermint/tendermint/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
@@ -53,10 +54,8 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		providerKeeper := s.providerApp.GetProviderKeeper()
 		firstConsumerKeeper := s.getFirstBundle().GetKeeper()
 
-		// Setup first val to be jailed on provider by setting signing info
+		// pick first consumer validator
 		tmVal := s.consumerChain.Vals.Validators[0]
-		s.setDefaultValSigningInfo(*tmVal)
-
 		val, err := tmVal.ToProto()
 		s.Require().NoError(err)
 		pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
@@ -74,6 +73,14 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		valData, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
 		s.Require().True(found)
 		valOldBalance := valData.Tokens
+
+		// Setup first val with mapped consensus addresss to be jailed on provider by setting signing info
+		// convert validator to TM type
+		pk, err := valData.ConsPubKey()
+		s.Require().NoError(err)
+		tmPk, err := cryptocodec.ToTmPubKeyInterface(pk)
+		s.Require().NoError(err)
+		s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, valData.ConsensusPower(sdk.DefaultPowerReduction)))
 
 		// Construct packet depending on the test case
 		var infractionType stakingtypes.InfractionType
