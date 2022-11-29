@@ -52,7 +52,8 @@ func (k Keeper) SetVscTimeoutPeriod(ctx sdk.Context, period time.Duration) {
 	k.paramSpace.Set(ctx, types.KeyVscTimeoutPeriod, period)
 }
 
-// GetSlashMeterReplenishPeriod returns the period for which the slash gas meter is replenished.
+// GetSlashMeterReplenishPeriod returns the period in which:
+// Once the slash meter becomes not-full, the slash meter is replenished after this period.
 func (k Keeper) GetSlashMeterReplenishPeriod(ctx sdk.Context) time.Duration {
 	var p time.Duration
 	k.paramSpace.Get(ctx, types.KeySlashMeterReplenishPeriod, &p)

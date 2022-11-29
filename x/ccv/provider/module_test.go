@@ -182,9 +182,9 @@ func TestInitGenesis(t *testing.T) {
 		expectedSlashMeterValue := sdk.NewInt(replenishFraction.MulInt(sdk.NewInt(100)).RoundInt64())
 		require.Equal(t, expectedSlashMeterValue, slashMeter)
 
-		// Expect last slash replenish time to be current block time
-		lastSlashReplenishTime := providerKeeper.GetLastSlashMeterReplenishTime(ctx)
-		require.Equal(t, lastSlashReplenishTime, ctx.BlockTime())
+		// Expect last slash meter full time to be current block time
+		lastFullTime := providerKeeper.GetLastSlashMeterFullTime(ctx)
+		require.Equal(t, lastFullTime, ctx.BlockTime().UTC())
 
 		ctrl.Finish()
 	}

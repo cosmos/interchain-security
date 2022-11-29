@@ -300,6 +300,9 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		// Confirm meter value is initialized to expected allowance
 		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
 
+		// Confirm last full time is current block time.
+		require.Equal(t, now.UTC(), providerKeeper.GetLastSlashMeterFullTime(ctx))
+
 		// Decrement slash meter
 		providerKeeper.SetSlashMeter(ctx, providerKeeper.GetSlashMeter(ctx).Sub(sdktypes.NewInt(3)))
 		require.Equal(t, tc.expectedAllowance.Sub(sdktypes.NewInt(3)), providerKeeper.GetSlashMeter(ctx))
@@ -308,6 +311,9 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		meterBefore := providerKeeper.GetSlashMeter(ctx)
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, meterBefore, providerKeeper.GetSlashMeter(ctx))
+
+		// Confirm last full time is not updated
+		require.Equal(t, now.UTC(), providerKeeper.GetLastSlashMeterFullTime(ctx))
 
 		// Note: odd time formats are used as an extra sanity check that UTC format is persisted
 
@@ -319,6 +325,9 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, meterBefore, providerKeeper.GetSlashMeter(ctx))
 
+		// Confirm last full time is not updated
+		require.Equal(t, now.UTC(), providerKeeper.GetLastSlashMeterFullTime(ctx))
+
 		// Increment block time by more than replenish period
 		ctx = ctx.WithBlockTime(now.Add(tc.replenishPeriod * 2).In(time.FixedZone("UTC-8", -8*60*60)))
 
@@ -326,13 +335,18 @@ func TestSlashMeterReplenishment(t *testing.T) {
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
 
-		// Last slash meter replenish time should now be updated,
+		// Last full time should now be updated
+		require.Equal(t, ctx.BlockTime().UTC(), providerKeeper.GetLastSlashMeterFullTime(ctx))
+
 		// increment block time by more than replenish period again
 		ctx = ctx.WithBlockTime(ctx.BlockTime().Add(tc.replenishPeriod * 2))
 
 		// Confirm that meter is capped at max value
 		providerKeeper.CheckForSlashMeterReplenishment(ctx)
 		require.Equal(t, tc.expectedAllowance, providerKeeper.GetSlashMeter(ctx))
+
+		// Confirm last full time is updated, even though slash meter was not replenished
+		require.Equal(t, ctx.BlockTime().UTC(), providerKeeper.GetLastSlashMeterFullTime(ctx))
 	}
 }
 
@@ -854,8 +868,9 @@ func TestSlashMeter(t *testing.T) {
 	}
 }
 
-// TestLastSlashMeterReplenishTime tests the getter and setter for the last slash meter replenish time
-func TestLastSlashMeterReplenishTime(t *testing.T) {
+// TestLastSlashMeterFullTime tests the getter and setter for the most recent time
+// the slash meter was full.
+func TestLastSlashMeterFullTime(t *testing.T) {
 
 	testCases := []time.Time{
 		time.Now(),
@@ -874,8 +889,8 @@ func TestLastSlashMeterReplenishTime(t *testing.T) {
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
-		providerKeeper.SetLastSlashMeterReplenishTime(ctx, tc)
-		gotTime := providerKeeper.GetLastSlashMeterReplenishTime(ctx)
+		providerKeeper.SetLastSlashMeterFullTime(ctx, tc)
+		gotTime := providerKeeper.GetLastSlashMeterFullTime(ctx)
 		// Time should be returned in UTC
 		require.Equal(t, tc.UTC(), gotTime)
 	}

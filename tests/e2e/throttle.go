@@ -373,8 +373,8 @@ func (s *CCVTestSuite) replenishSlashMeterTillPositive() {
 func (s *CCVTestSuite) getCtxWithReplenishPeriodElapsed(ctx sdktypes.Context) sdktypes.Context {
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
-	lastReplenishTime := providerKeeper.GetLastSlashMeterReplenishTime(ctx)
+	lastFullTime := providerKeeper.GetLastSlashMeterFullTime(ctx)
 	replenishPeriod := providerKeeper.GetSlashMeterReplenishPeriod(ctx)
 
-	return ctx.WithBlockTime(lastReplenishTime.Add(replenishPeriod).Add(time.Minute))
+	return ctx.WithBlockTime(lastFullTime.Add(replenishPeriod).Add(time.Minute))
 }
