@@ -188,16 +188,6 @@ func TestHandlePacketDataForChainPanic(t *testing.T) {
 		dataToQueue  []interface{}
 		slashHandler func(ctx sdktypes.Context, chainID string, data ccvtypes.SlashPacketData) (bool, error)
 	}{
-		{
-			"panic when slash packet data is not first in queue",
-			[]interface{}{
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewSlashPacketData(),
-			},
-			func(ctx sdktypes.Context, chainID string, data ccvtypes.SlashPacketData) (bool, error) {
-				return true, nil
-			},
-		},
 		// Panic for invalid persisted data is skipped, its not worth adding a keeper method to allow for invalid data
 		{
 			"panic when slash handler returns error",

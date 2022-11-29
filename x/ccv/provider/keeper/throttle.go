@@ -66,35 +66,30 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 	// Store ibc sequence numbers to delete data after iteration is completed
 	seqNums := []uint64{}
 
-	idx := 0
+	slashPacketHandled := false
 	k.IteratePendingPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, data interface{}) (stop bool) {
 
 		switch data := data.(type) {
 
 		case ccvtypes.SlashPacketData:
-			if idx == 0 {
+			if slashPacketHandled {
+				// Break iteration, since we've already handled one slash packet
+				stop = true
+				return stop
+			} else {
+				// Handle slash packet and set flag to true
 				_, err := slashPacketHandler(ctx, consumerChainID, data)
 				if err != nil {
 					panic(fmt.Sprintf("failed to handle slash packet: %s", err))
 				}
-			} else {
-				// Break iteration, since we've already handled one slash packet
-				stop = true
-				return stop
+				slashPacketHandled = true
 			}
 		case ccvtypes.VSCMaturedPacketData:
-			if idx == 0 {
-				panic("data is corrupt, first data struct in queue should be slash packet data")
-			} else {
-				vscMaturedPacketHandler(ctx, consumerChainID, data)
-			}
+			vscMaturedPacketHandler(ctx, consumerChainID, data)
 		default:
 			panic(fmt.Sprintf("unexpected pending packet data type: %T", data))
 		}
 		seqNums = append(seqNums, ibcSeqNum)
-
-		// Increment idx
-		idx++
 
 		// Continue iterating through the queue until we reach the end or a 2nd slash packet
 		stop = false
