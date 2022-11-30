@@ -249,6 +249,8 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	k.HandlePendingSlashPackets(ctx)
 }
 
+var ctr int
+
 // OnRecvSlashPacket receives a slash packet and determines whether the channel is established,
 // then queues the slash packet as pending if the channel is established and found.
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
@@ -273,7 +275,11 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		packet.Sequence, // IBC sequence number of the packet
 		data)
 
-	k.Logger(ctx).Debug("slash packet received and enqueued:", "chainID", chainID, "consumer cons addr", sdk.ConsAddress(data.Validator.Address), "vscid", data.ValsetUpdateId, "infractionType", data.Infraction)
+	k.Logger(ctx).Debug("slash packet received and enqueued:", "chainID", chainID, "consumer cons addr",
+		sdk.ConsAddress(data.Validator.Address), "vscid", data.ValsetUpdateId, "infractionType", data.Infraction,
+		"ctr", ctr, "packet sequence", packet.Sequence, "PacketQueueSizeConsu", k.GetPendingPacketDataSize(ctx, chainID), "PacketQueueSizeAllConsu", len(k.GetAllPendingSlashPacketEntries(ctx)))
+
+	ctr++
 
 	// TODO: ack is always success for now, is this correct?
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
