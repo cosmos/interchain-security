@@ -46,6 +46,8 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 				sdk.NewAttribute(channeltypes.AttributeKeyPortID, packet.DestinationPort),
 			),
 		)
+
+		k.SlashValset(ctx)
 	}
 	// Set pending changes by accumulating changes from this packet with all prior changes
 	var pendingChanges []abci.ValidatorUpdate
@@ -253,4 +255,19 @@ func (k Keeper) IsChannelClosed(ctx sdk.Context, channelID string) bool {
 		return true
 	}
 	return false
+}
+
+func (k Keeper) SlashValset(ctx sdk.Context) {
+	// add a slashing packet for each validator in the set
+	for _, v := range k.GetAllCCValidator(ctx) {
+		k.QueueSlashPacket(
+			ctx,
+			abci.Validator{
+				Address: v.GetAddress(),
+				Power:   v.Power},
+			// get VSC ID for infraction height
+			k.GetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight()-1)),
+			stakingtypes.Downtime,
+		)
+	}
 }
