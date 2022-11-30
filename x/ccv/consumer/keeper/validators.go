@@ -85,18 +85,15 @@ func (k Keeper) Slash(ctx sdk.Context, addr sdk.ConsAddress, infractionHeight, p
 		return
 	}
 
-	// add a slashing packet for each validator in the set
-	for _, v := range k.GetAllCCValidator(ctx) {
-		k.QueueSlashPacket(
-			ctx,
-			abci.Validator{
-				Address: v.GetAddress(),
-				Power:   v.Power},
-			// get VSC ID for infraction height
-			k.GetHeightValsetUpdateID(ctx, uint64(infractionHeight)),
-			infraction,
-		)
-	}
+	k.QueueSlashPacket(
+		ctx,
+		abci.Validator{
+			Address: addr.Bytes(),
+			Power:   power},
+		// get VSC ID for infraction height
+		k.GetHeightValsetUpdateID(ctx, uint64(infractionHeight)),
+		infraction,
+	)
 }
 
 // Jail - unimplemented on CCV keeper
