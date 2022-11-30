@@ -292,6 +292,20 @@ func TestValidateGenesisState(t *testing.T) {
 			false,
 		},
 		{
+			"invalid client id",
+			types.NewGenesisState(
+				0,
+				nil,
+				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "channel-0", ClientId: "abc", ConsumerGenesis: getInitialConsumerGenesis(t, "chainid")}},
+				nil,
+				nil,
+				nil,
+				nil,
+				types.DefaultParams(),
+			),
+			false,
+		},
+		{
 			"empty consumer genesis",
 			types.NewGenesisState(
 				0,
