@@ -33,6 +33,7 @@ func NewGenesisState(
 
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
+		// ensure that VSCID is striclty positive
 		ValsetUpdateId: DefaultValsetUpdateID,
 		Params:         DefaultParams(),
 	}
@@ -61,7 +62,7 @@ func (gs GenesisState) Validate() error {
 		}
 	}
 
-	if len(gs.ValsetUpdateIdToHeight) > 1 {
+	if len(gs.ValsetUpdateIdToHeight) > 0 {
 		// check only the first tuple of the list since it is ordered by VSC ID
 		if gs.ValsetUpdateIdToHeight[0].ValsetUpdateId == 0 {
 			return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "valset update ID cannot be equal to zero")
@@ -108,9 +109,6 @@ func (cs ConsumerState) Validate() error {
 	for _, pVSC := range cs.PendingValsetChanges {
 		if pVSC.ValsetUpdateId == 0 {
 			return fmt.Errorf("valset update ID cannot be equal to zero")
-		}
-		if len(pVSC.ValidatorUpdates) == 0 {
-			return fmt.Errorf("validator set updates cannot be empty: %#v", pVSC)
 		}
 		if err := validateSlashAcksAddress(pVSC.SlashAcks); err != nil {
 			return err

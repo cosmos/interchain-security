@@ -379,22 +379,7 @@ func TestValidateGenesisState(t *testing.T) {
 			false,
 		},
 		{
-			"invalid consumer state pending VSC packets 2: validator updates empty",
-			types.NewGenesisState(
-				types.DefaultValsetUpdateID,
-				nil,
-				[]types.ConsumerState{{ChainId: "chainid", ChannelId: "channel-0", ClientId: "client-id",
-					PendingValsetChanges: []ccv.ValidatorSetChangePacketData{{ValsetUpdateId: 1}}}},
-				nil,
-				nil,
-				nil,
-				nil,
-				types.DefaultParams(),
-			),
-			false,
-		},
-		{
-			"invalid consumer state pending VSC packets 3: invalid slash acks address",
+			"invalid consumer state pending VSC packets 2: invalid slash acks address",
 			types.NewGenesisState(
 				types.DefaultValsetUpdateID,
 				nil,
