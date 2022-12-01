@@ -12,6 +12,7 @@ import {
   CommittedBlock,
   Status,
 } from './common.js';
+import { Model } from './model.js';
 
 /**
  * Queries and data structures in this file are currently naive
@@ -279,10 +280,34 @@ function bondBasedConsumerVotingPower(hist: BlockHistory): boolean {
  * @param hist A history of blocks.
  * @returns Is the property satisfied?
  */
-function validatorSetReplication(hist: BlockHistory): boolean {
-  const blocks = hist.blocks;
+ function validatorSetReplication(hist: BlockHistory, model: Model): boolean {
+  const p = hist.blocks.provider;
+  const c = hist.blocks.consumer;
+
+  // check each consumer block has valset seen on the provider
+  // VSCID is used to get the block on the provider
+  for ( const record of c ) {
+    const block = record[1];
+    const hc = block.invariantSnapshot.h[C];
+    const vscID = model.ccvC.hToVscID[hc]
+    const hp = model.ccvP.vscIDtoH[vscID]
+    const proviVals = p.get(hp)?.invariantSnapshot.status
+    const consuVals = block.invariantSnapshot.consumerPower
+
+    for ( const [index, val] of consuVals.entries() ) {
+      if ( val && proviVals && proviVals[index] != Status.BONDED ) {
+        return false
+      }
+
+      if ( !val && proviVals && proviVals[index] == Status.BONDED ) {
+        return false
+      }
+    }
+  };
+
   return true;
 }
+
 
 export {
   PartialOrder,
