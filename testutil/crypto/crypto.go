@@ -62,6 +62,10 @@ func (v *CryptoIdentity) TMCryptoPubKey() tmcrypto.PubKey {
 	return ret
 }
 
+func (v *CryptoIdentity) SDKOperator() sdktypes.ValAddress {
+	return v.SDKStakingValidator().GetOperator()
+}
+
 func (v *CryptoIdentity) SDKStakingValidator() sdkstakingtypes.Validator {
 	ret, err := sdkstakingtypes.NewValidator(v.SDKValAddress(), v.SDKPubKey(), sdkstakingtypes.Description{})
 	if err != nil {
