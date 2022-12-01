@@ -56,14 +56,10 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 			// Delete unbonding op
 			k.DeleteUnbondingOp(ctx, unbondingOp.Id)
 		} else {
-			if err := k.SetUnbondingOp(ctx, unbondingOp); err != nil {
-				panic(fmt.Errorf("unbonding op could not be persisted: %w", err))
-			}
+			k.SetUnbondingOp(ctx, unbondingOp)
 		}
 	}
-	if err := k.AppendMaturedUnbondingOps(ctx, maturedIds); err != nil {
-		panic(fmt.Errorf("mature unbonding ops could not be appended: %w", err))
-	}
+	k.AppendMaturedUnbondingOps(ctx, maturedIds)
 
 	// clean up index
 	k.DeleteUnbondingOpIndex(ctx, chainID, data.ValsetUpdateId)
