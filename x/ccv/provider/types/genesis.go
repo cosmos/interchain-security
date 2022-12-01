@@ -33,7 +33,7 @@ func NewGenesisState(
 
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
-		// ensure that VSCID is striclty positive
+		// ensure that VSCID is strictly positive
 		ValsetUpdateId: DefaultValsetUpdateID,
 		Params:         DefaultParams(),
 	}
