@@ -10,7 +10,7 @@ assignees: ''
 
 # Description
 
-Please include a summary of the changes and the related issue. If the the issue was ambiguous try to clarify it in this section.
+Please include a summary of the changes and the related issue. If the issue was ambiguous try to clarify it in this section.
 
 
 # Linked issues
@@ -26,7 +26,7 @@ Please delete options that are not relevant.
 - [ ] New feature (adding functionality)
 - [ ] Breaking change (fix, feature or refactoring that changes existing functionality)
 - [ ] Requires state migrations
-- [ ] Profo files changes
+- [ ] Proto files changes
 - [ ] Updates in store keepers or store keys
 - [ ] Changes in genesis (import/export)
 - [ ] Testing
@@ -62,5 +62,5 @@ Please delete options that are not relevant.
 - [ ] `make proto-lint` was run (for changes in `.proto` files)
 - [ ] PR satisfies closing criteria defined in issue (remove if not applicable or issue has no criteria)
 - [ ] Added iterators follow SDK pattern (`IterateX(ctx sdk.Context, cb func(arg1, arg2) (stop bool))`)
-- [ ] testuil/e2e/debug_test.go is up-to-date with additional or changed e2e test names
+- [ ] testutil/e2e/debug_test.go is up-to-date with additional or changed e2e test names
 - [ ] Documentation has been updated
