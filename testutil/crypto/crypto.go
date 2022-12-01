@@ -83,18 +83,10 @@ func (v *CryptoIdentity) SDKPubKey() sdkcryptotypes.PubKey {
 	return ret
 }
 
-func (v *CryptoIdentity) SDKValAddressString() string {
-	return v.TMCryptoPubKey().Address().String()
-}
-
 func (v *CryptoIdentity) SDKValAddress() sdktypes.ValAddress {
-	ret, err := sdktypes.ValAddressFromHex(v.SDKValAddressString())
-	if err != nil {
-		panic(err)
-	}
-	return ret
+	return sdktypes.ValAddress(v.SDKPubKey().Address())
 }
 
 func (v *CryptoIdentity) SDKConsAddress() sdktypes.ConsAddress {
-	return sdktypes.GetConsAddress(v.SDKPubKey())
+	return sdktypes.ConsAddress(v.SDKPubKey().Address())
 }
