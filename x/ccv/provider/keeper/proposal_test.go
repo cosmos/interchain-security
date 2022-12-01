@@ -27,8 +27,8 @@ import (
 //
 
 // Tests the HandleConsumerAdditionProposal method against the SpawnConsumerChainProposalHandler spec.
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-spccprop1
-// Spec tag: [CCV-PCF-SPCCPROP.1]
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcaprop1
+// Spec tag: [CCV-PCF-HCAPROP.1]
 func TestHandleConsumerAdditionProposal(t *testing.T) {
 
 	type testCase struct {
@@ -309,8 +309,8 @@ func TestPendingConsumerAdditionPropOrder(t *testing.T) {
 
 // TestHandleConsumerRemovalProposal tests HandleConsumerRemovalProposal against its corresponding spec method.
 //
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stccprop1
-// Spec tag: [CCV-PCF-STCCPROP.1]
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcrprop1
+// Spec tag: [CCV-PCF-HCRPROP.1]
 func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 	type testCase struct {

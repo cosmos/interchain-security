@@ -25,8 +25,8 @@ import (
 // as a pending client, and set once spawn time has passed.
 //
 // Note: This method implements SpawnConsumerChainProposalHandler in spec.
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-spccprop1
-// Spec tag: [CCV-PCF-SPCCPROP.1]
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcaprop1
+// Spec tag: [CCV-PCF-HCAPROP.1]
 func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
 	if !ctx.BlockTime().Before(p.SpawnTime) {
 		// lockUbdOnTimeout is set to be false, regardless of what the proposal says, until we can specify and test issues around this use case more thoroughly
@@ -116,8 +116,8 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 // If the stop time hasn't already passed, it stores the proposal as a pending proposal.
 //
 // This method implements StopConsumerChainProposalHandler from spec.
-// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stccprop1
-// Spec tag: [CCV-PCF-STCCPROP.1]
+// See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcrprop1
+// Spec tag: [CCV-PCF-HCRPROP.1]
 func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.ConsumerRemovalProposal) error {
 
 	if !ctx.BlockTime().Before(p.StopTime) {
