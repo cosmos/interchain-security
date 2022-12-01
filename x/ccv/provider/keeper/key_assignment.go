@@ -479,7 +479,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 		providerAddr := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
 
 		// If a key assignment replacement is found, we remove the valupdate with the old consumer key,
-		// create tow new valupdates,
+		// create two new valupdates,
 		//  - setting the old consumer key's power to 0
 		//  - and setting the new consumer key's power to the power in the update
 		prevConsumerKey, _, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
@@ -499,8 +499,8 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 			})
 			k.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
 		} else {
-			// If a pending key assignment is not found, we check if the validator's key is assigned.
-			// If it is, we replace the update containing the provider key with the update containing
+			// If a key assignment replacement is not found, we check if the validator's key is assigned.
+			// If it is, we replace the update containing the provider key with an update containing
 			// the consumer key.
 			// Note that this will always be the brach taken when creating the genesis state
 			// of a newly registered consumer chain.
