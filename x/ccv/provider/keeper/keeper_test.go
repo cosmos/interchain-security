@@ -286,8 +286,7 @@ func TestMaturedUnbondingOps(t *testing.T) {
 	require.Nil(t, ids)
 
 	unbondingOpIds := []uint64{0, 1, 2, 3, 4, 5, 6}
-	err = providerKeeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
-	require.NoError(t, err)
+	providerKeeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
 
 	ids, err = providerKeeper.ConsumeMaturedUnbondingOps(ctx)
 	require.NoError(t, err)
@@ -508,8 +507,7 @@ func TestIterateOverUnbondingOps(t *testing.T) {
 	}
 
 	for _, op := range ops {
-		err := pk.SetUnbondingOp(ctx, op)
-		require.NoError(t, err, "SetUnbondingOp returned err %s", err)
+		pk.SetUnbondingOp(ctx, op)
 	}
 
 	result := []ccv.UnbondingOp{}
