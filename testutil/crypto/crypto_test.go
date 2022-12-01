@@ -22,7 +22,7 @@ func TestLike(t *testing.T) {
 
 	id := NewCryptoIdentityFromIntSeed(0)
 	abciAddressBytes := id.ABCIAddressBytes()
-	sdkOperator := id.SDKOperator()
+	sdkOperator := id.SDKStakingOperator()
 	sdkValAddressString := id.SDKValAddressString()
 	sdkValAddress := id.SDKValAddress()
 	sdkConsAddress := id.SDKConsAddress()

@@ -62,7 +62,7 @@ func (v *CryptoIdentity) TMCryptoPubKey() tmcrypto.PubKey {
 	return ret
 }
 
-func (v *CryptoIdentity) SDKOperator() sdktypes.ValAddress {
+func (v *CryptoIdentity) SDKStakingOperator() sdktypes.ValAddress {
 	return v.SDKStakingValidator().GetOperator()
 }
 
