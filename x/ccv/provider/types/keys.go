@@ -24,7 +24,7 @@ const (
 	// QuerierRoute is the querier route for IBC transfer
 	QuerierRoute = ModuleName
 
-	// Default validator set update ID used during init genesis
+	// Default validator set update ID
 	DefaultValsetUpdateID = 1
 )
 
