@@ -92,7 +92,7 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"invalid valset ID to block height mapping",
 			types.NewGenesisState(
-				0,
+				types.DefaultValsetUpdateID,
 				[]types.ValsetUpdateIdToHeight{{ValsetUpdateId: 0}},
 				nil,
 				nil,
@@ -108,7 +108,7 @@ func TestValidateGenesisState(t *testing.T) {
 		{
 			"invalid unbonding op",
 			types.NewGenesisState(
-				0,
+				types.DefaultValsetUpdateID,
 				nil,
 				nil,
 				[]ccv.UnbondingOp{{UnbondingConsumerChains: nil}},
