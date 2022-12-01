@@ -147,6 +147,40 @@ class BlockHistory {
   };
 }
 
+/**
+ * Checks the Validator Set Replication property as defined
+ * in https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/system_model_and_properties.md#system-properties
+ * Property: e very validator set on any consumer chain MUST either be or have been a validator set on the provider chain.
+ *
+ * @param hist A history of blocks.
+ * @returns Is the property satisfied?
+ */
+ function validatorSetReplication(hist: BlockHistory): boolean {
+  const blocks = hist.blocks;
+  let proviVals;
+  let concuVals;
+  blocks.provider.forEach(element => {
+    // put into proviVals
+  });
+  blocks.consumer.forEach(element => {
+    // put into consuVals
+  });
+
+  /*
+  Each consumer block has a height hc. Each hc has a vscid defined by CCVConsumer.hToVscID[hc].
+  Each provider block has a height hp. Each hp has a vscid defined by CCVProvider.vscID
+
+  Validators are identified by 0,1,2,3
+  CCVConsumer.consumerPower is an array indexed by validator id (index)
+  So, for example if the consumer set only contains validator 3 then the consumer power will be
+  [undefined, undefined, undefined, x]
+  */
+
+  
+
+  return true;
+}
+
 function sum(arr: number[]): number {
   return arr.reduce((sum: number, x: number) => sum + x, 0);
 }

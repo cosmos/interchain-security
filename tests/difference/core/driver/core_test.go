@@ -275,6 +275,8 @@ func (s *CoreSuite) executeTrace() {
 				int64(a.Val),
 				int64(a.Amt),
 			)
+		case "Redelegate":
+			// TODO:
 		case "ConsumerSlash":
 			s.consumerSlash(
 				s.consAddr(int64(a.Val)),

@@ -330,6 +330,10 @@ function gen(seconds: number, checkProperties: boolean) {
           dumpTrace(`${DIR}trace_${i}.json`, actions, events);
           throw 'stakingWithoutSlashing property failure, trace written.';
         }
+        if (!validatorSetReplication(hist)) {
+          dumpTrace(`${DIR}trace_${i}.json`, actions, events);
+          throw 'validatorSetReplication property failure, trace written.';
+        }
       }
     }
     if (!checkProperties) {
