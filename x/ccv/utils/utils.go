@@ -84,5 +84,6 @@ func SendIBCPacket(
 		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
 		clienttypes.Height{}, uint64(ctx.BlockTime().Add(timeoutPeriod).UnixNano()),
 	)
+
 	return channelKeeper.SendPacket(ctx, channelCap, packet)
 }

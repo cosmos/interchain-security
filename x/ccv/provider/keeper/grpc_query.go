@@ -80,10 +80,6 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if _, found := k.GetConsumerClientId(ctx, req.ChainId); !found {
-		return nil, types.ErrUnknownConsumerChainId
-	}
-
 	providerAddr, err := sdk.ConsAddressFromBech32(req.ProviderAddress)
 	if err != nil {
 		return nil, err
@@ -91,7 +87,7 @@ func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.Que
 
 	consumerKey, found := k.GetValidatorConsumerPubKey(ctx, req.ChainId, providerAddr)
 	if !found {
-		return nil, types.ErrNoValidatorConsumerAddress
+		return &types.QueryValidatorConsumerAddrResponse{}, nil
 	}
 
 	return &types.QueryValidatorConsumerAddrResponse{
@@ -106,10 +102,6 @@ func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.Que
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	if _, found := k.GetConsumerClientId(ctx, req.ChainId); !found {
-		return nil, types.ErrUnknownConsumerChainId
-	}
-
 	consumerAddr, err := sdk.ConsAddressFromBech32(req.ConsumerAddress)
 	if err != nil {
 		return nil, err
@@ -117,7 +109,7 @@ func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.Que
 
 	providerAddr, found := k.GetValidatorByConsumerAddr(ctx, req.ChainId, consumerAddr)
 	if !found {
-		return nil, types.ErrNoValidatorProviderAddress
+		return &types.QueryValidatorProviderAddrResponse{}, nil
 	}
 
 	return &types.QueryValidatorProviderAddrResponse{
