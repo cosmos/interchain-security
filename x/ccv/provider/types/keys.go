@@ -23,6 +23,9 @@ const (
 
 	// QuerierRoute is the querier route for IBC transfer
 	QuerierRoute = ModuleName
+
+	// Default validator set update ID used during init genesis
+	DefaultValsetUpdateID = 1
 )
 
 // Iota generated keys/byte prefixes (as a byte), supports 256 possible values
