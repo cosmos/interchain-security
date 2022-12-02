@@ -290,6 +290,12 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		slashFraction sdk.Dec
 	)
 
+	// Obtain infraction height or panic
+	infractionHeight, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
+	if !found {
+		panic("infraction height not found. But was found during slash packet validation")
+	}
+
 	switch data.Infraction {
 	case stakingtypes.Downtime:
 		// set the downtime slash fraction and duration
@@ -306,10 +312,6 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	}
 
 	// slash validator
-	infractionHeight, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
-	if !found {
-		panic("infraction height not found. But was found during slash packet validation")
-	}
 	k.stakingKeeper.Slash(
 		ctx,
 		consAddr,
