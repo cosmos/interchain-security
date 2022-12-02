@@ -212,10 +212,6 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 // according to https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics#processing-acknowledgements
 func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, ack channeltypes.Acknowledgement) error {
 
-	// TODO: remove all this shiz, just log an error
-	// working protocol should never receive an error ack
-	// let the consumer run still tho!
-
 	if err := ack.GetError(); err != "" {
 		// Reasons for ErrorAcknowledgment
 		//  - packet data could not be successfully decoded
