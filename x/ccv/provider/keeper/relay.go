@@ -53,9 +53,10 @@ func (k Keeper) validateVSCMaturedPacket(ctx sdk.Context,
 	// check that a ccv channel is established via the dest channel of the recv packet
 	_ = k.getChainIdOrPanic(ctx, packet)
 
-	if data.ValsetUpdateId == 0 {
-		return fmt.Errorf("VSCMaturedPacket's data.ValsetUpdateId cannot be 0")
-	}
+	// TODO: needed?
+	// if data.ValsetUpdateId == 0 {
+	// 	return fmt.Errorf("VSCMaturedPacket's data.ValsetUpdateId cannot be 0")
+	// }
 
 	return nil
 }
@@ -242,8 +243,6 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 // validateSlashPacket validates a recv slash packet before it is
 // handled or persisted in store. An error is returned if the packet is invalid,
 // and an error ack should be relayed to the sender.
-
-// TODO: test this ish? If so, base it off throttle PR?
 func (k Keeper) validateSlashPacket(ctx sdk.Context,
 	packet channeltypes.Packet, data ccv.SlashPacketData) error {
 
@@ -255,7 +254,7 @@ func (k Keeper) validateSlashPacket(ctx sdk.Context,
 	// TODO: Key assignment will change the following line
 	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, sdk.ConsAddress(data.Validator.Address))
 	if !found || val.IsUnbonded() {
-		return fmt.Errorf("validator %s not found or is unbonded", data.Validator.Address)
+		// TODO: return error here. See: ___ (new issue, this PR is just refactoring)
 	}
 
 	_, found = k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
@@ -276,20 +275,21 @@ func (k Keeper) validateSlashPacket(ctx sdk.Context,
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
 
 	// Get the validator
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, sdk.ConsAddress(data.Validator.Address))
+	consAddr := sdk.ConsAddress(data.Validator.Address)
+	// TODO: Key assignment will change the following line
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
 	if !found || validator.IsUnbonded() {
 		// if validator is not found or is unbonded drop slash packet and log error
 
 		// TODO: Confirm this will not cause a panic.
 		// See: https://github.com/cosmos/interchain-security/issues/541
 
-		k.Logger(ctx).Error("validator not found or is unbonded. This validator"+
-			"was found and bonded at slash packet recv time", "validator", data.Validator.Address)
+		k.Logger(ctx).Error("validator not found or is unbonded. However, this validator"+
+			" was found and bonded at slash packet recv time", "validator", data.Validator.Address)
 		return
 	}
 
 	// tombstoned validators should not be slashed multiple times.
-	consAddr := sdk.ConsAddress(data.Validator.Address)
 	if k.slashingKeeper.IsTombstoned(ctx, consAddr) {
 		// Drop packet if validator is tombstoned.
 		return
