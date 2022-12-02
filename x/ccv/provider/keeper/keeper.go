@@ -515,17 +515,8 @@ func (k Keeper) chanCloseInit(ctx sdk.Context, channelID string) error {
 }
 
 func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-
-	// Unmarshal and increment
 	validatorSetUpdateId := k.GetValidatorSetUpdateId(ctx)
-	validatorSetUpdateId = validatorSetUpdateId + 1
-
-	// Convert back into bytes for storage
-	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, validatorSetUpdateId)
-
-	store.Set(types.ValidatorSetUpdateIdKey(), bz)
+	k.SetValidatorSetUpdateId(ctx, validatorSetUpdateId+1)
 }
 
 func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
