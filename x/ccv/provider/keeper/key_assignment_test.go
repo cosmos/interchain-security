@@ -768,8 +768,10 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		consumerValset := CreateValSet(append(providerIdentities, consumerIdentities...))
 		// VSCID -> Set(string(sdk.ConsAddress)) - Used to check that slash lookups are correct
 		// (history is needed for consumer initiated double sign slashes)
-		historicConsumerValidators := map[int]map[string]struct{}{}
-		_ = historicConsumerValidators
+		historicConsumerValidators := map[uint64]map[string]struct{}{}
+
+		// Sanity check that the validator set update is initialised to 0, for clarity.
+		require.Equal(t, k.GetValidatorSetUpdateId(ctx), uint64(0))
 
 		// Mock calls to GetLastValidatorPower to return directly from the providerValset
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
@@ -789,12 +791,26 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		}).AnyTimes()
 
 		// Helper: apply some updates to both the provider and consumer valsets
+		// and increment the provider vscid.
 		applyUpdates := func(updates []abci.ValidatorUpdate) {
 			providerValset.apply(updates)
 			updates, err := k.ApplyKeyAssignmentToValUpdates(ctx, CHAINID, updates)
 			require.NoError(t, err)
 			consumerValset.apply(updates)
 
+			// Record the active validator set
+			vscid := k.GetValidatorSetUpdateId(ctx)
+			historicConsumerValidators[vscid] = map[string]struct{}{}
+			for i, id := range consumerValset.identities {
+				cons := string(id.SDKConsAddress())
+				if 0 < consumerValset.power[i] {
+					// 0 < power because we want active validators only
+					historicConsumerValidators[vscid][cons] = struct{}{}
+				}
+			}
+
+			// Simulate the VSCID update in EndBlock
+			k.IncrementValidatorSetUpdateId(ctx)
 		}
 
 		// Helper: apply some key assignment transactions to the system
@@ -830,7 +846,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 			// Randomly fast forward the greatest pruned VSCID. This simulates
 			// delivery of maturity packets from the consumer chain.
-			prunedVscid := greatestPrunedVSCID + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1-greatestPrunedVSCID)
+			prunedVscid := greatestPrunedVSCID + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))-greatestPrunedVSCID)
 			k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
 			greatestPrunedVSCID = prunedVscid
 
@@ -890,10 +906,35 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 			/*
 				Property: Correct Consumer Initiated Slash Lookup
+				For all cryptographic identities known to the consumer at a vscid VSCID
+				with greatestPrunedVSCID < VSCID: the identity
 				Each consumer validator that is present in a validator set with vscid VSCID
 				and greatestPrunedVSCID < VSCID maps to a unique provider validator.
 				(TODO: strengthen)
+
+
 			*/
+			for _, id := range consumerIdentities {
+				consC := string(id.SDKConsAddress())
+				first := true
+				var consP string
+
+				// For each validator set that was not yet matured (pruned) by the consumer
+				for vscid := uint64(greatestPrunedVSCID + 1); vscid < k.GetValidatorSetUpdateId(ctx); vscid++ {
+					// Check if the identity was included in the set
+					if _, ok := historicConsumerValidators[vscid][consC]; ok {
+						// If it was included in the set
+						// Check that that the provider consensus address queried is always the same
+						consPFromSlashQuery := string(k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, id.SDKConsAddress()))
+						if first {
+							first = false
+							consP = consPFromSlashQuery
+							continue
+						}
+						require.Equal(t, consP, consPFromSlashQuery)
+					}
+				}
+			}
 
 		}
 		ctrl.Finish()
