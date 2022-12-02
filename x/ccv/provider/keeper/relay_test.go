@@ -6,6 +6,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -13,6 +14,28 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestValidateVSCMaturedPacket(t *testing.T) {
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+		t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	packet := channeltypes.Packet{DestinationChannel: "channel-7"}
+	data := ccv.VSCMaturedPacketData{}
+
+	// validate method panics if there is no established ccv channel
+	// with channel ID specified in packet.
+	require.Panics(t, func() {
+		providerKeeper.ValidateVSCMaturedPacket(ctx, packet, data)
+	})
+
+	// Pseudo setup ccv channel for channel ID specified in packet.
+	providerKeeper.SetChannelToChain(ctx, "channel-7", "consumer-chain-id")
+
+	// validate method now passes.
+	err := providerKeeper.ValidateVSCMaturedPacket(ctx, packet, data)
+	require.NoError(t, err)
+}
 
 // TestQueueVSCPackets tests queueing validator set updates.
 func TestQueueVSCPackets(t *testing.T) {

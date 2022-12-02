@@ -35,19 +35,19 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	data ccv.VSCMaturedPacketData,
 ) exported.Acknowledgement {
 
-	if err := k.validateVSCMaturedPacket(ctx, packet, data); err != nil {
+	if err := k.ValidateVSCMaturedPacket(ctx, packet, data); err != nil {
 		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
 
 	chainID := k.getChainIdOrPanic(ctx, packet)
-	k.handleVSCMaturedPacket(ctx, chainID, data)
+	k.HandleVSCMaturedPacket(ctx, chainID, data)
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
 
-// validateVSCMaturedPacket validates a recv VSCMatured packet before it is
+// ValidateVSCMaturedPacket validates a recv VSCMatured packet before it is
 // handled or persisted in store. An error is returned if the packet is invalid,
 // and an error ack should be relayed to the sender.
-func (k Keeper) validateVSCMaturedPacket(ctx sdk.Context,
+func (k Keeper) ValidateVSCMaturedPacket(ctx sdk.Context,
 	packet channeltypes.Packet, data ccv.VSCMaturedPacketData) error {
 
 	// check that a ccv channel is established via the dest channel of the recv packet
@@ -56,7 +56,8 @@ func (k Keeper) validateVSCMaturedPacket(ctx sdk.Context,
 	return nil
 }
 
-func (k Keeper) handleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv.VSCMaturedPacketData) {
+// TODO: Unit test this method.
+func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv.VSCMaturedPacketData) {
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
 	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
 	var maturedIds []uint64
