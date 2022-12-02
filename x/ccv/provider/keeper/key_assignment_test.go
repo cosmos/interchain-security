@@ -25,7 +25,6 @@ type testAssignment struct {
 	consumerAddr   sdk.ConsAddress
 	consumerPubKey tmprotocrypto.PublicKey
 	pubKeyAndPower abci.ValidatorUpdate
-	vscID          uint64
 }
 
 func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
