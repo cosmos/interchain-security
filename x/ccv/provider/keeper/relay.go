@@ -53,11 +53,6 @@ func (k Keeper) validateVSCMaturedPacket(ctx sdk.Context,
 	// check that a ccv channel is established via the dest channel of the recv packet
 	_ = k.getChainIdOrPanic(ctx, packet)
 
-	// TODO: needed?
-	// if data.ValsetUpdateId == 0 {
-	// 	return fmt.Errorf("VSCMaturedPacket's data.ValsetUpdateId cannot be 0")
-	// }
-
 	return nil
 }
 
@@ -248,8 +243,6 @@ func (k Keeper) validateSlashPacket(ctx sdk.Context,
 
 	// check that a ccv channel is established via the dest channel of the recv packet
 	chainID := k.getChainIdOrPanic(ctx, packet)
-
-	// TODO: callout in PR that check needs to be added here, to return an ibc erro ack when val not found.
 
 	_, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	// return error if we cannot find infraction height matching the validator update id
