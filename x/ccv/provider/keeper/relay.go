@@ -222,10 +222,10 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
 }
 
-// OnRecvSlashPacket slashes and jails the given validator in the packet data
+// OnRecvSlashPacket receives a slash packet, validates it, then handles it if valid.
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
 
-	if err := k.validateSlashPacket(ctx, packet, data); err != nil {
+	if err := k.ValidateSlashPacket(ctx, packet, data); err != nil {
 		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
 
@@ -239,7 +239,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 // validateSlashPacket validates a recv slash packet before it is
 // handled or persisted in store. An error is returned if the packet is invalid,
 // and an error ack should be relayed to the sender.
-func (k Keeper) validateSlashPacket(ctx sdk.Context,
+func (k Keeper) ValidateSlashPacket(ctx sdk.Context,
 	packet channeltypes.Packet, data ccv.SlashPacketData) error {
 
 	// check that a ccv channel is established via the dest channel of the recv packet

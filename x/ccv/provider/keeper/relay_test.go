@@ -6,6 +6,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
@@ -102,5 +103,70 @@ func TestQueueVSCPackets(t *testing.T) {
 		// each call to QueueValidatorUpdates will increment the ValidatorUpdateID
 		valUpdateID := pk.GetValidatorSetUpdateId(ctx)
 		require.Equal(t, tc.expectNextValsetUpdateId, valUpdateID, "valUpdateID (%v != %v) mismatch in case: '%s'", tc.expectNextValsetUpdateId, valUpdateID, tc.name)
+	}
+}
+
+// TestValidateSlashPacket tests ValidateSlashPacket.
+func TestValidateSlashPacket(t *testing.T) {
+
+	validVscID := uint64(98)
+
+	testCases := []struct {
+		name       string
+		packetData ccv.SlashPacketData
+		expectErr  bool
+	}{
+		{"no block height found for given vscID",
+			ccv.SlashPacketData{ValsetUpdateId: 61},
+			true},
+		{"non-set infraction type",
+			ccv.SlashPacketData{ValsetUpdateId: validVscID},
+			true},
+		{"invalid infraction type",
+			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.MaxMonikerLength},
+			true},
+		{"valid double sign packet with non-zero vscID",
+			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.DoubleSign},
+			false},
+		{"valid downtime packet with non-zero vscID",
+			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.Downtime},
+			false},
+		{"valid double sign packet with zero vscID",
+			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.DoubleSign},
+			false},
+		{"valid downtime packet with zero vscID",
+			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.Downtime},
+			false},
+	}
+
+	for _, tc := range testCases {
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+			t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
+
+		packet := channeltypes.Packet{DestinationChannel: "channel-9"}
+
+		// validate method panics if there is no established ccv channel
+		// with channel ID specified in packet.
+		require.Panics(t, func() {
+			providerKeeper.ValidateSlashPacket(ctx, packet, tc.packetData)
+		})
+
+		// Pseudo setup ccv channel for channel ID specified in packet.
+		providerKeeper.SetChannelToChain(ctx, "channel-9", "consumer-chain-id")
+
+		// Setup init chain height for consumer (allowing 0 vscID to be valid).
+		providerKeeper.SetInitChainHeight(ctx, "consumer-chain-id", uint64(89))
+
+		// Setup valset update ID to block height mapping using var instantiated above.
+		providerKeeper.SetValsetUpdateBlockHeight(ctx, validVscID, uint64(100))
+
+		// Test error behavior as specified in tc.
+		err := providerKeeper.ValidateSlashPacket(ctx, packet, tc.packetData)
+		if tc.expectErr {
+			require.Error(t, err, "expected error in case: '%s'", tc.name)
+		} else {
+			require.NoError(t, err, "unexpected error in case: '%s'", tc.name)
+		}
 	}
 }
