@@ -28,7 +28,7 @@ func TestValidateVSCMaturedPacket(t *testing.T) {
 	// validate method panics if there is no established ccv channel
 	// with channel ID specified in packet.
 	require.Panics(t, func() {
-		providerKeeper.ValidateVSCMaturedPacket(ctx, packet, data)
+		_ = providerKeeper.ValidateVSCMaturedPacket(ctx, packet, data)
 	})
 
 	// Pseudo setup ccv channel for channel ID specified in packet.
@@ -150,7 +150,7 @@ func TestValidateSlashPacket(t *testing.T) {
 		// validate method panics if there is no established ccv channel
 		// with channel ID specified in packet.
 		require.Panics(t, func() {
-			providerKeeper.ValidateSlashPacket(ctx, packet, tc.packetData)
+			_ = providerKeeper.ValidateSlashPacket(ctx, packet, tc.packetData)
 		})
 
 		// Pseudo setup ccv channel for channel ID specified in packet.
