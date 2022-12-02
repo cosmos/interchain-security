@@ -37,11 +37,6 @@ func main() {
 	dmc.ValidateStringLiterals()
 	dmc.startDocker()
 
-	mul := MultiConsumerTestRun()
-	mul.SetLocalSDKPath(*localSdkPath)
-	mul.ValidateStringLiterals()
-	mul.startDocker()
-
 	keys := KeyAssignmentTestRun()
 	keys.SetLocalSDKPath(*localSdkPath)
 	keys.ValidateStringLiterals()
@@ -55,9 +50,6 @@ func main() {
 
 	wg.Add(1)
 	go dmc.ExecuteSteps(&wg, democracySteps)
-
-	wg.Add(1)
-	go mul.ExecuteSteps(&wg, multipleConsumers)
 
 	wg.Wait()
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))

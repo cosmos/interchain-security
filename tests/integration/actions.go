@@ -13,6 +13,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/client"
+	"github.com/tidwall/gjson"
 )
 
 type SendTokensAction struct {
@@ -826,11 +827,10 @@ func (tr TestRun) delegateTokens(
 }
 
 type unbondTokensAction struct {
-	chain              chainID
-	sender             validatorID
-	unbondFrom         validatorID
-	amount             uint
-	useFromConsumerKey bool
+	chain      chainID
+	sender     validatorID
+	unbondFrom validatorID
+	amount     uint
 }
 
 func (tr TestRun) unbondTokens(
@@ -838,9 +838,10 @@ func (tr TestRun) unbondTokens(
 	verbose bool,
 ) {
 	unbondFrom := tr.validatorConfigs[action.unbondFrom].valoperAddress
-	if action.chain != chainID("provi") && action.useFromConsumerKey {
+	if tr.validatorConfigs[action.unbondFrom].useConsumerKey {
 		unbondFrom = tr.validatorConfigs[action.unbondFrom].consumerValoperAddress
 	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
@@ -1088,20 +1089,23 @@ func (tr TestRun) invokeDoublesignSlash(
 }
 
 type assignConsumerPubKeyAction struct {
-	chain     chainID
-	validator validatorID
+	chain          chainID
+	validator      validatorID
+	consumerPubkey string
 	// reconfigureNode will change keys the node uses and restart
 	reconfigureNode bool
+	// executing the action should raise an error
+	expectError bool
 }
 
 func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbose bool) {
 	valCfg := tr.validatorConfigs[action.validator]
 
 	assignKey := fmt.Sprintf(
-		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 900000 --keyring-backend test -b block -y`,
+		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 900000 --keyring-backend test -b block -y -o json`,
 		tr.chainConfigs[chainID("provi")].binaryName,
 		string(tr.chainConfigs[action.chain].chainId),
-		valCfg.consumerValPubKey,
+		action.consumerPubkey,
 		action.validator,
 		tr.chainConfigs[chainID("provi")].chainId,
 		tr.getValidatorHome(chainID("provi"), action.validator),
@@ -1121,6 +1125,20 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err, "\n", string(bz))
+	}
+
+	jsonStr := string(bz)
+	code := gjson.Get(jsonStr, "code")
+	rawLog := gjson.Get(jsonStr, "raw_log")
+	if !action.expectError && code.Int() != 0 {
+		log.Fatalf("unexpected error during key assignment - code: %s, output: %s", code, jsonStr)
+	}
+
+	if action.expectError {
+		if code.Int() == 0 {
+		} else if verbose {
+			fmt.Printf("got expected error during key assignment | code: %v | log: %s\n", code, rawLog)
+		}
 	}
 
 	// node was started with provider key
@@ -1155,7 +1173,6 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 			out := scanner.Text()
 			if verbose {
 				fmt.Println("assign key - reconfigure: " + out)
-
 			}
 			if out == "done!!!!!!!!" {
 				break
@@ -1165,6 +1182,7 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 			log.Fatal(err)
 		}
 
+		// TODO: @MSalopek refactor this so test config is not changed at runtime
 		// make the validator use consumer key
 		valCfg.useConsumerKey = true
 		tr.validatorConfigs[action.validator] = valCfg

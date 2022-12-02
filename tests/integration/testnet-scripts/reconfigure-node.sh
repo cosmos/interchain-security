@@ -32,8 +32,11 @@ echo "$CONSUMER_PRIVATE_KEY" > /$CHAIN_ID/validator$VAL_ID/config/priv_validator
 
 echo "$CONSUMER_NODE_KEY" > /$CHAIN_ID/validator$VAL_ID/config/node_key.json
 
+# remove old key
+$BIN keys delete validator$VAL_ID --keyring-backend test --home /$CHAIN_ID/validator$VAL_ID --yes
+
 # add new key from mnemonic
-echo "$CONSUMER_MNEMONIC" | $BIN keys add $CHAIN_ID-validator$VAL_ID --keyring-backend test --home /$CHAIN_ID/validator$VAL_ID --recover  --output json
+echo "$CONSUMER_MNEMONIC" | $BIN keys add validator$VAL_ID --keyring-backend test --home /$CHAIN_ID/validator$VAL_ID --recover  --output json
 
 
 # restart node with new key
