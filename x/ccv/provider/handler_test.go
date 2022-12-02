@@ -1,4 +1,4 @@
-package client
+package provider_test
 
 import (
 	"strings"
@@ -13,6 +13,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testcrypto "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	"github.com/cosmos/interchain-security/x/ccv/provider"
 	keeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
@@ -20,7 +21,7 @@ import (
 
 func TestInvalidMsg(t *testing.T) {
 	k, _, _, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	handler := NewHandler(&k)
+	handler := provider.NewHandler(&k)
 	res, err := handler(sdk.NewContext(nil, tmproto.Header{}, false, nil), testdata.NewTestMsg())
 	require.Error(t, err)
 	require.Nil(t, res)
@@ -103,7 +104,7 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			require.NoError(t, err)
 
 			// Try to handle the message
-			_, err = NewHandler(&k)(ctx, msg)
+			_, err = provider.NewHandler(&k)(ctx, msg)
 
 			if tc.expError {
 				require.Error(t, err, "invalid case did not return error")
