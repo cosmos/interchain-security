@@ -306,24 +306,27 @@ func (k Keeper) AppendConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscI
 
 // GetConsumerAddrsToPrune returns the list of consumer addresses
 // that can be pruned once the VSCMaturedPacket with vscID is received
-func (k Keeper) GetConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID uint64) [][]byte {
+func (k Keeper) GetConsumerAddrsToPrune(
+	ctx sdk.Context,
+	chainID string,
+	vscID uint64,
+) (consumerAddrsToPrune types.AddressList) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerAddrsToPruneKey(chainID, vscID))
 	if bz == nil {
-		return nil
+		return
 	}
-	var consumerAddrsToPrune types.AddressList
 	err := consumerAddrsToPrune.Unmarshal(bz)
 	if err != nil {
 		panic(err)
 	}
-	return consumerAddrsToPrune.Addresses
+	return
 }
 
 func (k Keeper) IterateConsumerAddrsToPrune(
 	ctx sdk.Context,
 	chainID string,
-	cb func(vscID uint64, consumerAddrsToPrune [][]byte) (stop bool),
+	cb func(vscID uint64, consumerAddrsToPrune types.AddressList) (stop bool),
 ) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := types.ChainIdWithLenKey(types.ConsumerAddrsToPruneBytePrefix, chainID)
@@ -339,7 +342,7 @@ func (k Keeper) IterateConsumerAddrsToPrune(
 		if err != nil {
 			panic(err)
 		}
-		stop := cb(vscID, consumerAddrsToPrune.Addresses)
+		stop := cb(vscID, consumerAddrsToPrune)
 		if stop {
 			break
 		}
@@ -348,7 +351,7 @@ func (k Keeper) IterateConsumerAddrsToPrune(
 
 func (k Keeper) IterateAllConsumerAddrsToPrune(
 	ctx sdk.Context,
-	cb func(chainID string, vscID uint64, consumerAddrsToPrune [][]byte) (stop bool),
+	cb func(chainID string, vscID uint64, consumerAddrsToPrune types.AddressList) (stop bool),
 ) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ConsumerAddrsToPruneBytePrefix})
@@ -363,7 +366,7 @@ func (k Keeper) IterateAllConsumerAddrsToPrune(
 		if err != nil {
 			panic(err)
 		}
-		stop := cb(chainID, vscID, consumerAddrsToPrune.Addresses)
+		stop := cb(chainID, vscID, consumerAddrsToPrune)
 		if stop {
 			break
 		}
@@ -572,7 +575,7 @@ func (k Keeper) GetProviderAddrFromConsumerAddr(
 // as they cannot be referenced in slash requests (by a correct consumer)
 func (k Keeper) PruneKeyAssignments(ctx sdk.Context, chainID string, vscID uint64) {
 	consumerAddrs := k.GetConsumerAddrsToPrune(ctx, chainID, vscID)
-	for _, addr := range consumerAddrs {
+	for _, addr := range consumerAddrs.Addresses {
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, addr)
 	}
 	k.DeleteConsumerAddrsToPrune(ctx, chainID, vscID)
@@ -609,7 +612,7 @@ func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
 	}
 	// delete ValidatorConsumerPubKey
 	var ids []uint64
-	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, _ [][]byte) (stop bool) {
+	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, _ types.AddressList) (stop bool) {
 		ids = append(ids, vscID)
 		return false // do not stop the iteration
 	})

@@ -498,7 +498,7 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 	})
 	require.False(t, found)
 	found = false
-	providerKeeper.IterateConsumerAddrsToPrune(ctx, expectedChainID, func(_ uint64, _ [][]byte) (stop bool) {
+	providerKeeper.IterateConsumerAddrsToPrune(ctx, expectedChainID, func(_ uint64, _ types.AddressList) (stop bool) {
 		found = true
 		return true // stop the iteration
 	})

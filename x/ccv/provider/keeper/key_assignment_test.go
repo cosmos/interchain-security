@@ -14,6 +14,7 @@ import (
 	"math/rand"
 
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/golang/mock/gomock"
 )
@@ -401,13 +402,13 @@ func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 
 	keeper.AppendConsumerAddrsToPrune(ctx, chainID, vscID, consumerAddr)
 
-	addrToPrune := keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID)
+	addrToPrune := keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
 	require.NotEmpty(t, addrToPrune, "address to prune is empty")
 	require.Len(t, addrToPrune, 1, "address to prune is not len 1")
 	require.Equal(t, sdk.ConsAddress(addrToPrune[0]), consumerAddr)
 
 	keeper.DeleteConsumerAddrsToPrune(ctx, chainID, vscID)
-	addrToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID)
+	addrToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
 	require.Empty(t, addrToPrune, "address to prune was returned")
 }
 
@@ -440,21 +441,21 @@ func TestIterateAllConsumerAddrsToPrune(t *testing.T) {
 		keeper.AppendConsumerAddrsToPrune(ctx, ta.chainID, ta.vscID, ta.consumerAddr)
 	}
 
-	addrToPrune := keeper.GetConsumerAddrsToPrune(ctx, testAssignments[0].chainID, testAssignments[0].vscID)
+	addrToPrune := keeper.GetConsumerAddrsToPrune(ctx, testAssignments[0].chainID, testAssignments[0].vscID).Addresses
 	require.NotEmpty(t, addrToPrune, "address to prune is empty")
 	require.Len(t, addrToPrune, 2, "address to prune is not len 2")
 	require.Equal(t, sdk.ConsAddress(addrToPrune[0]), testAssignments[0].consumerAddr)
 	require.Equal(t, sdk.ConsAddress(addrToPrune[1]), testAssignments[1].consumerAddr)
 
 	type iterResult struct {
-		vscID                uint64
-		consumerAddrsToPrune [][]byte
+		vscID    uint64
+		addrList providertypes.AddressList
 	}
 	results := []iterResult{}
-	cbIterateAll := func(chainID string, vscID uint64, consumerAddrsToPrune [][]byte) (stop bool) {
+	cbIterateAll := func(chainID string, vscID uint64, addrList providertypes.AddressList) (stop bool) {
 		results = append(results, iterResult{
-			vscID:                vscID,
-			consumerAddrsToPrune: consumerAddrsToPrune,
+			vscID:    vscID,
+			addrList: addrList,
 		})
 		return false // continue iteration
 	}
@@ -464,22 +465,22 @@ func TestIterateAllConsumerAddrsToPrune(t *testing.T) {
 
 	// 2 keys for vscID == 1
 	require.Equal(t, results[0].vscID, uint64(1), "mismatched vscID in iterate all")
-	vsc1Addrs := results[0].consumerAddrsToPrune
+	vsc1Addrs := results[0].addrList.Addresses
 	require.Len(t, vsc1Addrs, 2, "wrong len of addrs to prune")
 	require.Equal(t, testAssignments[0].consumerAddr, sdk.ConsAddress(vsc1Addrs[0]), "mismatched consumer address")
 	require.Equal(t, testAssignments[1].consumerAddr, sdk.ConsAddress(vsc1Addrs[1]), "mismatched consumer address")
 
 	// 1 key for vscID == 2
 	require.Equal(t, results[1].vscID, uint64(2), "mismatched vscID in iterate all")
-	vsc2Addrs := results[1].consumerAddrsToPrune
+	vsc2Addrs := results[1].addrList.Addresses
 	require.Len(t, vsc2Addrs, 1, "wrong len of addrs to prune")
 	require.Equal(t, testAssignments[2].consumerAddr, sdk.ConsAddress(vsc2Addrs[0]), "mismatched consumer address")
 
 	results = []iterResult{}
-	cbIterateOne := func(chainID string, vscID uint64, consumerAddrsToPrune [][]byte) (stop bool) {
+	cbIterateOne := func(chainID string, vscID uint64, addrList providertypes.AddressList) (stop bool) {
 		results = append(results, iterResult{
-			vscID:                vscID,
-			consumerAddrsToPrune: consumerAddrsToPrune,
+			vscID:    vscID,
+			addrList: addrList,
 		})
 		return true // stop iteration
 	}
@@ -489,7 +490,7 @@ func TestIterateAllConsumerAddrsToPrune(t *testing.T) {
 
 	// 2 keys for vscID == 1
 	require.Equal(t, results[0].vscID, uint64(1), "mismatched vscID in iterate")
-	vsc1Addrs = results[0].consumerAddrsToPrune
+	vsc1Addrs = results[0].addrList.Addresses
 	require.Len(t, vsc1Addrs, 2, "wrong len of addrs to prune")
 	require.Equal(t, testAssignments[0].consumerAddr, sdk.ConsAddress(vsc1Addrs[0]), "mismatched consumer address")
 	require.Equal(t, testAssignments[1].consumerAddr, sdk.ConsAddress(vsc1Addrs[1]), "mismatched consumer address")
@@ -505,8 +506,8 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 		  - or there exists a vscID in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(vscID)
 	*/
 	willBePruned := map[string]bool{}
-	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, consumerAddrsToPrune [][]byte) (stop bool) {
-		for _, cAddr := range consumerAddrsToPrune {
+	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, addrList providertypes.AddressList) (stop bool) {
+		for _, cAddr := range addrList.Addresses {
 			addr := sdk.ConsAddress(cAddr)
 			willBePruned[addr.String()] = true
 		}

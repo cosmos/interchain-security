@@ -89,7 +89,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 
 	for _, item := range genState.ConsumerAddrsToPrune {
-		for _, addr := range item.ConsumerAddrs {
+		for _, addr := range item.ConsumerAddrs.Addresses {
 			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.VscId, addr)
 		}
 	}
@@ -190,11 +190,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	})
 
 	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
-	k.IterateAllConsumerAddrsToPrune(ctx, func(chainID string, vscID uint64, consumerAddrs [][]byte) (stop bool) {
+	k.IterateAllConsumerAddrsToPrune(ctx, func(chainID string, vscID uint64, consumerAddrs types.AddressList) (stop bool) {
 		consumerAddrsToPrune = append(consumerAddrsToPrune, types.ConsumerAddrsToPrune{
 			ChainId:       chainID,
 			VscId:         vscID,
-			ConsumerAddrs: consumerAddrs,
+			ConsumerAddrs: &consumerAddrs,
 		})
 		return false // do not stop the iteration
 	})

@@ -104,9 +104,9 @@ message ValidatorByConsumerAddr {
 }
 
 // Used to serialize the ConsumerAddrsToPrune index from key assignment
-// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrsToPrune [][]byte
+// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrs AddressList
 message ConsumerAddrsToPrune {
     string chain_id = 1;
     uint64 vsc_id = 2;
-    repeated bytes consumer_addrs = 3;
+    AddressList consumer_addrs = 3;
 }
