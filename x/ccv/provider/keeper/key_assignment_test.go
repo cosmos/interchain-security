@@ -766,12 +766,11 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		providerValset := CreateValSet(providerIdentities)
 		// NOTE: consumer must have space for provider identities because default key assignments are to provider keys
 		consumerValset := CreateValSet(append(providerIdentities, consumerIdentities...))
-		// TODO:
-		// maps consumer cons addr -> vscid -> reverse lookup provider addr
-		historicActiveConsumerValSlashLookups := map[string]map[uint64]string{}
-		for _, id := range append(providerIdentities, consumerIdentities...) {
-			historicActiveConsumerValSlashLookups[string(id.SDKConsAddress())] = map[uint64]string{}
-		}
+		// For each validator on the consumer, record the corresponding provider
+		// address as looked up on the provider using GetProviderAddrFromConsumerAddr
+		// at a given vscid.
+		// consumer consAddr -> vscid -> provider consAddr
+		historicSlashQueries := map[string]map[uint64]string{}
 
 		// Sanity check that the validator set update is initialised to 0, for clarity.
 		require.Equal(t, k.GetValidatorSetUpdateId(ctx), uint64(0))
@@ -869,6 +868,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 					// Find the corresponding consumer validator (must always be found)
 					for j, idC := range consumerValset.identities {
 						if consC.Equals(idC.SDKConsAddress()) {
+							// Ensure powers are the same
 							require.Equal(t, providerValset.power[i], consumerValset.power[j])
 						}
 					}
@@ -884,13 +884,10 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 					// Find the corresponding provider validator (must always be found)
 					for j, idP := range providerValset.identities {
 						if idP.SDKConsAddress().Equals(consP) {
+							// Ensure powers are the same
 							require.Equal(t, providerValset.power[j], consumerValset.power[i])
-
 						}
 					}
-
-					vscid := k.GetValidatorSetUpdateId(ctx) - 1 // -1 since it was incremented before
-					historicActiveConsumerValSlashLookups[string(consC)][vscid] = string(consP)
 				}
 			}
 
@@ -903,18 +900,47 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 			/*
 				Property: Correct Consumer Initiated Slash Lookup
-				Check that the reverse lookup is the same for all consumer ids,
-				for all vscid : greatestPrunedVSCID < vscid if consumer ever active
+
+				Check that since the last pruning, it has never been possible to query
+				two different provider addresses from the same consumer address.
+				We know that the queried provider address was correct at least once,
+				from checking the validator set replication property. These two facts
+				together guarantee that the slash lookup is always correct.
 			*/
-			for _, vscidToConsP := range historicActiveConsumerValSlashLookups {
+
+			// Build up the historicSlashQueries data structure
+			for i := range consumerValset.identities {
+				// For each active validator on the consumer chain
+				consC := consumerValset.identities[i].SDKConsAddress()
+				if 0 < consumerValset.power[i] {
+					// Get the provider who assigned the key
+					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
+
+					if _, found := historicSlashQueries[string(consC)]; !found {
+						historicSlashQueries[string(consC)] = map[uint64]string{}
+					}
+
+					vscid := k.GetValidatorSetUpdateId(ctx) - 1 // -1 since it was incremented before
+					// Record the slash query result obtained at this block
+					historicSlashQueries[string(consC)][vscid] = string(consP)
+				}
+			}
+
+			// Check that, for each address known the consumer at some block
+			// with vscid st. greatestPrunedVSCID < vscid, there were never
+			// conflicting slash query results.
+			for _, vscidToConsP := range historicSlashQueries {
 				seen := map[string]bool{}
 				for vscid, consP := range vscidToConsP {
 					if uint64(greatestPrunedVSCID) < vscid {
+						// The provider would have returned
 						seen[consP] = true
 					}
 				}
+				// No conflicts.
 				require.True(t, len(seen) < 2)
 			}
+
 		}
 		ctrl.Finish()
 	}
