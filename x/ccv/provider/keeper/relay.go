@@ -34,14 +34,33 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	packet channeltypes.Packet,
 	data ccv.VSCMaturedPacketData,
 ) exported.Acknowledgement {
-	// check that the channel is established
-	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
-	if !found {
-		// VSCMatured packet was sent on a channel different than any of the established CCV channels;
-		// this should never happen
-		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
+
+	if err := k.validateVSCMaturedPacket(ctx, packet, data); err != nil {
+		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
 
+	chainID := k.getChainIdOrPanic(ctx, packet)
+	k.handleVSCMaturedPacket(ctx, chainID, data)
+	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+}
+
+// validateVSCMaturedPacket validates a recv VSCMatured packet before it is
+// handled or persisted in store. An error is returned if the packet is invalid,
+// and an error ack should be relayed to the sender.
+func (k Keeper) validateVSCMaturedPacket(ctx sdk.Context,
+	packet channeltypes.Packet, data ccv.VSCMaturedPacketData) error {
+
+	// check that a ccv channel is established via the dest channel of the recv packet
+	_ = k.getChainIdOrPanic(ctx, packet)
+
+	if data.ValsetUpdateId == 0 {
+		return fmt.Errorf("VSCMaturedPacket's data.ValsetUpdateId cannot be 0")
+	}
+
+	return nil
+}
+
+func (k Keeper) handleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv.VSCMaturedPacketData) {
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
 	unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, data.ValsetUpdateId)
 	var maturedIds []uint64
@@ -66,9 +85,6 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 
 	// remove the VSC timeout timestamp for this chainID and vscID
 	k.DeleteVscSendTimestamp(ctx, chainID, data.ValsetUpdateId)
-
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	return ack
 }
 
 // CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
@@ -211,55 +227,76 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 
 // OnRecvSlashPacket slashes and jails the given validator in the packet data
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
-	// check that the channel is established
-	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
-	if !found {
-		// SlashPacket packet was sent on a channel different than any of the established CCV channels;
-		// this should never happen
-		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
+
+	if err := k.validateSlashPacket(ctx, packet, data); err != nil {
+		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
 
 	// apply slashing
-	if _, err := k.HandleSlashPacket(ctx, chainID, data); err != nil {
-		errAck := channeltypes.NewErrorAcknowledgement(err.Error())
-		return &errAck
-	}
+	chainID := k.getChainIdOrPanic(ctx, packet)
+	k.HandleSlashPacket(ctx, chainID, data)
 
-	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-	return ack
+	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
 
-// HandleSlashPacket slash and jail a misbehaving validator according the infraction type
-func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
-	// map VSC ID to infraction height for the given chain ID
-	var infractionHeight uint64
-	var found bool
-	if data.ValsetUpdateId == 0 {
-		infractionHeight, found = k.GetInitChainHeight(ctx, chainID)
-	} else {
-		infractionHeight, found = k.GetValsetUpdateBlockHeight(ctx, data.ValsetUpdateId)
-	}
+// validateSlashPacket validates a recv slash packet before it is
+// handled or persisted in store. An error is returned if the packet is invalid,
+// and an error ack should be relayed to the sender.
 
-	// return error if we cannot find infraction height matching the validator update id
-	if !found {
-		return false, fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
-	}
+// TODO: test this ish? If so, base it off throttle PR?
+func (k Keeper) validateSlashPacket(ctx sdk.Context,
+	packet channeltypes.Packet, data ccv.SlashPacketData) error {
 
-	// get the validator
-	consAddr := sdk.ConsAddress(data.Validator.Address)
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+	// check that a ccv channel is established via the dest channel of the recv packet
+	chainID := k.getChainIdOrPanic(ctx, packet)
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
-	if !found || validator.IsUnbonded() {
-		// TODO add warning log message
-		// fmt.Sprintf("consumer chain %s trying to slash unbonded validator %s", chainID, consAddr.String())
-		return false, nil
+	// TODO: Key assignment will change the following line
+	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, sdk.ConsAddress(data.Validator.Address))
+	if !found || val.IsUnbonded() {
+		return fmt.Errorf("validator %s not found or is unbonded", data.Validator.Address)
 	}
 
-	// tombstoned validators should not be slashed multiple times
+	if data.ValsetUpdateId == 0 {
+		return fmt.Errorf("invalid valset update id: %d", data.ValsetUpdateId)
+	}
+
+	_, found = k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
+	// return error if we cannot find infraction height matching the validator update id
+	if !found {
+		return fmt.Errorf("cannot find infraction height matching "+
+			"the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
+	}
+
+	if data.Infraction != stakingtypes.DoubleSign && data.Infraction != stakingtypes.Downtime {
+		return fmt.Errorf("invalid infraction type: %s", data.Infraction)
+	}
+
+	return nil
+}
+
+// HandleSlashPacket slash and jail a misbehaving validator according the infraction type
+func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
+
+	// Get the validator
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, sdk.ConsAddress(data.Validator.Address))
+	if !found || validator.IsUnbonded() {
+		// if validator is not found or is unbonded drop slash packet and log error
+
+		// TODO: Confirm this will not cause a panic.
+		// See: https://github.com/cosmos/interchain-security/issues/541
+
+		k.Logger(ctx).Error("validator not found or is unbonded. This validator"+
+			"was found and bonded at slash packet recv time", "validator", data.Validator.Address)
+		return
+	}
+
+	// tombstoned validators should not be slashed multiple times.
+	consAddr := sdk.ConsAddress(data.Validator.Address)
 	if k.slashingKeeper.IsTombstoned(ctx, consAddr) {
-		return false, nil
+		// Drop packet if validator is tombstoned.
+		return
 	}
 
 	// slash and jail validator according to their infraction type
@@ -282,11 +319,13 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		slashFraction = k.slashingKeeper.SlashFractionDoubleSign(ctx)
 		jailTime = evidencetypes.DoubleSignJailEndTime
 		k.slashingKeeper.Tombstone(ctx, consAddr)
-	default:
-		return false, fmt.Errorf("invalid infraction type: %v", data.Infraction)
 	}
 
 	// slash validator
+	infractionHeight, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
+	if !found {
+		panic("infraction height not found. But was found during slash packet validation")
+	}
 	k.stakingKeeper.Slash(
 		ctx,
 		consAddr,
@@ -312,11 +351,9 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))),
 		),
 	)
-
-	return true, nil
 }
 
-// EndBlockCIS contains the EndBlock logic needed for
+// EndBlockCCR contains the EndBlock logic needed for
 // the Consumer Chain Removal sub-protocol
 func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	currentTime := ctx.BlockTime()
@@ -380,4 +417,27 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 		}
 	}
+}
+
+// getMappedInfractionHeight gets the infraction height mapped from val set ID for the given chain ID
+func (k Keeper) getMappedInfractionHeight(ctx sdk.Context,
+	chainID string, valsetUpdateID uint64) (height uint64, found bool) {
+
+	if valsetUpdateID == 0 {
+		return k.GetInitChainHeight(ctx, chainID)
+	} else {
+		return k.GetValsetUpdateBlockHeight(ctx, valsetUpdateID)
+	}
+}
+
+// getChainIdOrPanic returns the chainID from a recv packet,
+// or panics if the packet was sent on a different channel than any of the established CCV channels.
+func (k Keeper) getChainIdOrPanic(ctx sdk.Context, packet channeltypes.Packet) string {
+	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
+	if !found {
+		// Packet was sent on a channel different than any of the established CCV channels;
+		// this should never happen
+		panic(fmt.Sprintf("channel %s not found", packet.DestinationChannel))
+	}
+	return chainID
 }
