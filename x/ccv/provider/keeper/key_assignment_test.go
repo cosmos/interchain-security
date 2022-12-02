@@ -676,6 +676,15 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 	}
 }
 
+type SlashPropertyHelper struct {
+	// TODO:
+	// string(sdk.ConsAddress) -> vscid -> was active consumer validator
+	active map[string]map[uint64]bool
+	// TODO:
+	// string(sdk.ConsAddress) -> vscid -> string(sdk.ConsAddress)
+	provider map[string]map[uint64]string
+}
+
 // A key assignment action to be done
 type Assignment struct {
 	val stakingtypes.Validator
@@ -846,7 +855,9 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 			// Randomly fast forward the greatest pruned VSCID. This simulates
 			// delivery of maturity packets from the consumer chain.
-			prunedVscid := greatestPrunedVSCID + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))-greatestPrunedVSCID)
+			prunedVscid := greatestPrunedVSCID +
+				// +1 and -1 because id was incremented (-1), (+1) to make upper bound inclusive
+				rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1-1-greatestPrunedVSCID)
 			k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
 			greatestPrunedVSCID = prunedVscid
 
@@ -879,6 +890,10 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 							require.Equal(t, providerValset.power[i], consumerValset.power[j])
 						}
 					}
+
+					// Know that consC -> idP at vscid k.GetValidatorSetUpdate()-1
+					// Check that for greatestPrunedVSCID < vscid:
+					// 	idP unique and equal to k.GetProviderAddrFromConsumerAddr
 				}
 			}
 			// Check validator set replication backward direction
@@ -911,6 +926,14 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				Each consumer validator that is present in a validator set with vscid VSCID
 				and greatestPrunedVSCID < VSCID maps to a unique provider validator.
 				(TODO: strengthen)
+
+				Each block , record the reverse map for each consumer id
+				consumer id -> vscid -> provider id
+
+				For all VSCID i st greatestPrunedVSCID < i:
+
+
+				For all consumers vals active in any VSCID st greatestPrunedVSCID < VSCID
 
 
 			*/
