@@ -766,6 +766,14 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		providerValset := CreateValSet(providerIdentities)
 		// NOTE: consumer must have space for provider identities because default key assignments are to provider keys
 		consumerValset := CreateValSet(append(providerIdentities, consumerIdentities...))
+		// For each validator on the consumer, record the corresponding provider
+		// address as looked up on the provider using GetProviderAddrFromConsumerAddr
+		// at a given vscid.
+		// consumer consAddr -> vscid -> provider consAddr
+		historicSlashQueries := map[string]map[uint64]string{}
+
+		// Sanity check that the validator set update is initialised to 0, for clarity.
+		require.Equal(t, k.GetValidatorSetUpdateId(ctx), uint64(0))
 
 		// Mock calls to GetLastValidatorPower to return directly from the providerValset
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
@@ -785,11 +793,14 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		}).AnyTimes()
 
 		// Helper: apply some updates to both the provider and consumer valsets
-		applyUpdates := func(updates []abci.ValidatorUpdate) {
+		// and increment the provider vscid.
+		applyUpdatesAndIncrementVSCID := func(updates []abci.ValidatorUpdate) {
 			providerValset.apply(updates)
 			updates, err := k.ApplyKeyAssignmentToValUpdates(ctx, CHAINID, updates)
 			require.NoError(t, err)
 			consumerValset.apply(updates)
+			// Simulate the VSCID update in EndBlock
+			k.IncrementValidatorSetUpdateId(ctx)
 		}
 
 		// Helper: apply some key assignment transactions to the system
@@ -805,7 +816,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		applyAssignments(getAssignments())
 		// And generate a random provider valset which, in the real system, will
 		// be put into the consumer genesis.
-		applyUpdates(getStakingUpdates())
+		applyUpdatesAndIncrementVSCID(getStakingUpdates())
 
 		// Register the consumer chain
 		k.SetConsumerClientId(ctx, CHAINID, "")
@@ -821,17 +832,19 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 			// Generate and apply assignments and power updates
 			applyAssignments(getAssignments())
-			applyUpdates(getStakingUpdates())
+			applyUpdatesAndIncrementVSCID(getStakingUpdates())
 
 			// Randomly fast forward the greatest pruned VSCID. This simulates
 			// delivery of maturity packets from the consumer chain.
-			prunedVscid := greatestPrunedVSCID + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1)
+			prunedVscid := greatestPrunedVSCID +
+				// +1 and -1 because id was incremented (-1), (+1) to make upper bound inclusive
+				rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1-1-greatestPrunedVSCID)
 			k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
 			greatestPrunedVSCID = prunedVscid
 
 			/*
 
-				Properties: Validator Set Replication
+				Property: Validator Set Replication
 				Each validator set on the provider must be replicated on the consumer.
 				The property in the real system is somewhat weaker, because the consumer chain can
 				forward updates to tendermint in batches.
@@ -855,6 +868,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 					// Find the corresponding consumer validator (must always be found)
 					for j, idC := range consumerValset.identities {
 						if consC.Equals(idC.SDKConsAddress()) {
+							// Ensure powers are the same
 							require.Equal(t, providerValset.power[i], consumerValset.power[j])
 						}
 					}
@@ -870,15 +884,62 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 					// Find the corresponding provider validator (must always be found)
 					for j, idP := range providerValset.identities {
 						if idP.SDKConsAddress().Equals(consP) {
+							// Ensure powers are the same
 							require.Equal(t, providerValset.power[j], consumerValset.power[i])
 						}
 					}
 				}
 			}
 
-			// Check that all keys have been or will eventually be pruned.
+			/*
+				Property: Pruning (bounded storage)
+				Check that all keys have been or will eventually be pruned.
+			*/
 
 			require.True(t, checkCorrectPruningProperty(ctx, k, CHAINID))
+
+			/*
+				Property: Correct Consumer Initiated Slash Lookup
+
+				Check that since the last pruning, it has never been possible to query
+				two different provider addresses from the same consumer address.
+				We know that the queried provider address was correct at least once,
+				from checking the validator set replication property. These two facts
+				together guarantee that the slash lookup is always correct.
+			*/
+
+			// Build up the historicSlashQueries data structure
+			for i := range consumerValset.identities {
+				// For each active validator on the consumer chain
+				consC := consumerValset.identities[i].SDKConsAddress()
+				if 0 < consumerValset.power[i] {
+					// Get the provider who assigned the key
+					consP := k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, consC)
+
+					if _, found := historicSlashQueries[string(consC)]; !found {
+						historicSlashQueries[string(consC)] = map[uint64]string{}
+					}
+
+					vscid := k.GetValidatorSetUpdateId(ctx) - 1 // -1 since it was incremented before
+					// Record the slash query result obtained at this block
+					historicSlashQueries[string(consC)][vscid] = string(consP)
+				}
+			}
+
+			// Check that, for each address known the consumer at some block
+			// with vscid st. greatestPrunedVSCID < vscid, there were never
+			// conflicting slash query results.
+			for _, vscidToConsP := range historicSlashQueries {
+				seen := map[string]bool{}
+				for vscid, consP := range vscidToConsP {
+					if uint64(greatestPrunedVSCID) < vscid {
+						// The provider would have returned
+						seen[consP] = true
+					}
+				}
+				// No conflicts.
+				require.True(t, len(seen) < 2)
+			}
 
 		}
 		ctrl.Finish()
