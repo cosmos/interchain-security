@@ -349,30 +349,6 @@ func (k Keeper) IterateConsumerAddrsToPrune(
 	}
 }
 
-func (k Keeper) IterateAllConsumerAddrsToPrune(
-	ctx sdk.Context,
-	cb func(chainID string, vscID uint64, consumerAddrsToPrune types.AddressList) (stop bool),
-) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ConsumerAddrsToPruneBytePrefix})
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		chainID, vscID, err := types.ParseChainIdAndVscIdKey(types.ConsumerAddrsToPruneBytePrefix, iterator.Key())
-		if err != nil {
-			panic(err)
-		}
-		var consumerAddrsToPrune types.AddressList
-		err = consumerAddrsToPrune.Unmarshal(iterator.Value())
-		if err != nil {
-			panic(err)
-		}
-		stop := cb(chainID, vscID, consumerAddrsToPrune)
-		if stop {
-			break
-		}
-	}
-}
-
 // DeleteConsumerAddrsToPrune deletes the list of consumer addresses mapped to a given VSC ID
 func (k Keeper) DeleteConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID uint64) {
 	store := ctx.KVStore(k.storeKey)

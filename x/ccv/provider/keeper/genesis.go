@@ -190,11 +190,15 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	})
 
 	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
-	k.IterateAllConsumerAddrsToPrune(ctx, func(chainID string, vscID uint64, consumerAddrs types.AddressList) (stop bool) {
-		consumerAddrsToPrune = append(consumerAddrsToPrune, types.ConsumerAddrsToPrune{
-			ChainId:       chainID,
-			VscId:         vscID,
-			ConsumerAddrs: &consumerAddrs,
+	// ConsumerAddrsToPrune are added only for registered consumer chains
+	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string, _ string) (stopOuter bool) {
+		k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, consumerAddrs types.AddressList) (stopInner bool) {
+			consumerAddrsToPrune = append(consumerAddrsToPrune, types.ConsumerAddrsToPrune{
+				ChainId:       chainID,
+				VscId:         vscID,
+				ConsumerAddrs: &consumerAddrs,
+			})
+			return false // do not stop the iteration
 		})
 		return false // do not stop the iteration
 	})
