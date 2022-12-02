@@ -766,6 +766,10 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		providerValset := CreateValSet(providerIdentities)
 		// NOTE: consumer must have space for provider identities because default key assignments are to provider keys
 		consumerValset := CreateValSet(append(providerIdentities, consumerIdentities...))
+		// VSCID -> Set(string(sdk.ConsAddress)) - Used to check that slash lookups are correct
+		// (history is needed for consumer initiated double sign slashes)
+		historicConsumerValidators := map[int]map[string]struct{}{}
+		_ = historicConsumerValidators
 
 		// Mock calls to GetLastValidatorPower to return directly from the providerValset
 		mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
@@ -790,6 +794,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			updates, err := k.ApplyKeyAssignmentToValUpdates(ctx, CHAINID, updates)
 			require.NoError(t, err)
 			consumerValset.apply(updates)
+
 		}
 
 		// Helper: apply some key assignment transactions to the system
@@ -825,13 +830,13 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 			// Randomly fast forward the greatest pruned VSCID. This simulates
 			// delivery of maturity packets from the consumer chain.
-			prunedVscid := greatestPrunedVSCID + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1)
+			prunedVscid := greatestPrunedVSCID + rand.Intn(int(k.GetValidatorSetUpdateId(ctx))+1-greatestPrunedVSCID)
 			k.PruneKeyAssignments(ctx, CHAINID, uint64(prunedVscid))
 			greatestPrunedVSCID = prunedVscid
 
 			/*
 
-				Properties: Validator Set Replication
+				Property: Validator Set Replication
 				Each validator set on the provider must be replicated on the consumer.
 				The property in the real system is somewhat weaker, because the consumer chain can
 				forward updates to tendermint in batches.
@@ -876,9 +881,19 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 				}
 			}
 
-			// Check that all keys have been or will eventually be pruned.
+			/*
+				Property: Pruning (bounded storage)
+				Check that all keys have been or will eventually be pruned.
+			*/
 
 			require.True(t, checkCorrectPruningProperty(ctx, k, CHAINID))
+
+			/*
+				Property: Correct Consumer Initiated Slash Lookup
+				Each consumer validator that is present in a validator set with vscid VSCID
+				and greatestPrunedVSCID < VSCID maps to a unique provider validator.
+				(TODO: strengthen)
+			*/
 
 		}
 		ctrl.Finish()
