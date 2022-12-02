@@ -72,6 +72,7 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 	type StoreKey struct {
 		ChainID      string
 		ProviderAddr sdk.ConsAddress
+		ConsumerKey  tmprotocrypto.PublicKey
 	}
 	toDelete := []StoreKey{}
 	h.k.IterateAllValidatorConsumerPubKeys(ctx, func(
@@ -80,17 +81,19 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 		consumerKey tmprotocrypto.PublicKey,
 	) (stop bool) {
 		if providerAddr.Equals(valConsAddr) {
-			toDelete = append(toDelete, StoreKey{ChainID: chainID, ProviderAddr: providerAddr})
+			toDelete = append(toDelete,
+				StoreKey{
+					ChainID:      chainID,
+					ProviderAddr: providerAddr,
+					ConsumerKey:  consumerKey,
+				})
 		}
 		return false // do not stop
 	})
 	for _, key := range toDelete {
-		consumerKey, found := h.k.GetValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
-		if found {
-			consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
-			h.k.DeleteValidatorByConsumerAddr(ctx, key.ChainID, consumerAddr)
-			h.k.DeleteValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
-		}
+		consumerAddr := utils.TMCryptoPublicKeyToConsAddr(key.ConsumerKey)
+		h.k.DeleteValidatorByConsumerAddr(ctx, key.ChainID, consumerAddr)
+		h.k.DeleteValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
 	}
 }
 
