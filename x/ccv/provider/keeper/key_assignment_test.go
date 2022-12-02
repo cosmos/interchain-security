@@ -676,15 +676,6 @@ func (vs *ValSet) apply(updates []abci.ValidatorUpdate) {
 	}
 }
 
-type SlashPropertyHelper struct {
-	// TODO:
-	// string(sdk.ConsAddress) -> vscid -> was active consumer validator
-	active map[string]map[uint64]bool
-	// TODO:
-	// string(sdk.ConsAddress) -> vscid -> string(sdk.ConsAddress)
-	provider map[string]map[uint64]string
-}
-
 // A key assignment action to be done
 type Assignment struct {
 	val stakingtypes.Validator
@@ -775,9 +766,12 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		providerValset := CreateValSet(providerIdentities)
 		// NOTE: consumer must have space for provider identities because default key assignments are to provider keys
 		consumerValset := CreateValSet(append(providerIdentities, consumerIdentities...))
-		// VSCID -> Set(string(sdk.ConsAddress)) - Used to check that slash lookups are correct
-		// (history is needed for consumer initiated double sign slashes)
-		historicConsumerValidators := map[uint64]map[string]struct{}{}
+		// TODO:
+		// maps consumer cons addr -> vscid -> reverse lookup provider addr
+		historicActiveConsumerValSlashLookups := map[string]map[uint64]string{}
+		for _, id := range append(providerIdentities, consumerIdentities...) {
+			historicActiveConsumerValSlashLookups[string(id.SDKConsAddress())] = map[uint64]string{}
+		}
 
 		// Sanity check that the validator set update is initialised to 0, for clarity.
 		require.Equal(t, k.GetValidatorSetUpdateId(ctx), uint64(0))
@@ -801,23 +795,11 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 		// Helper: apply some updates to both the provider and consumer valsets
 		// and increment the provider vscid.
-		applyUpdates := func(updates []abci.ValidatorUpdate) {
+		applyUpdatesAndIncrementVSCID := func(updates []abci.ValidatorUpdate) {
 			providerValset.apply(updates)
 			updates, err := k.ApplyKeyAssignmentToValUpdates(ctx, CHAINID, updates)
 			require.NoError(t, err)
 			consumerValset.apply(updates)
-
-			// Record the active validator set
-			vscid := k.GetValidatorSetUpdateId(ctx)
-			historicConsumerValidators[vscid] = map[string]struct{}{}
-			for i, id := range consumerValset.identities {
-				cons := string(id.SDKConsAddress())
-				if 0 < consumerValset.power[i] {
-					// 0 < power because we want active validators only
-					historicConsumerValidators[vscid][cons] = struct{}{}
-				}
-			}
-
 			// Simulate the VSCID update in EndBlock
 			k.IncrementValidatorSetUpdateId(ctx)
 		}
@@ -835,7 +817,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		applyAssignments(getAssignments())
 		// And generate a random provider valset which, in the real system, will
 		// be put into the consumer genesis.
-		applyUpdates(getStakingUpdates())
+		applyUpdatesAndIncrementVSCID(getStakingUpdates())
 
 		// Register the consumer chain
 		k.SetConsumerClientId(ctx, CHAINID, "")
@@ -851,7 +833,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 			// Generate and apply assignments and power updates
 			applyAssignments(getAssignments())
-			applyUpdates(getStakingUpdates())
+			applyUpdatesAndIncrementVSCID(getStakingUpdates())
 
 			// Randomly fast forward the greatest pruned VSCID. This simulates
 			// delivery of maturity packets from the consumer chain.
@@ -890,10 +872,6 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 							require.Equal(t, providerValset.power[i], consumerValset.power[j])
 						}
 					}
-
-					// Know that consC -> idP at vscid k.GetValidatorSetUpdate()-1
-					// Check that for greatestPrunedVSCID < vscid:
-					// 	idP unique and equal to k.GetProviderAddrFromConsumerAddr
 				}
 			}
 			// Check validator set replication backward direction
@@ -907,8 +885,12 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 					for j, idP := range providerValset.identities {
 						if idP.SDKConsAddress().Equals(consP) {
 							require.Equal(t, providerValset.power[j], consumerValset.power[i])
+
 						}
 					}
+
+					vscid := k.GetValidatorSetUpdateId(ctx) - 1 // -1 since it was incremented before
+					historicActiveConsumerValSlashLookups[string(consC)][vscid] = string(consP)
 				}
 			}
 
@@ -921,44 +903,18 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 			/*
 				Property: Correct Consumer Initiated Slash Lookup
-				For all cryptographic identities known to the consumer at a vscid VSCID
-				with greatestPrunedVSCID < VSCID: the identity
-				Each consumer validator that is present in a validator set with vscid VSCID
-				and greatestPrunedVSCID < VSCID maps to a unique provider validator.
-				(TODO: strengthen)
-
-				Each block , record the reverse map for each consumer id
-				consumer id -> vscid -> provider id
-
-				For all VSCID i st greatestPrunedVSCID < i:
-
-
-				For all consumers vals active in any VSCID st greatestPrunedVSCID < VSCID
-
-
+				Check that the reverse lookup is the same for all consumer ids,
+				for all vscid : greatestPrunedVSCID < vscid if consumer ever active
 			*/
-			for _, id := range consumerIdentities {
-				consC := string(id.SDKConsAddress())
-				first := true
-				var consP string
-
-				// For each validator set that was not yet matured (pruned) by the consumer
-				for vscid := uint64(greatestPrunedVSCID + 1); vscid < k.GetValidatorSetUpdateId(ctx); vscid++ {
-					// Check if the identity was included in the set
-					if _, ok := historicConsumerValidators[vscid][consC]; ok {
-						// If it was included in the set
-						// Check that that the provider consensus address queried is always the same
-						consPFromSlashQuery := string(k.GetProviderAddrFromConsumerAddr(ctx, CHAINID, id.SDKConsAddress()))
-						if first {
-							first = false
-							consP = consPFromSlashQuery
-							continue
-						}
-						require.Equal(t, consP, consPFromSlashQuery)
+			for _, vscidToConsP := range historicActiveConsumerValSlashLookups {
+				seen := map[string]bool{}
+				for vscid, consP := range vscidToConsP {
+					if uint64(greatestPrunedVSCID) < vscid {
+						seen[consP] = true
 					}
 				}
+				require.True(t, len(seen) < 2)
 			}
-
 		}
 		ctrl.Finish()
 	}
