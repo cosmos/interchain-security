@@ -15,6 +15,7 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/pkg/errors"
 )
 
 // OnChanOpenInit implements the IBCModule interface
@@ -275,14 +276,22 @@ func (am AppModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {
-	var data ccv.SlashPacketData
-	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal consumer packet data: %s", err.Error())
+	var slashData ccv.SlashPacketData
+	var vscMaturedData ccv.VSCMaturedPacketData
+
+	err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &slashData)
+	if err != nil {
+		vscErr := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &vscMaturedData)
+		if vscErr != nil {
+			// packet is neither SlashPacketData nor VCSMaturedPacketData
+			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest,
+				"cannot unmarshal consumer packet data: %s",
+				errors.Wrap(err, vscErr.Error()).Error())
+		}
 	}
 
-	if err := am.keeper.OnTimeoutPacket(ctx, packet, data); err != nil {
-		return err
-	}
+	// keeper.OnTimeoutPacket is a no-op
+	_ = am.keeper.OnTimeoutPacket(ctx, packet)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
