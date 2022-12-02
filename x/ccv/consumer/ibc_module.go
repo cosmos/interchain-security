@@ -15,7 +15,6 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	"github.com/pkg/errors"
 )
 
 // OnChanOpenInit implements the IBCModule interface
@@ -271,6 +270,8 @@ func (am AppModule) OnAcknowledgementPacket(
 }
 
 // OnTimeoutPacket implements the IBCModule interface
+// the CCV channel state is changed to CLOSED
+// by the IBC module as the channel is ORDERED
 func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
@@ -286,12 +287,9 @@ func (am AppModule) OnTimeoutPacket(
 			// packet is neither SlashPacketData nor VCSMaturedPacketData
 			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest,
 				"cannot unmarshal consumer packet data: %s",
-				errors.Wrap(err, vscErr.Error()).Error())
+				"expected SlashPacketData or VCSMaturedPacketData")
 		}
 	}
-
-	// keeper.OnTimeoutPacket is a no-op
-	_ = am.keeper.OnTimeoutPacket(ctx, packet)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
