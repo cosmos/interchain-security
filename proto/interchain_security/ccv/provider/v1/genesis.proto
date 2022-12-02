@@ -14,7 +14,7 @@ import "tendermint/crypto/keys.proto";
 
 // GenesisState defines the CCV provider chain genesis state
 message GenesisState {
-  // empty for a new chain
+  // strictly positive and set to 1 (DefaultValsetUpdateID) for a new chain
   uint64 valset_update_id = 1; 
   // empty for a new chain
   repeated ConsumerState consumer_states = 2 [ 
