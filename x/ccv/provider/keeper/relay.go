@@ -249,15 +249,10 @@ func (k Keeper) validateSlashPacket(ctx sdk.Context,
 	// check that a ccv channel is established via the dest channel of the recv packet
 	chainID := k.getChainIdOrPanic(ctx, packet)
 
-	// make sure the validator is not yet unbonded;
-	// stakingKeeper.Slash() panics otherwise
-	// TODO: Key assignment will change the following line
-	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, sdk.ConsAddress(data.Validator.Address))
-	if !found || val.IsUnbonded() {
-		// TODO: return error here. See: ___ (new issue, this PR is just refactoring)
-	}
+	// TODO: callout in PR that check needs to be added here, to return an ibc erro ack when val not found.
+	// TODO: This will need it's own issue, so this PR can stay as refactoring
 
-	_, found = k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
+	_, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	// return error if we cannot find infraction height matching the validator update id
 	if !found {
 		return fmt.Errorf("cannot find infraction height matching "+
@@ -278,12 +273,11 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	consAddr := sdk.ConsAddress(data.Validator.Address)
 	// TODO: Key assignment will change the following line
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+
+	// make sure the validator is not yet unbonded;
+	// stakingKeeper.Slash() panics otherwise
 	if !found || validator.IsUnbonded() {
 		// if validator is not found or is unbonded drop slash packet and log error
-
-		// TODO: Confirm this will not cause a panic.
-		// See: https://github.com/cosmos/interchain-security/issues/541
-
 		k.Logger(ctx).Error("validator not found or is unbonded. However, this validator"+
 			" was found and bonded at slash packet recv time", "validator", data.Validator.Address)
 		return
