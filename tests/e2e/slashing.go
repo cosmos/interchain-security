@@ -255,8 +255,6 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 }
 
 // TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an e2e testing setting
-
-// TODO: likely just replace this with unit tests for the validation and handler!
 func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
