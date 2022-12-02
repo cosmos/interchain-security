@@ -328,7 +328,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	providerKeeper.SetInitChainHeight(ctx, consumerChainID, uint64(ctx.BlockHeight()))
 
 	// Expect no error ack if validator does not exist
-	// TODO: this behavior should be changed to return an error
+	// TODO: this behavior should be changed to return an error ack,
+	// see: https://github.com/cosmos/interchain-security/issues/546
 	ack := providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
 	suite.Require().True(ack.Success())
 
@@ -372,11 +373,6 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
 	suite.Require().True(ack.Success())
 	suite.Require().True(providerStakingKeeper.IsValidatorJailed(ctx, sdk.ConsAddress(tmAddr)))
-
-	// expect the slash to not succeed when validator is tombstoned
-	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
-	suite.Require().True(ack.Success())
-	// TODO: prove slash didn't happen
 }
 
 // TestHandleSlashPacketDistribution tests the slashing of an undelegation balance

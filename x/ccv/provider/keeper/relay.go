@@ -250,7 +250,6 @@ func (k Keeper) validateSlashPacket(ctx sdk.Context,
 	chainID := k.getChainIdOrPanic(ctx, packet)
 
 	// TODO: callout in PR that check needs to be added here, to return an ibc erro ack when val not found.
-	// TODO: This will need it's own issue, so this PR can stay as refactoring
 
 	_, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	// return error if we cannot find infraction height matching the validator update id
@@ -266,7 +265,8 @@ func (k Keeper) validateSlashPacket(ctx sdk.Context,
 	return nil
 }
 
-// HandleSlashPacket slash and jail a misbehaving validator according the infraction type
+// HandleSlashPacket potentially slashes, jails and/or tombstones
+// a misbehaving validator according to infraction type.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
 
 	// Get the validator
