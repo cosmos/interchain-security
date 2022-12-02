@@ -29,8 +29,7 @@ import (
 // Spec tag: [CCV-PCF-HCAPROP.1]
 func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
 	if !ctx.BlockTime().Before(p.SpawnTime) {
-		// lockUbdOnTimeout is set to be false, regardless of what the proposal says, until we can specify and test issues around this use case more thoroughly
-		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, false)
+		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight)
 	}
 
 	err := k.SetPendingConsumerAdditionProp(ctx, p)
@@ -47,7 +46,7 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
 // Spec tag: [CCV-PCF-CRCLIENT.1]
 func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
-	initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
+	initialHeight clienttypes.Height) error {
 
 	// check that a client for this chain does not exist
 	if _, found := k.GetConsumerClientId(ctx, chainID); found {
@@ -315,8 +314,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	propsToExecute := k.ConsumerAdditionPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
-		// lockUbdOnTimeout is set to be false, regardless of what the proposal says, until we can specify and test issues around this use case more thoroughly
-		err := k.CreateConsumerClient(ctx, prop.ChainId, prop.InitialHeight, false)
+		err := k.CreateConsumerClient(ctx, prop.ChainId, prop.InitialHeight)
 		if err != nil {
 			panic(fmt.Errorf("consumer client could not be created: %w", err))
 		}
