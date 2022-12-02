@@ -92,9 +92,6 @@ const (
 	// VscSendTimestampBytePrefix is the byte prefix for storing
 	// the list of VSC sending timestamps for a given consumer chainID.
 	VscSendTimestampBytePrefix
-
-	// LockUnbondingOnTimeoutBytePrefix is the byte prefix that will store the consumer chain id which unbonding operations are locked on CCV channel timeout
-	LockUnbondingOnTimeoutBytePrefix
 )
 
 // PortKey returns the key to the port ID in the store
@@ -213,12 +210,6 @@ func VscSendingTimestampKey(chainID string, vscID uint64) []byte {
 // for a VscSendingTimestampKey or an error if unparsable
 func ParseVscSendingTimestampKey(bz []byte) (string, uint64, error) {
 	return parseChainIdAndVscIdKey(VscSendTimestampBytePrefix, bz)
-}
-
-// LockUnbondingOnTimeoutKey returns the key that will store the consumer chain id which unbonding operations are locked
-// on CCV channel timeout
-func LockUnbondingOnTimeoutKey(chainID string) []byte {
-	return append([]byte{LockUnbondingOnTimeoutBytePrefix}, []byte(chainID)...)
 }
 
 // AppendMany appends a variable number of byte slices together

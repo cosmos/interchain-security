@@ -751,26 +751,6 @@ func (k Keeper) DeletePendingPackets(ctx sdk.Context, chainID string) {
 	store.Delete(types.PendingVSCsKey(chainID))
 }
 
-// GetLockUnbondingOnTimeout returns the mapping from the given consumer chain ID to a boolean value indicating whether
-// the unbonding operation funds should be locked on CCV channel timeout
-func (k Keeper) GetLockUnbondingOnTimeout(ctx sdk.Context, chainID string) bool {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.LockUnbondingOnTimeoutKey(chainID))
-	return bz != nil
-}
-
-// SetLockUnbondingOnTimeout locks the unbonding operation funds in case of a CCV channel timeouts for the given consumer chain ID
-func (k Keeper) SetLockUnbondingOnTimeout(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.LockUnbondingOnTimeoutKey(chainID), []byte{})
-}
-
-// DeleteLockUnbondingOnTimeout deletes the unbonding operation lock in case of a CCV channel timeouts for the given consumer chain ID
-func (k Keeper) DeleteLockUnbondingOnTimeout(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.LockUnbondingOnTimeoutKey(chainID))
-}
-
 // SetConsumerClientId sets the client ID for the given chain ID
 func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
 	store := ctx.KVStore(k.storeKey)

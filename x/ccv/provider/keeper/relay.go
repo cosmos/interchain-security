@@ -96,9 +96,8 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		// The VSC packet data could not be successfully decoded.
 		// This should never happen.
 		if chainID, ok := k.GetChannelToChain(ctx, packet.SourceChannel); ok {
-			// stop consumer chain and uses the LockUnbondingOnTimeout flag
-			// to decide whether the unbonding operations should be released
-			return k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID), false)
+			// stop consumer chain
+			return k.StopConsumerChain(ctx, chainID, false)
 		}
 		return sdkerrors.Wrapf(types.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
 	}
@@ -116,9 +115,8 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) err
 			packet.SourceChannel,
 		)
 	}
-	// stop consumer chain and uses the LockUnbondingOnTimeout flag
-	// to decide whether the unbonding operations should be released
-	return k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID), false)
+	// stop consumer chain
+	return k.StopConsumerChain(ctx, chainID, false)
 }
 
 // EndBlockVSU contains the EndBlock logic needed for
@@ -343,7 +341,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 		// stop the consumer chain and unlock the unbonding.
 		// Note that the CCV channel was not established,
 		// thus closeChan is irrelevant
-		err := k.StopConsumerChain(ctx, chainID, false, false)
+		err := k.StopConsumerChain(ctx, chainID, false)
 		if err != nil {
 			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 		}
@@ -372,14 +370,8 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	})
 	// remove consumers that timed out
 	for _, chainID := range chainIdsToRemove {
-		// stop the consumer chain and use lockUnbondingOnTimeout
-		// to decide whether to lock the unbonding
-		err := k.StopConsumerChain(
-			ctx,
-			chainID,
-			k.GetLockUnbondingOnTimeout(ctx, chainID),
-			true,
-		)
+		// stop the consumer chain
+		err := k.StopConsumerChain(ctx, chainID, true)
 		if err != nil {
 			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 		}

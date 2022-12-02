@@ -54,7 +54,6 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{InitChainHeightBytePrefix}, i+1
 	keys[i], i = []byte{PendingVSCsBytePrefix}, i+1
 	keys[i], i = []byte{VscSendTimestampBytePrefix}, i+1
-	keys[i], i = []byte{LockUnbondingOnTimeoutBytePrefix}, i+1
 
 	return keys[:i]
 }
@@ -148,7 +147,6 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 		SlashAcksKey,
 		InitChainHeightKey,
 		PendingVSCsKey,
-		LockUnbondingOnTimeoutKey,
 	}
 
 	expectedBytePrefixes := []byte{
@@ -160,7 +158,6 @@ func TestKeysWithPrefixAndId(t *testing.T) {
 		SlashAcksBytePrefix,
 		InitChainHeightBytePrefix,
 		PendingVSCsBytePrefix,
-		LockUnbondingOnTimeoutBytePrefix,
 	}
 
 	tests := []struct {

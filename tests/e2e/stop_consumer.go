@@ -42,7 +42,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	// 	- setup CCV channel; establish CCV channel and set channelToChain, chainToChannel and initHeight mapping for the consumer chain ID
 	// 	- delegate the total bond amount to the chosed validator
 	// 	- undelegate the shares in four consecutive blocks evenly; create UnbondigOp and UnbondingOpIndex entries for the consumer chain ID
-	// 	- set SlashAck and LockUnbondingOnTimeout states for the consumer chain ID
+	// 	- set SlashAck state for the consumer chain ID
 	setupOperations := []struct {
 		fn func(suite *CCVTestSuite) error
 	}{
@@ -76,7 +76,6 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 		{
 			func(suite *CCVTestSuite) error {
 				providerKeeper.SetSlashAcks(s.providerCtx(), consumerChainID, []string{"validator-1", "validator-2", "validator-3"})
-				providerKeeper.SetLockUnbondingOnTimeout(s.providerCtx(), consumerChainID)
 				providerKeeper.AppendPendingPackets(s.providerCtx(), consumerChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
 				return nil
 			},
@@ -89,7 +88,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	}
 
 	// stop the consumer chain
-	err = providerKeeper.StopConsumerChain(s.providerCtx(), consumerChainID, false, true)
+	err = providerKeeper.StopConsumerChain(s.providerCtx(), consumerChainID, true)
 	s.Require().NoError(err)
 
 	// check all states are removed and the unbonding operation released
@@ -106,7 +105,7 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	// stop the consumer chain
-	err := providerKeeper.StopConsumerChain(s.providerCtx(), s.consumerChain.ChainID, true, true)
+	err := providerKeeper.StopConsumerChain(s.providerCtx(), s.consumerChain.ChainID, true)
 	s.Require().NoError(err)
 
 	err = s.path.EndpointA.UpdateClient()
@@ -160,7 +159,7 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd bool,
 	// verify consumer chain's states are removed
 	_, found := providerKeeper.GetConsumerGenesis(s.providerCtx(), chainID)
 	s.Require().False(found)
-	s.Require().False(providerKeeper.GetLockUnbondingOnTimeout(s.providerCtx(), chainID))
+
 	_, found = providerKeeper.GetConsumerClientId(s.providerCtx(), chainID)
 	s.Require().False(found)
 

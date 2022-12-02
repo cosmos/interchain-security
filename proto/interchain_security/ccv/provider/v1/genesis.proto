@@ -48,18 +48,15 @@ message ConsumerState {
   string client_id = 3;
   // InitalHeight defines the initial block height for the consumer chain
   uint64 initial_height = 4;
-  // LockUnbondingOnTimeout defines whether the unbonding funds should be released for this
-  // chain in case of a IBC channel timeout
-  bool lock_unbonding_on_timeout = 5;
   // ConsumerGenesis defines the initial consumer chain genesis states
-  interchain_security.ccv.consumer.v1.GenesisState consumer_genesis = 6
+  interchain_security.ccv.consumer.v1.GenesisState consumer_genesis = 5
   [ (gogoproto.nullable) = false ];
   // PendingValsetChanges defines the pending validator set changes for the consumer chain 
-  repeated interchain_security.ccv.v1.ValidatorSetChangePacketData pending_valset_changes = 7
+  repeated interchain_security.ccv.v1.ValidatorSetChangePacketData pending_valset_changes = 6
   [ (gogoproto.nullable) = false ];
-  repeated string slash_downtime_ack = 8;
+  repeated string slash_downtime_ack = 7;
   // UnbondingOpsIndex defines the unbonding operations on the consumer chain
-  repeated UnbondingOpIndex unbonding_ops_index = 9
+  repeated UnbondingOpIndex unbonding_ops_index = 8
   [ (gogoproto.nullable) = false ];
 }
 

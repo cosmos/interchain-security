@@ -135,8 +135,6 @@ func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, 
 			require.True(t, found)
 		}
 
-		require.Equal(t, cs.LockUnbondingOnTimeout, pk.GetLockUnbondingOnTimeout(ctx, chainID))
-
 		if expVSC := cs.GetPendingValsetChanges(); expVSC != nil {
 			gotVSC := pk.GetPendingPackets(ctx, chainID)
 			require.Equal(t, expVSC, gotVSC)
