@@ -272,8 +272,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// stakingKeeper.Slash() panics otherwise
 	if !found || validator.IsUnbonded() {
 		// if validator is not found or is unbonded drop slash packet and log error
-		k.Logger(ctx).Error("validator not found or is unbonded. However, this validator"+
-			" was found and bonded at slash packet recv time", "validator", data.Validator.Address)
+		k.Logger(ctx).Error("validator not found or is unbonded", "validator", data.Validator.Address)
 		return
 	}
 
