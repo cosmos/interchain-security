@@ -183,7 +183,6 @@ func TestHandleSlashPacket(t *testing.T) {
 		packetData ccv.SlashPacketData
 		// The mocks that we expect to be called for the specified packet data.
 		expectedCalls func(sdk.Context, testkeeper.MockedKeepers, ccv.SlashPacketData) []*gomock.Call
-		expectPanic   bool
 	}{
 		{
 			"not found validator",
@@ -200,7 +199,6 @@ func TestHandleSlashPacket(t *testing.T) {
 					).Times(1),
 				}
 			},
-			false, // No panic expected.
 		},
 		{
 			"found, but tombstoned validator",
@@ -218,10 +216,9 @@ func TestHandleSlashPacket(t *testing.T) {
 						sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(true).Times(1),
 				}
 			},
-			false, // No panic expected.
 		},
 		{
-			"panic on infraction height not found",
+			"drop packet when infraction height not found",
 			ccv.SlashPacketData{ValsetUpdateId: 78}, // Keeper doesn't have a height mapped to this vscID.
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
@@ -237,7 +234,6 @@ func TestHandleSlashPacket(t *testing.T) {
 						sdk.ConsAddress(expectedPacketData.Validator.Address)).Return(false).Times(1),
 				}
 			},
-			true, // Panic expected.
 		},
 		{
 			"full downtime packet handling, uses init chain height and non-jailed validator",
@@ -248,7 +244,6 @@ func TestHandleSlashPacket(t *testing.T) {
 				return testkeeper.GetMocksForHandleSlashPacket(
 					ctx, mocks, expectedPacketData, stakingtypes.Validator{Jailed: false})
 			},
-			false, // No panic expected.
 		},
 		{
 			"full downtime packet handling, uses valid vscID and jailed validator",
@@ -259,7 +254,6 @@ func TestHandleSlashPacket(t *testing.T) {
 				return testkeeper.GetMocksForHandleSlashPacket(
 					ctx, mocks, expectedPacketData, stakingtypes.Validator{Jailed: true})
 			},
-			false, // No panic expected.
 		},
 		{
 			"full double sign packet handling, uses init chain height and jailed validator",
@@ -270,7 +264,6 @@ func TestHandleSlashPacket(t *testing.T) {
 				return testkeeper.GetMocksForHandleSlashPacket(
 					ctx, mocks, expectedPacketData, stakingtypes.Validator{Jailed: true})
 			},
-			false, // No panic expected.
 		},
 		{
 			"full double sign packet handling, uses valid vsc id and non-jailed validator",
@@ -281,7 +274,6 @@ func TestHandleSlashPacket(t *testing.T) {
 				return testkeeper.GetMocksForHandleSlashPacket(
 					ctx, mocks, expectedPacketData, stakingtypes.Validator{Jailed: false})
 			},
-			false, // No panic expected.
 		},
 	}
 
@@ -298,11 +290,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		providerKeeper.SetValsetUpdateBlockHeight(ctx, validVscID, 99)
 
 		// Execute method and assert expected mock calls.
-		if tc.expectPanic {
-			require.Panics(t, func() { providerKeeper.HandleSlashPacket(ctx, chainId, tc.packetData) })
-		} else {
-			providerKeeper.HandleSlashPacket(ctx, chainId, tc.packetData)
-		}
+		providerKeeper.HandleSlashPacket(ctx, chainId, tc.packetData)
 		ctrl.Finish()
 	}
 }
