@@ -245,13 +245,7 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context,
 	// check that a ccv channel is established via the dest channel of the recv packet
 	chainID := k.getChainIdOrPanic(ctx, packet)
 
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(
-		ctx, sdk.ConsAddress(data.Validator.Address))
-	if !found || validator.IsUnbonded() {
-		return fmt.Errorf("validator with addr %s not found or unbonded", data.Validator.Address)
-	}
-
-	_, found = k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
+	_, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	// return error if we cannot find infraction height matching the validator update id
 	if !found {
 		return fmt.Errorf("cannot find infraction height matching "+
