@@ -340,6 +340,96 @@ func TestSlashMeterReplenishment(t *testing.T) {
 	}
 }
 
+// TestSlashMeterAllowanceChanges tests the behavior of a full slash meter when the
+// allowance is changed from total voting power changing.
+func TestSlashMeterAllowanceChanges(t *testing.T) {
+
+	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	now := time.Now()
+	ctx = ctx.WithBlockTime(now)
+
+	params := providertypes.DefaultParams()
+	params.SlashMeterReplenishFraction = "0.1"
+	params.SlashMeterReplenishPeriod = time.Hour
+	providerKeeper.SetParams(ctx, params)
+
+	// Mock total power to be 1000
+	gomock.InOrder(
+		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+			// Expect two calls, once for initialization, once for allowance check
+			ctx).Return(sdktypes.NewInt(1000)).Times(2),
+	)
+
+	// Initialize the slash meter (this would happen in InitGenesis)
+	providerKeeper.InitializeSlashMeter(ctx)
+
+	// Confirm slash meter is full, and allowance is expected value via params
+	require.Equal(t, sdktypes.NewInt(100), providerKeeper.GetSlashMeterAllowance(ctx))
+	require.Equal(t, sdktypes.NewInt(100), providerKeeper.GetSlashMeter(ctx))
+
+	// Mutate context so mocked total power is less than before
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Microsecond)) // Don't add enough time for replenishment
+	gomock.InOrder(
+		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+			// Expect two calls, once for replenish check, once for allowance check
+			ctx).Return(sdktypes.NewInt(500)).Times(2),
+	)
+
+	// Replenishment should not happen here, but slash meter should be decremented to new allowance
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(50), providerKeeper.GetSlashMeterAllowance(ctx))
+	require.Equal(t, sdktypes.NewInt(50), providerKeeper.GetSlashMeter(ctx))
+
+	// Mutate context so mocked total power is again less than before,
+	// with ctx time set to a time that will replenish meter
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(5 * time.Hour))
+	gomock.InOrder(
+		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+			// Expect three calls, once for replenish check,
+			// once for replenishment, once for allowance check
+			ctx).Return(sdktypes.NewInt(100)).Times(3),
+	)
+
+	// Replenishment should happen here, slash meter should be decremented to new allowance regardless
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(10), providerKeeper.GetSlashMeterAllowance(ctx))
+	require.Equal(t, sdktypes.NewInt(10), providerKeeper.GetSlashMeter(ctx))
+
+	// Mutate context so mocked total power is now more than before
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Microsecond)) // Don't add enough time for replenishment
+	gomock.InOrder(
+		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+			// Expect two calls, once for replenish check, once for allowance check
+			ctx).Return(sdktypes.NewInt(5000)).Times(2),
+	)
+
+	//
+	// Important: Without a replenishment, the meter should remain at its previous value
+	//
+
+	// Replenishment should not happen here, slash meter should remain at previous value
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(500), providerKeeper.GetSlashMeterAllowance(ctx))
+	require.Equal(t, sdktypes.NewInt(10), providerKeeper.GetSlashMeter(ctx))
+
+	// Mutate context so mocked total power is again more than before,
+	// with ctx time set to a time that will replenish meter
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(5 * time.Hour))
+	gomock.InOrder(
+		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+			// Expect three calls, once for replenish check,
+			// once for replenishment, once for allowance check
+			ctx).Return(sdktypes.NewInt(10000)).Times(3),
+	)
+
+	// Replenishment should happen here, slash meter should be set to new allowance
+	providerKeeper.CheckForSlashMeterReplenishment(ctx)
+	require.Equal(t, sdktypes.NewInt(1000), providerKeeper.GetSlashMeterAllowance(ctx))
+	require.Equal(t, sdktypes.NewInt(1000), providerKeeper.GetSlashMeter(ctx))
+}
+
 // TestNegativeSlashMeter tests behavior of the slash meter when it goes negative,
 // and also the fact that the replenishment allowance becomes lower as total
 // voting power becomes lower from slashing.
