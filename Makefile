@@ -1,5 +1,41 @@
 #!/usr/bin/make -f
 
+BRANCH := $(shell git name-rev --name-only HEAD | sed s,'.*/\(.*\)','\1',)
+COMMIT := $(shell git log -1 --format='%H')
+
+# don't override user values
+ifeq (,$(VERSION))
+  VERSION := $(shell git describe --exact-match 2>/dev/null)
+  # if VERSION is empty, then populate it with branch's name and raw commit hash
+  ifeq (,$(VERSION))
+    VERSION := $(BRANCH)-$(COMMIT)
+  endif
+endif
+
+ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=interchain-security \
+		  -X github.com/cosmos/cosmos-sdk/version.AppName=interchain-security-pd \
+		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
+		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
+		  -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)" \
+		  -X github.com/tendermint/tendermint/version.TMCoreSemVer=$(TM_VERSION)
+
+ifeq (cleveldb,$(findstring cleveldb,$(GAIA_BUILD_OPTIONS)))
+  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb
+endif
+ifeq (,$(findstring nostrip,$(GAIA_BUILD_OPTIONS)))
+  ldflags += -w -s
+endif
+ldflags += $(LDFLAGS)
+ldflags := $(strip $(ldflags))
+
+BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)'
+# check for nostrip option
+ifeq (,$(findstring nostrip,$(GAIA_BUILD_OPTIONS)))
+  BUILD_FLAGS += -trimpath
+endif
+
+#$(info $$BUILD_FLAGS is [$(BUILD_FLAGS)])
+
 install: go.sum
 		export GOFLAGS='-buildmode=pie'
 		export CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2"
