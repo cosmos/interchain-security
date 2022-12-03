@@ -293,7 +293,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// Obtain infraction height or panic
 	infractionHeight, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	if !found {
-		panic("infraction height not found. But was found during slash packet validation")
+		k.Logger(ctx).Error("infraction height not found. But was found during slash packet validation")
 	}
 
 	switch data.Infraction {
