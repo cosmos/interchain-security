@@ -108,17 +108,27 @@ func (k Keeper) InitializeSlashMeter(ctx sdktypes.Context) {
 }
 
 // CheckForSlashMeterReplenishment checks if the slash meter should be replenished, and if so, replenishes it.
-// Note: initial slash meter replenish time is set in InitGenesis
+// Note: initial "last slash meter full time" is set in InitGenesis.
 func (k Keeper) CheckForSlashMeterReplenishment(ctx sdktypes.Context) {
+
 	lastFullTime := k.GetLastSlashMeterFullTime(ctx)
 	replenishPeriod := k.GetSlashMeterReplenishPeriod(ctx)
+
 	// Replenish slash meter if enough time has passed since the last time it was full.
 	if ctx.BlockTime().UTC().After(lastFullTime.Add(replenishPeriod)) {
 		k.ReplenishSlashMeter(ctx)
 	}
-	// If slash meter is full, update most recent time the slash meter was full to current block time.
-	if k.GetSlashMeter(ctx).Equal(k.GetSlashMeterAllowance(ctx)) {
+
+	// If slash meter is full, or more than full considering updated allowance/total power,
+	allowance := k.GetSlashMeterAllowance(ctx)
+	if k.GetSlashMeter(ctx).GTE(allowance) {
+
+		// set the most recent time the slash meter was full to current block time.
 		k.SetLastSlashMeterFullTime(ctx, ctx.BlockTime())
+
+		// Ensure the slash meter is not greater than allowance,
+		// considering current total voting power.
+		k.SetSlashMeter(ctx, allowance)
 	}
 }
 
