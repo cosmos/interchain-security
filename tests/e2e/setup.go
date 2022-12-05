@@ -10,10 +10,12 @@ import (
 	tmencoding "github.com/tendermint/tendermint/crypto/encoding"
 
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 
 	transfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
@@ -114,6 +116,18 @@ func (suite *CCVTestSuite) SetupTest() {
 
 	// re-assign all validator keys for the first consumer chain
 	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
+	for chainID, bundle := range suite.consumerBundles {
+		prop := testkeeper.GetTestConsumerAdditionProp()
+		prop.ChainId = chainID
+		prop.InitialHeight = bundle.Chain.LastHeader.GetHeight().(clienttypes.Height)
+
+		// For each consumer, create client to that consumer on the provider chain.
+		err := providerKeeper.CreateConsumerClient(
+			suite.providerCtx(),
+			prop,
+		)
+		suite.Require().NoError(err)
+	}
 
 	// start consumer chains
 	numConsumers := 5

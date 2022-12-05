@@ -30,8 +30,7 @@ import (
 // Spec tag: [CCV-PCF-HCAPROP.1]
 func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
 	if !ctx.BlockTime().Before(p.SpawnTime) {
-		// lockUbdOnTimeout is set to be false, regardless of what the proposal says, until we can specify and test issues around this use case more thoroughly
-		return k.CreateConsumerClient(ctx, p.ChainId, p.InitialHeight, false)
+		return k.CreateConsumerClient(ctx, p)
 	}
 
 	err := k.SetPendingConsumerAdditionProp(ctx, p)
@@ -47,26 +46,40 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 //
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-crclient1
 // Spec tag: [CCV-PCF-CRCLIENT.1]
-func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
-	initialHeight clienttypes.Height, lockUbdOnTimeout bool) error {
+func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditionProposal) error {
 
+	chainID := prop.ChainId
 	// check that a client for this chain does not exist
-	if _, found := k.GetConsumerClientId(ctx, chainID); found {
+	if _, found := k.GetConsumerClientId(ctx, prop.ChainId); found {
 		// drop the proposal
 		return nil
 	}
 
 	// Consumers always start out with the default unbonding period
-	consumerUnbondingPeriod := consumertypes.DefaultConsumerUnbondingPeriod
+	consumerUnbondingPeriod := prop.UnbondingPeriod
 
 	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
 	clientState := k.GetTemplateClient(ctx)
-	clientState.ChainId = chainID
-	clientState.LatestHeight = initialHeight
+	clientState.ChainId = prop.ChainId
+	clientState.LatestHeight = prop.InitialHeight
 	clientState.TrustingPeriod = consumerUnbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
 	clientState.UnbondingPeriod = consumerUnbondingPeriod
 
 	consumerGen, validatorSetHash, err := k.MakeConsumerGenesis(ctx, chainID)
+	// TODO: Allow for current validators to set different keys
+	consensusState := ibctmtypes.NewConsensusState(
+		ctx.BlockTime(),
+		commitmenttypes.NewMerkleRoot([]byte(ibctmtypes.SentinelRoot)),
+		ctx.BlockHeader().NextValidatorsHash,
+	)
+
+	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)
+	if err != nil {
+		return err
+	}
+	k.SetConsumerClientId(ctx, chainID, clientID)
+
+	consumerGen, err := k.MakeConsumerGenesis(ctx, prop)
 	if err != nil {
 		return err
 	}
@@ -92,8 +105,8 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
 	k.SetInitTimeoutTimestamp(ctx, chainID, uint64(ts.UnixNano()))
 
-	// store LockUnbondingOnTimeout flag
-	if lockUbdOnTimeout {
+	// TODO: this is removed elsewhere
+	if prop.LockUnbondingOnTimeout {
 		k.SetLockUnbondingOnTimeout(ctx, chainID)
 	}
 
@@ -103,7 +116,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 			sdk.NewAttribute(ccv.AttributeChainID, chainID),
 			sdk.NewAttribute(clienttypes.AttributeKeyClientID, clientID),
-			sdk.NewAttribute(ccv.AttributeInitialHeight, initialHeight.String()),
+			sdk.NewAttribute(ccv.AttributeInitialHeight, prop.InitialHeight.String()),
 			sdk.NewAttribute(ccv.AttributeInitializationTimeout, strconv.Itoa(int(ts.UnixNano()))),
 			sdk.NewAttribute(ccv.AttributeTrustingPeriod, clientState.TrustingPeriod.String()),
 			sdk.NewAttribute(ccv.AttributeUnbondingPeriod, clientState.UnbondingPeriod.String()),
@@ -220,7 +233,24 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 // MakeConsumerGenesis constructs the consumer CCV module part of the genesis state.
 func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
+func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditionProposal) (gen consumertypes.GenesisState, err error) {
+	consumerParams := consumertypes.NewParams(
+		true,
+		prop.BlocksPerDistributionTransmission,
+		"", // distributionTransmissionChannel
+		"", // providerFeePoolAddrStr,
+		prop.CcvTimeoutPeriod,
+		prop.TransferTimeoutPeriod,
+		prop.ConsumerRedistributionFraction,
+		prop.HistoricalEntries,
+		prop.UnbondingPeriod,
+	)
+	if err := consumerParams.Validate(); err != nil {
+		return gen, sdkerrors.Wrapf(types.ErrInvalidConsumerParams, "error validating consumer params for chain-id '%s': %s", prop.ChainId, err)
+	}
+
 	height := clienttypes.GetSelfHeight(ctx)
+	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 
 	clientState := k.GetTemplateClient(ctx)
 	// this is the counter party chain ID for the consumer
@@ -235,15 +265,6 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consum
 	if err != nil {
 		return gen, nil, sdkerrors.Wrapf(clienttypes.ErrConsensusStateNotFound, "error %s getting self consensus state for: %s", err, height)
 	}
-
-	gen = *consumertypes.DefaultGenesisState()
-
-	gen.Params.Enabled = true
-	gen.NewChain = true
-	// the client state and consensus state needed by the consumer
-	// to create a client to the provider
-	gen.ProviderClientState = clientState
-	gen.ProviderConsensusState = consState.(*ibctmtypes.ConsensusState)
 
 	var lastPowers []stakingtypes.LastValidatorPower
 
@@ -290,6 +311,8 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consum
 	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
 
 	return gen, hash, nil
+	gen = *consumertypes.NewInitialGenesisState(clientState, consState.(*ibctmtypes.ConsensusState), updates, consumerParams)
+	return gen, nil
 }
 
 // SetPendingConsumerAdditionProp stores a pending proposal to create a consumer chain client
@@ -332,8 +355,8 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	propsToExecute := k.ConsumerAdditionPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
-		// lockUbdOnTimeout is set to be false, regardless of what the proposal says, until we can specify and test issues around this use case more thoroughly
-		err := k.CreateConsumerClient(ctx, prop.ChainId, prop.InitialHeight, false)
+		p := prop
+		err := k.CreateConsumerClient(ctx, &p)
 		if err != nil {
 			panic(fmt.Errorf("consumer client could not be created: %w", err))
 		}
