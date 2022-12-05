@@ -163,8 +163,8 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 
 	roundedInt := sdktypes.NewInt(decFrac.MulInt(totalPower).RoundInt64())
 	if roundedInt.IsZero() {
-		// TODO: Log warning that replenish fraction is too small to
-		// add any allowance to the meter, considering bankers rounding.
+		k.Logger(ctx).Info("slash meter replenish fraction is too small " +
+			"to add any allowance to the meter, considering bankers rounding")
 
 		// Return non-zero allowance to guarantee some slash packets are eventually handled
 		return sdktypes.NewInt(1)
