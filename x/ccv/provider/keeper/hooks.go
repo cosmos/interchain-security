@@ -64,7 +64,7 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 	return nil
 }
 
-func validatorConsensusKeyInUse(ctx sdk.Context, k *Keeper, valAddr sdk.ValAddress) bool {
+func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddress) bool {
 	// Find the validator being added in the staking module
 	// This is necessary because only the operator address is received
 	// as argument at it is not possible to directly query the validator using
@@ -97,7 +97,7 @@ func validatorConsensusKeyInUse(ctx sdk.Context, k *Keeper, valAddr sdk.ValAddre
 }
 
 func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
-	if validatorConsensusKeyInUse(ctx, h.k, valAddr) {
+	if ValidatorConsensusKeyInUse(h.k, ctx, valAddr) {
 		// Abort TX, do NOT allow validator to be created
 		panic("cannot create a validator with a consensus key that is already in use or was recently in use as an assigned consumer chain key")
 	}
