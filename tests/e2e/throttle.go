@@ -328,8 +328,8 @@ func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 	s.setupValidatorPowers()
 
 	// Now all 4 validators have 1000 power (4000 total power) so allowance should be:
-	// default replenish frac * 4000 = 200
-	s.Require().Equal(int64(200), providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
+	// default replenish frac * 4000 = 100
+	s.Require().Equal(int64(100), providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
 
 	// Now we change replenish fraction and assert new expected allowance.
 	params := providerKeeper.GetParams(s.providerCtx())

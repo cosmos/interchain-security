@@ -33,7 +33,7 @@ const (
 	// DefaultSlashMeterReplenishFraction defines the default fraction of total voting power
 	// that is replenished to the slash meter every replenish period. This param also serves as a maximum
 	// fraction of total voting power that the slash meter can hold.
-	DefaultSlashMeterReplenishFraction = "0.05"
+	DefaultSlashMeterReplenishFraction = "0.025"
 
 	// DefaultMaxPendingSlashPackets defines the default maximum amount of pending slash packets that can
 	// be queued for a consumer before the provider chain halts.
