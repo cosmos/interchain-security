@@ -64,8 +64,43 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 	return nil
 }
 
-// Define unimplemented methods to satisfy the StakingHooks contract
+func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddress) bool {
+	// Find the validator being added in the staking module
+	// This is necessary because only the operator address is received
+	// as argument at it is not possible to directly query the validator using
+	// the operator address. Nor is it possible to convert an operator addr
+	// to a consensus addr.
+	val, found := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if !found {
+		panic("did not find newly created validator in staking module")
+	}
+
+	// Get the consensus address of the validator being added
+	cons, err := val.GetConsAddr()
+	if err != nil {
+		panic("could not get validator cons addr ")
+	}
+
+	inUse := false
+
+	// Search over all consumer keys which have been assigned in order to
+	// check if the validator being added is, or was, a consumer chain validator
+	k.IterateAllValidatorsByConsumerAddr(ctx, func(_ string, consumerAddr sdk.ConsAddress, _ sdk.ConsAddress) (stop bool) {
+		if consumerAddr.Equals(cons) {
+			inUse = true
+			return true
+		}
+		return false
+	})
+
+	return inUse
+}
+
 func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
+	if ValidatorConsensusKeyInUse(h.k, ctx, valAddr) {
+		// Abort TX, do NOT allow validator to be created
+		panic("cannot create a validator with a consensus key that is already in use or was recently in use as an assigned consumer chain key")
+	}
 }
 
 func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) {

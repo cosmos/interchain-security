@@ -16,7 +16,6 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/provider"
 	keeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	"github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
 func TestInvalidMsg(t *testing.T) {
@@ -50,6 +49,9 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 						ctx, testValProvider.SDKValAddress(),
 						// Return a valid validator, found!
 					).Return(testValProvider.SDKStakingValidator(), true).Times(1),
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						testValConsumer.SDKConsAddress(),
+					).Return(stakingtypes.Validator{}, false),
 				)
 			},
 			expError: false,
@@ -76,13 +78,16 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				k keeper.Keeper, mocks testkeeper.MockedKeepers) {
 
 				// Use the consumer key already
-				pAddr := utils.TMCryptoPublicKeyToConsAddr(testValProvider.TMProtoCryptoPublicKey())
-				k.SetValidatorConsumerPubKey(ctx, "chainid", pAddr, testValConsumer.TMProtoCryptoPublicKey())
+				k.SetValidatorByConsumerAddr(ctx, "chainid", testValConsumer.SDKConsAddress(), testValProvider.SDKConsAddress())
 
 				gomock.InOrder(
 					mocks.MockStakingKeeper.EXPECT().GetValidator(
 						ctx, testValProvider.SDKValAddress(),
-					).Return(stakingtypes.Validator{}, false).Times(1),
+						// Return a valid validator, found!
+					).Return(testValProvider.SDKStakingValidator(), true).Times(1),
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						testValConsumer.SDKConsAddress(),
+					).Return(stakingtypes.Validator{}, false),
 				)
 			},
 			expError: true,

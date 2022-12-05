@@ -477,16 +477,19 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			0. Consumer     registered: Assign PK0->CK0 and retrieve PK0->CK0
 			1. Consumer     registered: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
 			2. Consumer     registered: Assign PK0->CK0, PK1->CK0 and error
-			3. Consumer     registered: Assign PK1->PK0 and error (TODO: see https://github.com/cosmos/interchain-security/issues/503)
+			3. Consumer     registered: Assign PK1->PK0 and error
 			4. Consumer not registered: Assign PK0->CK0 and retrieve PK0->CK0
 			5. Consumer not registered: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
 			6. Consumer not registered: Assign PK0->CK0, PK1->CK0 and error
-			7. Consumer not registered: Assign PK1->PK0 and error (TODO: see https://github.com/cosmos/interchain-security/issues/503)
+			7. Consumer not registered: Assign PK1->PK0 and error
 		*/
 		{
 			name: "0",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKConsAddress(),
+					).Return(stakingtypes.Validator{}, false),
 					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
 						ctx, providerIdentities[0].SDKValAddress(),
 					).Return(int64(0)),
@@ -508,9 +511,15 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			name: "1",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKConsAddress(),
+					).Return(stakingtypes.Validator{}, false),
 					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
 						ctx, providerIdentities[0].SDKValAddress(),
 					).Return(int64(0)),
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[1].SDKConsAddress(),
+					).Return(stakingtypes.Validator{}, false),
 					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
 						ctx, providerIdentities[0].SDKValAddress(),
 					).Return(int64(0)),
@@ -537,9 +546,15 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			name: "2",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKConsAddress(),
+					).Return(stakingtypes.Validator{}, false),
 					mocks.MockStakingKeeper.EXPECT().GetLastValidatorPower(
 						ctx, providerIdentities[0].SDKValAddress(),
 					).Return(int64(0)),
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKConsAddress(),
+					).Return(stakingtypes.Validator{}, false),
 				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
@@ -559,17 +574,32 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
 			},
 		},
-		// (TODO: see https://github.com/cosmos/interchain-security/issues/503)
-		// {
-		// 	name: "3",
-		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-		// 	},
-		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-		// 	},
-		// },
+		{
+			name: "3",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						providerIdentities[0].SDKConsAddress(),
+					).Return(providerIdentities[0].SDKStakingValidator(), true),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetConsumerClientId(ctx, chainID, "")
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[1].SDKStakingValidator(),
+					providerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.Error(t, err)
+			},
+		},
 		{
 			name: "4",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKConsAddress(),
+					).Return(stakingtypes.Validator{}, false),
+				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
 				err := k.AssignConsumerKey(ctx, chainID,
@@ -585,6 +615,14 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 		{
 			name: "5",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKConsAddress(),
+					).Return(stakingtypes.Validator{}, false),
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[1].SDKConsAddress(),
+					).Return(stakingtypes.Validator{}, false),
+				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
 				err := k.AssignConsumerKey(ctx, chainID,
@@ -605,6 +643,14 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 		{
 			name: "6",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKConsAddress(),
+					).Return(stakingtypes.Validator{}, false),
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						consumerIdentities[0].SDKConsAddress(),
+					).Return(stakingtypes.Validator{}, false),
+				)
 			},
 			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
 				err := k.AssignConsumerKey(ctx, chainID,
@@ -622,14 +668,23 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
 			},
 		},
-		// (TODO: see https://github.com/cosmos/interchain-security/issues/503)
-		// {
-		// 	name: "7",
-		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-		// 	},
-		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-		// 	},
-		// },
+		{
+			name: "7",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						providerIdentities[0].SDKConsAddress(),
+					).Return(providerIdentities[0].SDKStakingValidator(), true),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[1].SDKStakingValidator(),
+					providerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.Error(t, err)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -685,9 +740,6 @@ type Assignment struct {
 // TestSimulatedAssignmentsAndUpdateApplication tests a series
 // of simulated scenarios where random key assignments and validator
 // set updates are generated.
-// TODO: this does not yet fully test the correct lookup of a provider
-// validator from a consumer consensus address, as is needed for handling
-// (double sign) slash packets.
 func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 	CHAINID := "chainID"
@@ -707,32 +759,27 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 	NUM_ASSIGNMENTS_PER_BLOCK_MAX := 8
 
 	// Create some identities for the simulated provider validators to use
-	providerIdentities := []*cryptotestutil.CryptoIdentity{}
+	providerIDS := []*cryptotestutil.CryptoIdentity{}
 	// Create some identities which the provider validators can assign to the consumer chain
-	consumerIdentities := []*cryptotestutil.CryptoIdentity{}
+	assignableIDS := []*cryptotestutil.CryptoIdentity{}
 	for i := 0; i < NUM_VALIDATORS; i++ {
-		providerIdentities = append(providerIdentities, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
+		providerIDS = append(providerIDS, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
 	}
-	for i := NUM_VALIDATORS; i < NUM_ASSIGNABLE_KEYS+NUM_VALIDATORS; i++ {
-		// ATTENTION: uses a different domain of keys for assignments
-		//
-		// (TODO: allow consumer identities to overlap with provider identities
-		// this will be enabled after the testnet
-		// see https://github.com/cosmos/interchain-security/issues/503)
-		//
-		consumerIdentities = append(consumerIdentities, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
+	// Notice that the assignable identities include the provider identities
+	for i := 0; i < NUM_VALIDATORS+NUM_ASSIGNABLE_KEYS; i++ {
+		assignableIDS = append(assignableIDS, cryptotestutil.NewCryptoIdentityFromIntSeed(i))
 	}
 
 	// Helper: simulates creation of staking module EndBlock updates.
 	getStakingUpdates := func() (ret []abci.ValidatorUpdate) {
 		// Get a random set of validators to update. It is important to test subsets of all validators.
-		validators := rand.Perm(NUM_VALIDATORS)[0:rand.Intn(NUM_VALIDATORS+1)]
+		validators := rand.Perm(len(providerIDS))[0:rand.Intn(len(providerIDS)+1)]
 		for _, i := range validators {
 			// Power 0, 1, or 2 represents
 			// deletion, update (from 0 or 2), update (from 0 or 1)
 			power := rand.Intn(3)
 			ret = append(ret, abci.ValidatorUpdate{
-				PubKey: providerIdentities[i].TMProtoCryptoPublicKey(),
+				PubKey: providerIDS[i].TMProtoCryptoPublicKey(),
 				Power:  int64(power),
 			})
 		}
@@ -742,11 +789,11 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 	// Helper: simulates creation of assignment tx's to be done.
 	getAssignments := func() (ret []Assignment) {
 		for i, numAssignments := 0, rand.Intn(NUM_ASSIGNMENTS_PER_BLOCK_MAX); i < numAssignments; i++ {
-			randomIxP := rand.Intn(NUM_VALIDATORS)
-			randomIxC := rand.Intn(NUM_ASSIGNABLE_KEYS)
+			randomIxP := rand.Intn(len(providerIDS))
+			randomIxC := rand.Intn(len(assignableIDS))
 			ret = append(ret, Assignment{
-				val: providerIdentities[randomIxP].SDKStakingValidator(),
-				ck:  consumerIdentities[randomIxC].TMProtoCryptoPublicKey(),
+				val: providerIDS[randomIxP].SDKStakingValidator(),
+				ck:  assignableIDS[randomIxC].TMProtoCryptoPublicKey(),
 			})
 		}
 		return
@@ -763,9 +810,9 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 		// Create validator sets for the provider and consumer. These are used to check the validator set
 		// replication property.
-		providerValset := CreateValSet(providerIdentities)
+		providerValset := CreateValSet(providerIDS)
 		// NOTE: consumer must have space for provider identities because default key assignments are to provider keys
-		consumerValset := CreateValSet(append(providerIdentities, consumerIdentities...))
+		consumerValset := CreateValSet(assignableIDS)
 		// For each validator on the consumer, record the corresponding provider
 		// address as looked up on the provider using GetProviderAddrFromConsumerAddr
 		// at a given vscid.
@@ -782,7 +829,7 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 		).DoAndReturn(func(_ interface{}, valAddr sdk.ValAddress) int64 {
 			// When the mocked method is called, locate the appropriate validator
 			// in the provider valset and return its power.
-			for i, id := range providerIdentities {
+			for i, id := range providerIDS {
 				if id.SDKStakingValidator().GetOperator().Equals(valAddr) {
 					return providerValset.power[i]
 				}
@@ -790,6 +837,20 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			panic("must find validator")
 			// This can be called 0 or more times per block depending on the random
 			// assignments that occur
+		}).AnyTimes()
+
+		// This implements the assumption that all the provider IDS are added
+		// to the system at the beginning of the simulation.
+		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
+			gomock.Any(),
+			gomock.Any(),
+		).DoAndReturn(func(_ interface{}, consP sdk.ConsAddress) (stakingtypes.Validator, bool) {
+			for _, id := range providerIDS {
+				if id.SDKConsAddress().Equals(consP) {
+					return id.SDKStakingValidator(), true
+				}
+			}
+			return stakingtypes.Validator{}, false
 		}).AnyTimes()
 
 		// Helper: apply some updates to both the provider and consumer valsets
