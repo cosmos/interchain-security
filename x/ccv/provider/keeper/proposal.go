@@ -218,6 +218,16 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 		k.DeleteUnbondingOpIndex(ctx, chainID, id)
 	}
 
+	// Remove any existing throttling related queue entries from the
+	// global queue for this consumer.
+	k.DeletePendingSlashPacketEntriesForConsumer(ctx, chainID)
+
+	// Remove all pending slash packets and vsc matured packets queued for this consumer.
+	// Note: queued VSC matured packets can be safely removed from the per-chain queue,
+	// since all unbonding operations for this consumer are release above.
+	// TODO: ^ is this true?
+	k.DeletePendingPacketDataForConsumer(ctx, chainID)
+
 	return nil
 }
 

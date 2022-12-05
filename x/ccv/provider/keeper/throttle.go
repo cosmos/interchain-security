@@ -199,6 +199,22 @@ func (k Keeper) GetAllPendingSlashPacketEntries(ctx sdktypes.Context) (entries [
 	return entries
 }
 
+// DeleteAllPendingSlashPacketEntries deletes all pending slash packet entries in the global queue,
+// only relevant to a single consumer.
+func (k Keeper) DeletePendingSlashPacketEntriesForConsumer(ctx sdktypes.Context, consumerChainID string) {
+	entriesToDel := []providertypes.SlashPacketEntry{}
+	k.IteratePendingSlashPacketEntries(ctx, func(entry providertypes.SlashPacketEntry) (stop bool) {
+		if entry.ConsumerChainID == consumerChainID {
+			entriesToDel = append(entriesToDel, entry)
+		}
+		// Continue iteration
+		stop = false
+		return stop
+	})
+
+	k.DeletePendingSlashPacketEntries(ctx, entriesToDel...)
+}
+
 // IteratePendingSlashPackets iterates over the pending slash packet entry queue and calls the provided callback
 func (k Keeper) IteratePendingSlashPacketEntries(ctx sdktypes.Context,
 	cb func(providertypes.SlashPacketEntry) (stop bool)) {
@@ -350,6 +366,44 @@ func (k Keeper) IteratePendingPacketData(ctx sdktypes.Context, consumerChainID s
 			break
 		}
 	}
+}
+
+// GetAllPendingPacketData returns all pending packet data for a specific consumer chain.
+//
+// Note: This method is only used by tests
+func (k Keeper) GetAllPendingPacketData(ctx sdktypes.Context, consumerChainID string) (
+	[]ccvtypes.SlashPacketData, []ccvtypes.VSCMaturedPacketData) {
+
+	slashData := []ccvtypes.SlashPacketData{}
+	vscMaturedData := []ccvtypes.VSCMaturedPacketData{}
+	k.IteratePendingPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, data interface{}) (stop bool) {
+
+		switch data := data.(type) {
+
+		case ccvtypes.SlashPacketData:
+			slashData = append(slashData, data)
+		case ccvtypes.VSCMaturedPacketData:
+			vscMaturedData = append(vscMaturedData, data)
+		default:
+			panic(fmt.Sprintf("unexpected pending packet data type: %T", data))
+		}
+		// Continue iteration
+		stop = false
+		return stop
+	})
+	return slashData, vscMaturedData
+}
+
+// DeletePendingPacketDataForConsumer deletes all pending packet data for the given consumer chain.
+func (k Keeper) DeletePendingPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
+	ibcSeqNumsToDelete := []uint64{}
+	k.IteratePendingPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, packetData interface{}) bool {
+		ibcSeqNumsToDelete = append(ibcSeqNumsToDelete, ibcSeqNum)
+		// Continue iteration
+		stop := false
+		return stop
+	})
+	k.DeletePendingPacketData(ctx, consumerChainID, ibcSeqNumsToDelete...)
 }
 
 // DeletePendingPacketData deletes the given entries (specified by their ibc seq number) from the pending packet data queue
