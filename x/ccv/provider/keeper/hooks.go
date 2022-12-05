@@ -70,15 +70,10 @@ func validatorConsensusKeyInUse(ctx sdk.Context, k *Keeper, valAddr sdk.ValAddre
 	// as argument at it is not possible to directly query the validator using
 	// the operator address. Nor is it possible to convert an operator addr
 	// to a consensus addr.
-	var val stakingtypes.ValidatorI
-	k.stakingKeeper.IterateValidators(ctx, func(_ int64, validator stakingtypes.ValidatorI) bool {
-		if validator.GetOperator().Equals(valAddr) {
-			val = validator
-			return true
-
-		}
-		return false
-	})
+	val, found := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if !found {
+		panic("did not find newly created validator in staking module")
+	}
 
 	// Get the consensus address of the validator being added
 	cons, err := val.GetConsAddr()
