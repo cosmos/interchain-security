@@ -189,28 +189,6 @@ func TestValidateBasic(t *testing.T) {
 				0),
 			false,
 		},
-		{
-			"ccv timeout period greater than unbonding period",
-			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
-				"0.75",
-				10,
-				10000,
-				10000000000,
-				100000000000,
-				10000000000),
-			false,
-		},
-		{
-			"transfer timeout period greater than unbonding period",
-			types.NewConsumerAdditionProposal("title", "description", "chainID", initialHeight, []byte("gen_hash"), []byte("bin_hash"), time.Now(),
-				"0.75",
-				10,
-				10000,
-				10000000000,
-				100000000000,
-				10000000000),
-			false,
-		},
 	}
 
 	for _, tc := range testCases {

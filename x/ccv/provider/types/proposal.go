@@ -118,15 +118,6 @@ func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
 	}
 
-	// TODO: sanity check these params
-	if cccp.CcvTimeoutPeriod > cccp.UnbondingPeriod {
-		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "ccv timeout period cannot be greater than unbonding period")
-	}
-	// TODO: sanity check these params
-	if cccp.TransferTimeoutPeriod > cccp.UnbondingPeriod {
-		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "transfer timeout period cannot be greater than unbonding period")
-	}
-
 	return nil
 }
 
