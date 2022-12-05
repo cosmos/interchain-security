@@ -56,6 +56,12 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				[]byte("gen_hash"),
 				[]byte("bin_hash"),
 				now, // Spawn time
+				"0.75",
+				10,
+				10000,
+				100000000000,
+				100000000000,
+				100000000000,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:        hourFromNow,
 			expCreatedClient: true,
@@ -71,6 +77,12 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				[]byte("gen_hash"),
 				[]byte("bin_hash"),
 				hourFromNow, // Spawn time
+				"0.75",
+				10,
+				10000,
+				100000000000,
+				100000000000,
+				100000000000,
 			).(*types.ConsumerAdditionProposal),
 			blockTime:        now,
 			expCreatedClient: false,
@@ -713,13 +725,31 @@ func TestBeginBlockInit(t *testing.T) {
 	pendingProps := []*providertypes.ConsumerAdditionProposal{
 		providertypes.NewConsumerAdditionProposal(
 			"title", "description", "chain1", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.Add(-time.Hour).UTC()).(*providertypes.ConsumerAdditionProposal),
+			now.Add(-time.Hour).UTC(),
+			"0.75",
+			10,
+			10000,
+			100000000000,
+			100000000000,
+			100000000000).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "description", "chain2", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.UTC()).(*providertypes.ConsumerAdditionProposal),
+			now.UTC(),
+			"0.75",
+			10,
+			10000,
+			100000000000,
+			100000000000,
+			100000000000).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "description", "chain3", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.Add(time.Hour).UTC()).(*providertypes.ConsumerAdditionProposal),
+			now.Add(time.Hour).UTC(),
+			"0.75",
+			10,
+			10000,
+			100000000000,
+			100000000000,
+			100000000000).(*providertypes.ConsumerAdditionProposal),
 	}
 
 	gomock.InOrder(

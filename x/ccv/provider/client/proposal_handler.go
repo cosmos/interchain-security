@@ -68,7 +68,9 @@ Where proposal.json contains:
 
 			content := types.NewConsumerAdditionProposal(
 				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
-				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime)
+				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime,
+				proposal.ConsumerRedistributionFraction, proposal.BlocksPerDistributionTransmission, proposal.HistoricalEntries,
+				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod)
 
 			from := clientCtx.GetFromAddress()
 
@@ -148,7 +150,15 @@ type ConsumerAdditionProposalJSON struct {
 	GenesisHash   []byte             `json:"genesis_hash"`
 	BinaryHash    []byte             `json:"binary_hash"`
 	SpawnTime     time.Time          `json:"spawn_time"`
-	Deposit       string             `json:"deposit"`
+
+	ConsumerRedistributionFraction    string        `json:"consumer_redistribution_fraction"`
+	BlocksPerDistributionTransmission int64         `json:"blocks_per_distribution_transmission"`
+	HistoricalEntries                 int64         `json:"historical_entries"`
+	CcvTimeoutPeriod                  time.Duration `json:"ccv_timeout_period"`
+	TransferTimeoutPeriod             time.Duration `json:"transfer_timeout_period"`
+	UnbondingPeriod                   time.Duration `json:"unbonding_period"`
+
+	Deposit string `json:"deposit"`
 }
 
 type ConsumerAdditionProposalReq struct {
@@ -162,7 +172,15 @@ type ConsumerAdditionProposalReq struct {
 	GenesisHash   []byte             `json:"genesisHash"`
 	BinaryHash    []byte             `json:"binaryHash"`
 	SpawnTime     time.Time          `json:"spawnTime"`
-	Deposit       sdk.Coins          `json:"deposit"`
+
+	ConsumerRedistributionFraction    string        `json:"consumer_redistribution_fraction"`
+	BlocksPerDistributionTransmission int64         `json:"blocks_per_distribution_transmission"`
+	HistoricalEntries                 int64         `json:"historical_entries"`
+	CcvTimeoutPeriod                  time.Duration `json:"ccv_timeout_period"`
+	TransferTimeoutPeriod             time.Duration `json:"transfer_timeout_period"`
+	UnbondingPeriod                   time.Duration `json:"unbonding_period"`
+
+	Deposit sdk.Coins `json:"deposit"`
 }
 
 func ParseConsumerAdditionProposalJSON(proposalFile string) (ConsumerAdditionProposalJSON, error) {
@@ -245,7 +263,9 @@ func postConsumerAdditionProposalHandlerFn(clientCtx client.Context) http.Handle
 
 		content := types.NewConsumerAdditionProposal(
 			req.Title, req.Description, req.ChainId, req.InitialHeight,
-			req.GenesisHash, req.BinaryHash, req.SpawnTime)
+			req.GenesisHash, req.BinaryHash, req.SpawnTime,
+			req.ConsumerRedistributionFraction, req.BlocksPerDistributionTransmission, req.HistoricalEntries,
+			req.CcvTimeoutPeriod, req.TransferTimeoutPeriod, req.UnbondingPeriod)
 
 		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
 		if rest.CheckBadRequestError(w, err) {
