@@ -477,11 +477,11 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 			0. Consumer     registered: Assign PK0->CK0 and retrieve PK0->CK0
 			1. Consumer     registered: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
 			2. Consumer     registered: Assign PK0->CK0, PK1->CK0 and error
-			3. Consumer     registered: Assign PK1->PK0 and error (TODO: see https://github.com/cosmos/interchain-security/issues/503)
+			3. Consumer     registered: Assign PK1->PK0 and error
 			4. Consumer not registered: Assign PK0->CK0 and retrieve PK0->CK0
 			5. Consumer not registered: Assign PK0->CK0, PK0->CK1 and retrieve PK0->CK1
 			6. Consumer not registered: Assign PK0->CK0, PK1->CK0 and error
-			7. Consumer not registered: Assign PK1->PK0 and error (TODO: see https://github.com/cosmos/interchain-security/issues/503)
+			7. Consumer not registered: Assign PK1->PK0 and error
 		*/
 		{
 			name: "0",
@@ -574,14 +574,24 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
 			},
 		},
-		// (TODO: see https://github.com/cosmos/interchain-security/issues/503)
-		// {
-		// 	name: "3",
-		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-		// 	},
-		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-		// 	},
-		// },
+		{
+			name: "3",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						providerIdentities[0].SDKConsAddress(),
+					).Return(providerIdentities[0].SDKStakingValidator(), true),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				k.SetConsumerClientId(ctx, chainID, "")
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[1].SDKStakingValidator(),
+					providerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.Error(t, err)
+			},
+		},
 		{
 			name: "4",
 			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
@@ -658,14 +668,23 @@ func TestAssignConsensusKeyForConsumerChain(t *testing.T) {
 				require.Equal(t, providerIdentities[0].SDKConsAddress(), providerAddr)
 			},
 		},
-		// (TODO: see https://github.com/cosmos/interchain-security/issues/503)
-		// {
-		// 	name: "7",
-		// 	mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
-		// 	},
-		// 	doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
-		// 	},
-		// },
+		{
+			name: "7",
+			mockSetup: func(ctx sdk.Context, k providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+				gomock.InOrder(
+					mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(ctx,
+						providerIdentities[0].SDKConsAddress(),
+					).Return(providerIdentities[0].SDKStakingValidator(), true),
+				)
+			},
+			doActions: func(ctx sdk.Context, k providerkeeper.Keeper) {
+				err := k.AssignConsumerKey(ctx, chainID,
+					providerIdentities[1].SDKStakingValidator(),
+					providerIdentities[0].TMProtoCryptoPublicKey(),
+				)
+				require.Error(t, err)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
