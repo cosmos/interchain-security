@@ -847,6 +847,14 @@ func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 			// assignments that occur
 		}).AnyTimes()
 
+		// Mock calls to GetValidatorByConsAddr never find a validator
+		mocks.MockStakingKeeper.EXPECT().GetValidatorByConsAddr(
+			gomock.Any(),
+			gomock.Any(),
+		).DoAndReturn(func(_ interface{}, _ interface{}) (validator stakingtypes.Validator, found bool) {
+			return validator, false
+		}).AnyTimes()
+
 		// Helper: apply some updates to both the provider and consumer valsets
 		// and increment the provider vscid.
 		applyUpdatesAndIncrementVSCID := func(updates []abci.ValidatorUpdate) {
