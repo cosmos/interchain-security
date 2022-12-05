@@ -358,17 +358,31 @@ func (k Keeper) AssignConsumerKey(
 	validator stakingtypes.Validator,
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
+
 	consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
 
 	providerAddr, err := validator.GetConsAddr()
+
 	if err != nil {
 		return err
 	}
 
+	if existingVal, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consumerAddr); found {
+		if existingVal.OperatorAddress != validator.OperatorAddress {
+			// consumer key is already the key belonging to another existing
+			// and different provider
+			// prevent
+			return sdkerrors.Wrapf(
+				types.ErrConsumerKeyInUse, "a different validator already uses the consumer key",
+			)
+		}
+	}
+
 	if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
-		// mapping already exists; return error
+		// consumer key is already in use
+		// prevent multiple validators from assigning the same key
 		return sdkerrors.Wrapf(
-			types.ErrConsumerKeyExists, "consumer key already exists",
+			types.ErrConsumerKeyInUse, "a validator has assigned the consumer key already",
 		)
 	}
 
