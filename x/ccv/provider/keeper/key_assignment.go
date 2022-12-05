@@ -12,11 +12,6 @@ import (
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
-// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
-// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
-// KeyAssignmentReplacements: (chainID, providerAddr consAddr) -> replacement abci.ValidatorUpdate
-// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrsToPrune [][]byte
-
 // GetValidatorConsumerPubKey returns a validator's public key assigned for a consumer chain
 func (k Keeper) GetValidatorConsumerPubKey(
 	ctx sdk.Context,
