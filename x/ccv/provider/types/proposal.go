@@ -5,6 +5,7 @@ import (
 	"strings"
 	time "time"
 
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
@@ -76,6 +77,32 @@ func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 	if cccp.SpawnTime.IsZero() {
 		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "spawn time cannot be zero")
 	}
+
+	if _, err := sdktypes.NewDecFromStr(cccp.ConsumerRedistributionFraction); err != nil {
+		return sdkerrors.Wrapf(ErrInvalidConsumerAdditionProposal, "consumer redistribution fraction is invalid: %s", err)
+	}
+
+	if cccp.BlocksPerDistributionTransmission < 1 {
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "blocks per distribution transmission cannot be < 1")
+	}
+
+	if cccp.HistoricalEntries < 1 {
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "historical entries cannot be < 1")
+	}
+
+	zeroDuration := time.Duration(0)
+	if cccp.CcvTimeoutPeriod == zeroDuration {
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "ccv timeout period cannot be zero")
+	}
+
+	if cccp.TransferTimeoutPeriod == zeroDuration {
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "transfer timeout period cannot be zero")
+	}
+
+	if cccp.UnbondingPeriod == zeroDuration {
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
+	}
+
 	return nil
 }
 
@@ -88,7 +115,26 @@ func (cccp *ConsumerAdditionProposal) String() string {
 	InitialHeight: %s
 	GenesisHash: %s
 	BinaryHash: %s
-	SpawnTime: %s`, cccp.Title, cccp.Description, cccp.ChainId, cccp.InitialHeight, cccp.GenesisHash, cccp.BinaryHash, cccp.SpawnTime)
+	SpawnTime: %s
+	ConsumerRedistributionFraction: %s
+	BlocksPerDistributionTransmission: %d
+	HistoricalEntries: %d
+	CcvTimeoutPeriod: %d
+	TransferTimeoutPeriod: %d
+	UnbondingPeriod: %d`,
+		cccp.Title,
+		cccp.Description,
+		cccp.ChainId,
+		cccp.InitialHeight,
+		cccp.GenesisHash,
+		cccp.BinaryHash,
+		cccp.SpawnTime,
+		cccp.ConsumerRedistributionFraction,
+		cccp.BlocksPerDistributionTransmission,
+		cccp.HistoricalEntries,
+		cccp.CcvTimeoutPeriod,
+		cccp.TransferTimeoutPeriod,
+		cccp.UnbondingPeriod)
 }
 
 // NewConsumerRemovalProposal creates a new consumer removal proposal.
