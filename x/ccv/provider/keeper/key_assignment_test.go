@@ -740,9 +740,6 @@ type Assignment struct {
 // TestSimulatedAssignmentsAndUpdateApplication tests a series
 // of simulated scenarios where random key assignments and validator
 // set updates are generated.
-// TODO: this does not yet fully test the correct lookup of a provider
-// validator from a consumer consensus address, as is needed for handling
-// (double sign) slash packets.
 func TestSimulatedAssignmentsAndUpdateApplication(t *testing.T) {
 
 	CHAINID := "chainID"
