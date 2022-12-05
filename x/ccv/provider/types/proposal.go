@@ -27,15 +27,30 @@ func init() {
 }
 
 // NewConsumerAdditionProposal creates a new consumer addition proposal.
-func NewConsumerAdditionProposal(title, description, chainID string, initialHeight clienttypes.Height, genesisHash, binaryHash []byte, spawnTime time.Time) govtypes.Content {
+func NewConsumerAdditionProposal(title, description, chainID string,
+	initialHeight clienttypes.Height, genesisHash, binaryHash []byte,
+	spawnTime time.Time,
+	consumerRedistributionFraction string,
+	blocksPerDistributionTransmission,
+	historicalEntries int64,
+	ccvTimeoutPeriod time.Duration,
+	transferTimeoutPeriod time.Duration,
+	unbondingPeriod time.Duration,
+) govtypes.Content {
 	return &ConsumerAdditionProposal{
-		Title:         title,
-		Description:   description,
-		ChainId:       chainID,
-		InitialHeight: initialHeight,
-		GenesisHash:   genesisHash,
-		BinaryHash:    binaryHash,
-		SpawnTime:     spawnTime,
+		Title:                             title,
+		Description:                       description,
+		ChainId:                           chainID,
+		InitialHeight:                     initialHeight,
+		GenesisHash:                       genesisHash,
+		BinaryHash:                        binaryHash,
+		SpawnTime:                         spawnTime,
+		ConsumerRedistributionFraction:    consumerRedistributionFraction,
+		BlocksPerDistributionTransmission: blocksPerDistributionTransmission,
+		HistoricalEntries:                 historicalEntries,
+		CcvTimeoutPeriod:                  ccvTimeoutPeriod,
+		TransferTimeoutPeriod:             transferTimeoutPeriod,
+		UnbondingPeriod:                   unbondingPeriod,
 	}
 }
 
@@ -101,6 +116,15 @@ func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 
 	if cccp.UnbondingPeriod == zeroDuration {
 		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
+	}
+
+	// TODO: sanity check these params
+	if cccp.CcvTimeoutPeriod > cccp.UnbondingPeriod {
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "ccv timeout period cannot be greater than unbonding period")
+	}
+	// TODO: sanity check these params
+	if cccp.TransferTimeoutPeriod > cccp.UnbondingPeriod {
+		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "transfer timeout period cannot be greater than unbonding period")
 	}
 
 	return nil
