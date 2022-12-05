@@ -371,7 +371,8 @@ func (k Keeper) AssignConsumerKey(
 		if existingVal.OperatorAddress != validator.OperatorAddress {
 			// consumer key is already the key belonging to another existing
 			// and different provider
-			// prevent
+			// prevent a validator from assigning a key which is the *provider*
+			// key of another validator
 			return sdkerrors.Wrapf(
 				types.ErrConsumerKeyInUse, "a different validator already uses the consumer key",
 			)
