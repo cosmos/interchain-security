@@ -172,7 +172,7 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd bool,
 
 	s.Require().Nil(providerKeeper.GetSlashAcks(s.providerCtx(), chainID))
 	s.Require().Zero(providerKeeper.GetInitChainHeight(s.providerCtx(), chainID))
-	s.Require().Nil(providerKeeper.GetPendingPackets(s.providerCtx(), chainID))
+	s.Require().Empty(providerKeeper.GetPendingPackets(s.providerCtx(), chainID))
 }
 
 // TestProviderChannelClosed checks that a consumer chain panics
