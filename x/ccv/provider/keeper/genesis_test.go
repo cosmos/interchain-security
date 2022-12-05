@@ -49,7 +49,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				[]providertypes.UnbondingOpIndex{
 					{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex},
 				},
-				nil,
+				[]ccv.ValidatorSetChangePacketData{},
 				[]string{"slashedValidatorConsAddress"},
 			),
 			providertypes.NewConsumerStates(

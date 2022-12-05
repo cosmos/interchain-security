@@ -25,6 +25,14 @@ message ValidatorSetChangePacketData {
   repeated string slash_acks = 3;
 }
 
+// List of ccv.ValidatorSetChangePacketData.
+message ValidatorSetChangePackets {
+  repeated ValidatorSetChangePacketData list = 1 [
+    (gogoproto.nullable) = false
+  ];
+}
+
+
 message UnbondingOp {
   uint64 id = 1;
   // consumer chains that are still unbonding
