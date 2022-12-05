@@ -27,7 +27,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // GenesisState defines the CCV provider chain genesis state
 type GenesisState struct {
-	// empty for a new chain
+	// strictly positive and set to 1 (DefaultValsetUpdateID) for a new chain
 	ValsetUpdateId uint64 `protobuf:"varint,1,opt,name=valset_update_id,json=valsetUpdateId,proto3" json:"valset_update_id,omitempty"`
 	// empty for a new chain
 	ConsumerStates []ConsumerState `protobuf:"bytes,2,rep,name=consumer_states,json=consumerStates,proto3" json:"consumer_states" yaml:"consumer_states"`
