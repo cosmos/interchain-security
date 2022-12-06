@@ -8,6 +8,7 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
+	abcitypes "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
@@ -29,6 +30,11 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 	// Iterate through ordered (by received time) slash packet entries from any consumer chain
 	k.IteratePendingSlashPacketEntries(ctx, func(entry providertypes.SlashPacketEntry) (stop bool) {
 
+		// _, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, entry.ValAddr)
+		stringable := abcitypes.Validator{Address: entry.ValAddr, Power: 0}
+		fmt.Println("val addr in loop body", stringable.String())
+		fmt.Println("meter:", meter.String())
+
 		// Obtain the validator power relevant to the slash packet that's about to be handled
 		// (this power will be removed via jailing or tombstoning)
 		valPower := k.stakingKeeper.GetLastValidatorPower(ctx, entry.ValAddr)
@@ -44,6 +50,8 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 		// Do not handle anymore slash packets if the meter is 0 or negative in value
 		stop = !meter.IsPositive()
+		fmt.Println("stop", stop)
+
 		return stop
 	})
 
