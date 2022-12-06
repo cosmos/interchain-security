@@ -428,7 +428,7 @@ func TestStopConsumerChain(t *testing.T) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
 
 				providerKeeper.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
-					ctx.BlockTime(), "chainID", ed25519.GenPrivKey().PubKey().Address()))
+					ctx.BlockTime(), "chainID", 1, ed25519.GenPrivKey().PubKey().Address()))
 				providerKeeper.QueuePendingSlashPacketData(ctx, "chainID", 1, testkeeper.GetNewSlashPacketData())
 				providerKeeper.QueuePendingVSCMaturedPacketData(ctx, "chainID", 2, testkeeper.GetNewVSCMaturedPacketData())
 			},
