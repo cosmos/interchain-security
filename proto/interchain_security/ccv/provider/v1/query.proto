@@ -134,9 +134,12 @@ message QueryPendingSlashPacketsRequest {}
 message QueryPendingSlashPacketsResponse {
   // current slash_meter state
   int64 slash_meter = 1;
-  google.protobuf.Timestamp last_replenish = 2
+  // allowance of voting power units (int) that the slash meter is given per replenish period
+  // this also serves as the max value for the meter.
+  int64 slash_meter_allowance = 2;
+  google.protobuf.Timestamp last_replenish = 3
     [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-  repeated PendingSlashPacket packets = 3;
+  repeated PendingSlashPacket packets = 4;
 }
 
 message QueryPendingConsumerPacketsRequest {
@@ -160,7 +163,7 @@ message PendingSlashPacket {
 
 // PendingPacketWrapper data contains either SlashPacketData or VSCMaturedPacketData
 message PendingPacketWrapper {
-  oneof types {
+  oneof data {
     interchain_security.ccv.v1.SlashPacketData slash_packet = 1;
     interchain_security.ccv.v1.VSCMaturedPacketData vsc_matured_packet = 2;
   }

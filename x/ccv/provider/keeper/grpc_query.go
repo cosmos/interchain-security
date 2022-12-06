@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -124,18 +125,34 @@ func (k Keeper) QueryPendingSlashPackets(goCtx context.Context, req *types.Query
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	consumerAddr, err := sdk.ConsAddressFromBech32(req.ConsumerAddress)
-	if err != nil {
-		return nil, err
-	}
+	meter := k.GetSlashMeter(ctx)
+	allowance := k.GetSlashMeterAllowance(ctx)
+	lastTs := k.GetLastSlashMeterFullTime(ctx) // always UTC
+	packets := []*types.PendingSlashPacket{}
 
-	providerAddr, found := k.GetValidatorByConsumerAddr(ctx, req.ChainId, consumerAddr)
-	if !found {
-		return &types.QueryValidatorProviderAddrResponse{}, nil
-	}
+	// Iterate through ordered (by received time) slash packet entries from any consumer chain
+	k.IteratePendingSlashPacketEntries(ctx, func(entry types.SlashPacketEntry) (stop bool) {
+		slashPacket, found := k.GetPendingSlashPacketData(ctx, entry.ConsumerChainID, entry.IbcSeqNum)
+		if !found {
+			// TODO: maybe error if package was not found?
+			// I don't want to panic on provider in case of incomplete response data
+			// don't stop on error
+			return false
+		}
 
-	return &types.QueryValidatorProviderAddrResponse{
-		ProviderAddress: providerAddr.String(),
+		packets = append(packets, &types.PendingSlashPacket{
+			ChainId:    entry.ConsumerChainID,
+			ReceivedAt: entry.RecvTime,
+			Data:       slashPacket,
+		})
+		return false
+	})
+
+	return &types.QueryPendingSlashPacketsResponse{
+		SlashMeter:          meter.Int64(),
+		SlashMeterAllowance: allowance.Int64(),
+		LastReplenish:       lastTs,
+		Packets:             packets,
 	}, nil
 }
 
@@ -144,19 +161,38 @@ func (k Keeper) QueryPendingConsumerPackets(goCtx context.Context, req *types.Qu
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	if req.ChainId == "" {
+		return nil, status.Error(codes.InvalidArgument, "invalid chain-id")
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	consumerAddr, err := sdk.ConsAddressFromBech32(req.ConsumerAddress)
-	if err != nil {
-		return nil, err
+	if _, found := k.GetChainToChannel(ctx, req.ChainId); !found {
+		return nil, status.Error(codes.InvalidArgument, "invalid chain-id")
 	}
 
-	providerAddr, found := k.GetValidatorByConsumerAddr(ctx, req.ChainId, consumerAddr)
-	if !found {
-		return &types.QueryValidatorProviderAddrResponse{}, nil
-	}
+	// TODO: maybe just dump it as JSON bytes?
+	packets := []types.PendingPacketWrapper{}
+	k.IteratePendingPacketData(ctx, req.ChainId, func(ibcSeqNum uint64, data interface{}) (stop bool) {
+		switch data := data.(type) {
+		case ccvtypes.SlashPacketData:
+			packets = append(packets, types.PendingPacketWrapper{
+				Data: &types.PendingPacketWrapper_SlashPacket{SlashPacket: &data},
+			})
+		case ccvtypes.VSCMaturedPacketData:
+			packets = append(packets, types.PendingPacketWrapper{
+				Data: &types.PendingPacketWrapper_VscMaturedPacket{VscMaturedPacket: &data},
+			})
+		default:
+			// silently skip over invalid data
+			return false
 
-	return &types.QueryValidatorProviderAddrResponse{
-		ProviderAddress: providerAddr.String(),
+		}
+		return false
+	})
+
+	return &types.QueryPendingConsumerPacketsResponse{
+		ChainId: req.ChainId,
+		Size_:   k.GetPendingPacketDataSize(ctx, req.ChainId),
+		Packets: packets,
 	}, nil
 }

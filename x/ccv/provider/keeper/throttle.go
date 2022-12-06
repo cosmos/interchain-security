@@ -302,6 +302,59 @@ func (k Keeper) QueuePendingVSCMaturedPacketData(
 	k.IncrementPendingPacketDataSize(ctx, consumerChainID)
 }
 
+// GetPendingPacketData fetches packet data from the store using consumerChainId and ibcSeqNum
+// Since multiple types can be stored, it is up to the caller to determine the type after fetching
+func (k Keeper) GetPendingPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64) interface{} {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum))
+
+	var packetData interface{}
+	var err error
+	switch bz[0] {
+	case slashPacketData:
+		spd := ccvtypes.SlashPacketData{}
+		err = spd.Unmarshal(bz[1:])
+		packetData = spd
+	case vscMaturedPacketData:
+		vpd := ccvtypes.VSCMaturedPacketData{}
+		err = vpd.Unmarshal(bz[1:])
+		packetData = vpd
+	default:
+		panic("invalid packet data type")
+	}
+
+	if err != nil {
+		panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
+	}
+
+	return packetData
+}
+
+// GetPendingSlashPacketData fetches a slash packet data from the store using consumerChainId and ibcSeqNum
+// If the packets is not SlashPacketData, it is considered as not found.
+// TODO: discuss with others if we should panic here?
+func (k Keeper) GetPendingSlashPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64) (ccvtypes.SlashPacketData, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum))
+	if len(bz) == 0 {
+		return ccvtypes.SlashPacketData{}, false
+	}
+
+	// TODO: discuss - maybe panic?
+	if bz[0] != slashPacketData {
+		return ccvtypes.SlashPacketData{}, false
+	}
+
+	packet := ccvtypes.SlashPacketData{}
+	err := packet.Unmarshal(bz[1:])
+
+	if err != nil {
+		panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
+	}
+
+	return packet, true
+}
+
 // IteratePendingPacketData iterates over the pending packet data queue for a specific consumer chain
 // (ordered by ibc seq number) and calls the provided callback
 func (k Keeper) IteratePendingPacketData(ctx sdktypes.Context, consumerChainID string, cb func(uint64, interface{}) (stop bool)) {
