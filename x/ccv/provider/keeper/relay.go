@@ -43,7 +43,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	// Note: no validation is needed for recv VSCMatured packets,
+	// Note: no validation is needed (that'd return an IBC err ack) for recv VSCMatured packets,
 	// since the packet data only includes a valset update id that can take any uint64 value.
 
 	k.HandleVSCMaturedPacket(ctx, chainID, data)
