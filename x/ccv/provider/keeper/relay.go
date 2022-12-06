@@ -253,6 +253,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
 		ctx.BlockTime(), // recv time
 		chainID,         // consumer chain id that sent the packet
+		packet.Sequence, // IBC sequence number of the packet
 		data.Validator.Address))
 
 	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
