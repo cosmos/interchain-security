@@ -678,11 +678,12 @@ func (b *Builder) build() {
 
 	b.setSlashParams()
 
+	// TODO: tidy
 	prams := b.providerKeeper().GetParams(b.ctx(P))
 	prams.SlashMeterReplenishFraction = "1.0"
 	prams.SlashMeterReplenishPeriod = time.Second * 1
 	b.providerKeeper().SetParams(b.ctx(P), prams)
-	b.providerKeeper().SetSlashMeter(b.ctx(P), sdk.NewInt(b.initState.SlashMeterInitValue))
+	b.providerKeeper().InitializeSlashMeter(b.ctx(P))
 
 	// Set light client params to match model
 	tmConfig := ibctesting.NewTendermintConfig()
