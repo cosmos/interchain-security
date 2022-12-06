@@ -424,6 +424,16 @@ class CCVProvider {
   };
 
   onReceive = (data: PacketData) => {
+    /*
+    TODO:
+    This is some quick prototyping to get the tests passing
+    We have 1 consumer chain so the slash queue is the global queue
+    if the queue is empty we can just process the packet
+    */
+    if (this.queue.length == 0 && !('isDowntime' in data)) {
+      // Skip the queue
+      this.onReceiveVSCMatured(data as VscMatured);
+    }
     this.queue.push(data);
   };
 
