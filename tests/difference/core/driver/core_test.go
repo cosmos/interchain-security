@@ -461,6 +461,15 @@ func (s *CoreSuite) TestAssumptions() {
 	s.Require().Empty(s.simibc.Link.OutboxAcks[C])
 }
 
+/*
+Reminder about current status:
+I won't come back to this until Thursday at the earliest. When I stopped,
+I had just debugged a failing test, using a lot of print statements. From
+the failure I found 3 bugs which I put in comments in the PR and in the log.
+Long story short, the way the slash meter works forces slash packets to
+be delayed in some cases if the packets slash inactive validators.
+*/
+
 // Test a set of traces
 func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
