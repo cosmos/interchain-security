@@ -163,8 +163,8 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 
 	roundedInt := sdktypes.NewInt(decFrac.MulInt(totalPower).RoundInt64())
 	if roundedInt.IsZero() {
-		// TODO: Log warning that replenish fraction is too small to
-		// add any allowance to the meter, considering bankers rounding.
+		k.Logger(ctx).Info("slash meter replenish fraction is too small " +
+			"to add any allowance to the meter, considering bankers rounding")
 
 		// Return non-zero allowance to guarantee some slash packets are eventually handled
 		return sdktypes.NewInt(1)
@@ -180,10 +180,10 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 // related to jailing/tombstoning over time. This "parent" queue is used to coordinate the order of slash packet handling
 // between chains, whereas the chain specific queue is used to coordinate the order of slash and vsc matured packets
 // relevant to each chain.
-func (k Keeper) QueuePendingSlashPacketEntry(ctx sdktypes.Context, entry providertypes.SlashPacketEntry) {
+func (k Keeper) QueuePendingSlashPacketEntry(ctx sdktypes.Context,
+	entry providertypes.SlashPacketEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.PendingSlashPacketEntryKey(entry)
-	// Note: Val address is stored as value to assist in debugging. This could be removed for efficiency.
 	store.Set(key, entry.ValAddr)
 }
 
@@ -206,9 +206,9 @@ func (k Keeper) IteratePendingSlashPacketEntries(ctx sdktypes.Context,
 	iterator := sdktypes.KVStorePrefixIterator(store, []byte{providertypes.PendingSlashPacketEntryBytePrefix})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		recvTime, chainID := providertypes.ParsePendingSlashPacketEntryKey(iterator.Key())
+		recvTime, chainID, ibcSeqNum := providertypes.ParsePendingSlashPacketEntryKey(iterator.Key())
 		valAddr := iterator.Value()
-		entry := providertypes.NewSlashPacketEntry(recvTime, chainID, valAddr)
+		entry := providertypes.NewSlashPacketEntry(recvTime, chainID, ibcSeqNum, valAddr)
 		stop := cb(entry)
 		if stop {
 			break
