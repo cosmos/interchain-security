@@ -30,6 +30,8 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerStopProposals())
 	cmd.AddCommand(CmdConsumerValidatorKeyAssignment())
 	cmd.AddCommand(CmdProviderValidatorKey())
+	cmd.AddCommand(CmdPendingSlashPackets())
+	cmd.AddCommand(CmdPendingConsumerPackets())
 
 	return cmd
 }
