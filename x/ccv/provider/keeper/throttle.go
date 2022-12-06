@@ -24,6 +24,13 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		return
 	}
 
+	// NOTE: global queue
+	// -> iter global
+	// -> get slash packet data
+	// -> do this also per chain
+	//
+	// Q1: list of pending slash packets -> consumerChainID, SLASH packet data -> includes slash meter in all responses (and replen time)
+	// Q2: list of all pending packets per consumer -> includes VSCM + slash
 	handledEntries := []providertypes.SlashPacketEntry{}
 
 	// Iterate through ordered (by received time) slash packet entries from any consumer chain

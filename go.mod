@@ -34,7 +34,6 @@ require (
 	github.com/oxyno-zeta/gomock-extra-matcher v1.1.0
 	github.com/regen-network/cosmos-proto v0.3.1
 	golang.org/x/exp v0.0.0-20221025133541-111beb427cde
-	github.com/spf13/pflag v1.0.5
 )
 
 require (
@@ -116,6 +115,7 @@ require (
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.13.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
