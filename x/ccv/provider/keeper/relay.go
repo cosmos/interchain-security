@@ -241,6 +241,8 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 // OnRecvSlashPacket receives a slash packet and determines whether the channel is established,
 // then queues the slash packet as pending if the channel is established and found.
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
+	fmt.Println("OnRecvSlashPacket, val string", data.Validator.String())
+
 	// check that the channel is established
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {

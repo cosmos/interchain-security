@@ -22,6 +22,8 @@ import (
 
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
+	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	abcitypes "github.com/tendermint/tendermint/abci/types"
 )
 
 type CoreSuite struct {
@@ -70,6 +72,10 @@ func (b *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
 
 func (b *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
 	return b.providerChain().App.(*appProvider.App).SlashingKeeper
+}
+
+func (b *CoreSuite) providerKeeper() providerkeeper.Keeper {
+	return b.providerChain().App.(*appProvider.App).ProviderKeeper
 }
 
 func (b *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
@@ -240,7 +246,11 @@ func (s *CoreSuite) matchState() {
 		// TODO: delegations
 		s.Require().Equalf(int64(s.traces.DelegatorTokens()), s.delegatorBalance(), diagnostic+"P del balance mismatch")
 		for j := 0; j < initState.NumValidators; j++ {
-			s.Require().Equalf(s.traces.Jailed(j) != nil, s.isJailed(int64(j)), diagnostic+"P jail status mismatch for val %d", j)
+			a := s.traces.Jailed(j) != nil
+			b := s.isJailed(int64(j))
+
+			s.Require().Equalf(a, b, diagnostic+"P jail status mismatch for val %d", j)
+			// s.Require().Equalf(s.traces.Jailed(j) != nil, s.isJailed(int64(j)), diagnostic+"P jail status mismatch for val %d", j)
 		}
 	}
 	if chain == C {
@@ -258,11 +268,31 @@ func (s *CoreSuite) matchState() {
 	}
 }
 
+func printValidatorConsAddress(s *CoreSuite, validator int64) {
+	// fmt.Println(s.validator(0))
+	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(validator))
+	if !found {
+		panic("bad")
+	}
+	cons, err := v.GetConsAddr()
+	if err != nil {
+		panic("bad")
+	}
+	vx := abcitypes.Validator{Address: cons.Bytes(), Power: 0}
+	fmt.Println(vx.String())
+}
+
 func (s *CoreSuite) executeTrace() {
+
+	printValidatorConsAddress(s, 0)
+
 	for i := range s.traces.Actions() {
 		s.traces.CurrentActionIx = i
 
 		a := s.traces.Action()
+
+		fmt.Println("Executing actionIX", s.traces.CurrentActionIx)
+		fmt.Println("pHeight:", s.height(P))
 
 		switch a.Kind {
 		case "Delegate":
@@ -436,9 +466,12 @@ func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
 		Data: LoadTraces("tracesAlt.json"),
 	}
-	// s.traces.Data = []TraceData{s.traces.Data[69]}
+	shortest := -1
+	shortestLen := 10000000000
+	s.traces.Data = []TraceData{s.traces.Data[68]}
+	// s.traces.Data = s.traces.Data[:10]
 	for i := range s.traces.Data {
-		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
+		if !s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
 
@@ -456,8 +489,15 @@ func (s *CoreSuite) TestTraces() {
 			// Record information about the trace, for debugging
 			// diagnostics.
 			s.executeTrace()
-		})
+		}) {
+			if s.traces.CurrentActionIx < shortestLen {
+				shortest = s.traces.CurrentTraceIx
+				shortestLen = s.traces.CurrentActionIx
+			}
+		}
 	}
+	fmt.Println("Shortest [traceIx, actionIx]:", shortest, shortestLen)
+
 }
 
 func TestCoreSuite(t *testing.T) {

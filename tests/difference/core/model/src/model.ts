@@ -433,8 +433,9 @@ class CCVProvider {
     if (this.queue.length == 0 && !('isDowntime' in data)) {
       // Skip the queue
       this.onReceiveVSCMatured(data as VscMatured);
+    } else {
+      this.queue.push(data);
     }
-    this.queue.push(data);
   };
 
   processPackets = () => {
@@ -459,6 +460,7 @@ class CCVProvider {
   };
 
   onReceiveSlash = (data: Slash) => {
+    console.log(`received slash for val ${data.val}`);
     let infractionHeight = undefined;
 
     if (data.vscID === 0) {
