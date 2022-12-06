@@ -310,6 +310,13 @@ func (s *CoreSuite) TestAssumptions() {
 		s.T().Fatal(FAIL_MSG)
 	}
 
+	// Slash meter value is correct
+	slashMeterE := initState.SlashMeterInitValue
+	slashMeter := s.providerChain().App.(*appProvider.App).ProviderKeeper.GetSlashMeter(s.ctx(P))
+	if !sdk.NewInt(slashMeterE).Equal(slashMeter) {
+		s.T().Fatal(FAIL_MSG)
+	}
+
 	// Delegator balance is correct
 	s.Require().Equal(int64(initState.InitialDelegatorTokens), s.delegatorBalance())
 
@@ -426,7 +433,7 @@ func (s *CoreSuite) TestAssumptions() {
 // Test a set of traces
 func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
-		Data: LoadTraces("traces.json"),
+		Data: LoadTraces("tracesAlt.json"),
 	}
 	// s.traces.Data = []TraceData{s.traces.Data[69]}
 	for i := range s.traces.Data {
@@ -453,8 +460,7 @@ func (s *CoreSuite) TestTraces() {
 }
 
 func TestCoreSuite(t *testing.T) {
-	// TODO: Reenable diff tests once model is updated
-	// suite.Run(t, new(CoreSuite))
+	suite.Run(t, new(CoreSuite))
 }
 
 // SetupTest sets up the test suite in a 'zero' state which matches
