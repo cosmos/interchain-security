@@ -468,7 +468,7 @@ func (s *CoreSuite) TestTraces() {
 	}
 	shortest := -1
 	shortestLen := 10000000000
-	s.traces.Data = []TraceData{s.traces.Data[68]}
+	// s.traces.Data = []TraceData{s.traces.Data[68]}
 	// s.traces.Data = s.traces.Data[:10]
 	for i := range s.traces.Data {
 		if !s.Run(fmt.Sprintf("Trace num: %d", i), func() {
