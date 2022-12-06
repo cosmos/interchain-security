@@ -178,10 +178,10 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 // related to jailing/tombstoning over time. This "parent" queue is used to coordinate the order of slash packet handling
 // between chains, whereas the chain specific queue is used to coordinate the order of slash and vsc matured packets
 // relevant to each chain.
-func (k Keeper) QueuePendingSlashPacketEntry(ctx sdktypes.Context, entry providertypes.SlashPacketEntry) {
+func (k Keeper) QueuePendingSlashPacketEntry(ctx sdktypes.Context,
+	entry providertypes.SlashPacketEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.PendingSlashPacketEntryKey(entry)
-	// Note: Val address is stored as value to assist in debugging. This could be removed for efficiency.
 	store.Set(key, entry.ValAddr)
 }
 
@@ -204,9 +204,9 @@ func (k Keeper) IteratePendingSlashPacketEntries(ctx sdktypes.Context,
 	iterator := sdktypes.KVStorePrefixIterator(store, []byte{providertypes.PendingSlashPacketEntryBytePrefix})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		recvTime, chainID := providertypes.ParsePendingSlashPacketEntryKey(iterator.Key())
+		recvTime, chainID, ibcSeqNum := providertypes.ParsePendingSlashPacketEntryKey(iterator.Key())
 		valAddr := iterator.Value()
-		entry := providertypes.NewSlashPacketEntry(recvTime, chainID, valAddr)
+		entry := providertypes.NewSlashPacketEntry(recvTime, chainID, ibcSeqNum, valAddr)
 		stop := cb(entry)
 		if stop {
 			break

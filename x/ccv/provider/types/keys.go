@@ -275,10 +275,6 @@ func ParsePendingPacketDataKey(key []byte) (string, uint64, error) {
 }
 
 // PendingSlashPacketEntryKey returns the key for storing a pending slash packet entry.
-//
-// Note: It's not expected for a single consumer chain to send a slash packet for the same validator more than once
-// in the same block. Hence why this key should ber unique per slash packet. However, if a malicious consumer did send
-// duplicate slash packets in the same block, the slash packet entry would simply be overwritten.
 func PendingSlashPacketEntryKey(packetEntry SlashPacketEntry) []byte {
 	timeBz := sdk.FormatTimeBytes(packetEntry.RecvTime)
 	timeBzL := len(timeBz)
@@ -286,27 +282,34 @@ func PendingSlashPacketEntryKey(packetEntry SlashPacketEntry) []byte {
 		[]byte{PendingSlashPacketEntryBytePrefix},
 		sdk.Uint64ToBigEndian(uint64(timeBzL)),
 		timeBz,
-		HashBytes(packetEntry.ValAddr),
+		sdk.Uint64ToBigEndian(packetEntry.IbcSeqNum),
 		[]byte(packetEntry.ConsumerChainID),
 	)
 }
 
 // ParsePendingSlashPacketEntryKey returns the received time and chainID for a pending slash packet entry key
-func ParsePendingSlashPacketEntryKey(bz []byte) (time.Time, string) {
+func ParsePendingSlashPacketEntryKey(bz []byte) (
+	recvTime time.Time, consumerChainID string, ibcSeqNum uint64) {
+
 	// Prefix is in first byte
 	expectedPrefix := []byte{PendingSlashPacketEntryBytePrefix}
 	if prefix := bz[:1]; !bytes.Equal(prefix, expectedPrefix) {
 		panic(fmt.Sprintf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix))
 	}
+
 	// 8 bytes for uint64 storing timestamp length
 	timeBzL := sdk.BigEndianToUint64(bz[1:9])
 	recvTime, err := sdk.ParseTimeBytes(bz[9 : 9+timeBzL])
 	if err != nil {
 		panic(err)
 	}
-	// ChainID is stored after 32 byte hashed validator address
-	chainID := string(bz[9+int(timeBzL)+32:])
-	return recvTime, chainID
+
+	ibcSeqNum = sdk.BigEndianToUint64(bz[9+timeBzL : 9+timeBzL+8])
+
+	// ChainID is stored after 8 byte ibc seq num
+	chainID := string(bz[9+timeBzL+8:])
+
+	return recvTime, chainID, ibcSeqNum
 }
 
 // ConsumerValidatorsKey returns the key under which the
