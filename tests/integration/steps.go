@@ -13,17 +13,10 @@ func concatSteps(steps ...[]Step) []Step {
 	return concat
 }
 
-var keyAssignmentSteps = concatSteps(
-	stepsStartChains([]string{"consu"}, false),
-	stepsDelegate("consu"),
-	stepsAssignConsumerKeyOnStartedChain("consu", "bob"),
-	stepsUnbond("consu"),
-	stepsRedelegate("consu"),
-)
-
 var happyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
 	stepsDelegate("consu"),
+	stepsAssignConsumerKeyOnStartedChain("consu", "bob"),
 	stepsUnbond("consu"),
 	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
@@ -38,6 +31,7 @@ var democracySteps = concatSteps(
 	stepsDemocracy("democ"),
 )
 
+//nolint
 var multipleConsumers = concatSteps(
 	stepsStartChains([]string{"consu", "densu"}, false),
 	stepsMultiConsumerDelegate("consu", "densu"),
