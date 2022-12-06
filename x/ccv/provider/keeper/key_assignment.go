@@ -72,7 +72,9 @@ func (k Keeper) IterateValidatorConsumerPubKeys(
 	}
 }
 
-// IterateValidatorConsumerPubKeys iterates over the validators public keys assigned for all consumer chain
+// IterateAllValidatorConsumerPubKeys iterates over the validators public keys assigned for all consumer chain.
+// Note that IterateValidatorConsumerPubKeys cannot be used as consumer keys can be assigned for chain IDs
+// that are not yet known to the provider.
 func (k Keeper) IterateAllValidatorConsumerPubKeys(
 	ctx sdk.Context,
 	cb func(chainID string, providerAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool),
@@ -138,6 +140,8 @@ func (k Keeper) SetValidatorByConsumerAddr(
 	store.Set(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr), bz)
 }
 
+// IterateValidatorsByConsumerAddr iterates over all the mappings from consensus addresses
+// on a given consumer chain to consensus addresses on the provider chain
 func (k Keeper) IterateValidatorsByConsumerAddr(
 	ctx sdk.Context,
 	chainID string,
@@ -164,7 +168,10 @@ func (k Keeper) IterateValidatorsByConsumerAddr(
 	}
 }
 
-// IterateAllValidatorsByConsumerAddr iterates over all the mappings from consensus addresses on any consumer chain to consensus addresses on the provider chain
+// IterateAllValidatorsByConsumerAddr iterates over all the mappings from consensus addresses
+// on any consumer chain to consensus addresses on the provider chain.
+// Note that IterateValidatorsByConsumerAddr cannot be used as consumer keys can be assigned
+// for chain IDs that are not yet known to the provider.
 func (k Keeper) IterateAllValidatorsByConsumerAddr(
 	ctx sdk.Context,
 	cb func(chainID string, consumerAddr sdk.ConsAddress, providerAddr sdk.ConsAddress) (stop bool),
