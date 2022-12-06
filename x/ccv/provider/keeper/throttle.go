@@ -29,9 +29,25 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 	// Iterate through ordered (by received time) slash packet entries from any consumer chain
 	k.IteratePendingSlashPacketEntries(ctx, func(entry providertypes.SlashPacketEntry) (stop bool) {
 
+		// Obtain validator from consensus address.
+		// The slash packet validator address may be known only on the consumer chain
+		// in this case, it must be mapped back to the consensus address on the provider chain
+		consumerAddr := sdktypes.ConsAddress(entry.ValAddr)
+		providerAddr := k.GetProviderAddrFromConsumerAddr(ctx, entry.ConsumerChainID, consumerAddr)
+
+		// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
+		val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr)
+
 		// Obtain the validator power relevant to the slash packet that's about to be handled
 		// (this power will be removed via jailing or tombstoning)
-		valPower := k.stakingKeeper.GetLastValidatorPower(ctx, entry.ValAddr)
+		var valPower int64
+		if val.IsJailed() || !found {
+			// If validator is jailed or not found, it's power is 0. This path is explicitly defined since the
+			// staking keeper's LastValidatorPower values are not updated till the staking keeper's endblocker.
+			valPower = 0
+		} else {
+			valPower = k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
+		}
 
 		// Subtract this power from the slash meter
 		meter = meter.Sub(sdktypes.NewInt(valPower))
