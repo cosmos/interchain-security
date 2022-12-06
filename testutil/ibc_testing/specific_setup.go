@@ -15,6 +15,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmdb "github.com/tendermint/tm-db"
 
+	gaiaApp "github.com/cosmos/gaia/v8/app"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
@@ -26,6 +27,15 @@ func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	testApp := appProvider.New(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
 		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
+}
+
+// ProviderAppIniter implements ibctesting.AppIniter for a provider app
+func GaiaAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
+	encoding := gaiaApp.MakeTestEncodingConfig()
+	app := gaiaApp.NewGaiaApp(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{})
+	testApp := ibctesting.TestingApp(app)
+	return testApp, gaiaApp.NewDefaultGenesisState()
 }
 
 // ConsumerAppIniter implements ibctesting.AppIniter for a consumer app
