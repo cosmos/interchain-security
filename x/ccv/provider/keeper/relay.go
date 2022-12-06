@@ -345,11 +345,9 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 		if currentTimeUint64 > ts {
 			// initTimeout expired
 			chainIdsToRemove = append(chainIdsToRemove, chainID)
-			// continue to iterate through all timed out consumers
-			return false
 		}
-		// break iteration since the timeout timestamps are in order
-		return true
+		// continue to iterate through all timed out consumers
+		return false
 	})
 	// remove consumers that timed out
 	for _, chainID := range chainIdsToRemove {
