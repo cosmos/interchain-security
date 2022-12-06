@@ -179,19 +179,20 @@ func TestPendingPacketDataKeyAndParse(t *testing.T) {
 func TestPendingSlashPacketEntryKeyAndParse(t *testing.T) {
 	now := time.Now()
 	entries := []providertypes.SlashPacketEntry{}
-	entries = append(entries, providertypes.NewSlashPacketEntry(now, "chain-0", ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(2*time.Hour), "chain-7896978", ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(3*time.Hour), "chain-1", ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now, "chain-0", 2, ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(2*time.Hour), "chain-7896978", 3, ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(3*time.Hour), "chain-1", 4723894, ed25519.GenPrivKey().PubKey().Address()))
 
 	for _, entry := range entries {
 		key := providertypes.PendingSlashPacketEntryKey(entry)
 		require.NotEmpty(t, key)
 		timeBzL := len(sdk.FormatTimeBytes(entry.RecvTime))
-		// This key should be of set length: prefix + 8 + timeBzL + hashed valAddr + chainID
-		require.Equal(t, 1+8+timeBzL+32+len(entry.ConsumerChainID), len(key))
-		parsedRecvTime, parsedChainID := providertypes.ParsePendingSlashPacketEntryKey(key)
+		// This key should be of set length: prefix + 8 + timeBzL + 8 + chainID
+		require.Equal(t, 1+8+timeBzL+8+len(entry.ConsumerChainID), len(key))
+		parsedRecvTime, parsedChainID, parsedIBCSeqNum := providertypes.ParsePendingSlashPacketEntryKey(key)
 		require.Equal(t, entry.RecvTime, parsedRecvTime)
 		require.Equal(t, entry.ConsumerChainID, parsedChainID)
+		require.Equal(t, entry.IbcSeqNum, parsedIBCSeqNum)
 	}
 }
 

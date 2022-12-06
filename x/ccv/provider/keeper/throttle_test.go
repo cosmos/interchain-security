@@ -616,15 +616,17 @@ func TestPendingSlashPacketEntries(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Consistent time for "now"
-	now := time.Now()
+	now := time.Now().UTC()
 
 	entries := providerKeeper.GetAllPendingSlashPacketEntries(ctx)
 	require.Equal(t, 0, len(entries))
 
 	// Queue 3 entries for chainIDs 0, 1, 2
 	for i := 0; i < 3; i++ {
-		entry := providertypes.NewSlashPacketEntry(now,
-			fmt.Sprintf("chain-%d", i), ed25519.GenPrivKey().PubKey().Address())
+		entry := providertypes.NewSlashPacketEntry(now.Local(),
+			fmt.Sprintf("chain-%d", i),
+			8, // all with seq = 8
+			ed25519.GenPrivKey().PubKey().Address())
 		providerKeeper.QueuePendingSlashPacketEntry(ctx, entry)
 	}
 	entries = providerKeeper.GetAllPendingSlashPacketEntries(ctx)
@@ -632,8 +634,10 @@ func TestPendingSlashPacketEntries(t *testing.T) {
 
 	// Queue 3 entries for chainIDs 0, 1, 2 an hour later
 	for i := 0; i < 3; i++ {
-		entry := providertypes.NewSlashPacketEntry(now.Add(time.Hour),
-			fmt.Sprintf("chain-%d", i), ed25519.GenPrivKey().PubKey().Address())
+		entry := providertypes.NewSlashPacketEntry(now.Add(time.Hour).Local(),
+			fmt.Sprintf("chain-%d", i),
+			9, // all with seq = 9
+			ed25519.GenPrivKey().PubKey().Address())
 		providerKeeper.QueuePendingSlashPacketEntry(ctx, entry)
 	}
 
@@ -653,8 +657,10 @@ func TestPendingSlashPacketEntries(t *testing.T) {
 
 	// Queue 3 entries for chainIDs 5, 6, 7 another hour later
 	for i := 0; i < 3; i++ {
-		entry := providertypes.NewSlashPacketEntry(now.Add(2*time.Hour),
-			fmt.Sprintf("chain-%d", i+5), ed25519.GenPrivKey().PubKey().Address())
+		entry := providertypes.NewSlashPacketEntry(now.Add(2*time.Hour).Local(),
+			fmt.Sprintf("chain-%d", i+5),
+			7697, // all with seq = 7697
+			ed25519.GenPrivKey().PubKey().Address())
 		providerKeeper.QueuePendingSlashPacketEntry(ctx, entry)
 	}
 
@@ -675,6 +681,29 @@ func TestPendingSlashPacketEntries(t *testing.T) {
 	require.True(t, slices.Contains(thirdChainIdSet, "chain-5"))
 	require.True(t, slices.Contains(thirdChainIdSet, "chain-6"))
 	require.True(t, slices.Contains(thirdChainIdSet, "chain-7"))
+
+	// Assert each field is as expected for all 9 entries
+	for idx, entry := range entries {
+		switch idx {
+		case 0, 1, 2:
+			require.Equal(t, now, entry.RecvTime)
+			require.Equal(t, fmt.Sprintf("chain-%d", idx), entry.ConsumerChainID)
+			require.Equal(t, uint64(8), entry.IbcSeqNum)
+			require.NotEmpty(t, entry.ValAddr)
+		case 3, 4, 5:
+			require.Equal(t, now.Add(time.Hour), entry.RecvTime)
+			require.Equal(t, fmt.Sprintf("chain-%d", idx-3), entry.ConsumerChainID)
+			require.Equal(t, uint64(9), entry.IbcSeqNum)
+			require.NotEmpty(t, entry.ValAddr)
+		case 6, 7, 8:
+			require.Equal(t, now.Add(2*time.Hour), entry.RecvTime)
+			require.Equal(t, fmt.Sprintf("chain-%d", idx-6+5), entry.ConsumerChainID)
+			require.Equal(t, uint64(7697), entry.IbcSeqNum)
+			require.NotEmpty(t, entry.ValAddr)
+		default:
+			t.Fatalf("unexpected entry index %d", idx)
+		}
+	}
 
 	// Test the callback break functionality of the iterator
 	entries = []providertypes.SlashPacketEntry{}
@@ -701,13 +730,13 @@ func TestPendingSlashPacketEntryDeletion(t *testing.T) {
 
 	// Instantiate entries in the expected order we wish to get them back as (ordered by recv time)
 	entries = []providertypes.SlashPacketEntry{}
-	entries = append(entries, providertypes.NewSlashPacketEntry(now, "chain-0", ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(time.Hour).UTC(), "chain-1", ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(2*time.Hour).Local(), "chain-2", ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(3*time.Hour).In(time.FixedZone("UTC-8", -8*60*60)), "chain-3", ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(4*time.Hour).Local(), "chain-4", ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(5*time.Hour).UTC(), "chain-5", ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(6*time.Hour).Local(), "chain-6", ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now, "chain-0", 1, ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(time.Hour).UTC(), "chain-1", 178, ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(2*time.Hour).Local(), "chain-2", 89, ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(3*time.Hour).In(time.FixedZone("UTC-8", -8*60*60)), "chain-3", 23423, ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(4*time.Hour).Local(), "chain-4", 323, ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(5*time.Hour).UTC(), "chain-5", 18, ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(6*time.Hour).Local(), "chain-6", 2, ed25519.GenPrivKey().PubKey().Address()))
 
 	// Instantiate shuffled copy of above slice
 	shuffledEntries := append([]providertypes.SlashPacketEntry{}, entries...)
