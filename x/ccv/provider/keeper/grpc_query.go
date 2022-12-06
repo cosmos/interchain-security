@@ -127,7 +127,7 @@ func (k Keeper) QueryPendingSlashPackets(goCtx context.Context, req *types.Query
 
 	meter := k.GetSlashMeter(ctx)
 	allowance := k.GetSlashMeterAllowance(ctx)
-	lastTs := k.GetLastSlashMeterFullTime(ctx) // always UTC
+	lastTs := k.GetLastSlashMeterReplenishTime(ctx) // always UTC
 	packets := []*types.PendingSlashPacket{}
 
 	// Iterate through ordered (by received time) slash packet entries from any consumer chain
