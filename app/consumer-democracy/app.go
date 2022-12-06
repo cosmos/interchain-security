@@ -306,7 +306,7 @@ func New(
 	)
 
 	// Remove the fee-pool from the group of blocked recipient addresses in bank
-	// this is required for the provider chain to be able to send tokens to
+	// this is required for the consumer chain to be able to send tokens to
 	// the provider chain
 	bankBlockedAddrs := app.ModuleAccountAddrs()
 	delete(bankBlockedAddrs, authtypes.NewModuleAddress(
