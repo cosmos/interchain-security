@@ -35,25 +35,19 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	data ccv.VSCMaturedPacketData,
 ) exported.Acknowledgement {
 
-	if err := k.ValidateVSCMaturedPacket(ctx, packet, data); err != nil {
-		return channeltypes.NewErrorAcknowledgement(err.Error())
+	// check that the channel is established, panic if not
+	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
+	if !found {
+		// VSCMatured packet was sent on a channel different than any of the established CCV channels;
+		// this should never happen
+		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	chainID := k.getChainIdOrPanic(ctx, packet)
+	// Note: no validation is needed for recv VSCMatured packets,
+	// since the packet data only includes a valset update id that can take any uint64 value.
+
 	k.HandleVSCMaturedPacket(ctx, chainID, data)
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-}
-
-// ValidateVSCMaturedPacket validates a recv VSCMatured packet before it is
-// handled or persisted in store. An error is returned if the packet is invalid,
-// and an error ack should be relayed to the sender.
-func (k Keeper) ValidateVSCMaturedPacket(ctx sdk.Context,
-	packet channeltypes.Packet, data ccv.VSCMaturedPacketData) error {
-
-	// check that a ccv channel is established via the dest channel of the recv packet
-	_ = k.getChainIdOrPanic(ctx, packet)
-
-	return nil
 }
 
 // TODO: Unit test this method.
@@ -225,25 +219,29 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 // OnRecvSlashPacket receives a slash packet, validates it, then handles it if valid.
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
 
-	if err := k.ValidateSlashPacket(ctx, packet, data); err != nil {
+	// check that the channel is established, panic if not
+	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
+	if !found {
+		// SlashPacket packet was sent on a channel different than any of the established CCV channels;
+		// this should never happen
+		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
+	}
+
+	if err := k.ValidateSlashPacket(ctx, chainID, packet, data); err != nil {
 		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
 
 	// apply slashing
-	chainID := k.getChainIdOrPanic(ctx, packet)
 	k.HandleSlashPacket(ctx, chainID, data)
 
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
 
-// validateSlashPacket validates a recv slash packet before it is
+// ValidateSlashPacket validates a recv slash packet before it is
 // handled or persisted in store. An error is returned if the packet is invalid,
 // and an error ack should be relayed to the sender.
-func (k Keeper) ValidateSlashPacket(ctx sdk.Context,
+func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 	packet channeltypes.Packet, data ccv.SlashPacketData) error {
-
-	// check that a ccv channel is established via the dest channel of the recv packet
-	chainID := k.getChainIdOrPanic(ctx, packet)
 
 	_, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	// return error if we cannot find infraction height matching the validator update id
@@ -414,16 +412,4 @@ func (k Keeper) getMappedInfractionHeight(ctx sdk.Context,
 	} else {
 		return k.GetValsetUpdateBlockHeight(ctx, valsetUpdateID)
 	}
-}
-
-// getChainIdOrPanic returns the chainID from a recv packet,
-// or panics if the packet was sent on a different channel than any of the established CCV channels.
-func (k Keeper) getChainIdOrPanic(ctx sdk.Context, packet channeltypes.Packet) string {
-	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
-	if !found {
-		// Packet was sent on a channel different than any of the established CCV channels;
-		// this should never happen
-		panic(fmt.Sprintf("channel %s not found", packet.DestinationChannel))
-	}
-	return chainID
 }

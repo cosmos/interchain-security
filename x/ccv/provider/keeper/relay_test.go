@@ -17,28 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidateVSCMaturedPacket(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
-		t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	packet := channeltypes.Packet{DestinationChannel: "channel-7"}
-	data := ccv.VSCMaturedPacketData{}
-
-	// validate method panics if there is no established ccv channel
-	// with channel ID specified in packet.
-	require.Panics(t, func() {
-		_ = providerKeeper.ValidateVSCMaturedPacket(ctx, packet, data)
-	})
-
-	// Pseudo setup ccv channel for channel ID specified in packet.
-	providerKeeper.SetChannelToChain(ctx, "channel-7", "consumer-chain-id")
-
-	// validate method now passes.
-	err := providerKeeper.ValidateVSCMaturedPacket(ctx, packet, data)
-	require.NoError(t, err)
-}
-
 // TestQueueVSCPackets tests queueing validator set updates.
 func TestQueueVSCPackets(t *testing.T) {
 	key := ibcsimapp.CreateTestPubKeys(1)[0]
@@ -147,12 +125,6 @@ func TestValidateSlashPacket(t *testing.T) {
 
 		packet := channeltypes.Packet{DestinationChannel: "channel-9"}
 
-		// validate method panics if there is no established ccv channel
-		// with channel ID specified in packet.
-		require.Panics(t, func() {
-			_ = providerKeeper.ValidateSlashPacket(ctx, packet, tc.packetData)
-		})
-
 		// Pseudo setup ccv channel for channel ID specified in packet.
 		providerKeeper.SetChannelToChain(ctx, "channel-9", "consumer-chain-id")
 
@@ -163,7 +135,7 @@ func TestValidateSlashPacket(t *testing.T) {
 		providerKeeper.SetValsetUpdateBlockHeight(ctx, validVscID, uint64(100))
 
 		// Test error behavior as specified in tc.
-		err := providerKeeper.ValidateSlashPacket(ctx, packet, tc.packetData)
+		err := providerKeeper.ValidateSlashPacket(ctx, "consumer-chain-id", packet, tc.packetData)
 		if tc.expectErr {
 			require.Error(t, err, "expected error in case: '%s'", tc.name)
 		} else {
