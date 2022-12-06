@@ -32,11 +32,11 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		// Obtain validator from consensus address.
 		// The slash packet validator address may be known only on the consumer chain
 		// in this case, it must be mapped back to the consensus address on the provider chain
-		consumerAddr := sdktypes.ConsAddress(entry.ValAddr)
-		providerAddr := k.GetProviderAddrFromConsumerAddr(ctx, entry.ConsumerChainID, consumerAddr)
+		consumerConsAddr := sdktypes.ConsAddress(entry.ValAddr)
+		providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, entry.ConsumerChainID, consumerConsAddr)
 
 		// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
-		val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr)
+		val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr)
 
 		// Obtain the validator power relevant to the slash packet that's about to be handled
 		// (this power will be removed via jailing or tombstoning)
