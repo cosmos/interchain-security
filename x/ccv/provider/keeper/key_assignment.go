@@ -368,11 +368,11 @@ func (k Keeper) AssignConsumerKey(
 	}
 
 	if existingVal, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consumerAddr); found {
+		// If there is a validator with using the consumer key to validate on the provider
+		// we prevent assigning the consumer key, unless the validator is assigning validator.
+		// This ensures that a validator joining the active set who has not explicitly assigned
+		// a consumer key, will be able to use their provider key as consumer key (as per default).
 		if existingVal.OperatorAddress != validator.OperatorAddress {
-			// consumer key is already the key belonging to another existing
-			// and different provider
-			// prevent a validator from assigning a key which is the *provider*
-			// key of another validator
 			return sdkerrors.Wrapf(
 				types.ErrConsumerKeyInUse, "a different validator already uses the consumer key",
 			)
