@@ -116,3 +116,47 @@ func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.Que
 		ProviderAddress: providerAddr.String(),
 	}, nil
 }
+
+func (k Keeper) QueryPendingSlashPackets(goCtx context.Context, req *types.QueryPendingSlashPacketsRequest) (*types.QueryPendingSlashPacketsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	consumerAddr, err := sdk.ConsAddressFromBech32(req.ConsumerAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	providerAddr, found := k.GetValidatorByConsumerAddr(ctx, req.ChainId, consumerAddr)
+	if !found {
+		return &types.QueryValidatorProviderAddrResponse{}, nil
+	}
+
+	return &types.QueryValidatorProviderAddrResponse{
+		ProviderAddress: providerAddr.String(),
+	}, nil
+}
+
+func (k Keeper) QueryPendingConsumerPackets(goCtx context.Context, req *types.QueryPendingConsumerPacketsRequest) (*types.QueryPendingConsumerPacketsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	consumerAddr, err := sdk.ConsAddressFromBech32(req.ConsumerAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	providerAddr, found := k.GetValidatorByConsumerAddr(ctx, req.ChainId, consumerAddr)
+	if !found {
+		return &types.QueryValidatorProviderAddrResponse{}, nil
+	}
+
+	return &types.QueryValidatorProviderAddrResponse{
+		ProviderAddress: providerAddr.String(),
+	}, nil
+}
