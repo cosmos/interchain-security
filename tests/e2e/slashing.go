@@ -61,6 +61,14 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
 		s.Require().Nil(err)
 		consAddr := sdk.GetConsAddress(pubkey)
+		// map consumer consensus address to provider consensus address
+		if providerAddr, found := providerKeeper.GetValidatorByConsumerAddr(
+			s.providerCtx(),
+			s.consumerChain.ChainID,
+			consAddr,
+		); found {
+			consAddr = providerAddr
+		}
 		valData, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
 		s.Require().True(found)
 		valOldBalance := valData.Tokens

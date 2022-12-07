@@ -1,5 +1,5 @@
 .DS_STORE
-vue/node_modules
+*/node_modules
 vue/dist
 release/
 docs/tla/states/
