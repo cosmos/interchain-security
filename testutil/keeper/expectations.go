@@ -94,6 +94,9 @@ func GetMocksForStopConsumerChain(ctx sdk.Context, mocks *MockedKeepers) []*gomo
 func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 	expectedPacketData ccv.SlashPacketData, valToReturn stakingtypes.Validator) []*gomock.Call {
 
+	// An arbitrary slash fraction returned and later used by mock calls.
+	arbitrarySlashFraction := sdk.NewDec(1)
+
 	// These first two calls are always made.
 	calls := []*gomock.Call{
 
@@ -109,13 +112,13 @@ func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 	// Different calls are made depending on the type infraction.
 	if expectedPacketData.Infraction == stakingtypes.Downtime {
 		calls = append(calls,
-			mocks.MockSlashingKeeper.EXPECT().SlashFractionDowntime(ctx).Return(sdk.NewDec(1)).Times(1),
+			mocks.MockSlashingKeeper.EXPECT().SlashFractionDowntime(ctx).Return(arbitrarySlashFraction).Times(1),
 			mocks.MockSlashingKeeper.EXPECT().DowntimeJailDuration(ctx).Return(time.Hour).Times(1),
 		)
 
 	} else if expectedPacketData.Infraction == stakingtypes.DoubleSign {
 		calls = append(calls,
-			mocks.MockSlashingKeeper.EXPECT().SlashFractionDoubleSign(ctx).Return(sdk.NewDec(1)).Times(1),
+			mocks.MockSlashingKeeper.EXPECT().SlashFractionDoubleSign(ctx).Return(arbitrarySlashFraction).Times(1),
 			mocks.MockSlashingKeeper.EXPECT().Tombstone(ctx,
 				sdk.ConsAddress(expectedPacketData.Validator.Address)).Times(1),
 		)
@@ -125,9 +128,9 @@ func GetMocksForHandleSlashPacket(ctx sdk.Context, mocks MockedKeepers,
 	calls = append(calls, mocks.MockStakingKeeper.EXPECT().Slash(
 		ctx,
 		sdk.ConsAddress(expectedPacketData.Validator.Address),
-		gomock.Any(),  // infraction height
-		int64(0),      // power
-		sdk.NewDec(1), // Slash fraction
+		gomock.Any(), // infraction height
+		int64(0),     // power
+		arbitrarySlashFraction,
 		expectedPacketData.Infraction).Return().Times(1),
 	)
 
