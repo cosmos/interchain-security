@@ -277,19 +277,6 @@ func (am AppModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {
-	var slashData ccv.SlashPacketData
-	var vscMaturedData ccv.VSCMaturedPacketData
-
-	err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &slashData)
-	if err != nil {
-		vscErr := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &vscMaturedData)
-		if vscErr != nil {
-			// packet is neither SlashPacketData nor VCSMaturedPacketData
-			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest,
-				"cannot unmarshal consumer packet data: %s",
-				"expected SlashPacketData or VCSMaturedPacketData")
-		}
-	}
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
