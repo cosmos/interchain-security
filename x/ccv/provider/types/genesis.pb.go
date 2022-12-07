@@ -9,6 +9,7 @@ import (
 	types "github.com/cosmos/interchain-security/x/ccv/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -42,6 +43,12 @@ type GenesisState struct {
 	// empty for a new chain
 	ConsumerRemovalProposals []ConsumerRemovalProposal `protobuf:"bytes,7,rep,name=consumer_removal_proposals,json=consumerRemovalProposals,proto3" json:"consumer_removal_proposals"`
 	Params                   Params                    `protobuf:"bytes,8,opt,name=params,proto3" json:"params"`
+	// empty for a new chain
+	ValidatorConsumerPubkeys []ValidatorConsumerPubKey `protobuf:"bytes,9,rep,name=validator_consumer_pubkeys,json=validatorConsumerPubkeys,proto3" json:"validator_consumer_pubkeys"`
+	// empty for a new chain
+	ValidatorsByConsumerAddr []ValidatorByConsumerAddr `protobuf:"bytes,10,rep,name=validators_by_consumer_addr,json=validatorsByConsumerAddr,proto3" json:"validators_by_consumer_addr"`
+	// empty for a new chain
+	ConsumerAddrsToPrune []ConsumerAddrsToPrune `protobuf:"bytes,11,rep,name=consumer_addrs_to_prune,json=consumerAddrsToPrune,proto3" json:"consumer_addrs_to_prune"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
@@ -131,6 +138,27 @@ func (m *GenesisState) GetParams() Params {
 		return m.Params
 	}
 	return Params{}
+}
+
+func (m *GenesisState) GetValidatorConsumerPubkeys() []ValidatorConsumerPubKey {
+	if m != nil {
+		return m.ValidatorConsumerPubkeys
+	}
+	return nil
+}
+
+func (m *GenesisState) GetValidatorsByConsumerAddr() []ValidatorByConsumerAddr {
+	if m != nil {
+		return m.ValidatorsByConsumerAddr
+	}
+	return nil
+}
+
+func (m *GenesisState) GetConsumerAddrsToPrune() []ConsumerAddrsToPrune {
+	if m != nil {
+		return m.ConsumerAddrsToPrune
+	}
+	return nil
 }
 
 // consumer chain
@@ -359,11 +387,200 @@ func (m *ValsetUpdateIdToHeight) GetHeight() uint64 {
 	return 0
 }
 
+// Used to serialize the ValidatorConsumerPubKey index from key assignment
+// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
+type ValidatorConsumerPubKey struct {
+	ChainId      string            `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	ProviderAddr []byte            `protobuf:"bytes,2,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
+	ConsumerKey  *crypto.PublicKey `protobuf:"bytes,3,opt,name=consumer_key,json=consumerKey,proto3" json:"consumer_key,omitempty"`
+}
+
+func (m *ValidatorConsumerPubKey) Reset()         { *m = ValidatorConsumerPubKey{} }
+func (m *ValidatorConsumerPubKey) String() string { return proto.CompactTextString(m) }
+func (*ValidatorConsumerPubKey) ProtoMessage()    {}
+func (*ValidatorConsumerPubKey) Descriptor() ([]byte, []int) {
+	return fileDescriptor_48411d9c7900d48e, []int{4}
+}
+func (m *ValidatorConsumerPubKey) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ValidatorConsumerPubKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ValidatorConsumerPubKey.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ValidatorConsumerPubKey) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ValidatorConsumerPubKey.Merge(m, src)
+}
+func (m *ValidatorConsumerPubKey) XXX_Size() int {
+	return m.Size()
+}
+func (m *ValidatorConsumerPubKey) XXX_DiscardUnknown() {
+	xxx_messageInfo_ValidatorConsumerPubKey.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ValidatorConsumerPubKey proto.InternalMessageInfo
+
+func (m *ValidatorConsumerPubKey) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+func (m *ValidatorConsumerPubKey) GetProviderAddr() []byte {
+	if m != nil {
+		return m.ProviderAddr
+	}
+	return nil
+}
+
+func (m *ValidatorConsumerPubKey) GetConsumerKey() *crypto.PublicKey {
+	if m != nil {
+		return m.ConsumerKey
+	}
+	return nil
+}
+
+// Used to serialize the ValidatorConsumerAddr index from key assignment
+// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
+type ValidatorByConsumerAddr struct {
+	ChainId      string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	ConsumerAddr []byte `protobuf:"bytes,2,opt,name=consumer_addr,json=consumerAddr,proto3" json:"consumer_addr,omitempty"`
+	ProviderAddr []byte `protobuf:"bytes,3,opt,name=provider_addr,json=providerAddr,proto3" json:"provider_addr,omitempty"`
+}
+
+func (m *ValidatorByConsumerAddr) Reset()         { *m = ValidatorByConsumerAddr{} }
+func (m *ValidatorByConsumerAddr) String() string { return proto.CompactTextString(m) }
+func (*ValidatorByConsumerAddr) ProtoMessage()    {}
+func (*ValidatorByConsumerAddr) Descriptor() ([]byte, []int) {
+	return fileDescriptor_48411d9c7900d48e, []int{5}
+}
+func (m *ValidatorByConsumerAddr) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ValidatorByConsumerAddr) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ValidatorByConsumerAddr.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ValidatorByConsumerAddr) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ValidatorByConsumerAddr.Merge(m, src)
+}
+func (m *ValidatorByConsumerAddr) XXX_Size() int {
+	return m.Size()
+}
+func (m *ValidatorByConsumerAddr) XXX_DiscardUnknown() {
+	xxx_messageInfo_ValidatorByConsumerAddr.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ValidatorByConsumerAddr proto.InternalMessageInfo
+
+func (m *ValidatorByConsumerAddr) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+func (m *ValidatorByConsumerAddr) GetConsumerAddr() []byte {
+	if m != nil {
+		return m.ConsumerAddr
+	}
+	return nil
+}
+
+func (m *ValidatorByConsumerAddr) GetProviderAddr() []byte {
+	if m != nil {
+		return m.ProviderAddr
+	}
+	return nil
+}
+
+// Used to serialize the ConsumerAddrsToPrune index from key assignment
+// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrsToPrune [][]byte
+type ConsumerAddrsToPrune struct {
+	ChainId       string       `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	VscId         uint64       `protobuf:"varint,2,opt,name=vsc_id,json=vscId,proto3" json:"vsc_id,omitempty"`
+	ConsumerAddrs *AddressList `protobuf:"bytes,3,opt,name=consumer_addrs,json=consumerAddrs,proto3" json:"consumer_addrs,omitempty"`
+}
+
+func (m *ConsumerAddrsToPrune) Reset()         { *m = ConsumerAddrsToPrune{} }
+func (m *ConsumerAddrsToPrune) String() string { return proto.CompactTextString(m) }
+func (*ConsumerAddrsToPrune) ProtoMessage()    {}
+func (*ConsumerAddrsToPrune) Descriptor() ([]byte, []int) {
+	return fileDescriptor_48411d9c7900d48e, []int{6}
+}
+func (m *ConsumerAddrsToPrune) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ConsumerAddrsToPrune) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ConsumerAddrsToPrune.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ConsumerAddrsToPrune) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ConsumerAddrsToPrune.Merge(m, src)
+}
+func (m *ConsumerAddrsToPrune) XXX_Size() int {
+	return m.Size()
+}
+func (m *ConsumerAddrsToPrune) XXX_DiscardUnknown() {
+	xxx_messageInfo_ConsumerAddrsToPrune.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ConsumerAddrsToPrune proto.InternalMessageInfo
+
+func (m *ConsumerAddrsToPrune) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+func (m *ConsumerAddrsToPrune) GetVscId() uint64 {
+	if m != nil {
+		return m.VscId
+	}
+	return 0
+}
+
+func (m *ConsumerAddrsToPrune) GetConsumerAddrs() *AddressList {
+	if m != nil {
+		return m.ConsumerAddrs
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*GenesisState)(nil), "interchain_security.ccv.provider.v1.GenesisState")
 	proto.RegisterType((*ConsumerState)(nil), "interchain_security.ccv.provider.v1.ConsumerState")
 	proto.RegisterType((*UnbondingOpIndex)(nil), "interchain_security.ccv.provider.v1.UnbondingOpIndex")
 	proto.RegisterType((*ValsetUpdateIdToHeight)(nil), "interchain_security.ccv.provider.v1.ValsetUpdateIdToHeight")
+	proto.RegisterType((*ValidatorConsumerPubKey)(nil), "interchain_security.ccv.provider.v1.ValidatorConsumerPubKey")
+	proto.RegisterType((*ValidatorByConsumerAddr)(nil), "interchain_security.ccv.provider.v1.ValidatorByConsumerAddr")
+	proto.RegisterType((*ConsumerAddrsToPrune)(nil), "interchain_security.ccv.provider.v1.ConsumerAddrsToPrune")
 }
 
 func init() {
@@ -371,57 +588,72 @@ func init() {
 }
 
 var fileDescriptor_48411d9c7900d48e = []byte{
-	// 794 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x55, 0x5d, 0x6f, 0xf3, 0x34,
-	0x14, 0x6e, 0xd6, 0xd2, 0xb7, 0xf5, 0xfb, 0x6e, 0x14, 0x33, 0x55, 0x59, 0x5f, 0xd1, 0x55, 0x05,
-	0x44, 0x25, 0x46, 0xa2, 0x14, 0x21, 0xc1, 0x80, 0x8b, 0x7d, 0x48, 0xd0, 0x0b, 0xc4, 0x94, 0x7d,
-	0x5c, 0xec, 0x26, 0x72, 0x1d, 0xab, 0x35, 0x4d, 0xec, 0x28, 0x76, 0xc2, 0x26, 0x84, 0x84, 0xc4,
-	0x1f, 0xe0, 0x0f, 0x21, 0x6e, 0x77, 0xb9, 0x4b, 0xae, 0x26, 0xb4, 0xfd, 0x03, 0x7e, 0x01, 0x8a,
-	0xe3, 0x76, 0x69, 0xd5, 0x8e, 0xf6, 0x2e, 0x39, 0x8f, 0x9f, 0xe7, 0x3c, 0x3e, 0x3e, 0x3e, 0x06,
-	0x0e, 0x65, 0x92, 0xc4, 0x78, 0x8c, 0x28, 0xf3, 0x04, 0xc1, 0x49, 0x4c, 0xe5, 0xad, 0x8d, 0x71,
-	0x6a, 0x47, 0x31, 0x4f, 0xa9, 0x4f, 0x62, 0x3b, 0x75, 0xec, 0x11, 0x61, 0x44, 0x50, 0x61, 0x45,
-	0x31, 0x97, 0x1c, 0x7e, 0xb8, 0x84, 0x62, 0x61, 0x9c, 0x5a, 0x53, 0x8a, 0x95, 0x3a, 0xad, 0xdd,
-	0x11, 0x1f, 0x71, 0xb5, 0xde, 0xce, 0xbe, 0x72, 0x6a, 0xeb, 0xa3, 0x55, 0xd9, 0x52, 0xc7, 0xd6,
-	0x0a, 0x92, 0xb7, 0xfa, 0xeb, 0x78, 0x9a, 0x25, 0xfb, 0x1f, 0x0e, 0xe6, 0x4c, 0x24, 0x61, 0xce,
-	0x99, 0x7e, 0x6b, 0x8e, 0xb3, 0x0e, 0x67, 0x6e, 0xef, 0xdd, 0xbf, 0xaa, 0xe0, 0xcd, 0x77, 0x79,
-	0xe4, 0x5c, 0x22, 0x49, 0x60, 0x0f, 0x34, 0x52, 0x14, 0x08, 0x22, 0xbd, 0x24, 0xf2, 0x91, 0x24,
-	0x1e, 0xf5, 0x4d, 0xa3, 0x63, 0xf4, 0x2a, 0xee, 0x4e, 0x1e, 0xbf, 0x54, 0xe1, 0x81, 0x0f, 0x7f,
-	0x01, 0xef, 0x4e, 0x75, 0x3d, 0x91, 0x71, 0x85, 0xb9, 0xd5, 0x29, 0xf7, 0x5e, 0xf7, 0xfb, 0xd6,
-	0x1a, 0x05, 0xb5, 0x4e, 0x34, 0x57, 0xa5, 0x3d, 0x6e, 0xdf, 0x3d, 0xec, 0x97, 0xfe, 0x7d, 0xd8,
-	0x6f, 0xde, 0xa2, 0x30, 0x38, 0xec, 0x2e, 0x08, 0x77, 0xdd, 0x1d, 0x5c, 0x5c, 0x2e, 0xa0, 0x0b,
-	0xb6, 0x13, 0x36, 0xe4, 0xcc, 0xa7, 0x6c, 0xe4, 0xf1, 0x48, 0x98, 0x65, 0x95, 0xfa, 0x93, 0x95,
-	0xa9, 0x53, 0xc7, 0xba, 0x9c, 0x12, 0x7e, 0x8c, 0x8e, 0x2b, 0x59, 0x3e, 0xf7, 0x4d, 0xf2, 0x1c,
-	0x12, 0x10, 0x81, 0xdd, 0x10, 0xc9, 0x24, 0x26, 0xde, 0xbc, 0x74, 0xa5, 0x63, 0xf4, 0x5e, 0xf7,
-	0xed, 0x97, 0xa4, 0x7f, 0x50, 0x3c, 0xbf, 0x90, 0x41, 0xb8, 0x30, 0x17, 0x2b, 0xc6, 0xe0, 0xaf,
-	0xa0, 0xb5, 0x58, 0x5d, 0x4f, 0x72, 0x6f, 0x4c, 0xe8, 0x68, 0x2c, 0xcd, 0x77, 0xd4, 0x1e, 0xbe,
-	0x5e, 0xab, 0x7c, 0x57, 0x73, 0x87, 0x71, 0xc1, 0xbf, 0x57, 0x12, 0x7a, 0x5f, 0xcd, 0x74, 0x29,
-	0x0a, 0x7f, 0x37, 0xc0, 0xdb, 0x59, 0x69, 0x91, 0xef, 0x53, 0x49, 0x39, 0xf3, 0xa2, 0x98, 0x47,
-	0x5c, 0xa0, 0x40, 0x98, 0x55, 0x65, 0xe0, 0xdb, 0x8d, 0xce, 0xef, 0x48, 0xcb, 0x9c, 0x69, 0x15,
-	0x6d, 0x61, 0x0f, 0xaf, 0xc0, 0x05, 0xfc, 0xcd, 0x00, 0xad, 0x99, 0x8b, 0x98, 0x84, 0x3c, 0x45,
-	0x41, 0xc1, 0xc4, 0x2b, 0x65, 0xe2, 0x9b, 0x8d, 0x4c, 0xb8, 0xb9, 0xca, 0x82, 0x07, 0x13, 0x2f,
-	0x87, 0x05, 0x1c, 0x80, 0x6a, 0x84, 0x62, 0x14, 0x0a, 0xb3, 0xa6, 0x0e, 0xf7, 0xd3, 0xb5, 0xb2,
-	0x9d, 0x29, 0x8a, 0x16, 0xd7, 0x02, 0xdd, 0x3f, 0x2b, 0x60, 0x7b, 0xae, 0x97, 0xe1, 0x1e, 0xa8,
-	0xe5, 0x42, 0xfa, 0xea, 0xd4, 0xdd, 0x57, 0xea, 0x7f, 0xe0, 0xc3, 0x0f, 0x00, 0xc0, 0x63, 0xc4,
-	0x18, 0x09, 0x32, 0x70, 0x4b, 0x81, 0x75, 0x1d, 0x19, 0xf8, 0xf0, 0x2d, 0xa8, 0xe3, 0x80, 0x12,
-	0x26, 0x33, 0xb4, 0xac, 0xd0, 0x5a, 0x1e, 0x18, 0xf8, 0xf0, 0x63, 0xb0, 0x43, 0x19, 0x95, 0x14,
-	0x05, 0xd3, 0x7e, 0xa9, 0xa8, 0x7b, 0xb9, 0xad, 0xa3, 0xfa, 0x8c, 0xbf, 0x02, 0x7b, 0x01, 0xc7,
-	0x93, 0x62, 0x0f, 0x33, 0x4f, 0xd2, 0x90, 0xf0, 0x24, 0xeb, 0x30, 0xa3, 0x57, 0x73, 0x9b, 0xd9,
-	0x82, 0xe7, 0xbe, 0x64, 0x17, 0x39, 0x0a, 0x87, 0xa0, 0x31, 0x3b, 0x17, 0x3d, 0x26, 0xcc, 0xaa,
-	0xaa, 0x8f, 0xb3, 0xb2, 0x3e, 0xb3, 0x11, 0x94, 0x3a, 0x56, 0x71, 0x90, 0xe8, 0x2a, 0xcd, 0x46,
-	0x84, 0xc6, 0xa0, 0x04, 0xcd, 0x88, 0xe4, 0xbe, 0xf4, 0x4d, 0xc8, 0xb6, 0x3f, 0x22, 0xd3, 0x73,
-	0xff, 0xf2, 0xa5, 0x6b, 0x76, 0x85, 0x02, 0xea, 0x23, 0xc9, 0xe3, 0x73, 0x22, 0x4f, 0x14, 0xed,
-	0x0c, 0xe1, 0x09, 0x91, 0xa7, 0x48, 0x22, 0x9d, 0x70, 0x57, 0xab, 0xe7, 0xf7, 0x23, 0x5f, 0x24,
-	0xe0, 0x01, 0x80, 0x22, 0x40, 0x62, 0xec, 0xf9, 0xfc, 0x67, 0x96, 0x15, 0xc3, 0x43, 0x78, 0x62,
-	0xd6, 0x3a, 0xe5, 0x5e, 0xdd, 0x6d, 0x28, 0xe4, 0x54, 0x03, 0x47, 0x78, 0x02, 0x27, 0xe0, 0xfd,
-	0xb9, 0x09, 0xe0, 0x51, 0xe6, 0x93, 0x1b, 0xb3, 0xae, 0x0c, 0x7e, 0xb1, 0x56, 0xab, 0x14, 0x6e,
-	0xfd, 0x20, 0x23, 0x6b, 0x77, 0xef, 0x15, 0x07, 0x8e, 0x02, 0xba, 0x3f, 0x81, 0xc6, 0xe2, 0xe2,
-	0x0d, 0x86, 0xf0, 0x01, 0x80, 0x45, 0xab, 0xda, 0x69, 0x36, 0x87, 0x2b, 0x6e, 0x23, 0x59, 0xd0,
-	0xed, 0x5e, 0x83, 0xe6, 0xf2, 0xb9, 0xb1, 0x41, 0xc6, 0x26, 0xa8, 0xea, 0xf6, 0xdb, 0x52, 0xb8,
-	0xfe, 0x3b, 0xbe, 0xb8, 0x7b, 0x6c, 0x1b, 0xf7, 0x8f, 0x6d, 0xe3, 0x9f, 0xc7, 0xb6, 0xf1, 0xc7,
-	0x53, 0xbb, 0x74, 0xff, 0xd4, 0x2e, 0xfd, 0xfd, 0xd4, 0x2e, 0x5d, 0x1f, 0x8e, 0xa8, 0x1c, 0x27,
-	0x43, 0x0b, 0xf3, 0xd0, 0xc6, 0x5c, 0x84, 0x5c, 0xd8, 0xcf, 0x25, 0xfc, 0x6c, 0xf6, 0x50, 0xdd,
-	0xcc, 0x3f, 0x89, 0xf2, 0x36, 0x22, 0x62, 0x58, 0x55, 0xcf, 0xd4, 0xe7, 0xff, 0x05, 0x00, 0x00,
-	0xff, 0xff, 0xb9, 0x12, 0x17, 0x90, 0xd7, 0x07, 0x00, 0x00,
+	// 1036 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x56, 0xdd, 0x8e, 0xdb, 0x44,
+	0x14, 0x5e, 0xef, 0xa6, 0xe9, 0x66, 0xf6, 0x87, 0x30, 0x2c, 0xa9, 0x37, 0x5b, 0xd2, 0x55, 0x0a,
+	0x22, 0x12, 0xc5, 0x26, 0x41, 0x48, 0xb4, 0x80, 0x50, 0xb7, 0x95, 0x20, 0x5a, 0x10, 0x91, 0xbb,
+	0x2d, 0x52, 0x6f, 0xac, 0xc9, 0x78, 0x94, 0x0c, 0x71, 0x3c, 0x96, 0x67, 0x6c, 0x6a, 0x21, 0x10,
+	0x88, 0x17, 0xe0, 0x9a, 0x3b, 0x1e, 0x04, 0xae, 0x7b, 0xd9, 0x4b, 0xae, 0x2a, 0xb4, 0xfb, 0x06,
+	0x3c, 0x01, 0xf2, 0x78, 0xec, 0xb5, 0xb3, 0x49, 0x48, 0x7a, 0x97, 0xcc, 0x37, 0xe7, 0x7c, 0xdf,
+	0x39, 0x33, 0xe7, 0xf3, 0x80, 0x2e, 0xf5, 0x04, 0x09, 0xf0, 0x18, 0x51, 0xcf, 0xe6, 0x04, 0x87,
+	0x01, 0x15, 0xb1, 0x89, 0x71, 0x64, 0xfa, 0x01, 0x8b, 0xa8, 0x43, 0x02, 0x33, 0xea, 0x9a, 0x23,
+	0xe2, 0x11, 0x4e, 0xb9, 0xe1, 0x07, 0x4c, 0x30, 0x78, 0x7b, 0x4e, 0x88, 0x81, 0x71, 0x64, 0x64,
+	0x21, 0x46, 0xd4, 0x6d, 0x1e, 0x8c, 0xd8, 0x88, 0xc9, 0xfd, 0x66, 0xf2, 0x2b, 0x0d, 0x6d, 0xbe,
+	0xbd, 0x88, 0x2d, 0xea, 0x9a, 0x2a, 0x83, 0x60, 0xcd, 0xde, 0x2a, 0x9a, 0x72, 0xb2, 0xff, 0x89,
+	0xc1, 0xcc, 0xe3, 0xe1, 0x34, 0x8d, 0xc9, 0x7e, 0xab, 0x98, 0xee, 0x2a, 0x31, 0xa5, 0xda, 0x9b,
+	0x37, 0x05, 0xf1, 0x1c, 0x12, 0x4c, 0xa9, 0x27, 0x4c, 0x1c, 0xc4, 0xbe, 0x60, 0xe6, 0x84, 0xc4,
+	0x0a, 0x6d, 0xff, 0x55, 0x03, 0xbb, 0x5f, 0xa4, 0xfb, 0x1f, 0x09, 0x24, 0x08, 0xec, 0x80, 0x7a,
+	0x84, 0x5c, 0x4e, 0x84, 0x1d, 0xfa, 0x0e, 0x12, 0xc4, 0xa6, 0x8e, 0xae, 0x1d, 0x6b, 0x9d, 0x8a,
+	0xb5, 0x9f, 0xae, 0x3f, 0x96, 0xcb, 0x7d, 0x07, 0xfe, 0x00, 0x5e, 0xcb, 0x58, 0x6d, 0x9e, 0xc4,
+	0x72, 0x7d, 0xf3, 0x78, 0xab, 0xb3, 0xd3, 0xeb, 0x19, 0x2b, 0xb4, 0xdb, 0x78, 0xa0, 0x62, 0x25,
+	0xed, 0x49, 0xeb, 0xf9, 0xcb, 0x5b, 0x1b, 0xff, 0xbe, 0xbc, 0xd5, 0x88, 0xd1, 0xd4, 0xbd, 0xd7,
+	0x9e, 0x49, 0xdc, 0xb6, 0xf6, 0x71, 0x71, 0x3b, 0x87, 0x16, 0xd8, 0x0b, 0xbd, 0x21, 0xf3, 0x1c,
+	0xea, 0x8d, 0x6c, 0xe6, 0x73, 0x7d, 0x4b, 0x52, 0xbf, 0xbb, 0x90, 0x3a, 0xea, 0x1a, 0x8f, 0xb3,
+	0x80, 0x6f, 0xfc, 0x93, 0x4a, 0xc2, 0x67, 0xed, 0x86, 0x97, 0x4b, 0x1c, 0x22, 0x70, 0x30, 0x45,
+	0x22, 0x0c, 0x88, 0x5d, 0x4e, 0x5d, 0x39, 0xd6, 0x3a, 0x3b, 0x3d, 0x73, 0x59, 0xea, 0xaf, 0x65,
+	0x9c, 0x53, 0x60, 0xe0, 0x16, 0x4c, 0x93, 0x15, 0xd7, 0xe0, 0x8f, 0xa0, 0x39, 0xdb, 0x5d, 0x5b,
+	0x30, 0x7b, 0x4c, 0xe8, 0x68, 0x2c, 0xf4, 0x6b, 0xb2, 0x86, 0x4f, 0x56, 0x6a, 0xdf, 0x93, 0xd2,
+	0x61, 0x9c, 0xb1, 0x2f, 0x65, 0x0a, 0x55, 0x57, 0x23, 0x9a, 0x8b, 0xc2, 0x5f, 0x35, 0x70, 0x94,
+	0xb7, 0x16, 0x39, 0x0e, 0x15, 0x94, 0x79, 0xb6, 0x1f, 0x30, 0x9f, 0x71, 0xe4, 0x72, 0xbd, 0x2a,
+	0x05, 0x7c, 0xb6, 0xd6, 0xf9, 0xdd, 0x57, 0x69, 0x06, 0x2a, 0x8b, 0x92, 0x70, 0x88, 0x17, 0xe0,
+	0x1c, 0xfe, 0xac, 0x81, 0x66, 0xae, 0x22, 0x20, 0x53, 0x16, 0x21, 0xb7, 0x20, 0xe2, 0xba, 0x14,
+	0xf1, 0xe9, 0x5a, 0x22, 0xac, 0x34, 0xcb, 0x8c, 0x06, 0x1d, 0xcf, 0x87, 0x39, 0xec, 0x83, 0xaa,
+	0x8f, 0x02, 0x34, 0xe5, 0xfa, 0xb6, 0x3c, 0xdc, 0xf7, 0x56, 0x62, 0x1b, 0xc8, 0x10, 0x95, 0x5c,
+	0x25, 0x90, 0xd5, 0x44, 0xc8, 0xa5, 0x0e, 0x12, 0x2c, 0xb0, 0xf3, 0xba, 0xfc, 0x70, 0x98, 0x8c,
+	0x99, 0x5e, 0x5b, 0xa3, 0x9a, 0x27, 0x59, 0x9a, 0xac, 0xac, 0x41, 0x38, 0x3c, 0x25, 0x71, 0x56,
+	0x4d, 0x34, 0x07, 0x4e, 0x38, 0xe0, 0x2f, 0x1a, 0x38, 0xca, 0x41, 0x6e, 0x0f, 0x63, 0xbb, 0x78,
+	0xc8, 0x81, 0x0e, 0x5e, 0x45, 0xc3, 0x49, 0x5c, 0x38, 0xe1, 0xe0, 0x8a, 0x06, 0x5e, 0xc6, 0x61,
+	0x04, 0x6e, 0x94, 0x48, 0x79, 0x72, 0xaf, 0xfd, 0x20, 0xf4, 0x88, 0xbe, 0x23, 0xe9, 0xef, 0xae,
+	0x7b, 0xab, 0x02, 0x7e, 0xc6, 0x06, 0x49, 0x02, 0xc5, 0x7d, 0x80, 0xe7, 0x60, 0xed, 0x3f, 0x2b,
+	0x60, 0xaf, 0x64, 0x25, 0xf0, 0x10, 0x6c, 0xa7, 0x24, 0xca, 0xb9, 0x6a, 0xd6, 0x75, 0xf9, 0xbf,
+	0xef, 0xc0, 0xb7, 0x00, 0xc0, 0x63, 0xe4, 0x79, 0xc4, 0x4d, 0xc0, 0x4d, 0x09, 0xd6, 0xd4, 0x4a,
+	0xdf, 0x81, 0x47, 0xa0, 0x86, 0x5d, 0x4a, 0x3c, 0x91, 0xa0, 0x5b, 0x12, 0xdd, 0x4e, 0x17, 0xfa,
+	0x0e, 0x7c, 0x07, 0xec, 0x53, 0x8f, 0x0a, 0x8a, 0xdc, 0x6c, 0x5c, 0x2b, 0xd2, 0x16, 0xf7, 0xd4,
+	0xaa, 0x1a, 0xb1, 0xbb, 0xe0, 0xd0, 0x65, 0x78, 0x52, 0xb4, 0x10, 0xcf, 0x16, 0x74, 0x4a, 0x58,
+	0x98, 0x0c, 0xb8, 0xd6, 0xd9, 0xb6, 0x1a, 0xc9, 0x86, 0x4b, 0x5b, 0xf0, 0xce, 0x52, 0x14, 0x0e,
+	0x41, 0x3d, 0x6f, 0xa1, 0xf2, 0x70, 0xbd, 0x2a, 0xaf, 0x67, 0x77, 0x61, 0xef, 0xf2, 0xef, 0x43,
+	0xd4, 0x35, 0x8a, 0x3e, 0xae, 0x7a, 0x96, 0x3b, 0xb4, 0xc2, 0xa0, 0x00, 0x0d, 0x9f, 0xa4, 0xba,
+	0x94, 0x11, 0x25, 0xe5, 0x8f, 0x48, 0x36, 0x76, 0x1f, 0x2f, 0x73, 0xb9, 0xfc, 0x6e, 0x3c, 0x22,
+	0xe2, 0x81, 0x0c, 0x1b, 0x20, 0x3c, 0x21, 0xe2, 0x21, 0x12, 0x28, 0x3b, 0x24, 0x95, 0x3d, 0xb5,
+	0xa7, 0x74, 0x13, 0x87, 0x77, 0x00, 0xe4, 0x2e, 0xe2, 0x63, 0xdb, 0x61, 0xdf, 0x7b, 0x49, 0x33,
+	0x6c, 0x84, 0x27, 0xfa, 0xf6, 0xf1, 0x56, 0xa7, 0x66, 0xd5, 0x25, 0xf2, 0x50, 0x01, 0xf7, 0xf1,
+	0x04, 0x4e, 0xc0, 0x1b, 0x25, 0x03, 0xb6, 0xa9, 0xe7, 0x90, 0x67, 0x6a, 0x92, 0x3e, 0x5a, 0xe9,
+	0x1a, 0x15, 0x4c, 0xb7, 0x9f, 0x04, 0x2b, 0x75, 0xaf, 0x17, 0xfd, 0x5e, 0x02, 0xed, 0xef, 0x40,
+	0x7d, 0x76, 0xf3, 0x1a, 0xdf, 0xc0, 0x3b, 0x00, 0x16, 0xa5, 0x2a, 0xa5, 0xc9, 0x67, 0xb0, 0x62,
+	0xd5, 0xc3, 0x99, 0xbc, 0xed, 0xa7, 0xa0, 0x31, 0xdf, 0xb6, 0xd7, 0x60, 0x6c, 0x80, 0xaa, 0xba,
+	0x7e, 0x9b, 0x12, 0x57, 0xff, 0xda, 0xbf, 0x6b, 0xe0, 0xc6, 0x02, 0xff, 0x58, 0x36, 0x11, 0xb7,
+	0xc1, 0x5e, 0xd6, 0xb7, 0xd4, 0x2b, 0x92, 0xac, 0xbb, 0xd6, 0x6e, 0xb6, 0x28, 0x67, 0xfb, 0x73,
+	0xb0, 0x9b, 0x5f, 0xcc, 0x09, 0x89, 0xe5, 0x68, 0xec, 0xf4, 0x6e, 0x1a, 0x97, 0x2f, 0x0b, 0x23,
+	0x7d, 0x59, 0x18, 0x83, 0x70, 0xe8, 0x52, 0x7c, 0x4a, 0x62, 0x6b, 0x27, 0x8b, 0x38, 0x25, 0x71,
+	0xfb, 0xa7, 0x82, 0xb6, 0x19, 0xdf, 0x58, 0xae, 0xad, 0xec, 0x63, 0x4a, 0x5b, 0xd1, 0x07, 0xae,
+	0x16, 0xb0, 0x75, 0xb5, 0x80, 0xf6, 0x1f, 0x1a, 0x38, 0x98, 0xe7, 0x2c, 0xcb, 0xd8, 0xdf, 0x04,
+	0xd5, 0x88, 0xe3, 0xcc, 0x27, 0x2a, 0xd6, 0xb5, 0x88, 0xe3, 0xbe, 0x03, 0xbf, 0x05, 0xfb, 0x65,
+	0x9f, 0x53, 0xdd, 0xf8, 0x60, 0xa5, 0x7b, 0x99, 0x90, 0x13, 0xce, 0xbf, 0xa2, 0x5c, 0x58, 0x7b,
+	0x25, 0x3f, 0x3b, 0x39, 0x7b, 0x7e, 0xde, 0xd2, 0x5e, 0x9c, 0xb7, 0xb4, 0x7f, 0xce, 0x5b, 0xda,
+	0x6f, 0x17, 0xad, 0x8d, 0x17, 0x17, 0xad, 0x8d, 0xbf, 0x2f, 0x5a, 0x1b, 0x4f, 0xef, 0x8d, 0xa8,
+	0x18, 0x87, 0x43, 0x03, 0xb3, 0xa9, 0x89, 0x19, 0x9f, 0x32, 0x6e, 0x5e, 0x72, 0xbd, 0x9f, 0x3f,
+	0x03, 0x9f, 0x95, 0x1f, 0x9c, 0x22, 0xf6, 0x09, 0x1f, 0x56, 0xe5, 0x33, 0xef, 0xc3, 0xff, 0x02,
+	0x00, 0x00, 0xff, 0xff, 0x79, 0x53, 0xf9, 0x6c, 0x35, 0x0b, 0x00, 0x00,
 }
 
 func (m *GenesisState) Marshal() (dAtA []byte, err error) {
@@ -444,6 +676,48 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.ConsumerAddrsToPrune) > 0 {
+		for iNdEx := len(m.ConsumerAddrsToPrune) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ConsumerAddrsToPrune[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x5a
+		}
+	}
+	if len(m.ValidatorsByConsumerAddr) > 0 {
+		for iNdEx := len(m.ValidatorsByConsumerAddr) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ValidatorsByConsumerAddr[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x52
+		}
+	}
+	if len(m.ValidatorConsumerPubkeys) > 0 {
+		for iNdEx := len(m.ValidatorConsumerPubkeys) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ValidatorConsumerPubkeys[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x4a
+		}
+	}
 	{
 		size, err := m.Params.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -729,6 +1003,146 @@ func (m *ValsetUpdateIdToHeight) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 
+func (m *ValidatorConsumerPubKey) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ValidatorConsumerPubKey) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ValidatorConsumerPubKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ConsumerKey != nil {
+		{
+			size, err := m.ConsumerKey.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenesis(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.ProviderAddr) > 0 {
+		i -= len(m.ProviderAddr)
+		copy(dAtA[i:], m.ProviderAddr)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ProviderAddr)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ValidatorByConsumerAddr) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ValidatorByConsumerAddr) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ValidatorByConsumerAddr) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ProviderAddr) > 0 {
+		i -= len(m.ProviderAddr)
+		copy(dAtA[i:], m.ProviderAddr)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ProviderAddr)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.ConsumerAddr) > 0 {
+		i -= len(m.ConsumerAddr)
+		copy(dAtA[i:], m.ConsumerAddr)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ConsumerAddr)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ConsumerAddrsToPrune) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ConsumerAddrsToPrune) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ConsumerAddrsToPrune) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ConsumerAddrs != nil {
+		{
+			size, err := m.ConsumerAddrs.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenesis(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.VscId != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.VscId))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintGenesis(dAtA []byte, offset int, v uint64) int {
 	offset -= sovGenesis(v)
 	base := offset
@@ -785,6 +1199,24 @@ func (m *GenesisState) Size() (n int) {
 	}
 	l = m.Params.Size()
 	n += 1 + l + sovGenesis(uint64(l))
+	if len(m.ValidatorConsumerPubkeys) > 0 {
+		for _, e := range m.ValidatorConsumerPubkeys {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.ValidatorsByConsumerAddr) > 0 {
+		for _, e := range m.ValidatorsByConsumerAddr {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.ConsumerAddrsToPrune) > 0 {
+		for _, e := range m.ConsumerAddrsToPrune {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -865,6 +1297,68 @@ func (m *ValsetUpdateIdToHeight) Size() (n int) {
 	}
 	if m.Height != 0 {
 		n += 1 + sovGenesis(uint64(m.Height))
+	}
+	return n
+}
+
+func (m *ValidatorConsumerPubKey) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = len(m.ProviderAddr)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	if m.ConsumerKey != nil {
+		l = m.ConsumerKey.Size()
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	return n
+}
+
+func (m *ValidatorByConsumerAddr) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = len(m.ConsumerAddr)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = len(m.ProviderAddr)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	return n
+}
+
+func (m *ConsumerAddrsToPrune) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	if m.VscId != 0 {
+		n += 1 + sovGenesis(uint64(m.VscId))
+	}
+	if m.ConsumerAddrs != nil {
+		l = m.ConsumerAddrs.Size()
+		n += 1 + l + sovGenesis(uint64(l))
 	}
 	return n
 }
@@ -1159,6 +1653,108 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.Params.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorConsumerPubkeys", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorConsumerPubkeys = append(m.ValidatorConsumerPubkeys, ValidatorConsumerPubKey{})
+			if err := m.ValidatorConsumerPubkeys[len(m.ValidatorConsumerPubkeys)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorsByConsumerAddr", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorsByConsumerAddr = append(m.ValidatorsByConsumerAddr, ValidatorByConsumerAddr{})
+			if err := m.ValidatorsByConsumerAddr[len(m.ValidatorsByConsumerAddr)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerAddrsToPrune", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ConsumerAddrsToPrune = append(m.ConsumerAddrsToPrune, ConsumerAddrsToPrune{})
+			if err := m.ConsumerAddrsToPrune[len(m.ConsumerAddrsToPrune)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1713,6 +2309,445 @@ func (m *ValsetUpdateIdToHeight) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ValidatorConsumerPubKey) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ValidatorConsumerPubKey: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ValidatorConsumerPubKey: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddr", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProviderAddr = append(m.ProviderAddr[:0], dAtA[iNdEx:postIndex]...)
+			if m.ProviderAddr == nil {
+				m.ProviderAddr = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerKey", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ConsumerKey == nil {
+				m.ConsumerKey = &crypto.PublicKey{}
+			}
+			if err := m.ConsumerKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ValidatorByConsumerAddr) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ValidatorByConsumerAddr: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ValidatorByConsumerAddr: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerAddr", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ConsumerAddr = append(m.ConsumerAddr[:0], dAtA[iNdEx:postIndex]...)
+			if m.ConsumerAddr == nil {
+				m.ConsumerAddr = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderAddr", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProviderAddr = append(m.ProviderAddr[:0], dAtA[iNdEx:postIndex]...)
+			if m.ProviderAddr == nil {
+				m.ProviderAddr = []byte{}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ConsumerAddrsToPrune) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ConsumerAddrsToPrune: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ConsumerAddrsToPrune: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VscId", wireType)
+			}
+			m.VscId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.VscId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConsumerAddrs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ConsumerAddrs == nil {
+				m.ConsumerAddrs = &AddressList{}
+			}
+			if err := m.ConsumerAddrs.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenesis(dAtA[iNdEx:])

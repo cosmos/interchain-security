@@ -39,6 +39,20 @@ service Query {
     option (google.api.http).get =
         "/interchain_security/ccv/provider/consumer_chain_stop_proposals";
   }
+
+  // QueryValidatorConsumerAddr queries the address
+  // assigned by a validator for a consumer chain.
+  rpc QueryValidatorConsumerAddr(QueryValidatorConsumerAddrRequest)
+      returns (QueryValidatorConsumerAddrResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/provider/validator_consumer_addr";
+  }
+
+  // QueryProviderAddr returns the provider chain validator
+  // given a consumer chain validator address
+  rpc QueryValidatorProviderAddr(QueryValidatorProviderAddrRequest)
+      returns (QueryValidatorProviderAddrResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/provider/validator_provider_addr";
+  }
 }
 
 message QueryConsumerGenesisRequest { string chain_id = 1; }
@@ -67,4 +81,34 @@ message QueryConsumerChainStopProposalsResponse {
 message Chain {
   string chain_id = 1;
   string client_id = 2;
+}
+
+message QueryValidatorConsumerAddrRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  // The id of the consumer chain
+  string chain_id = 1;
+  // The consensus address of the validator on the provider chain
+  string provider_address = 2
+      [ (gogoproto.moretags) = "yaml:\"address\"" ];
+}
+
+message QueryValidatorConsumerAddrResponse {
+  // The address of the validator on the consumer chain
+  string consumer_address = 1;
+}
+
+message QueryValidatorProviderAddrRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  // The id of the provider chain
+  string chain_id = 1;
+  // The consensus address of the validator on the consumer chain
+  string consumer_address = 2
+      [ (gogoproto.moretags) = "yaml:\"address\"" ];
+}
+
+message QueryValidatorProviderAddrResponse {
+  // The address of the validator on the provider chain
+  string provider_address = 1;
 }
