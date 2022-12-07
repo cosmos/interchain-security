@@ -85,7 +85,7 @@ func (suite *CCVTestSuite) TestInitTimeout() {
 
 		if tc.removed {
 			// check if the chain was properly removed
-			suite.checkConsumerChainIsRemoved(chainID, false, false)
+			suite.checkConsumerChainIsRemoved(chainID, false)
 		}
 
 		if i+1 < len(testCases) {

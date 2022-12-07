@@ -37,33 +37,28 @@ message ConsumerAdditionProposal {
     // will be responsible for starting their consumer chain validator node.
     google.protobuf.Timestamp spawn_time = 7
         [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-  
-    // BlocksPerDistributionTransmission is the number of blocks between ibc-token-transfers from the consumer chain to the provider chain.
-    // Note that at this transmission event a fraction of the accumulated tokens are divided and sent consumer redistribution address.
-    int64 blocks_per_distribution_transmission = 8;
 
+    // Unbonding period for the consumer,
+    // which should be smaller than that of the provider in general.
+    google.protobuf.Duration unbonding_period = 8
+        [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
     // Sent CCV related IBC packets will timeout after this duration
     google.protobuf.Duration ccv_timeout_period = 9
         [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
-
     // Sent transfer related IBC packets will timeout after this duration
     google.protobuf.Duration transfer_timeout_period = 10
         [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
-
     // The fraction of tokens allocated to the consumer redistribution address
     // during distribution events. The fraction is a string representing a
     // decimal number. For example "0.75" would represent 75%.
     string consumer_redistribution_fraction = 11;
-
+    // BlocksPerDistributionTransmission is the number of blocks between ibc-token-transfers from the consumer chain to the provider chain.
+    // On sending transmission event, `consumer_redistribution_fraction` of the accumulated tokens are sent to the consumer redistribution address.
+    int64 blocks_per_distribution_transmission = 12;
     // The number of historical info entries to persist in store.
     // This param is a part of the cosmos sdk staking module. In the case of 
     // a ccv enabled consumer chain, the ccv module acts as the staking module.
-    int64 historical_entries = 12;
-
-    // Unbonding period for the consumer,
-    // which should be smaller than that of the provider in general.
-    google.protobuf.Duration unbonding_period = 13
-        [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+    int64 historical_entries = 13;
 }
 
 // ConsumerRemovalProposal is a governance proposal on the provider chain to remove (and stop) a consumer chain.

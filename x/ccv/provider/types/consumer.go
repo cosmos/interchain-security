@@ -10,7 +10,6 @@ func NewConsumerStates(
 	clientID,
 	channelID string,
 	initialHeight uint64,
-	lockUbdTimeout bool,
 	genesis consumertypes.GenesisState,
 	unbondingOpsIndexes []UnbondingOpIndex,
 	pendingValsetChanges []ccv.ValidatorSetChangePacketData,

@@ -123,8 +123,8 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 	return nil
 }
 
-// StopConsumerChain cleans up the states for the given consumer chain ID and, if the given lockUbd is false,
-// it completes the outstanding unbonding operations lock by the consumer chain.
+// StopConsumerChain cleans up the states for the given consumer chain ID and
+// completes the outstanding unbonding operations on the consumer chain.
 //
 // This method implements StopConsumerChain from spec.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stcc1
@@ -211,21 +211,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 // MakeConsumerGenesis constructs the consumer CCV module part of the genesis state.
 func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditionProposal) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
 	chainID := prop.ChainId
-	consumerParams := consumertypes.NewParams(
-		true,
-		prop.BlocksPerDistributionTransmission,
-		"", // distributionTransmissionChannel
-		"", // providerFeePoolAddrStr,
-		prop.CcvTimeoutPeriod,
-		prop.TransferTimeoutPeriod,
-		prop.ConsumerRedistributionFraction,
-		prop.HistoricalEntries,
-		prop.UnbondingPeriod,
-	)
-	if err := consumerParams.Validate(); err != nil {
-		return gen, nil, sdkerrors.Wrapf(types.ErrInvalidConsumerParams, "error validating consumer params for chain-id '%s': %s", chainID, err)
-	}
-
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
 	height := clienttypes.GetSelfHeight(ctx)
 
@@ -286,11 +271,23 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 	}
 	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
 
+	consumerGenesisParams := consumertypes.NewParams(
+		true,
+		prop.BlocksPerDistributionTransmission,
+		"", // distributionTransmissionChannel
+		"", // providerFeePoolAddrStr,
+		prop.CcvTimeoutPeriod,
+		prop.TransferTimeoutPeriod,
+		prop.ConsumerRedistributionFraction,
+		prop.HistoricalEntries,
+		prop.UnbondingPeriod,
+	)
+
 	gen = *consumertypes.NewInitialGenesisState(
 		clientState,
 		consState.(*ibctmtypes.ConsensusState),
 		initialUpdatesWithConsumerKeys,
-		consumerParams,
+		consumerGenesisParams,
 	)
 	return gen, hash, nil
 }

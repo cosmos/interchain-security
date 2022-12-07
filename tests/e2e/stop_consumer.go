@@ -92,7 +92,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	s.Require().NoError(err)
 
 	// check all states are removed and the unbonding operation released
-	s.checkConsumerChainIsRemoved(consumerChainID, false, true)
+	s.checkConsumerChainIsRemoved(consumerChainID, true)
 }
 
 // TODO Simon: implement OnChanCloseConfirm in IBC-GO testing to close the consumer chain's channel end
@@ -126,7 +126,7 @@ func (s *CCVTestSuite) TestStopConsumerOnChannelClosed() {
 	// s.Require().False(found)
 }
 
-func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd bool, checkChannel bool) {
+func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel bool) {
 	channelID := s.path.EndpointB.ChannelID
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
@@ -137,24 +137,21 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, lockUbd bool,
 	}
 
 	// check UnbondingOps were deleted and undelegation entries aren't onHold
-	if !lockUbd {
-		providerKeeper.IterateOverUnbondingOpIndex(
-			s.providerCtx(),
-			chainID,
-			func(vscID uint64, ubdIndex []uint64) (stop bool) {
-				_, found := providerKeeper.GetUnbondingOpIndex(s.providerCtx(), chainID, uint64(vscID))
+	providerKeeper.IterateOverUnbondingOpIndex(
+		s.providerCtx(),
+		chainID,
+		func(vscID uint64, ubdIndex []uint64) (stop bool) {
+			_, found := providerKeeper.GetUnbondingOpIndex(s.providerCtx(), chainID, uint64(vscID))
+			s.Require().False(found)
+			for _, ubdID := range ubdIndex {
+				_, found = providerKeeper.GetUnbondingOp(s.providerCtx(), ubdIndex[ubdID])
 				s.Require().False(found)
-				for _, ubdID := range ubdIndex {
-					_, found = providerKeeper.GetUnbondingOp(s.providerCtx(), ubdIndex[ubdID])
-					s.Require().False(found)
-					ubd, _ := providerStakingKeeper.GetUnbondingDelegationByUnbondingID(s.providerCtx(), ubdIndex[ubdID])
-					s.Require().Zero(ubd.Entries[ubdID].UnbondingOnHoldRefCount)
-				}
-				return false // do not stop the iteration
-			},
-		)
-
-	}
+				ubd, _ := providerStakingKeeper.GetUnbondingDelegationByUnbondingID(s.providerCtx(), ubdIndex[ubdID])
+				s.Require().Zero(ubd.Entries[ubdID].UnbondingOnHoldRefCount)
+			}
+			return false // do not stop the iteration
+		},
+	)
 
 	// verify consumer chain's states are removed
 	_, found := providerKeeper.GetConsumerGenesis(s.providerCtx(), chainID)

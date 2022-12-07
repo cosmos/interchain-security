@@ -5,10 +5,10 @@ import (
 	"strings"
 	time "time"
 
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
 const (
@@ -93,28 +93,27 @@ func (cccp *ConsumerAdditionProposal) ValidateBasic() error {
 		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "spawn time cannot be zero")
 	}
 
-	if _, err := sdktypes.NewDecFromStr(cccp.ConsumerRedistributionFraction); err != nil {
+	if err := ccvtypes.ValidateStringFraction(cccp.ConsumerRedistributionFraction); err != nil {
 		return sdkerrors.Wrapf(ErrInvalidConsumerAdditionProposal, "consumer redistribution fraction is invalid: %s", err)
 	}
 
-	if cccp.BlocksPerDistributionTransmission < 1 {
+	if err := ccvtypes.ValidatePositiveInt64(cccp.BlocksPerDistributionTransmission); err != nil {
 		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "blocks per distribution transmission cannot be < 1")
 	}
 
-	if cccp.HistoricalEntries < 1 {
+	if err := ccvtypes.ValidatePositiveInt64(cccp.HistoricalEntries); err != nil {
 		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "historical entries cannot be < 1")
 	}
 
-	zeroDuration := time.Duration(0)
-	if cccp.CcvTimeoutPeriod == zeroDuration {
+	if err := ccvtypes.ValidateDuration(cccp.CcvTimeoutPeriod); err != nil {
 		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "ccv timeout period cannot be zero")
 	}
 
-	if cccp.TransferTimeoutPeriod == zeroDuration {
+	if err := ccvtypes.ValidateDuration(cccp.TransferTimeoutPeriod); err != nil {
 		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "transfer timeout period cannot be zero")
 	}
 
-	if cccp.UnbondingPeriod == zeroDuration {
+	if err := ccvtypes.ValidateDuration(cccp.UnbondingPeriod); err != nil {
 		return sdkerrors.Wrap(ErrInvalidConsumerAdditionProposal, "unbonding period cannot be zero")
 	}
 

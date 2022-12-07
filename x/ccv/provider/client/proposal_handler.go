@@ -53,12 +53,12 @@ Where proposal.json contains:
     "genesis_hash": "Z2VuZXNpcyBoYXNo",
     "binary_hash": "YmluYXJ5IGhhc2g=",
     "spawn_time": "2022-01-27T15:59:50.121607-08:00",
-	"blocks_per_distribution_transmission": 1000,
-	"ccv_timeout_period": 2419200000000000,
-	"transfer_timeout_period": 3600000000000,
-	"consumer_redistribution_fraction": "0.75,
-	"historical_entries": 10000,
-	"unbonding_period": 1728000000000000,
+    "blocks_per_distribution_transmission": 1000,
+    "consumer_redistribution_fraction": "0.75",
+    "historical_entries": 10000,
+    "transfer_timeout_period": 3600000000000,
+    "ccv_timeout_period": 2419200000000000,
+    "unbonding_period": 1728000000000000,
     "deposit": "10000stake"
 }
 		`,

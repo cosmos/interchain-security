@@ -44,7 +44,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 				expClientID,
 				"channel",
 				initHeight,
-				true,
 				*consumertypes.DefaultGenesisState(),
 				[]providertypes.UnbondingOpIndex{
 					{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex},
@@ -57,7 +56,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 				expClientID,
 				"",
 				0,
-				false,
 				*consumertypes.DefaultGenesisState(),
 				nil,
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
