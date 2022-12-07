@@ -46,10 +46,6 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 		h.k.SetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID, index)
 	}
 
-	// Set unbonding op.
-	// If there is an error persisting the unbonding op, the method will
-	// panic to end execution for the current tx and prevent committal
-	// of this invalid state.
 	h.k.SetUnbondingOp(ctx, unbondingOp)
 
 	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
