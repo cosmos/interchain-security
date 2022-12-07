@@ -246,14 +246,13 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 		slashingtypes.ValidatorSigningInfo{Address: consAddr.String()},
 	)
 
-	_, err := providerKeeper.HandleSlashPacket(suite.providerCtx(), suite.consumerChain.ChainID,
+	providerKeeper.HandleSlashPacket(suite.providerCtx(), suite.consumerChain.ChainID,
 		ccv.NewSlashPacketData(
 			abci.Validator{Address: tmVal.Address, Power: 0},
 			uint64(0),
 			stakingtypes.DoubleSign,
 		),
 	)
-	suite.NoError(err)
 
 	// verify that validator is jailed in the staking and slashing modules' states
 	suite.Require().True(providerStakingKeeper.IsValidatorJailed(suite.providerCtx(), consAddr))
@@ -263,29 +262,69 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 	suite.Require().True(signingInfo.Tombstoned)
 }
 
-// TestHandleSlashPacketErrors tests errors for the HandleSlashPacket method in an e2e testing setting
-func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
+// TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an e2e testing setting
+func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
+
 	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
-	ProviderKeeper := suite.providerApp.GetProviderKeeper()
+	providerKeeper := suite.providerApp.GetProviderKeeper()
 	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
-	consumerChainID := suite.consumerChain.ChainID
+	firstBundle := suite.getFirstBundle()
+	consumerChainID := firstBundle.Chain.ChainID
+
+	suite.SetupAllCCVChannels()
 
 	// sync contexts block height
 	ctx := suite.providerCtx()
 
-	// expect an error if initial block height isn't set for consumer chain
-	_, err := ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, ccv.SlashPacketData{})
-	suite.Require().Error(err, "slash validator with invalid infraction height")
+	// Expect panic if ccv channel is not established via dest channel of packet
+	suite.Panics(func() {
+		providerKeeper.OnRecvSlashPacket(ctx, channeltypes.Packet{}, ccv.SlashPacketData{})
+	})
 
-	// save VSC ID
-	vID := ProviderKeeper.GetValidatorSetUpdateId(ctx)
+	// Add correct channelID to packet. Now we will not panic anymore.
+	packet := channeltypes.Packet{DestinationChannel: firstBundle.Path.EndpointB.ChannelID}
 
-	// remove block height for current VSC ID
-	ProviderKeeper.DeleteValsetUpdateBlockHeight(ctx, vID)
+	// Init chain height is set by established CCV channel
+	// Delete init chain height and confirm expected error
+	initChainHeight, found := providerKeeper.GetInitChainHeight(ctx, consumerChainID)
+	suite.Require().True(found)
+	providerKeeper.DeleteInitChainHeight(ctx, consumerChainID)
 
-	// expect an error if block height mapping VSC ID is zero
-	_, err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, ccv.SlashPacketData{ValsetUpdateId: vID})
-	suite.Require().Error(err, "slash with height mapping to zero")
+	packetData := ccv.SlashPacketData{ValsetUpdateId: 0}
+	errAck := providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
+	suite.Require().False(errAck.Success())
+	errAckCast := errAck.(channeltypes.Acknowledgement)
+	suite.Require().Equal(
+		fmt.Sprintf("cannot find infraction height matching the validator update id 0 for chain %s",
+			firstBundle.Chain.ChainID), errAckCast.GetError())
+
+	// Restore init chain height
+	providerKeeper.SetInitChainHeight(ctx, consumerChainID, initChainHeight)
+
+	// now the method will fail at infraction height check.
+	packetData.Infraction = stakingtypes.InfractionEmpty
+	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
+	suite.Require().False(errAck.Success())
+	errAckCast = errAck.(channeltypes.Acknowledgement)
+	suite.Require().Equal(
+		fmt.Sprintf("invalid infraction type: %s", packetData.Infraction.String()), errAckCast.GetError())
+
+	// save current VSC ID
+	vscID := providerKeeper.GetValidatorSetUpdateId(ctx)
+
+	// remove block height value mapped to current VSC ID
+	providerKeeper.DeleteValsetUpdateBlockHeight(ctx, vscID)
+
+	// Instantiate packet data with current VSC ID
+	packetData = ccv.SlashPacketData{ValsetUpdateId: vscID}
+
+	// expect an error if mapped block height is not found
+	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, packetData)
+	suite.Require().False(errAck.Success())
+	errAckCast = errAck.(channeltypes.Acknowledgement)
+	suite.Require().Equal(
+		fmt.Sprintf("cannot find infraction height matching the validator update id %d for chain %s",
+			vscID, firstBundle.Chain.ChainID), errAckCast.GetError())
 
 	// construct slashing packet with non existing validator
 	slashingPkt := ccv.NewSlashPacketData(
@@ -294,12 +333,13 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 	)
 
 	// Set initial block height for consumer chain
-	ProviderKeeper.SetInitChainHeight(ctx, consumerChainID, uint64(ctx.BlockHeight()))
+	providerKeeper.SetInitChainHeight(ctx, consumerChainID, uint64(ctx.BlockHeight()))
 
-	// expect the slash to not succeed if validator doesn't exist
-	success, err := ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
-	suite.Require().NoError(err, "slashing an unknown validator should not result in error")
-	suite.Require().False(success, "did slash unknown validator")
+	// Expect no error ack if validator does not exist
+	// TODO: this behavior should be changed to return an error ack,
+	// see: https://github.com/cosmos/interchain-security/issues/546
+	ack := providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
+	suite.Require().True(ack.Success())
 
 	// jail an existing validator
 	val := suite.providerChain.Vals.Validators[0]
@@ -309,7 +349,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 	suite.coordinator.CommitBlock(suite.providerChain)
 	// Update suite.ctx bc CommitBlock updates only providerChain's current header block height
 	ctx = suite.providerChain.GetContext()
-	suite.Require().NotZero(ProviderKeeper.GetValsetUpdateBlockHeight(ctx, vID))
+	suite.Require().NotZero(providerKeeper.GetValsetUpdateBlockHeight(ctx, vscID))
 
 	// create validator signing info
 	valInfo := slashingtypes.NewValidatorSigningInfo(sdk.ConsAddress(val.Address), ctx.BlockHeight(),
@@ -318,13 +358,14 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 
 	// update validator address and VSC ID
 	slashingPkt.Validator.Address = val.Address
-	slashingPkt.ValsetUpdateId = vID
+	slashingPkt.ValsetUpdateId = vscID
 
 	// expect to slash and jail validator
-	_, err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
-	suite.Require().NoError(err, "did slash jail validator")
+	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
+	suite.Require().True(ack.Success())
+	suite.Require().True(providerStakingKeeper.IsValidatorJailed(ctx, consAddr))
 
-	// expect error when infraction type in unspecified
+	// expect error ack when infraction type in unspecified
 	tmAddr := suite.providerChain.Vals.Validators[1].Address
 	slashingPkt.Validator.Address = tmAddr
 	slashingPkt.Infraction = stakingtypes.InfractionEmpty
@@ -332,17 +373,14 @@ func (suite *CCVTestSuite) TestHandleSlashPacketErrors() {
 	valInfo.Address = sdk.ConsAddress(tmAddr).String()
 	providerSlashingKeeper.SetValidatorSigningInfo(ctx, sdk.ConsAddress(tmAddr), valInfo)
 
-	_, err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
-	suite.Require().EqualError(err, fmt.Sprintf("invalid infraction type: %v", stakingtypes.InfractionEmpty))
+	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
+	suite.Require().False(errAck.Success())
 
-	// expect to slash jail validator
+	// expect to slash and jail validator
 	slashingPkt.Infraction = stakingtypes.DoubleSign
-	_, err = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
-	suite.Require().NoError(err)
-
-	// expect the slash to not succeed when validator is tombstoned
-	success, _ = ProviderKeeper.HandleSlashPacket(ctx, consumerChainID, slashingPkt)
-	suite.Require().False(success)
+	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
+	suite.Require().True(ack.Success())
+	suite.Require().True(providerStakingKeeper.IsValidatorJailed(ctx, sdk.ConsAddress(tmAddr)))
 }
 
 // TestHandleSlashPacketDistribution tests the slashing of an undelegation balance
@@ -434,8 +472,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDistribution() {
 		)
 
 		// slash
-		_, err := providerKeeper.HandleSlashPacket(suite.providerChain.GetContext(), suite.consumerChain.ChainID, slashPacket)
-		suite.Require().NoError(err)
+		providerKeeper.HandleSlashPacket(suite.providerChain.GetContext(), suite.consumerChain.ChainID, slashPacket)
 
 		ubd, found := providerStakingKeeper.GetUnbondingDelegation(suite.providerChain.GetContext(), delAddr, valAddr)
 		suite.Require().True(found)

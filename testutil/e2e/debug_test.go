@@ -112,8 +112,8 @@ func TestHandleSlashPacketDoubleSigning(t *testing.T) {
 	runCCVTestByName(t, "TestHandleSlashPacketDoubleSigning")
 }
 
-func TestHandleSlashPacketErrors(t *testing.T) {
-	runCCVTestByName(t, "TestHandleSlashPacketErrors")
+func TestOnRecvSlashPacketErrors(t *testing.T) {
+	runCCVTestByName(t, "TestOnRecvSlashPacketErrors")
 }
 
 func TestHandleSlashPacketDistribution(t *testing.T) {
