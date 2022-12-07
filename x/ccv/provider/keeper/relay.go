@@ -236,7 +236,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
 
-	// apply slashing
+	// handle slashing request
 	k.HandleSlashPacket(ctx, chainID, data)
 
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
