@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"testing"
 
+	gaiaApp "github.com/cosmos/gaia/v8/app"
 	appConsumer "github.com/cosmos/interchain-security/app/consumer"
 	appConsumerDemocracy "github.com/cosmos/interchain-security/app/consumer-democracy"
 	appProvider "github.com/cosmos/interchain-security/app/provider"
@@ -53,4 +54,16 @@ func TestConsumerDemocracyTestSuite(t *testing.T) {
 
 	// Run tests
 	suite.Run(t, democSuite)
+}
+
+// Executes the standard group of ccv tests against a generic consumer app.go implementation and Gaia as the provider.
+func TestCCVTestSuiteGaia(t *testing.T) {
+
+	// Pass in concrete app types that implement the interfaces defined in /testutil/e2e/interfaces.go
+	ccvSuite := e2e.NewCCVTestSuite[*gaiaApp.GaiaApp, *appConsumer.App](
+		// Pass in ibctesting.AppIniters for gaia (provider) and consumer.
+		icstestingutils.GaiaAppIniter, icstestingutils.ConsumerAppIniter, []string{})
+
+	// Run tests
+	suite.Run(t, ccvSuite)
 }
