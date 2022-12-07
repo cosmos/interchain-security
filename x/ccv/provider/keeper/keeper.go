@@ -301,14 +301,13 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 }
 
 // Save UnbondingOp by unique ID
-func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp ccv.UnbondingOp) error {
+func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp ccv.UnbondingOp) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := unbondingOp.Marshal()
 	if err != nil {
-		return err
+		panic(fmt.Errorf("unbonding op could not be marshaled: %w", err))
 	}
 	store.Set(types.UnbondingOpKey(unbondingOp.Id), bz)
-	return nil
 }
 
 // Get UnbondingOp by unique ID
@@ -448,13 +447,13 @@ func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64, err error
 }
 
 // AppendMaturedUnbondingOps adds a list of ids to the list of matured unbonding operation ids
-func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) error {
+func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) {
 	if len(ids) == 0 {
-		return nil
+		return
 	}
 	existingIds, err := k.GetMaturedUnbondingOps(ctx)
 	if err != nil {
-		return err
+		panic(fmt.Sprintf("failed to get matured unbonding operations: %s", err))
 	}
 
 	maturedOps := ccv.MaturedUnbondingOps{
@@ -464,10 +463,9 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := maturedOps.Marshal()
 	if err != nil {
-		return err
+		panic(fmt.Sprintf("failed to marshal matured unbonding operations: %s", err))
 	}
 	store.Set(types.MaturedUnbondingOpsKey(), bz)
-	return nil
 }
 
 // ConsumeMaturedUnbondingOps empties and returns list of matured unbonding operation ids (if it exists)

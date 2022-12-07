@@ -40,17 +40,13 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		k.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
 	}
 	for _, ubdOp := range genState.UnbondingOps {
-		if err := k.SetUnbondingOp(ctx, ubdOp); err != nil {
-			panic(fmt.Errorf("unbonding op could not be persisted: %w", err))
-		}
+		k.SetUnbondingOp(ctx, ubdOp)
 	}
 
 	// Note that MatureUnbondingOps aren't stored across blocks, but it
 	// might be used after implementing sovereign to consumer transition
 	if genState.MatureUnbondingOps != nil {
-		if err := k.AppendMaturedUnbondingOps(ctx, genState.MatureUnbondingOps.Ids); err != nil {
-			panic(err)
-		}
+		k.AppendMaturedUnbondingOps(ctx, genState.MatureUnbondingOps.Ids)
 	}
 
 	// Set initial state for each consumer chain
