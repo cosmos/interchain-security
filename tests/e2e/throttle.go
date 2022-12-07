@@ -379,7 +379,9 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 
 	// Recv and queue all slash packets.
 	for _, packet := range packets {
-		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, ccvtypes.MustUnmarshalJsonBzToSlashPacketData(packet.GetData()))
+		slashPacketData := ccvtypes.SlashPacketData{}
+		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &slashPacketData)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, slashPacketData)
 	}
 
 	// We should have 6 pending slash packet entries queued.

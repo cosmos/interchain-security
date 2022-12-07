@@ -76,10 +76,3 @@ func (vdt SlashPacketData) GetBytes() []byte {
 	valDowntimeBytes := ModuleCdc.MustMarshalJSON(&vdt)
 	return valDowntimeBytes
 }
-
-// Unmarshals json bytes to SlashPacketData or panics if the bytes are invalid.
-func MustUnmarshalJsonBzToSlashPacketData(bz []byte) SlashPacketData {
-	data := SlashPacketData{}
-	ModuleCdc.MustUnmarshalJSON(bz, &data)
-	return data
-}
