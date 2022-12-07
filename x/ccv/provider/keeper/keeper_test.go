@@ -5,13 +5,8 @@ import (
 	"testing"
 	"time"
 
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	"github.com/golang/mock/gomock"
-
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
 
@@ -188,68 +183,6 @@ func TestInitHeight(t *testing.T) {
 	}
 }
 
-// TestHandleSlashPacketDoubleSigning tests the handling of a double-signing related slash packet, with mocks and unit tests
-func TestHandleSlashPacketDoubleSigning(t *testing.T) {
-
-	chainId := "consumer"
-	infractionHeight := int64(5)
-
-	keeperParams := testkeeper.NewInMemKeeperParams(t)
-	ctx := keeperParams.Ctx
-
-	slashPacket := ccv.NewSlashPacketData(
-		abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(),
-			Power: int64(0)},
-		uint64(0),
-		stakingtypes.DoubleSign,
-	)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mocks := testkeeper.NewMockedKeepers(ctrl)
-	mockSlashingKeeper := mocks.MockSlashingKeeper
-	mockStakingKeeper := mocks.MockStakingKeeper
-
-	// Setup expected mock calls
-	gomock.InOrder(
-
-		mockStakingKeeper.EXPECT().GetValidatorByConsAddr(
-			ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Return(
-			stakingtypes.Validator{Status: stakingtypes.Bonded}, true,
-		).Times(1),
-
-		mockSlashingKeeper.EXPECT().IsTombstoned(ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Return(false).Times(1),
-
-		mockSlashingKeeper.EXPECT().SlashFractionDoubleSign(ctx).Return(sdk.NewDec(1)).Times(1),
-
-		mockSlashingKeeper.EXPECT().Tombstone(ctx, sdk.ConsAddress(slashPacket.Validator.Address)).Times(1),
-
-		mockStakingKeeper.EXPECT().Slash(
-			ctx,
-			sdk.ConsAddress(slashPacket.Validator.Address),
-			infractionHeight,
-			int64(0),      // power
-			sdk.NewDec(1), // Slash fraction
-			stakingtypes.DoubleSign).Return().Times(1),
-
-		mockStakingKeeper.EXPECT().Jail(
-			gomock.Eq(ctx),
-			gomock.Eq(sdk.ConsAddress(slashPacket.Validator.Address)),
-		).Return(),
-
-		mockSlashingKeeper.EXPECT().JailUntil(ctx, sdk.ConsAddress(slashPacket.Validator.Address),
-			evidencetypes.DoubleSignJailEndTime).Times(1),
-	)
-
-	providerKeeper := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
-
-	providerKeeper.SetInitChainHeight(ctx, chainId, uint64(infractionHeight))
-
-	success, err := providerKeeper.HandleSlashPacket(ctx, chainId, slashPacket)
-	require.NoError(t, err)
-	require.True(t, success)
-}
-
 func TestIterateOverUnbondingOpIndex(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -286,8 +219,7 @@ func TestMaturedUnbondingOps(t *testing.T) {
 	require.Nil(t, ids)
 
 	unbondingOpIds := []uint64{0, 1, 2, 3, 4, 5, 6}
-	err = providerKeeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
-	require.NoError(t, err)
+	providerKeeper.AppendMaturedUnbondingOps(ctx, unbondingOpIds)
 
 	ids, err = providerKeeper.ConsumeMaturedUnbondingOps(ctx)
 	require.NoError(t, err)
@@ -510,8 +442,7 @@ func TestIterateOverUnbondingOps(t *testing.T) {
 	}
 
 	for _, op := range ops {
-		err := pk.SetUnbondingOp(ctx, op)
-		require.NoError(t, err, "SetUnbondingOp returned err %s", err)
+		pk.SetUnbondingOp(ctx, op)
 	}
 
 	result := []ccv.UnbondingOp{}
