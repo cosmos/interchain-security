@@ -343,7 +343,8 @@ func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 
 // TestSlashSameValidator tests the edge case that that the total slashed validator power
 // queued up for a single block exceeds the slash meter allowance,
-// but some of the slash packets are for the same validator, and should all be handled.
+// but some of the slash packets are for the same validator, and therefore some packets
+// will be applied to a validator that is already jailed but still not unbonded (ie. still slashable).
 func (s *CCVTestSuite) TestSlashSameValidator() {
 
 	s.SetupAllCCVChannels()
