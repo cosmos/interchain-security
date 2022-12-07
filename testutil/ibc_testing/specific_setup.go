@@ -29,7 +29,7 @@ func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
 }
 
-// ProviderAppIniter implements ibctesting.AppIniter for a provider app
+// GaiaAppIniter implements ibctesting.AppIniter for the gaia app
 func GaiaAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	encoding := gaiaApp.MakeTestEncodingConfig()
 	app := gaiaApp.NewGaiaApp(log.NewNopLogger(), tmdb.NewMemDB(), nil, true, map[int64]bool{},
