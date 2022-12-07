@@ -299,10 +299,10 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		slashFraction sdk.Dec
 	)
 
-	// Obtain infraction height, or log error and drop packet
 	infractionHeight, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	if !found {
 		k.Logger(ctx).Error("infraction height not found. But was found during slash packet validation")
+		// drop packet
 		return
 	}
 
