@@ -35,6 +35,7 @@ func SubmitConsumerAdditionPropTxCmd() *cobra.Command {
 		Long: `
 Submit a consumer addition proposal along with an initial deposit.
 The proposal details must be supplied via a JSON file.
+Unbonding period, transfer timeout period and ccv timeout period should be provided as nanosecond time periods.
 
 Example:
 $ <appd> tx gov submit-proposal consumer-addition <path/to/proposal.json> --from=<key_or_address>
@@ -52,6 +53,12 @@ Where proposal.json contains:
     "genesis_hash": "Z2VuZXNpcyBoYXNo",
     "binary_hash": "YmluYXJ5IGhhc2g=",
     "spawn_time": "2022-01-27T15:59:50.121607-08:00",
+	"blocks_per_distribution_transmission": 1000,
+	"ccv_timeout_period": 2419200000000000,
+	"transfer_timeout_period": 3600000000000,
+	"consumer_redistribution_fraction": "0.75,
+	"historical_entries": 10000,
+	"unbonding_period": 1728000000000000,
     "deposit": "10000stake"
 }
 		`,
