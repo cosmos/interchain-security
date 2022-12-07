@@ -512,7 +512,7 @@ func (m *ValidatorByConsumerAddr) GetProviderAddr() []byte {
 }
 
 // Used to serialize the ConsumerAddrsToPrune index from key assignment
-// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrsToPrune [][]byte
+// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrs AddressList
 type ConsumerAddrsToPrune struct {
 	ChainId       string       `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	VscId         uint64       `protobuf:"varint,2,opt,name=vsc_id,json=vscId,proto3" json:"vsc_id,omitempty"`
