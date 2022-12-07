@@ -57,9 +57,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		if err := k.SetConsumerGenesis(ctx, chainID, cs.ConsumerGenesis); err != nil {
 			panic(fmt.Errorf("consumer chain genesis could not be persisted: %w", err))
 		}
-		if cs.LockUnbondingOnTimeout {
-			k.SetLockUnbondingOnTimeout(ctx, chainID)
-		}
 		// check if the CCV channel was established
 		if cs.ChannelId != "" {
 			k.SetChannelToChain(ctx, cs.ChannelId, chainID)
@@ -105,10 +102,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 		// initial consumer chain states
 		cs := types.ConsumerState{
-			ChainId:                chainID,
-			ClientId:               clientID,
-			ConsumerGenesis:        gen,
-			LockUnbondingOnTimeout: k.GetLockUnbondingOnTimeout(ctx, chainID),
+			ChainId:         chainID,
+			ClientId:        clientID,
+			ConsumerGenesis: gen,
 		}
 
 		// try to find channel id for the current consumer chain

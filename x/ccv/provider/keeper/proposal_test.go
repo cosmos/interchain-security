@@ -103,8 +103,6 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 			)
 		}
 
-		tc.prop.LockUnbondingOnTimeout = false // Full functionality not implemented yet.
-
 		err := providerKeeper.HandleConsumerAdditionProposal(ctx, tc.prop)
 		require.NoError(t, err)
 
@@ -199,10 +197,6 @@ func testCreatedConsumerClient(t *testing.T,
 	clientId, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
 	require.True(t, found, "consumer client not found")
 	require.Equal(t, expectedClientID, clientId)
-
-	// Lock unbonding on timeout flag always false for now.
-	lockUbdOnTimeout := providerKeeper.GetLockUnbondingOnTimeout(ctx, expectedChainID)
-	require.False(t, lockUbdOnTimeout)
 
 	// Only assert that consumer genesis was set,
 	// more granular tests on consumer genesis should be defined in TestMakeConsumerGenesis
@@ -451,7 +445,7 @@ func TestStopConsumerChain(t *testing.T) {
 		// Setup specific to test case
 		tc.setup(ctx, &providerKeeper, mocks)
 
-		err := providerKeeper.StopConsumerChain(ctx, "chainID", false, true)
+		err := providerKeeper.StopConsumerChain(ctx, "chainID", true)
 
 		if tc.expErr {
 			require.Error(t, err)
@@ -470,8 +464,6 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 	expectedChainID string, expectedChannelID string) {
 
 	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
-	require.False(t, found)
-	found = providerKeeper.GetLockUnbondingOnTimeout(ctx, expectedChainID)
 	require.False(t, found)
 	_, found = providerKeeper.GetChainToChannel(ctx, expectedChainID)
 	require.False(t, found)
@@ -695,7 +687,6 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		Title:                             "title",
 		Description:                       "desc",
 		ChainId:                           "testchain1",
-		LockUnbondingOnTimeout:            false,
 		BlocksPerDistributionTransmission: 1000,
 		CcvTimeoutPeriod:                  2419200000000000,
 		TransferTimeoutPeriod:             3600000000000,

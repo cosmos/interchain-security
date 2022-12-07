@@ -116,7 +116,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.ConsumerRemovalProposal) error {
 
 	if !ctx.BlockTime().Before(p.StopTime) {
-		return k.StopConsumerChain(ctx, p.ChainId, false, true)
+		return k.StopConsumerChain(ctx, p.ChainId, true)
 	}
 
 	k.SetPendingConsumerRemovalProp(ctx, p.ChainId, p.StopTime)
@@ -129,7 +129,7 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 // This method implements StopConsumerChain from spec.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-stcc1
 // Spec tag: [CCV-PCF-STCC.1]
-func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, closeChan bool) (err error) {
+func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan bool) (err error) {
 	// check that a client for chainID exists
 	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
 		// drop the proposal
@@ -139,7 +139,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	// clean up states
 	k.DeleteConsumerClientId(ctx, chainID)
 	k.DeleteConsumerGenesis(ctx, chainID)
-	k.DeleteLockUnbondingOnTimeout(ctx, chainID)
 	k.DeleteInitTimeoutTimestamp(ctx, chainID)
 	k.DeleteKeyAssignments(ctx, chainID)
 
@@ -166,38 +165,36 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	k.ConsumeSlashAcks(ctx, chainID)
 	k.DeletePendingPackets(ctx, chainID)
 
-	// release unbonding operations if they aren't locked
+	// release unbonding operations
 	var vscIDs []uint64
-	if !lockUbd {
-		// iterate over the consumer chain's unbonding operation VSC ids
-		k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ids []uint64) (stop bool) {
-			// iterate over the unbonding operations for the current VSC ID
-			var maturedIds []uint64
-			for _, id := range ids {
-				unbondingOp, found := k.GetUnbondingOp(ctx, id)
-				if !found {
-					err = fmt.Errorf("could not find UnbondingOp according to index - id: %d", id)
-					return true // stop the iteration
-				}
-				// remove consumer chain ID from unbonding op record
-				unbondingOp.UnbondingConsumerChains, _ = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
-
-				// If unbonding op is completely unbonded from all relevant consumer chains
-				if len(unbondingOp.UnbondingConsumerChains) == 0 {
-					// Store id of matured unbonding op for later completion of unbonding in staking module
-					maturedIds = append(maturedIds, unbondingOp.Id)
-					// Delete unbonding op
-					k.DeleteUnbondingOp(ctx, unbondingOp.Id)
-				} else {
-					k.SetUnbondingOp(ctx, unbondingOp)
-				}
+	// iterate over the consumer chain's unbonding operation VSC ids
+	k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ids []uint64) (stop bool) {
+		// iterate over the unbonding operations for the current VSC ID
+		var maturedIds []uint64
+		for _, id := range ids {
+			unbondingOp, found := k.GetUnbondingOp(ctx, id)
+			if !found {
+				err = fmt.Errorf("could not find UnbondingOp according to index - id: %d", id)
+				return true // stop the iteration
 			}
-			k.AppendMaturedUnbondingOps(ctx, maturedIds)
+			// remove consumer chain ID from unbonding op record
+			unbondingOp.UnbondingConsumerChains, _ = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
 
-			vscIDs = append(vscIDs, vscID)
-			return false // do not stop the iteration
-		})
-	}
+			// If unbonding op is completely unbonded from all relevant consumer chains
+			if len(unbondingOp.UnbondingConsumerChains) == 0 {
+				// Store id of matured unbonding op for later completion of unbonding in staking module
+				maturedIds = append(maturedIds, unbondingOp.Id)
+				// Delete unbonding op
+				k.DeleteUnbondingOp(ctx, unbondingOp.Id)
+			} else {
+				k.SetUnbondingOp(ctx, unbondingOp)
+			}
+		}
+		k.AppendMaturedUnbondingOps(ctx, maturedIds)
+
+		vscIDs = append(vscIDs, vscID)
+		return false // do not stop the iteration
+	})
 
 	if err != nil {
 		return err
@@ -463,7 +460,7 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 	propsToExecute := k.ConsumerRemovalPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
-		err := k.StopConsumerChain(ctx, prop.ChainId, false, true)
+		err := k.StopConsumerChain(ctx, prop.ChainId, true)
 		if err != nil {
 			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 		}

@@ -17,14 +17,13 @@ func NewConsumerStates(
 	slashDowntimeAck []string,
 ) ConsumerState {
 	return ConsumerState{
-		ChainId:                chainID,
-		ClientId:               clientID,
-		ChannelId:              channelID,
-		InitialHeight:          initialHeight,
-		LockUnbondingOnTimeout: true,
-		UnbondingOpsIndex:      unbondingOpsIndexes,
-		PendingValsetChanges:   pendingValsetChanges,
-		ConsumerGenesis:        genesis,
-		SlashDowntimeAck:       slashDowntimeAck,
+		ChainId:              chainID,
+		ClientId:             clientID,
+		ChannelId:            channelID,
+		InitialHeight:        initialHeight,
+		UnbondingOpsIndex:    unbondingOpsIndexes,
+		PendingValsetChanges: pendingValsetChanges,
+		ConsumerGenesis:      genesis,
+		SlashDowntimeAck:     slashDowntimeAck,
 	}
 }

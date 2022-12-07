@@ -80,7 +80,6 @@ func TestValidateBasic(t *testing.T) {
 				GenesisHash:                       []byte("gen_hash"),
 				BinaryHash:                        []byte("bin_hash"),
 				SpawnTime:                         time.Now(),
-				LockUnbondingOnTimeout:            false,
 				BlocksPerDistributionTransmission: 10,
 				CcvTimeoutPeriod:                  100000000000,
 				TransferTimeoutPeriod:             100000000000,
