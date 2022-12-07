@@ -284,7 +284,11 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// tombstoned validators should not be slashed multiple times.
 	if k.slashingKeeper.IsTombstoned(ctx, consAddr) {
-		// Drop packet if validator is tombstoned.
+		// Log and drop packet if validator is tombstoned.
+		k.Logger(ctx).Info(
+			"slash packet dropped because validator is already tombstoned",
+			"validator cons addr", consAddr,
+		)
 		return
 	}
 
