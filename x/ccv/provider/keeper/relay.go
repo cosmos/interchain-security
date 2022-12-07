@@ -221,7 +221,7 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
 }
 
-// OnRecvSlashPacket receives a slash packet, validates it, then handles it if valid.
+// OnRecvSlashPacket delivers a received slash packet: validates it and then handles it if valid.
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
 
 	// check that the channel is established, panic if not
