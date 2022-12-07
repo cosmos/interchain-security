@@ -50,6 +50,11 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
 
+// HandleVSCMaturedPacket handles a VSCMatured packet.
+//
+// Note: This method should only panic for a system critical error like a
+// failed marshal/unmarshal, or persistence of critical data.
+//
 // TODO: Unit test this method.
 func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv.VSCMaturedPacketData) {
 	// iterate over the unbonding operations mapped to (chainID, data.ValsetUpdateId)
