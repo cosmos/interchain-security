@@ -3,8 +3,13 @@ package main
 // simulates double signing on provider and vsc propagation to consumer chains
 // steps continue from downtime tests state.
 //
-// Note: These steps are not affected by slash packet throttling since
-// only one consumer initiated slash is implemented.
+// Note: These steps ARE affected by slash packet throttling, since the
+// consumer-initiated slash steps are executed after consumer-initiated downtime
+// slashes have already occurred. However slash packet throttling is
+// psuedo-disabled in this test by setting the slash meter replenish
+// fraction to 1.0 in the config file.
+//
+// TODO: test throttling logic directly, https://github.com/cosmos/interchain-security/issues/509
 func stepsDoubleSign(consumer1, consumer2 string) []Step {
 	return []Step{
 		{
