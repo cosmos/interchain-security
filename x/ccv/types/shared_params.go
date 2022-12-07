@@ -86,10 +86,10 @@ func ValidateStringFraction(i interface{}) error {
 		return err
 	}
 	if dec.IsNegative() {
-		return fmt.Errorf("consumer redistribution fraction is negative")
+		return fmt.Errorf("param cannot be negative, got %s", str)
 	}
 	if dec.Sub(sdktypes.NewDec(1)).IsPositive() {
-		return fmt.Errorf("consumer redistribution fraction cannot be above 1.0")
+		return fmt.Errorf("param cannot be greater than 1, got %s", str)
 	}
 	return nil
 }
