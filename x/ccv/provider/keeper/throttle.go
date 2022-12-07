@@ -29,14 +29,9 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 	// Iterate through ordered (by received time) slash packet entries from any consumer chain
 	k.IteratePendingSlashPacketEntries(ctx, func(entry providertypes.SlashPacketEntry) (stop bool) {
 
-		// Obtain validator from consensus address.
-		// The slash packet validator address may be known only on the consumer chain
-		// in this case, it must be mapped back to the consensus address on the provider chain
-		consumerConsAddr := sdktypes.ConsAddress(entry.ValAddr)
-		providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, entry.ConsumerChainID, consumerConsAddr)
-
+		// Obtain validator from the provider's consensus address.
 		// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
-		val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerConsAddr)
+		val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, entry.ProviderValConsAddr)
 
 		// Obtain the validator power relevant to the slash packet that's about to be handled
 		// (this power will be removed via jailing or tombstoning)
@@ -200,7 +195,7 @@ func (k Keeper) QueuePendingSlashPacketEntry(ctx sdktypes.Context,
 	entry providertypes.SlashPacketEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.PendingSlashPacketEntryKey(entry)
-	store.Set(key, entry.ValAddr)
+	store.Set(key, entry.ProviderValConsAddr)
 }
 
 // GetAllPendingSlashPacketEntries returns all pending slash packet entries in the queue

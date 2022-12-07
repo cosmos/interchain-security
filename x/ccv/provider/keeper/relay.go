@@ -6,6 +6,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -249,12 +250,17 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
+	// The slash packet validator address may be known only on the consumer chain,
+	// in this case, it must be mapped back to the consensus address on the provider chain
+	consumerConsAddr := sdktypes.ConsAddress(data.Validator.Address)
+	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
+
 	// Queue a pending slash packet entry to the parent queue, which will be seen by the throttling logic
 	k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
-		ctx.BlockTime(), // recv time
-		chainID,         // consumer chain id that sent the packet
-		packet.Sequence, // IBC sequence number of the packet
-		data.Validator.Address))
+		ctx.BlockTime(),   // recv time
+		chainID,           // consumer chain id that sent the packet
+		packet.Sequence,   // IBC sequence number of the packet
+		providerConsAddr)) // Provider consensus address of val to be slashed
 
 	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
 	// to enforce order of handling between the two packet types.
