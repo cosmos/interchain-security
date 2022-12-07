@@ -65,21 +65,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	clientState.TrustingPeriod = consumerUnbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
 	clientState.UnbondingPeriod = consumerUnbondingPeriod
 
-	consumerGen, validatorSetHash, err := k.MakeConsumerGenesis(ctx, chainID)
-	// TODO: Allow for current validators to set different keys
-	consensusState := ibctmtypes.NewConsensusState(
-		ctx.BlockTime(),
-		commitmenttypes.NewMerkleRoot([]byte(ibctmtypes.SentinelRoot)),
-		ctx.BlockHeader().NextValidatorsHash,
-	)
-
-	clientID, err := k.clientKeeper.CreateClient(ctx, clientState, consensusState)
-	if err != nil {
-		return err
-	}
-	k.SetConsumerClientId(ctx, chainID, clientID)
-
-	consumerGen, err := k.MakeConsumerGenesis(ctx, prop)
+	consumerGen, validatorSetHash, err := k.MakeConsumerGenesis(ctx, prop)
 	if err != nil {
 		return err
 	}
@@ -104,11 +90,6 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	// add the init timeout timestamp for this consumer chain
 	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
 	k.SetInitTimeoutTimestamp(ctx, chainID, uint64(ts.UnixNano()))
-
-	// TODO: this is removed elsewhere
-	if prop.LockUnbondingOnTimeout {
-		k.SetLockUnbondingOnTimeout(ctx, chainID)
-	}
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -231,9 +212,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 }
 
 // MakeConsumerGenesis constructs the consumer CCV module part of the genesis state.
-func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, chainID string) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
-	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
-func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditionProposal) (gen consumertypes.GenesisState, err error) {
+func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditionProposal) (gen consumertypes.GenesisState, nextValidatorsHash []byte, err error) {
+	chainID := prop.ChainId
 	consumerParams := consumertypes.NewParams(
 		true,
 		prop.BlocksPerDistributionTransmission,
@@ -246,11 +226,11 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 		prop.UnbondingPeriod,
 	)
 	if err := consumerParams.Validate(); err != nil {
-		return gen, sdkerrors.Wrapf(types.ErrInvalidConsumerParams, "error validating consumer params for chain-id '%s': %s", prop.ChainId, err)
+		return gen, nil, sdkerrors.Wrapf(types.ErrInvalidConsumerParams, "error validating consumer params for chain-id '%s': %s", chainID, err)
 	}
 
-	height := clienttypes.GetSelfHeight(ctx)
 	providerUnbondingPeriod := k.stakingKeeper.UnbondingTime(ctx)
+	height := clienttypes.GetSelfHeight(ctx)
 
 	clientState := k.GetTemplateClient(ctx)
 	// this is the counter party chain ID for the consumer
@@ -273,8 +253,7 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 		return false
 	})
 
-	updates := []abci.ValidatorUpdate{}
-
+	initialUpdates := []abci.ValidatorUpdate{}
 	for _, p := range lastPowers {
 		addr, err := sdk.ValAddressFromBech32(p.Address)
 		if err != nil {
@@ -291,28 +270,32 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 			panic(err)
 		}
 
-		updates = append(updates, abci.ValidatorUpdate{
+		initialUpdates = append(initialUpdates, abci.ValidatorUpdate{
 			PubKey: tmProtoPk,
 			Power:  p.Power,
 		})
 	}
 
 	// apply key assignments to the initial valset
-	gen.InitialValSet, err = k.ApplyKeyAssignmentToValUpdates(ctx, chainID, updates)
+	initialUpdatesWithConsumerKeys, err := k.ApplyKeyAssignmentToValUpdates(ctx, chainID, initialUpdates)
 	if err != nil {
 		panic("unable to apply key assignments to the initial valset")
 	}
 
-	// Get a hash of the consumer validator set from the update.
-	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(gen.InitialValSet)
+	// Get a hash of the consumer validator set from the update with applied consumer assigned keys
+	updatesAsValSet, err := tmtypes.PB2TM.ValidatorUpdates(initialUpdatesWithConsumerKeys)
 	if err != nil {
 		panic("unable to create validator set from updates computed from key assignment in MakeConsumerGenesis")
 	}
 	hash := tmtypes.NewValidatorSet(updatesAsValSet).Hash()
 
+	gen = *consumertypes.NewInitialGenesisState(
+		clientState,
+		consState.(*ibctmtypes.ConsensusState),
+		initialUpdatesWithConsumerKeys,
+		consumerParams,
+	)
 	return gen, hash, nil
-	gen = *consumertypes.NewInitialGenesisState(clientState, consState.(*ibctmtypes.ConsensusState), updates, consumerParams)
-	return gen, nil
 }
 
 // SetPendingConsumerAdditionProp stores a pending proposal to create a consumer chain client
