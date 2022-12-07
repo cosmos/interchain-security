@@ -101,14 +101,22 @@ mv /$CHAIN_ID/edited-genesis.json /$CHAIN_ID/genesis.json
 for i in $(seq 0 $(($NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
-
+    START_WITH_CONSUMER_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].start_with_consumer_key")
     # Generate an application key for each validator
     # Sets up an arbitrary number of validators on a single machine by manipulating
     # the --home parameter on gaiad
-    echo "$VALIDATORS" | jq -r ".[$i].mnemonic" | $BIN keys add validator$VAL_ID \
+    # optionally start validator with a key different from provider chain key
+    if [[ "$CHAIN_ID" != "provi" && "$START_WITH_CONSUMER_KEY" = "true" ]]; then
+        echo "$VALIDATORS" | jq -r ".[$i].consumer_mnemonic" | $BIN keys add validator$VAL_ID \
+            --home /$CHAIN_ID/validator$VAL_ID \
+            --keyring-backend test \
+            --recover > /dev/null
+    else
+        echo "$VALIDATORS" | jq -r ".[$i].mnemonic" | $BIN keys add validator$VAL_ID \
         --home /$CHAIN_ID/validator$VAL_ID \
         --keyring-backend test \
         --recover > /dev/null
+    fi
     
     # Give validators their initial token allocations
     # move the genesis in
@@ -131,15 +139,25 @@ done
 for i in $(seq 0 $(($NODES - 1)));
 do
     VAL_ID=$(echo "$VALIDATORS" | jq -r ".[$i].val_id")
+
     # Copy in the genesis.json
     cp /$CHAIN_ID/genesis.json /$CHAIN_ID/validator$VAL_ID/config/genesis.json
 
     # Copy in validator state file
     echo '{"height": "0","round": 0,"step": 0}' > /$CHAIN_ID/validator$VAL_ID/data/priv_validator_state.json
 
-    PRIV_VALIDATOR_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].priv_validator_key")
-    if [[ "$PRIV_VALIDATOR_KEY" ]]; then
-        echo "$PRIV_VALIDATOR_KEY" > /$CHAIN_ID/validator$VAL_ID/config/priv_validator_key.json
+    START_WITH_CONSUMER_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].start_with_consumer_key")
+    if [[ "$CHAIN_ID" != "provi" && "$START_WITH_CONSUMER_KEY" = "true" ]]; then
+        # start with assigned consumer key
+        PRIV_VALIDATOR_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].consumer_priv_validator_key")
+        if [[ "$PRIV_VALIDATOR_KEY" ]]; then
+            echo "$PRIV_VALIDATOR_KEY" > /$CHAIN_ID/validator$VAL_ID/config/priv_validator_key.json
+        fi
+    else
+        PRIV_VALIDATOR_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].priv_validator_key")
+        if [[ "$PRIV_VALIDATOR_KEY" ]]; then
+            echo "$PRIV_VALIDATOR_KEY" > /$CHAIN_ID/validator$VAL_ID/config/priv_validator_key.json
+        fi
     fi
 
     NODE_KEY=$(echo "$VALIDATORS" | jq -r ".[$i].node_key")

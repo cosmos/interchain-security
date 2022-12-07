@@ -1,0 +1,29 @@
+syntax = "proto3";
+package interchain_security.ccv.provider.v1;
+
+option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types";
+
+import "google/api/annotations.proto";
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "google/protobuf/any.proto";
+
+// Msg defines the Msg service.
+service Msg {
+  rpc AssignConsumerKey(MsgAssignConsumerKey) returns (MsgAssignConsumerKeyResponse);
+}
+
+message MsgAssignConsumerKey {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  // The chain id of the consumer chain to assign a consensus public key to
+  string chain_id = 1;
+  // The validator address on the provider
+  string provider_addr = 2
+      [ (gogoproto.moretags) = "yaml:\"address\"" ];
+  // The consensus public key to use on the consumer
+  google.protobuf.Any consumer_key = 3
+      [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
+}
+
+message MsgAssignConsumerKeyResponse {}

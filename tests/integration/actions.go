@@ -13,6 +13,7 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/client"
+	"github.com/tidwall/gjson"
 )
 
 type SendTokensAction struct {
@@ -79,6 +80,10 @@ func (tr TestRun) startChain(
 		PrivValidatorKey string `json:"priv_validator_key"`
 		NodeKey          string `json:"node_key"`
 		IpSuffix         string `json:"ip_suffix"`
+
+		ConsumerMnemonic         string `json:"consumer_mnemonic"`
+		ConsumerPrivValidatorKey string `json:"consumer_priv_validator_key"`
+		StartWithConsumerKey     bool   `json:"start_with_consumer_key"`
 	}
 
 	var validators []jsonValAttrs
@@ -91,6 +96,11 @@ func (tr TestRun) startChain(
 			Allocation:       fmt.Sprint(val.allocation) + "stake",
 			Stake:            fmt.Sprint(val.stake) + "stake",
 			IpSuffix:         tr.validatorConfigs[val.id].ipSuffix,
+
+			ConsumerMnemonic:         tr.validatorConfigs[val.id].consumerMnemonic,
+			ConsumerPrivValidatorKey: tr.validatorConfigs[val.id].consumerPrivValidatorKey,
+			// if true node will be started with consumer key for each consumer chain
+			StartWithConsumerKey: tr.validatorConfigs[val.id].useConsumerKey,
 		})
 	}
 
@@ -786,11 +796,16 @@ func (tr TestRun) delegateTokens(
 	action delegateTokensAction,
 	verbose bool,
 ) {
+	toValCfg := tr.validatorConfigs[action.to]
+	delegateAddr := toValCfg.valoperAddress
+	if action.chain != chainID("provi") && toValCfg.useConsumerKey {
+		delegateAddr = toValCfg.consumerValoperAddress
+	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
 		"tx", "staking", "delegate",
-		tr.validatorConfigs[action.to].valoperAddress,
+		delegateAddr,
 		fmt.Sprint(action.amount)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.from),
@@ -822,11 +837,16 @@ func (tr TestRun) unbondTokens(
 	action unbondTokensAction,
 	verbose bool,
 ) {
+	unbondFrom := tr.validatorConfigs[action.unbondFrom].valoperAddress
+	if tr.validatorConfigs[action.unbondFrom].useConsumerKey {
+		unbondFrom = tr.validatorConfigs[action.unbondFrom].consumerValoperAddress
+	}
+
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[action.chain].binaryName,
 
 		"tx", "staking", "unbond",
-		tr.validatorConfigs[action.unbondFrom].valoperAddress,
+		unbondFrom,
 		fmt.Sprint(action.amount)+`stake`,
 
 		`--from`, `validator`+fmt.Sprint(action.sender),
@@ -857,14 +877,26 @@ type redelegateTokensAction struct {
 }
 
 func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) {
+	srcCfg := tr.validatorConfigs[action.src]
+	dstCfg := tr.validatorConfigs[action.dst]
+
+	redelegateSrc := srcCfg.valoperAddress
+	if action.chain != chainID("provi") && srcCfg.useConsumerKey {
+		redelegateSrc = srcCfg.consumerValoperAddress
+	}
+
+	redelegateDst := dstCfg.valoperAddress
+	if action.chain != chainID("provi") && dstCfg.useConsumerKey {
+		redelegateDst = dstCfg.consumerValoperAddress
+	}
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec",
 		tr.containerConfig.instanceName,
 		tr.chainConfigs[action.chain].binaryName,
 
 		"tx", "staking", "redelegate",
-		tr.validatorConfigs[action.src].valoperAddress,
-		tr.validatorConfigs[action.dst].valoperAddress,
+		redelegateSrc,
+		redelegateDst,
 		fmt.Sprint(action.amount)+`stake`,
 		`--from`, `validator`+fmt.Sprint(action.txSender),
 		`--chain-id`, string(tr.chainConfigs[action.chain].chainId),
@@ -896,7 +928,7 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 	// Bring validator down
 	tr.setValidatorDowntime(action.chain, action.validator, true, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
-	tr.waitBlocks(action.chain, 3, time.Minute)
+	tr.waitBlocks(action.chain, 15, time.Minute)
 	// Bring validator back up
 	tr.setValidatorDowntime(action.chain, action.validator, false, verbose)
 }
@@ -1054,4 +1086,106 @@ func (tr TestRun) invokeDoublesignSlash(
 		log.Fatal(err, "\n", string(bz))
 	}
 	tr.waitBlocks("provi", 10, 2*time.Minute)
+}
+
+type assignConsumerPubKeyAction struct {
+	chain          chainID
+	validator      validatorID
+	consumerPubkey string
+	// reconfigureNode will change keys the node uses and restart
+	reconfigureNode bool
+	// executing the action should raise an error
+	expectError bool
+}
+
+func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbose bool) {
+	valCfg := tr.validatorConfigs[action.validator]
+
+	assignKey := fmt.Sprintf(
+		`%s tx provider assign-consensus-key %s '%s' --from validator%s --chain-id %s --home %s --node %s --gas 900000 --keyring-backend test -b block -y -o json`,
+		tr.chainConfigs[chainID("provi")].binaryName,
+		string(tr.chainConfigs[action.chain].chainId),
+		action.consumerPubkey,
+		action.validator,
+		tr.chainConfigs[chainID("provi")].chainId,
+		tr.getValidatorHome(chainID("provi"), action.validator),
+		tr.getValidatorNode(chainID("provi"), action.validator),
+	)
+	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+	cmd := exec.Command("docker", "exec",
+		tr.containerConfig.instanceName,
+		"/bin/bash", "-c",
+		assignKey,
+	)
+
+	if verbose {
+		fmt.Println("assignConsumerPubKey cmd:", cmd.String())
+	}
+
+	bz, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err, "\n", string(bz))
+	}
+
+	jsonStr := string(bz)
+	code := gjson.Get(jsonStr, "code")
+	rawLog := gjson.Get(jsonStr, "raw_log")
+	if !action.expectError && code.Int() != 0 {
+		log.Fatalf("unexpected error during key assignment - code: %s, output: %s", code, jsonStr)
+	}
+
+	if action.expectError {
+		if code.Int() == 0 {
+		} else if verbose {
+			fmt.Printf("got expected error during key assignment | code: %v | log: %s\n", code, rawLog)
+		}
+	}
+
+	// node was started with provider key
+	// we swap the nodes's keys for consumer keys and restart it
+	if action.reconfigureNode {
+		//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
+		configureNodeCmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, "/bin/bash",
+			"/testnet-scripts/reconfigure-node.sh", tr.chainConfigs[action.chain].binaryName,
+			string(action.validator), string(action.chain),
+			tr.chainConfigs[action.chain].ipPrefix, valCfg.ipSuffix,
+			valCfg.consumerMnemonic, valCfg.consumerPrivValidatorKey,
+			valCfg.consumerNodeKey,
+		)
+
+		if verbose {
+			fmt.Println("assignConsumerPubKey - reconfigure node cmd:", configureNodeCmd.String())
+		}
+
+		cmdReader, err := configureNodeCmd.StdoutPipe()
+		if err != nil {
+			log.Fatal(err)
+		}
+		configureNodeCmd.Stderr = configureNodeCmd.Stdout
+
+		if err := configureNodeCmd.Start(); err != nil {
+			log.Fatal(err)
+		}
+
+		scanner := bufio.NewScanner(cmdReader)
+
+		for scanner.Scan() {
+			out := scanner.Text()
+			if verbose {
+				fmt.Println("assign key - reconfigure: " + out)
+			}
+			if out == "done!!!!!!!!" {
+				break
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+
+		// TODO: @MSalopek refactor this so test config is not changed at runtime
+		// make the validator use consumer key
+		valCfg.useConsumerKey = true
+		tr.validatorConfigs[action.validator] = valCfg
+	}
+
 }

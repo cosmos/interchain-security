@@ -4,13 +4,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
@@ -26,6 +27,13 @@ func TestInitAndExportGenesis(t *testing.T) {
 	initHeight, vscID := uint64(5), uint64(1)
 	ubdIndex := []uint64{0, 1, 2}
 	params := providertypes.DefaultParams()
+
+	// create validator keys and addresses for key assignement
+	provAddr := sdk.ConsAddress(ed25519.GenPrivKey().PubKey().Address().Bytes())
+	consPubKey := ed25519.GenPrivKey().PubKey()
+	consTmPubKey, err := cryptocodec.ToTmProtoPublicKey(consPubKey)
+	require.NoError(t, err)
+	consAddr := sdk.ConsAddress(consPubKey.Address().Bytes())
 
 	// create genesis struct
 	provGenesis := providertypes.NewGenesisState(vscID,
@@ -61,15 +69,36 @@ func TestInitAndExportGenesis(t *testing.T) {
 			UnbondingConsumerChains: []string{cChainIDs[0]},
 		}},
 		&ccv.MaturedUnbondingOps{Ids: ubdIndex},
-		[]providertypes.ConsumerAdditionProposal{types.ConsumerAdditionProposal{
+		[]providertypes.ConsumerAdditionProposal{{
 			ChainId:   cChainIDs[0],
 			SpawnTime: oneHourFromNow,
 		}},
-		[]providertypes.ConsumerRemovalProposal{types.ConsumerRemovalProposal{
+		[]providertypes.ConsumerRemovalProposal{{
 			ChainId:  cChainIDs[0],
 			StopTime: oneHourFromNow,
 		}},
 		params,
+		[]providertypes.ValidatorConsumerPubKey{
+			{
+				ChainId:      cChainIDs[0],
+				ProviderAddr: provAddr,
+				ConsumerKey:  &consTmPubKey,
+			},
+		},
+		[]providertypes.ValidatorByConsumerAddr{
+			{
+				ChainId:      cChainIDs[0],
+				ProviderAddr: provAddr,
+				ConsumerAddr: consAddr,
+			},
+		},
+		[]providertypes.ConsumerAddrsToPrune{
+			{
+				ChainId:       cChainIDs[0],
+				VscId:         vscID,
+				ConsumerAddrs: &providertypes.AddressList{Addresses: [][]byte{consAddr}},
+			},
+		},
 	)
 
 	// Instantiate in-mem provider keeper with mocks
@@ -104,6 +133,17 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, provGenesis.ConsumerAdditionProposals[0], addProp)
 	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, provGenesis.Params, pk.GetParams(ctx))
+
+	gotConsTmPubKey, found := pk.GetValidatorConsumerPubKey(ctx, cChainIDs[0], provAddr)
+	require.True(t, found)
+	require.True(t, consTmPubKey.Equal(gotConsTmPubKey))
+
+	providerAddr, found := pk.GetValidatorByConsumerAddr(ctx, cChainIDs[0], consAddr)
+	require.True(t, found)
+	require.Equal(t, provAddr, providerAddr)
+
+	addrs := pk.GetConsumerAddrsToPrune(ctx, cChainIDs[0], vscID)
+	require.Equal(t, [][]byte{consAddr}, addrs.Addresses)
 
 	// check provider chain's consumer chain states
 	assertConsumerChainStates(ctx, t, pk, provGenesis.ConsumerStates...)

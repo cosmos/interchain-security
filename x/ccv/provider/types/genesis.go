@@ -18,6 +18,9 @@ func NewGenesisState(
 	additionProposals []ConsumerAdditionProposal,
 	removalProposals []ConsumerRemovalProposal,
 	params Params,
+	validatorConsumerPubkeys []ValidatorConsumerPubKey,
+	validatorsByConsumerAddr []ValidatorByConsumerAddr,
+	consumerAddrsToPrune []ConsumerAddrsToPrune,
 ) *GenesisState {
 	return &GenesisState{
 		ValsetUpdateId:            vscID,
@@ -28,6 +31,9 @@ func NewGenesisState(
 		ConsumerAdditionProposals: additionProposals,
 		ConsumerRemovalProposals:  removalProposals,
 		Params:                    params,
+		ValidatorConsumerPubkeys:  validatorConsumerPubkeys,
+		ValidatorsByConsumerAddr:  validatorsByConsumerAddr,
+		ConsumerAddrsToPrune:      consumerAddrsToPrune,
 	}
 }
 

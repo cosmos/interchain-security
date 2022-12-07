@@ -110,3 +110,8 @@ message ConsumerRemovalProposals {
   // proposals waiting for stop_time to pass
   repeated ConsumerRemovalProposal pending = 1;
 }
+
+// AddressList contains a list of consensus addresses
+message AddressList {
+  repeated bytes addresses = 1;
+}

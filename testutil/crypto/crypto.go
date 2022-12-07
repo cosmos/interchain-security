@@ -25,13 +25,13 @@ type CryptoIdentity struct {
 	ibcmock.PV
 }
 
-func NewCryptoIdentityFromBytesSeed(seed []byte) CryptoIdentity {
+func NewCryptoIdentityFromBytesSeed(seed []byte) *CryptoIdentity {
 	//lint:ignore SA1019 We don't care because this is only a test.
 	privKey := ibcmock.PV{PrivKey: &sdkcryptokeys.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
-	return CryptoIdentity{PV: privKey}
+	return &CryptoIdentity{PV: privKey}
 }
 
-func NewCryptoIdentityFromIntSeed(i int) CryptoIdentity {
+func NewCryptoIdentityFromIntSeed(i int) *CryptoIdentity {
 	iUint64 := uint64(i)
 	seed := []byte("AAAAAAAAabcdefghijklmnopqrstuvwx") // 8+24 bytes
 	binary.LittleEndian.PutUint64(seed[:8], iUint64)
