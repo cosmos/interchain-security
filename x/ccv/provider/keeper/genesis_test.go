@@ -44,7 +44,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 				expClientID,
 				"channel",
 				initHeight,
-				true,
 				*consumertypes.DefaultGenesisState(),
 				[]providertypes.UnbondingOpIndex{
 					{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex},
@@ -57,7 +56,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 				expClientID,
 				"",
 				0,
-				false,
 				*consumertypes.DefaultGenesisState(),
 				nil,
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
@@ -174,8 +172,6 @@ func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, 
 			_, found = pk.GetInitChainHeight(ctx, chainID)
 			require.True(t, found)
 		}
-
-		require.Equal(t, cs.LockUnbondingOnTimeout, pk.GetLockUnbondingOnTimeout(ctx, chainID))
 
 		if expVSC := cs.GetPendingValsetChanges(); expVSC != nil {
 			gotVSC := pk.GetPendingPackets(ctx, chainID)

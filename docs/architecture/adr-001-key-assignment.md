@@ -240,7 +240,7 @@ func OnRecvVSCMaturedPacket(packet channeltypes.Packet, data ccv.VSCMaturedPacke
 
 On stopping a consumer chain:
 ```golang
-func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, closeChan bool) (err error) {
+func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan bool) (err error) {
     // ...
     // deletes all the state needed for key assignments on this consumer chain
     // ...

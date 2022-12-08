@@ -12,6 +12,8 @@ import (
 	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+
 	"github.com/cosmos/interchain-security/x/ccv/provider/client"
 	"github.com/tidwall/gjson"
 )
@@ -208,15 +210,22 @@ func (tr TestRun) submitConsumerAdditionProposal(
 	verbose bool,
 ) {
 	spawnTime := tr.containerConfig.now.Add(time.Duration(action.spawnTime) * time.Millisecond)
+	params := consumertypes.DefaultParams()
 	prop := client.ConsumerAdditionProposalJSON{
-		Title:         "Propose the addition of a new chain",
-		Description:   "Gonna be a great chain",
-		ChainId:       string(tr.chainConfigs[action.consumerChain].chainId),
-		InitialHeight: action.initialHeight,
-		GenesisHash:   []byte("gen_hash"),
-		BinaryHash:    []byte("bin_hash"),
-		SpawnTime:     spawnTime,
-		Deposit:       fmt.Sprint(action.deposit) + `stake`,
+		Title:                             "Propose the addition of a new chain",
+		Description:                       "Gonna be a great chain",
+		ChainId:                           string(tr.chainConfigs[action.consumerChain].chainId),
+		InitialHeight:                     action.initialHeight,
+		GenesisHash:                       []byte("gen_hash"),
+		BinaryHash:                        []byte("bin_hash"),
+		SpawnTime:                         spawnTime,
+		ConsumerRedistributionFraction:    params.ConsumerRedistributionFraction,
+		BlocksPerDistributionTransmission: params.BlocksPerDistributionTransmission,
+		HistoricalEntries:                 params.HistoricalEntries,
+		CcvTimeoutPeriod:                  params.CcvTimeoutPeriod,
+		TransferTimeoutPeriod:             params.TransferTimeoutPeriod,
+		UnbondingPeriod:                   params.UnbondingPeriod,
+		Deposit:                           fmt.Sprint(action.deposit) + `stake`,
 	}
 
 	bz, err := json.Marshal(prop)

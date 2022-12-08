@@ -7,6 +7,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
+	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 
 	"github.com/stretchr/testify/suite"
@@ -83,13 +84,15 @@ func AddConsumer[Tp e2eutil.ProviderApp, Tc e2eutil.ConsumerApp](
 	providerChain := coordinator.Chains[provChainID]
 	providerApp := providerChain.App.(Tp)
 	providerKeeper := providerApp.GetProviderKeeper()
+
+	prop := testkeeper.GetTestConsumerAdditionProp()
+	prop.ChainId = chainID
+	// NOTE: the initial height passed to CreateConsumerClient
+	// must be the height on the consumer when InitGenesis is called
+	prop.InitialHeight = clienttypes.Height{RevisionNumber: 0, RevisionHeight: 3}
 	err := providerKeeper.CreateConsumerClient(
 		providerChain.GetContext(),
-		chainID,
-		// NOTE: the initial height passed to CreateConsumerClient
-		// must be the height on the consumer when InitGenesis is called
-		clienttypes.Height{RevisionNumber: 0, RevisionHeight: 3},
-		false,
+		prop,
 	)
 	s.Require().NoError(err)
 

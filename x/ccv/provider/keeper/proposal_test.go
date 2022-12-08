@@ -56,6 +56,12 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				[]byte("gen_hash"),
 				[]byte("bin_hash"),
 				now, // Spawn time
+				"0.75",
+				10,
+				10000,
+				100000000000,
+				100000000000,
+				100000000000,
 			).(*providertypes.ConsumerAdditionProposal),
 			blockTime:        hourFromNow,
 			expCreatedClient: true,
@@ -71,6 +77,12 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				[]byte("gen_hash"),
 				[]byte("bin_hash"),
 				hourFromNow, // Spawn time
+				"0.75",
+				10,
+				10000,
+				100000000000,
+				100000000000,
+				100000000000,
 			).(*types.ConsumerAdditionProposal),
 			blockTime:        now,
 			expCreatedClient: false,
@@ -90,8 +102,6 @@ func TestHandleConsumerAdditionProposal(t *testing.T) {
 				testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks, "chainID", clienttypes.NewHeight(2, 3))...,
 			)
 		}
-
-		tc.prop.LockUnbondingOnTimeout = false // Full functionality not implemented yet.
 
 		err := providerKeeper.HandleConsumerAdditionProposal(ctx, tc.prop)
 		require.NoError(t, err)
@@ -164,7 +174,7 @@ func TestCreateConsumerClient(t *testing.T) {
 
 		// Call method with same arbitrary values as defined above in mock expectations.
 		err := providerKeeper.CreateConsumerClient(
-			ctx, "chainID", clienttypes.NewHeight(4, 5), false) // LockUbdOnTimeout always false for now
+			ctx, testkeeper.GetTestConsumerAdditionProp())
 
 		require.NoError(t, err)
 
@@ -187,10 +197,6 @@ func testCreatedConsumerClient(t *testing.T,
 	clientId, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
 	require.True(t, found, "consumer client not found")
 	require.Equal(t, expectedClientID, clientId)
-
-	// Lock unbonding on timeout flag always false for now.
-	lockUbdOnTimeout := providerKeeper.GetLockUnbondingOnTimeout(ctx, expectedChainID)
-	require.False(t, lockUbdOnTimeout)
 
 	// Only assert that consumer genesis was set,
 	// more granular tests on consumer genesis should be defined in TestMakeConsumerGenesis
@@ -439,7 +445,7 @@ func TestStopConsumerChain(t *testing.T) {
 		// Setup specific to test case
 		tc.setup(ctx, &providerKeeper, mocks)
 
-		err := providerKeeper.StopConsumerChain(ctx, "chainID", false, true)
+		err := providerKeeper.StopConsumerChain(ctx, "chainID", true)
 
 		if tc.expErr {
 			require.Error(t, err)
@@ -458,8 +464,6 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 	expectedChainID string, expectedChannelID string) {
 
 	_, found := providerKeeper.GetConsumerClientId(ctx, expectedChainID)
-	require.False(t, found)
-	found = providerKeeper.GetLockUnbondingOnTimeout(ctx, expectedChainID)
 	require.False(t, found)
 	_, found = providerKeeper.GetChainToChannel(ctx, expectedChainID)
 	require.False(t, found)
@@ -678,7 +682,19 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	ctx = ctx.WithBlockHeight(5)        // RevisionHeight obtained from ctx
 	gomock.InOrder(testkeeper.GetMocksForMakeConsumerGenesis(ctx, &mocks, 1814400000000000)...)
 
-	actualGenesis, _, err := providerKeeper.MakeConsumerGenesis(ctx, "testchain2")
+	// matches params from jsonString
+	prop := providertypes.ConsumerAdditionProposal{
+		Title:                             "title",
+		Description:                       "desc",
+		ChainId:                           "testchain1",
+		BlocksPerDistributionTransmission: 1000,
+		CcvTimeoutPeriod:                  2419200000000000,
+		TransferTimeoutPeriod:             3600000000000,
+		ConsumerRedistributionFraction:    "0.75",
+		HistoricalEntries:                 10000,
+		UnbondingPeriod:                   1728000000000000,
+	}
+	actualGenesis, _, err := providerKeeper.MakeConsumerGenesis(ctx, &prop)
 	require.NoError(t, err)
 
 	jsonString := `{"params":{"enabled":true, "blocks_per_distribution_transmission":1000, "ccv_timeout_period":2419200000000000, "transfer_timeout_period": 3600000000000, "consumer_redistribution_fraction":"0.75", "historical_entries":10000, "unbonding_period": 1728000000000000},"new_chain":true,"provider_client_state":{"chain_id":"testchain1","trust_level":{"numerator":1,"denominator":3},"trusting_period":907200000000000,"unbonding_period":1814400000000000,"max_clock_drift":10000000000,"frozen_height":{},"latest_height":{"revision_height":5},"proof_specs":[{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":33,"min_prefix_length":4,"max_prefix_length":12,"hash":1}},{"leaf_spec":{"hash":1,"prehash_value":1,"length":1,"prefix":"AA=="},"inner_spec":{"child_order":[0,1],"child_size":32,"min_prefix_length":1,"max_prefix_length":1,"hash":1}}],"upgrade_path":["upgrade","upgradedIBCState"],"allow_update_after_expiry":true,"allow_update_after_misbehaviour":true},"provider_consensus_state":{"timestamp":"2020-01-02T00:00:10Z","root":{"hash":"LpGpeyQVLUo9HpdsgJr12NP2eCICspcULiWa5u9udOA="},"next_validators_hash":"E30CE736441FB9101FADDAF7E578ABBE6DFDB67207112350A9A904D554E1F5BE"},"unbonding_sequences":null,"initial_val_set":[{"pub_key":{"type":"tendermint/PubKeyEd25519","value":"dcASx5/LIKZqagJWN0frOlFtcvz91frYmj/zmoZRWro="},"power":1}]}`
@@ -713,13 +729,31 @@ func TestBeginBlockInit(t *testing.T) {
 	pendingProps := []*providertypes.ConsumerAdditionProposal{
 		providertypes.NewConsumerAdditionProposal(
 			"title", "description", "chain1", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.Add(-time.Hour).UTC()).(*providertypes.ConsumerAdditionProposal),
+			now.Add(-time.Hour).UTC(),
+			"0.75",
+			10,
+			10000,
+			100000000000,
+			100000000000,
+			100000000000).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "description", "chain2", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.UTC()).(*providertypes.ConsumerAdditionProposal),
+			now.UTC(),
+			"0.75",
+			10,
+			10000,
+			100000000000,
+			100000000000,
+			100000000000).(*providertypes.ConsumerAdditionProposal),
 		providertypes.NewConsumerAdditionProposal(
 			"title", "description", "chain3", clienttypes.NewHeight(3, 4), []byte{}, []byte{},
-			now.Add(time.Hour).UTC()).(*providertypes.ConsumerAdditionProposal),
+			now.Add(time.Hour).UTC(),
+			"0.75",
+			10,
+			10000,
+			100000000000,
+			100000000000,
+			100000000000).(*providertypes.ConsumerAdditionProposal),
 	}
 
 	gomock.InOrder(
@@ -793,7 +827,10 @@ func TestBeginBlockCCR(t *testing.T) {
 	//
 	for _, prop := range pendingProps {
 		// Setup a valid consumer chain for each prop
-		err := providerKeeper.CreateConsumerClient(ctx, prop.ChainId, clienttypes.NewHeight(2, 3), false)
+		additionProp := testkeeper.GetTestConsumerAdditionProp()
+		additionProp.ChainId = prop.ChainId
+		additionProp.InitialHeight = clienttypes.NewHeight(2, 3)
+		err := providerKeeper.CreateConsumerClient(ctx, additionProp)
 		require.NoError(t, err)
 		err = providerKeeper.SetConsumerChain(ctx, "channelID")
 		require.NoError(t, err)

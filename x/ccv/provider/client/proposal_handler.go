@@ -35,6 +35,7 @@ func SubmitConsumerAdditionPropTxCmd() *cobra.Command {
 		Long: `
 Submit a consumer addition proposal along with an initial deposit.
 The proposal details must be supplied via a JSON file.
+Unbonding period, transfer timeout period and ccv timeout period should be provided as nanosecond time periods.
 
 Example:
 $ <appd> tx gov submit-proposal consumer-addition <path/to/proposal.json> --from=<key_or_address>
@@ -52,6 +53,12 @@ Where proposal.json contains:
     "genesis_hash": "Z2VuZXNpcyBoYXNo",
     "binary_hash": "YmluYXJ5IGhhc2g=",
     "spawn_time": "2022-01-27T15:59:50.121607-08:00",
+    "blocks_per_distribution_transmission": 1000,
+    "consumer_redistribution_fraction": "0.75",
+    "historical_entries": 10000,
+    "transfer_timeout_period": 3600000000000,
+    "ccv_timeout_period": 2419200000000000,
+    "unbonding_period": 1728000000000000,
     "deposit": "10000stake"
 }
 		`,
@@ -68,7 +75,9 @@ Where proposal.json contains:
 
 			content := types.NewConsumerAdditionProposal(
 				proposal.Title, proposal.Description, proposal.ChainId, proposal.InitialHeight,
-				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime)
+				proposal.GenesisHash, proposal.BinaryHash, proposal.SpawnTime,
+				proposal.ConsumerRedistributionFraction, proposal.BlocksPerDistributionTransmission, proposal.HistoricalEntries,
+				proposal.CcvTimeoutPeriod, proposal.TransferTimeoutPeriod, proposal.UnbondingPeriod)
 
 			from := clientCtx.GetFromAddress()
 
@@ -148,7 +157,15 @@ type ConsumerAdditionProposalJSON struct {
 	GenesisHash   []byte             `json:"genesis_hash"`
 	BinaryHash    []byte             `json:"binary_hash"`
 	SpawnTime     time.Time          `json:"spawn_time"`
-	Deposit       string             `json:"deposit"`
+
+	ConsumerRedistributionFraction    string        `json:"consumer_redistribution_fraction"`
+	BlocksPerDistributionTransmission int64         `json:"blocks_per_distribution_transmission"`
+	HistoricalEntries                 int64         `json:"historical_entries"`
+	CcvTimeoutPeriod                  time.Duration `json:"ccv_timeout_period"`
+	TransferTimeoutPeriod             time.Duration `json:"transfer_timeout_period"`
+	UnbondingPeriod                   time.Duration `json:"unbonding_period"`
+
+	Deposit string `json:"deposit"`
 }
 
 type ConsumerAdditionProposalReq struct {
@@ -162,7 +179,15 @@ type ConsumerAdditionProposalReq struct {
 	GenesisHash   []byte             `json:"genesisHash"`
 	BinaryHash    []byte             `json:"binaryHash"`
 	SpawnTime     time.Time          `json:"spawnTime"`
-	Deposit       sdk.Coins          `json:"deposit"`
+
+	ConsumerRedistributionFraction    string        `json:"consumer_redistribution_fraction"`
+	BlocksPerDistributionTransmission int64         `json:"blocks_per_distribution_transmission"`
+	HistoricalEntries                 int64         `json:"historical_entries"`
+	CcvTimeoutPeriod                  time.Duration `json:"ccv_timeout_period"`
+	TransferTimeoutPeriod             time.Duration `json:"transfer_timeout_period"`
+	UnbondingPeriod                   time.Duration `json:"unbonding_period"`
+
+	Deposit sdk.Coins `json:"deposit"`
 }
 
 func ParseConsumerAdditionProposalJSON(proposalFile string) (ConsumerAdditionProposalJSON, error) {
@@ -245,7 +270,9 @@ func postConsumerAdditionProposalHandlerFn(clientCtx client.Context) http.Handle
 
 		content := types.NewConsumerAdditionProposal(
 			req.Title, req.Description, req.ChainId, req.InitialHeight,
-			req.GenesisHash, req.BinaryHash, req.SpawnTime)
+			req.GenesisHash, req.BinaryHash, req.SpawnTime,
+			req.ConsumerRedistributionFraction, req.BlocksPerDistributionTransmission, req.HistoricalEntries,
+			req.CcvTimeoutPeriod, req.TransferTimeoutPeriod, req.UnbondingPeriod)
 
 		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, req.Proposer)
 		if rest.CheckBadRequestError(w, err) {

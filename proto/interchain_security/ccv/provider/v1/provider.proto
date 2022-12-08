@@ -37,14 +37,33 @@ message ConsumerAdditionProposal {
     // will be responsible for starting their consumer chain validator node.
     google.protobuf.Timestamp spawn_time = 7
         [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-    // Indicates whether the outstanding unbonding operations should be released
-    // in case of a channel time-outs. When set to true, a governance proposal
-    // on the provider chain would be necessary to release the locked funds.
-    bool lock_unbonding_on_timeout = 8;   
-  }
+
+    // Unbonding period for the consumer,
+    // which should be smaller than that of the provider in general.
+    google.protobuf.Duration unbonding_period = 8
+        [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+    // Sent CCV related IBC packets will timeout after this duration
+    google.protobuf.Duration ccv_timeout_period = 9
+        [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+    // Sent transfer related IBC packets will timeout after this duration
+    google.protobuf.Duration transfer_timeout_period = 10
+        [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+    // The fraction of tokens allocated to the consumer redistribution address
+    // during distribution events. The fraction is a string representing a
+    // decimal number. For example "0.75" would represent 75%.
+    string consumer_redistribution_fraction = 11;
+    // BlocksPerDistributionTransmission is the number of blocks between ibc-token-transfers from the consumer chain to the provider chain.
+    // On sending transmission event, `consumer_redistribution_fraction` of the accumulated tokens are sent to the consumer redistribution address.
+    int64 blocks_per_distribution_transmission = 12;
+    // The number of historical info entries to persist in store.
+    // This param is a part of the cosmos sdk staking module. In the case of 
+    // a ccv enabled consumer chain, the ccv module acts as the staking module.
+    int64 historical_entries = 13;
+}
+
 // ConsumerRemovalProposal is a governance proposal on the provider chain to remove (and stop) a consumer chain.
 // If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
-// operation funds are released if the LockUnbondingOnTimeout parameter is set to false for the consumer chain ID.
+// operation funds are released.
  message ConsumerRemovalProposal {
     // the title of the proposal
     string title = 1;

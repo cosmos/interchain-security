@@ -167,7 +167,7 @@ func (s *CCVTestSuite) TestUndelegationVscTimeout() {
 	s.Require().Equal(false, found, "consumer chain was not removed")
 
 	// check if the chain was properly removed
-	s.checkConsumerChainIsRemoved(chainID, false, true)
+	s.checkConsumerChainIsRemoved(chainID, true)
 
 	// check that the unbonding operation completed
 	// - check that ccv unbonding op has been deleted
