@@ -84,13 +84,14 @@ Using on-chain params and the sub protocol defined, slash packet throttling is i
 
 For the following invariant to hold, these points must be true:
 
+- We assume the total voting power of the chain (as a function of delegations) does not significantly increase over the course of the attack.
 - The final slashed validator does not have more than `SlashMeterReplenishFraction` of total voting power on the provider.
 - `SlashMeterReplenishFraction` is large enough to avoid rounding errors.
 - `SlashMeterReplenishPeriod` is sufficiently longer than the time it takes to produce a block.
 
 Invariant:
 
-> The time it takes to jail `X`% of the provider validator set from consumer initiated slash requests will be greater than or equal to `(X * SlashMeterReplenishPeriod / SlashMeterReplenishFraction) - 2 * SlashMeterReplenishPeriod`
+> If we define a consumer initiated slash attack to start when the first slash packet from such an attack is received by the provider, and we define the initial validator set as the set that existed when the attack started, the time it takes to jail `X`% of the initial validator set will be greater than or equal to `(X * SlashMeterReplenishPeriod / SlashMeterReplenishFraction) - 2 * SlashMeterReplenishPeriod`
 
 Intuition: If jailings begin when the slash meter is full, then `SlashMeterReplenishFraction` of the provider validator set can be jailed immediately. The remaining jailings are only applied when the slash meter is positive in value, so the time it takes to jail the remaining `X - SlashMeterReplenishFraction` of the provider validator set is `(X - SlashMeterReplenishFraction) * SlashMeterReplenishPeriod / SlashMeterReplenishFraction`. However, the final validator could be jailed during the final replenishment period, with the meter being very small in value (causing it to go negative after jailing). So we subtract another `SlashMeterReplenishPeriod` term in the invariant to account for this.
 

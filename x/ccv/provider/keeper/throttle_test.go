@@ -716,6 +716,37 @@ func TestPendingSlashPacketEntries(t *testing.T) {
 	require.Equal(t, 7, len(entries))
 }
 
+// Tests DeletePendingSlashPacketEntriesForConsumer.
+func TestDeletePendingSlashPacketEntriesForConsumer(t *testing.T) {
+
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+		t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	// Queue 2 global entries for a consumer chain ID
+	providerKeeper.QueuePendingSlashPacketEntry(ctx,
+		providertypes.NewSlashPacketEntry(time.Now().Add(time.Hour), "chain-78", 1,
+			ed25519.GenPrivKey().PubKey().Address()))
+	providerKeeper.QueuePendingSlashPacketEntry(ctx,
+		providertypes.NewSlashPacketEntry(time.Now().Add(time.Hour), "chain-78", 2,
+			ed25519.GenPrivKey().PubKey().Address()))
+
+	// Queue 1 global entry for two other consumer chain IDs
+	providerKeeper.QueuePendingSlashPacketEntry(ctx,
+		providertypes.NewSlashPacketEntry(time.Now().Add(2*time.Hour), "chain-79", 1,
+			ed25519.GenPrivKey().PubKey().Address()))
+	providerKeeper.QueuePendingSlashPacketEntry(ctx,
+		providertypes.NewSlashPacketEntry(time.Now().Add(3*time.Hour), "chain-80", 1,
+			ed25519.GenPrivKey().PubKey().Address()))
+
+	// Delete entries for chain-78, confirm those are deleted, and the other two remain
+	providerKeeper.DeletePendingSlashPacketEntriesForConsumer(ctx, "chain-78")
+	allEntries := providerKeeper.GetAllPendingSlashPacketEntries(ctx)
+	require.Equal(t, 2, len(allEntries))
+	require.Equal(t, "chain-79", allEntries[0].ConsumerChainID)
+	require.Equal(t, "chain-80", allEntries[1].ConsumerChainID)
+}
+
 // TestPendingSlashPacketEntryDeletion tests the deletion function for
 // pending slash packet entries with assertion of FIFO ordering.
 func TestPendingSlashPacketEntryDeletion(t *testing.T) {
@@ -867,6 +898,38 @@ func TestPendingPacketData(t *testing.T) {
 		expectedInstances := getOrderedInstances(chainData.instances, chainData.expectedOrderAfterDeletion)
 		assertPendingPacketDataOrdering(t, &providerKeeper, ctx, chainData.chainID, expectedInstances)
 	}
+}
+
+// TestDeletePendingPacketDataForConsumer tests the DeletePendingPacketDataForConsumer method.
+func TestDeletePendingPacketDataForConsumer(t *testing.T) {
+
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+
+	// Queue slash and a VSC matured packet data for chain-48
+	providerKeeper.QueuePendingSlashPacketData(ctx, "chain-48", 0, testkeeper.GetNewSlashPacketData())
+	providerKeeper.QueuePendingVSCMaturedPacketData(ctx, "chain-48", 1, testkeeper.GetNewVSCMaturedPacketData())
+
+	// Queue 3 slash, and 4 vsc matured packet data instances for chain-49
+	providerKeeper.QueuePendingSlashPacketData(ctx, "chain-49", 0, testkeeper.GetNewSlashPacketData())
+	providerKeeper.QueuePendingSlashPacketData(ctx, "chain-49", 1, testkeeper.GetNewSlashPacketData())
+	providerKeeper.QueuePendingSlashPacketData(ctx, "chain-49", 2, testkeeper.GetNewSlashPacketData())
+	providerKeeper.QueuePendingVSCMaturedPacketData(ctx, "chain-49", 3, testkeeper.GetNewVSCMaturedPacketData())
+	providerKeeper.QueuePendingVSCMaturedPacketData(ctx, "chain-49", 4, testkeeper.GetNewVSCMaturedPacketData())
+	providerKeeper.QueuePendingVSCMaturedPacketData(ctx, "chain-49", 5, testkeeper.GetNewVSCMaturedPacketData())
+	providerKeeper.QueuePendingVSCMaturedPacketData(ctx, "chain-49", 6, testkeeper.GetNewVSCMaturedPacketData())
+
+	// Delete all packet data for chain-49, confirm they are deleted
+	providerKeeper.DeletePendingPacketDataForConsumer(ctx, "chain-49")
+	slashData, vscMaturedData := providerKeeper.GetAllPendingPacketData(ctx, "chain-49")
+	require.Empty(t, slashData)
+	require.Empty(t, vscMaturedData)
+
+	// Confirm packet data for chain-48 is not deleted
+	slashData, vscMaturedData = providerKeeper.GetAllPendingPacketData(ctx, "chain-48")
+	require.Len(t, slashData, 1)
+	require.Len(t, vscMaturedData, 1)
 }
 
 // TestPanicIfTooMuchPendingPacketData tests the PanicIfTooMuchPendingPacketData method.
