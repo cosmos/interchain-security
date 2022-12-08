@@ -10,7 +10,7 @@ Closes: `#<issue>`
 
 If you've checked both of the first two boxes, consider splitting this PR into multiple PRs!
 
-- [ ] `Feature`: Changes existing code behavior
+- [ ] `Feature`: Changes and/or adds code behavior
 - [ ] `Refactor`: Changes existing code style (naming, structure, etc.)
 - [ ] `Testing`: Adds testing
 - [ ] `Docs`: Adds documentation
@@ -19,7 +19,7 @@ If you've checked both of the first two boxes, consider splitting this PR into m
 
 If `Refactor`, describe the new or existing tests that verify no behavior was changed where refactors were introduced.
 
-## New behavior tests
+## New/Changed behavior tests
 
 If `Feature`, describe the new or existing tests that verify the new behavior is correct and expected.
 
