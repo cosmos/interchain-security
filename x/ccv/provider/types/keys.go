@@ -143,15 +143,18 @@ func InitTimeoutTimestampKey(chainID string) []byte {
 	return append([]byte{InitTimeoutTimestampBytePrefix}, []byte(chainID)...)
 }
 
-// PendingCAPKey returns the key under which a pending consumer addition proposal is stored
+// PendingCAPKey returns the key under which a pending consumer addition proposal is stored.
+// The key has the following format: PendingCAPBytePrefix | timestamp | chainID
 func PendingCAPKey(timestamp time.Time, chainID string) []byte {
-	return TsAndChainIdKey(PendingCAPBytePrefix, timestamp, chainID)
-}
-
-// ParsePendingCAPKey returns the time and chain ID for a pending consumer addition proposal key
-// or an error if unparsable
-func ParsePendingCAPKey(bz []byte) (time.Time, string, error) {
-	return ParseTsAndChainIdKey(PendingCAPBytePrefix, bz)
+	timeBz := sdk.FormatTimeBytes(timestamp)
+	return AppendMany(
+		// Append the prefix
+		[]byte{PendingCAPBytePrefix},
+		// Append the time bytes
+		timeBz,
+		// Append the chainId
+		[]byte(chainID),
+	)
 }
 
 // PendingCRPKey returns the key under which pending consumer removal proposals are stored

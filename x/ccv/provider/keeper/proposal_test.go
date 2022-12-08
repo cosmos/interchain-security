@@ -231,7 +231,7 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 
 	ctx = ctx.WithBlockTime(time.Now().UTC())
 
-	propsToExecute := providerKeeper.ConsumerAdditionPropsToExecute(ctx)
+	propsToExecute := providerKeeper.GetConsumerAdditionPropsToExecute(ctx)
 	// Delete consumer addition proposals, same as what would be done by BeginBlockInit
 	providerKeeper.DeletePendingConsumerAdditionProps(ctx, propsToExecute...)
 	numDeleted := 0
@@ -305,7 +305,7 @@ func TestPendingConsumerAdditionPropOrder(t *testing.T) {
 			err := providerKeeper.SetPendingConsumerAdditionProp(ctx, &prop)
 			require.NoError(t, err)
 		}
-		propsToExecute := providerKeeper.ConsumerAdditionPropsToExecute(ctx)
+		propsToExecute := providerKeeper.GetConsumerAdditionPropsToExecute(ctx)
 		require.Equal(t, tc.expectedOrderedProps, propsToExecute)
 	}
 }

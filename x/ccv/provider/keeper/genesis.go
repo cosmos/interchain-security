@@ -149,7 +149,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	addProps := []types.ConsumerAdditionProposal{}
-	k.IteratePendingConsumerAdditionProps(ctx, func(_ time.Time, prop types.ConsumerAdditionProposal) (stop bool) {
+	k.IteratePendingConsumerAdditionProps(ctx, func(prop types.ConsumerAdditionProposal) (stop bool) {
 		addProps = append(addProps, prop)
 		return false // do not stop the iteration
 	})
