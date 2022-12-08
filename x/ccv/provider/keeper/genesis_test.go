@@ -129,7 +129,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	addProp, found := pk.GetPendingConsumerAdditionProp(ctx, oneHourFromNow, cChainIDs[0])
 	require.True(t, found)
 	require.Equal(t, provGenesis.ConsumerAdditionProposals[0], addProp)
-	require.True(t, pk.GetPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
+	require.True(t, pk.IsPendingConsumerRemovalProp(ctx, cChainIDs[0], oneHourFromNow))
 	require.Equal(t, provGenesis.Params, pk.GetParams(ctx))
 
 	gotConsTmPubKey, found := pk.GetValidatorConsumerPubKey(ctx, cChainIDs[0], provAddr)

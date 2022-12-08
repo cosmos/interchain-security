@@ -157,14 +157,18 @@ func PendingCAPKey(timestamp time.Time, chainID string) []byte {
 	)
 }
 
-// PendingCRPKey returns the key under which pending consumer removal proposals are stored
+// PendingCRPKey returns the key under which pending consumer removal proposals are stored.
+// The key has the following format: PendingCRPBytePrefix | timestamp | chainID
 func PendingCRPKey(timestamp time.Time, chainID string) []byte {
-	return TsAndChainIdKey(PendingCRPBytePrefix, timestamp, chainID)
-}
-
-// ParsePendingCRPKey returns the time and chain ID for a pending consumer removal proposal key or an error if unparseable
-func ParsePendingCRPKey(bz []byte) (time.Time, string, error) {
-	return ParseTsAndChainIdKey(PendingCRPBytePrefix, bz)
+	timeBz := sdk.FormatTimeBytes(timestamp)
+	return AppendMany(
+		// Append the prefix
+		[]byte{PendingCRPBytePrefix},
+		// Append the time bytes
+		timeBz,
+		// Append the chainId
+		[]byte(chainID),
+	)
 }
 
 // UnbondingOpIndexKey returns an unbonding op index key

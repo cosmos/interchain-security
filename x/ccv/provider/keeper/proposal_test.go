@@ -379,13 +379,13 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 		if tc.expStop {
 			// Expect no pending proposal to exist
-			found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
+			found := providerKeeper.IsPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
 			require.False(t, found)
 
 			testProviderStateIsCleaned(t, ctx, providerKeeper, tc.prop.ChainId, "channelID")
 		} else {
 			// Proposal should be stored as pending
-			found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
+			found := providerKeeper.IsPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
 			require.True(t, found)
 		}
 
@@ -530,17 +530,17 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 	defer ctrl.Finish()
 
 	for _, tc := range testCases {
-		providerKeeper.SetPendingConsumerRemovalProp(ctx, tc.ChainId, tc.StopTime)
+		providerKeeper.SetPendingConsumerRemovalProp(ctx, &tc.ConsumerRemovalProposal)
 	}
 
 	ctx = ctx.WithBlockTime(time.Now().UTC())
 
-	propsToExecute := providerKeeper.ConsumerRemovalPropsToExecute(ctx)
+	propsToExecute := providerKeeper.GetConsumerRemovalPropsToExecute(ctx)
 	// Delete consumer removal proposals, same as what would be done by BeginBlockCCR
 	providerKeeper.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
 	numDeleted := 0
 	for _, tc := range testCases {
-		res := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.ChainId, tc.StopTime)
+		res := providerKeeper.IsPendingConsumerRemovalProp(ctx, tc.ChainId, tc.StopTime)
 		if !tc.ExpDeleted {
 			require.NotEmpty(t, res, "consumer removal prop was deleted: %s %s", tc.ChainId, tc.StopTime.String())
 			continue
@@ -603,9 +603,9 @@ func TestPendingConsumerRemovalPropOrder(t *testing.T) {
 		ctx = ctx.WithBlockTime(tc.accessTime)
 
 		for _, prop := range tc.propSubmitOrder {
-			providerKeeper.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
+			providerKeeper.SetPendingConsumerRemovalProp(ctx, &prop)
 		}
-		propsToExecute := providerKeeper.ConsumerRemovalPropsToExecute(ctx)
+		propsToExecute := providerKeeper.GetConsumerRemovalPropsToExecute(ctx)
 		require.Equal(t, tc.expectedOrderedProps, propsToExecute)
 	}
 }
@@ -836,7 +836,7 @@ func TestBeginBlockCCR(t *testing.T) {
 		require.NoError(t, err)
 
 		// Set removal props for all consumer chains
-		providerKeeper.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
+		providerKeeper.SetPendingConsumerRemovalProp(ctx, prop)
 	}
 
 	//
@@ -845,26 +845,26 @@ func TestBeginBlockCCR(t *testing.T) {
 	providerKeeper.BeginBlockCCR(ctx)
 
 	// Only the 3rd (final) proposal is still stored as pending
-	found := providerKeeper.GetPendingConsumerRemovalProp(
+	found := providerKeeper.IsPendingConsumerRemovalProp(
 		ctx, pendingProps[0].ChainId, pendingProps[0].StopTime)
 	require.False(t, found)
-	found = providerKeeper.GetPendingConsumerRemovalProp(
+	found = providerKeeper.IsPendingConsumerRemovalProp(
 		ctx, pendingProps[1].ChainId, pendingProps[1].StopTime)
 	require.False(t, found)
-	found = providerKeeper.GetPendingConsumerRemovalProp(
+	found = providerKeeper.IsPendingConsumerRemovalProp(
 		ctx, pendingProps[2].ChainId, pendingProps[2].StopTime)
 	require.True(t, found)
 }
 
-// Test getting both matured and pending comnsumer addition proposals
-func TestGetAllConsumerAdditionProps(t *testing.T) {
+// Test iterating through all consumer addition proposals
+func TestIteratePendingConsumerAdditionProps(t *testing.T) {
 	now := time.Now().UTC()
 
 	props := []types.ConsumerAdditionProposal{
-		{ChainId: "1", SpawnTime: now.Add(1 * time.Hour)},
-		{ChainId: "2", SpawnTime: now.Add(2 * time.Hour)},
 		{ChainId: "3", SpawnTime: now.Add(3 * time.Hour)},
+		{ChainId: "1", SpawnTime: now.Add(1 * time.Hour)},
 		{ChainId: "4", SpawnTime: now.Add(4 * time.Hour)},
+		{ChainId: "2", SpawnTime: now.Add(2 * time.Hour)},
 	}
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
@@ -879,21 +879,29 @@ func TestGetAllConsumerAdditionProps(t *testing.T) {
 
 	// advance the clock to be 1 minute after first proposal
 	ctx = ctx.WithBlockTime(now.Add(time.Minute))
-	res := providerKeeper.GetAllConsumerAdditionProps(ctx)
-	require.NotEmpty(t, res, "GetAllConsumerAdditionProps returned empty result")
-	require.Len(t, res.Pending, 4, "wrong len for pending addition props")
-	require.Equal(t, props[0].ChainId, res.Pending[0].ChainId, "wrong chain ID for pending addition prop")
+	storedProps := types.ConsumerAdditionProposals{}
+	providerKeeper.IteratePendingConsumerAdditionProps(ctx, func(prop types.ConsumerAdditionProposal) (stop bool) {
+		storedProps.Pending = append(storedProps.Pending, &prop)
+		return false // do not stop the iteration
+	})
+	require.NotEmpty(t, storedProps)
+	require.Len(t, storedProps.Pending, 4, "wrong len for pending addition props")
+	// check that the order is correct
+	require.Equal(t, props[1].ChainId, storedProps.Pending[0].ChainId)
+	require.Equal(t, props[3].ChainId, storedProps.Pending[1].ChainId)
+	require.Equal(t, props[0].ChainId, storedProps.Pending[2].ChainId)
+	require.Equal(t, props[2].ChainId, storedProps.Pending[3].ChainId)
 }
 
-// Test getting both matured and pending consumer removal proposals
-func TestGetAllConsumerRemovalProps(t *testing.T) {
+// Test iterating through all consumer removal proposals
+func TestIteratePendingConsumerRemovalProps(t *testing.T) {
 	now := time.Now().UTC()
 
 	props := []types.ConsumerRemovalProposal{
-		{ChainId: "1", StopTime: now.Add(1 * time.Hour)},
-		{ChainId: "2", StopTime: now.Add(2 * time.Hour)},
 		{ChainId: "3", StopTime: now.Add(3 * time.Hour)},
+		{ChainId: "1", StopTime: now.Add(1 * time.Hour)},
 		{ChainId: "4", StopTime: now.Add(4 * time.Hour)},
+		{ChainId: "2", StopTime: now.Add(2 * time.Hour)},
 	}
 
 	keeperParams := testkeeper.NewInMemKeeperParams(t)
@@ -901,13 +909,21 @@ func TestGetAllConsumerRemovalProps(t *testing.T) {
 	defer ctrl.Finish()
 
 	for _, prop := range props {
-		providerKeeper.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
+		providerKeeper.SetPendingConsumerRemovalProp(ctx, &prop)
 	}
 
 	// advance the clock to be 1 minute after first proposal
 	ctx = ctx.WithBlockTime(now.Add(time.Minute))
-	res := providerKeeper.GetAllConsumerRemovalProps(ctx)
-	require.NotEmpty(t, res, "GetAllConsumerRemovalProps returned empty result")
-	require.Len(t, res.Pending, 4, "wrong len for pending removal props")
-	require.Equal(t, props[0].ChainId, res.Pending[0].ChainId, "wrong chain ID for pending removal prop")
+	storedProps := types.ConsumerRemovalProposals{}
+	providerKeeper.IteratePendingConsumerRemovalProps(ctx, func(prop types.ConsumerRemovalProposal) (stop bool) {
+		storedProps.Pending = append(storedProps.Pending, &prop)
+		return false // do not stop the iteration
+	})
+	require.NotEmpty(t, storedProps)
+	require.Len(t, storedProps.Pending, 4, "wrong len for pending removal props")
+	// check that the order is correct
+	require.Equal(t, props[1].ChainId, storedProps.Pending[0].ChainId)
+	require.Equal(t, props[3].ChainId, storedProps.Pending[1].ChainId)
+	require.Equal(t, props[0].ChainId, storedProps.Pending[2].ChainId)
+	require.Equal(t, props[2].ChainId, storedProps.Pending[3].ChainId)
 }

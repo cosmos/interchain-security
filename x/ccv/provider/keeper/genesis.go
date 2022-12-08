@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -38,7 +37,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 	}
 	for _, prop := range genState.ConsumerRemovalProposals {
-		k.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
+		k.SetPendingConsumerRemovalProp(ctx, &prop)
 	}
 	for _, ubdOp := range genState.UnbondingOps {
 		k.SetUnbondingOp(ctx, ubdOp)
@@ -155,7 +154,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	})
 
 	remProps := []types.ConsumerRemovalProposal{}
-	k.IteratePendingConsumerRemovalProps(ctx, func(_ time.Time, prop types.ConsumerRemovalProposal) (stop bool) {
+	k.IteratePendingConsumerRemovalProps(ctx, func(prop types.ConsumerRemovalProposal) (stop bool) {
 		remProps = append(remProps, prop)
 		return false // do not stop the iteration
 	})

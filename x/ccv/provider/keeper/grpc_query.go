@@ -56,8 +56,13 @@ func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.Query
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	// get all pending consumer addition proposals
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	props := k.GetAllConsumerAdditionProps(ctx)
+	props := types.ConsumerAdditionProposals{}
+	k.IteratePendingConsumerAdditionProps(ctx, func(prop types.ConsumerAdditionProposal) (stop bool) {
+		props.Pending = append(props.Pending, &prop)
+		return false // do not stop the iteration
+	})
 
 	return &types.QueryConsumerChainStartProposalsResponse{Proposals: &props}, nil
 }
@@ -67,8 +72,13 @@ func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryC
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	// get all pending consumer removal proposals
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	props := k.GetAllConsumerRemovalProps(ctx)
+	props := types.ConsumerRemovalProposals{}
+	k.IteratePendingConsumerRemovalProps(ctx, func(prop types.ConsumerRemovalProposal) (stop bool) {
+		props.Pending = append(props.Pending, &prop)
+		return false // do not stop the iteration
+	})
 
 	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &props}, nil
 }
