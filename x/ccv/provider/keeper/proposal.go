@@ -292,7 +292,7 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 	return gen, hash, nil
 }
 
-// SetPendingConsumerAdditionProp stores a pending proposal to create a consumer chain client
+// SetPendingConsumerAdditionProp stores a pending consumer addition proposal
 func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, clientInfo *types.ConsumerAdditionProposal) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(clientInfo)
@@ -304,9 +304,15 @@ func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, clientInfo *type
 	return nil
 }
 
-// GetPendingConsumerAdditionProp retrieves a pending proposal to create a consumer chain client (by spawn time and chain id)
-func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.Time,
-	chainID string) (prop types.ConsumerAdditionProposal, found bool) {
+// GetPendingConsumerAdditionProp retrieves a pending consumer addition proposal
+// by spawn time and chain id.
+//
+// Note: this method is used only in testing
+func (k Keeper) GetPendingConsumerAdditionProp(
+	ctx sdk.Context,
+	spawnTime time.Time,
+	chainID string,
+) (prop types.ConsumerAdditionProposal, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingCAPKey(spawnTime, chainID))
 	if len(bz) == 0 {
@@ -315,6 +321,14 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 	k.cdc.MustUnmarshal(bz, &prop)
 
 	return prop, true
+}
+
+// DeletePendingConsumerAdditionProps deletes the given consumer addition proposals
+func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ...types.ConsumerAdditionProposal) {
+	store := ctx.KVStore(k.storeKey)
+	for _, p := range proposals {
+		store.Delete(types.PendingCAPKey(p.SpawnTime, p.ChainId))
+	}
 }
 
 // BeginBlockInit iterates over the pending consumer addition proposals in order, and creates
@@ -380,15 +394,6 @@ func (k Keeper) GetAllConsumerAdditionProps(ctx sdk.Context) types.ConsumerAddit
 		return false // do not stop the iteration
 	})
 	return props
-}
-
-// DeletePendingConsumerAdditionProps deletes the given consumer addition proposals
-func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ...types.ConsumerAdditionProposal) {
-	store := ctx.KVStore(k.storeKey)
-
-	for _, p := range proposals {
-		store.Delete(types.PendingCAPKey(p.SpawnTime, p.ChainId))
-	}
 }
 
 // SetPendingConsumerRemovalProp stores a pending proposal to remove and stop a consumer chain
