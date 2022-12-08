@@ -2,6 +2,8 @@ package types
 
 import (
 	"time"
+
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 )
 
 // A persisted queue entry indicating that a slash packet data instance needs to be handled
@@ -14,20 +16,20 @@ type SlashPacketEntry struct {
 	// The IBC sequence number of the recv packet.
 	// This field is used in the store key to ensure uniqueness.
 	IbcSeqNum uint64
-	// The byte address of the validator being slashed.
+	// The provider's consensus address of the validator being slashed.
 	// This field is used to obtain validator power in HandlePendingSlashPackets.
 	// It is not used in the store key, but is persisted in value bytes,
 	// see QueuePendingSlashPacketEntry.
-	ValAddr []byte
+	ProviderValConsAddr sdktypes.ConsAddress
 }
 
 // NewSlashPacketEntry creates a new SlashPacketEntry.
 func NewSlashPacketEntry(recvTime time.Time, consumerChainID string,
-	ibcSeqNum uint64, valAddr []byte) SlashPacketEntry {
+	ibcSeqNum uint64, providerValConsAddr sdktypes.ConsAddress) SlashPacketEntry {
 	return SlashPacketEntry{
-		RecvTime:        recvTime.UTC(), // UTC prevents serialization inconsistencies
-		ConsumerChainID: consumerChainID,
-		IbcSeqNum:       ibcSeqNum,
-		ValAddr:         valAddr,
+		RecvTime:            recvTime.UTC(), // UTC prevents serialization inconsistencies
+		ConsumerChainID:     consumerChainID,
+		IbcSeqNum:           ibcSeqNum,
+		ProviderValConsAddr: providerValConsAddr,
 	}
 }

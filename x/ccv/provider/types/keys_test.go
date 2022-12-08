@@ -5,11 +5,11 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
 // Tests that all singular keys, or prefixes to fully resolves keys are a single byte long,
@@ -179,9 +179,9 @@ func TestPendingPacketDataKeyAndParse(t *testing.T) {
 func TestPendingSlashPacketEntryKeyAndParse(t *testing.T) {
 	now := time.Now()
 	entries := []providertypes.SlashPacketEntry{}
-	entries = append(entries, providertypes.NewSlashPacketEntry(now, "chain-0", 2, ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(2*time.Hour), "chain-7896978", 3, ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(3*time.Hour), "chain-1", 4723894, ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now, "chain-0", 2, cryptoutil.NewCryptoIdentityFromIntSeed(0).SDKConsAddress()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(2*time.Hour), "chain-7896978", 3, cryptoutil.NewCryptoIdentityFromIntSeed(1).SDKConsAddress()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(3*time.Hour), "chain-1", 4723894, cryptoutil.NewCryptoIdentityFromIntSeed(2).SDKConsAddress()))
 
 	for _, entry := range entries {
 		key := providertypes.PendingSlashPacketEntryKey(entry)

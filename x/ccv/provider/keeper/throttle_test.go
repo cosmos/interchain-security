@@ -13,9 +13,9 @@ import (
 	"github.com/golang/mock/gomock"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/crypto/ed25519"
 	tmtypes "github.com/tendermint/tendermint/types"
 	"golang.org/x/exp/slices"
 )
@@ -626,7 +626,7 @@ func TestPendingSlashPacketEntries(t *testing.T) {
 		entry := providertypes.NewSlashPacketEntry(now.Local(),
 			fmt.Sprintf("chain-%d", i),
 			8, // all with seq = 8
-			ed25519.GenPrivKey().PubKey().Address())
+			cryptoutil.NewCryptoIdentityFromIntSeed(i).SDKConsAddress())
 		providerKeeper.QueuePendingSlashPacketEntry(ctx, entry)
 	}
 	entries = providerKeeper.GetAllPendingSlashPacketEntries(ctx)
@@ -637,7 +637,7 @@ func TestPendingSlashPacketEntries(t *testing.T) {
 		entry := providertypes.NewSlashPacketEntry(now.Add(time.Hour).Local(),
 			fmt.Sprintf("chain-%d", i),
 			9, // all with seq = 9
-			ed25519.GenPrivKey().PubKey().Address())
+			cryptoutil.NewCryptoIdentityFromIntSeed(i).SDKConsAddress())
 		providerKeeper.QueuePendingSlashPacketEntry(ctx, entry)
 	}
 
@@ -660,7 +660,7 @@ func TestPendingSlashPacketEntries(t *testing.T) {
 		entry := providertypes.NewSlashPacketEntry(now.Add(2*time.Hour).Local(),
 			fmt.Sprintf("chain-%d", i+5),
 			7697, // all with seq = 7697
-			ed25519.GenPrivKey().PubKey().Address())
+			cryptoutil.NewCryptoIdentityFromIntSeed(i).SDKConsAddress())
 		providerKeeper.QueuePendingSlashPacketEntry(ctx, entry)
 	}
 
@@ -689,17 +689,17 @@ func TestPendingSlashPacketEntries(t *testing.T) {
 			require.Equal(t, now, entry.RecvTime)
 			require.Equal(t, fmt.Sprintf("chain-%d", idx), entry.ConsumerChainID)
 			require.Equal(t, uint64(8), entry.IbcSeqNum)
-			require.NotEmpty(t, entry.ValAddr)
+			require.NotEmpty(t, entry.ProviderValConsAddr)
 		case 3, 4, 5:
 			require.Equal(t, now.Add(time.Hour), entry.RecvTime)
 			require.Equal(t, fmt.Sprintf("chain-%d", idx-3), entry.ConsumerChainID)
 			require.Equal(t, uint64(9), entry.IbcSeqNum)
-			require.NotEmpty(t, entry.ValAddr)
+			require.NotEmpty(t, entry.ProviderValConsAddr)
 		case 6, 7, 8:
 			require.Equal(t, now.Add(2*time.Hour), entry.RecvTime)
 			require.Equal(t, fmt.Sprintf("chain-%d", idx-6+5), entry.ConsumerChainID)
 			require.Equal(t, uint64(7697), entry.IbcSeqNum)
-			require.NotEmpty(t, entry.ValAddr)
+			require.NotEmpty(t, entry.ProviderValConsAddr)
 		default:
 			t.Fatalf("unexpected entry index %d", idx)
 		}
@@ -761,13 +761,13 @@ func TestPendingSlashPacketEntryDeletion(t *testing.T) {
 
 	// Instantiate entries in the expected order we wish to get them back as (ordered by recv time)
 	entries = []providertypes.SlashPacketEntry{}
-	entries = append(entries, providertypes.NewSlashPacketEntry(now, "chain-0", 1, ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(time.Hour).UTC(), "chain-1", 178, ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(2*time.Hour).Local(), "chain-2", 89, ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(3*time.Hour).In(time.FixedZone("UTC-8", -8*60*60)), "chain-3", 23423, ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(4*time.Hour).Local(), "chain-4", 323, ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(5*time.Hour).UTC(), "chain-5", 18, ed25519.GenPrivKey().PubKey().Address()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(6*time.Hour).Local(), "chain-6", 2, ed25519.GenPrivKey().PubKey().Address()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now, "chain-0", 1, cryptoutil.NewCryptoIdentityFromIntSeed(0).SDKConsAddress()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(time.Hour).UTC(), "chain-1", 178, cryptoutil.NewCryptoIdentityFromIntSeed(1).SDKConsAddress()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(2*time.Hour).Local(), "chain-2", 89, cryptoutil.NewCryptoIdentityFromIntSeed(2).SDKConsAddress()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(3*time.Hour).In(time.FixedZone("UTC-8", -8*60*60)), "chain-3", 23423, cryptoutil.NewCryptoIdentityFromIntSeed(3).SDKConsAddress()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(4*time.Hour).Local(), "chain-4", 323, cryptoutil.NewCryptoIdentityFromIntSeed(4).SDKConsAddress()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(5*time.Hour).UTC(), "chain-5", 18, cryptoutil.NewCryptoIdentityFromIntSeed(5).SDKConsAddress()))
+	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(6*time.Hour).Local(), "chain-6", 2, cryptoutil.NewCryptoIdentityFromIntSeed(6).SDKConsAddress()))
 
 	// Instantiate shuffled copy of above slice
 	shuffledEntries := append([]providertypes.SlashPacketEntry{}, entries...)
