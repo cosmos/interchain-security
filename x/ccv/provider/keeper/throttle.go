@@ -53,8 +53,8 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		// Store handled entry to be deleted after iteration is completed
 		handledEntries = append(handledEntries, entry)
 
-		// Do not handle anymore slash packets if the meter is 0 or negative in value
-		stop = !meter.IsPositive()
+		// Do not handle anymore slash packets if the meter is negative in value
+		stop = meter.IsNegative()
 		return stop
 	})
 

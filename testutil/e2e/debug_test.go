@@ -172,6 +172,10 @@ func TestSlashSameValidator(t *testing.T) {
 	runCCVTestByName(t, "TestSlashSameValidator")
 }
 
+func TestSlashAllValidators(t *testing.T) {
+	runCCVTestByName(t, "TestSlashAllValidators")
+}
+
 //
 // Unbonding tests
 //
