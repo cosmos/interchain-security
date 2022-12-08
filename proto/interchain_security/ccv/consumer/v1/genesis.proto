@@ -5,6 +5,7 @@ package interchain_security.ccv.consumer.v1;
 option go_package = "github.com/cosmos/interchain-security/x/ccv/consumer/types";
 
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
 import "ibc/core/channel/v1/channel.proto";
 import "gogoproto/gogo.proto";
@@ -45,7 +46,8 @@ message GenesisState {
 // unbonding VSC packet
 message MaturingVSCPacket {
   uint64 vscId = 1;
-  uint64 maturity_time = 2;
+  google.protobuf.Timestamp maturity_time = 2
+  [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }
 
 // HeightValsetUpdateID defines the genesis information for the mapping 

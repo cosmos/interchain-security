@@ -59,7 +59,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *consumertypes.GenesisState) 
 			k.SetProviderChannel(ctx, state.ProviderChannelId)
 			// set all unbonding sequences
 			for _, mp := range state.MaturingPackets {
-				k.SetPacketMaturityTime(ctx, mp.VscId, mp.MaturityTime)
+				k.InsertVSCPacketQueue(ctx, mp.VscId, mp.MaturityTime)
 			}
 			// set outstanding downtime slashing requests
 			for _, od := range state.OutstandingDowntimeSlashing {
@@ -118,16 +118,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			panic("provider client does not exist")
 		}
 
-		maturingPackets := []consumertypes.MaturingVSCPacket{}
-		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) (stop bool) {
-			mat := consumertypes.MaturingVSCPacket{
-				VscId:        vscId,
-				MaturityTime: timeNs,
-			}
-			maturingPackets = append(maturingPackets, mat)
-			return false // do not stop the iteration
-		})
-
 		heightToVCIDs := []consumertypes.HeightToValsetUpdateID{}
 		k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
 			hv := consumertypes.HeightToValsetUpdateID{
@@ -156,7 +146,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 		genesis = consumertypes.NewRestartGenesisState(
 			clientID,
 			channelID,
-			maturingPackets,
+			k.GetAllVSCPacketMaturityTimes(ctx),
 			valset,
 			k.GetHeightToValsetUpdateIDs(ctx),
 			k.GetPendingPackets(ctx),

@@ -143,9 +143,16 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		})
 		require.Equal(t, tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
 
-		expectedTime := uint64(ctx.BlockTime().Add(consumerKeeper.GetUnbondingPeriod(ctx)).UnixNano())
-		maturityTime := consumerKeeper.GetPacketMaturityTime(ctx, tc.newChanges.ValsetUpdateId)
-		require.Equal(t, expectedTime, maturityTime, "packet maturity time has unexpected value for case: %s", tc.name)
+		expectedTime := ctx.BlockTime().Add(consumerKeeper.GetUnbondingPeriod(ctx))
+		vscIDs := consumerKeeper.GetVSCPacketQueueTimeSlice(ctx, expectedTime)
+		found := false
+		for _, vscID := range vscIDs {
+			if vscID == tc.newChanges.ValsetUpdateId {
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "the ID of the VSC packet is not in the VSCPacketQueue: %s", tc.name)
 	}
 }
 

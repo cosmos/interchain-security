@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
 	"strconv"
 
@@ -63,9 +62,9 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		panic(fmt.Errorf("pending validator set change could not be persisted: %w", err))
 	}
 
-	// Save maturity time and packet
+	// Add the ValsetUpdateId to the packet maturity queue
 	maturityTime := ctx.BlockTime().Add(k.GetUnbondingPeriod(ctx))
-	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, uint64(maturityTime.UnixNano()))
+	k.InsertVSCPacketQueue(ctx, newChanges.ValsetUpdateId, maturityTime)
 
 	// set height to VSC id mapping
 	k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())+1, newChanges.ValsetUpdateId)
@@ -86,46 +85,30 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // operations that resulted in validator updates included in that VSC have matured on
 // the consumer chain.
 func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-	maturityIterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
-	defer maturityIterator.Close()
+	vscIDs := k.DequeueAllMatureVSCPacketQueue(ctx)
 
-	currentTime := uint64(ctx.BlockTime().UnixNano())
+	for _, vscID := range vscIDs {
+		// construct validator set change packet data
+		vscPacket := ccv.NewVSCMaturedPacketData(vscID)
 
-	maturedVscIds := []uint64{}
-	for maturityIterator.Valid() {
-		vscId := types.IdFromPacketMaturityTimeKey(maturityIterator.Key())
-		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
-			// construct validator set change packet data
-			vscPacket := ccv.NewVSCMaturedPacketData(vscId)
+		// append VSCMatured packet to pending packets
+		// sending packets is attempted each EndBlock
+		// unsent packets remain in the queue until sent
+		k.AppendPendingPacket(ctx, types.ConsumerPacket{
+			Type: types.VscMaturedPacket,
+			Data: vscPacket.GetBytes(),
+		})
 
-			// append VSCMatured packet to pending packets
-			// sending packets is attempted each EndBlock
-			// unsent packets remain in the queue until sent
-			k.AppendPendingPacket(ctx, types.ConsumerPacket{
-				Type: types.VscMaturedPacket,
-				Data: vscPacket.GetBytes(),
-			})
-
-			ctx.EventManager().EmitEvent(
-				sdk.NewEvent(
-					ccv.EventTypeVSCMatured,
-					sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-					sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
-					sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
-					sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(vscId))),
-					sdk.NewAttribute(ccv.AttributeTimestamp, strconv.Itoa(int(currentTime))),
-				),
-			)
-
-			maturedVscIds = append(maturedVscIds, vscId)
-		} else {
-			break
-		}
-		maturityIterator.Next()
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				ccv.EventTypeVSCMatured,
+				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+				sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
+				sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
+				sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(vscID))),
+			),
+		)
 	}
-
-	k.DeletePacketMaturityTimes(ctx, maturedVscIds...)
 }
 
 // QueueSlashPacket appends a slash packet containing the given validator data and slashing info to queue.

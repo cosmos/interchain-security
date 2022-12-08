@@ -91,3 +91,8 @@ message ConsumerPackets {
   repeated ConsumerPacket list = 1
   [ (gogoproto.nullable) = false ];
 }
+
+// ValidatorSetChangeIDs defines a list of VSC ids. 
+message ValidatorSetChangeIDs {
+  repeated uint64 ids = 1;
+}

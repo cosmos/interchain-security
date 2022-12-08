@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/binary"
+	time "time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -50,8 +51,9 @@ const (
 	// HistoricalInfoKey is the byte prefix that will store the historical info for a given height
 	HistoricalInfoBytePrefix
 
-	// PacketMaturityTimePrefix is the byte prefix that will store maturity time for each received VSC packet
-	PacketMaturityTimeBytePrefix
+	// VSCPacketQueueBytePrefix is the byte prefix that will store the ID of each received VSC packet
+	// by the maturity time of the VSC packet
+	VSCPacketQueueBytePrefix
 
 	// HeightValsetUpdateIDPrefix is the byte prefix that will store the mapping from block height to valset update ID
 	HeightValsetUpdateIDBytePrefix
@@ -99,11 +101,11 @@ func PendingChangesKey() []byte {
 	return []byte{PendingChangesByteKey}
 }
 
-// PacketMaturityTimeKey returns the key for storing maturity time for a given received VSC packet id
-func PacketMaturityTimeKey(id uint64) []byte {
-	seqBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(seqBytes, id)
-	return append([]byte{PacketMaturityTimeBytePrefix}, seqBytes...)
+// VSCPacketQueueKey returns the key for storing the ID of a received VSC packet
+// given its maturity time
+func VSCPacketQueueKey(timestamp time.Time) []byte {
+	timeBz := sdk.FormatTimeBytes(timestamp)
+	return append([]byte{VSCPacketQueueBytePrefix}, timeBz...)
 }
 
 // IdFromPacketMaturityTimeKey returns the packet id corresponding to a maturity time full key (including prefix)

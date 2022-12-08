@@ -67,7 +67,7 @@ func TestInitGenesis(t *testing.T) {
 	matPackets := []consumertypes.MaturingVSCPacket{
 		{
 			VscId:        1,
-			MaturityTime: uint64(time.Now().UnixNano()),
+			MaturityTime: time.Now(),
 		},
 	}
 	pendingDataPackets := consumertypes.ConsumerPackets{
@@ -184,7 +184,18 @@ func TestInitGenesis(t *testing.T) {
 				require.True(t, ok)
 				require.Equal(t, provChannelID, gotChannelID)
 
-				require.Equal(t, vscID, ck.GetPacketMaturityTime(ctx, vscID))
+				for _, mp := range matPackets {
+					vscIDs := ck.GetVSCPacketQueueTimeSlice(ctx, mp.MaturityTime)
+					found := false
+					for _, vscID := range vscIDs {
+						if vscID == mp.VscId {
+							found = true
+							break
+						}
+					}
+					require.True(t, found)
+				}
+
 				require.Equal(t, pendingDataPackets, ck.GetPendingPackets(ctx))
 
 				require.Equal(t, gs.OutstandingDowntimeSlashing, ck.GetOutstandingDowntimes(ctx))
@@ -235,7 +246,7 @@ func TestExportGenesis(t *testing.T) {
 	matPackets := []consumertypes.MaturingVSCPacket{
 		{
 			VscId:        1,
-			MaturityTime: uint64(time.Now().UnixNano()),
+			MaturityTime: time.Now().UTC(),
 		},
 	}
 
@@ -323,7 +334,7 @@ func TestExportGenesis(t *testing.T) {
 				ck.AppendPendingPacket(ctx, consPackets.List...)
 
 				// populate the required states for an established CCV channel
-				ck.SetPacketMaturityTime(ctx, matPackets[0].VscId, matPackets[0].MaturityTime)
+				ck.InsertVSCPacketQueue(ctx, matPackets[0].VscId, matPackets[0].MaturityTime)
 				ck.SetOutstandingDowntime(ctx, sdk.ConsAddress(validator.Address.Bytes()))
 				err = ck.SetLastTransmissionBlockHeight(ctx, ltbh)
 				require.NoError(t, err)

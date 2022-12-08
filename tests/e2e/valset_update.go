@@ -99,6 +99,12 @@ func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
 	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
 	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
+	// get the maturity times of all received VSC packets
+	maturingVSCPacket := consumerKeeper.GetAllVSCPacketMaturityTimes(suite.consumerChain.GetContext())
+	suite.Require().Equal(uint64(1), maturingVSCPacket[0].VscId, "maturity time not added for packet 1")
+	suite.Require().Equal(uint64(2), maturingVSCPacket[1].VscId, "maturity time not added for packet 2")
+	suite.Require().Equal(uint64(3), maturingVSCPacket[2].VscId, "maturity time not added for packet 3")
+
 	// increase time such that first two packets are unbonded but third is not.
 	unbondingPeriod := consumerKeeper.GetUnbondingPeriod(suite.consumerChain.GetContext())
 	// increase time
@@ -106,14 +112,23 @@ func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
 
 	// ensure first two packets are unbonded and VSCMatured packets are queued
 	// unbonded time is deleted
-	time1 := consumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 1)
-	time2 := consumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 2)
-	suite.Require().Equal(uint64(0), time1, "maturity time not deleted for mature packet 1")
-	suite.Require().Equal(uint64(0), time2, "maturity time not deleted for mature packet 2")
+	vscIDs := consumerKeeper.GetVSCPacketQueueTimeSlice(
+		suite.consumerChain.GetContext(),
+		maturingVSCPacket[0].MaturityTime,
+	)
+	suite.Require().Len(vscIDs, 0, "maturity time not deleted for mature packet 1")
+	vscIDs = consumerKeeper.GetVSCPacketQueueTimeSlice(
+		suite.consumerChain.GetContext(),
+		maturingVSCPacket[1].MaturityTime,
+	)
+	suite.Require().Len(vscIDs, 0, "maturity time not deleted for mature packet 2")
 
 	// ensure that third packet did not get unbonded and is still in store
-	time3 := consumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 3)
-	suite.Require().True(time3 > uint64(suite.consumerChain.GetContext().BlockTime().UnixNano()), "maturity time for packet 3 is not after current time")
+	vscIDs = consumerKeeper.GetVSCPacketQueueTimeSlice(
+		suite.consumerChain.GetContext(),
+		maturingVSCPacket[2].MaturityTime,
+	)
+	suite.Require().Len(vscIDs, 1, "maturity time for packet 3 is not after current time")
 
 	// check that the packets are committed in state
 	commitments := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(

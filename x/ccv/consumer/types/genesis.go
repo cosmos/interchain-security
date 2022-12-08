@@ -158,9 +158,6 @@ func (gs GenesisState) Validate() error {
 }
 
 func (mat MaturingVSCPacket) Validate() error {
-	if mat.MaturityTime == 0 {
-		return sdkerrors.Wrap(ccv.ErrInvalidVSCMaturedTime, "cannot have 0 maturity time")
-	}
 	if mat.VscId == 0 {
 		return sdkerrors.Wrap(ccv.ErrInvalidVSCMaturedId, "cannot have 0 maturity time")
 	}

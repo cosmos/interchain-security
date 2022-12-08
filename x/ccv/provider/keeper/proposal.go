@@ -370,6 +370,10 @@ func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) []types.Consu
 }
 
 // IteratePendingConsumerAdditionProps iterates through the pending consumer addition proposals.
+//
+// Note that the pending consumer addition proposals are stored under keys with the following format:
+// PendingCAPBytePrefix | spawnTime | chainID
+// Thus, the iteration is in ascending order of spawnTimes.
 func (k Keeper) IteratePendingConsumerAdditionProps(
 	ctx sdk.Context,
 	cb func(prop types.ConsumerAdditionProposal) (stop bool),
@@ -463,6 +467,10 @@ func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.Consum
 }
 
 // IteratePendingConsumerRemovalProps iterates through the pending consumer removal proposals.
+//
+// Note that the pending consumer removal proposals are stored under keys with the following format:
+// PendingCRPBytePrefix | stopTime | chainID
+// Thus, the iteration is in ascending order of stopTimes.
 func (k Keeper) IteratePendingConsumerRemovalProps(
 	ctx sdk.Context,
 	cb func(prop types.ConsumerRemovalProposal) (stop bool),

@@ -385,11 +385,10 @@ func (s *CoreSuite) TestAssumptions() {
 	s.Require().Empty(s.consumerKeeper().GetPendingPackets(s.ctx(C)))
 
 	// Consumer has no maturities
-	s.consumerKeeper().IteratePacketMaturityTime(s.ctx(C),
-		func(vscId uint64, timeNs uint64) (stop bool) {
-			s.T().Fatal(FAIL_MSG)
-			return false // Don't stop
-		})
+	maturingVSCPacket := s.consumerKeeper().GetAllVSCPacketMaturityTimes(s.ctx(C))
+	if len(maturingVSCPacket) > 0 {
+		s.T().Fatal(FAIL_MSG)
+	}
 
 	// Consumer power
 	for i := 0; i < len(initState.ValStates.Status); i++ {

@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -81,41 +82,64 @@ func TestPendingChanges(t *testing.T) {
 	require.Nil(t, gotPd, "got non-nil pending changes after Delete")
 }
 
-// TestPacketMaturityTime tests getter, setter, and iterator functionality for the packet maturity time of a received VSC packet
-func TestPacketMaturityTime(t *testing.T) {
-
+// TestVSCPacketQueue tests getter, setter, and iterator functionality for the VSC packet queue
+func TestVSCPacketQueue(t *testing.T) {
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	consumerKeeper.SetPacketMaturityTime(ctx, 1, 10)
-	consumerKeeper.SetPacketMaturityTime(ctx, 2, 25)
-	consumerKeeper.SetPacketMaturityTime(ctx, 5, 15)
-	consumerKeeper.SetPacketMaturityTime(ctx, 6, 40)
+	maturingVSCPacket := consumerKeeper.GetAllVSCPacketMaturityTimes(ctx)
+	require.Len(t, maturingVSCPacket, 0)
 
-	consumerKeeper.DeletePacketMaturityTimes(ctx, 6)
+	now := ctx.BlockHeader().Time
+	vscPackets := []types.MaturingVSCPacket{
+		{
+			VscId:        1,
+			MaturityTime: now,
+		},
+		{
+			VscId:        2,
+			MaturityTime: now,
+		},
+		{
+			VscId:        3,
+			MaturityTime: now.Add(time.Hour),
+		},
+		{
+			VscId:        4,
+			MaturityTime: now.Add(2 * time.Hour),
+		},
+	}
 
-	require.Equal(t, uint64(10), consumerKeeper.GetPacketMaturityTime(ctx, 1))
-	require.Equal(t, uint64(25), consumerKeeper.GetPacketMaturityTime(ctx, 2))
-	require.Equal(t, uint64(15), consumerKeeper.GetPacketMaturityTime(ctx, 5))
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 3))
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 6))
+	for _, vscPacket := range vscPackets {
+		consumerKeeper.InsertVSCPacketQueue(ctx, vscPacket.VscId, vscPacket.MaturityTime)
+	}
 
-	orderedTimes := [][]uint64{{1, 10}, {2, 25}, {5, 15}}
-	i := 0
+	maturingVSCPacket = consumerKeeper.GetAllVSCPacketMaturityTimes(ctx)
+	require.Equal(t, vscPackets, maturingVSCPacket)
 
-	consumerKeeper.IteratePacketMaturityTime(ctx, func(seq, time uint64) (stop bool) {
-		// require that we iterate through unbonding time in order of sequence
-		require.Equal(t, orderedTimes[i][0], seq)
-		require.Equal(t, orderedTimes[i][1], time)
-		i++
-		return false // do not stop the iteration
-	})
+	vscIDs := consumerKeeper.GetVSCPacketQueueTimeSlice(ctx, vscPackets[0].MaturityTime)
+	require.Len(t, vscIDs, 2)
+	require.Equal(t, vscPackets[0].VscId, vscIDs[0])
+	require.Equal(t, vscPackets[1].VscId, vscIDs[1])
 
-	// delete all vscs remaining in state
-	consumerKeeper.DeletePacketMaturityTimes(ctx, 1, 2, 5)
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 1))
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 2))
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 5))
+	vscIDs = consumerKeeper.DequeueAllMatureVSCPacketQueue(ctx)
+	require.Len(t, vscIDs, 2)
+	require.Equal(t, vscPackets[0].VscId, vscIDs[0])
+	require.Equal(t, vscPackets[1].VscId, vscIDs[1])
+
+	maturingVSCPacket = consumerKeeper.GetAllVSCPacketMaturityTimes(ctx)
+	require.Len(t, maturingVSCPacket, 2)
+	require.Equal(t, vscPackets[2].VscId, maturingVSCPacket[0].VscId)
+	require.Equal(t, vscPackets[3].VscId, maturingVSCPacket[1].VscId)
+
+	newCtx := ctx.WithBlockTime(time.Now().Add(3 * time.Hour))
+	vscIDs = consumerKeeper.DequeueAllMatureVSCPacketQueue(newCtx)
+	require.Len(t, vscIDs, 2)
+	require.Equal(t, vscPackets[2].VscId, vscIDs[0])
+	require.Equal(t, vscPackets[3].VscId, vscIDs[1])
+
+	maturingVSCPacket = consumerKeeper.GetAllVSCPacketMaturityTimes(newCtx)
+	require.Len(t, maturingVSCPacket, 0)
 }
 
 // TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records
