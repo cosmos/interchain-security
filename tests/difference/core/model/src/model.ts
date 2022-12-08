@@ -384,7 +384,6 @@ class CCVProvider {
 
   endBlockCIS = () => {
     this.vscIDtoH[this.vscID] = this.m.h[P] + 1;
-
     this.processPackets();
   };
 
@@ -425,10 +424,10 @@ class CCVProvider {
 
   onReceive = (data: PacketData) => {
     /*
-    TODO:
+    TODO: tidy up before merging to main
     This is some quick prototyping to get the tests passing
     We have 1 consumer chain so the slash queue is the global queue
-    if the queue is empty we can just process the packet
+    if the queue is empty we can just process the packet.
     */
     if (this.queue.length == 0 && !('isDowntime' in data)) {
       // Skip the queue
@@ -460,7 +459,6 @@ class CCVProvider {
   };
 
   onReceiveSlash = (data: Slash) => {
-    console.log(`received slash for val ${data.val}`);
     let infractionHeight = undefined;
 
     if (data.vscID === 0) {

@@ -248,9 +248,7 @@ func (s *CoreSuite) matchState() {
 		for j := 0; j < initState.NumValidators; j++ {
 			a := s.traces.Jailed(j) != nil
 			b := s.isJailed(int64(j))
-
 			s.Require().Equalf(a, b, diagnostic+"P jail status mismatch for val %d", j)
-			// s.Require().Equalf(s.traces.Jailed(j) != nil, s.isJailed(int64(j)), diagnostic+"P jail status mismatch for val %d", j)
 		}
 	}
 	if chain == C {
@@ -268,8 +266,8 @@ func (s *CoreSuite) matchState() {
 	}
 }
 
+// TODO:  debug util, delete before merging to main
 func printValidatorConsAddress(s *CoreSuite, validator int64) {
-	// fmt.Println(s.validator(0))
 	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(validator))
 	if !found {
 		panic("bad")
@@ -284,15 +282,10 @@ func printValidatorConsAddress(s *CoreSuite, validator int64) {
 
 func (s *CoreSuite) executeTrace() {
 
-	printValidatorConsAddress(s, 0)
-
 	for i := range s.traces.Actions() {
 		s.traces.CurrentActionIx = i
 
 		a := s.traces.Action()
-
-		fmt.Println("Executing actionIX", s.traces.CurrentActionIx)
-		fmt.Println("pHeight:", s.height(P))
 
 		switch a.Kind {
 		case "Delegate":
@@ -340,13 +333,7 @@ func (s *CoreSuite) TestAssumptions() {
 		s.T().Fatal(FAIL_MSG)
 	}
 
-	// TODO: uncomment out
-	// Slash meter value is correct
-	// slashMeterE := initState.SlashMeterInitValue
-	// slashMeter := s.providerChain().App.(*appProvider.App).ProviderKeeper.GetSlashMeter(s.ctx(P))
-	// if !sdk.NewInt(slashMeterE).Equal(slashMeter) {
-	// 	s.T().Fatal(FAIL_MSG)
-	// }
+	// TODO: write assumption that checks that throttle params are appropriate
 
 	// Delegator balance is correct
 	s.Require().Equal(int64(initState.InitialDelegatorTokens), s.delegatorBalance())
@@ -461,15 +448,6 @@ func (s *CoreSuite) TestAssumptions() {
 	s.Require().Empty(s.simibc.Link.OutboxAcks[C])
 }
 
-/*
-Reminder about current status:
-I won't come back to this until Thursday at the earliest. When I stopped,
-I had just debugged a failing test, using a lot of print statements. From
-the failure I found 3 bugs which I put in comments in the PR and in the log.
-Long story short, the way the slash meter works forces slash packets to
-be delayed in some cases if the packets slash inactive validators.
-*/
-
 // Test a set of traces
 func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
@@ -477,8 +455,6 @@ func (s *CoreSuite) TestTraces() {
 	}
 	shortest := -1
 	shortestLen := 10000000000
-	// s.traces.Data = []TraceData{s.traces.Data[68]}
-	// s.traces.Data = s.traces.Data[:10]
 	for i := range s.traces.Data {
 		if !s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace

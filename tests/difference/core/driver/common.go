@@ -37,7 +37,6 @@ type InitState struct {
 	ConsensusParams        *abci.ConsensusParams
 	ValStates              ValStates
 	MaxEntries             int
-	SlashMeterInitValue    int64
 }
 
 var initState InitState
@@ -64,7 +63,6 @@ func init() {
 		Trusting:               time.Second * 49,
 		MaxClockDrift:          time.Second * 10000,
 		BlockSeconds:           time.Second * 6,
-		SlashMeterInitValue:    100,
 		ValStates: ValStates{
 			Delegation:           []int{4000, 3000, 2000, 1000},
 			Tokens:               []int{5000, 4000, 3000, 2000},
