@@ -8,9 +8,10 @@ Closes: `#<issue>`
 
 ## Type of change
 
-If you've checked both of the first two boxes, consider splitting this PR into multiple PRs!
+If you've checked more than one of the first three boxes, consider splitting this PR into multiple PRs!
 
 - [ ] `Feature`: Changes and/or adds code behavior
+- [ ] `Fix`: Fixes a bug
 - [ ] `Refactor`: Changes existing code style (naming, structure, etc.)
 - [ ] `Testing`: Adds testing
 - [ ] `Docs`: Adds documentation
@@ -21,6 +22,6 @@ If `Refactor`, describe the new or existing tests that verify no behavior was ch
 
 ## New/Changed behavior tests
 
-If `Feature`, describe the new or existing tests that verify the new behavior is correct and expected.
+If `Feature` or `Fix`, describe the new or existing tests that verify the new behavior is correct and expected.
 
 ## For merge checklist, see *guidelines doc*
