@@ -680,7 +680,7 @@ func (b *Builder) build() {
 
 	// TODO: tidy
 	prams := b.providerKeeper().GetParams(b.ctx(P))
-	prams.SlashMeterReplenishFraction = "100.0"
+	prams.SlashMeterReplenishFraction = "1.0"
 	prams.SlashMeterReplenishPeriod = time.Second * 1
 	b.providerKeeper().SetParams(b.ctx(P), prams)
 	b.providerKeeper().InitializeSlashMeter(b.ctx(P))
