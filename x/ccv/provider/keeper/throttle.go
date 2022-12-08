@@ -36,8 +36,8 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		// Obtain the validator power relevant to the slash packet that's about to be handled
 		// (this power will be removed via jailing or tombstoning)
 		var valPower int64
-		if val.IsJailed() || !found {
-			// If validator is jailed or not found, it's power is 0. This path is explicitly defined since the
+		if !found || val.IsJailed() {
+			// If validator is not found, or found but jailed, it's power is 0. This path is explicitly defined since the
 			// staking keeper's LastValidatorPower values are not updated till the staking keeper's endblocker.
 			valPower = 0
 		} else {
