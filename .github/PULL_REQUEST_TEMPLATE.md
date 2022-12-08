@@ -11,9 +11,9 @@ Closes: `#<issue>`
 If you've checked both of the first two boxes, consider splitting this PR into multiple PRs!
 
 - [ ] `Feature`: Changes existing code behavior
-- [ ] `Refactor`: Changes existing code style, but not behavior (naming, structure, etc.)
+- [ ] `Refactor`: Changes existing code style (naming, structure, etc.)
 - [ ] `Testing`: Adds testing
-- [ ] `Docs`: Added documentation
+- [ ] `Docs`: Adds documentation
 
 ## Regression tests
 
