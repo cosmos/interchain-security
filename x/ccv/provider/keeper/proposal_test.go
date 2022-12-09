@@ -225,8 +225,9 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 	defer ctrl.Finish()
 
 	for _, tc := range testCases {
-		err := providerKeeper.SetPendingConsumerAdditionProp(ctx, &tc.ConsumerAdditionProposal)
-		require.NoError(t, err)
+		require.NotPanics(t, func() {
+			providerKeeper.SetPendingConsumerAdditionProp(ctx, &tc.ConsumerAdditionProposal)
+		})
 	}
 
 	ctx = ctx.WithBlockTime(time.Now().UTC())
@@ -302,8 +303,9 @@ func TestPendingConsumerAdditionPropOrder(t *testing.T) {
 		ctx = ctx.WithBlockTime(tc.accessTime)
 
 		for _, prop := range tc.propSubmitOrder {
-			err := providerKeeper.SetPendingConsumerAdditionProp(ctx, &prop)
-			require.NoError(t, err)
+			require.NotPanics(t, func() {
+				providerKeeper.SetPendingConsumerAdditionProp(ctx, &prop)
+			})
 		}
 		propsToExecute := providerKeeper.GetConsumerAdditionPropsToExecute(ctx)
 		require.Equal(t, tc.expectedOrderedProps, propsToExecute)
@@ -529,7 +531,9 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 	defer ctrl.Finish()
 
 	for _, tc := range testCases {
-		providerKeeper.SetPendingConsumerRemovalProp(ctx, &tc.ConsumerRemovalProposal)
+		require.NotPanics(t, func() {
+			providerKeeper.SetPendingConsumerRemovalProp(ctx, &tc.ConsumerRemovalProposal)
+		})
 	}
 
 	ctx = ctx.WithBlockTime(time.Now().UTC())
@@ -602,7 +606,9 @@ func TestPendingConsumerRemovalPropOrder(t *testing.T) {
 		ctx = ctx.WithBlockTime(tc.accessTime)
 
 		for _, prop := range tc.propSubmitOrder {
-			providerKeeper.SetPendingConsumerRemovalProp(ctx, &prop)
+			require.NotPanics(t, func() {
+				providerKeeper.SetPendingConsumerRemovalProp(ctx, &prop)
+			})
 		}
 		propsToExecute := providerKeeper.GetConsumerRemovalPropsToExecute(ctx)
 		require.Equal(t, tc.expectedOrderedProps, propsToExecute)
@@ -762,8 +768,9 @@ func TestBeginBlockInit(t *testing.T) {
 	)
 
 	for _, prop := range pendingProps {
-		err := providerKeeper.SetPendingConsumerAdditionProp(ctx, prop)
-		require.NoError(t, err)
+		require.NotPanics(t, func() {
+			providerKeeper.SetPendingConsumerAdditionProp(ctx, prop)
+		})
 	}
 
 	providerKeeper.BeginBlockInit(ctx)
@@ -835,7 +842,9 @@ func TestBeginBlockCCR(t *testing.T) {
 		require.NoError(t, err)
 
 		// Set removal props for all consumer chains
-		providerKeeper.SetPendingConsumerRemovalProp(ctx, prop)
+		require.NotPanics(t, func() {
+			providerKeeper.SetPendingConsumerRemovalProp(ctx, prop)
+		})
 	}
 
 	//
@@ -871,9 +880,10 @@ func TestIteratePendingConsumerAdditionProps(t *testing.T) {
 	defer ctrl.Finish()
 
 	for _, prop := range props {
-		cpProp := prop // bring into loop scope - avoids using iterator pointer instead of value pointer
-		err := providerKeeper.SetPendingConsumerAdditionProp(ctx, &cpProp)
-		require.NoError(t, err)
+		require.NotPanics(t, func() {
+			cpProp := prop // bring into loop scope - avoids using iterator pointer instead of value pointer
+			providerKeeper.SetPendingConsumerAdditionProp(ctx, &cpProp)
+		})
 	}
 
 	// advance the clock to be 1 minute after first proposal
@@ -908,7 +918,9 @@ func TestIteratePendingConsumerRemovalProps(t *testing.T) {
 	defer ctrl.Finish()
 
 	for _, prop := range props {
-		providerKeeper.SetPendingConsumerRemovalProp(ctx, &prop)
+		require.NotPanics(t, func() {
+			providerKeeper.SetPendingConsumerRemovalProp(ctx, &prop)
+		})
 	}
 
 	// advance the clock to be 1 minute after first proposal

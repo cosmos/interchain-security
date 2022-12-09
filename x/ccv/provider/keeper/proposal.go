@@ -33,11 +33,7 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 		return k.CreateConsumerClient(ctx, p)
 	}
 
-	err := k.SetPendingConsumerAdditionProp(ctx, p)
-	if err != nil {
-		return err
-	}
-
+	k.SetPendingConsumerAdditionProp(ctx, p)
 	return nil
 }
 
@@ -298,15 +294,13 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 // the following format: PendingCAPBytePrefix | spawnTime | chainID
 // Thus, if multiple consumer addition proposal for the same chain will pass at
 // the same time, then only the last one will be stored.
-func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, clientInfo *types.ConsumerAdditionProposal) error {
+func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, clientInfo *types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(clientInfo)
 	if err != nil {
-		return err
+		panic(fmt.Errorf("consumer addition proposal could not be marshaled: %w", err))
 	}
-
 	store.Set(types.PendingCAPKey(clientInfo.SpawnTime, clientInfo.ChainId), bz)
-	return nil
 }
 
 // GetPendingConsumerAdditionProp retrieves a pending consumer addition proposal
@@ -404,14 +398,13 @@ func (k Keeper) IteratePendingConsumerAdditionProps(
 // the following format: PendingCRPBytePrefix | stopTime | chainID
 // Thus, if multiple removal addition proposal for the same chain will pass at
 // the same time, then only the last one will be stored.
-func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *types.ConsumerRemovalProposal) error {
+func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *types.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(prop)
 	if err != nil {
-		return err
+		panic(fmt.Errorf("consumer removal proposal could not be marshaled: %w", err))
 	}
 	store.Set(types.PendingCRPKey(prop.StopTime, prop.ChainId), bz)
-	return nil
 }
 
 // IsPendingConsumerRemovalProp checks whether a pending consumer removal proposal
