@@ -139,8 +139,6 @@ func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
 // Note that the registered consumer chains are stored under keys with the following format:
 // ChainToClientBytePrefix | chainID
 // Thus, the iteration is in ascending order of chainIDs.
-//
-// Note: The order of iteration is irrelevant.
 func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID, clientID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
@@ -207,8 +205,6 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 // Note that mapping from CCV channel IDs to consumer chainIDs is stored under keys with the following format:
 // ChannelToChainBytePrefix | channelID
 // Thus, the iteration is in ascending order of channelIDs.
-//
-// Note: The order of iteration is irrelevant.
 func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, channelID, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
@@ -363,8 +359,6 @@ func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 // Note that UnbondingOps are stored under keys with the following format:
 // UnbondingOpBytePrefix | ID
 // Thus, the iteration is in ascending order of IDs.
-//
-// Note: The order of iteration is irrelevant.
 func (k Keeper) IterateUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdOp ccv.UnbondingOp) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.UnbondingOpBytePrefix})
@@ -407,8 +401,6 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint6
 // Note that the unbonding indexes for a given chainID are stored under keys with the following format:
 // UnbondingOpIndexBytePrefix | len(chainID) | chainID | vscID
 // Thus, the iteration is in ascending order of vscIDs.
-//
-// Note: The order of iteration is irrelevant.
 func (k Keeper) IterateUnbondingOpIndex(
 	ctx sdk.Context,
 	chainID string,
@@ -616,8 +608,6 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, vscID uint64) (uint6
 // Note that the mapping from vscIDs to block heights is stored under keys with the following format:
 // ValsetUpdateBlockHeightBytePrefix | vscID
 // Thus, the iteration is in ascending order of vscIDs.
-//
-// Note: The order of iteration is irrelevant.
 func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(vscID, height uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
@@ -686,7 +676,6 @@ func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []string
 // SlashAcksBytePrefix | chainID
 // Thus, the iteration is in ascending order of chainIDs.
 //
-// Note: The order of iteration is irrelevant.
 // Note: This method is only used in testing
 func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
@@ -804,7 +793,10 @@ func (k Keeper) DeleteInitTimeoutTimestamp(ctx sdk.Context, chainID string) {
 }
 
 // IterateInitTimeoutTimestamp iterates through the init timeout timestamps in the store.
-// Note: as the keys have the `bytePrefix | chainID` format, the iteration is NOT done in timestamp order.
+//
+// Note that the init timeout timestamps are stored under keys with the following format:
+// InitTimeoutTimestampBytePrefix | chainID
+// Thus, the iteration is in ascending order of chainIDs (NOT in timestamp order).
 func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID string, ts uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.InitTimeoutTimestampBytePrefix})

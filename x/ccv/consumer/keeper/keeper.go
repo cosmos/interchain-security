@@ -274,7 +274,7 @@ func (k Keeper) DequeueAllMatureVSCPacketQueue(ctx sdk.Context) (vscIDs []uint64
 
 // GetAllVSCPacketMaturityTimes returns the maturity times of all received VSC packets.
 //
-// Note: The order of iteration is irrelevant.
+// Note: The order of iteration is irrelevant as it returns all maturity times.
 func (k Keeper) GetAllVSCPacketMaturityTimes(ctx sdk.Context) []consumertypes.MaturingVSCPacket {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.VSCPacketQueueBytePrefix})
@@ -350,8 +350,6 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 // Note that the block height to valset update ID mapping is stored under keys with the following format:
 // HeightValsetUpdateIDBytePrefix | height
 // Thus, the iteration is in ascending order of heights.
-//
-// Note: The order of iteration is irrelevant.
 func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
@@ -398,8 +396,6 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 // Note that the outstanding downtime flags are stored under keys with the following format:
 // OutstandingDowntimeBytePrefix | consAddress
 // Thus, the iteration is in ascending order of consAddresses.
-//
-// Note: The order of iteration is irrelevant.
 func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
@@ -447,8 +443,6 @@ func (k Keeper) DeleteCCValidator(ctx sdk.Context, addr []byte) {
 // Note that the cross-chain validators are stored under keys with the following format:
 // CrossChainValidatorBytePrefix | address
 // Thus, the iteration is in ascending order of addresses.
-//
-// Note: The order of iteration is irrelevant.
 func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChainValidator) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.CrossChainValidatorBytePrefix})
