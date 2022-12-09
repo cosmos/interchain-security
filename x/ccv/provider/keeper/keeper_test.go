@@ -454,7 +454,7 @@ func TestIterateOverUnbondingOps(t *testing.T) {
 	require.Empty(t, result, "initial result not empty")
 
 	// iterate and check all results are returned
-	pk.IterateOverUnbondingOps(ctx, testIterateAll)
+	pk.IterateUnbondingOps(ctx, testIterateAll)
 	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
 	require.Contains(t, result, ops[0], "result does not contain '%s'", ops[0])
 	require.Contains(t, result, ops[1], "result does not contain '%s'", ops[1])
@@ -467,7 +467,7 @@ func TestIterateOverUnbondingOps(t *testing.T) {
 
 	require.Empty(t, result, "initial result not empty")
 	// iterate and check 1 result is returned
-	pk.IterateOverUnbondingOps(ctx, testGetFirst)
+	pk.IterateUnbondingOps(ctx, testGetFirst)
 	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
 	require.Contains(t, result, ops[0], "result does not contain '%s'", ops[0])
 	require.NotContains(t, result, ops[1], "result should not contain '%s'", ops[1])

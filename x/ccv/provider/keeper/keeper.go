@@ -331,7 +331,7 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	return nil
 }
 
-// Save UnbondingOp by unique ID
+// SetUnbondingOp sets the UnbondingOp by its unique ID
 func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp ccv.UnbondingOp) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := unbondingOp.Marshal()
@@ -341,7 +341,7 @@ func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp ccv.UnbondingOp) {
 	store.Set(types.UnbondingOpKey(unbondingOp.Id), bz)
 }
 
-// Get UnbondingOp by unique ID
+// GetUnbondingOp gets a UnbondingOp by its unique ID
 func (k Keeper) GetUnbondingOp(ctx sdk.Context, id uint64) (ccv.UnbondingOp, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.UnbondingOpKey(id))
@@ -352,18 +352,26 @@ func (k Keeper) GetUnbondingOp(ctx sdk.Context, id uint64) (ccv.UnbondingOp, boo
 	return types.MustUnmarshalUnbondingOp(k.cdc, bz), true
 }
 
+// GetUnbondingOp deletes a UnbondingOp given its ID
 func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.UnbondingOpKey(id))
 }
 
-func (k Keeper) IterateOverUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdOp ccv.UnbondingOp) (stop bool)) {
+// IterateUnbondingOps iterates over UnbondingOps.
+//
+// Note that UnbondingOps are stored under keys with the following format:
+// UnbondingOpBytePrefix | ID
+// Thus, the iteration is in ascending order of IDs.
+//
+// Note: The order of iteration is irrelevant.
+func (k Keeper) IterateUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdOp ccv.UnbondingOp) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.UnbondingOpBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		id := binary.BigEndian.Uint64(iterator.Key()[1:])
+		id := sdk.BigEndianToUint64(iterator.Key()[1:])
 		bz := iterator.Value()
 		if bz == nil {
 			panic(fmt.Errorf("unbonding operation is nil for id %d", id))
