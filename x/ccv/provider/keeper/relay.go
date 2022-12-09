@@ -43,12 +43,12 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 
 	// If no packets are in the per chain queue, immediately handle the vsc matured packet data
 	if k.GetPendingPacketDataSize(ctx, chainID) == 0 {
-		k.Logger(ctx).Debug("recv VSCMaturedPacket, no pending slashes, handling immediately:", "chainID", chainID, "seq", packet.Sequence)
+		k.Logger(ctx).Debug("VSCMaturedPacket received, no pending slashes, handling immediately:", "chainID", chainID, "seq", packet.Sequence)
 		k.HandleVSCMaturedPacket(ctx, chainID, data)
 	} else {
 		// Otherwise queue the packet data as pending (behind one or more pending slash packet data instances)
 		k.QueuePendingVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
-		k.Logger(ctx).Debug("recv VSCMaturedPacket, pending slashes, enqueued:", "chainID", chainID, "seq", packet.Sequence)
+		k.Logger(ctx).Debug("VSCMaturedPacket received, there are pending slashes, enqueued:", "chainID", chainID, "seq", packet.Sequence)
 	}
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
