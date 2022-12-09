@@ -105,7 +105,7 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 		chainID string,
 		providerAddr sdk.ConsAddress,
 		consumerKey tmprotocrypto.PublicKey,
-	) (stop bool) {
+	) {
 		if providerAddr.Equals(valConsAddr) {
 			toDelete = append(toDelete,
 				StoreKey{
@@ -114,7 +114,6 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 					ConsumerKey:  consumerKey,
 				})
 		}
-		return false // do not stop
 	})
 	for _, key := range toDelete {
 		consumerAddr := utils.TMCryptoPublicKeyToConsAddr(key.ConsumerKey)

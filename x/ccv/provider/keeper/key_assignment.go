@@ -46,6 +46,10 @@ func (k Keeper) SetValidatorConsumerPubKey(
 }
 
 // IterateValidatorConsumerPubKeys iterates over the validators public keys assigned for a consumer chain
+//
+// Note that the validators public keys assigned for a consumer chain are stored under keys
+// with the following format: UnbondingOpIndexBytePrefix | len(chainID) | chainID | providerAddress
+// Thus, the iteration is in ascending order of providerAddresses.
 func (k Keeper) IterateValidatorConsumerPubKeys(
 	ctx sdk.Context,
 	chainID string,
@@ -53,15 +57,15 @@ func (k Keeper) IterateValidatorConsumerPubKeys(
 ) {
 	store := ctx.KVStore(k.storeKey)
 	prefix := types.ChainIdWithLenKey(types.ConsumerValidatorsBytePrefix, chainID)
-	iter := sdk.KVStorePrefixIterator(store, prefix)
-	defer iter.Close()
-	for ; iter.Valid(); iter.Next() {
-		_, providerAddr, err := types.ParseChainIdAndConsAddrKey(types.ConsumerValidatorsBytePrefix, iter.Key())
+	iterator := sdk.KVStorePrefixIterator(store, prefix)
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		_, providerAddr, err := types.ParseChainIdAndConsAddrKey(types.ConsumerValidatorsBytePrefix, iterator.Key())
 		if err != nil {
 			panic(err)
 		}
 		var consumerKey tmprotocrypto.PublicKey
-		err = consumerKey.Unmarshal(iter.Value())
+		err = consumerKey.Unmarshal(iterator.Value())
 		if err != nil {
 			panic(err)
 		}
@@ -75,9 +79,13 @@ func (k Keeper) IterateValidatorConsumerPubKeys(
 // IterateAllValidatorConsumerPubKeys iterates over the validators public keys assigned for all consumer chain.
 // Note that IterateValidatorConsumerPubKeys cannot be used as consumer keys can be assigned for chain IDs
 // that are not yet known to the provider.
+//
+// Note that the validators public keys assigned for all consumer chain are stored under keys
+// with the following format: UnbondingOpIndexBytePrefix | len(chainID) | chainID | providerAddress
+// Thus, the order of iteration is undetermined.
 func (k Keeper) IterateAllValidatorConsumerPubKeys(
 	ctx sdk.Context,
-	cb func(chainID string, providerAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool),
+	cb func(chainID string, providerAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey),
 ) {
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, []byte{types.ConsumerValidatorsBytePrefix})
@@ -92,10 +100,8 @@ func (k Keeper) IterateAllValidatorConsumerPubKeys(
 		if err != nil {
 			panic(err)
 		}
-		stop := cb(chainID, providerAddr, consumerKey)
-		if stop {
-			break
-		}
+		cb(chainID, providerAddr, consumerKey)
+		// never stop the iteration
 	}
 }
 
@@ -142,6 +148,10 @@ func (k Keeper) SetValidatorByConsumerAddr(
 
 // IterateValidatorsByConsumerAddr iterates over all the mappings from consensus addresses
 // on a given consumer chain to consensus addresses on the provider chain
+//
+// Note that the mappings for a consumer chain are stored under keys with the following format:
+// ValidatorsByConsumerAddrBytePrefix | len(chainID) | chainID | consumerAddress
+// Thus, the iteration is in ascending order of consumerAddresses.
 func (k Keeper) IterateValidatorsByConsumerAddr(
 	ctx sdk.Context,
 	chainID string,
@@ -172,6 +182,10 @@ func (k Keeper) IterateValidatorsByConsumerAddr(
 // on any consumer chain to consensus addresses on the provider chain.
 // Note that IterateValidatorsByConsumerAddr cannot be used as consumer keys can be assigned
 // for chain IDs that are not yet known to the provider.
+//
+// Note that the mappings for all consumer chain are stored under keys with the following format:
+// ValidatorsByConsumerAddrBytePrefix | len(chainID) | chainID | consumerAddress
+// Thus, the order of iteration is undetermined.
 func (k Keeper) IterateAllValidatorsByConsumerAddr(
 	ctx sdk.Context,
 	cb func(chainID string, consumerAddr sdk.ConsAddress, providerAddr sdk.ConsAddress) (stop bool),
@@ -246,6 +260,10 @@ func (k Keeper) SetKeyAssignmentReplacement(
 
 // IterateKeyAssignmentReplacements iterates through all pairs of previous assigned consumer keys
 // and current powers for all provider validator for which key assignments were received in this block.
+//
+// Note that the pairs are stored under keys with the following format:
+// KeyAssignmentReplacementsBytePrefix | len(chainID) | chainID | providerAddress
+// Thus, the iteration is in ascending order of providerAddresses.
 func (k Keeper) IterateKeyAssignmentReplacements(
 	ctx sdk.Context,
 	chainID string,
@@ -325,10 +343,16 @@ func (k Keeper) GetConsumerAddrsToPrune(
 	return
 }
 
+// IterateConsumerAddrsToPrune iterates over the list of all consumer addresses
+// that can be pruned for a given chainID.
+//
+// Note that the list of all consumer addresses is stored under keys with the following format:
+// ConsumerAddrsToPruneBytePrefix | len(chainID) | chainID | vscID
+// Thus, the iteration is in ascending order of vscIDs.
 func (k Keeper) IterateConsumerAddrsToPrune(
 	ctx sdk.Context,
 	chainID string,
-	cb func(vscID uint64, consumerAddrsToPrune types.AddressList) (stop bool),
+	cb func(vscID uint64, consumerAddrsToPrune types.AddressList),
 ) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := types.ChainIdWithLenKey(types.ConsumerAddrsToPruneBytePrefix, chainID)
@@ -344,10 +368,8 @@ func (k Keeper) IterateConsumerAddrsToPrune(
 		if err != nil {
 			panic(err)
 		}
-		stop := cb(vscID, consumerAddrsToPrune)
-		if stop {
-			break
-		}
+		cb(vscID, consumerAddrsToPrune)
+		// never stop the iteration
 	}
 }
 
@@ -605,9 +627,8 @@ func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
 	}
 	// delete ValidatorConsumerPubKey
 	var ids []uint64
-	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, _ types.AddressList) (stop bool) {
+	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, _ types.AddressList) {
 		ids = append(ids, vscID)
-		return false // do not stop the iteration
 	})
 	for _, id := range ids {
 		k.DeleteConsumerAddrsToPrune(ctx, chainID, id)

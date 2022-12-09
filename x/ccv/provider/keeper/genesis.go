@@ -161,13 +161,12 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	// Export key assignment states
 	validatorConsumerPubKeys := []types.ValidatorConsumerPubKey{}
-	k.IterateAllValidatorConsumerPubKeys(ctx, func(chainID string, providerAddr sdk.ConsAddress, consumerKey tmcrypto.PublicKey) (stop bool) {
+	k.IterateAllValidatorConsumerPubKeys(ctx, func(chainID string, providerAddr sdk.ConsAddress, consumerKey tmcrypto.PublicKey) {
 		validatorConsumerPubKeys = append(validatorConsumerPubKeys, types.ValidatorConsumerPubKey{
 			ChainId:      chainID,
 			ProviderAddr: providerAddr,
 			ConsumerKey:  &consumerKey,
 		})
-		return false // do not stop the iteration
 	})
 
 	validatorsByConsumerAddr := []types.ValidatorByConsumerAddr{}
@@ -183,13 +182,12 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
 	// ConsumerAddrsToPrune are added only for registered consumer chains
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string, _ string) (stopOuter bool) {
-		k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, consumerAddrs types.AddressList) (stopInner bool) {
+		k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, consumerAddrs types.AddressList) {
 			consumerAddrsToPrune = append(consumerAddrsToPrune, types.ConsumerAddrsToPrune{
 				ChainId:       chainID,
 				VscId:         vscID,
 				ConsumerAddrs: &consumerAddrs,
 			})
-			return false // do not stop the iteration
 		})
 		return false // do not stop the iteration
 	})
