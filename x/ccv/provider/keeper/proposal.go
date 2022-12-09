@@ -292,7 +292,12 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 	return gen, hash, nil
 }
 
-// SetPendingConsumerAdditionProp stores a pending consumer addition proposal
+// SetPendingConsumerAdditionProp stores a pending consumer addition proposal.
+//
+// Note that the pending consumer addition proposals are stored under keys with
+// the following format: PendingCAPBytePrefix | spawnTime | chainID
+// Thus, if multiple consumer addition proposal for the same chain will pass at
+// the same time, then only the last one will be stored.
 func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, clientInfo *types.ConsumerAdditionProposal) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(clientInfo)
@@ -393,7 +398,12 @@ func (k Keeper) IteratePendingConsumerAdditionProps(
 	}
 }
 
-// SetPendingConsumerRemovalProp stores a pending consumer removal proposal
+// SetPendingConsumerRemovalProp stores a pending consumer removal proposal.
+//
+// Note that the pending removal addition proposals are stored under keys with
+// the following format: PendingCRPBytePrefix | stopTime | chainID
+// Thus, if multiple removal addition proposal for the same chain will pass at
+// the same time, then only the last one will be stored.
 func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *types.ConsumerRemovalProposal) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := k.cdc.Marshal(prop)
