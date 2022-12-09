@@ -133,9 +133,36 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 	store.Delete(types.ChainToChannelKey(chainID))
 }
 
-// IterateConsumerChains iterates over all of the consumer chains that the provider module controls
-// It calls the provided callback function which takes in a chainID and client ID to return
-// a stop boolean which will stop the iteration.
+// SetConsumerClientId sets the client ID for the given chain ID
+func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
+}
+
+// GetConsumerClientId returns the client ID for the given chain ID.
+func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool) {
+	store := ctx.KVStore(k.storeKey)
+	clientIdBytes := store.Get(types.ChainToClientKey(chainID))
+	if clientIdBytes == nil {
+		return "", false
+	}
+	return string(clientIdBytes), true
+}
+
+// DeleteConsumerClientId removes from the store the clientID for the given chainID.
+func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ChainToClientKey(chainID))
+}
+
+// IterateConsumerChains iterates over the IDs of all clients to consumer chains.
+// Consumer chains with created clients are also referred to as registered.
+//
+// Note that the registered consumer chains are stored under keys with the following format:
+// ChainToClientBytePrefix | chainID
+// Thus, the iteration is in ascending order of chainIDs.
+//
+// Note: The order of iteration is irrelevant.
 func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, chainID, clientID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
@@ -713,28 +740,6 @@ func (k Keeper) AppendPendingPackets(ctx sdk.Context, chainID string, newPackets
 func (k Keeper) DeletePendingPackets(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.PendingVSCsKey(chainID))
-}
-
-// SetConsumerClientId sets the client ID for the given chain ID
-func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ChainToClientKey(chainID), []byte(clientID))
-}
-
-// GetConsumerClientId returns the client ID for the given chain ID.
-func (k Keeper) GetConsumerClientId(ctx sdk.Context, chainID string) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
-	clientIdBytes := store.Get(types.ChainToClientKey(chainID))
-	if clientIdBytes == nil {
-		return "", false
-	}
-	return string(clientIdBytes), true
-}
-
-// DeleteConsumerClientId removes from the store the clientID for the given chainID.
-func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ChainToClientKey(chainID))
 }
 
 // SetInitTimeoutTimestamp sets the init timeout timestamp for the given chain ID
