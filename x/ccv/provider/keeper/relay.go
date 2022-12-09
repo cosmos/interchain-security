@@ -243,10 +243,10 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	// set the ValsetUpdateBlockHeight
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
-	// Replenish slash meter if necessary
-	k.CheckForSlashMeterReplenishment(ctx)
 	// Execute slash packet throttling logic
 	k.HandlePendingSlashPackets(ctx)
+	// Replenish slash meter if necessary
+	k.CheckForSlashMeterReplenishment(ctx)
 }
 
 // OnRecvSlashPacket receives a slash packet and determines whether the channel is established,
