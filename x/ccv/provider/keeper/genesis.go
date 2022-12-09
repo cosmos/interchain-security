@@ -131,9 +131,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	// export provider chain state
 	vscID := k.GetValidatorSetUpdateId(ctx)
 	vscIDToHeights := []types.ValsetUpdateIdToHeight{}
-	k.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) (stop bool) {
+	k.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) {
 		vscIDToHeights = append(vscIDToHeights, types.ValsetUpdateIdToHeight{ValsetUpdateId: vscID, Height: height})
-		return false // do not stop the iteration
 	})
 
 	ubdOps := []ccv.UnbondingOp{}

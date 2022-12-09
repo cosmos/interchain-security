@@ -347,7 +347,7 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 // Note that the block height to valset update ID mapping is stored under keys with the following format:
 // HeightValsetUpdateIDBytePrefix | height
 // Thus, the iteration is in ascending order of heights.
-func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64) (stop bool)) {
+func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
 
@@ -356,10 +356,8 @@ func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, v
 		height := sdk.BigEndianToUint64(iterator.Key()[1:])
 		vscID := sdk.BigEndianToUint64(iterator.Value())
 
-		stop := cb(height, vscID)
-		if stop {
-			break
-		}
+		cb(height, vscID)
+		// never stop the iteration
 	}
 }
 
@@ -391,7 +389,7 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 // Note that the outstanding downtime flags are stored under keys with the following format:
 // OutstandingDowntimeBytePrefix | consAddress
 // Thus, the iteration is in ascending order of consAddresses.
-func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address string) (stop bool)) {
+func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address string)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
 
@@ -399,10 +397,8 @@ func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address stri
 	for ; iterator.Valid(); iterator.Next() {
 		addrBytes := iterator.Key()[1:]
 		addr := sdk.ConsAddress(addrBytes).String()
-		stop := cb(addr)
-		if stop {
-			break
-		}
+		cb(addr)
+		// never stop the iteration
 	}
 }
 
@@ -496,13 +492,12 @@ func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...types.ConsumerPac
 // GetHeightToValsetUpdateIDs returns all height to valset update id mappings in store
 func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToValsetUpdateID {
 	heightToVCIDs := []types.HeightToValsetUpdateID{}
-	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
+	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) {
 		hv := types.HeightToValsetUpdateID{
 			Height:         height,
 			ValsetUpdateId: vscID,
 		}
 		heightToVCIDs = append(heightToVCIDs, hv)
-		return false // do not stop iteration
 	})
 
 	return heightToVCIDs
@@ -511,12 +506,11 @@ func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToVals
 // GetOutstandingDowntimes returns all outstanding downtimes in store
 func (k Keeper) GetOutstandingDowntimes(ctx sdk.Context) []consumertypes.OutstandingDowntime {
 	outstandingDowntimes := []types.OutstandingDowntime{}
-	k.IterateOutstandingDowntime(ctx, func(addr string) bool {
+	k.IterateOutstandingDowntime(ctx, func(addr string) {
 		od := types.OutstandingDowntime{
 			ValidatorConsensusAddress: addr,
 		}
 		outstandingDowntimes = append(outstandingDowntimes, od)
-		return false // do not stop the iteration
 	})
 	return outstandingDowntimes
 }

@@ -602,7 +602,7 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, vscID uint64) (uint6
 // Note that the mapping from vscIDs to block heights is stored under keys with the following format:
 // ValsetUpdateBlockHeightBytePrefix | vscID
 // Thus, the iteration is in ascending order of vscIDs.
-func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(vscID, height uint64) (stop bool)) {
+func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(vscID, height uint64)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
 
@@ -610,11 +610,8 @@ func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(vscID, h
 	for ; iterator.Valid(); iterator.Next() {
 		vscID := sdk.BigEndianToUint64(iterator.Key()[1:])
 		height := sdk.BigEndianToUint64(iterator.Value())
-
-		stop := cb(vscID, height)
-		if stop {
-			return
-		}
+		cb(vscID, height)
+		// never stop the iteration
 	}
 }
 
@@ -671,7 +668,7 @@ func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []string
 // Thus, the iteration is in ascending order of chainIDs.
 //
 // Note: This method is only used in testing
-func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) (stop bool)) {
+func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.SlashAcksBytePrefix})
 
@@ -685,11 +682,8 @@ func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks [
 		if err != nil {
 			panic(fmt.Errorf("failed to unmarshal SlashAcks: %w", err))
 		}
-
-		stop := cb(chainID, sa.GetAddresses())
-		if stop {
-			return
-		}
+		cb(chainID, sa.GetAddresses())
+		// never stop the iteration
 	}
 }
 
@@ -786,7 +780,7 @@ func (k Keeper) DeleteInitTimeoutTimestamp(ctx sdk.Context, chainID string) {
 // Note that the init timeout timestamps are stored under keys with the following format:
 // InitTimeoutTimestampBytePrefix | chainID
 // Thus, the iteration is in ascending order of chainIDs (NOT in timestamp order).
-func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID string, ts uint64) (stop bool)) {
+func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID string, ts uint64)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.InitTimeoutTimestampBytePrefix})
 
@@ -794,11 +788,8 @@ func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID str
 	for ; iterator.Valid(); iterator.Next() {
 		chainID := string(iterator.Key()[1:])
 		ts := sdk.BigEndianToUint64(iterator.Value())
-
-		stop := cb(chainID, ts)
-		if stop {
-			return
-		}
+		cb(chainID, ts)
+		// never stop the iteration
 	}
 }
 

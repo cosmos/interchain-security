@@ -34,9 +34,8 @@ func TestValsetUpdateBlockHeight(t *testing.T) {
 	}
 
 	found := false
-	providerKeeper.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) (stop bool) {
+	providerKeeper.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) {
 		found = true
-		return true // stop iteration
 	})
 	require.False(t, found)
 
@@ -51,9 +50,8 @@ func TestValsetUpdateBlockHeight(t *testing.T) {
 	}
 
 	heights := []uint64{}
-	providerKeeper.IterateValsetUpdateBlockHeight(ctx, func(_, height uint64) (stop bool) {
+	providerKeeper.IterateValsetUpdateBlockHeight(ctx, func(_, height uint64) {
 		heights = append(heights, height)
-		return false // do not stop iteration
 	})
 	require.Len(t, heights, len(testCases))
 	for _, tc := range testCases {
@@ -73,9 +71,8 @@ func TestSlashAcks(t *testing.T) {
 	var chainsAcks [][]string
 
 	penaltiesfN := func() (penalties []string) {
-		providerKeeper.IterateSlashAcks(ctx, func(id string, acks []string) (stop bool) {
+		providerKeeper.IterateSlashAcks(ctx, func(id string, acks []string) {
 			chainsAcks = append(chainsAcks, acks)
-			return false // do not stop iteration
 		})
 		return
 	}
@@ -274,11 +271,10 @@ func TestInitTimeoutTimestamp(t *testing.T) {
 	i := 2
 	// store is iterated in alphabetical ascending order
 	// not in the order of insertion
-	providerKeeper.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) (stop bool) {
+	providerKeeper.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) {
 		require.Equal(t, chainID, tc[i].chainID)
 		require.Equal(t, ts, tc[i].expected)
 		i--
-		return false // do not stop the iteration
 	})
 
 	for _, tc := range tc {
