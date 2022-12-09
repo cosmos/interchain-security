@@ -318,6 +318,14 @@ func (s *CCVTestSuite) TestStressTestThrottling() {
 	// Only one packet should have been handled, and the rest should stay queued. BAD!
 	s.Require().Equal(0, len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())))
 	s.Require().Equal(uint64(899), providerKeeper.GetPendingPacketDataSize(s.providerCtx(), firstBundle.Chain.ChainID))
+
+	// Call HandlePacketDataForChain 899 times, to handle all remaining packets.
+	// Hacky shiz for debugging and trying to reproduce the hang.
+	for i := 0; i < 899; i++ {
+		providerKeeper.HandlePacketDataForChain(s.providerCtx(), firstBundle.Chain.ChainID,
+			providerKeeper.HandleSlashPacket, providerKeeper.HandleVSCMaturedPacket)
+	}
+	s.Require().Equal(uint64(0), providerKeeper.GetPendingPacketDataSize(s.providerCtx(), firstBundle.Chain.ChainID))
 }
 
 // TestSlashingSmallValidators tests that multiple slash packets from validators with small
