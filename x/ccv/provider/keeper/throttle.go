@@ -55,6 +55,9 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		// Handle slash packet by passing in chainID and appropriate callbacks, relevant packet data is deleted in this method
 		k.HandlePacketDataForChain(ctx, entry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
 
+		// Log meter value after HandlePacketDataForChain is called
+		ctx.Logger().Info(fmt.Sprintf("slash meter value after HandlePacketDataForChain: %s", meter))
+
 		// Store handled entry to be deleted after iteration is completed
 		handledEntries = append(handledEntries, entry)
 

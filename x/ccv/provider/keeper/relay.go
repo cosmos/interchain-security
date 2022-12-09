@@ -15,6 +15,7 @@ import (
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
+	"github.com/gogo/protobuf/jsonpb"
 )
 
 func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
@@ -241,6 +242,25 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 // OnRecvSlashPacket receives a slash packet and determines whether the channel is established,
 // then queues the slash packet as pending if the channel is established and found.
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
+
+	marshaler := &jsonpb.Marshaler{}
+
+	// Log the slash packet data protobuf type into JSON string
+	str, err := marshaler.MarshalToString(&data)
+	if err != nil {
+		k.Logger(ctx).Error("failed to marshal slash packet data to JSON string", "error", err)
+	} else {
+		k.Logger(ctx).Info("received slash packet data", "slash packet data", str)
+	}
+
+	// Log the ibc packet protobuf type into JSON string
+	str, err = marshaler.MarshalToString(&packet)
+	if err != nil {
+		k.Logger(ctx).Error("failed to marshal ibc packet (for slash) to JSON string", "error", err)
+	} else {
+		k.Logger(ctx).Info("received ibc packet (for slash)", "ibc packet", str)
+	}
+
 	// check that the channel is established
 	chainID, found := k.GetChannelToChain(ctx, packet.DestinationChannel)
 	if !found {
@@ -248,6 +268,13 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		// this should never happen
 		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
+
+	// Log the size of the pending slash packet entry queue
+	allGlobalEntries := k.GetAllPendingSlashPacketEntries(ctx)
+	k.Logger(ctx).Info("pending slash packet entry queue size", "size", len(allGlobalEntries))
+
+	// Log the size of the pending slash packet data queue (for the chain that sent the packet)
+	k.Logger(ctx).Info("pending slash packet data queue size", "size", k.GetPendingPacketDataSize(ctx, chainID))
 
 	// Queue a pending slash packet entry to the parent queue, which will be seen by the throttling logic
 	k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
@@ -268,6 +295,15 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 // HandleSlashPacket potentially slashes, jails and/or tombstones a misbehaving validator according to infraction type
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
+
+	// Log the slash packet data protobuf type into JSON string
+	marshaler := &jsonpb.Marshaler{}
+	str, err := marshaler.MarshalToString(&data)
+	if err != nil {
+		k.Logger(ctx).Error("failed to marshal slash packet data to JSON string, during HandleSlashPacket method", "error", err)
+	} else {
+		k.Logger(ctx).Info("handling slash packet data", "slash packet data", str)
+	}
 
 	// map VSC ID to infraction height for the given chain ID
 	var infractionHeight uint64
@@ -339,6 +375,10 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// jail validator
 	if !validator.IsJailed() {
+
+		// Log that we're jailing this validator
+		k.Logger(ctx).Info("jailing validator", "validator provider cons addr", providerAddr.String())
+
 		k.stakingKeeper.Jail(ctx, providerAddr)
 	}
 	k.slashingKeeper.JailUntil(ctx, providerAddr, jailTime)
