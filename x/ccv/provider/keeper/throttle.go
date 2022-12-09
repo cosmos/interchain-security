@@ -59,6 +59,8 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		// Subtract this power from the slash meter
 		meter = meter.Sub(sdktypes.NewInt(valPower))
 
+		k.Logger(ctx).Debug("meter after subtracting val power", "meter", meter, "val power", valPower)
+
 		// Handle slash packet by passing in chainID and appropriate callbacks, relevant packet data is deleted in this method
 		k.HandlePacketDataForChain(ctx, entry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
 

@@ -174,6 +174,8 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	// EndBlock logic needed for the Validator Set Update sub-protocol
 	am.keeper.EndBlockVSU(ctx)
 
+	am.keeper.Logger(ctx).Debug("CCV module EndBlock has finished", "height", ctx.BlockHeight())
+
 	return []abci.ValidatorUpdate{}
 }
 
