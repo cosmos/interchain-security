@@ -29,9 +29,20 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 	// Iterate through ordered (by received time) slash packet entries from any consumer chain
 	k.IteratePendingSlashPacketEntries(ctx, func(entry providertypes.SlashPacketEntry) (stop bool) {
 
+		// Obtain validator from the provider's consensus address.
+		// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
+		val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, entry.ProviderValConsAddr)
+
 		// Obtain the validator power relevant to the slash packet that's about to be handled
 		// (this power will be removed via jailing or tombstoning)
-		valPower := k.stakingKeeper.GetLastValidatorPower(ctx, entry.ValAddr)
+		var valPower int64
+		if !found || val.IsJailed() {
+			// If validator is not found, or found but jailed, it's power is 0. This path is explicitly defined since the
+			// staking keeper's LastValidatorPower values are not updated till the staking keeper's endblocker.
+			valPower = 0
+		} else {
+			valPower = k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
+		}
 
 		// Subtract this power from the slash meter
 		meter = meter.Sub(sdktypes.NewInt(valPower))
@@ -42,8 +53,8 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		// Store handled entry to be deleted after iteration is completed
 		handledEntries = append(handledEntries, entry)
 
-		// Do not handle anymore slash packets if the meter is 0 or negative in value
-		stop = !meter.IsPositive()
+		// Do not handle anymore slash packets if the meter is negative in value
+		stop = meter.IsNegative()
 		return stop
 	})
 
@@ -184,7 +195,7 @@ func (k Keeper) QueuePendingSlashPacketEntry(ctx sdktypes.Context,
 	entry providertypes.SlashPacketEntry) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.PendingSlashPacketEntryKey(entry)
-	store.Set(key, entry.ValAddr)
+	store.Set(key, entry.ProviderValConsAddr)
 }
 
 // GetAllPendingSlashPacketEntries returns all pending slash packet entries in the queue
