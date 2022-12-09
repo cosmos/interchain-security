@@ -211,6 +211,7 @@ func (s *CoreSuite) deliver(chain string, numPackets int) {
 func (s *CoreSuite) endAndBeginBlock(chain string) {
 	s.simibc.EndAndBeginBlock(s.chainID(chain), initState.BlockSeconds, func() {
 		// s.matchState()
+		_ = s.matchState
 	})
 }
 
