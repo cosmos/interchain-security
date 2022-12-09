@@ -117,7 +117,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		if chainID, ok := k.GetChannelToChain(ctx, packet.SourceChannel); ok {
 			// stop consumer chain and uses the LockUnbondingOnTimeout flag
 			// to decide whether the unbonding operations should be released
-			k.Logger(ctx).Error("error handling acknowledgement, stopping chain:", "chainID", chainID, "packet", packet) // TODO: the logger will stringify the packet right?
+			k.Logger(ctx).Error("error handling acknowledgement, stopping chain:", "chainID", chainID, "packet", packet)
 			return k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID), false)
 		}
 		return sdkerrors.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
@@ -293,7 +293,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// return error if we cannot find infraction height matching the validator update id
 	if !found {
 		k.Logger(ctx).Error("cannot find infraction height matching the validator update id", "chainID", chainID, "vscid", data.ValsetUpdateId)
-		return false, fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
+		return false, fmt.Errorf("aborting slash, cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
 	// the slash packet validator address may be known only on the consumer chain;
@@ -306,7 +306,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	if !found {
 		// The provider or the consumer chain is faulty but it is impossible to tell which one.
 		// A slash should not be sent by a consumer for a validator that is not known on the provider.
-		k.Logger(ctx).Error("cannot find validator to slash, either the provider or the consumer chain is faulty", "chainID", chainID, "provider cons addr", providerAddr)
+		k.Logger(ctx).Error("aborting slash, cannot find validator to slash, either the provider or the consumer chain is faulty", "chainID", chainID, "provider cons addr", providerAddr)
 		return false, nil
 	}
 
@@ -315,13 +315,13 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		// A slash should not be sent by a consumer for a validator that is unbonded on the provider,
 		// because all unbonded validators should already have unbonded on the consumer chain and thus
 		// the consumer should not be able to reference them for slashing.
-		k.Logger(ctx).Error("the validator to be slashed is unbonded, either the provider or the consumer chain is faulty", "chainID", chainID, "provider cons addr", providerAddr)
+		k.Logger(ctx).Error("aborting slash, the validator to be slashed is unbonded, either the provider or the consumer chain is faulty", "chainID", chainID, "provider cons addr", providerAddr)
 		return false, nil
 	}
 
 	// tombstoned validators should not be slashed multiple times
 	if k.slashingKeeper.IsTombstoned(ctx, providerAddr) {
-		k.Logger(ctx).Debug("validator is already tombstoned, skipping slash", "chainID", chainID, "provider cons addr", providerAddr)
+		k.Logger(ctx).Debug("aborting slash, validator is already tombstoned", "chainID", chainID, "provider cons addr", providerAddr)
 		return false, nil
 	}
 
@@ -347,7 +347,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		k.slashingKeeper.Tombstone(ctx, providerAddr)
 	default:
 		// TODO: should we stop the consumer chain here?
-		k.Logger(ctx).Error("invalid infraction type", "infraction", data.Infraction)
+		k.Logger(ctx).Error("aborting slash, invalid infraction type", "infraction", data.Infraction)
 		return false, fmt.Errorf("invalid infraction type: %v", data.Infraction)
 	}
 
@@ -407,6 +407,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 		// Note that the CCV channel was not established,
 		// thus closeChan is irrelevant
 		err := k.StopConsumerChain(ctx, chainID, false, false)
+		k.Logger(ctx).Info("stopped timed out consumer chain - chain was not initialised at time of stopping", "chainID", chainID)
 		if err != nil {
 			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 		}
@@ -443,6 +444,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 			k.GetLockUnbondingOnTimeout(ctx, chainID),
 			true,
 		)
+		k.Logger(ctx).Info("stopped timed out consumer chain - chain was initialised at time of stopping", "chainID", chainID)
 		if err != nil {
 			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 		}
