@@ -107,6 +107,9 @@ func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
 			panic(fmt.Sprintf("could not complete unbonding op: %s", err.Error()))
 		}
 	}
+	if 0 < len(ids) {
+		k.Logger(ctx).Debug("completed matured unbonding ops", "ids", ids)
+	}
 }
 
 // OnAcknowledgementPacket handles acknowledgments for sent VSC packets
@@ -240,10 +243,10 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	// set the ValsetUpdateBlockHeight
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
-	// Execute slash packet throttling logic
-	k.HandlePendingSlashPackets(ctx)
 	// Replenish slash meter if necessary
 	k.CheckForSlashMeterReplenishment(ctx)
+	// Execute slash packet throttling logic
+	k.HandlePendingSlashPackets(ctx)
 }
 
 // OnRecvSlashPacket receives a slash packet and determines whether the channel is established,

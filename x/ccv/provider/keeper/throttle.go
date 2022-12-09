@@ -66,7 +66,8 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		handledEntries = append(handledEntries, entry)
 
 		// Do not handle anymore slash packets if the meter is 0 or negative in value
-		stop = !meter.IsPositive()
+		// stop = !meter.IsPositive()
+		stop = meter.IsNegative()
 
 		k.Logger(ctx).Debug("handled slash packet entry", "chainID", entry.ConsumerChainID, "meter", meter, "stopping", stop)
 
