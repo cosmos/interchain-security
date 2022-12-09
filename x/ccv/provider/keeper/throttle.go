@@ -99,23 +99,40 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 	idx := 0
 	k.IteratePendingPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, data interface{}) (stop bool) {
 
+		k.Logger(ctx).Debug("iterating packet data for chain", "chainID", consumerChainID, "idx", idx, "ibc seq num", ibcSeqNum)
+
 		switch data := data.(type) {
 
 		case ccvtypes.SlashPacketData:
+
+			k.Logger(ctx).Debug("slash packet data found")
+
 			if idx == 0 {
+
+				k.Logger(ctx).Debug("idx is 0, about to handle slash packet")
+
 				_, err := slashPacketHandler(ctx, consumerChainID, data)
 				if err != nil {
 					panic(fmt.Sprintf("failed to handle slash packet: %s", err))
 				}
 			} else {
+
+				k.Logger(ctx).Debug("slash packet data found, but idx is not 0, so we're done handling slash packets for this chain")
+
 				// Break iteration, since we've already handled one slash packet
 				stop = true
 				return stop
 			}
 		case ccvtypes.VSCMaturedPacketData:
+
+			k.Logger(ctx).Debug("vsc matured packet data found")
+
 			if idx == 0 {
 				panic("data is corrupt, first data struct in queue should be slash packet data")
 			} else {
+
+				k.Logger(ctx).Debug("vsc matured packet data found, about to handle vsc matured packet")
+
 				vscMaturedPacketHandler(ctx, consumerChainID, data)
 			}
 		default:
@@ -124,6 +141,7 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 		seqNums = append(seqNums, ibcSeqNum)
 
 		// Increment idx
+		k.Logger(ctx).Debug("incrementing idx", "idx", idx)
 		idx++
 
 		// Continue iterating through the queue until we reach the end or a 2nd slash packet

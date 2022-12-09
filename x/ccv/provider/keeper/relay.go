@@ -275,6 +275,9 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 
 	k.Logger(ctx).Debug("slash packet received and enqueued:", "chainID", chainID, "consumer cons addr", sdk.ConsAddress(data.Validator.Address), "vscid", data.ValsetUpdateId, "infractionType", data.Infraction)
 
+	k.Logger(ctx).Debug("slash packet global queue length", "length", len(k.GetAllPendingSlashPacketEntries(ctx)))
+	k.Logger(ctx).Debug("slash packet per-chain queue length", "chainID", chainID, "length", k.GetPendingPacketDataSize(ctx, chainID))
+
 	// TODO: ack is always success for now, is this correct?
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
