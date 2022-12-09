@@ -116,7 +116,7 @@ func (suite *CCVTestSuite) SetupTest() {
 	preProposalKeyAssignment(suite, icstestingutils.FirstConsumerChainID)
 
 	// start consumer chains
-	numConsumers := 5
+	numConsumers := 10
 	suite.consumerBundles = make(map[string]*icstestingutils.ConsumerBundle)
 	for i := 0; i < numConsumers; i++ {
 		bundle := suite.setupConsumerCallback(&suite.Suite, suite.coordinator, i)

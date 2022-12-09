@@ -261,6 +261,65 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	s.Require().Empty(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx()))
 }
 
+func (s *CCVTestSuite) TestStressTestThrottling() {
+
+	// Setup ccv channels to all consumers
+	s.SetupAllCCVChannels()
+
+	// Setup validator powers to be 25%, 25%, 25%, 25%
+	s.setupValidatorPowers()
+
+	// Keep default params, initialize slash meter
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	providerKeeper.InitializeSlashMeter(s.providerCtx())
+
+	// The packets to be recv in a single block, ordered as they will be recv.
+	packets := []channeltypes.Packet{}
+
+	// Track and increment ibc seq num for each packet, since these need to be unique.
+	ibcSeqNum := uint64(1)
+
+	firstBundle := s.getFirstBundle()
+
+	valToJail := s.providerChain.Vals.Validators[2]
+	s.setDefaultValSigningInfo(*valToJail)
+
+	for i := 0; i < 900; i++ {
+		// Set infraction type based on even/odd index.
+		var infractionType stakingtypes.InfractionType
+		if i%2 == 0 {
+			infractionType = stakingtypes.Downtime
+		} else {
+			infractionType = stakingtypes.DoubleSign
+		}
+		packets = append(packets, s.constructSlashPacketFromConsumer(
+			firstBundle, *valToJail, infractionType, ibcSeqNum))
+		ibcSeqNum++
+	}
+
+	// Send 900 slash packets from consumer to provider in same block,
+	// all trying to jail the same validator
+	for _, packet := range packets {
+		slashPacketData := ccvtypes.SlashPacketData{}
+		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &slashPacketData)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, slashPacketData)
+	}
+
+	// Confirm that global queue has 1 entry. This is not the desired behavior,
+	// but the expected behavior for this branch.
+	s.Require().Equal(1, len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())))
+
+	// Confirm that chain specific queue has 900 packet data entries
+	s.Require().Equal(uint64(900), providerKeeper.GetPendingPacketDataSize(s.providerCtx(), firstBundle.Chain.ChainID))
+
+	// Execute end block
+	s.providerChain.NextBlock()
+
+	// Only one packet should have been handled, and the rest should stay queued. BAD!
+	s.Require().Equal(0, len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())))
+	s.Require().Equal(uint64(899), providerKeeper.GetPendingPacketDataSize(s.providerCtx(), firstBundle.Chain.ChainID))
+}
+
 // TestSlashingSmallValidators tests that multiple slash packets from validators with small
 // power can be handled by the provider chain in a non-throttled manner.
 func (s *CCVTestSuite) TestSlashingSmallValidators() {
