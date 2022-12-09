@@ -423,57 +423,6 @@ func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 
 }
 
-// TestSlashSameValidator tests the edge case that that the total slashed validator power
-// queued up for a single block exceeds the slash meter allowance,
-// but some of the slash packets are for the same validator, and should all be handled.
-func (s *CCVTestSuite) TestSlashSameValidator() {
-
-	s.SetupAllCCVChannels()
-
-	// Setup 4 validators with 25% of the total power each.
-	s.setupValidatorPowers()
-
-	providerKeeper := s.providerApp.GetProviderKeeper()
-
-	// Set replenish fraction to 1.0 so that all sent packets should handled immediately (no throttling)
-	params := providerKeeper.GetParams(s.providerCtx())
-	params.SlashMeterReplenishFraction = "1.0"
-	providerKeeper.SetParams(s.providerCtx(), params)
-	providerKeeper.InitializeSlashMeter(s.providerCtx())
-
-	// Send a downtime and double-sign slash packet for 3/4 validators
-	// This will have a total slashing power of 150% total power.
-	tmval1 := s.providerChain.Vals.Validators[1]
-	tmval2 := s.providerChain.Vals.Validators[2]
-	tmval3 := s.providerChain.Vals.Validators[3]
-	s.setDefaultValSigningInfo(*tmval1)
-	s.setDefaultValSigningInfo(*tmval2)
-	s.setDefaultValSigningInfo(*tmval3)
-
-	packets := []channeltypes.Packet{
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Downtime, 1),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 4),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.DoubleSign, 5),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.DoubleSign, 6),
-	}
-
-	// Recv and queue all slash packets.
-	for _, packet := range packets {
-		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, ccvtypes.MustUnmarshalJsonBzToSlashPacketData(packet.GetData()))
-	}
-
-	// We should have 6 pending slash packet entries queued.
-	s.Require().Len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx()), 6)
-
-	// Call next block to process all pending slash packets in end blocker.
-	s.providerChain.NextBlock()
-
-	// All slash packets should have been handled immediately, even though they totaled to 150% of total power.
-	s.Require().Len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx()), 0)
-}
-
 func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator) {
 	sdkVal, found := s.providerApp.GetE2eStakingKeeper().GetValidator(
 		s.providerCtx(), sdktypes.ValAddress(tmVal.Address))

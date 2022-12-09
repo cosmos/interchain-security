@@ -172,10 +172,6 @@ func TestSlashMeterAllowanceChanges(t *testing.T) {
 	runCCVTestByName(t, "TestSlashMeterAllowanceChanges")
 }
 
-func TestSlashSameValidator(t *testing.T) {
-	runCCVTestByName(t, "TestSlashSameValidator")
-}
-
 //
 // Unbonding tests
 //
