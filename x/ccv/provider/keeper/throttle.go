@@ -127,10 +127,9 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 		return stop
 	})
 
-	if len(seqNums) < 1 {
-		panic("did not handle any consumer packets even though there was an entry in the pending slash packet entries queue")
+	if 0 < len(seqNums) {
+		k.Logger(ctx).Debug("handled consumer packets", "chainID", consumerChainID, "largest seq num handled", seqNums[len(seqNums)-1])
 	}
-	k.Logger(ctx).Debug("handled consumer packets", "chainID", consumerChainID, "largest seq num handled", seqNums[len(seqNums)-1])
 
 	// Delete handled data after iteration is completed
 	k.DeletePendingPacketData(ctx, consumerChainID, seqNums...)
