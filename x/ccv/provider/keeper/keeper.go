@@ -595,46 +595,49 @@ func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId u
 	return validatorSetUpdateId
 }
 
-// SetValsetUpdateBlockHeight sets the block height for a given valset update id
-func (k Keeper) SetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId, blockHeight uint64) {
+// SetValsetUpdateBlockHeight sets the block height for a given vscID
+func (k Keeper) SetValsetUpdateBlockHeight(ctx sdk.Context, vscID, blockHeight uint64) {
 	store := ctx.KVStore(k.storeKey)
-	heightBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(heightBytes, blockHeight)
-	store.Set(types.ValsetUpdateBlockHeightKey(valsetUpdateId), heightBytes)
+	store.Set(types.ValsetUpdateBlockHeightKey(vscID), sdk.Uint64ToBigEndian(blockHeight))
 }
 
-// GetValsetUpdateBlockHeight gets the block height for a given valset update id
-func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) (uint64, bool) {
+// GetValsetUpdateBlockHeight gets the block height for a given vscID
+func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, vscID uint64) (uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
+	bz := store.Get(types.ValsetUpdateBlockHeightKey(vscID))
 	if bz == nil {
 		return 0, false
 	}
-	return binary.BigEndian.Uint64(bz), true
+	return sdk.BigEndianToUint64(bz), true
 }
 
-// IterateSlashAcks iterates through the slash acks set in the store
-func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(valsetUpdateId, height uint64) (stop bool)) {
+// IterateValsetUpdateBlockHeight iterates through the mapping from vscIDs to block heights.
+//
+// Note that the mapping from vscIDs to block heights is stored under keys with the following format:
+// ValsetUpdateBlockHeightBytePrefix | vscID
+// Thus, the iteration is in ascending order of vscIDs.
+//
+// Note: The order of iteration is irrelevant.
+func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(vscID, height uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
+		vscID := sdk.BigEndianToUint64(iterator.Key()[1:])
+		height := sdk.BigEndianToUint64(iterator.Value())
 
-		valsetUpdateId := binary.BigEndian.Uint64(iterator.Key()[1:])
-		height := binary.BigEndian.Uint64(iterator.Value())
-
-		stop := cb(valsetUpdateId, height)
+		stop := cb(vscID, height)
 		if stop {
 			return
 		}
 	}
 }
 
-// DeleteValsetUpdateBlockHeight deletes the block height value for a given vaset update id
-func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint64) {
+// DeleteValsetUpdateBlockHeight deletes the block height value for a given vscID
+func (k Keeper) DeleteValsetUpdateBlockHeight(ctx sdk.Context, vscID uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ValsetUpdateBlockHeightKey(valsetUpdateId))
+	store.Delete(types.ValsetUpdateBlockHeightKey(vscID))
 }
 
 // SetSlashAcks sets the slash acks under the given chain ID

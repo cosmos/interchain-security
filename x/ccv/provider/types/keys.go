@@ -2,7 +2,6 @@ package types
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -73,7 +72,7 @@ const (
 	// operations are waiting for a given consumer chain to unbond
 	UnbondingOpIndexBytePrefix
 
-	// ValsetUpdateBlockHeightBytePrefix is the byte prefix that will store the mapping from valset update ID to block height
+	// ValsetUpdateBlockHeightBytePrefix is the byte prefix that will store the mapping from vscIDs to block heights
 	ValsetUpdateBlockHeightBytePrefix
 
 	// ConsumerGenesisBytePrefix stores consumer genesis state material (consensus state and client state) indexed by consumer chain id
@@ -189,11 +188,9 @@ func UnbondingOpKey(id uint64) []byte {
 	return append([]byte{UnbondingOpBytePrefix}, sdk.Uint64ToBigEndian(id)...)
 }
 
-// ValsetUpdateBlockHeightKey returns the key that storing the mapping from valset update ID to block height
-func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
-	vuidBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(vuidBytes, valsetUpdateId)
-	return append([]byte{ValsetUpdateBlockHeightBytePrefix}, vuidBytes...)
+// ValsetUpdateBlockHeightKey returns the key that stores the mapping from vscIDs to block heights
+func ValsetUpdateBlockHeightKey(vscID uint64) []byte {
+	return append([]byte{ValsetUpdateBlockHeightBytePrefix}, sdk.Uint64ToBigEndian(vscID)...)
 }
 
 // ConsumerGenesisKey returns the key corresponding to consumer genesis state material

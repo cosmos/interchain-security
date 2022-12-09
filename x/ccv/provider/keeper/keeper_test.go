@@ -23,25 +23,46 @@ func TestValsetUpdateBlockHeight(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	blockHeight, found := providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(0))
+	testCases := []struct {
+		vscID         uint64
+		height        uint64
+		iteratorIndex int
+	}{
+		{vscID: 2, height: 22, iteratorIndex: 1},
+		{vscID: 1, height: 11, iteratorIndex: 0},
+		{vscID: 3, height: 33, iteratorIndex: 2},
+	}
+
+	found := false
+	providerKeeper.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) (stop bool) {
+		found = true
+		return true // stop iteration
+	})
 	require.False(t, found)
-	require.Zero(t, blockHeight)
 
-	providerKeeper.SetValsetUpdateBlockHeight(ctx, uint64(1), uint64(2))
-	blockHeight, found = providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(1))
-	require.True(t, found)
-	require.Equal(t, blockHeight, uint64(2))
+	for _, tc := range testCases {
+		providerKeeper.SetValsetUpdateBlockHeight(ctx, tc.vscID, tc.height)
+	}
 
-	providerKeeper.DeleteValsetUpdateBlockHeight(ctx, uint64(1))
-	blockHeight, found = providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(1))
+	for _, tc := range testCases {
+		height, found := providerKeeper.GetValsetUpdateBlockHeight(ctx, tc.vscID)
+		require.True(t, found)
+		require.Equal(t, tc.height, height)
+	}
+
+	heights := []uint64{}
+	providerKeeper.IterateValsetUpdateBlockHeight(ctx, func(_, height uint64) (stop bool) {
+		heights = append(heights, height)
+		return false // do not stop iteration
+	})
+	require.Len(t, heights, len(testCases))
+	for _, tc := range testCases {
+		require.Equal(t, tc.height, heights[tc.iteratorIndex])
+	}
+
+	providerKeeper.DeleteValsetUpdateBlockHeight(ctx, testCases[0].vscID)
+	_, found = providerKeeper.GetValsetUpdateBlockHeight(ctx, testCases[0].vscID)
 	require.False(t, found)
-	require.Zero(t, blockHeight)
-
-	providerKeeper.SetValsetUpdateBlockHeight(ctx, uint64(1), uint64(2))
-	providerKeeper.SetValsetUpdateBlockHeight(ctx, uint64(3), uint64(4))
-	blockHeight, found = providerKeeper.GetValsetUpdateBlockHeight(ctx, uint64(3))
-	require.True(t, found)
-	require.Equal(t, blockHeight, uint64(4))
 }
 
 // TestSlashAcks tests the getter, setter, iteration, and deletion methods for stored slash acknowledgements
