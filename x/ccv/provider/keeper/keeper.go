@@ -854,8 +854,11 @@ func (k Keeper) DeleteVscSendTimestamp(ctx sdk.Context, chainID string, vscID ui
 	store.Delete(types.VscSendingTimestampKey(chainID, vscID))
 }
 
-// IterateVscSendTimestamps iterates in order (lowest first)
-// over the vsc send timestamps of the given chainID.
+// IterateVscSendTimestamps iterates over the vsc send timestamps of the given chainID.
+//
+// Note that the vsc send timestamps of a given chainID are stored under keys with the following format:
+// VscSendTimestampBytePrefix | len(chainID) | chainID | vscID
+// Thus, the iteration is in ascending order of vscIDs, and as a result in send timestamp order.
 func (k Keeper) IterateVscSendTimestamps(
 	ctx sdk.Context,
 	chainID string,
