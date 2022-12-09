@@ -35,6 +35,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		k.SetPendingConsumerAdditionProp(ctx, &prop)
 	}
 	for _, prop := range genState.ConsumerRemovalProposals {
+		// prevent implicit memory aliasing
+		prop := prop
 		k.SetPendingConsumerRemovalProp(ctx, &prop)
 	}
 	for _, ubdOp := range genState.UnbondingOps {
