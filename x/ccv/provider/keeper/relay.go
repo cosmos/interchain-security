@@ -381,7 +381,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		),
 	)
 
-	k.Logger(ctx).Debug("validator slashed and jailed", "chainID", chainID, "provider cons addr", providerAddr, "infraction type", data.Infraction, "infraction height", infractionHeight)
+	k.Logger(ctx).Debug("handled slash packet", "chainID", chainID, "provider cons addr", providerAddr, "infraction type", data.Infraction, "infraction height", infractionHeight)
 	return true, nil
 }
 
