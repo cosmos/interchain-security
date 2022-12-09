@@ -111,28 +111,6 @@ func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability
 	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
 }
 
-// SetChainToChannel sets the mapping from a consumer chainID to the CCV channel ID for that consumer chain.
-func (k Keeper) SetChainToChannel(ctx sdk.Context, chainID, channelID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.ChainToChannelKey(chainID), []byte(channelID))
-}
-
-// GetChainToChannel gets the CCV channelID for the given consumer chainID
-func (k Keeper) GetChainToChannel(ctx sdk.Context, chainID string) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.ChainToChannelKey(chainID))
-	if bz == nil {
-		return "", false
-	}
-	return string(bz), true
-}
-
-// DeleteChainToChannel deletes the CCV channel ID for the given consumer chain ID
-func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.ChainToChannelKey(chainID))
-}
-
 // SetConsumerClientId sets the client ID for the given chain ID
 func (k Keeper) SetConsumerClientId(ctx sdk.Context, chainID, clientID string) {
 	store := ctx.KVStore(k.storeKey)
@@ -180,6 +158,28 @@ func (k Keeper) IterateConsumerChains(ctx sdk.Context, cb func(ctx sdk.Context, 
 	}
 }
 
+// SetChainToChannel sets the mapping from a consumer chainID to the CCV channel ID for that consumer chain.
+func (k Keeper) SetChainToChannel(ctx sdk.Context, chainID, channelID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.ChainToChannelKey(chainID), []byte(channelID))
+}
+
+// GetChainToChannel gets the CCV channelID for the given consumer chainID
+func (k Keeper) GetChainToChannel(ctx sdk.Context, chainID string) (string, bool) {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.ChainToChannelKey(chainID))
+	if bz == nil {
+		return "", false
+	}
+	return string(bz), true
+}
+
+// DeleteChainToChannel deletes the CCV channel ID for the given consumer chain ID
+func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.ChainToChannelKey(chainID))
+}
+
 // SetChannelToChain sets the mapping from the CCV channel ID to the consumer chainID.
 func (k Keeper) SetChannelToChain(ctx sdk.Context, channelID, chainID string) {
 	store := ctx.KVStore(k.storeKey)
@@ -202,8 +202,13 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 	store.Delete(types.ChannelToChainKey(channelID))
 }
 
-// IterateChannelToChain iterates over the channel to chain mappings and calls the provided callback until the iteration ends
-// or the callback returns stop=true
+// IterateChannelToChain iterates over the channel to chain mappings.
+//
+// Note that mapping from CCV channel IDs to consumer chainIDs is stored under keys with the following format:
+// ChannelToChainBytePrefix | channelID
+// Thus, the iteration is in ascending order of channelIDs.
+//
+// Note: The order of iteration is irrelevant.
 func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, channelID, chainID string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
@@ -212,7 +217,6 @@ func (k Keeper) IterateChannelToChain(ctx sdk.Context, cb func(ctx sdk.Context, 
 	for ; iterator.Valid(); iterator.Next() {
 		// remove prefix from key to retrieve channelID
 		channelID := string(iterator.Key()[1:])
-
 		chainID := string(iterator.Value())
 
 		stop := cb(ctx, channelID, chainID)
