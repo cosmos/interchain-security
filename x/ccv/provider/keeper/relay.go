@@ -43,6 +43,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 
 	// If no packets are in the per chain queue, immediately handle the vsc matured packet data
 	if k.GetPendingPacketDataSize(ctx, chainID) == 0 {
+		k.Logger(ctx).Debug("recv VSCMaturedPacket, no pending slashes, handling immediately:", "chainID", chainID)
 		k.HandleVSCMaturedPacket(ctx, chainID, data)
 	} else {
 		// Otherwise queue the packet data as pending (behind one or more pending slash packet data instances)
