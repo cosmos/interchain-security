@@ -301,14 +301,13 @@ func (s *CCVTestSuite) TestStressTestThrottling() {
 	}
 
 	// Send 900 slash packets from consumer to provider in same block,
-	// all trying to jail the same validator
 	for _, packet := range packets {
 		slashPacketData := ccvtypes.SlashPacketData{}
 		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &slashPacketData)
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, slashPacketData)
 	}
 
-	// Confirm that global queue has 3 entry. This is not the desired behavior,
+	// Confirm that global queue has 3 entries. This is not the desired behavior,
 	// but the expected behavior for this branch.
 	s.Require().Equal(3, len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())))
 
@@ -318,7 +317,7 @@ func (s *CCVTestSuite) TestStressTestThrottling() {
 	// Execute end block
 	s.providerChain.NextBlock()
 
-	// Only one packet should have been handled, and the rest should stay queued. BAD!
+	// Only one packet should have been handled, and the rest should stay queued. (BAD! But expected)
 	s.Require().Equal(2, len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())))
 	s.Require().Equal(uint64(899), providerKeeper.GetPendingPacketDataSize(s.providerCtx(), firstBundle.Chain.ChainID))
 
