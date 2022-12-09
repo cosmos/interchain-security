@@ -454,7 +454,7 @@ func (s *CoreSuite) TestTraces() {
 
 func TestCoreSuite(t *testing.T) {
 	// TODO: Reenable diff tests once model is updated
-	// suite.Run(t, new(CoreSuite))
+	suite.Run(t, new(CoreSuite))
 }
 
 // SetupTest sets up the test suite in a 'zero' state which matches

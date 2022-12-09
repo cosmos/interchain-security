@@ -20,6 +20,30 @@ import (
 	appProvider "github.com/cosmos/interchain-security/app/provider"
 )
 
+// TODO: refactor this out test (-v) verbose flag needed to see output!
+func ProviderAppIniterWithLog() (ibctesting.TestingApp, map[string]json.RawMessage) {
+	l := log.TestingLogger()
+	l = log.NewFilter(l,
+		log.AllowDebugWith("module", "x/ibc-provider"))
+
+	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)
+	testApp := appProvider.New(l, tmdb.NewMemDB(), nil, true, map[int64]bool{},
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
+	return testApp, appProvider.NewDefaultGenesisState(encoding.Marshaler)
+}
+
+// TODO: refactor this out test (-v) verbose flag needed to see output!
+func ConsumerAppIniterWithLog() (ibctesting.TestingApp, map[string]json.RawMessage) {
+	l := log.TestingLogger()
+	l = log.NewFilter(l,
+		log.AllowDebugWith("module", "x/ibc-consumer"))
+
+	encoding := cosmoscmd.MakeEncodingConfig(appConsumer.ModuleBasics)
+	testApp := appConsumer.New(l, tmdb.NewMemDB(), nil, true, map[int64]bool{},
+		simapp.DefaultNodeHome, 5, encoding, simapp.EmptyAppOptions{}).(ibctesting.TestingApp)
+	return testApp, appConsumer.NewDefaultGenesisState(encoding.Marshaler)
+}
+
 // ProviderAppIniter implements ibctesting.AppIniter for a provider app
 func ProviderAppIniter() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	encoding := cosmoscmd.MakeEncodingConfig(appProvider.ModuleBasics)

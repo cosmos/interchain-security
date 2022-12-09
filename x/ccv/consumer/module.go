@@ -178,6 +178,11 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 // EndBlock implements the AppModule interface
 // Flush PendingChanges to ABCI, send pending packets, write acknowledgements for packets that have finished unbonding.
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+
+	am.keeper.Logger(ctx).Debug("trying out the logger (consumer) (debug)")
+	am.keeper.Logger(ctx).Info("trying out the logger (consumer) (info)")
+	am.keeper.Logger(ctx).Error("trying out the logger (consumer) (err)")
+
 	// distribution transmission
 	err := am.keeper.DistributeToProviderValidatorSet(ctx)
 	if err != nil {

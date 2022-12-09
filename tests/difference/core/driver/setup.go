@@ -341,9 +341,9 @@ func (b *Builder) createChains() {
 	// Create validators
 	validators, signers, addresses := b.createValidators()
 	// Create provider
-	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, icstestingutils.ProviderAppIniter, ibctesting.GetChainID(0), validators, signers)
+	coordinator.Chains[ibctesting.GetChainID(0)] = b.newChain(coordinator, icstestingutils.ProviderAppIniterWithLog, ibctesting.GetChainID(0), validators, signers)
 	// Create consumer, using the same validators.
-	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, icstestingutils.ConsumerAppIniter, ibctesting.GetChainID(1), validators, signers)
+	coordinator.Chains[ibctesting.GetChainID(1)] = b.newChain(coordinator, icstestingutils.ConsumerAppIniterWithLog, ibctesting.GetChainID(1), validators, signers)
 
 	b.coordinator = coordinator
 	b.valAddresses = addresses
