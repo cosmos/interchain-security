@@ -281,8 +281,10 @@ func (s *CCVTestSuite) TestStressTestThrottling() {
 
 	firstBundle := s.getFirstBundle()
 
-	valToJail := s.providerChain.Vals.Validators[2]
-	s.setDefaultValSigningInfo(*valToJail)
+	// Slash first 3 but not 4th validator
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[1])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
 
 	for i := 0; i < 900; i++ {
 		// Set infraction type based on even/odd index.
@@ -292,6 +294,7 @@ func (s *CCVTestSuite) TestStressTestThrottling() {
 		} else {
 			infractionType = stakingtypes.DoubleSign
 		}
+		valToJail := s.providerChain.Vals.Validators[i%3]
 		packets = append(packets, s.constructSlashPacketFromConsumer(
 			firstBundle, *valToJail, infractionType, ibcSeqNum))
 		ibcSeqNum++
@@ -305,9 +308,9 @@ func (s *CCVTestSuite) TestStressTestThrottling() {
 		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, slashPacketData)
 	}
 
-	// Confirm that global queue has 1 entry. This is not the desired behavior,
+	// Confirm that global queue has 3 entry. This is not the desired behavior,
 	// but the expected behavior for this branch.
-	s.Require().Equal(1, len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())))
+	s.Require().Equal(3, len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())))
 
 	// Confirm that chain specific queue has 900 packet data entries
 	s.Require().Equal(uint64(900), providerKeeper.GetPendingPacketDataSize(s.providerCtx(), firstBundle.Chain.ChainID))
@@ -316,12 +319,24 @@ func (s *CCVTestSuite) TestStressTestThrottling() {
 	s.providerChain.NextBlock()
 
 	// Only one packet should have been handled, and the rest should stay queued. BAD!
-	s.Require().Equal(0, len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())))
+	s.Require().Equal(2, len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())))
 	s.Require().Equal(uint64(899), providerKeeper.GetPendingPacketDataSize(s.providerCtx(), firstBundle.Chain.ChainID))
 
-	// Call HandlePacketDataForChain 899 times, to handle all remaining packets.
+	// Replenish slash meter, and execute end block to handle another global entry
+	s.replenishSlashMeterTillPositive()
+	s.providerChain.NextBlock()
+	s.Require().Equal(1, len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())))
+	s.Require().Equal(uint64(898), providerKeeper.GetPendingPacketDataSize(s.providerCtx(), firstBundle.Chain.ChainID))
+
+	// Replenish slash meter, and execute end block to handle another global entry
+	s.replenishSlashMeterTillPositive()
+	s.providerChain.NextBlock()
+	s.Require().Equal(0, len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())))
+	s.Require().Equal(uint64(897), providerKeeper.GetPendingPacketDataSize(s.providerCtx(), firstBundle.Chain.ChainID))
+
+	// Call HandlePacketDataForChain 897 times, to handle all remaining packets.
 	// Hacky shiz for debugging and trying to reproduce the hang.
-	for i := 0; i < 899; i++ {
+	for i := 0; i < 897; i++ {
 		providerKeeper.HandlePacketDataForChain(s.providerCtx(), firstBundle.Chain.ChainID,
 			providerKeeper.HandleSlashPacket, providerKeeper.HandleVSCMaturedPacket)
 	}
@@ -482,7 +497,7 @@ func (s *CCVTestSuite) confirmValidatorNotJailed(tmVal tmtypes.Validator, expect
 func (s *CCVTestSuite) replenishSlashMeterTillPositive() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	idx := 0
-	for providerKeeper.GetSlashMeter(s.providerCtx()).IsNegative() {
+	for !providerKeeper.GetSlashMeter(s.providerCtx()).IsPositive() {
 		if idx > 100 {
 			panic("replenishTillPositive: failed to replenish slash meter")
 		}
