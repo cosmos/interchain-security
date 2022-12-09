@@ -351,7 +351,6 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		return false, fmt.Errorf("invalid infraction type: %v", data.Infraction)
 	}
 
-	// slash validator
 	k.stakingKeeper.Slash(
 		ctx,
 		providerAddr,
@@ -361,10 +360,13 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		data.Infraction,
 	)
 
-	// jail validator
+	k.Logger(ctx).Debug("validator slashed", "chainID", chainID, "provider cons addr", providerAddr, "infraction type", data.Infraction, "infraction height", infractionHeight)
+
 	if !validator.IsJailed() {
 		k.stakingKeeper.Jail(ctx, providerAddr)
+		k.Logger(ctx).Debug("validator jailed", "chainID", chainID, "provider cons addr", providerAddr, "infraction type", data.Infraction, "infraction height", infractionHeight)
 	}
+
 	k.slashingKeeper.JailUntil(ctx, providerAddr, jailTime)
 
 	ctx.EventManager().EmitEvent(
