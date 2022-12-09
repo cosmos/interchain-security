@@ -385,7 +385,7 @@ func (k Keeper) IterateUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdOp cc
 	}
 }
 
-// This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
+// SetUnbondingOpIndex This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
 func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, IDs []uint64) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -400,8 +400,14 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 	store.Set(types.UnbondingOpIndexKey(chainID, valsetUpdateID), bz)
 }
 
-// IterateOverUnbondingOpIndex iterates over the unbonding indexes for a given chain id.
-func (k Keeper) IterateOverUnbondingOpIndex(
+// IterateUnbondingOpIndex iterates over the unbonding indexes for a given chainID.
+//
+// Note that the unbonding indexes for a given chainID are stored under keys with the following format:
+// UnbondingOpIndexBytePrefix | len(chainID) | chainID | vscID
+// Thus, the iteration is in ascending order of vscIDs.
+//
+// Note: The order of iteration is irrelevant.
+func (k Keeper) IterateUnbondingOpIndex(
 	ctx sdk.Context,
 	chainID string,
 	cb func(vscID uint64, ubdIndex []uint64) (stop bool),

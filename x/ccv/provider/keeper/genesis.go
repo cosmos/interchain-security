@@ -115,7 +115,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 				panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chainID, clientID))
 			}
 			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chainID)
-			k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) (stop bool) {
+			k.IterateUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) (stop bool) {
 				cs.UnbondingOpsIndex = append(cs.UnbondingOpsIndex,
 					types.UnbondingOpIndex{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex},
 				)

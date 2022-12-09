@@ -70,7 +70,7 @@ const (
 	UnbondingOpBytePrefix
 
 	// UnbondingOpIndexBytePrefix is byte prefix of the index for looking up which unbonding
-	// delegation entries are waiting for a given consumer chain to unbond
+	// operations are waiting for a given consumer chain to unbond
 	UnbondingOpIndexBytePrefix
 
 	// ValsetUpdateBlockHeightBytePrefix is the byte prefix that will store the mapping from valset update ID to block height
@@ -171,9 +171,8 @@ func PendingCRPKey(timestamp time.Time, chainID string) []byte {
 	)
 }
 
-// UnbondingOpIndexKey returns an unbonding op index key
-// Note: chainId is hashed to a fixed length sequence of bytes here to prevent
-// injection attack between chainIDs.
+// UnbondingOpIndexKey returns the key under which the index for looking up which
+// unbonding operations are waiting for a given consumer chain to unbond is stored
 func UnbondingOpIndexKey(chainID string, vscID uint64) []byte {
 	return ChainIdAndVscIdKey(UnbondingOpIndexBytePrefix, chainID, vscID)
 }

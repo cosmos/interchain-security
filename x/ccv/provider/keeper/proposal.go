@@ -168,7 +168,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	// release unbonding operations
 	var vscIDs []uint64
 	// iterate over the consumer chain's unbonding operation VSC ids
-	k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ids []uint64) (stop bool) {
+	k.IterateUnbondingOpIndex(ctx, chainID, func(vscID uint64, ids []uint64) (stop bool) {
 		// iterate over the unbonding operations for the current VSC ID
 		var maturedIds []uint64
 		for _, id := range ids {
