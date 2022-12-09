@@ -75,6 +75,8 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		return stop
 	})
 
+	k.Logger(ctx).Debug("global iteration has completed in HandlePendingSlashPackets", "num handled entries", len(handledEntries))
+
 	// Handled entries are deleted after iteration is completed
 	k.DeletePendingSlashPacketEntries(ctx, handledEntries...)
 
@@ -130,7 +132,7 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 	})
 
 	if 0 < len(seqNums) {
-		k.Logger(ctx).Debug("handled consumer packets", "chainID", consumerChainID, "largest seq num handled", seqNums[len(seqNums)-1])
+		k.Logger(ctx).Debug("handled packet data from per-chain queue", "chainID", consumerChainID, "largest seq num handled", seqNums[len(seqNums)-1])
 	}
 
 	// Delete handled data after iteration is completed
