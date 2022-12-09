@@ -110,6 +110,8 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, chainID string,
 		),
 	)
 
+	k.Logger(ctx).Info("created consumer client", "chain-id", chainID, "client-id", clientID)
+
 	return nil
 }
 
@@ -217,6 +219,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, lockUbd, clos
 	for _, id := range vscIDs {
 		k.DeleteUnbondingOpIndex(ctx, chainID, id)
 	}
+
+	k.Logger(ctx).Info("stopped consumer chain", "chain-id", chainID)
 
 	return nil
 }
@@ -344,6 +348,10 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	}
 	// delete the executed proposals
 	k.DeletePendingConsumerAdditionProps(ctx, propsToExecute...)
+
+	if 0 < len(propsToExecute) {
+		k.Logger(ctx).Info("executed consumer addition proposals", "num_props", len(propsToExecute))
+	}
 }
 
 // ConsumerAdditionPropsToExecute iterates over the pending consumer addition proposals
@@ -468,6 +476,10 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 	}
 	// delete the executed proposals
 	k.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
+
+	if 0 < len(propsToExecute) {
+		k.Logger(ctx).Info("executed consumer removal proposals", "num_props", len(propsToExecute))
+	}
 }
 
 // ConsumerRemovalPropsToExecute iterates over the pending consumer removal proposals
