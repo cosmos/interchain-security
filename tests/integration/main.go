@@ -32,29 +32,29 @@ func main() {
 	tr.ValidateStringLiterals()
 	tr.startDocker()
 
-	dmc := DemocracyTestRun()
-	dmc.SetLocalSDKPath(*localSdkPath)
-	dmc.ValidateStringLiterals()
-	dmc.startDocker()
+	// dmc := DemocracyTestRun()
+	// dmc.SetLocalSDKPath(*localSdkPath)
+	// dmc.ValidateStringLiterals()
+	// dmc.startDocker()
 
 	// mul := MultiConsumerTestRun()
 	// mul.SetLocalSDKPath(*localSdkPath)
 	// mul.ValidateStringLiterals()
 	// mul.startDocker()
 
-	keys := KeyAssignmentTestRun()
-	keys.SetLocalSDKPath(*localSdkPath)
-	keys.ValidateStringLiterals()
-	keys.startDocker()
+	// keys := KeyAssignmentTestRun()
+	// keys.SetLocalSDKPath(*localSdkPath)
+	// keys.ValidateStringLiterals()
+	// keys.startDocker()
 
-	wg.Add(1)
-	go keys.ExecuteSteps(&wg, keyAssignmentSteps)
+	// wg.Add(1)
+	// go keys.ExecuteSteps(&wg, keyAssignmentSteps)
 
 	wg.Add(1)
 	go tr.ExecuteSteps(&wg, happyPathSteps)
 
-	wg.Add(1)
-	go dmc.ExecuteSteps(&wg, democracySteps)
+	// wg.Add(1)
+	// go dmc.ExecuteSteps(&wg, democracySteps)
 
 	// wg.Add(1)
 	// go mul.ExecuteSteps(&wg, multipleConsumers)

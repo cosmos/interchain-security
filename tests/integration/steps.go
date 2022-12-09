@@ -13,38 +13,38 @@ func concatSteps(steps ...[]Step) []Step {
 	return concat
 }
 
-var keyAssignmentSteps = concatSteps(
-	stepsStartChains([]string{"consu"}, false),
-	stepsDelegate("consu"),
-	stepsAssignConsumerKeyOnStartedChain("consu", "bob"),
-	stepsUnbond("consu"),
-	stepsRedelegate("consu"),
-)
+// var keyAssignmentSteps = concatSteps(
+// 	stepsStartChains([]string{"consu"}, false),
+// 	stepsDelegate("consu"),
+// 	stepsAssignConsumerKeyOnStartedChain("consu", "bob"),
+// 	stepsUnbond("consu"),
+// 	stepsRedelegate("consu"),
+// )
 
 var happyPathSteps = concatSteps(
 	stepsStartChains([]string{"consu"}, false),
-	stepsDelegate("consu"),
-	stepsUnbond("consu"),
-	stepsRedelegate("consu"),
+	// stepsDelegate("consu"),
+	// stepsUnbond("consu"),
+	// stepsRedelegate("consu"),
 	stepsDowntime("consu"),
-	stepsStopChain("consu"),
+	// stepsStopChain("consu"),
 )
 
-var democracySteps = concatSteps(
-	// democracySteps requires a transfer channel
-	stepsStartChains([]string{"democ"}, true),
-	// delegation needs to happen so the first VSC packet can be delivered
-	stepsDelegate("democ"),
-	stepsDemocracy("democ"),
-)
+// var democracySteps = concatSteps(
+// 	// democracySteps requires a transfer channel
+// 	stepsStartChains([]string{"democ"}, true),
+// 	// delegation needs to happen so the first VSC packet can be delivered
+// 	stepsDelegate("democ"),
+// 	stepsDemocracy("democ"),
+// )
 
 //nolint
-var multipleConsumers = concatSteps(
-	stepsStartChains([]string{"consu", "densu"}, false),
-	stepsMultiConsumerDelegate("consu", "densu"),
-	stepsMultiConsumerUnbond("consu", "densu"),
-	stepsMultiConsumerRedelegate("consu", "densu"),
-	stepsMultiConsumerDowntimeFromConsumer("consu", "densu"),
-	stepsMultiConsumerDowntimeFromProvider("consu", "densu"),
-	stepsDoubleSign("consu", "densu"), // double sign on one of the chains
-)
+// var multipleConsumers = concatSteps(
+// 	stepsStartChains([]string{"consu", "densu"}, false),
+// 	stepsMultiConsumerDelegate("consu", "densu"),
+// 	stepsMultiConsumerUnbond("consu", "densu"),
+// 	stepsMultiConsumerRedelegate("consu", "densu"),
+// 	stepsMultiConsumerDowntimeFromConsumer("consu", "densu"),
+// 	stepsMultiConsumerDowntimeFromProvider("consu", "densu"),
+// 	stepsDoubleSign("consu", "densu"), // double sign on one of the chains
+// )
