@@ -66,8 +66,7 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		handledEntries = append(handledEntries, entry)
 
 		// Do not handle anymore slash packets if the meter is 0 or negative in value
-		// stop = !meter.IsPositive()
-		stop = meter.IsNegative()
+		stop = !meter.IsPositive()
 
 		k.Logger(ctx).Debug("handled slash packet entry", "chainID", entry.ConsumerChainID, "meter", meter, "stopping", stop)
 
@@ -79,7 +78,6 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 	// Persist current value for slash meter
 	k.SetSlashMeter(ctx, meter)
-
 }
 
 // HandlePacketDataForChain handles only the first queued slash packet relevant to the passed consumer chainID,
