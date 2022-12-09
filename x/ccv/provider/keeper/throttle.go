@@ -41,12 +41,19 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		// Obtain the validator power relevant to the slash packet that's about to be handled
 		// (this power will be removed via jailing or tombstoning)
 		var valPower int64
-		if val.IsJailed() || !found {
+		if !found {
 			// If validator is jailed or not found, it's power is 0. This path is explicitly defined since the
 			// staking keeper's LastValidatorPower values are not updated till the staking keeper's endblocker.
 			valPower = 0
+			k.Logger(ctx).Debug("handling slash entry, validator not found", "chainID", entry.ConsumerChainID, "provider cons addr", providerConsAddr)
+		} else if val.IsJailed() {
+			// If validator is jailed or not found, it's power is 0. This path is explicitly defined since the
+			// staking keeper's LastValidatorPower values are not updated till the staking keeper's endblocker.
+			valPower = 0
+			k.Logger(ctx).Debug("handling slash entry, validator already jailed", "chainID", entry.ConsumerChainID, "provider cons addr", providerConsAddr)
 		} else {
 			valPower = k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
+			k.Logger(ctx).Debug("handling slash entry", "chainID", entry.ConsumerChainID, "provider cons addr", providerConsAddr, "val power at beginning of block", valPower)
 		}
 
 		// Subtract this power from the slash meter
@@ -60,6 +67,9 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 		// Do not handle anymore slash packets if the meter is 0 or negative in value
 		stop = !meter.IsPositive()
+
+		k.Logger(ctx).Debug("handled slash packet entry", "chainID", entry.ConsumerChainID, "meter", meter, "stopping", stop)
+
 		return stop
 	})
 
@@ -68,6 +78,7 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 	// Persist current value for slash meter
 	k.SetSlashMeter(ctx, meter)
+
 }
 
 // HandlePacketDataForChain handles only the first queued slash packet relevant to the passed consumer chainID,
@@ -117,6 +128,11 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 		return stop
 	})
 
+	if len(seqNums) < 1 {
+		panic("did not handle any consumer packets even though there was an entry in the pending slash packet entries queue")
+	}
+	k.Logger(ctx).Debug("handled consumer packets", "chainID", consumerChainID, "largest seq num handled", seqNums[len(seqNums)-1])
+
 	// Delete handled data after iteration is completed
 	k.DeletePendingPacketData(ctx, consumerChainID, seqNums...)
 }
@@ -152,6 +168,8 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 	}
 	k.SetSlashMeter(ctx, meter)
 	k.SetLastSlashMeterReplenishTime(ctx, ctx.BlockTime())
+
+	k.Logger(ctx).Debug("replenished slash meter", "meter", meter)
 }
 
 // GetSlashMeterAllowance returns the allowance of voting power units (int) that the slash meter
