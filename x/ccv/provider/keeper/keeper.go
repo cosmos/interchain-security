@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -563,14 +562,9 @@ func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
 	k.SetValidatorSetUpdateId(ctx, validatorSetUpdateId+1)
 }
 
-func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
+func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, vscID uint64) {
 	store := ctx.KVStore(k.storeKey)
-
-	// Convert back into bytes for storage
-	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, valUpdateID)
-
-	store.Set(types.ValidatorSetUpdateIdKey(), bz)
+	store.Set(types.ValidatorSetUpdateIdKey(), sdk.Uint64ToBigEndian(vscID))
 }
 
 func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId uint64) {
@@ -581,7 +575,7 @@ func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (validatorSetUpdateId u
 		validatorSetUpdateId = 0
 	} else {
 		// Unmarshal
-		validatorSetUpdateId = binary.BigEndian.Uint64(bz)
+		validatorSetUpdateId = sdk.BigEndianToUint64(bz)
 	}
 
 	return validatorSetUpdateId
@@ -709,10 +703,7 @@ func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID, ack string) {
 // SetInitChainHeight sets the provider block height when the given consumer chain was initiated
 func (k Keeper) SetInitChainHeight(ctx sdk.Context, chainID string, height uint64) {
 	store := ctx.KVStore(k.storeKey)
-	heightBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(heightBytes, height)
-
-	store.Set(types.InitChainHeightKey(chainID), heightBytes)
+	store.Set(types.InitChainHeightKey(chainID), sdk.Uint64ToBigEndian(height))
 }
 
 // GetInitChainHeight returns the provider block height when the given consumer chain was initiated
@@ -723,7 +714,7 @@ func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) (uint64, boo
 		return 0, false
 	}
 
-	return binary.BigEndian.Uint64(bz), true
+	return sdk.BigEndianToUint64(bz), true
 }
 
 // DeleteInitChainHeight deletes the block height value for which the given consumer chain's channel was established
@@ -770,9 +761,7 @@ func (k Keeper) DeletePendingPackets(ctx sdk.Context, chainID string) {
 // SetInitTimeoutTimestamp sets the init timeout timestamp for the given chain ID
 func (k Keeper) SetInitTimeoutTimestamp(ctx sdk.Context, chainID string, ts uint64) {
 	store := ctx.KVStore(k.storeKey)
-	tsBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(tsBytes, ts)
-	store.Set(types.InitTimeoutTimestampKey(chainID), tsBytes)
+	store.Set(types.InitTimeoutTimestampKey(chainID), sdk.Uint64ToBigEndian(ts))
 }
 
 // GetInitTimeoutTimestamp returns the init timeout timestamp for the given chain ID.
@@ -783,7 +772,7 @@ func (k Keeper) GetInitTimeoutTimestamp(ctx sdk.Context, chainID string) (uint64
 	if bz == nil {
 		return 0, false
 	}
-	return binary.BigEndian.Uint64(bz), true
+	return sdk.BigEndianToUint64(bz), true
 }
 
 // DeleteInitTimeoutTimestamp removes from the store the init timeout timestamp for the given chainID.
@@ -804,7 +793,7 @@ func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID str
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		chainID := string(iterator.Key()[1:])
-		ts := binary.BigEndian.Uint64(iterator.Value())
+		ts := sdk.BigEndianToUint64(iterator.Value())
 
 		stop := cb(chainID, ts)
 		if stop {

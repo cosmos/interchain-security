@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -321,12 +320,10 @@ func (k Keeper) VerifyProviderChain(ctx sdk.Context, connectionHops []string) er
 	return nil
 }
 
-// SetHeightValsetUpdateID sets the valset update id for a given block height
-func (k Keeper) SetHeightValsetUpdateID(ctx sdk.Context, height, valsetUpdateId uint64) {
+// SetHeightValsetUpdateID sets the vscID for a given block height
+func (k Keeper) SetHeightValsetUpdateID(ctx sdk.Context, height, vscID uint64) {
 	store := ctx.KVStore(k.storeKey)
-	valBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(valBytes, valsetUpdateId)
-	store.Set(types.HeightValsetUpdateIDKey(height), valBytes)
+	store.Set(types.HeightValsetUpdateIDKey(height), sdk.Uint64ToBigEndian(vscID))
 }
 
 // GetHeightValsetUpdateID gets the valset update id recorded for a given block height
@@ -336,7 +333,7 @@ func (k Keeper) GetHeightValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 	if bz == nil {
 		return 0
 	}
-	return binary.BigEndian.Uint64(bz)
+	return sdk.BigEndianToUint64(bz)
 }
 
 // DeleteHeightValsetUpdateID deletes the valset update id for a given block height
@@ -356,10 +353,8 @@ func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, v
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		heightBytes := iterator.Key()[1:]
-		height := binary.BigEndian.Uint64(heightBytes)
-
-		vscID := binary.BigEndian.Uint64(iterator.Value())
+		height := sdk.BigEndianToUint64(iterator.Key()[1:])
+		vscID := sdk.BigEndianToUint64(iterator.Value())
 
 		stop := cb(height, vscID)
 		if stop {
