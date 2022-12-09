@@ -43,11 +43,12 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 
 	// If no packets are in the per chain queue, immediately handle the vsc matured packet data
 	if k.GetPendingPacketDataSize(ctx, chainID) == 0 {
-		k.Logger(ctx).Debug("recv VSCMaturedPacket, no pending slashes, handling immediately:", "chainID", chainID)
+		k.Logger(ctx).Debug("recv VSCMaturedPacket, no pending slashes, handling immediately:", "chainID", chainID, "seq", packet.Sequence)
 		k.HandleVSCMaturedPacket(ctx, chainID, data)
 	} else {
 		// Otherwise queue the packet data as pending (behind one or more pending slash packet data instances)
 		k.QueuePendingVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
+		k.Logger(ctx).Debug("recv VSCMaturedPacket, pending slashes, enqueued:", "chainID", chainID, "seq", packet.Sequence)
 	}
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
@@ -89,6 +90,8 @@ func (k Keeper) HandleVSCMaturedPacket(
 
 	// prune previous consumer validator address that are no longer needed
 	k.PruneKeyAssignments(ctx, chainID, data.ValsetUpdateId)
+
+	k.Logger(ctx).Debug("handled VSCMaturedPacket", "chainID", chainID, "vscid", data.ValsetUpdateId)
 }
 
 // CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
@@ -114,6 +117,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 		if chainID, ok := k.GetChannelToChain(ctx, packet.SourceChannel); ok {
 			// stop consumer chain and uses the LockUnbondingOnTimeout flag
 			// to decide whether the unbonding operations should be released
+			k.Logger(ctx).Error("error handling acknowledgement, stopping chain:", "chainID", chainID, "packet", packet) // TODO: the logger will stringify the packet right?
 			return k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID), false)
 		}
 		return sdkerrors.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
@@ -126,12 +130,14 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) error {
 	chainID, found := k.GetChannelToChain(ctx, packet.SourceChannel)
 	if !found {
+		k.Logger(ctx).Debug("packet timeout, unknown channel:", "channel", packet.SourceChannel)
 		// abort transaction
 		return sdkerrors.Wrap(
 			channeltypes.ErrInvalidChannelState,
 			packet.SourceChannel,
 		)
 	}
+	k.Logger(ctx).Info("packet timeout, stopping chain:", "chainID", chainID)
 	// stop consumer chain and uses the LockUnbondingOnTimeout flag
 	// to decide whether the unbonding operations should be released
 	return k.StopConsumerChain(ctx, chainID, k.GetLockUnbondingOnTimeout(ctx, chainID), false)
@@ -183,6 +189,7 @@ func (k Keeper) SendPacketsToChain(ctx sdk.Context, chainID, channelID string) {
 
 		if err != nil {
 			if clienttypes.ErrClientNotActive.Is(err) {
+				k.Logger(ctx).Debug("IBC client is expired, cannot send VSC, leaving packet data stored:", "chainID", chainID, "vscid", data.ValsetUpdateId)
 				// IBC client is expired!
 				// leave the packet data stored to be sent once the client is upgraded
 				// the client cannot expire during iteration (in the middle of a block)
@@ -263,12 +270,16 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		packet.Sequence, // IBC sequence number of the packet
 		data)
 
+	k.Logger(ctx).Debug("slash packet received and enqueued:", "chainID", chainID, "consumer cons addr", sdk.ConsAddress(data.Validator.Address), "vscid", data.ValsetUpdateId, "infractionType", data.Infraction)
+
 	// TODO: ack is always success for now, is this correct?
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
 
 // HandleSlashPacket potentially slashes, jails and/or tombstones a misbehaving validator according to infraction type
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) (success bool, err error) {
+
+	k.Logger(ctx).Debug("handling slash packet", "chainID", chainID, "consumer cons addr", sdk.ConsAddress(data.Validator.Address), "vscid", data.ValsetUpdateId, "infractionType", data.Infraction)
 
 	// map VSC ID to infraction height for the given chain ID
 	var infractionHeight uint64
@@ -281,6 +292,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// return error if we cannot find infraction height matching the validator update id
 	if !found {
+		k.Logger(ctx).Error("cannot find infraction height matching the validator update id", "chainID", chainID, "vscid", data.ValsetUpdateId)
 		return false, fmt.Errorf("cannot find infraction height matching the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
 	}
 
@@ -291,16 +303,25 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// get the validator
 	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr)
 
-	// make sure the validator is not yet unbonded;
-	// stakingKeeper.Slash() panics otherwise
-	if !found || validator.IsUnbonded() {
-		// TODO add warning log message
-		// fmt.Sprintf("consumer chain %s trying to slash unbonded validator %s", chainID, consAddr.String())
+	if !found {
+		// The provider or the consumer chain is faulty but it is impossible to tell which one.
+		// A slash should not be sent by a consumer for a validator that is not known on the provider.
+		k.Logger(ctx).Error("cannot find validator to slash, either the provider or the consumer chain is faulty", "chainID", chainID, "provider cons addr", providerAddr)
+		return false, nil
+	}
+
+	if validator.IsUnbonded() {
+		// The provider or the consumer chain is faulty but it is impossible to tell which one.
+		// A slash should not be sent by a consumer for a validator that is unbonded on the provider,
+		// because all unbonded validators should already have unbonded on the consumer chain and thus
+		// the consumer should not be able to reference them for slashing.
+		k.Logger(ctx).Error("the validator to be slashed is unbonded, either the provider or the consumer chain is faulty", "chainID", chainID, "provider cons addr", providerAddr)
 		return false, nil
 	}
 
 	// tombstoned validators should not be slashed multiple times
 	if k.slashingKeeper.IsTombstoned(ctx, providerAddr) {
+		k.Logger(ctx).Debug("validator is already tombstoned, skipping slash", "chainID", chainID, "provider cons addr", providerAddr)
 		return false, nil
 	}
 
@@ -325,6 +346,8 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		jailTime = evidencetypes.DoubleSignJailEndTime
 		k.slashingKeeper.Tombstone(ctx, providerAddr)
 	default:
+		// TODO: should we stop the consumer chain here?
+		k.Logger(ctx).Error("invalid infraction type", "infraction", data.Infraction)
 		return false, fmt.Errorf("invalid infraction type: %v", data.Infraction)
 	}
 
@@ -356,6 +379,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		),
 	)
 
+	k.Logger(ctx).Debug("validator slashed and jailed", "chainID", chainID, "provider cons addr", providerAddr, "infraction type", data.Infraction, "infraction height", infractionHeight)
 	return true, nil
 }
 
