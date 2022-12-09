@@ -6,7 +6,6 @@ import (
 	"time"
 
 	_go "github.com/confio/ics23/go"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
@@ -428,7 +428,8 @@ func TestStopConsumerChain(t *testing.T) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
 
 				providerKeeper.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
-					ctx.BlockTime(), "chainID", 1, ed25519.GenPrivKey().PubKey().Address()))
+					ctx.BlockTime(), "chainID", 1, cryptoutil.NewCryptoIdentityFromIntSeed(90).SDKConsAddress()))
+
 				providerKeeper.QueuePendingSlashPacketData(ctx, "chainID", 1, testkeeper.GetNewSlashPacketData())
 				providerKeeper.QueuePendingVSCMaturedPacketData(ctx, "chainID", 2, testkeeper.GetNewVSCMaturedPacketData())
 			},

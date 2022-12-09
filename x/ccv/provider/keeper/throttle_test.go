@@ -726,18 +726,19 @@ func TestDeletePendingSlashPacketEntriesForConsumer(t *testing.T) {
 	// Queue 2 global entries for a consumer chain ID
 	providerKeeper.QueuePendingSlashPacketEntry(ctx,
 		providertypes.NewSlashPacketEntry(time.Now().Add(time.Hour), "chain-78", 1,
-			ed25519.GenPrivKey().PubKey().Address()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(78).SDKConsAddress()))
 	providerKeeper.QueuePendingSlashPacketEntry(ctx,
 		providertypes.NewSlashPacketEntry(time.Now().Add(time.Hour), "chain-78", 2,
-			ed25519.GenPrivKey().PubKey().Address()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(79).SDKConsAddress()))
 
 	// Queue 1 global entry for two other consumer chain IDs
 	providerKeeper.QueuePendingSlashPacketEntry(ctx,
 		providertypes.NewSlashPacketEntry(time.Now().Add(2*time.Hour), "chain-79", 1,
-			ed25519.GenPrivKey().PubKey().Address()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(80).SDKConsAddress()))
+
 	providerKeeper.QueuePendingSlashPacketEntry(ctx,
 		providertypes.NewSlashPacketEntry(time.Now().Add(3*time.Hour), "chain-80", 1,
-			ed25519.GenPrivKey().PubKey().Address()))
+			cryptoutil.NewCryptoIdentityFromIntSeed(81).SDKConsAddress()))
 
 	// Delete entries for chain-78, confirm those are deleted, and the other two remain
 	providerKeeper.DeletePendingSlashPacketEntriesForConsumer(ctx, "chain-78")
