@@ -286,9 +286,9 @@ func TestSlashMeterReplenishment(t *testing.T) {
 	}
 }
 
-// TestSlashMeterAllowanceChanges tests the behavior of a full slash meter when the
-// allowance is changed from total voting power changing.
-func TestSlashMeterAllowanceChanges(t *testing.T) {
+// TestSlashMeterAllowanceChanges tests the behavior of a full slash meter
+// when total voting power becomes higher and lower.
+func TestTotalVotingPowerChanges(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()

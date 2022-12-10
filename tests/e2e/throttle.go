@@ -319,6 +319,8 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 }
 
 // TestSlashMeterAllowanceChanges tests scenarios where the slash meter allowance is expected to change.
+//
+// TODO: This should be a unit test, or replaced by TestTotalVotingPowerChanges.
 func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 	s.SetupAllCCVChannels()
 
@@ -338,7 +340,6 @@ func (s *CCVTestSuite) TestSlashMeterAllowanceChanges() {
 	params.SlashMeterReplenishFraction = "0.3"
 	providerKeeper.SetParams(s.providerCtx(), params)
 	s.Require().Equal(int64(1200), providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
-
 }
 
 // TestSlashSameValidator tests the edge case that that the total slashed validator power
