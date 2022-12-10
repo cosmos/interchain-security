@@ -191,7 +191,7 @@ func GenPubKey() (crypto.PubKey, error) {
 	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
 }
 
-// Obtains slash packet data with a newly generated key
+// Obtains slash packet data with a newly generated key, and randomized field values
 func GetNewSlashPacketData() ccvtypes.SlashPacketData {
 	b1 := make([]byte, 8)
 	_, _ = rand.Read(b1)

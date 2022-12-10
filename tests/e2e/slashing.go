@@ -259,7 +259,6 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 // TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an e2e testing setting
 func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
-	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
 	firstBundle := suite.getFirstBundle()
@@ -335,10 +334,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	ack := providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
 	suite.Require().True(ack.Success())
 
-	// jail an existing validator
 	val := suite.providerChain.Vals.Validators[0]
-	consAddr := sdk.ConsAddress(val.Address)
-	providerStakingKeeper.Jail(ctx, consAddr)
+
 	// commit block to set VSC ID
 	suite.coordinator.CommitBlock(suite.providerChain)
 	// Update suite.ctx bc CommitBlock updates only providerChain's current header block height
@@ -354,11 +351,6 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	slashingPkt.Validator.Address = val.Address
 	slashingPkt.ValsetUpdateId = vscID
 
-	// expect to slash and jail validator
-	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
-	suite.Require().True(ack.Success())
-	suite.Require().True(providerStakingKeeper.IsValidatorJailed(ctx, consAddr))
-
 	// expect error ack when infraction type in unspecified
 	tmAddr := suite.providerChain.Vals.Validators[1].Address
 	slashingPkt.Validator.Address = tmAddr
@@ -370,11 +362,16 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
 	suite.Require().False(errAck.Success())
 
-	// expect to slash and jail validator
+	// Expect nothing was queued
+	suite.Require().Equal(0, len(providerKeeper.GetAllPendingSlashPacketEntries(ctx)))
+	suite.Require().Equal(uint64(0), (providerKeeper.GetPendingPacketDataSize(ctx, consumerChainID)))
+
+	// expect to queue entries for the slash request
 	slashingPkt.Infraction = stakingtypes.DoubleSign
 	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
 	suite.Require().True(ack.Success())
-	suite.Require().True(providerStakingKeeper.IsValidatorJailed(ctx, sdk.ConsAddress(tmAddr)))
+	suite.Require().Equal(1, len(providerKeeper.GetAllPendingSlashPacketEntries(ctx)))
+	suite.Require().Equal(uint64(1), (providerKeeper.GetPendingPacketDataSize(ctx, consumerChainID)))
 }
 
 // TestHandleSlashPacketDistribution tests the slashing of an undelegation balance

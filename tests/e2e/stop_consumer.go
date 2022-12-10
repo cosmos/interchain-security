@@ -200,7 +200,7 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 
 	s.Require().Nil(providerKeeper.GetSlashAcks(s.providerCtx(), chainID))
 	s.Require().Zero(providerKeeper.GetInitChainHeight(s.providerCtx(), chainID))
-	s.Require().Nil(providerKeeper.GetPendingPackets(s.providerCtx(), chainID))
+	s.Require().Empty(providerKeeper.GetPendingPackets(s.providerCtx(), chainID))
 
 	// No remaining global entries for this consumer
 	allGlobalEntries := providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())

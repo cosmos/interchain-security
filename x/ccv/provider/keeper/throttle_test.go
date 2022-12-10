@@ -179,44 +179,6 @@ func TestHandlePacketDataForChain(t *testing.T) {
 	}
 }
 
-// TestHandlePacketDataForChainPanic tests that HandlePacketDataForChain panics when expected
-func TestHandlePacketDataForChainPanic(t *testing.T) {
-	testCases := []struct {
-		name        string
-		dataToQueue []interface{}
-	}{
-		// Panic for invalid persisted data is skipped, its not worth adding a keeper method to allow for invalid data
-		{
-			"panic when too many packets are queued",
-			[]interface{}{
-				// 6 packets is more than the max allowed set below
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewSlashPacketData(),
-				testkeeper.GetNewVSCMaturedPacketData(),
-			},
-		},
-	}
-	for _, tc := range testCases {
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-		defer ctrl.Finish()
-		params := providertypes.DefaultParams()
-		params.MaxPendingSlashPackets = 5
-		providerKeeper.SetParams(ctx, params)
-
-		for i, data := range tc.dataToQueue {
-			providerKeeper.QueuePendingPacketData(ctx, "chainID", uint64(i), data)
-		}
-
-		require.Panics(t, func() {
-			providerKeeper.HandlePacketDataForChain(ctx, "chainID",
-				providerKeeper.HandleSlashPacket, func(ctx sdktypes.Context, chainID string, data ccvtypes.VSCMaturedPacketData) {})
-		})
-	}
-}
-
 // TestSlashMeterReplenishment tests the CheckForSlashMeterReplenishment, ReplenishSlashMeter,
 // and InitializeSlashMeter methods.
 func TestSlashMeterReplenishment(t *testing.T) {

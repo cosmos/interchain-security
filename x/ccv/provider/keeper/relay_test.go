@@ -156,9 +156,16 @@ func TestOnRecvSlashPacket(t *testing.T) {
 	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
 	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
 
+	// Generate a new slash packet data instance with valid infraction type
+	packetData := testkeeper.GetNewSlashPacketData()
+	packetData.Infraction = stakingtypes.DoubleSign
+
+	// Set a block height for the valset update id in the generated packet data
+	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
+
 	// Receive a slash packet for chain-1 at time.Now()
 	ctx = ctx.WithBlockTime(time.Now())
-	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1)
+	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 
 	// Confirm an entry was added to the parent queue, and pending packet data was added to the per-chain queue
@@ -167,9 +174,16 @@ func TestOnRecvSlashPacket(t *testing.T) {
 	require.Equal(t, "chain-1", packetEntries[0].ConsumerChainID)
 	require.Equal(t, uint64(1), providerKeeper.GetPendingPacketDataSize(ctx, "chain-1")) // per chain queue
 
+	// Generate a new packet data instance with valid infraction type
+	packetData = testkeeper.GetNewSlashPacketData()
+	packetData.Infraction = stakingtypes.Downtime
+
+	// Set a block height for the valset update id in the generated packet data
+	providerKeeper.SetValsetUpdateBlockHeight(ctx, packetData.ValsetUpdateId, uint64(15))
+
 	// Receive a slash packet for chain-2 at time.Now(Add(1 *time.Hour))
 	ctx = ctx.WithBlockTime(time.Now().Add(1 * time.Hour))
-	ack = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2)
+	ack = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2, packetData)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 
 	// Confirm sizes of parent queue and both per-chain queues
@@ -197,17 +211,16 @@ func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, 
 }
 
 func executeOnRecvSlashPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
-	channelID string, ibcSeqNum uint64) exported.Acknowledgement {
+	channelID string, ibcSeqNum uint64, packetData ccv.SlashPacketData) exported.Acknowledgement {
 
 	// Instantiate slash packet data and bytes
-	data := testkeeper.GetNewSlashPacketData()
-	dataBz, err := data.Marshal()
+	dataBz, err := packetData.Marshal()
 	require.NoError(t, err)
 
 	return providerKeeper.OnRecvSlashPacket(
 		ctx,
 		channeltypes.NewPacket(dataBz, ibcSeqNum, "srcPort", "srcChan", "provider-port", channelID, clienttypes.Height{}, 1),
-		data,
+		packetData,
 	)
 }
 
