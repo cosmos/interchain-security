@@ -222,39 +222,6 @@ func TestChainIdAndConsAddrAndParse(t *testing.T) {
 		expectedLen := 1 + 8 + len(test.chainID) + len(test.addr)
 		require.Equal(t, expectedLen, len(key))
 		parsedID, parsedConsAddr, err := types.ParseChainIdAndConsAddrKey(test.prefix, key)
-		parsedID, parsedVscID, err := types.ParseChainIdAndVscIdKey(test.prefix, key)
-		require.Equal(t, test.chainID, parsedID)
-		require.Equal(t, test.addr, parsedConsAddr)
-		require.NoError(t, err)
-	}
-}
-
-// Tests the construction and parsing of ChainIdAndConsAddr keys
-func TestChainIdAndConsAddrAndParse(t *testing.T) {
-	pubKey1, err := testkeeper.GenPubKey()
-	require.NoError(t, err)
-	pubKey2, err := testkeeper.GenPubKey()
-	require.NoError(t, err)
-	pubKey3, err := testkeeper.GenPubKey()
-	require.NoError(t, err)
-
-	tests := []struct {
-		prefix  byte
-		chainID string
-		addr    sdk.ConsAddress
-	}{
-		{prefix: 0x01, chainID: "1", addr: sdk.ConsAddress(pubKey1.Address())},
-		{prefix: 0x02, chainID: "some other ID", addr: sdk.ConsAddress(pubKey2.Address())},
-		{prefix: 0x03, chainID: "some other other chain ID", addr: sdk.ConsAddress(pubKey3.Address())},
-	}
-
-	for _, test := range tests {
-		key := types.ChainIdAndConsAddrKey(test.prefix, test.chainID, test.addr)
-		require.NotEmpty(t, key)
-		// Expected bytes = prefix + chainID length + chainID + consAddr bytes
-		expectedLen := 1 + 8 + len(test.chainID) + len(test.addr)
-		require.Equal(t, expectedLen, len(key))
-		parsedID, parsedConsAddr, err := types.ParseChainIdAndConsAddrKey(test.prefix, key)
 		require.Equal(t, test.chainID, parsedID)
 		require.Equal(t, test.addr, parsedConsAddr)
 		require.NoError(t, err)

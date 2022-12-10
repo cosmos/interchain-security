@@ -2,7 +2,6 @@ package types
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"time"
@@ -274,7 +273,7 @@ func KeyAssignmentReplacementsKey(chainID string, addr sdk.ConsAddress) []byte {
 // ConsumerAddrsToPruneKey returns the key under which the
 // mapping from VSC ids to consumer validators addresses is stored
 func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndVscIdKey(ConsumerAddrsToPruneBytePrefix, chainID, vscID)
+	return ChainIdAndUintIdKey(ConsumerAddrsToPruneBytePrefix, chainID, vscID)
 }
 
 // PendingPacketDataSizeKey returns the key storing the size of the pending packet data queue for a given chain ID
@@ -328,30 +327,6 @@ func ParsePendingSlashPacketEntryKey(bz []byte) (
 	chainID := string(bz[9+timeBzL+8:])
 
 	return recvTime, chainID, ibcSeqNum
-}
-
-// ConsumerValidatorsKey returns the key under which the
-// validator assigned keys for every consumer chain are stored
-func ConsumerValidatorsKey(chainID string, addr sdk.ConsAddress) []byte {
-	return ChainIdAndConsAddrKey(ConsumerValidatorsBytePrefix, chainID, addr)
-}
-
-// ValidatorsByConsumerAddrKey returns the key under which the mapping from validator addresses
-// on consumer chains to validator addresses on the provider chain is stored
-func ValidatorsByConsumerAddrKey(chainID string, addr sdk.ConsAddress) []byte {
-	return ChainIdAndConsAddrKey(ValidatorsByConsumerAddrBytePrefix, chainID, addr)
-}
-
-// KeyAssignmentReplacementsKey returns the key under which the
-// key assignments that need to be replaced in the current block are stored
-func KeyAssignmentReplacementsKey(chainID string, addr sdk.ConsAddress) []byte {
-	return ChainIdAndConsAddrKey(KeyAssignmentReplacementsBytePrefix, chainID, addr)
-}
-
-// ConsumerAddrsToPruneKey returns the key under which the
-// mapping from VSC ids to consumer validators addresses is stored
-func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
-	return ChainIdAndUintIdKey(ConsumerAddrsToPruneBytePrefix, chainID, vscID)
 }
 
 // AppendMany appends a variable number of byte slices together
@@ -464,31 +439,6 @@ func ParseChainIdAndUintIdKey(prefix byte, bz []byte) (string, uint64, error) {
 	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
 	uintID := sdk.BigEndianToUint64(bz[prefixL+8+int(chainIdL):])
 	return chainID, uintID, nil
-}
-
-// ChainIdAndConsAddrKey returns the key with the following format:
-// bytePrefix | len(chainID) | chainID | ConsAddress
-func ChainIdAndConsAddrKey(prefix byte, chainID string, addr sdk.ConsAddress) []byte {
-	partialKey := ChainIdWithLenKey(prefix, chainID)
-	return AppendMany(
-		// Append the partialKey
-		partialKey,
-		// Append the addr bytes
-		addr,
-	)
-}
-
-// ParseChainIdAndConsAddrKey returns the chain ID and ConsAddress for a ChainIdAndConsAddrKey key
-func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress, error) {
-	expectedPrefix := []byte{prefix}
-	prefixL := len(expectedPrefix)
-	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
-		return "", nil, fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
-	}
-	chainIdL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
-	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
-	addr := bz[prefixL+8+int(chainIdL):]
-	return chainID, addr, nil
 }
 
 // ChainIdAndConsAddrKey returns the key with the following format:

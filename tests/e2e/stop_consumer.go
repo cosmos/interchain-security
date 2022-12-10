@@ -75,8 +75,8 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 		},
 		{
 			func(suite *CCVTestSuite) error {
-				providerKeeper.SetSlashAcks(s.providerCtx(), consumerChainID, []string{"validator-1", "validator-2", "validator-3"})
-				providerKeeper.AppendPendingPackets(s.providerCtx(), consumerChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
+				providerKeeper.SetSlashAcks(s.providerCtx(), firstBundle.Chain.ChainID, []string{"validator-1", "validator-2", "validator-3"})
+				providerKeeper.AppendPendingPackets(s.providerCtx(), firstBundle.Chain.ChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
 				return nil
 			},
 		},
@@ -112,11 +112,11 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	}
 
 	// stop the consumer chain
-	err = providerKeeper.StopConsumerChain(s.providerCtx(), firstBundle.Chain.ChainID, false, true)
+	err = providerKeeper.StopConsumerChain(s.providerCtx(), firstBundle.Chain.ChainID, true)
 	s.Require().NoError(err)
 
 	// check all states are removed and the unbonding operation released
-	s.checkConsumerChainIsRemoved(firstBundle.Chain.ChainID, false, true)
+	s.checkConsumerChainIsRemoved(firstBundle.Chain.ChainID, true)
 
 	// check entries related to second consumer chain are not removed
 	s.Require().Len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx()), 1)

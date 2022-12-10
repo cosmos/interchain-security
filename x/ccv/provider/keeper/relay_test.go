@@ -13,9 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"

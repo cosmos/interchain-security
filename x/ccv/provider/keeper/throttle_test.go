@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -129,9 +128,8 @@ func TestHandlePacketDataForChain(t *testing.T) {
 
 		// Define our handler callbacks to simply store the data instances that are handled
 		handledData := []interface{}{}
-		slashHandleCounter := func(ctx sdktypes.Context, chainID string, data ccvtypes.SlashPacketData) (bool, error) {
+		slashHandleCounter := func(ctx sdktypes.Context, chainID string, data ccvtypes.SlashPacketData) {
 			handledData = append(handledData, data)
-			return true, nil
 		}
 		vscMaturedHandleCounter := func(ctx sdktypes.Context, chainID string, data ccvtypes.VSCMaturedPacketData) {
 			handledData = append(handledData, data)
@@ -184,21 +182,10 @@ func TestHandlePacketDataForChain(t *testing.T) {
 // TestHandlePacketDataForChainPanic tests that HandlePacketDataForChain panics when expected
 func TestHandlePacketDataForChainPanic(t *testing.T) {
 	testCases := []struct {
-		name         string
-		dataToQueue  []interface{}
-		slashHandler func(ctx sdktypes.Context, chainID string, data ccvtypes.SlashPacketData) (bool, error)
+		name        string
+		dataToQueue []interface{}
 	}{
 		// Panic for invalid persisted data is skipped, its not worth adding a keeper method to allow for invalid data
-		{
-			"panic when slash handler returns error",
-			[]interface{}{
-				testkeeper.GetNewSlashPacketData(),
-			},
-			func(ctx sdktypes.Context, chainID string,
-				data ccvtypes.SlashPacketData) (bool, error) {
-				return false, errors.New("error")
-			},
-		},
 		{
 			"panic when too many packets are queued",
 			[]interface{}{
@@ -209,10 +196,6 @@ func TestHandlePacketDataForChainPanic(t *testing.T) {
 				testkeeper.GetNewSlashPacketData(),
 				testkeeper.GetNewSlashPacketData(),
 				testkeeper.GetNewVSCMaturedPacketData(),
-			},
-			func(ctx sdktypes.Context, chainID string,
-				data ccvtypes.SlashPacketData) (bool, error) {
-				return false, errors.New("error")
 			},
 		},
 	}
@@ -228,7 +211,8 @@ func TestHandlePacketDataForChainPanic(t *testing.T) {
 		}
 
 		require.Panics(t, func() {
-			providerKeeper.HandlePacketDataForChain(ctx, "chainID", tc.slashHandler, func(ctx sdktypes.Context, chainID string, data ccvtypes.VSCMaturedPacketData) {})
+			providerKeeper.HandlePacketDataForChain(ctx, "chainID",
+				providerKeeper.HandleSlashPacket, func(ctx sdktypes.Context, chainID string, data ccvtypes.VSCMaturedPacketData) {})
 		})
 	}
 }

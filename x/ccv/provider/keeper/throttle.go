@@ -70,7 +70,7 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 //
 // Note: Any packet data which is handled in this method is also deleted from the (consumer chain specific) queue.
 func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID string,
-	slashPacketHandler func(sdktypes.Context, string, ccvtypes.SlashPacketData) (bool, error),
+	slashPacketHandler func(sdktypes.Context, string, ccvtypes.SlashPacketData),
 	vscMaturedPacketHandler func(sdktypes.Context, string, ccvtypes.VSCMaturedPacketData),
 ) {
 
@@ -89,10 +89,7 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 				return stop
 			} else {
 				// Handle slash packet and set flag to true
-				_, err := slashPacketHandler(ctx, consumerChainID, data)
-				if err != nil {
-					panic(fmt.Sprintf("failed to handle slash packet: %s", err))
-				}
+				slashPacketHandler(ctx, consumerChainID, data)
 				slashPacketHandled = true
 			}
 		case ccvtypes.VSCMaturedPacketData:
