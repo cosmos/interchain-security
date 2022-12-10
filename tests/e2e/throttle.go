@@ -132,7 +132,6 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 
 	// Setup test
-	s.SetupTest()
 	s.SetupAllCCVChannels()
 	s.setupValidatorPowers()
 
@@ -259,6 +258,82 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 
 	// All global queue entries are gone too
 	s.Require().Empty(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx()))
+}
+
+// TestPacketSpamAndQueueOrdering validates that the ordering of slash packet entries
+// in the global queue (relevant to a single chain) matches the ordering of slash packet
+// data in the chain specific queues, even in the presence of packet spam.
+//
+// Note: The global queue is ordered by: time, then IBC sequence number, see PendingSlashPacketEntryKey.
+// The chain specific queue is ordered by: IBC sequence number, see PendingSlashPacketDataKey.
+//
+// TODO: Also Q up some VSC matured packets and confirm they are handled in the correct order.
+func (s *CCVTestSuite) TestPacketSpamAndQueueOrdering() {
+
+	// Setup ccv channels to all consumers
+	s.SetupAllCCVChannels()
+
+	// Setup validator powers to be 25%, 25%, 25%, 25%
+	s.setupValidatorPowers()
+
+	// Keep default params, initialize slash meter
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	providerKeeper.InitializeSlashMeter(s.providerCtx())
+
+	// The packets to be recv in a single block, ordered as they will be recv.
+	packets := []channeltypes.Packet{}
+
+	// Track and increment ibc seq num for each packet, since these need to be unique.
+	ibcSeqNum := uint64(1)
+
+	firstBundle := s.getFirstBundle()
+
+	// Slash first 3 but not 4th validator
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[1])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
+
+	for i := 0; i < 500; i++ {
+		// Set infraction type based on even/odd index.
+		var infractionType stakingtypes.InfractionType
+		if i%2 == 0 {
+			infractionType = stakingtypes.Downtime
+		} else {
+			infractionType = stakingtypes.DoubleSign
+		}
+		valToJail := s.providerChain.Vals.Validators[i%3]
+		packets = append(packets, s.constructSlashPacketFromConsumer(
+			firstBundle, *valToJail, infractionType, ibcSeqNum))
+		ibcSeqNum++
+	}
+
+	// Send 500 slash packets from consumer to provider in same block,
+	for _, packet := range packets {
+		slashPacketData := ccvtypes.SlashPacketData{}
+		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &slashPacketData)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, slashPacketData)
+	}
+
+	// Confirm that global queue has 500 packet entries
+	allGlobalEntries := providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())
+	s.Require().Equal(500, len(allGlobalEntries))
+
+	// Confirm that the chain specific queue has 500 slash packet data
+	slashPacketData, _ := providerKeeper.GetAllPendingPacketData(
+		s.providerCtx(), firstBundle.Chain.ChainID)
+	s.Require().Equal(500, len(slashPacketData))
+
+	// Confirm order between the two queues match, determined by IBC sequence number.
+	for idx, globalEntry := range allGlobalEntries {
+		// get provider val cons addr from chain specific queue
+		providerConsAddr := providerKeeper.GetProviderAddrFromConsumerAddr(
+			s.providerCtx(), globalEntry.ConsumerChainID, slashPacketData[idx].Validator.Address)
+		// compare this to global queue entry
+		s.Require().Equal(globalEntry.ProviderValConsAddr, providerConsAddr)
+	}
+
+	// TODO: Can queue up more at a new block time, and confirm ordering is still correct.
+
 }
 
 // TestSlashingSmallValidators tests that multiple slash packets from validators with small

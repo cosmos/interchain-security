@@ -271,7 +271,6 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		packet.Sequence, // IBC sequence number of the packet
 		data)
 
-	// TODO: ack is always success for now, is this correct?
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
 

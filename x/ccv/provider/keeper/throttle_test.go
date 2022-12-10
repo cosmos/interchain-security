@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -567,96 +566,95 @@ func TestPendingSlashPacketEntries(t *testing.T) {
 	entries := providerKeeper.GetAllPendingSlashPacketEntries(ctx)
 	require.Equal(t, 0, len(entries))
 
-	// Queue 3 entries for chainIDs 0, 1, 2
-	for i := 0; i < 3; i++ {
-		entry := providertypes.NewSlashPacketEntry(now.Local(),
-			fmt.Sprintf("chain-%d", i),
-			8, // all with seq = 8
-			cryptoutil.NewCryptoIdentityFromIntSeed(i).SDKConsAddress())
-		providerKeeper.QueuePendingSlashPacketEntry(ctx, entry)
-	}
+	// Queue 3 entries for chainIDs 0, 1, 2, note their respective ibc seq nums are
+	// ordered differently than the chainIDs would be iterated.
+	providerKeeper.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
+		now.Local(), "chain-0", 15, cryptoutil.NewCryptoIdentityFromIntSeed(10).SDKConsAddress()))
+	providerKeeper.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
+		now.Local(), "chain-1", 10, cryptoutil.NewCryptoIdentityFromIntSeed(11).SDKConsAddress()))
+	providerKeeper.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
+		now.Local(), "chain-2", 5, cryptoutil.NewCryptoIdentityFromIntSeed(12).SDKConsAddress()))
+
 	entries = providerKeeper.GetAllPendingSlashPacketEntries(ctx)
 	require.Equal(t, 3, len(entries))
 
-	// Queue 3 entries for chainIDs 0, 1, 2 an hour later
-	for i := 0; i < 3; i++ {
-		entry := providertypes.NewSlashPacketEntry(now.Add(time.Hour).Local(),
-			fmt.Sprintf("chain-%d", i),
-			9, // all with seq = 9
-			cryptoutil.NewCryptoIdentityFromIntSeed(i).SDKConsAddress())
-		providerKeeper.QueuePendingSlashPacketEntry(ctx, entry)
-	}
+	// Queue 3 entries for chainIDs 0, 1, 2 an hour later, with incremented ibc seq nums
+	providerKeeper.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
+		now.Add(time.Hour).Local(), "chain-0", 16, // should appear last for this recv time
+		cryptoutil.NewCryptoIdentityFromIntSeed(20).SDKConsAddress()))
+	providerKeeper.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
+		now.Add(time.Hour).Local(), "chain-1", 11, // should appear middle for this recv time
+		cryptoutil.NewCryptoIdentityFromIntSeed(21).SDKConsAddress()))
+	providerKeeper.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
+		now.Add(time.Hour).Local(), "chain-2", 6, // should appear first for this recv time
+		cryptoutil.NewCryptoIdentityFromIntSeed(22).SDKConsAddress()))
 
 	// Retrieve entries from store
 	entries = providerKeeper.GetAllPendingSlashPacketEntries(ctx)
 	require.Equal(t, 6, len(entries))
 
-	// Assert that entries are obtained in FIFO order according to block time
-	firstChainIdSet := []string{entries[0].ConsumerChainID, entries[1].ConsumerChainID, entries[2].ConsumerChainID}
-	require.True(t, slices.Contains(firstChainIdSet, "chain-0"))
-	require.True(t, slices.Contains(firstChainIdSet, "chain-1"))
-	require.True(t, slices.Contains(firstChainIdSet, "chain-2"))
-	secondChainIdSet := []string{entries[3].ConsumerChainID, entries[4].ConsumerChainID, entries[5].ConsumerChainID}
-	require.True(t, slices.Contains(secondChainIdSet, "chain-0"))
-	require.True(t, slices.Contains(secondChainIdSet, "chain-1"))
-	require.True(t, slices.Contains(secondChainIdSet, "chain-2"))
+	// Assert that entries are obtained in FIFO order according to block time, then ibc seq num
+	require.Equal(t, "chain-2", entries[0].ConsumerChainID)
+	require.Equal(t, "chain-1", entries[1].ConsumerChainID)
+	require.Equal(t, "chain-0", entries[2].ConsumerChainID)
+	require.Equal(t, "chain-2", entries[3].ConsumerChainID)
+	require.Equal(t, "chain-1", entries[4].ConsumerChainID)
+	require.Equal(t, "chain-0", entries[5].ConsumerChainID)
 
 	// Queue 3 entries for chainIDs 5, 6, 7 another hour later
-	for i := 0; i < 3; i++ {
-		entry := providertypes.NewSlashPacketEntry(now.Add(2*time.Hour).Local(),
-			fmt.Sprintf("chain-%d", i+5),
-			7697, // all with seq = 7697
-			cryptoutil.NewCryptoIdentityFromIntSeed(i).SDKConsAddress())
-		providerKeeper.QueuePendingSlashPacketEntry(ctx, entry)
-	}
+	providerKeeper.QueuePendingSlashPacketEntry(ctx,
+		providertypes.NewSlashPacketEntry(now.Add(2*time.Hour).Local(), "chain-5", 50, // should appear middle for this recv time
+			cryptoutil.NewCryptoIdentityFromIntSeed(96).SDKConsAddress()))
+	providerKeeper.QueuePendingSlashPacketEntry(ctx,
+		providertypes.NewSlashPacketEntry(now.Add(2*time.Hour).Local(), "chain-6", 60, // should appear last for this recv time
+			cryptoutil.NewCryptoIdentityFromIntSeed(97).SDKConsAddress()))
+	providerKeeper.QueuePendingSlashPacketEntry(ctx,
+		providertypes.NewSlashPacketEntry(now.Add(2*time.Hour).Local(), "chain-7", 40, // should appear first for this recv time
+			cryptoutil.NewCryptoIdentityFromIntSeed(98).SDKConsAddress()))
 
 	// Retrieve entries from store
 	entries = providerKeeper.GetAllPendingSlashPacketEntries(ctx)
 	require.Equal(t, 9, len(entries))
 
-	// Assert that entries are obtained in FIFO order according to block time
-	firstChainIdSet = []string{entries[0].ConsumerChainID, entries[1].ConsumerChainID, entries[2].ConsumerChainID}
-	require.True(t, slices.Contains(firstChainIdSet, "chain-0"))
-	require.True(t, slices.Contains(firstChainIdSet, "chain-1"))
-	require.True(t, slices.Contains(firstChainIdSet, "chain-2"))
-	secondChainIdSet = []string{entries[3].ConsumerChainID, entries[4].ConsumerChainID, entries[5].ConsumerChainID}
-	require.True(t, slices.Contains(secondChainIdSet, "chain-0"))
-	require.True(t, slices.Contains(secondChainIdSet, "chain-1"))
-	require.True(t, slices.Contains(secondChainIdSet, "chain-2"))
-	thirdChainIdSet := []string{entries[6].ConsumerChainID, entries[7].ConsumerChainID, entries[8].ConsumerChainID}
-	require.True(t, slices.Contains(thirdChainIdSet, "chain-5"))
-	require.True(t, slices.Contains(thirdChainIdSet, "chain-6"))
-	require.True(t, slices.Contains(thirdChainIdSet, "chain-7"))
+	// Assert that entries are obtained in FIFO order according to block time, then ibc seq num
+	require.Equal(t, "chain-2", entries[0].ConsumerChainID)
+	require.Equal(t, "chain-1", entries[1].ConsumerChainID)
+	require.Equal(t, "chain-0", entries[2].ConsumerChainID)
+	require.Equal(t, "chain-2", entries[3].ConsumerChainID)
+	require.Equal(t, "chain-1", entries[4].ConsumerChainID)
+	require.Equal(t, "chain-0", entries[5].ConsumerChainID)
+	require.Equal(t, "chain-7", entries[6].ConsumerChainID)
+	require.Equal(t, "chain-5", entries[7].ConsumerChainID)
+	require.Equal(t, "chain-6", entries[8].ConsumerChainID)
 
 	// Assert each field is as expected for all 9 entries
-	for idx, entry := range entries {
-		switch idx {
-		case 0, 1, 2:
-			require.Equal(t, now, entry.RecvTime)
-			require.Equal(t, fmt.Sprintf("chain-%d", idx), entry.ConsumerChainID)
-			require.Equal(t, uint64(8), entry.IbcSeqNum)
-			require.NotEmpty(t, entry.ProviderValConsAddr)
-		case 3, 4, 5:
-			require.Equal(t, now.Add(time.Hour), entry.RecvTime)
-			require.Equal(t, fmt.Sprintf("chain-%d", idx-3), entry.ConsumerChainID)
-			require.Equal(t, uint64(9), entry.IbcSeqNum)
-			require.NotEmpty(t, entry.ProviderValConsAddr)
-		case 6, 7, 8:
-			require.Equal(t, now.Add(2*time.Hour), entry.RecvTime)
-			require.Equal(t, fmt.Sprintf("chain-%d", idx-6+5), entry.ConsumerChainID)
-			require.Equal(t, uint64(7697), entry.IbcSeqNum)
-			require.NotEmpty(t, entry.ProviderValConsAddr)
-		default:
-			t.Fatalf("unexpected entry index %d", idx)
-		}
-	}
+	require.Equal(t, uint64(5), entries[0].IbcSeqNum)
+	require.Equal(t, uint64(10), entries[1].IbcSeqNum)
+	require.Equal(t, uint64(15), entries[2].IbcSeqNum)
+	require.Equal(t, uint64(6), entries[3].IbcSeqNum)
+	require.Equal(t, uint64(11), entries[4].IbcSeqNum)
+	require.Equal(t, uint64(16), entries[5].IbcSeqNum)
+	require.Equal(t, uint64(40), entries[6].IbcSeqNum)
+	require.Equal(t, uint64(50), entries[7].IbcSeqNum)
+	require.Equal(t, uint64(60), entries[8].IbcSeqNum)
+
+	require.Equal(t, now, entries[0].RecvTime)
+	require.Equal(t, now, entries[1].RecvTime)
+	require.Equal(t, now, entries[2].RecvTime)
+	require.Equal(t, now.Add(time.Hour).UTC(), entries[3].RecvTime)
+	require.Equal(t, now.Add(time.Hour).UTC(), entries[4].RecvTime)
+	require.Equal(t, now.Add(time.Hour).UTC(), entries[5].RecvTime)
+	require.Equal(t, now.Add(2*time.Hour).UTC(), entries[6].RecvTime)
+	require.Equal(t, now.Add(2*time.Hour).UTC(), entries[7].RecvTime)
+	require.Equal(t, now.Add(2*time.Hour).UTC(), entries[8].RecvTime)
 
 	// Test the callback break functionality of the iterator
 	entries = []providertypes.SlashPacketEntry{}
 	providerKeeper.IteratePendingSlashPacketEntries(ctx, func(entry providertypes.SlashPacketEntry) bool {
 		entries = append(entries, entry)
-		// Break after any of the third set of entry is seen
-		return slices.Contains(thirdChainIdSet, entry.ConsumerChainID)
+		// Break after any of the third set of entries is seen
+		stop := entry.ConsumerChainID == "chain-7" || entry.ConsumerChainID == "chain-6" || entry.ConsumerChainID == "chain-5"
+		return stop
 	})
 	// Expect first two sets of entries to be seen, and one packet from the third set
 	require.Equal(t, 7, len(entries))
