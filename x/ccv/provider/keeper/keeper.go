@@ -1,9 +1,7 @@
 package keeper
 
 import (
-	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -303,14 +301,13 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 }
 
 // Save UnbondingOp by unique ID
-func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp ccv.UnbondingOp) error {
+func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp ccv.UnbondingOp) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := unbondingOp.Marshal()
 	if err != nil {
-		return err
+		panic(fmt.Errorf("unbonding op could not be marshaled: %w", err))
 	}
 	store.Set(types.UnbondingOpKey(unbondingOp.Id), bz)
-	return nil
 }
 
 // Get UnbondingOp by unique ID
@@ -450,13 +447,13 @@ func (k Keeper) GetMaturedUnbondingOps(ctx sdk.Context) (ids []uint64, err error
 }
 
 // AppendMaturedUnbondingOps adds a list of ids to the list of matured unbonding operation ids
-func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) error {
+func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) {
 	if len(ids) == 0 {
-		return nil
+		return
 	}
 	existingIds, err := k.GetMaturedUnbondingOps(ctx)
 	if err != nil {
-		return err
+		panic(fmt.Sprintf("failed to get matured unbonding operations: %s", err))
 	}
 
 	maturedOps := ccv.MaturedUnbondingOps{
@@ -466,10 +463,9 @@ func (k Keeper) AppendMaturedUnbondingOps(ctx sdk.Context, ids []uint64) error {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := maturedOps.Marshal()
 	if err != nil {
-		return err
+		panic(fmt.Sprintf("failed to marshal matured unbonding operations: %s", err))
 	}
 	store.Set(types.MaturedUnbondingOpsKey(), bz)
-	return nil
 }
 
 // ConsumeMaturedUnbondingOps empties and returns list of matured unbonding operation ids (if it exists)
@@ -517,17 +513,8 @@ func (k Keeper) chanCloseInit(ctx sdk.Context, channelID string) error {
 }
 
 func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-
-	// Unmarshal and increment
 	validatorSetUpdateId := k.GetValidatorSetUpdateId(ctx)
-	validatorSetUpdateId = validatorSetUpdateId + 1
-
-	// Convert back into bytes for storage
-	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, validatorSetUpdateId)
-
-	store.Set(types.ValidatorSetUpdateIdKey(), bz)
+	k.SetValidatorSetUpdateId(ctx, validatorSetUpdateId+1)
 }
 
 func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, valUpdateID uint64) {
@@ -695,80 +682,37 @@ func (k Keeper) DeleteInitChainHeight(ctx sdk.Context, chainID string) {
 
 // GetPendingPackets returns the list of pending ValidatorSetChange packets stored under chain ID
 func (k Keeper) GetPendingPackets(ctx sdk.Context, chainID string) []ccv.ValidatorSetChangePacketData {
-	var packets []ccv.ValidatorSetChangePacketData
+	var packets ccv.ValidatorSetChangePackets
 
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingVSCsKey(chainID))
 	if bz == nil {
-		return packets
+		return []ccv.ValidatorSetChangePacketData{}
 	}
-	buf := bytes.NewBuffer(bz)
-
-	var data [][]byte
-	if err := json.NewDecoder(buf).Decode(&data); err != nil {
-		panic(fmt.Errorf("pending validator set changes could not be decoded: %w", err))
+	if err := packets.Unmarshal(bz); err != nil {
+		panic(fmt.Errorf("cannot unmarshal pending validator set changes: %w", err))
 	}
-
-	for _, pdata := range data {
-		var p ccv.ValidatorSetChangePacketData
-		err := p.Unmarshal(pdata)
-		if err != nil {
-			panic("failed to unmarshal ValidatorSetChange packet data")
-		}
-		packets = append(packets, p)
-	}
-
-	return packets
+	return packets.GetList()
 }
 
 // AppendPendingPackets adds the given ValidatorSetChange packet to the list
 // of pending ValidatorSetChange packets stored under chain ID
 func (k Keeper) AppendPendingPackets(ctx sdk.Context, chainID string, newPackets ...ccv.ValidatorSetChangePacketData) {
-	packets := append(
-		k.GetPendingPackets(ctx, chainID),
-		newPackets...)
+	pds := append(k.GetPendingPackets(ctx, chainID), newPackets...)
 
 	store := ctx.KVStore(k.storeKey)
-	var data [][]byte
-	for _, p := range packets {
-		pdata, err := p.Marshal()
-		if err != nil {
-			panic("failed to marshal ValidatorSetChange packet data")
-		}
-		data = append(data, pdata)
-	}
-	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(data)
+	packets := ccv.ValidatorSetChangePackets{List: pds}
+	buf, err := packets.Marshal()
 	if err != nil {
-		panic("failed to encode json")
+		panic(fmt.Errorf("cannot marshal pending validator set changes: %w", err))
 	}
-	store.Set(types.PendingVSCsKey(chainID), buf.Bytes())
+	store.Set(types.PendingVSCsKey(chainID), buf)
 }
 
 // DeletePendingPackets deletes the list of pending ValidatorSetChange packets for chain ID
 func (k Keeper) DeletePendingPackets(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.PendingVSCsKey(chainID))
-}
-
-// GetLockUnbondingOnTimeout returns the mapping from the given consumer chain ID to a boolean value indicating whether
-// the unbonding operation funds should be locked on CCV channel timeout
-func (k Keeper) GetLockUnbondingOnTimeout(ctx sdk.Context, chainID string) bool {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.LockUnbondingOnTimeoutKey(chainID))
-	return bz != nil
-}
-
-// SetLockUnbondingOnTimeout locks the unbonding operation funds in case of a CCV channel timeouts for the given consumer chain ID
-func (k Keeper) SetLockUnbondingOnTimeout(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.LockUnbondingOnTimeoutKey(chainID), []byte{})
-}
-
-// DeleteLockUnbondingOnTimeout deletes the unbonding operation lock in case of a CCV channel timeouts for the given consumer chain ID
-func (k Keeper) DeleteLockUnbondingOnTimeout(ctx sdk.Context, chainID string) {
-	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.LockUnbondingOnTimeoutKey(chainID))
 }
 
 // SetConsumerClientId sets the client ID for the given chain ID
@@ -818,7 +762,8 @@ func (k Keeper) DeleteInitTimeoutTimestamp(ctx sdk.Context, chainID string) {
 	store.Delete(types.InitTimeoutTimestampKey(chainID))
 }
 
-// IterateInitTimeoutTimestamp iterates through the init timeout timestamps in the store
+// IterateInitTimeoutTimestamp iterates through the init timeout timestamps in the store.
+// Note: as the keys have the `bytePrefix | chainID` format, the iteration is NOT done in timestamp order.
 func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID string, ts uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.InitTimeoutTimestampBytePrefix})

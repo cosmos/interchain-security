@@ -44,12 +44,11 @@ func TestInitAndExportGenesis(t *testing.T) {
 				expClientID,
 				"channel",
 				initHeight,
-				true,
 				*consumertypes.DefaultGenesisState(),
 				[]providertypes.UnbondingOpIndex{
 					{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex},
 				},
-				nil,
+				[]ccv.ValidatorSetChangePacketData{},
 				[]string{"slashedValidatorConsAddress"},
 			),
 			providertypes.NewConsumerStates(
@@ -57,7 +56,6 @@ func TestInitAndExportGenesis(t *testing.T) {
 				expClientID,
 				"",
 				0,
-				false,
 				*consumertypes.DefaultGenesisState(),
 				nil,
 				[]ccv.ValidatorSetChangePacketData{{ValsetUpdateId: vscID}},
@@ -96,7 +94,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 			{
 				ChainId:       cChainIDs[0],
 				VscId:         vscID,
-				ConsumerAddrs: [][]byte{consAddr},
+				ConsumerAddrs: &providertypes.AddressList{Addresses: [][]byte{consAddr}},
 			},
 		},
 	)
@@ -157,7 +155,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 	require.Equal(t, provAddr, providerAddr)
 
 	addrs := pk.GetConsumerAddrsToPrune(ctx, cChainIDs[0], vscID)
-	require.Equal(t, [][]byte{consAddr}, addrs)
+	require.Equal(t, [][]byte{consAddr}, addrs.Addresses)
 
 	// check provider chain's consumer chain states
 	assertConsumerChainStates(ctx, t, pk, provGenesis.ConsumerStates...)
@@ -188,8 +186,6 @@ func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, 
 			_, found = pk.GetInitChainHeight(ctx, chainID)
 			require.True(t, found)
 		}
-
-		require.Equal(t, cs.LockUnbondingOnTimeout, pk.GetLockUnbondingOnTimeout(ctx, chainID))
 
 		if expVSC := cs.GetPendingValsetChanges(); expVSC != nil {
 			gotVSC := pk.GetPendingPackets(ctx, chainID)

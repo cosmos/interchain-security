@@ -48,12 +48,7 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 		h.k.SetUnbondingOpIndex(ctx, consumerChainID, valsetUpdateID, index)
 	}
 
-	// Set unbondingOp
-	if err := h.k.SetUnbondingOp(ctx, unbondingOp); err != nil {
-		// If there was an error persisting the unbonding op, panic to end execution for
-		// the current tx and prevent committal of this invalid state.
-		panic(fmt.Errorf("unbonding op could not be persisted: %w", err))
-	}
+	h.k.SetUnbondingOp(ctx, unbondingOp)
 
 	// Call back into staking to tell it to stop this op from unbonding when the unbonding period is complete
 	if err := h.k.stakingKeeper.PutUnbondingOnHold(ctx, ID); err != nil {
@@ -64,14 +59,46 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 	return nil
 }
 
-// Define unimplemented methods to satisfy the StakingHooks contract
+func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddress) bool {
+	// Get the validator being added in the staking module.
+	val, found := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if !found {
+		panic("did not find newly created validator in staking module")
+	}
+
+	// Get the consensus address of the validator being added
+	consensusAddr, err := val.GetConsAddr()
+	if err != nil {
+		panic("could not get validator cons addr ")
+	}
+
+	inUse := false
+
+	// Search over all consumer keys which have been assigned in order to
+	// check if the validator being added is, or was, a consumer chain validator
+	k.IterateAllValidatorsByConsumerAddr(ctx, func(_ string, consumerAddr sdk.ConsAddress, _ sdk.ConsAddress) (stop bool) {
+		if consumerAddr.Equals(consensusAddr) {
+			inUse = true
+			return true
+		}
+		return false
+	})
+
+	return inUse
+}
+
 func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
+	if ValidatorConsensusKeyInUse(h.k, ctx, valAddr) {
+		// Abort TX, do NOT allow validator to be created
+		panic("cannot create a validator with a consensus key that is already in use or was recently in use as an assigned consumer chain key")
+	}
 }
 
 func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) {
 	type StoreKey struct {
 		ChainID      string
 		ProviderAddr sdk.ConsAddress
+		ConsumerKey  tmprotocrypto.PublicKey
 	}
 	toDelete := []StoreKey{}
 	h.k.IterateAllValidatorConsumerPubKeys(ctx, func(
@@ -80,17 +107,19 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 		consumerKey tmprotocrypto.PublicKey,
 	) (stop bool) {
 		if providerAddr.Equals(valConsAddr) {
-			toDelete = append(toDelete, StoreKey{ChainID: chainID, ProviderAddr: providerAddr})
+			toDelete = append(toDelete,
+				StoreKey{
+					ChainID:      chainID,
+					ProviderAddr: providerAddr,
+					ConsumerKey:  consumerKey,
+				})
 		}
 		return false // do not stop
 	})
 	for _, key := range toDelete {
-		consumerKey, found := h.k.GetValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
-		if found {
-			consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
-			h.k.DeleteValidatorByConsumerAddr(ctx, key.ChainID, consumerAddr)
-			h.k.DeleteValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
-		}
+		consumerAddr := utils.TMCryptoPublicKeyToConsAddr(key.ConsumerKey)
+		h.k.DeleteValidatorByConsumerAddr(ctx, key.ChainID, consumerAddr)
+		h.k.DeleteValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
 	}
 }
 

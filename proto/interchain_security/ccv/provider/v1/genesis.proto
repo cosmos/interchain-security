@@ -14,7 +14,7 @@ import "tendermint/crypto/keys.proto";
 
 // GenesisState defines the CCV provider chain genesis state
 message GenesisState {
-  // empty for a new chain
+  // strictly positive and set to 1 (DefaultValsetUpdateID) for a new chain
   uint64 valset_update_id = 1; 
   // empty for a new chain
   repeated ConsumerState consumer_states = 2 [ 
@@ -58,18 +58,15 @@ message ConsumerState {
   string client_id = 3;
   // InitalHeight defines the initial block height for the consumer chain
   uint64 initial_height = 4;
-  // LockUnbondingOnTimeout defines whether the unbonding funds should be released for this
-  // chain in case of a IBC channel timeout
-  bool lock_unbonding_on_timeout = 5;
   // ConsumerGenesis defines the initial consumer chain genesis states
-  interchain_security.ccv.consumer.v1.GenesisState consumer_genesis = 6
+  interchain_security.ccv.consumer.v1.GenesisState consumer_genesis = 5
   [ (gogoproto.nullable) = false ];
   // PendingValsetChanges defines the pending validator set changes for the consumer chain 
-  repeated interchain_security.ccv.v1.ValidatorSetChangePacketData pending_valset_changes = 7
+  repeated interchain_security.ccv.v1.ValidatorSetChangePacketData pending_valset_changes = 6
   [ (gogoproto.nullable) = false ];
-  repeated string slash_downtime_ack = 8;
+  repeated string slash_downtime_ack = 7;
   // UnbondingOpsIndex defines the unbonding operations on the consumer chain
-  repeated UnbondingOpIndex unbonding_ops_index = 9
+  repeated UnbondingOpIndex unbonding_ops_index = 8
   [ (gogoproto.nullable) = false ];
 }
 
@@ -104,9 +101,9 @@ message ValidatorByConsumerAddr {
 }
 
 // Used to serialize the ConsumerAddrsToPrune index from key assignment
-// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrsToPrune [][]byte
+// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrs AddressList
 message ConsumerAddrsToPrune {
     string chain_id = 1;
     uint64 vsc_id = 2;
-    repeated bytes consumer_addrs = 3;
+    AddressList consumer_addrs = 3;
 }

@@ -61,8 +61,9 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 		// the key will be present in consumer genesis initial_val_set
 		{
 			action: assignConsumerPubKeyAction{
-				chain:     chainID(consumerName),
-				validator: validatorID("carol"),
+				chain:          chainID(consumerName),
+				validator:      validatorID("carol"),
+				consumerPubkey: `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
 				// consumer chain has not started
 				// we don't need to reconfigure the node
 				// since it will start with consumer key
@@ -72,6 +73,39 @@ func stepsStartConsumerChain(consumerName string, proposalIndex, chainIndex uint
 				chainID(consumerName): ChainState{
 					AssignedKeys: &map[validatorID]string{
 						validatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
+					},
+					ProviderKeys: &map[validatorID]string{
+						validatorID("carol"): "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
+					},
+				},
+			},
+		},
+		{
+			// op should fail - key already assigned by the same validator
+			action: assignConsumerPubKeyAction{
+				chain:           chainID(consumerName),
+				validator:       validatorID("carol"),
+				consumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
+				reconfigureNode: false,
+				expectError:     true,
+			},
+			state: State{},
+		},
+		{
+			// op should fail - key allready assigned by another validator
+			action: assignConsumerPubKeyAction{
+				chain:     chainID(consumerName),
+				validator: validatorID("bob"),
+				// same pub key as carol
+				consumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"Ui5Gf1+mtWUdH8u3xlmzdKID+F3PK0sfXZ73GZ6q6is="}`,
+				reconfigureNode: false,
+				expectError:     true,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					AssignedKeys: &map[validatorID]string{
+						validatorID("carol"): "cosmosvalcons1kswr5sq599365kcjmhgufevfps9njf43e4lwdk",
+						validatorID("bob"):   "",
 					},
 					ProviderKeys: &map[validatorID]string{
 						validatorID("carol"): "cosmosvalcons1ezyrq65s3gshhx5585w6mpusq3xsj3ayzf4uv6",
@@ -190,10 +224,20 @@ func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step
 				chain:     chainID(consumerName),
 				validator: validatorID("bob"),
 				// reconfigure the node -> validator was using provider key
-				// until this point
+				// until this point -> key matches config.consumerValPubKey for "bob"
+				consumerPubkey:  `{"@type":"/cosmos.crypto.ed25519.PubKey","key":"QlG+iYe6AyYpvY1z9RNJKCVlH14Q/qSz4EjGdGCru3o="}`,
 				reconfigureNode: true,
 			},
 			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						// this happens after some delegations
+						// so that the chain does not halt if 1/3 of power is offline
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						// this happens after some delegations
@@ -220,6 +264,15 @@ func stepsAssignConsumerKeyOnStartedChain(consumerName, validator string) []Step
 				channel: 0,
 			},
 			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						// this happens after some delegations
+						// so that the chain does not halt if 1/3 of power is offline
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
 						// this happens after some delegations

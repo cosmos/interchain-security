@@ -12,11 +12,6 @@ import (
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
-// ValidatorConsumerPubKey: (chainID, providerAddr consAddr) -> consumerKey tmprotocrypto.PublicKey
-// ValidatorByConsumerAddr: (chainID, consumerAddr consAddr) -> providerAddr consAddr
-// KeyAssignmentReplacements: (chainID, providerAddr consAddr) -> replacement abci.ValidatorUpdate
-// ConsumerAddrsToPrune: (chainID, vscID uint64) -> consumerAddrsToPrune [][]byte
-
 // GetValidatorConsumerPubKey returns a validator's public key assigned for a consumer chain
 func (k Keeper) GetValidatorConsumerPubKey(
 	ctx sdk.Context,
@@ -77,7 +72,9 @@ func (k Keeper) IterateValidatorConsumerPubKeys(
 	}
 }
 
-// IterateValidatorConsumerPubKeys iterates over the validators public keys assigned for all consumer chain
+// IterateAllValidatorConsumerPubKeys iterates over the validators public keys assigned for all consumer chain.
+// Note that IterateValidatorConsumerPubKeys cannot be used as consumer keys can be assigned for chain IDs
+// that are not yet known to the provider.
 func (k Keeper) IterateAllValidatorConsumerPubKeys(
 	ctx sdk.Context,
 	cb func(chainID string, providerAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool),
@@ -143,6 +140,8 @@ func (k Keeper) SetValidatorByConsumerAddr(
 	store.Set(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr), bz)
 }
 
+// IterateValidatorsByConsumerAddr iterates over all the mappings from consensus addresses
+// on a given consumer chain to consensus addresses on the provider chain
 func (k Keeper) IterateValidatorsByConsumerAddr(
 	ctx sdk.Context,
 	chainID string,
@@ -169,7 +168,10 @@ func (k Keeper) IterateValidatorsByConsumerAddr(
 	}
 }
 
-// IterateAllValidatorsByConsumerAddr iterates over all the mappings from consensus addresses on any consumer chain to consensus addresses on the provider chain
+// IterateAllValidatorsByConsumerAddr iterates over all the mappings from consensus addresses
+// on any consumer chain to consensus addresses on the provider chain.
+// Note that IterateValidatorsByConsumerAddr cannot be used as consumer keys can be assigned
+// for chain IDs that are not yet known to the provider.
 func (k Keeper) IterateAllValidatorsByConsumerAddr(
 	ctx sdk.Context,
 	cb func(chainID string, consumerAddr sdk.ConsAddress, providerAddr sdk.ConsAddress) (stop bool),
@@ -306,31 +308,34 @@ func (k Keeper) AppendConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscI
 
 // GetConsumerAddrsToPrune returns the list of consumer addresses
 // that can be pruned once the VSCMaturedPacket with vscID is received
-func (k Keeper) GetConsumerAddrsToPrune(ctx sdk.Context, chainID string, vscID uint64) [][]byte {
+func (k Keeper) GetConsumerAddrsToPrune(
+	ctx sdk.Context,
+	chainID string,
+	vscID uint64,
+) (consumerAddrsToPrune types.AddressList) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.ConsumerAddrsToPruneKey(chainID, vscID))
 	if bz == nil {
-		return nil
+		return
 	}
-	var consumerAddrsToPrune types.AddressList
 	err := consumerAddrsToPrune.Unmarshal(bz)
 	if err != nil {
 		panic(err)
 	}
-	return consumerAddrsToPrune.Addresses
+	return
 }
 
 func (k Keeper) IterateConsumerAddrsToPrune(
 	ctx sdk.Context,
 	chainID string,
-	cb func(vscID uint64, consumerAddrsToPrune [][]byte) (stop bool),
+	cb func(vscID uint64, consumerAddrsToPrune types.AddressList) (stop bool),
 ) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := types.ChainIdWithLenKey(types.ConsumerAddrsToPruneBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		_, vscID, err := types.ParseChainIdAndUintIdKey(types.ConsumerAddrsToPruneBytePrefix, iterator.Key())
+		_, vscID, err := types.ParseChainIdAndVscIdKey(types.ConsumerAddrsToPruneBytePrefix, iterator.Key())
 		if err != nil {
 			panic(err)
 		}
@@ -339,31 +344,7 @@ func (k Keeper) IterateConsumerAddrsToPrune(
 		if err != nil {
 			panic(err)
 		}
-		stop := cb(vscID, consumerAddrsToPrune.Addresses)
-		if stop {
-			break
-		}
-	}
-}
-
-func (k Keeper) IterateAllConsumerAddrsToPrune(
-	ctx sdk.Context,
-	cb func(chainID string, vscID uint64, consumerAddrsToPrune [][]byte) (stop bool),
-) {
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ConsumerAddrsToPruneBytePrefix})
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		chainID, vscID, err := types.ParseChainIdAndUintIdKey(types.ConsumerAddrsToPruneBytePrefix, iterator.Key())
-		if err != nil {
-			panic(err)
-		}
-		var consumerAddrsToPrune types.AddressList
-		err = consumerAddrsToPrune.Unmarshal(iterator.Value())
-		if err != nil {
-			panic(err)
-		}
-		stop := cb(chainID, vscID, consumerAddrsToPrune.Addresses)
+		stop := cb(vscID, consumerAddrsToPrune)
 		if stop {
 			break
 		}
@@ -384,17 +365,32 @@ func (k Keeper) AssignConsumerKey(
 	validator stakingtypes.Validator,
 	consumerKey tmprotocrypto.PublicKey,
 ) error {
+
 	consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
 
 	providerAddr, err := validator.GetConsAddr()
+
 	if err != nil {
 		return err
 	}
 
+	if existingVal, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consumerAddr); found {
+		// If there is a validator with using the consumer key to validate on the provider
+		// we prevent assigning the consumer key, unless the validator is assigning validator.
+		// This ensures that a validator joining the active set who has not explicitly assigned
+		// a consumer key, will be able to use their provider key as consumer key (as per default).
+		if existingVal.OperatorAddress != validator.OperatorAddress {
+			return sdkerrors.Wrapf(
+				types.ErrConsumerKeyInUse, "a different validator already uses the consumer key",
+			)
+		}
+	}
+
 	if _, found := k.GetValidatorByConsumerAddr(ctx, chainID, consumerAddr); found {
-		// mapping already exists; return error
+		// consumer key is already in use
+		// prevent multiple validators from assigning the same key
 		return sdkerrors.Wrapf(
-			types.ErrConsumerKeyExists, "consumer key already exists",
+			types.ErrConsumerKeyInUse, "a validator has assigned the consumer key already",
 		)
 	}
 
@@ -477,7 +473,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 		providerAddr := utils.TMCryptoPublicKeyToConsAddr(valUpdate.PubKey)
 
 		// If a key assignment replacement is found, we remove the valupdate with the old consumer key,
-		// create tow new valupdates,
+		// create two new valupdates,
 		//  - setting the old consumer key's power to 0
 		//  - and setting the new consumer key's power to the power in the update
 		prevConsumerKey, _, found := k.GetKeyAssignmentReplacement(ctx, chainID, providerAddr)
@@ -497,8 +493,8 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 			})
 			k.DeleteKeyAssignmentReplacement(ctx, chainID, providerAddr)
 		} else {
-			// If a pending key assignment is not found, we check if the validator's key is assigned.
-			// If it is, we replace the update containing the provider key with the update containing
+			// If a key assignment replacement is not found, we check if the validator's key is assigned.
+			// If it is, we replace the update containing the provider key with an update containing
 			// the consumer key.
 			// Note that this will always be the brach taken when creating the genesis state
 			// of a newly registered consumer chain.
@@ -572,7 +568,7 @@ func (k Keeper) GetProviderAddrFromConsumerAddr(
 // as they cannot be referenced in slash requests (by a correct consumer)
 func (k Keeper) PruneKeyAssignments(ctx sdk.Context, chainID string, vscID uint64) {
 	consumerAddrs := k.GetConsumerAddrsToPrune(ctx, chainID, vscID)
-	for _, addr := range consumerAddrs {
+	for _, addr := range consumerAddrs.Addresses {
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, addr)
 	}
 	k.DeleteConsumerAddrsToPrune(ctx, chainID, vscID)
@@ -609,7 +605,7 @@ func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
 	}
 	// delete ValidatorConsumerPubKey
 	var ids []uint64
-	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, _ [][]byte) (stop bool) {
+	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, _ types.AddressList) (stop bool) {
 		ids = append(ids, vscID)
 		return false // do not stop the iteration
 	})

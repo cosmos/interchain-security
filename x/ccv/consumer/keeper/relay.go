@@ -239,10 +239,6 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 	return nil
 }
 
-func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) error {
-	return nil
-}
-
 // IsChannelClosed returns a boolean whether a given channel is in the CLOSED state
 func (k Keeper) IsChannelClosed(ctx sdk.Context, channelID string) bool {
 	channel, found := k.channelKeeper.GetChannel(ctx, ccv.ConsumerPortID, channelID)

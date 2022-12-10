@@ -202,6 +202,7 @@ func (m *MockStakingKeeper) GetLastValidatorPower(ctx types.Context, addr types.
 	return ret0
 }
 
+
 // GetLastValidatorPower indicates an expected call of GetLastValidatorPower.
 func (mr *MockStakingKeeperMockRecorder) GetLastValidatorPower(ctx, addr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()

@@ -41,28 +41,28 @@ func getSingleByteKeys() [][]byte {
 	keys := make([][]byte, 32)
 	i := 0
 
-	keys[i], i = providertypes.PortKey(), i+1
-	keys[i], i = providertypes.MaturedUnbondingOpsKey(), i+1
-	keys[i], i = providertypes.ValidatorSetUpdateIdKey(), i+1
-	keys[i], i = []byte{providertypes.ChainToChannelBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ChannelToChainBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ChainToClientBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.InitTimeoutTimestampBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.PendingCAPBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.PendingCRPBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.UnbondingOpBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.UnbondingOpIndexBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ValsetUpdateBlockHeightBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ConsumerGenesisBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.SlashAcksBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.InitChainHeightBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.PendingVSCsBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.VscSendTimestampBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.LockUnbondingOnTimeoutBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ConsumerValidatorsBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ValidatorsByConsumerAddrBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.KeyAssignmentReplacementsBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.ConsumerAddrsToPruneBytePrefix}, i+1
+	// keys[i], i = []byte{providertypes.LockUnbondingOnTimeoutBytePrefix}, i+1
+	keys[i], i = types.PortKey(), i+1
+	keys[i], i = types.MaturedUnbondingOpsKey(), i+1
+	keys[i], i = types.ValidatorSetUpdateIdKey(), i+1
+	keys[i], i = []byte{types.ChainToChannelBytePrefix}, i+1
+	keys[i], i = []byte{types.ChannelToChainBytePrefix}, i+1
+	keys[i], i = []byte{types.ChainToClientBytePrefix}, i+1
+	keys[i], i = []byte{types.InitTimeoutTimestampBytePrefix}, i+1
+	keys[i], i = []byte{types.PendingCAPBytePrefix}, i+1
+	keys[i], i = []byte{types.PendingCRPBytePrefix}, i+1
+	keys[i], i = []byte{types.UnbondingOpBytePrefix}, i+1
+	keys[i], i = []byte{types.UnbondingOpIndexBytePrefix}, i+1
+	keys[i], i = []byte{types.ValsetUpdateBlockHeightBytePrefix}, i+1
+	keys[i], i = []byte{types.ConsumerGenesisBytePrefix}, i+1
+	keys[i], i = []byte{types.SlashAcksBytePrefix}, i+1
+	keys[i], i = []byte{types.InitChainHeightBytePrefix}, i+1
+	keys[i], i = []byte{types.PendingVSCsBytePrefix}, i+1
+	keys[i], i = []byte{types.VscSendTimestampBytePrefix}, i+1
+	keys[i], i = []byte{types.ConsumerValidatorsBytePrefix}, i+1
+	keys[i], i = []byte{types.ValidatorsByConsumerAddrBytePrefix}, i+1
+	keys[i], i = []byte{types.KeyAssignmentReplacementsBytePrefix}, i+1
+	keys[i], i = []byte{types.ConsumerAddrsToPruneBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.PendingPacketDataSizeBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.PendingPacketDataBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.PendingSlashPacketEntryBytePrefix}, i+1
@@ -222,6 +222,39 @@ func TestChainIdAndConsAddrAndParse(t *testing.T) {
 		expectedLen := 1 + 8 + len(test.chainID) + len(test.addr)
 		require.Equal(t, expectedLen, len(key))
 		parsedID, parsedConsAddr, err := types.ParseChainIdAndConsAddrKey(test.prefix, key)
+		parsedID, parsedVscID, err := types.ParseChainIdAndVscIdKey(test.prefix, key)
+		require.Equal(t, test.chainID, parsedID)
+		require.Equal(t, test.addr, parsedConsAddr)
+		require.NoError(t, err)
+	}
+}
+
+// Tests the construction and parsing of ChainIdAndConsAddr keys
+func TestChainIdAndConsAddrAndParse(t *testing.T) {
+	pubKey1, err := testkeeper.GenPubKey()
+	require.NoError(t, err)
+	pubKey2, err := testkeeper.GenPubKey()
+	require.NoError(t, err)
+	pubKey3, err := testkeeper.GenPubKey()
+	require.NoError(t, err)
+
+	tests := []struct {
+		prefix  byte
+		chainID string
+		addr    sdk.ConsAddress
+	}{
+		{prefix: 0x01, chainID: "1", addr: sdk.ConsAddress(pubKey1.Address())},
+		{prefix: 0x02, chainID: "some other ID", addr: sdk.ConsAddress(pubKey2.Address())},
+		{prefix: 0x03, chainID: "some other other chain ID", addr: sdk.ConsAddress(pubKey3.Address())},
+	}
+
+	for _, test := range tests {
+		key := types.ChainIdAndConsAddrKey(test.prefix, test.chainID, test.addr)
+		require.NotEmpty(t, key)
+		// Expected bytes = prefix + chainID length + chainID + consAddr bytes
+		expectedLen := 1 + 8 + len(test.chainID) + len(test.addr)
+		require.Equal(t, expectedLen, len(key))
+		parsedID, parsedConsAddr, err := types.ParseChainIdAndConsAddrKey(test.prefix, key)
 		require.Equal(t, test.chainID, parsedID)
 		require.Equal(t, test.addr, parsedConsAddr)
 		require.NoError(t, err)
@@ -232,27 +265,25 @@ func TestChainIdAndConsAddrAndParse(t *testing.T) {
 func TestKeysWithPrefixAndId(t *testing.T) {
 
 	funcs := []func(string) []byte{
-		providertypes.ChainToChannelKey,
-		providertypes.ChannelToChainKey,
-		providertypes.ChainToClientKey,
-		providertypes.InitTimeoutTimestampKey,
-		providertypes.ConsumerGenesisKey,
-		providertypes.SlashAcksKey,
-		providertypes.InitChainHeightKey,
-		providertypes.PendingVSCsKey,
-		providertypes.LockUnbondingOnTimeoutKey,
+		types.ChainToChannelKey,
+		types.ChannelToChainKey,
+		types.ChainToClientKey,
+		types.InitTimeoutTimestampKey,
+		types.ConsumerGenesisKey,
+		types.SlashAcksKey,
+		types.InitChainHeightKey,
+		types.PendingVSCsKey,
 	}
 
 	expectedBytePrefixes := []byte{
-		providertypes.ChainToChannelBytePrefix,
-		providertypes.ChannelToChainBytePrefix,
-		providertypes.ChainToClientBytePrefix,
-		providertypes.InitTimeoutTimestampBytePrefix,
-		providertypes.ConsumerGenesisBytePrefix,
-		providertypes.SlashAcksBytePrefix,
-		providertypes.InitChainHeightBytePrefix,
-		providertypes.PendingVSCsBytePrefix,
-		providertypes.LockUnbondingOnTimeoutBytePrefix,
+		types.ChainToChannelBytePrefix,
+		types.ChannelToChainBytePrefix,
+		types.ChainToClientBytePrefix,
+		types.InitTimeoutTimestampBytePrefix,
+		types.ConsumerGenesisBytePrefix,
+		types.SlashAcksBytePrefix,
+		types.InitChainHeightBytePrefix,
+		types.PendingVSCsBytePrefix,
 	}
 
 	tests := []struct {

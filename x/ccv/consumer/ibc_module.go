@@ -270,19 +270,13 @@ func (am AppModule) OnAcknowledgementPacket(
 }
 
 // OnTimeoutPacket implements the IBCModule interface
+// the CCV channel state is changed to CLOSED
+// by the IBC module as the channel is ORDERED
 func (am AppModule) OnTimeoutPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
 	_ sdk.AccAddress,
 ) error {
-	var data ccv.SlashPacketData
-	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal consumer packet data: %s", err.Error())
-	}
-
-	if err := am.keeper.OnTimeoutPacket(ctx, packet, data); err != nil {
-		return err
-	}
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(

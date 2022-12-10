@@ -37,7 +37,14 @@ func TestConsumerChainProposalHandler(t *testing.T) {
 			name: "valid consumer addition proposal",
 			content: types.NewConsumerAdditionProposal(
 				"title", "description", "chainID",
-				clienttypes.NewHeight(2, 3), []byte("gen_hash"), []byte("bin_hash"), now),
+				clienttypes.NewHeight(2, 3), []byte("gen_hash"), []byte("bin_hash"), now,
+				"0.75",
+				10,
+				10000,
+				100000000000,
+				100000000000,
+				100000000000,
+			),
 			blockTime:                hourFromNow, // ctx blocktime is after proposal's spawn time
 			expValidConsumerAddition: true,
 		},

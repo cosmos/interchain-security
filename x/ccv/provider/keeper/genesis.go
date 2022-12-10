@@ -41,17 +41,13 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		k.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
 	}
 	for _, ubdOp := range genState.UnbondingOps {
-		if err := k.SetUnbondingOp(ctx, ubdOp); err != nil {
-			panic(fmt.Errorf("unbonding op could not be persisted: %w", err))
-		}
+		k.SetUnbondingOp(ctx, ubdOp)
 	}
 
 	// Note that MatureUnbondingOps aren't stored across blocks, but it
 	// might be used after implementing sovereign to consumer transition
 	if genState.MatureUnbondingOps != nil {
-		if err := k.AppendMaturedUnbondingOps(ctx, genState.MatureUnbondingOps.Ids); err != nil {
-			panic(err)
-		}
+		k.AppendMaturedUnbondingOps(ctx, genState.MatureUnbondingOps.Ids)
 	}
 
 	// Set initial state for each consumer chain
@@ -60,9 +56,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		k.SetConsumerClientId(ctx, chainID, cs.ClientId)
 		if err := k.SetConsumerGenesis(ctx, chainID, cs.ConsumerGenesis); err != nil {
 			panic(fmt.Errorf("consumer chain genesis could not be persisted: %w", err))
-		}
-		if cs.LockUnbondingOnTimeout {
-			k.SetLockUnbondingOnTimeout(ctx, chainID)
 		}
 		// check if the CCV channel was established
 		if cs.ChannelId != "" {
@@ -89,7 +82,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 
 	for _, item := range genState.ConsumerAddrsToPrune {
-		for _, addr := range item.ConsumerAddrs {
+		for _, addr := range item.ConsumerAddrs.Addresses {
 			k.AppendConsumerAddrsToPrune(ctx, item.ChainId, item.VscId, addr)
 		}
 	}
@@ -110,10 +103,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 		// initial consumer chain states
 		cs := types.ConsumerState{
-			ChainId:                chainID,
-			ClientId:               clientID,
-			ConsumerGenesis:        gen,
-			LockUnbondingOnTimeout: k.GetLockUnbondingOnTimeout(ctx, chainID),
+			ChainId:         chainID,
+			ClientId:        clientID,
+			ConsumerGenesis: gen,
 		}
 
 		// try to find channel id for the current consumer chain
@@ -191,11 +183,15 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	})
 
 	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
-	k.IterateAllConsumerAddrsToPrune(ctx, func(chainID string, vscID uint64, consumerAddrs [][]byte) (stop bool) {
-		consumerAddrsToPrune = append(consumerAddrsToPrune, types.ConsumerAddrsToPrune{
-			ChainId:       chainID,
-			VscId:         vscID,
-			ConsumerAddrs: consumerAddrs,
+	// ConsumerAddrsToPrune are added only for registered consumer chains
+	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string, _ string) (stopOuter bool) {
+		k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, consumerAddrs types.AddressList) (stopInner bool) {
+			consumerAddrsToPrune = append(consumerAddrsToPrune, types.ConsumerAddrsToPrune{
+				ChainId:       chainID,
+				VscId:         vscID,
+				ConsumerAddrs: &consumerAddrs,
+			})
+			return false // do not stop the iteration
 		})
 		return false // do not stop the iteration
 	})

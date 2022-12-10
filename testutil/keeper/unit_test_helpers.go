@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"testing"
+	"time"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
@@ -15,7 +16,10 @@ import (
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
+	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
+	"github.com/cosmos/interchain-security/x/ccv/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -218,14 +222,35 @@ func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
 	providerKeeper *providerkeeper.Keeper, mocks MockedKeepers) {
 
 	expectations := GetMocksForCreateConsumerClient(ctx, &mocks,
-		"chainID", clienttypes.NewHeight(2, 3))
+		"chainID", clienttypes.NewHeight(4, 5))
 	expectations = append(expectations, GetMocksForSetConsumerChain(ctx, &mocks, "chainID")...)
 	expectations = append(expectations, GetMocksForStopConsumerChain(ctx, &mocks)...)
 
 	gomock.InOrder(expectations...)
 
-	err := providerKeeper.CreateConsumerClient(ctx, "chainID", clienttypes.NewHeight(2, 3), false)
+	prop := GetTestConsumerAdditionProp()
+	err := providerKeeper.CreateConsumerClient(ctx, prop)
 	require.NoError(t, err)
 	err = providerKeeper.SetConsumerChain(ctx, "channelID")
 	require.NoError(t, err)
+}
+
+func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
+	prop := providertypes.NewConsumerAdditionProposal(
+		"chainID",
+		"description",
+		"chainID",
+		clienttypes.NewHeight(4, 5),
+		[]byte("gen_hash"),
+		[]byte("bin_hash"),
+		time.Now(),
+		consumertypes.DefaultConsumerRedistributeFrac,
+		consumertypes.DefaultBlocksPerDistributionTransmission,
+		consumertypes.DefaultHistoricalEntries,
+		types.DefaultCCVTimeoutPeriod,
+		consumertypes.DefaultTransferTimeoutPeriod,
+		consumertypes.DefaultConsumerUnbondingPeriod,
+	).(*providertypes.ConsumerAdditionProposal)
+
+	return prop
 }
