@@ -74,6 +74,11 @@ func stepsDelegate(consumerName string) []Step {
 						validatorID("alice"): 9999999999,
 						validatorID("bob"):   10000000001,
 					},
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
 				},
 			},
 		},

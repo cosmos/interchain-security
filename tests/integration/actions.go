@@ -247,6 +247,7 @@ func (tr TestRun) submitConsumerAdditionProposal(
 		`--home`, tr.getValidatorHome(action.chain, action.from),
 		`--node`, tr.getValidatorNode(action.chain, action.from),
 		`--keyring-backend`, `test`,
+		`--gas`, "900000",
 		`-b`, `block`,
 		`-y`,
 	).CombinedOutput()

@@ -9,37 +9,17 @@ import (
 func getValidators99() []StartChainValidator {
 	validators := []StartChainValidator{}
 
-	for i := 1; i <= 99; i++ {
-		validators = append(validators, StartChainValidator{id: validatorID(i), stake: 500000000, allocation: 10000000000})
+	for i := 1; i <= 3; i++ {
+		validators = append(validators, StartChainValidator{id: validatorID(fmt.Sprintf("%d", i)), stake: 500000000, allocation: 10000000000})
 	}
 
 	return validators
 }
 
-func getValBalances99a() *map[validatorID]uint {
-	valBalances := map[validatorID]uint{}
-
-	for i := 1; i <= 99; i++ {
-		valBalances[validatorID(i)] = 9500000000
-	}
-
-	return &valBalances
-}
-
-func getValBalances99b() *map[validatorID]uint {
-	valBalances := map[validatorID]uint{}
-
-	for i := 1; i <= 99; i++ {
-		valBalances[validatorID(i)] = 10000000000
-	}
-
-	return &valBalances
-}
-
 // This function returns a list of validator IDs from 1 to 99
 func getValidatorIDs99() []validatorID {
 	valIds99 := []validatorID{}
-	for i := 1; i <= 99; i++ {
+	for i := 1; i <= 3; i++ {
 		valIds99 = append(valIds99, validatorID(fmt.Sprintf("%d", i)))
 	}
 	return valIds99
@@ -48,7 +28,7 @@ func getValidatorIDs99() []validatorID {
 // This function returns a list of 99 "yes" votes
 func getVotes99() []string {
 	votes99 := []string{}
-	for i := 1; i <= 99; i++ {
+	for i := 1; i <= 3; i++ {
 		votes99 = append(votes99, "yes")
 	}
 	return votes99
@@ -138,10 +118,23 @@ func stepsStartConsumerChainHalt(consumerName string, proposalIndex, chainIndex 
 			},
 			state: State{
 				chainID("provi"): ChainState{
-					ValBalances: getValBalances99a(),
+					ValBalances: &map[validatorID]uint{
+						validatorID("1"): 9500000000,
+						validatorID("2"): 9500000000,
+						validatorID("3"): 9500000000,
+					},
+					ValPowers: &map[validatorID]uint{
+						validatorID("1"): 500,
+						validatorID("2"): 500,
+						validatorID("3"): 500,
+					},
 				},
 				chainID(consumerName): ChainState{
-					ValBalances: getValBalances99b(),
+					ValBalances: &map[validatorID]uint{
+						validatorID("1"): 10000000000,
+						validatorID("2"): 10000000000,
+						validatorID("3"): 10000000000,
+					},
 				},
 			},
 		},
@@ -167,43 +160,28 @@ func stepsStartConsumerChainHalt(consumerName string, proposalIndex, chainIndex 
 		},
 	}
 
-	// currently only used in democracy tests
-	if setupTransferChans {
-		s = append(s, Step{
-			action: transferChannelCompleteAction{
-				chainA:      chainID(consumerName),
-				chainB:      chainID("provi"),
-				connectionA: 0,
-				portA:       "transfer",
-				portB:       "transfer",
-				order:       "unordered",
-				channelA:    1,
-				channelB:    1,
-			},
-			state: State{},
-		})
-	}
 	return s
 }
 
 func stepStartProviderChainHalt() []Step {
-	validators := []StartChainValidator{}
-	valBalances := &map[validatorID]uint{}
-
-	for i := 1; i <= 99; i++ {
-		validators = append(validators, StartChainValidator{id: validatorID(i), stake: 500000000, allocation: 10000000000})
-		(*valBalances)[validatorID(i)] = 9500000000
-	}
-
 	return []Step{
 		{
 			action: StartChainAction{
 				chain:      chainID("provi"),
-				validators: validators,
+				validators: getValidators99(),
 			},
 			state: State{
 				chainID("provi"): ChainState{
-					ValBalances: valBalances,
+					ValBalances: &map[validatorID]uint{
+						validatorID("1"): 9500000000,
+						validatorID("2"): 9500000000,
+						validatorID("3"): 9500000000,
+					},
+					ValPowers: &map[validatorID]uint{
+						validatorID("1"): 500,
+						validatorID("2"): 500,
+						validatorID("3"): 500,
+					},
 				},
 			},
 		},
@@ -213,9 +191,9 @@ func stepStartProviderChainHalt() []Step {
 // starts provider and consumer chains specified in consumerNames
 // setupTransferChans will establish a channel for fee transfers between consumer and provider
 func stepsStartChainsHalt(consumerNames []string, setupTransferChans bool) []Step {
-	s := stepStartProviderChain()
+	s := stepStartProviderChainHalt()
 	for i, consumerName := range consumerNames {
-		s = append(s, stepsStartConsumerChain(consumerName, uint(i+1), uint(i), setupTransferChans)...)
+		s = append(s, stepsStartConsumerChainHalt(consumerName, uint(i+1), uint(i), setupTransferChans)...)
 	}
 
 	return s
@@ -223,4 +201,46 @@ func stepsStartChainsHalt(consumerNames []string, setupTransferChans bool) []Ste
 
 var haltSteps = concatSteps(
 	stepsStartChainsHalt([]string{"consu"}, false),
+	[]Step{
+		{
+			action: delegateTokensAction{
+				chain:  chainID("provi"),
+				from:   validatorID("1"),
+				to:     validatorID("1"),
+				amount: 11000000,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("1"): 511,
+						validatorID("2"): 500,
+						validatorID("3"): 500,
+					},
+				},
+				chainID("consu"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("1"): 500,
+						validatorID("2"): 500,
+						validatorID("3"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chain:   chainID("provi"),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("1"): 500,
+						validatorID("2"): 500,
+						validatorID("3"): 500,
+					},
+				},
+			},
+		},
+	},
 )
