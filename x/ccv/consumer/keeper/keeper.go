@@ -331,12 +331,12 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 	store.Delete(types.HeightValsetUpdateIDKey(height))
 }
 
-// IterateHeightToValsetUpdateID iterates over the block height to valset update ID mapping in store.
+// IterateAllHeightToValsetUpdateID iterates over the block height to valset update ID mapping in store.
 //
 // Note that the block height to valset update ID mapping is stored under keys with the following format:
 // HeightValsetUpdateIDBytePrefix | height
 // Thus, the iteration is in ascending order of heights.
-func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64)) {
+func (k Keeper) IterateAllHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
 
@@ -481,7 +481,7 @@ func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...types.ConsumerPac
 // GetHeightToValsetUpdateIDs returns all height to valset update id mappings in store
 func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToValsetUpdateID {
 	heightToVCIDs := []types.HeightToValsetUpdateID{}
-	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) {
+	k.IterateAllHeightToValsetUpdateID(ctx, func(height, vscID uint64) {
 		hv := types.HeightToValsetUpdateID{
 			Height:         height,
 			ValsetUpdateId: vscID,
