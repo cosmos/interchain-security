@@ -6,10 +6,12 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
+var NUM_VALS = 6
+
 func getValidators99() []StartChainValidator {
 	validators := []StartChainValidator{}
 
-	for i := 1; i <= 3; i++ {
+	for i := 1; i <= NUM_VALS; i++ {
 		validators = append(validators, StartChainValidator{id: validatorID(fmt.Sprintf("%d", i)), stake: 500000000, allocation: 10000000000})
 	}
 
@@ -19,7 +21,7 @@ func getValidators99() []StartChainValidator {
 // This function returns a list of validator IDs from 1 to 99
 func getValidatorIDs99() []validatorID {
 	valIds99 := []validatorID{}
-	for i := 1; i <= 3; i++ {
+	for i := 1; i <= NUM_VALS; i++ {
 		valIds99 = append(valIds99, validatorID(fmt.Sprintf("%d", i)))
 	}
 	return valIds99
@@ -28,10 +30,20 @@ func getValidatorIDs99() []validatorID {
 // This function returns a list of 99 "yes" votes
 func getVotes99() []string {
 	votes99 := []string{}
-	for i := 1; i <= 3; i++ {
+	for i := 1; i <= NUM_VALS; i++ {
 		votes99 = append(votes99, "yes")
 	}
 	return votes99
+}
+
+// This function returns a list of 99 val powers set to 500
+func getValPowers99() *map[validatorID]uint {
+	// first one is 511 because of the delegation required to initiate the consumer channel
+	valPowers99 := map[validatorID]uint{validatorID("1"): 511}
+	for i := 2; i <= NUM_VALS; i++ {
+		valPowers99[validatorID(fmt.Sprintf("%d", i))] = 500
+	}
+	return &valPowers99
 }
 
 func stepsStartConsumerChainHalt(consumerName string, proposalIndex, chainIndex uint, setupTransferChans bool) []Step {
@@ -210,20 +222,20 @@ var haltSteps = concatSteps(
 				amount: 11000000,
 			},
 			state: State{
-				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("1"): 511,
-						validatorID("2"): 500,
-						validatorID("3"): 500,
-					},
-				},
-				chainID("consu"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("1"): 500,
-						validatorID("2"): 500,
-						validatorID("3"): 500,
-					},
-				},
+				// chainID("provi"): ChainState{
+				// 	ValPowers: &map[validatorID]uint{
+				// 		validatorID("1"): 511,
+				// 		validatorID("2"): 500,
+				// 		validatorID("3"): 500,
+				// 	},
+				// },
+				// chainID("consu"): ChainState{
+				// 	ValPowers: &map[validatorID]uint{
+				// 		validatorID("1"): 500,
+				// 		validatorID("2"): 500,
+				// 		validatorID("3"): 500,
+				// 	},
+				// },
 			},
 		},
 		{
@@ -234,11 +246,7 @@ var haltSteps = concatSteps(
 			},
 			state: State{
 				chainID("provi"): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("1"): 500,
-						validatorID("2"): 500,
-						validatorID("3"): 500,
-					},
+					ValPowers: getValPowers99(),
 				},
 			},
 		},
