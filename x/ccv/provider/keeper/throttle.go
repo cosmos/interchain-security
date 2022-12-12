@@ -19,8 +19,8 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
 
-	// Don't start iterating if meter is 0 or negative in value
-	if !meter.IsPositive() {
+	// Don't start iterating if meter is negative in value
+	if meter.IsNegative() {
 		return
 	}
 
