@@ -71,7 +71,7 @@ func TestSlashAcks(t *testing.T) {
 	var chainsAcks [][]string
 
 	penaltiesfN := func() (penalties []string) {
-		providerKeeper.IterateSlashAcks(ctx, func(id string, acks []string) {
+		providerKeeper.IterateAllSlashAcks(ctx, func(id string, acks []string) {
 			chainsAcks = append(chainsAcks, acks)
 		})
 		return
