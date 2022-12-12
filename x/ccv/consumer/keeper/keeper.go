@@ -249,6 +249,7 @@ func (k Keeper) DequeueAllMatureVSCPacketQueue(ctx sdk.Context) (vscIDs []uint64
 	iterator := k.VSCPacketQueueIterator(ctx, ctx.BlockHeader().Time)
 	defer iterator.Close()
 
+	var keysToDelete [][]byte
 	for ; iterator.Valid(); iterator.Next() {
 		timeslice := types.ValidatorSetChangeIDs{}
 		value := iterator.Value()
@@ -256,7 +257,11 @@ func (k Keeper) DequeueAllMatureVSCPacketQueue(ctx sdk.Context) (vscIDs []uint64
 
 		vscIDs = append(vscIDs, timeslice.Ids...)
 
-		store.Delete(iterator.Key())
+		keysToDelete = append(keysToDelete, iterator.Key())
+	}
+
+	for _, key := range keysToDelete {
+		store.Delete(key)
 	}
 
 	return vscIDs

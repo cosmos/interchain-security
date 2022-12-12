@@ -393,7 +393,7 @@ func assertProviderClientID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Ke
 // assert that the given input match the height to valset update ID mappings in the store
 func assertHeightValsetUpdateIDs(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, heighValsetUpdateIDs []consumertypes.HeightToValsetUpdateID) {
 	ctr := 0
-	ck.IterateHeightToValsetUpdateID(ctx, func(height uint64, vscID uint64) {
+	ck.IterateAllHeightToValsetUpdateID(ctx, func(height uint64, vscID uint64) {
 		require.Equal(t, heighValsetUpdateIDs[ctr].Height, height)
 		require.Equal(t, heighValsetUpdateIDs[ctr].ValsetUpdateId, vscID)
 		ctr++
