@@ -48,14 +48,6 @@ func main() {
 		go mul.ExecuteSteps(&wg, multipleConsumers)
 	}
 
-	keys := KeyAssignmentTestRun()
-	keys.SetLocalSDKPath(*localSdkPath)
-	keys.ValidateStringLiterals()
-	keys.startDocker()
-
-	wg.Add(1)
-	go keys.ExecuteSteps(&wg, keyAssignmentSteps)
-
 	wg.Add(1)
 	go tr.ExecuteSteps(&wg, happyPathSteps)
 

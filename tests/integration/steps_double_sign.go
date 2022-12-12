@@ -1,9 +1,8 @@
 package main
 
 // simulates double signing on provider and vsc propagation to consumer chains
-// steps continue from downtime tests state.
 //
-// Note: These steps ARE affected by slash packet throttling, since the
+// Note: These steps would be affected by slash packet throttling, since the
 // consumer-initiated slash steps are executed after consumer-initiated downtime
 // slashes have already occurred. However slash packet throttling is
 // psuedo-disabled in this test by setting the slash meter replenish
