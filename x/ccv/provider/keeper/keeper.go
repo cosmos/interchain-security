@@ -597,12 +597,12 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, vscID uint64) (uint6
 	return sdk.BigEndianToUint64(bz), true
 }
 
-// IterateValsetUpdateBlockHeight iterates through the mapping from vscIDs to block heights.
+// IterateAllValsetUpdateBlockHeight iterates through the mapping from vscIDs to block heights.
 //
 // Note that the mapping from vscIDs to block heights is stored under keys with the following format:
 // ValsetUpdateBlockHeightBytePrefix | vscID
 // Thus, the iteration is in ascending order of vscIDs.
-func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(vscID, height uint64)) {
+func (k Keeper) IterateAllValsetUpdateBlockHeight(ctx sdk.Context, cb func(vscID, height uint64)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
 

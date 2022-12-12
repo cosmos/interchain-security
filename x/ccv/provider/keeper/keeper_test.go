@@ -34,7 +34,7 @@ func TestValsetUpdateBlockHeight(t *testing.T) {
 	}
 
 	found := false
-	providerKeeper.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) {
+	providerKeeper.IterateAllValsetUpdateBlockHeight(ctx, func(vscID, height uint64) {
 		found = true
 	})
 	require.False(t, found)
@@ -50,7 +50,7 @@ func TestValsetUpdateBlockHeight(t *testing.T) {
 	}
 
 	heights := []uint64{}
-	providerKeeper.IterateValsetUpdateBlockHeight(ctx, func(_, height uint64) {
+	providerKeeper.IterateAllValsetUpdateBlockHeight(ctx, func(_, height uint64) {
 		heights = append(heights, height)
 	})
 	require.Len(t, heights, len(testCases))
