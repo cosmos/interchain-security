@@ -223,23 +223,14 @@ func (k Keeper) GetVSCPacketQueueTimeSlice(ctx sdk.Context, timestamp time.Time)
 	return validatorSetChangeIDs.Ids
 }
 
-// SetVSCPacketQueueTimeSlice sets a specific VSC packet queue timeslice.
-func (k Keeper) SetVSCPacketQueueTimeSlice(ctx sdk.Context, timestamp time.Time, vscIDs ...uint64) {
-	store := ctx.KVStore(k.storeKey)
-	bz := k.cdc.MustMarshal(&types.ValidatorSetChangeIDs{Ids: vscIDs})
-	store.Set(types.VSCPacketQueueKey(timestamp), bz)
-}
-
 // InsertVSCPacketQueue inserts the ID of a VSC packet to the appropriate timeslice
 // in the VSCPacketQueue.
 func (k Keeper) InsertVSCPacketQueue(ctx sdk.Context, vscID uint64, maturityTime time.Time) {
-	timeSlice := k.GetVSCPacketQueueTimeSlice(ctx, maturityTime)
-	if len(timeSlice) == 0 {
-		k.SetVSCPacketQueueTimeSlice(ctx, maturityTime, vscID)
-	} else {
-		timeSlice = append(timeSlice, vscID)
-		k.SetVSCPacketQueueTimeSlice(ctx, maturityTime, timeSlice...)
-	}
+	vscIDs := k.GetVSCPacketQueueTimeSlice(ctx, maturityTime)
+	vscIDs = append(vscIDs, vscID)
+	store := ctx.KVStore(k.storeKey)
+	bz := k.cdc.MustMarshal(&types.ValidatorSetChangeIDs{Ids: vscIDs})
+	store.Set(types.VSCPacketQueueKey(maturityTime), bz)
 }
 
 // VSCPacketQueueIterator returns all the VSC packet queue timeslices from time 0 until endTime.
