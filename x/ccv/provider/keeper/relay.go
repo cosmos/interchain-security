@@ -159,7 +159,7 @@ func (k Keeper) SendVSCPackets(ctx sdk.Context) {
 	})
 }
 
-// SendPacketsToChain sends all queued VSC packets to the specified chain
+// SendVSCPacketsToChain sends all queued VSC packets to the specified chain
 func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string) {
 	pendingPackets := k.GetPendingVSCPackets(ctx, chainID)
 	for _, data := range pendingPackets {
