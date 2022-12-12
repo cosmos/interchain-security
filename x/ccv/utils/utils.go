@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"sort"
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -30,6 +31,16 @@ func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci
 	for _, update := range m {
 		out = append(out, update)
 	}
+
+	// The list of tendermint updates should hash the same across all consensus nodes
+	// that means it is necessary to sort for determinism.
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Power > out[j].Power {
+			return true
+		}
+		return out[i].PubKey.String() > out[j].PubKey.String()
+	})
+
 	return out
 }
 
