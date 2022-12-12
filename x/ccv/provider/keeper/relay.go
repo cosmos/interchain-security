@@ -366,7 +366,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 
 	// iterate over initTimeoutTimestamps
 	var chainIdsToRemove []string
-	k.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) {
+	k.IterateAllInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) {
 		if currentTimeUint64 > ts {
 			// initTimeout expired
 			chainIdsToRemove = append(chainIdsToRemove, chainID)

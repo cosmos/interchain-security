@@ -271,7 +271,7 @@ func TestInitTimeoutTimestamp(t *testing.T) {
 	i := 2
 	// store is iterated in alphabetical ascending order
 	// not in the order of insertion
-	providerKeeper.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) {
+	providerKeeper.IterateAllInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) {
 		require.Equal(t, chainID, tc[i].chainID)
 		require.Equal(t, ts, tc[i].expected)
 		i--

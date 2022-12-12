@@ -775,12 +775,12 @@ func (k Keeper) DeleteInitTimeoutTimestamp(ctx sdk.Context, chainID string) {
 	store.Delete(types.InitTimeoutTimestampKey(chainID))
 }
 
-// IterateInitTimeoutTimestamp iterates through the init timeout timestamps in the store.
+// IterateAllInitTimeoutTimestamp iterates through the init timeout timestamps in the store.
 //
 // Note that the init timeout timestamps are stored under keys with the following format:
 // InitTimeoutTimestampBytePrefix | chainID
 // Thus, the iteration is in ascending order of chainIDs (NOT in timestamp order).
-func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID string, ts uint64)) {
+func (k Keeper) IterateAllInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID string, ts uint64)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.InitTimeoutTimestampBytePrefix})
 
