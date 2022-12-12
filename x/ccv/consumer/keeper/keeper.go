@@ -263,8 +263,6 @@ func (k Keeper) DequeueAllMatureVSCPacketQueue(ctx sdk.Context) (vscIDs []uint64
 }
 
 // GetAllVSCPacketMaturityTimes returns the maturity times of all received VSC packets.
-//
-// Note: The order of iteration is irrelevant as it returns all maturity times.
 func (k Keeper) GetAllVSCPacketMaturityTimes(ctx sdk.Context) []consumertypes.MaturingVSCPacket {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.VSCPacketQueueBytePrefix})
@@ -375,12 +373,12 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 	store.Delete(types.OutstandingDowntimeKey(consAddr))
 }
 
-// IterateOutstandingDowntime iterates over the outstanding downtime flags.
+// IterateAllOutstandingDowntime iterates over the outstanding downtime flags.
 //
 // Note that the outstanding downtime flags are stored under keys with the following format:
 // OutstandingDowntimeBytePrefix | consAddress
 // Thus, the iteration is in ascending order of consAddresses.
-func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address string)) {
+func (k Keeper) IterateAllOutstandingDowntime(ctx sdk.Context, cb func(address string)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
 
@@ -497,7 +495,7 @@ func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToVals
 // GetOutstandingDowntimes returns all outstanding downtimes in store
 func (k Keeper) GetOutstandingDowntimes(ctx sdk.Context) []consumertypes.OutstandingDowntime {
 	outstandingDowntimes := []types.OutstandingDowntime{}
-	k.IterateOutstandingDowntime(ctx, func(addr string) {
+	k.IterateAllOutstandingDowntime(ctx, func(addr string) {
 		od := types.OutstandingDowntime{
 			ValidatorConsensusAddress: addr,
 		}
