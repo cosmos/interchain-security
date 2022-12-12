@@ -257,6 +257,10 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
 	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
 
+	// Replace data.Validator.Address with the proper provider chain consensus address,
+	// for later use in HandleSlashPacket
+	data.Validator.Address = providerConsAddr.Bytes()
+
 	// Queue a pending slash packet entry to the parent queue, which will be seen by the throttling logic
 	k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
 		ctx.BlockTime(),   // recv time
@@ -297,12 +301,13 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 // HandleSlashPacket potentially slashes, jails and/or tombstones
 // a misbehaving validator according to infraction type.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
-	// the slash packet validator address may be known only on the consumer chain;
-	// in this case, it must be mapped back to the consensus address on the provider chain
-	consumerAddr := sdk.ConsAddress(data.Validator.Address)
-	providerAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerAddr)
-	// get the validator
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr)
+
+	// Obtain provider chain consensus address from packet data
+	// (overwritten with proper provider chain cons address in OnRecvSlashPacket)
+	providerConsAddr := sdk.ConsAddress(data.Validator.Address)
+
+	// Obtain validator from staking keeper
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, data.Validator.Address)
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
@@ -316,11 +321,11 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	}
 
 	// tombstoned validators should not be slashed multiple times.
-	if k.slashingKeeper.IsTombstoned(ctx, providerAddr) {
+	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr) {
 		// Log and drop packet if validator is tombstoned.
 		k.Logger(ctx).Info(
 			"slash packet dropped because validator is already tombstoned",
-			"validator cons addr", providerAddr,
+			"validator cons addr", providerConsAddr,
 		)
 		return
 	}
@@ -345,19 +350,19 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		// then append the validator address to the slash ack for its chain id
 		slashFraction = k.slashingKeeper.SlashFractionDowntime(ctx)
 		jailTime = ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
-		k.AppendSlashAck(ctx, chainID, providerAddr.String())
+		k.AppendSlashAck(ctx, chainID, providerConsAddr.String())
 	case stakingtypes.DoubleSign:
 		// set double-signing slash fraction and infinite jail duration
 		// then tombstone the validator
 		slashFraction = k.slashingKeeper.SlashFractionDoubleSign(ctx)
 		jailTime = evidencetypes.DoubleSignJailEndTime
-		k.slashingKeeper.Tombstone(ctx, providerAddr)
+		k.slashingKeeper.Tombstone(ctx, providerConsAddr)
 	}
 
 	// slash validator
 	k.stakingKeeper.Slash(
 		ctx,
-		providerAddr,
+		providerConsAddr,
 		int64(infractionHeight),
 		data.Validator.Power,
 		slashFraction,
@@ -366,16 +371,15 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// jail validator
 	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, providerAddr)
+		k.stakingKeeper.Jail(ctx, providerConsAddr)
 	}
-	k.slashingKeeper.JailUntil(ctx, providerAddr, jailTime)
+	k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypeExecuteConsumerChainSlash,
 			sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
-			sdk.NewAttribute(ccv.AttributeValidatorAddress, providerAddr.String()),
-			sdk.NewAttribute(ccv.AttributeValidatorConsumerAddress, consumerAddr.String()),
+			sdk.NewAttribute(ccv.AttributeValidatorAddress, providerConsAddr.String()),
 			sdk.NewAttribute(ccv.AttributeInfractionType, data.Infraction.String()),
 			sdk.NewAttribute(ccv.AttributeInfractionHeight, strconv.Itoa(int(infractionHeight))),
 			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))),
