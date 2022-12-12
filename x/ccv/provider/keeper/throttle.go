@@ -13,9 +13,11 @@ import (
 
 // This file contains functionality relevant to the throttling of slash and vsc matured packets, aka circuit breaker logic.
 
-// HandlePendingSlashPackets handles all or some portion of pending slash packets received by consumer chains,
-// depending on throttling logic. The slash meter is decremented appropriately in this method.
-func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
+// HandleThrottleQueues iterates over the global slash entry queue, and
+// handles all or some portion of pending (slash and/or VSC matured) packet data received from
+// consumer chains, depending on throttling logic. The slash meter is decremented appropriately
+// in this method.
+func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
 
@@ -24,10 +26,10 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		return
 	}
 
-	handledEntries := []providertypes.SlashPacketEntry{}
+	handledGlobalEntries := []providertypes.GlobalSlashEntry{}
 
-	// Iterate through ordered (by received time) slash packet entries from any consumer chain
-	k.IteratePendingSlashPacketEntries(ctx, func(entry providertypes.SlashPacketEntry) (stop bool) {
+	// Iterate through ordered (by received time) global slash entries from any consumer chain
+	k.IterateGlobalSlashEntries(ctx, func(entry providertypes.GlobalSlashEntry) (stop bool) {
 
 		// Obtain validator from the provider's consensus address.
 		// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
@@ -47,19 +49,20 @@ func (k Keeper) HandlePendingSlashPackets(ctx sdktypes.Context) {
 		// Subtract this power from the slash meter
 		meter = meter.Sub(sdktypes.NewInt(valPower))
 
-		// Handle slash packet by passing in chainID and appropriate callbacks, relevant packet data is deleted in this method
+		// Handle slash packet by passing in chainID and appropriate callbacks,
+		// relevant packet data is deleted in this method
 		k.HandlePacketDataForChain(ctx, entry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
 
-		// Store handled entry to be deleted after iteration is completed
-		handledEntries = append(handledEntries, entry)
+		// Store handled global entry to be deleted after iteration is completed
+		handledGlobalEntries = append(handledGlobalEntries, entry)
 
-		// Do not handle anymore slash packets if the meter is negative in value
+		// Do not handle anymore global slash entries if the meter is negative in value
 		stop = meter.IsNegative()
 		return stop
 	})
 
-	// Handled entries are deleted after iteration is completed
-	k.DeletePendingSlashPacketEntries(ctx, handledEntries...)
+	// Handled global entries are deleted after iteration is completed
+	k.DeleteGlobalSlashEntries(ctx, handledGlobalEntries...)
 
 	// Persist current value for slash meter
 	k.SetSlashMeter(ctx, meter)
@@ -184,21 +187,22 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 // CRUD section
 //
 
-// QueuePendingSlashPacketEntry queues an entry to the "parent" slash packet queue, used for throttling val power changes
-// related to jailing/tombstoning over time. This "parent" queue is used to coordinate the order of slash packet handling
-// between chains, whereas the chain specific queue is used to coordinate the order of slash and vsc matured packets
+// QueueGlobalSlashEntry queues an entry to the "global" slash packet queue, used for throttling val power changes
+// related to jailing/tombstoning over time. This "global" queue is used to coordinate the order of slash packet handling
+// between chains, whereas the chain-specific queue is used to coordinate the order of slash and vsc matured packets
 // relevant to each chain.
-func (k Keeper) QueuePendingSlashPacketEntry(ctx sdktypes.Context,
-	entry providertypes.SlashPacketEntry) {
+func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context,
+	entry providertypes.GlobalSlashEntry) {
 	store := ctx.KVStore(k.storeKey)
-	key := providertypes.PendingSlashPacketEntryKey(entry)
+	key := providertypes.GlobalSlashEntryKey(entry)
 	store.Set(key, entry.ProviderValConsAddr)
 }
 
-// GetAllPendingSlashPacketEntries returns all pending slash packet entries in the queue
-// This method is used for testing purposes only
-func (k Keeper) GetAllPendingSlashPacketEntries(ctx sdktypes.Context) (entries []providertypes.SlashPacketEntry) {
-	k.IteratePendingSlashPacketEntries(ctx, func(entry providertypes.SlashPacketEntry) (stop bool) {
+// GetAllGlobalSlashEntries returns all global slash entries in the global queue slash entry queue.
+//
+// Note: This method is used for testing purposes only.
+func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) (entries []providertypes.GlobalSlashEntry) {
+	k.IterateGlobalSlashEntries(ctx, func(entry providertypes.GlobalSlashEntry) (stop bool) {
 		entries = append(entries, entry)
 		// Continue iteration
 		stop = false
@@ -207,11 +211,11 @@ func (k Keeper) GetAllPendingSlashPacketEntries(ctx sdktypes.Context) (entries [
 	return entries
 }
 
-// DeleteAllPendingSlashPacketEntries deletes all pending slash packet entries in the global queue,
+// DeleteGlobalSlashEntriesForConsumer deletes all pending slash packet entries in the global queue,
 // only relevant to a single consumer.
-func (k Keeper) DeletePendingSlashPacketEntriesForConsumer(ctx sdktypes.Context, consumerChainID string) {
-	entriesToDel := []providertypes.SlashPacketEntry{}
-	k.IteratePendingSlashPacketEntries(ctx, func(entry providertypes.SlashPacketEntry) (stop bool) {
+func (k Keeper) DeleteGlobalSlashEntriesForConsumer(ctx sdktypes.Context, consumerChainID string) {
+	entriesToDel := []providertypes.GlobalSlashEntry{}
+	k.IterateGlobalSlashEntries(ctx, func(entry providertypes.GlobalSlashEntry) (stop bool) {
 		if entry.ConsumerChainID == consumerChainID {
 			entriesToDel = append(entriesToDel, entry)
 		}
@@ -220,19 +224,19 @@ func (k Keeper) DeletePendingSlashPacketEntriesForConsumer(ctx sdktypes.Context,
 		return stop
 	})
 
-	k.DeletePendingSlashPacketEntries(ctx, entriesToDel...)
+	k.DeleteGlobalSlashEntries(ctx, entriesToDel...)
 }
 
-// IteratePendingSlashPackets iterates over the pending slash packet entry queue and calls the provided callback
-func (k Keeper) IteratePendingSlashPacketEntries(ctx sdktypes.Context,
-	cb func(providertypes.SlashPacketEntry) (stop bool)) {
+// IterateGlobalSlashEntries iterates over the global slash entry queue and calls the provided callback
+func (k Keeper) IterateGlobalSlashEntries(ctx sdktypes.Context,
+	cb func(providertypes.GlobalSlashEntry) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdktypes.KVStorePrefixIterator(store, []byte{providertypes.PendingSlashPacketEntryBytePrefix})
+	iterator := sdktypes.KVStorePrefixIterator(store, []byte{providertypes.GlobalSlashEntryBytePrefix})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		recvTime, chainID, ibcSeqNum := providertypes.ParsePendingSlashPacketEntryKey(iterator.Key())
+		recvTime, chainID, ibcSeqNum := providertypes.ParseGlobalSlashEntryKey(iterator.Key())
 		valAddr := iterator.Value()
-		entry := providertypes.NewSlashPacketEntry(recvTime, chainID, ibcSeqNum, valAddr)
+		entry := providertypes.NewGlobalSlashEntry(recvTime, chainID, ibcSeqNum, valAddr)
 		stop := cb(entry)
 		if stop {
 			break
@@ -240,11 +244,11 @@ func (k Keeper) IteratePendingSlashPacketEntries(ctx sdktypes.Context,
 	}
 }
 
-// DeletePendingSlashPackets deletes the given entries from the pending slash packet entry queue
-func (k Keeper) DeletePendingSlashPacketEntries(ctx sdktypes.Context, entries ...providertypes.SlashPacketEntry) {
+// DeleteGlobalSlashEntries deletes the given global entries from the global slash queue
+func (k Keeper) DeleteGlobalSlashEntries(ctx sdktypes.Context, entries ...providertypes.GlobalSlashEntry) {
 	store := ctx.KVStore(k.storeKey)
 	for _, entry := range entries {
-		store.Delete(providertypes.PendingSlashPacketEntryKey(entry))
+		store.Delete(providertypes.GlobalSlashEntryKey(entry))
 	}
 }
 

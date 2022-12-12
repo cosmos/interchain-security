@@ -205,9 +205,9 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		k.DeleteUnbondingOpIndex(ctx, chainID, id)
 	}
 
-	// Remove any existing throttling related queue entries from the
-	// global queue for this consumer.
-	k.DeletePendingSlashPacketEntriesForConsumer(ctx, chainID)
+	// Remove any existing throttling related entries from the global queue,
+	// only for this consumer.
+	k.DeleteGlobalSlashEntriesForConsumer(ctx, chainID)
 
 	if k.GetPendingPacketDataSize(ctx, chainID) > 0 {
 		k.Logger(ctx).Info("There are pending slash packets queued,"+

@@ -106,8 +106,8 @@ const (
 	// PendingPacketDataBytePrefix is the byte prefix storing pending packet data
 	PendingPacketDataBytePrefix
 
-	// PendingSlashPacketEntryBytePrefix is the byte prefix storing pending slash packet entries
-	PendingSlashPacketEntryBytePrefix
+	// PendingSlashPacketEntryBytePrefix is the byte prefix storing global slash queue entries
+	GlobalSlashEntryBytePrefix
 
 	// ConsumerValidatorsBytePrefix is the byte prefix that will store the validator assigned keys for every consumer chain
 	ConsumerValidatorsBytePrefix
@@ -291,25 +291,25 @@ func ParsePendingPacketDataKey(key []byte) (string, uint64, error) {
 	return ParseChainIdAndUintIdKey(PendingPacketDataBytePrefix, key)
 }
 
-// PendingSlashPacketEntryKey returns the key for storing a pending slash packet entry.
-func PendingSlashPacketEntryKey(packetEntry SlashPacketEntry) []byte {
-	timeBz := sdk.FormatTimeBytes(packetEntry.RecvTime)
+// GlobalSlashEntryKey returns the key for storing a global slash queue entry.
+func GlobalSlashEntryKey(entry GlobalSlashEntry) []byte {
+	timeBz := sdk.FormatTimeBytes(entry.RecvTime)
 	timeBzL := len(timeBz)
 	return AppendMany(
-		[]byte{PendingSlashPacketEntryBytePrefix},
+		[]byte{GlobalSlashEntryBytePrefix},
 		sdk.Uint64ToBigEndian(uint64(timeBzL)),
 		timeBz,
-		sdk.Uint64ToBigEndian(packetEntry.IbcSeqNum),
-		[]byte(packetEntry.ConsumerChainID),
+		sdk.Uint64ToBigEndian(entry.IbcSeqNum),
+		[]byte(entry.ConsumerChainID),
 	)
 }
 
-// ParsePendingSlashPacketEntryKey returns the received time and chainID for a pending slash packet entry key
-func ParsePendingSlashPacketEntryKey(bz []byte) (
+// ParseGlobalSlashEntry returns the received time and chainID for a global slash queue entry key.
+func ParseGlobalSlashEntryKey(bz []byte) (
 	recvTime time.Time, consumerChainID string, ibcSeqNum uint64) {
 
 	// Prefix is in first byte
-	expectedPrefix := []byte{PendingSlashPacketEntryBytePrefix}
+	expectedPrefix := []byte{GlobalSlashEntryBytePrefix}
 	if prefix := bz[:1]; !bytes.Equal(prefix, expectedPrefix) {
 		panic(fmt.Sprintf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix))
 	}

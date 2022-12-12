@@ -65,7 +65,7 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = []byte{types.ConsumerAddrsToPruneBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.PendingPacketDataSizeBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.PendingPacketDataBytePrefix}, i+1
-	keys[i], i = []byte{providertypes.PendingSlashPacketEntryBytePrefix}, i+1
+	keys[i], i = []byte{providertypes.GlobalSlashEntryBytePrefix}, i+1
 
 	return keys[:i]
 }
@@ -175,21 +175,21 @@ func TestPendingPacketDataKeyAndParse(t *testing.T) {
 	require.NotEqual(t, key1, key2)
 }
 
-// Tests the construction and parsing of keys for pending slash packet entries
-func TestPendingSlashPacketEntryKeyAndParse(t *testing.T) {
+// Tests the construction and parsing of keys for global slash entries
+func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
 	now := time.Now()
-	entries := []providertypes.SlashPacketEntry{}
-	entries = append(entries, providertypes.NewSlashPacketEntry(now, "chain-0", 2, cryptoutil.NewCryptoIdentityFromIntSeed(0).SDKConsAddress()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(2*time.Hour), "chain-7896978", 3, cryptoutil.NewCryptoIdentityFromIntSeed(1).SDKConsAddress()))
-	entries = append(entries, providertypes.NewSlashPacketEntry(now.Add(3*time.Hour), "chain-1", 4723894, cryptoutil.NewCryptoIdentityFromIntSeed(2).SDKConsAddress()))
+	entries := []providertypes.GlobalSlashEntry{}
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now, "chain-0", 2, cryptoutil.NewCryptoIdentityFromIntSeed(0).SDKConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(2*time.Hour), "chain-7896978", 3, cryptoutil.NewCryptoIdentityFromIntSeed(1).SDKConsAddress()))
+	entries = append(entries, providertypes.NewGlobalSlashEntry(now.Add(3*time.Hour), "chain-1", 4723894, cryptoutil.NewCryptoIdentityFromIntSeed(2).SDKConsAddress()))
 
 	for _, entry := range entries {
-		key := providertypes.PendingSlashPacketEntryKey(entry)
+		key := providertypes.GlobalSlashEntryKey(entry)
 		require.NotEmpty(t, key)
 		timeBzL := len(sdk.FormatTimeBytes(entry.RecvTime))
 		// This key should be of set length: prefix + 8 + timeBzL + 8 + chainID
 		require.Equal(t, 1+8+timeBzL+8+len(entry.ConsumerChainID), len(key))
-		parsedRecvTime, parsedChainID, parsedIBCSeqNum := providertypes.ParsePendingSlashPacketEntryKey(key)
+		parsedRecvTime, parsedChainID, parsedIBCSeqNum := providertypes.ParseGlobalSlashEntryKey(key)
 		require.Equal(t, entry.RecvTime, parsedRecvTime)
 		require.Equal(t, entry.ConsumerChainID, parsedChainID)
 		require.Equal(t, entry.IbcSeqNum, parsedIBCSeqNum)

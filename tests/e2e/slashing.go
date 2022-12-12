@@ -363,14 +363,14 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	suite.Require().False(errAck.Success())
 
 	// Expect nothing was queued
-	suite.Require().Equal(0, len(providerKeeper.GetAllPendingSlashPacketEntries(ctx)))
+	suite.Require().Equal(0, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
 	suite.Require().Equal(uint64(0), (providerKeeper.GetPendingPacketDataSize(ctx, consumerChainID)))
 
 	// expect to queue entries for the slash request
 	slashingPkt.Infraction = stakingtypes.DoubleSign
 	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
 	suite.Require().True(ack.Success())
-	suite.Require().Equal(1, len(providerKeeper.GetAllPendingSlashPacketEntries(ctx)))
+	suite.Require().Equal(1, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
 	suite.Require().Equal(uint64(1), (providerKeeper.GetPendingPacketDataSize(ctx, consumerChainID)))
 }
 

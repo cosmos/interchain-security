@@ -168,10 +168,10 @@ func TestOnRecvSlashPacket(t *testing.T) {
 	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 
-	// Confirm an entry was added to the parent queue, and pending packet data was added to the per-chain queue
-	packetEntries := providerKeeper.GetAllPendingSlashPacketEntries(ctx) // parent queue
-	require.Equal(t, 1, len(packetEntries))
-	require.Equal(t, "chain-1", packetEntries[0].ConsumerChainID)
+	// Confirm an entry was added to the global queue, and pending packet data was added to the per-chain queue
+	globalEntries := providerKeeper.GetAllGlobalSlashEntries(ctx) // parent queue
+	require.Equal(t, 1, len(globalEntries))
+	require.Equal(t, "chain-1", globalEntries[0].ConsumerChainID)
 	require.Equal(t, uint64(1), providerKeeper.GetPendingPacketDataSize(ctx, "chain-1")) // per chain queue
 
 	// Generate a new packet data instance with valid infraction type
@@ -187,10 +187,10 @@ func TestOnRecvSlashPacket(t *testing.T) {
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 
 	// Confirm sizes of parent queue and both per-chain queues
-	packetEntries = providerKeeper.GetAllPendingSlashPacketEntries(ctx) // parent queue
-	require.Equal(t, 2, len(packetEntries))
-	require.Equal(t, "chain-1", packetEntries[0].ConsumerChainID)
-	require.Equal(t, "chain-2", packetEntries[1].ConsumerChainID)
+	globalEntries = providerKeeper.GetAllGlobalSlashEntries(ctx)
+	require.Equal(t, 2, len(globalEntries))
+	require.Equal(t, "chain-1", globalEntries[0].ConsumerChainID)
+	require.Equal(t, "chain-2", globalEntries[1].ConsumerChainID)
 	require.Equal(t, uint64(1), providerKeeper.GetPendingPacketDataSize(ctx, "chain-1")) // per chain queue
 	require.Equal(t, uint64(1), providerKeeper.GetPendingPacketDataSize(ctx, "chain-2")) // per chain queue
 }

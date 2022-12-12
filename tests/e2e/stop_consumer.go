@@ -85,8 +85,8 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 
 				// Queue slash and vsc packet data for consumer 0, these queue entries will be removed
 				firstBundle := s.getFirstBundle()
-				globalEntry := types.NewSlashPacketEntry(s.providerCtx().BlockTime(), firstBundle.Chain.ChainID, 7, []byte{})
-				providerKeeper.QueuePendingSlashPacketEntry(s.providerCtx(), globalEntry)
+				globalEntry := types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), firstBundle.Chain.ChainID, 7, []byte{})
+				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
 				providerKeeper.QueuePendingSlashPacketData(s.providerCtx(), firstBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
 				providerKeeper.QueuePendingVSCMaturedPacketData(s.providerCtx(),
@@ -94,8 +94,8 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 
 				// Queue slash and vsc packet data for consumer 1, these queue entries will be not be removed
 				secondBundle := s.getBundleByIdx(1)
-				globalEntry = types.NewSlashPacketEntry(s.providerCtx().BlockTime(), secondBundle.Chain.ChainID, 7, []byte{})
-				providerKeeper.QueuePendingSlashPacketEntry(s.providerCtx(), globalEntry)
+				globalEntry = types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), secondBundle.Chain.ChainID, 7, []byte{})
+				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
 				providerKeeper.QueuePendingSlashPacketData(s.providerCtx(), secondBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
 				providerKeeper.QueuePendingVSCMaturedPacketData(s.providerCtx(),
@@ -119,7 +119,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	s.checkConsumerChainIsRemoved(firstBundle.Chain.ChainID, true)
 
 	// check entries related to second consumer chain are not removed
-	s.Require().Len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx()), 1)
+	s.Require().Len(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()), 1)
 
 	secondBundle := s.getBundleByIdx(1)
 	slashData, vscMaturedData := providerKeeper.GetAllPendingPacketData(
@@ -203,7 +203,7 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 	s.Require().Empty(providerKeeper.GetPendingPackets(s.providerCtx(), chainID))
 
 	// No remaining global entries for this consumer
-	allGlobalEntries := providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())
+	allGlobalEntries := providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
 	for _, entry := range allGlobalEntries {
 		s.Require().NotEqual(chainID, entry.ConsumerChainID)
 	}

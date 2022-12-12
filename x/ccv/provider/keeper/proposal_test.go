@@ -433,7 +433,7 @@ func TestStopConsumerChain(t *testing.T) {
 
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
 
-				providerKeeper.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
+				providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 					ctx.BlockTime(), "chainID", 1, cryptoutil.NewCryptoIdentityFromIntSeed(90).SDKConsAddress()))
 
 				providerKeeper.QueuePendingSlashPacketData(ctx, "chainID", 1, testkeeper.GetNewSlashPacketData())
@@ -523,7 +523,7 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 	})
 	require.False(t, found)
 
-	allGlobalEntries := providerKeeper.GetAllPendingSlashPacketEntries(ctx)
+	allGlobalEntries := providerKeeper.GetAllGlobalSlashEntries(ctx)
 	for _, entry := range allGlobalEntries {
 		require.NotEqual(t, expectedChainID, entry.ConsumerChainID)
 	}

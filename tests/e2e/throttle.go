@@ -257,7 +257,7 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 		s.providerCtx(), senderBundles[2].Chain.ChainID))
 
 	// All global queue entries are gone too
-	s.Require().Empty(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx()))
+	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()))
 }
 
 // TestPacketSpamAndQueueOrdering validates that the ordering of slash packet entries
@@ -315,7 +315,7 @@ func (s *CCVTestSuite) TestPacketSpamAndQueueOrdering() {
 	}
 
 	// Confirm that global queue has 500 packet entries
-	allGlobalEntries := providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx())
+	allGlobalEntries := providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
 	s.Require().Equal(500, len(allGlobalEntries))
 
 	// Confirm that the chain specific queue has 500 slash packet data
@@ -463,13 +463,13 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 	}
 
 	// We should have 6 pending slash packet entries queued.
-	s.Require().Len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx()), 6)
+	s.Require().Len(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()), 6)
 
 	// Call next block to process all pending slash packets in end blocker.
 	s.providerChain.NextBlock()
 
 	// All slash packets should have been handled immediately, even though they totaled to 150% of total power.
-	s.Require().Len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx()), 0)
+	s.Require().Len(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()), 0)
 }
 
 // Similar to TestSlashSameValidator, but 100% of val power is jailed a single block,
@@ -531,14 +531,14 @@ func (s CCVTestSuite) TestSlashAllValidators() {
 	}
 
 	// We should have 24 pending slash packet entries queued.
-	s.Require().Len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx()), 24)
+	s.Require().Len(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()), 24)
 
 	// Call next block to process all pending slash packets in end blocker.
 	s.providerChain.NextBlock()
 
 	// All slash packets should have been handled immediately,
 	// even though the first 4 packets jailed 100% of the total power.
-	s.Require().Len(providerKeeper.GetAllPendingSlashPacketEntries(s.providerCtx()), 0)
+	s.Require().Len(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()), 0)
 
 	// Sanity check that all validators are jailed.
 	for _, val := range s.providerChain.Vals.Validators {

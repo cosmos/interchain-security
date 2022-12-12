@@ -231,7 +231,7 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// set the ValsetUpdateBlockHeight
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
 	// Execute slash packet throttling logic
-	k.HandlePendingSlashPackets(ctx)
+	k.HandleThrottleQueues(ctx)
 	// Replenish slash meter if necessary
 	k.CheckForSlashMeterReplenishment(ctx)
 }
@@ -261,8 +261,8 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	// for later use in HandleSlashPacket
 	data.Validator.Address = providerConsAddr.Bytes()
 
-	// Queue a pending slash packet entry to the parent queue, which will be seen by the throttling logic
-	k.QueuePendingSlashPacketEntry(ctx, providertypes.NewSlashPacketEntry(
+	// Queue a slash entry to the global queue, which will be seen by the throttling logic
+	k.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 		ctx.BlockTime(),   // recv time
 		chainID,           // consumer chain id that sent the packet
 		packet.Sequence,   // IBC sequence number of the packet
