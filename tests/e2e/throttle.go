@@ -329,6 +329,7 @@ func (s *CCVTestSuite) TestPacketSpamAndQueueOrdering() {
 		providerConsAddr := providerKeeper.GetProviderAddrFromConsumerAddr(
 			s.providerCtx(), globalEntry.ConsumerChainID, slashPacketData[idx].Validator.Address)
 		// compare this to global queue entry
+		// TODO: we can improve this ordering assertion
 		s.Require().Equal(globalEntry.ProviderValConsAddr, providerConsAddr)
 	}
 
