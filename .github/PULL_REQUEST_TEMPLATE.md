@@ -20,6 +20,6 @@ If you've checked more than one of the first three boxes, consider splitting thi
 
 If `Refactor`, describe the new or existing tests that verify no behavior was changed or added where refactors were introduced.
 
-## New/Changed behavior tests
+## New behavior tests
 
 If `Feature` or `Fix`, describe the new or existing tests that verify the new behavior is correct and expected.
