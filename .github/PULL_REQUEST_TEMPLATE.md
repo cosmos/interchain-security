@@ -10,15 +10,15 @@ Closes: `#<issue>`
 
 If you've checked more than one of the first three boxes, consider splitting this PR into multiple PRs!
 
-- [ ] `Feature`: Changes and/or adds code behavior
-- [ ] `Fix`: Fixes a bug
-- [ ] `Refactor`: Changes existing code style (naming, structure, etc.)
+- [ ] `Feature`: Changes and/or adds code behavior, irrelevant to bug fixes
+- [ ] `Fix`: Changes and/or adds code behavior, specifically to fix a bug
+- [ ] `Refactor`: Changes existing code style, naming, structure, etc.
 - [ ] `Testing`: Adds testing
 - [ ] `Docs`: Adds documentation
 
 ## Regression tests
 
-If `Refactor`, describe the new or existing tests that verify no behavior was changed where refactors were introduced.
+If `Refactor`, describe the new or existing tests that verify no behavior was changed or added where refactors were introduced.
 
 ## New/Changed behavior tests
 
