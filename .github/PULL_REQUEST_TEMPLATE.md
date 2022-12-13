@@ -23,5 +23,3 @@ If `Refactor`, describe the new or existing tests that verify no behavior was ch
 ## New/Changed behavior tests
 
 If `Feature` or `Fix`, describe the new or existing tests that verify the new behavior is correct and expected.
-
-## For merge checklist, see *guidelines doc*
