@@ -72,10 +72,10 @@ func TestQueueVSCPackets(t *testing.T) {
 
 		pk := testkeeper.NewInMemProviderKeeper(keeperParams, mocks)
 		// no-op if tc.packets is empty
-		pk.AppendPendingPackets(ctx, chainID, tc.packets...)
+		pk.AppendPendingVSCPackets(ctx, chainID, tc.packets...)
 
 		pk.QueueVSCPackets(ctx)
-		pending := pk.GetPendingPackets(ctx, chainID)
+		pending := pk.GetPendingVSCPackets(ctx, chainID)
 		require.Len(t, pending, tc.expectedQueueSize, "pending vsc queue mismatch (%v != %v) in case: '%s'", tc.expectedQueueSize, len(pending), tc.name)
 
 		// next valset update ID -> default value in tests is 0

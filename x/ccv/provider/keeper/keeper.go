@@ -717,8 +717,8 @@ func (k Keeper) DeleteInitChainHeight(ctx sdk.Context, chainID string) {
 	store.Delete(types.InitChainHeightKey(chainID))
 }
 
-// GetPendingPackets returns the list of pending ValidatorSetChange packets stored under chain ID
-func (k Keeper) GetPendingPackets(ctx sdk.Context, chainID string) []ccv.ValidatorSetChangePacketData {
+// GetPendingVSCPackets returns the list of pending ValidatorSetChange packets stored under chain ID
+func (k Keeper) GetPendingVSCPackets(ctx sdk.Context, chainID string) []ccv.ValidatorSetChangePacketData {
 	var packets ccv.ValidatorSetChangePackets
 
 	store := ctx.KVStore(k.storeKey)
@@ -732,10 +732,10 @@ func (k Keeper) GetPendingPackets(ctx sdk.Context, chainID string) []ccv.Validat
 	return packets.GetList()
 }
 
-// AppendPendingPackets adds the given ValidatorSetChange packet to the list
+// AppendPendingVSCPackets adds the given ValidatorSetChange packet to the list
 // of pending ValidatorSetChange packets stored under chain ID
-func (k Keeper) AppendPendingPackets(ctx sdk.Context, chainID string, newPackets ...ccv.ValidatorSetChangePacketData) {
-	pds := append(k.GetPendingPackets(ctx, chainID), newPackets...)
+func (k Keeper) AppendPendingVSCPackets(ctx sdk.Context, chainID string, newPackets ...ccv.ValidatorSetChangePacketData) {
+	pds := append(k.GetPendingVSCPackets(ctx, chainID), newPackets...)
 
 	store := ctx.KVStore(k.storeKey)
 	packets := ccv.ValidatorSetChangePackets{List: pds}
@@ -746,8 +746,8 @@ func (k Keeper) AppendPendingPackets(ctx sdk.Context, chainID string, newPackets
 	store.Set(types.PendingVSCsKey(chainID), buf)
 }
 
-// DeletePendingPackets deletes the list of pending ValidatorSetChange packets for chain ID
-func (k Keeper) DeletePendingPackets(ctx sdk.Context, chainID string) {
+// DeletePendingVSCPackets deletes the list of pending ValidatorSetChange packets for chain ID
+func (k Keeper) DeletePendingVSCPackets(ctx sdk.Context, chainID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.PendingVSCsKey(chainID))
 }

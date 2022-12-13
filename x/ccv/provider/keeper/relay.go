@@ -139,29 +139,29 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	// collect validator updates
 	k.QueueVSCPackets(ctx)
 
-	// try sending packets to all chains
+	// try sending VSC packets to all chains
 	// if CCV channel is not established for consumer chain
 	// the updates will remain queued until the channel is established
-	k.SendPackets(ctx)
+	k.SendVSCPackets(ctx)
 }
 
-// SendPackets iterates over chains and sends pending packets (VSCs) to
+// SendVSCPackets iterates over chains and sends pending VSC packets to
 // consumer chains with established CCV channels
 // if CCV channel is not established for consumer chain
 // the updates will remain queued until the channel is established
-func (k Keeper) SendPackets(ctx sdk.Context) {
+func (k Keeper) SendVSCPackets(ctx sdk.Context) {
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
 		// check if CCV channel is established and send
 		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
-			k.SendPacketsToChain(ctx, chainID, channelID)
+			k.SendVSCPacketsToChain(ctx, chainID, channelID)
 		}
 		return false // continue iterating chains
 	})
 }
 
-// SendPacketsToChain sends all queued packets to the specified chain
-func (k Keeper) SendPacketsToChain(ctx sdk.Context, chainID, channelID string) {
-	pendingPackets := k.GetPendingPackets(ctx, chainID)
+// SendVSCPacketsToChain sends all queued VSC packets to the specified chain
+func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string) {
+	pendingPackets := k.GetPendingVSCPackets(ctx, chainID)
 	for _, data := range pendingPackets {
 		// send packet over IBC
 		err := utils.SendIBCPacket(
@@ -188,7 +188,7 @@ func (k Keeper) SendPacketsToChain(ctx sdk.Context, chainID, channelID string) {
 		// are actually sent over IBC
 		k.SetVscSendTimestamp(ctx, chainID, data.ValsetUpdateId, ctx.BlockTime())
 	}
-	k.DeletePendingPackets(ctx, chainID)
+	k.DeletePendingVSCPackets(ctx, chainID)
 }
 
 // QueueVSCPackets queues latest validator updates for every registered consumer chain
@@ -211,7 +211,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			// construct validator set change packet data
 			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
-			k.AppendPendingPackets(ctx, chainID, packet)
+			k.AppendPendingVSCPackets(ctx, chainID, packet)
 		}
 		return false // do not stop the iteration
 	})
