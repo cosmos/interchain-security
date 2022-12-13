@@ -35,8 +35,8 @@ func AccumulateChanges(currentChanges, newChanges []abci.ValidatorUpdate) []abci
 	// The list of tendermint updates should hash the same across all consensus nodes
 	// that means it is necessary to sort for determinism.
 	sort.Slice(out, func(i, j int) bool {
-		if out[i].Power > out[j].Power {
-			return true
+		if out[i].Power != out[j].Power {
+			return out[i].Power > out[j].Power
 		}
 		return out[i].PubKey.String() > out[j].PubKey.String()
 	})
