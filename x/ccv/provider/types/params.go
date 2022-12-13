@@ -21,6 +21,10 @@ const (
 	// as UnbondingPeriod / TrustingPeriodFraction
 	DefaultTrustingPeriodFraction = 2
 
+	// DefaultTrustingPeriodFraction is the default fraction used to compute TrustingPeriod
+	// as UnbondingPeriod / TrustingPeriodFraction
+	DefaultTrustingPeriodFractionX = "0.50"
+
 	// DefaultInitTimeoutPeriod defines the init timeout period
 	DefaultInitTimeoutPeriod = 7 * 24 * time.Hour
 
@@ -163,7 +167,12 @@ func validateTemplateClient(i interface{}) error {
 
 	// populate zeroed fields with valid fields
 	copiedClient.ChainId = "chainid"
-	copiedClient.TrustingPeriod = consumertypes.DefaultConsumerUnbondingPeriod / DefaultTrustingPeriodFraction
+	//copiedClient.TrustingPeriod = consumertypes.DefaultConsumerUnbondingPeriod / DefaultTrustingPeriodFraction
+	trustPeriod, err := ccvtypes.CalculateTrustPeriod(consumertypes.DefaultConsumerUnbondingPeriod, DefaultTrustingPeriodFractionX)
+	if err != nil {
+		return fmt.Errorf("invalid TrustPeriodFraction: %T", err)
+	}
+	copiedClient.TrustingPeriod = trustPeriod
 	copiedClient.UnbondingPeriod = consumertypes.DefaultConsumerUnbondingPeriod
 	copiedClient.LatestHeight = clienttypes.NewHeight(0, 1)
 

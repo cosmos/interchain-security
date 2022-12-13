@@ -703,6 +703,9 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	err = json.Unmarshal([]byte(jsonString), &expectedGenesis)
 	require.NoError(t, err)
 
+	actual, err := json.Marshal(actualGenesis)
+	t.Logf("Actual Genesis %s", actual)
+
 	// Zeroing out different fields that are challenging to mock
 	actualGenesis.InitialValSet = []abci.ValidatorUpdate{}
 	expectedGenesis.InitialValSet = []abci.ValidatorUpdate{}
