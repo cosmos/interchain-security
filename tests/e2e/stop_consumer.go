@@ -76,7 +76,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 		{
 			func(suite *CCVTestSuite) error {
 				providerKeeper.SetSlashAcks(s.providerCtx(), firstBundle.Chain.ChainID, []string{"validator-1", "validator-2", "validator-3"})
-				providerKeeper.AppendPendingPackets(s.providerCtx(), firstBundle.Chain.ChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
+				providerKeeper.AppendPendingVSCPackets(s.providerCtx(), firstBundle.Chain.ChainID, ccv.ValidatorSetChangePacketData{ValsetUpdateId: 1})
 				return nil
 			},
 		},
@@ -200,7 +200,7 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 
 	s.Require().Nil(providerKeeper.GetSlashAcks(s.providerCtx(), chainID))
 	s.Require().Zero(providerKeeper.GetInitChainHeight(s.providerCtx(), chainID))
-	s.Require().Empty(providerKeeper.GetPendingPackets(s.providerCtx(), chainID))
+	s.Require().Empty(providerKeeper.GetPendingVSCPackets(s.providerCtx(), chainID))
 
 	// No remaining global entries for this consumer
 	allGlobalEntries := providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
