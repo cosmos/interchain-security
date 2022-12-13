@@ -184,7 +184,7 @@ func (am AppModule) OnRecvPacket(
 		// handle SlashPacket
 		ack = am.keeper.OnRecvSlashPacket(ctx, packet, slashData)
 	} else {
-		errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("cannot unmarshal CCV packet data: %s", err.Error()))
+		errAck := channeltypes.NewErrorAcknowledgement("cannot unmarshal CCV packet data")
 		ack = &errAck
 	}
 
