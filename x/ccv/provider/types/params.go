@@ -19,7 +19,7 @@ const (
 
 	// DefaultTrustingPeriodFraction is the default fraction used to compute TrustingPeriod
 	// as UnbondingPeriod * TrustingPeriodFraction
-	DefaultTrustingPeriodFraction = "0.50"
+	DefaultTrustingPeriodFraction = "0.66"
 
 	// DefaultInitTimeoutPeriod defines the init timeout period
 	DefaultInitTimeoutPeriod = 7 * 24 * time.Hour
