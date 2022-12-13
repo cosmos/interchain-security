@@ -22,8 +22,6 @@ import (
 
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
-	abcitypes "github.com/tendermint/tendermint/abci/types"
 )
 
 type CoreSuite struct {
@@ -72,10 +70,6 @@ func (b *CoreSuite) providerStakingKeeper() stakingkeeper.Keeper {
 
 func (b *CoreSuite) providerSlashingKeeper() slashingkeeper.Keeper {
 	return b.providerChain().App.(*appProvider.App).SlashingKeeper
-}
-
-func (b *CoreSuite) providerKeeper() providerkeeper.Keeper {
-	return b.providerChain().App.(*appProvider.App).ProviderKeeper
 }
 
 func (b *CoreSuite) consumerKeeper() consumerkeeper.Keeper {
@@ -264,20 +258,6 @@ func (s *CoreSuite) matchState() {
 		}
 		// TODO: outstanding downtime
 	}
-}
-
-// TODO:  debug util, delete before merging to main
-func printValidatorConsAddress(s *CoreSuite, validator int64) {
-	v, found := s.providerStakingKeeper().GetValidator(s.ctx(P), s.validator(validator))
-	if !found {
-		panic("bad")
-	}
-	cons, err := v.GetConsAddr()
-	if err != nil {
-		panic("bad")
-	}
-	vx := abcitypes.Validator{Address: cons.Bytes(), Power: 0}
-	fmt.Println(vx.String())
 }
 
 func (s *CoreSuite) executeTrace() {
