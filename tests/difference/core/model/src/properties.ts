@@ -190,38 +190,50 @@ function stakingWithoutSlashing(hist: BlockHistory): boolean {
  * @returns Is the property satisfied?
  */
 function validatorSetReplication(hist: BlockHistory): boolean {
+  // return true;
   const blocks = hist.blocks;
   let good = true;
-  blocks[C].forEach((b: CommittedBlock) => {
-    const ss = b.invariantSnapshot;
-    if (ss.h[C] === 0) {
+  blocks[C].forEach((b: CommittedBlock, hC: number) => {
+    if (hC < 1) {
+      // The model starts at consumer height 0, so there is
+      // no committed block at height - 1. This means it does
+      // not make sense to try to check the property for height 0.
       return
     }
+    const ss = b.invariantSnapshot;
     // Get the vscid of the last update which dictated
     // the consumer valset valsetC committed at hC-1
-    const vscid = ss.hToVscID[ss.h[C]];
+    const vscid = ss.hToVscID[hC];
     // The VSU packet was sent at height hP-1
     const hP = ss.vscIDtoH[vscid];
     // Compare the validator sets at hC-1 and hP-1
-    const valsetC = blocks[C].get(ss.h[C] - 1)!.invariantSnapshot.consumerPower;
+    const valsetC = blocks[C].get(hC - 1)!.invariantSnapshot.consumerPower;
     // The provider set is implicitly defined by the status and tokens (power)
-    console.log(`hP: ${hP}`);
+    if (hP < 1) {
+      // The model starts at provider height 0, so there is
+      // no committed block at height - 1. This means it does not
+      // make sense to try to check the property for height 0.
+      return
+    }
     const statusP = blocks[P].get(hP - 1)!.invariantSnapshot.status;
     const tokensP = blocks[P].get(hP - 1)!.invariantSnapshot.tokens;
     assert(valsetC.length === statusP.length, 'this should never happen.');
     assert(valsetC.length === tokensP.length, 'this should never happen.');
     valsetC.forEach((power, i) => {
       if (power !== undefined) { // undefined means the validator is not in the set
-        good = good && tokensP[i] === power;
+        // Check that the consumer power is strictly equal to the provider power
+        good = good && (tokensP[i] === power);
       }
     })
     statusP.forEach((status, i) => {
       if (status === Status.BONDED) {
         const power = tokensP[i];
-        good = good && valsetC[i] === power;
+        // Check that the consumer power is strictly equal to the provider power
+        good = good && (valsetC[i] === power);
       }
       else {
-        good = good && valsetC[i] === undefined;
+        // Ensure that the consumer validator set does not contain a non-bonded validator
+        good = good && (valsetC[i] === undefined);
       }
     })
 
