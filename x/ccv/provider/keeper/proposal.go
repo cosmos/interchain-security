@@ -62,7 +62,12 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	clientState := k.GetTemplateClient(ctx)
 	clientState.ChainId = prop.ChainId
 	clientState.LatestHeight = prop.InitialHeight
-	clientState.TrustingPeriod = consumerUnbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
+
+	trustPeriod, err := ccv.CalculateTrustPeriod(consumerUnbondingPeriod, k.GetTrustingPeriodFraction(ctx))
+	if err != nil {
+		return err
+	}
+	clientState.TrustingPeriod = trustPeriod
 	clientState.UnbondingPeriod = consumerUnbondingPeriod
 
 	consumerGen, validatorSetHash, err := k.MakeConsumerGenesis(ctx, prop)
@@ -220,7 +225,11 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 	// this is the latest height the client was updated at, i.e.,
 	// the height of the latest consensus state (see below)
 	clientState.LatestHeight = height
-	clientState.TrustingPeriod = providerUnbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
+	trustPeriod, err := ccv.CalculateTrustPeriod(providerUnbondingPeriod, k.GetTrustingPeriodFraction(ctx))
+	if err != nil {
+		return gen, nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidHeight, "error %s calculating trusting_period for: %s", err, height)
+	}
+	clientState.TrustingPeriod = trustPeriod
 	clientState.UnbondingPeriod = providerUnbondingPeriod
 
 	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)

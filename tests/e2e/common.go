@@ -436,10 +436,11 @@ func (suite *CCVTestSuite) CreateCustomClient(endpoint *ibctesting.Endpoint, unb
 	tmConfig, ok := endpoint.ClientConfig.(*ibctesting.TendermintConfig)
 	require.True(endpoint.Chain.T, ok)
 	tmConfig.UnbondingPeriod = unbondingPeriod
-	trustPeriod, err := ccv.CalculateTrustPeriod(unbondingPeriod, providertypes.DefaultTrustingPeriodFractionX)
+
+	trustPeriod, err := ccv.CalculateTrustPeriod(unbondingPeriod, providertypes.DefaultTrustingPeriodFraction)
 	require.NoError(endpoint.Chain.T, err)
-	//tmConfig.TrustingPeriod = unbondingPeriod / providertypes.DefaultTrustingPeriodFraction
 	tmConfig.TrustingPeriod = trustPeriod
+
 	height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
 	UpgradePath := []string{"upgrade", "upgradedIBCState"}
 	clientState := ibctm.NewClientState(

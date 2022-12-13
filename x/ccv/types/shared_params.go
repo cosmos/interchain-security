@@ -95,10 +95,11 @@ func ValidateStringFraction(i interface{}) error {
 }
 
 func CalculateTrustPeriod(unbondingPeriod time.Duration, defaultTrustPeriodFraction string) (time.Duration, error) {
-	decX, err := sdktypes.NewDecFromStr(defaultTrustPeriodFraction)
+	trustDec, err := sdktypes.NewDecFromStr(defaultTrustPeriodFraction)
 	if err != nil {
 		return time.Duration(0), err
 	}
-	trustPeriod := time.Duration(decX.MulInt64(unbondingPeriod.Milliseconds()).TruncateInt64())
+	trustPeriod := time.Duration(trustDec.MulInt64(unbondingPeriod.Nanoseconds()).TruncateInt64())
+
 	return trustPeriod, nil
 }
