@@ -86,7 +86,7 @@ For the following invariant to hold, these points must be true:
 
 - We assume the total voting power of the chain (as a function of delegations) does not significantly increase over the course of the attack.
 - The final slashed validator does not have more than `SlashMeterReplenishFraction` of total voting power on the provider.
-- `SlashMeterReplenishFraction` is large enough to avoid rounding errors.
+- `SlashMeterReplenishFraction` is large enough that `SlashMeterReplenishFraction` * `currentTotalVotingPower` > 1. Ie. the replenish fraction is set high enough that we can ignore rounding errors.
 - `SlashMeterReplenishPeriod` is sufficiently longer than the time it takes to produce a block.
 
 Invariant:
