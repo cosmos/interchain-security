@@ -74,7 +74,7 @@ Once the slash meter becomes not full, it'll be replenished after `SlashMeterRep
 
 1. The slash meter can go negative in value, and will do so when handling a single slash packet that jails a validator with significant voting power. In such a scenario, the slash meter may take multiple replenishment periods to once again reach a positive value, meaning no other slash packets may be handled for multiple replenishment periods.
 2. Total voting power of a chain changes over time, especially as validators are jailed/tombstoned. As validators are jailed, total voting power decreases, and so does the slashing allowance for specific blocks.
-3. The voting power allowance added to the slash meter during replenishment will always be greater than or equal to 1. If the `SlashMeterReplenishFraction (param)` is set too low, integer rounding will put this minimum value into effect.
+3. The voting power allowance added to the slash meter during replenishment will always be greater than or equal to 1. If the `SlashMeterReplenishFraction (param)` is set too low, integer rounding will put this minimum value into effect. That is, if `SlashMeterReplenishFraction` * `currentTotalVotingPower` < 1, then the effective allowance would be 1. This min value of allowance ensures that there's some packets handled over time, even if that is a very long time. It's a crude solution to an edge case caused by too small of a replenishment fraction.
 
 The behavior described above is achieved by executing `CheckForSlashMeterReplenishment()` every endblock.
 
