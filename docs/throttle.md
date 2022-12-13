@@ -14,6 +14,10 @@ The system properties maintained for CCV are defined here: [CCV spec - Consumer 
 
 TODO: Update `Provider Slashing Warranty` to accommodate that slash requests are not always applied on the same block that the provider receives a slash packet.
 
+## Practical/Implementation Properties
+
+One property of this implementation (that probably doesn't need to be in the spec) is that if any of the chain-specific packet data queues become larger than `MaxPendingSlashingPackets (param)`, then the provider binary will panic, and the provider chain will halt. Therefore this param should be set carefully. See [PanicIfTooMuchThrottledPacketData](../x/ccv/provider/keeper/throttle.go#L264) for more details. This behavior is included so that if the provider binaries are queuing up more packet data than machines can handle, the provider chain halts deterministically between validators.
+
 ## Data structure - Global entry queue
 
 There exists a single queue which stores "pending slash packet entries". These entries allow the provider to appropriately handle slash packets sent from any consumer in FIFO ordering. This queue is responsible for coordinating the order that slash packets (from multiple chains) are handled over time.
