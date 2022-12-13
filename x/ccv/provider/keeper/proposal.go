@@ -209,15 +209,15 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	// only for this consumer.
 	k.DeleteGlobalSlashEntriesForConsumer(ctx, chainID)
 
-	if k.GetPendingPacketDataSize(ctx, chainID) > 0 {
-		k.Logger(ctx).Info("There are pending slash packets queued,"+
-			" from a consumer that is being removed. Those slash packets will be thrown out!", "chainID", chainID)
+	if k.GetThrottledPacketDataSize(ctx, chainID) > 0 {
+		k.Logger(ctx).Info("There are throttled slash and/or vsc matured packet data instances queued,"+
+			" from a consumer that is being removed. This packet data will be thrown out!", "chainID", chainID)
 	}
 
-	// Remove all pending slash packets and vsc matured packets queued for this consumer.
+	// Remove all throttled slash packets and vsc matured packets queued for this consumer.
 	// Note: queued VSC matured packets can be safely removed from the per-chain queue,
 	// since all unbonding operations for this consumer are release above.
-	k.DeletePendingPacketDataForConsumer(ctx, chainID)
+	k.DeleteAllThrottledPacketDataForConsumer(ctx, chainID)
 
 	return nil
 }

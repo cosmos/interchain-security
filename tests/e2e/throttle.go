@@ -149,7 +149,7 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
 		// Confirm packets were not queued on provider for this consumer
 		s.Require().Equal(uint64(0),
-			providerKeeper.GetPendingPacketDataSize(s.providerCtx(), consumerChainID))
+			providerKeeper.GetThrottledPacketDataSize(s.providerCtx(), consumerChainID))
 	}
 
 	// Choose 3 consumer bundles. It doesn't matter which ones.
@@ -205,15 +205,15 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	// Confirm that the slash packet and trailing VSC matured packet
 	// were handled immediately for the first consumer (this packet was recv first).
 	s.confirmValidatorJailed(valsToSlash[0], true)
-	s.Require().Equal(uint64(0), providerKeeper.GetPendingPacketDataSize(
+	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(
 		s.providerCtx(), senderBundles[0].Chain.ChainID))
 
 	// Packets were queued for the second and third consumers.
 	s.confirmValidatorNotJailed(valsToSlash[1], 1000)
-	s.Require().Equal(uint64(3), providerKeeper.GetPendingPacketDataSize(
+	s.Require().Equal(uint64(3), providerKeeper.GetThrottledPacketDataSize(
 		s.providerCtx(), senderBundles[1].Chain.ChainID))
 	s.confirmValidatorNotJailed(valsToSlash[2], 1000)
-	s.Require().Equal(uint64(3), providerKeeper.GetPendingPacketDataSize(
+	s.Require().Equal(uint64(3), providerKeeper.GetThrottledPacketDataSize(
 		s.providerCtx(), senderBundles[2].Chain.ChainID))
 
 	// Total power is now 3000
@@ -249,11 +249,11 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	for _, val := range valsToSlash {
 		s.confirmValidatorJailed(val, true)
 	}
-	s.Require().Equal(uint64(0), providerKeeper.GetPendingPacketDataSize(
+	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(
 		s.providerCtx(), senderBundles[0].Chain.ChainID))
-	s.Require().Equal(uint64(0), providerKeeper.GetPendingPacketDataSize(
+	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(
 		s.providerCtx(), senderBundles[1].Chain.ChainID))
-	s.Require().Equal(uint64(0), providerKeeper.GetPendingPacketDataSize(
+	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(
 		s.providerCtx(), senderBundles[2].Chain.ChainID))
 
 	// All global queue entries are gone too
@@ -319,7 +319,7 @@ func (s *CCVTestSuite) TestPacketSpamAndQueueOrdering() {
 	s.Require().Equal(500, len(allGlobalEntries))
 
 	// Confirm that the chain specific queue has 500 slash packet data
-	slashPacketData, _ := providerKeeper.GetAllPendingPacketData(
+	slashPacketData, _ := providerKeeper.GetAllThrottledPacketData(
 		s.providerCtx(), firstBundle.Chain.ChainID)
 	s.Require().Equal(500, len(slashPacketData))
 

@@ -100,11 +100,11 @@ const (
 	// the list of VSC sending timestamps for a given consumer chainID.
 	VscSendTimestampBytePrefix
 
-	// PendingPacketDataSizeBytePrefix is the byte prefix for storing the size of pending packet data queues per chain
-	PendingPacketDataSizeBytePrefix
+	// ThrottledPacketDataSizeBytePrefix is the byte prefix for storing the size of chain-specific throttled packet data queues
+	ThrottledPacketDataSizeBytePrefix
 
-	// PendingPacketDataBytePrefix is the byte prefix storing pending packet data
-	PendingPacketDataBytePrefix
+	// ThrottledPacketDataBytePrefix is the byte prefix storing throttled packet data
+	ThrottledPacketDataBytePrefix
 
 	// PendingSlashPacketEntryBytePrefix is the byte prefix storing global slash queue entries
 	GlobalSlashEntryBytePrefix
@@ -276,19 +276,19 @@ func ConsumerAddrsToPruneKey(chainID string, vscID uint64) []byte {
 	return ChainIdAndUintIdKey(ConsumerAddrsToPruneBytePrefix, chainID, vscID)
 }
 
-// PendingPacketDataSizeKey returns the key storing the size of the pending packet data queue for a given chain ID
-func PendingPacketDataSizeKey(consumerChainID string) []byte {
-	return append([]byte{PendingPacketDataSizeBytePrefix}, []byte(consumerChainID)...)
+// ThrottledPacketDataSizeKey returns the key storing the size of the throttled packet data queue for a given chain ID
+func ThrottledPacketDataSizeKey(consumerChainID string) []byte {
+	return append([]byte{ThrottledPacketDataSizeBytePrefix}, []byte(consumerChainID)...)
 }
 
-// PendingPacketDataKey returns the key storing the pending packet data queue for a given chain ID and ibc seq num
-func PendingPacketDataKey(consumerChainID string, ibcSeqNum uint64) []byte {
-	return ChainIdAndUintIdKey(PendingPacketDataBytePrefix, consumerChainID, ibcSeqNum)
+// ThrottledPacketDataKey returns the key storing the throttled packet data queue for a given chain ID and ibc seq num
+func ThrottledPacketDataKey(consumerChainID string, ibcSeqNum uint64) []byte {
+	return ChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, consumerChainID, ibcSeqNum)
 }
 
-// ParsePendingPacketDataKey parses a pending packet data key for IBC sequence number
-func ParsePendingPacketDataKey(key []byte) (string, uint64, error) {
-	return ParseChainIdAndUintIdKey(PendingPacketDataBytePrefix, key)
+// ParseThrottledPacketDataKey parses a throttled packet data key
+func ParseThrottledPacketDataKey(key []byte) (string, uint64, error) {
+	return ParseChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, key)
 }
 
 // GlobalSlashEntryKey returns the key for storing a global slash queue entry.

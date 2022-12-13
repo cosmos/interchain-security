@@ -42,12 +42,13 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	// If no packets are in the per chain queue, immediately handle the vsc matured packet data
-	if k.GetPendingPacketDataSize(ctx, chainID) == 0 {
+	// If no packets are in the chain specific throttled packet data queue,
+	// immediately handle the vsc matured packet data.
+	if k.GetThrottledPacketDataSize(ctx, chainID) == 0 {
 		k.HandleVSCMaturedPacket(ctx, chainID, data)
 	} else {
-		// Otherwise queue the packet data as pending (behind one or more pending slash packet data instances)
-		k.QueuePendingVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
+		// Otherwise queue the packet data (behind one or more throttled slash packet data instances)
+		k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
 	}
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
@@ -269,8 +270,8 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		providerConsAddr)) // Provider consensus address of val to be slashed
 
 	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
-	// to enforce order of handling between the two packet types.
-	k.QueuePendingSlashPacketData(ctx,
+	// to enforce order of handling between the two packet data types.
+	k.QueueThrottledSlashPacketData(ctx,
 		chainID,         // consumer chain id that sent the packet
 		packet.Sequence, // IBC sequence number of the packet
 		data)

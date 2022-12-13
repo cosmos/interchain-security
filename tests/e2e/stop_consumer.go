@@ -87,18 +87,18 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 				firstBundle := s.getFirstBundle()
 				globalEntry := types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), firstBundle.Chain.ChainID, 7, []byte{})
 				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
-				providerKeeper.QueuePendingSlashPacketData(s.providerCtx(), firstBundle.Chain.ChainID, 1,
+				providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), firstBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
-				providerKeeper.QueuePendingVSCMaturedPacketData(s.providerCtx(),
+				providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
 					firstBundle.Chain.ChainID, 2, ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
 
 				// Queue slash and vsc packet data for consumer 1, these queue entries will be not be removed
 				secondBundle := s.getBundleByIdx(1)
 				globalEntry = types.NewGlobalSlashEntry(s.providerCtx().BlockTime(), secondBundle.Chain.ChainID, 7, []byte{})
 				providerKeeper.QueueGlobalSlashEntry(s.providerCtx(), globalEntry)
-				providerKeeper.QueuePendingSlashPacketData(s.providerCtx(), secondBundle.Chain.ChainID, 1,
+				providerKeeper.QueueThrottledSlashPacketData(s.providerCtx(), secondBundle.Chain.ChainID, 1,
 					ccv.SlashPacketData{ValsetUpdateId: 1})
-				providerKeeper.QueuePendingVSCMaturedPacketData(s.providerCtx(),
+				providerKeeper.QueueThrottledVSCMaturedPacketData(s.providerCtx(),
 					secondBundle.Chain.ChainID, 2, ccv.VSCMaturedPacketData{ValsetUpdateId: 2})
 
 				return nil
@@ -122,7 +122,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	s.Require().Len(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()), 1)
 
 	secondBundle := s.getBundleByIdx(1)
-	slashData, vscMaturedData := providerKeeper.GetAllPendingPacketData(
+	slashData, vscMaturedData := providerKeeper.GetAllThrottledPacketData(
 		s.providerCtx(), secondBundle.Chain.ChainID)
 	s.Require().Len(slashData, 1)
 	s.Require().Len(vscMaturedData, 1)
@@ -209,7 +209,7 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 	}
 
 	// No remaining per-chain entries for this consumer
-	slashData, vscMaturedData := providerKeeper.GetAllPendingPacketData(s.providerCtx(), chainID)
+	slashData, vscMaturedData := providerKeeper.GetAllThrottledPacketData(s.providerCtx(), chainID)
 	s.Require().Empty(slashData)
 	s.Require().Empty(vscMaturedData)
 }

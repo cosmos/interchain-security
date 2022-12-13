@@ -120,9 +120,9 @@ func TestHandlePacketDataForChain(t *testing.T) {
 		defer ctrl.Finish()
 		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
-		// Queue pending packet data, where chainID is arbitrary, and ibc seq number is index of the data instance
+		// Queue throttled packet data, where chainID is arbitrary, and ibc seq number is index of the data instance
 		for i, data := range tc.dataToQueue {
-			providerKeeper.QueuePendingPacketData(ctx, tc.chainID, uint64(i), data)
+			providerKeeper.QueueThrottledPacketData(ctx, tc.chainID, uint64(i), data)
 		}
 
 		// Define our handler callbacks to simply store the data instances that are handled
@@ -164,7 +164,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 		}
 
 		dataThatsLeft := []interface{}{}
-		providerKeeper.IteratePendingPacketData(ctx, tc.chainID, func(ibcSeqNum uint64, data interface{}) bool {
+		providerKeeper.IterateThrottledPacketData(ctx, tc.chainID, func(ibcSeqNum uint64, data interface{}) bool {
 			dataThatsLeft = append(dataThatsLeft, data)
 			return false
 		})
@@ -754,8 +754,9 @@ func TestGlobalSlashEntryDeletion(t *testing.T) {
 	require.Equal(t, "chain-6", gotEntries[3].ConsumerChainID)
 }
 
-// TestPendingPacketData tests the pending packet data queuing, iteration and deletion functionality.
-func TestPendingPacketData(t *testing.T) {
+// TestThrottledPacketData tests chain-specific throttled packet data queuing,
+// iteration and deletion functionality.
+func TestThrottledPacketData(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -763,7 +764,7 @@ func TestPendingPacketData(t *testing.T) {
 
 	packetDataForMultipleConsumers := []struct {
 		chainID   string
-		instances []pendingPacketDataInstance
+		instances []throttledPacketDataInstance
 
 		// Expected order of data instances after retrieval from store, before deletion (specified by instance index)
 		expectedOrder []int
@@ -775,7 +776,7 @@ func TestPendingPacketData(t *testing.T) {
 		// Note, duplicate ibc sequence numbers are not tested, as we assume ibc behaves correctly
 		{
 			chainID: "chain-0",
-			instances: []pendingPacketDataInstance{
+			instances: []throttledPacketDataInstance{
 				{IbcSeqNum: 0, Data: testkeeper.GetNewSlashPacketData()},
 				{IbcSeqNum: 1, Data: testkeeper.GetNewVSCMaturedPacketData()},
 				{IbcSeqNum: 2, Data: testkeeper.GetNewSlashPacketData()},
@@ -788,7 +789,7 @@ func TestPendingPacketData(t *testing.T) {
 		},
 		{
 			chainID: "chain-7",
-			instances: []pendingPacketDataInstance{
+			instances: []throttledPacketDataInstance{
 				{IbcSeqNum: 96, Data: testkeeper.GetNewSlashPacketData()},
 				{IbcSeqNum: 78, Data: testkeeper.GetNewVSCMaturedPacketData()},
 				{IbcSeqNum: 12, Data: testkeeper.GetNewSlashPacketData()},
@@ -803,7 +804,7 @@ func TestPendingPacketData(t *testing.T) {
 		},
 		{
 			chainID: "chain-thats-not-0-or-7",
-			instances: []pendingPacketDataInstance{
+			instances: []throttledPacketDataInstance{
 				{IbcSeqNum: 9, Data: testkeeper.GetNewSlashPacketData()},
 				{IbcSeqNum: 8, Data: testkeeper.GetNewSlashPacketData()},
 				{IbcSeqNum: 7, Data: testkeeper.GetNewSlashPacketData()},
@@ -820,7 +821,7 @@ func TestPendingPacketData(t *testing.T) {
 	// Queue all packet data at once
 	for _, chainData := range packetDataForMultipleConsumers {
 		for _, dataInstance := range chainData.instances {
-			providerKeeper.QueuePendingPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, dataInstance.Data)
+			providerKeeper.QueueThrottledPacketData(ctx, chainData.chainID, dataInstance.IbcSeqNum, dataInstance.Data)
 		}
 	}
 
@@ -833,7 +834,7 @@ func TestPendingPacketData(t *testing.T) {
 	// Delete specified data all at once
 	for _, chainData := range packetDataForMultipleConsumers {
 		for _, i := range chainData.toDelete {
-			providerKeeper.DeletePendingPacketData(ctx, chainData.chainID, chainData.instances[i].IbcSeqNum)
+			providerKeeper.DeleteThrottledPacketData(ctx, chainData.chainID, chainData.instances[i].IbcSeqNum)
 		}
 	}
 
@@ -844,40 +845,40 @@ func TestPendingPacketData(t *testing.T) {
 	}
 }
 
-// TestDeletePendingPacketDataForConsumer tests the DeletePendingPacketDataForConsumer method.
-func TestDeletePendingPacketDataForConsumer(t *testing.T) {
+// TestDeleteAllThrottledPacketDataForConsumer tests the DeleteAllThrottledPacketDataForConsumer method.
+func TestDeleteAllThrottledPacketDataForConsumer(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
 
 	// Queue slash and a VSC matured packet data for chain-48
-	providerKeeper.QueuePendingSlashPacketData(ctx, "chain-48", 0, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueuePendingVSCMaturedPacketData(ctx, "chain-48", 1, testkeeper.GetNewVSCMaturedPacketData())
+	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-48", 0, testkeeper.GetNewSlashPacketData())
+	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-48", 1, testkeeper.GetNewVSCMaturedPacketData())
 
 	// Queue 3 slash, and 4 vsc matured packet data instances for chain-49
-	providerKeeper.QueuePendingSlashPacketData(ctx, "chain-49", 0, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueuePendingSlashPacketData(ctx, "chain-49", 1, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueuePendingSlashPacketData(ctx, "chain-49", 2, testkeeper.GetNewSlashPacketData())
-	providerKeeper.QueuePendingVSCMaturedPacketData(ctx, "chain-49", 3, testkeeper.GetNewVSCMaturedPacketData())
-	providerKeeper.QueuePendingVSCMaturedPacketData(ctx, "chain-49", 4, testkeeper.GetNewVSCMaturedPacketData())
-	providerKeeper.QueuePendingVSCMaturedPacketData(ctx, "chain-49", 5, testkeeper.GetNewVSCMaturedPacketData())
-	providerKeeper.QueuePendingVSCMaturedPacketData(ctx, "chain-49", 6, testkeeper.GetNewVSCMaturedPacketData())
+	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 0, testkeeper.GetNewSlashPacketData())
+	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 1, testkeeper.GetNewSlashPacketData())
+	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-49", 2, testkeeper.GetNewSlashPacketData())
+	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 3, testkeeper.GetNewVSCMaturedPacketData())
+	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 4, testkeeper.GetNewVSCMaturedPacketData())
+	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 5, testkeeper.GetNewVSCMaturedPacketData())
+	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 6, testkeeper.GetNewVSCMaturedPacketData())
 
 	// Delete all packet data for chain-49, confirm they are deleted
-	providerKeeper.DeletePendingPacketDataForConsumer(ctx, "chain-49")
-	slashData, vscMaturedData := providerKeeper.GetAllPendingPacketData(ctx, "chain-49")
+	providerKeeper.DeleteAllThrottledPacketDataForConsumer(ctx, "chain-49")
+	slashData, vscMaturedData := providerKeeper.GetAllThrottledPacketData(ctx, "chain-49")
 	require.Empty(t, slashData)
 	require.Empty(t, vscMaturedData)
 
 	// Confirm packet data for chain-48 is not deleted
-	slashData, vscMaturedData = providerKeeper.GetAllPendingPacketData(ctx, "chain-48")
+	slashData, vscMaturedData = providerKeeper.GetAllThrottledPacketData(ctx, "chain-48")
 	require.Len(t, slashData, 1)
 	require.Len(t, vscMaturedData, 1)
 }
 
-// TestPanicIfTooMuchPendingPacketData tests the PanicIfTooMuchPendingPacketData method.
-func TestPanicIfTooMuchPendingPacketData(t *testing.T) {
+// TestPanicIfTooMuchThrottledPacketData tests the PanicIfTooMuchThrottledPacketData method.
+func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 
 	testCases := []struct {
 		max int64
@@ -902,8 +903,8 @@ func TestPanicIfTooMuchPendingPacketData(t *testing.T) {
 		rand.Seed(time.Now().UnixNano())
 
 		// Queuing up a couple data instances for another chain shouldn't matter
-		providerKeeper.QueuePendingPacketData(ctx, "chain-17", 0, testkeeper.GetNewSlashPacketData())
-		providerKeeper.QueuePendingPacketData(ctx, "chain-17", 1, testkeeper.GetNewVSCMaturedPacketData())
+		providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 0, testkeeper.GetNewSlashPacketData())
+		providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 1, testkeeper.GetNewVSCMaturedPacketData())
 
 		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
 		reachedMax := false
@@ -918,11 +919,11 @@ func TestPanicIfTooMuchPendingPacketData(t *testing.T) {
 			// Panic only if we've reached the max
 			if i == int(tc.max+1) {
 				require.Panics(t, func() {
-					providerKeeper.QueuePendingPacketData(ctx, "chain-88", uint64(i), data)
+					providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
 				})
 				reachedMax = true
 			} else {
-				providerKeeper.QueuePendingPacketData(ctx, "chain-88", uint64(i), data)
+				providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
 			}
 		}
 		require.True(t, reachedMax)
@@ -935,15 +936,15 @@ func TestPendingPacketDataSize(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Confirm initial size is 0
-	require.Equal(t, uint64(0), providerKeeper.GetPendingPacketDataSize(ctx, "chain-0"))
+	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-0"))
 
-	// Set pending packet data size and confirm it was set
-	providerKeeper.SetPendingPacketDataSize(ctx, "chain-0", 10)
-	require.Equal(t, uint64(10), providerKeeper.GetPendingPacketDataSize(ctx, "chain-0"))
+	// Set throttled packet data size and confirm it was set
+	providerKeeper.SetThrottledPacketDataSize(ctx, "chain-0", 10)
+	require.Equal(t, uint64(10), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-0"))
 
-	// Increment pending packet data size and confirm it was incremented
-	providerKeeper.IncrementPendingPacketDataSize(ctx, "chain-0")
-	require.Equal(t, uint64(11), providerKeeper.GetPendingPacketDataSize(ctx, "chain-0"))
+	// Increment throttled packet data size and confirm it was incremented
+	providerKeeper.IncrementThrottledPacketDataSize(ctx, "chain-0")
+	require.Equal(t, uint64(11), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-0"))
 }
 
 // TestSlashMeter tests the getter and setter for the slash gas meter
@@ -1013,32 +1014,32 @@ func TestLastSlashMeterFullTime(t *testing.T) {
 }
 
 // Struct used for TestPendingPacketData and helpers
-type pendingPacketDataInstance struct {
+type throttledPacketDataInstance struct {
 	IbcSeqNum uint64
 	Data      interface{}
 }
 
 // getAllPendingPacketDataInstances returns all pending packet data instances in order from the pending packet data queue
-func getAllPendingPacketDataInstances(ctx sdktypes.Context, k *keeper.Keeper, consumerChainId string) (instances []pendingPacketDataInstance) {
-	k.IteratePendingPacketData(ctx, consumerChainId, func(ibcSeqNum uint64, data interface{}) bool {
-		instances = append(instances, pendingPacketDataInstance{IbcSeqNum: ibcSeqNum, Data: data})
+func getAllPendingPacketDataInstances(ctx sdktypes.Context, k *keeper.Keeper, consumerChainId string) (instances []throttledPacketDataInstance) {
+	k.IterateThrottledPacketData(ctx, consumerChainId, func(ibcSeqNum uint64, data interface{}) bool {
+		instances = append(instances, throttledPacketDataInstance{IbcSeqNum: ibcSeqNum, Data: data})
 		return false
 	})
 	return
 }
 
 // getOrderedInstances returns the given instances in order, specified by the given indexes
-func getOrderedInstances(instances []pendingPacketDataInstance, orderbyIdx []int) (orderedInstances []pendingPacketDataInstance) {
-	toReturn := []pendingPacketDataInstance{}
+func getOrderedInstances(instances []throttledPacketDataInstance, orderbyIdx []int) (orderedInstances []throttledPacketDataInstance) {
+	toReturn := []throttledPacketDataInstance{}
 	for _, idx := range orderbyIdx {
 		toReturn = append(toReturn, instances[idx])
 	}
 	return toReturn
 }
 
-// Asserts that the pending packet data retrieved for this consumer chain matches what's expected
+// Asserts that the throttled packet data retrieved for this consumer chain matches what's expected
 func assertPendingPacketDataOrdering(t *testing.T, k *keeper.Keeper, ctx sdktypes.Context,
-	consumerChainId string, expectedInstances []pendingPacketDataInstance) {
+	consumerChainId string, expectedInstances []throttledPacketDataInstance) {
 	// Get all packet data for this chain
 	obtainedInstances := getAllPendingPacketDataInstances(ctx, k, consumerChainId)
 	// No extra data should be present

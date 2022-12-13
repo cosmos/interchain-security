@@ -436,8 +436,8 @@ func TestStopConsumerChain(t *testing.T) {
 				providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
 					ctx.BlockTime(), "chainID", 1, cryptoutil.NewCryptoIdentityFromIntSeed(90).SDKConsAddress()))
 
-				providerKeeper.QueuePendingSlashPacketData(ctx, "chainID", 1, testkeeper.GetNewSlashPacketData())
-				providerKeeper.QueuePendingVSCMaturedPacketData(ctx, "chainID", 2, testkeeper.GetNewVSCMaturedPacketData())
+				providerKeeper.QueueThrottledSlashPacketData(ctx, "chainID", 1, testkeeper.GetNewSlashPacketData())
+				providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chainID", 2, testkeeper.GetNewVSCMaturedPacketData())
 			},
 			expErr: false,
 		},
@@ -528,7 +528,7 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 		require.NotEqual(t, expectedChainID, entry.ConsumerChainID)
 	}
 
-	slashPacketData, vscMaturedPacketData := providerKeeper.GetAllPendingPacketData(ctx, expectedChainID)
+	slashPacketData, vscMaturedPacketData := providerKeeper.GetAllThrottledPacketData(ctx, expectedChainID)
 	require.Empty(t, slashPacketData)
 	require.Empty(t, vscMaturedPacketData)
 }

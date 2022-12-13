@@ -14,9 +14,8 @@ import (
 // This file contains functionality relevant to the throttling of slash and vsc matured packets, aka circuit breaker logic.
 
 // HandleThrottleQueues iterates over the global slash entry queue, and
-// handles all or some portion of pending (slash and/or VSC matured) packet data received from
-// consumer chains, depending on throttling logic. The slash meter is decremented appropriately
-// in this method.
+// handles all or some portion of throttled (slash and/or VSC matured) packet data received from
+// consumer chains. The slash meter is decremented appropriately in this method.
 func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
@@ -49,8 +48,8 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 		// Subtract this power from the slash meter
 		meter = meter.Sub(sdktypes.NewInt(valPower))
 
-		// Handle slash packet by passing in chainID and appropriate callbacks,
-		// relevant packet data is deleted in this method
+		// Handle slash and any trailing vsc matured packet data instances by passing in
+		// chainID and appropriate callbacks, relevant packet data is deleted in this method.
 		k.HandlePacketDataForChain(ctx, entry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
 
 		// Store handled global entry to be deleted after iteration is completed
@@ -69,7 +68,7 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 }
 
 // HandlePacketDataForChain handles only the first queued slash packet relevant to the passed consumer chainID,
-// and then handles any trailing vsc matured packets in that (consumer chain specific) queue.
+// and then handles any trailing vsc matured packets in that (consumer chain specific) throttled packet data queue.
 //
 // Note: Any packet data which is handled in this method is also deleted from the (consumer chain specific) queue.
 func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID string,
@@ -81,7 +80,7 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 	seqNums := []uint64{}
 
 	slashPacketHandled := false
-	k.IteratePendingPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, data interface{}) (stop bool) {
+	k.IterateThrottledPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, data interface{}) (stop bool) {
 
 		switch data := data.(type) {
 
@@ -108,7 +107,7 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 	})
 
 	// Delete handled data after iteration is completed
-	k.DeletePendingPacketData(ctx, consumerChainID, seqNums...)
+	k.DeleteThrottledPacketData(ctx, consumerChainID, seqNums...)
 }
 
 // InitializeSlashMeter initializes the slash meter to it's max value (also its allowance
@@ -258,19 +257,19 @@ const (
 	vscMaturedPacketData
 )
 
-// PanicIfTooMuchPendingPacketData is a sanity check to ensure that the pending packet data queue
-// does not grow too large for a single consumer chain.
-func (k Keeper) PanicIfTooMuchPendingPacketData(ctx sdktypes.Context, consumerChainID string) {
-	size := k.GetPendingPacketDataSize(ctx, consumerChainID)
+// PanicIfTooMuchThrottledPacketData is a sanity check to ensure that the chain-specific
+// throttled packet data queue does not grow too large for a single consumer chain.
+func (k Keeper) PanicIfTooMuchThrottledPacketData(ctx sdktypes.Context, consumerChainID string) {
+	size := k.GetThrottledPacketDataSize(ctx, consumerChainID)
 	if size > uint64(k.GetMaxPendingSlashingPackets(ctx)) {
-		panic(fmt.Sprintf("pending packet data queue for chain %s is too large: %d", consumerChainID, size))
+		panic(fmt.Sprintf("throttled packet data queue for chain %s is too large: %d", consumerChainID, size))
 	}
 }
 
-// GetPendingPacketDataSize returns the size of the pending packet data queue for the given consumer chain
-func (k Keeper) GetPendingPacketDataSize(ctx sdktypes.Context, consumerChainID string) uint64 {
+// GetThrottledPacketDataSize returns the size of the throttled packet data queue for the given consumer chain
+func (k Keeper) GetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID string) uint64 {
 	store := ctx.KVStore(k.storeKey)
-	key := providertypes.PendingPacketDataSizeKey(consumerChainID)
+	key := providertypes.ThrottledPacketDataSizeKey(consumerChainID)
 	var size uint64
 	bz := store.Get(key)
 	if bz == nil {
@@ -281,42 +280,45 @@ func (k Keeper) GetPendingPacketDataSize(ctx sdktypes.Context, consumerChainID s
 	return size
 }
 
-// SetPendingPacketDataSize sets the size of the pending packet data queue for the given consumer chain
-func (k Keeper) SetPendingPacketDataSize(ctx sdktypes.Context, consumerChainID string, size uint64) {
+// SetThrottledPacketDataSize sets the size of the throttled packet data queue for the given consumer chain
+func (k Keeper) SetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID string, size uint64) {
 	store := ctx.KVStore(k.storeKey)
-	key := providertypes.PendingPacketDataSizeKey(consumerChainID)
+	key := providertypes.ThrottledPacketDataSizeKey(consumerChainID)
 	bz := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bz, size)
 	store.Set(key, bz)
 }
 
-// IncrementPendingPacketDataSize increments the size of the pending packet data queue for the given consumer chain
-func (k Keeper) IncrementPendingPacketDataSize(ctx sdktypes.Context, consumerChainID string) {
-	size := k.GetPendingPacketDataSize(ctx, consumerChainID)
-	k.SetPendingPacketDataSize(ctx, consumerChainID, size+1)
+// IncrementThrottledPacketDataSize increments the size of the throttled packet data
+// queue for the given consumer chain.
+func (k Keeper) IncrementThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID string) {
+	size := k.GetThrottledPacketDataSize(ctx, consumerChainID)
+	k.SetThrottledPacketDataSize(ctx, consumerChainID, size+1)
 }
 
-// QueuePendingSlashPacketData queues the given slash packet data for the given consumer chain's queue
-// Note: This queue is shared between pending slash packet data and pending vsc matured packet data
-func (k Keeper) QueuePendingSlashPacketData(
+// QueueThrottledSlashPacketData queues the slash packet data for a chain-specific throttled packet data queue.
+//
+// Note: This queue is shared between pending slash packet data and pending vsc matured packet data.
+func (k Keeper) QueueThrottledSlashPacketData(
 	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.SlashPacketData) {
-	k.QueuePendingPacketData(ctx, consumerChainID, ibcSeqNum, data)
+	k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
 }
 
-// QueuePendingVSCMaturedPacketData queues the given vsc matured packet data for the given consumer chain's queue
-// Note: This queue is shared between pending slash packet data and pending vsc matured packet data
-func (k Keeper) QueuePendingVSCMaturedPacketData(
+// QueueThrottledVSCMaturedPacketData queues the vsc matured packet data for a chain-specific throttled packet data queue.
+//
+// Note: This queue is shared between pending slash packet data and pending vsc matured packet data.
+func (k Keeper) QueueThrottledVSCMaturedPacketData(
 	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, data ccvtypes.VSCMaturedPacketData) {
-	k.QueuePendingPacketData(ctx, consumerChainID, ibcSeqNum, data)
+	k.QueueThrottledPacketData(ctx, consumerChainID, ibcSeqNum, data)
 }
 
-// QueuePendingPacketData queues a slash packet data or vsc matured packet data instance
+// QueueThrottledPacketData queues a slash packet data or vsc matured packet data instance
 // for the given consumer chain's queue. This method is either used by tests, or called
 // by higher level methods with type assertion.
-func (k Keeper) QueuePendingPacketData(
+func (k Keeper) QueueThrottledPacketData(
 	ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64, packetData interface{}) {
 
-	k.PanicIfTooMuchPendingPacketData(ctx, consumerChainID)
+	k.PanicIfTooMuchThrottledPacketData(ctx, consumerChainID)
 
 	store := ctx.KVStore(k.storeKey)
 
@@ -339,15 +341,15 @@ func (k Keeper) QueuePendingPacketData(
 		panic(fmt.Sprintf("unexpected packet data type: %T", data))
 	}
 
-	store.Set(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum), bz)
-	k.IncrementPendingPacketDataSize(ctx, consumerChainID)
+	store.Set(providertypes.ThrottledPacketDataKey(consumerChainID, ibcSeqNum), bz)
+	k.IncrementThrottledPacketDataSize(ctx, consumerChainID)
 }
 
-// IteratePendingPacketData iterates over the pending packet data queue for a specific consumer chain
+// IterateThrottledPacketData iterates over the throttled packet data queue for a specific consumer chain
 // (ordered by ibc seq number) and calls the provided callback
-func (k Keeper) IteratePendingPacketData(ctx sdktypes.Context, consumerChainID string, cb func(uint64, interface{}) (stop bool)) {
+func (k Keeper) IterateThrottledPacketData(ctx sdktypes.Context, consumerChainID string, cb func(uint64, interface{}) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.PendingPacketDataBytePrefix, consumerChainID)
+	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
 	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -369,7 +371,7 @@ func (k Keeper) IteratePendingPacketData(ctx sdktypes.Context, consumerChainID s
 		if err != nil {
 			panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
 		}
-		_, ibcSeqNum, err := providertypes.ParsePendingPacketDataKey(iterator.Key())
+		_, ibcSeqNum, err := providertypes.ParseThrottledPacketDataKey(iterator.Key())
 		if err != nil {
 			panic(fmt.Sprintf("failed to parse pending packet data key: %v", err))
 		}
@@ -380,15 +382,15 @@ func (k Keeper) IteratePendingPacketData(ctx sdktypes.Context, consumerChainID s
 	}
 }
 
-// GetAllPendingPacketData returns all pending packet data for a specific consumer chain.
+// GetAllThrottledPacketData returns all throttled packet data for a specific consumer chain.
 //
 // Note: This method is only used by tests
-func (k Keeper) GetAllPendingPacketData(ctx sdktypes.Context, consumerChainID string) (
+func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID string) (
 	[]ccvtypes.SlashPacketData, []ccvtypes.VSCMaturedPacketData) {
 
 	slashData := []ccvtypes.SlashPacketData{}
 	vscMaturedData := []ccvtypes.VSCMaturedPacketData{}
-	k.IteratePendingPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, data interface{}) (stop bool) {
+	k.IterateThrottledPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, data interface{}) (stop bool) {
 
 		switch data := data.(type) {
 
@@ -406,27 +408,28 @@ func (k Keeper) GetAllPendingPacketData(ctx sdktypes.Context, consumerChainID st
 	return slashData, vscMaturedData
 }
 
-// DeletePendingPacketDataForConsumer deletes all pending packet data for the given consumer chain.
-func (k Keeper) DeletePendingPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
+// DeleteAllThrottledPacketDataForConsumer deletes all throttled packet data for the given consumer chain.
+func (k Keeper) DeleteAllThrottledPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
 	ibcSeqNumsToDelete := []uint64{}
-	k.IteratePendingPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, packetData interface{}) bool {
+	k.IterateThrottledPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, packetData interface{}) bool {
 		ibcSeqNumsToDelete = append(ibcSeqNumsToDelete, ibcSeqNum)
 		// Continue iteration
 		stop := false
 		return stop
 	})
-	k.DeletePendingPacketData(ctx, consumerChainID, ibcSeqNumsToDelete...)
+	k.DeleteThrottledPacketData(ctx, consumerChainID, ibcSeqNumsToDelete...)
 }
 
-// DeletePendingPacketData deletes the given entries (specified by their ibc seq number) from the pending packet data queue
-func (k Keeper) DeletePendingPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNumbers ...uint64) {
+// DeleteThrottledPacketData deletes the given throttled packet data instances
+// (specified by their ibc seq number) from the chain-specific throttled packet data queue.
+func (k Keeper) DeleteThrottledPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNumbers ...uint64) {
 	store := ctx.KVStore(k.storeKey)
 	for _, ibcSeqNum := range ibcSeqNumbers {
-		store.Delete(providertypes.PendingPacketDataKey(consumerChainID, ibcSeqNum))
+		store.Delete(providertypes.ThrottledPacketDataKey(consumerChainID, ibcSeqNum))
 	}
 	// Decrement the size of the pending packet data queue
-	sizeBeforeDeletion := k.GetPendingPacketDataSize(ctx, consumerChainID)
-	k.SetPendingPacketDataSize(ctx, consumerChainID, sizeBeforeDeletion-uint64(len(ibcSeqNumbers)))
+	sizeBeforeDeletion := k.GetThrottledPacketDataSize(ctx, consumerChainID)
+	k.SetThrottledPacketDataSize(ctx, consumerChainID, sizeBeforeDeletion-uint64(len(ibcSeqNumbers)))
 }
 
 // GetSlashMeter returns a meter (persisted as a signed int) which stores an amount of voting power, corresponding

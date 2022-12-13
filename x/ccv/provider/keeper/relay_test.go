@@ -110,38 +110,38 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 
 	// Assert that the packet data was handled immediately, not queued
-	require.Equal(t, uint64(0), providerKeeper.GetPendingPacketDataSize(ctx, "chain-1"))
+	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
 
 	// Other queue still empty
-	require.Equal(t, uint64(0), providerKeeper.GetPendingPacketDataSize(ctx, "chain-2"))
+	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
 
 	// Now queue a slash packet data instance for chain-2, then confirm the on recv method
 	// queues the vsc matured behind the slash packet data
-	providerKeeper.QueuePendingPacketData(ctx, "chain-2", 1, testkeeper.GetNewSlashPacketData())
+	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 1, testkeeper.GetNewSlashPacketData())
 	ack = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 2)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
-	require.Equal(t, uint64(2), providerKeeper.GetPendingPacketDataSize(ctx, "chain-2"))
+	require.Equal(t, uint64(2), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
 
 	// Other queue still empty
-	require.Equal(t, uint64(0), providerKeeper.GetPendingPacketDataSize(ctx, "chain-1"))
+	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
 
 	// Receive 5 more vsc matured packets for chain-2, then confirm chain-2 queue size is 7, chain-1 still 0
 	for i := 0; i < 5; i++ {
 		ack = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", uint64(i+3))
 		require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 	}
-	require.Equal(t, uint64(7), providerKeeper.GetPendingPacketDataSize(ctx, "chain-2"))
-	require.Equal(t, uint64(0), providerKeeper.GetPendingPacketDataSize(ctx, "chain-1"))
+	require.Equal(t, uint64(7), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
+	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
 
 	// Delete chain-2's data from its queue, then confirm the queue size is 0
-	providerKeeper.DeletePendingPacketData(ctx, "chain-2", []uint64{1, 2, 3, 4, 5, 6, 7}...)
-	require.Equal(t, uint64(0), providerKeeper.GetPendingPacketDataSize(ctx, "chain-2"))
+	providerKeeper.DeleteThrottledPacketData(ctx, "chain-2", []uint64{1, 2, 3, 4, 5, 6, 7}...)
+	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
 
 	// Finally, confirm vsc packet data will again be handled immediately
 	ack = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 8)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
-	require.Equal(t, uint64(0), providerKeeper.GetPendingPacketDataSize(ctx, "chain-2"))
-	require.Equal(t, uint64(0), providerKeeper.GetPendingPacketDataSize(ctx, "chain-1"))
+	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
+	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
 }
 
 // TestOnRecvSlashPacket tests the OnRecvSlashPacket method, and how it interacts with the
@@ -172,7 +172,7 @@ func TestOnRecvSlashPacket(t *testing.T) {
 	globalEntries := providerKeeper.GetAllGlobalSlashEntries(ctx) // parent queue
 	require.Equal(t, 1, len(globalEntries))
 	require.Equal(t, "chain-1", globalEntries[0].ConsumerChainID)
-	require.Equal(t, uint64(1), providerKeeper.GetPendingPacketDataSize(ctx, "chain-1")) // per chain queue
+	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1")) // per chain queue
 
 	// Generate a new packet data instance with valid infraction type
 	packetData = testkeeper.GetNewSlashPacketData()
@@ -191,8 +191,8 @@ func TestOnRecvSlashPacket(t *testing.T) {
 	require.Equal(t, 2, len(globalEntries))
 	require.Equal(t, "chain-1", globalEntries[0].ConsumerChainID)
 	require.Equal(t, "chain-2", globalEntries[1].ConsumerChainID)
-	require.Equal(t, uint64(1), providerKeeper.GetPendingPacketDataSize(ctx, "chain-1")) // per chain queue
-	require.Equal(t, uint64(1), providerKeeper.GetPendingPacketDataSize(ctx, "chain-2")) // per chain queue
+	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1")) // per chain queue
+	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2")) // per chain queue
 }
 
 func executeOnRecvVSCMaturedPacket(t *testing.T, providerKeeper *keeper.Keeper, ctx sdk.Context,
