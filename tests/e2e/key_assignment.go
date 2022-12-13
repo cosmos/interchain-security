@@ -28,7 +28,7 @@ func (s *CCVTestSuite) TestKeyAssignment() {
 
 				// check that a VSCPacket is queued
 				s.providerChain.NextBlock()
-				pendingPackets := pk.GetPendingPackets(s.providerCtx(), s.consumerChain.ChainID)
+				pendingPackets := pk.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
 				s.Require().Len(pendingPackets, 1)
 
 				// establish CCV channel
