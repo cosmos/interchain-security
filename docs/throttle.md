@@ -70,11 +70,11 @@ while meter.IsPositive() && entriesExist() {
 
 ## Endblocker handling - Slash Meter Replenishment
 
-Once the slash meter is not full, it'll be replenished after `SlashMeterReplenishPeriod (param)` by incrementing the meter by its allowance for that period, where `allowance` = `SlashMeterReplenishFraction (param)` * `currentTotalVotingPower`. The slash meter will never exceed its current allowance in value. Note a few things:
+Once the slash meter becomes not full, it'll be replenished after `SlashMeterReplenishPeriod (param)` by incrementing the meter with its allowance for the replenishment block, where `allowance` = `SlashMeterReplenishFraction (param)` * `currentTotalVotingPower`. The slash meter will never exceed its current allowance (fn of the total voting power for the block) in value. Note a few things:
 
 1. The slash meter can go negative in value, and will do so when handling a single slash packet that jails a validator with significant voting power. In such a scenario, the slash meter may take multiple replenishment periods to once again reach a positive value, meaning no other slash packets may be handled for multiple replenishment periods.
-2. Total voting power of a chain changes over time, especially as validators are jailed/tombstoned. As validators are jailed, total voting power decreases, and so does the slashing allowance per replenishment period.
-3. The voting power allowance added to the slash meter per replenish period will always be strictly greater than 1. If the `SlashMeterReplenishFraction (param)` is set too low, integer rounding will put this minimum value into effect.
+2. Total voting power of a chain changes over time, especially as validators are jailed/tombstoned. As validators are jailed, total voting power decreases, and so does the slashing allowance for specific blocks.
+3. The voting power allowance added to the slash meter during replenishment will always be greater than or equal to 1. If the `SlashMeterReplenishFraction (param)` is set too low, integer rounding will put this minimum value into effect.
 
 The behavior described above is achieved by executing `CheckForSlashMeterReplenishment()` every endblock.
 

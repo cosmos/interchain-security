@@ -110,8 +110,8 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 	k.DeleteThrottledPacketData(ctx, consumerChainID, seqNums...)
 }
 
-// InitializeSlashMeter initializes the slash meter to it's max value (also its allowance
-// per replenish period), and sets the last replenish time to the current block time.
+// InitializeSlashMeter initializes the slash meter to it's max value (also its allowance),
+// and sets the last replenish time to the current block time.
 func (k Keeper) InitializeSlashMeter(ctx sdktypes.Context) {
 	k.SetSlashMeter(ctx, k.GetSlashMeterAllowance(ctx))
 	k.SetLastSlashMeterFullTime(ctx, ctx.BlockTime())
@@ -147,9 +147,10 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 	meter := k.GetSlashMeter(ctx)
 	allowance := k.GetSlashMeterAllowance(ctx)
 
-	// Replenish gas up to gas allowance per period. That is, if meter was negative
-	// before being replenished, it'll gain some additional gas. However, if the meter
-	// was 0 or positive in value, it'll be replenished only up to it's allowance for the period.
+	// Replenish meter up to allowance for this block. That is, if meter was negative
+	// before being replenished, it'll become more positive in value. However, if the meter
+	// was 0 or positive in value, it'll be replenished only up to it's allowance
+	// for the current block.
 	meter = meter.Add(allowance)
 	if meter.GT(allowance) {
 		meter = allowance
@@ -157,8 +158,9 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 	k.SetSlashMeter(ctx, meter)
 }
 
-// GetSlashMeterAllowance returns the allowance of voting power units (int) that the slash meter
-// is given per replenish period, this also serves as the max value for the meter.
+// GetSlashMeterAllowance returns the amount of voting power units (int)
+// that would be added to the slash meter for a replenishment this block,
+// this allowance value also serves as the max value for the meter for this block.
 func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 
 	strFrac := k.GetSlashMeterReplenishFraction(ctx)
@@ -167,7 +169,7 @@ func (k Keeper) GetSlashMeterAllowance(ctx sdktypes.Context) sdktypes.Int {
 		panic(fmt.Sprintf("failed to parse slash meter replenish fraction: %s", err))
 	}
 
-	// Compute slash gas allowance in units of tendermint voting power (integer),
+	// Compute allowance in units of tendermint voting power (integer),
 	// noting that total power changes over time
 	totalPower := k.stakingKeeper.GetLastTotalPower(ctx)
 
