@@ -447,9 +447,9 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 	k.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
 }
 
-// GetConsumerRemovalPropsToExecute returns an ordered list of pending consumer
-// removal proposals that are ready to be executed,
-// i.e., consumer chains to be stopped and removed from the provider chain.
+// GetConsumerRemovalPropsToExecute returns the pending consumer removal proposals
+// that are ready to be executed, i.e., consumer chains to be stopped and removed
+// from the provider chain.
 // A prop is included in the returned list if its proposed stop time has passed.
 //
 // Note: this method is split out from BeginBlockCCR to be easily unit tested.
