@@ -25,9 +25,14 @@ func BeginBlock(c *ibctesting.TestChain, dt time.Duration) {
 	_ = c.App.BeginBlock(abci.RequestBeginBlock{Header: c.CurrentHeader})
 }
 
+// EndBlock and calls the preCommitCallback before the app.Commit() is called.
 func EndBlock(c *ibctesting.TestChain, preCommitCallback func()) (*ibctmtypes.Header, []channeltypes.Packet) {
 	ebRes := c.App.EndBlock(abci.RequestEndBlock{Height: c.CurrentHeader.Height})
 
+	/*
+		It is useful to call arbitrary code after ending the block but before
+		committing the block because the sdk.Context is cleared after committing.
+	*/
 	preCommitCallback()
 
 	c.App.Commit()
