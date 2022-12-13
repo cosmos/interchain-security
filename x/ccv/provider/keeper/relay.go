@@ -231,10 +231,12 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	// set the ValsetUpdateBlockHeight
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
+	// Replenish slash meter if necessary, BEFORE executing slash packet throttling logic.
+	// This ensures the meter value is replenished, and not greater than the allowance (max value)
+	// for the block, before the throttling logic is executed.
+	k.CheckForSlashMeterReplenishment(ctx)
 	// Execute slash packet throttling logic
 	k.HandleThrottleQueues(ctx)
-	// Replenish slash meter if necessary
-	k.CheckForSlashMeterReplenishment(ctx)
 }
 
 // OnRecvSlashPacket delivers a received slash packet, validates it and
