@@ -160,8 +160,8 @@ func TestMultiConsumerSlashPacketThrottling(t *testing.T) {
 	runCCVTestByName(t, "TestMultiConsumerSlashPacketThrottling")
 }
 
-func TestPacketSpamAndQueueOrdering(t *testing.T) {
-	runCCVTestByName(t, "TestPacketSpamAndQueueOrdering")
+func TestPacketSpam(t *testing.T) {
+	runCCVTestByName(t, "TestPacketSpam")
 }
 
 func TestSlashingSmallValidators(t *testing.T) {

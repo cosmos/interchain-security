@@ -267,8 +267,9 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 // Note: The global queue is ordered by: time, then IBC sequence number, see PendingSlashPacketEntryKey.
 // The chain specific queue is ordered by: IBC sequence number, see PendingSlashPacketDataKey.
 //
-// TODO: Also Q up some VSC matured packets and confirm they are handled in the correct order.
-func (s *CCVTestSuite) TestPacketSpamAndQueueOrdering() {
+// TODO: consider DOS attack, see: https://github.com/cosmos/interchain-security/issues/594
+// This test will change in that the duplicated packets would not be queued.
+func (s *CCVTestSuite) TestPacketSpam() {
 
 	// Setup ccv channels to all consumers
 	s.SetupAllCCVChannels()
@@ -276,15 +277,15 @@ func (s *CCVTestSuite) TestPacketSpamAndQueueOrdering() {
 	// Setup validator powers to be 25%, 25%, 25%, 25%
 	s.setupValidatorPowers()
 
-	// Keep default params, initialize slash meter
+	// Explicitly set params, initialize slash meter
 	providerKeeper := s.providerApp.GetProviderKeeper()
+	params := providerKeeper.GetParams(s.providerCtx())
+	params.SlashMeterReplenishFraction = "0.05" // 5% total power can be jailed
+	providerKeeper.SetParams(s.providerCtx(), params)
 	providerKeeper.InitializeSlashMeter(s.providerCtx())
 
 	// The packets to be recv in a single block, ordered as they will be recv.
 	packets := []channeltypes.Packet{}
-
-	// Track and increment ibc seq num for each packet, since these need to be unique.
-	ibcSeqNum := uint64(1)
 
 	firstBundle := s.getFirstBundle()
 
@@ -293,45 +294,127 @@ func (s *CCVTestSuite) TestPacketSpamAndQueueOrdering() {
 	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[1])
 	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
 
-	for i := 0; i < 500; i++ {
+	// Track and increment ibc seq num for each packet, since these need to be unique.
+	ibcSeqNum := uint64(4)
+
+	for ibcSeqNum < 504 {
+		// Increment ibc seq num for each packet (starting at 5)
+		ibcSeqNum++
+
+		// Instantiate a vsc matured packet every 10th packet
+		if ibcSeqNum%10 == 0 {
+			packets = append(packets, s.constructVSCMaturedPacketFromConsumer(firstBundle, ibcSeqNum))
+			continue
+		}
+		// Else instantiate a slash packet
+
 		// Set infraction type based on even/odd index.
 		var infractionType stakingtypes.InfractionType
-		if i%2 == 0 {
+		if ibcSeqNum%2 == 0 {
 			infractionType = stakingtypes.Downtime
 		} else {
 			infractionType = stakingtypes.DoubleSign
 		}
-		valToJail := s.providerChain.Vals.Validators[i%3]
-		packets = append(packets, s.constructSlashPacketFromConsumer(
-			firstBundle, *valToJail, infractionType, ibcSeqNum))
-		ibcSeqNum++
+		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
+		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum))
 	}
 
-	// Send 500 slash packets from consumer to provider in same block,
-	for _, packet := range packets {
-		slashPacketData := ccvtypes.SlashPacketData{}
-		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &slashPacketData)
-		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, slashPacketData)
+	// Recv 500 packets from consumer to provider in same block
+	for i, packet := range packets {
+		// Type depends on index packets were appended from above
+		if (i+5)%10 == 0 {
+			vscMaturedPacketData := ccvtypes.VSCMaturedPacketData{}
+			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &vscMaturedPacketData)
+			vscMaturedPacketData.ValsetUpdateId = uint64(i + 1000)
+			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(), packet, vscMaturedPacketData)
+		} else {
+			slashPacketData := ccvtypes.SlashPacketData{}
+			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &slashPacketData)
+			// Set valset update id to be 2000 + index to assert ordering
+			slashPacketData.ValsetUpdateId = uint64(i + 2000)
+			// Set block height mapping so packet is not dropped
+			providerKeeper.SetValsetUpdateBlockHeight(s.providerCtx(),
+				slashPacketData.ValsetUpdateId, uint64(firstBundle.GetCtx().BlockHeight()))
+			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, slashPacketData)
+		}
 	}
 
-	// Confirm that global queue has 500 packet entries
+	// Confirm that global queue has 450 packet entries (500 * 0.9)
 	allGlobalEntries := providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
-	s.Require().Equal(500, len(allGlobalEntries))
+	s.Require().Equal(450, len(allGlobalEntries))
 
-	// Confirm that the chain specific queue has 500 slash packet data
-	slashPacketData, _ := providerKeeper.GetAllThrottledPacketData(
+	// Confirm that the chain specific queue has 450 slash packet data instances, and 50 vsc matured
+	slashPacketData, vscMaturedPacketData := providerKeeper.GetAllThrottledPacketData(
 		s.providerCtx(), firstBundle.Chain.ChainID)
-	s.Require().Equal(500, len(slashPacketData))
+	s.Require().Equal(450, len(slashPacketData))
+	s.Require().Equal(50, len(vscMaturedPacketData))
 
-	// Confirm order between the two queues match, determined by IBC sequence number.
-	for idx, globalEntry := range allGlobalEntries {
-		// get provider val cons addr from chain specific queue
-		providerConsAddr := providerKeeper.GetProviderAddrFromConsumerAddr(
-			s.providerCtx(), globalEntry.ConsumerChainID, slashPacketData[idx].Validator.Address)
-		// compare this to global queue entry
-		// TODO: we can improve this ordering assertion
-		s.Require().Equal(globalEntry.ProviderValConsAddr, providerConsAddr)
+	// IBC seq numbers of recv slash packets range from 5 to 504.
+	// Confirm expected global queue ordering.
+	expectedSeqNum := uint64(5)
+	for _, globalEntry := range allGlobalEntries {
+		// entries should be ordered by ibc seq num starting at 5
+		s.Require().Equal(expectedSeqNum, globalEntry.IbcSeqNum)
+		expectedSeqNum++
+		if expectedSeqNum%10 == 0 {
+			// Skip over vsc matured packets
+			expectedSeqNum++
+		}
 	}
+
+	// Confirm expected chain specific queue ordering.
+	expectedVscId := uint64(2000)
+	for _, slashPacket := range slashPacketData {
+		// entries should be ordered by valset update id starting at 2000
+		s.Require().Equal(expectedVscId, slashPacket.ValsetUpdateId)
+		expectedVscId++
+		if (expectedVscId+5)%10 == 0 {
+			// Skip over vsc matured packets
+			expectedVscId++
+		}
+	}
+	for idx, vscMaturedPacket := range vscMaturedPacketData {
+		// entries should be ordered by valset update id starting at 1005
+		// and show up every 10 packets
+		expectedVscId = uint64(1005) + 10*uint64(idx)
+		s.Require().Equal(expectedVscId, vscMaturedPacket.ValsetUpdateId)
+	}
+
+	// Execute endblock to handle packets in throttled manner
+	s.providerChain.NextBlock()
+
+	// Confirm that only the first packet was handled
+	allGlobalEntries = providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
+	s.Require().Equal(449, len(allGlobalEntries))
+	slashPacketData, vscMaturedPacketData = providerKeeper.GetAllThrottledPacketData(
+		s.providerCtx(), firstBundle.Chain.ChainID)
+	s.Require().Equal(449, len(slashPacketData))
+	// No VSC matured packets should be handled yet
+	s.Require().Equal(50, len(vscMaturedPacketData))
+
+	// Replenish frac is 0.05, so jailing %25 of the validators should result in a negative slash meter.
+	s.Require().True(providerKeeper.GetSlashMeter(s.providerCtx()).IsNegative())
+
+	// Confirm total power is now 3000 once updated by staking end blocker
+	s.providerChain.NextBlock()
+	totalPower := s.providerApp.GetE2eStakingKeeper().GetLastTotalPower(s.providerCtx())
+	s.Require().Equal(sdktypes.NewInt(3000), totalPower)
+
+	// Now change replenish frac to 0.67 and fully replenish the meter.
+	params.SlashMeterReplenishFraction = "0.67"
+	providerKeeper.SetParams(s.providerCtx(), params)
+	providerKeeper.InitializeSlashMeter(s.providerCtx())
+
+	// Execute endblock to handle packets (remaining packets are relevant to 2/3 of the validators)
+	// so the current replenish frac should be enough to handle all packets this block.
+	s.providerChain.NextBlock()
+
+	// Confirm both queues are now empty, meaning every packet was handled.
+	allGlobalEntries = providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
+	s.Require().Equal(0, len(allGlobalEntries))
+	slashPacketData, _ = providerKeeper.GetAllThrottledPacketData(
+		s.providerCtx(), firstBundle.Chain.ChainID)
+	s.Require().Equal(0, len(slashPacketData))
 
 	// TODO: Can queue up more at a new block time, and confirm ordering is still correct.
 
