@@ -134,14 +134,13 @@ func TestIterateAllValidatorConsumerPubKeys(t *testing.T) {
 	}
 
 	result := []testAssignment{}
-	cbIterateAll := func(chainID string, iteratorProviderAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool) {
+	cbIterateAll := func(chainID string, iteratorProviderAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) {
 		require.Equal(t, providerAddr, iteratorProviderAddr, "unexpected provider address in iterator - expecting just 1 provider address")
 		result = append(result, testAssignment{
 			chainID:        chainID,
 			providerAddr:   iteratorProviderAddr,
 			consumerPubKey: consumerKey,
 		})
-		return false
 	}
 
 	keeper.IterateAllValidatorConsumerPubKeys(ctx, cbIterateAll)
@@ -152,14 +151,13 @@ func TestIterateAllValidatorConsumerPubKeys(t *testing.T) {
 	}
 
 	result = []testAssignment{}
-	cbIterateOne := func(chainID string, iteratorProviderAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) (stop bool) {
+	cbIterateOne := func(chainID string, iteratorProviderAddr sdk.ConsAddress, consumerKey tmprotocrypto.PublicKey) {
 		require.Equal(t, providerAddr, iteratorProviderAddr, "unexpected provider address in iterator - expecting just 1 provider address")
 		result = append(result, testAssignment{
 			chainID:        chainID,
 			providerAddr:   iteratorProviderAddr,
 			consumerPubKey: consumerKey,
 		})
-		return false
 	}
 
 	keeper.IterateAllValidatorConsumerPubKeys(ctx, cbIterateOne)
@@ -421,12 +419,11 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 		  - or there exists a vscID in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(vscID)
 	*/
 	willBePruned := map[string]bool{}
-	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, addrList providertypes.AddressList) (stop bool) {
+	k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, addrList providertypes.AddressList) {
 		for _, cAddr := range addrList.Addresses {
 			addr := sdk.ConsAddress(cAddr)
 			willBePruned[addr.String()] = true
 		}
-		return false
 	})
 	good := true
 	k.IterateAllValidatorsByConsumerAddr(ctx, func(chainID string, consumerAddr sdk.ConsAddress, providerAddr sdk.ConsAddress) (stop bool) {

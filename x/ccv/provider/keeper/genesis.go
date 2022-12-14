@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -33,12 +32,12 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	for _, prop := range genState.ConsumerAdditionProposals {
 		// prevent implicit memory aliasing
 		prop := prop
-		if err := k.SetPendingConsumerAdditionProp(ctx, &prop); err != nil {
-			panic(fmt.Errorf("pending create consumer chain proposal could not be persisted: %w", err))
-		}
+		k.SetPendingConsumerAdditionProp(ctx, &prop)
 	}
 	for _, prop := range genState.ConsumerRemovalProposals {
-		k.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
+		// prevent implicit memory aliasing
+		prop := prop
+		k.SetPendingConsumerRemovalProp(ctx, &prop)
 	}
 	for _, ubdOp := range genState.UnbondingOps {
 		k.SetUnbondingOp(ctx, ubdOp)
@@ -116,7 +115,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 				panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chainID, clientID))
 			}
 			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chainID)
-			k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) (stop bool) {
+			k.IterateUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) (stop bool) {
 				cs.UnbondingOpsIndex = append(cs.UnbondingOpsIndex,
 					types.UnbondingOpIndex{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex},
 				)
@@ -138,7 +137,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	})
 
 	ubdOps := []ccv.UnbondingOp{}
-	k.IterateOverUnbondingOps(ctx, func(id uint64, ubdOp ccv.UnbondingOp) (stop bool) {
+	k.IterateUnbondingOps(ctx, func(id uint64, ubdOp ccv.UnbondingOp) (stop bool) {
 		ubdOps = append(ubdOps, ubdOp)
 		return false // do not stop the iteration
 	})
@@ -149,26 +148,25 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	addProps := []types.ConsumerAdditionProposal{}
-	k.IteratePendingConsumerAdditionProps(ctx, func(_ time.Time, prop types.ConsumerAdditionProposal) (stop bool) {
+	k.IteratePendingConsumerAdditionProps(ctx, func(prop types.ConsumerAdditionProposal) (stop bool) {
 		addProps = append(addProps, prop)
 		return false // do not stop the iteration
 	})
 
 	remProps := []types.ConsumerRemovalProposal{}
-	k.IteratePendingConsumerRemovalProps(ctx, func(_ time.Time, prop types.ConsumerRemovalProposal) (stop bool) {
+	k.IteratePendingConsumerRemovalProps(ctx, func(prop types.ConsumerRemovalProposal) (stop bool) {
 		remProps = append(remProps, prop)
 		return false // do not stop the iteration
 	})
 
 	// Export key assignment states
 	validatorConsumerPubKeys := []types.ValidatorConsumerPubKey{}
-	k.IterateAllValidatorConsumerPubKeys(ctx, func(chainID string, providerAddr sdk.ConsAddress, consumerKey tmcrypto.PublicKey) (stop bool) {
+	k.IterateAllValidatorConsumerPubKeys(ctx, func(chainID string, providerAddr sdk.ConsAddress, consumerKey tmcrypto.PublicKey) {
 		validatorConsumerPubKeys = append(validatorConsumerPubKeys, types.ValidatorConsumerPubKey{
 			ChainId:      chainID,
 			ProviderAddr: providerAddr,
 			ConsumerKey:  &consumerKey,
 		})
-		return false // do not stop the iteration
 	})
 
 	validatorsByConsumerAddr := []types.ValidatorByConsumerAddr{}
@@ -184,13 +182,12 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
 	// ConsumerAddrsToPrune are added only for registered consumer chains
 	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string, _ string) (stopOuter bool) {
-		k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, consumerAddrs types.AddressList) (stopInner bool) {
+		k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, consumerAddrs types.AddressList) {
 			consumerAddrsToPrune = append(consumerAddrsToPrune, types.ConsumerAddrsToPrune{
 				ChainId:       chainID,
 				VscId:         vscID,
 				ConsumerAddrs: &consumerAddrs,
 			})
-			return false // do not stop the iteration
 		})
 		return false // do not stop the iteration
 	})

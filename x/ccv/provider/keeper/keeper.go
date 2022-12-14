@@ -326,7 +326,7 @@ func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 	store.Delete(types.UnbondingOpKey(id))
 }
 
-func (k Keeper) IterateOverUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdOp ccv.UnbondingOp) (stop bool)) {
+func (k Keeper) IterateUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdOp ccv.UnbondingOp) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.UnbondingOpBytePrefix})
 
@@ -361,8 +361,8 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 	store.Set(types.UnbondingOpIndexKey(chainID, valsetUpdateID), bz)
 }
 
-// IterateOverUnbondingOpIndex iterates over the unbonding indexes for a given chain id.
-func (k Keeper) IterateOverUnbondingOpIndex(
+// IterateUnbondingOpIndex iterates over the unbonding indexes for a given chain id.
+func (k Keeper) IterateUnbondingOpIndex(
 	ctx sdk.Context,
 	chainID string,
 	cb func(vscID uint64, ubdIndex []uint64) (stop bool),
