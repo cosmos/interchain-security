@@ -10,8 +10,8 @@ func stepsDowntime(consumerName string) []Step {
 	return []Step{
 		{
 			action: downtimeSlashAction{
-				chain:     chainID(consumerName),
-				validator: validatorID("bob"),
+				chain:      chainID(consumerName),
+				validators: []validatorID{validatorID("bob")},
 			},
 			state: State{
 				// validator should be slashed on consumer, powers not affected on either chain yet
@@ -116,8 +116,8 @@ func stepsDowntime(consumerName string) []Step {
 		// Now we test provider initiated downtime/slashing
 		{
 			action: downtimeSlashAction{
-				chain:     chainID("provi"),
-				validator: validatorID("carol"),
+				chain:      chainID("provi"),
+				validators: []validatorID{validatorID("carol")},
 			},
 			state: State{
 				chainID("provi"): ChainState{
@@ -194,5 +194,103 @@ func stepsDowntime(consumerName string) []Step {
 
 		// TODO: Test full unbonding functionality, tracked as: https://github.com/cosmos/interchain-security/issues/311
 
+	}
+}
+
+// stepsThrottledDowntime creates two consumer initiated downtime slash events and relays packets
+func stepsThrottledDowntime(consumerName string) []Step {
+	return []Step{
+		{
+			action: downtimeSlashAction{
+				chain:      chainID(consumerName),
+				validators: []validatorID{validatorID("bob"), validatorID("carol")},
+			},
+			state: State{
+				// powers not affected on either chain yet
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   495,
+						validatorID("carol"): 495,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   495,
+						validatorID("carol"): 495,
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chain:   chainID("provi"),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   0,
+						validatorID("carol"): 495, // not slashed due to throttling
+					},
+					GlobalSlashQueueSize: intPointer(1), // carol's slash request is throttled
+				},
+				chainID(consumerName): ChainState{
+					// no updates received on consumer
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   495,
+						validatorID("carol"): 495,
+					},
+					ConsumerChainQueueSize: intPointer(1),
+				},
+			},
+		},
+		// A block is incremented each action, hence why VSC is committed on provider,
+		// and can now be relayed as packet to consumer
+		{
+			action: relayPacketsAction{
+				chain:   chainID("provi"),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						// first update (before throttling kicked in) now seen on consumer
+						validatorID("bob"):   0,
+						validatorID("carol"): 495,
+					},
+				},
+			},
+		},
+		{
+			action: relayPacketsAction{
+				chain:   chainID("provi"),
+				port:    "provider",
+				channel: 0,
+			},
+			state: State{
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   0,
+						validatorID("carol"): 0, // slash meter was replenished and slash request was processed on provider
+					},
+					GlobalSlashQueueSize: intPointer(0),
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 509,
+						validatorID("bob"):   0,
+						validatorID("carol"): 0, // consumer now sees a slash request that was throttled
+					},
+				},
+			},
+		},
 	}
 }

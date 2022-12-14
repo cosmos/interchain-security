@@ -139,7 +139,9 @@ message QueryPendingSlashPacketsResponse {
   int64 slash_meter_allowance = 2;
   google.protobuf.Timestamp last_replenish = 3
     [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-  repeated PendingSlashPacket packets = 4;
+  google.protobuf.Timestamp next_replenish = 4
+    [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  repeated PendingSlashPacket packets = 5;
 }
 
 message QueryPendingConsumerPacketsRequest {

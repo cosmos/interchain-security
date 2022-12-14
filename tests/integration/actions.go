@@ -930,17 +930,19 @@ func (tr TestRun) redelegateTokens(action redelegateTokensAction, verbose bool) 
 }
 
 type downtimeSlashAction struct {
-	chain     chainID
-	validator validatorID
+	chain      chainID
+	validators []validatorID
 }
 
 func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) {
-	// Bring validator down
-	tr.setValidatorDowntime(action.chain, action.validator, true, verbose)
-	// Wait appropriate amount of blocks for validator to be slashed
-	tr.waitBlocks(action.chain, 15, time.Minute)
-	// Bring validator back up
-	tr.setValidatorDowntime(action.chain, action.validator, false, verbose)
+	for _, validator := range action.validators {
+		// Bring validator down
+		tr.setValidatorDowntime(action.chain, validator, true, verbose)
+		// Wait appropriate amount of blocks for validator to be slashed
+		tr.waitBlocks(action.chain, 12, time.Minute)
+		// Bring validator back up
+		tr.setValidatorDowntime(action.chain, validator, false, verbose)
+	}
 }
 
 // Sets validator downtime by setting the virtual ethernet interface of a node to "up" or "down"
@@ -1198,4 +1200,8 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		tr.validatorConfigs[action.validator] = valCfg
 	}
 
+}
+
+func intPointer(i int) *int {
+	return &i
 }

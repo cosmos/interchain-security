@@ -132,7 +132,7 @@ func stepsDemocracy(consumerName string) []Step {
 				chain: chainID(consumerName),
 				// TODO: First validator cannot be brought down until this issue is resolved:
 				// https://github.com/cosmos/interchain-security/issues/263
-				validator: validatorID("bob"),
+				validators: []validatorID{validatorID("bob")},
 			},
 			state: State{
 				// validator should be slashed on consumer, powers not affected on either chain yet

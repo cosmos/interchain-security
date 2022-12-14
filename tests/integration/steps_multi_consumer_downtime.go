@@ -5,8 +5,8 @@ func stepsMultiConsumerDowntimeFromConsumer(consumer1, consumer2 string) []Step 
 	return []Step{
 		{
 			action: downtimeSlashAction{
-				chain:     chainID(consumer1),
-				validator: validatorID("bob"),
+				chain:      chainID(consumer1),
+				validators: []validatorID{validatorID("bob")},
 			},
 			state: State{
 				// validator should be slashed on consumer, powers not affected on either chain yet
@@ -221,8 +221,8 @@ func stepsMultiConsumerDowntimeFromProvider(consumer1, consumer2 string) []Step 
 		// Now we test provider initiated downtime/slashing
 		{
 			action: downtimeSlashAction{
-				chain:     chainID("provi"),
-				validator: validatorID("carol"),
+				chain:      chainID("provi"),
+				validators: []validatorID{validatorID("carol")},
 			},
 			state: State{
 				chainID("provi"): ChainState{
