@@ -75,7 +75,7 @@ func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddre
 	inUse := false
 
 	for _, validatorConsumerAddrs := range k.IterateAllValidatorsByConsumerAddr(ctx) {
-		if validatorConsumerAddrs.ConsumerAddr.Equals(consensusAddr) {
+		if sdk.ConsAddress(validatorConsumerAddrs.ConsumerAddr).Equals(consensusAddr) {
 			inUse = true
 			break
 		}
@@ -99,7 +99,7 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 	}
 
 	for _, validatorConsumerPubKey := range h.k.IterateAllValidatorConsumerPubKeys(ctx) {
-		if validatorConsumerPubKey.ProviderAddr.Equals(valConsAddr) {
+		if sdk.ConsAddress(validatorConsumerPubKey.ProviderAddr).Equals(valConsAddr) {
 			consumerAddr := utils.TMCryptoPublicKeyToConsAddr(*validatorConsumerPubKey.ConsumerKey)
 			h.k.DeleteValidatorByConsumerAddr(ctx, validatorConsumerPubKey.ChainId, consumerAddr)
 			h.k.DeleteValidatorConsumerPubKey(ctx, validatorConsumerPubKey.ChainId, validatorConsumerPubKey.ProviderAddr)

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
 
@@ -15,6 +14,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
+	providerkeepertypes "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/stretchr/testify/require"
 )
 
@@ -300,29 +300,22 @@ func TestVscSendTimestamp(t *testing.T) {
 	}
 
 	i = 0
-	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(vscID uint64, ts time.Time) (stop bool) {
-		require.Equal(t, vscID, testCases[i].vscID)
-		require.Equal(t, ts, testCases[i].ts)
+	for _, vscSendTimestamp := range providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID) {
+		require.Equal(t, vscSendTimestamp.VscID, testCases[i].vscID)
+		require.Equal(t, vscSendTimestamp.Timestamp, testCases[i].ts)
 		i++
-		return false // do not stop
-	})
+	}
 	require.Equal(t, 2, i)
 
 	// delete VSC send timestamps
-	var ids []uint64
-	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(vscID uint64, _ time.Time) (stop bool) {
-		ids = append(ids, vscID)
-		return false // do not stop
-	})
-	for _, vscID := range ids {
-		providerKeeper.DeleteVscSendTimestamp(ctx, testCases[0].chainID, vscID)
+	for _, vscSendTimestamp := range providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID) {
+		providerKeeper.DeleteVscSendTimestamp(ctx, testCases[0].chainID, vscSendTimestamp.VscID)
 	}
 
 	i = 0
-	providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID, func(_ uint64, _ time.Time) (stop bool) {
+	for _, _ = range providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID) {
 		i++
-		return false // do not stop
-	})
+	}
 	require.Equal(t, 0, i)
 }
 
@@ -337,28 +330,27 @@ func TestIterateConsumerChains(t *testing.T) {
 	}
 
 	result := []string{}
-	testIterateAll := func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		result = append(result, chainID)
-		return false // will not stop iteration
-	}
 
 	require.Empty(t, result, "initial result not empty")
 	require.Len(t, chainIDs, 2, "initial chainIDs not len 2")
 
 	// iterate and check all chains are returned
-	pk.IterateConsumerChains(ctx, testIterateAll)
+	for _, chain := range pk.IterateConsumerChains(ctx) {
+		result = append(result, chain.ChainId)
+	}
+
 	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
 	require.Contains(t, result, chainIDs[0], "result does not contain '%s'", chainIDs[0])
 	require.Contains(t, result, chainIDs[1], "result does not contain '%s'", chainIDs[1])
 
 	result = []string{}
-	testGetFirst := func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		result = append(result, chainID)
-		return true // will stop iteration after iterating 1 element
-	}
 	require.Empty(t, result, "initial result not empty")
+
 	// iterate and check first chain is
-	pk.IterateConsumerChains(ctx, testGetFirst)
+	for _, chain := range pk.IterateConsumerChains(ctx) {
+		result = append(result, chain.ChainId)
+		break
+	}
 	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
 	require.Contains(t, result, chainIDs[0], "result does not contain '%s'", chainIDs[0])
 	require.NotContains(t, result, chainIDs[1], "result should not contain '%s'", chainIDs[1])
@@ -369,58 +361,33 @@ func TestIterateChannelToChain(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	type chanToChain struct {
-		chainID   string
-		channelID string
-	}
-
-	cases := []chanToChain{
+	cases := []providerkeepertypes.ChannelToChain{
 		{
-			chainID:   "chain-1",
-			channelID: "channel-1",
+			ChainID:   "chain-1",
+			ChannelID: "channel-1",
 		},
 		{
-			chainID:   "chain-2",
-			channelID: "channel-2",
+			ChainID:   "chain-2",
+			ChannelID: "channel-2",
 		},
 	}
 
 	for _, c := range cases {
-		pk.SetChannelToChain(ctx, c.channelID, c.chainID)
+		pk.SetChannelToChain(ctx, c.ChannelID, c.ChainID)
 	}
-
-	result := []chanToChain{}
-	testIterateAll := func(ctx sdk.Context, channelID, chainID string) (stop bool) {
-		result = append(result, chanToChain{
-			chainID:   chainID,
-			channelID: channelID,
-		})
-		return false // will not stop iteration
-	}
-
-	require.Empty(t, result, "initial result not empty")
 
 	// iterate and check all results are returned
-	pk.IterateChannelToChain(ctx, testIterateAll)
+	result := pk.IterateChannelToChain(ctx)
 	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
 	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
 	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
 
-	result = []chanToChain{}
-	testGetFirst := func(ctx sdk.Context, channelID, chainID string) (stop bool) {
-		result = append(result, chanToChain{
-			chainID:   chainID,
-			channelID: channelID,
-		})
-		return true // will stop iteration
-	}
-
-	require.Empty(t, result, "initial result not empty")
+	// TODO JEHAN: if it is necessary to stop the iteration, fix this test
 	// iterate and check 1 result is returned
-	pk.IterateChannelToChain(ctx, testGetFirst)
-	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
-	require.NotContains(t, result, cases[1], "result should not contain '%s'", cases[1])
+	// result = pk.IterateChannelToChain(ctx)
+	// require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
+	// require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
+	// require.NotContains(t, result, cases[1], "result should not contain '%s'", cases[1])
 }
 
 // IterateOverUnbondingOps tests IterateOverUnbondingOps behaviour correctness
@@ -443,30 +410,16 @@ func TestIterateOverUnbondingOps(t *testing.T) {
 		pk.SetUnbondingOp(ctx, op)
 	}
 
-	result := []ccv.UnbondingOp{}
-	testIterateAll := func(id uint64, ubdOp ccv.UnbondingOp) (stop bool) {
-		result = append(result, ubdOp)
-		return false // will not stop iteration
-	}
-
-	require.Empty(t, result, "initial result not empty")
-
 	// iterate and check all results are returned
-	pk.IterateOverUnbondingOps(ctx, testIterateAll)
+	result := pk.IterateOverUnbondingOps(ctx)
 	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
 	require.Contains(t, result, ops[0], "result does not contain '%s'", ops[0])
 	require.Contains(t, result, ops[1], "result does not contain '%s'", ops[1])
 
-	result = []ccv.UnbondingOp{}
-	testGetFirst := func(id uint64, ubdOp ccv.UnbondingOp) (stop bool) {
-		result = append(result, ubdOp)
-		return true // will stop iteration
-	}
-
-	require.Empty(t, result, "initial result not empty")
+	// TODO JEHAN: if it is necessary to stop the iteration, fix this test
 	// iterate and check 1 result is returned
-	pk.IterateOverUnbondingOps(ctx, testGetFirst)
-	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	require.Contains(t, result, ops[0], "result does not contain '%s'", ops[0])
-	require.NotContains(t, result, ops[1], "result should not contain '%s'", ops[1])
+	// result = pk.IterateOverUnbondingOps(ctx)
+	// require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
+	// require.Contains(t, result, ops[0], "result does not contain '%s'", ops[0])
+	// require.NotContains(t, result, ops[1], "result should not contain '%s'", ops[1])
 }
