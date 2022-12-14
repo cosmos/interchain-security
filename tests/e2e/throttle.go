@@ -415,9 +415,6 @@ func (s *CCVTestSuite) TestPacketSpam() {
 	slashPacketData, _ = providerKeeper.GetAllThrottledPacketData(
 		s.providerCtx(), firstBundle.Chain.ChainID)
 	s.Require().Equal(0, len(slashPacketData))
-
-	// TODO: Can queue up more at a new block time, and confirm ordering is still correct.
-
 }
 
 // TestSlashingSmallValidators tests that multiple slash packets from validators with small

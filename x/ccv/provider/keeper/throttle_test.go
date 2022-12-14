@@ -555,7 +555,7 @@ func TestGetSlashMeterAllowance(t *testing.T) {
 
 // TestGlobalSlashEntries tests the queue and iteration functions for global slash entries,
 // with assertion of FIFO ordering
-func TestPendingSlashPacketEntries(t *testing.T) {
+func TestGlobalSlashEntries(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
