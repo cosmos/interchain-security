@@ -275,15 +275,15 @@ func (k Keeper) VerifyProviderChain(ctx sdk.Context, connectionHops []string) er
 	return nil
 }
 
-// SetHeightValsetUpdateID sets the valset update id for a given block height
-func (k Keeper) SetHeightValsetUpdateID(ctx sdk.Context, height, valsetUpdateId uint64) {
+// SetHeightValsetUpdateID sets the vscID for a given block height
+func (k Keeper) SetHeightValsetUpdateID(ctx sdk.Context, height, vscID uint64) {
 	store := ctx.KVStore(k.storeKey)
 	valBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(valBytes, valsetUpdateId)
+	binary.BigEndian.PutUint64(valBytes, vscID)
 	store.Set(types.HeightValsetUpdateIDKey(height), valBytes)
 }
 
-// GetHeightValsetUpdateID gets the valset update id recorded for a given block height
+// GetHeightValsetUpdateID gets the vscID recorded for a given block height
 func (k Keeper) GetHeightValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.HeightValsetUpdateIDKey(height))
@@ -293,13 +293,17 @@ func (k Keeper) GetHeightValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 	return binary.BigEndian.Uint64(bz)
 }
 
-// DeleteHeightValsetUpdateID deletes the valset update id for a given block height
+// DeleteHeightValsetUpdateID deletes the vscID for a given block height
 func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.HeightValsetUpdateIDKey(height))
 }
 
-// IterateHeightToValsetUpdateID iterates over the block height to valset update ID mapping in store
+// IterateHeightToValsetUpdateID iterates over the block height to vscID mapping in store.
+//
+// Note that the block height to vscID mapping is stored under keys with the following format:
+// HeightValsetUpdateIDBytePrefix | height
+// Thus, the iteration is in ascending order of heights.
 func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
@@ -341,7 +345,11 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 	store.Delete(types.OutstandingDowntimeKey(consAddr))
 }
 
-// IterateOutstandingDowntime iterates over the validator addresses of outstanding downtime flags
+// IterateOutstandingDowntime iterates over the outstanding downtime flags.
+//
+// Note that the outstanding downtime flags are stored under keys with the following format:
+// OutstandingDowntimeBytePrefix | consAddress
+// Thus, the iteration is in ascending order of consAddresses.
 func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
@@ -384,7 +392,11 @@ func (k Keeper) DeleteCCValidator(ctx sdk.Context, addr []byte) {
 	store.Delete(types.CrossChainValidatorKey(addr))
 }
 
-// GetAllCCValidator returns all cross-chain validators
+// GetAllCCValidator returns all cross-chain validators.
+//
+// Note that the cross-chain validators are stored under keys with the following format:
+// CrossChainValidatorBytePrefix | address
+// Thus, the iteration is in ascending order of addresses.
 func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChainValidator) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.CrossChainValidatorBytePrefix})
@@ -463,7 +475,7 @@ func (k Keeper) GetOutstandingDowntimes(ctx sdk.Context) []consumertypes.Outstan
 			ValidatorConsensusAddress: addr,
 		}
 		outstandingDowntimes = append(outstandingDowntimes, od)
-		return false
+		return false // do not stop iteration
 	})
 	return outstandingDowntimes
 }
