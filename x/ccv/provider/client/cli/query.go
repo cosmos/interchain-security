@@ -30,6 +30,8 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerStopProposals())
 	cmd.AddCommand(CmdConsumerValidatorKeyAssignment())
 	cmd.AddCommand(CmdProviderValidatorKey())
+	cmd.AddCommand(CmdPendingSlashPackets())
+	cmd.AddCommand(CmdPendingConsumerPackets())
 
 	return cmd
 }
@@ -234,6 +236,78 @@ $ %s query provider validator-provider-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 				ConsumerAddress: addr.String(),
 			}
 			res, err := queryClient.QueryValidatorProviderAddr(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdPendingSlashPackets() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "pending-slash-packets",
+		Short: "Query pending slash packet queue on the provider chain",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Returns current pending slash packet queue state on the provider chain.
+			Queue is ordered by time of arrival.
+Example:
+$ %s query provider pending-slash-packets
+`,
+				version.AppName,
+			),
+		),
+		Args: cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryPendingSlashPacketsRequest{}
+			res, err := queryClient.QueryPendingSlashPackets(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdPendingConsumerPackets() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "pending-consumer-packets [chainid]",
+		Short: "Query pending VSCMatured and slash packets for chainId",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Returns the current pending VSCMatured and slash packets for chainId.
+			Queue is ordered by time of arrival.
+Example:
+$ %s query provider pending-consumer-packets foochain
+`,
+				version.AppName,
+			),
+		),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryPendingConsumerPacketsRequest{ChainId: args[0]}
+			res, err := queryClient.QueryPendingConsumerPackets(cmd.Context(), req)
 			if err != nil {
 				return err
 			}

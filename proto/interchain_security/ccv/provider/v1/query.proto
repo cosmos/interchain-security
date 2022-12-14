@@ -5,6 +5,8 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "interchain_security/ccv/v1/ccv.proto";
 import "interchain_security/ccv/consumer/v1/genesis.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
 
@@ -52,6 +54,20 @@ service Query {
   rpc QueryValidatorProviderAddr(QueryValidatorProviderAddrRequest)
       returns (QueryValidatorProviderAddrResponse) {
     option (google.api.http).get = "/interchain_security/ccv/provider/validator_provider_addr";
+  }
+
+  // QueryPendingSlashPackets returns the current state of the slash meter
+  // and a list of pending slash packets (chainID, slashPacket)
+  rpc QueryPendingSlashPackets(QueryPendingSlashPacketsRequest)
+      returns (QueryPendingSlashPacketsResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/provider/pending_slash_requests";
+  }
+
+  // QueryPendingConsumerPackets returns a list of pending packets (slash packet and vsc matured)
+  // for a consumer chain
+  rpc QueryPendingConsumerPackets(QueryPendingConsumerPacketsRequest)
+      returns (QueryPendingConsumerPacketsResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/provider/pending_consumer_packets";
   }
 }
 
@@ -111,4 +127,44 @@ message QueryValidatorProviderAddrRequest {
 message QueryValidatorProviderAddrResponse {
   // The address of the validator on the provider chain
   string provider_address = 1;
+}
+
+message QueryPendingSlashPacketsRequest {}
+
+message QueryPendingSlashPacketsResponse {
+  // current slash_meter state
+  int64 slash_meter = 1;
+  // allowance of voting power units (int) that the slash meter is given per replenish period
+  // this also serves as the max value for the meter.
+  int64 slash_meter_allowance = 2;
+  google.protobuf.Timestamp last_replenish = 3
+    [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  repeated PendingSlashPacket packets = 4;
+}
+
+message QueryPendingConsumerPacketsRequest {
+  string chain_id = 1;
+}
+
+message QueryPendingConsumerPacketsResponse {
+  string chain_id = 1;
+  uint64 size = 2;
+  repeated PendingPacketWrapper packets = 3
+    [(gogoproto.nullable) = false];
+}
+
+message PendingSlashPacket {
+  string chain_id = 1;
+  google.protobuf.Timestamp received_at = 2
+    [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  interchain_security.ccv.v1.SlashPacketData data = 3
+    [(gogoproto.nullable) = false];
+}
+
+// PendingPacketWrapper data contains either SlashPacketData or VSCMaturedPacketData
+message PendingPacketWrapper {
+  oneof data {
+    interchain_security.ccv.v1.SlashPacketData slash_packet = 1;
+    interchain_security.ccv.v1.VSCMaturedPacketData vsc_matured_packet = 2;
+  }
 }

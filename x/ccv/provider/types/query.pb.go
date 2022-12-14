@@ -7,22 +7,27 @@ import (
 	context "context"
 	fmt "fmt"
 	types "github.com/cosmos/interchain-security/x/ccv/consumer/types"
+	types1 "github.com/cosmos/interchain-security/x/ccv/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+var _ = time.Kitchen
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -588,6 +593,363 @@ func (m *QueryValidatorProviderAddrResponse) GetProviderAddress() string {
 	return ""
 }
 
+type QueryPendingSlashPacketsRequest struct {
+}
+
+func (m *QueryPendingSlashPacketsRequest) Reset()         { *m = QueryPendingSlashPacketsRequest{} }
+func (m *QueryPendingSlashPacketsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryPendingSlashPacketsRequest) ProtoMessage()    {}
+func (*QueryPendingSlashPacketsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{13}
+}
+func (m *QueryPendingSlashPacketsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryPendingSlashPacketsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryPendingSlashPacketsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryPendingSlashPacketsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryPendingSlashPacketsRequest.Merge(m, src)
+}
+func (m *QueryPendingSlashPacketsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryPendingSlashPacketsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryPendingSlashPacketsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryPendingSlashPacketsRequest proto.InternalMessageInfo
+
+type QueryPendingSlashPacketsResponse struct {
+	// current slash_meter state
+	SlashMeter int64 `protobuf:"varint,1,opt,name=slash_meter,json=slashMeter,proto3" json:"slash_meter,omitempty"`
+	// allowance of voting power units (int) that the slash meter is given per replenish period
+	// this also serves as the max value for the meter.
+	SlashMeterAllowance int64                 `protobuf:"varint,2,opt,name=slash_meter_allowance,json=slashMeterAllowance,proto3" json:"slash_meter_allowance,omitempty"`
+	LastReplenish       time.Time             `protobuf:"bytes,3,opt,name=last_replenish,json=lastReplenish,proto3,stdtime" json:"last_replenish"`
+	Packets             []*PendingSlashPacket `protobuf:"bytes,4,rep,name=packets,proto3" json:"packets,omitempty"`
+}
+
+func (m *QueryPendingSlashPacketsResponse) Reset()         { *m = QueryPendingSlashPacketsResponse{} }
+func (m *QueryPendingSlashPacketsResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryPendingSlashPacketsResponse) ProtoMessage()    {}
+func (*QueryPendingSlashPacketsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{14}
+}
+func (m *QueryPendingSlashPacketsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryPendingSlashPacketsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryPendingSlashPacketsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryPendingSlashPacketsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryPendingSlashPacketsResponse.Merge(m, src)
+}
+func (m *QueryPendingSlashPacketsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryPendingSlashPacketsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryPendingSlashPacketsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryPendingSlashPacketsResponse proto.InternalMessageInfo
+
+func (m *QueryPendingSlashPacketsResponse) GetSlashMeter() int64 {
+	if m != nil {
+		return m.SlashMeter
+	}
+	return 0
+}
+
+func (m *QueryPendingSlashPacketsResponse) GetSlashMeterAllowance() int64 {
+	if m != nil {
+		return m.SlashMeterAllowance
+	}
+	return 0
+}
+
+func (m *QueryPendingSlashPacketsResponse) GetLastReplenish() time.Time {
+	if m != nil {
+		return m.LastReplenish
+	}
+	return time.Time{}
+}
+
+func (m *QueryPendingSlashPacketsResponse) GetPackets() []*PendingSlashPacket {
+	if m != nil {
+		return m.Packets
+	}
+	return nil
+}
+
+type QueryPendingConsumerPacketsRequest struct {
+	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+}
+
+func (m *QueryPendingConsumerPacketsRequest) Reset()         { *m = QueryPendingConsumerPacketsRequest{} }
+func (m *QueryPendingConsumerPacketsRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryPendingConsumerPacketsRequest) ProtoMessage()    {}
+func (*QueryPendingConsumerPacketsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{15}
+}
+func (m *QueryPendingConsumerPacketsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryPendingConsumerPacketsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryPendingConsumerPacketsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryPendingConsumerPacketsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryPendingConsumerPacketsRequest.Merge(m, src)
+}
+func (m *QueryPendingConsumerPacketsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryPendingConsumerPacketsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryPendingConsumerPacketsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryPendingConsumerPacketsRequest proto.InternalMessageInfo
+
+func (m *QueryPendingConsumerPacketsRequest) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+type QueryPendingConsumerPacketsResponse struct {
+	ChainId string                 `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	Size_   uint64                 `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
+	Packets []PendingPacketWrapper `protobuf:"bytes,3,rep,name=packets,proto3" json:"packets"`
+}
+
+func (m *QueryPendingConsumerPacketsResponse) Reset()         { *m = QueryPendingConsumerPacketsResponse{} }
+func (m *QueryPendingConsumerPacketsResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryPendingConsumerPacketsResponse) ProtoMessage()    {}
+func (*QueryPendingConsumerPacketsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{16}
+}
+func (m *QueryPendingConsumerPacketsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryPendingConsumerPacketsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryPendingConsumerPacketsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryPendingConsumerPacketsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryPendingConsumerPacketsResponse.Merge(m, src)
+}
+func (m *QueryPendingConsumerPacketsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryPendingConsumerPacketsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryPendingConsumerPacketsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryPendingConsumerPacketsResponse proto.InternalMessageInfo
+
+func (m *QueryPendingConsumerPacketsResponse) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+func (m *QueryPendingConsumerPacketsResponse) GetSize_() uint64 {
+	if m != nil {
+		return m.Size_
+	}
+	return 0
+}
+
+func (m *QueryPendingConsumerPacketsResponse) GetPackets() []PendingPacketWrapper {
+	if m != nil {
+		return m.Packets
+	}
+	return nil
+}
+
+type PendingSlashPacket struct {
+	ChainId    string                 `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	ReceivedAt time.Time              `protobuf:"bytes,2,opt,name=received_at,json=receivedAt,proto3,stdtime" json:"received_at"`
+	Data       types1.SlashPacketData `protobuf:"bytes,3,opt,name=data,proto3" json:"data"`
+}
+
+func (m *PendingSlashPacket) Reset()         { *m = PendingSlashPacket{} }
+func (m *PendingSlashPacket) String() string { return proto.CompactTextString(m) }
+func (*PendingSlashPacket) ProtoMessage()    {}
+func (*PendingSlashPacket) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{17}
+}
+func (m *PendingSlashPacket) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PendingSlashPacket) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PendingSlashPacket.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PendingSlashPacket) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PendingSlashPacket.Merge(m, src)
+}
+func (m *PendingSlashPacket) XXX_Size() int {
+	return m.Size()
+}
+func (m *PendingSlashPacket) XXX_DiscardUnknown() {
+	xxx_messageInfo_PendingSlashPacket.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PendingSlashPacket proto.InternalMessageInfo
+
+func (m *PendingSlashPacket) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+func (m *PendingSlashPacket) GetReceivedAt() time.Time {
+	if m != nil {
+		return m.ReceivedAt
+	}
+	return time.Time{}
+}
+
+func (m *PendingSlashPacket) GetData() types1.SlashPacketData {
+	if m != nil {
+		return m.Data
+	}
+	return types1.SlashPacketData{}
+}
+
+// PendingPacketWrapper data contains either SlashPacketData or VSCMaturedPacketData
+type PendingPacketWrapper struct {
+	// Types that are valid to be assigned to Data:
+	//	*PendingPacketWrapper_SlashPacket
+	//	*PendingPacketWrapper_VscMaturedPacket
+	Data isPendingPacketWrapper_Data `protobuf_oneof:"data"`
+}
+
+func (m *PendingPacketWrapper) Reset()         { *m = PendingPacketWrapper{} }
+func (m *PendingPacketWrapper) String() string { return proto.CompactTextString(m) }
+func (*PendingPacketWrapper) ProtoMessage()    {}
+func (*PendingPacketWrapper) Descriptor() ([]byte, []int) {
+	return fileDescriptor_422512d7b7586cd7, []int{18}
+}
+func (m *PendingPacketWrapper) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PendingPacketWrapper) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PendingPacketWrapper.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PendingPacketWrapper) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PendingPacketWrapper.Merge(m, src)
+}
+func (m *PendingPacketWrapper) XXX_Size() int {
+	return m.Size()
+}
+func (m *PendingPacketWrapper) XXX_DiscardUnknown() {
+	xxx_messageInfo_PendingPacketWrapper.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PendingPacketWrapper proto.InternalMessageInfo
+
+type isPendingPacketWrapper_Data interface {
+	isPendingPacketWrapper_Data()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type PendingPacketWrapper_SlashPacket struct {
+	SlashPacket *types1.SlashPacketData `protobuf:"bytes,1,opt,name=slash_packet,json=slashPacket,proto3,oneof" json:"slash_packet,omitempty"`
+}
+type PendingPacketWrapper_VscMaturedPacket struct {
+	VscMaturedPacket *types1.VSCMaturedPacketData `protobuf:"bytes,2,opt,name=vsc_matured_packet,json=vscMaturedPacket,proto3,oneof" json:"vsc_matured_packet,omitempty"`
+}
+
+func (*PendingPacketWrapper_SlashPacket) isPendingPacketWrapper_Data()      {}
+func (*PendingPacketWrapper_VscMaturedPacket) isPendingPacketWrapper_Data() {}
+
+func (m *PendingPacketWrapper) GetData() isPendingPacketWrapper_Data {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+func (m *PendingPacketWrapper) GetSlashPacket() *types1.SlashPacketData {
+	if x, ok := m.GetData().(*PendingPacketWrapper_SlashPacket); ok {
+		return x.SlashPacket
+	}
+	return nil
+}
+
+func (m *PendingPacketWrapper) GetVscMaturedPacket() *types1.VSCMaturedPacketData {
+	if x, ok := m.GetData().(*PendingPacketWrapper_VscMaturedPacket); ok {
+		return x.VscMaturedPacket
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*PendingPacketWrapper) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*PendingPacketWrapper_SlashPacket)(nil),
+		(*PendingPacketWrapper_VscMaturedPacket)(nil),
+	}
+}
+
 func init() {
 	proto.RegisterType((*QueryConsumerGenesisRequest)(nil), "interchain_security.ccv.provider.v1.QueryConsumerGenesisRequest")
 	proto.RegisterType((*QueryConsumerGenesisResponse)(nil), "interchain_security.ccv.provider.v1.QueryConsumerGenesisResponse")
@@ -602,6 +964,12 @@ func init() {
 	proto.RegisterType((*QueryValidatorConsumerAddrResponse)(nil), "interchain_security.ccv.provider.v1.QueryValidatorConsumerAddrResponse")
 	proto.RegisterType((*QueryValidatorProviderAddrRequest)(nil), "interchain_security.ccv.provider.v1.QueryValidatorProviderAddrRequest")
 	proto.RegisterType((*QueryValidatorProviderAddrResponse)(nil), "interchain_security.ccv.provider.v1.QueryValidatorProviderAddrResponse")
+	proto.RegisterType((*QueryPendingSlashPacketsRequest)(nil), "interchain_security.ccv.provider.v1.QueryPendingSlashPacketsRequest")
+	proto.RegisterType((*QueryPendingSlashPacketsResponse)(nil), "interchain_security.ccv.provider.v1.QueryPendingSlashPacketsResponse")
+	proto.RegisterType((*QueryPendingConsumerPacketsRequest)(nil), "interchain_security.ccv.provider.v1.QueryPendingConsumerPacketsRequest")
+	proto.RegisterType((*QueryPendingConsumerPacketsResponse)(nil), "interchain_security.ccv.provider.v1.QueryPendingConsumerPacketsResponse")
+	proto.RegisterType((*PendingSlashPacket)(nil), "interchain_security.ccv.provider.v1.PendingSlashPacket")
+	proto.RegisterType((*PendingPacketWrapper)(nil), "interchain_security.ccv.provider.v1.PendingPacketWrapper")
 }
 
 func init() {
@@ -609,57 +977,83 @@ func init() {
 }
 
 var fileDescriptor_422512d7b7586cd7 = []byte{
-	// 795 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x96, 0xc1, 0x4f, 0xd4, 0x4a,
-	0x1c, 0xc7, 0xb7, 0xbc, 0x07, 0x0f, 0x86, 0xf7, 0x1e, 0x64, 0x24, 0x11, 0x0b, 0xd9, 0xc5, 0x9a,
-	0xe8, 0x62, 0x62, 0x9b, 0x5d, 0x2e, 0x82, 0xc1, 0x65, 0x97, 0x28, 0x12, 0x31, 0xe2, 0x62, 0x3c,
-	0xa8, 0xc9, 0xa6, 0xb4, 0x93, 0xa5, 0xc9, 0x6e, 0xa7, 0x74, 0x66, 0x37, 0x6e, 0xd4, 0x83, 0x1e,
-	0x94, 0xa3, 0x89, 0xff, 0x00, 0x7f, 0x80, 0x7f, 0x08, 0x47, 0x12, 0x2e, 0x9e, 0x88, 0x59, 0x3c,
-	0x78, 0x34, 0xde, 0x4d, 0x4c, 0xa7, 0xd3, 0xd2, 0xd2, 0xb2, 0x74, 0x0b, 0xb7, 0x65, 0x66, 0x7e,
-	0xdf, 0xdf, 0xf7, 0xf3, 0xeb, 0xf0, 0x6d, 0x81, 0x62, 0x98, 0x14, 0xd9, 0xda, 0x96, 0x6a, 0x98,
-	0x35, 0x82, 0xb4, 0x96, 0x6d, 0xd0, 0x8e, 0xa2, 0x69, 0x6d, 0xc5, 0xb2, 0x71, 0xdb, 0xd0, 0x91,
-	0xad, 0xb4, 0x0b, 0xca, 0x76, 0x0b, 0xd9, 0x1d, 0xd9, 0xb2, 0x31, 0xc5, 0xf0, 0x5a, 0x4c, 0x81,
-	0xac, 0x69, 0x6d, 0xd9, 0x2b, 0x90, 0xdb, 0x05, 0x71, 0xba, 0x8e, 0x71, 0xbd, 0x81, 0x14, 0xd5,
-	0x32, 0x14, 0xd5, 0x34, 0x31, 0x55, 0xa9, 0x81, 0x4d, 0xe2, 0x4a, 0x88, 0x13, 0x75, 0x5c, 0xc7,
-	0xec, 0xa7, 0xe2, 0xfc, 0xe2, 0xab, 0x85, 0xd3, 0x9c, 0x68, 0xd8, 0x24, 0xad, 0xa6, 0xeb, 0xa4,
-	0x8e, 0x4c, 0x44, 0x0c, 0x4f, 0xa8, 0x98, 0xc4, 0xbc, 0xef, 0x8b, 0xd5, 0x48, 0xb7, 0xc1, 0xd4,
-	0x13, 0x07, 0x67, 0x99, 0xab, 0xae, 0xb8, 0x8a, 0x55, 0xb4, 0xdd, 0x42, 0x84, 0xc2, 0x2b, 0x60,
-	0xd8, 0xd5, 0x33, 0xf4, 0x49, 0x61, 0x46, 0xc8, 0x8f, 0x54, 0xff, 0x61, 0x7f, 0xaf, 0xea, 0xd2,
-	0x1b, 0x30, 0x1d, 0x5f, 0x49, 0x2c, 0x6c, 0x12, 0x04, 0x5f, 0x82, 0xff, 0xb8, 0xbd, 0x1a, 0xa1,
-	0x2a, 0x45, 0xac, 0x7e, 0xb4, 0x58, 0x90, 0x4f, 0x9b, 0x98, 0x07, 0x26, 0xb7, 0x0b, 0x32, 0x17,
-	0xdb, 0x70, 0x0a, 0x2b, 0x7f, 0xef, 0x1d, 0xe6, 0x32, 0xd5, 0x7f, 0xeb, 0x81, 0x35, 0x69, 0x1a,
-	0x88, 0xa1, 0xee, 0xcb, 0x8e, 0x9e, 0x67, 0x5b, 0x52, 0x4f, 0x50, 0x79, 0xbb, 0xdc, 0x5a, 0x05,
-	0x0c, 0xb1, 0xfe, 0x64, 0x52, 0x98, 0xf9, 0x2b, 0x3f, 0x5a, 0xbc, 0x29, 0x27, 0x78, 0x8a, 0x32,
-	0x13, 0xa9, 0xf2, 0x4a, 0x69, 0x16, 0xdc, 0x88, 0xb6, 0xd8, 0xa0, 0xaa, 0x4d, 0xd7, 0x6d, 0x6c,
-	0x61, 0xa2, 0x36, 0x7c, 0x37, 0x3b, 0x02, 0xc8, 0x9f, 0x7d, 0xd6, 0x1f, 0xdb, 0x88, 0xe5, 0x2d,
-	0xf2, 0x91, 0xdd, 0x4d, 0x66, 0x8f, 0x8b, 0x97, 0x75, 0xdd, 0x70, 0xae, 0xd7, 0xb1, 0xf4, 0xb1,
-	0xa0, 0x94, 0x07, 0xd7, 0xe3, 0x9c, 0x60, 0x2b, 0x62, 0xfa, 0x83, 0x10, 0x0f, 0x18, 0x3a, 0xca,
-	0x3d, 0xbf, 0x88, 0x7a, 0x5e, 0xec, 0xcb, 0x73, 0x15, 0x35, 0x71, 0x5b, 0x6d, 0xc4, 0x5a, 0x2e,
-	0x81, 0x41, 0xd6, 0xba, 0xc7, 0x5d, 0x84, 0x53, 0x60, 0x44, 0x6b, 0x18, 0xc8, 0xa4, 0xce, 0xde,
-	0x00, 0xdb, 0x1b, 0x76, 0x17, 0x56, 0x75, 0xe9, 0xa3, 0x00, 0xae, 0x32, 0x92, 0x67, 0x6a, 0xc3,
-	0xd0, 0x55, 0x8a, 0xed, 0xc0, 0xa8, 0xec, 0xb3, 0x6f, 0x3a, 0x5c, 0x04, 0xe3, 0x9e, 0xe9, 0x9a,
-	0xaa, 0xeb, 0x36, 0x22, 0xc4, 0x6d, 0x52, 0x81, 0xbf, 0x0e, 0x73, 0xff, 0x77, 0xd4, 0x66, 0x63,
-	0x41, 0xe2, 0x1b, 0x52, 0x75, 0xcc, 0x3b, 0x5b, 0x76, 0x57, 0x16, 0x86, 0x77, 0x76, 0x73, 0x99,
-	0x1f, 0xbb, 0xb9, 0x8c, 0xf4, 0x18, 0x48, 0xbd, 0x8c, 0xf0, 0x69, 0xce, 0x82, 0x71, 0xef, 0x5f,
-	0xc1, 0x6f, 0xe7, 0x3a, 0x1a, 0xd3, 0x02, 0xe7, 0x9d, 0x66, 0x51, 0xb4, 0xf5, 0x40, 0xf3, 0x64,
-	0x68, 0x91, 0x5e, 0x3d, 0xd0, 0x4e, 0xf4, 0xef, 0x85, 0x16, 0x36, 0x72, 0x8c, 0x16, 0x99, 0x24,
-	0x47, 0x3b, 0x31, 0xb5, 0xe2, 0x97, 0x51, 0x30, 0xc8, 0x14, 0x61, 0x57, 0x00, 0x13, 0x71, 0x49,
-	0x03, 0x97, 0x12, 0xdd, 0xb1, 0x1e, 0xf1, 0x26, 0x96, 0xcf, 0xa1, 0xe0, 0x22, 0x49, 0xf7, 0xde,
-	0x1f, 0x7c, 0xff, 0x3c, 0x50, 0x82, 0x8b, 0x67, 0xbf, 0x3a, 0xfc, 0x49, 0xf3, 0x24, 0x53, 0x5e,
-	0x7b, 0x8f, 0xe5, 0x2d, 0x3c, 0x10, 0xc0, 0xa5, 0x98, 0xc8, 0x82, 0xa5, 0xfe, 0x1d, 0x86, 0xa2,
-	0x50, 0x5c, 0x4a, 0x2f, 0xc0, 0x09, 0xe7, 0x19, 0xe1, 0x1c, 0x2c, 0xf4, 0x41, 0xe8, 0x86, 0x24,
-	0x7c, 0x37, 0x00, 0x26, 0x4f, 0x49, 0x3e, 0x02, 0xd7, 0x52, 0x3a, 0x8b, 0x0d, 0x59, 0xf1, 0xd1,
-	0x05, 0xa9, 0x71, 0xe8, 0x07, 0x0c, 0xba, 0x02, 0x97, 0xfa, 0x85, 0x76, 0x5e, 0x76, 0x36, 0xad,
-	0xf9, 0xf9, 0x05, 0x7f, 0x0b, 0xe0, 0x72, 0x7c, 0x90, 0x12, 0xf8, 0x30, 0xb5, 0xe9, 0x68, 0x62,
-	0x8b, 0x6b, 0x17, 0x23, 0xc6, 0x07, 0xb0, 0xc2, 0x06, 0x50, 0x86, 0xa5, 0x14, 0x03, 0xc0, 0x56,
-	0x80, 0xff, 0xa7, 0xc0, 0x5f, 0xd5, 0xb1, 0xa9, 0x07, 0xef, 0x27, 0x77, 0xdd, 0x2b, 0xbf, 0xc5,
-	0x95, 0x73, 0xeb, 0x70, 0xf0, 0x32, 0x03, 0xbf, 0x03, 0xe7, 0x13, 0x7c, 0x0b, 0x7a, 0x42, 0xb5,
-	0x50, 0x88, 0xc6, 0x20, 0x07, 0xd3, 0x30, 0x15, 0x72, 0x4c, 0xae, 0xa7, 0x42, 0x8e, 0x8b, 0xe5,
-	0x74, 0xc8, 0xa1, 0x20, 0xaf, 0x3c, 0xdd, 0xeb, 0x66, 0x85, 0xfd, 0x6e, 0x56, 0xf8, 0xd6, 0xcd,
-	0x0a, 0x9f, 0x8e, 0xb2, 0x99, 0xfd, 0xa3, 0x6c, 0xe6, 0xeb, 0x51, 0x36, 0xf3, 0x7c, 0xa1, 0x6e,
-	0xd0, 0xad, 0xd6, 0xa6, 0xac, 0xe1, 0xa6, 0xa2, 0x61, 0xd2, 0xc4, 0x24, 0xd0, 0xe5, 0x96, 0xdf,
-	0xe5, 0x55, 0xb8, 0x0f, 0xed, 0x58, 0x88, 0x6c, 0x0e, 0xb1, 0x8f, 0xd4, 0xb9, 0x3f, 0x01, 0x00,
-	0x00, 0xff, 0xff, 0xb0, 0x31, 0x40, 0x03, 0x97, 0x0b, 0x00, 0x00,
+	// 1201 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0xcd, 0x6f, 0xdc, 0x44,
+	0x1c, 0x5d, 0x27, 0x69, 0x9a, 0x4c, 0xda, 0x26, 0x9a, 0x06, 0x11, 0xdc, 0x68, 0x37, 0x75, 0x11,
+	0xa4, 0x20, 0x6c, 0x36, 0x3d, 0xd0, 0x04, 0x42, 0xb2, 0x9b, 0x86, 0xa4, 0x6a, 0x23, 0x52, 0xa7,
+	0x2a, 0xe2, 0x43, 0x32, 0x13, 0x7b, 0xd8, 0x58, 0x78, 0x3d, 0xae, 0x67, 0xd6, 0x10, 0x3e, 0x0e,
+	0x70, 0x80, 0xde, 0xa8, 0xc4, 0x81, 0x6b, 0xff, 0x03, 0xfe, 0x02, 0xee, 0x3d, 0x56, 0xf4, 0xc2,
+	0xa9, 0xa0, 0x84, 0x03, 0xdc, 0x10, 0xe2, 0x8a, 0x54, 0x79, 0x66, 0xbc, 0x1f, 0x59, 0xaf, 0xe3,
+	0xdd, 0xf4, 0xe6, 0x9d, 0x99, 0xdf, 0xfb, 0xbd, 0xf7, 0xf6, 0xe7, 0xd9, 0xb7, 0xc0, 0x70, 0x7d,
+	0x86, 0x43, 0x7b, 0x0f, 0xb9, 0xbe, 0x45, 0xb1, 0xdd, 0x08, 0x5d, 0xb6, 0x6f, 0xd8, 0x76, 0x64,
+	0x04, 0x21, 0x89, 0x5c, 0x07, 0x87, 0x46, 0x54, 0x36, 0xee, 0x36, 0x70, 0xb8, 0xaf, 0x07, 0x21,
+	0x61, 0x04, 0x5e, 0x4a, 0x29, 0xd0, 0x6d, 0x3b, 0xd2, 0x93, 0x02, 0x3d, 0x2a, 0xab, 0xb3, 0x35,
+	0x42, 0x6a, 0x1e, 0x36, 0x50, 0xe0, 0x1a, 0xc8, 0xf7, 0x09, 0x43, 0xcc, 0x25, 0x3e, 0x15, 0x10,
+	0xea, 0x74, 0x8d, 0xd4, 0x08, 0x7f, 0x34, 0xe2, 0x27, 0xb9, 0x5a, 0x92, 0x35, 0xfc, 0xd3, 0x6e,
+	0xe3, 0x13, 0x83, 0xb9, 0x75, 0x4c, 0x19, 0xaa, 0x07, 0xf2, 0xc0, 0x8b, 0xbd, 0xa8, 0x46, 0x65,
+	0x43, 0x12, 0x60, 0x44, 0x2d, 0xf7, 0x3a, 0x65, 0x13, 0x9f, 0x36, 0xea, 0x42, 0x50, 0x0d, 0xfb,
+	0x98, 0xba, 0x09, 0x9f, 0x85, 0x3c, 0x1e, 0x34, 0xe5, 0xf1, 0x1a, 0xed, 0x2a, 0xb8, 0x70, 0x2b,
+	0x76, 0x65, 0x4d, 0xa2, 0x6e, 0x08, 0x44, 0x13, 0xdf, 0x6d, 0x60, 0xca, 0xe0, 0x0b, 0x60, 0x4c,
+	0xe0, 0xb9, 0xce, 0x8c, 0x32, 0xa7, 0xcc, 0x8f, 0x9b, 0xa7, 0xf9, 0xe7, 0xeb, 0x8e, 0xf6, 0x15,
+	0x98, 0x4d, 0xaf, 0xa4, 0x01, 0xf1, 0x29, 0x86, 0x1f, 0x81, 0xb3, 0x92, 0x9e, 0x45, 0x19, 0x62,
+	0x98, 0xd7, 0x4f, 0x2c, 0x94, 0xf5, 0x5e, 0xc6, 0x27, 0xc2, 0xf4, 0xa8, 0xac, 0x4b, 0xb0, 0x9d,
+	0xb8, 0xb0, 0x3a, 0xf2, 0xf0, 0x49, 0xa9, 0x60, 0x9e, 0xa9, 0xb5, 0xad, 0x69, 0xb3, 0x40, 0xed,
+	0xe8, 0xbe, 0x16, 0xe3, 0x25, 0xb4, 0x35, 0x74, 0x44, 0x55, 0xb2, 0x2b, 0xa9, 0x55, 0xc1, 0x28,
+	0xef, 0x4f, 0x67, 0x94, 0xb9, 0xe1, 0xf9, 0x89, 0x85, 0x57, 0xf4, 0x1c, 0xc3, 0xa0, 0x73, 0x10,
+	0x53, 0x56, 0x6a, 0x97, 0xc1, 0xcb, 0xdd, 0x2d, 0x76, 0x18, 0x0a, 0xd9, 0x76, 0x48, 0x02, 0x42,
+	0x91, 0xd7, 0x64, 0x73, 0x4f, 0x01, 0xf3, 0xc7, 0x9f, 0x6d, 0xda, 0x36, 0x1e, 0x24, 0x8b, 0xd2,
+	0xb2, 0xb7, 0xf3, 0xd1, 0x93, 0xe0, 0x15, 0xc7, 0x71, 0xe3, 0x29, 0x6d, 0x41, 0xb7, 0x00, 0xb5,
+	0x79, 0xf0, 0x52, 0x1a, 0x13, 0x12, 0x74, 0x91, 0xfe, 0x4e, 0x49, 0x17, 0xd8, 0x71, 0x54, 0x72,
+	0xfe, 0xb0, 0x9b, 0xf3, 0x72, 0x5f, 0x9c, 0x4d, 0x5c, 0x27, 0x11, 0xf2, 0x52, 0x29, 0xaf, 0x80,
+	0x53, 0xbc, 0x75, 0xc6, 0x2c, 0xc2, 0x0b, 0x60, 0xdc, 0xf6, 0x5c, 0xec, 0xb3, 0x78, 0x6f, 0x88,
+	0xef, 0x8d, 0x89, 0x85, 0xeb, 0x8e, 0xf6, 0xbd, 0x02, 0x2e, 0x72, 0x25, 0x77, 0x90, 0xe7, 0x3a,
+	0x88, 0x91, 0xb0, 0xcd, 0xaa, 0xf0, 0xf8, 0x49, 0x87, 0xcb, 0x60, 0x2a, 0x21, 0x6d, 0x21, 0xc7,
+	0x09, 0x31, 0xa5, 0xa2, 0x49, 0x15, 0xfe, 0xfb, 0xa4, 0x74, 0x6e, 0x1f, 0xd5, 0xbd, 0x25, 0x4d,
+	0x6e, 0x68, 0xe6, 0x64, 0x72, 0xb6, 0x22, 0x56, 0x96, 0xc6, 0xee, 0x3d, 0x28, 0x15, 0xfe, 0x7a,
+	0x50, 0x2a, 0x68, 0xef, 0x02, 0x2d, 0x8b, 0x88, 0x74, 0xf3, 0x32, 0x98, 0x4a, 0x5e, 0x85, 0x66,
+	0x3b, 0xc1, 0x68, 0xd2, 0x6e, 0x3b, 0x1f, 0x37, 0xeb, 0x96, 0xb6, 0xdd, 0xd6, 0x3c, 0x9f, 0xb4,
+	0xae, 0x5e, 0x19, 0xd2, 0x8e, 0xf4, 0xcf, 0x92, 0xd6, 0x49, 0xa4, 0x25, 0xad, 0xcb, 0x49, 0x29,
+	0xed, 0x88, 0x6b, 0xda, 0x45, 0x50, 0xe2, 0x80, 0xdb, 0xd8, 0x77, 0x5c, 0xbf, 0xb6, 0xe3, 0x21,
+	0xba, 0xb7, 0x8d, 0xec, 0x4f, 0x31, 0x6b, 0x8e, 0xe8, 0x4f, 0x43, 0x60, 0xae, 0xf7, 0x19, 0xd9,
+	0xb2, 0x04, 0x26, 0x68, 0xbc, 0x6e, 0xd5, 0x31, 0xc3, 0x21, 0xef, 0x36, 0x6c, 0x02, 0xbe, 0xb4,
+	0x15, 0xaf, 0xc0, 0x05, 0xf0, 0x5c, 0xdb, 0x01, 0x0b, 0x79, 0x1e, 0xf9, 0x0c, 0xf9, 0x36, 0xe6,
+	0x3e, 0x0c, 0x9b, 0xe7, 0x5b, 0x47, 0x2b, 0xc9, 0x16, 0xbc, 0x01, 0xce, 0x79, 0x88, 0x32, 0x2b,
+	0xc4, 0x81, 0x87, 0x7d, 0x97, 0xee, 0xcd, 0x0c, 0xf3, 0xa9, 0x57, 0x75, 0x71, 0xf9, 0xeb, 0xc9,
+	0xe5, 0xaf, 0xdf, 0x4e, 0x2e, 0xff, 0xea, 0x58, 0x7c, 0x8b, 0xdd, 0xff, 0xbd, 0xa4, 0x98, 0x67,
+	0xe3, 0x5a, 0x33, 0x29, 0x85, 0xb7, 0xc0, 0xe9, 0x40, 0x90, 0x9e, 0x19, 0xe1, 0xd7, 0xd1, 0x1b,
+	0xb9, 0xde, 0x9d, 0x6e, 0xd1, 0x66, 0x82, 0xa3, 0xad, 0xc8, 0x6f, 0x43, 0x9e, 0x49, 0xc6, 0xac,
+	0xd3, 0xbf, 0xac, 0xcb, 0xfd, 0x67, 0x05, 0x5c, 0xca, 0x44, 0x90, 0xee, 0x66, 0x8c, 0x16, 0x04,
+	0x23, 0xd4, 0xfd, 0x42, 0xd8, 0x38, 0x62, 0xf2, 0x67, 0xf8, 0x7e, 0x4b, 0xea, 0x30, 0x97, 0xba,
+	0xd8, 0x8f, 0x54, 0xd1, 0xfc, 0xbd, 0x10, 0x05, 0x01, 0x0e, 0xe5, 0xaf, 0x42, 0x53, 0xf2, 0x2f,
+	0x0a, 0x80, 0xdd, 0x96, 0x64, 0x11, 0x5c, 0x07, 0x13, 0x21, 0xb6, 0xb1, 0x1b, 0x61, 0xc7, 0x42,
+	0x8c, 0xf3, 0xcc, 0xfb, 0x0d, 0x82, 0xa4, 0xb0, 0xc2, 0xe0, 0x3a, 0x18, 0x71, 0x10, 0x43, 0x72,
+	0x02, 0x5e, 0xed, 0x29, 0x28, 0x2a, 0xeb, 0x6d, 0xc4, 0xae, 0x21, 0x86, 0xa4, 0x04, 0x5e, 0xae,
+	0xfd, 0xaa, 0x80, 0xe9, 0x34, 0x9d, 0x70, 0x1b, 0x9c, 0x11, 0xf3, 0x29, 0x94, 0xca, 0xfb, 0xb5,
+	0x9f, 0x3e, 0x9b, 0x05, 0x53, 0xbc, 0x03, 0xd2, 0x93, 0x8f, 0x01, 0x8c, 0xa8, 0x6d, 0xd5, 0x11,
+	0x6b, 0x84, 0xd8, 0x49, 0x70, 0x85, 0xfe, 0xd7, 0xb3, 0x70, 0xef, 0xec, 0xac, 0x6d, 0x89, 0xa2,
+	0x0e, 0xf0, 0xa9, 0x88, 0xda, 0x1d, 0xeb, 0xd5, 0x51, 0xe1, 0xc9, 0xc2, 0x0f, 0x93, 0xe0, 0x14,
+	0x1f, 0x23, 0x78, 0xa0, 0x80, 0xe9, 0xb4, 0xb8, 0x00, 0x57, 0x73, 0x4d, 0x40, 0x46, 0x46, 0x51,
+	0x2b, 0x27, 0x40, 0x10, 0x63, 0xac, 0xad, 0x7f, 0xfb, 0xf8, 0xcf, 0x1f, 0x87, 0x56, 0xe0, 0xf2,
+	0xf1, 0x31, 0xb2, 0x79, 0x5d, 0xca, 0x38, 0x62, 0x7c, 0x99, 0xcc, 0xd7, 0xd7, 0xf0, 0xb1, 0x02,
+	0xce, 0xa7, 0xe4, 0x0e, 0xb8, 0xd2, 0x3f, 0xc3, 0x8e, 0x3c, 0xa3, 0xae, 0x0e, 0x0e, 0x20, 0x15,
+	0x2e, 0x72, 0x85, 0x57, 0x60, 0xb9, 0x0f, 0x85, 0x22, 0xe9, 0xc0, 0x6f, 0x86, 0xc0, 0x4c, 0x8f,
+	0xf8, 0x42, 0xe1, 0xcd, 0x01, 0x99, 0xa5, 0x26, 0x25, 0x75, 0xeb, 0x19, 0xa1, 0x49, 0xd1, 0x9b,
+	0x5c, 0x74, 0x15, 0xae, 0xf6, 0x2b, 0x3a, 0x4e, 0xac, 0x21, 0xb3, 0x9a, 0x21, 0x04, 0xfe, 0xaf,
+	0x80, 0xe7, 0xd3, 0xd3, 0x10, 0x85, 0x37, 0x06, 0x26, 0xdd, 0x1d, 0xbb, 0xd4, 0x9b, 0xcf, 0x06,
+	0x4c, 0x1a, 0xb0, 0xc1, 0x0d, 0xa8, 0xc0, 0x95, 0x01, 0x0c, 0x20, 0x41, 0x9b, 0xfe, 0x7f, 0x14,
+	0x99, 0xb7, 0x53, 0xa3, 0x0b, 0x7c, 0x27, 0x3f, 0xeb, 0xac, 0x10, 0xa6, 0x6e, 0x9c, 0x18, 0x47,
+	0x0a, 0xaf, 0x70, 0xe1, 0x6f, 0xc2, 0xc5, 0x1c, 0xff, 0x0b, 0x13, 0x20, 0xab, 0x23, 0x09, 0xa5,
+	0x48, 0x6e, 0x8f, 0x34, 0x03, 0x49, 0x4e, 0x09, 0x67, 0x03, 0x49, 0x4e, 0xcb, 0x56, 0x83, 0x49,
+	0xee, 0x48, 0x63, 0xf0, 0x6f, 0x45, 0xbe, 0xe9, 0x29, 0x81, 0x0a, 0x5e, 0xcb, 0x4f, 0xb4, 0x77,
+	0x66, 0x53, 0xd7, 0x4f, 0x88, 0x22, 0xc5, 0xae, 0x72, 0xb1, 0x4b, 0xf0, 0xea, 0xf1, 0x62, 0x03,
+	0x01, 0x63, 0x89, 0x1f, 0xd1, 0x50, 0xf0, 0xa0, 0xf0, 0x3f, 0x45, 0xfe, 0x47, 0x4c, 0x4f, 0x38,
+	0x70, 0xa3, 0x6f, 0xa2, 0xe9, 0x29, 0x4b, 0xdd, 0x3c, 0x39, 0x90, 0x14, 0x5d, 0xe5, 0xa2, 0xdf,
+	0x82, 0x4b, 0xf9, 0x45, 0x37, 0x47, 0x5a, 0xc6, 0xa4, 0xea, 0xed, 0x87, 0x07, 0x45, 0xe5, 0xd1,
+	0x41, 0x51, 0xf9, 0xe3, 0xa0, 0xa8, 0xdc, 0x3f, 0x2c, 0x16, 0x1e, 0x1d, 0x16, 0x0b, 0xbf, 0x1d,
+	0x16, 0x0b, 0x1f, 0x2c, 0xd5, 0x5c, 0xb6, 0xd7, 0xd8, 0xd5, 0x6d, 0x52, 0x37, 0x6c, 0x42, 0xeb,
+	0x84, 0xb6, 0xb5, 0x79, 0xad, 0xd9, 0xe6, 0xf3, 0xce, 0x46, 0x6c, 0x3f, 0xc0, 0x74, 0x77, 0x94,
+	0xa7, 0xa5, 0x2b, 0x4f, 0x03, 0x00, 0x00, 0xff, 0xff, 0xda, 0x9f, 0x74, 0x9a, 0x86, 0x11, 0x00,
+	0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -690,6 +1084,12 @@ type QueryClient interface {
 	// QueryProviderAddr returns the provider chain validator
 	// given a consumer chain validator address
 	QueryValidatorProviderAddr(ctx context.Context, in *QueryValidatorProviderAddrRequest, opts ...grpc.CallOption) (*QueryValidatorProviderAddrResponse, error)
+	// QueryPendingSlashPackets returns the current state of the slash meter
+	// and a list of pending slash packets (chainID, slashPacket)
+	QueryPendingSlashPackets(ctx context.Context, in *QueryPendingSlashPacketsRequest, opts ...grpc.CallOption) (*QueryPendingSlashPacketsResponse, error)
+	// QueryPendingConsumerPackets returns a list of pending packets (slash packet and vsc matured)
+	// for a consumer chain
+	QueryPendingConsumerPackets(ctx context.Context, in *QueryPendingConsumerPacketsRequest, opts ...grpc.CallOption) (*QueryPendingConsumerPacketsResponse, error)
 }
 
 type queryClient struct {
@@ -754,6 +1154,24 @@ func (c *queryClient) QueryValidatorProviderAddr(ctx context.Context, in *QueryV
 	return out, nil
 }
 
+func (c *queryClient) QueryPendingSlashPackets(ctx context.Context, in *QueryPendingSlashPacketsRequest, opts ...grpc.CallOption) (*QueryPendingSlashPacketsResponse, error) {
+	out := new(QueryPendingSlashPacketsResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryPendingSlashPackets", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) QueryPendingConsumerPackets(ctx context.Context, in *QueryPendingConsumerPacketsRequest, opts ...grpc.CallOption) (*QueryPendingConsumerPacketsResponse, error) {
+	out := new(QueryPendingConsumerPacketsResponse)
+	err := c.cc.Invoke(ctx, "/interchain_security.ccv.provider.v1.Query/QueryPendingConsumerPackets", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// ConsumerGenesis queries the genesis state needed to start a consumer chain
@@ -772,6 +1190,12 @@ type QueryServer interface {
 	// QueryProviderAddr returns the provider chain validator
 	// given a consumer chain validator address
 	QueryValidatorProviderAddr(context.Context, *QueryValidatorProviderAddrRequest) (*QueryValidatorProviderAddrResponse, error)
+	// QueryPendingSlashPackets returns the current state of the slash meter
+	// and a list of pending slash packets (chainID, slashPacket)
+	QueryPendingSlashPackets(context.Context, *QueryPendingSlashPacketsRequest) (*QueryPendingSlashPacketsResponse, error)
+	// QueryPendingConsumerPackets returns a list of pending packets (slash packet and vsc matured)
+	// for a consumer chain
+	QueryPendingConsumerPackets(context.Context, *QueryPendingConsumerPacketsRequest) (*QueryPendingConsumerPacketsResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -795,6 +1219,12 @@ func (*UnimplementedQueryServer) QueryValidatorConsumerAddr(ctx context.Context,
 }
 func (*UnimplementedQueryServer) QueryValidatorProviderAddr(ctx context.Context, req *QueryValidatorProviderAddrRequest) (*QueryValidatorProviderAddrResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryValidatorProviderAddr not implemented")
+}
+func (*UnimplementedQueryServer) QueryPendingSlashPackets(ctx context.Context, req *QueryPendingSlashPacketsRequest) (*QueryPendingSlashPacketsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryPendingSlashPackets not implemented")
+}
+func (*UnimplementedQueryServer) QueryPendingConsumerPackets(ctx context.Context, req *QueryPendingConsumerPacketsRequest) (*QueryPendingConsumerPacketsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryPendingConsumerPackets not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -909,6 +1339,42 @@ func _Query_QueryValidatorProviderAddr_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_QueryPendingSlashPackets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryPendingSlashPacketsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).QueryPendingSlashPackets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryPendingSlashPackets",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).QueryPendingSlashPackets(ctx, req.(*QueryPendingSlashPacketsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_QueryPendingConsumerPackets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryPendingConsumerPacketsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).QueryPendingConsumerPackets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/interchain_security.ccv.provider.v1.Query/QueryPendingConsumerPackets",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).QueryPendingConsumerPackets(ctx, req.(*QueryPendingConsumerPacketsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "interchain_security.ccv.provider.v1.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -936,6 +1402,14 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "QueryValidatorProviderAddr",
 			Handler:    _Query_QueryValidatorProviderAddr_Handler,
+		},
+		{
+			MethodName: "QueryPendingSlashPackets",
+			Handler:    _Query_QueryPendingSlashPackets_Handler,
+		},
+		{
+			MethodName: "QueryPendingConsumerPackets",
+			Handler:    _Query_QueryPendingConsumerPackets_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1352,6 +1826,285 @@ func (m *QueryValidatorProviderAddrResponse) MarshalToSizedBuffer(dAtA []byte) (
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryPendingSlashPacketsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryPendingSlashPacketsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryPendingSlashPacketsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryPendingSlashPacketsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryPendingSlashPacketsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryPendingSlashPacketsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Packets) > 0 {
+		for iNdEx := len(m.Packets) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Packets[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	n4, err4 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.LastReplenish, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.LastReplenish):])
+	if err4 != nil {
+		return 0, err4
+	}
+	i -= n4
+	i = encodeVarintQuery(dAtA, i, uint64(n4))
+	i--
+	dAtA[i] = 0x1a
+	if m.SlashMeterAllowance != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.SlashMeterAllowance))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.SlashMeter != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.SlashMeter))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryPendingConsumerPacketsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryPendingConsumerPacketsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryPendingConsumerPacketsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryPendingConsumerPacketsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryPendingConsumerPacketsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryPendingConsumerPacketsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Packets) > 0 {
+		for iNdEx := len(m.Packets) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Packets[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if m.Size_ != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Size_))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PendingSlashPacket) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PendingSlashPacket) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PendingSlashPacket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Data.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	n6, err6 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.ReceivedAt, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.ReceivedAt):])
+	if err6 != nil {
+		return 0, err6
+	}
+	i -= n6
+	i = encodeVarintQuery(dAtA, i, uint64(n6))
+	i--
+	dAtA[i] = 0x12
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PendingPacketWrapper) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PendingPacketWrapper) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PendingPacketWrapper) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Data != nil {
+		{
+			size := m.Data.Size()
+			i -= size
+			if _, err := m.Data.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PendingPacketWrapper_SlashPacket) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PendingPacketWrapper_SlashPacket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.SlashPacket != nil {
+		{
+			size, err := m.SlashPacket.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+func (m *PendingPacketWrapper_VscMaturedPacket) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PendingPacketWrapper_VscMaturedPacket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.VscMaturedPacket != nil {
+		{
+			size, err := m.VscMaturedPacket.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -1527,6 +2280,127 @@ func (m *QueryValidatorProviderAddrResponse) Size() (n int) {
 	_ = l
 	l = len(m.ProviderAddress)
 	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryPendingSlashPacketsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *QueryPendingSlashPacketsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.SlashMeter != 0 {
+		n += 1 + sovQuery(uint64(m.SlashMeter))
+	}
+	if m.SlashMeterAllowance != 0 {
+		n += 1 + sovQuery(uint64(m.SlashMeterAllowance))
+	}
+	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.LastReplenish)
+	n += 1 + l + sovQuery(uint64(l))
+	if len(m.Packets) > 0 {
+		for _, e := range m.Packets {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *QueryPendingConsumerPacketsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryPendingConsumerPacketsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.Size_ != 0 {
+		n += 1 + sovQuery(uint64(m.Size_))
+	}
+	if len(m.Packets) > 0 {
+		for _, e := range m.Packets {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *PendingSlashPacket) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.ReceivedAt)
+	n += 1 + l + sovQuery(uint64(l))
+	l = m.Data.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *PendingPacketWrapper) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Data != nil {
+		n += m.Data.Size()
+	}
+	return n
+}
+
+func (m *PendingPacketWrapper_SlashPacket) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.SlashPacket != nil {
+		l = m.SlashPacket.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+func (m *PendingPacketWrapper_VscMaturedPacket) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.VscMaturedPacket != nil {
+		l = m.VscMaturedPacket.Size()
 		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
@@ -2593,6 +3467,696 @@ func (m *QueryValidatorProviderAddrResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.ProviderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryPendingSlashPacketsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryPendingSlashPacketsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryPendingSlashPacketsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryPendingSlashPacketsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryPendingSlashPacketsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryPendingSlashPacketsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SlashMeter", wireType)
+			}
+			m.SlashMeter = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SlashMeter |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SlashMeterAllowance", wireType)
+			}
+			m.SlashMeterAllowance = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SlashMeterAllowance |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastReplenish", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.LastReplenish, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Packets", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Packets = append(m.Packets, &PendingSlashPacket{})
+			if err := m.Packets[len(m.Packets)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryPendingConsumerPacketsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryPendingConsumerPacketsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryPendingConsumerPacketsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryPendingConsumerPacketsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryPendingConsumerPacketsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryPendingConsumerPacketsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Size_", wireType)
+			}
+			m.Size_ = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Size_ |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Packets", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Packets = append(m.Packets, PendingPacketWrapper{})
+			if err := m.Packets[len(m.Packets)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PendingSlashPacket) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PendingSlashPacket: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PendingSlashPacket: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReceivedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.ReceivedAt, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Data.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PendingPacketWrapper) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PendingPacketWrapper: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PendingPacketWrapper: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SlashPacket", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &types1.SlashPacketData{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Data = &PendingPacketWrapper_SlashPacket{v}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VscMaturedPacket", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &types1.VSCMaturedPacketData{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Data = &PendingPacketWrapper_VscMaturedPacket{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
