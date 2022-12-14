@@ -24,6 +24,13 @@ var happyPathSteps = concatSteps(
 	stepsStopChain("consu"),
 )
 
+var slashThrottleSteps = concatSteps(
+	stepsStartChains([]string{"consu"}, false),
+	stepsDelegate("consu"),
+	stepsThrottledDowntime("consu"),
+	stepsStopChain("consu"),
+)
+
 var democracySteps = concatSteps(
 	// democracySteps requires a transfer channel
 	stepsStartChains([]string{"democ"}, true),

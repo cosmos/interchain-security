@@ -1,5 +1,7 @@
 package main
 
+import "time"
+
 // stepsDowntime tests validator jailing and slashing.
 //
 // Note: These steps are not affected by slash packet throttling since
@@ -10,8 +12,8 @@ func stepsDowntime(consumerName string) []Step {
 	return []Step{
 		{
 			action: downtimeSlashAction{
-				chain:      chainID(consumerName),
-				validators: []validatorID{validatorID("bob")},
+				chain:     chainID(consumerName),
+				validator: validatorID("bob"),
 			},
 			state: State{
 				// validator should be slashed on consumer, powers not affected on either chain yet
@@ -116,8 +118,8 @@ func stepsDowntime(consumerName string) []Step {
 		// Now we test provider initiated downtime/slashing
 		{
 			action: downtimeSlashAction{
-				chain:      chainID("provi"),
-				validators: []validatorID{validatorID("carol")},
+				chain:     chainID("provi"),
+				validator: validatorID("carol"),
 			},
 			state: State{
 				chainID("provi"): ChainState{
@@ -202,23 +204,46 @@ func stepsThrottledDowntime(consumerName string) []Step {
 	return []Step{
 		{
 			action: downtimeSlashAction{
-				chain:      chainID(consumerName),
-				validators: []validatorID{validatorID("bob"), validatorID("carol")},
+				chain:     chainID(consumerName),
+				validator: validatorID("bob"),
 			},
 			state: State{
 				// powers not affected on either chain yet
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   495,
-						validatorID("carol"): 495,
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
 					},
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   495,
-						validatorID("carol"): 495,
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+			},
+		},
+		{
+			action: downtimeSlashAction{
+				chain:     chainID(consumerName),
+				validator: validatorID("carol"),
+			},
+			state: State{
+				// powers not affected on either chain yet
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+				},
+				chainID(consumerName): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
 					},
 				},
 			},
@@ -232,20 +257,48 @@ func stepsThrottledDowntime(consumerName string) []Step {
 			state: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
+						validatorID("alice"): 511,
 						validatorID("bob"):   0,
-						validatorID("carol"): 495, // not slashed due to throttling
+						validatorID("carol"): 500, // not slashed due to throttling
 					},
 					GlobalSlashQueueSize: intPointer(1), // carol's slash request is throttled
 				},
 				chainID(consumerName): ChainState{
 					// no updates received on consumer
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						validatorID("bob"):   495,
-						validatorID("carol"): 495,
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
 					},
 					ConsumerChainQueueSize: intPointer(1),
+				},
+			},
+		},
+		{
+			action: slashThrottleDequeue{
+				chain:            chainID(consumerName),
+				currentQueueSize: 1,
+				nextQueueSize:    0,
+				timeout:          time.Minute, // panic after reaching timeout
+			},
+			state: State{
+				// no changes in state should occur
+				chainID("provi"): ChainState{
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   0,
+						validatorID("carol"): 500,
+					},
+					GlobalSlashQueueSize: intPointer(0), // slash packets dequeued
+				},
+				chainID(consumerName): ChainState{
+					// no updates received on consumer
+					ValPowers: &map[validatorID]uint{
+						validatorID("alice"): 511,
+						validatorID("bob"):   500,
+						validatorID("carol"): 500,
+					},
+					ConsumerChainQueueSize: intPointer(0), // slash packets dequeued
 				},
 			},
 		},
@@ -258,37 +311,22 @@ func stepsThrottledDowntime(consumerName string) []Step {
 				channel: 0,
 			},
 			state: State{
-				chainID(consumerName): ChainState{
-					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
-						// first update (before throttling kicked in) now seen on consumer
-						validatorID("bob"):   0,
-						validatorID("carol"): 495,
-					},
-				},
-			},
-		},
-		{
-			action: relayPacketsAction{
-				chain:   chainID("provi"),
-				port:    "provider",
-				channel: 0,
-			},
-			state: State{
 				chainID("provi"): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
+						validatorID("alice"): 511,
 						validatorID("bob"):   0,
-						validatorID("carol"): 0, // slash meter was replenished and slash request was processed on provider
+						validatorID("carol"): 0,
 					},
 					GlobalSlashQueueSize: intPointer(0),
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
-						validatorID("alice"): 509,
+						validatorID("alice"): 511,
+						// throttled update gets to consumer
 						validatorID("bob"):   0,
-						validatorID("carol"): 0, // consumer now sees a slash request that was throttled
+						validatorID("carol"): 0,
 					},
+					ConsumerChainQueueSize: intPointer(0),
 				},
 			},
 		},

@@ -28,15 +28,20 @@ func main() {
 	var wg sync.WaitGroup
 
 	start := time.Now()
-	tr := DefaultTestRun()
-	tr.SetLocalSDKPath(*localSdkPath)
-	tr.ValidateStringLiterals()
-	tr.startDocker()
+	// tr := DefaultTestRun()
+	// tr.SetLocalSDKPath(*localSdkPath)
+	// tr.ValidateStringLiterals()
+	// tr.startDocker()
 
-	dmc := DemocracyTestRun()
-	dmc.SetLocalSDKPath(*localSdkPath)
-	dmc.ValidateStringLiterals()
-	dmc.startDocker()
+	// dmc := DemocracyTestRun()
+	// dmc.SetLocalSDKPath(*localSdkPath)
+	// dmc.ValidateStringLiterals()
+	// dmc.startDocker()
+
+	slash := SlashThrottleTestRun()
+	slash.SetLocalSDKPath(*localSdkPath)
+	slash.ValidateStringLiterals()
+	slash.startDocker()
 
 	if *multiconsumer {
 		mul := MultiConsumerTestRun()
@@ -49,10 +54,12 @@ func main() {
 	}
 
 	wg.Add(1)
-	go tr.ExecuteSteps(&wg, happyPathSteps)
+	go slash.ExecuteSteps(&wg, slashThrottleSteps)
+	// wg.Add(1)
+	// go tr.ExecuteSteps(&wg, happyPathSteps)
 
-	wg.Add(1)
-	go dmc.ExecuteSteps(&wg, democracySteps)
+	// wg.Add(1)
+	// go dmc.ExecuteSteps(&wg, democracySteps)
 
 	wg.Wait()
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
@@ -104,6 +111,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.registerRepresentative(action, verbose)
 	case assignConsumerPubKeyAction:
 		tr.assignConsumerPubKey(action, verbose)
+	case slashThrottleDequeue:
+		tr.waitForSlashThrottleDequeue(action, verbose)
 	default:
 		log.Fatalf(fmt.Sprintf(`unknown action in testRun %s: %#v`, tr.name, action))
 	}
