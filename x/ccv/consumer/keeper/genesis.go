@@ -118,34 +118,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			panic("provider client does not exist")
 		}
 
-		maturingPackets := []consumertypes.MaturingVSCPacket{}
-		k.IteratePacketMaturityTime(ctx, func(vscId, timeNs uint64) (stop bool) {
-			mat := consumertypes.MaturingVSCPacket{
-				VscId:        vscId,
-				MaturityTime: timeNs,
-			}
-			maturingPackets = append(maturingPackets, mat)
-			return false // do not stop the iteration
-		})
+		maturingPackets := k.IteratePacketMaturityTime(ctx)
 
-		heightToVCIDs := []consumertypes.HeightToValsetUpdateID{}
-		k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
-			hv := consumertypes.HeightToValsetUpdateID{
-				Height:         height,
-				ValsetUpdateId: vscID,
-			}
-			heightToVCIDs = append(heightToVCIDs, hv)
-			return false // do not stop the iteration
-		})
+		// heightToVCIDs := k.IterateHeightToValsetUpdateID(ctx)
 
-		outstandingDowntimes := []consumertypes.OutstandingDowntime{}
-		k.IterateOutstandingDowntime(ctx, func(addr string) (stop bool) {
-			od := consumertypes.OutstandingDowntime{
-				ValidatorConsensusAddress: addr,
-			}
-			outstandingDowntimes = append(outstandingDowntimes, od)
-			return false // do not stop the iteration
-		})
+		outstandingDowntimes := k.IterateOutstandingDowntime(ctx)
 
 		// TODO: update GetLastTransmissionBlockHeight to not return an error
 		ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
@@ -158,7 +135,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			channelID,
 			maturingPackets,
 			valset,
-			k.GetHeightToValsetUpdateIDs(ctx),
+			k.IterateHeightToValsetUpdateID(ctx),
 			k.GetPendingPackets(ctx),
 			outstandingDowntimes,
 			*ltbh,
@@ -178,7 +155,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			"",
 			nil,
 			valset,
-			k.GetHeightToValsetUpdateIDs(ctx),
+			k.IterateHeightToValsetUpdateID(ctx),
 			k.GetPendingPackets(ctx),
 			nil,
 			consumertypes.LastTransmissionBlockHeight{},

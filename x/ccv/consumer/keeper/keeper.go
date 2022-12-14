@@ -206,24 +206,30 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
-// IteratePacketMaturityTime iterates through the VSC packet maturity times set in the store
-func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs uint64) (stop bool)) {
+// GetPacketMaturityTimes returns a slice of PacketMaturityTimes
+// TODO: where this is used in QueueVSCMaturedPackets, it replaces an iterator which was stopped
+// when it reached a certain time. The new behavior gets all the packet maturity times, which
+// is less efficient but may not impact performance enough to matter.
+// If it does matter, we can add a time parameter to this function and stop the iteration when we reach
+// that time.
+func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context) (packetMaturityTimes []consumertypes.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		// Extract bytes following the 1 byte prefix
-		seqBytes := iterator.Key()[1:]
-		seq := binary.BigEndian.Uint64(seqBytes)
+		vscIdBytes := iterator.Key()[1:]
+		vscId := binary.BigEndian.Uint64(vscIdBytes)
 
 		timeNs := binary.BigEndian.Uint64(iterator.Value())
 
-		stop := cb(seq, timeNs)
-		if stop {
-			break
-		}
+		packetMaturityTimes = append(packetMaturityTimes, consumertypes.MaturingVSCPacket{
+			VscId:        vscId,
+			MaturityTime: timeNs,
+		})
 	}
+	return packetMaturityTimes
 }
 
 // SetPacketMaturityTime sets the maturity time for a given received VSC packet id
@@ -299,8 +305,8 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 	store.Delete(types.HeightValsetUpdateIDKey(height))
 }
 
-// IterateHeightToValsetUpdateID iterates over the block height to valset update ID mapping in store
-func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64) (stop bool)) {
+// GetHeightToValsetUpdateID returns a list of all the block heights to valset update IDs in the store
+func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context) (heightToValsetUpdateIDs []types.HeightToValsetUpdateID) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
 
@@ -311,11 +317,13 @@ func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, v
 
 		vscID := binary.BigEndian.Uint64(iterator.Value())
 
-		stop := cb(height, vscID)
-		if stop {
-			break
-		}
+		heightToValsetUpdateIDs = append(heightToValsetUpdateIDs, types.HeightToValsetUpdateID{
+			Height:         height,
+			ValsetUpdateId: vscID,
+		})
 	}
+
+	return heightToValsetUpdateIDs
 }
 
 // OutstandingDowntime returns the outstanding downtime flag for a given validator
@@ -341,8 +349,8 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 	store.Delete(types.OutstandingDowntimeKey(consAddr))
 }
 
-// IterateOutstandingDowntime iterates over the validator addresses of outstanding downtime flags
-func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address string) (stop bool)) {
+// GetOutstandingDowntimes gets an array of the validator addresses of outstanding downtime flags
+func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context) (downtimes []consumertypes.OutstandingDowntime) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
 
@@ -350,11 +358,13 @@ func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address stri
 	for ; iterator.Valid(); iterator.Next() {
 		addrBytes := iterator.Key()[1:]
 		addr := sdk.ConsAddress(addrBytes).String()
-		stop := cb(addr)
-		if stop {
-			break
-		}
+
+		downtimes = append(downtimes, consumertypes.OutstandingDowntime{
+			ValidatorConsensusAddress: addr,
+		})
 	}
+
+	return downtimes
 }
 
 // SetCCValidator sets a cross-chain validator under its validator address
@@ -440,30 +450,30 @@ func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...types.ConsumerPac
 	k.SetPendingPackets(ctx, types.ConsumerPackets{List: list})
 }
 
-// GetHeightToValsetUpdateIDs returns all height to valset update id mappings in store
-func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToValsetUpdateID {
-	heightToVCIDs := []types.HeightToValsetUpdateID{}
-	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
-		hv := types.HeightToValsetUpdateID{
-			Height:         height,
-			ValsetUpdateId: vscID,
-		}
-		heightToVCIDs = append(heightToVCIDs, hv)
-		return false // do not stop iteration
-	})
+// // GetHeightToValsetUpdateIDs returns all height to valset update id mappings in store
+// func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToValsetUpdateID {
+// 	heightToVCIDs := []types.HeightToValsetUpdateID{}
+// 	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
+// 		hv := types.HeightToValsetUpdateID{
+// 			Height:         height,
+// 			ValsetUpdateId: vscID,
+// 		}
+// 		heightToVCIDs = append(heightToVCIDs, hv)
+// 		return false // do not stop iteration
+// 	})
 
-	return heightToVCIDs
-}
+// 	return heightToVCIDs
+// }
 
-// GetOutstandingDowntimes returns all outstanding downtimes in store
-func (k Keeper) GetOutstandingDowntimes(ctx sdk.Context) []consumertypes.OutstandingDowntime {
-	outstandingDowntimes := []types.OutstandingDowntime{}
-	k.IterateOutstandingDowntime(ctx, func(addr string) bool {
-		od := types.OutstandingDowntime{
-			ValidatorConsensusAddress: addr,
-		}
-		outstandingDowntimes = append(outstandingDowntimes, od)
-		return false
-	})
-	return outstandingDowntimes
-}
+// // GetOutstandingDowntimes returns all outstanding downtimes in store
+// func (k Keeper) GetOutstandingDowntimes(ctx sdk.Context) []consumertypes.OutstandingDowntime {
+// 	outstandingDowntimes := []types.OutstandingDowntime{}
+// 	k.IterateOutstandingDowntime(ctx, func(addr string) bool {
+// 		od := types.OutstandingDowntime{
+// 			ValidatorConsensusAddress: addr,
+// 		}
+// 		outstandingDowntimes = append(outstandingDowntimes, od)
+// 		return false
+// 	})
+// 	return outstandingDowntimes
+// }

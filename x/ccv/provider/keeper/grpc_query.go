@@ -38,15 +38,12 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// convert to array of pointers
 	chains := []*types.Chain{}
-	cb := func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		chains = append(chains, &types.Chain{
-			ChainId:  chainID,
-			ClientId: clientID,
-		})
-		return false // do not stop the iteration
+	for _, chain := range k.IterateConsumerChains(ctx) {
+		chains = append(chains, &chain)
 	}
-	k.IterateConsumerChains(ctx, cb)
 
 	return &types.QueryConsumerChainsResponse{Chains: chains}, nil
 }

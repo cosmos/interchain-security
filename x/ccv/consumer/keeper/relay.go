@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
 	"strconv"
 
@@ -86,18 +85,15 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // operations that resulted in validator updates included in that VSC have matured on
 // the consumer chain.
 func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-	maturityIterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
-	defer maturityIterator.Close()
+	maturityTimes := k.IteratePacketMaturityTime(ctx)
 
 	currentTime := uint64(ctx.BlockTime().UnixNano())
 
 	maturedVscIds := []uint64{}
-	for maturityIterator.Valid() {
-		vscId := types.IdFromPacketMaturityTimeKey(maturityIterator.Key())
-		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
+	for _, maturityTime := range maturityTimes {
+		if currentTime >= maturityTime.MaturityTime {
 			// construct validator set change packet data
-			vscPacket := ccv.NewVSCMaturedPacketData(vscId)
+			vscPacket := ccv.NewVSCMaturedPacketData(maturityTime.VscId)
 
 			// append VSCMatured packet to pending packets
 			// sending packets is attempted each EndBlock
@@ -113,16 +109,15 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 					sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
 					sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
 					sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
-					sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(vscId))),
+					sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(maturityTime.VscId))),
 					sdk.NewAttribute(ccv.AttributeTimestamp, strconv.Itoa(int(currentTime))),
 				),
 			)
 
-			maturedVscIds = append(maturedVscIds, vscId)
+			maturedVscIds = append(maturedVscIds, uint64(maturityTime.VscId))
 		} else {
 			break
 		}
-		maturityIterator.Next()
 	}
 
 	k.DeletePacketMaturityTimes(ctx, maturedVscIds...)

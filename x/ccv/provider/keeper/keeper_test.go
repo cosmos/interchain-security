@@ -200,12 +200,12 @@ func TestIterateOverUnbondingOpIndex(t *testing.T) {
 
 	// check iterator returns expected entries
 	i := 1
-	providerKeeper.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) (stop bool) {
-		require.Equal(t, uint64(i), vscID)
-		require.EqualValues(t, unbondingOpIndex[:i], ubdIndex)
+	for _, unbondingOpsIndex := range providerKeeper.IterateOverUnbondingOpIndex(ctx, chainID) {
+		require.Equal(t, uint64(i), unbondingOpsIndex.VscId)
+		require.EqualValues(t, unbondingOpIndex[:i], unbondingOpsIndex.UnbondingOpIds)
 		i++
-		return false // do not stop the iteration
-	})
+	}
+
 	require.Equal(t, len(unbondingOpIndex), i)
 }
 
@@ -253,12 +253,11 @@ func TestInitTimeoutTimestamp(t *testing.T) {
 	i := 2
 	// store is iterated in alphabetical ascending order
 	// not in the order of insertion
-	providerKeeper.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) (stop bool) {
-		require.Equal(t, chainID, tc[i].chainID)
-		require.Equal(t, ts, tc[i].expected)
+	for _, initTimeoutTimestamp := range providerKeeper.IterateInitTimeoutTimestamp(ctx) {
+		require.Equal(t, initTimeoutTimestamp.ChainID, tc[i].chainID)
+		require.Equal(t, initTimeoutTimestamp.Timestamp, tc[i].expected)
 		i--
-		return false // do not stop the iteration
-	})
+	}
 
 	for _, tc := range tc {
 		ts, found := providerKeeper.GetInitTimeoutTimestamp(ctx, tc.chainID)
@@ -291,10 +290,9 @@ func TestVscSendTimestamp(t *testing.T) {
 
 	i := 0
 	chainID := "chain"
-	providerKeeper.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, _ time.Time) (stop bool) {
+	for _, _ = range providerKeeper.IterateVscSendTimestamps(ctx, chainID) {
 		i++
-		return false // do not stop
-	})
+	}
 	require.Equal(t, 0, i)
 
 	for _, tc := range testCases {

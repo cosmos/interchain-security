@@ -27,10 +27,10 @@ func (k *Keeper) Hooks() Hooks {
 func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 	var consumerChainIDS []string
 
-	h.k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		consumerChainIDS = append(consumerChainIDS, chainID)
-		return false // do not stop the iteration
-	})
+	for _, chain := range h.k.IterateConsumerChains(ctx) {
+		consumerChainIDS = append(consumerChainIDS, chain.ChainId)
+	}
+
 	if len(consumerChainIDS) == 0 {
 		// Do not put the unbonding op on hold if there are no consumer chains
 		return nil
@@ -74,15 +74,12 @@ func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddre
 
 	inUse := false
 
-	// Search over all consumer keys which have been assigned in order to
-	// check if the validator being added is, or was, a consumer chain validator
-	k.IterateAllValidatorsByConsumerAddr(ctx, func(_ string, consumerAddr sdk.ConsAddress, _ sdk.ConsAddress) (stop bool) {
-		if consumerAddr.Equals(consensusAddr) {
+	for _, validatorConsumerAddrs := range k.IterateAllValidatorsByConsumerAddr(ctx) {
+		if validatorConsumerAddrs.ConsumerAddr.Equals(consensusAddr) {
 			inUse = true
-			return true
+			break
 		}
-		return false
-	})
+	}
 
 	return inUse
 }
@@ -100,26 +97,13 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 		ProviderAddr sdk.ConsAddress
 		ConsumerKey  tmprotocrypto.PublicKey
 	}
-	toDelete := []StoreKey{}
-	h.k.IterateAllValidatorConsumerPubKeys(ctx, func(
-		chainID string,
-		providerAddr sdk.ConsAddress,
-		consumerKey tmprotocrypto.PublicKey,
-	) (stop bool) {
-		if providerAddr.Equals(valConsAddr) {
-			toDelete = append(toDelete,
-				StoreKey{
-					ChainID:      chainID,
-					ProviderAddr: providerAddr,
-					ConsumerKey:  consumerKey,
-				})
+
+	for _, validatorConsumerPubKey := range h.k.IterateAllValidatorConsumerPubKeys(ctx) {
+		if validatorConsumerPubKey.ProviderAddr.Equals(valConsAddr) {
+			consumerAddr := utils.TMCryptoPublicKeyToConsAddr(*validatorConsumerPubKey.ConsumerKey)
+			h.k.DeleteValidatorByConsumerAddr(ctx, validatorConsumerPubKey.ChainId, consumerAddr)
+			h.k.DeleteValidatorConsumerPubKey(ctx, validatorConsumerPubKey.ChainId, validatorConsumerPubKey.ProviderAddr)
 		}
-		return false // do not stop
-	})
-	for _, key := range toDelete {
-		consumerAddr := utils.TMCryptoPublicKeyToConsAddr(key.ConsumerKey)
-		h.k.DeleteValidatorByConsumerAddr(ctx, key.ChainID, consumerAddr)
-		h.k.DeleteValidatorConsumerPubKey(ctx, key.ChainID, key.ProviderAddr)
 	}
 }
 

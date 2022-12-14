@@ -187,7 +187,7 @@ func TestInitGenesis(t *testing.T) {
 				require.Equal(t, vscID, ck.GetPacketMaturityTime(ctx, vscID))
 				require.Equal(t, pendingDataPackets, ck.GetPendingPackets(ctx))
 
-				require.Equal(t, gs.OutstandingDowntimeSlashing, ck.GetOutstandingDowntimes(ctx))
+				require.Equal(t, gs.OutstandingDowntimeSlashing, ck.IterateOutstandingDowntime(ctx))
 
 				ltbh, err := ck.GetLastTransmissionBlockHeight(ctx)
 				require.NoError(t, err)
@@ -382,10 +382,10 @@ func assertProviderClientID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Ke
 // assert that the given input match the height to valset update ID mappings in the store
 func assertHeightValsetUpdateIDs(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, heighValsetUpdateIDs []consumertypes.HeightToValsetUpdateID) {
 	ctr := 0
-	ck.IterateHeightToValsetUpdateID(ctx, func(height uint64, vscID uint64) (stop bool) {
-		require.Equal(t, heighValsetUpdateIDs[ctr].Height, height)
-		require.Equal(t, heighValsetUpdateIDs[ctr].ValsetUpdateId, vscID)
+
+	for _, heightToValsetUpdateID := range ck.IterateHeightToValsetUpdateID(ctx) {
+		require.Equal(t, heighValsetUpdateIDs[ctr].Height, heightToValsetUpdateID.Height)
+		require.Equal(t, heighValsetUpdateIDs[ctr].ValsetUpdateId, heightToValsetUpdateID.ValsetUpdateId)
 		ctr++
-		return false
-	})
+	}
 }

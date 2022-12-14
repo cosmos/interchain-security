@@ -2,12 +2,10 @@ package keeper
 
 import (
 	"fmt"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
-	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 // InitGenesis initializes the CCV provider state and binds to PortID.
@@ -94,106 +92,65 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	var consumerStates []types.ConsumerState
 	// export states for each consumer chains
-	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		gen, found := k.GetConsumerGenesis(ctx, chainID)
+	for _, chain := range k.IterateConsumerChains(ctx) {
+		gen, found := k.GetConsumerGenesis(ctx, chain.ChainId)
 		if !found {
-			panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chainID, clientID))
+			panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chain.ChainId, chain.ClientId))
 		}
 
 		// initial consumer chain states
 		cs := types.ConsumerState{
-			ChainId:         chainID,
-			ClientId:        clientID,
+			ChainId:         chain.ChainId,
+			ClientId:        chain.ClientId,
 			ConsumerGenesis: gen,
 		}
 
 		// try to find channel id for the current consumer chain
-		channelId, found := k.GetChainToChannel(ctx, chainID)
+		channelId, found := k.GetChainToChannel(ctx, chain.ChainId)
 		if found {
 			cs.ChannelId = channelId
-			cs.InitialHeight, found = k.GetInitChainHeight(ctx, chainID)
+			cs.InitialHeight, found = k.GetInitChainHeight(ctx, chain.ChainId)
 			if !found {
-				panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chainID, clientID))
+				panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chain.ChainId, chain.ClientId))
 			}
-			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chainID)
-			k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ubdIndex []uint64) (stop bool) {
+			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chain.ChainId)
+			for _, unbondingOpsIndex := range k.IterateOverUnbondingOpIndex(ctx, chain.ChainId) {
 				cs.UnbondingOpsIndex = append(cs.UnbondingOpsIndex,
-					types.UnbondingOpIndex{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex},
+					types.UnbondingOpIndex{ValsetUpdateId: unbondingOpsIndex.VscId, UnbondingOpIndex: unbondingOpsIndex.UnbondingOpIds},
 				)
-				return false // do not stop the iteration
-			})
+			}
 		}
 
-		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, chainID)
+		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, chain.ChainId)
 		consumerStates = append(consumerStates, cs)
-		return false // do not stop the iteration
-	})
+
+	}
 
 	// export provider chain state
 	vscID := k.GetValidatorSetUpdateId(ctx)
-	vscIDToHeights := []types.ValsetUpdateIdToHeight{}
-	k.IterateValsetUpdateBlockHeight(ctx, func(vscID, height uint64) (stop bool) {
-		vscIDToHeights = append(vscIDToHeights, types.ValsetUpdateIdToHeight{ValsetUpdateId: vscID, Height: height})
-		return false // do not stop the iteration
-	})
+	vscIDToHeights := k.IterateValsetUpdateBlockHeight(ctx)
 
-	ubdOps := []ccv.UnbondingOp{}
-	k.IterateOverUnbondingOps(ctx, func(id uint64, ubdOp ccv.UnbondingOp) (stop bool) {
-		ubdOps = append(ubdOps, ubdOp)
-		return false // do not stop the iteration
-	})
+	ubdOps := k.IterateOverUnbondingOps(ctx)
 
 	matureUbdOps, err := k.GetMaturedUnbondingOps(ctx)
 	if err != nil {
 		panic(err)
 	}
 
-	addProps := []types.ConsumerAdditionProposal{}
-	k.IteratePendingConsumerAdditionProps(ctx, func(_ time.Time, prop types.ConsumerAdditionProposal) (stop bool) {
-		addProps = append(addProps, prop)
-		return false // do not stop the iteration
-	})
+	addProps := k.IteratePendingConsumerAdditionProps(ctx)
 
-	remProps := []types.ConsumerRemovalProposal{}
-	k.IteratePendingConsumerRemovalProps(ctx, func(_ time.Time, prop types.ConsumerRemovalProposal) (stop bool) {
-		remProps = append(remProps, prop)
-		return false // do not stop the iteration
-	})
+	remProps := k.IteratePendingConsumerRemovalProps(ctx)
 
 	// Export key assignment states
-	validatorConsumerPubKeys := []types.ValidatorConsumerPubKey{}
-	k.IterateAllValidatorConsumerPubKeys(ctx, func(chainID string, providerAddr sdk.ConsAddress, consumerKey tmcrypto.PublicKey) (stop bool) {
-		validatorConsumerPubKeys = append(validatorConsumerPubKeys, types.ValidatorConsumerPubKey{
-			ChainId:      chainID,
-			ProviderAddr: providerAddr,
-			ConsumerKey:  &consumerKey,
-		})
-		return false // do not stop the iteration
-	})
+	validatorConsumerPubKeys := k.IterateAllValidatorConsumerPubKeys(ctx)
 
-	validatorsByConsumerAddr := []types.ValidatorByConsumerAddr{}
-	k.IterateAllValidatorsByConsumerAddr(ctx, func(chainID string, consumerAddr sdk.ConsAddress, providerAddr sdk.ConsAddress) (stop bool) {
-		validatorsByConsumerAddr = append(validatorsByConsumerAddr, types.ValidatorByConsumerAddr{
-			ChainId:      chainID,
-			ConsumerAddr: consumerAddr,
-			ProviderAddr: providerAddr,
-		})
-		return false // do not stop the iteration
-	})
+	validatorsByConsumerAddr := k.IterateAllValidatorsByConsumerAddr(ctx)
 
 	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
 	// ConsumerAddrsToPrune are added only for registered consumer chains
-	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID string, _ string) (stopOuter bool) {
-		k.IterateConsumerAddrsToPrune(ctx, chainID, func(vscID uint64, consumerAddrs types.AddressList) (stopInner bool) {
-			consumerAddrsToPrune = append(consumerAddrsToPrune, types.ConsumerAddrsToPrune{
-				ChainId:       chainID,
-				VscId:         vscID,
-				ConsumerAddrs: &consumerAddrs,
-			})
-			return false // do not stop the iteration
-		})
-		return false // do not stop the iteration
-	})
+	for _, chain := range k.IterateConsumerChains(ctx) {
+		consumerAddrsToPrune = append(consumerAddrsToPrune, k.IterateConsumerAddrsToPrune(ctx, chain.ChainId)...)
+	}
 
 	params := k.GetParams(ctx)
 
