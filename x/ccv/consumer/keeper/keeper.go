@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -214,10 +213,8 @@ func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		// Extract bytes following the 1 byte prefix
-		seqBytes := iterator.Key()[1:]
-		seq := binary.BigEndian.Uint64(seqBytes)
-
-		timeNs := binary.BigEndian.Uint64(iterator.Value())
+		seq := sdk.BigEndianToUint64(iterator.Key()[1:])
+		timeNs := sdk.BigEndianToUint64(iterator.Value())
 
 		stop := cb(seq, timeNs)
 		if stop {
@@ -229,9 +226,7 @@ func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs
 // SetPacketMaturityTime sets the maturity time for a given received VSC packet id
 func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscId, maturityTime uint64) {
 	store := ctx.KVStore(k.storeKey)
-	timeBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(timeBytes, maturityTime)
-	store.Set(types.PacketMaturityTimeKey(vscId), timeBytes)
+	store.Set(types.PacketMaturityTimeKey(vscId), sdk.Uint64ToBigEndian(maturityTime))
 }
 
 // GetPacketMaturityTime gets the maturity time for a given received VSC packet id
@@ -241,7 +236,7 @@ func (k Keeper) GetPacketMaturityTime(ctx sdk.Context, vscId uint64) uint64 {
 	if bz == nil {
 		return 0
 	}
-	return binary.BigEndian.Uint64(bz)
+	return sdk.BigEndianToUint64(bz)
 }
 
 // DeletePacketMaturityTimes deletes the packet maturity time for given received VSC packet ids
@@ -278,9 +273,7 @@ func (k Keeper) VerifyProviderChain(ctx sdk.Context, connectionHops []string) er
 // SetHeightValsetUpdateID sets the vscID for a given block height
 func (k Keeper) SetHeightValsetUpdateID(ctx sdk.Context, height, vscID uint64) {
 	store := ctx.KVStore(k.storeKey)
-	valBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(valBytes, vscID)
-	store.Set(types.HeightValsetUpdateIDKey(height), valBytes)
+	store.Set(types.HeightValsetUpdateIDKey(height), sdk.Uint64ToBigEndian(vscID))
 }
 
 // GetHeightValsetUpdateID gets the vscID recorded for a given block height
@@ -290,7 +283,7 @@ func (k Keeper) GetHeightValsetUpdateID(ctx sdk.Context, height uint64) uint64 {
 	if bz == nil {
 		return 0
 	}
-	return binary.BigEndian.Uint64(bz)
+	return sdk.BigEndianToUint64(bz)
 }
 
 // DeleteHeightValsetUpdateID deletes the vscID for a given block height
@@ -310,10 +303,8 @@ func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, v
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		heightBytes := iterator.Key()[1:]
-		height := binary.BigEndian.Uint64(heightBytes)
-
-		vscID := binary.BigEndian.Uint64(iterator.Value())
+		height := sdk.BigEndianToUint64(iterator.Key()[1:])
+		vscID := sdk.BigEndianToUint64(iterator.Value())
 
 		stop := cb(height, vscID)
 		if stop {

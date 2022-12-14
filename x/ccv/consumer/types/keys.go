@@ -1,8 +1,6 @@
 package types
 
 import (
-	"encoding/binary"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -101,22 +99,18 @@ func PendingChangesKey() []byte {
 
 // PacketMaturityTimeKey returns the key for storing maturity time for a given received VSC packet id
 func PacketMaturityTimeKey(id uint64) []byte {
-	seqBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(seqBytes, id)
-	return append([]byte{PacketMaturityTimeBytePrefix}, seqBytes...)
+	return append([]byte{PacketMaturityTimeBytePrefix}, sdk.Uint64ToBigEndian(id)...)
 }
 
 // IdFromPacketMaturityTimeKey returns the packet id corresponding to a maturity time full key (including prefix)
 func IdFromPacketMaturityTimeKey(key []byte) uint64 {
 	// Bytes after single byte prefix are converted to uin64
-	return binary.BigEndian.Uint64(key[1:])
+	return sdk.BigEndianToUint64(key[1:])
 }
 
 // HeightValsetUpdateIDKey returns the key to a valset update ID for a given block height
 func HeightValsetUpdateIDKey(height uint64) []byte {
-	hBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(hBytes, height)
-	return append([]byte{HeightValsetUpdateIDBytePrefix}, hBytes...)
+	return append([]byte{HeightValsetUpdateIDBytePrefix}, sdk.Uint64ToBigEndian(height)...)
 }
 
 // OutstandingDowntimeKey returns the key to a validators' outstanding downtime by consensus address
@@ -131,7 +125,5 @@ func CrossChainValidatorKey(addr []byte) []byte {
 
 // HistoricalInfoKey returns the key to historical info to a given block height
 func HistoricalInfoKey(height int64) []byte {
-	hBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(hBytes, uint64(height))
-	return append([]byte{HistoricalInfoBytePrefix}, hBytes...)
+	return append([]byte{HistoricalInfoBytePrefix}, sdk.Uint64ToBigEndian(uint64(height))...)
 }

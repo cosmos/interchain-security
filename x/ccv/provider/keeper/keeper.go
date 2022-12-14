@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -344,7 +343,7 @@ func (k Keeper) IterateUnbondingOps(ctx sdk.Context, cb func(id uint64, ubdOp cc
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		id := binary.BigEndian.Uint64(iterator.Key()[1:])
+		id := sdk.BigEndianToUint64(iterator.Key()[1:])
 		bz := iterator.Value()
 		if bz == nil {
 			panic(fmt.Errorf("unbonding operation is nil for id %d", id))
@@ -544,12 +543,7 @@ func (k Keeper) IncrementValidatorSetUpdateId(ctx sdk.Context) {
 
 func (k Keeper) SetValidatorSetUpdateId(ctx sdk.Context, vscID uint64) {
 	store := ctx.KVStore(k.storeKey)
-
-	// Convert back into bytes for storage
-	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, vscID)
-
-	store.Set(types.ValidatorSetUpdateIdKey(), bz)
+	store.Set(types.ValidatorSetUpdateIdKey(), sdk.Uint64ToBigEndian(vscID))
 }
 
 func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (vscID uint64) {
@@ -560,7 +554,7 @@ func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (vscID uint64) {
 		vscID = 0
 	} else {
 		// Unmarshal
-		vscID = binary.BigEndian.Uint64(bz)
+		vscID = sdk.BigEndianToUint64(bz)
 	}
 
 	return vscID
@@ -569,9 +563,7 @@ func (k Keeper) GetValidatorSetUpdateId(ctx sdk.Context) (vscID uint64) {
 // SetValsetUpdateBlockHeight sets the block height for a given vscID
 func (k Keeper) SetValsetUpdateBlockHeight(ctx sdk.Context, vscID, blockHeight uint64) {
 	store := ctx.KVStore(k.storeKey)
-	heightBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(heightBytes, blockHeight)
-	store.Set(types.ValsetUpdateBlockHeightKey(vscID), heightBytes)
+	store.Set(types.ValsetUpdateBlockHeightKey(vscID), sdk.Uint64ToBigEndian(blockHeight))
 }
 
 // GetValsetUpdateBlockHeight gets the block height for a given vscID
@@ -581,7 +573,7 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, vscID uint64) (uint6
 	if bz == nil {
 		return 0, false
 	}
-	return binary.BigEndian.Uint64(bz), true
+	return sdk.BigEndianToUint64(bz), true
 }
 
 // IterateValsetUpdateBlockHeight iterates through the mapping from vscIDs to block heights.
@@ -595,8 +587,8 @@ func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context, cb func(vscID, h
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		vscID := binary.BigEndian.Uint64(iterator.Key()[1:])
-		height := binary.BigEndian.Uint64(iterator.Value())
+		vscID := sdk.BigEndianToUint64(iterator.Key()[1:])
+		height := sdk.BigEndianToUint64(iterator.Value())
 
 		stop := cb(vscID, height)
 		if stop {
@@ -690,10 +682,7 @@ func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID, ack string) {
 // SetInitChainHeight sets the provider block height when the given consumer chain was initiated
 func (k Keeper) SetInitChainHeight(ctx sdk.Context, chainID string, height uint64) {
 	store := ctx.KVStore(k.storeKey)
-	heightBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(heightBytes, height)
-
-	store.Set(types.InitChainHeightKey(chainID), heightBytes)
+	store.Set(types.InitChainHeightKey(chainID), sdk.Uint64ToBigEndian(height))
 }
 
 // GetInitChainHeight returns the provider block height when the given consumer chain was initiated
@@ -704,7 +693,7 @@ func (k Keeper) GetInitChainHeight(ctx sdk.Context, chainID string) (uint64, boo
 		return 0, false
 	}
 
-	return binary.BigEndian.Uint64(bz), true
+	return sdk.BigEndianToUint64(bz), true
 }
 
 // DeleteInitChainHeight deletes the block height value for which the given consumer chain's channel was established
@@ -773,9 +762,7 @@ func (k Keeper) DeleteConsumerClientId(ctx sdk.Context, chainID string) {
 // SetInitTimeoutTimestamp sets the init timeout timestamp for the given chain ID
 func (k Keeper) SetInitTimeoutTimestamp(ctx sdk.Context, chainID string, ts uint64) {
 	store := ctx.KVStore(k.storeKey)
-	tsBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(tsBytes, ts)
-	store.Set(types.InitTimeoutTimestampKey(chainID), tsBytes)
+	store.Set(types.InitTimeoutTimestampKey(chainID), sdk.Uint64ToBigEndian(ts))
 }
 
 // GetInitTimeoutTimestamp returns the init timeout timestamp for the given chain ID.
@@ -786,7 +773,7 @@ func (k Keeper) GetInitTimeoutTimestamp(ctx sdk.Context, chainID string) (uint64
 	if bz == nil {
 		return 0, false
 	}
-	return binary.BigEndian.Uint64(bz), true
+	return sdk.BigEndianToUint64(bz), true
 }
 
 // DeleteInitTimeoutTimestamp removes from the store the init timeout timestamp for the given chainID.
@@ -807,7 +794,7 @@ func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context, cb func(chainID str
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		chainID := string(iterator.Key()[1:])
-		ts := binary.BigEndian.Uint64(iterator.Value())
+		ts := sdk.BigEndianToUint64(iterator.Value())
 
 		stop := cb(chainID, ts)
 		if stop {
