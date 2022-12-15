@@ -358,6 +358,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 // EndBlockCCR contains the EndBlock logic needed for
 // the Consumer Chain Removal sub-protocol
+// TODO JEHAN: Stopping iteration here
 func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	currentTime := ctx.BlockTime()
 	currentTimeUint64 := uint64(currentTime.UnixNano())

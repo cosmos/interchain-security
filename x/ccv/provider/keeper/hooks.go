@@ -74,6 +74,7 @@ func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddre
 
 	inUse := false
 
+	// TODO JEHAN: Stopping iteration here
 	for _, validatorConsumerAddrs := range k.IterateAllValidatorsByConsumerAddr(ctx) {
 		if sdk.ConsAddress(validatorConsumerAddrs.ConsumerAddr).Equals(consensusAddr) {
 			inUse = true

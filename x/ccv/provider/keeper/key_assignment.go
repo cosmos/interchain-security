@@ -528,6 +528,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 	// For any key assignment replacements that did not have a corresponding validator update already,
 	// set the old consumer key's power to 0 and the new consumer key's power to the
 	// power in the pending key assignment.
+	// TODO JEHAN: Stopping iteration here (but only in error)
 	for _, replacement := range k.IterateKeyAssignmentReplacements(ctx, chainID) {
 		k.DeleteKeyAssignmentReplacement(ctx, chainID, replacement.ProviderAddr)
 		newUpdates = append(newUpdates, abci.ValidatorUpdate{

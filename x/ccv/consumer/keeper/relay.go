@@ -84,6 +84,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // Note: Per spec, a VSC reaching maturity on a consumer chain means that all the unbonding
 // operations that resulted in validator updates included in that VSC have matured on
 // the consumer chain.
+// TODO JEHAN: Stopping iteration here
 func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 	maturityTimes := k.IteratePacketMaturityTime(ctx)
 

@@ -19,14 +19,6 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
-type testAssignment struct {
-	chainID        string
-	providerAddr   sdk.ConsAddress
-	consumerAddr   sdk.ConsAddress
-	consumerPubKey tmprotocrypto.PublicKey
-	pubKeyAndPower abci.ValidatorUpdate
-}
-
 func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
 	chainID := "consumer"
 	providerAddr := sdk.ConsAddress([]byte("providerAddr"))
