@@ -407,11 +407,11 @@ func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *types.Consu
 	store.Set(types.PendingCRPKey(prop.StopTime, prop.ChainId), bz)
 }
 
-// IsPendingConsumerRemovalProp checks whether a pending consumer removal proposal
+// PendingConsumerRemovalPropExists checks whether a pending consumer removal proposal
 // exists for the given consumer chain ID and stopTime
 //
 // Note: this method is only used in testing
-func (k Keeper) IsPendingConsumerRemovalProp(ctx sdk.Context, chainID string, stopTime time.Time) bool {
+func (k Keeper) PendingConsumerRemovalPropExists(ctx sdk.Context, chainID string, stopTime time.Time) bool {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingCRPKey(stopTime, chainID))
 

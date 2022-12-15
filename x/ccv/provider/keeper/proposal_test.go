@@ -381,13 +381,13 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 		if tc.expStop {
 			// Expect no pending proposal to exist
-			found := providerKeeper.IsPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
+			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
 			require.False(t, found)
 
 			testProviderStateIsCleaned(t, ctx, providerKeeper, tc.prop.ChainId, "channelID")
 		} else {
 			// Proposal should be stored as pending
-			found := providerKeeper.IsPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
+			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
 			require.True(t, found)
 		}
 
@@ -543,7 +543,7 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 	providerKeeper.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
 	numDeleted := 0
 	for _, tc := range testCases {
-		res := providerKeeper.IsPendingConsumerRemovalProp(ctx, tc.ChainId, tc.StopTime)
+		res := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.ChainId, tc.StopTime)
 		if !tc.ExpDeleted {
 			require.NotEmpty(t, res, "consumer removal prop was deleted: %s %s", tc.ChainId, tc.StopTime.String())
 			continue
@@ -853,13 +853,13 @@ func TestBeginBlockCCR(t *testing.T) {
 	providerKeeper.BeginBlockCCR(ctx)
 
 	// Only the 3rd (final) proposal is still stored as pending
-	found := providerKeeper.IsPendingConsumerRemovalProp(
+	found := providerKeeper.PendingConsumerRemovalPropExists(
 		ctx, pendingProps[0].ChainId, pendingProps[0].StopTime)
 	require.False(t, found)
-	found = providerKeeper.IsPendingConsumerRemovalProp(
+	found = providerKeeper.PendingConsumerRemovalPropExists(
 		ctx, pendingProps[1].ChainId, pendingProps[1].StopTime)
 	require.False(t, found)
-	found = providerKeeper.IsPendingConsumerRemovalProp(
+	found = providerKeeper.PendingConsumerRemovalPropExists(
 		ctx, pendingProps[2].ChainId, pendingProps[2].StopTime)
 	require.True(t, found)
 }
