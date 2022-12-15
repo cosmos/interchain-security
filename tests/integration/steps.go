@@ -20,7 +20,6 @@ var happyPathSteps = concatSteps(
 	stepsUnbond("consu"),
 	stepsRedelegate("consu"),
 	stepsDowntime("consu"),
-	stepsThrottledDowntime("consu"),
 	stepsStopChain("consu"),
 )
 
