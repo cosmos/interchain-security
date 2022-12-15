@@ -22,7 +22,7 @@ func NewQueue(n int) *Queue {
 	}
 }
 
-// Precondition: 0 < Size().
+// Precondition: 0 < Size(). // Should give first by FIFO
 func (q *Queue) Pop() int {
 	x := q.buf[q.tail]
 	q.tail += 1
@@ -30,16 +30,16 @@ func (q *Queue) Pop() int {
 	return x
 }
 
-// Precondition: Size() < n.
+// Precondition: Size() < n.  // Should add element by FIFO
 func (q *Queue) Add(x int) {
 	q.buf[q.head] = x
 	q.head += 1
 	q.head = len(q.buf)
 }
 
-func (q *Queue) Size() int {
+func (q *Queue) Size() int { // Should tell you the number of items in the queue
 	// Useful to check https://go.dev/ref/spec#Arithmetic_operators for precise behavior of %.
-	return (q.tail - q.head + 1) % len(q.buf)
+	return (q.tail - q.head) % len(q.buf)
 }
 
 ///////////////////////////////////////////////////////////////
@@ -77,7 +77,6 @@ func (m *Harness) Add(t *rapid.T) {
 	if m.q.Size() == m.capacity {
 		t.Skip("queue full")
 	}
-
 	x := rapid.Int().Draw(t, "x")
 	m.q.Add(x)
 	m.model = append(m.model, x)
