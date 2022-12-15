@@ -24,7 +24,8 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 		return
 	}
 
-	// TODO: explain this
+	// Obtain all global slash entries, where only some of them may be handled in this method,
+	// depending on the value of the slash meter.
 	allEntries := k.GetAllGlobalSlashEntries(ctx)
 	handledEntries := []providertypes.GlobalSlashEntry{}
 
