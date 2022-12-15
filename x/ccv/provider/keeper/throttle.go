@@ -24,6 +24,7 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 		return
 	}
 
+	// TODO: explain this
 	allEntries := k.GetAllGlobalSlashEntries(ctx)
 	handledEntries := []providertypes.GlobalSlashEntry{}
 
@@ -214,7 +215,7 @@ func (k Keeper) DeleteGlobalSlashEntriesForConsumer(ctx sdktypes.Context, consum
 	k.DeleteGlobalSlashEntries(ctx, entriesToDel...)
 }
 
-// GetAllGlobalSlashEntries returns all global slash entries in the global queue slash entry queue.
+// GetAllGlobalSlashEntries returns all global slash entries from the queue
 func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.GlobalSlashEntry {
 
 	store := ctx.KVStore(k.storeKey)
