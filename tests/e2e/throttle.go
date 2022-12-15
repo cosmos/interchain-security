@@ -260,16 +260,13 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()))
 }
 
-// TestPacketSpamAndQueueOrdering validates that the ordering of slash packet entries
+// TestQueueOrdering validates that the ordering of slash packet entries
 // in the global queue (relevant to a single chain) matches the ordering of slash packet
 // data in the chain specific queues, even in the presence of packet spam.
 //
 // Note: The global queue is ordered by: time, then IBC sequence number, see PendingSlashPacketEntryKey.
 // The chain specific queue is ordered by: IBC sequence number, see PendingSlashPacketDataKey.
-//
-// TODO: consider DOS attack, see: https://github.com/cosmos/interchain-security/issues/594
-// This test will change in that the duplicated packets would not be queued.
-func (s *CCVTestSuite) TestPacketSpam() {
+func (s *CCVTestSuite) TestQueueOrdering() {
 
 	// Setup ccv channels to all consumers
 	s.SetupAllCCVChannels()
