@@ -31,7 +31,7 @@ func GetProviderKeeperAndCtx(t *rapid.T, params testkeeper.InMemKeeperParams) (
 	return testkeeper.NewInMemProviderKeeper(params, mocks), params.Ctx, ctrl, mocks
 }
 
-func NewInMemKeeperParams() testkeeper.InMemKeeperParams {
+func NewInMemKeeperParams(t *rapid.T) testkeeper.InMemKeeperParams {
 	storeKey := sdk.NewKVStoreKey(types.StoreKey)
 	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
 
@@ -39,6 +39,7 @@ func NewInMemKeeperParams() testkeeper.InMemKeeperParams {
 	stateStore := store.NewCommitMultiStore(db)
 	stateStore.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(memStoreKey, sdk.StoreTypeMemory, nil)
+	require.NoError(t, stateStore.LoadLatestVersion())
 
 	registry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(registry)
@@ -63,38 +64,25 @@ func NewInMemKeeperParams() testkeeper.InMemKeeperParams {
 // SYSTEM UNDER TEST
 ///////////////////////////////////////////////////////////////
 
-type Wiz struct {
+type StoredThing struct {
 	pk   keeper.Keeper
 	ctx  sdk.Context
 	ctrl *gomock.Controller
 }
 
-func NewWiz(t *rapid.T) *Wiz {
-	providerKeeper, ctx, ctrl, _ := GetProviderKeeperAndCtx(t, NewInMemKeeperParams())
-	return &Wiz{
-		pk:   providerKeeper,
-		ctx:  ctx,
-		ctrl: ctrl,
-	}
-}
-
-func (w *Wiz) Cleanup() {
-	w.ctrl.Finish()
-}
-
-func (w *Wiz) Set(k, v string) {
+func (w *StoredThing) Set(k, v string) {
 	w.pk.SetChainToChannel(w.ctx, k, v)
 }
 
-func (w *Wiz) Get(k string) (string, bool) {
+func (w *StoredThing) Get(k string) (string, bool) {
 	return w.pk.GetChainToChannel(w.ctx, k)
 }
 
-func (w *Wiz) Del(k string) {
+func (w *StoredThing) Del(k string) {
 	w.pk.DeleteChainToChannel(w.ctx, k)
 }
 
-func (w *Wiz) Iter(n int) []string {
+func (w *StoredThing) Iter(n int) []string {
 	ret := []string{}
 	cnt := 0
 	w.pk.IterateConsumerChains(w.ctx, func(_ sdk.Context, k string, v string) bool {
@@ -109,36 +97,41 @@ func (w *Wiz) Iter(n int) []string {
 // TESTING CODE
 ///////////////////////////////////////////////////////////////
 
-type IterHarness struct {
-	wiz   *Wiz // Wiz being tested
+type StoreHarness struct {
+	wiz   *StoredThing // Wiz being tested
 	model map[string]string
 }
 
 // Init is an action for initializing  a WizMachine instance.
-func (h *IterHarness) Init(t *rapid.T) {
-	h.wiz = NewWiz(t)
+func (h *StoreHarness) Init(t *rapid.T) {
+	providerKeeper, ctx, ctrl, _ := GetProviderKeeperAndCtx(t, NewInMemKeeperParams(t))
+	h.wiz = &StoredThing{
+		pk:   providerKeeper,
+		ctx:  ctx,
+		ctrl: ctrl,
+	}
 	h.model = map[string]string{}
 }
 
-func (h *IterHarness) Cleanup(t *rapid.T) {
-	h.wiz.Cleanup()
+func (h *StoreHarness) Cleanup() {
+	h.wiz.ctrl.Finish()
 }
 
-func (h *IterHarness) Set(t *rapid.T) {
+func (h *StoreHarness) Set(t *rapid.T) {
 	k := rapid.String().Draw(t, "k")
 	v := rapid.String().Draw(t, "v")
 	h.wiz.Set(k, v)
 	h.model[k] = v
 }
 
-func (h *IterHarness) Del(t *rapid.T) {
+func (h *StoreHarness) Del(t *rapid.T) {
 	k := rapid.String().Draw(t, "k")
 	h.wiz.Del(k)
 	delete(h.model, k)
 }
 
 // Check runs after each action
-func (h *IterHarness) Check(t *rapid.T) {
+func (h *StoreHarness) Check(t *rapid.T) {
 
 	get := func() {
 		k := rapid.String().Draw(t, "k")
@@ -153,6 +146,9 @@ func (h *IterHarness) Check(t *rapid.T) {
 	}
 
 	iter := func() {
+		// Exercise, how would this function (and the rest of code) need
+		// to change if we were testing data which was supposed to be
+		// sorted?
 		n := rapid.IntRange(0, 100).Draw(t, "n")
 		iterated := h.wiz.Iter(n)
 		if len(h.model) < n {
@@ -167,9 +163,8 @@ func (h *IterHarness) Check(t *rapid.T) {
 
 	get()
 	iter()
-
 }
 
 func TestWiz(t *testing.T) {
-	rapid.Check(t, rapid.Run[*IterHarness]())
+	rapid.Check(t, rapid.Run[*StoreHarness]())
 }
