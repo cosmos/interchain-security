@@ -71,21 +71,21 @@ type StoredThing struct {
 }
 
 func (w *StoredThing) Set(k, v string) {
-	w.pk.SetChainToChannel(w.ctx, k, v)
+	w.pk.SetChannelToChain(w.ctx, k, v)
 }
 
 func (w *StoredThing) Get(k string) (string, bool) {
-	return w.pk.GetChainToChannel(w.ctx, k)
+	return w.pk.GetChannelToChain(w.ctx, k)
 }
 
 func (w *StoredThing) Del(k string) {
-	w.pk.DeleteChainToChannel(w.ctx, k)
+	w.pk.DeleteChannelToChain(w.ctx, k)
 }
 
 func (w *StoredThing) Iter(n int) []string {
 	ret := []string{}
 	cnt := 0
-	w.pk.IterateConsumerChains(w.ctx, func(_ sdk.Context, k string, v string) bool {
+	w.pk.IterateChannelToChain(w.ctx, func(_ sdk.Context, k string, v string) bool {
 		ret = append(ret, k)
 		cnt += 1
 		return n <= cnt
@@ -98,14 +98,14 @@ func (w *StoredThing) Iter(n int) []string {
 ///////////////////////////////////////////////////////////////
 
 type StoreHarness struct {
-	wiz   *StoredThing // Wiz being tested
+	thing *StoredThing // Wiz being tested
 	model map[string]string
 }
 
 // Init is an action for initializing  a WizMachine instance.
 func (h *StoreHarness) Init(t *rapid.T) {
 	providerKeeper, ctx, ctrl, _ := GetProviderKeeperAndCtx(t, NewInMemKeeperParams(t))
-	h.wiz = &StoredThing{
+	h.thing = &StoredThing{
 		pk:   providerKeeper,
 		ctx:  ctx,
 		ctrl: ctrl,
@@ -113,20 +113,24 @@ func (h *StoreHarness) Init(t *rapid.T) {
 	h.model = map[string]string{}
 }
 
+func makeNonEmpty(s string) string {
+	return s + "AAAA"
+}
+
 func (h *StoreHarness) Cleanup() {
-	h.wiz.ctrl.Finish()
+	h.thing.ctrl.Finish()
 }
 
 func (h *StoreHarness) Set(t *rapid.T) {
-	k := rapid.String().Draw(t, "k")
-	v := rapid.String().Draw(t, "v")
-	h.wiz.Set(k, v)
+	k := makeNonEmpty(rapid.String().Draw(t, "k"))
+	v := makeNonEmpty(rapid.String().Draw(t, "v"))
+	h.thing.Set(k, v)
 	h.model[k] = v
 }
 
 func (h *StoreHarness) Del(t *rapid.T) {
-	k := rapid.String().Draw(t, "k")
-	h.wiz.Del(k)
+	k := makeNonEmpty(rapid.String().Draw(t, "k"))
+	h.thing.Del(k)
 	delete(h.model, k)
 }
 
@@ -134,9 +138,9 @@ func (h *StoreHarness) Del(t *rapid.T) {
 func (h *StoreHarness) Check(t *rapid.T) {
 
 	get := func() {
-		k := rapid.String().Draw(t, "k")
+		k := makeNonEmpty(rapid.String().Draw(t, "k"))
 		expect, expectOk := h.model[k]
-		actual, actualOk := h.wiz.Get(k)
+		actual, actualOk := h.thing.Get(k)
 		require.Equal(t, expectOk, actualOk)
 		// Exercise: do you think it's a good to check the value is equal
 		// even if it was not expected to be found?
@@ -150,7 +154,7 @@ func (h *StoreHarness) Check(t *rapid.T) {
 		// to change if we were testing data which was supposed to be
 		// sorted?
 		n := rapid.IntRange(0, 100).Draw(t, "n")
-		iterated := h.wiz.Iter(n)
+		iterated := h.thing.Iter(n)
 		if len(h.model) < n {
 			n = len(h.model)
 		}
