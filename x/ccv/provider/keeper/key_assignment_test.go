@@ -89,7 +89,8 @@ func TestIterateValidatorConsumerPubKeys(t *testing.T) {
 	}
 
 	result = keeper.IterateValidatorConsumerPubKeys(ctx, chainID)
-	require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
+	// TODO JEHAN: This was testing an "iterateOne" iterator in the test itself. bring that back if we add a callback
+	// require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
 
 	require.Equal(t, testAssignments[0], result[0], "mismatched consumer key assignment in iterate one")
 
@@ -195,7 +196,8 @@ func TestIterateValidatorsByConsumerAddr(t *testing.T) {
 	}
 
 	result = keeper.IterateValidatorsByConsumerAddr(ctx, chainID)
-	require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
+	// TODO JEHAN: This was testing an "iterateOne" iterator in the test itself. bring that back if we add a callback
+	// require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
 
 	require.Equal(t, testAssignments[0], result[0], "mismatched consumer address assignment in iterate one")
 }
@@ -262,27 +264,21 @@ func TestKeyAssignmentReplacementCRUD(t *testing.T) {
 
 func TestIterateKeyAssignmentReplacements(t *testing.T) {
 	chainID := "consumer"
-	testAssignments := []testAssignment{
+	testAssignments := []providerkeeper.KeyAssignmentReplacement{
 		{
-			providerAddr: sdk.ConsAddress([]byte("validator-1")),
-			pubKeyAndPower: abci.ValidatorUpdate{
-				Power:  100,
-				PubKey: cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey(),
-			},
+			ProviderAddr: sdk.ConsAddress([]byte("validator-1")),
+			Power:        100,
+			PrevCKey:     cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey(),
 		},
 		{
-			providerAddr: sdk.ConsAddress([]byte("validator-2")),
-			pubKeyAndPower: abci.ValidatorUpdate{
-				Power:  100,
-				PubKey: cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey(),
-			},
+			ProviderAddr: sdk.ConsAddress([]byte("validator-2")),
+			Power:        100,
+			PrevCKey:     cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey(),
 		},
 		{
-			providerAddr: sdk.ConsAddress([]byte("validator-3")),
-			pubKeyAndPower: abci.ValidatorUpdate{
-				Power:  100,
-				PubKey: cryptotestutil.NewCryptoIdentityFromIntSeed(3).TMProtoCryptoPublicKey(),
-			},
+			ProviderAddr: sdk.ConsAddress([]byte("validator-3")),
+			Power:        100,
+			PrevCKey:     cryptotestutil.NewCryptoIdentityFromIntSeed(3).TMProtoCryptoPublicKey(),
 		},
 	}
 
@@ -290,7 +286,7 @@ func TestIterateKeyAssignmentReplacements(t *testing.T) {
 	defer ctrl.Finish()
 
 	for _, assignment := range testAssignments {
-		keeper.SetKeyAssignmentReplacement(ctx, chainID, assignment.providerAddr, assignment.pubKeyAndPower.PubKey, assignment.pubKeyAndPower.Power)
+		keeper.SetKeyAssignmentReplacement(ctx, chainID, assignment.ProviderAddr, assignment.PrevCKey, assignment.Power)
 	}
 
 	result := keeper.IterateKeyAssignmentReplacements(ctx, chainID)
