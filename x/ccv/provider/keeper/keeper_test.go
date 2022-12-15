@@ -10,11 +10,11 @@ import (
 	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
+	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
-	providerkeepertypes "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	"github.com/stretchr/testify/require"
 )
 
@@ -254,7 +254,7 @@ func TestInitTimeoutTimestamp(t *testing.T) {
 	// store is iterated in alphabetical ascending order
 	// not in the order of insertion
 	for _, initTimeoutTimestamp := range providerKeeper.GetAllInitTimeoutTimestamps(ctx) {
-		require.Equal(t, initTimeoutTimestamp.ChainID, tc[i].chainID)
+		require.Equal(t, initTimeoutTimestamp.ChainId, tc[i].chainID)
 		require.Equal(t, initTimeoutTimestamp.Timestamp, tc[i].expected)
 		i--
 	}
@@ -301,7 +301,7 @@ func TestVscSendTimestamp(t *testing.T) {
 
 	i = 0
 	for _, vscSendTimestamp := range providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID) {
-		require.Equal(t, vscSendTimestamp.VscID, testCases[i].vscID)
+		require.Equal(t, vscSendTimestamp.VscId, testCases[i].vscID)
 		require.Equal(t, vscSendTimestamp.Timestamp, testCases[i].ts)
 		i++
 	}
@@ -309,7 +309,7 @@ func TestVscSendTimestamp(t *testing.T) {
 
 	// delete VSC send timestamps
 	for _, vscSendTimestamp := range providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID) {
-		providerKeeper.DeleteVscSendTimestamp(ctx, testCases[0].chainID, vscSendTimestamp.VscID)
+		providerKeeper.DeleteVscSendTimestamp(ctx, testCases[0].chainID, vscSendTimestamp.VscId)
 	}
 
 	i = 0
@@ -361,19 +361,19 @@ func TestIterateChannelToChain(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	cases := []providerkeepertypes.ChannelToChain{
+	cases := []types.ChannelToChain{
 		{
-			ChainID:   "chain-1",
-			ChannelID: "channel-1",
+			ChainId:   "chain-1",
+			ChannelId: "channel-1",
 		},
 		{
-			ChainID:   "chain-2",
-			ChannelID: "channel-2",
+			ChainId:   "chain-2",
+			ChannelId: "channel-2",
 		},
 	}
 
 	for _, c := range cases {
-		pk.SetChannelToChain(ctx, c.ChannelID, c.ChainID)
+		pk.SetChannelToChain(ctx, c.ChannelId, c.ChainId)
 	}
 
 	// iterate and check all results are returned

@@ -175,13 +175,8 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 	store.Delete(types.ChannelToChainKey(channelID))
 }
 
-type ChannelToChain struct {
-	ChannelID string
-	ChainID   string
-}
-
 // GetChannelToChains gets all channel to chain mappings
-func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []ChannelToChain) {
+func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.ChannelToChain) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
 	defer iterator.Close()
@@ -192,9 +187,9 @@ func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []ChannelToChai
 
 		chainID := string(iterator.Value())
 
-		channels = append(channels, ChannelToChain{
-			ChannelID: channelID,
-			ChainID:   chainID,
+		channels = append(channels, types.ChannelToChain{
+			ChannelId: channelID,
+			ChainId:   chainID,
 		})
 	}
 
@@ -372,13 +367,8 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 	store.Set(types.UnbondingOpIndexKey(chainID, valsetUpdateID), bz)
 }
 
-type UnbondingOpsIndex struct {
-	VscId          uint64
-	UnbondingOpIds []uint64
-}
-
 // GetAllUnbondingOpIndexes gets all unbonding indexes for a given chain id.
-func (k Keeper) GetAllUnbondingOpIndexes(ctx sdk.Context, chainID string) (indexes []UnbondingOpsIndex) {
+func (k Keeper) GetAllUnbondingOpIndexes(ctx sdk.Context, chainID string) (indexes []types.VscUnbondingOps) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.UnbondingOpIndexBytePrefix, chainID))
 	defer iterator.Close()
@@ -395,7 +385,7 @@ func (k Keeper) GetAllUnbondingOpIndexes(ctx sdk.Context, chainID string) (index
 			panic("Failed to unmarshal JSON")
 		}
 
-		indexes = append(indexes, UnbondingOpsIndex{
+		indexes = append(indexes, types.VscUnbondingOps{
 			VscId:          vscID,
 			UnbondingOpIds: index.GetIds(),
 		})
@@ -778,14 +768,9 @@ func (k Keeper) DeleteInitTimeoutTimestamp(ctx sdk.Context, chainID string) {
 	store.Delete(types.InitTimeoutTimestampKey(chainID))
 }
 
-type InitTimeoutTimestamp struct {
-	ChainID   string
-	Timestamp uint64
-}
-
 // GetAllInitTimeoutTimestamps gets all init timeout timestamps in the store.
 // Note: as the keys have the `bytePrefix | chainID` format, the array is NOT in timestamp order.
-func (k Keeper) GetAllInitTimeoutTimestamps(ctx sdk.Context) (initTimeoutTimestamps []InitTimeoutTimestamp) {
+func (k Keeper) GetAllInitTimeoutTimestamps(ctx sdk.Context) (initTimeoutTimestamps []types.InitTimeoutTimestamp) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.InitTimeoutTimestampBytePrefix})
 
@@ -794,8 +779,8 @@ func (k Keeper) GetAllInitTimeoutTimestamps(ctx sdk.Context) (initTimeoutTimesta
 		chainID := string(iterator.Key()[1:])
 		ts := binary.BigEndian.Uint64(iterator.Value())
 
-		initTimeoutTimestamps = append(initTimeoutTimestamps, InitTimeoutTimestamp{
-			ChainID:   chainID,
+		initTimeoutTimestamps = append(initTimeoutTimestamps, types.InitTimeoutTimestamp{
+			ChainId:   chainID,
 			Timestamp: ts,
 		})
 	}
@@ -844,14 +829,9 @@ func (k Keeper) DeleteVscSendTimestamp(ctx sdk.Context, chainID string, vscID ui
 	store.Delete(types.VscSendingTimestampKey(chainID, vscID))
 }
 
-type VscSendTimestamp struct {
-	VscID     uint64
-	Timestamp time.Time
-}
-
 // GetAllVscSendTimestamps gets an array of vsc send timestamps in order (lowest first)
 // for the given chainID.
-func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSendTimestamps []VscSendTimestamp) {
+func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSendTimestamps []types.VscSendTimestamp) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
 	defer iterator.Close()
@@ -867,8 +847,8 @@ func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSen
 			panic(fmt.Errorf("failed to parse timestamp value: %w", err))
 		}
 
-		vscSendTimestamps = append(vscSendTimestamps, VscSendTimestamp{
-			VscID:     vscID,
+		vscSendTimestamps = append(vscSendTimestamps, types.VscSendTimestamp{
+			VscId:     vscID,
 			Timestamp: ts,
 		})
 	}
@@ -878,7 +858,7 @@ func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSen
 
 // GetOneVscSendTimestamp gets the first vsc send timestamp in order (lowest first)
 // for the given chainID.
-func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSendTimestamp VscSendTimestamp, found bool) {
+func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSendTimestamp types.VscSendTimestamp, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
 	defer iterator.Close()
@@ -894,11 +874,11 @@ func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSe
 			panic(fmt.Errorf("failed to parse timestamp value: %w", err))
 		}
 
-		return VscSendTimestamp{
-			VscID:     vscID,
+		return types.VscSendTimestamp{
+			VscId:     vscID,
 			Timestamp: ts,
 		}, true
 	}
 
-	return VscSendTimestamp{}, false
+	return types.VscSendTimestamp{}, false
 }

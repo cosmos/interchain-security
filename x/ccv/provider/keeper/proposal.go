@@ -152,7 +152,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 
 		// delete VSC send timestamps
 		for _, vscSendTimestamp := range k.GetAllVscSendTimestamps(ctx, chainID) {
-			k.DeleteVscSendTimestamp(ctx, chainID, vscSendTimestamp.VscID)
+			k.DeleteVscSendTimestamp(ctx, chainID, vscSendTimestamp.VscId)
 		}
 	}
 

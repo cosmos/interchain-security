@@ -369,7 +369,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 			// stop the consumer chain and unlock the unbonding.
 			// Note that the CCV channel was not established,
 			// thus closeChan is irrelevant
-			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainID, false)
+			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
 			if err != nil {
 				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 			}
@@ -381,13 +381,13 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 		// exceed the current block time.
 		// Checking the first send timestamp for each chain is sufficient since
 		// timestamps are ordered by vsc ID.
-		vscSendTimestamp, found := k.GetFirstVscSendTimestamp(ctx, channelToChain.ChainID)
+		vscSendTimestamp, found := k.GetFirstVscSendTimestamp(ctx, channelToChain.ChainId)
 		if found {
 			timeoutTimestamp := vscSendTimestamp.Timestamp.Add(k.GetParams(ctx).VscTimeoutPeriod)
 			if currentTime.After(timeoutTimestamp) {
 				// vscTimeout expired
 				// stop the consumer chain and release unbondings
-				err := k.StopConsumerChain(ctx, channelToChain.ChainID, true)
+				err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
 				if err != nil {
 					panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 				}

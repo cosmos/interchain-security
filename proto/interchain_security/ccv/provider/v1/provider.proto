@@ -134,3 +134,37 @@ message ConsumerRemovalProposals {
 message AddressList {
   repeated bytes addresses = 1;
 }
+
+message ChannelToChain {
+  string channel_id = 1;
+  string chain_id = 2;
+}
+
+// type UnbondingOpsIndex struct {
+// 	VscId          uint64
+// 	UnbondingOpIds []uint64
+// }
+message VscUnbondingOps {
+  uint64 vsc_id = 1;
+  repeated uint64 unbonding_op_ids = 2;
+}
+
+// type InitTimeoutTimestamp struct {
+// 	ChainID   string
+// 	Timestamp uint64
+// }
+message InitTimeoutTimestamp {
+  string chain_id = 1;
+  uint64 timestamp = 2;
+}
+
+// type VscSendTimestamp struct {
+// 	VscID     uint64
+// 	Timestamp time.Time
+// }
+message VscSendTimestamp {
+  uint64 vsc_id = 1;
+  google.protobuf.Timestamp timestamp = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+
