@@ -144,28 +144,28 @@ func InitTimeoutTimestampKey(chainID string) []byte {
 }
 
 // PendingCAPKey returns the key under which a pending consumer addition proposal is stored.
-// The key has the following format: PendingCAPBytePrefix | timestamp | chainID
+// The key has the following format: PendingCAPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCAPKey(timestamp time.Time, chainID string) []byte {
-	timeBz := sdk.FormatTimeBytes(timestamp)
+	ts := uint64(timestamp.UTC().UnixNano())
 	return AppendMany(
 		// Append the prefix
 		[]byte{PendingCAPBytePrefix},
-		// Append the time bytes
-		timeBz,
+		// Append the time
+		sdk.Uint64ToBigEndian(ts),
 		// Append the chainId
 		[]byte(chainID),
 	)
 }
 
 // PendingCRPKey returns the key under which pending consumer removal proposals are stored.
-// The key has the following format: PendingCRPBytePrefix | timestamp | chainID
+// The key has the following format: PendingCRPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCRPKey(timestamp time.Time, chainID string) []byte {
-	timeBz := sdk.FormatTimeBytes(timestamp)
+	ts := uint64(timestamp.UTC().UnixNano())
 	return AppendMany(
 		// Append the prefix
 		[]byte{PendingCRPBytePrefix},
-		// Append the time bytes
-		timeBz,
+		// Append the time
+		sdk.Uint64ToBigEndian(ts),
 		// Append the chainId
 		[]byte(chainID),
 	)
