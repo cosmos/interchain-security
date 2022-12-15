@@ -42,7 +42,11 @@ const MODEL_INIT_STATE: ModelInitState = {
   h: { provider: 0, consumer: 0 },
   t: { provider: 0, consumer: 0 },
   ccvC: {
-    hToVscID: { 0: 0, 1: 0 },
+    // The initial provider height is 0 but there must have been
+    // a vscid created at the previous height. However we do not
+    // use model this. Instead we use -1 to represent the phantom
+    // vscid.
+    hToVscID: { 0: -1, 1: -1 },
     pendingChanges: [],
     maturingVscs: new Map(),
     outstandingDowntime: [false, false, false, false],
@@ -51,7 +55,11 @@ const MODEL_INIT_STATE: ModelInitState = {
   ccvP: {
     initialHeight: 0,
     vscID: 0,
-    vscIDtoH: {},
+    // The initial provider height is 0 but there must have been
+    // a vscid created at the previous height. However we do not
+    // use model this. Instead we use -1 to represent the phantom
+    // vscid.
+    vscIDtoH: { [-1]: 0 },
     vscIDtoOpIDs: new Map(),
     downtimeSlashAcks: [],
     tombstoned: [false, false, false, false],
