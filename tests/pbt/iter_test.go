@@ -85,17 +85,22 @@ func (w *Wiz) Cleanup() {
 func (w *Wiz) Set(k, v string) {
 	w.pk.SetChainToChannel(w.ctx, k, v)
 }
+
 func (w *Wiz) Get(k string) (string, bool) {
 	return w.pk.GetChainToChannel(w.ctx, k)
 }
+
 func (w *Wiz) Del(k string) {
 	w.pk.DeleteChainToChannel(w.ctx, k)
 }
-func (w *Wiz) Iter() []string {
+
+func (w *Wiz) Iter(n int) []string {
 	ret := []string{}
+	cnt := 0
 	w.pk.IterateConsumerChains(w.ctx, func(_ sdk.Context, k string, v string) bool {
 		ret = append(ret, k)
-		return false
+		cnt += 1
+		return n <= cnt
 	})
 	return ret
 }
@@ -119,26 +124,50 @@ func (h *IterHarness) Cleanup(t *rapid.T) {
 	h.wiz.Cleanup()
 }
 
-func (h *IterHarness) Set(k, v string) {
+func (h *IterHarness) Set(t *rapid.T) {
+	k := rapid.String().Draw(t, "k")
+	v := rapid.String().Draw(t, "v")
 	h.wiz.Set(k, v)
 	h.model[k] = v
 }
-func (h *IterHarness) Get(k string) string {
-	expect, expectOk := h.model[k]
-	actual, actualOk := h.wiz.Get(k)
-	require.Equal(t, expectOk, actualOk)
-	if expectOk {
-		require.Equal(t, expect, actual)
-	}
-}
-func (h *IterHarness) Del(k string) {
-}
-func (h *IterHarness) Iter() []string {
+
+func (h *IterHarness) Del(t *rapid.T) {
+	k := rapid.String().Draw(t, "k")
+	h.wiz.Del(k)
+	delete(h.model, k)
 }
 
-// Check runs after every action and verifies that all required invariants hold.
+// Check runs after each action
 func (h *IterHarness) Check(t *rapid.T) {
-	// t.Helper().Log("Check")
+
+	get := func() {
+		k := rapid.String().Draw(t, "k")
+		expect, expectOk := h.model[k]
+		actual, actualOk := h.wiz.Get(k)
+		require.Equal(t, expectOk, actualOk)
+		// Exercise: do you think it's a good to check the value is equal
+		// even if it was not expected to be found?
+		if expectOk {
+			require.Equal(t, expect, actual)
+		}
+	}
+
+	iter := func() {
+		n := rapid.IntRange(0, 100).Draw(t, "n")
+		iterated := h.wiz.Iter(n)
+		if len(h.model) < n {
+			n = len(h.model)
+		}
+		require.Len(t, iterated, n)
+		for _, s := range iterated {
+			_, ok := h.model[s]
+			require.True(t, ok)
+		}
+	}
+
+	get()
+	iter()
+
 }
 
 func TestWiz(t *testing.T) {
