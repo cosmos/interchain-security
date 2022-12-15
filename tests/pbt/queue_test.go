@@ -18,25 +18,28 @@ type Queue struct {
 
 func NewQueue(n int) *Queue {
 	return &Queue{
-		buf: make([]int, n),
+		buf: make([]int, n+1),
 	}
 }
 
 // Precondition: 0 < Size().
-func (q *Queue) Get() int {
-	i := q.buf[q.tail]
-	q.tail = (q.tail + 1) % len(q.buf)
-	return i
+func (q *Queue) Pop() int {
+	x := q.buf[q.head]
+	q.head += 1
+	q.head %= len(q.buf)
+	return x
 }
 
 // Precondition: Size() < n.
-func (q *Queue) Put(i int) {
-	q.buf[q.head] = i
-	q.head = (q.head + 1) % len(q.buf)
+func (q *Queue) Add(x int) {
+	q.buf[q.tail] = x
+	q.tail += 1
+	q.tail %= len(q.buf)
 }
 
 func (q *Queue) Size() int {
-	return (q.head - q.tail) % len(q.buf)
+	// Useful to check https://go.dev/ref/spec#Arithmetic_operators for precise behavior of %.
+	return (q.tail - q.head + len(q.buf)) % len(q.buf)
 }
 
 //////////////////////////////////////////////////////////////
@@ -56,27 +59,27 @@ func (m *Harness) Init(t *rapid.T) {
 	m.capacity = n
 }
 
-// Get is a conditional action which removes an item from the queue.
-func (m *Harness) Get(t *rapid.T) {
+// Pop is a conditional action which removes an item from the queue.
+func (m *Harness) Pop(t *rapid.T) {
 	if m.q.Size() == 0 {
 		t.Skip("queue empty")
 	}
 
-	x := m.q.Get()
+	x := m.q.Pop()
 	if x != m.model[0] {
 		t.Fatalf("got invalid value: %v vs expected %v", x, m.model[0])
 	}
 	m.model = m.model[1:]
 }
 
-// Put is a conditional action which adds an items to the queue.
-func (m *Harness) Put(t *rapid.T) {
+// Add is a conditional action which adds an items to the queue.
+func (m *Harness) Add(t *rapid.T) {
 	if m.q.Size() == m.capacity {
 		t.Skip("queue full")
 	}
 
 	x := rapid.Int().Draw(t, "x")
-	m.q.Put(x)
+	m.q.Add(x)
 	m.model = append(m.model, x)
 }
 
