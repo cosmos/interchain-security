@@ -9,7 +9,7 @@ This is the basic idea but there are many places where it is explained better, I
 particular I can recommend this page which contains links to solid tutorials https://jqwik.net/property-based-testing.html and this
 tutorial in particular https://johanneslink.net/how-to-specify-it/
 
-## Resources
+## Extra resources
 
 1. Rapid golang library - better than alternatives but poorly documented https://github.com/flyingmutant/rapid
 2. Jqwik java library - very easy to use and feature rich https://jqwik.net/
@@ -17,7 +17,12 @@ tutorial in particular https://johanneslink.net/how-to-specify-it/
 4. Python hypothesis github page - hypothesis is the most popular python PBT library https://github.com/HypothesisWorks/hypothesis
 5. C++ Rapidcheck github page - rapidcheck is a solid c++ library https://github.com/emil-e/rapidcheck
 
-## Exercises
+## Hands-on tutorial
 
-1. Modify the SUT in queue_test to get the tests to pass. See commit e294647 for a solution.
-2. 
+1. Read about PBT so you know roughly what it's about
+2. Checkout the README on https://github.com/flyingmutant/rapid
+3. Clone https://github.com/flyingmutant/rapid golang PBT library so you can inspect the code and see examples
+4. Investigate sort_test and fix fooSort
+5. Use union_test as a template and implement set union using arrays as sets. You will need to implement the SUT and the properties.
+6. Investigate queue_test and try to fix the queue, while still using a ring buffer approach
+
