@@ -199,48 +199,37 @@ func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context,
 	store.Set(key, entry.ProviderValConsAddr)
 }
 
-// GetAllGlobalSlashEntries returns all global slash entries in the global queue slash entry queue.
-func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) (entries []providertypes.GlobalSlashEntry) {
-	k.IterateGlobalSlashEntries(ctx, func(entry providertypes.GlobalSlashEntry) (stop bool) {
-		entries = append(entries, entry)
-		// Continue iteration
-		stop = false
-		return stop
-	})
-	return entries
-}
-
 // DeleteGlobalSlashEntriesForConsumer deletes all pending slash packet entries in the global queue,
 // only relevant to a single consumer.
 func (k Keeper) DeleteGlobalSlashEntriesForConsumer(ctx sdktypes.Context, consumerChainID string) {
+
+	allEntries := k.GetAllGlobalSlashEntries(ctx)
 	entriesToDel := []providertypes.GlobalSlashEntry{}
-	k.IterateGlobalSlashEntries(ctx, func(entry providertypes.GlobalSlashEntry) (stop bool) {
+
+	for _, entry := range allEntries {
 		if entry.ConsumerChainID == consumerChainID {
 			entriesToDel = append(entriesToDel, entry)
 		}
-		// Continue iteration
-		stop = false
-		return stop
-	})
-
+	}
 	k.DeleteGlobalSlashEntries(ctx, entriesToDel...)
 }
 
-// IterateGlobalSlashEntries iterates over the global slash entry queue and calls the provided callback
-func (k Keeper) IterateGlobalSlashEntries(ctx sdktypes.Context,
-	cb func(providertypes.GlobalSlashEntry) (stop bool)) {
+// GetAllGlobalSlashEntries returns all global slash entries in the global queue slash entry queue.
+func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.GlobalSlashEntry {
+
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdktypes.KVStorePrefixIterator(store, []byte{providertypes.GlobalSlashEntryBytePrefix})
 	defer iterator.Close()
+
+	entries := []providertypes.GlobalSlashEntry{}
+
 	for ; iterator.Valid(); iterator.Next() {
 		recvTime, chainID, ibcSeqNum := providertypes.ParseGlobalSlashEntryKey(iterator.Key())
 		valAddr := iterator.Value()
 		entry := providertypes.NewGlobalSlashEntry(recvTime, chainID, ibcSeqNum, valAddr)
-		stop := cb(entry)
-		if stop {
-			break
-		}
+		entries = append(entries, entry)
 	}
+	return entries
 }
 
 // DeleteGlobalSlashEntries deletes the given global entries from the global slash queue
