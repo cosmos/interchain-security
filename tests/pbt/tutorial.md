@@ -23,6 +23,6 @@ tutorial in particular https://johanneslink.net/how-to-specify-it/
 2. Checkout the README on https://github.com/flyingmutant/rapid
 3. Clone https://github.com/flyingmutant/rapid golang PBT library so you can inspect the code and see examples
 4. Investigate sort_test and fix fooSort
-5. Use union_test as a template and implement set union using arrays as sets. You will need to implement the SUT and the properties.
-6. Investigate queue_test and try to fix the queue, while still using a ring buffer approach
+5. Use union_test as a template and implement set union using arrays as sets. You will need to implement the SUT and the properties. See cf427c0 for solution.
+6. Investigate queue_test and try to fix the queue, while still using a ring buffer approach. See e294647 for solution.
 
