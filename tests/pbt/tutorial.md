@@ -16,3 +16,8 @@ tutorial in particular https://johanneslink.net/how-to-specify-it/
 3. Jqwik page about property based testing in general - contains a lot of resource links https://jqwik.net/property-based-testing.html
 4. Python hypothesis github page - hypothesis is the most popular python PBT library https://github.com/HypothesisWorks/hypothesis
 5. C++ Rapidcheck github page - rapidcheck is a solid c++ library https://github.com/emil-e/rapidcheck
+
+## Exercises
+
+1. Modify the SUT in queue_test to get the tests to pass. See commit e294647 for a solution.
+2. 
