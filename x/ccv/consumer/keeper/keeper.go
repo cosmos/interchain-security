@@ -456,31 +456,3 @@ func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...types.ConsumerPac
 	list := append(pending.GetList(), packet...)
 	k.SetPendingPackets(ctx, types.ConsumerPackets{List: list})
 }
-
-// // GetHeightToValsetUpdateIDs returns all height to valset update id mappings in store
-// func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToValsetUpdateID {
-// 	heightToVCIDs := []types.HeightToValsetUpdateID{}
-// 	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
-// 		hv := types.HeightToValsetUpdateID{
-// 			Height:         height,
-// 			ValsetUpdateId: vscID,
-// 		}
-// 		heightToVCIDs = append(heightToVCIDs, hv)
-// 		return false // do not stop iteration
-// 	})
-
-// 	return heightToVCIDs
-// }
-
-// // GetOutstandingDowntimes returns all outstanding downtimes in store
-// func (k Keeper) GetOutstandingDowntimes(ctx sdk.Context) []consumertypes.OutstandingDowntime {
-// 	outstandingDowntimes := []types.OutstandingDowntime{}
-// 	k.IterateOutstandingDowntime(ctx, func(addr string) bool {
-// 		od := types.OutstandingDowntime{
-// 			ValidatorConsensusAddress: addr,
-// 		}
-// 		outstandingDowntimes = append(outstandingDowntimes, od)
-// 		return false
-// 	})
-// 	return outstandingDowntimes
-// }
