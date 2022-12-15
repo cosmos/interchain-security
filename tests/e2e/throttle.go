@@ -260,6 +260,62 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()))
 }
 
+// TestPacketSpam confirms that the provider can handle a large number of
+// incoming slash packets in a single block.
+func (s *CCVTestSuite) TestPacketSpam() {
+
+	// Setup ccv channels to all consumers
+	s.SetupAllCCVChannels()
+
+	// Setup validator powers to be 25%, 25%, 25%, 25%
+	s.setupValidatorPowers()
+
+	// Explicitly set params, initialize slash meter
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	params := providerKeeper.GetParams(s.providerCtx())
+	params.SlashMeterReplenishFraction = "0.75" // Allow 3/4 of validators to be jailed
+	providerKeeper.SetParams(s.providerCtx(), params)
+	providerKeeper.InitializeSlashMeter(s.providerCtx())
+
+	// The packets to be recv in a single block, ordered as they will be recv.
+	packets := []channeltypes.Packet{}
+
+	firstBundle := s.getFirstBundle()
+
+	// Slash first 3 but not 4th validator
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[1])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
+
+	// Track and increment ibc seq num for each packet, since these need to be unique.
+	ibcSeqNum := uint64(0)
+
+	// Construct 500 slash packets
+	for ibcSeqNum < 500 {
+		// Increment ibc seq num for each packet (starting at 1)
+		ibcSeqNum++
+		// Set infraction type based on even/odd index.
+		var infractionType stakingtypes.InfractionType
+		if ibcSeqNum%2 == 0 {
+			infractionType = stakingtypes.Downtime
+		} else {
+			infractionType = stakingtypes.DoubleSign
+		}
+		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
+		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum))
+	}
+
+	// Recv 500 packets from consumer to provider in same block
+	for _, packet := range packets {
+		slashPacketData := ccvtypes.SlashPacketData{}
+		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &slashPacketData)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, slashPacketData)
+	}
+
+	// Execute block to handle packets in endblock
+	s.providerChain.NextBlock()
+}
+
 // TestQueueOrdering validates that the ordering of slash packet entries
 // in the global queue (relevant to a single chain) matches the ordering of slash packet
 // data in the chain specific queues, even in the presence of packet spam.
