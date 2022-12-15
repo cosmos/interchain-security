@@ -19,52 +19,54 @@ import (
 func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
-
-	// Don't start iterating if meter is negative in value
+	// Return if meter is negative in value
 	if meter.IsNegative() {
 		return
 	}
 
-	handledGlobalEntries := []providertypes.GlobalSlashEntry{}
+	// Obtain all global slash entries, where only some of them may be handled in this method,
+	// depending on the value of the slash meter.
+	allEntries := k.GetAllGlobalSlashEntries(ctx)
+	handledEntries := []providertypes.GlobalSlashEntry{}
 
-	// Iterate through ordered (by received time) global slash entries from any consumer chain
-	k.IterateGlobalSlashEntries(ctx, func(entry providertypes.GlobalSlashEntry) (stop bool) {
+	for _, globalEntry := range allEntries {
+		// Subtract voting power that will be jailed/tombstoned from the slash meter
+		meter = meter.Sub(k.GetEffectiveValPower(ctx, globalEntry.ProviderValConsAddr))
 
-		// Obtain validator from the provider's consensus address.
-		// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
-		val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, entry.ProviderValConsAddr)
-
-		// Obtain the validator power relevant to the slash packet that's about to be handled
-		// (this power will be removed via jailing or tombstoning)
-		var valPower int64
-		if !found || val.IsJailed() {
-			// If validator is not found, or found but jailed, it's power is 0. This path is explicitly defined since the
-			// staking keeper's LastValidatorPower values are not updated till the staking keeper's endblocker.
-			valPower = 0
-		} else {
-			valPower = k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
-		}
-
-		// Subtract this power from the slash meter
-		meter = meter.Sub(sdktypes.NewInt(valPower))
-
-		// Handle slash and any trailing vsc matured packet data instances by passing in
+		// Handle one slash and any trailing vsc matured packet data instances by passing in
 		// chainID and appropriate callbacks, relevant packet data is deleted in this method.
-		k.HandlePacketDataForChain(ctx, entry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
+		k.HandlePacketDataForChain(ctx, globalEntry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
+		handledEntries = append(handledEntries, globalEntry)
 
-		// Store handled global entry to be deleted after iteration is completed
-		handledGlobalEntries = append(handledGlobalEntries, entry)
-
-		// Do not handle anymore global slash entries if the meter is negative in value
-		stop = meter.IsNegative()
-		return stop
-	})
+		// don't handle any more global entries if meter becomes negative in value
+		if meter.IsNegative() {
+			break
+		}
+	}
 
 	// Handled global entries are deleted after iteration is completed
-	k.DeleteGlobalSlashEntries(ctx, handledGlobalEntries...)
+	k.DeleteGlobalSlashEntries(ctx, handledEntries...)
 
 	// Persist current value for slash meter
 	k.SetSlashMeter(ctx, meter)
+}
+
+// Obtains the effective validator power relevant to a validator consensus address.
+func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
+	valConsAddr sdktypes.ConsAddress, // Provider's validator consensus address
+) sdktypes.Int {
+	// Obtain staking module val object from the provider's consensus address.
+	// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
+	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr)
+
+	if !found || val.IsJailed() {
+		// If validator is not found, or found but jailed, it's power is 0. This path is explicitly defined since the
+		// staking keeper's LastValidatorPower values are not updated till the staking keeper's endblocker.
+		return sdktypes.ZeroInt()
+	} else {
+		// Otherwise, return the staking keeper's LastValidatorPower value.
+		return sdktypes.NewInt(k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator()))
+	}
 }
 
 // HandlePacketDataForChain handles only the first queued slash packet relevant to the passed consumer chainID,
@@ -199,50 +201,37 @@ func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context,
 	store.Set(key, entry.ProviderValConsAddr)
 }
 
-// GetAllGlobalSlashEntries returns all global slash entries in the global queue slash entry queue.
-//
-// Note: This method is used for testing purposes only.
-func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) (entries []providertypes.GlobalSlashEntry) {
-	k.IterateGlobalSlashEntries(ctx, func(entry providertypes.GlobalSlashEntry) (stop bool) {
-		entries = append(entries, entry)
-		// Continue iteration
-		stop = false
-		return stop
-	})
-	return entries
-}
-
 // DeleteGlobalSlashEntriesForConsumer deletes all pending slash packet entries in the global queue,
 // only relevant to a single consumer.
 func (k Keeper) DeleteGlobalSlashEntriesForConsumer(ctx sdktypes.Context, consumerChainID string) {
+
+	allEntries := k.GetAllGlobalSlashEntries(ctx)
 	entriesToDel := []providertypes.GlobalSlashEntry{}
-	k.IterateGlobalSlashEntries(ctx, func(entry providertypes.GlobalSlashEntry) (stop bool) {
+
+	for _, entry := range allEntries {
 		if entry.ConsumerChainID == consumerChainID {
 			entriesToDel = append(entriesToDel, entry)
 		}
-		// Continue iteration
-		stop = false
-		return stop
-	})
-
+	}
 	k.DeleteGlobalSlashEntries(ctx, entriesToDel...)
 }
 
-// IterateGlobalSlashEntries iterates over the global slash entry queue and calls the provided callback
-func (k Keeper) IterateGlobalSlashEntries(ctx sdktypes.Context,
-	cb func(providertypes.GlobalSlashEntry) (stop bool)) {
+// GetAllGlobalSlashEntries returns all global slash entries from the queue
+func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.GlobalSlashEntry {
+
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdktypes.KVStorePrefixIterator(store, []byte{providertypes.GlobalSlashEntryBytePrefix})
 	defer iterator.Close()
+
+	entries := []providertypes.GlobalSlashEntry{}
+
 	for ; iterator.Valid(); iterator.Next() {
 		recvTime, chainID, ibcSeqNum := providertypes.ParseGlobalSlashEntryKey(iterator.Key())
 		valAddr := iterator.Value()
 		entry := providertypes.NewGlobalSlashEntry(recvTime, chainID, ibcSeqNum, valAddr)
-		stop := cb(entry)
-		if stop {
-			break
-		}
+		entries = append(entries, entry)
 	}
+	return entries
 }
 
 // DeleteGlobalSlashEntries deletes the given global entries from the global slash queue

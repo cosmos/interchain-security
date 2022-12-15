@@ -647,17 +647,6 @@ func TestGlobalSlashEntries(t *testing.T) {
 	require.Equal(t, now.Add(2*time.Hour).UTC(), globalEntries[6].RecvTime)
 	require.Equal(t, now.Add(2*time.Hour).UTC(), globalEntries[7].RecvTime)
 	require.Equal(t, now.Add(2*time.Hour).UTC(), globalEntries[8].RecvTime)
-
-	// Test the callback break functionality of the iterator
-	globalEntries = []providertypes.GlobalSlashEntry{}
-	providerKeeper.IterateGlobalSlashEntries(ctx, func(entry providertypes.GlobalSlashEntry) bool {
-		globalEntries = append(globalEntries, entry)
-		// Break after any of the third set of entries is seen
-		stop := entry.ConsumerChainID == "chain-7" || entry.ConsumerChainID == "chain-6" || entry.ConsumerChainID == "chain-5"
-		return stop
-	})
-	// Expect first two sets of entries to be seen, and one packet from the third set
-	require.Equal(t, 7, len(globalEntries))
 }
 
 // Tests DeleteGlobalSlashEntriesForConsumer.
