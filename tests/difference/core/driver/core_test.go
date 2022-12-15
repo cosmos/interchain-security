@@ -385,7 +385,7 @@ func (s *CoreSuite) TestAssumptions() {
 	s.Require().Empty(s.consumerKeeper().GetPendingPackets(s.ctx(C)))
 
 	// Consumer has no maturities
-	for _, _ = range s.consumerKeeper().IteratePacketMaturityTime(s.ctx(C)) {
+	for _, _ = range s.consumerKeeper().GetAllPacketMaturityTimes(s.ctx(C), nil) {
 		s.T().Fatal(FAIL_MSG)
 	}
 

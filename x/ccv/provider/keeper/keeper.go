@@ -133,8 +133,8 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 	store.Delete(types.ChainToChannelKey(chainID))
 }
 
-// GetConsumerChains gets all of the consumer chains that the provider module controls
-func (k Keeper) IterateConsumerChains(ctx sdk.Context) (chains []types.Chain) {
+// GetAllConsumerChains gets all of the consumer chains that the provider module controls
+func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
 	defer iterator.Close()
@@ -181,7 +181,7 @@ type ChannelToChain struct {
 }
 
 // GetChannelToChains gets all channel to chain mappings
-func (k Keeper) IterateChannelToChain(ctx sdk.Context) (channels []ChannelToChain) {
+func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []ChannelToChain) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
 	defer iterator.Close()
@@ -332,7 +332,7 @@ func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 	store.Delete(types.UnbondingOpKey(id))
 }
 
-func (k Keeper) IterateOverUnbondingOps(ctx sdk.Context) (ops []ccv.UnbondingOp) {
+func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []ccv.UnbondingOp) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.UnbondingOpBytePrefix})
 
@@ -377,8 +377,8 @@ type UnbondingOpsIndex struct {
 	UnbondingOpIds []uint64
 }
 
-// GetUnbondingOpIndexes gets all unbonding indexes for a given chain id.
-func (k Keeper) IterateOverUnbondingOpIndex(ctx sdk.Context, chainID string) (indexes []UnbondingOpsIndex) {
+// GetAllUnbondingOpIndexes gets all unbonding indexes for a given chain id.
+func (k Keeper) GetAllUnbondingOpIndexes(ctx sdk.Context, chainID string) (indexes []UnbondingOpsIndex) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.UnbondingOpIndexBytePrefix, chainID))
 	defer iterator.Close()
@@ -573,8 +573,8 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint6
 	return binary.BigEndian.Uint64(bz), true
 }
 
-// GetValsetUpdateBlockHeights gets all the block heights for all valset updates
-func (k Keeper) IterateValsetUpdateBlockHeight(ctx sdk.Context) (valsetUpdateBlockHeights []types.ValsetUpdateIdToHeight) {
+// GetAllValsetUpdateBlockHeights gets all the block heights for all valset updates
+func (k Keeper) GetAllValsetUpdateBlockHeights(ctx sdk.Context) (valsetUpdateBlockHeights []types.ValsetUpdateIdToHeight) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
 
@@ -639,9 +639,9 @@ func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []string
 	return
 }
 
-// IterateSlashAcks iterates through the slash acks set in the store.
+// GetAllSlashAcks iterates through the slash acks set in the store.
 // Note: this method is only used in testing
-func (k Keeper) IterateSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) (stop bool)) {
+func (k Keeper) GetAllSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.SlashAcksBytePrefix})
 
@@ -783,9 +783,9 @@ type InitTimeoutTimestamp struct {
 	Timestamp uint64
 }
 
-// GetInitTimeoutTimestamps gets all init timeout timestamps in the store.
+// GetAllInitTimeoutTimestamps gets all init timeout timestamps in the store.
 // Note: as the keys have the `bytePrefix | chainID` format, the array is NOT in timestamp order.
-func (k Keeper) IterateInitTimeoutTimestamp(ctx sdk.Context) (initTimeoutTimestamps []InitTimeoutTimestamp) {
+func (k Keeper) GetAllInitTimeoutTimestamps(ctx sdk.Context) (initTimeoutTimestamps []InitTimeoutTimestamp) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.InitTimeoutTimestampBytePrefix})
 
@@ -849,9 +849,9 @@ type VscSendTimestamp struct {
 	Timestamp time.Time
 }
 
-// GetVscSendTimestamps gets an array of vsc send timestamps in order (lowest first)
+// GetAllVscSendTimestamps gets an array of vsc send timestamps in order (lowest first)
 // for the given chainID.
-func (k Keeper) IterateVscSendTimestamps(ctx sdk.Context, chainID string) (vscSendTimestamps []VscSendTimestamp) {
+func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSendTimestamps []VscSendTimestamp) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
 	defer iterator.Close()
@@ -874,4 +874,31 @@ func (k Keeper) IterateVscSendTimestamps(ctx sdk.Context, chainID string) (vscSe
 	}
 
 	return vscSendTimestamps
+}
+
+// GetOneVscSendTimestamp gets the first vsc send timestamp in order (lowest first)
+// for the given chainID.
+func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSendTimestamp VscSendTimestamp, found bool) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		key := iterator.Key()
+		_, vscID, err := types.ParseVscSendingTimestampKey(key)
+		if err != nil {
+			panic(fmt.Errorf("failed to parse VscSendTimestampKey: %w", err))
+		}
+		ts, err := sdk.ParseTimeBytes(iterator.Value())
+		if err != nil {
+			panic(fmt.Errorf("failed to parse timestamp value: %w", err))
+		}
+
+		return VscSendTimestamp{
+			VscID:     vscID,
+			Timestamp: ts,
+		}, true
+	}
+
+	return VscSendTimestamp{}, false
 }

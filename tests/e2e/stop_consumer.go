@@ -137,7 +137,7 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 	}
 
 	// check UnbondingOps were deleted and undelegation entries aren't onHold
-	for _, unbondingOpsIndex := range providerKeeper.IterateOverUnbondingOpIndex(s.providerCtx(), chainID) {
+	for _, unbondingOpsIndex := range providerKeeper.GetAllUnbondingOpIndexes(s.providerCtx(), chainID) {
 		_, found := providerKeeper.GetUnbondingOpIndex(s.providerCtx(), chainID, unbondingOpsIndex.VscId)
 		s.Require().False(found)
 		for _, ubdID := range unbondingOpsIndex.UnbondingOpIds {

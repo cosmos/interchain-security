@@ -92,7 +92,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	var consumerStates []types.ConsumerState
 	// export states for each consumer chains
-	for _, chain := range k.IterateConsumerChains(ctx) {
+	for _, chain := range k.GetAllConsumerChains(ctx) {
 		gen, found := k.GetConsumerGenesis(ctx, chain.ChainId)
 		if !found {
 			panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chain.ChainId, chain.ClientId))
@@ -114,7 +114,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 				panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chain.ChainId, chain.ClientId))
 			}
 			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chain.ChainId)
-			for _, unbondingOpsIndex := range k.IterateOverUnbondingOpIndex(ctx, chain.ChainId) {
+			for _, unbondingOpsIndex := range k.GetAllUnbondingOpIndexes(ctx, chain.ChainId) {
 				cs.UnbondingOpsIndex = append(cs.UnbondingOpsIndex,
 					types.UnbondingOpIndex{ValsetUpdateId: unbondingOpsIndex.VscId, UnbondingOpIndex: unbondingOpsIndex.UnbondingOpIds},
 				)
@@ -128,28 +128,28 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	// export provider chain state
 	vscID := k.GetValidatorSetUpdateId(ctx)
-	vscIDToHeights := k.IterateValsetUpdateBlockHeight(ctx)
+	vscIDToHeights := k.GetAllValsetUpdateBlockHeights(ctx)
 
-	ubdOps := k.IterateOverUnbondingOps(ctx)
+	ubdOps := k.GetAllUnbondingOps(ctx)
 
 	matureUbdOps, err := k.GetMaturedUnbondingOps(ctx)
 	if err != nil {
 		panic(err)
 	}
 
-	addProps := k.IteratePendingConsumerAdditionProps(ctx)
+	addProps := k.GetAllPendingConsumerAdditionProps(ctx)
 
-	remProps := k.IteratePendingConsumerRemovalProps(ctx)
+	remProps := k.GetAllPendingConsumerRemovalProps(ctx)
 
 	// Export key assignment states
-	validatorConsumerPubKeys := k.IterateAllValidatorConsumerPubKeys(ctx)
+	validatorConsumerPubKeys := k.GetAllValidatorConsumerPubKeys2(ctx)
 
-	validatorsByConsumerAddr := k.IterateAllValidatorsByConsumerAddr(ctx)
+	validatorsByConsumerAddr := k.GetAllValidatorsByConsumerAddr(ctx)
 
 	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
 	// ConsumerAddrsToPrune are added only for registered consumer chains
-	for _, chain := range k.IterateConsumerChains(ctx) {
-		consumerAddrsToPrune = append(consumerAddrsToPrune, k.IterateConsumerAddrsToPrune(ctx, chain.ChainId)...)
+	for _, chain := range k.GetAllConsumerChains(ctx) {
+		consumerAddrsToPrune = append(consumerAddrsToPrune, k.GetAllConsumerAddrsToPrune(ctx, chain.ChainId)...)
 	}
 
 	params := k.GetParams(ctx)

@@ -52,7 +52,7 @@ func TestSlashAcks(t *testing.T) {
 	var chainsAcks [][]string
 
 	penaltiesfN := func() (penalties []string) {
-		providerKeeper.IterateSlashAcks(ctx, func(id string, acks []string) (stop bool) {
+		providerKeeper.GetAllSlashAcks(ctx, func(id string, acks []string) (stop bool) {
 			chainsAcks = append(chainsAcks, acks)
 			return false // do not stop iteration
 		})
@@ -200,7 +200,7 @@ func TestIterateOverUnbondingOpIndex(t *testing.T) {
 
 	// check iterator returns expected entries
 	i := 1
-	for _, unbondingOpsIndex := range providerKeeper.IterateOverUnbondingOpIndex(ctx, chainID) {
+	for _, unbondingOpsIndex := range providerKeeper.GetAllUnbondingOpIndexes(ctx, chainID) {
 		require.Equal(t, uint64(i), unbondingOpsIndex.VscId)
 		require.EqualValues(t, unbondingOpIndex[:i], unbondingOpsIndex.UnbondingOpIds)
 		i++
@@ -253,7 +253,7 @@ func TestInitTimeoutTimestamp(t *testing.T) {
 	i := 2
 	// store is iterated in alphabetical ascending order
 	// not in the order of insertion
-	for _, initTimeoutTimestamp := range providerKeeper.IterateInitTimeoutTimestamp(ctx) {
+	for _, initTimeoutTimestamp := range providerKeeper.GetAllInitTimeoutTimestamps(ctx) {
 		require.Equal(t, initTimeoutTimestamp.ChainID, tc[i].chainID)
 		require.Equal(t, initTimeoutTimestamp.Timestamp, tc[i].expected)
 		i--
@@ -290,7 +290,7 @@ func TestVscSendTimestamp(t *testing.T) {
 
 	i := 0
 	chainID := "chain"
-	for _, _ = range providerKeeper.IterateVscSendTimestamps(ctx, chainID) {
+	for _, _ = range providerKeeper.GetAllVscSendTimestamps(ctx, chainID) {
 		i++
 	}
 	require.Equal(t, 0, i)
@@ -300,7 +300,7 @@ func TestVscSendTimestamp(t *testing.T) {
 	}
 
 	i = 0
-	for _, vscSendTimestamp := range providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID) {
+	for _, vscSendTimestamp := range providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID) {
 		require.Equal(t, vscSendTimestamp.VscID, testCases[i].vscID)
 		require.Equal(t, vscSendTimestamp.Timestamp, testCases[i].ts)
 		i++
@@ -308,12 +308,12 @@ func TestVscSendTimestamp(t *testing.T) {
 	require.Equal(t, 2, i)
 
 	// delete VSC send timestamps
-	for _, vscSendTimestamp := range providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID) {
+	for _, vscSendTimestamp := range providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID) {
 		providerKeeper.DeleteVscSendTimestamp(ctx, testCases[0].chainID, vscSendTimestamp.VscID)
 	}
 
 	i = 0
-	for _, _ = range providerKeeper.IterateVscSendTimestamps(ctx, testCases[0].chainID) {
+	for _, _ = range providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID) {
 		i++
 	}
 	require.Equal(t, 0, i)
@@ -335,7 +335,7 @@ func TestIterateConsumerChains(t *testing.T) {
 	require.Len(t, chainIDs, 2, "initial chainIDs not len 2")
 
 	// iterate and check all chains are returned
-	for _, chain := range pk.IterateConsumerChains(ctx) {
+	for _, chain := range pk.GetAllConsumerChains(ctx) {
 		result = append(result, chain.ChainId)
 	}
 
@@ -347,7 +347,7 @@ func TestIterateConsumerChains(t *testing.T) {
 	require.Empty(t, result, "initial result not empty")
 
 	// iterate and check first chain is
-	for _, chain := range pk.IterateConsumerChains(ctx) {
+	for _, chain := range pk.GetAllConsumerChains(ctx) {
 		result = append(result, chain.ChainId)
 		break
 	}
@@ -377,7 +377,7 @@ func TestIterateChannelToChain(t *testing.T) {
 	}
 
 	// iterate and check all results are returned
-	result := pk.IterateChannelToChain(ctx)
+	result := pk.GetAllChannelToChains(ctx)
 	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
 	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
 	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
@@ -411,7 +411,7 @@ func TestIterateOverUnbondingOps(t *testing.T) {
 	}
 
 	// iterate and check all results are returned
-	result := pk.IterateOverUnbondingOps(ctx)
+	result := pk.GetAllUnbondingOps(ctx)
 	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
 	require.Contains(t, result, ops[0], "result does not contain '%s'", ops[0])
 	require.Contains(t, result, ops[1], "result does not contain '%s'", ops[1])

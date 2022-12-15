@@ -41,7 +41,7 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 
 	// convert to array of pointers
 	chains := []*types.Chain{}
-	for _, chain := range k.IterateConsumerChains(ctx) {
+	for _, chain := range k.GetAllConsumerChains(ctx) {
 		chains = append(chains, &chain)
 	}
 

@@ -45,8 +45,8 @@ func (k Keeper) SetValidatorConsumerPubKey(
 	store.Set(types.ConsumerValidatorsKey(chainID, providerAddr), bz)
 }
 
-// GetValidatorConsumerPubKeys gets all the validators public keys assigned for a consumer chain
-func (k Keeper) IterateValidatorConsumerPubKeys(ctx sdk.Context, chainID string) (validatorConsumerPubKeys []types.ValidatorConsumerPubKey) {
+// GetAllValidatorConsumerPubKeys gets all the validators public keys assigned for a consumer chain
+func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID string) (validatorConsumerPubKeys []types.ValidatorConsumerPubKey) {
 	store := ctx.KVStore(k.storeKey)
 	prefix := types.ChainIdWithLenKey(types.ConsumerValidatorsBytePrefix, chainID)
 	iter := sdk.KVStorePrefixIterator(store, prefix)
@@ -72,10 +72,11 @@ func (k Keeper) IterateValidatorConsumerPubKeys(ctx sdk.Context, chainID string)
 	return validatorConsumerPubKeys
 }
 
-// GetValidatorConsumerPubKeys gets all validators public keys assigned for all consumer chain.
+// GetAllValidatorConsumerPubKeys2 gets all validators public keys assigned for all consumer chain.
 // Note that GetValidatorConsumerPubKeys cannot be used as consumer keys can be assigned for chain IDs
 // that are not yet known to the provider.
-func (k Keeper) IterateAllValidatorConsumerPubKeys(ctx sdk.Context) (validatorConsumerPubKeys []types.ValidatorConsumerPubKey) {
+// TODO JEHAN: figure out the naming conflict
+func (k Keeper) GetAllValidatorConsumerPubKeys2(ctx sdk.Context) (validatorConsumerPubKeys []types.ValidatorConsumerPubKey) {
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, []byte{types.ConsumerValidatorsBytePrefix})
 	defer iter.Close()
@@ -141,15 +142,10 @@ func (k Keeper) SetValidatorByConsumerAddr(
 	store.Set(types.ValidatorsByConsumerAddrKey(chainID, consumerAddr), bz)
 }
 
-// type ValidatorConsumerAddr struct {
-// 	ChainId      string
-// 	ConsumerAddr sdk.ConsAddress
-// 	ProviderAddr sdk.ConsAddress
-// }
-
 // GetValidatorsByConsumerAddrs gets all the mappings from consensus addresses
 // on a given consumer chain to consensus addresses on the provider chain
-func (k Keeper) IterateValidatorsByConsumerAddr(ctx sdk.Context, chainID string) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
+// TODO JEHAN: figure out the naming conflict
+func (k Keeper) GetAllValidatorsByConsumerAddr2(ctx sdk.Context, chainID string) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
 	store := ctx.KVStore(k.storeKey)
 	prefix := types.ChainIdWithLenKey(types.ValidatorsByConsumerAddrBytePrefix, chainID)
 	iter := sdk.KVStorePrefixIterator(store, prefix)
@@ -175,11 +171,11 @@ func (k Keeper) IterateValidatorsByConsumerAddr(ctx sdk.Context, chainID string)
 	return validatorConsumerAddrs
 }
 
-// GetValidatorConsumerAddrs gets all the mappings from consensus addresses
+// GetAllValidatorConsumerAddrs gets all the mappings from consensus addresses
 // on any consumer chain to consensus addresses on the provider chain.
 // Note that GetValidatorsConsumerAddrsByChainId cannot be used as consumer keys can be assigned
 // for chain IDs that are not yet known to the provider.
-func (k Keeper) IterateAllValidatorsByConsumerAddr(ctx sdk.Context) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
+func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
 	store := ctx.KVStore(k.storeKey)
 	iter := sdk.KVStorePrefixIterator(store, []byte{types.ValidatorsByConsumerAddrBytePrefix})
 	defer iter.Close()
@@ -258,9 +254,9 @@ type KeyAssignmentReplacement struct {
 	Power        int64
 }
 
-// GetKeyAssignmentReplacements gets all pairs of previous assigned consumer keys
+// GetAllKeyAssignmentReplacements gets all pairs of previous assigned consumer keys
 // and current powers for all provider validator for which key assignments were received in this block.
-func (k Keeper) IterateKeyAssignmentReplacements(ctx sdk.Context, chainID string) (replacements []KeyAssignmentReplacement) {
+func (k Keeper) GetAllKeyAssignmentReplacements(ctx sdk.Context, chainID string) (replacements []KeyAssignmentReplacement) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := types.ChainIdWithLenKey(types.KeyAssignmentReplacementsBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, iteratorPrefix)
@@ -339,7 +335,7 @@ func (k Keeper) GetConsumerAddrsToPrune(
 	return
 }
 
-func (k Keeper) IterateConsumerAddrsToPrune(ctx sdk.Context, chainID string) (consumerAddrsToPrune []types.ConsumerAddrsToPrune) {
+func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (consumerAddrsToPrune []types.ConsumerAddrsToPrune) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := types.ChainIdWithLenKey(types.ConsumerAddrsToPruneBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, iteratorPrefix)
@@ -529,7 +525,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 	// set the old consumer key's power to 0 and the new consumer key's power to the
 	// power in the pending key assignment.
 	// TODO JEHAN: Stopping iteration here (but only in error)
-	for _, replacement := range k.IterateKeyAssignmentReplacements(ctx, chainID) {
+	for _, replacement := range k.GetAllKeyAssignmentReplacements(ctx, chainID) {
 		k.DeleteKeyAssignmentReplacement(ctx, chainID, replacement.ProviderAddr)
 		newUpdates = append(newUpdates, abci.ValidatorUpdate{
 			PubKey: replacement.PrevCKey,
@@ -576,22 +572,22 @@ func (k Keeper) PruneKeyAssignments(ctx sdk.Context, chainID string, vscID uint6
 // DeleteKeyAssignments deletes all the state needed for key assignments on a consumer chain
 func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
 	// delete ValidatorConsumerPubKey
-	for _, validatorConsumerAddr := range k.IterateValidatorConsumerPubKeys(ctx, chainID) {
+	for _, validatorConsumerAddr := range k.GetAllValidatorConsumerPubKeys(ctx, chainID) {
 		k.DeleteValidatorConsumerPubKey(ctx, chainID, validatorConsumerAddr.ProviderAddr)
 	}
 
 	// delete ValidatorsByConsumerAddr
-	for _, validatorConsumerAddr := range k.IterateValidatorsByConsumerAddr(ctx, chainID) {
+	for _, validatorConsumerAddr := range k.GetAllValidatorsByConsumerAddr2(ctx, chainID) {
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, validatorConsumerAddr.ConsumerAddr)
 	}
 
 	// delete KeyAssignmentReplacements
-	for _, keyAssignmentReplacement := range k.IterateKeyAssignmentReplacements(ctx, chainID) {
+	for _, keyAssignmentReplacement := range k.GetAllKeyAssignmentReplacements(ctx, chainID) {
 		k.DeleteKeyAssignmentReplacement(ctx, chainID, keyAssignmentReplacement.ProviderAddr)
 	}
 
 	// delete ValidatorConsumerPubKey
-	for _, consumerAddrsToPrune := range k.IterateConsumerAddrsToPrune(ctx, chainID) {
+	for _, consumerAddrsToPrune := range k.GetAllConsumerAddrsToPrune(ctx, chainID) {
 		k.DeleteConsumerAddrsToPrune(ctx, chainID, consumerAddrsToPrune.VscId)
 	}
 }

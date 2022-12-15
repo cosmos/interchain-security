@@ -476,32 +476,32 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 	require.False(t, found)
 
 	found = false
-	for _, _ = range providerKeeper.IterateVscSendTimestamps(ctx, expectedChainID) {
+	for _, _ = range providerKeeper.GetAllVscSendTimestamps(ctx, expectedChainID) {
 		found = true
 	}
 	require.False(t, found)
 
 	// test key assignment state is cleaned
 	found = false
-	for _, _ = range providerKeeper.IterateValidatorConsumerPubKeys(ctx, expectedChainID) {
+	for _, _ = range providerKeeper.GetAllValidatorConsumerPubKeys(ctx, expectedChainID) {
 		found = true
 	}
 	require.False(t, found)
 
 	found = false
-	for _, _ = range providerKeeper.IterateValidatorsByConsumerAddr(ctx, expectedChainID) {
+	for _, _ = range providerKeeper.GetAllValidatorsByConsumerAddr2(ctx, expectedChainID) {
 		found = true
 	}
 	require.False(t, found)
 
 	found = false
-	for _, _ = range providerKeeper.IterateKeyAssignmentReplacements(ctx, expectedChainID) {
+	for _, _ = range providerKeeper.GetAllKeyAssignmentReplacements(ctx, expectedChainID) {
 		found = true
 	}
 	require.False(t, found)
 
 	found = false
-	for _, _ = range providerKeeper.IterateConsumerAddrsToPrune(ctx, expectedChainID) {
+	for _, _ = range providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID) {
 		found = true
 	}
 	require.False(t, found)

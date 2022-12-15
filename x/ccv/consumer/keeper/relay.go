@@ -84,41 +84,39 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // Note: Per spec, a VSC reaching maturity on a consumer chain means that all the unbonding
 // operations that resulted in validator updates included in that VSC have matured on
 // the consumer chain.
-// TODO JEHAN: Stopping iteration here
+// TODO JEHAN: Stopping iteration here (dealt with by passing time param)
 func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
-	maturityTimes := k.IteratePacketMaturityTime(ctx)
-
 	currentTime := uint64(ctx.BlockTime().UnixNano())
 
 	maturedVscIds := []uint64{}
-	for _, maturityTime := range maturityTimes {
-		if currentTime >= maturityTime.MaturityTime {
-			// construct validator set change packet data
-			vscPacket := ccv.NewVSCMaturedPacketData(maturityTime.VscId)
-
-			// append VSCMatured packet to pending packets
-			// sending packets is attempted each EndBlock
-			// unsent packets remain in the queue until sent
-			k.AppendPendingPacket(ctx, types.ConsumerPacket{
-				Type: types.VscMaturedPacket,
-				Data: vscPacket.GetBytes(),
-			})
-
-			ctx.EventManager().EmitEvent(
-				sdk.NewEvent(
-					ccv.EventTypeVSCMatured,
-					sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-					sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
-					sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
-					sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(maturityTime.VscId))),
-					sdk.NewAttribute(ccv.AttributeTimestamp, strconv.Itoa(int(currentTime))),
-				),
-			)
-
-			maturedVscIds = append(maturedVscIds, uint64(maturityTime.VscId))
-		} else {
-			break
+	for _, maturityTime := range k.GetAllPacketMaturityTimes(ctx, &currentTime) {
+		// TODO JEHAN: Panicing to check that the before stuff is right, can probably remove
+		if currentTime < maturityTime.MaturityTime {
+			panic(fmt.Errorf("maturity time %d is greater than current time %d", maturityTime.MaturityTime, currentTime))
 		}
+		// construct validator set change packet data
+		vscPacket := ccv.NewVSCMaturedPacketData(maturityTime.VscId)
+
+		// append VSCMatured packet to pending packets
+		// sending packets is attempted each EndBlock
+		// unsent packets remain in the queue until sent
+		k.AppendPendingPacket(ctx, types.ConsumerPacket{
+			Type: types.VscMaturedPacket,
+			Data: vscPacket.GetBytes(),
+		})
+
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				ccv.EventTypeVSCMatured,
+				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+				sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
+				sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
+				sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(maturityTime.VscId))),
+				sdk.NewAttribute(ccv.AttributeTimestamp, strconv.Itoa(int(currentTime))),
+			),
+		)
+
+		maturedVscIds = append(maturedVscIds, uint64(maturityTime.VscId))
 	}
 
 	k.DeletePacketMaturityTimes(ctx, maturedVscIds...)

@@ -150,7 +150,7 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 // if CCV channel is not established for consumer chain
 // the updates will remain queued until the channel is established
 func (k Keeper) SendVSCPackets(ctx sdk.Context) {
-	for _, chain := range k.IterateConsumerChains(ctx) {
+	for _, chain := range k.GetAllConsumerChains(ctx) {
 		// check if CCV channel is established and send
 		if channelID, found := k.GetChainToChannel(ctx, chain.ChainId); found {
 			k.SendVSCPacketsToChain(ctx, chain.ChainId, channelID)
@@ -196,7 +196,7 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	// get the validator updates from the staking module
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 
-	for _, chain := range k.IterateConsumerChains(ctx) {
+	for _, chain := range k.GetAllConsumerChains(ctx) {
 		// apply the key assignment to the validator updates
 		valUpdates, err := k.ApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, valUpdates)
 		if err != nil {
@@ -358,12 +358,12 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 // EndBlockCCR contains the EndBlock logic needed for
 // the Consumer Chain Removal sub-protocol
-// TODO JEHAN: Stopping iteration here
+// TODO JEHAN: Stopping iteration here (dealt with by creating a "getFirst" function)
 func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	currentTime := ctx.BlockTime()
 	currentTimeUint64 := uint64(currentTime.UnixNano())
 
-	for _, initTimeoutTimestamp := range k.IterateInitTimeoutTimestamp(ctx) {
+	for _, initTimeoutTimestamp := range k.GetAllInitTimeoutTimestamps(ctx) {
 		if currentTimeUint64 > initTimeoutTimestamp.Timestamp {
 			// initTimeout expired
 			// stop the consumer chain and unlock the unbonding.
@@ -376,12 +376,13 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 		}
 	}
 
-	for _, channelToChain := range k.IterateChannelToChain(ctx) {
+	for _, channelToChain := range k.GetAllChannelToChains(ctx) {
 		// check if the first vscSendTimestamp in iterator + VscTimeoutPeriod
 		// exceed the current block time.
 		// Checking the first send timestamp for each chain is sufficient since
 		// timestamps are ordered by vsc ID.
-		for _, vscSendTimestamp := range k.IterateVscSendTimestamps(ctx, channelToChain.ChainID) {
+		vscSendTimestamp, found := k.GetFirstVscSendTimestamp(ctx, channelToChain.ChainID)
+		if found {
 			timeoutTimestamp := vscSendTimestamp.Timestamp.Add(k.GetParams(ctx).VscTimeoutPeriod)
 			if currentTime.After(timeoutTimestamp) {
 				// vscTimeout expired
@@ -390,7 +391,6 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				if err != nil {
 					panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 				}
-				break
 			}
 		}
 	}

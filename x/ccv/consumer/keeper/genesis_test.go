@@ -187,7 +187,7 @@ func TestInitGenesis(t *testing.T) {
 				require.Equal(t, vscID, ck.GetPacketMaturityTime(ctx, vscID))
 				require.Equal(t, pendingDataPackets, ck.GetPendingPackets(ctx))
 
-				require.Equal(t, gs.OutstandingDowntimeSlashing, ck.IterateOutstandingDowntime(ctx))
+				require.Equal(t, gs.OutstandingDowntimeSlashing, ck.GetAllOutstandingDowntimes(ctx))
 
 				ltbh, err := ck.GetLastTransmissionBlockHeight(ctx)
 				require.NoError(t, err)
@@ -383,7 +383,7 @@ func assertProviderClientID(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Ke
 func assertHeightValsetUpdateIDs(t *testing.T, ctx sdk.Context, ck *consumerkeeper.Keeper, heighValsetUpdateIDs []consumertypes.HeightToValsetUpdateID) {
 	ctr := 0
 
-	for _, heightToValsetUpdateID := range ck.IterateHeightToValsetUpdateID(ctx) {
+	for _, heightToValsetUpdateID := range ck.GetAllHeightToValsetUpdateIDs(ctx) {
 		require.Equal(t, heighValsetUpdateIDs[ctr].Height, heightToValsetUpdateID.Height)
 		require.Equal(t, heighValsetUpdateIDs[ctr].ValsetUpdateId, heightToValsetUpdateID.ValsetUpdateId)
 		ctr++

@@ -212,7 +212,7 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 // is less efficient but may not impact performance enough to matter.
 // If it does matter, we can add a time parameter to this function and stop the iteration when we reach
 // that time.
-func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context) (packetMaturityTimes []consumertypes.MaturingVSCPacket) {
+func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context, before *uint64) (packetMaturityTimes []consumertypes.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
@@ -223,6 +223,13 @@ func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context) (packetMaturityTimes 
 		vscId := binary.BigEndian.Uint64(vscIdBytes)
 
 		timeNs := binary.BigEndian.Uint64(iterator.Value())
+
+		// If the `before` parameter is not nil, we want to stop iterating when we reach
+		// a maturityTime that is after the `before` time, because we want all maturities
+		// before the `before` time.
+		if before != nil && *before < timeNs {
+			break
+		}
 
 		packetMaturityTimes = append(packetMaturityTimes, consumertypes.MaturingVSCPacket{
 			VscId:        vscId,
@@ -305,8 +312,8 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 	store.Delete(types.HeightValsetUpdateIDKey(height))
 }
 
-// GetHeightToValsetUpdateID returns a list of all the block heights to valset update IDs in the store
-func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context) (heightToValsetUpdateIDs []types.HeightToValsetUpdateID) {
+// GetAllHeightToValsetUpdateIDs returns a list of all the block heights to valset update IDs in the store
+func (k Keeper) GetAllHeightToValsetUpdateIDs(ctx sdk.Context) (heightToValsetUpdateIDs []types.HeightToValsetUpdateID) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
 
@@ -349,8 +356,8 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 	store.Delete(types.OutstandingDowntimeKey(consAddr))
 }
 
-// GetOutstandingDowntimes gets an array of the validator addresses of outstanding downtime flags
-func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context) (downtimes []consumertypes.OutstandingDowntime) {
+// GetAllOutstandingDowntimes gets an array of the validator addresses of outstanding downtime flags
+func (k Keeper) GetAllOutstandingDowntimes(ctx sdk.Context) (downtimes []consumertypes.OutstandingDowntime) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
 

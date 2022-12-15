@@ -103,7 +103,7 @@ func TestPacketMaturityTime(t *testing.T) {
 	orderedTimes := [][]uint64{{1, 10}, {2, 25}, {5, 15}}
 	i := 0
 
-	for _, maturingVSCPacket := range consumerKeeper.IteratePacketMaturityTime(ctx) {
+	for _, maturingVSCPacket := range consumerKeeper.GetAllPacketMaturityTimes(ctx, nil) {
 		// require that we iterate through unbonding time in order of sequence
 		require.Equal(t, orderedTimes[i][0], maturingVSCPacket.VscId)
 		require.Equal(t, orderedTimes[i][1], maturingVSCPacket.MaturityTime)

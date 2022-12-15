@@ -27,7 +27,7 @@ func (k *Keeper) Hooks() Hooks {
 func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 	var consumerChainIDS []string
 
-	for _, chain := range h.k.IterateConsumerChains(ctx) {
+	for _, chain := range h.k.GetAllConsumerChains(ctx) {
 		consumerChainIDS = append(consumerChainIDS, chain.ChainId)
 	}
 
@@ -74,8 +74,9 @@ func ValidatorConsensusKeyInUse(k *Keeper, ctx sdk.Context, valAddr sdk.ValAddre
 
 	inUse := false
 
-	// TODO JEHAN: Stopping iteration here
-	for _, validatorConsumerAddrs := range k.IterateAllValidatorsByConsumerAddr(ctx) {
+	// TODO JEHAN: Stopping iteration here (IMO, this doesn't matter since iteration will never be
+	// stopped early in normal use. If this is a problem, then it needs to be solved with an index on ConsumerAddr)
+	for _, validatorConsumerAddrs := range k.GetAllValidatorsByConsumerAddr(ctx) {
 		if sdk.ConsAddress(validatorConsumerAddrs.ConsumerAddr).Equals(consensusAddr) {
 			inUse = true
 			break
@@ -99,7 +100,7 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 		ConsumerKey  tmprotocrypto.PublicKey
 	}
 
-	for _, validatorConsumerPubKey := range h.k.IterateAllValidatorConsumerPubKeys(ctx) {
+	for _, validatorConsumerPubKey := range h.k.GetAllValidatorConsumerPubKeys2(ctx) {
 		if sdk.ConsAddress(validatorConsumerPubKey.ProviderAddr).Equals(valConsAddr) {
 			consumerAddr := utils.TMCryptoPublicKeyToConsAddr(*validatorConsumerPubKey.ConsumerKey)
 			h.k.DeleteValidatorByConsumerAddr(ctx, validatorConsumerPubKey.ChainId, consumerAddr)

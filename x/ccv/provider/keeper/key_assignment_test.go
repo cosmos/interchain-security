@@ -73,14 +73,14 @@ func TestIterateValidatorConsumerPubKeys(t *testing.T) {
 		keeper.SetValidatorConsumerPubKey(ctx, chainID, assignment.ProviderAddr, *assignment.ConsumerKey)
 	}
 
-	result := keeper.IterateValidatorConsumerPubKeys(ctx, chainID)
+	result := keeper.GetAllValidatorConsumerPubKeys(ctx, chainID)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
 
 	for i, res := range result {
 		require.Equal(t, testAssignments[i], res, "mismatched consumer key assignment in case %d", i)
 	}
 
-	result = keeper.IterateValidatorConsumerPubKeys(ctx, chainID)
+	result = keeper.GetAllValidatorConsumerPubKeys(ctx, chainID)
 	// TODO JEHAN: This was testing an "iterateOne" iterator in the test itself. bring that back if we add a callback
 	// require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
 
@@ -118,14 +118,14 @@ func TestIterateAllValidatorConsumerPubKeys(t *testing.T) {
 		keeper.SetValidatorConsumerPubKey(ctx, assignment.ChainId, assignment.ProviderAddr, *assignment.ConsumerKey)
 	}
 
-	result := keeper.IterateAllValidatorConsumerPubKeys(ctx)
+	result := keeper.GetAllValidatorConsumerPubKeys2(ctx)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
 
 	for i, res := range result {
 		require.Equal(t, testAssignments[i], res, "mismatched consumer key assignment in case %d", i)
 	}
 
-	result = keeper.IterateAllValidatorConsumerPubKeys(ctx)
+	result = keeper.GetAllValidatorConsumerPubKeys2(ctx)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be 1, got %d", len(result))
 
 	require.Equal(t, testAssignments[0], result[0], "mismatched consumer key assignment in iterate one")
@@ -180,14 +180,14 @@ func TestIterateValidatorsByConsumerAddr(t *testing.T) {
 		keeper.SetValidatorByConsumerAddr(ctx, chainID, assignment.ConsumerAddr, assignment.ProviderAddr)
 	}
 
-	result := keeper.IterateValidatorsByConsumerAddr(ctx, chainID)
+	result := keeper.GetAllValidatorsByConsumerAddr2(ctx, chainID)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
 
 	for i, res := range result {
 		require.Equal(t, testAssignments[i], res, "mismatched consumer address assignment in case %d", i)
 	}
 
-	result = keeper.IterateValidatorsByConsumerAddr(ctx, chainID)
+	result = keeper.GetAllValidatorsByConsumerAddr2(ctx, chainID)
 	// TODO JEHAN: This was testing an "iterateOne" iterator in the test itself. bring that back if we add a callback
 	// require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
 
@@ -221,14 +221,14 @@ func TestIterateAllValidatorsByConsumerAddr(t *testing.T) {
 		keeper.SetValidatorByConsumerAddr(ctx, assignment.ChainId, assignment.ConsumerAddr, assignment.ProviderAddr)
 	}
 
-	result := keeper.IterateAllValidatorsByConsumerAddr(ctx)
+	result := keeper.GetAllValidatorsByConsumerAddr(ctx)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
 
 	for i, res := range result {
 		require.Equal(t, testAssignments[i], res, "mismatched consumer address assignment in case %d", i)
 	}
 
-	result = keeper.IterateAllValidatorsByConsumerAddr(ctx)
+	result = keeper.GetAllValidatorsByConsumerAddr(ctx)
 
 	require.Equal(t, testAssignments[0], result[0], "mismatched consumer address assignment in iterate one")
 }
@@ -281,14 +281,14 @@ func TestIterateKeyAssignmentReplacements(t *testing.T) {
 		keeper.SetKeyAssignmentReplacement(ctx, chainID, assignment.ProviderAddr, assignment.PrevCKey, assignment.Power)
 	}
 
-	result := keeper.IterateKeyAssignmentReplacements(ctx, chainID)
+	result := keeper.GetAllKeyAssignmentReplacements(ctx, chainID)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
 
 	for i, res := range result {
 		require.Equal(t, testAssignments[i], res, "mismatched key assignment replacement in case %d", i)
 	}
 
-	result = keeper.IterateKeyAssignmentReplacements(ctx, chainID)
+	result = keeper.GetAllKeyAssignmentReplacements(ctx, chainID)
 	require.Equal(t, testAssignments[0], result[0], "mismatched key assignment replacement in iterate one")
 }
 
@@ -322,7 +322,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 		  - or there exists a vscID in ConsumerAddrsToPrune s.t. cAddr in ConsumerAddrsToPrune(vscID)
 	*/
 	willBePruned := map[string]bool{}
-	for _, consAddrToPrune := range k.IterateConsumerAddrsToPrune(ctx, chainID) {
+	for _, consAddrToPrune := range k.GetAllConsumerAddrsToPrune(ctx, chainID) {
 		for _, cAddr := range consAddrToPrune.ConsumerAddrs.Addresses {
 			addr := sdk.ConsAddress(cAddr)
 			willBePruned[addr.String()] = true
@@ -330,14 +330,14 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 	}
 
 	good := true
-	for _, valByConsAddr := range k.IterateAllValidatorsByConsumerAddr(ctx) {
+	for _, valByConsAddr := range k.GetAllValidatorsByConsumerAddr(ctx) {
 		if _, ok := willBePruned[sdk.ConsAddress(valByConsAddr.ConsumerAddr).String()]; ok {
 			// Address will be pruned, everything is fine.
 			continue
 		}
 		// Try to find a validator who has this consumer address currently assigned
 		isCurrentlyAssigned := false
-		for _, valconsPubKey := range k.IterateValidatorConsumerPubKeys(ctx, valByConsAddr.ChainId) {
+		for _, valconsPubKey := range k.GetAllValidatorConsumerPubKeys(ctx, valByConsAddr.ChainId) {
 			if utils.TMCryptoPublicKeyToConsAddr(*valconsPubKey.ConsumerKey).Equals(sdk.ConsAddress(valByConsAddr.ConsumerAddr)) {
 				isCurrentlyAssigned = true
 				break
