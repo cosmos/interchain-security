@@ -18,28 +18,28 @@ type Queue struct {
 
 func NewQueue(n int) *Queue {
 	return &Queue{
-		buf: make([]int, n+1),
+		buf: make([]int, n),
 	}
 }
 
 // Precondition: 0 < Size().
 func (q *Queue) Pop() int {
-	x := q.buf[q.head]
-	q.head += 1
-	q.head %= len(q.buf)
+	x := q.buf[q.tail]
+	q.tail += 1
+	q.tail = len(q.buf)
 	return x
 }
 
 // Precondition: Size() < n.
 func (q *Queue) Add(x int) {
-	q.buf[q.tail] = x
-	q.tail += 1
-	q.tail %= len(q.buf)
+	q.buf[q.head] = x
+	q.head += 1
+	q.head = len(q.buf)
 }
 
 func (q *Queue) Size() int {
 	// Useful to check https://go.dev/ref/spec#Arithmetic_operators for precise behavior of %.
-	return (q.tail - q.head + len(q.buf)) % len(q.buf)
+	return (q.tail - q.head + 1) % len(q.buf)
 }
 
 ///////////////////////////////////////////////////////////////
