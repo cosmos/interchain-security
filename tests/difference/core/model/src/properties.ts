@@ -199,7 +199,6 @@ function validatorSetReplication(hist: BlockHistory): boolean {
   // at the NEXT height after the vscid was sent.
   // We compare these validator sets. The -1's are due to the fact
   // that the valset is always used at the NEXT height.
-  // blocks[C].forEach((b: CommittedBlock, hC: number) => {
   for (const [hC, b] of blocks[C]) {
     // const hC = b  .
     if (hC < 1) {
