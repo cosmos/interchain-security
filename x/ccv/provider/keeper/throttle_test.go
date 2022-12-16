@@ -864,7 +864,8 @@ func TestDeleteThrottledPacketDataForConsumer(t *testing.T) {
 	require.Len(t, vscMaturedData, 1)
 }
 
-// TestPanicIfTooMuchThrottledPacketData tests the PanicIfTooMuchThrottledPacketData method.
+// TestPanicIfTooMuchThrottledPacketData tests that the provider panics
+// when the number of throttled (queued) packets exceeds the max allowed by params.
 func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 
 	testCases := []struct {
@@ -883,9 +884,9 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
-		// Set max pending slash packets param
+		// Set max throttled packets param
 		defaultParams := providertypes.DefaultParams()
-		defaultParams.MaxPendingSlashPackets = tc.max // TODO: change naming
+		defaultParams.MaxThrottledPackets = tc.max
 		providerKeeper.SetParams(ctx, defaultParams)
 
 		rand.Seed(time.Now().UnixNano())

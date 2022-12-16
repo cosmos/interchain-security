@@ -18,9 +18,9 @@ type GlobalSlashEntry struct {
 	// This field is used in the store key to ensure uniqueness.
 	IbcSeqNum uint64
 	// The provider's consensus address of the validator being slashed.
-	// This field is used to obtain validator power in HandlePendingSlashPackets.
+	// This field is used to obtain validator power in HandleThrottleQueues.
 	// It is not used in the store key, but is persisted in value bytes,
-	// see QueuePendingSlashPacketEntry.
+	// see QueueGlobalSlashEntry.
 	ProviderValConsAddr sdktypes.ConsAddress
 }
 

@@ -35,9 +35,9 @@ const (
 	// fraction of total voting power that the slash meter can hold.
 	DefaultSlashMeterReplenishFraction = "0.05"
 
-	// DefaultMaxPendingSlashPackets defines the default maximum amount of pending slash packets that can
-	// be queued for a consumer before the provider chain halts.
-	DefaultMaxPendingSlashPackets = 1000
+	// DefaultMaxThrottledPackets defines the default amount of throttled slash or vsc matured packets
+	// that can be queued for a single consumer before the provider chain halts.
+	DefaultMaxThrottledPackets = 1000
 )
 
 // Reflection based keys for params subspace
@@ -48,7 +48,7 @@ var (
 	KeyVscTimeoutPeriod            = []byte("VscTimeoutPeriod")
 	KeySlashMeterReplenishPeriod   = []byte("SlashMeterReplenishPeriod")
 	KeySlashMeterReplenishFraction = []byte("SlashMeterReplenishFraction")
-	KeyMaxPendingSlashPackets      = []byte("MaxPendingSlashPackets")
+	KeyMaxThrottledPackets         = []byte("MaxThrottledPackets")
 )
 
 // ParamKeyTable returns a key table with the necessary registered provider params
@@ -65,7 +65,7 @@ func NewParams(
 	vscTimeoutPeriod time.Duration,
 	slashMeterReplenishPeriod time.Duration,
 	slashMeterReplenishFraction string,
-	maxPendingSlashPackets int64,
+	maxThrottledPackets int64,
 ) Params {
 	return Params{
 		TemplateClient:              cs,
@@ -75,7 +75,7 @@ func NewParams(
 		VscTimeoutPeriod:            vscTimeoutPeriod,
 		SlashMeterReplenishPeriod:   slashMeterReplenishPeriod,
 		SlashMeterReplenishFraction: slashMeterReplenishFraction,
-		MaxPendingSlashPackets:      maxPendingSlashPackets,
+		MaxThrottledPackets:         maxThrottledPackets,
 	}
 }
 
@@ -102,7 +102,7 @@ func DefaultParams() Params {
 		DefaultVscTimeoutPeriod,
 		DefaultSlashMeterReplenishPeriod,
 		DefaultSlashMeterReplenishFraction,
-		DefaultMaxPendingSlashPackets,
+		DefaultMaxThrottledPackets,
 	)
 }
 
@@ -132,8 +132,8 @@ func (p Params) Validate() error {
 	if err := ccvtypes.ValidateStringFraction(p.SlashMeterReplenishFraction); err != nil {
 		return fmt.Errorf("slash meter replenish fraction is invalid: %s", err)
 	}
-	if err := ccvtypes.ValidatePositiveInt64(p.MaxPendingSlashPackets); err != nil {
-		return fmt.Errorf("max pending slash packets is invalid: %s", err)
+	if err := ccvtypes.ValidatePositiveInt64(p.MaxThrottledPackets); err != nil {
+		return fmt.Errorf("max throttled packets is invalid: %s", err)
 	}
 	return nil
 }
@@ -148,7 +148,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyVscTimeoutPeriod, p.VscTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishPeriod, p.SlashMeterReplenishPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeySlashMeterReplenishFraction, p.SlashMeterReplenishFraction, ccvtypes.ValidateStringFraction),
-		paramtypes.NewParamSetPair(KeyMaxPendingSlashPackets, p.MaxPendingSlashPackets, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(KeyMaxThrottledPackets, p.MaxThrottledPackets, ccvtypes.ValidatePositiveInt64),
 	}
 }
 

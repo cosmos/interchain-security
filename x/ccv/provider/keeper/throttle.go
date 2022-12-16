@@ -253,7 +253,7 @@ func (k Keeper) SetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID
 	// Sanity check to ensure that the chain-specific throttled packet data queue does not grow too
 	// large for a single consumer chain. This check ensures that binaries would panic deterministically
 	// if the queue does grow too large.
-	if size >= uint64(k.GetMaxPendingSlashingPackets(ctx)) {
+	if size >= uint64(k.GetMaxThrottledPackets(ctx)) {
 		panic(fmt.Sprintf("throttled packet data queue for chain %s is too large: %d", consumerChainID, size))
 	}
 

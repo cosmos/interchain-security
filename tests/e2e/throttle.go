@@ -329,8 +329,8 @@ func (s *CCVTestSuite) TestPacketSpam() {
 // in the global queue (relevant to a single chain) matches the ordering of slash packet
 // data in the chain specific queues, even in the presence of packet spam.
 //
-// Note: The global queue is ordered by: time, then IBC sequence number, see PendingSlashPacketEntryKey.
-// The chain specific queue is ordered by: IBC sequence number, see PendingSlashPacketDataKey.
+// Note: The global queue is ordered by: time, then IBC sequence number, see GlobalSlashEntryKey.
+// The chain specific queue is ordered by: IBC sequence number, see ThrottledPacketDataKey.
 func (s *CCVTestSuite) TestQueueOrdering() {
 
 	// Setup ccv channels to all consumers

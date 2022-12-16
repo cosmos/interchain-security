@@ -106,7 +106,7 @@ const (
 	// ThrottledPacketDataBytePrefix is the byte prefix storing throttled packet data
 	ThrottledPacketDataBytePrefix
 
-	// PendingSlashPacketEntryBytePrefix is the byte prefix storing global slash queue entries
+	// GlobalSlashEntryBytePrefix is the byte prefix storing global slash queue entries
 	GlobalSlashEntryBytePrefix
 
 	// ConsumerValidatorsBytePrefix is the byte prefix that will store the validator assigned keys for every consumer chain
