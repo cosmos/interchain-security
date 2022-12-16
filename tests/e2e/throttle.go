@@ -465,9 +465,10 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 	// Confirm both queues are now empty, meaning every packet was handled.
 	allGlobalEntries = providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
 	s.Require().Equal(0, len(allGlobalEntries))
-	slashPacketData, _, _, _ = providerKeeper.GetAllThrottledPacketData(
+	slashPacketData, vscMaturedPacketData, _, _ = providerKeeper.GetAllThrottledPacketData(
 		s.providerCtx(), firstBundle.Chain.ChainID)
 	s.Require().Equal(0, len(slashPacketData))
+	s.Require().Equal(0, len(vscMaturedPacketData))
 }
 
 // TestSlashingSmallValidators tests that multiple slash packets from validators with small
