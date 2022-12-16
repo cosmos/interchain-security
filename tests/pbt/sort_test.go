@@ -10,7 +10,7 @@ import (
 
 func fooSort(arr []int) {
 	for i := 0; i < len(arr); i++ {
-		for j := i; j < len(arr); j++ {
+		for j := 0; j < len(arr); j++ {
 			if arr[j] < arr[i] {
 				arr[i], arr[j] = arr[j], arr[i]
 			}
