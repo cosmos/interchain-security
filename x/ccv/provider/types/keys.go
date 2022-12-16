@@ -2,7 +2,6 @@ package types
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -186,16 +185,12 @@ func ParseUnbondingOpIndexKey(key []byte) (string, uint64, error) {
 // UnbondingOpKey returns the key that stores a record of all the ids of consumer chains that
 // need to unbond before a given unbonding operation can complete
 func UnbondingOpKey(id uint64) []byte {
-	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, id)
-	return append([]byte{UnbondingOpBytePrefix}, bz...)
+	return append([]byte{UnbondingOpBytePrefix}, sdk.Uint64ToBigEndian(id)...)
 }
 
 // ValsetUpdateBlockHeightKey returns the key that storing the mapping from valset update ID to block height
 func ValsetUpdateBlockHeightKey(valsetUpdateId uint64) []byte {
-	vuidBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(vuidBytes, valsetUpdateId)
-	return append([]byte{ValsetUpdateBlockHeightBytePrefix}, vuidBytes...)
+	return append([]byte{ValsetUpdateBlockHeightBytePrefix}, sdk.Uint64ToBigEndian(valsetUpdateId)...)
 }
 
 // ConsumerGenesisKey returns the key corresponding to consumer genesis state material

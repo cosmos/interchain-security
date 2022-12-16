@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
 	"strconv"
 
@@ -95,7 +94,7 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 	maturedVscIds := []uint64{}
 	for maturityIterator.Valid() {
 		vscId := types.IdFromPacketMaturityTimeKey(maturityIterator.Key())
-		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
+		if currentTime >= sdk.BigEndianToUint64(maturityIterator.Value()) {
 			// construct validator set change packet data
 			vscPacket := ccv.NewVSCMaturedPacketData(vscId)
 
