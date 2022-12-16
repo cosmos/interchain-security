@@ -190,7 +190,6 @@ function stakingWithoutSlashing(hist: BlockHistory): boolean {
  * @returns Is the property satisfied?
  */
 function validatorSetReplication(hist: BlockHistory): boolean {
-  // return true;
   const blocks = hist.blocks;
   let good = true;
   blocks[C].forEach((b: CommittedBlock, hC: number) => {
