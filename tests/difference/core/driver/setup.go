@@ -678,6 +678,13 @@ func (b *Builder) build() {
 
 	b.setSlashParams()
 
+	// TODO: tidy up before merging into main
+	prams := b.providerKeeper().GetParams(b.ctx(P))
+	prams.SlashMeterReplenishFraction = "1.0"
+	prams.SlashMeterReplenishPeriod = time.Second * 1
+	b.providerKeeper().SetParams(b.ctx(P), prams)
+	b.providerKeeper().InitializeSlashMeter(b.ctx(P))
+
 	// Set light client params to match model
 	tmConfig := ibctesting.NewTendermintConfig()
 	tmConfig.UnbondingPeriod = b.initState.UnbondingP

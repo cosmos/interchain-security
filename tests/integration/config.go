@@ -150,7 +150,8 @@ func KeyAssignmentTestRun() TestRun {
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\"", // This disables slash packet throttling
 			},
 			chainID("consu"): {
 				chainId:        chainID("consu"),
@@ -189,7 +190,8 @@ func DefaultTestRun() TestRun {
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\"", // This disables slash packet throttling
 			},
 			chainID("consu"): {
 				chainId:        chainID("consu"),
@@ -228,7 +230,8 @@ func DemocracyTestRun() TestRun {
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\"", // This disables slash packet throttling
 			},
 			chainID("democ"): {
 				chainId:        chainID("democ"),
@@ -268,7 +271,8 @@ func MultiConsumerTestRun() TestRun {
 					".app_state.slashing.params.signed_blocks_window = \"2\" | " +
 					".app_state.slashing.params.min_signed_per_window = \"0.500000000000000000\" | " +
 					".app_state.slashing.params.downtime_jail_duration = \"2s\" | " +
-					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\"",
+					".app_state.slashing.params.slash_fraction_downtime = \"0.010000000000000000\" | " +
+					".app_state.provider.params.slash_meter_replenish_fraction = \"1.0\"", // This disables slash packet throttling
 			},
 			chainID("consu"): {
 				chainId:        chainID("consu"),

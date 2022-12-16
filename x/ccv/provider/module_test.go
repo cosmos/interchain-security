@@ -3,6 +3,7 @@ package provider_test
 import (
 	"testing"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
@@ -135,6 +136,15 @@ func TestInitGenesis(t *testing.T) {
 			)
 		}
 
+		// Last total power is queried in InitGenesis, only if method has not
+		// already panicked from unowned capability.
+		if !tc.expPanic {
+			orderedCalls = append(orderedCalls,
+				mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+					ctx).Return(sdk.NewInt(100)).Times(1), // Return total voting power as 100
+			)
+		}
+
 		gomock.InOrder(orderedCalls...)
 
 		//
@@ -163,6 +173,18 @@ func TestInitGenesis(t *testing.T) {
 		require.Equal(t, len(tc.consumerStates), numStatesCounted)
 
 		require.Empty(t, valUpdates, "InitGenesis should return no validator updates")
+
+		// Expect slash meter to be initialized to it's allowance value
+		// (replenish fraction * mocked value defined above)
+		slashMeter := providerKeeper.GetSlashMeter(ctx)
+		replenishFraction, err := sdk.NewDecFromStr(providerKeeper.GetParams(ctx).SlashMeterReplenishFraction)
+		require.NoError(t, err)
+		expectedSlashMeterValue := sdk.NewInt(replenishFraction.MulInt(sdk.NewInt(100)).RoundInt64())
+		require.Equal(t, expectedSlashMeterValue, slashMeter)
+
+		// Expect last slash meter full time to be current block time
+		lastFullTime := providerKeeper.GetLastSlashMeterFullTime(ctx)
+		require.Equal(t, lastFullTime, ctx.BlockTime().UTC())
 
 		ctrl.Finish()
 	}

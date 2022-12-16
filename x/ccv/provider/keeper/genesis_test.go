@@ -107,10 +107,24 @@ func TestInitAndExportGenesis(t *testing.T) {
 		mocks.MockScopedKeeper.EXPECT().GetCapability(
 			ctx, host.PortPath(ccv.ProviderPortID),
 		).Return(nil, true).Times(1),
+		mocks.MockStakingKeeper.EXPECT().GetLastTotalPower(
+			ctx).Return(sdk.NewInt(100)).Times(1), // Return total voting power as 100
 	)
 
 	// init provider chain
 	pk.InitGenesis(ctx, provGenesis)
+
+	// Expect slash meter to be initialized to it's allowance value
+	// (replenish fraction * mocked value defined above)
+	slashMeter := pk.GetSlashMeter(ctx)
+	replenishFraction, err := sdk.NewDecFromStr(pk.GetParams(ctx).SlashMeterReplenishFraction)
+	require.NoError(t, err)
+	expectedSlashMeterValue := sdk.NewInt(replenishFraction.MulInt(sdk.NewInt(100)).RoundInt64())
+	require.Equal(t, expectedSlashMeterValue, slashMeter)
+
+	// Expect last slash meter full time to be current block time
+	lastFullTime := pk.GetLastSlashMeterFullTime(ctx)
+	require.Equal(t, lastFullTime, ctx.BlockTime())
 
 	// check local provider chain states
 	ubdOps, found := pk.GetUnbondingOp(ctx, vscID)

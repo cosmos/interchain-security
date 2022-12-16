@@ -15,6 +15,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	cryptoutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
@@ -445,6 +446,20 @@ func TestStopConsumerChain(t *testing.T) {
 			expErr: true,
 		},
 		{
+			description: "valid stop of consumer chain, throttle related queues are cleaned",
+			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
+
+				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
+
+				providerKeeper.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
+					ctx.BlockTime(), "chainID", 1, cryptoutil.NewCryptoIdentityFromIntSeed(90).SDKConsAddress()))
+
+				providerKeeper.QueueThrottledSlashPacketData(ctx, "chainID", 1, testkeeper.GetNewSlashPacketData())
+				providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chainID", 2, testkeeper.GetNewVSCMaturedPacketData())
+			},
+			expErr: false,
+		},
+		{
 			description: "valid stop of consumer chain, all mock calls hit",
 			setup: func(ctx sdk.Context, providerKeeper *providerkeeper.Keeper, mocks testkeeper.MockedKeepers) {
 				testkeeper.SetupForStoppingConsumerChain(t, ctx, providerKeeper, mocks)
@@ -525,6 +540,15 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 		return true // stop the iteration
 	})
 	require.False(t, found)
+
+	allGlobalEntries := providerKeeper.GetAllGlobalSlashEntries(ctx)
+	for _, entry := range allGlobalEntries {
+		require.NotEqual(t, expectedChainID, entry.ConsumerChainID)
+	}
+
+	slashPacketData, vscMaturedPacketData, _, _ := providerKeeper.GetAllThrottledPacketData(ctx, expectedChainID)
+	require.Empty(t, slashPacketData)
+	require.Empty(t, vscMaturedPacketData)
 }
 
 // TestPendingConsumerRemovalPropDeletion tests the getting/setting
