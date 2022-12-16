@@ -31,16 +31,16 @@ const (
 // Iota generated keys/byte prefixes (as a byte), supports 256 possible values
 const (
 
-	// PortBytePrefix defines the byte prefix to store the port ID in store
-	PortBytePrefix byte = iota
+	// PortKey defines the key to store the port ID in store
+	PortByteKey byte = iota
 
-	// MaturedUnbondingOpsBytePrefix is the byte prefix that stores the list of all unbonding operations ids
+	// MaturedUnbondingOpsByteKey is the byte key that stores the list of all unbonding operations ids
 	// that have matured from a consumer chain perspective,
 	// i.e., no longer waiting on the unbonding period to elapse on any consumer chain
-	MaturedUnbondingOpsBytePrefix
+	MaturedUnbondingOpsByteKey
 
-	// ValidatorSetUpdateIdBytePrefix is the byte prefix that stores the current validator set update id
-	ValidatorSetUpdateIdBytePrefix
+	// ValidatorSetUpdateIdByteKey is the byte key that stores the current validator set update id
+	ValidatorSetUpdateIdByteKey
 
 	// SlashMeterBytePrefix is the byte prefix for storing the slash meter
 	SlashMeterBytePrefix
@@ -126,17 +126,17 @@ const (
 
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {
-	return []byte{PortBytePrefix}
+	return []byte{PortByteKey}
 }
 
 // MaturedUnbondingOpsKey returns the key for storing the list of matured unbonding operations.
 func MaturedUnbondingOpsKey() []byte {
-	return []byte{MaturedUnbondingOpsBytePrefix}
+	return []byte{MaturedUnbondingOpsByteKey}
 }
 
 // ValidatorSetUpdateIdKey is the key that stores the current validator set update id
 func ValidatorSetUpdateIdKey() []byte {
-	return []byte{ValidatorSetUpdateIdBytePrefix}
+	return []byte{ValidatorSetUpdateIdByteKey}
 }
 
 // SlashMeterKey returns the key storing the slash meter
