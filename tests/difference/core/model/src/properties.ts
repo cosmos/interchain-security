@@ -192,6 +192,13 @@ function stakingWithoutSlashing(hist: BlockHistory): boolean {
 function validatorSetReplication(hist: BlockHistory): boolean {
   const blocks = hist.blocks;
   let good = true;
+
+  // Each committed block on the consumer chain has a last vscid
+  // received that informs the validator set at the NEXT height.
+  // The validator set is exactly the validator set at the provider
+  // at the NEXT height after the vscid was sent.
+  // We compare these validator sets. The -1's are due to the fact
+  // that the valset is always used at the NEXT height.
   blocks[C].forEach((b: CommittedBlock, hC: number) => {
     if (hC < 1) {
       // The model starts at consumer height 0, so there is
@@ -214,8 +221,9 @@ function validatorSetReplication(hist: BlockHistory): boolean {
       // make sense to try to check the property for height 0.
       return
     }
-    const statusP = blocks[P].get(hP - 1)!.invariantSnapshot.status;
-    const tokensP = blocks[P].get(hP - 1)!.invariantSnapshot.tokens;
+    const snapshotP = blocks[P].get(hP - 1)!.invariantSnapshot;
+    const statusP = snapshotP.status;
+    const tokensP = snapshotP.tokens;
     assert(valsetC.length === statusP.length, 'this should never happen.');
     assert(valsetC.length === tokensP.length, 'this should never happen.');
     valsetC.forEach((power, i) => {
