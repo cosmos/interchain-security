@@ -161,7 +161,6 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeletePendingVSCPackets(ctx, chainID)
 
 	// release unbonding operations
-	// TODO JEHAN: Stopping iteration here (but only in error)
 	for _, unbondingOpsIndex := range k.GetAllUnbondingOpIndexes(ctx, chainID) {
 		// iterate over the unbonding operations for the current VSC ID
 		var maturedIds []uint64
@@ -324,7 +323,6 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 // A prop is included in the returned list if its proposed spawn time has passed.
 //
 // Note: this method is split out from BeginBlockInit to be easily unit tested.
-// TODO JEHAN: Stopping iteration here (dealt with by making a direct call to KVStorePrefixIterator)
 func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.ConsumerAdditionProposal {
 
 	// store the (to be) executed proposals in order
@@ -388,23 +386,6 @@ func (k Keeper) GetAllPendingConsumerAdditionProps(ctx sdk.Context) (props []typ
 	return props
 }
 
-// GetAllConsumerAdditionProps returns all consumer addition proposals separated into matured and pending.
-func (k Keeper) GetAllConsumerAdditionProps(ctx sdk.Context) types.ConsumerAdditionProposals {
-	props := types.ConsumerAdditionProposals{}
-
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		var prop types.ConsumerAdditionProposal
-		k.cdc.MustUnmarshal(iterator.Value(), &prop)
-
-		props.Pending = append(props.Pending, &prop)
-	}
-	return props
-}
-
 // DeletePendingConsumerAdditionProps deletes the given consumer addition proposals
 func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ...types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
@@ -464,7 +445,6 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 // A prop is included in the returned list if its proposed stop time has passed.
 //
 // Note: this method is split out from BeginBlockCCR to be easily unit tested.
-// TODO JEHAN: Stopping iteration here (dealt with by making a direct call to KVStorePrefixIterator)
 func (k Keeper) ConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerRemovalProposal {
 
 	// store the (to be) executed consumer removal proposals in order
@@ -514,28 +494,6 @@ func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []type
 			ChainId:  chainID,
 			StopTime: stopTime,
 		})
-	}
-
-	return props
-}
-
-// GetAllConsumerRemovalProps returns all consumer removal proposals separated into matured and pending.
-func (k Keeper) GetAllConsumerRemovalProps(ctx sdk.Context) types.ConsumerRemovalProposals {
-	props := types.ConsumerRemovalProposals{}
-
-	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		key := iterator.Key()
-		stopTime, chainID, err := types.ParsePendingCRPKey(key)
-		if err != nil {
-			panic(fmt.Errorf("failed to parse pending consumer removal proposal key: %w", err))
-		}
-
-		props.Pending = append(props.Pending,
-			&types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime})
 	}
 
 	return props

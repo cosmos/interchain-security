@@ -81,8 +81,6 @@ func TestIterateValidatorConsumerPubKeys(t *testing.T) {
 	}
 
 	result = keeper.GetAllValidatorConsumerPubKeys(ctx, &chainID)
-	// TODO JEHAN: This was testing an "iterateOne" iterator in the test itself. bring that back if we add a callback
-	// require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
 
 	require.Equal(t, testAssignments[0], result[0], "mismatched consumer key assignment in iterate one")
 
@@ -188,8 +186,6 @@ func TestIterateValidatorsByConsumerAddr(t *testing.T) {
 	}
 
 	result = keeper.GetAllValidatorsByConsumerAddr2(ctx, chainID)
-	// TODO JEHAN: This was testing an "iterateOne" iterator in the test itself. bring that back if we add a callback
-	// require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
 
 	require.Equal(t, testAssignments[0], result[0], "mismatched consumer address assignment in iterate one")
 }

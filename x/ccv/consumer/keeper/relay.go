@@ -84,13 +84,11 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // Note: Per spec, a VSC reaching maturity on a consumer chain means that all the unbonding
 // operations that resulted in validator updates included in that VSC have matured on
 // the consumer chain.
-// TODO JEHAN: Stopping iteration here (dealt with by passing time param)
 func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 	currentTime := uint64(ctx.BlockTime().UnixNano())
 
 	maturedVscIds := []uint64{}
 	for _, maturityTime := range k.GetAllPacketMaturityTimes(ctx, &currentTime) {
-		// TODO JEHAN: Panicing to check that the before stuff is right, can probably remove
 		if currentTime < maturityTime.MaturityTime {
 			panic(fmt.Errorf("maturity time %d is greater than current time %d", maturityTime.MaturityTime, currentTime))
 		}

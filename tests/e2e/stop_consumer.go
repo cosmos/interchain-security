@@ -141,7 +141,6 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 		_, found := providerKeeper.GetUnbondingOpIndex(s.providerCtx(), chainID, unbondingOpsIndex.VscId)
 		s.Require().False(found)
 		for _, ubdID := range unbondingOpsIndex.UnbondingOpIds {
-			// TODO: `unbondingOpsIndex.UnbondingOpIds[ubdID]` must be wrong
 			_, found = providerKeeper.GetUnbondingOp(s.providerCtx(), unbondingOpsIndex.UnbondingOpIds[ubdID])
 			s.Require().False(found)
 			ubd, _ := providerStakingKeeper.GetUnbondingDelegationByUnbondingID(s.providerCtx(), unbondingOpsIndex.UnbondingOpIds[ubdID])

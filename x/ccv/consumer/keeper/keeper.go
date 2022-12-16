@@ -206,7 +206,7 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
-// GetPacketMaturityTimes returns a slice of PacketMaturityTimes, sorted by maturity time.
+// GetAllPacketMaturityTimes returns a slice of PacketMaturityTimes, sorted by maturity time.
 func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context, latest *uint64) (packetMaturityTimes []consumertypes.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})

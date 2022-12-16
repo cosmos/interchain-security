@@ -877,10 +877,10 @@ func TestGetAllConsumerAdditionProps(t *testing.T) {
 
 	// advance the clock to be 1 minute after first proposal
 	ctx = ctx.WithBlockTime(now.Add(time.Minute))
-	res := providerKeeper.GetAllConsumerAdditionProps(ctx)
+	res := providerKeeper.GetAllPendingConsumerAdditionProps(ctx)
 	require.NotEmpty(t, res, "GetAllConsumerAdditionProps returned empty result")
-	require.Len(t, res.Pending, 4, "wrong len for pending addition props")
-	require.Equal(t, props[0].ChainId, res.Pending[0].ChainId, "wrong chain ID for pending addition prop")
+	require.Len(t, res, 4, "wrong len for pending addition props")
+	require.Equal(t, props[0].ChainId, res[0].ChainId, "wrong chain ID for pending addition prop")
 }
 
 // Test getting both matured and pending consumer removal proposals
@@ -904,8 +904,8 @@ func TestGetAllConsumerRemovalProps(t *testing.T) {
 
 	// advance the clock to be 1 minute after first proposal
 	ctx = ctx.WithBlockTime(now.Add(time.Minute))
-	res := providerKeeper.GetAllConsumerRemovalProps(ctx)
+	res := providerKeeper.GetAllPendingConsumerRemovalProps(ctx)
 	require.NotEmpty(t, res, "GetAllConsumerRemovalProps returned empty result")
-	require.Len(t, res.Pending, 4, "wrong len for pending removal props")
-	require.Equal(t, props[0].ChainId, res.Pending[0].ChainId, "wrong chain ID for pending removal prop")
+	require.Len(t, res, 4, "wrong len for pending removal props")
+	require.Equal(t, props[0].ChainId, res[0].ChainId, "wrong chain ID for pending removal prop")
 }

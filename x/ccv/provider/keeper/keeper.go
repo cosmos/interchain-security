@@ -343,7 +343,7 @@ func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []ccv.UnbondingOp) {
 		// Panicing here to see if these ever differ
 		// TODO: remove
 		if ubdOp.Id != id {
-			panic(fmt.Errorf("unbonding operation id %d does not match key id %d", ubdOp.Id, id))
+			panic(fmt.Errorf("unbonding operation id %d does not match key %d", ubdOp.Id, id))
 		}
 
 		ops = append(ops, ubdOp)

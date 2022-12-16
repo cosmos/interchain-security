@@ -54,9 +54,13 @@ func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.Query
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	props := k.GetAllConsumerAdditionProps(ctx)
+	var props []*types.ConsumerAdditionProposal
 
-	return &types.QueryConsumerChainStartProposalsResponse{Proposals: &props}, nil
+	for _, prop := range k.GetAllPendingConsumerAdditionProps(ctx) {
+		props = append(props, &prop)
+	}
+
+	return &types.QueryConsumerChainStartProposalsResponse{Proposals: &types.ConsumerAdditionProposals{Pending: props}}, nil
 }
 
 func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryConsumerChainStopProposalsRequest) (*types.QueryConsumerChainStopProposalsResponse, error) {
@@ -65,9 +69,12 @@ func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryC
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	props := k.GetAllConsumerRemovalProps(ctx)
+	var props []*types.ConsumerRemovalProposal
+	for _, prop := range k.GetAllPendingConsumerRemovalProps(ctx) {
+		props = append(props, &prop)
+	}
 
-	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &props}, nil
+	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &types.ConsumerRemovalProposals{Pending: props}}, nil
 }
 
 func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.QueryValidatorConsumerAddrRequest) (*types.QueryValidatorConsumerAddrResponse, error) {
