@@ -323,8 +323,12 @@ func (k Keeper) QueueThrottledPacketData(
 // Note: this method is not tested directly, but is covered indirectly
 // by TestHandlePacketDataForChain and e2e tests.
 func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID string) (
-	slashFound bool, slashData ccvtypes.SlashPacketData,
-	vscMaturedData []ccvtypes.VSCMaturedPacketData, ibcSeqNums []uint64) {
+	slashFound bool, slashData ccvtypes.SlashPacketData, vscMaturedData []ccvtypes.VSCMaturedPacketData,
+	// Note: this slice contains the IBC sequence numbers of the slash packet data
+	// and trailing vsc matured packet data instances. This is used by caller to delete the
+	// data after it has been handled.
+	ibcSeqNums []uint64,
+) {
 
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
