@@ -42,10 +42,12 @@ const MODEL_INIT_STATE: ModelInitState = {
   h: { provider: 0, consumer: 0 },
   t: { provider: 0, consumer: 0 },
   ccvC: {
-    // The initial provider height is 0 but there must have been
-    // a vscid created at the previous height. However we do not
-    // use model this. Instead we use -1 to represent the phantom
-    // vscid.
+    // We model a consumer chain that has already been established,
+    // but we model starting from height 0. It is necessary to have
+    // a vscid from the previous block, as is always the case in the
+    // real system and algorithm once a consumer has been added.
+    // Therefore we use -1 to represent the phantom vscid from the height
+    // before the first modelled height.
     hToVscID: { 0: -1, 1: -1 },
     pendingChanges: [],
     maturingVscs: new Map(),
@@ -55,10 +57,7 @@ const MODEL_INIT_STATE: ModelInitState = {
   ccvP: {
     initialHeight: 0,
     vscID: 0,
-    // The initial provider height is 0 but there must have been
-    // a vscid created at the previous height. However we do not
-    // use model this. Instead we use -1 to represent the phantom
-    // vscid.
+    // See ccvC.hToVscID
     vscIDtoH: { [-1]: 0 },
     vscIDtoOpIDs: new Map(),
     downtimeSlashAcks: [],
