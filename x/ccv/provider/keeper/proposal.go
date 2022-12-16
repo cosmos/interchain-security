@@ -31,7 +31,7 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 
 	// verify the consumer addition proposal execution
 	// in cached context and discard the cached writes
-	if _, _, err := k.CreateConsumerClientInCachedCtx(ctx, p); err != nil {
+	if _, _, err := k.CreateConsumerClientInCachedCtx(ctx, *p); err != nil {
 		return err
 	}
 
@@ -118,7 +118,7 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.ConsumerRemovalProposal) error {
 	// verify the consumer removal proposal execution
 	// in cached context and discard the cached writes
-	if _, _, err := k.StopConsumerChainInCachedCtx(ctx, p); err != nil {
+	if _, _, err := k.StopConsumerChainInCachedCtx(ctx, *p); err != nil {
 		return err
 	}
 
@@ -336,7 +336,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 
 	for _, prop := range propsToExecute {
 		// create consumer client in a cached context to handle errors
-		cachedCtx, writeFn, err := k.CreateConsumerClientInCachedCtx(ctx, &prop)
+		cachedCtx, writeFn, err := k.CreateConsumerClientInCachedCtx(ctx, prop)
 		if err != nil {
 			// drop the proposal
 			ctx.Logger().Info("consumer client could not be created: %w", err)
@@ -468,7 +468,7 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 
 	for _, prop := range propsToExecute {
 		// stop consumer chain in a cached context to handle errors
-		cachedCtx, writeFn, err := k.StopConsumerChainInCachedCtx(ctx, &prop)
+		cachedCtx, writeFn, err := k.StopConsumerChainInCachedCtx(ctx, prop)
 		if err != nil {
 			// drop the proposal
 			ctx.Logger().Info("consumer chain could not be stopped: %w", err)
@@ -565,15 +565,15 @@ func (k Keeper) CloseChannel(ctx sdk.Context, channelID string) {
 
 // CreateConsumerClientInCachedCtx creates a consumer client
 // from a given consumer addition proposal in a cached context
-func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p *types.ConsumerAdditionProposal) (cc sdk.Context, writeCache func(), err error) {
+func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p types.ConsumerAdditionProposal) (cc sdk.Context, writeCache func(), err error) {
 	cc, writeCache = ctx.CacheContext()
-	err = k.CreateConsumerClient(cc, p)
+	err = k.CreateConsumerClient(cc, &p)
 	return
 }
 
 // StopConsumerChainInCachedCtx stop a consumer chain
 // from a given consumer removal proposal in a cached context
-func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p *types.ConsumerRemovalProposal) (cc sdk.Context, writeCache func(), err error) {
+func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRemovalProposal) (cc sdk.Context, writeCache func(), err error) {
 	cc, writeCache = ctx.CacheContext()
 	err = k.StopConsumerChain(ctx, p.ChainId, true)
 	return

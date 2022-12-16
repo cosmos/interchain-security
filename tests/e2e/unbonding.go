@@ -306,7 +306,8 @@ func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 
 	// remove all consumer chains, which were already started during setup
 	for chainID := range s.consumerBundles {
-		providerKeeper.StopConsumerChain(s.providerCtx(), chainID, true)
+		err := providerKeeper.StopConsumerChain(s.providerCtx(), chainID, true)
+		s.Require().NoError(err)
 	}
 
 	// delegate bondAmt and undelegate 1/2 of it
@@ -342,7 +343,8 @@ func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
 	// stop the consumer chain, which was already started during setup
-	providerKeeper.StopConsumerChain(s.providerCtx(), s.consumerChain.ChainID, true)
+	err := providerKeeper.StopConsumerChain(s.providerCtx(), s.consumerChain.ChainID, true)
+	s.Require().NoError(err)
 
 	// Setup delegator, bond amount, and src/dst validators
 	bondAmt := sdk.NewInt(10000000)
