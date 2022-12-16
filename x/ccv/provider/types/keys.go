@@ -42,12 +42,12 @@ const (
 	// ValidatorSetUpdateIdByteKey is the byte key that stores the current validator set update id
 	ValidatorSetUpdateIdByteKey
 
-	// SlashMeterBytePrefix is the byte prefix for storing the slash meter
-	SlashMeterBytePrefix
+	// SlashMeterBytePrefix is the byte key for storing the slash meter
+	SlashMeterByteKey
 
-	// LastSlashMeterReplenishTimeBytePrefix is the byte prefix for storing
+	// LastSlashMeterReplenishTimeBytePrefix is the byte key for storing
 	// the last time the slash meter was replenished
-	LastSlashMeterReplenishTimeBytePrefix
+	LastSlashMeterFullTimeByteKey
 
 	// ChainToChannelBytePrefix is the byte prefix for storing mapping
 	// from chainID to the channel ID that is used to send over validator set changes.
@@ -141,12 +141,12 @@ func ValidatorSetUpdateIdKey() []byte {
 
 // SlashMeterKey returns the key storing the slash meter
 func SlashMeterKey() []byte {
-	return []byte{SlashMeterBytePrefix}
+	return []byte{SlashMeterByteKey}
 }
 
-// LastSlashMeterReplenishTimeKey returns the key storing the last time the slash meter was replenished
-func LastSlashMeterReplenishTimeKey() []byte {
-	return []byte{LastSlashMeterReplenishTimeBytePrefix}
+// LastSlashMeterFullTimeKey returns the key storing the last time the slash meter was full
+func LastSlashMeterFullTimeKey() []byte {
+	return []byte{LastSlashMeterFullTimeByteKey}
 }
 
 // ChainToChannelKey returns the key under which the CCV channel ID will be stored for the given consumer chain.

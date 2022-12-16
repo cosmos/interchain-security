@@ -480,7 +480,7 @@ func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value sdktypes.Int) {
 // GetLastSlashMeterFullTime returns the last UTC time the slash meter was full.
 func (k Keeper) GetLastSlashMeterFullTime(ctx sdktypes.Context) time.Time {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(providertypes.LastSlashMeterReplenishTimeKey())
+	bz := store.Get(providertypes.LastSlashMeterFullTimeKey())
 	if bz == nil {
 		panic("last slash replenish time not set")
 	}
@@ -494,5 +494,5 @@ func (k Keeper) GetLastSlashMeterFullTime(ctx sdktypes.Context) time.Time {
 // SetLastSlashMeterReplenishTime sets the most recent time the slash meter was full.
 func (k Keeper) SetLastSlashMeterFullTime(ctx sdktypes.Context, time time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(providertypes.LastSlashMeterReplenishTimeKey(), sdktypes.FormatTimeBytes(time.UTC()))
+	store.Set(providertypes.LastSlashMeterFullTimeKey(), sdktypes.FormatTimeBytes(time.UTC()))
 }
