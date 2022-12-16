@@ -314,6 +314,15 @@ func (s *CCVTestSuite) TestPacketSpam() {
 
 	// Execute block to handle packets in endblock
 	s.providerChain.NextBlock()
+
+	// Confirm all packets are handled or dropped (queues empty)
+	s.Require().Equal(uint64(0), providerKeeper.GetThrottledPacketDataSize(
+		s.providerCtx(), firstBundle.Chain.ChainID))
+	slashData, vscMData, _, _ := providerKeeper.GetAllThrottledPacketData(
+		s.providerCtx(), firstBundle.Chain.ChainID)
+	s.Require().Empty(slashData)
+	s.Require().Empty(vscMData)
+	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()))
 }
 
 // TestQueueOrdering validates that the ordering of slash packet entries
