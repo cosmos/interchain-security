@@ -336,27 +336,26 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 	vscMaturedData = []ccvtypes.VSCMaturedPacketData{}
 	ibcSeqNums = []uint64{}
 
-iteratorLoop:
 	for ; iterator.Valid(); iterator.Next() {
+
 		bz := iterator.Value()
-		switch bz[0] {
-		case slashPacketData:
+		if bz[0] == slashPacketData {
 			if slashFound {
 				// Break for-loop, we've already found first slash packet data instance.
-				break iteratorLoop
+				break
 			} else {
 				if err := slashData.Unmarshal(bz[1:]); err != nil {
 					panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
 				}
 				slashFound = true
 			}
-		case vscMaturedPacketData:
+		} else if bz[0] == vscMaturedPacketData {
 			vscMData := ccvtypes.VSCMaturedPacketData{}
 			if err := vscMData.Unmarshal(bz[1:]); err != nil {
 				panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
 			}
 			vscMaturedData = append(vscMaturedData, vscMData)
-		default:
+		} else {
 			panic("invalid packet data type")
 		}
 
