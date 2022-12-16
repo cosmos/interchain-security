@@ -185,9 +185,8 @@ func TestGlobalSlashEntryKeyAndParse(t *testing.T) {
 	for _, entry := range entries {
 		key := providertypes.GlobalSlashEntryKey(entry)
 		require.NotEmpty(t, key)
-		timeBzL := len(sdk.FormatTimeBytes(entry.RecvTime))
-		// This key should be of set length: prefix + 8 + timeBzL + 8 + chainID
-		require.Equal(t, 1+8+timeBzL+8+len(entry.ConsumerChainID), len(key))
+		// This key should be of set length: prefix + 8 + 8 + chainID
+		require.Equal(t, 1+8+8+len(entry.ConsumerChainID), len(key))
 		parsedRecvTime, parsedChainID, parsedIBCSeqNum := providertypes.ParseGlobalSlashEntryKey(key)
 		require.Equal(t, entry.RecvTime, parsedRecvTime)
 		require.Equal(t, entry.ConsumerChainID, parsedChainID)
