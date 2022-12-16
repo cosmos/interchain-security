@@ -78,21 +78,16 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 	vscMaturedPacketHandler func(sdktypes.Context, string, ccvtypes.VSCMaturedPacketData),
 ) {
 	// Get slash packet data and trailing vsc matured packet data, handle it all.
-	slashFound, slashData, slashSeqNum, vscMaturedData, vscMaturedSeqNums := k.GetSlashAndTrailingData(ctx, consumerChainID)
-	if !slashFound {
-		// This should only happen if the queue data has become corrupted.
-		ctx.Logger().Error(fmt.Sprintf("no slash packet data found for chain %s", consumerChainID))
-		return
+	slashFound, slashData, vscMaturedData, seqNums := k.GetSlashAndTrailingData(ctx, consumerChainID)
+	if slashFound {
+		slashPacketHandler(ctx, consumerChainID, slashData)
 	}
-	slashPacketHandler(ctx, consumerChainID, slashData)
 	for _, vscMData := range vscMaturedData {
 		vscMaturedPacketHandler(ctx, consumerChainID, vscMData)
 	}
 
-	// Delete data using ibc seq numbers after it has all been handled.
-	toDel := []uint64{slashSeqNum}
-	toDel = append(toDel, vscMaturedSeqNums...)
-	k.DeleteThrottledPacketData(ctx, consumerChainID, toDel...)
+	// Delete handled data after it has all been handled.
+	k.DeleteThrottledPacketData(ctx, consumerChainID, seqNums...)
 }
 
 // InitializeSlashMeter initializes the slash meter to it's max value (also its allowance),
@@ -328,8 +323,8 @@ func (k Keeper) QueueThrottledPacketData(
 // Note: this method is not tested directly, but is covered indirectly
 // by TestHandlePacketDataForChain and e2e tests.
 func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID string) (
-	slashFound bool, slashData ccvtypes.SlashPacketData, slashSeqNum uint64,
-	vscMaturedData []ccvtypes.VSCMaturedPacketData, vscMaturedSeqNums []uint64) {
+	slashFound bool, slashData ccvtypes.SlashPacketData,
+	vscMaturedData []ccvtypes.VSCMaturedPacketData, ibcSeqNums []uint64) {
 
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
@@ -338,9 +333,8 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 
 	slashFound = false
 	slashData = ccvtypes.SlashPacketData{}
-	slashSeqNum = 0
 	vscMaturedData = []ccvtypes.VSCMaturedPacketData{}
-	vscMaturedSeqNums = []uint64{}
+	ibcSeqNums = []uint64{}
 
 	for ; iterator.Valid(); iterator.Next() {
 
@@ -354,7 +348,6 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 					panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
 				}
 				slashFound = true
-				_, slashSeqNum = providertypes.MustParseThrottledPacketDataKey(iterator.Key())
 			}
 		} else if bz[0] == vscMaturedPacketData {
 			vscMData := ccvtypes.VSCMaturedPacketData{}
@@ -362,13 +355,14 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 				panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
 			}
 			vscMaturedData = append(vscMaturedData, vscMData)
-			_, newSeqNum := providertypes.MustParseThrottledPacketDataKey(iterator.Key())
-			vscMaturedSeqNums = append(vscMaturedSeqNums, newSeqNum)
 		} else {
 			panic("invalid packet data type")
 		}
+
+		_, ibcSeqNum := providertypes.MustParseThrottledPacketDataKey(iterator.Key())
+		ibcSeqNums = append(ibcSeqNums, ibcSeqNum)
 	}
-	return slashFound, slashData, slashSeqNum, vscMaturedData, vscMaturedSeqNums
+	return slashFound, slashData, vscMaturedData, ibcSeqNums
 }
 
 // GetAllThrottledPacketData returns all throttled packet data for a specific consumer chain.
