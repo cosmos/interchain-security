@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -245,7 +244,7 @@ func (k Keeper) GetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID
 	if bz == nil {
 		size = 0
 	} else {
-		size = binary.LittleEndian.Uint64(bz)
+		size = sdktypes.BigEndianToUint64(bz)
 	}
 	return size
 }
@@ -254,8 +253,7 @@ func (k Keeper) GetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID
 func (k Keeper) SetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID string, size uint64) {
 	store := ctx.KVStore(k.storeKey)
 	key := providertypes.ThrottledPacketDataSizeKey(consumerChainID)
-	bz := make([]byte, 8)
-	binary.LittleEndian.PutUint64(bz, size)
+	bz := sdktypes.Uint64ToBigEndian(size)
 	store.Set(key, bz)
 }
 
