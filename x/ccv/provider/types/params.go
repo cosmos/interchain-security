@@ -18,8 +18,8 @@ const (
 	DefaultMaxClockDrift = 10 * time.Second
 
 	// DefaultTrustingPeriodFraction is the default fraction used to compute TrustingPeriod
-	// as UnbondingPeriod / TrustingPeriodFraction
-	DefaultTrustingPeriodFraction = 2
+	// as UnbondingPeriod * TrustingPeriodFraction
+	DefaultTrustingPeriodFraction = "0.66"
 
 	// DefaultInitTimeoutPeriod defines the init timeout period
 	DefaultInitTimeoutPeriod = 7 * 24 * time.Hour
@@ -59,7 +59,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 // NewParams creates new provider parameters with provided arguments
 func NewParams(
 	cs *ibctmtypes.ClientState,
-	trustingPeriodFraction int64,
+	trustingPeriodFraction string,
 	ccvTimeoutPeriod time.Duration,
 	initTimeoutPeriod time.Duration,
 	vscTimeoutPeriod time.Duration,
@@ -114,7 +114,7 @@ func (p Params) Validate() error {
 	if err := validateTemplateClient(*p.TemplateClient); err != nil {
 		return err
 	}
-	if err := ccvtypes.ValidatePositiveInt64(p.TrustingPeriodFraction); err != nil {
+	if err := ccvtypes.ValidateStringFraction(p.TrustingPeriodFraction); err != nil {
 		return fmt.Errorf("trusting period fraction is invalid: %s", err)
 	}
 	if err := ccvtypes.ValidateDuration(p.CcvTimeoutPeriod); err != nil {
@@ -142,7 +142,7 @@ func (p Params) Validate() error {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyTemplateClient, p.TemplateClient, validateTemplateClient),
-		paramtypes.NewParamSetPair(KeyTrustingPeriodFraction, p.TrustingPeriodFraction, ccvtypes.ValidatePositiveInt64),
+		paramtypes.NewParamSetPair(KeyTrustingPeriodFraction, p.TrustingPeriodFraction, ccvtypes.ValidateStringFraction),
 		paramtypes.NewParamSetPair(ccvtypes.KeyCCVTimeoutPeriod, p.CcvTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyInitTimeoutPeriod, p.InitTimeoutPeriod, ccvtypes.ValidateDuration),
 		paramtypes.NewParamSetPair(KeyVscTimeoutPeriod, p.VscTimeoutPeriod, ccvtypes.ValidateDuration),
@@ -163,7 +163,13 @@ func validateTemplateClient(i interface{}) error {
 
 	// populate zeroed fields with valid fields
 	copiedClient.ChainId = "chainid"
-	copiedClient.TrustingPeriod = consumertypes.DefaultConsumerUnbondingPeriod / DefaultTrustingPeriodFraction
+
+	trustPeriod, err := ccvtypes.CalculateTrustPeriod(consumertypes.DefaultConsumerUnbondingPeriod, DefaultTrustingPeriodFraction)
+	if err != nil {
+		return fmt.Errorf("invalid TrustPeriodFraction: %T", err)
+	}
+	copiedClient.TrustingPeriod = trustPeriod
+
 	copiedClient.UnbondingPeriod = consumertypes.DefaultConsumerUnbondingPeriod
 	copiedClient.LatestHeight = clienttypes.NewHeight(0, 1)
 
