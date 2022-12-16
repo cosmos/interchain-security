@@ -43,6 +43,8 @@ func getSingleByteKeys() [][]byte {
 	keys[i], i = providertypes.PortKey(), i+1
 	keys[i], i = providertypes.MaturedUnbondingOpsKey(), i+1
 	keys[i], i = providertypes.ValidatorSetUpdateIdKey(), i+1
+	keys[i], i = providertypes.SlashMeterKey(), i+1
+	keys[i], i = providertypes.LastSlashMeterFullTimeKey(), i+1
 	keys[i], i = []byte{providertypes.ChainToChannelBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChannelToChainBytePrefix}, i+1
 	keys[i], i = []byte{providertypes.ChainToClientBytePrefix}, i+1
@@ -161,10 +163,9 @@ func TestThrottledPacketDataKeyAndParse(t *testing.T) {
 		require.NotEmpty(t, key)
 		// This key should be of len: prefix + chainID length + chainID + ibcSeqNum
 		require.Equal(t, 1+8+len(test.consumerChainID)+8, len(key))
-		parsedChainID, parsedSeqNum, err := providertypes.ParseThrottledPacketDataKey(key)
+		parsedChainID, parsedSeqNum := providertypes.MustParseThrottledPacketDataKey(key)
 		require.Equal(t, test.consumerChainID, parsedChainID)
 		require.Equal(t, test.ibcSeqNum, parsedSeqNum)
-		require.NoError(t, err)
 	}
 
 	// Sanity check that two keys with different chain ids but same seq num are different

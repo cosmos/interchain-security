@@ -260,16 +260,69 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 	s.Require().Empty(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()))
 }
 
-// TestPacketSpamAndQueueOrdering validates that the ordering of slash packet entries
+// TestPacketSpam confirms that the provider can handle a large number of
+// incoming slash packets in a single block.
+func (s *CCVTestSuite) TestPacketSpam() {
+
+	// Setup ccv channels to all consumers
+	s.SetupAllCCVChannels()
+
+	// Setup validator powers to be 25%, 25%, 25%, 25%
+	s.setupValidatorPowers()
+
+	// Explicitly set params, initialize slash meter
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	params := providerKeeper.GetParams(s.providerCtx())
+	params.SlashMeterReplenishFraction = "0.75" // Allow 3/4 of validators to be jailed
+	providerKeeper.SetParams(s.providerCtx(), params)
+	providerKeeper.InitializeSlashMeter(s.providerCtx())
+
+	// The packets to be recv in a single block, ordered as they will be recv.
+	packets := []channeltypes.Packet{}
+
+	firstBundle := s.getFirstBundle()
+
+	// Slash first 3 but not 4th validator
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[1])
+	s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
+
+	// Track and increment ibc seq num for each packet, since these need to be unique.
+	ibcSeqNum := uint64(0)
+
+	// Construct 500 slash packets
+	for ibcSeqNum < 500 {
+		// Increment ibc seq num for each packet (starting at 1)
+		ibcSeqNum++
+		// Set infraction type based on even/odd index.
+		var infractionType stakingtypes.InfractionType
+		if ibcSeqNum%2 == 0 {
+			infractionType = stakingtypes.Downtime
+		} else {
+			infractionType = stakingtypes.DoubleSign
+		}
+		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
+		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum))
+	}
+
+	// Recv 500 packets from consumer to provider in same block
+	for _, packet := range packets {
+		slashPacketData := ccvtypes.SlashPacketData{}
+		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &slashPacketData)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, slashPacketData)
+	}
+
+	// Execute block to handle packets in endblock
+	s.providerChain.NextBlock()
+}
+
+// TestQueueOrdering validates that the ordering of slash packet entries
 // in the global queue (relevant to a single chain) matches the ordering of slash packet
 // data in the chain specific queues, even in the presence of packet spam.
 //
 // Note: The global queue is ordered by: time, then IBC sequence number, see PendingSlashPacketEntryKey.
 // The chain specific queue is ordered by: IBC sequence number, see PendingSlashPacketDataKey.
-//
-// TODO: consider DOS attack, see: https://github.com/cosmos/interchain-security/issues/594
-// This test will change in that the duplicated packets would not be queued.
-func (s *CCVTestSuite) TestPacketSpam() {
+func (s *CCVTestSuite) TestQueueOrdering() {
 
 	// Setup ccv channels to all consumers
 	s.SetupAllCCVChannels()
@@ -344,7 +397,7 @@ func (s *CCVTestSuite) TestPacketSpam() {
 	s.Require().Equal(450, len(allGlobalEntries))
 
 	// Confirm that the chain specific queue has 450 slash packet data instances, and 50 vsc matured
-	slashPacketData, vscMaturedPacketData := providerKeeper.GetAllThrottledPacketData(
+	slashPacketData, vscMaturedPacketData, _, _ := providerKeeper.GetAllThrottledPacketData(
 		s.providerCtx(), firstBundle.Chain.ChainID)
 	s.Require().Equal(450, len(slashPacketData))
 	s.Require().Equal(50, len(vscMaturedPacketData))
@@ -386,7 +439,7 @@ func (s *CCVTestSuite) TestPacketSpam() {
 	// Confirm that only the first packet was handled
 	allGlobalEntries = providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
 	s.Require().Equal(449, len(allGlobalEntries))
-	slashPacketData, vscMaturedPacketData = providerKeeper.GetAllThrottledPacketData(
+	slashPacketData, vscMaturedPacketData, _, _ = providerKeeper.GetAllThrottledPacketData(
 		s.providerCtx(), firstBundle.Chain.ChainID)
 	s.Require().Equal(449, len(slashPacketData))
 	// No VSC matured packets should be handled yet
@@ -412,9 +465,10 @@ func (s *CCVTestSuite) TestPacketSpam() {
 	// Confirm both queues are now empty, meaning every packet was handled.
 	allGlobalEntries = providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
 	s.Require().Equal(0, len(allGlobalEntries))
-	slashPacketData, _ = providerKeeper.GetAllThrottledPacketData(
+	slashPacketData, vscMaturedPacketData, _, _ = providerKeeper.GetAllThrottledPacketData(
 		s.providerCtx(), firstBundle.Chain.ChainID)
 	s.Require().Equal(0, len(slashPacketData))
+	s.Require().Equal(0, len(vscMaturedPacketData))
 }
 
 // TestSlashingSmallValidators tests that multiple slash packets from validators with small

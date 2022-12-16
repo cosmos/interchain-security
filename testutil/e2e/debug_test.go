@@ -164,6 +164,10 @@ func TestPacketSpam(t *testing.T) {
 	runCCVTestByName(t, "TestPacketSpam")
 }
 
+func TestQueueOrdering(t *testing.T) {
+	runCCVTestByName(t, "TestQueueOrdering")
+}
+
 func TestSlashingSmallValidators(t *testing.T) {
 	runCCVTestByName(t, "TestSlashingSmallValidators")
 }

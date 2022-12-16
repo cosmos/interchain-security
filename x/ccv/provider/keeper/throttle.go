@@ -19,52 +19,55 @@ import (
 func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 	meter := k.GetSlashMeter(ctx)
-
-	// Don't start iterating if meter is negative in value
+	// Return if meter is negative in value
 	if meter.IsNegative() {
 		return
 	}
 
-	handledGlobalEntries := []providertypes.GlobalSlashEntry{}
+	// Obtain all global slash entries, where only some of them may be handled in this method,
+	// depending on the value of the slash meter.
+	allEntries := k.GetAllGlobalSlashEntries(ctx)
+	handledEntries := []providertypes.GlobalSlashEntry{}
 
-	// Iterate through ordered (by received time) global slash entries from any consumer chain
-	k.IterateGlobalSlashEntries(ctx, func(entry providertypes.GlobalSlashEntry) (stop bool) {
+	for _, globalEntry := range allEntries {
+		// Subtract voting power that will be jailed/tombstoned from the slash meter
+		meter = meter.Sub(k.GetEffectiveValPower(ctx, globalEntry.ProviderValConsAddr))
 
-		// Obtain validator from the provider's consensus address.
-		// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
-		val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, entry.ProviderValConsAddr)
-
-		// Obtain the validator power relevant to the slash packet that's about to be handled
-		// (this power will be removed via jailing or tombstoning)
-		var valPower int64
-		if !found || val.IsJailed() {
-			// If validator is not found, or found but jailed, it's power is 0. This path is explicitly defined since the
-			// staking keeper's LastValidatorPower values are not updated till the staking keeper's endblocker.
-			valPower = 0
-		} else {
-			valPower = k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator())
-		}
-
-		// Subtract this power from the slash meter
-		meter = meter.Sub(sdktypes.NewInt(valPower))
-
-		// Handle slash and any trailing vsc matured packet data instances by passing in
+		// Handle one slash and any trailing vsc matured packet data instances by passing in
 		// chainID and appropriate callbacks, relevant packet data is deleted in this method.
-		k.HandlePacketDataForChain(ctx, entry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
 
-		// Store handled global entry to be deleted after iteration is completed
-		handledGlobalEntries = append(handledGlobalEntries, entry)
+		k.HandlePacketDataForChain(ctx, globalEntry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
+		handledEntries = append(handledEntries, globalEntry)
 
-		// Do not handle anymore global slash entries if the meter is negative in value
-		stop = meter.IsNegative()
-		return stop
-	})
+		// don't handle any more global entries if meter becomes negative in value
+		if meter.IsNegative() {
+			break
+		}
+	}
 
 	// Handled global entries are deleted after iteration is completed
-	k.DeleteGlobalSlashEntries(ctx, handledGlobalEntries...)
+	k.DeleteGlobalSlashEntries(ctx, handledEntries...)
 
 	// Persist current value for slash meter
 	k.SetSlashMeter(ctx, meter)
+}
+
+// Obtains the effective validator power relevant to a validator consensus address.
+func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
+	valConsAddr sdktypes.ConsAddress, // Provider's validator consensus address
+) sdktypes.Int {
+	// Obtain staking module val object from the provider's consensus address.
+	// Note: if validator is not found or unbonded, this will be handled appropriately in HandleSlashPacket
+	val, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, valConsAddr)
+
+	if !found || val.IsJailed() {
+		// If validator is not found, or found but jailed, it's power is 0. This path is explicitly defined since the
+		// staking keeper's LastValidatorPower values are not updated till the staking keeper's endblocker.
+		return sdktypes.ZeroInt()
+	} else {
+		// Otherwise, return the staking keeper's LastValidatorPower value.
+		return sdktypes.NewInt(k.stakingKeeper.GetLastValidatorPower(ctx, val.GetOperator()))
+	}
 }
 
 // HandlePacketDataForChain handles only the first queued slash packet relevant to the passed consumer chainID,
@@ -75,38 +78,16 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 	slashPacketHandler func(sdktypes.Context, string, ccvtypes.SlashPacketData),
 	vscMaturedPacketHandler func(sdktypes.Context, string, ccvtypes.VSCMaturedPacketData),
 ) {
+	// Get slash packet data and trailing vsc matured packet data, handle it all.
+	slashFound, slashData, vscMaturedData, seqNums := k.GetSlashAndTrailingData(ctx, consumerChainID)
+	if slashFound {
+		slashPacketHandler(ctx, consumerChainID, slashData)
+	}
+	for _, vscMData := range vscMaturedData {
+		vscMaturedPacketHandler(ctx, consumerChainID, vscMData)
+	}
 
-	// Store ibc sequence numbers to delete data after iteration is completed
-	seqNums := []uint64{}
-
-	slashPacketHandled := false
-	k.IterateThrottledPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, data interface{}) (stop bool) {
-
-		switch data := data.(type) {
-
-		case ccvtypes.SlashPacketData:
-			if slashPacketHandled {
-				// Break iteration, since we've already handled one slash packet
-				stop = true
-				return stop
-			} else {
-				// Handle slash packet and set flag to true
-				slashPacketHandler(ctx, consumerChainID, data)
-				slashPacketHandled = true
-			}
-		case ccvtypes.VSCMaturedPacketData:
-			vscMaturedPacketHandler(ctx, consumerChainID, data)
-		default:
-			panic(fmt.Sprintf("unexpected pending packet data type: %T", data))
-		}
-		seqNums = append(seqNums, ibcSeqNum)
-
-		// Continue iterating through the queue until we reach the end or a 2nd slash packet
-		stop = false
-		return stop
-	})
-
-	// Delete handled data after iteration is completed
+	// Delete handled data after it has all been handled.
 	k.DeleteThrottledPacketData(ctx, consumerChainID, seqNums...)
 }
 
@@ -199,50 +180,37 @@ func (k Keeper) QueueGlobalSlashEntry(ctx sdktypes.Context,
 	store.Set(key, entry.ProviderValConsAddr)
 }
 
-// GetAllGlobalSlashEntries returns all global slash entries in the global queue slash entry queue.
-//
-// Note: This method is used for testing purposes only.
-func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) (entries []providertypes.GlobalSlashEntry) {
-	k.IterateGlobalSlashEntries(ctx, func(entry providertypes.GlobalSlashEntry) (stop bool) {
-		entries = append(entries, entry)
-		// Continue iteration
-		stop = false
-		return stop
-	})
-	return entries
-}
-
 // DeleteGlobalSlashEntriesForConsumer deletes all pending slash packet entries in the global queue,
 // only relevant to a single consumer.
 func (k Keeper) DeleteGlobalSlashEntriesForConsumer(ctx sdktypes.Context, consumerChainID string) {
+
+	allEntries := k.GetAllGlobalSlashEntries(ctx)
 	entriesToDel := []providertypes.GlobalSlashEntry{}
-	k.IterateGlobalSlashEntries(ctx, func(entry providertypes.GlobalSlashEntry) (stop bool) {
+
+	for _, entry := range allEntries {
 		if entry.ConsumerChainID == consumerChainID {
 			entriesToDel = append(entriesToDel, entry)
 		}
-		// Continue iteration
-		stop = false
-		return stop
-	})
-
+	}
 	k.DeleteGlobalSlashEntries(ctx, entriesToDel...)
 }
 
-// IterateGlobalSlashEntries iterates over the global slash entry queue and calls the provided callback
-func (k Keeper) IterateGlobalSlashEntries(ctx sdktypes.Context,
-	cb func(providertypes.GlobalSlashEntry) (stop bool)) {
+// GetAllGlobalSlashEntries returns all global slash entries from the queue
+func (k Keeper) GetAllGlobalSlashEntries(ctx sdktypes.Context) []providertypes.GlobalSlashEntry {
+
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdktypes.KVStorePrefixIterator(store, []byte{providertypes.GlobalSlashEntryBytePrefix})
 	defer iterator.Close()
+
+	entries := []providertypes.GlobalSlashEntry{}
+
 	for ; iterator.Valid(); iterator.Next() {
 		recvTime, chainID, ibcSeqNum := providertypes.ParseGlobalSlashEntryKey(iterator.Key())
 		valAddr := iterator.Value()
 		entry := providertypes.NewGlobalSlashEntry(recvTime, chainID, ibcSeqNum, valAddr)
-		stop := cb(entry)
-		if stop {
-			break
-		}
+		entries = append(entries, entry)
 	}
+	return entries
 }
 
 // DeleteGlobalSlashEntries deletes the given global entries from the global slash queue
@@ -347,79 +315,118 @@ func (k Keeper) QueueThrottledPacketData(
 	k.IncrementThrottledPacketDataSize(ctx, consumerChainID)
 }
 
-// IterateThrottledPacketData iterates over the throttled packet data queue for a specific consumer chain
-// (ordered by ibc seq number) and calls the provided callback
-func (k Keeper) IterateThrottledPacketData(ctx sdktypes.Context, consumerChainID string, cb func(uint64, interface{}) (stop bool)) {
+// GetSlashAndTrailingData returns the first slash packet data instance and any
+// trailing vsc matured packet data instances in the chain-specific throttled packet data queue.
+//
+// Note: this method is not tested directly, but is covered indirectly
+// by TestHandlePacketDataForChain and e2e tests.
+func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID string) (
+	slashFound bool, slashData ccvtypes.SlashPacketData,
+	vscMaturedData []ccvtypes.VSCMaturedPacketData, ibcSeqNums []uint64) {
+
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
 	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
+
+	slashFound = false
+	slashData = ccvtypes.SlashPacketData{}
+	vscMaturedData = []ccvtypes.VSCMaturedPacketData{}
+	ibcSeqNums = []uint64{}
+
+iteratorLoop:
 	for ; iterator.Valid(); iterator.Next() {
-		var packetData interface{}
-		var err error
 		bz := iterator.Value()
 		switch bz[0] {
 		case slashPacketData:
-			spd := ccvtypes.SlashPacketData{}
-			err = spd.Unmarshal(bz[1:])
-			packetData = spd
+			if slashFound {
+				// Break for-loop, we've already found first slash packet data instance.
+				break iteratorLoop
+			} else {
+				if err := slashData.Unmarshal(bz[1:]); err != nil {
+					panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
+				}
+				slashFound = true
+			}
 		case vscMaturedPacketData:
-			vpd := ccvtypes.VSCMaturedPacketData{}
-			err = vpd.Unmarshal(bz[1:])
-			packetData = vpd
+			vscMData := ccvtypes.VSCMaturedPacketData{}
+			if err := vscMData.Unmarshal(bz[1:]); err != nil {
+				panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
+			}
+			vscMaturedData = append(vscMaturedData, vscMData)
 		default:
 			panic("invalid packet data type")
 		}
-		if err != nil {
-			panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
-		}
-		_, ibcSeqNum, err := providertypes.ParseThrottledPacketDataKey(iterator.Key())
-		if err != nil {
-			panic(fmt.Sprintf("failed to parse pending packet data key: %v", err))
-		}
-		stop := cb(ibcSeqNum, packetData)
-		if stop {
-			break
-		}
+
+		_, ibcSeqNum := providertypes.MustParseThrottledPacketDataKey(iterator.Key())
+		ibcSeqNums = append(ibcSeqNums, ibcSeqNum)
 	}
+	return slashFound, slashData, vscMaturedData, ibcSeqNums
 }
 
 // GetAllThrottledPacketData returns all throttled packet data for a specific consumer chain.
 //
-// Note: This method is only used by tests
+// Note: This method is only used by tests, hence why it returns redundant data as different types.
 func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID string) (
-	[]ccvtypes.SlashPacketData, []ccvtypes.VSCMaturedPacketData) {
+	slashData []ccvtypes.SlashPacketData, vscMaturedData []ccvtypes.VSCMaturedPacketData,
+	rawOrderedData []interface{}, ibcSeqNums []uint64) {
 
-	slashData := []ccvtypes.SlashPacketData{}
-	vscMaturedData := []ccvtypes.VSCMaturedPacketData{}
-	k.IterateThrottledPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, data interface{}) (stop bool) {
+	slashData = []ccvtypes.SlashPacketData{}
+	vscMaturedData = []ccvtypes.VSCMaturedPacketData{}
+	rawOrderedData = []interface{}{}
+	ibcSeqNums = []uint64{}
 
-		switch data := data.(type) {
+	store := ctx.KVStore(k.storeKey)
+	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
+	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
+	defer iterator.Close()
 
-		case ccvtypes.SlashPacketData:
-			slashData = append(slashData, data)
-		case ccvtypes.VSCMaturedPacketData:
-			vscMaturedData = append(vscMaturedData, data)
+	for ; iterator.Valid(); iterator.Next() {
+		bz := iterator.Value()
+		switch bz[0] {
+		case slashPacketData:
+			d := ccvtypes.SlashPacketData{}
+			if err := d.Unmarshal(bz[1:]); err != nil {
+				panic(fmt.Sprintf("failed to unmarshal slash packet data: %v", err))
+			}
+			slashData = append(slashData, d)
+			rawOrderedData = append(rawOrderedData, d)
+		case vscMaturedPacketData:
+			d := ccvtypes.VSCMaturedPacketData{}
+			if err := d.Unmarshal(bz[1:]); err != nil {
+				panic(fmt.Sprintf("failed to unmarshal vsc matured packet data: %v", err))
+			}
+			vscMaturedData = append(vscMaturedData, d)
+			rawOrderedData = append(rawOrderedData, d)
 		default:
-			panic(fmt.Sprintf("unexpected pending packet data type: %T", data))
+			panic(fmt.Sprintf("invalid packet data type: %v", bz[0]))
 		}
-		// Continue iteration
-		stop = false
-		return stop
-	})
-	return slashData, vscMaturedData
+		_, ibcSeqNum := providertypes.MustParseThrottledPacketDataKey(iterator.Key())
+		ibcSeqNums = append(ibcSeqNums, ibcSeqNum)
+	}
+
+	return slashData, vscMaturedData, rawOrderedData, ibcSeqNums
 }
 
-// DeleteAllThrottledPacketDataForConsumer deletes all throttled packet data for the given consumer chain.
-func (k Keeper) DeleteAllThrottledPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
-	ibcSeqNumsToDelete := []uint64{}
-	k.IterateThrottledPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, packetData interface{}) bool {
-		ibcSeqNumsToDelete = append(ibcSeqNumsToDelete, ibcSeqNum)
-		// Continue iteration
-		stop := false
-		return stop
-	})
-	k.DeleteThrottledPacketData(ctx, consumerChainID, ibcSeqNumsToDelete...)
+// DeleteAllPacketDataForConsumer deletes all queued packet data for the given consumer chain.
+func (k Keeper) DeleteThrottledPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
+
+	store := ctx.KVStore(k.storeKey)
+	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
+	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
+	defer iterator.Close()
+
+	keysToDel := [][]byte{}
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	// Delete data for this consumer
+	for _, key := range keysToDel {
+		store.Delete(key)
+	}
+
+	// Delete size of data queue for this consumer
+	store.Delete(providertypes.ThrottledPacketDataSizeKey(consumerChainID))
 }
 
 // DeleteThrottledPacketData deletes the given throttled packet data instances
@@ -473,7 +480,7 @@ func (k Keeper) SetSlashMeter(ctx sdktypes.Context, value sdktypes.Int) {
 // GetLastSlashMeterFullTime returns the last UTC time the slash meter was full.
 func (k Keeper) GetLastSlashMeterFullTime(ctx sdktypes.Context) time.Time {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(providertypes.LastSlashMeterReplenishTimeKey())
+	bz := store.Get(providertypes.LastSlashMeterFullTimeKey())
 	if bz == nil {
 		panic("last slash replenish time not set")
 	}
@@ -487,5 +494,5 @@ func (k Keeper) GetLastSlashMeterFullTime(ctx sdktypes.Context) time.Time {
 // SetLastSlashMeterReplenishTime sets the most recent time the slash meter was full.
 func (k Keeper) SetLastSlashMeterFullTime(ctx sdktypes.Context, time time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(providertypes.LastSlashMeterReplenishTimeKey(), sdktypes.FormatTimeBytes(time.UTC()))
+	store.Set(providertypes.LastSlashMeterFullTimeKey(), sdktypes.FormatTimeBytes(time.UTC()))
 }

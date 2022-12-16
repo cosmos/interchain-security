@@ -31,23 +31,23 @@ const (
 // Iota generated keys/byte prefixes (as a byte), supports 256 possible values
 const (
 
-	// PortBytePrefix defines the byte prefix to store the port ID in store
-	PortBytePrefix byte = iota
+	// PortKey defines the key to store the port ID in store
+	PortByteKey byte = iota
 
-	// MaturedUnbondingOpsBytePrefix is the byte prefix that stores the list of all unbonding operations ids
+	// MaturedUnbondingOpsByteKey is the byte key that stores the list of all unbonding operations ids
 	// that have matured from a consumer chain perspective,
 	// i.e., no longer waiting on the unbonding period to elapse on any consumer chain
-	MaturedUnbondingOpsBytePrefix
+	MaturedUnbondingOpsByteKey
 
-	// ValidatorSetUpdateIdBytePrefix is the byte prefix that stores the current validator set update id
-	ValidatorSetUpdateIdBytePrefix
+	// ValidatorSetUpdateIdByteKey is the byte key that stores the current validator set update id
+	ValidatorSetUpdateIdByteKey
 
-	// SlashMeterBytePrefix is the byte prefix for storing the slash meter
-	SlashMeterBytePrefix
+	// SlashMeterBytePrefix is the byte key for storing the slash meter
+	SlashMeterByteKey
 
-	// LastSlashMeterReplenishTimeBytePrefix is the byte prefix for storing
+	// LastSlashMeterReplenishTimeBytePrefix is the byte key for storing
 	// the last time the slash meter was replenished
-	LastSlashMeterReplenishTimeBytePrefix
+	LastSlashMeterFullTimeByteKey
 
 	// ChainToChannelBytePrefix is the byte prefix for storing mapping
 	// from chainID to the channel ID that is used to send over validator set changes.
@@ -126,27 +126,27 @@ const (
 
 // PortKey returns the key to the port ID in the store
 func PortKey() []byte {
-	return []byte{PortBytePrefix}
+	return []byte{PortByteKey}
 }
 
 // MaturedUnbondingOpsKey returns the key for storing the list of matured unbonding operations.
 func MaturedUnbondingOpsKey() []byte {
-	return []byte{MaturedUnbondingOpsBytePrefix}
+	return []byte{MaturedUnbondingOpsByteKey}
 }
 
 // ValidatorSetUpdateIdKey is the key that stores the current validator set update id
 func ValidatorSetUpdateIdKey() []byte {
-	return []byte{ValidatorSetUpdateIdBytePrefix}
+	return []byte{ValidatorSetUpdateIdByteKey}
 }
 
 // SlashMeterKey returns the key storing the slash meter
 func SlashMeterKey() []byte {
-	return []byte{SlashMeterBytePrefix}
+	return []byte{SlashMeterByteKey}
 }
 
-// LastSlashMeterReplenishTimeKey returns the key storing the last time the slash meter was replenished
-func LastSlashMeterReplenishTimeKey() []byte {
-	return []byte{LastSlashMeterReplenishTimeBytePrefix}
+// LastSlashMeterFullTimeKey returns the key storing the last time the slash meter was full
+func LastSlashMeterFullTimeKey() []byte {
+	return []byte{LastSlashMeterFullTimeByteKey}
 }
 
 // ChainToChannelKey returns the key under which the CCV channel ID will be stored for the given consumer chain.
@@ -286,9 +286,14 @@ func ThrottledPacketDataKey(consumerChainID string, ibcSeqNum uint64) []byte {
 	return ChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, consumerChainID, ibcSeqNum)
 }
 
-// ParseThrottledPacketDataKey parses a throttled packet data key
-func ParseThrottledPacketDataKey(key []byte) (string, uint64, error) {
-	return ParseChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, key)
+// MustParseThrottledPacketDataKey parses a throttled packet data key
+// or panics upon failure
+func MustParseThrottledPacketDataKey(key []byte) (string, uint64) {
+	str, i, err := ParseChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, key)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse throttled packet data key: %s", err.Error()))
+	}
+	return str, i
 }
 
 // GlobalSlashEntryKey returns the key for storing a global slash queue entry.
