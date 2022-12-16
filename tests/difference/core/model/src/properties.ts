@@ -199,19 +199,21 @@ function validatorSetReplication(hist: BlockHistory): boolean {
   // at the NEXT height after the vscid was sent.
   // We compare these validator sets. The -1's are due to the fact
   // that the valset is always used at the NEXT height.
-  blocks[C].forEach((b: CommittedBlock, hC: number) => {
+  // blocks[C].forEach((b: CommittedBlock, hC: number) => {
+  for (const [hC, b] of blocks[C]) {
+    // const hC = b  .
     if (hC < 1) {
       // The model starts at consumer height 0, so there is
       // no committed block at height - 1. This means it does
       // not make sense to try to check the property for height 0.
-      return
+      continue
     }
-    const ss = b.invariantSnapshot;
+    const snapshotC = b.invariantSnapshot;
     // Get the vscid of the last update which dictated
     // the consumer valset valsetC committed at hC-1
-    const vscid = ss.hToVscID[hC];
+    const vscid = snapshotC.hToVscID[hC];
     // The VSU packet was sent at height hP-1
-    const hP = ss.vscIDtoH[vscid];
+    const hP = snapshotC.vscIDtoH[vscid];
     // Compare the validator sets at hC-1 and hP-1
     const valsetC = blocks[C].get(hC - 1)!.invariantSnapshot.consumerPower;
     // The provider set is implicitly defined by the status and tokens (power)
@@ -219,7 +221,7 @@ function validatorSetReplication(hist: BlockHistory): boolean {
       // The model starts at provider height 0, so there is
       // no committed block at height - 1. This means it does not
       // make sense to try to check the property for height 0.
-      return
+      continue
     }
     const snapshotP = blocks[P].get(hP - 1)!.invariantSnapshot;
     const statusP = snapshotP.status;
@@ -244,7 +246,7 @@ function validatorSetReplication(hist: BlockHistory): boolean {
       }
     })
 
-  })
+  }
   return good;
 }
 
