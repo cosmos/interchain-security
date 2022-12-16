@@ -87,7 +87,7 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 		vscMaturedPacketHandler(ctx, consumerChainID, vscMData)
 	}
 
-	// Delete handled data after iteration is completed
+	// Delete handled data after it has all been handled.
 	k.DeleteThrottledPacketData(ctx, consumerChainID, seqNums...)
 }
 
@@ -315,7 +315,11 @@ func (k Keeper) QueueThrottledPacketData(
 	k.IncrementThrottledPacketDataSize(ctx, consumerChainID)
 }
 
-// TODO: Comments and better tests
+// GetSlashAndTrailingData returns the first slash packet data instance and any
+// trailing vsc matured packet data instances in the chain-specific throttled packet data queue.
+//
+// Note: this method is not tested directly, but is covered indirectly
+// by TestHandlePacketDataForChain and e2e tests.
 func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID string) (
 	slashFound bool, slashData ccvtypes.SlashPacketData,
 	vscMaturedData []ccvtypes.VSCMaturedPacketData, ibcSeqNums []uint64) {
@@ -362,7 +366,7 @@ iteratorLoop:
 
 // GetAllThrottledPacketData returns all throttled packet data for a specific consumer chain.
 //
-// Note: This method is only used by tests
+// Note: This method is only used by tests, hence why it returns redundant data as different types.
 func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID string) (
 	slashData []ccvtypes.SlashPacketData, vscMaturedData []ccvtypes.VSCMaturedPacketData,
 	rawOrderedData []interface{}, ibcSeqNums []uint64) {
