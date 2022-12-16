@@ -22,15 +22,17 @@ import (
 )
 
 // HandleConsumerAdditionProposal will receive the consumer chain's client state from the proposal.
-// If the spawn time has already passed, then set the consumer chain. Otherwise store the client
-// as a pending client, and set once spawn time has passed.
+// If the client can be successfully created in a cached context, it stores the proposal as a pending proposal.
 //
 // Note: This method implements SpawnConsumerChainProposalHandler in spec.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcaprop1
 // Spec tag: [CCV-PCF-HCAPROP.1]
 func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.ConsumerAdditionProposal) error {
-	if !ctx.BlockTime().Before(p.SpawnTime) {
-		return k.CreateConsumerClient(ctx, p)
+
+	// verify the consumer addition proposal execution
+	// in cached context and discard the cached writes
+	if _, _, err := k.CreateConsumerClientInCachedCtx(ctx, *p); err != nil {
+		return err
 	}
 
 	err := k.SetPendingConsumerAdditionProp(ctx, p)
@@ -50,9 +52,9 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 
 	chainID := prop.ChainId
 	// check that a client for this chain does not exist
-	if _, found := k.GetConsumerClientId(ctx, prop.ChainId); found {
-		// drop the proposal
-		return nil
+	if _, found := k.GetConsumerClientId(ctx, chainID); found {
+		return sdkerrors.Wrap(ccv.ErrDuplicateConsumerChain,
+			fmt.Sprintf("cannot create client for existent consumer chain: %s", chainID))
 	}
 
 	// Consumers always start out with the default unbonding period
@@ -60,9 +62,14 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 
 	// Create client state by getting template client from parameters and filling in zeroed fields from proposal.
 	clientState := k.GetTemplateClient(ctx)
-	clientState.ChainId = prop.ChainId
+	clientState.ChainId = chainID
 	clientState.LatestHeight = prop.InitialHeight
-	clientState.TrustingPeriod = consumerUnbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
+
+	trustPeriod, err := ccv.CalculateTrustPeriod(consumerUnbondingPeriod, k.GetTrustingPeriodFraction(ctx))
+	if err != nil {
+		return err
+	}
+	clientState.TrustingPeriod = trustPeriod
 	clientState.UnbondingPeriod = consumerUnbondingPeriod
 
 	consumerGen, validatorSetHash, err := k.MakeConsumerGenesis(ctx, prop)
@@ -108,15 +115,16 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 }
 
 // HandleConsumerRemovalProposal stops a consumer chain and released the outstanding unbonding operations.
-// If the stop time hasn't already passed, it stores the proposal as a pending proposal.
+// If the consumer can be successfully stopped in a cached context, it stores the proposal as a pending proposal.
 //
 // This method implements StopConsumerChainProposalHandler from spec.
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-hcrprop1
 // Spec tag: [CCV-PCF-HCRPROP.1]
 func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.ConsumerRemovalProposal) error {
-
-	if !ctx.BlockTime().Before(p.StopTime) {
-		return k.StopConsumerChain(ctx, p.ChainId, true)
+	// verify the consumer removal proposal execution
+	// in cached context and discard the cached writes
+	if _, _, err := k.StopConsumerChainInCachedCtx(ctx, *p); err != nil {
+		return err
 	}
 
 	k.SetPendingConsumerRemovalProp(ctx, p.ChainId, p.StopTime)
@@ -132,8 +140,8 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan bool) (err error) {
 	// check that a client for chainID exists
 	if _, found := k.GetConsumerClientId(ctx, chainID); !found {
-		// drop the proposal
-		return nil
+		return sdkerrors.Wrap(ccv.ErrConsumerChainNotFound,
+			fmt.Sprintf("cannot stop non-existent consumer chain: %s", chainID))
 	}
 
 	// clean up states
@@ -234,7 +242,11 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 	// this is the latest height the client was updated at, i.e.,
 	// the height of the latest consensus state (see below)
 	clientState.LatestHeight = height
-	clientState.TrustingPeriod = providerUnbondingPeriod / time.Duration(k.GetTrustingPeriodFraction(ctx))
+	trustPeriod, err := ccv.CalculateTrustPeriod(providerUnbondingPeriod, k.GetTrustingPeriodFraction(ctx))
+	if err != nil {
+		return gen, nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidHeight, "error %s calculating trusting_period for: %s", err, height)
+	}
+	clientState.TrustingPeriod = trustPeriod
 	clientState.UnbondingPeriod = providerUnbondingPeriod
 
 	consState, err := k.clientKeeper.GetSelfConsensusState(ctx, height)
@@ -346,11 +358,18 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	propsToExecute := k.ConsumerAdditionPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
-		p := prop
-		err := k.CreateConsumerClient(ctx, &p)
+		// create consumer client in a cached context to handle errors
+		cachedCtx, writeFn, err := k.CreateConsumerClientInCachedCtx(ctx, prop)
 		if err != nil {
-			panic(fmt.Errorf("consumer client could not be created: %w", err))
+			// drop the proposal
+			ctx.Logger().Info("consumer client could not be created: %w", err)
+			continue
 		}
+		// The cached context is created with a new EventManager so we merge the event
+		// into the original context
+		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
+		// write cache
+		writeFn()
 	}
 	// delete the executed proposals
 	k.DeletePendingConsumerAdditionProps(ctx, propsToExecute...)
@@ -471,10 +490,18 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 	propsToExecute := k.ConsumerRemovalPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
-		err := k.StopConsumerChain(ctx, prop.ChainId, true)
+		// stop consumer chain in a cached context to handle errors
+		cachedCtx, writeFn, err := k.StopConsumerChainInCachedCtx(ctx, prop)
 		if err != nil {
-			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+			// drop the proposal
+			ctx.Logger().Info("consumer chain could not be stopped: %w", err)
+			continue
 		}
+		// The cached context is created with a new EventManager so we merge the event
+		// into the original context
+		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
+		// write cache
+		writeFn()
 	}
 	// delete the executed proposals
 	k.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
@@ -557,4 +584,20 @@ func (k Keeper) CloseChannel(ctx sdk.Context, channelID string) {
 			panic(fmt.Errorf("channel (id: %s) could not be closed: %w", channelID, err))
 		}
 	}
+}
+
+// CreateConsumerClientInCachedCtx creates a consumer client
+// from a given consumer addition proposal in a cached context
+func (k Keeper) CreateConsumerClientInCachedCtx(ctx sdk.Context, p types.ConsumerAdditionProposal) (cc sdk.Context, writeCache func(), err error) {
+	cc, writeCache = ctx.CacheContext()
+	err = k.CreateConsumerClient(cc, &p)
+	return
+}
+
+// StopConsumerChainInCachedCtx stop a consumer chain
+// from a given consumer removal proposal in a cached context
+func (k Keeper) StopConsumerChainInCachedCtx(ctx sdk.Context, p types.ConsumerRemovalProposal) (cc sdk.Context, writeCache func(), err error) {
+	cc, writeCache = ctx.CacheContext()
+	err = k.StopConsumerChain(ctx, p.ChainId, true)
+	return
 }

@@ -38,7 +38,7 @@ func TestParams(t *testing.T) {
 			true,
 			false,
 		),
-		4,
+		"0.25",
 		7*24*time.Hour,
 		5*time.Hour,
 		10*time.Minute,
