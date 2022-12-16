@@ -120,8 +120,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 
 		maturingPackets := k.GetAllPacketMaturityTimes(ctx, nil)
 
-		// heightToVCIDs := k.IterateHeightToValsetUpdateID(ctx)
-
 		outstandingDowntimes := k.GetAllOutstandingDowntimes(ctx)
 
 		// TODO: update GetLastTransmissionBlockHeight to not return an error

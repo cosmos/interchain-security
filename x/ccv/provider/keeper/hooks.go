@@ -100,7 +100,7 @@ func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddres
 		ConsumerKey  tmprotocrypto.PublicKey
 	}
 
-	for _, validatorConsumerPubKey := range h.k.GetAllValidatorConsumerPubKeys2(ctx) {
+	for _, validatorConsumerPubKey := range h.k.GetAllValidatorConsumerPubKeys(ctx, nil) {
 		if sdk.ConsAddress(validatorConsumerPubKey.ProviderAddr).Equals(valConsAddr) {
 			consumerAddr := utils.TMCryptoPublicKeyToConsAddr(*validatorConsumerPubKey.ConsumerKey)
 			h.k.DeleteValidatorByConsumerAddr(ctx, validatorConsumerPubKey.ChainId, consumerAddr)

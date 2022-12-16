@@ -381,13 +381,6 @@ func TestIterateChannelToChain(t *testing.T) {
 	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
 	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
 	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
-
-	// TODO JEHAN: if it is necessary to stop the iteration, fix this test
-	// iterate and check 1 result is returned
-	// result = pk.IterateChannelToChain(ctx)
-	// require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	// require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
-	// require.NotContains(t, result, cases[1], "result should not contain '%s'", cases[1])
 }
 
 // IterateOverUnbondingOps tests IterateOverUnbondingOps behaviour correctness
@@ -415,11 +408,4 @@ func TestIterateOverUnbondingOps(t *testing.T) {
 	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
 	require.Contains(t, result, ops[0], "result does not contain '%s'", ops[0])
 	require.Contains(t, result, ops[1], "result does not contain '%s'", ops[1])
-
-	// TODO JEHAN: if it is necessary to stop the iteration, fix this test
-	// iterate and check 1 result is returned
-	// result = pk.IterateOverUnbondingOps(ctx)
-	// require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	// require.Contains(t, result, ops[0], "result does not contain '%s'", ops[0])
-	// require.NotContains(t, result, ops[1], "result should not contain '%s'", ops[1])
 }

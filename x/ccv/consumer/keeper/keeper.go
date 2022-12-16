@@ -206,13 +206,8 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
-// GetPacketMaturityTimes returns a slice of PacketMaturityTimes
-// TODO: where this is used in QueueVSCMaturedPackets, it replaces an iterator which was stopped
-// when it reached a certain time. The new behavior gets all the packet maturity times, which
-// is less efficient but may not impact performance enough to matter.
-// If it does matter, we can add a time parameter to this function and stop the iteration when we reach
-// that time.
-func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context, before *uint64) (packetMaturityTimes []consumertypes.MaturingVSCPacket) {
+// GetPacketMaturityTimes returns a slice of PacketMaturityTimes, sorted by maturity time.
+func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context, latest *uint64) (packetMaturityTimes []consumertypes.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
@@ -224,10 +219,10 @@ func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context, before *uint64) (pack
 
 		timeNs := binary.BigEndian.Uint64(iterator.Value())
 
-		// If the `before` parameter is not nil, we want to stop iterating when we reach
-		// a maturityTime that is after the `before` time, because we want all maturities
-		// before the `before` time.
-		if before != nil && *before < timeNs {
+		// If the `latest` parameter is not nil, we want to stop iterating when we reach
+		// a maturityTime that is after the `latest` time, because we want no maturities
+		// after the `latest` time.
+		if latest != nil && *latest < timeNs {
 			break
 		}
 

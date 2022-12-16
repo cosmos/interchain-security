@@ -483,7 +483,7 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 
 	// test key assignment state is cleaned
 	found = false
-	for _, _ = range providerKeeper.GetAllValidatorConsumerPubKeys(ctx, expectedChainID) {
+	for _, _ = range providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &expectedChainID) {
 		found = true
 	}
 	require.False(t, found)

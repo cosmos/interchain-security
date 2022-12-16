@@ -142,7 +142,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	remProps := k.GetAllPendingConsumerRemovalProps(ctx)
 
 	// Export key assignment states
-	validatorConsumerPubKeys := k.GetAllValidatorConsumerPubKeys2(ctx)
+	validatorConsumerPubKeys := k.GetAllValidatorConsumerPubKeys(ctx, nil)
 
 	validatorsByConsumerAddr := k.GetAllValidatorsByConsumerAddr(ctx)
 

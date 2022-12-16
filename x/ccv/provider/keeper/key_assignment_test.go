@@ -73,14 +73,14 @@ func TestIterateValidatorConsumerPubKeys(t *testing.T) {
 		keeper.SetValidatorConsumerPubKey(ctx, chainID, assignment.ProviderAddr, *assignment.ConsumerKey)
 	}
 
-	result := keeper.GetAllValidatorConsumerPubKeys(ctx, chainID)
+	result := keeper.GetAllValidatorConsumerPubKeys(ctx, &chainID)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
 
 	for i, res := range result {
 		require.Equal(t, testAssignments[i], res, "mismatched consumer key assignment in case %d", i)
 	}
 
-	result = keeper.GetAllValidatorConsumerPubKeys(ctx, chainID)
+	result = keeper.GetAllValidatorConsumerPubKeys(ctx, &chainID)
 	// TODO JEHAN: This was testing an "iterateOne" iterator in the test itself. bring that back if we add a callback
 	// require.Len(t, result, 1, "incorrect result len - should be 1, got %d", len(result))
 
@@ -118,14 +118,14 @@ func TestIterateAllValidatorConsumerPubKeys(t *testing.T) {
 		keeper.SetValidatorConsumerPubKey(ctx, assignment.ChainId, assignment.ProviderAddr, *assignment.ConsumerKey)
 	}
 
-	result := keeper.GetAllValidatorConsumerPubKeys2(ctx)
+	result := keeper.GetAllValidatorConsumerPubKeys(ctx, nil)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
 
 	for i, res := range result {
 		require.Equal(t, testAssignments[i], res, "mismatched consumer key assignment in case %d", i)
 	}
 
-	result = keeper.GetAllValidatorConsumerPubKeys2(ctx)
+	result = keeper.GetAllValidatorConsumerPubKeys(ctx, nil)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be 1, got %d", len(result))
 
 	require.Equal(t, testAssignments[0], result[0], "mismatched consumer key assignment in iterate one")
@@ -337,7 +337,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 		}
 		// Try to find a validator who has this consumer address currently assigned
 		isCurrentlyAssigned := false
-		for _, valconsPubKey := range k.GetAllValidatorConsumerPubKeys(ctx, valByConsAddr.ChainId) {
+		for _, valconsPubKey := range k.GetAllValidatorConsumerPubKeys(ctx, &valByConsAddr.ChainId) {
 			if utils.TMCryptoPublicKeyToConsAddr(*valconsPubKey.ConsumerKey).Equals(sdk.ConsAddress(valByConsAddr.ConsumerAddr)) {
 				isCurrentlyAssigned = true
 				break
