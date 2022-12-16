@@ -178,6 +178,8 @@ func (k Keeper) QueryPendingConsumerPackets(goCtx context.Context, req *types.Qu
 	slashData, vscMaturedData, _, _ := k.GetAllThrottledPacketData(ctx, req.ChainId)
 
 	for _, data := range slashData {
+		// Prevent implicit memory aliasing in for loop.
+		data := data
 		wrapper := &types.PendingPacketWrapper_SlashPacket{SlashPacket: &data}
 		packets = append(packets, types.PendingPacketWrapper{
 			Data: wrapper,
@@ -185,6 +187,8 @@ func (k Keeper) QueryPendingConsumerPackets(goCtx context.Context, req *types.Qu
 	}
 
 	for _, data := range vscMaturedData {
+		// Prevent implicit memory aliasing in for loop.
+		data := data
 		wrapper := &types.PendingPacketWrapper_VscMaturedPacket{VscMaturedPacket: &data}
 		packets = append(packets, types.PendingPacketWrapper{
 			Data: wrapper,
