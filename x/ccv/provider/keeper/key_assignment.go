@@ -46,6 +46,11 @@ func (k Keeper) SetValidatorConsumerPubKey(
 }
 
 // GetAllValidatorConsumerPubKeys gets all the validators public keys assigned for a consumer chain
+// If chainID is nil, it returns all the validators public keys assigned for all consumer chains
+//
+// Note that the validators public keys assigned for a consumer chain are stored under keys
+// with the following format: UnbondingOpIndexBytePrefix | len(chainID) | chainID | providerAddress
+// Thus, the returned array is in ascending order of providerAddresses.
 func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string) (validatorConsumerPubKeys []types.ValidatorConsumerPubKey) {
 	store := ctx.KVStore(k.storeKey)
 	var prefix []byte
@@ -120,10 +125,19 @@ func (k Keeper) SetValidatorByConsumerAddr(
 
 // GetValidatorsByConsumerAddrs gets all the mappings from consensus addresses
 // on a given consumer chain to consensus addresses on the provider chain
-// TODO JEHAN: figure out the naming conflict
-func (k Keeper) GetAllValidatorsByConsumerAddr2(ctx sdk.Context, chainID string) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
+// If chainID is nil, it returns all the mappings from consensus addresses on all consumer chains
+//
+// Note that the mappings for a consumer chain are stored under keys with the following format:
+// ValidatorsByConsumerAddrBytePrefix | len(chainID) | chainID | consumerAddress
+// Thus, the returned array is in ascending order of consumerAddresses.
+func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
 	store := ctx.KVStore(k.storeKey)
-	prefix := types.ChainIdWithLenKey(types.ValidatorsByConsumerAddrBytePrefix, chainID)
+	var prefix []byte
+	if chainID == nil {
+		prefix = []byte{types.ValidatorsByConsumerAddrBytePrefix}
+	} else {
+		prefix = types.ChainIdWithLenKey(types.ValidatorsByConsumerAddrBytePrefix, *chainID)
+	}
 	iter := sdk.KVStorePrefixIterator(store, prefix)
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
@@ -140,36 +154,7 @@ func (k Keeper) GetAllValidatorsByConsumerAddr2(ctx sdk.Context, chainID string)
 		validatorConsumerAddrs = append(validatorConsumerAddrs, types.ValidatorByConsumerAddr{
 			ConsumerAddr: consumerAddr,
 			ProviderAddr: providerAddr,
-			ChainId:      chainID,
-		})
-	}
-
-	return validatorConsumerAddrs
-}
-
-// GetAllValidatorConsumerAddrs gets all the mappings from consensus addresses
-// on any consumer chain to consensus addresses on the provider chain.
-// Note that GetValidatorsConsumerAddrsByChainId cannot be used as consumer keys can be assigned
-// for chain IDs that are not yet known to the provider.
-func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
-	store := ctx.KVStore(k.storeKey)
-	iter := sdk.KVStorePrefixIterator(store, []byte{types.ValidatorsByConsumerAddrBytePrefix})
-	defer iter.Close()
-	for ; iter.Valid(); iter.Next() {
-		chainID, consumerAddr, err := types.ParseChainIdAndConsAddrKey(types.ValidatorsByConsumerAddrBytePrefix, iter.Key())
-		if err != nil {
-			panic(err)
-		}
-		var providerAddr sdk.ConsAddress
-		err = providerAddr.Unmarshal(iter.Value())
-		if err != nil {
-			panic(err)
-		}
-
-		validatorConsumerAddrs = append(validatorConsumerAddrs, types.ValidatorByConsumerAddr{
-			ChainId:      chainID,
-			ConsumerAddr: consumerAddr,
-			ProviderAddr: providerAddr,
+			ChainId:      *chainID,
 		})
 	}
 
@@ -226,6 +211,10 @@ func (k Keeper) SetKeyAssignmentReplacement(
 
 // GetAllKeyAssignmentReplacements gets all pairs of previous assigned consumer keys
 // and current powers for all provider validator for which key assignments were received in this block.
+//
+// Note that the pairs are stored under keys with the following format:
+// KeyAssignmentReplacementsBytePrefix | len(chainID) | chainID | providerAddress
+// Thus, the iteration is in ascending order of providerAddresses.
 func (k Keeper) GetAllKeyAssignmentReplacements(ctx sdk.Context, chainID string) (replacements []types.KeyAssignmentReplacement) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := types.ChainIdWithLenKey(types.KeyAssignmentReplacementsBytePrefix, chainID)
@@ -305,6 +294,12 @@ func (k Keeper) GetConsumerAddrsToPrune(
 	return
 }
 
+// GetAllConsumerAddrsToPrune gets all consumer addresses
+// that can be pruned for a given chainID.
+//
+// Note that the list of all consumer addresses is stored under keys with the following format:
+// ConsumerAddrsToPruneBytePrefix | len(chainID) | chainID | vscID
+// Thus, the returned array is in ascending order of vscIDs.
 func (k Keeper) GetAllConsumerAddrsToPrune(ctx sdk.Context, chainID string) (consumerAddrsToPrune []types.ConsumerAddrsToPrune) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := types.ChainIdWithLenKey(types.ConsumerAddrsToPruneBytePrefix, chainID)
@@ -546,7 +541,7 @@ func (k Keeper) DeleteKeyAssignments(ctx sdk.Context, chainID string) {
 	}
 
 	// delete ValidatorsByConsumerAddr
-	for _, validatorConsumerAddr := range k.GetAllValidatorsByConsumerAddr2(ctx, chainID) {
+	for _, validatorConsumerAddr := range k.GetAllValidatorsByConsumerAddr(ctx, &chainID) {
 		k.DeleteValidatorByConsumerAddr(ctx, chainID, validatorConsumerAddr.ConsumerAddr)
 	}
 

@@ -31,9 +31,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	for _, prop := range genState.ConsumerAdditionProposals {
 		// prevent implicit memory aliasing
 		prop := prop
-		if err := k.SetPendingConsumerAdditionProp(ctx, &prop); err != nil {
-			panic(fmt.Errorf("pending create consumer chain proposal could not be persisted: %w", err))
-		}
+		k.SetPendingConsumerAdditionProp(ctx, &prop)
 	}
 	for _, prop := range genState.ConsumerRemovalProposals {
 		k.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
@@ -144,7 +142,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	// Export key assignment states
 	validatorConsumerPubKeys := k.GetAllValidatorConsumerPubKeys(ctx, nil)
 
-	validatorsByConsumerAddr := k.GetAllValidatorsByConsumerAddr(ctx)
+	validatorsByConsumerAddr := k.GetAllValidatorsByConsumerAddr(ctx, nil)
 
 	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
 	// ConsumerAddrsToPrune are added only for registered consumer chains

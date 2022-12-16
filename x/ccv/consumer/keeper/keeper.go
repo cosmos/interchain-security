@@ -308,6 +308,10 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 }
 
 // GetAllHeightToValsetUpdateIDs returns a list of all the block heights to valset update IDs in the store
+//
+// Note that the block height to vscID mapping is stored under keys with the following format:
+// HeightValsetUpdateIDBytePrefix | height
+// Thus, the returned array is in ascending order of heights.
 func (k Keeper) GetAllHeightToValsetUpdateIDs(ctx sdk.Context) (heightToValsetUpdateIDs []types.HeightToValsetUpdateID) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
@@ -352,6 +356,10 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 }
 
 // GetAllOutstandingDowntimes gets an array of the validator addresses of outstanding downtime flags
+//
+// Note that the outstanding downtime flags are stored under keys with the following format:
+// OutstandingDowntimeBytePrefix | consAddress
+// Thus, the returned array is in ascending order of consAddresses.
 func (k Keeper) GetAllOutstandingDowntimes(ctx sdk.Context) (downtimes []consumertypes.OutstandingDowntime) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
@@ -397,6 +405,10 @@ func (k Keeper) DeleteCCValidator(ctx sdk.Context, addr []byte) {
 }
 
 // GetAllCCValidator returns all cross-chain validators
+//
+// Note that the cross-chain validators are stored under keys with the following format:
+// CrossChainValidatorBytePrefix | address
+// Thus, the returned array is in ascending order of addresses.
 func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChainValidator) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.CrossChainValidatorBytePrefix})

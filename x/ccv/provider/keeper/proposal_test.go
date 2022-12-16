@@ -224,8 +224,7 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 	defer ctrl.Finish()
 
 	for _, tc := range testCases {
-		err := providerKeeper.SetPendingConsumerAdditionProp(ctx, &tc.ConsumerAdditionProposal)
-		require.NoError(t, err)
+		providerKeeper.SetPendingConsumerAdditionProp(ctx, &tc.ConsumerAdditionProposal)
 	}
 
 	ctx = ctx.WithBlockTime(time.Now().UTC())
@@ -301,8 +300,7 @@ func TestPendingConsumerAdditionPropOrder(t *testing.T) {
 		ctx = ctx.WithBlockTime(tc.accessTime)
 
 		for _, prop := range tc.propSubmitOrder {
-			err := providerKeeper.SetPendingConsumerAdditionProp(ctx, &prop)
-			require.NoError(t, err)
+			providerKeeper.SetPendingConsumerAdditionProp(ctx, &prop)
 		}
 		propsToExecute := providerKeeper.ConsumerAdditionPropsToExecute(ctx)
 		require.Equal(t, tc.expectedOrderedProps, propsToExecute)
@@ -378,13 +376,13 @@ func TestHandleConsumerRemovalProposal(t *testing.T) {
 
 		if tc.expStop {
 			// Expect no pending proposal to exist
-			found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
+			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
 			require.False(t, found)
 
 			testProviderStateIsCleaned(t, ctx, providerKeeper, tc.prop.ChainId, "channelID")
 		} else {
 			// Proposal should be stored as pending
-			found := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.prop.ChainId, tc.prop.StopTime)
+			found := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.prop.ChainId, tc.prop.StopTime)
 			require.True(t, found)
 		}
 
@@ -489,7 +487,7 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 	require.False(t, found)
 
 	found = false
-	for _, _ = range providerKeeper.GetAllValidatorsByConsumerAddr2(ctx, expectedChainID) {
+	for _, _ = range providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID) {
 		found = true
 	}
 	require.False(t, found)
@@ -538,7 +536,7 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 	providerKeeper.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
 	numDeleted := 0
 	for _, tc := range testCases {
-		res := providerKeeper.GetPendingConsumerRemovalProp(ctx, tc.ChainId, tc.StopTime)
+		res := providerKeeper.PendingConsumerRemovalPropExists(ctx, tc.ChainId, tc.StopTime)
 		if !tc.ExpDeleted {
 			require.NotEmpty(t, res, "consumer removal prop was deleted: %s %s", tc.ChainId, tc.StopTime.String())
 			continue
@@ -761,8 +759,7 @@ func TestBeginBlockInit(t *testing.T) {
 	)
 
 	for _, prop := range pendingProps {
-		err := providerKeeper.SetPendingConsumerAdditionProp(ctx, prop)
-		require.NoError(t, err)
+		providerKeeper.SetPendingConsumerAdditionProp(ctx, prop)
 	}
 
 	providerKeeper.BeginBlockInit(ctx)
@@ -843,13 +840,13 @@ func TestBeginBlockCCR(t *testing.T) {
 	providerKeeper.BeginBlockCCR(ctx)
 
 	// Only the 3rd (final) proposal is still stored as pending
-	found := providerKeeper.GetPendingConsumerRemovalProp(
+	found := providerKeeper.PendingConsumerRemovalPropExists(
 		ctx, pendingProps[0].ChainId, pendingProps[0].StopTime)
 	require.False(t, found)
-	found = providerKeeper.GetPendingConsumerRemovalProp(
+	found = providerKeeper.PendingConsumerRemovalPropExists(
 		ctx, pendingProps[1].ChainId, pendingProps[1].StopTime)
 	require.False(t, found)
-	found = providerKeeper.GetPendingConsumerRemovalProp(
+	found = providerKeeper.PendingConsumerRemovalPropExists(
 		ctx, pendingProps[2].ChainId, pendingProps[2].StopTime)
 	require.True(t, found)
 }
@@ -871,8 +868,7 @@ func TestGetAllConsumerAdditionProps(t *testing.T) {
 
 	for _, prop := range props {
 		cpProp := prop // bring into loop scope - avoids using iterator pointer instead of value pointer
-		err := providerKeeper.SetPendingConsumerAdditionProp(ctx, &cpProp)
-		require.NoError(t, err)
+		providerKeeper.SetPendingConsumerAdditionProp(ctx, &cpProp)
 	}
 
 	// advance the clock to be 1 minute after first proposal

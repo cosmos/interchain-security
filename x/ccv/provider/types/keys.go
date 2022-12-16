@@ -66,14 +66,14 @@ const (
 	PendingCRPBytePrefix
 
 	// UnbondingOpBytePrefix is the byte prefix that stores a record of all the ids of consumer chains that
-	// need to unbond before a given delegation can unbond on this chain.
+	// need to unbond before a given unbonding operation can unbond on this chain.
 	UnbondingOpBytePrefix
 
 	// UnbondingOpIndexBytePrefix is byte prefix of the index for looking up which unbonding
-	// delegation entries are waiting for a given consumer chain to unbond
+	// operations are waiting for a given consumer chain to unbond
 	UnbondingOpIndexBytePrefix
 
-	// ValsetUpdateBlockHeightBytePrefix is the byte prefix that will store the mapping from valset update ID to block height
+	// ValsetUpdateBlockHeightBytePrefix is the byte prefix that will store the mapping from vscIDs to block heights
 	ValsetUpdateBlockHeightBytePrefix
 
 	// ConsumerGenesisBytePrefix stores consumer genesis state material (consensus state and client state) indexed by consumer chain id

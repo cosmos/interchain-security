@@ -134,6 +134,11 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 }
 
 // GetAllConsumerChains gets all of the consumer chains that the provider module controls
+// Consumer chains with created clients are also referred to as registered.
+//
+// Note that the registered consumer chains are stored under keys with the following format:
+// ChainToClientBytePrefix | chainID
+// Thus, the returned array is in ascending order of chainIDs.
 func (k Keeper) GetAllConsumerChains(ctx sdk.Context) (chains []types.Chain) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChainToClientBytePrefix})
@@ -176,6 +181,10 @@ func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 }
 
 // GetChannelToChains gets all channel to chain mappings
+//
+// Note that mapping from CCV channel IDs to consumer chainIDs is stored under keys with the following format:
+// ChannelToChainBytePrefix | channelID
+// Thus, the returned array is in ascending order of channelIDs.
 func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.ChannelToChain) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ChannelToChainBytePrefix})
@@ -301,7 +310,7 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 	return nil
 }
 
-// Save UnbondingOp by unique ID
+// SetUnbondingOp sets the UnbondingOp by its unique ID
 func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp ccv.UnbondingOp) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := unbondingOp.Marshal()
@@ -311,7 +320,7 @@ func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp ccv.UnbondingOp) {
 	store.Set(types.UnbondingOpKey(unbondingOp.Id), bz)
 }
 
-// Get UnbondingOp by unique ID
+// GetUnbondingOp gets a UnbondingOp by its unique ID
 func (k Keeper) GetUnbondingOp(ctx sdk.Context, id uint64) (ccv.UnbondingOp, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.UnbondingOpKey(id))
@@ -322,11 +331,17 @@ func (k Keeper) GetUnbondingOp(ctx sdk.Context, id uint64) (ccv.UnbondingOp, boo
 	return types.MustUnmarshalUnbondingOp(k.cdc, bz), true
 }
 
+// DeleteUnbondingOp deletes a UnbondingOp given its ID
 func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.UnbondingOpKey(id))
 }
 
+// GetAllUnbondingOps gets all UnbondingOps.
+//
+// Note that UnbondingOps are stored under keys with the following format:
+// UnbondingOpBytePrefix | ID
+// Thus, the iteration is in ascending order of IDs.
 func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []ccv.UnbondingOp) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.UnbondingOpBytePrefix})
@@ -352,7 +367,9 @@ func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []ccv.UnbondingOp) {
 	return ops
 }
 
-// This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
+// SetUnbondingOpIndex sets an unbonding index,
+// i.e., the IDs of unbonding operations that are waiting for
+// a VSCMaturedPacket with vscID from a consumer with chainID
 func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, IDs []uint64) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -368,6 +385,10 @@ func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 }
 
 // GetAllUnbondingOpIndexes gets all unbonding indexes for a given chain id.
+//
+// Note that the unbonding indexes for a given chainID are stored under keys with the following format:
+// UnbondingOpIndexBytePrefix | len(chainID) | chainID | vscID
+// Thus, the returned array is in ascending order of vscIDs.
 func (k Keeper) GetAllUnbondingOpIndexes(ctx sdk.Context, chainID string) (indexes []types.VscUnbondingOps) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.UnbondingOpIndexBytePrefix, chainID))
@@ -394,7 +415,9 @@ func (k Keeper) GetAllUnbondingOpIndexes(ctx sdk.Context, chainID string) (index
 	return indexes
 }
 
-// This index allows retrieving UnbondingDelegationEntries by chainID and valsetUpdateID
+// GetUnbondingOpIndex gets an unbonding index,
+// i.e., the IDs of unbonding operations that are waiting for
+// a VSCMaturedPacket with vscID from a consumer with chainID
 func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) ([]uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 
@@ -411,13 +434,15 @@ func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdat
 	return idx.GetIds(), true
 }
 
-// This index allows retreiving UnbondingDelegationEntries by chainID and valsetUpdateID
+// DeleteUnbondingOpIndex deletes an unbonding index,
+// i.e., the IDs of unbonding operations that are waiting for
+// a VSCMaturedPacket with vscID from a consumer with chainID
 func (k Keeper) DeleteUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.UnbondingOpIndexKey(chainID, valsetUpdateID))
 }
 
-// Retrieve UnbondingDelegationEntries by chainID and valsetUpdateID
+// GetUnbondingOpsFromIndex gets the unbonding ops waiting for a given chainID and vscID
 func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (entries []ccv.UnbondingOp, found bool) {
 	ids, found := k.GetUnbondingOpIndex(ctx, chainID, valsetUpdateID)
 	if !found {
@@ -564,6 +589,10 @@ func (k Keeper) GetValsetUpdateBlockHeight(ctx sdk.Context, valsetUpdateId uint6
 }
 
 // GetAllValsetUpdateBlockHeights gets all the block heights for all valset updates
+//
+// Note that the mapping from vscIDs to block heights is stored under keys with the following format:
+// ValsetUpdateBlockHeightBytePrefix | vscID
+// Thus, the returned array is in ascending order of vscIDs.
 func (k Keeper) GetAllValsetUpdateBlockHeights(ctx sdk.Context) (valsetUpdateBlockHeights []types.ValsetUpdateIdToHeight) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.ValsetUpdateBlockHeightBytePrefix})
@@ -630,7 +659,12 @@ func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []string
 }
 
 // GetAllSlashAcks iterates through the slash acks set in the store.
-// Note: this method is only used in testing
+//
+// Note that the slash acks are stored under keys with the following format:
+// SlashAcksBytePrefix | chainID
+// Thus, the returned array is in ascending order of chainIDs.
+//
+// Note: This method is only used in testing
 func (k Keeper) GetAllSlashAcks(ctx sdk.Context, cb func(chainID string, acks []string) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.SlashAcksBytePrefix})
@@ -769,7 +803,10 @@ func (k Keeper) DeleteInitTimeoutTimestamp(ctx sdk.Context, chainID string) {
 }
 
 // GetAllInitTimeoutTimestamps gets all init timeout timestamps in the store.
-// Note: as the keys have the `bytePrefix | chainID` format, the array is NOT in timestamp order.
+//
+// Note that the init timeout timestamps are stored under keys with the following format:
+// InitTimeoutTimestampBytePrefix | chainID
+// Thus, the returned array is in ascending order of chainIDs (NOT in timestamp order).
 func (k Keeper) GetAllInitTimeoutTimestamps(ctx sdk.Context) (initTimeoutTimestamps []types.InitTimeoutTimestamp) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.InitTimeoutTimestampBytePrefix})
@@ -831,6 +868,10 @@ func (k Keeper) DeleteVscSendTimestamp(ctx sdk.Context, chainID string, vscID ui
 
 // GetAllVscSendTimestamps gets an array of vsc send timestamps in order (lowest first)
 // for the given chainID.
+//
+// Note that the vsc send timestamps of a given chainID are stored under keys with the following format:
+// VscSendTimestampBytePrefix | len(chainID) | chainID | vscID
+// Thus, the returned array is in ascending order of vscIDs, and as a result in send timestamp order.
 func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSendTimestamps []types.VscSendTimestamp) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))

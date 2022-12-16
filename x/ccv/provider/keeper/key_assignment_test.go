@@ -178,14 +178,14 @@ func TestIterateValidatorsByConsumerAddr(t *testing.T) {
 		keeper.SetValidatorByConsumerAddr(ctx, chainID, assignment.ConsumerAddr, assignment.ProviderAddr)
 	}
 
-	result := keeper.GetAllValidatorsByConsumerAddr2(ctx, chainID)
+	result := keeper.GetAllValidatorsByConsumerAddr(ctx, &chainID)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
 
 	for i, res := range result {
 		require.Equal(t, testAssignments[i], res, "mismatched consumer address assignment in case %d", i)
 	}
 
-	result = keeper.GetAllValidatorsByConsumerAddr2(ctx, chainID)
+	result = keeper.GetAllValidatorsByConsumerAddr(ctx, &chainID)
 
 	require.Equal(t, testAssignments[0], result[0], "mismatched consumer address assignment in iterate one")
 }
@@ -217,14 +217,14 @@ func TestIterateAllValidatorsByConsumerAddr(t *testing.T) {
 		keeper.SetValidatorByConsumerAddr(ctx, assignment.ChainId, assignment.ConsumerAddr, assignment.ProviderAddr)
 	}
 
-	result := keeper.GetAllValidatorsByConsumerAddr(ctx)
+	result := keeper.GetAllValidatorsByConsumerAddr(ctx, nil)
 	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
 
 	for i, res := range result {
 		require.Equal(t, testAssignments[i], res, "mismatched consumer address assignment in case %d", i)
 	}
 
-	result = keeper.GetAllValidatorsByConsumerAddr(ctx)
+	result = keeper.GetAllValidatorsByConsumerAddr(ctx, nil)
 
 	require.Equal(t, testAssignments[0], result[0], "mismatched consumer address assignment in iterate one")
 }
@@ -329,7 +329,7 @@ func checkCorrectPruningProperty(ctx sdk.Context, k providerkeeper.Keeper, chain
 	}
 
 	good := true
-	for _, valByConsAddr := range k.GetAllValidatorsByConsumerAddr(ctx) {
+	for _, valByConsAddr := range k.GetAllValidatorsByConsumerAddr(ctx, nil) {
 		if _, ok := willBePruned[sdk.ConsAddress(valByConsAddr.ConsumerAddr).String()]; ok {
 			// Address will be pruned, everything is fine.
 			continue
