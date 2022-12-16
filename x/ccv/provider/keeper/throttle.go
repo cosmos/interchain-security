@@ -35,6 +35,7 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 		// Handle one slash and any trailing vsc matured packet data instances by passing in
 		// chainID and appropriate callbacks, relevant packet data is deleted in this method.
+
 		k.HandlePacketDataForChain(ctx, globalEntry.ConsumerChainID, k.HandleSlashPacket, k.HandleVSCMaturedPacket)
 		handledEntries = append(handledEntries, globalEntry)
 
@@ -77,38 +78,16 @@ func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID s
 	slashPacketHandler func(sdktypes.Context, string, ccvtypes.SlashPacketData),
 	vscMaturedPacketHandler func(sdktypes.Context, string, ccvtypes.VSCMaturedPacketData),
 ) {
+	// Get slash packet data and trailing vsc matured packet data, handle it all.
+	slashFound, slashData, vscMaturedData, seqNums := k.GetSlashAndTrailingData(ctx, consumerChainID)
+	if slashFound {
+		slashPacketHandler(ctx, consumerChainID, slashData)
+	}
+	for _, vscMData := range vscMaturedData {
+		vscMaturedPacketHandler(ctx, consumerChainID, vscMData)
+	}
 
-	// Store ibc sequence numbers to delete data after iteration is completed
-	seqNums := []uint64{}
-
-	slashPacketHandled := false
-	k.IterateThrottledPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, data interface{}) (stop bool) {
-
-		switch data := data.(type) {
-
-		case ccvtypes.SlashPacketData:
-			if slashPacketHandled {
-				// Break iteration, since we've already handled one slash packet
-				stop = true
-				return stop
-			} else {
-				// Handle slash packet and set flag to true
-				slashPacketHandler(ctx, consumerChainID, data)
-				slashPacketHandled = true
-			}
-		case ccvtypes.VSCMaturedPacketData:
-			vscMaturedPacketHandler(ctx, consumerChainID, data)
-		default:
-			panic(fmt.Sprintf("unexpected pending packet data type: %T", data))
-		}
-		seqNums = append(seqNums, ibcSeqNum)
-
-		// Continue iterating through the queue until we reach the end or a 2nd slash packet
-		stop = false
-		return stop
-	})
-
-	// Delete handled data after iteration is completed
+	// Delete handled data after it has all been handled.
 	k.DeleteThrottledPacketData(ctx, consumerChainID, seqNums...)
 }
 
@@ -336,79 +315,118 @@ func (k Keeper) QueueThrottledPacketData(
 	k.IncrementThrottledPacketDataSize(ctx, consumerChainID)
 }
 
-// IterateThrottledPacketData iterates over the throttled packet data queue for a specific consumer chain
-// (ordered by ibc seq number) and calls the provided callback
-func (k Keeper) IterateThrottledPacketData(ctx sdktypes.Context, consumerChainID string, cb func(uint64, interface{}) (stop bool)) {
+// GetSlashAndTrailingData returns the first slash packet data instance and any
+// trailing vsc matured packet data instances in the chain-specific throttled packet data queue.
+//
+// Note: this method is not tested directly, but is covered indirectly
+// by TestHandlePacketDataForChain and e2e tests.
+func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID string) (
+	slashFound bool, slashData ccvtypes.SlashPacketData,
+	vscMaturedData []ccvtypes.VSCMaturedPacketData, ibcSeqNums []uint64) {
+
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
 	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
 	defer iterator.Close()
+
+	slashFound = false
+	slashData = ccvtypes.SlashPacketData{}
+	vscMaturedData = []ccvtypes.VSCMaturedPacketData{}
+	ibcSeqNums = []uint64{}
+
+iteratorLoop:
 	for ; iterator.Valid(); iterator.Next() {
-		var packetData interface{}
-		var err error
 		bz := iterator.Value()
 		switch bz[0] {
 		case slashPacketData:
-			spd := ccvtypes.SlashPacketData{}
-			err = spd.Unmarshal(bz[1:])
-			packetData = spd
+			if slashFound {
+				// Break for-loop, we've already found first slash packet data instance.
+				break iteratorLoop
+			} else {
+				if err := slashData.Unmarshal(bz[1:]); err != nil {
+					panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
+				}
+				slashFound = true
+			}
 		case vscMaturedPacketData:
-			vpd := ccvtypes.VSCMaturedPacketData{}
-			err = vpd.Unmarshal(bz[1:])
-			packetData = vpd
+			vscMData := ccvtypes.VSCMaturedPacketData{}
+			if err := vscMData.Unmarshal(bz[1:]); err != nil {
+				panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
+			}
+			vscMaturedData = append(vscMaturedData, vscMData)
 		default:
 			panic("invalid packet data type")
 		}
-		if err != nil {
-			panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
-		}
-		_, ibcSeqNum, err := providertypes.ParseThrottledPacketDataKey(iterator.Key())
-		if err != nil {
-			panic(fmt.Sprintf("failed to parse pending packet data key: %v", err))
-		}
-		stop := cb(ibcSeqNum, packetData)
-		if stop {
-			break
-		}
+
+		_, ibcSeqNum := providertypes.MustParseThrottledPacketDataKey(iterator.Key())
+		ibcSeqNums = append(ibcSeqNums, ibcSeqNum)
 	}
+	return slashFound, slashData, vscMaturedData, ibcSeqNums
 }
 
 // GetAllThrottledPacketData returns all throttled packet data for a specific consumer chain.
 //
-// Note: This method is only used by tests
+// Note: This method is only used by tests, hence why it returns redundant data as different types.
 func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID string) (
-	[]ccvtypes.SlashPacketData, []ccvtypes.VSCMaturedPacketData) {
+	slashData []ccvtypes.SlashPacketData, vscMaturedData []ccvtypes.VSCMaturedPacketData,
+	rawOrderedData []interface{}, ibcSeqNums []uint64) {
 
-	slashData := []ccvtypes.SlashPacketData{}
-	vscMaturedData := []ccvtypes.VSCMaturedPacketData{}
-	k.IterateThrottledPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, data interface{}) (stop bool) {
+	slashData = []ccvtypes.SlashPacketData{}
+	vscMaturedData = []ccvtypes.VSCMaturedPacketData{}
+	rawOrderedData = []interface{}{}
+	ibcSeqNums = []uint64{}
 
-		switch data := data.(type) {
+	store := ctx.KVStore(k.storeKey)
+	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
+	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
+	defer iterator.Close()
 
-		case ccvtypes.SlashPacketData:
-			slashData = append(slashData, data)
-		case ccvtypes.VSCMaturedPacketData:
-			vscMaturedData = append(vscMaturedData, data)
+	for ; iterator.Valid(); iterator.Next() {
+		bz := iterator.Value()
+		switch bz[0] {
+		case slashPacketData:
+			d := ccvtypes.SlashPacketData{}
+			if err := d.Unmarshal(bz[1:]); err != nil {
+				panic(fmt.Sprintf("failed to unmarshal slash packet data: %v", err))
+			}
+			slashData = append(slashData, d)
+			rawOrderedData = append(rawOrderedData, d)
+		case vscMaturedPacketData:
+			d := ccvtypes.VSCMaturedPacketData{}
+			if err := d.Unmarshal(bz[1:]); err != nil {
+				panic(fmt.Sprintf("failed to unmarshal vsc matured packet data: %v", err))
+			}
+			vscMaturedData = append(vscMaturedData, d)
+			rawOrderedData = append(rawOrderedData, d)
 		default:
-			panic(fmt.Sprintf("unexpected pending packet data type: %T", data))
+			panic(fmt.Sprintf("invalid packet data type: %v", bz[0]))
 		}
-		// Continue iteration
-		stop = false
-		return stop
-	})
-	return slashData, vscMaturedData
+		_, ibcSeqNum := providertypes.MustParseThrottledPacketDataKey(iterator.Key())
+		ibcSeqNums = append(ibcSeqNums, ibcSeqNum)
+	}
+
+	return slashData, vscMaturedData, rawOrderedData, ibcSeqNums
 }
 
-// DeleteAllThrottledPacketDataForConsumer deletes all throttled packet data for the given consumer chain.
-func (k Keeper) DeleteAllThrottledPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
-	ibcSeqNumsToDelete := []uint64{}
-	k.IterateThrottledPacketData(ctx, consumerChainID, func(ibcSeqNum uint64, packetData interface{}) bool {
-		ibcSeqNumsToDelete = append(ibcSeqNumsToDelete, ibcSeqNum)
-		// Continue iteration
-		stop := false
-		return stop
-	})
-	k.DeleteThrottledPacketData(ctx, consumerChainID, ibcSeqNumsToDelete...)
+// DeleteAllPacketDataForConsumer deletes all queued packet data for the given consumer chain.
+func (k Keeper) DeleteThrottledPacketDataForConsumer(ctx sdktypes.Context, consumerChainID string) {
+
+	store := ctx.KVStore(k.storeKey)
+	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
+	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
+	defer iterator.Close()
+
+	keysToDel := [][]byte{}
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+	// Delete data for this consumer
+	for _, key := range keysToDel {
+		store.Delete(key)
+	}
+
+	// Delete size of data queue for this consumer
+	store.Delete(providertypes.ThrottledPacketDataSizeKey(consumerChainID))
 }
 
 // DeleteThrottledPacketData deletes the given throttled packet data instances

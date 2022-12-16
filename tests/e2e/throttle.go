@@ -397,7 +397,7 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 	s.Require().Equal(450, len(allGlobalEntries))
 
 	// Confirm that the chain specific queue has 450 slash packet data instances, and 50 vsc matured
-	slashPacketData, vscMaturedPacketData := providerKeeper.GetAllThrottledPacketData(
+	slashPacketData, vscMaturedPacketData, _, _ := providerKeeper.GetAllThrottledPacketData(
 		s.providerCtx(), firstBundle.Chain.ChainID)
 	s.Require().Equal(450, len(slashPacketData))
 	s.Require().Equal(50, len(vscMaturedPacketData))
@@ -439,7 +439,7 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 	// Confirm that only the first packet was handled
 	allGlobalEntries = providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
 	s.Require().Equal(449, len(allGlobalEntries))
-	slashPacketData, vscMaturedPacketData = providerKeeper.GetAllThrottledPacketData(
+	slashPacketData, vscMaturedPacketData, _, _ = providerKeeper.GetAllThrottledPacketData(
 		s.providerCtx(), firstBundle.Chain.ChainID)
 	s.Require().Equal(449, len(slashPacketData))
 	// No VSC matured packets should be handled yet
@@ -465,9 +465,10 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 	// Confirm both queues are now empty, meaning every packet was handled.
 	allGlobalEntries = providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
 	s.Require().Equal(0, len(allGlobalEntries))
-	slashPacketData, _ = providerKeeper.GetAllThrottledPacketData(
+	slashPacketData, vscMaturedPacketData, _, _ = providerKeeper.GetAllThrottledPacketData(
 		s.providerCtx(), firstBundle.Chain.ChainID)
 	s.Require().Equal(0, len(slashPacketData))
+	s.Require().Equal(0, len(vscMaturedPacketData))
 }
 
 // TestSlashingSmallValidators tests that multiple slash packets from validators with small

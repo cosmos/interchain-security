@@ -528,7 +528,7 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 		require.NotEqual(t, expectedChainID, entry.ConsumerChainID)
 	}
 
-	slashPacketData, vscMaturedPacketData := providerKeeper.GetAllThrottledPacketData(ctx, expectedChainID)
+	slashPacketData, vscMaturedPacketData, _, _ := providerKeeper.GetAllThrottledPacketData(ctx, expectedChainID)
 	require.Empty(t, slashPacketData)
 	require.Empty(t, vscMaturedPacketData)
 }

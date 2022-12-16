@@ -163,12 +163,7 @@ func TestHandlePacketDataForChain(t *testing.T) {
 			}
 		}
 
-		dataThatsLeft := []interface{}{}
-		providerKeeper.IterateThrottledPacketData(ctx, tc.chainID, func(ibcSeqNum uint64, data interface{}) bool {
-			dataThatsLeft = append(dataThatsLeft, data)
-			return false
-		})
-
+		_, _, dataThatsLeft, _ := providerKeeper.GetAllThrottledPacketData(ctx, tc.chainID)
 		require.Equal(t, expectedDataThatsLeft, dataThatsLeft)
 
 		// Assert that each instance of handled data is deleted from the persisted queue (i.e deletions where expected)
@@ -834,8 +829,8 @@ func TestThrottledPacketData(t *testing.T) {
 	}
 }
 
-// TestDeleteAllThrottledPacketDataForConsumer tests the DeleteAllThrottledPacketDataForConsumer method.
-func TestDeleteAllThrottledPacketDataForConsumer(t *testing.T) {
+// TestDeleteThrottledPacketDataForConsumer tests the DeleteThrottledPacketDataForConsumer method.
+func TestDeleteThrottledPacketDataForConsumer(t *testing.T) {
 
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
@@ -855,13 +850,16 @@ func TestDeleteAllThrottledPacketDataForConsumer(t *testing.T) {
 	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-49", 6, testkeeper.GetNewVSCMaturedPacketData())
 
 	// Delete all packet data for chain-49, confirm they are deleted
-	providerKeeper.DeleteAllThrottledPacketDataForConsumer(ctx, "chain-49")
-	slashData, vscMaturedData := providerKeeper.GetAllThrottledPacketData(ctx, "chain-49")
+	providerKeeper.DeleteThrottledPacketDataForConsumer(ctx, "chain-49")
+	slashData, vscMaturedData, _, _ := providerKeeper.GetAllThrottledPacketData(ctx, "chain-49")
 	require.Empty(t, slashData)
 	require.Empty(t, vscMaturedData)
 
+	// Confirm size of queue is now 0
+	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-49"))
+
 	// Confirm packet data for chain-48 is not deleted
-	slashData, vscMaturedData = providerKeeper.GetAllThrottledPacketData(ctx, "chain-48")
+	slashData, vscMaturedData, _, _ = providerKeeper.GetAllThrottledPacketData(ctx, "chain-48")
 	require.Len(t, slashData, 1)
 	require.Len(t, vscMaturedData, 1)
 }
@@ -1008,13 +1006,19 @@ type throttledPacketDataInstance struct {
 	Data      interface{}
 }
 
-// getAllPendingPacketDataInstances returns all pending packet data instances in order from the pending packet data queue
-func getAllPendingPacketDataInstances(ctx sdktypes.Context, k *keeper.Keeper, consumerChainId string) (instances []throttledPacketDataInstance) {
-	k.IterateThrottledPacketData(ctx, consumerChainId, func(ibcSeqNum uint64, data interface{}) bool {
-		instances = append(instances, throttledPacketDataInstance{IbcSeqNum: ibcSeqNum, Data: data})
-		return false
-	})
-	return
+// getAllThrottledPacketDataInstances returns all throttled packet data instances in order
+// from the chain-specific packet data queue.
+func getAllThrottledPacketDataInstances(ctx sdktypes.Context, k *keeper.Keeper, consumerChainId string) (instances []throttledPacketDataInstance) {
+
+	_, _, allData, ibcSeqNums := k.GetAllThrottledPacketData(ctx, consumerChainId)
+	instances = []throttledPacketDataInstance{}
+	for idx, data := range allData {
+		instances = append(instances, throttledPacketDataInstance{
+			IbcSeqNum: ibcSeqNums[idx],
+			Data:      data,
+		})
+	}
+	return instances
 }
 
 // getOrderedInstances returns the given instances in order, specified by the given indexes
@@ -1030,7 +1034,7 @@ func getOrderedInstances(instances []throttledPacketDataInstance, orderbyIdx []i
 func assertPendingPacketDataOrdering(t *testing.T, k *keeper.Keeper, ctx sdktypes.Context,
 	consumerChainId string, expectedInstances []throttledPacketDataInstance) {
 	// Get all packet data for this chain
-	obtainedInstances := getAllPendingPacketDataInstances(ctx, k, consumerChainId)
+	obtainedInstances := getAllThrottledPacketDataInstances(ctx, k, consumerChainId)
 	// No extra data should be present
 	require.Equal(t, len(expectedInstances), len(obtainedInstances))
 	// Assert order and correct serialization/deserialization for each data instance
