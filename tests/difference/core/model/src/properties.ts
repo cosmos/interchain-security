@@ -200,7 +200,6 @@ function validatorSetReplication(hist: BlockHistory): boolean {
   // We compare these validator sets. The -1's are due to the fact
   // that the valset is always used at the NEXT height.
   for (const [hC, b] of blocks[C]) {
-    // const hC = b  .
     if (hC < 1) {
       // The model starts at consumer height 0, so there is
       // no committed block at height - 1. This means it does
