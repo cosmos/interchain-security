@@ -6,8 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
-	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -119,6 +117,7 @@ func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.Que
 	}, nil
 }
 
+// TODO: change to GlobalSlashEntries naming
 func (k Keeper) QueryPendingSlashPackets(goCtx context.Context, req *types.QueryPendingSlashPacketsRequest) (*types.QueryPendingSlashPacketsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -134,20 +133,22 @@ func (k Keeper) QueryPendingSlashPackets(goCtx context.Context, req *types.Query
 
 	// iterate global slash entries from all consumer chains
 	// and fetch corresponding SlashPacketData from the per-chain throttled packet data queue
-	k.IterateGlobalSlashEntries(ctx, func(entry providertypes.GlobalSlashEntry) (stop bool) {
-		slashPacket, found := k.GetSlashPacketForGlobalEntry(ctx, entry.ConsumerChainID, entry.IbcSeqNum)
+	allGlobalEntries := k.GetAllGlobalSlashEntries(ctx)
+
+	for _, entry := range allGlobalEntries {
+
+		slashData, found := k.GetSlashPacketForGlobalEntry(ctx, entry.ConsumerChainID, entry.IbcSeqNum)
 		if !found {
 			// silently skip over invalid data
-			return false
+			continue
 		}
 
 		packets = append(packets, &types.PendingSlashPacket{
 			ChainId:    entry.ConsumerChainID,
 			ReceivedAt: entry.RecvTime,
-			Data:       slashPacket,
+			Data:       slashData,
 		})
-		return false
-	})
+	}
 
 	return &types.QueryPendingSlashPacketsResponse{
 		SlashMeter:          meter.Int64(),
@@ -158,6 +159,7 @@ func (k Keeper) QueryPendingSlashPackets(goCtx context.Context, req *types.Query
 	}, nil
 }
 
+// TODO: change to ThrottledPacketData naming
 func (k Keeper) QueryPendingConsumerPackets(goCtx context.Context, req *types.QueryPendingConsumerPacketsRequest) (*types.QueryPendingConsumerPacketsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -173,23 +175,21 @@ func (k Keeper) QueryPendingConsumerPackets(goCtx context.Context, req *types.Qu
 	}
 
 	packets := []types.PendingPacketWrapper{}
-	k.IterateThrottledPacketData(ctx, req.ChainId, func(ibcSeqNum uint64, data interface{}) (stop bool) {
-		switch data := data.(type) {
-		case ccvtypes.SlashPacketData:
-			packets = append(packets, types.PendingPacketWrapper{
-				Data: &types.PendingPacketWrapper_SlashPacket{SlashPacket: &data},
-			})
-		case ccvtypes.VSCMaturedPacketData:
-			packets = append(packets, types.PendingPacketWrapper{
-				Data: &types.PendingPacketWrapper_VscMaturedPacket{VscMaturedPacket: &data},
-			})
-		default:
-			// silently skip over invalid data
-			return false
+	slashData, vscMaturedData, _, _ := k.GetAllThrottledPacketData(ctx, req.ChainId)
 
-		}
-		return false
-	})
+	for _, data := range slashData {
+		wrapper := &types.PendingPacketWrapper_SlashPacket{SlashPacket: &data}
+		packets = append(packets, types.PendingPacketWrapper{
+			Data: wrapper,
+		})
+	}
+
+	for _, data := range vscMaturedData {
+		wrapper := &types.PendingPacketWrapper_VscMaturedPacket{VscMaturedPacket: &data}
+		packets = append(packets, types.PendingPacketWrapper{
+			Data: wrapper,
+		})
+	}
 
 	return &types.QueryPendingConsumerPacketsResponse{
 		ChainId: req.ChainId,
