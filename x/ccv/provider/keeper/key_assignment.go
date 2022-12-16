@@ -224,15 +224,9 @@ func (k Keeper) SetKeyAssignmentReplacement(
 	store.Set(types.KeyAssignmentReplacementsKey(chainID, providerAddr), bz)
 }
 
-type KeyAssignmentReplacement struct {
-	ProviderAddr sdk.ConsAddress
-	PrevCKey     tmprotocrypto.PublicKey
-	Power        int64
-}
-
 // GetAllKeyAssignmentReplacements gets all pairs of previous assigned consumer keys
 // and current powers for all provider validator for which key assignments were received in this block.
-func (k Keeper) GetAllKeyAssignmentReplacements(ctx sdk.Context, chainID string) (replacements []KeyAssignmentReplacement) {
+func (k Keeper) GetAllKeyAssignmentReplacements(ctx sdk.Context, chainID string) (replacements []types.KeyAssignmentReplacement) {
 	store := ctx.KVStore(k.storeKey)
 	iteratorPrefix := types.ChainIdWithLenKey(types.KeyAssignmentReplacementsBytePrefix, chainID)
 	iterator := sdk.KVStorePrefixIterator(store, iteratorPrefix)
@@ -248,9 +242,9 @@ func (k Keeper) GetAllKeyAssignmentReplacements(ctx sdk.Context, chainID string)
 			panic(err)
 		}
 
-		replacements = append(replacements, KeyAssignmentReplacement{
+		replacements = append(replacements, types.KeyAssignmentReplacement{
 			ProviderAddr: providerAddr,
-			PrevCKey:     pubKeyAndPower.PubKey,
+			PrevCKey:     &pubKeyAndPower.PubKey,
 			Power:        pubKeyAndPower.Power,
 		})
 	}
@@ -504,7 +498,7 @@ func (k Keeper) ApplyKeyAssignmentToValUpdates(
 	for _, replacement := range k.GetAllKeyAssignmentReplacements(ctx, chainID) {
 		k.DeleteKeyAssignmentReplacement(ctx, chainID, replacement.ProviderAddr)
 		newUpdates = append(newUpdates, abci.ValidatorUpdate{
-			PubKey: replacement.PrevCKey,
+			PubKey: *replacement.PrevCKey,
 			Power:  0,
 		})
 

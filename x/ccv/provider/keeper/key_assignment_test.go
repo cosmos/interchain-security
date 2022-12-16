@@ -256,21 +256,24 @@ func TestKeyAssignmentReplacementCRUD(t *testing.T) {
 
 func TestIterateKeyAssignmentReplacements(t *testing.T) {
 	chainID := "consumer"
-	testAssignments := []providerkeeper.KeyAssignmentReplacement{
+	tmpkey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
+	tmpkey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
+	tmpkey3 := cryptotestutil.NewCryptoIdentityFromIntSeed(3).TMProtoCryptoPublicKey()
+	testAssignments := []types.KeyAssignmentReplacement{
 		{
 			ProviderAddr: sdk.ConsAddress([]byte("validator-1")),
 			Power:        100,
-			PrevCKey:     cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey(),
+			PrevCKey:     &tmpkey1,
 		},
 		{
 			ProviderAddr: sdk.ConsAddress([]byte("validator-2")),
 			Power:        100,
-			PrevCKey:     cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey(),
+			PrevCKey:     &tmpkey2,
 		},
 		{
 			ProviderAddr: sdk.ConsAddress([]byte("validator-3")),
 			Power:        100,
-			PrevCKey:     cryptotestutil.NewCryptoIdentityFromIntSeed(3).TMProtoCryptoPublicKey(),
+			PrevCKey:     &tmpkey3,
 		},
 	}
 
@@ -278,7 +281,7 @@ func TestIterateKeyAssignmentReplacements(t *testing.T) {
 	defer ctrl.Finish()
 
 	for _, assignment := range testAssignments {
-		keeper.SetKeyAssignmentReplacement(ctx, chainID, assignment.ProviderAddr, assignment.PrevCKey, assignment.Power)
+		keeper.SetKeyAssignmentReplacement(ctx, chainID, assignment.ProviderAddr, *assignment.PrevCKey, assignment.Power)
 	}
 
 	result := keeper.GetAllKeyAssignmentReplacements(ctx, chainID)
