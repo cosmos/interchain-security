@@ -122,7 +122,7 @@ func (s *CCVTestSuite) TestStopConsumerChain() {
 	s.Require().Len(providerKeeper.GetAllGlobalSlashEntries(s.providerCtx()), 1)
 
 	secondBundle := s.getBundleByIdx(1)
-	slashData, vscMaturedData := providerKeeper.GetAllThrottledPacketData(
+	slashData, vscMaturedData, _, _ := providerKeeper.GetAllThrottledPacketData(
 		s.providerCtx(), secondBundle.Chain.ChainID)
 	s.Require().Len(slashData, 1)
 	s.Require().Len(vscMaturedData, 1)
@@ -209,7 +209,7 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 	}
 
 	// No remaining per-chain entries for this consumer
-	slashData, vscMaturedData := providerKeeper.GetAllThrottledPacketData(s.providerCtx(), chainID)
+	slashData, vscMaturedData, _, _ := providerKeeper.GetAllThrottledPacketData(s.providerCtx(), chainID)
 	s.Require().Empty(slashData)
 	s.Require().Empty(vscMaturedData)
 }

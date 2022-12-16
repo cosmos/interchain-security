@@ -217,7 +217,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	// Remove all throttled slash packets and vsc matured packets queued for this consumer.
 	// Note: queued VSC matured packets can be safely removed from the per-chain queue,
 	// since all unbonding operations for this consumer are release above.
-	k.DeleteAllThrottledPacketDataForConsumer(ctx, chainID)
+	k.DeleteThrottledPacketDataForConsumer(ctx, chainID)
 
 	return nil
 }

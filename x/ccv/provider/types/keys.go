@@ -286,9 +286,14 @@ func ThrottledPacketDataKey(consumerChainID string, ibcSeqNum uint64) []byte {
 	return ChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, consumerChainID, ibcSeqNum)
 }
 
-// ParseThrottledPacketDataKey parses a throttled packet data key
-func ParseThrottledPacketDataKey(key []byte) (string, uint64, error) {
-	return ParseChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, key)
+// MustParseThrottledPacketDataKey parses a throttled packet data key
+// or panics upon failure
+func MustParseThrottledPacketDataKey(key []byte) (string, uint64) {
+	str, i, err := ParseChainIdAndUintIdKey(ThrottledPacketDataBytePrefix, key)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse throttled packet data key: %s", err.Error()))
+	}
+	return str, i
 }
 
 // GlobalSlashEntryKey returns the key for storing a global slash queue entry.
