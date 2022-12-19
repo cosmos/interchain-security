@@ -57,7 +57,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	valUpdates := staking.InitGenesis(ctx, am.keeper, am.accKeeper, am.bankKeeper, &genesisState)
-	if !am.consumerKeeper.GetParams(ctx).Enabled {
+	if am.consumerKeeper.IsPreCCV(ctx) {
 		return valUpdates
 	}
 
@@ -70,7 +70,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 // for returning the initial validator set.
 func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
 	valUpdates := am.keeper.BlockValidatorUpdates(ctx)
-	if !am.consumerKeeper.GetParams(ctx).Enabled {
+	if am.consumerKeeper.IsPreCCV(ctx) {
 		return valUpdates
 	}
 	return []abci.ValidatorUpdate{}

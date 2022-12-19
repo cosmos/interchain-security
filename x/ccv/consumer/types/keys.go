@@ -67,6 +67,9 @@ const (
 
 	// CrossChainValidatorPrefix is the byte prefix that will store cross-chain validators by consensus address
 	CrossChainValidatorBytePrefix
+
+	// PreCCVPrefix is the byte prefix to store the consumer is running on democracy staking module without consumer
+	PreCCVPrefix
 )
 
 // PortKey returns the key to the port ID in the store
@@ -97,6 +100,10 @@ func ProviderChannelKey() []byte {
 // PendingChangesKey returns the key for storing pending validator set changes
 func PendingChangesKey() []byte {
 	return []byte{PendingChangesByteKey}
+}
+
+func PreCCVKey() []byte {
+	return []byte{PreCCVPrefix}
 }
 
 // PacketMaturityTimeKey returns the key for storing maturity time for a given received VSC packet id

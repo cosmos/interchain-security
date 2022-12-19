@@ -206,6 +206,25 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
+func (k Keeper) IsPreCCV(ctx sdk.Context) bool {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(types.PreCCVKey())
+	if bz != nil {
+		return true
+	}
+	return false
+}
+
+func (k Keeper) SetPreCCV(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(types.PreCCVKey(), []byte{1})
+}
+
+func (k Keeper) DeletePreCCV(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.PreCCVKey())
+}
+
 // IteratePacketMaturityTime iterates through the VSC packet maturity times set in the store
 func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs uint64) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)

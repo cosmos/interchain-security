@@ -8,4 +8,5 @@ import (
 // ConsumerKeeper defines the contract needed to be fulfilled for staking module.
 type ConsumerKeeper interface {
 	GetParams(ctx sdk.Context) consumertypes.Params
+	IsPreCCV(ctx sdk.Context) bool
 }
