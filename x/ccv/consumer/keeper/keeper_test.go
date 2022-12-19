@@ -301,8 +301,8 @@ func TestVerifyProviderChain(t *testing.T) {
 	}
 }
 
-// TestGetAllValsetUpdateBlockHeights tests GetAllValsetUpdateBlockHeights behaviour correctness
-func TestGetAllValsetUpdateBlockHeights(t *testing.T) {
+// TestGetAllHeightToValsetUpdateIDs tests GetAllHeightToValsetUpdateIDs behaviour correctness
+func TestGetAllHeightToValsetUpdateIDs(t *testing.T) {
 	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
@@ -338,4 +338,57 @@ func TestGetAllValsetUpdateBlockHeights(t *testing.T) {
 	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
 	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
 	require.NotContains(t, result, cases[0], "result should not contain '%s'", cases[0])
+}
+
+// TestGetAllOutstandingDowntimes tests GetAllOutstandingDowntimes behaviour correctness
+func TestGetAllOutstandingDowntimes(t *testing.T) {
+	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	addresses := []sdk.ConsAddress{
+		sdk.ConsAddress([]byte("consAddress2")),
+		sdk.ConsAddress([]byte("consAddress1")),
+	}
+
+	for _, addr := range addresses {
+		ck.SetOutstandingDowntime(ctx, addr)
+	}
+
+	// iterate and check all results are returned
+	result := ck.GetAllOutstandingDowntimes(ctx)
+	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
+	require.Contains(
+		t,
+		result,
+		types.OutstandingDowntime{ValidatorConsensusAddress: addresses[0].String()},
+		"result does not contain expected entry",
+	)
+	require.Contains(
+		t,
+		result,
+		types.OutstandingDowntime{ValidatorConsensusAddress: addresses[1].String()},
+		"result does not contain expected entry",
+	)
+
+	result = []types.OutstandingDowntime{}
+	require.Empty(t, result, "initial result not empty")
+
+	// iterate and check first op has ID 1
+	for _, outstandingDowntime := range ck.GetAllOutstandingDowntimes(ctx) {
+		result = append(result, outstandingDowntime)
+		break
+	}
+	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
+	require.Contains(
+		t,
+		result,
+		types.OutstandingDowntime{ValidatorConsensusAddress: addresses[1].String()},
+		"result does not contain expected entry",
+	)
+	require.NotContains(
+		t,
+		result,
+		types.OutstandingDowntime{ValidatorConsensusAddress: addresses[0].String()},
+		"result contains unexpected entry",
+	)
 }
