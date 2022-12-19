@@ -376,7 +376,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	}
 
 	for _, channelToChain := range k.GetAllChannelToChains(ctx) {
-		// check if the first vscSendTimestamp in iterator + VscTimeoutPeriod
+		// Check if the first vscSendTimestamp in iterator + VscTimeoutPeriod
 		// exceed the current block time.
 		// Checking the first send timestamp for each chain is sufficient since
 		// timestamps are ordered by vsc ID.

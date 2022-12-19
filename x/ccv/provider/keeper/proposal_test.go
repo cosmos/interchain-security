@@ -473,36 +473,13 @@ func testProviderStateIsCleaned(t *testing.T, ctx sdk.Context, providerKeeper pr
 	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, expectedChainID)
 	require.False(t, found)
 
-	found = false
-	for _, _ = range providerKeeper.GetAllVscSendTimestamps(ctx, expectedChainID) {
-		found = true
-	}
-	require.False(t, found)
+	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, expectedChainID))
 
 	// test key assignment state is cleaned
-	found = false
-	for _, _ = range providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &expectedChainID) {
-		found = true
-	}
-	require.False(t, found)
-
-	found = false
-	for _, _ = range providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID) {
-		found = true
-	}
-	require.False(t, found)
-
-	found = false
-	for _, _ = range providerKeeper.GetAllKeyAssignmentReplacements(ctx, expectedChainID) {
-		found = true
-	}
-	require.False(t, found)
-
-	found = false
-	for _, _ = range providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID) {
-		found = true
-	}
-	require.False(t, found)
+	require.Empty(t, providerKeeper.GetAllValidatorConsumerPubKeys(ctx, &expectedChainID))
+	require.Empty(t, providerKeeper.GetAllValidatorsByConsumerAddr(ctx, &expectedChainID))
+	require.Empty(t, providerKeeper.GetAllKeyAssignmentReplacements(ctx, expectedChainID))
+	require.Empty(t, providerKeeper.GetAllConsumerAddrsToPrune(ctx, expectedChainID))
 }
 
 // TestPendingConsumerRemovalPropDeletion tests the getting/setting

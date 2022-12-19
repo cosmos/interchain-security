@@ -834,20 +834,18 @@ func (k Keeper) DeleteVscSendTimestamp(ctx sdk.Context, chainID string, vscID ui
 	store.Delete(types.VscSendingTimestampKey(chainID, vscID))
 }
 
-// GetAllVscSendTimestamps gets an array of vsc send timestamps in order (lowest first)
-// for the given chainID.
+// GetAllVscSendTimestamps gets an array of all the vsc send timestamps of the given chainID.
 //
 // Note that the vsc send timestamps of a given chainID are stored under keys with the following format:
 // VscSendTimestampBytePrefix | len(chainID) | chainID | vscID
-// Thus, the returned array is in ascending order of vscIDs, and as a result in send timestamp order.
+// Thus, the iteration is in ascending order of vscIDs, and as a result in send timestamp order.
 func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSendTimestamps []types.VscSendTimestamp) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		key := iterator.Key()
-		_, vscID, err := types.ParseVscSendingTimestampKey(key)
+		_, vscID, err := types.ParseVscSendingTimestampKey(iterator.Key())
 		if err != nil {
 			panic(fmt.Errorf("failed to parse VscSendTimestampKey: %w", err))
 		}
@@ -865,16 +863,14 @@ func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSen
 	return vscSendTimestamps
 }
 
-// GetOneVscSendTimestamp gets the first vsc send timestamp in order (lowest first)
-// for the given chainID.
+// GetFirstVscSendTimestamp gets the vsc send timestamp with the lowest vscID for the given chainID.
 func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSendTimestamp types.VscSendTimestamp, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		key := iterator.Key()
-		_, vscID, err := types.ParseVscSendingTimestampKey(key)
+		_, vscID, err := types.ParseVscSendingTimestampKey(iterator.Key())
 		if err != nil {
 			panic(fmt.Errorf("failed to parse VscSendTimestampKey: %w", err))
 		}

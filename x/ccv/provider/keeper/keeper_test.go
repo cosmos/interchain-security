@@ -290,41 +290,38 @@ func TestVscSendTimestamp(t *testing.T) {
 		ts      time.Time
 		vscID   uint64
 	}{
-		{chainID: "chain", ts: now.Add(time.Hour), vscID: 1},
 		{chainID: "chain", ts: now.Add(2 * time.Hour), vscID: 2},
+		{chainID: "chain", ts: now.Add(time.Hour), vscID: 1},
 		{chainID: "chain1", ts: now.Add(time.Hour), vscID: 1},
 		{chainID: "chain2", ts: now.Add(time.Hour), vscID: 1},
 	}
 
-	i := 0
-	chainID := "chain"
-	for _, _ = range providerKeeper.GetAllVscSendTimestamps(ctx, chainID) {
-		i++
-	}
-	require.Equal(t, 0, i)
+	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID))
 
 	for _, tc := range testCases {
 		providerKeeper.SetVscSendTimestamp(ctx, tc.chainID, tc.vscID, tc.ts)
 	}
 
-	i = 0
-	for _, vscSendTimestamp := range providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID) {
+	vscSendTimestamps := providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID)
+	require.Len(t, vscSendTimestamps, 2)
+	i := 1
+	for _, vscSendTimestamp := range vscSendTimestamps {
 		require.Equal(t, vscSendTimestamp.VscId, testCases[i].vscID)
 		require.Equal(t, vscSendTimestamp.Timestamp, testCases[i].ts)
-		i++
+		i--
 	}
-	require.Equal(t, 2, i)
+
+	vscSendTimestamp, found := providerKeeper.GetFirstVscSendTimestamp(ctx, testCases[0].chainID)
+	require.True(t, found)
+	require.Equal(t, vscSendTimestamp.VscId, testCases[1].vscID)
+	require.Equal(t, vscSendTimestamp.Timestamp, testCases[1].ts)
 
 	// delete VSC send timestamps
 	for _, vscSendTimestamp := range providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID) {
 		providerKeeper.DeleteVscSendTimestamp(ctx, testCases[0].chainID, vscSendTimestamp.VscId)
 	}
 
-	i = 0
-	for _, _ = range providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID) {
-		i++
-	}
-	require.Equal(t, 0, i)
+	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID))
 }
 
 // TestGetAllConsumerChains tests GetAllConsumerChains behaviour correctness
