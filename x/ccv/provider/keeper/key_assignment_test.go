@@ -41,7 +41,7 @@ func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
 	require.NotEqual(t, consumerPubKey, consumerKey)
 }
 
-func TestIterateValidatorConsumerPubKeys(t *testing.T) {
+func TestGetAllValidatorConsumerPubKeysOneConsumer(t *testing.T) {
 
 	chainID := "consumer"
 	tmpkey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
@@ -86,7 +86,7 @@ func TestIterateValidatorConsumerPubKeys(t *testing.T) {
 
 }
 
-func TestIterateAllValidatorConsumerPubKeys(t *testing.T) {
+func TestGetAllValidatorConsumerPubKeysAllConsumers(t *testing.T) {
 	providerAddr := sdk.ConsAddress([]byte("validator-1"))
 	tmpkey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	tmpkey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
@@ -151,7 +151,7 @@ func TestValidatorByConsumerAddrCRUD(t *testing.T) {
 	require.NotEqual(t, providerAddr, providerAddrResult)
 }
 
-func TestIterateValidatorsByConsumerAddr(t *testing.T) {
+func TestGetAllValidatorsByConsumerAddrOneConsumer(t *testing.T) {
 	chainID := "consumer"
 	testAssignments := []types.ValidatorByConsumerAddr{
 		{
@@ -190,7 +190,7 @@ func TestIterateValidatorsByConsumerAddr(t *testing.T) {
 	require.Equal(t, testAssignments[0], result[0], "mismatched consumer address assignment in iterate one")
 }
 
-func TestIterateAllValidatorsByConsumerAddr(t *testing.T) {
+func TestGetAllValidatorsByConsumerAddrAllConsumers(t *testing.T) {
 	providerAddr := sdk.ConsAddress([]byte("validator-1"))
 	testAssignments := []types.ValidatorByConsumerAddr{
 		{
@@ -250,7 +250,7 @@ func TestKeyAssignmentReplacementCRUD(t *testing.T) {
 	require.False(t, found, "key assignment replacement found")
 }
 
-func TestIterateKeyAssignmentReplacements(t *testing.T) {
+func TestGetAllKeyAssignmentReplacements(t *testing.T) {
 	chainID := "consumer"
 	tmpkey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
 	tmpkey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
@@ -309,6 +309,43 @@ func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 	keeper.DeleteConsumerAddrsToPrune(ctx, chainID, vscID)
 	addrToPrune = keeper.GetConsumerAddrsToPrune(ctx, chainID, vscID).Addresses
 	require.Empty(t, addrToPrune, "address to prune was returned")
+}
+
+func TestGetAllConsumerAddrsToPrune(t *testing.T) {
+
+	testAssignments := []types.ConsumerAddrsToPrune{
+		{
+			ChainId:       "chain-1",
+			VscId:         2,
+			ConsumerAddrs: &types.AddressList{Addresses: [][]byte{sdk.ConsAddress([]byte("consumer-2"))}},
+		},
+		{
+			ChainId:       "chain-1",
+			VscId:         1,
+			ConsumerAddrs: &types.AddressList{Addresses: [][]byte{sdk.ConsAddress([]byte("consumer-1"))}},
+		},
+		{
+			ChainId:       "chain-2",
+			VscId:         1,
+			ConsumerAddrs: &types.AddressList{Addresses: [][]byte{sdk.ConsAddress([]byte("consumer-1"))}},
+		},
+	}
+
+	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	for _, assignment := range testAssignments {
+		keeper.AppendConsumerAddrsToPrune(ctx, assignment.ChainId, assignment.VscId, assignment.ConsumerAddrs.Addresses[0])
+	}
+
+	result := keeper.GetAllConsumerAddrsToPrune(ctx, testAssignments[0].ChainId)
+	require.Len(t, result, 2, "incorrect result len - should be %d, got %d", 2, len(result))
+	require.Equal(t, testAssignments[1], result[0], "mismatched key assignment replacement")
+	require.Equal(t, testAssignments[0], result[1], "mismatched key assignment replacement")
+
+	result = keeper.GetAllConsumerAddrsToPrune(ctx, testAssignments[2].ChainId)
+	require.Len(t, result, 1, "incorrect result len - should be %d, got %d", 1, len(result))
+	require.Equal(t, testAssignments[2], result[0], "mismatched key assignment replacement in iterate one")
 }
 
 // checkCorrectPruningProperty checks that the pruning property is correct for a given

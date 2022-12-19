@@ -50,7 +50,9 @@ func (k Keeper) SetValidatorConsumerPubKey(
 //
 // Note that the validators public keys assigned for a consumer chain are stored under keys
 // with the following format: UnbondingOpIndexBytePrefix | len(chainID) | chainID | providerAddress
-// Thus, the returned array is in ascending order of providerAddresses.
+// Thus, the returned array is
+//   - in ascending order of providerAddresses, if chainID is not nil;
+//   - in undetermined order, if chainID is nil.
 func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string) (validatorConsumerPubKeys []types.ValidatorConsumerPubKey) {
 	store := ctx.KVStore(k.storeKey)
 	var prefix []byte
@@ -59,15 +61,15 @@ func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string)
 	} else {
 		prefix = types.ChainIdWithLenKey(types.ConsumerValidatorsBytePrefix, *chainID)
 	}
-	iter := sdk.KVStorePrefixIterator(store, prefix)
-	defer iter.Close()
-	for ; iter.Valid(); iter.Next() {
-		chainID, providerAddr, err := types.ParseChainIdAndConsAddrKey(types.ConsumerValidatorsBytePrefix, iter.Key())
+	iterator := sdk.KVStorePrefixIterator(store, prefix)
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		chainID, providerAddr, err := types.ParseChainIdAndConsAddrKey(types.ConsumerValidatorsBytePrefix, iterator.Key())
 		if err != nil {
 			panic(err)
 		}
 		var consumerKey tmprotocrypto.PublicKey
-		err = consumerKey.Unmarshal(iter.Value())
+		err = consumerKey.Unmarshal(iterator.Value())
 		if err != nil {
 			panic(err)
 		}
@@ -124,12 +126,14 @@ func (k Keeper) SetValidatorByConsumerAddr(
 }
 
 // GetValidatorsByConsumerAddrs gets all the mappings from consensus addresses
-// on a given consumer chain to consensus addresses on the provider chain
-// If chainID is nil, it returns all the mappings from consensus addresses on all consumer chains
+// on a given consumer chain to consensus addresses on the provider chain.
+// If chainID is nil, it returns all the mappings from consensus addresses on all consumer chains.
 //
 // Note that the mappings for a consumer chain are stored under keys with the following format:
 // ValidatorsByConsumerAddrBytePrefix | len(chainID) | chainID | consumerAddress
-// Thus, the returned array is in ascending order of consumerAddresses.
+// Thus, the returned array is
+//   - in ascending order of consumerAddresses, if chainID is not nil;
+//   - in undetermined order, if chainID is nil.
 func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string) (validatorConsumerAddrs []types.ValidatorByConsumerAddr) {
 	store := ctx.KVStore(k.storeKey)
 	var prefix []byte
@@ -138,15 +142,15 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string)
 	} else {
 		prefix = types.ChainIdWithLenKey(types.ValidatorsByConsumerAddrBytePrefix, *chainID)
 	}
-	iter := sdk.KVStorePrefixIterator(store, prefix)
-	defer iter.Close()
-	for ; iter.Valid(); iter.Next() {
-		chainID, consumerAddr, err := types.ParseChainIdAndConsAddrKey(types.ValidatorsByConsumerAddrBytePrefix, iter.Key())
+	iterator := sdk.KVStorePrefixIterator(store, prefix)
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		chainID, consumerAddr, err := types.ParseChainIdAndConsAddrKey(types.ValidatorsByConsumerAddrBytePrefix, iterator.Key())
 		if err != nil {
 			panic(err)
 		}
 		var providerAddr sdk.ConsAddress
-		err = providerAddr.Unmarshal(iter.Value())
+		err = providerAddr.Unmarshal(iterator.Value())
 		if err != nil {
 			panic(err)
 		}
@@ -294,8 +298,7 @@ func (k Keeper) GetConsumerAddrsToPrune(
 	return
 }
 
-// GetAllConsumerAddrsToPrune gets all consumer addresses
-// that can be pruned for a given chainID.
+// GetAllConsumerAddrsToPrune gets all consumer addresses that can be pruned for a given chainID.
 //
 // Note that the list of all consumer addresses is stored under keys with the following format:
 // ConsumerAddrsToPruneBytePrefix | len(chainID) | chainID | vscID

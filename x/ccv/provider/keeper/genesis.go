@@ -134,11 +134,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	remProps := k.GetAllPendingConsumerRemovalProps(ctx)
 
-	// Export key assignment states
-	validatorConsumerPubKeys := k.GetAllValidatorConsumerPubKeys(ctx, nil)
-
-	validatorsByConsumerAddr := k.GetAllValidatorsByConsumerAddr(ctx, nil)
-
 	// ConsumerAddrsToPrune are added only for registered consumer chains
 	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
 	for _, chain := range registeredChains {
@@ -156,8 +151,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		addProps,
 		remProps,
 		params,
-		validatorConsumerPubKeys,
-		validatorsByConsumerAddr,
+		k.GetAllValidatorConsumerPubKeys(ctx, nil),
+		k.GetAllValidatorsByConsumerAddr(ctx, nil),
 		consumerAddrsToPrune,
 	)
 }
