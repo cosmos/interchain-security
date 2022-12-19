@@ -864,17 +864,19 @@ func TestDeleteThrottledPacketDataForConsumer(t *testing.T) {
 	require.Len(t, vscMaturedData, 1)
 }
 
-// TestPanicIfTooMuchThrottledPacketData tests the PanicIfTooMuchThrottledPacketData method.
+// TestPanicIfTooMuchThrottledPacketData tests that the provider panics
+// when the number of throttled (queued) packets exceeds the max allowed by params.
 func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 
 	testCases := []struct {
 		max int64
 	}{
-		{max: 1},
+		{max: 3}, // Max must be greater than 2 since we queue 2 packets for another chain in the test
 		{max: 5},
 		{max: 10},
 		{max: 15},
 		{max: 25},
+		{max: 100},
 	}
 
 	for _, tc := range testCases {
@@ -882,9 +884,9 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
-		// Set max pending slash packets param
+		// Set max throttled packets param
 		defaultParams := providertypes.DefaultParams()
-		defaultParams.MaxPendingSlashPackets = tc.max
+		defaultParams.MaxThrottledPackets = tc.max
 		providerKeeper.SetParams(ctx, defaultParams)
 
 		rand.Seed(time.Now().UnixNano())
@@ -895,7 +897,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 
 		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
 		reachedMax := false
-		for i := 0; i < int(tc.max+2); i++ { // iterate up to tc.max+1
+		for i := 0; i < int(tc.max); i++ {
 			randBool := rand.Intn(2) == 0
 			var data interface{}
 			if randBool {
@@ -904,7 +906,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 				data = testkeeper.GetNewVSCMaturedPacketData()
 			}
 			// Panic only if we've reached the max
-			if i == int(tc.max+1) {
+			if i == int(tc.max-1) {
 				require.Panics(t, func() {
 					providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
 				})
@@ -917,10 +919,15 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 	}
 }
 
-// TestPendingPacketDataSize tests the getter, setter and incrementer for pending packet data size.
-func TestPendingPacketDataSize(t *testing.T) {
+// TestThrottledPacketDataSize tests the getter, setter and incrementer for throttled packet data size.
+func TestThrottledPacketDataSize(t *testing.T) {
+
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
+
+	// Set params so we can use the default max throttled packet data size
+	params := providertypes.DefaultParams()
+	providerKeeper.SetParams(ctx, params)
 
 	// Confirm initial size is 0
 	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-0"))

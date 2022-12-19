@@ -102,9 +102,9 @@ message Params {
   // This param also serves as a maximum fraction of total voting power that the slash meter can hold.
   string slash_meter_replenish_fraction = 7;
 
-  // The maximum amount of pending slash packets that can be queued for a consumer
-  // before the provider chain halts.
-  int64 max_pending_slash_packets = 8;
+  // The maximum amount of throttled slash or vsc matured packets 
+  // that can be queued for a single consumer before the provider chain halts.
+  int64 max_throttled_packets = 8;
 }
 
 message HandshakeMetadata {

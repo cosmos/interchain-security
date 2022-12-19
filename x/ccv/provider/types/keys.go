@@ -42,11 +42,11 @@ const (
 	// ValidatorSetUpdateIdByteKey is the byte key that stores the current validator set update id
 	ValidatorSetUpdateIdByteKey
 
-	// SlashMeterBytePrefix is the byte key for storing the slash meter
+	// SlashMeterByteKey is the byte key for storing the slash meter
 	SlashMeterByteKey
 
-	// LastSlashMeterReplenishTimeBytePrefix is the byte key for storing
-	// the last time the slash meter was replenished
+	// LastSlashMeterFullTimeByteKey is the byte key for storing
+	// the last time the slash meter was full.
 	LastSlashMeterFullTimeByteKey
 
 	// ChainToChannelBytePrefix is the byte prefix for storing mapping
@@ -106,7 +106,7 @@ const (
 	// ThrottledPacketDataBytePrefix is the byte prefix storing throttled packet data
 	ThrottledPacketDataBytePrefix
 
-	// PendingSlashPacketEntryBytePrefix is the byte prefix storing global slash queue entries
+	// GlobalSlashEntryBytePrefix is the byte prefix storing global slash queue entries
 	GlobalSlashEntryBytePrefix
 
 	// ConsumerValidatorsBytePrefix is the byte prefix that will store the validator assigned keys for every consumer chain
