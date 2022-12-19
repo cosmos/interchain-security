@@ -127,7 +127,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 		genesis = consumertypes.NewRestartGenesisState(
 			clientID,
 			channelID,
-			k.GetAllPacketMaturityTimes(ctx, nil),
+			k.GetAllPacketMaturityTimes(ctx),
 			valset,
 			k.GetAllHeightToValsetUpdateIDs(ctx),
 			k.GetPendingPackets(ctx),

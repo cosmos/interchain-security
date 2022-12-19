@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -83,38 +84,53 @@ func TestPendingChanges(t *testing.T) {
 
 // TestPacketMaturityTime tests getter, setter, and iterator functionality for the packet maturity time of a received VSC packet
 func TestPacketMaturityTime(t *testing.T) {
-
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	consumerKeeper.SetPacketMaturityTime(ctx, 1, 10)
-	consumerKeeper.SetPacketMaturityTime(ctx, 2, 25)
-	consumerKeeper.SetPacketMaturityTime(ctx, 5, 15)
-	consumerKeeper.SetPacketMaturityTime(ctx, 6, 40)
-
-	consumerKeeper.DeletePacketMaturityTimes(ctx, 6)
-
-	require.Equal(t, uint64(10), consumerKeeper.GetPacketMaturityTime(ctx, 1))
-	require.Equal(t, uint64(25), consumerKeeper.GetPacketMaturityTime(ctx, 2))
-	require.Equal(t, uint64(15), consumerKeeper.GetPacketMaturityTime(ctx, 5))
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 3))
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 6))
-
-	orderedTimes := [][]uint64{{1, 10}, {2, 25}, {5, 15}}
-	i := 0
-
-	for _, maturingVSCPacket := range consumerKeeper.GetAllPacketMaturityTimes(ctx, nil) {
-		// require that we iterate through unbonding time in order of sequence
-		require.Equal(t, orderedTimes[i][0], maturingVSCPacket.VscId)
-		require.Equal(t, orderedTimes[i][1], maturingVSCPacket.MaturityTime)
-		i++
+	now := time.Now()
+	nsNow := uint64(time.Now().UnixNano())
+	cases := []types.MaturingVSCPacket{
+		{
+			VscId:        2,
+			MaturityTime: nsNow,
+		},
+		{
+			VscId:        1,
+			MaturityTime: nsNow - 15,
+		},
+		{
+			VscId:        5,
+			MaturityTime: nsNow - 30,
+		},
+		{
+			VscId:        6,
+			MaturityTime: nsNow + 10,
+		},
 	}
 
-	// delete all vscs remaining in state
-	consumerKeeper.DeletePacketMaturityTimes(ctx, 1, 2, 5)
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 1))
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 2))
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 5))
+	for _, c := range cases {
+		ck.SetPacketMaturityTime(ctx, c.VscId, c.MaturityTime)
+	}
+
+	for _, c := range cases {
+		require.Equal(t, c.MaturityTime, ck.GetPacketMaturityTime(ctx, c.VscId))
+	}
+
+	maturingVSCPackets := ck.GetAllPacketMaturityTimes(ctx)
+	require.Len(t, maturingVSCPackets, len(cases))
+	for _, c := range cases {
+		require.Contains(t, maturingVSCPackets, c, "result does not contain '%s'", c)
+	}
+	require.Equal(t, cases[1], maturingVSCPackets[0])
+
+	elapsedMaturingVSCPackets := ck.GetElapsedPacketMaturityTimes(ctx.WithBlockTime(now))
+	require.Len(t, elapsedMaturingVSCPackets, len(cases)-1)
+	require.NotContains(t, elapsedMaturingVSCPackets, cases[3], "result does contain unexpected entry")
+	require.Equal(t, cases[1], elapsedMaturingVSCPackets[0])
+
+	ck.DeletePacketMaturityTimes(ctx, 6)
+	require.Equal(t, uint64(0), ck.GetPacketMaturityTime(ctx, 3))
+	require.Equal(t, uint64(0), ck.GetPacketMaturityTime(ctx, 6))
 }
 
 // TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records

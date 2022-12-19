@@ -87,8 +87,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 	currentTime := uint64(ctx.BlockTime().UnixNano())
 
-	maturedVscIds := []uint64{}
-	for _, maturityTime := range k.GetAllPacketMaturityTimes(ctx, &currentTime) {
+	for _, maturityTime := range k.GetElapsedPacketMaturityTimes(ctx) {
 		if currentTime < maturityTime.MaturityTime {
 			panic(fmt.Errorf("maturity time %d is greater than current time %d", maturityTime.MaturityTime, currentTime))
 		}
@@ -103,6 +102,8 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 			Data: vscPacket.GetBytes(),
 		})
 
+		k.DeletePacketMaturityTimes(ctx, uint64(maturityTime.VscId))
+
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				ccv.EventTypeVSCMatured,
@@ -113,11 +114,7 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 				sdk.NewAttribute(ccv.AttributeTimestamp, strconv.Itoa(int(currentTime))),
 			),
 		)
-
-		maturedVscIds = append(maturedVscIds, uint64(maturityTime.VscId))
 	}
-
-	k.DeletePacketMaturityTimes(ctx, maturedVscIds...)
 }
 
 // QueueSlashPacket appends a slash packet containing the given validator data and slashing info to queue.

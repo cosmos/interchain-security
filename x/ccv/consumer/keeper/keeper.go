@@ -206,32 +206,50 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
-// GetAllPacketMaturityTimes returns a slice of PacketMaturityTimes, sorted by maturity time.
-func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context, latest *uint64) (packetMaturityTimes []consumertypes.MaturingVSCPacket) {
+// GetElapsedPacketMaturityTimes returns a slice of already elapsed PacketMaturityTimes, sorted by vscIDs,
+// i.e., the slide contains the IDs of the matured VSCPackets
+func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacket []consumertypes.MaturingVSCPacket) {
+	currentTime := uint64(ctx.BlockTime().UnixNano())
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		vscId := binary.BigEndian.Uint64(iterator.Key()[1:])
+		maturityTime := binary.BigEndian.Uint64(iterator.Value())
+
+		// If the maturity time is after the current time, then stop the iteration;
+		// TODO: the iteration over PacketMaturityTimes should be over maturity times,
+		// see https://github.com/cosmos/interchain-security/issues/598
+		if currentTime < maturityTime {
+			break
+		}
+
+		maturingVSCPacket = append(maturingVSCPacket, consumertypes.MaturingVSCPacket{
+			VscId:        vscId,
+			MaturityTime: maturityTime,
+		})
+	}
+	return maturingVSCPacket
+}
+
+// GetAllPacketMaturityTimes returns a slice of all PacketMaturityTimes, sorted by vscIDs.
+func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacket []consumertypes.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		// Extract bytes following the 1 byte prefix
-		vscIdBytes := iterator.Key()[1:]
-		vscId := binary.BigEndian.Uint64(vscIdBytes)
+		vscId := binary.BigEndian.Uint64(iterator.Key()[1:])
+		maturityTime := binary.BigEndian.Uint64(iterator.Value())
 
-		timeNs := binary.BigEndian.Uint64(iterator.Value())
-
-		// If the `latest` parameter is not nil, we want to stop iterating when we reach
-		// a maturityTime that is after the `latest` time, because we want no maturities
-		// after the `latest` time.
-		if latest != nil && *latest < timeNs {
-			break
-		}
-
-		packetMaturityTimes = append(packetMaturityTimes, consumertypes.MaturingVSCPacket{
+		maturingVSCPacket = append(maturingVSCPacket, consumertypes.MaturingVSCPacket{
 			VscId:        vscId,
-			MaturityTime: timeNs,
+			MaturityTime: maturityTime,
 		})
 	}
-	return packetMaturityTimes
+	return maturingVSCPacket
 }
 
 // SetPacketMaturityTime sets the maturity time for a given received VSC packet id
