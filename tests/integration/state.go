@@ -594,7 +594,7 @@ func (tr TestRun) getGlobalSlashQueueSize() int {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chainID("provi")].binaryName,
 
-		"query", "provider", "pending-slash-packets",
+		"query", "provider", "throttle-state",
 		`--node`, tr.getQueryNode(chainID("provi")),
 		`-o`, `json`,
 	)
@@ -611,7 +611,7 @@ func (tr TestRun) getConsumerChainPacketQueueSize(consumerChain chainID) int {
 	//#nosec G204 -- Bypass linter warning for spawning subprocess with cmd arguments.
 	cmd := exec.Command("docker", "exec", tr.containerConfig.instanceName, tr.chainConfigs[chainID("provi")].binaryName,
 
-		"query", "provider", "pending-consumer-packets",
+		"query", "provider", "throttled-consumer-packet-data",
 		string(consumerChain),
 		`--node`, tr.getQueryNode(chainID("provi")),
 		`-o`, `json`,

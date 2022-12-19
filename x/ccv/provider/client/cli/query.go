@@ -30,8 +30,8 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerStopProposals())
 	cmd.AddCommand(CmdConsumerValidatorKeyAssignment())
 	cmd.AddCommand(CmdProviderValidatorKey())
-	cmd.AddCommand(CmdPendingSlashPackets())
-	cmd.AddCommand(CmdPendingConsumerPackets())
+	cmd.AddCommand(CmdThrottleState())
+	cmd.AddCommand(CmdThrottledConsumerPacketData())
 
 	return cmd
 }
@@ -249,15 +249,15 @@ $ %s query provider validator-provider-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 	return cmd
 }
 
-func CmdPendingSlashPackets() *cobra.Command {
+func CmdThrottleState() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "pending-slash-packets",
-		Short: "Query pending slash packet queue on the provider chain",
+		Use:   "throttle-state",
+		Short: "Query on-chain state relevant to slash packet throttling",
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Returns current pending slash packet queue state on the provider chain.
+			fmt.Sprintf(`Returns state relevant to throttled slash packet queue on the provider chain.
 			Queue is ordered by time of arrival.
 Example:
-$ %s query provider pending-slash-packets
+$ %s query provider throttle-state
 `,
 				version.AppName,
 			),
@@ -270,8 +270,8 @@ $ %s query provider pending-slash-packets
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			req := &types.QueryPendingSlashPacketsRequest{}
-			res, err := queryClient.QueryPendingSlashPackets(cmd.Context(), req)
+			req := &types.QueryThrottleStateRequest{}
+			res, err := queryClient.QueryThrottleState(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -285,15 +285,15 @@ $ %s query provider pending-slash-packets
 	return cmd
 }
 
-func CmdPendingConsumerPackets() *cobra.Command {
+func CmdThrottledConsumerPacketData() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "pending-consumer-packets [chainid]",
-		Short: "Query pending VSCMatured and slash packets for chainId",
+		Use:   "throttled-consumer-packet-data [chainid]",
+		Short: "Query pending VSCMatured and slash packet data for a consumer chainId",
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Returns the current pending VSCMatured and slash packets for chainId.
-			Queue is ordered by time of arrival.
+			fmt.Sprintf(`Returns the current pending VSCMatured and slash packet data instances for a consumer chainId.
+			Queue is ordered by ibc sequence number. 
 Example:
-$ %s query provider pending-consumer-packets foochain
+$ %s query provider throttled-consumer-packet-data foochain
 `,
 				version.AppName,
 			),
@@ -306,8 +306,8 @@ $ %s query provider pending-consumer-packets foochain
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			req := &types.QueryPendingConsumerPacketsRequest{ChainId: args[0]}
-			res, err := queryClient.QueryPendingConsumerPackets(cmd.Context(), req)
+			req := &types.QueryThrottledConsumerPacketDataRequest{ChainId: args[0]}
+			res, err := queryClient.QueryThrottledConsumerPacketData(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
