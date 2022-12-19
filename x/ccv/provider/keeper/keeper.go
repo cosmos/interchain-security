@@ -133,8 +133,8 @@ func (k Keeper) DeleteChainToChannel(ctx sdk.Context, chainID string) {
 	store.Delete(types.ChainToChannelKey(chainID))
 }
 
-// GetAllConsumerChains gets all of the consumer chains that the provider module controls
-// Consumer chains with created clients are also referred to as registered.
+// GetAllConsumerChains gets all of the consumer chains, for which the provider module
+// created IBC clients. Consumer chains with created clients are also referred to as registered.
 //
 // Note that the registered consumer chains are stored under keys with the following format:
 // ChainToClientBytePrefix | chainID

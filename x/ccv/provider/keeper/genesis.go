@@ -88,9 +88,12 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 
 // ExportGenesis returns the CCV provider module's exported genesis
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
-	var consumerStates []types.ConsumerState
+	// get a list of all registered consumer chains
+	registeredChains := k.GetAllConsumerChains(ctx)
+
 	// export states for each consumer chains
-	for _, chain := range k.GetAllConsumerChains(ctx) {
+	var consumerStates []types.ConsumerState
+	for _, chain := range registeredChains {
 		gen, found := k.GetConsumerGenesis(ctx, chain.ChainId)
 		if !found {
 			panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chain.ChainId, chain.ClientId))
@@ -144,9 +147,9 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	validatorsByConsumerAddr := k.GetAllValidatorsByConsumerAddr(ctx, nil)
 
-	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
 	// ConsumerAddrsToPrune are added only for registered consumer chains
-	for _, chain := range k.GetAllConsumerChains(ctx) {
+	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
+	for _, chain := range registeredChains {
 		consumerAddrsToPrune = append(consumerAddrsToPrune, k.GetAllConsumerAddrsToPrune(ctx, chain.ChainId)...)
 	}
 

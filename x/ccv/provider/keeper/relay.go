@@ -139,15 +139,15 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	// collect validator updates
 	k.QueueVSCPackets(ctx)
 
-	// try sending VSC packets to all chains
-	// if CCV channel is not established for consumer chain
+	// try sending VSC packets to all registered consumer chains;
+	// if the CCV channel is not established for a consumer chain,
 	// the updates will remain queued until the channel is established
 	k.SendVSCPackets(ctx)
 }
 
-// SendVSCPackets iterates over chains and sends pending VSC packets to
-// consumer chains with established CCV channels
-// if CCV channel is not established for consumer chain
+// SendVSCPackets iterates over all registered consumers and sends pending
+// VSC packets to the chains with established CCV channels.
+// If the CCV channel is not established for a consumer chain,
 // the updates will remain queued until the channel is established
 func (k Keeper) SendVSCPackets(ctx sdk.Context) {
 	for _, chain := range k.GetAllConsumerChains(ctx) {
