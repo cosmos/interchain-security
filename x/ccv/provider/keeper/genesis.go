@@ -122,17 +122,10 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	}
 
-	// export provider chain state
-	vscID := k.GetValidatorSetUpdateId(ctx)
-
 	matureUbdOps, err := k.GetMaturedUnbondingOps(ctx)
 	if err != nil {
 		panic(err)
 	}
-
-	addProps := k.GetAllPendingConsumerAdditionProps(ctx)
-
-	remProps := k.GetAllPendingConsumerRemovalProps(ctx)
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
 	consumerAddrsToPrune := []types.ConsumerAddrsToPrune{}
@@ -143,13 +136,13 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	params := k.GetParams(ctx)
 
 	return types.NewGenesisState(
-		vscID,
+		k.GetValidatorSetUpdateId(ctx),
 		k.GetAllValsetUpdateBlockHeights(ctx),
 		consumerStates,
 		k.GetAllUnbondingOps(ctx),
 		&ccv.MaturedUnbondingOps{Ids: matureUbdOps},
-		addProps,
-		remProps,
+		k.GetAllPendingConsumerAdditionProps(ctx),
+		k.GetAllPendingConsumerRemovalProps(ctx),
 		params,
 		k.GetAllValidatorConsumerPubKeys(ctx, nil),
 		k.GetAllValidatorsByConsumerAddr(ctx, nil),

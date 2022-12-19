@@ -148,12 +148,6 @@ func PendingCAPKey(timestamp time.Time, chainID string) []byte {
 	return TsAndChainIdKey(PendingCAPBytePrefix, timestamp, chainID)
 }
 
-// ParsePendingCAPKey returns the time and chain ID for a pending consumer addition proposal key
-// or an error if unparsable
-func ParsePendingCAPKey(bz []byte) (time.Time, string, error) {
-	return ParseTsAndChainIdKey(PendingCAPBytePrefix, bz)
-}
-
 // PendingCRPKey returns the key under which pending consumer removal proposals are stored
 func PendingCRPKey(timestamp time.Time, chainID string) []byte {
 	return TsAndChainIdKey(PendingCRPBytePrefix, timestamp, chainID)

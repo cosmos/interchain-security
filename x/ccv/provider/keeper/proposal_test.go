@@ -229,7 +229,7 @@ func TestPendingConsumerAdditionPropDeletion(t *testing.T) {
 
 	ctx = ctx.WithBlockTime(time.Now().UTC())
 
-	propsToExecute := providerKeeper.ConsumerAdditionPropsToExecute(ctx)
+	propsToExecute := providerKeeper.GetConsumerAdditionPropsToExecute(ctx)
 	// Delete consumer addition proposals, same as what would be done by BeginBlockInit
 	providerKeeper.DeletePendingConsumerAdditionProps(ctx, propsToExecute...)
 	numDeleted := 0
@@ -302,7 +302,7 @@ func TestPendingConsumerAdditionPropOrder(t *testing.T) {
 		for _, prop := range tc.propSubmitOrder {
 			providerKeeper.SetPendingConsumerAdditionProp(ctx, &prop)
 		}
-		propsToExecute := providerKeeper.ConsumerAdditionPropsToExecute(ctx)
+		propsToExecute := providerKeeper.GetConsumerAdditionPropsToExecute(ctx)
 		require.Equal(t, tc.expectedOrderedProps, propsToExecute)
 	}
 }
@@ -508,7 +508,7 @@ func TestPendingConsumerRemovalPropDeletion(t *testing.T) {
 
 	ctx = ctx.WithBlockTime(time.Now().UTC())
 
-	propsToExecute := providerKeeper.ConsumerRemovalPropsToExecute(ctx)
+	propsToExecute := providerKeeper.GetConsumerRemovalPropsToExecute(ctx)
 	// Delete consumer removal proposals, same as what would be done by BeginBlockCCR
 	providerKeeper.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
 	numDeleted := 0
@@ -578,7 +578,7 @@ func TestPendingConsumerRemovalPropOrder(t *testing.T) {
 		for _, prop := range tc.propSubmitOrder {
 			providerKeeper.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
 		}
-		propsToExecute := providerKeeper.ConsumerRemovalPropsToExecute(ctx)
+		propsToExecute := providerKeeper.GetConsumerRemovalPropsToExecute(ctx)
 		require.Equal(t, tc.expectedOrderedProps, propsToExecute)
 	}
 }
