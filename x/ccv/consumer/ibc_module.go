@@ -213,6 +213,7 @@ func (am AppModule) OnRecvPacket(
 		errAck := channeltypes.NewErrorAcknowledgement("cannot unmarshal CCV packet data")
 		ack = &errAck
 	} else {
+		// TODO: add possibility to receive ReplaceValidatorSet if it's the first time switching to consumer chain
 		ack = am.keeper.OnRecvVSCPacket(ctx, packet, data)
 	}
 
