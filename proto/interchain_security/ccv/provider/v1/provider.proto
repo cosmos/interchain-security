@@ -86,8 +86,8 @@ message GlobalSlashEntry {
   // The consumer that sent a slash packet.
   string consumer_chain_id = 2
       [(gogoproto.customname) = "ConsumerChainID"];
-  // The IBC sequence number of the recv packet.
-	// This field is used in the store key to ensure uniqueness.
+  // The IBC sequence number of the recv packet.  
+  // This field is used in the store key to ensure uniqueness.
   uint64 ibc_seq_num = 3; 
   // The provider's consensus address of the validator being slashed. 
   // This field is used to obtain validator power in HandleThrottleQueues.
