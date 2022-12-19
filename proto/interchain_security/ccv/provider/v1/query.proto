@@ -141,7 +141,7 @@ message QueryPendingSlashPacketsResponse {
     [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
   google.protobuf.Timestamp next_replenish = 4
     [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-  repeated PendingSlashPacket packets = 5;
+  repeated ThrottledSlashPacket packets = 5;
 }
 
 message QueryPendingConsumerPacketsRequest {
@@ -155,11 +155,11 @@ message QueryPendingConsumerPacketsResponse {
     [(gogoproto.nullable) = false];
 }
 
-message PendingSlashPacket {
-  string chain_id = 1;
-  google.protobuf.Timestamp received_at = 2
-    [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-  interchain_security.ccv.v1.SlashPacketData data = 3
+// A query wrapper type for the global entry and data relevant to a throttled slash packet.
+message ThrottledSlashPacket {
+  interchain_security.ccv.provider.v1.GlobalSlashEntry global_entry = 1
+    [(gogoproto.nullable) = false];
+  interchain_security.ccv.v1.SlashPacketData data = 2
     [(gogoproto.nullable) = false];
 }
 

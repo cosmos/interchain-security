@@ -133,7 +133,7 @@ func (k Keeper) QueryPendingSlashPackets(goCtx context.Context, req *types.Query
 	allowance := k.GetSlashMeterAllowance(ctx)
 	lastTs := k.GetLastSlashMeterFullTime(ctx) // always UTC
 	nextReplenishTs := lastTs.Add(k.GetSlashMeterReplenishPeriod(ctx))
-	packets := []*types.PendingSlashPacket{}
+	packets := []*types.ThrottledSlashPacket{}
 
 	// iterate global slash entries from all consumer chains
 	// and fetch corresponding SlashPacketData from the per-chain throttled packet data queue
@@ -146,10 +146,9 @@ func (k Keeper) QueryPendingSlashPackets(goCtx context.Context, req *types.Query
 			continue
 		}
 
-		packets = append(packets, &types.PendingSlashPacket{
-			ChainId:    entry.ConsumerChainID,
-			ReceivedAt: entry.RecvTime,
-			Data:       slashData,
+		packets = append(packets, &types.ThrottledSlashPacket{
+			GlobalEntry: entry,
+			Data:        slashData,
 		})
 	}
 
