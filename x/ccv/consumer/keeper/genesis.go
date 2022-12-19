@@ -118,10 +118,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 			panic("provider client does not exist")
 		}
 
-		maturingPackets := k.GetAllPacketMaturityTimes(ctx, nil)
-
-		outstandingDowntimes := k.GetAllOutstandingDowntimes(ctx)
-
 		// TODO: update GetLastTransmissionBlockHeight to not return an error
 		ltbh, err := k.GetLastTransmissionBlockHeight(ctx)
 		if err != nil {
@@ -131,11 +127,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) (genesis *consumertypes.GenesisSt
 		genesis = consumertypes.NewRestartGenesisState(
 			clientID,
 			channelID,
-			maturingPackets,
+			k.GetAllPacketMaturityTimes(ctx, nil),
 			valset,
 			k.GetAllHeightToValsetUpdateIDs(ctx),
 			k.GetPendingPackets(ctx),
-			outstandingDowntimes,
+			k.GetAllOutstandingDowntimes(ctx),
 			*ltbh,
 			params,
 		)

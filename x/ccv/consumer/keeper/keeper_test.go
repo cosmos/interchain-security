@@ -300,3 +300,42 @@ func TestVerifyProviderChain(t *testing.T) {
 		ctrl.Finish()
 	}
 }
+
+// TestGetAllValsetUpdateBlockHeights tests GetAllValsetUpdateBlockHeights behaviour correctness
+func TestGetAllValsetUpdateBlockHeights(t *testing.T) {
+	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	cases := []types.HeightToValsetUpdateID{
+		{
+			ValsetUpdateId: 2,
+			Height:         22,
+		},
+		{
+			ValsetUpdateId: 1,
+			Height:         11,
+		},
+	}
+
+	for _, c := range cases {
+		ck.SetHeightValsetUpdateID(ctx, c.Height, c.ValsetUpdateId)
+	}
+
+	// iterate and check all results are returned
+	result := ck.GetAllHeightToValsetUpdateIDs(ctx)
+	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
+	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
+	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
+
+	result = []types.HeightToValsetUpdateID{}
+	require.Empty(t, result, "initial result not empty")
+
+	// iterate and check first op has ID 1
+	for _, vscIDtoHeight := range ck.GetAllHeightToValsetUpdateIDs(ctx) {
+		result = append(result, vscIDtoHeight)
+		break
+	}
+	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
+	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
+	require.NotContains(t, result, cases[0], "result should not contain '%s'", cases[0])
+}

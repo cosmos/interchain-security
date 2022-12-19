@@ -318,9 +318,7 @@ func (k Keeper) GetAllHeightToValsetUpdateIDs(ctx sdk.Context) (heightToValsetUp
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		heightBytes := iterator.Key()[1:]
-		height := binary.BigEndian.Uint64(heightBytes)
-
+		height := binary.BigEndian.Uint64(iterator.Key()[1:])
 		vscID := binary.BigEndian.Uint64(iterator.Value())
 
 		heightToValsetUpdateIDs = append(heightToValsetUpdateIDs, types.HeightToValsetUpdateID{
