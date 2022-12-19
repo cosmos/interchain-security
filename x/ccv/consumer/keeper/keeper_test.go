@@ -87,7 +87,7 @@ func TestPacketMaturityTime(t *testing.T) {
 	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	now := time.Now()
+	now := time.Now().UTC()
 	nsNow := uint64(time.Now().UnixNano())
 	cases := []types.MaturingVSCPacket{
 		{
