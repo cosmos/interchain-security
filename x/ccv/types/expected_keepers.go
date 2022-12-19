@@ -33,6 +33,7 @@ type StakingKeeper interface {
 	IterateLastValidatorPowers(ctx sdk.Context, cb func(addr sdk.ValAddress, power int64) (stop bool))
 	PowerReduction(ctx sdk.Context) sdk.Int
 	PutUnbondingOnHold(ctx sdk.Context, id uint64) error
+	GetLastTotalPower(ctx sdk.Context) sdk.Int
 }
 
 // SlashingKeeper defines the contract expected to perform ccv slashing
