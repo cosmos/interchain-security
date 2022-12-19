@@ -124,7 +124,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	// export provider chain state
 	vscID := k.GetValidatorSetUpdateId(ctx)
-	vscIDToHeights := k.GetAllValsetUpdateBlockHeights(ctx)
 
 	matureUbdOps, err := k.GetMaturedUnbondingOps(ctx)
 	if err != nil {
@@ -150,7 +149,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	return types.NewGenesisState(
 		vscID,
-		vscIDToHeights,
+		k.GetAllValsetUpdateBlockHeights(ctx),
 		consumerStates,
 		k.GetAllUnbondingOps(ctx),
 		&ccv.MaturedUnbondingOps{Ids: matureUbdOps},

@@ -450,3 +450,42 @@ func TestGetAllUnbondingOps(t *testing.T) {
 	require.Contains(t, result, ops[1], "result does not contain '%s'", ops[1])
 	require.NotContains(t, result, ops[0], "result should not contain '%s'", ops[0])
 }
+
+// TestGetAllValsetUpdateBlockHeights tests GetAllValsetUpdateBlockHeights behaviour correctness
+func TestGetAllValsetUpdateBlockHeights(t *testing.T) {
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	cases := []types.ValsetUpdateIdToHeight{
+		{
+			ValsetUpdateId: 2,
+			Height:         22,
+		},
+		{
+			ValsetUpdateId: 1,
+			Height:         11,
+		},
+	}
+
+	for _, c := range cases {
+		pk.SetValsetUpdateBlockHeight(ctx, c.ValsetUpdateId, c.Height)
+	}
+
+	// iterate and check all results are returned
+	result := pk.GetAllValsetUpdateBlockHeights(ctx)
+	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
+	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
+	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
+
+	result = []types.ValsetUpdateIdToHeight{}
+	require.Empty(t, result, "initial result not empty")
+
+	// iterate and check first op has ID 1
+	for _, vscIDtoHeight := range pk.GetAllValsetUpdateBlockHeights(ctx) {
+		result = append(result, vscIDtoHeight)
+		break
+	}
+	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
+	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
+	require.NotContains(t, result, cases[0], "result should not contain '%s'", cases[0])
+}

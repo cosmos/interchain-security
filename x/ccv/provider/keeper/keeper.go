@@ -597,11 +597,10 @@ func (k Keeper) GetAllValsetUpdateBlockHeights(ctx sdk.Context) (valsetUpdateBlo
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-
 		valsetUpdateId := binary.BigEndian.Uint64(iterator.Key()[1:])
 		height := binary.BigEndian.Uint64(iterator.Value())
 
-		return append(valsetUpdateBlockHeights, types.ValsetUpdateIdToHeight{
+		valsetUpdateBlockHeights = append(valsetUpdateBlockHeights, types.ValsetUpdateIdToHeight{
 			ValsetUpdateId: valsetUpdateId,
 			Height:         height,
 		})
