@@ -42,6 +42,8 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	// convert to array of pointers
 	chains := []*types.Chain{}
 	for _, chain := range k.GetAllConsumerChains(ctx) {
+		// prevent implicit memory aliasing
+		chain := chain
 		chains = append(chains, &chain)
 	}
 
@@ -57,6 +59,8 @@ func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.Query
 	var props []*types.ConsumerAdditionProposal
 
 	for _, prop := range k.GetAllPendingConsumerAdditionProps(ctx) {
+		// prevent implicit memory aliasing
+		prop := prop
 		props = append(props, &prop)
 	}
 
@@ -71,6 +75,8 @@ func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryC
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	var props []*types.ConsumerRemovalProposal
 	for _, prop := range k.GetAllPendingConsumerRemovalProps(ctx) {
+		// prevent implicit memory aliasing
+		prop := prop
 		props = append(props, &prop)
 	}
 
