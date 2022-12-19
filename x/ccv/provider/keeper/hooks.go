@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
@@ -92,12 +91,6 @@ func (h Hooks) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) {
 }
 
 func (h Hooks) AfterValidatorRemoved(ctx sdk.Context, valConsAddr sdk.ConsAddress, valAddr sdk.ValAddress) {
-	type StoreKey struct {
-		ChainID      string
-		ProviderAddr sdk.ConsAddress
-		ConsumerKey  tmprotocrypto.PublicKey
-	}
-
 	for _, validatorConsumerPubKey := range h.k.GetAllValidatorConsumerPubKeys(ctx, nil) {
 		if sdk.ConsAddress(validatorConsumerPubKey.ProviderAddr).Equals(valConsAddr) {
 			consumerAddr := utils.TMCryptoPublicKeyToConsAddr(*validatorConsumerPubKey.ConsumerKey)
