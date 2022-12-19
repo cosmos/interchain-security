@@ -88,7 +88,7 @@ func TestPacketMaturityTime(t *testing.T) {
 	defer ctrl.Finish()
 
 	now := time.Now().UTC()
-	nsNow := uint64(time.Now().UnixNano())
+	nsNow := uint64(now.UnixNano())
 	cases := []types.MaturingVSCPacket{
 		{
 			VscId:        2,
