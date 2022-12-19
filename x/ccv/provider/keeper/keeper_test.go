@@ -49,16 +49,6 @@ func TestSlashAcks(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	var chainsAcks [][]string
-
-	penaltiesfN := func() (penalties []string) {
-		providerKeeper.GetAllSlashAcks(ctx, func(id string, acks []string) (stop bool) {
-			chainsAcks = append(chainsAcks, acks)
-			return false // do not stop iteration
-		})
-		return
-	}
-
 	chainID := "consumer"
 
 	acks := providerKeeper.GetSlashAcks(ctx, chainID)
@@ -83,8 +73,9 @@ func TestSlashAcks(t *testing.T) {
 		providerKeeper.SetSlashAcks(ctx, c, p)
 	}
 
-	penaltiesfN()
-	require.Len(t, chainsAcks, len(chains))
+	for _, c := range chains {
+		require.Equal(t, p, providerKeeper.GetSlashAcks(ctx, c))
+	}
 }
 
 // TestAppendSlashAck tests the append method for stored slash acknowledgements
