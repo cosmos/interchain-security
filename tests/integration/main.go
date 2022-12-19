@@ -54,13 +54,13 @@ func main() {
 	}
 
 	wg.Add(1)
-	go slash.ExecuteSteps(&wg, slashThrottleSteps)
-
-	wg.Add(1)
 	go tr.ExecuteSteps(&wg, happyPathSteps)
 
 	wg.Add(1)
 	go dmc.ExecuteSteps(&wg, democracySteps)
+
+	wg.Add(1)
+	go slash.ExecuteSteps(&wg, slashThrottleSteps)
 
 	wg.Wait()
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))

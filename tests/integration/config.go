@@ -130,7 +130,7 @@ func getDefaultValidators() map[validatorID]ValidatorConfig {
 
 func SlashThrottleTestRun() TestRun {
 	return TestRun{
-		name: "key-assignment",
+		name: "slash-throttling",
 		containerConfig: ContainerConfig{
 			containerName: "interchain-security-slash-container",
 			instanceName:  "interchain-security-slash-instance",
