@@ -24,6 +24,7 @@ import (
 // Note: CCV uses an ordered IBC channel, meaning VSC packet changes will be accumulated (and later
 // processed by ApplyCCValidatorChanges) s.t. more recent val power changes overwrite older ones.
 func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, newChanges ccv.ValidatorSetChangePacketData) exported.Acknowledgement {
+	// TODO: validator set update on receive packet
 	// get the provider channel
 	providerChannel, found := k.GetProviderChannel(ctx)
 	if found && providerChannel != packet.DestinationChannel {

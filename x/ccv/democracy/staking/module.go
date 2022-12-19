@@ -29,20 +29,22 @@ type AppModule struct {
 	// embed the Cosmos SDK's x/staking AppModule
 	staking.AppModule
 
-	keeper     keeper.Keeper
-	accKeeper  types.AccountKeeper
-	bankKeeper types.BankKeeper
+	keeper         keeper.Keeper
+	accKeeper      types.AccountKeeper
+	bankKeeper     types.BankKeeper
+	consumerKeeper ConsumerKeeper
 }
 
 // NewAppModule creates a new AppModule object using the native x/staking module
 // AppModule constructor.
-func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak types.AccountKeeper, bk types.BankKeeper) AppModule {
+func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak types.AccountKeeper, bk types.BankKeeper, ck ConsumerKeeper) AppModule {
 	stakingAppMod := staking.NewAppModule(cdc, keeper, ak, bk)
 	return AppModule{
-		AppModule:  stakingAppMod,
-		keeper:     keeper,
-		accKeeper:  ak,
-		bankKeeper: bk,
+		AppModule:      stakingAppMod,
+		keeper:         keeper,
+		accKeeper:      ak,
+		bankKeeper:     bk,
+		consumerKeeper: ck,
 	}
 }
 
@@ -54,7 +56,10 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	var genesisState types.GenesisState
 
 	cdc.MustUnmarshalJSON(data, &genesisState)
-	_ = staking.InitGenesis(ctx, am.keeper, am.accKeeper, am.bankKeeper, &genesisState)
+	valUpdates := staking.InitGenesis(ctx, am.keeper, am.accKeeper, am.bankKeeper, &genesisState)
+	if !am.consumerKeeper.GetParams(ctx).Enabled {
+		return valUpdates
+	}
 
 	return []abci.ValidatorUpdate{}
 }
@@ -64,6 +69,9 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 // consumer chain's x/cvv/consumer module and so this module is not responsible
 // for returning the initial validator set.
 func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	_ = am.keeper.BlockValidatorUpdates(ctx)
+	valUpdates := am.keeper.BlockValidatorUpdates(ctx)
+	if !am.consumerKeeper.GetParams(ctx).Enabled {
+		return valUpdates
+	}
 	return []abci.ValidatorUpdate{}
 }

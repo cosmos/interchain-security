@@ -39,6 +39,12 @@ message GenesisState {
   // LastTransmissionBlockHeight nil on new chain, filled in on restart.
   interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight last_transmission_block_height = 12
   [ (gogoproto.nullable) = false ];
+  // TODO: preCCV could be replaced by params.Enabled
+  bool preCCV = 13; // flag indicating whether the consumer CCV module starts in pre-CCV state
+  google.protobuf.Duration unbonding_period = 14; // the unbonding period on the consumer chain.
+  string conn_id = 15; // the ID of the connection end on the consumer chain on top of which the CCV channel will be established.
+  string counterparty_client_id = 16; // the ID of the client of the consumer chain on the provider chain.
+  string transfer_channel_id = 17; // the ID of a token transfer channel used for the Reward Distribution sub-protocol.
 }
 
 // MaturingVSCPacket defines the genesis information for the
