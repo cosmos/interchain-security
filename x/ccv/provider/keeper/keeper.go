@@ -869,7 +869,7 @@ func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSe
 	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, chainID))
 	defer iterator.Close()
 
-	for ; iterator.Valid(); iterator.Next() {
+	if iterator.Valid() {
 		_, vscID, err := types.ParseVscSendingTimestampKey(iterator.Key())
 		if err != nil {
 			panic(fmt.Errorf("failed to parse VscSendTimestampKey: %w", err))
