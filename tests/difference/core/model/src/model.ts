@@ -374,6 +374,8 @@ class CCVProvider {
   tombstoned: boolean[];
   // unbonding operations to be completed in EndBlock
   matureUnbondingOps: number[];
+  // queue
+  queue: (Slash | VscMatured)[];
 
   constructor(model: Model, { ccvP }: ModelInitState) {
     this.m = model;
@@ -382,6 +384,7 @@ class CCVProvider {
 
   endBlockCIS = () => {
     this.vscIDtoH[this.vscID] = this.m.h[P] + 1;
+    this.processPackets();
   };
 
   endBlockVSU = () => {
@@ -420,12 +423,30 @@ class CCVProvider {
   };
 
   onReceive = (data: PacketData) => {
-    // It's sufficient to use isDowntime field as differentiator
-    if ('isDowntime' in data) {
-      this.onReceiveSlash(data);
+    /*
+    TODO: tidy up before merging to main
+    This is some quick prototyping to get the tests passing
+    We have 1 consumer chain so the slash queue is the global queue
+    if the queue is empty we can just process the packet.
+    */
+    if (this.queue.length == 0 && !('isDowntime' in data)) {
+      // Skip the queue
+      this.onReceiveVSCMatured(data as VscMatured);
     } else {
-      this.onReceiveVSCMatured(data);
+      this.queue.push(data);
     }
+  };
+
+  processPackets = () => {
+    this.queue.forEach((data) => {
+      // It's sufficient to use isDowntime field as differentiator
+      if ('isDowntime' in data) {
+        this.onReceiveSlash(data);
+      } else {
+        this.onReceiveVSCMatured(data);
+      }
+    });
+    this.queue = [];
   };
 
   onReceiveVSCMatured = (data: VscMatured) => {

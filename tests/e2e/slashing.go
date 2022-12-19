@@ -13,6 +13,8 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
+	keepertestutil "github.com/cosmos/interchain-security/testutil/keeper"
+	tmtypes "github.com/tendermint/tendermint/types"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
@@ -52,10 +54,8 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		providerKeeper := s.providerApp.GetProviderKeeper()
 		firstConsumerKeeper := s.getFirstBundle().GetKeeper()
 
-		// get a cross-chain validator address, pubkey and balance
-		tmVals := s.consumerChain.Vals.Validators
-		tmVal := tmVals[0]
-
+		// pick first consumer validator
+		tmVal := s.consumerChain.Vals.Validators[0]
 		val, err := tmVal.ToProto()
 		s.Require().NoError(err)
 		pubkey, err := cryptocodec.FromTmProtoPublicKey(val.GetPubKey())
@@ -69,41 +69,29 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		); found {
 			consAddr = providerAddr
 		}
+
 		valData, found := providerStakingKeeper.GetValidatorByConsAddr(s.providerCtx(), consAddr)
 		s.Require().True(found)
 		valOldBalance := valData.Tokens
 
-		// create the validator's signing info record to allow jailing
-		valInfo := slashingtypes.NewValidatorSigningInfo(consAddr, s.providerCtx().BlockHeight(),
-			s.providerCtx().BlockHeight()-1, time.Time{}.UTC(), false, int64(0))
-		providerSlashingKeeper.SetValidatorSigningInfo(s.providerCtx(), consAddr, valInfo)
+		// Setup first val with mapped consensus addresss to be jailed on provider by setting signing info
+		// convert validator to TM type
+		pk, err := valData.ConsPubKey()
+		s.Require().NoError(err)
+		tmPk, err := cryptocodec.ToTmPubKeyInterface(pk)
+		s.Require().NoError(err)
+		s.setDefaultValSigningInfo(*tmtypes.NewValidator(tmPk, valData.ConsensusPower(sdk.DefaultPowerReduction)))
 
-		// get valseUpdateId for current block height on first consumer
-		valsetUpdateId := firstConsumerKeeper.GetHeightValsetUpdateID(
-			s.consumerCtx(), uint64(s.consumerCtx().BlockHeight()))
-
-		// construct the slash packet with the validator address and power
-		validator := abci.Validator{
-			Address: tmVal.Address,
-			Power:   tmVal.VotingPower,
-		}
-
-		// Construct packet data depending on the test case
+		// Construct packet depending on the test case
 		var infractionType stakingtypes.InfractionType
-
 		if tc == downtimeTestCase {
 			infractionType = stakingtypes.Downtime
 		} else if tc == doubleSignTestCase {
 			infractionType = stakingtypes.DoubleSign
 		}
-		packetData := ccv.NewSlashPacketData(validator, valsetUpdateId, infractionType).GetBytes()
-
-		oldBlockTime := s.consumerCtx().BlockTime()
-		timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
-		packet := channeltypes.NewPacket(packetData, 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
-			ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, timeout)
 
 		// Send slash packet from the first consumer chain
+		packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, infractionType, 1)
 		err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
 		s.Require().NoError(err)
 
@@ -113,12 +101,14 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		}
 
 		// Note: RecvPacket advances two blocks. Let's say the provider is currently at height N.
-		// The received slash packet will be handled during N, and the staking module will then
-		// register a validator update from that packet during the endblocker of N. Then the ccv
-		// module sends VSC packets during the endblocker of N. The new validator set will be
-		// committed to in block N+1, and will be in effect for block N+2.
+		// The received slash packet will be queued during N, and handled by the ccv module during
+		// the endblocker of N. The staking module will then register a validator update from that
+		// packet during the endblocker of N+1 (note that staking endblocker runs before ccv endblocker,
+		// hence why the VSC is registered on N+1). Then the ccv module sends VSC packets to each consumer
+		// during the endblocker of N+1. The new validator set will be committed to in block N+2,
+		// and will be in effect for the provider during block N+3.
 
-		valsetUpdateN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
+		valsetUpdateIdN := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
 
 		// receive the downtime packet on the provider chain.
 		// RecvPacket() calls the provider endblocker twice
@@ -127,20 +117,23 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 
 		// We've now advanced two blocks.
 
-		// VSC packets should have been sent from provider during block N to each consumer
-		expectedSentValsetUpdateId := valsetUpdateN
+		// VSC packets should have been sent from provider during block N+1 to each consumer
+		expectedSentValsetUpdateId := valsetUpdateIdN + 1
 		for _, bundle := range s.consumerBundles {
-			_, found = providerKeeper.GetVscSendTimestamp(s.providerCtx(),
+			_, found := providerKeeper.GetVscSendTimestamp(s.providerCtx(),
 				bundle.Chain.ChainID, expectedSentValsetUpdateId)
 			s.Require().True(found)
 		}
 
 		// Confirm the valset update Id was incremented twice on provider,
 		// since two endblockers have passed.
-		valsetUpdateNPlus2 := providerKeeper.GetValidatorSetUpdateId(s.providerCtx())
-		s.Require().Equal(valsetUpdateN+2, valsetUpdateNPlus2)
+		s.Require().Equal(valsetUpdateIdN+2,
+			providerKeeper.GetValidatorSetUpdateId(s.providerCtx()))
 
-		// check that the validator was removed from the provider validator set
+		// Call next block so provider is now on block N + 3 mentioned above
+		s.providerChain.NextBlock()
+
+		// check that the validator was removed from the provider validator set by N + 3
 		s.Require().Len(s.providerChain.Vals.Validators, validatorsPerChain-1)
 
 		for _, bundle := range s.consumerBundles {
@@ -212,7 +205,8 @@ func (s *CCVTestSuite) TestSlashPacketAcknowledgement() {
 	packet := channeltypes.NewPacket([]byte{}, 1, ccv.ConsumerPortID, s.path.EndpointA.ChannelID,
 		ccv.ProviderPortID, s.path.EndpointB.ChannelID, clienttypes.Height{}, 0)
 
-	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, ccv.SlashPacketData{})
+	ack := providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet,
+		keepertestutil.GetNewSlashPacketData())
 	s.Require().NotNil(ack)
 
 	err := consumerKeeper.OnAcknowledgementPacket(s.consumerCtx(), packet, channeltypes.NewResultAcknowledgement(ack.Acknowledgement()))
@@ -265,7 +259,6 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 // TestOnRecvSlashPacketErrors tests errors for the OnRecvSlashPacket method in an e2e testing setting
 func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
-	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
 	providerKeeper := suite.providerApp.GetProviderKeeper()
 	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
 	firstBundle := suite.getFirstBundle()
@@ -341,10 +334,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	ack := providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
 	suite.Require().True(ack.Success())
 
-	// jail an existing validator
 	val := suite.providerChain.Vals.Validators[0]
-	consAddr := sdk.ConsAddress(val.Address)
-	providerStakingKeeper.Jail(ctx, consAddr)
+
 	// commit block to set VSC ID
 	suite.coordinator.CommitBlock(suite.providerChain)
 	// Update suite.ctx bc CommitBlock updates only providerChain's current header block height
@@ -360,11 +351,6 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	slashingPkt.Validator.Address = val.Address
 	slashingPkt.ValsetUpdateId = vscID
 
-	// expect to slash and jail validator
-	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
-	suite.Require().True(ack.Success())
-	suite.Require().True(providerStakingKeeper.IsValidatorJailed(ctx, consAddr))
-
 	// expect error ack when infraction type in unspecified
 	tmAddr := suite.providerChain.Vals.Validators[1].Address
 	slashingPkt.Validator.Address = tmAddr
@@ -376,11 +362,16 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
 	suite.Require().False(errAck.Success())
 
-	// expect to slash and jail validator
+	// Expect nothing was queued
+	suite.Require().Equal(0, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
+	suite.Require().Equal(uint64(0), (providerKeeper.GetThrottledPacketDataSize(ctx, consumerChainID)))
+
+	// expect to queue entries for the slash request
 	slashingPkt.Infraction = stakingtypes.DoubleSign
 	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
 	suite.Require().True(ack.Success())
-	suite.Require().True(providerStakingKeeper.IsValidatorJailed(ctx, sdk.ConsAddress(tmAddr)))
+	suite.Require().Equal(1, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
+	suite.Require().Equal(uint64(1), (providerKeeper.GetThrottledPacketDataSize(ctx, consumerChainID)))
 }
 
 // TestHandleSlashPacketDistribution tests the slashing of an undelegation balance

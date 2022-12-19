@@ -20,10 +20,10 @@ func (k Keeper) GetTemplateClient(ctx sdk.Context) *ibctmtypes.ClientState {
 
 // GetTrustingPeriodFraction returns a TrustingPeriodFraction
 // used to compute the provider IBC client's TrustingPeriod as UnbondingPeriod / TrustingPeriodFraction
-func (k Keeper) GetTrustingPeriodFraction(ctx sdk.Context) int64 {
-	var i int64
-	k.paramSpace.Get(ctx, types.KeyTrustingPeriodFraction, &i)
-	return i
+func (k Keeper) GetTrustingPeriodFraction(ctx sdk.Context) string {
+	var f string
+	k.paramSpace.Get(ctx, types.KeyTrustingPeriodFraction, &f)
+	return f
 }
 
 // GetCCVTimeoutPeriod returns the timeout period for sent ibc packets
@@ -52,7 +52,8 @@ func (k Keeper) SetVscTimeoutPeriod(ctx sdk.Context, period time.Duration) {
 	k.paramSpace.Set(ctx, types.KeyVscTimeoutPeriod, period)
 }
 
-// GetSlashMeterReplenishPeriod returns the period for which the slash gas meter is replenished.
+// GetSlashMeterReplenishPeriod returns the period in which:
+// Once the slash meter becomes not-full, the slash meter is replenished after this period.
 func (k Keeper) GetSlashMeterReplenishPeriod(ctx sdk.Context) time.Duration {
 	var p time.Duration
 	k.paramSpace.Get(ctx, types.KeySlashMeterReplenishPeriod, &p)

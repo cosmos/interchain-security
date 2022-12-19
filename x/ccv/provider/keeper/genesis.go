@@ -68,7 +68,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 				k.SetUnbondingOpIndex(ctx, chainID, ubdOpIndex.ValsetUpdateId, ubdOpIndex.UnbondingOpIndex)
 			}
 		} else {
-			k.AppendPendingPackets(ctx, chainID, cs.PendingValsetChanges...)
+			k.AppendPendingVSCPackets(ctx, chainID, cs.PendingValsetChanges...)
 		}
 	}
 
@@ -88,6 +88,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 
 	k.SetParams(ctx, genState.Params)
+	k.InitializeSlashMeter(ctx)
 }
 
 // ExportGenesis returns the CCV provider module's exported genesis
@@ -124,7 +125,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			})
 		}
 
-		cs.PendingValsetChanges = k.GetPendingPackets(ctx, chainID)
+		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, chainID)
 		consumerStates = append(consumerStates, cs)
 		return false // do not stop the iteration
 	})

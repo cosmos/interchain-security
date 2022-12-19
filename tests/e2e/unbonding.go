@@ -233,7 +233,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 		s.providerChain.NextBlock()
 
 		// check that the VSC packet is stored in state as pending
-		pendingVSCs := providerKeeper.GetPendingPackets(s.providerCtx(), s.consumerChain.ChainID)
+		pendingVSCs := providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
 		s.Require().Lenf(pendingVSCs, 1, "no pending VSC packet found; test: %s", tc.name)
 
 		// delegate again to create another VSC packet
@@ -243,7 +243,7 @@ func (s *CCVTestSuite) TestUndelegationDuringInit() {
 		s.providerChain.NextBlock()
 
 		// check that the VSC packet is stored in state as pending
-		pendingVSCs = providerKeeper.GetPendingPackets(s.providerCtx(), s.consumerChain.ChainID)
+		pendingVSCs = providerKeeper.GetPendingVSCPackets(s.providerCtx(), s.consumerChain.ChainID)
 		s.Require().Lenf(pendingVSCs, 2, "only one pending VSC packet found; test: %s", tc.name)
 
 		// increment time so that the unbonding period ends on the provider
@@ -304,9 +304,10 @@ func (s *CCVTestSuite) TestUnbondingNoConsumer() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
-	// remove all consumer chains, which were already registered during setup
+	// remove all consumer chains, which were already started during setup
 	for chainID := range s.consumerBundles {
-		providerKeeper.DeleteConsumerClientId(s.providerCtx(), chainID)
+		err := providerKeeper.StopConsumerChain(s.providerCtx(), chainID, true)
+		s.Require().NoError(err)
 	}
 
 	// delegate bondAmt and undelegate 1/2 of it
@@ -341,8 +342,9 @@ func (s *CCVTestSuite) TestRedelegationNoConsumer() {
 	providerKeeper := s.providerApp.GetProviderKeeper()
 	stakingKeeper := s.providerApp.GetE2eStakingKeeper()
 
-	// remove the consumer chain, which was already registered during setup
-	providerKeeper.DeleteConsumerClientId(s.providerCtx(), s.consumerChain.ChainID)
+	// stop the consumer chain, which was already started during setup
+	err := providerKeeper.StopConsumerChain(s.providerCtx(), s.consumerChain.ChainID, true)
+	s.Require().NoError(err)
 
 	// Setup delegator, bond amount, and src/dst validators
 	bondAmt := sdk.NewInt(10000000)
