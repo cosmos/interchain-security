@@ -395,19 +395,19 @@ func TestGetAllChannelToChains(t *testing.T) {
 	require.NotContains(t, result, cases[0], "result should not contain '%s'", cases[0])
 }
 
-// IterateOverUnbondingOps tests IterateOverUnbondingOps behaviour correctness
-func TestIterateOverUnbondingOps(t *testing.T) {
+// TestGetAllUnbondingOps tests GetAllUnbondingOps behaviour correctness
+func TestGetAllUnbondingOps(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	ops := []ccv.UnbondingOp{
 		{
-			Id:                      1,
-			UnbondingConsumerChains: []string{"test"},
+			Id:                      2,
+			UnbondingConsumerChains: []string{"chain-2", "chain-1"},
 		},
 		{
-			Id:                      2,
-			UnbondingConsumerChains: []string{"test"},
+			Id:                      1,
+			UnbondingConsumerChains: []string{"chain-1", "chain-2"},
 		},
 	}
 
@@ -420,4 +420,16 @@ func TestIterateOverUnbondingOps(t *testing.T) {
 	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
 	require.Contains(t, result, ops[0], "result does not contain '%s'", ops[0])
 	require.Contains(t, result, ops[1], "result does not contain '%s'", ops[1])
+
+	result = []ccv.UnbondingOp{}
+	require.Empty(t, result, "initial result not empty")
+
+	// iterate and check first op has ID 1
+	for _, unbondingOp := range pk.GetAllUnbondingOps(ctx) {
+		result = append(result, unbondingOp)
+		break
+	}
+	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
+	require.Contains(t, result, ops[1], "result does not contain '%s'", ops[1])
+	require.NotContains(t, result, ops[0], "result should not contain '%s'", ops[0])
 }

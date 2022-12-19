@@ -338,7 +338,9 @@ func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 	store.Delete(types.UnbondingOpKey(id))
 }
 
-// GetAllUnbondingOps gets all UnbondingOps.
+// GetAllUnbondingOps gets all UnbondingOps, where each UnbondingOp consists
+// of its unique ID and a list of consumer chainIDs that the unbonding operation
+// is waiting on.
 //
 // Note that UnbondingOps are stored under keys with the following format:
 // UnbondingOpBytePrefix | ID
