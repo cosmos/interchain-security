@@ -319,12 +319,12 @@ func TestVscSendTimestamp(t *testing.T) {
 	require.Equal(t, 0, i)
 }
 
-// TestIterateConsumerChains tests IterateConsumerChains behaviour correctness
-func TestIterateConsumerChains(t *testing.T) {
+// TestGetAllConsumerChains tests GetAllConsumerChains behaviour correctness
+func TestGetAllConsumerChains(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainIDs := []string{"chain-1", "chain-2"}
+	chainIDs := []string{"chain-2", "chain-1"}
 	for _, c := range chainIDs {
 		pk.SetConsumerClientId(ctx, c, fmt.Sprintf("client-%s", c))
 	}
@@ -346,29 +346,29 @@ func TestIterateConsumerChains(t *testing.T) {
 	result = []string{}
 	require.Empty(t, result, "initial result not empty")
 
-	// iterate and check first chain is
+	// iterate and check first chain is chain-1
 	for _, chain := range pk.GetAllConsumerChains(ctx) {
 		result = append(result, chain.ChainId)
 		break
 	}
 	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	require.Contains(t, result, chainIDs[0], "result does not contain '%s'", chainIDs[0])
-	require.NotContains(t, result, chainIDs[1], "result should not contain '%s'", chainIDs[1])
+	require.Contains(t, result, chainIDs[1], "result does not contain '%s'", chainIDs[1])
+	require.NotContains(t, result, chainIDs[0], "result should not contain '%s'", chainIDs[0])
 }
 
-// TestIterateConsumerChains tests IterateConsumerChains behaviour correctness
-func TestIterateChannelToChain(t *testing.T) {
+// TestGetAllChannelToChains tests GetAllChannelToChains behaviour correctness
+func TestGetAllChannelToChains(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	cases := []types.ChannelToChain{
 		{
-			ChainId:   "chain-1",
-			ChannelId: "channel-1",
-		},
-		{
 			ChainId:   "chain-2",
 			ChannelId: "channel-2",
+		},
+		{
+			ChainId:   "chain-1",
+			ChannelId: "channel-1",
 		},
 	}
 
@@ -381,6 +381,18 @@ func TestIterateChannelToChain(t *testing.T) {
 	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
 	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
 	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
+
+	result = []types.ChannelToChain{}
+	require.Empty(t, result, "initial result not empty")
+
+	// iterate and check first mapping is <chain-1: channel-1>
+	for _, channelToChain := range pk.GetAllChannelToChains(ctx) {
+		result = append(result, channelToChain)
+		break
+	}
+	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
+	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
+	require.NotContains(t, result, cases[0], "result should not contain '%s'", cases[0])
 }
 
 // IterateOverUnbondingOps tests IterateOverUnbondingOps behaviour correctness

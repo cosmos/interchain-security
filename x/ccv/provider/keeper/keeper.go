@@ -174,15 +174,17 @@ func (k Keeper) GetChannelToChain(ctx sdk.Context, channelID string) (string, bo
 	return string(bz), true
 }
 
-// DeleteChannelToChain deletes the consumer chain ID for a given CCV channe lID
+// DeleteChannelToChain deletes the consumer chain ID for a given CCV channelID
 func (k Keeper) DeleteChannelToChain(ctx sdk.Context, channelID string) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.ChannelToChainKey(channelID))
 }
 
-// GetChannelToChains gets all channel to chain mappings
+// GetAllChannelToChains gets all channel to chain mappings. If a mapping exists,
+// then the CCV channel to that consumer chain is established.
 //
-// Note that mapping from CCV channel IDs to consumer chainIDs is stored under keys with the following format:
+// Note that mapping from CCV channel IDs to consumer chainIDs
+// is stored under keys with the following format:
 // ChannelToChainBytePrefix | channelID
 // Thus, the returned array is in ascending order of channelIDs.
 func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.ChannelToChain) {
@@ -193,7 +195,6 @@ func (k Keeper) GetAllChannelToChains(ctx sdk.Context) (channels []types.Channel
 	for ; iterator.Valid(); iterator.Next() {
 		// remove prefix from key to retrieve channelID
 		channelID := string(iterator.Key()[1:])
-
 		chainID := string(iterator.Value())
 
 		channels = append(channels, types.ChannelToChain{
