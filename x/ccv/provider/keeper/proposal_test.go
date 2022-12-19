@@ -712,7 +712,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 		VscTimeoutPeriod:            providertypes.DefaultVscTimeoutPeriod,
 		SlashMeterReplenishPeriod:   providertypes.DefaultSlashMeterReplenishPeriod,
 		SlashMeterReplenishFraction: providertypes.DefaultSlashMeterReplenishFraction,
-		MaxPendingSlashPackets:      providertypes.DefaultMaxPendingSlashPackets,
+		MaxThrottledPackets:         providertypes.DefaultMaxThrottledPackets,
 	}
 	providerKeeper.SetParams(ctx, moduleParams)
 	defer ctrl.Finish()
@@ -744,7 +744,7 @@ func TestMakeConsumerGenesis(t *testing.T) {
 	var expectedGenesis consumertypes.GenesisState
 	err = json.Unmarshal([]byte(jsonString), &expectedGenesis)
 	require.NoError(t, err)
-	
+
 	// Zeroing out different fields that are challenging to mock
 	actualGenesis.InitialValSet = []abci.ValidatorUpdate{}
 	expectedGenesis.InitialValSet = []abci.ValidatorUpdate{}
