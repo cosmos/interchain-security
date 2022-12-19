@@ -56,17 +56,16 @@ service Query {
     option (google.api.http).get = "/interchain_security/ccv/provider/validator_provider_addr";
   }
 
-  // QueryPendingSlashPackets returns the current state of the slash meter
-  // and a list of pending slash packets (chainID, slashPacket)
-  rpc QueryPendingSlashPackets(QueryPendingSlashPacketsRequest)
-      returns (QueryPendingSlashPacketsResponse) {
-    option (google.api.http).get = "/interchain_security/ccv/provider/pending_slash_requests";
+  // QueryThrottleState returns the main on-chain state relevant to currently throttled slash packets 
+  rpc QueryThrottleState(QueryThrottleStateRequest)
+      returns (QueryThrottleStateResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/provider/throttle_state";
   }
 
-  // QueryPendingConsumerPackets returns a list of pending packets (slash packet and vsc matured)
-  // for a consumer chain
-  rpc QueryPendingConsumerPackets(QueryPendingConsumerPacketsRequest)
-      returns (QueryPendingConsumerPacketsResponse) {
+  // QueryThrottledConsumerPacketData returns a list of pending packet data instances
+  // (slash packet and vsc matured) for a single consumer chain
+  rpc QueryThrottledConsumerPacketData(QueryThrottledConsumerPacketDataRequest)
+      returns (QueryThrottledConsumerPacketDataResponse) {
     option (google.api.http).get = "/interchain_security/ccv/provider/pending_consumer_packets";
   }
 }
@@ -129,29 +128,29 @@ message QueryValidatorProviderAddrResponse {
   string provider_address = 1;
 }
 
-message QueryPendingSlashPacketsRequest {}
+message QueryThrottleStateRequest {}
 
-message QueryPendingSlashPacketsResponse {
+message QueryThrottleStateResponse {
   // current slash_meter state
   int64 slash_meter = 1;
   // allowance of voting power units (int) that the slash meter is given per replenish period
   // this also serves as the max value for the meter.
   int64 slash_meter_allowance = 2;
-  google.protobuf.Timestamp last_replenish = 3
+  // last time the slash meter was full
+  google.protobuf.Timestamp last_full_time = 3
     [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-  google.protobuf.Timestamp next_replenish = 4
-    [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-  repeated ThrottledSlashPacket packets = 5;
+  // data relevant to currently throttled slash packets
+  repeated ThrottledSlashPacket packets = 4;
 }
 
-message QueryPendingConsumerPacketsRequest {
+message QueryThrottledConsumerPacketDataRequest {
   string chain_id = 1;
 }
 
-message QueryPendingConsumerPacketsResponse {
+message QueryThrottledConsumerPacketDataResponse {
   string chain_id = 1;
   uint64 size = 2;
-  repeated PendingPacketWrapper packets = 3
+  repeated ThrottledPacketDataWrapper packetDataInstances = 3
     [(gogoproto.nullable) = false];
 }
 
@@ -163,8 +162,8 @@ message ThrottledSlashPacket {
     [(gogoproto.nullable) = false];
 }
 
-// PendingPacketWrapper data contains either SlashPacketData or VSCMaturedPacketData
-message PendingPacketWrapper {
+// ThrottledPacketDataWrapper contains either SlashPacketData or VSCMaturedPacketData
+message ThrottledPacketDataWrapper {
   oneof data {
     interchain_security.ccv.v1.SlashPacketData slash_packet = 1;
     interchain_security.ccv.v1.VSCMaturedPacketData vsc_matured_packet = 2;

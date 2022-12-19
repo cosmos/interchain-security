@@ -121,8 +121,7 @@ func (k Keeper) QueryValidatorProviderAddr(goCtx context.Context, req *types.Que
 	}, nil
 }
 
-// TODO: change to GlobalSlashEntries naming
-func (k Keeper) QueryPendingSlashPackets(goCtx context.Context, req *types.QueryPendingSlashPacketsRequest) (*types.QueryPendingSlashPacketsResponse, error) {
+func (k Keeper) QueryThrottleState(goCtx context.Context, req *types.QueryThrottleStateRequest) (*types.QueryThrottleStateResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -131,8 +130,7 @@ func (k Keeper) QueryPendingSlashPackets(goCtx context.Context, req *types.Query
 
 	meter := k.GetSlashMeter(ctx)
 	allowance := k.GetSlashMeterAllowance(ctx)
-	lastTs := k.GetLastSlashMeterFullTime(ctx) // always UTC
-	nextReplenishTs := lastTs.Add(k.GetSlashMeterReplenishPeriod(ctx))
+	lastFullTime := k.GetLastSlashMeterFullTime(ctx) // always UTC
 	packets := []*types.ThrottledSlashPacket{}
 
 	// iterate global slash entries from all consumer chains
@@ -140,7 +138,8 @@ func (k Keeper) QueryPendingSlashPackets(goCtx context.Context, req *types.Query
 	allGlobalEntries := k.GetAllGlobalSlashEntries(ctx)
 
 	for _, entry := range allGlobalEntries {
-		slashData, found := k.getSlashPacketForGlobalEntry(ctx, entry.ConsumerChainID, entry.IbcSeqNum)
+		// Obtain slash packet data instance for the given global entry
+		slashData, found := k.getSlashPacketData(ctx, entry.ConsumerChainID, entry.IbcSeqNum)
 		if !found {
 			// silently skip over invalid data
 			continue
@@ -152,17 +151,15 @@ func (k Keeper) QueryPendingSlashPackets(goCtx context.Context, req *types.Query
 		})
 	}
 
-	return &types.QueryPendingSlashPacketsResponse{
+	return &types.QueryThrottleStateResponse{
 		SlashMeter:          meter.Int64(),
 		SlashMeterAllowance: allowance.Int64(),
-		LastReplenish:       lastTs,
-		NextReplenish:       nextReplenishTs,
+		LastFullTime:        lastFullTime,
 		Packets:             packets,
 	}, nil
 }
 
-// TODO: change to ThrottledPacketData naming
-func (k Keeper) QueryPendingConsumerPackets(goCtx context.Context, req *types.QueryPendingConsumerPacketsRequest) (*types.QueryPendingConsumerPacketsResponse, error) {
+func (k Keeper) QueryThrottledConsumerPacketData(goCtx context.Context, req *types.QueryThrottledConsumerPacketDataRequest) (*types.QueryThrottledConsumerPacketDataResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -176,19 +173,19 @@ func (k Keeper) QueryPendingConsumerPackets(goCtx context.Context, req *types.Qu
 		return nil, status.Error(codes.InvalidArgument, "invalid chain-id")
 	}
 
-	packets := []types.PendingPacketWrapper{}
+	packetDataInstances := []types.ThrottledPacketDataWrapper{}
 	_, _, rawOrderedData, _ := k.GetAllThrottledPacketData(ctx, req.ChainId)
 
 	for _, raw := range rawOrderedData {
 		switch data := raw.(type) {
 		case ccvtypes.SlashPacketData:
-			w := &types.PendingPacketWrapper_SlashPacket{SlashPacket: &data}
-			packets = append(packets, types.PendingPacketWrapper{
+			w := &types.ThrottledPacketDataWrapper_SlashPacket{SlashPacket: &data}
+			packetDataInstances = append(packetDataInstances, types.ThrottledPacketDataWrapper{
 				Data: w,
 			})
 		case ccvtypes.VSCMaturedPacketData:
-			w := &types.PendingPacketWrapper_VscMaturedPacket{VscMaturedPacket: &data}
-			packets = append(packets, types.PendingPacketWrapper{
+			w := &types.ThrottledPacketDataWrapper_VscMaturedPacket{VscMaturedPacket: &data}
+			packetDataInstances = append(packetDataInstances, types.ThrottledPacketDataWrapper{
 				Data: w,
 			})
 		default:
@@ -196,16 +193,16 @@ func (k Keeper) QueryPendingConsumerPackets(goCtx context.Context, req *types.Qu
 		}
 	}
 
-	return &types.QueryPendingConsumerPacketsResponse{
-		ChainId: req.ChainId,
-		Size_:   k.GetThrottledPacketDataSize(ctx, req.ChainId),
-		Packets: packets,
+	return &types.QueryThrottledConsumerPacketDataResponse{
+		ChainId:             req.ChainId,
+		Size_:               k.GetThrottledPacketDataSize(ctx, req.ChainId),
+		PacketDataInstances: packetDataInstances,
 	}, nil
 }
 
-// getSlashPacketForGlobalEntry fetches a slash packet data from the store using consumerChainId and ibcSeqNum
-// If the packets is not SlashPacketData, it is considered not found.
-func (k Keeper) getSlashPacketForGlobalEntry(ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64) (ccvtypes.SlashPacketData, bool) {
+// getSlashPacketData fetches a slash packet data from the store using consumerChainId and ibcSeqNum (direct access)
+// If the returned bytes do not unmarshal to SlashPacketData, the data is considered not found.
+func (k Keeper) getSlashPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64) (ccvtypes.SlashPacketData, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(providertypes.ThrottledPacketDataKey(consumerChainID, ibcSeqNum))
 	if len(bz) == 0 {
@@ -220,7 +217,8 @@ func (k Keeper) getSlashPacketForGlobalEntry(ctx sdktypes.Context, consumerChain
 	err := packet.Unmarshal(bz[1:])
 
 	if err != nil {
-		panic(fmt.Sprintf("failed to unmarshal pending packet data: %v", err))
+		// If the data cannot be unmarshaled, it is considered not found
+		return ccvtypes.SlashPacketData{}, false
 	}
 
 	return packet, true
