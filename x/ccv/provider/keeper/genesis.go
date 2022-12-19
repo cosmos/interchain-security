@@ -53,16 +53,15 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		if err := k.SetConsumerGenesis(ctx, chainID, cs.ConsumerGenesis); err != nil {
 			panic(fmt.Errorf("consumer chain genesis could not be persisted: %w", err))
 		}
+		for _, ubdOpIndex := range cs.UnbondingOpsIndex {
+			k.SetUnbondingOpIndex(ctx, chainID, ubdOpIndex.GetVscId(), ubdOpIndex.GetUnbondingOpIds())
+		}
 		// check if the CCV channel was established
 		if cs.ChannelId != "" {
 			k.SetChannelToChain(ctx, cs.ChannelId, chainID)
 			k.SetChainToChannel(ctx, chainID, cs.ChannelId)
 			k.SetInitChainHeight(ctx, chainID, cs.InitialHeight)
-
 			k.SetSlashAcks(ctx, cs.ChainId, cs.SlashDowntimeAck)
-			for _, ubdOpIndex := range cs.UnbondingOpsIndex {
-				k.SetUnbondingOpIndex(ctx, chainID, ubdOpIndex.ValsetUpdateId, ubdOpIndex.UnbondingOpIndex)
-			}
 		} else {
 			k.AppendPendingVSCPackets(ctx, chainID, cs.PendingValsetChanges...)
 		}
@@ -101,9 +100,10 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 		// initial consumer chain states
 		cs := types.ConsumerState{
-			ChainId:         chain.ChainId,
-			ClientId:        chain.ClientId,
-			ConsumerGenesis: gen,
+			ChainId:           chain.ChainId,
+			ClientId:          chain.ClientId,
+			ConsumerGenesis:   gen,
+			UnbondingOpsIndex: k.GetAllUnbondingOpIndexes(ctx, chain.ChainId),
 		}
 
 		// try to find channel id for the current consumer chain
@@ -115,11 +115,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 				panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chain.ChainId, chain.ClientId))
 			}
 			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chain.ChainId)
-			for _, unbondingOpsIndex := range k.GetAllUnbondingOpIndexes(ctx, chain.ChainId) {
-				cs.UnbondingOpsIndex = append(cs.UnbondingOpsIndex,
-					types.UnbondingOpIndex{ValsetUpdateId: unbondingOpsIndex.VscId, UnbondingOpIndex: unbondingOpsIndex.UnbondingOpIds},
-				)
-			}
 		}
 
 		cs.PendingValsetChanges = k.GetPendingVSCPackets(ctx, chain.ChainId)

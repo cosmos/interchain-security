@@ -137,59 +137,6 @@ func (m *ValidatorSetChangePackets) GetList() []ValidatorSetChangePacketData {
 	return nil
 }
 
-type UnbondingOp struct {
-	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	// consumer chains that are still unbonding
-	UnbondingConsumerChains []string `protobuf:"bytes,2,rep,name=unbonding_consumer_chains,json=unbondingConsumerChains,proto3" json:"unbonding_consumer_chains,omitempty"`
-}
-
-func (m *UnbondingOp) Reset()         { *m = UnbondingOp{} }
-func (m *UnbondingOp) String() string { return proto.CompactTextString(m) }
-func (*UnbondingOp) ProtoMessage()    {}
-func (*UnbondingOp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_68bd5f3242e6f29c, []int{2}
-}
-func (m *UnbondingOp) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *UnbondingOp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UnbondingOp.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *UnbondingOp) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UnbondingOp.Merge(m, src)
-}
-func (m *UnbondingOp) XXX_Size() int {
-	return m.Size()
-}
-func (m *UnbondingOp) XXX_DiscardUnknown() {
-	xxx_messageInfo_UnbondingOp.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_UnbondingOp proto.InternalMessageInfo
-
-func (m *UnbondingOp) GetId() uint64 {
-	if m != nil {
-		return m.Id
-	}
-	return 0
-}
-
-func (m *UnbondingOp) GetUnbondingConsumerChains() []string {
-	if m != nil {
-		return m.UnbondingConsumerChains
-	}
-	return nil
-}
-
 // This packet is sent from the consumer chain to the provider chain
 // to notify that a VSC packet reached maturity on the consumer chain.
 type VSCMaturedPacketData struct {
@@ -201,7 +148,7 @@ func (m *VSCMaturedPacketData) Reset()         { *m = VSCMaturedPacketData{} }
 func (m *VSCMaturedPacketData) String() string { return proto.CompactTextString(m) }
 func (*VSCMaturedPacketData) ProtoMessage()    {}
 func (*VSCMaturedPacketData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_68bd5f3242e6f29c, []int{3}
+	return fileDescriptor_68bd5f3242e6f29c, []int{2}
 }
 func (m *VSCMaturedPacketData) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -252,7 +199,7 @@ func (m *SlashPacketData) Reset()         { *m = SlashPacketData{} }
 func (m *SlashPacketData) String() string { return proto.CompactTextString(m) }
 func (*SlashPacketData) ProtoMessage()    {}
 func (*SlashPacketData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_68bd5f3242e6f29c, []int{4}
+	return fileDescriptor_68bd5f3242e6f29c, []int{3}
 }
 func (m *SlashPacketData) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -302,51 +249,6 @@ func (m *SlashPacketData) GetInfraction() types1.InfractionType {
 	return types1.InfractionEmpty
 }
 
-// UnbondingOpsIndex defines a list of unbonding operation ids.
-type UnbondingOpsIndex struct {
-	Ids []uint64 `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
-}
-
-func (m *UnbondingOpsIndex) Reset()         { *m = UnbondingOpsIndex{} }
-func (m *UnbondingOpsIndex) String() string { return proto.CompactTextString(m) }
-func (*UnbondingOpsIndex) ProtoMessage()    {}
-func (*UnbondingOpsIndex) Descriptor() ([]byte, []int) {
-	return fileDescriptor_68bd5f3242e6f29c, []int{5}
-}
-func (m *UnbondingOpsIndex) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *UnbondingOpsIndex) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UnbondingOpsIndex.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *UnbondingOpsIndex) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UnbondingOpsIndex.Merge(m, src)
-}
-func (m *UnbondingOpsIndex) XXX_Size() int {
-	return m.Size()
-}
-func (m *UnbondingOpsIndex) XXX_DiscardUnknown() {
-	xxx_messageInfo_UnbondingOpsIndex.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_UnbondingOpsIndex proto.InternalMessageInfo
-
-func (m *UnbondingOpsIndex) GetIds() []uint64 {
-	if m != nil {
-		return m.Ids
-	}
-	return nil
-}
-
 // MaturedUnbondingOps defines a list of ids corresponding to ids of matured unbonding operations.
 type MaturedUnbondingOps struct {
 	Ids []uint64 `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
@@ -356,7 +258,7 @@ func (m *MaturedUnbondingOps) Reset()         { *m = MaturedUnbondingOps{} }
 func (m *MaturedUnbondingOps) String() string { return proto.CompactTextString(m) }
 func (*MaturedUnbondingOps) ProtoMessage()    {}
 func (*MaturedUnbondingOps) Descriptor() ([]byte, []int) {
-	return fileDescriptor_68bd5f3242e6f29c, []int{6}
+	return fileDescriptor_68bd5f3242e6f29c, []int{4}
 }
 func (m *MaturedUnbondingOps) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -395,10 +297,8 @@ func (m *MaturedUnbondingOps) GetIds() []uint64 {
 func init() {
 	proto.RegisterType((*ValidatorSetChangePacketData)(nil), "interchain_security.ccv.v1.ValidatorSetChangePacketData")
 	proto.RegisterType((*ValidatorSetChangePackets)(nil), "interchain_security.ccv.v1.ValidatorSetChangePackets")
-	proto.RegisterType((*UnbondingOp)(nil), "interchain_security.ccv.v1.UnbondingOp")
 	proto.RegisterType((*VSCMaturedPacketData)(nil), "interchain_security.ccv.v1.VSCMaturedPacketData")
 	proto.RegisterType((*SlashPacketData)(nil), "interchain_security.ccv.v1.SlashPacketData")
-	proto.RegisterType((*UnbondingOpsIndex)(nil), "interchain_security.ccv.v1.UnbondingOpsIndex")
 	proto.RegisterType((*MaturedUnbondingOps)(nil), "interchain_security.ccv.v1.MaturedUnbondingOps")
 }
 
@@ -407,41 +307,38 @@ func init() {
 }
 
 var fileDescriptor_68bd5f3242e6f29c = []byte{
-	// 541 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x53, 0xcd, 0x6e, 0xd3, 0x40,
-	0x10, 0x8e, 0x93, 0x08, 0xa9, 0x1b, 0x29, 0xa4, 0xa6, 0x12, 0x6e, 0x00, 0xd7, 0x5a, 0x15, 0xc8,
-	0x85, 0xb5, 0x12, 0x2e, 0xa8, 0x27, 0x48, 0x10, 0x52, 0x84, 0x10, 0xc8, 0xa1, 0x95, 0xe0, 0x62,
-	0x6d, 0x76, 0x17, 0x67, 0x95, 0x64, 0x37, 0xf2, 0xae, 0xad, 0xe6, 0x2d, 0x78, 0xac, 0x1e, 0x7b,
-	0xa3, 0xa7, 0x0a, 0x25, 0x6f, 0xc0, 0x13, 0x20, 0xaf, 0x9d, 0x1f, 0x68, 0x82, 0xc4, 0x29, 0x93,
-	0xf9, 0xbe, 0xf9, 0xbc, 0xf3, 0xcd, 0x0c, 0x38, 0xe5, 0x42, 0xb3, 0x98, 0x8c, 0x30, 0x17, 0xa1,
-	0x62, 0x24, 0x89, 0xb9, 0x9e, 0xfb, 0x84, 0xa4, 0x7e, 0xda, 0xce, 0x7e, 0xd0, 0x2c, 0x96, 0x5a,
-	0xda, 0xcd, 0x1d, 0x2c, 0x94, 0xc1, 0x69, 0xbb, 0x79, 0x4a, 0xa4, 0x9a, 0x4a, 0xe5, 0x2b, 0x8d,
-	0xc7, 0x5c, 0x44, 0x7e, 0xda, 0x1e, 0x32, 0x8d, 0xdb, 0xab, 0xff, 0xb9, 0x42, 0xf3, 0x28, 0x92,
-	0x91, 0x34, 0xa1, 0x9f, 0x45, 0x45, 0xf6, 0x91, 0x66, 0x82, 0xb2, 0x78, 0xca, 0x85, 0xf6, 0xf1,
-	0x90, 0x70, 0x5f, 0xcf, 0x67, 0x4c, 0xe5, 0x20, 0xbc, 0xb1, 0xc0, 0xe3, 0x0b, 0x3c, 0xe1, 0x14,
-	0x6b, 0x19, 0x0f, 0x98, 0xee, 0x8d, 0xb0, 0x88, 0xd8, 0x27, 0x4c, 0xc6, 0x4c, 0xbf, 0xc5, 0x1a,
-	0xdb, 0x12, 0x1c, 0xa6, 0x2b, 0x3c, 0x4c, 0x66, 0x14, 0x6b, 0xa6, 0x1c, 0xcb, 0xab, 0xb4, 0x6a,
-	0x1d, 0x0f, 0x6d, 0x94, 0x51, 0xa6, 0x8c, 0xd6, 0x4a, 0xe7, 0x86, 0xd8, 0xf5, 0xae, 0x6e, 0x4f,
-	0x4a, 0xbf, 0x6e, 0x4f, 0x9c, 0x39, 0x9e, 0x4e, 0xce, 0xe0, 0x1d, 0x21, 0x18, 0x34, 0xd2, 0x3f,
-	0x4b, 0x94, 0xdd, 0x02, 0x59, 0x4e, 0x31, 0x5d, 0x90, 0x42, 0x4e, 0x9d, 0xb2, 0x67, 0xb5, 0xaa,
-	0x41, 0x3d, 0xcf, 0xe7, 0xc4, 0x3e, 0xb5, 0x9f, 0x00, 0xa0, 0x26, 0x58, 0x8d, 0x42, 0x4c, 0xc6,
-	0xca, 0xa9, 0x78, 0x95, 0xd6, 0x41, 0x70, 0x60, 0x32, 0x6f, 0xc8, 0x58, 0x41, 0x09, 0x8e, 0xf7,
-	0x75, 0xa6, 0xec, 0x00, 0x54, 0x27, 0x5c, 0xe9, 0xa2, 0x93, 0x57, 0x68, 0xbf, 0xf7, 0xe8, 0x5f,
-	0xf6, 0x74, 0xab, 0x59, 0x87, 0x81, 0xd1, 0x82, 0x5f, 0x40, 0xed, 0x5c, 0x0c, 0xa5, 0xa0, 0x5c,
-	0x44, 0x1f, 0x67, 0x76, 0x1d, 0x94, 0x39, 0x75, 0x2c, 0xf3, 0xf4, 0x32, 0xa7, 0xf6, 0x19, 0x38,
-	0x4e, 0x56, 0x70, 0x48, 0xa4, 0x50, 0xc9, 0x94, 0xc5, 0xa1, 0xf9, 0xa6, 0x72, 0xca, 0xe6, 0xf5,
-	0x0f, 0xd7, 0x84, 0x5e, 0x81, 0xf7, 0x0c, 0x0c, 0x5f, 0x83, 0xa3, 0x8b, 0x41, 0xef, 0x03, 0xd6,
-	0x49, 0xcc, 0xe8, 0xd6, 0x74, 0x76, 0x99, 0x65, 0xed, 0x32, 0x0b, 0xfe, 0xb0, 0xc0, 0xfd, 0x41,
-	0xe6, 0xcd, 0x56, 0x75, 0x00, 0x0e, 0xd6, 0xf6, 0x9b, 0xb2, 0x5a, 0xa7, 0xb9, 0x7f, 0xa6, 0x5d,
-	0xa7, 0x98, 0x66, 0xe3, 0xaf, 0x69, 0xc2, 0x60, 0x23, 0xf3, 0x1f, 0xe3, 0x7b, 0x07, 0x00, 0x17,
-	0xdf, 0x62, 0x4c, 0x34, 0x97, 0xc2, 0xa9, 0x78, 0x56, 0xab, 0xde, 0x79, 0x86, 0xf2, 0x45, 0x47,
-	0xab, 0xc5, 0x2e, 0x16, 0x1d, 0xf5, 0xd7, 0xcc, 0xcf, 0xf3, 0x19, 0x0b, 0xb6, 0x2a, 0xe1, 0x53,
-	0x70, 0xb8, 0x65, 0xbb, 0xea, 0x0b, 0xca, 0x2e, 0xed, 0x06, 0xa8, 0x70, 0x9a, 0x2f, 0x6a, 0x35,
-	0xc8, 0x42, 0xf8, 0x1c, 0x3c, 0x28, 0xfc, 0xdb, 0x66, 0xdf, 0x25, 0x76, 0xdf, 0x5f, 0x2d, 0x5c,
-	0xeb, 0x7a, 0xe1, 0x5a, 0x3f, 0x17, 0xae, 0xf5, 0x7d, 0xe9, 0x96, 0xae, 0x97, 0x6e, 0xe9, 0x66,
-	0xe9, 0x96, 0xbe, 0xb6, 0x23, 0xae, 0x47, 0xc9, 0x10, 0x11, 0x39, 0xf5, 0x8b, 0x83, 0xdc, 0xec,
-	0xcd, 0x8b, 0xf5, 0x65, 0x5f, 0x9a, 0xdb, 0x36, 0x57, 0x36, 0xbc, 0x67, 0xce, 0xec, 0xe5, 0xef,
-	0x00, 0x00, 0x00, 0xff, 0xff, 0xf2, 0xc0, 0x56, 0x1d, 0x03, 0x04, 0x00, 0x00,
+	// 483 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x53, 0x4d, 0x6f, 0xd3, 0x40,
+	0x10, 0xcd, 0x92, 0x08, 0x29, 0x5b, 0xa9, 0x04, 0xd3, 0x83, 0x09, 0xe0, 0x5a, 0x56, 0x05, 0xbe,
+	0xb0, 0x96, 0xc3, 0x05, 0x71, 0x82, 0x14, 0x21, 0x55, 0x08, 0x81, 0x36, 0xb4, 0x07, 0x2e, 0xd1,
+	0x7a, 0xbd, 0x38, 0xab, 0x24, 0xbb, 0x96, 0x77, 0x62, 0x91, 0x7f, 0xc1, 0xcf, 0xea, 0xb1, 0x37,
+	0x7a, 0xaa, 0x50, 0xf2, 0x0f, 0xf8, 0x05, 0xc8, 0x1f, 0xf9, 0x00, 0x12, 0xa4, 0x9e, 0x3c, 0x9e,
+	0x79, 0xf3, 0xa4, 0xf7, 0xf6, 0x0d, 0x3e, 0x91, 0x0a, 0x44, 0xc6, 0x47, 0x4c, 0xaa, 0xa1, 0x11,
+	0x7c, 0x96, 0x49, 0x98, 0x07, 0x9c, 0xe7, 0x41, 0x1e, 0x16, 0x1f, 0x92, 0x66, 0x1a, 0xb4, 0xd5,
+	0xdd, 0x81, 0x22, 0xc5, 0x38, 0x0f, 0xbb, 0x27, 0x5c, 0x9b, 0xa9, 0x36, 0x81, 0x01, 0x36, 0x96,
+	0x2a, 0x09, 0xf2, 0x30, 0x12, 0xc0, 0xc2, 0xd5, 0x7f, 0xc5, 0xd0, 0x3d, 0x4a, 0x74, 0xa2, 0xcb,
+	0x32, 0x28, 0xaa, 0xba, 0xfb, 0x08, 0x84, 0x8a, 0x45, 0x36, 0x95, 0x0a, 0x02, 0x16, 0x71, 0x19,
+	0xc0, 0x3c, 0x15, 0xa6, 0x1a, 0x7a, 0xd7, 0x08, 0x3f, 0xbe, 0x60, 0x13, 0x19, 0x33, 0xd0, 0xd9,
+	0x40, 0xc0, 0xe9, 0x88, 0xa9, 0x44, 0x7c, 0x62, 0x7c, 0x2c, 0xe0, 0x2d, 0x03, 0x66, 0x69, 0x7c,
+	0x3f, 0x5f, 0xcd, 0x87, 0xb3, 0x34, 0x66, 0x20, 0x8c, 0x8d, 0xdc, 0xa6, 0x7f, 0xd0, 0x73, 0xc9,
+	0x86, 0x99, 0x14, 0xcc, 0x64, 0xcd, 0x74, 0x5e, 0x02, 0xfb, 0xee, 0xe5, 0xcd, 0x71, 0xe3, 0xd7,
+	0xcd, 0xb1, 0x3d, 0x67, 0xd3, 0xc9, 0x2b, 0xef, 0x1f, 0x22, 0x8f, 0x76, 0xf2, 0x3f, 0x57, 0x8c,
+	0xe5, 0xe3, 0xa2, 0x67, 0x04, 0xd4, 0xa0, 0xa1, 0x8c, 0xed, 0x3b, 0x2e, 0xf2, 0x5b, 0xf4, 0xb0,
+	0xea, 0x57, 0xc0, 0xb3, 0xd8, 0x7a, 0x82, 0xb1, 0x99, 0x30, 0x33, 0x1a, 0x32, 0x3e, 0x36, 0x76,
+	0xd3, 0x6d, 0xfa, 0x6d, 0xda, 0x2e, 0x3b, 0x6f, 0xf8, 0xd8, 0x78, 0x1a, 0x3f, 0xdc, 0xa7, 0xcc,
+	0x58, 0x14, 0xb7, 0x26, 0xd2, 0x40, 0xad, 0xe4, 0x25, 0xd9, 0xef, 0x3d, 0xf9, 0x9f, 0x3d, 0xfd,
+	0x56, 0xa1, 0x90, 0x96, 0x5c, 0xde, 0x6b, 0x7c, 0x74, 0x31, 0x38, 0xfd, 0xc0, 0x60, 0x96, 0x89,
+	0x78, 0xcb, 0xc2, 0x5d, 0x8a, 0xd0, 0x2e, 0x45, 0xde, 0x0f, 0x84, 0xef, 0x0d, 0x0a, 0x01, 0x5b,
+	0xdb, 0x14, 0xb7, 0xd7, 0x1e, 0x95, 0x6b, 0x07, 0xbd, 0xee, 0x7e, 0xe3, 0xfb, 0x76, 0x6d, 0x79,
+	0xe7, 0x2f, 0xcb, 0x3d, 0xba, 0xa1, 0xb9, 0x85, 0xc7, 0xef, 0x30, 0x96, 0xea, 0x6b, 0xc6, 0x38,
+	0x48, 0xad, 0xec, 0xa6, 0x8b, 0xfc, 0xc3, 0xde, 0x53, 0x52, 0xa5, 0x91, 0xac, 0xd2, 0x57, 0xa7,
+	0x91, 0x9c, 0xad, 0x91, 0x9f, 0xe7, 0xa9, 0xa0, 0x5b, 0x9b, 0xde, 0x33, 0xfc, 0xa0, 0x36, 0xe6,
+	0x5c, 0x45, 0x5a, 0xc5, 0x52, 0x25, 0x1f, 0x53, 0x63, 0x75, 0x70, 0x53, 0xc6, 0x55, 0x9e, 0x5a,
+	0xb4, 0x28, 0xfb, 0xef, 0x2f, 0x17, 0x0e, 0xba, 0x5a, 0x38, 0xe8, 0xe7, 0xc2, 0x41, 0xdf, 0x97,
+	0x4e, 0xe3, 0x6a, 0xe9, 0x34, 0xae, 0x97, 0x4e, 0xe3, 0x4b, 0x98, 0x48, 0x18, 0xcd, 0x22, 0xc2,
+	0xf5, 0x34, 0xa8, 0xcf, 0x61, 0xf3, 0x6a, 0xcf, 0xd7, 0x77, 0xf5, 0xad, 0xbc, 0xac, 0x32, 0xe3,
+	0xd1, 0xdd, 0x32, 0xe4, 0x2f, 0x7e, 0x07, 0x00, 0x00, 0xff, 0xff, 0x72, 0x03, 0x3c, 0x5e, 0x81,
+	0x03, 0x00, 0x00,
 }
 
 func (m *ValidatorSetChangePacketData) Marshal() (dAtA []byte, err error) {
@@ -532,43 +429,6 @@ func (m *ValidatorSetChangePackets) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	return len(dAtA) - i, nil
 }
 
-func (m *UnbondingOp) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *UnbondingOp) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *UnbondingOp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.UnbondingConsumerChains) > 0 {
-		for iNdEx := len(m.UnbondingConsumerChains) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.UnbondingConsumerChains[iNdEx])
-			copy(dAtA[i:], m.UnbondingConsumerChains[iNdEx])
-			i = encodeVarintCcv(dAtA, i, uint64(len(m.UnbondingConsumerChains[iNdEx])))
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	if m.Id != 0 {
-		i = encodeVarintCcv(dAtA, i, uint64(m.Id))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
 func (m *VSCMaturedPacketData) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -640,47 +500,6 @@ func (m *SlashPacketData) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *UnbondingOpsIndex) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *UnbondingOpsIndex) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *UnbondingOpsIndex) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Ids) > 0 {
-		dAtA3 := make([]byte, len(m.Ids)*10)
-		var j2 int
-		for _, num := range m.Ids {
-			for num >= 1<<7 {
-				dAtA3[j2] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j2++
-			}
-			dAtA3[j2] = uint8(num)
-			j2++
-		}
-		i -= j2
-		copy(dAtA[i:], dAtA3[:j2])
-		i = encodeVarintCcv(dAtA, i, uint64(j2))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
 func (m *MaturedUnbondingOps) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -702,20 +521,20 @@ func (m *MaturedUnbondingOps) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if len(m.Ids) > 0 {
-		dAtA5 := make([]byte, len(m.Ids)*10)
-		var j4 int
+		dAtA3 := make([]byte, len(m.Ids)*10)
+		var j2 int
 		for _, num := range m.Ids {
 			for num >= 1<<7 {
-				dAtA5[j4] = uint8(uint64(num)&0x7f | 0x80)
+				dAtA3[j2] = uint8(uint64(num)&0x7f | 0x80)
 				num >>= 7
-				j4++
+				j2++
 			}
-			dAtA5[j4] = uint8(num)
-			j4++
+			dAtA3[j2] = uint8(num)
+			j2++
 		}
-		i -= j4
-		copy(dAtA[i:], dAtA5[:j4])
-		i = encodeVarintCcv(dAtA, i, uint64(j4))
+		i -= j2
+		copy(dAtA[i:], dAtA3[:j2])
+		i = encodeVarintCcv(dAtA, i, uint64(j2))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -772,24 +591,6 @@ func (m *ValidatorSetChangePackets) Size() (n int) {
 	return n
 }
 
-func (m *UnbondingOp) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Id != 0 {
-		n += 1 + sovCcv(uint64(m.Id))
-	}
-	if len(m.UnbondingConsumerChains) > 0 {
-		for _, s := range m.UnbondingConsumerChains {
-			l = len(s)
-			n += 1 + l + sovCcv(uint64(l))
-		}
-	}
-	return n
-}
-
 func (m *VSCMaturedPacketData) Size() (n int) {
 	if m == nil {
 		return 0
@@ -815,22 +616,6 @@ func (m *SlashPacketData) Size() (n int) {
 	}
 	if m.Infraction != 0 {
 		n += 1 + sovCcv(uint64(m.Infraction))
-	}
-	return n
-}
-
-func (m *UnbondingOpsIndex) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Ids) > 0 {
-		l = 0
-		for _, e := range m.Ids {
-			l += sovCcv(uint64(e))
-		}
-		n += 1 + sovCcv(uint64(l)) + l
 	}
 	return n
 }
@@ -1076,107 +861,6 @@ func (m *ValidatorSetChangePackets) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *UnbondingOp) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowCcv
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: UnbondingOp: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UnbondingOp: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
-			}
-			m.Id = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCcv
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Id |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UnbondingConsumerChains", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCcv
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthCcv
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthCcv
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.UnbondingConsumerChains = append(m.UnbondingConsumerChains, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipCcv(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthCcv
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *VSCMaturedPacketData) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1345,132 +1029,6 @@ func (m *SlashPacketData) Unmarshal(dAtA []byte) error {
 				if b < 0x80 {
 					break
 				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipCcv(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthCcv
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *UnbondingOpsIndex) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowCcv
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: UnbondingOpsIndex: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: UnbondingOpsIndex: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType == 0 {
-				var v uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowCcv
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.Ids = append(m.Ids, v)
-			} else if wireType == 2 {
-				var packedLen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowCcv
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					packedLen |= int(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if packedLen < 0 {
-					return ErrInvalidLengthCcv
-				}
-				postIndex := iNdEx + packedLen
-				if postIndex < 0 {
-					return ErrInvalidLengthCcv
-				}
-				if postIndex > l {
-					return io.ErrUnexpectedEOF
-				}
-				var elementCount int
-				var count int
-				for _, integer := range dAtA[iNdEx:postIndex] {
-					if integer < 128 {
-						count++
-					}
-				}
-				elementCount = count
-				if elementCount != 0 && len(m.Ids) == 0 {
-					m.Ids = make([]uint64, 0, elementCount)
-				}
-				for iNdEx < postIndex {
-					var v uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowCcv
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						v |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					m.Ids = append(m.Ids, v)
-				}
-			} else {
-				return fmt.Errorf("proto: wrong wireType = %d for field Ids", wireType)
 			}
 		default:
 			iNdEx = preIndex

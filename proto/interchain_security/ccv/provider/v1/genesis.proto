@@ -22,7 +22,7 @@ message GenesisState {
     (gogoproto.moretags) = "yaml:\"consumer_states\""
   ];
   // empty for a new chain
-  repeated interchain_security.ccv.v1.UnbondingOp unbonding_ops = 3
+  repeated interchain_security.ccv.provider.v1.UnbondingOp unbonding_ops = 3
   [ (gogoproto.nullable) = false ];
   // empty for a new chain
   interchain_security.ccv.v1.MaturedUnbondingOps mature_unbonding_ops = 4;
@@ -65,16 +65,9 @@ message ConsumerState {
   repeated interchain_security.ccv.v1.ValidatorSetChangePacketData pending_valset_changes = 6
   [ (gogoproto.nullable) = false ];
   repeated string slash_downtime_ack = 7;
-  // UnbondingOpsIndex defines the unbonding operations on the consumer chain
-  repeated UnbondingOpIndex unbonding_ops_index = 8
+  // UnbondingOpsIndex defines the unbonding operations waiting on this consumer chain
+  repeated interchain_security.ccv.provider.v1.VscUnbondingOps unbonding_ops_index = 8
   [ (gogoproto.nullable) = false ];
-}
-
-// UnbondingOpIndex defines the genesis information for each unbonding operations index 
-// referenced by chain id and valset udpate id
-message UnbondingOpIndex {
-  uint64 valset_update_id = 1;
-  repeated uint64 unbonding_op_index = 2;
 }
 
 // ValsetUpdateIdToHeight defines the genesis information for the mapping 

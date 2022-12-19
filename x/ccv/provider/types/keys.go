@@ -178,7 +178,7 @@ func ParseUnbondingOpIndexKey(key []byte) (string, uint64, error) {
 }
 
 // UnbondingOpKey returns the key that stores a record of all the ids of consumer chains that
-// need to unbond before a given delegation can unbond on this chain
+// need to unbond before a given unbonding operation can unbond on this chain.
 func UnbondingOpKey(id uint64) []byte {
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, id)

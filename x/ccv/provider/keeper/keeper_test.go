@@ -183,30 +183,47 @@ func TestInitHeight(t *testing.T) {
 	}
 }
 
-func TestIterateOverUnbondingOpIndex(t *testing.T) {
+// TestGetAllUnbondingOpIndexes tests GetAllUnbondingOpIndexes behavior correctness
+func TestGetAllUnbondingOpIndexes(t *testing.T) {
 
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "6"
+	chainID := "chain-1"
 
-	// mock an unbonding index
-	unbondingOpIndex := []uint64{0, 1, 2, 3, 4, 5, 6}
-
-	// set ubd ops by varying vsc ids and index slices
-	for i := 1; i < len(unbondingOpIndex); i++ {
-		providerKeeper.SetUnbondingOpIndex(ctx, chainID, uint64(i), unbondingOpIndex[:i])
+	cases := []types.VscUnbondingOps{
+		{
+			VscId:          2,
+			UnbondingOpIds: []uint64{1, 2, 3, 4, 5, 6},
+		},
+		{
+			VscId:          1,
+			UnbondingOpIds: []uint64{1, 2, 3},
+		},
 	}
 
-	// check iterator returns expected entries
-	i := 1
-	for _, unbondingOpsIndex := range providerKeeper.GetAllUnbondingOpIndexes(ctx, chainID) {
-		require.Equal(t, uint64(i), unbondingOpsIndex.VscId)
-		require.EqualValues(t, unbondingOpIndex[:i], unbondingOpsIndex.UnbondingOpIds)
-		i++
+	pk.SetUnbondingOpIndex(ctx, "chain-2", 1, []uint64{1, 2, 3})
+	for _, c := range cases {
+		pk.SetUnbondingOpIndex(ctx, chainID, c.VscId, c.UnbondingOpIds)
 	}
 
-	require.Equal(t, len(unbondingOpIndex), i)
+	// iterate and check all results are returned
+	result := pk.GetAllUnbondingOpIndexes(ctx, chainID)
+	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
+	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
+	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
+
+	result = []types.VscUnbondingOps{}
+	require.Empty(t, result, "initial result not empty")
+
+	// iterate and check first index is with vscID 1
+	for _, index := range pk.GetAllUnbondingOpIndexes(ctx, chainID) {
+		result = append(result, index)
+		break
+	}
+	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
+	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
+	require.NotContains(t, result, cases[0], "result should not contain '%s'", cases[0])
 }
 
 func TestMaturedUnbondingOps(t *testing.T) {
@@ -400,7 +417,7 @@ func TestGetAllUnbondingOps(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	ops := []ccv.UnbondingOp{
+	ops := []types.UnbondingOp{
 		{
 			Id:                      2,
 			UnbondingConsumerChains: []string{"chain-2", "chain-1"},
@@ -421,7 +438,7 @@ func TestGetAllUnbondingOps(t *testing.T) {
 	require.Contains(t, result, ops[0], "result does not contain '%s'", ops[0])
 	require.Contains(t, result, ops[1], "result does not contain '%s'", ops[1])
 
-	result = []ccv.UnbondingOp{}
+	result = []types.UnbondingOp{}
 	require.Empty(t, result, "initial result not empty")
 
 	// iterate and check first op has ID 1

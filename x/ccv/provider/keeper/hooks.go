@@ -7,7 +7,7 @@ import (
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
@@ -36,7 +36,7 @@ func (h Hooks) AfterUnbondingInitiated(ctx sdk.Context, ID uint64) error {
 		return nil
 	}
 	valsetUpdateID := h.k.GetValidatorSetUpdateId(ctx)
-	unbondingOp := ccv.UnbondingOp{
+	unbondingOp := types.UnbondingOp{
 		Id:                      ID,
 		UnbondingConsumerChains: consumerChainIDS,
 	}

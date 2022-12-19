@@ -45,8 +45,8 @@ func TestInitAndExportGenesis(t *testing.T) {
 				"channel",
 				initHeight,
 				*consumertypes.DefaultGenesisState(),
-				[]providertypes.UnbondingOpIndex{
-					{ValsetUpdateId: vscID, UnbondingOpIndex: ubdIndex},
+				[]providertypes.VscUnbondingOps{
+					{VscId: vscID, UnbondingOpIds: ubdIndex},
 				},
 				[]ccv.ValidatorSetChangePacketData{},
 				[]string{"slashedValidatorConsAddress"},
@@ -62,7 +62,7 @@ func TestInitAndExportGenesis(t *testing.T) {
 				nil,
 			),
 		},
-		[]ccv.UnbondingOp{{
+		[]providertypes.UnbondingOp{{
 			Id:                      vscID,
 			UnbondingConsumerChains: []string{cChainIDs[0]},
 		}},
@@ -179,9 +179,9 @@ func assertConsumerChainStates(ctx sdk.Context, t *testing.T, pk keeper.Keeper, 
 		}
 
 		for _, ubdOpIdx := range cs.UnbondingOpsIndex {
-			ubdIndex, found := pk.GetUnbondingOpIndex(ctx, chainID, ubdOpIdx.ValsetUpdateId)
+			ubdIndex, found := pk.GetUnbondingOpIndex(ctx, chainID, ubdOpIdx.VscId)
 			require.True(t, found)
-			require.Equal(t, ubdOpIdx.UnbondingOpIndex, ubdIndex)
+			require.Equal(t, ubdOpIdx.UnbondingOpIds, ubdIndex)
 		}
 
 		require.Equal(t, cs.SlashDowntimeAck, pk.GetSlashAcks(ctx, chainID))

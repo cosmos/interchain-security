@@ -141,9 +141,19 @@ message ChannelToChain {
   string chain_id = 2;
 }
 
+// VscUnbondingOps contains the IDs of unbonding operations that are waiting for
+// at least one VSCMaturedPacket with vscID from a consumer chain 
 message VscUnbondingOps {
   uint64 vsc_id = 1;
   repeated uint64 unbonding_op_ids = 2;
+}
+
+// UnbondingOp contains the ids of consumer chains that need to unbond before 
+// the unbonding operation with the given ID can unbond
+message UnbondingOp {
+  uint64 id = 1;
+  // consumer chains that are still unbonding
+  repeated string unbonding_consumer_chains = 2;
 }
 
 message InitTimeoutTimestamp {

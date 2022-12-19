@@ -312,7 +312,7 @@ func (k Keeper) SetConsumerChain(ctx sdk.Context, channelID string) error {
 }
 
 // SetUnbondingOp sets the UnbondingOp by its unique ID
-func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp ccv.UnbondingOp) {
+func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp types.UnbondingOp) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := unbondingOp.Marshal()
 	if err != nil {
@@ -322,14 +322,19 @@ func (k Keeper) SetUnbondingOp(ctx sdk.Context, unbondingOp ccv.UnbondingOp) {
 }
 
 // GetUnbondingOp gets a UnbondingOp by its unique ID
-func (k Keeper) GetUnbondingOp(ctx sdk.Context, id uint64) (ccv.UnbondingOp, bool) {
+func (k Keeper) GetUnbondingOp(ctx sdk.Context, id uint64) (types.UnbondingOp, bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.UnbondingOpKey(id))
 	if bz == nil {
-		return ccv.UnbondingOp{}, false
+		return types.UnbondingOp{}, false
 	}
 
-	return types.MustUnmarshalUnbondingOp(k.cdc, bz), true
+	var unbondingOp types.UnbondingOp
+	if err := unbondingOp.Unmarshal(bz); err != nil {
+		panic(fmt.Errorf("failed to unmarshal UnbondingOp: %w", err))
+	}
+
+	return unbondingOp, true
 }
 
 // DeleteUnbondingOp deletes a UnbondingOp given its ID
@@ -345,7 +350,7 @@ func (k Keeper) DeleteUnbondingOp(ctx sdk.Context, id uint64) {
 // Note that UnbondingOps are stored under keys with the following format:
 // UnbondingOpBytePrefix | ID
 // Thus, the iteration is in ascending order of IDs.
-func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []ccv.UnbondingOp) {
+func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []types.UnbondingOp) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.UnbondingOpBytePrefix})
 
@@ -356,38 +361,37 @@ func (k Keeper) GetAllUnbondingOps(ctx sdk.Context) (ops []ccv.UnbondingOp) {
 		if bz == nil {
 			panic(fmt.Errorf("unbonding operation is nil for id %d", id))
 		}
-		ubdOp := types.MustUnmarshalUnbondingOp(k.cdc, bz)
-
-		// Panicing here to see if these ever differ
-		// TODO: remove
-		if ubdOp.Id != id {
-			panic(fmt.Errorf("unbonding operation id %d does not match key %d", ubdOp.Id, id))
+		var unbondingOp types.UnbondingOp
+		if err := unbondingOp.Unmarshal(bz); err != nil {
+			panic(fmt.Errorf("failed to unmarshal UnbondingOp: %w", err))
 		}
 
-		ops = append(ops, ubdOp)
+		ops = append(ops, unbondingOp)
 	}
 
 	return ops
 }
 
-// SetUnbondingOpIndex sets an unbonding index,
-// i.e., the IDs of unbonding operations that are waiting for
+// SetUnbondingOpIndex sets the IDs of unbonding operations that are waiting for
 // a VSCMaturedPacket with vscID from a consumer with chainID
-func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64, IDs []uint64) {
+func (k Keeper) SetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64, IDs []uint64) {
 	store := ctx.KVStore(k.storeKey)
 
-	index := ccv.UnbondingOpsIndex{
-		Ids: IDs,
+	vscUnbondingOps := types.VscUnbondingOps{
+		VscId:          vscID,
+		UnbondingOpIds: IDs,
 	}
-	bz, err := index.Marshal()
+	bz, err := vscUnbondingOps.Marshal()
 	if err != nil {
-		panic("Failed to marshal UnbondingOpsIndex")
+		panic(fmt.Errorf("failed to marshal VscUnbondingOps: %w", err))
 	}
 
-	store.Set(types.UnbondingOpIndexKey(chainID, valsetUpdateID), bz)
+	store.Set(types.UnbondingOpIndexKey(chainID, vscID), bz)
 }
 
-// GetAllUnbondingOpIndexes gets all unbonding indexes for a given chain id.
+// GetAllUnbondingOpIndexes gets all unbonding indexes for a given chain id,
+// i.e., all the IDs of unbonding operations that are waiting for
+// VSCMaturedPackets from a consumer with chainID.
 //
 // Note that the unbonding indexes for a given chainID are stored under keys with the following format:
 // UnbondingOpIndexBytePrefix | len(chainID) | chainID | vscID
@@ -398,55 +402,47 @@ func (k Keeper) GetAllUnbondingOpIndexes(ctx sdk.Context, chainID string) (index
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		// parse key to get the current VSC ID
-		_, vscID, err := types.ParseUnbondingOpIndexKey(iterator.Key())
-		if err != nil {
-			panic(fmt.Errorf("failed to parse UnbondingOpIndexKey: %w", err))
-		}
-
-		var index ccv.UnbondingOpsIndex
-		if err = index.Unmarshal(iterator.Value()); err != nil {
-			panic("Failed to unmarshal JSON")
+		var vscUnbondingOps types.VscUnbondingOps
+		if err := vscUnbondingOps.Unmarshal(iterator.Value()); err != nil {
+			panic(fmt.Errorf("failed to unmarshal VscUnbondingOps: %w", err))
 		}
 
 		indexes = append(indexes, types.VscUnbondingOps{
-			VscId:          vscID,
-			UnbondingOpIds: index.GetIds(),
+			VscId:          vscUnbondingOps.GetVscId(),
+			UnbondingOpIds: vscUnbondingOps.GetUnbondingOpIds(),
 		})
 	}
 
 	return indexes
 }
 
-// GetUnbondingOpIndex gets an unbonding index,
-// i.e., the IDs of unbonding operations that are waiting for
+// GetUnbondingOpIndex gets the IDs of unbonding operations that are waiting for
 // a VSCMaturedPacket with vscID from a consumer with chainID
-func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) ([]uint64, bool) {
+func (k Keeper) GetUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64) ([]uint64, bool) {
 	store := ctx.KVStore(k.storeKey)
 
-	bz := store.Get(types.UnbondingOpIndexKey(chainID, valsetUpdateID))
+	bz := store.Get(types.UnbondingOpIndexKey(chainID, vscID))
 	if bz == nil {
 		return []uint64{}, false
 	}
 
-	var idx ccv.UnbondingOpsIndex
-	if err := idx.Unmarshal(bz); err != nil {
-		panic("Failed to unmarshal UnbondingOpsIndex")
+	var vscUnbondingOps types.VscUnbondingOps
+	if err := vscUnbondingOps.Unmarshal(bz); err != nil {
+		panic(fmt.Errorf("failed to unmarshal VscUnbondingOps: %w", err))
 	}
 
-	return idx.GetIds(), true
+	return vscUnbondingOps.GetUnbondingOpIds(), true
 }
 
-// DeleteUnbondingOpIndex deletes an unbonding index,
-// i.e., the IDs of unbonding operations that are waiting for
+// DeleteUnbondingOpIndex deletes the IDs of unbonding operations that are waiting for
 // a VSCMaturedPacket with vscID from a consumer with chainID
-func (k Keeper) DeleteUnbondingOpIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) {
+func (k Keeper) DeleteUnbondingOpIndex(ctx sdk.Context, chainID string, vscID uint64) {
 	store := ctx.KVStore(k.storeKey)
-	store.Delete(types.UnbondingOpIndexKey(chainID, valsetUpdateID))
+	store.Delete(types.UnbondingOpIndexKey(chainID, vscID))
 }
 
 // GetUnbondingOpsFromIndex gets the unbonding ops waiting for a given chainID and vscID
-func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (entries []ccv.UnbondingOp, found bool) {
+func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valsetUpdateID uint64) (entries []types.UnbondingOp, found bool) {
 	ids, found := k.GetUnbondingOpIndex(ctx, chainID, valsetUpdateID)
 	if !found {
 		return entries, false
@@ -454,7 +450,6 @@ func (k Keeper) GetUnbondingOpsFromIndex(ctx sdk.Context, chainID string, valset
 	for _, id := range ids {
 		entry, found := k.GetUnbondingOp(ctx, id)
 		if !found {
-			// TODO JEHAN: is this the correct way to deal with this?
 			panic("did not find UnbondingOp according to index- index was probably not correctly updated")
 		}
 		entries = append(entries, entry)
