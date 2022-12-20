@@ -30,6 +30,8 @@ func NewQueryCmd() *cobra.Command {
 	cmd.AddCommand(CmdConsumerStopProposals())
 	cmd.AddCommand(CmdConsumerValidatorKeyAssignment())
 	cmd.AddCommand(CmdProviderValidatorKey())
+	cmd.AddCommand(CmdThrottleState())
+	cmd.AddCommand(CmdThrottledConsumerPacketData())
 
 	return cmd
 }
@@ -234,6 +236,78 @@ $ %s query provider validator-provider-key foochain %s1gghjut3ccd8ay0zduzj64hwre
 				ConsumerAddress: addr.String(),
 			}
 			res, err := queryClient.QueryValidatorProviderAddr(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdThrottleState() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "throttle-state",
+		Short: "Query on-chain state relevant to slash packet throttling",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Returns state relevant to throttled slash packet queue on the provider chain.
+			Queue is ordered by time of arrival.
+Example:
+$ %s query provider throttle-state
+`,
+				version.AppName,
+			),
+		),
+		Args: cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryThrottleStateRequest{}
+			res, err := queryClient.QueryThrottleState(cmd.Context(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func CmdThrottledConsumerPacketData() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "throttled-consumer-packet-data [chainid]",
+		Short: "Query pending VSCMatured and slash packet data for a consumer chainId",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Returns the current pending VSCMatured and slash packet data instances for a consumer chainId.
+			Queue is ordered by ibc sequence number. 
+Example:
+$ %s query provider throttled-consumer-packet-data foochain
+`,
+				version.AppName,
+			),
+		),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryThrottledConsumerPacketDataRequest{ChainId: args[0]}
+			res, err := queryClient.QueryThrottledConsumerPacketData(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
