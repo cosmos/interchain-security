@@ -30,8 +30,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 
 	for _, prop := range genState.ConsumerAdditionProposals {
 		// prevent implicit memory aliasing
-		prop := prop
-		k.SetPendingConsumerAdditionProp(ctx, &prop)
+		p := prop
+		k.SetPendingConsumerAdditionProp(ctx, &p)
 	}
 	for _, prop := range genState.ConsumerRemovalProposals {
 		k.SetPendingConsumerRemovalProp(ctx, prop.ChainId, prop.StopTime)
