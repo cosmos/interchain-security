@@ -5,10 +5,8 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
-	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"google.golang.org/grpc/codes"
@@ -202,9 +200,9 @@ func (k Keeper) QueryThrottledConsumerPacketData(goCtx context.Context, req *typ
 
 // getSlashPacketData fetches a slash packet data from the store using consumerChainId and ibcSeqNum (direct access)
 // If the returned bytes do not unmarshal to SlashPacketData, the data is considered not found.
-func (k Keeper) getSlashPacketData(ctx sdktypes.Context, consumerChainID string, ibcSeqNum uint64) (ccvtypes.SlashPacketData, bool) {
+func (k Keeper) getSlashPacketData(ctx sdk.Context, consumerChainID string, ibcSeqNum uint64) (ccvtypes.SlashPacketData, bool) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(providertypes.ThrottledPacketDataKey(consumerChainID, ibcSeqNum))
+	bz := store.Get(types.ThrottledPacketDataKey(consumerChainID, ibcSeqNum))
 	if len(bz) == 0 {
 		return ccvtypes.SlashPacketData{}, false
 	}
