@@ -5,6 +5,8 @@ option go_package = "github.com/cosmos/interchain-security/x/ccv/provider/types"
 
 import "google/api/annotations.proto";
 import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "interchain_security/ccv/v1/ccv.proto";
 import "interchain_security/ccv/consumer/v1/genesis.proto";
 import "interchain_security/ccv/provider/v1/provider.proto";
 
@@ -52,6 +54,19 @@ service Query {
   rpc QueryValidatorProviderAddr(QueryValidatorProviderAddrRequest)
       returns (QueryValidatorProviderAddrResponse) {
     option (google.api.http).get = "/interchain_security/ccv/provider/validator_provider_addr";
+  }
+
+  // QueryThrottleState returns the main on-chain state relevant to currently throttled slash packets 
+  rpc QueryThrottleState(QueryThrottleStateRequest)
+      returns (QueryThrottleStateResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/provider/throttle_state";
+  }
+
+  // QueryThrottledConsumerPacketData returns a list of pending packet data instances
+  // (slash packet and vsc matured) for a single consumer chain
+  rpc QueryThrottledConsumerPacketData(QueryThrottledConsumerPacketDataRequest)
+      returns (QueryThrottledConsumerPacketDataResponse) {
+    option (google.api.http).get = "/interchain_security/ccv/provider/pending_consumer_packets";
   }
 }
 
@@ -111,4 +126,46 @@ message QueryValidatorProviderAddrRequest {
 message QueryValidatorProviderAddrResponse {
   // The address of the validator on the provider chain
   string provider_address = 1;
+}
+
+message QueryThrottleStateRequest {}
+
+message QueryThrottleStateResponse {
+  // current slash_meter state
+  int64 slash_meter = 1;
+  // allowance of voting power units (int) that the slash meter is given per replenish period
+  // this also serves as the max value for the meter.
+  int64 slash_meter_allowance = 2;
+  // last time the slash meter was full
+  google.protobuf.Timestamp last_full_time = 3
+    [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  // data relevant to currently throttled slash packets
+  repeated ThrottledSlashPacket packets = 4;
+}
+
+message QueryThrottledConsumerPacketDataRequest {
+  string chain_id = 1;
+}
+
+message QueryThrottledConsumerPacketDataResponse {
+  string chain_id = 1;
+  uint64 size = 2;
+  repeated ThrottledPacketDataWrapper packetDataInstances = 3
+    [(gogoproto.nullable) = false];
+}
+
+// A query wrapper type for the global entry and data relevant to a throttled slash packet.
+message ThrottledSlashPacket {
+  interchain_security.ccv.provider.v1.GlobalSlashEntry global_entry = 1
+    [(gogoproto.nullable) = false];
+  interchain_security.ccv.v1.SlashPacketData data = 2
+    [(gogoproto.nullable) = false];
+}
+
+// ThrottledPacketDataWrapper contains either SlashPacketData or VSCMaturedPacketData
+message ThrottledPacketDataWrapper {
+  oneof data {
+    interchain_security.ccv.v1.SlashPacketData slash_packet = 1;
+    interchain_security.ccv.v1.VSCMaturedPacketData vsc_matured_packet = 2;
+  }
 }
