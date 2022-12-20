@@ -65,7 +65,7 @@ message ConsumerAdditionProposal {
 // ConsumerRemovalProposal is a governance proposal on the provider chain to remove (and stop) a consumer chain.
 // If it passes, all the consumer chain's state is removed from the provider chain. The outstanding unbonding
 // operation funds are released.
- message ConsumerRemovalProposal {
+message ConsumerRemovalProposal {
     // the title of the proposal
     string title = 1;
     // the description of the proposal
@@ -74,9 +74,29 @@ message ConsumerAdditionProposal {
     string chain_id = 3;
     // the time on the provider chain at which all validators are responsible to stop their consumer chain validator node
     google.protobuf.Timestamp stop_time = 4
-    [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+        [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
  } 
 
+// A persisted queue entry indicating that a slash packet data instance needs to be handled.
+// This type belongs in the "global" queue, to coordinate slash packet handling times between consumers.
+message GlobalSlashEntry {
+  // Block time that slash packet was received by provider chain.
+  // This field is used for store key iteration ordering.
+  google.protobuf.Timestamp recv_time = 1
+      [(gogoproto.stdtime) = true, (gogoproto.nullable) = false]; 
+  // The consumer that sent a slash packet.
+  string consumer_chain_id = 2
+      [(gogoproto.customname) = "ConsumerChainID"];
+  // The IBC sequence number of the recv packet.  
+  // This field is used in the store key to ensure uniqueness.
+  uint64 ibc_seq_num = 3; 
+  // The provider's consensus address of the validator being slashed. 
+  // This field is used to obtain validator power in HandleThrottleQueues.
+  // 
+  // This field is not used in the store key, but is persisted in value bytes, see QueueGlobalSlashEntry.
+  bytes provider_val_cons_addr = 4;
+}
+ 
 // Params defines the parameters for CCV Provider module
 message Params {
   ibc.lightclients.tendermint.v1.ClientState template_client = 1;
