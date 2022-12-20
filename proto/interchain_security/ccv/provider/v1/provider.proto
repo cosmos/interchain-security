@@ -80,20 +80,19 @@ message ConsumerRemovalProposal {
 // This type belongs in the "global" queue, to coordinate slash packet handling times between consumers.
 message GlobalSlashEntry {
   // Block time that slash packet was received by provider chain.
-	// This field is used for store key iteration ordering.
+  // This field is used for store key iteration ordering.
   google.protobuf.Timestamp recv_time = 1
       [(gogoproto.stdtime) = true, (gogoproto.nullable) = false]; 
   // The consumer that sent a slash packet.
   string consumer_chain_id = 2
       [(gogoproto.customname) = "ConsumerChainID"];
-  // The IBC sequence number of the recv packet.
-	// This field is used in the store key to ensure uniqueness.
+  // The IBC sequence number of the recv packet.  
+  // This field is used in the store key to ensure uniqueness.
   uint64 ibc_seq_num = 3; 
-  // The provider's consensus address of the validator being slashed.
-	// This field is used to obtain validator power in HandleThrottleQueues.
+  // The provider's consensus address of the validator being slashed. 
+  // This field is used to obtain validator power in HandleThrottleQueues.
   // 
-	// This field is not used in the store key, but is persisted in value bytes,
-	// see QueueGlobalSlashEntry.
+  // This field is not used in the store key, but is persisted in value bytes, see QueueGlobalSlashEntry.
   bytes provider_val_cons_addr = 4;
 }
  
