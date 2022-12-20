@@ -261,7 +261,10 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   0,
 						validatorID("carol"): 500, // not slashed due to throttling
 					},
-					GlobalSlashQueueSize: intPointer(1), // carol's slash request is throttled
+					GlobalSlashQueueSize: uintPointer(1), // carol's slash request is throttled
+					ConsumerChainQueueSizes: &map[chainID]uint{
+						chainID(consumerName): uint(1),
+					},
 				},
 				chainID(consumerName): ChainState{
 					// no updates received on consumer
@@ -270,7 +273,6 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
-					ConsumerChainQueueSize: intPointer(1),
 				},
 			},
 		},
@@ -289,7 +291,10 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   0,
 						validatorID("carol"): 500,
 					},
-					GlobalSlashQueueSize: intPointer(0), // slash packets dequeued
+					GlobalSlashQueueSize: uintPointer(0), // slash packets dequeued
+					ConsumerChainQueueSizes: &map[chainID]uint{
+						chainID(consumerName): 0,
+					},
 				},
 				chainID(consumerName): ChainState{
 					// no updates received on consumer
@@ -298,7 +303,6 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   500,
 						validatorID("carol"): 500,
 					},
-					ConsumerChainQueueSize: intPointer(0), // slash packets dequeued
 				},
 			},
 		},
@@ -317,7 +321,10 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   0,
 						validatorID("carol"): 0,
 					},
-					GlobalSlashQueueSize: intPointer(0),
+					GlobalSlashQueueSize: uintPointer(0),
+					ConsumerChainQueueSizes: &map[chainID]uint{
+						chainID(consumerName): 0,
+					},
 				},
 				chainID(consumerName): ChainState{
 					ValPowers: &map[validatorID]uint{
@@ -326,7 +333,6 @@ func stepsThrottledDowntime(consumerName string) []Step {
 						validatorID("bob"):   0,
 						validatorID("carol"): 0,
 					},
-					ConsumerChainQueueSize: intPointer(0),
 				},
 			},
 		},

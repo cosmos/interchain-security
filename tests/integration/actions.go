@@ -1214,14 +1214,14 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 ) {
 
 	timeout := time.Now().Add(action.timeout)
-	initialGlobalQueueSize := tr.getGlobalSlashQueueSize()
+	initialGlobalQueueSize := int(tr.getGlobalSlashQueueSize())
 
 	if initialGlobalQueueSize != action.currentQueueSize {
 		panic(fmt.Sprintf("wrong initial queue size: %d - expected global queue: %d\n", initialGlobalQueueSize, action.currentQueueSize))
 	}
 	for {
-		globalQueueSize := tr.getGlobalSlashQueueSize()
-		chainQueueSize := tr.getConsumerChainPacketQueueSize(action.chain)
+		globalQueueSize := int(tr.getGlobalSlashQueueSize())
+		chainQueueSize := int(tr.getConsumerChainPacketQueueSize(action.chain))
 		if verbose {
 			fmt.Printf("waiting for packed queue size to reach: %d - current: %d\n", action.nextQueueSize, globalQueueSize)
 		}
@@ -1238,6 +1238,6 @@ func (tr TestRun) waitForSlashThrottleDequeue(
 	}
 }
 
-func intPointer(i int) *int {
+func uintPointer(i uint) *uint {
 	return &i
 }
