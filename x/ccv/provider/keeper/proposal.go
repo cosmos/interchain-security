@@ -124,7 +124,7 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 		return err
 	}
 
-	k.SetPendingConsumerRemovalProp(ctx, p.ChainId, p.StopTime)
+	k.SetPendingConsumerRemovalProp(ctx, p)
 	return nil
 }
 
@@ -299,17 +299,17 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 // SetPendingConsumerAdditionProp stores a pending consumer addition proposal.
 //
 // Note that the pending consumer addition proposals are stored under keys with
-// the following format: PendingCAPBytePrefix | len(spawnTime) | spawnTime | chainID
+// the following format: PendingCAPBytePrefix | spawnTime | chainID
 // Thus, if multiple consumer addition proposal for the same chain will pass at
 // the same time, then only the last one will be stored.
-func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, clientInfo *types.ConsumerAdditionProposal) {
+func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, prop *types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := k.cdc.Marshal(clientInfo)
+	bz, err := k.cdc.Marshal(prop)
 	if err != nil {
 		panic(fmt.Errorf("consumer addition proposal could not be marshaled: %w", err))
 	}
 
-	store.Set(types.PendingCAPKey(clientInfo.SpawnTime, clientInfo.ChainId), bz)
+	store.Set(types.PendingCAPKey(prop.SpawnTime, prop.ChainId), bz)
 }
 
 // GetPendingConsumerAdditionProp retrieves a pending consumer addition proposal
@@ -381,8 +381,9 @@ func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) (propsToExecu
 // GetAllPendingConsumerAdditionProps gets all pending consumer addition proposals.
 //
 // Note that the pending consumer addition proposals are stored under keys with the following format:
-// PendingCAPBytePrefix | len(spawnTime) | spawnTime | chainID
-// Thus, the returned array is in undetermined order.
+// PendingCAPBytePrefix | spawnTime.UnixNano() | chainID
+// Thus, the returned array is in spawnTime order. If two proposals have the same spawnTime,
+// then they are ordered by chainID.
 func (k Keeper) GetAllPendingConsumerAdditionProps(ctx sdk.Context) (props []types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
@@ -410,12 +411,16 @@ func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ..
 // SetPendingConsumerRemovalProp stores a pending consumer removal proposal.
 //
 // Note that the pending removal addition proposals are stored under keys with
-// the following format: PendingCRPBytePrefix | len(stopTime) | stopTime | chainID
+// the following format: PendingCRPBytePrefix | stopTime | chainID
 // Thus, if multiple removal addition proposal for the same chain will pass at
 // the same time, then only the last one will be stored.
-func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, chainID string, timestamp time.Time) {
+func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *types.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.PendingCRPKey(timestamp, chainID), []byte{})
+	bz, err := k.cdc.Marshal(prop)
+	if err != nil {
+		panic(fmt.Errorf("consumer removal proposal could not be marshaled: %w", err))
+	}
+	store.Set(types.PendingCRPKey(prop.StopTime, prop.ChainId), bz)
 }
 
 // PendingConsumerRemovalPropExists checks whether a pending consumer removal proposal
@@ -482,16 +487,11 @@ func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.Consum
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		stopTime, chainID, err := types.ParsePendingCRPKey(iterator.Key())
-		if err != nil {
-			panic(fmt.Errorf("failed to parse pending consumer removal proposal key: %w", err))
-		}
+		var prop types.ConsumerRemovalProposal
+		k.cdc.MustUnmarshal(iterator.Value(), &prop)
 
-		if !ctx.BlockTime().Before(stopTime) {
-			propsToExecute = append(propsToExecute, types.ConsumerRemovalProposal{
-				ChainId:  chainID,
-				StopTime: stopTime,
-			})
+		if !ctx.BlockTime().Before(prop.StopTime) {
+			propsToExecute = append(propsToExecute, prop)
 		} else {
 			// No more proposals to check, since they're stored/ordered by timestamp.
 			break
@@ -504,23 +504,18 @@ func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.Consum
 // GetAllPendingConsumerRemovalProps iterates through the pending consumer removal proposals.
 //
 // Note that the pending consumer removal proposals are stored under keys with the following format:
-// PendingCRPBytePrefix | len(stopTime) | stopTime | chainID
-// Thus, the returned array is in undefined order.
+// PendingCRPBytePrefix | stopTime.UnixNano() | chainID
+// Thus, the returned array is in stopTime order.
 func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []types.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		stopTime, chainID, err := types.ParsePendingCRPKey(iterator.Key())
-		if err != nil {
-			panic(fmt.Errorf("failed to parse pending consumer removal proposal key: %w", err))
-		}
+		var prop types.ConsumerRemovalProposal
+		k.cdc.MustUnmarshal(iterator.Value(), &prop)
 
-		props = append(props, types.ConsumerRemovalProposal{
-			ChainId:  chainID,
-			StopTime: stopTime,
-		})
+		props = append(props, prop)
 	}
 
 	return props

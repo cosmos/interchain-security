@@ -169,19 +169,32 @@ func InitTimeoutTimestampKey(chainID string) []byte {
 	return append([]byte{InitTimeoutTimestampBytePrefix}, []byte(chainID)...)
 }
 
-// PendingCAPKey returns the key under which a pending consumer addition proposal is stored
+// PendingCAPKey returns the key under which a pending consumer addition proposal is stored.
+// The key has the following format: PendingCAPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCAPKey(timestamp time.Time, chainID string) []byte {
-	return TsAndChainIdKey(PendingCAPBytePrefix, timestamp, chainID)
+	ts := uint64(timestamp.UTC().UnixNano())
+	return AppendMany(
+		// Append the prefix
+		[]byte{PendingCAPBytePrefix},
+		// Append the time
+		sdk.Uint64ToBigEndian(ts),
+		// Append the chainId
+		[]byte(chainID),
+	)
 }
 
-// PendingCRPKey returns the key under which pending consumer removal proposals are stored
+// PendingCRPKey returns the key under which pending consumer removal proposals are stored.
+// The key has the following format: PendingCRPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCRPKey(timestamp time.Time, chainID string) []byte {
-	return TsAndChainIdKey(PendingCRPBytePrefix, timestamp, chainID)
-}
-
-// ParsePendingCRPKey returns the time and chain ID for a pending consumer removal proposal key or an error if unparseable
-func ParsePendingCRPKey(bz []byte) (time.Time, string, error) {
-	return ParseTsAndChainIdKey(PendingCRPBytePrefix, bz)
+	ts := uint64(timestamp.UTC().UnixNano())
+	return AppendMany(
+		// Append the prefix
+		[]byte{PendingCRPBytePrefix},
+		// Append the time
+		sdk.Uint64ToBigEndian(ts),
+		// Append the chainId
+		[]byte(chainID),
+	)
 }
 
 // UnbondingOpIndexKey returns an unbonding op index key
