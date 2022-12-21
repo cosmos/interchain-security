@@ -45,6 +45,47 @@ func TestValsetUpdateBlockHeight(t *testing.T) {
 	require.Equal(t, blockHeight, uint64(4))
 }
 
+// TestGetAllValsetUpdateBlockHeights tests GetAllValsetUpdateBlockHeights behaviour correctness
+func TestGetAllValsetUpdateBlockHeights(t *testing.T) {
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	cases := []types.ValsetUpdateIdToHeight{
+		{
+			ValsetUpdateId: 2,
+			Height:         22,
+		},
+		{
+			ValsetUpdateId: 1,
+			Height:         11,
+		},
+		{
+			// normal execution should not have two ValsetUpdateIdToHeight
+			// with the same Height, but let's test it anyway
+			ValsetUpdateId: 4,
+			Height:         11,
+		},
+		{
+			ValsetUpdateId: 3,
+			Height:         33,
+		},
+	}
+	expectedGetAllOrder := cases
+	// sorting by ValsetUpdateId
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].ValsetUpdateId < expectedGetAllOrder[j].ValsetUpdateId
+	})
+
+	for _, c := range cases {
+		pk.SetValsetUpdateBlockHeight(ctx, c.ValsetUpdateId, c.Height)
+	}
+
+	// iterate and check all results are returned in the expected order
+	result := pk.GetAllValsetUpdateBlockHeights(ctx)
+	require.Len(t, result, len(cases))
+	require.Equal(t, expectedGetAllOrder, result)
+}
+
 // TestSlashAcks tests the getter, setter, iteration, and deletion methods for stored slash acknowledgements
 func TestSlashAcks(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
@@ -403,43 +444,4 @@ func TestGetAllUnbondingOps(t *testing.T) {
 	result := pk.GetAllUnbondingOps(ctx)
 	require.Len(t, result, len(ops))
 	require.Equal(t, expectedGetAllOrder, result)
-}
-
-// TestGetAllValsetUpdateBlockHeights tests GetAllValsetUpdateBlockHeights behaviour correctness
-func TestGetAllValsetUpdateBlockHeights(t *testing.T) {
-	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
-
-	cases := []types.ValsetUpdateIdToHeight{
-		{
-			ValsetUpdateId: 2,
-			Height:         22,
-		},
-		{
-			ValsetUpdateId: 1,
-			Height:         11,
-		},
-	}
-
-	for _, c := range cases {
-		pk.SetValsetUpdateBlockHeight(ctx, c.ValsetUpdateId, c.Height)
-	}
-
-	// iterate and check all results are returned
-	result := pk.GetAllValsetUpdateBlockHeights(ctx)
-	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
-	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
-	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
-
-	result = []types.ValsetUpdateIdToHeight{}
-	require.Empty(t, result, "initial result not empty")
-
-	// iterate and check first op has ID 1
-	for _, vscIDtoHeight := range pk.GetAllValsetUpdateBlockHeights(ctx) {
-		result = append(result, vscIDtoHeight)
-		break
-	}
-	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
-	require.NotContains(t, result, cases[0], "result should not contain '%s'", cases[0])
 }

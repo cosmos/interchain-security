@@ -109,10 +109,22 @@ func TestPacketMaturityTime(t *testing.T) {
 			MaturityTime: nsNow + 10,
 		},
 	}
+	expectedGetAllOrder := packets
 	// sorting by VscId
-	expectedGetAllOrder := []types.MaturingVSCPacket{packets[1], packets[0], packets[2], packets[3]}
-	// sorting by VscId only packets with MaturityTime <= nsNow
-	expectedGetElapsedOrder := []types.MaturingVSCPacket{packets[1], packets[0], packets[2]}
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].VscId < expectedGetAllOrder[j].VscId
+	})
+	expectedGetElapsedOrder := []types.MaturingVSCPacket{}
+	for _, packet := range packets {
+		// only packets with MaturityTime <= nsNow
+		if packet.MaturityTime <= nsNow {
+			expectedGetElapsedOrder = append(expectedGetElapsedOrder, packet)
+		}
+	}
+	// sorting by VscId
+	sort.Slice(expectedGetElapsedOrder, func(i, j int) bool {
+		return expectedGetElapsedOrder[i].VscId < expectedGetElapsedOrder[j].VscId
+	})
 
 	for _, packet := range packets {
 		ck.SetPacketMaturityTime(ctx, packet.VscId, packet.MaturityTime)
@@ -371,8 +383,11 @@ func TestGetAllHeightToValsetUpdateIDs(t *testing.T) {
 			Height:         33,
 		},
 	}
+	expectedGetAllOrder := cases
 	// sorting by Height
-	expectedGetAllOrder := []types.HeightToValsetUpdateID{cases[1], cases[0], cases[3], cases[2]}
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].Height < expectedGetAllOrder[j].Height
+	})
 
 	for _, c := range cases {
 		ck.SetHeightValsetUpdateID(ctx, c.Height, c.ValsetUpdateId)
@@ -395,13 +410,14 @@ func TestGetAllOutstandingDowntimes(t *testing.T) {
 		sdk.ConsAddress([]byte("consAddress4")),
 		sdk.ConsAddress([]byte("consAddress3")),
 	}
-	// sorting by ConsAddress
-	expectedGetAllOrder := []types.OutstandingDowntime{
-		{ValidatorConsensusAddress: addresses[1].String()},
-		{ValidatorConsensusAddress: addresses[0].String()},
-		{ValidatorConsensusAddress: addresses[3].String()},
-		{ValidatorConsensusAddress: addresses[2].String()},
+	expectedGetAllOrder := []types.OutstandingDowntime{}
+	for _, addr := range addresses {
+		expectedGetAllOrder = append(expectedGetAllOrder, types.OutstandingDowntime{ValidatorConsensusAddress: addr.String()})
 	}
+	// sorting by ConsAddress
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return bytes.Compare(addresses[i], addresses[j]) == -1
+	})
 
 	for _, addr := range addresses {
 		ck.SetOutstandingDowntime(ctx, addr)
