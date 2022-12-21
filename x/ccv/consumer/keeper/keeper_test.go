@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"bytes"
+	"sort"
 	"testing"
 	"time"
 
@@ -171,6 +173,35 @@ func TestCrossChainValidator(t *testing.T) {
 	// should return false
 	_, found = consumerKeeper.GetCCValidator(ctx, ccVal.Address)
 	require.False(t, found)
+}
+
+// TestGetAllCCValidator tests GetAllCCValidator behaviour correctness
+func TestGetAllCCValidator(t *testing.T) {
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	// Explicitly register codec with public key interface
+	keeperParams.RegisterSdkCryptoCodecInterfaces()
+	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+	defer ctrl.Finish()
+
+	numValidators := 4
+	validators := []types.CrossChainValidator{}
+	for i := 0; i < numValidators; i++ {
+		validators = append(validators, testkeeper.GetNewCrossChainValidator(t))
+	}
+	// sorting by CrossChainValidator.Address
+	expectedGetAllOrder := validators
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return bytes.Compare(expectedGetAllOrder[i].Address, expectedGetAllOrder[j].Address) == -1
+	})
+
+	for _, val := range validators {
+		ck.SetCCValidator(ctx, val)
+	}
+
+	// iterate and check all results are returned in the expected order
+	result := ck.GetAllCCValidator(ctx)
+	require.Len(t, result, len(validators))
+	require.Equal(t, result, expectedGetAllOrder)
 }
 
 func TestSetPendingPackets(t *testing.T) {

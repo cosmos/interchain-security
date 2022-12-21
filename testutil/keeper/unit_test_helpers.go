@@ -254,3 +254,14 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 
 	return prop
 }
+
+// Obtains a CrossChainValidator with a newly generated key, and randomized field values
+func GetNewCrossChainValidator(t *testing.T) consumertypes.CrossChainValidator {
+	b1 := make([]byte, 8)
+	_, _ = rand.Read(b1)
+	power := int64(binary.BigEndian.Uint64(b1))
+	privKey := ed25519.GenPrivKey()
+	validator, err := consumertypes.NewCCValidator(privKey.PubKey().Address(), power, privKey.PubKey())
+	require.NoError(t, err)
+	return validator
+}
