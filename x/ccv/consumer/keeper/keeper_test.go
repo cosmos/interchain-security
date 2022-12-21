@@ -107,7 +107,9 @@ func TestPacketMaturityTime(t *testing.T) {
 			MaturityTime: nsNow + 10,
 		},
 	}
+	// sorting by VscId
 	expectedGetAllOrder := []types.MaturingVSCPacket{packets[1], packets[0], packets[2], packets[3]}
+	// sorting by VscId only packets with MaturityTime <= nsNow
 	expectedGetElapsedOrder := []types.MaturingVSCPacket{packets[1], packets[0], packets[2]}
 
 	for _, packet := range packets {
@@ -327,7 +329,19 @@ func TestGetAllHeightToValsetUpdateIDs(t *testing.T) {
 			ValsetUpdateId: 1,
 			Height:         11,
 		},
+		{
+			// normal execution should not have two HeightToValsetUpdateID
+			// with the same ValsetUpdateId, but let's test it anyway
+			ValsetUpdateId: 1,
+			Height:         44,
+		},
+		{
+			ValsetUpdateId: 3,
+			Height:         33,
+		},
 	}
+	// sorting by Height
+	expectedGetAllOrder := []types.HeightToValsetUpdateID{cases[1], cases[0], cases[3], cases[2]}
 
 	for _, c := range cases {
 		ck.SetHeightValsetUpdateID(ctx, c.Height, c.ValsetUpdateId)
@@ -335,21 +349,7 @@ func TestGetAllHeightToValsetUpdateIDs(t *testing.T) {
 
 	// iterate and check all results are returned
 	result := ck.GetAllHeightToValsetUpdateIDs(ctx)
-	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
-	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
-	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
-
-	result = []types.HeightToValsetUpdateID{}
-	require.Empty(t, result, "initial result not empty")
-
-	// iterate and check first op has ID 1
-	for _, vscIDtoHeight := range ck.GetAllHeightToValsetUpdateIDs(ctx) {
-		result = append(result, vscIDtoHeight)
-		break
-	}
-	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
-	require.NotContains(t, result, cases[0], "result should not contain '%s'", cases[0])
+	require.Equal(t, expectedGetAllOrder, result)
 }
 
 // TestGetAllOutstandingDowntimes tests GetAllOutstandingDowntimes behaviour correctness
