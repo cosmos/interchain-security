@@ -170,21 +170,16 @@ func (s *CCVTestSuite) checkConsumerChainIsRemoved(chainID string, checkChannel 
 	}
 
 	// check UnbondingOps were deleted and undelegation entries aren't onHold
-	providerKeeper.IterateOverUnbondingOpIndex(
-		s.providerCtx(),
-		chainID,
-		func(vscID uint64, ubdIndex []uint64) (stop bool) {
-			_, found := providerKeeper.GetUnbondingOpIndex(s.providerCtx(), chainID, uint64(vscID))
+	for _, unbondingOpsIndex := range providerKeeper.GetAllUnbondingOpIndexes(s.providerCtx(), chainID) {
+		_, found := providerKeeper.GetUnbondingOpIndex(s.providerCtx(), chainID, unbondingOpsIndex.VscId)
+		s.Require().False(found)
+		for _, ubdID := range unbondingOpsIndex.UnbondingOpIds {
+			_, found = providerKeeper.GetUnbondingOp(s.providerCtx(), unbondingOpsIndex.UnbondingOpIds[ubdID])
 			s.Require().False(found)
-			for _, ubdID := range ubdIndex {
-				_, found = providerKeeper.GetUnbondingOp(s.providerCtx(), ubdIndex[ubdID])
-				s.Require().False(found)
-				ubd, _ := providerStakingKeeper.GetUnbondingDelegationByUnbondingID(s.providerCtx(), ubdIndex[ubdID])
-				s.Require().Zero(ubd.Entries[ubdID].UnbondingOnHoldRefCount)
-			}
-			return false // do not stop the iteration
-		},
-	)
+			ubd, _ := providerStakingKeeper.GetUnbondingDelegationByUnbondingID(s.providerCtx(), unbondingOpsIndex.UnbondingOpIds[ubdID])
+			s.Require().Zero(ubd.Entries[ubdID].UnbondingOnHoldRefCount)
+		}
+	}
 
 	// verify consumer chain's states are removed
 	_, found := providerKeeper.GetConsumerGenesis(s.providerCtx(), chainID)

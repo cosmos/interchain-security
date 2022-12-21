@@ -73,14 +73,14 @@ const (
 	PendingCRPBytePrefix
 
 	// UnbondingOpBytePrefix is the byte prefix that stores a record of all the ids of consumer chains that
-	// need to unbond before a given delegation can unbond on this chain.
+	// need to unbond before a given unbonding operation can unbond on this chain.
 	UnbondingOpBytePrefix
 
 	// UnbondingOpIndexBytePrefix is byte prefix of the index for looking up which unbonding
-	// delegation entries are waiting for a given consumer chain to unbond
+	// operations are waiting for a given consumer chain to unbond
 	UnbondingOpIndexBytePrefix
 
-	// ValsetUpdateBlockHeightBytePrefix is the byte prefix that will store the mapping from valset update ID to block height
+	// ValsetUpdateBlockHeightBytePrefix is the byte prefix that will store the mapping from vscIDs to block heights
 	ValsetUpdateBlockHeightBytePrefix
 
 	// ConsumerGenesisBytePrefix stores consumer genesis state material (consensus state and client state) indexed by consumer chain id
@@ -169,25 +169,32 @@ func InitTimeoutTimestampKey(chainID string) []byte {
 	return append([]byte{InitTimeoutTimestampBytePrefix}, []byte(chainID)...)
 }
 
-// PendingCAPKey returns the key under which a pending consumer addition proposal is stored
+// PendingCAPKey returns the key under which a pending consumer addition proposal is stored.
+// The key has the following format: PendingCAPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCAPKey(timestamp time.Time, chainID string) []byte {
-	return TsAndChainIdKey(PendingCAPBytePrefix, timestamp, chainID)
+	ts := uint64(timestamp.UTC().UnixNano())
+	return AppendMany(
+		// Append the prefix
+		[]byte{PendingCAPBytePrefix},
+		// Append the time
+		sdk.Uint64ToBigEndian(ts),
+		// Append the chainId
+		[]byte(chainID),
+	)
 }
 
-// ParsePendingCAPKey returns the time and chain ID for a pending consumer addition proposal key
-// or an error if unparsable
-func ParsePendingCAPKey(bz []byte) (time.Time, string, error) {
-	return ParseTsAndChainIdKey(PendingCAPBytePrefix, bz)
-}
-
-// PendingCRPKey returns the key under which pending consumer removal proposals are stored
+// PendingCRPKey returns the key under which pending consumer removal proposals are stored.
+// The key has the following format: PendingCRPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCRPKey(timestamp time.Time, chainID string) []byte {
-	return TsAndChainIdKey(PendingCRPBytePrefix, timestamp, chainID)
-}
-
-// ParsePendingCRPKey returns the time and chain ID for a pending consumer removal proposal key or an error if unparseable
-func ParsePendingCRPKey(bz []byte) (time.Time, string, error) {
-	return ParseTsAndChainIdKey(PendingCRPBytePrefix, bz)
+	ts := uint64(timestamp.UTC().UnixNano())
+	return AppendMany(
+		// Append the prefix
+		[]byte{PendingCRPBytePrefix},
+		// Append the time
+		sdk.Uint64ToBigEndian(ts),
+		// Append the chainId
+		[]byte(chainID),
+	)
 }
 
 // UnbondingOpIndexKey returns an unbonding op index key
@@ -204,7 +211,7 @@ func ParseUnbondingOpIndexKey(key []byte) (string, uint64, error) {
 }
 
 // UnbondingOpKey returns the key that stores a record of all the ids of consumer chains that
-// need to unbond before a given delegation can unbond on this chain
+// need to unbond before a given unbonding operation can unbond on this chain.
 func UnbondingOpKey(id uint64) []byte {
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, id)
@@ -340,42 +347,6 @@ func AppendMany(byteses ...[]byte) (out []byte) {
 		out = append(out, bytes...)
 	}
 	return out
-}
-
-// TsAndChainIdKey returns the key with the following format:
-// bytePrefix | len(timestamp) | timestamp | chainID
-func TsAndChainIdKey(prefix byte, timestamp time.Time, chainID string) []byte {
-	timeBz := sdk.FormatTimeBytes(timestamp)
-	timeBzL := len(timeBz)
-
-	return AppendMany(
-		// Append the prefix
-		[]byte{prefix},
-		// Append the time length
-		sdk.Uint64ToBigEndian(uint64(timeBzL)),
-		// Append the time bytes
-		timeBz,
-		// Append the chainId
-		[]byte(chainID),
-	)
-}
-
-// ParseTsAndChainIdKey returns the time and chain ID for a TsAndChainId key
-func ParseTsAndChainIdKey(prefix byte, bz []byte) (time.Time, string, error) {
-	expectedPrefix := []byte{prefix}
-	prefixL := len(expectedPrefix)
-	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
-		return time.Time{}, "", fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
-	}
-
-	timeBzL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
-	timestamp, err := sdk.ParseTimeBytes(bz[prefixL+8 : prefixL+8+int(timeBzL)])
-	if err != nil {
-		return time.Time{}, "", err
-	}
-
-	chainID := string(bz[prefixL+8+int(timeBzL):])
-	return timestamp, chainID, nil
 }
 
 // ChainIdAndTsKey returns the key with the following format:

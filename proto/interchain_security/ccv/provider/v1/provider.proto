@@ -9,6 +9,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 import "ibc/core/client/v1/client.proto";
 import "ibc/lightclients/tendermint/v1/tendermint.proto";
+import "tendermint/crypto/keys.proto";
 
 // ConsumerAdditionProposal is a governance proposal on the provider chain to spawn a new consumer chain.
 // If it passes, then all validators on the provider chain are expected to validate the consumer chain at spawn time
@@ -154,3 +155,40 @@ message ConsumerRemovalProposals {
 message AddressList {
   repeated bytes addresses = 1;
 }
+
+message ChannelToChain {
+  string channel_id = 1;
+  string chain_id = 2;
+}
+
+// VscUnbondingOps contains the IDs of unbonding operations that are waiting for
+// at least one VSCMaturedPacket with vscID from a consumer chain 
+message VscUnbondingOps {
+  uint64 vsc_id = 1;
+  repeated uint64 unbonding_op_ids = 2;
+}
+
+// UnbondingOp contains the ids of consumer chains that need to unbond before 
+// the unbonding operation with the given ID can unbond
+message UnbondingOp {
+  uint64 id = 1;
+  // consumer chains that are still unbonding
+  repeated string unbonding_consumer_chains = 2;
+}
+
+message InitTimeoutTimestamp {
+  string chain_id = 1;
+  uint64 timestamp = 2;
+}
+
+message VscSendTimestamp {
+  uint64 vsc_id = 1;
+  google.protobuf.Timestamp timestamp = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
+
+message KeyAssignmentReplacement {
+  bytes provider_addr = 1;
+  tendermint.crypto.PublicKey prev_c_key = 2;
+  int64 power = 3;
+}
+
