@@ -177,45 +177,42 @@ func TestInitHeight(t *testing.T) {
 
 // TestGetAllUnbondingOpIndexes tests GetAllUnbondingOpIndexes behavior correctness
 func TestGetAllUnbondingOpIndexes(t *testing.T) {
-
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainID := "chain-1"
-
-	cases := []types.VscUnbondingOps{
+	ops := []types.VscUnbondingOps{
 		{
 			VscId:          2,
-			UnbondingOpIds: []uint64{1, 2, 3, 4, 5, 6},
+			UnbondingOpIds: []uint64{4, 5, 6, 7},
 		},
 		{
 			VscId:          1,
 			UnbondingOpIds: []uint64{1, 2, 3},
 		},
+		{
+			VscId:          4,
+			UnbondingOpIds: []uint64{10},
+		},
+		{
+			VscId:          3,
+			UnbondingOpIds: []uint64{8, 9},
+		},
 	}
+	// sorting by CrossChainValidator.Address
+	expectedGetAllOrder := ops
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].VscId < expectedGetAllOrder[j].VscId
+	})
 
 	pk.SetUnbondingOpIndex(ctx, "chain-2", 1, []uint64{1, 2, 3})
-	for _, c := range cases {
-		pk.SetUnbondingOpIndex(ctx, chainID, c.VscId, c.UnbondingOpIds)
+	for _, op := range ops {
+		pk.SetUnbondingOpIndex(ctx, "chain-1", op.VscId, op.UnbondingOpIds)
 	}
 
-	// iterate and check all results are returned
-	result := pk.GetAllUnbondingOpIndexes(ctx, chainID)
-	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
-	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
-	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
-
-	result = []types.VscUnbondingOps{}
-	require.Empty(t, result, "initial result not empty")
-
-	// iterate and check first index is with vscID 1
-	for _, index := range pk.GetAllUnbondingOpIndexes(ctx, chainID) {
-		result = append(result, index)
-		break
-	}
-	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
-	require.NotContains(t, result, cases[0], "result should not contain '%s'", cases[0])
+	// iterate and check all results are returned in the expected order
+	result := pk.GetAllUnbondingOpIndexes(ctx, "chain-1")
+	require.Len(t, result, len(ops))
+	require.Equal(t, result, expectedGetAllOrder)
 }
 
 func TestMaturedUnbondingOps(t *testing.T) {
