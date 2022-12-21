@@ -325,7 +325,7 @@ func (k Keeper) QueueThrottledPacketData(
 // trailing vsc matured packet data instances in the chain-specific throttled packet data queue.
 //
 // Note that throttled packet data is stored under keys with the following format:
-// Prefix | len(chainID) | chainID | ibcSeqNum
+// ThrottledPacketDataBytePrefix | len(chainID) | chainID | ibcSeqNum
 // Thus, the returned array is in ascending order of ibc seq numbers.
 func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID string) (
 	slashFound bool, slashData ccvtypes.SlashPacketData, vscMaturedData []ccvtypes.VSCMaturedPacketData,
