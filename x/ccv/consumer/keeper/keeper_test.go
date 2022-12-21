@@ -89,7 +89,7 @@ func TestPacketMaturityTime(t *testing.T) {
 
 	now := time.Now().UTC()
 	nsNow := uint64(now.UnixNano())
-	cases := []types.MaturingVSCPacket{
+	packets := []types.MaturingVSCPacket{
 		{
 			VscId:        2,
 			MaturityTime: nsNow,
@@ -108,25 +108,25 @@ func TestPacketMaturityTime(t *testing.T) {
 		},
 	}
 
-	for _, c := range cases {
-		ck.SetPacketMaturityTime(ctx, c.VscId, c.MaturityTime)
+	for _, packet := range packets {
+		ck.SetPacketMaturityTime(ctx, packet.VscId, packet.MaturityTime)
 	}
 
-	for _, c := range cases {
-		require.Equal(t, c.MaturityTime, ck.GetPacketMaturityTime(ctx, c.VscId))
+	for _, packet := range packets {
+		require.Equal(t, packet.MaturityTime, ck.GetPacketMaturityTime(ctx, packet.VscId))
 	}
 
 	maturingVSCPackets := ck.GetAllPacketMaturityTimes(ctx)
-	require.Len(t, maturingVSCPackets, len(cases))
-	for _, c := range cases {
-		require.Contains(t, maturingVSCPackets, c, "result does not contain '%s'", c)
+	require.Len(t, maturingVSCPackets, len(packets))
+	for _, packet := range packets {
+		require.Contains(t, maturingVSCPackets, packet, "result does not contain '%s'", packet)
 	}
-	require.Equal(t, cases[1], maturingVSCPackets[0])
+	require.Equal(t, packets[1], maturingVSCPackets[0])
 
 	elapsedMaturingVSCPackets := ck.GetElapsedPacketMaturityTimes(ctx.WithBlockTime(now))
-	require.Len(t, elapsedMaturingVSCPackets, len(cases)-1)
-	require.NotContains(t, elapsedMaturingVSCPackets, cases[3], "result does contain unexpected entry")
-	require.Equal(t, cases[1], elapsedMaturingVSCPackets[0])
+	require.Len(t, elapsedMaturingVSCPackets, len(packets)-1)
+	require.NotContains(t, elapsedMaturingVSCPackets, packets[3], "result does contain unexpected entry")
+	require.Equal(t, packets[1], elapsedMaturingVSCPackets[0])
 
 	ck.DeletePacketMaturityTimes(ctx, 6)
 	require.Equal(t, uint64(0), ck.GetPacketMaturityTime(ctx, 3))
