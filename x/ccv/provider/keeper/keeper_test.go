@@ -383,7 +383,20 @@ func TestGetAllUnbondingOps(t *testing.T) {
 			Id:                      1,
 			UnbondingConsumerChains: []string{"chain-1", "chain-2"},
 		},
+		{
+			Id:                      4,
+			UnbondingConsumerChains: []string{"chain-2"},
+		},
+		{
+			Id:                      3,
+			UnbondingConsumerChains: []string{"chain-3", "chain-1", "chain-2"},
+		},
 	}
+	expectedGetAllOrder := ops
+	// sorting by Id
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].Id < expectedGetAllOrder[j].Id
+	})
 
 	for _, op := range ops {
 		pk.SetUnbondingOp(ctx, op)
@@ -391,21 +404,8 @@ func TestGetAllUnbondingOps(t *testing.T) {
 
 	// iterate and check all results are returned
 	result := pk.GetAllUnbondingOps(ctx)
-	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
-	require.Contains(t, result, ops[0], "result does not contain '%s'", ops[0])
-	require.Contains(t, result, ops[1], "result does not contain '%s'", ops[1])
-
-	result = []types.UnbondingOp{}
-	require.Empty(t, result, "initial result not empty")
-
-	// iterate and check first op has ID 1
-	for _, unbondingOp := range pk.GetAllUnbondingOps(ctx) {
-		result = append(result, unbondingOp)
-		break
-	}
-	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	require.Contains(t, result, ops[1], "result does not contain '%s'", ops[1])
-	require.NotContains(t, result, ops[0], "result should not contain '%s'", ops[0])
+	require.Len(t, result, len(ops))
+	require.Equal(t, expectedGetAllOrder, result)
 }
 
 // TestGetAllValsetUpdateBlockHeights tests GetAllValsetUpdateBlockHeights behaviour correctness
