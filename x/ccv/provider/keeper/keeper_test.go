@@ -332,8 +332,8 @@ func TestGetAllConsumerChains(t *testing.T) {
 
 	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
 	expectedGetAllOrder := []types.Chain{}
-	for _, chainID := range chainIDs {
-		clientID := fmt.Sprintf("client-%s", chainID)
+	for i, chainID := range chainIDs {
+		clientID := fmt.Sprintf("client-%d", len(chainIDs)-i)
 		pk.SetConsumerClientId(ctx, chainID, clientID)
 		expectedGetAllOrder = append(expectedGetAllOrder, types.Chain{ChainId: chainID, ClientId: clientID})
 	}
@@ -352,38 +352,21 @@ func TestGetAllChannelToChains(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	cases := []types.ChannelToChain{
-		{
-			ChainId:   "chain-2",
-			ChannelId: "channel-2",
-		},
-		{
-			ChainId:   "chain-1",
-			ChannelId: "channel-1",
-		},
+	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
+	expectedGetAllOrder := []types.ChannelToChain{}
+	for i, chainID := range chainIDs {
+		channelID := fmt.Sprintf("client-%d", len(chainIDs)-i)
+		pk.SetChannelToChain(ctx, channelID, chainID)
+		expectedGetAllOrder = append(expectedGetAllOrder, types.ChannelToChain{ChainId: chainID, ChannelId: channelID})
 	}
+	// sorting by channelID
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].ChannelId < expectedGetAllOrder[j].ChannelId
+	})
 
-	for _, c := range cases {
-		pk.SetChannelToChain(ctx, c.ChannelId, c.ChainId)
-	}
-
-	// iterate and check all results are returned
 	result := pk.GetAllChannelToChains(ctx)
-	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
-	require.Contains(t, result, cases[0], "result does not contain '%s'", cases[0])
-	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
-
-	result = []types.ChannelToChain{}
-	require.Empty(t, result, "initial result not empty")
-
-	// iterate and check first mapping is <chain-1: channel-1>
-	for _, channelToChain := range pk.GetAllChannelToChains(ctx) {
-		result = append(result, channelToChain)
-		break
-	}
-	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	require.Contains(t, result, cases[1], "result does not contain '%s'", cases[1])
-	require.NotContains(t, result, cases[0], "result should not contain '%s'", cases[0])
+	require.Len(t, result, len(chainIDs))
+	require.Equal(t, expectedGetAllOrder, result)
 }
 
 // TestGetAllUnbondingOps tests GetAllUnbondingOps behaviour correctness
