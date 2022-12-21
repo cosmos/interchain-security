@@ -372,6 +372,7 @@ func (k Keeper) GetSlashAndTrailingData(ctx sdktypes.Context, consumerChainID st
 // GetAllThrottledPacketData returns all throttled packet data for a specific consumer chain.
 //
 // Note: This method is only used by tests, hence why it returns redundant data as different types.
+// This method is not unit tested, as it is a test util.
 func (k Keeper) GetAllThrottledPacketData(ctx sdktypes.Context, consumerChainID string) (
 	slashData []ccvtypes.SlashPacketData, vscMaturedData []ccvtypes.VSCMaturedPacketData,
 	rawOrderedData []interface{}, ibcSeqNums []uint64) {
