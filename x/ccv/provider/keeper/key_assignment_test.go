@@ -1,7 +1,10 @@
 package keeper_test
 
 import (
+	"bytes"
+	"sort"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -41,92 +44,60 @@ func TestValidatorConsumerPubKeyCRUD(t *testing.T) {
 	require.NotEqual(t, consumerPubKey, consumerKey)
 }
 
-func TestGetAllValidatorConsumerPubKeysOneConsumer(t *testing.T) {
-
-	chainID := "consumer"
-	tmpkey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
-	tmpkey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
-	tmpkey3 := cryptotestutil.NewCryptoIdentityFromIntSeed(3).TMProtoCryptoPublicKey()
-
-	testAssignments := []types.ValidatorConsumerPubKey{
-		{
-			ProviderAddr: sdk.ConsAddress([]byte("validator-1")),
-			ConsumerKey:  &tmpkey1,
-			ChainId:      "consumer",
-		},
-		{
-			ProviderAddr: sdk.ConsAddress([]byte("validator-2")),
-			ConsumerKey:  &tmpkey2,
-			ChainId:      "consumer",
-		},
-		{
-			ProviderAddr: sdk.ConsAddress([]byte("validator-3")),
-			ConsumerKey:  &tmpkey3,
-			ChainId:      "consumer",
-		},
-	}
-
-	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+func TestGetAllValidatorConsumerPubKey(t *testing.T) {
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	rand.Seed(time.Now().Unix())
+	chainIDs := []string{"consumer-1", "consumer-2", "consumer-3"}
+	numAssignments := 10
+	testAssignments := []types.ValidatorConsumerPubKey{}
+	for i := 0; i < numAssignments; i++ {
+		consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
+		providerKey, err := testkeeper.GenPubKey()
+		require.NoError(t, err)
+		testAssignments = append(testAssignments,
+			types.ValidatorConsumerPubKey{
+				ChainId:      chainIDs[rand.Intn(len(chainIDs))],
+				ProviderAddr: sdk.ConsAddress(providerKey.Address()),
+				ConsumerKey:  &consumerKey,
+			},
+		)
+	}
+	// select a chainID with more than two assignments
+	var chainID string
+	for i := range chainIDs {
+		chainID = chainIDs[i]
+		count := 0
+		for _, assignment := range testAssignments {
+			if assignment.ChainId == chainID {
+				count++
+			}
+		}
+		if count > 2 {
+			break
+		}
+	}
+	expectedGetAllOneConsumerOrder := []types.ValidatorConsumerPubKey{}
 	for _, assignment := range testAssignments {
-		keeper.SetValidatorConsumerPubKey(ctx, chainID, assignment.ProviderAddr, *assignment.ConsumerKey)
+		if assignment.ChainId == chainID {
+			expectedGetAllOneConsumerOrder = append(expectedGetAllOneConsumerOrder, assignment)
+		}
 	}
-
-	result := keeper.GetAllValidatorConsumerPubKeys(ctx, &chainID)
-	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
-
-	for i, res := range result {
-		require.Equal(t, testAssignments[i], res, "mismatched consumer key assignment in case %d", i)
-	}
-
-	result = keeper.GetAllValidatorConsumerPubKeys(ctx, &chainID)
-
-	require.Equal(t, testAssignments[0], result[0], "mismatched consumer key assignment in iterate one")
-
-}
-
-func TestGetAllValidatorConsumerPubKeysAllConsumers(t *testing.T) {
-	providerAddr := sdk.ConsAddress([]byte("validator-1"))
-	tmpkey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
-	tmpkey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
-	tmpkey3 := cryptotestutil.NewCryptoIdentityFromIntSeed(3).TMProtoCryptoPublicKey()
-	testAssignments := []types.ValidatorConsumerPubKey{
-		{
-			ChainId:      "consumer-1",
-			ProviderAddr: providerAddr,
-			ConsumerKey:  &tmpkey1,
-		},
-		{
-			ChainId:      "consumer-2",
-			ProviderAddr: providerAddr,
-			ConsumerKey:  &tmpkey2,
-		},
-		{
-			ChainId:      "consumer-3",
-			ProviderAddr: providerAddr,
-			ConsumerKey:  &tmpkey3,
-		},
-	}
-
-	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
-	defer ctrl.Finish()
+	// sorting by ValidatorConsumerPubKey.ProviderAddr
+	sort.Slice(expectedGetAllOneConsumerOrder, func(i, j int) bool {
+		return bytes.Compare(expectedGetAllOneConsumerOrder[i].ProviderAddr, expectedGetAllOneConsumerOrder[j].ProviderAddr) == -1
+	})
 
 	for _, assignment := range testAssignments {
-		keeper.SetValidatorConsumerPubKey(ctx, assignment.ChainId, assignment.ProviderAddr, *assignment.ConsumerKey)
+		pk.SetValidatorConsumerPubKey(ctx, assignment.ChainId, assignment.ProviderAddr, *assignment.ConsumerKey)
 	}
 
-	result := keeper.GetAllValidatorConsumerPubKeys(ctx, nil)
-	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
+	result := pk.GetAllValidatorConsumerPubKeys(ctx, &chainID)
+	require.Equal(t, expectedGetAllOneConsumerOrder, result)
 
-	for i, res := range result {
-		require.Equal(t, testAssignments[i], res, "mismatched consumer key assignment in case %d", i)
-	}
-
-	result = keeper.GetAllValidatorConsumerPubKeys(ctx, nil)
-	require.Len(t, result, len(testAssignments), "incorrect result len - should be 1, got %d", len(result))
-
-	require.Equal(t, testAssignments[0], result[0], "mismatched consumer key assignment in iterate one")
+	result = pk.GetAllValidatorConsumerPubKeys(ctx, nil)
+	require.Len(t, result, len(testAssignments))
 }
 
 func TestValidatorByConsumerAddrCRUD(t *testing.T) {

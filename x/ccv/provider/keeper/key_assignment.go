@@ -57,8 +57,10 @@ func (k Keeper) GetAllValidatorConsumerPubKeys(ctx sdk.Context, chainID *string)
 	store := ctx.KVStore(k.storeKey)
 	var prefix []byte
 	if chainID == nil {
+		// iterate over the validators public keys assigned for all consumer chains
 		prefix = []byte{types.ConsumerValidatorsBytePrefix}
 	} else {
+		// iterate over the validators public keys assigned for chainID
 		prefix = types.ChainIdWithLenKey(types.ConsumerValidatorsBytePrefix, *chainID)
 	}
 	iterator := sdk.KVStorePrefixIterator(store, prefix)
@@ -138,8 +140,10 @@ func (k Keeper) GetAllValidatorsByConsumerAddr(ctx sdk.Context, chainID *string)
 	store := ctx.KVStore(k.storeKey)
 	var prefix []byte
 	if chainID == nil {
+		// iterate over the mappings from consensus addresses on all consumer chains
 		prefix = []byte{types.ValidatorsByConsumerAddrBytePrefix}
 	} else {
+		// iterate over the mappings from consensus addresses on chainID
 		prefix = types.ChainIdWithLenKey(types.ValidatorsByConsumerAddrBytePrefix, *chainID)
 	}
 	iterator := sdk.KVStorePrefixIterator(store, prefix)
