@@ -938,7 +938,7 @@ func (tr TestRun) invokeDowntimeSlash(action downtimeSlashAction, verbose bool) 
 	// Bring validator down
 	tr.setValidatorDowntime(action.chain, action.validator, true, verbose)
 	// Wait appropriate amount of blocks for validator to be slashed
-	tr.waitBlocks(action.chain, 15, time.Minute)
+	tr.waitBlocks(action.chain, 12, 2*time.Minute)
 	// Bring validator back up
 	tr.setValidatorDowntime(action.chain, action.validator, false, verbose)
 }
@@ -1197,5 +1197,47 @@ func (tr TestRun) assignConsumerPubKey(action assignConsumerPubKeyAction, verbos
 		valCfg.useConsumerKey = true
 		tr.validatorConfigs[action.validator] = valCfg
 	}
+}
 
+// slashThrottleDequeue polls slash queue sizes until nextQueueSize is achieved
+type slashThrottleDequeue struct {
+	chain            chainID
+	currentQueueSize int
+	nextQueueSize    int
+	// panic if timeout is exceeded
+	timeout time.Duration
+}
+
+func (tr TestRun) waitForSlashThrottleDequeue(
+	action slashThrottleDequeue,
+	verbose bool,
+) {
+
+	timeout := time.Now().Add(action.timeout)
+	initialGlobalQueueSize := int(tr.getGlobalSlashQueueSize())
+
+	if initialGlobalQueueSize != action.currentQueueSize {
+		panic(fmt.Sprintf("wrong initial queue size: %d - expected global queue: %d\n", initialGlobalQueueSize, action.currentQueueSize))
+	}
+	for {
+		globalQueueSize := int(tr.getGlobalSlashQueueSize())
+		chainQueueSize := int(tr.getConsumerChainPacketQueueSize(action.chain))
+		if verbose {
+			fmt.Printf("waiting for packed queue size to reach: %d - current: %d\n", action.nextQueueSize, globalQueueSize)
+		}
+
+		if globalQueueSize == chainQueueSize && globalQueueSize == action.nextQueueSize {
+			return
+		}
+
+		if time.Now().After(timeout) {
+			panic(fmt.Sprintf("\n\n\nwaitForSlashThrottleDequeuemethod has timed out after: %s\n\n", action.timeout))
+		}
+
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
+func uintPointer(i uint) *uint {
+	return &i
 }
