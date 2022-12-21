@@ -693,6 +693,26 @@ func (s CCVTestSuite) TestSlashAllValidators() {
 	// "applying the validator changes would result in empty set".
 }
 
+func (s *CCVTestSuite) TestLeadingVSCMaturedAreHandled() {
+	s.SetupAllCCVChannels()
+
+	// Setup 4 validators with 25% of the total power each.
+	s.setupValidatorPowers()
+
+	providerKeeper := s.providerApp.GetProviderKeeper()
+
+	// Queue up 100 vsc matured packets for each consumer
+	for _, bundle := range s.consumerBundles {
+		for i := 0; i < 100; i++ {
+			ibcSeqNum := uint64(i)
+			packet := s.constructVSCMaturedPacketFromConsumer(*bundle, ibcSeqNum)
+			packetData := ccvtypes.VSCMaturedPacketData{}
+			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
+			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(), packet, packetData)
+		}
+	}
+}
+
 func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPower bool) {
 	sdkVal, found := s.providerApp.GetE2eStakingKeeper().GetValidator(
 		s.providerCtx(), sdktypes.ValAddress(tmVal.Address))

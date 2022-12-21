@@ -184,6 +184,10 @@ func TestSlashAllValidators(t *testing.T) {
 	runCCVTestByName(t, "TestSlashAllValidators")
 }
 
+func TestLeadingVSCMaturedAreHandled(t *testing.T) {
+	runCCVTestByName(t, "TestLeadingVSCMaturedAreHandled")
+}
+
 //
 // Unbonding tests
 //

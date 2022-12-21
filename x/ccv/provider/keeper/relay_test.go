@@ -144,6 +144,85 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
 }
 
+func TestHandleLeadingVSCMaturedPackets(t *testing.T) {
+
+	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+	providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+
+	vscData := getTenSampleVSCMaturedPacketData()
+
+	// Set channel to chain, and chain to client mappings
+	// (faking multiple established consumer channels)
+	providerKeeper.SetChannelToChain(ctx, "channel-1", "chain-1")
+	providerKeeper.SetConsumerClientId(ctx, "chain-1", "client-1")
+	providerKeeper.SetChannelToChain(ctx, "channel-2", "chain-2")
+	providerKeeper.SetConsumerClientId(ctx, "chain-2", "client-2")
+
+	// Queue some leading vsc matured packet data for chain-1
+	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 1, vscData[0])
+	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 2, vscData[1])
+	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 3, vscData[2])
+
+	// Queue some trailing slash packet data (and a couple more vsc matured)
+	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 4, testkeeper.GetNewSlashPacketData())
+	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-1", 5, testkeeper.GetNewSlashPacketData())
+	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 6, vscData[3])
+	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-1", 7, vscData[4])
+
+	// Queue some leading vsc matured packet data for chain-2
+	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 1, vscData[5])
+	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 2, vscData[6])
+
+	// And trailing slash packet data for chain-2
+	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 3, testkeeper.GetNewSlashPacketData())
+	providerKeeper.QueueThrottledSlashPacketData(ctx, "chain-2", 4, testkeeper.GetNewSlashPacketData())
+
+	// And one more trailing vsc matured packet for chain-2
+	providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "chain-2", 5, vscData[7])
+
+	// Set VSC Send timestamps for each recv vsc matured packet
+	providerKeeper.SetVscSendTimestamp(ctx, "chain-1", vscData[0].ValsetUpdateId, time.Now())
+	providerKeeper.SetVscSendTimestamp(ctx, "chain-1", vscData[1].ValsetUpdateId, time.Now())
+	providerKeeper.SetVscSendTimestamp(ctx, "chain-1", vscData[2].ValsetUpdateId, time.Now())
+	providerKeeper.SetVscSendTimestamp(ctx, "chain-1", vscData[3].ValsetUpdateId, time.Now())
+	providerKeeper.SetVscSendTimestamp(ctx, "chain-1", vscData[4].ValsetUpdateId, time.Now())
+	providerKeeper.SetVscSendTimestamp(ctx, "chain-2", vscData[5].ValsetUpdateId, time.Now())
+	providerKeeper.SetVscSendTimestamp(ctx, "chain-2", vscData[6].ValsetUpdateId, time.Now())
+	providerKeeper.SetVscSendTimestamp(ctx, "chain-2", vscData[7].ValsetUpdateId, time.Now())
+
+	// Confirm each chain-specific queue has the expected number of packet data instances
+	require.Equal(t, uint64(7), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
+	require.Equal(t, uint64(5), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
+
+	// Handle leading vsc matured packets and confirm queue sizes change for both chains
+	providerKeeper.HandleLeadingVSCMaturedPackets(ctx)
+	require.Equal(t, uint64(4), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
+	require.Equal(t, uint64(3), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
+
+	// Confirm the leading vsc matured packet data was handled for both chains,
+	// but not the vsc matured packet data that trails slash data in the queue.
+	// This assertion is made by checking that VSC Send timestamps were deleted for
+	// handled vsc matured packet data.
+	_, found := providerKeeper.GetVscSendTimestamp(ctx, "chain-1", vscData[0].ValsetUpdateId)
+	require.False(t, found)
+	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-1", vscData[1].ValsetUpdateId)
+	require.False(t, found)
+	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-1", vscData[2].ValsetUpdateId)
+	require.False(t, found)
+	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-1", vscData[3].ValsetUpdateId)
+	require.True(t, found)
+	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-1", vscData[4].ValsetUpdateId)
+	require.True(t, found)
+
+	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-2", vscData[5].ValsetUpdateId)
+	require.False(t, found)
+	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-2", vscData[6].ValsetUpdateId)
+	require.False(t, found)
+	_, found = providerKeeper.GetVscSendTimestamp(ctx, "chain-2", vscData[7].ValsetUpdateId)
+	require.True(t, found)
+}
+
 // TestOnRecvSlashPacket tests the OnRecvSlashPacket method, and how it interacts with the
 // parent and per-chain slash packet queues.
 func TestOnRecvSlashPacket(t *testing.T) {

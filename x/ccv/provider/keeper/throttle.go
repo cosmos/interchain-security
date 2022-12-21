@@ -71,6 +71,7 @@ func (k Keeper) GetEffectiveValPower(ctx sdktypes.Context,
 
 // HandlePacketDataForChain handles only the first queued slash packet relevant to the passed consumer chainID,
 // and then handles any trailing vsc matured packets in that (consumer chain specific) throttled packet data queue.
+// The handled data is then deleted from the queue.
 //
 // Note: Any packet data which is handled in this method is also deleted from the (consumer chain specific) queue.
 func (k Keeper) HandlePacketDataForChain(ctx sdktypes.Context, consumerChainID string,
@@ -319,6 +320,43 @@ func (k Keeper) QueueThrottledPacketData(
 
 	store.Set(providertypes.ThrottledPacketDataKey(consumerChainID, ibcSeqNum), bz)
 	k.IncrementThrottledPacketDataSize(ctx, consumerChainID)
+}
+
+// GetLeadingVSCMaturedData returns the leading vsc matured packet data instances
+// for a chain-specific throttled packet data queue. Ie the vsc matured packet data instances
+// that do not have any slash packet data instances preceding them in the queue for consumerChainID.
+func (k Keeper) GetLeadingVSCMaturedData(ctx sdktypes.Context, consumerChainID string) (
+	vscMaturedData []ccvtypes.VSCMaturedPacketData, ibcSeqNums []uint64) {
+
+	store := ctx.KVStore(k.storeKey)
+	iteratorPrefix := providertypes.ChainIdWithLenKey(providertypes.ThrottledPacketDataBytePrefix, consumerChainID)
+	iterator := sdktypes.KVStorePrefixIterator(store, iteratorPrefix)
+	defer iterator.Close()
+
+	// Iterate over the throttled packet data queue,
+	// and return vsc matured packet data instances until we encounter a slash packet data instance.
+	vscMaturedData = []ccvtypes.VSCMaturedPacketData{}
+	ibcSeqNums = []uint64{}
+	for ; iterator.Valid(); iterator.Next() {
+
+		bz := iterator.Value()
+		if bz[0] == slashPacketData {
+			break
+		} else if bz[0] != vscMaturedPacketData {
+			panic(fmt.Sprintf("unexpected packet data type: %d", bz[0]))
+		}
+
+		var data ccvtypes.VSCMaturedPacketData
+		err := data.Unmarshal(bz[1:])
+		if err != nil {
+			panic(fmt.Sprintf("failed to unmarshal vsc matured packet data: %v", err))
+		}
+
+		vscMaturedData = append(vscMaturedData, data)
+		_, ibcSeqNum := providertypes.MustParseThrottledPacketDataKey(iterator.Key())
+		ibcSeqNums = append(ibcSeqNums, ibcSeqNum)
+	}
+	return vscMaturedData, ibcSeqNums
 }
 
 // GetSlashAndTrailingData returns the first slash packet data instance and any
