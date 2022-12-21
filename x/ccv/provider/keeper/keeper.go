@@ -810,8 +810,7 @@ func (k Keeper) SetVscSendTimestamp(
 }
 
 // GetVscSendTimestamp returns a VSC send timestamp by chainID and vscID
-//
-// Note: This method is used only for testing.
+// If a VSCSentTImestamp is available the VSC has not yet matured.
 func (k Keeper) GetVscSendTimestamp(ctx sdk.Context, chainID string, vscID uint64) (time.Time, bool) {
 	store := ctx.KVStore(k.storeKey)
 

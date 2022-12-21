@@ -238,6 +238,8 @@ func TestOnRecvSlashPacket(t *testing.T) {
 
 	// Receive a slash packet for chain-1 at time.Now()
 	ctx = ctx.WithBlockTime(time.Now())
+	// Set timestamp for VSCId it is considered valid
+	providerKeeper.SetVscSendTimestamp(ctx, "chain-1", packetData.ValsetUpdateId, ctx.BlockTime())
 	ack := executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-1", 1, packetData)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 
@@ -256,6 +258,7 @@ func TestOnRecvSlashPacket(t *testing.T) {
 
 	// Receive a slash packet for chain-2 at time.Now(Add(1 *time.Hour))
 	ctx = ctx.WithBlockTime(time.Now().Add(1 * time.Hour))
+	providerKeeper.SetVscSendTimestamp(ctx, "chain-2", packetData.ValsetUpdateId, ctx.BlockTime())
 	ack = executeOnRecvSlashPacket(t, &providerKeeper, ctx, "channel-2", 2, packetData)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 
@@ -302,35 +305,62 @@ func TestValidateSlashPacket(t *testing.T) {
 
 	validVscID := uint64(98)
 
-	testCases := []struct {
+	invalidInfractionsTestCases := []struct {
 		name       string
 		packetData ccv.SlashPacketData
 		expectErr  bool
+		errType    error
 	}{
 		{"no block height found for given vscID",
 			ccv.SlashPacketData{ValsetUpdateId: 61},
-			true},
+			true,
+			providertypes.ErrSlashPacketInfractionHeightInvalid},
 		{"non-set infraction type",
 			ccv.SlashPacketData{ValsetUpdateId: validVscID},
-			true},
+			true,
+			providertypes.ErrSlashPacketInfractionTypeInvalid},
 		{"invalid infraction type",
 			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.MaxMonikerLength},
-			true},
+			true,
+			providertypes.ErrSlashPacketInfractionTypeInvalid},
 		{"valid double sign packet with non-zero vscID",
 			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.DoubleSign},
-			false},
+			false,
+			nil},
 		{"valid downtime packet with non-zero vscID",
 			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.Downtime},
-			false},
+			false,
+			nil},
 		{"valid double sign packet with zero vscID",
 			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.DoubleSign},
-			false},
+			false,
+			nil},
 		{"valid downtime packet with zero vscID",
 			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.Downtime},
-			false},
+			false,
+			nil},
 	}
 
-	for _, tc := range testCases {
+	// isolate these cases since the setup is different from cases above
+	outdatedSlashPacketsTestCases := []struct {
+		name       string
+		packetData ccv.SlashPacketData
+		expectErr  bool
+		errType    error
+	}{
+		{"valid downtime packet with outdated vscID",
+			// all ValsetUpdateIds less than validVscID are considered invalid (slash packets are outdated)
+			ccv.SlashPacketData{ValsetUpdateId: 94, Infraction: stakingtypes.Downtime},
+			true,
+			providertypes.ErrSlashPacketOutdated},
+		{"valid packet",
+			// all ValsetUpdateIds less than validVscID are considered invalid (slash packets are outdated)
+			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.Downtime},
+			false,
+			nil},
+	}
+
+	for _, tc := range invalidInfractionsTestCases {
 		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
@@ -346,14 +376,54 @@ func TestValidateSlashPacket(t *testing.T) {
 		// Setup valset update ID to block height mapping using var instantiated above.
 		providerKeeper.SetValsetUpdateBlockHeight(ctx, validVscID, uint64(100))
 
+		// only vscIDs 0, 98 is considered valid in these test cases
+		providerKeeper.SetVscSendTimestamp(ctx, "consumer-chain-id", 0, ctx.BlockTime())
+		providerKeeper.SetVscSendTimestamp(ctx, "consumer-chain-id", 98, ctx.BlockTime())
+
 		// Test error behavior as specified in tc.
 		err := providerKeeper.ValidateSlashPacket(ctx, "consumer-chain-id", packet, tc.packetData)
 		if tc.expectErr {
 			require.Error(t, err, "expected error in case: '%s'", tc.name)
+			require.ErrorIs(t, err, tc.errType, "incorrect expected error type: '%s' in case: %s", tc.errType, tc.name)
 		} else {
 			require.NoError(t, err, "unexpected error in case: '%s'", tc.name)
 		}
 	}
+
+	alreadyMaturedVscId := uint64(94)
+	for _, tc := range outdatedSlashPacketsTestCases {
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+			t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
+
+		packet := channeltypes.Packet{DestinationChannel: "channel-9"}
+
+		// Pseudo setup ccv channel for channel ID specified in packet.
+		providerKeeper.SetChannelToChain(ctx, "channel-9", "consumer-chain-id")
+
+		// Setup init chain height for consumer (allowing 0 vscID to be valid).
+		providerKeeper.SetInitChainHeight(ctx, "consumer-chain-id", uint64(89))
+
+		// Setup valset update ID to block height mapping using var instantiated above.
+		providerKeeper.SetValsetUpdateBlockHeight(ctx, validVscID, uint64(100))
+
+		// only vscIDs 0, 98 are considered valid in these test cases
+		providerKeeper.SetVscSendTimestamp(ctx, "consumer-chain-id", 0, ctx.BlockTime())
+		providerKeeper.SetVscSendTimestamp(ctx, "consumer-chain-id", 98, ctx.BlockTime())
+
+		// this must be set to accomodate the "valid downtime packet with outdated vscID" test case
+		providerKeeper.SetValsetUpdateBlockHeight(ctx, alreadyMaturedVscId, uint64(101))
+
+		// Test error behavior as specified in tc.
+		err := providerKeeper.ValidateSlashPacket(ctx, "consumer-chain-id", packet, tc.packetData)
+		if tc.expectErr {
+			require.Error(t, err, "expected error in case: '%s'", tc.name)
+			require.ErrorIs(t, err, tc.errType, "incorrect expected error type: '%s' in case: %s", tc.errType, tc.name)
+		} else {
+			require.NoError(t, err, "unexpected error in case: '%s'", tc.name)
+		}
+	}
+
 }
 
 // TestHandleSlashPacket tests the handling of slash packets.

@@ -254,7 +254,14 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	}
 
 	if err := k.ValidateSlashPacket(ctx, chainID, packet, data); err != nil {
-		return channeltypes.NewErrorAcknowledgement(err.Error())
+		return channeltypes.NewErrorAcknowledgement(
+			fmt.Errorf(
+				"%w error validating slash packet - valsetUpdateId: %d, infraction: %s for chain: %s",
+				err,
+				data.ValsetUpdateId,
+				data.Infraction,
+				chainID).Error(),
+		)
 	}
 
 	// The slash packet validator address may be known only on the consumer chain,
@@ -289,15 +296,19 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 	packet channeltypes.Packet, data ccv.SlashPacketData) error {
 
-	_, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	// return error if we cannot find infraction height matching the validator update id
-	if !found {
-		return fmt.Errorf("cannot find infraction height matching "+
-			"the validator update id %d for chain %s", data.ValsetUpdateId, chainID)
+	if _, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId); !found {
+		return providertypes.ErrSlashPacketInfractionHeightInvalid
 	}
 
 	if data.Infraction != stakingtypes.DoubleSign && data.Infraction != stakingtypes.Downtime {
-		return fmt.Errorf("invalid infraction type: %s", data.Infraction)
+		return providertypes.ErrSlashPacketInfractionTypeInvalid
+	}
+
+	// VSCMaturedPacket had already been received and processed for this ValsetUpdateId
+	// return error because slash packet is out of date
+	if _, found := k.GetVscSendTimestamp(ctx, chainID, data.ValsetUpdateId); !found {
+		return providertypes.ErrSlashPacketOutdated
 	}
 
 	return nil
