@@ -501,6 +501,7 @@ func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.Consum
 			panic(fmt.Errorf("failed to unmarshal consumer removal proposal: %w", err))
 		}
 
+		// If current block time is equal to or after stop time, proposal is ready to be executed
 		if !ctx.BlockTime().Before(prop.StopTime) {
 			propsToExecute = append(propsToExecute, prop)
 		} else {
