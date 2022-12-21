@@ -64,7 +64,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 
 	// Save maturity time and packet
 	maturityTime := ctx.BlockTime().Add(k.GetUnbondingPeriod(ctx))
-	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, uint64(maturityTime.UnixNano()))
+	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, maturityTime)
 
 	// set height to VSC id mapping
 	k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())+1, newChanges.ValsetUpdateId)
@@ -85,24 +85,22 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // operations that resulted in validator updates included in that VSC have matured on
 // the consumer chain.
 func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
-	currentTime := uint64(ctx.BlockTime().UnixNano())
-
 	for _, maturityTime := range k.GetElapsedPacketMaturityTimes(ctx) {
-		if currentTime < maturityTime.MaturityTime {
-			panic(fmt.Errorf("maturity time %d is greater than current time %d", maturityTime.MaturityTime, currentTime))
+		if ctx.BlockTime().Before(maturityTime.MaturityTime) {
+			panic(fmt.Errorf("maturity time %s is greater than current time %s", maturityTime.MaturityTime, ctx.BlockTime()))
 		}
 		// construct validator set change packet data
 		vscPacket := ccv.NewVSCMaturedPacketData(maturityTime.VscId)
 
-		// append VSCMatured packet to pending packets
-		// sending packets is attempted each EndBlock
+		// append VSCMatured packet to pending packets;
+		// sending packets is attempted each EndBlock;
 		// unsent packets remain in the queue until sent
 		k.AppendPendingPacket(ctx, types.ConsumerPacket{
 			Type: types.VscMaturedPacket,
 			Data: vscPacket.GetBytes(),
 		})
 
-		k.DeletePacketMaturityTimes(ctx, uint64(maturityTime.VscId))
+		k.DeletePacketMaturityTimes(ctx, maturityTime.VscId, maturityTime.MaturityTime)
 
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
@@ -111,7 +109,7 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 				sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
 				sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
 				sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(maturityTime.VscId))),
-				sdk.NewAttribute(ccv.AttributeTimestamp, strconv.Itoa(int(currentTime))),
+				sdk.NewAttribute(ccv.AttributeTimestamp, ctx.BlockTime().String()),
 			),
 		)
 	}

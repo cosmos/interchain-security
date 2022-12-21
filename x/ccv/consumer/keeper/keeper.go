@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -206,76 +207,82 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
-// GetElapsedPacketMaturityTimes returns a slice of already elapsed PacketMaturityTimes, sorted by vscIDs,
-// i.e., the slice contains the IDs of the matured VSCPackets
-func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacket []consumertypes.MaturingVSCPacket) {
-	currentTime := uint64(ctx.BlockTime().UnixNano())
+// GetElapsedPacketMaturityTimes returns a slice of already elapsed PacketMaturityTimes, sorted by maturity times,
+// i.e., the slice contains the IDs of the matured VSCPackets.
+func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []consumertypes.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		vscId := binary.BigEndian.Uint64(iterator.Key()[1:])
-		maturityTime := binary.BigEndian.Uint64(iterator.Value())
+		var maturingVSCPacket consumertypes.MaturingVSCPacket
+		if err := maturingVSCPacket.Unmarshal(iterator.Value()); err != nil {
+			panic(fmt.Errorf("failed to unmarshal MaturingVSCPacket: %w", err))
+		}
 
 		// If the maturity time is after the current time, then stop the iteration;
-		// TODO: the iteration over PacketMaturityTimes should be over maturity times,
-		// see https://github.com/cosmos/interchain-security/issues/598
-		if currentTime < maturityTime {
+		// this is possible since the iteration over PacketMaturityTimes is in order
+		// of maturity times
+		if ctx.BlockTime().Before(maturingVSCPacket.MaturityTime) {
 			break
 		}
 
-		maturingVSCPacket = append(maturingVSCPacket, consumertypes.MaturingVSCPacket{
-			VscId:        vscId,
-			MaturityTime: maturityTime,
-		})
+		maturingVSCPackets = append(maturingVSCPackets, maturingVSCPacket)
 	}
-	return maturingVSCPacket
+	return maturingVSCPackets
 }
 
-// GetAllPacketMaturityTimes returns a slice of all PacketMaturityTimes, sorted by vscIDs.
-func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacket []consumertypes.MaturingVSCPacket) {
+// GetAllPacketMaturityTimes returns a slice of all PacketMaturityTimes, sorted by maturity times.
+//
+// Note that PacketMaturityTimes are stored under keys with the following format:
+// PacketMaturityTimeBytePrefix | maturityTime.UnixNano() | vscID
+// Thus, the returned array is in ascending order of maturityTimes.
+// If two entries have the same maturityTime, then they are ordered by vscID.
+func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPackets []consumertypes.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		vscId := binary.BigEndian.Uint64(iterator.Key()[1:])
-		maturityTime := binary.BigEndian.Uint64(iterator.Value())
+		var maturingVSCPacket consumertypes.MaturingVSCPacket
+		if err := maturingVSCPacket.Unmarshal(iterator.Value()); err != nil {
+			panic(fmt.Errorf("failed to unmarshal MaturingVSCPacket: %w", err))
+		}
 
-		maturingVSCPacket = append(maturingVSCPacket, consumertypes.MaturingVSCPacket{
-			VscId:        vscId,
-			MaturityTime: maturityTime,
-		})
+		maturingVSCPackets = append(maturingVSCPackets, maturingVSCPacket)
 	}
-	return maturingVSCPacket
+	return maturingVSCPackets
 }
 
 // SetPacketMaturityTime sets the maturity time for a given received VSC packet id
-func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscId, maturityTime uint64) {
+func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscId uint64, maturityTime time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	timeBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(timeBytes, maturityTime)
-	store.Set(types.PacketMaturityTimeKey(vscId), timeBytes)
+	maturingVSCPacket := consumertypes.MaturingVSCPacket{
+		VscId:        vscId,
+		MaturityTime: maturityTime,
+	}
+	bz, err := maturingVSCPacket.Marshal()
+	if err != nil {
+		panic(fmt.Errorf("failed to marshal MaturingVSCPacket: %w", err))
+	}
+	store.Set(types.PacketMaturityTimeKey(vscId, maturityTime), bz)
 }
 
-// GetPacketMaturityTime gets the maturity time for a given received VSC packet id
-func (k Keeper) GetPacketMaturityTime(ctx sdk.Context, vscId uint64) uint64 {
+// PacketMaturityExists checks whether the packet maturity time for a given vscId and maturityTime exists
+func (k Keeper) PacketMaturityTimeExists(ctx sdk.Context, vscId uint64, maturityTime time.Time) bool {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.PacketMaturityTimeKey(vscId))
+	bz := store.Get(types.PacketMaturityTimeKey(vscId, maturityTime))
 	if bz == nil {
-		return 0
+		return false
 	}
-	return binary.BigEndian.Uint64(bz)
+	return true
 }
 
-// DeletePacketMaturityTimes deletes the packet maturity time for given received VSC packet ids
-func (k Keeper) DeletePacketMaturityTimes(ctx sdk.Context, vscIds ...uint64) {
+// DeletePacketMaturityTimes deletes the packet maturity time for a given vscId and maturityTime
+func (k Keeper) DeletePacketMaturityTimes(ctx sdk.Context, vscId uint64, maturityTime time.Time) {
 	store := ctx.KVStore(k.storeKey)
-	for _, vscId := range vscIds {
-		store.Delete(types.PacketMaturityTimeKey(vscId))
-	}
+	store.Delete(types.PacketMaturityTimeKey(vscId, maturityTime))
 }
 
 // VerifyProviderChain verifies that the chain trying to connect on the channel handshake

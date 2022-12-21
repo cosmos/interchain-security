@@ -90,48 +90,43 @@ func TestPacketMaturityTime(t *testing.T) {
 	defer ctrl.Finish()
 
 	now := time.Now().UTC()
-	nsNow := uint64(now.UnixNano())
 	packets := []types.MaturingVSCPacket{
 		{
 			VscId:        2,
-			MaturityTime: nsNow,
+			MaturityTime: now,
 		},
 		{
 			VscId:        1,
-			MaturityTime: nsNow - 15,
+			MaturityTime: now.Add(-time.Hour),
 		},
 		{
 			VscId:        5,
-			MaturityTime: nsNow - 30,
+			MaturityTime: now.Add(-2 * time.Hour),
 		},
 		{
 			VscId:        6,
-			MaturityTime: nsNow + 10,
+			MaturityTime: now.Add(time.Hour),
 		},
 	}
 	expectedGetAllOrder := packets
-	// sorting by VscId
+	// sorting by MaturityTime
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
-		return expectedGetAllOrder[i].VscId < expectedGetAllOrder[j].VscId
+		return expectedGetAllOrder[i].MaturityTime.Before(expectedGetAllOrder[j].MaturityTime)
 	})
 	expectedGetElapsedOrder := []types.MaturingVSCPacket{}
 	for _, packet := range packets {
-		// only packets with MaturityTime <= nsNow
-		if packet.MaturityTime <= nsNow {
+		// only packets with MaturityTime <= now
+		if !packet.MaturityTime.After(now) {
 			expectedGetElapsedOrder = append(expectedGetElapsedOrder, packet)
 		}
 	}
-	// sorting by VscId
+	// sorting by MaturityTime
 	sort.Slice(expectedGetElapsedOrder, func(i, j int) bool {
-		return expectedGetElapsedOrder[i].VscId < expectedGetElapsedOrder[j].VscId
+		return expectedGetAllOrder[i].MaturityTime.Before(expectedGetAllOrder[j].MaturityTime)
 	})
 
 	for _, packet := range packets {
 		ck.SetPacketMaturityTime(ctx, packet.VscId, packet.MaturityTime)
-	}
-
-	for _, packet := range packets {
-		require.Equal(t, packet.MaturityTime, ck.GetPacketMaturityTime(ctx, packet.VscId))
 	}
 
 	maturingVSCPackets := ck.GetAllPacketMaturityTimes(ctx)
@@ -141,9 +136,8 @@ func TestPacketMaturityTime(t *testing.T) {
 	elapsedMaturingVSCPackets := ck.GetElapsedPacketMaturityTimes(ctx.WithBlockTime(now))
 	require.Equal(t, expectedGetElapsedOrder, elapsedMaturingVSCPackets)
 
-	ck.DeletePacketMaturityTimes(ctx, 6)
-	require.Equal(t, uint64(0), ck.GetPacketMaturityTime(ctx, 3))
-	require.Equal(t, uint64(0), ck.GetPacketMaturityTime(ctx, 6))
+	ck.DeletePacketMaturityTimes(ctx, packets[0].VscId, packets[0].MaturityTime)
+	require.False(t, ck.PacketMaturityTimeExists(ctx, packets[0].VscId, packets[0].MaturityTime))
 }
 
 // TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records

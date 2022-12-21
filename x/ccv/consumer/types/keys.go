@@ -2,8 +2,11 @@ package types
 
 import (
 	"encoding/binary"
+	time "time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
 const (
@@ -99,17 +102,17 @@ func PendingChangesKey() []byte {
 	return []byte{PendingChangesByteKey}
 }
 
-// PacketMaturityTimeKey returns the key for storing maturity time for a given received VSC packet id
-func PacketMaturityTimeKey(id uint64) []byte {
-	seqBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(seqBytes, id)
-	return append([]byte{PacketMaturityTimeBytePrefix}, seqBytes...)
-}
-
-// IdFromPacketMaturityTimeKey returns the packet id corresponding to a maturity time full key (including prefix)
-func IdFromPacketMaturityTimeKey(key []byte) uint64 {
-	// Bytes after single byte prefix are converted to uin64
-	return binary.BigEndian.Uint64(key[1:])
+// PacketMaturityTimeKey returns the key for storing the maturity time for a given received VSC packet id
+func PacketMaturityTimeKey(vscID uint64, maturityTime time.Time) []byte {
+	ts := uint64(maturityTime.UTC().UnixNano())
+	return utils.AppendMany(
+		// Append the prefix
+		[]byte{PacketMaturityTimeBytePrefix},
+		// Append the time
+		sdk.Uint64ToBigEndian(ts),
+		// Append the vscID
+		sdk.Uint64ToBigEndian(vscID),
+	)
 }
 
 // HeightValsetUpdateIDKey returns the key to a valset update ID for a given block height
