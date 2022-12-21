@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"fmt"
+	"sort"
 	"testing"
 	"time"
 
@@ -329,36 +330,21 @@ func TestGetAllConsumerChains(t *testing.T) {
 	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	chainIDs := []string{"chain-2", "chain-1"}
-	for _, c := range chainIDs {
-		pk.SetConsumerClientId(ctx, c, fmt.Sprintf("client-%s", c))
+	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
+	expectedGetAllOrder := []types.Chain{}
+	for _, chainID := range chainIDs {
+		clientID := fmt.Sprintf("client-%s", chainID)
+		pk.SetConsumerClientId(ctx, chainID, clientID)
+		expectedGetAllOrder = append(expectedGetAllOrder, types.Chain{ChainId: chainID, ClientId: clientID})
 	}
+	// sorting by chainID
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].ChainId < expectedGetAllOrder[j].ChainId
+	})
 
-	result := []string{}
-
-	require.Empty(t, result, "initial result not empty")
-	require.Len(t, chainIDs, 2, "initial chainIDs not len 2")
-
-	// iterate and check all chains are returned
-	for _, chain := range pk.GetAllConsumerChains(ctx) {
-		result = append(result, chain.ChainId)
-	}
-
-	require.Len(t, result, 2, "wrong result len - should be 2, got %d", len(result))
-	require.Contains(t, result, chainIDs[0], "result does not contain '%s'", chainIDs[0])
-	require.Contains(t, result, chainIDs[1], "result does not contain '%s'", chainIDs[1])
-
-	result = []string{}
-	require.Empty(t, result, "initial result not empty")
-
-	// iterate and check first chain is chain-1
-	for _, chain := range pk.GetAllConsumerChains(ctx) {
-		result = append(result, chain.ChainId)
-		break
-	}
-	require.Len(t, result, 1, "wrong result len - should be 1, got %d", len(result))
-	require.Contains(t, result, chainIDs[1], "result does not contain '%s'", chainIDs[1])
-	require.NotContains(t, result, chainIDs[0], "result should not contain '%s'", chainIDs[0])
+	result := pk.GetAllConsumerChains(ctx)
+	require.Len(t, result, len(chainIDs))
+	require.Equal(t, expectedGetAllOrder, result)
 }
 
 // TestGetAllChannelToChains tests GetAllChannelToChains behaviour correctness
