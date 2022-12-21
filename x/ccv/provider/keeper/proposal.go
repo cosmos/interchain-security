@@ -304,11 +304,10 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 // the same time, then only the last one will be stored.
 func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, prop *types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := k.cdc.Marshal(prop)
+	bz, err := prop.Marshal()
 	if err != nil {
-		panic(fmt.Errorf("consumer addition proposal could not be marshaled: %w", err))
+		panic(fmt.Errorf("failed to marshal consumer addition proposal: %w", err))
 	}
-
 	store.Set(types.PendingCAPKey(prop.SpawnTime, prop.ChainId), bz)
 }
 
@@ -320,10 +319,13 @@ func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.T
 	chainID string) (prop types.ConsumerAdditionProposal, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingCAPKey(spawnTime, chainID))
-	if len(bz) == 0 {
+	if bz == nil {
 		return prop, false
 	}
-	k.cdc.MustUnmarshal(bz, &prop)
+	err := prop.Unmarshal(bz)
+	if err != nil {
+		panic(fmt.Errorf("failed to unmarshal consumer addition proposal: %w", err))
+	}
 
 	return prop, true
 }
@@ -366,7 +368,10 @@ func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) (propsToExecu
 
 	for ; iterator.Valid(); iterator.Next() {
 		var prop types.ConsumerAdditionProposal
-		k.cdc.MustUnmarshal(iterator.Value(), &prop)
+		err := prop.Unmarshal(iterator.Value())
+		if err != nil {
+			panic(fmt.Errorf("failed to unmarshal consumer addition proposal: %w", err))
+		}
 
 		if !ctx.BlockTime().Before(prop.SpawnTime) {
 			propsToExecute = append(propsToExecute, prop)
@@ -391,7 +396,10 @@ func (k Keeper) GetAllPendingConsumerAdditionProps(ctx sdk.Context) (props []typ
 
 	for ; iterator.Valid(); iterator.Next() {
 		var prop types.ConsumerAdditionProposal
-		k.cdc.MustUnmarshal(iterator.Value(), &prop)
+		err := prop.Unmarshal(iterator.Value())
+		if err != nil {
+			panic(fmt.Errorf("failed to unmarshal consumer addition proposal: %w", err))
+		}
 
 		props = append(props, prop)
 	}
@@ -416,9 +424,9 @@ func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ..
 // the same time, then only the last one will be stored.
 func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *types.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := k.cdc.Marshal(prop)
+	bz, err := prop.Marshal()
 	if err != nil {
-		panic(fmt.Errorf("consumer removal proposal could not be marshaled: %w", err))
+		panic(fmt.Errorf("failed to marshal consumer removal proposal: %w", err))
 	}
 	store.Set(types.PendingCRPKey(prop.StopTime, prop.ChainId), bz)
 }
@@ -488,7 +496,10 @@ func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.Consum
 
 	for ; iterator.Valid(); iterator.Next() {
 		var prop types.ConsumerRemovalProposal
-		k.cdc.MustUnmarshal(iterator.Value(), &prop)
+		err := prop.Unmarshal(iterator.Value())
+		if err != nil {
+			panic(fmt.Errorf("failed to unmarshal consumer removal proposal: %w", err))
+		}
 
 		if !ctx.BlockTime().Before(prop.StopTime) {
 			propsToExecute = append(propsToExecute, prop)
@@ -513,7 +524,10 @@ func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []type
 
 	for ; iterator.Valid(); iterator.Next() {
 		var prop types.ConsumerRemovalProposal
-		k.cdc.MustUnmarshal(iterator.Value(), &prop)
+		err := prop.Unmarshal(iterator.Value())
+		if err != nil {
+			panic(fmt.Errorf("failed to unmarshal consumer removal proposal: %w", err))
+		}
 
 		props = append(props, prop)
 	}

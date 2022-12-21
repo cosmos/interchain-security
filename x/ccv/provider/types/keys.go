@@ -349,42 +349,6 @@ func AppendMany(byteses ...[]byte) (out []byte) {
 	return out
 }
 
-// TsAndChainIdKey returns the key with the following format:
-// bytePrefix | len(timestamp) | timestamp | chainID
-func TsAndChainIdKey(prefix byte, timestamp time.Time, chainID string) []byte {
-	timeBz := sdk.FormatTimeBytes(timestamp)
-	timeBzL := len(timeBz)
-
-	return AppendMany(
-		// Append the prefix
-		[]byte{prefix},
-		// Append the time length
-		sdk.Uint64ToBigEndian(uint64(timeBzL)),
-		// Append the time bytes
-		timeBz,
-		// Append the chainId
-		[]byte(chainID),
-	)
-}
-
-// ParseTsAndChainIdKey returns the time and chain ID for a TsAndChainId key
-func ParseTsAndChainIdKey(prefix byte, bz []byte) (time.Time, string, error) {
-	expectedPrefix := []byte{prefix}
-	prefixL := len(expectedPrefix)
-	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
-		return time.Time{}, "", fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
-	}
-
-	timeBzL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
-	timestamp, err := sdk.ParseTimeBytes(bz[prefixL+8 : prefixL+8+int(timeBzL)])
-	if err != nil {
-		return time.Time{}, "", err
-	}
-
-	chainID := string(bz[prefixL+8+int(timeBzL):])
-	return timestamp, chainID, nil
-}
-
 // ChainIdAndTsKey returns the key with the following format:
 // bytePrefix | len(chainID) | chainID | timestamp
 func ChainIdAndTsKey(prefix byte, chainID string, timestamp time.Time) []byte {
