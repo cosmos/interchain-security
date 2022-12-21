@@ -37,7 +37,10 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		s.SetupAllCCVChannels()
 		s.setupValidatorPowers()
 
+		providerKeeper := s.providerApp.GetProviderKeeper()
 		providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
+
+		consumer := s.getFirstBundle()
 
 		// Use default params (incl replenish period), but set replenish fraction to tc value.
 		params := providertypes.DefaultParams()
@@ -46,9 +49,9 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 
 		// Elapse a replenish period and check for replenishment, so new param is fully in effect.
 		customCtx := s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
-		s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
+		providerKeeper.CheckForSlashMeterReplenishment(customCtx)
 
-		slashMeter := s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+		slashMeter := providerKeeper.GetSlashMeter(s.providerCtx())
 		s.Require().Equal(tc.expectedMeterBeforeFirstSlash, slashMeter.Int64())
 
 		// Assert that we start out with no jailings
@@ -60,8 +63,11 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Send a slash packet from consumer to provider
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
 		tmVal := s.providerChain.Vals.Validators[0]
-		packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Downtime, 1)
-		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
+		packet, slashData := s.constructSlashPacketFromConsumer(consumer, *tmVal, stakingtypes.Downtime, 1)
+
+		// in the real scenario the VSCTimeoutTimestamp is set when the provider sends a VSCPacket to consumer
+		providerKeeper.SetVscSendTimestamp(s.providerCtx(), consumer.Chain.ChainID, slashData.ValsetUpdateId, customCtx.BlockTime())
+		sendOnConsumerRecvOnProvider(s, consumer.Path, packet)
 
 		// Assert validator 0 is jailed and has no power
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
@@ -71,23 +77,25 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		s.Require().Equal(int64(0), lastValPower)
 
 		// Assert expected slash meter and allowance value
-		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+		slashMeter = providerKeeper.GetSlashMeter(s.providerCtx())
 		s.Require().Equal(tc.expectedMeterAfterFirstSlash, slashMeter.Int64())
 		s.Require().Equal(tc.expectedAllowanceAfterFirstSlash,
-			s.providerApp.GetProviderKeeper().GetSlashMeterAllowance(s.providerCtx()).Int64())
+			providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
 
 		// Now send a second slash packet from consumer to provider for a different validator.
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
 		tmVal = s.providerChain.Vals.Validators[2]
-		packet = s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Downtime, 2)
-		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
+		packet, slashData = s.constructSlashPacketFromConsumer(consumer, *tmVal, stakingtypes.Downtime, 2)
+		// in the real scenario the VSCTimeoutTimestamp is set when the provider sends a VSCPacket to consumer
+		providerKeeper.SetVscSendTimestamp(s.providerCtx(), consumer.Chain.ChainID, slashData.ValsetUpdateId, customCtx.BlockTime())
+		sendOnConsumerRecvOnProvider(s, consumer.Path, packet)
 
 		// Require that slash packet has not been handled
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
 		s.Require().False(vals[2].IsJailed())
 
 		// Assert slash meter value is still the same
-		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+		slashMeter = providerKeeper.GetSlashMeter(s.providerCtx())
 		s.Require().Equal(tc.expectedMeterAfterFirstSlash, slashMeter.Int64())
 
 		// Replenish slash meter until it is positive
@@ -97,9 +105,9 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 			customCtx = s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
 
 			// CheckForSlashMeterReplenishment should replenish meter here.
-			slashMeterBefore := s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
-			s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
-			slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+			slashMeterBefore := providerKeeper.GetSlashMeter(s.providerCtx())
+			providerKeeper.CheckForSlashMeterReplenishment(customCtx)
+			slashMeter = providerKeeper.GetSlashMeter(s.providerCtx())
 			s.Require().True(slashMeter.GT(slashMeterBefore))
 
 			// Check that slash meter is still negative or 0,
@@ -110,7 +118,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		}
 
 		// Meter is positive at this point, and ready to handle the second slash packet.
-		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+		slashMeter = providerKeeper.GetSlashMeter(s.providerCtx())
 		s.Require().True(slashMeter.IsPositive())
 
 		// Assert validator 2 is jailed once pending slash packets are handled in ccv endblocker.
@@ -185,12 +193,13 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 
 		tmVal := s.providerChain.Vals.Validators[idx]
 		valsToSlash = append(valsToSlash, *tmVal)
-		packet := s.constructSlashPacketFromConsumer(
+		packet, slashData := s.constructSlashPacketFromConsumer(
 			*bundle,
 			*tmVal,
 			infractionType,
 			3, // use sequence 3, 1 and 2 are used above.
 		)
+		providerKeeper.SetVscSendTimestamp(s.providerCtx(), bundle.Chain.ChainID, slashData.ValsetUpdateId, s.providerCtx().BlockTime())
 		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
 
 		// Send two trailing VSC matured packets from consumer to provider
@@ -302,7 +311,8 @@ func (s *CCVTestSuite) TestPacketSpam() {
 			infractionType = stakingtypes.DoubleSign
 		}
 		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
-		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum))
+		packet, _ := s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum)
+		packets = append(packets, packet)
 	}
 
 	// Recv 500 packets from consumer to provider in same block
@@ -378,7 +388,8 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 			infractionType = stakingtypes.DoubleSign
 		}
 		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
-		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum))
+		packet, _ := s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum)
+		packets = append(packets, packet)
 	}
 
 	// Recv 500 packets from consumer to provider in same block
@@ -496,7 +507,8 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 
 	// Replenish slash meter with default params and new total voting power.
 	customCtx := s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
-	s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
+	providerKeeper := s.providerApp.GetProviderKeeper()
+	providerKeeper.CheckForSlashMeterReplenishment(customCtx)
 
 	// Assert that we start out with no jailings
 	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
@@ -514,9 +526,18 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	tmval1 := s.providerChain.Vals.Validators[1]
 	tmval2 := s.providerChain.Vals.Validators[2]
 	tmval3 := s.providerChain.Vals.Validators[3]
-	packet1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 1)
-	packet2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2)
-	packet3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3)
+	packet1, data1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 1)
+	packet2, data2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2)
+	packet3, data3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3)
+
+	// set VSCSentTimestamp on provider so packets are not dropped
+	providerKeeper.SetVscSendTimestamp(s.providerCtx(),
+		s.getFirstBundle().Chain.ChainID, data1.ValsetUpdateId, s.providerCtx().BlockTime())
+	providerKeeper.SetVscSendTimestamp(s.providerCtx(),
+		s.getFirstBundle().Chain.ChainID, data2.ValsetUpdateId, s.providerCtx().BlockTime())
+	providerKeeper.SetVscSendTimestamp(s.providerCtx(),
+		s.getFirstBundle().Chain.ChainID, data3.ValsetUpdateId, s.providerCtx().BlockTime())
+
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet1)
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet2)
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet3)
@@ -589,14 +610,13 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 	s.setDefaultValSigningInfo(*tmval2)
 	s.setDefaultValSigningInfo(*tmval3)
 
-	packets := []channeltypes.Packet{
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Downtime, 1),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 4),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.DoubleSign, 5),
-		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.DoubleSign, 6),
-	}
+	p1, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Downtime, 1)
+	p2, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2)
+	p3, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3)
+	p4, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 4)
+	p5, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.DoubleSign, 5)
+	p6, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.DoubleSign, 6)
+	packets := []channeltypes.Packet{p1, p2, p3, p4, p5, p6}
 
 	// Recv and queue all slash packets.
 	for _, packet := range packets {
@@ -645,8 +665,9 @@ func (s CCVTestSuite) TestSlashAllValidators() {
 	// these first 4 packets should jail 100% of the total power.
 	for _, val := range s.providerChain.Vals.Validators {
 		s.setDefaultValSigningInfo(*val)
-		packets = append(packets, s.constructSlashPacketFromConsumer(
-			s.getFirstBundle(), *val, stakingtypes.Downtime, ibcSeqNum))
+		p, _ := s.constructSlashPacketFromConsumer(
+			s.getFirstBundle(), *val, stakingtypes.Downtime, ibcSeqNum)
+		packets = append(packets, p)
 		ibcSeqNum++
 	}
 
@@ -660,8 +681,9 @@ func (s CCVTestSuite) TestSlashAllValidators() {
 			infractionType = stakingtypes.DoubleSign
 		}
 		for i := 0; i < 5; i++ {
-			packets = append(packets, s.constructSlashPacketFromConsumer(
-				s.getFirstBundle(), *val, infractionType, ibcSeqNum))
+			p, _ := s.constructSlashPacketFromConsumer(
+				s.getFirstBundle(), *val, infractionType, ibcSeqNum)
+			packets = append(packets, p)
 			ibcSeqNum++
 		}
 	}

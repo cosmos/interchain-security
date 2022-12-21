@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
@@ -107,20 +108,22 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 
 	// relay all VSC packet from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 2)
-
+	fmt.Println("### 1st relay ###")
 	// expire client to provider
 	expireClient(s, Provider)
 
 	// check that the client to the consumer is active
 	checkClientExpired(s, Consumer, false)
-
+	fmt.Println("EXPIRED")
 	// increment time so that the unbonding period ends on the consumer;
 	// do not try to update the client to the provider since it's expired
 	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerCtx())
 	incrementTimeWithoutUpdate(s, consumerUnbondingPeriod+time.Hour, Provider)
+	fmt.Println("INCREMENT")
 
 	// check that the packets were added to the list of pending data packets
 	consumerPackets := consumerKeeper.GetPendingPackets(s.consumerCtx())
+	fmt.Println("PENDING")
 	s.Require().NotEmpty(consumerPackets)
 	s.Require().Equal(2, len(consumerPackets.GetList()), "unexpected number of pending data packets")
 
@@ -140,9 +143,11 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 
 	// upgrade expired client to the consumer
 	upgradeExpiredClient(s, Provider)
+	fmt.Println("UPGRADE")
 
 	// go to next block to trigger SendPendingDataPackets
 	s.consumerChain.NextBlock()
+	fmt.Println("CONSUMER ADVANCE")
 
 	// check that the list of pending data packets is emptied
 	consumerPackets = consumerKeeper.GetPendingPackets(s.consumerCtx())
@@ -150,7 +155,9 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	s.Require().Equal(0, len(consumerPackets.GetList()), "unexpected number of pending data packets")
 
 	// relay all  packet from consumer to provider
+	fmt.Println("BEFORE RELAY 2")
 	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 4)
+	fmt.Println("RELAY 2")
 
 	// check that everything works
 	// - bond more tokens on provider to change validator powers
@@ -159,10 +166,12 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	s.providerChain.NextBlock()
 	// - relay 1 VSC packet from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 1)
+	fmt.Println("### 3nd relay ###")
 	// - increment time so that the unbonding period ends on the provider
 	incrementTimeByUnbondingPeriod(s, Consumer)
 	// - relay 1 VSCMatured packet from consumer to provider
 	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 1)
+	fmt.Println("### 4th relay ###")
 }
 
 // expireClient expires the client to the `clientTo` chain

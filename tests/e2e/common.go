@@ -411,7 +411,7 @@ func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.
 // constructSlashPacketFromConsumer constructs an IBC packet embedding
 // slash packet data to be sent from consumer to provider
 func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
-	tmVal tmtypes.Validator, infractionType stakingtypes.InfractionType, ibcSeqNum uint64) channeltypes.Packet {
+	tmVal tmtypes.Validator, infractionType stakingtypes.InfractionType, ibcSeqNum uint64) (channeltypes.Packet, ccv.SlashPacketData) {
 
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
@@ -438,7 +438,7 @@ func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.C
 		bundle.Path.EndpointB.ChannelID, // Dst channel
 		clienttypes.Height{},
 		uint64(bundle.GetCtx().BlockTime().Add(ccv.DefaultCCVTimeoutPeriod).UnixNano()),
-	)
+	), data
 }
 
 // constructVSCMaturedPacketFromConsumer constructs an IBC packet embedding

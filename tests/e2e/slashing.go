@@ -91,7 +91,10 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		}
 
 		// Send slash packet from the first consumer chain
-		packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, infractionType, 1)
+		packet, slashData := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, infractionType, 1)
+		// SetVSCSentTimestamp so packet is not dropped during validation in OnRecvSlashPacket
+		providerKeeper.SetVscSendTimestamp(s.providerCtx(), s.getFirstBundle().Chain.ChainID,
+			slashData.ValsetUpdateId, s.providerCtx().BlockTime())
 		err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
 		s.Require().NoError(err)
 
@@ -288,8 +291,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	suite.Require().False(errAck.Success())
 	errAckCast := errAck.(channeltypes.Acknowledgement)
 	suite.Require().Equal(
-		fmt.Sprintf("cannot find infraction height matching the validator update id 0 for chain %s",
-			firstBundle.Chain.ChainID), errAckCast.GetError())
+		fmt.Sprintf("cannot find infraction height error validating slash packet - valsetUpdateId: 0, infraction: %s for chain: %s",
+			packetData.Infraction, firstBundle.Chain.ChainID), errAckCast.GetError())
 
 	// Restore init chain height
 	providerKeeper.SetInitChainHeight(ctx, consumerChainID, initChainHeight)
@@ -300,7 +303,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	suite.Require().False(errAck.Success())
 	errAckCast = errAck.(channeltypes.Acknowledgement)
 	suite.Require().Equal(
-		fmt.Sprintf("invalid infraction type: %s", packetData.Infraction.String()), errAckCast.GetError())
+		fmt.Sprintf("infraction type invalid error validating slash packet - valsetUpdateId: %d, infraction: %s for chain: %s",
+			packetData.ValsetUpdateId, packetData.Infraction, firstBundle.Chain.ChainID), errAckCast.GetError())
 
 	// save current VSC ID
 	vscID := providerKeeper.GetValidatorSetUpdateId(ctx)
@@ -316,8 +320,12 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	suite.Require().False(errAck.Success())
 	errAckCast = errAck.(channeltypes.Acknowledgement)
 	suite.Require().Equal(
-		fmt.Sprintf("cannot find infraction height matching the validator update id %d for chain %s",
-			vscID, firstBundle.Chain.ChainID), errAckCast.GetError())
+		fmt.Sprintf("cannot find infraction height error validating slash packet - valsetUpdateId: %d, infraction: %s for chain: %s",
+			vscID, packetData.Infraction, firstBundle.Chain.ChainID), errAckCast.GetError())
+
+	suite.Require().Equal(
+		fmt.Sprintf("cannot find infraction height error validating slash packet - valsetUpdateId: %d, infraction: %s for chain: %s",
+			vscID, packetData.Infraction, firstBundle.Chain.ChainID), errAckCast.GetError())
 
 	// construct slashing packet with non existing validator
 	slashingPkt := ccv.NewSlashPacketData(
@@ -327,6 +335,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	// Set initial block height for consumer chain
 	providerKeeper.SetInitChainHeight(ctx, consumerChainID, uint64(ctx.BlockHeight()))
+	// SetVSCSentTimestamp so packet is not dropped during validation in OnRecvSlashPacket
+	providerKeeper.SetVscSendTimestamp(ctx, consumerChainID, slashingPkt.ValsetUpdateId, ctx.BlockTime())
 
 	// Expect no error ack if validator does not exist
 	// TODO: this behavior should be changed to return an error ack,
@@ -358,6 +368,8 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	valInfo.Address = sdk.ConsAddress(tmAddr).String()
 	providerSlashingKeeper.SetValidatorSigningInfo(ctx, sdk.ConsAddress(tmAddr), valInfo)
+	// SetVSCSentTimestamp so packet is not dropped during validation in OnRecvSlashPacket
+	providerKeeper.SetVscSendTimestamp(ctx, consumerChainID, slashingPkt.ValsetUpdateId, ctx.BlockTime())
 
 	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
 	suite.Require().False(errAck.Success())
