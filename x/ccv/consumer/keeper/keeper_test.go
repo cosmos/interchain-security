@@ -107,6 +107,8 @@ func TestPacketMaturityTime(t *testing.T) {
 			MaturityTime: nsNow + 10,
 		},
 	}
+	expectedGetAllOrder := []types.MaturingVSCPacket{packets[1], packets[0], packets[2], packets[3]}
+	expectedGetElapsedOrder := []types.MaturingVSCPacket{packets[1], packets[0], packets[2]}
 
 	for _, packet := range packets {
 		ck.SetPacketMaturityTime(ctx, packet.VscId, packet.MaturityTime)
@@ -117,16 +119,10 @@ func TestPacketMaturityTime(t *testing.T) {
 	}
 
 	maturingVSCPackets := ck.GetAllPacketMaturityTimes(ctx)
-	require.Len(t, maturingVSCPackets, len(packets))
-	for _, packet := range packets {
-		require.Contains(t, maturingVSCPackets, packet, "result does not contain '%s'", packet)
-	}
-	require.Equal(t, packets[1], maturingVSCPackets[0])
+	require.Equal(t, expectedGetAllOrder, maturingVSCPackets)
 
 	elapsedMaturingVSCPackets := ck.GetElapsedPacketMaturityTimes(ctx.WithBlockTime(now))
-	require.Len(t, elapsedMaturingVSCPackets, len(packets)-1)
-	require.NotContains(t, elapsedMaturingVSCPackets, packets[3], "result does contain unexpected entry")
-	require.Equal(t, packets[1], elapsedMaturingVSCPackets[0])
+	require.Equal(t, expectedGetElapsedOrder, elapsedMaturingVSCPackets)
 
 	ck.DeletePacketMaturityTimes(ctx, 6)
 	require.Equal(t, uint64(0), ck.GetPacketMaturityTime(ctx, 3))
