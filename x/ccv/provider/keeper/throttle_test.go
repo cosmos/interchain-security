@@ -829,6 +829,115 @@ func TestThrottledPacketData(t *testing.T) {
 	}
 }
 
+func TestGetSlashAndTrailingData(t *testing.T) {
+
+	// Instantiate some data to test against
+	someSlashData := []ccvtypes.SlashPacketData{}
+	for i := 0; i < 10; i++ {
+		someSlashData = append(someSlashData, testkeeper.GetNewSlashPacketData())
+	}
+	someVSCMaturedData := []ccvtypes.VSCMaturedPacketData{}
+	for i := 0; i < 10; i++ {
+		someVSCMaturedData = append(someVSCMaturedData, testkeeper.GetNewVSCMaturedPacketData())
+	}
+
+	testCases := []struct {
+		name                   string
+		dataToQueue            []throttledPacketDataInstance
+		expectedSlashFound     bool
+		expectedSlashData      ccvtypes.SlashPacketData
+		expectedVSCMaturedData []ccvtypes.VSCMaturedPacketData
+		expectedIBCSeqNums     []uint64
+	}{
+		{
+			name:                   "Empty queue",
+			dataToQueue:            []throttledPacketDataInstance{},
+			expectedSlashFound:     false,
+			expectedSlashData:      ccvtypes.SlashPacketData{}, // single zero value returned.
+			expectedVSCMaturedData: []ccvtypes.VSCMaturedPacketData{},
+			expectedIBCSeqNums:     []uint64{},
+		},
+		{
+			name: "Queue only one slash data",
+			dataToQueue: []throttledPacketDataInstance{
+				{IbcSeqNum: 1, Data: someSlashData[0]},
+			},
+			expectedSlashFound:     true,
+			expectedSlashData:      someSlashData[0],
+			expectedVSCMaturedData: []ccvtypes.VSCMaturedPacketData{},
+			expectedIBCSeqNums:     []uint64{1},
+		},
+		{
+			name: "Queue two vsc matured behind slash data",
+			dataToQueue: []throttledPacketDataInstance{
+				{IbcSeqNum: 80, Data: someSlashData[3]},
+				{IbcSeqNum: 82, Data: someVSCMaturedData[0]},
+				{IbcSeqNum: 83, Data: someVSCMaturedData[1]},
+			},
+			expectedSlashFound:     true,
+			expectedSlashData:      someSlashData[3],
+			expectedVSCMaturedData: []ccvtypes.VSCMaturedPacketData{someVSCMaturedData[0], someVSCMaturedData[1]},
+			expectedIBCSeqNums:     []uint64{80, 82, 83},
+		},
+		{
+			name: "Queue two vsc matured behind 4 slash data",
+			dataToQueue: []throttledPacketDataInstance{
+				{IbcSeqNum: 80, Data: someSlashData[1]}, // Only returned value
+				{IbcSeqNum: 82, Data: someSlashData[2]},
+				{IbcSeqNum: 83, Data: someSlashData[3]},
+				{IbcSeqNum: 84, Data: someSlashData[4]},
+				{IbcSeqNum: 85, Data: someVSCMaturedData[1]},
+				{IbcSeqNum: 86, Data: someVSCMaturedData[2]},
+			},
+			expectedSlashFound:     true,
+			expectedSlashData:      someSlashData[1],
+			expectedVSCMaturedData: []ccvtypes.VSCMaturedPacketData{},
+			expectedIBCSeqNums:     []uint64{80},
+		},
+		{
+			name: "Queue vsc matured data behind slash data, ending with another slash data",
+			dataToQueue: []throttledPacketDataInstance{
+				{IbcSeqNum: 47238, Data: someSlashData[1]},
+				{IbcSeqNum: 47239, Data: someVSCMaturedData[0]},
+				{IbcSeqNum: 47240, Data: someVSCMaturedData[1]},
+				{IbcSeqNum: 47241, Data: someVSCMaturedData[2]},
+				{IbcSeqNum: 47242, Data: someVSCMaturedData[3]},
+				{IbcSeqNum: 47243, Data: someSlashData[2]}, // Not returned
+			},
+			expectedSlashFound: true,
+			expectedSlashData:  someSlashData[1],
+			expectedVSCMaturedData: []ccvtypes.VSCMaturedPacketData{
+				someVSCMaturedData[0], someVSCMaturedData[1], someVSCMaturedData[2], someVSCMaturedData[3],
+			},
+			expectedIBCSeqNums: []uint64{47238, 47239, 47240, 47241, 47242},
+		},
+	}
+
+	for _, tc := range testCases {
+
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
+		providerKeeper.SetParams(ctx, providertypes.DefaultParams())
+
+		// Queue a slash and vsc matured packet data for some random chain.
+		// These values should never be returned.
+		providerKeeper.QueueThrottledSlashPacketData(ctx, "some-rando-chain", 77, testkeeper.GetNewSlashPacketData())
+		providerKeeper.QueueThrottledVSCMaturedPacketData(ctx, "some-rando-chain", 97, testkeeper.GetNewVSCMaturedPacketData())
+
+		// Queue the data to test
+		for _, dataInstance := range tc.dataToQueue {
+			providerKeeper.QueueThrottledPacketData(ctx, "chain-49", dataInstance.IbcSeqNum, dataInstance.Data)
+		}
+
+		// Retrieve the data, and assert that it is correct
+		slashFound, slashData, vscMaturedData, ibcSeqNums := providerKeeper.GetSlashAndTrailingData(ctx, "chain-49")
+		require.Equal(t, tc.expectedSlashFound, slashFound, tc.name)
+		require.Equal(t, tc.expectedSlashData, slashData, tc.name)
+		require.Equal(t, tc.expectedVSCMaturedData, vscMaturedData, tc.name)
+		require.Equal(t, tc.expectedIBCSeqNums, ibcSeqNums, tc.name)
+	}
+}
+
 // TestDeleteThrottledPacketDataForConsumer tests the DeleteThrottledPacketDataForConsumer method.
 func TestDeleteThrottledPacketDataForConsumer(t *testing.T) {
 
