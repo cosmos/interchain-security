@@ -277,43 +277,43 @@ func TestMaturedUnbondingOps(t *testing.T) {
 }
 
 func TestInitTimeoutTimestamp(t *testing.T) {
-	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	tc := []struct {
-		chainID  string
-		expected uint64
-	}{
-		// ordered alphabetically - descending
-		{expected: 5, chainID: "z-chain"},
-		{expected: 12, chainID: "b-chain"},
-		{expected: 10, chainID: "a-chain"},
-	}
+	now := time.Now().UTC()
+	nsNow := uint64(now.UnixNano())
+	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
+	timestamps := []uint64{nsNow, nsNow + 10, nsNow - 10, nsNow}
+	require.Len(t, timestamps, len(chainIDs))
 
-	_, found := providerKeeper.GetInitTimeoutTimestamp(ctx, tc[0].chainID)
+	expectedGetAllOrder := []types.InitTimeoutTimestamp{}
+	for i, chainID := range chainIDs {
+		expectedGetAllOrder = append(expectedGetAllOrder, types.InitTimeoutTimestamp{ChainId: chainID, Timestamp: timestamps[i]})
+	}
+	// sorting by ChainId
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].ChainId < expectedGetAllOrder[j].ChainId
+	})
+
+	_, found := pk.GetInitTimeoutTimestamp(ctx, chainIDs[0])
 	require.False(t, found)
 
-	providerKeeper.SetInitTimeoutTimestamp(ctx, tc[0].chainID, tc[0].expected)
-	providerKeeper.SetInitTimeoutTimestamp(ctx, tc[1].chainID, tc[1].expected)
-	providerKeeper.SetInitTimeoutTimestamp(ctx, tc[2].chainID, tc[2].expected)
-
-	i := 2
-	// store is iterated in alphabetical ascending order
-	// not in the order of insertion
-	for _, initTimeoutTimestamp := range providerKeeper.GetAllInitTimeoutTimestamps(ctx) {
-		require.Equal(t, initTimeoutTimestamp.ChainId, tc[i].chainID)
-		require.Equal(t, initTimeoutTimestamp.Timestamp, tc[i].expected)
-		i--
+	for i, chainID := range chainIDs {
+		pk.SetInitTimeoutTimestamp(ctx, chainID, timestamps[i])
 	}
 
-	for _, tc := range tc {
-		ts, found := providerKeeper.GetInitTimeoutTimestamp(ctx, tc.chainID)
+	for _, chainID := range chainIDs {
+		_, found := pk.GetInitTimeoutTimestamp(ctx, chainID)
 		require.True(t, found)
-		require.Equal(t, tc.expected, ts)
 	}
 
-	providerKeeper.DeleteInitTimeoutTimestamp(ctx, tc[1].chainID)
-	_, found = providerKeeper.GetInitTimeoutTimestamp(ctx, tc[1].chainID)
+	// iterate and check all results are returned in the expected order
+	result := pk.GetAllInitTimeoutTimestamps(ctx)
+	require.Len(t, result, len(chainIDs))
+	require.Equal(t, result, expectedGetAllOrder)
+
+	pk.DeleteInitTimeoutTimestamp(ctx, chainIDs[0])
+	_, found = pk.GetInitTimeoutTimestamp(ctx, chainIDs[0])
 	require.False(t, found)
 }
 

@@ -135,6 +135,7 @@ func TestPacketMaturityTime(t *testing.T) {
 	}
 
 	maturingVSCPackets := ck.GetAllPacketMaturityTimes(ctx)
+	require.Len(t, maturingVSCPackets, len(packets))
 	require.Equal(t, expectedGetAllOrder, maturingVSCPackets)
 
 	elapsedMaturingVSCPackets := ck.GetElapsedPacketMaturityTimes(ctx.WithBlockTime(now))
@@ -423,7 +424,7 @@ func TestGetAllOutstandingDowntimes(t *testing.T) {
 		ck.SetOutstandingDowntime(ctx, addr)
 	}
 
-	// iterate and check all results are returned
+	// iterate and check all results are returned in the expected order
 	result := ck.GetAllOutstandingDowntimes(ctx)
 	require.Len(t, result, len(addresses))
 	require.Equal(t, result, expectedGetAllOrder)
