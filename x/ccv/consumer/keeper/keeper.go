@@ -207,7 +207,7 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 }
 
 // GetElapsedPacketMaturityTimes returns a slice of already elapsed PacketMaturityTimes, sorted by vscIDs,
-// i.e., the slide contains the IDs of the matured VSCPackets
+// i.e., the slice contains the IDs of the matured VSCPackets
 func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacket []consumertypes.MaturingVSCPacket) {
 	currentTime := uint64(ctx.BlockTime().UnixNano())
 	store := ctx.KVStore(k.storeKey)
