@@ -45,7 +45,7 @@ Inspect the [Makefile](./Makefile) if curious.
 
 ## Testing
 
-See [Testing wiki page](https://github.com/cosmos/interchain-security/wiki/Testing).
+See [testing docs](./docs/testing.md).
 
 ## Learn more
 
