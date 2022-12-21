@@ -282,38 +282,50 @@ func TestInitTimeoutTimestamp(t *testing.T) {
 
 	now := time.Now().UTC()
 	nsNow := uint64(now.UnixNano())
-	chainIDs := []string{"chain-2", "chain-1", "chain-4", "chain-3"}
-	timestamps := []uint64{nsNow, nsNow + 10, nsNow - 10, nsNow}
-	require.Len(t, timestamps, len(chainIDs))
-
-	expectedGetAllOrder := []types.InitTimeoutTimestamp{}
-	for i, chainID := range chainIDs {
-		expectedGetAllOrder = append(expectedGetAllOrder, types.InitTimeoutTimestamp{ChainId: chainID, Timestamp: timestamps[i]})
+	timeoutTimestamps := []types.InitTimeoutTimestamp{
+		{
+			ChainId:   "chain-2",
+			Timestamp: nsNow,
+		},
+		{
+			ChainId:   "chain-1",
+			Timestamp: nsNow + 10,
+		},
+		{
+			ChainId:   "chain-4",
+			Timestamp: nsNow - 10,
+		},
+		{
+			ChainId:   "chain-3",
+			Timestamp: nsNow,
+		},
 	}
+
+	expectedGetAllOrder := timeoutTimestamps
 	// sorting by ChainId
 	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
 		return expectedGetAllOrder[i].ChainId < expectedGetAllOrder[j].ChainId
 	})
 
-	_, found := pk.GetInitTimeoutTimestamp(ctx, chainIDs[0])
+	_, found := pk.GetInitTimeoutTimestamp(ctx, timeoutTimestamps[0].ChainId)
 	require.False(t, found)
 
-	for i, chainID := range chainIDs {
-		pk.SetInitTimeoutTimestamp(ctx, chainID, timestamps[i])
+	for _, tt := range timeoutTimestamps {
+		pk.SetInitTimeoutTimestamp(ctx, tt.ChainId, tt.Timestamp)
 	}
 
-	for _, chainID := range chainIDs {
-		_, found := pk.GetInitTimeoutTimestamp(ctx, chainID)
+	for _, tt := range timeoutTimestamps {
+		_, found := pk.GetInitTimeoutTimestamp(ctx, tt.ChainId)
 		require.True(t, found)
 	}
 
 	// iterate and check all results are returned in the expected order
 	result := pk.GetAllInitTimeoutTimestamps(ctx)
-	require.Len(t, result, len(chainIDs))
+	require.Len(t, result, len(timeoutTimestamps))
 	require.Equal(t, result, expectedGetAllOrder)
 
-	pk.DeleteInitTimeoutTimestamp(ctx, chainIDs[0])
-	_, found = pk.GetInitTimeoutTimestamp(ctx, chainIDs[0])
+	pk.DeleteInitTimeoutTimestamp(ctx, timeoutTimestamps[0].ChainId)
+	_, found = pk.GetInitTimeoutTimestamp(ctx, timeoutTimestamps[0].ChainId)
 	require.False(t, found)
 }
 

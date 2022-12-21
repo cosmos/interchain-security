@@ -171,19 +171,32 @@ func InitTimeoutTimestampKey(chainID string) []byte {
 	return append([]byte{InitTimeoutTimestampBytePrefix}, []byte(chainID)...)
 }
 
-// PendingCAPKey returns the key under which a pending consumer addition proposal is stored
+// PendingCAPKey returns the key under which a pending consumer addition proposal is stored.
+// The key has the following format: PendingCAPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCAPKey(timestamp time.Time, chainID string) []byte {
-	return TsAndChainIdKey(PendingCAPBytePrefix, timestamp, chainID)
+	ts := uint64(timestamp.UTC().UnixNano())
+	return AppendMany(
+		// Append the prefix
+		[]byte{PendingCAPBytePrefix},
+		// Append the time
+		sdk.Uint64ToBigEndian(ts),
+		// Append the chainId
+		[]byte(chainID),
+	)
 }
 
-// PendingCRPKey returns the key under which pending consumer removal proposals are stored
+// PendingCRPKey returns the key under which pending consumer removal proposals are stored.
+// The key has the following format: PendingCRPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCRPKey(timestamp time.Time, chainID string) []byte {
-	return TsAndChainIdKey(PendingCRPBytePrefix, timestamp, chainID)
-}
-
-// ParsePendingCRPKey returns the time and chain ID for a pending consumer removal proposal key or an error if unparseable
-func ParsePendingCRPKey(bz []byte) (time.Time, string, error) {
-	return ParseTsAndChainIdKey(PendingCRPBytePrefix, bz)
+	ts := uint64(timestamp.UTC().UnixNano())
+	return AppendMany(
+		// Append the prefix
+		[]byte{PendingCRPBytePrefix},
+		// Append the time
+		sdk.Uint64ToBigEndian(ts),
+		// Append the chainId
+		[]byte(chainID),
+	)
 }
 
 // UnbondingOpIndexKey returns an unbonding op index key
@@ -330,40 +343,12 @@ func ParseGlobalSlashEntryKey(bz []byte) (
 	return recvTime, chainID, ibcSeqNum
 }
 
-// TsAndChainIdKey returns the key with the following format:
-// bytePrefix | len(timestamp) | timestamp | chainID
-func TsAndChainIdKey(prefix byte, timestamp time.Time, chainID string) []byte {
-	timeBz := sdk.FormatTimeBytes(timestamp)
-	timeBzL := len(timeBz)
-
-	return utils.AppendMany(
-		// Append the prefix
-		[]byte{prefix},
-		// Append the time length
-		sdk.Uint64ToBigEndian(uint64(timeBzL)),
-		// Append the time bytes
-		timeBz,
-		// Append the chainId
-		[]byte(chainID),
-	)
-}
-
-// ParseTsAndChainIdKey returns the time and chain ID for a TsAndChainId key
-func ParseTsAndChainIdKey(prefix byte, bz []byte) (time.Time, string, error) {
-	expectedPrefix := []byte{prefix}
-	prefixL := len(expectedPrefix)
-	if prefix := bz[:prefixL]; !bytes.Equal(prefix, expectedPrefix) {
-		return time.Time{}, "", fmt.Errorf("invalid prefix; expected: %X, got: %X", expectedPrefix, prefix)
+// AppendMany appends a variable number of byte slices together
+func AppendMany(byteses ...[]byte) (out []byte) {
+	for _, bytes := range byteses {
+		out = append(out, bytes...)
 	}
-
-	timeBzL := sdk.BigEndianToUint64(bz[prefixL : prefixL+8])
-	timestamp, err := sdk.ParseTimeBytes(bz[prefixL+8 : prefixL+8+int(timeBzL)])
-	if err != nil {
-		return time.Time{}, "", err
-	}
-
-	chainID := string(bz[prefixL+8+int(timeBzL):])
-	return timestamp, chainID, nil
+	return out
 }
 
 // ChainIdAndTsKey returns the key with the following format:
