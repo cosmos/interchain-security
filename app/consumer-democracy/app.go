@@ -69,7 +69,7 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
-	ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -167,7 +167,7 @@ var (
 	_ simapp.App              = (*App)(nil)
 	_ servertypes.Application = (*App)(nil)
 	_ cosmoscmd.CosmosApp     = (*App)(nil)
-	_ ibctesting.TestingApp   = (*App)(nil)
+	//_ ibctesting.TestingApp   = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
