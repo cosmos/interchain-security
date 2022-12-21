@@ -254,40 +254,60 @@ func TestConsumerAddrsToPruneCRUD(t *testing.T) {
 }
 
 func TestGetAllConsumerAddrsToPrune(t *testing.T) {
-
-	testAssignments := []types.ConsumerAddrsToPrune{
-		{
-			ChainId:       "chain-1",
-			VscId:         2,
-			ConsumerAddrs: &types.AddressList{Addresses: [][]byte{sdk.ConsAddress([]byte("consumer-2"))}},
-		},
-		{
-			ChainId:       "chain-1",
-			VscId:         1,
-			ConsumerAddrs: &types.AddressList{Addresses: [][]byte{sdk.ConsAddress([]byte("consumer-1"))}},
-		},
-		{
-			ChainId:       "chain-2",
-			VscId:         1,
-			ConsumerAddrs: &types.AddressList{Addresses: [][]byte{sdk.ConsAddress([]byte("consumer-1"))}},
-		},
-	}
-
-	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	rand.Seed(time.Now().Unix())
+	chainIDs := []string{"consumer-1", "consumer-2", "consumer-3"}
+	numAssignments := 10
+	testAssignments := []types.ConsumerAddrsToPrune{}
+	for i := 0; i < numAssignments; i++ {
+		consumerAddresses := types.AddressList{}
+		for j := 0; j < 2*(i+1); j++ {
+			consumerAddresses.Addresses = append(consumerAddresses.Addresses,
+				cryptotestutil.NewCryptoIdentityFromIntSeed(i*j).SDKConsAddress())
+		}
+		testAssignments = append(testAssignments,
+			types.ConsumerAddrsToPrune{
+				ChainId:       chainIDs[rand.Intn(len(chainIDs))],
+				VscId:         rand.Uint64(),
+				ConsumerAddrs: &consumerAddresses,
+			},
+		)
+	}
+	// select a chainID with more than two assignments
+	var chainID string
+	for i := range chainIDs {
+		chainID = chainIDs[i]
+		count := 0
+		for _, assignment := range testAssignments {
+			if assignment.ChainId == chainID {
+				count++
+			}
+		}
+		if count > 2 {
+			break
+		}
+	}
+	expectedGetAllOrder := []types.ConsumerAddrsToPrune{}
 	for _, assignment := range testAssignments {
-		keeper.AppendConsumerAddrsToPrune(ctx, assignment.ChainId, assignment.VscId, assignment.ConsumerAddrs.Addresses[0])
+		if assignment.ChainId == chainID {
+			expectedGetAllOrder = append(expectedGetAllOrder, assignment)
+		}
+	}
+	// sorting by ConsumerAddrsToPrune.VscId
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].VscId < expectedGetAllOrder[j].VscId
+	})
+
+	for _, assignment := range testAssignments {
+		for _, addr := range assignment.ConsumerAddrs.Addresses {
+			pk.AppendConsumerAddrsToPrune(ctx, assignment.ChainId, assignment.VscId, addr)
+		}
 	}
 
-	result := keeper.GetAllConsumerAddrsToPrune(ctx, testAssignments[0].ChainId)
-	require.Len(t, result, 2, "incorrect result len - should be %d, got %d", 2, len(result))
-	require.Equal(t, testAssignments[1], result[0], "mismatched key assignment replacement")
-	require.Equal(t, testAssignments[0], result[1], "mismatched key assignment replacement")
-
-	result = keeper.GetAllConsumerAddrsToPrune(ctx, testAssignments[2].ChainId)
-	require.Len(t, result, 1, "incorrect result len - should be %d, got %d", 1, len(result))
-	require.Equal(t, testAssignments[2], result[0], "mismatched key assignment replacement in iterate one")
+	result := pk.GetAllConsumerAddrsToPrune(ctx, chainID)
+	require.Equal(t, expectedGetAllOrder, result)
 }
 
 // checkCorrectPruningProperty checks that the pruning property is correct for a given
