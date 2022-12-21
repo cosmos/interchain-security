@@ -273,10 +273,7 @@ func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscId uint64, maturityTim
 func (k Keeper) PacketMaturityTimeExists(ctx sdk.Context, vscId uint64, maturityTime time.Time) bool {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PacketMaturityTimeKey(vscId, maturityTime))
-	if bz == nil {
-		return false
-	}
-	return true
+	return bz != nil
 }
 
 // DeletePacketMaturityTimes deletes the packet maturity time for a given vscId and maturityTime
