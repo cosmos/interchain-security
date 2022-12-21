@@ -322,7 +322,7 @@ func TestVscSendTimestamp(t *testing.T) {
 	providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	now := ctx.BlockTime()
+	now := time.Now().UTC()
 
 	testCases := []struct {
 		chainID string
@@ -331,36 +331,46 @@ func TestVscSendTimestamp(t *testing.T) {
 	}{
 		{chainID: "chain", ts: now.Add(2 * time.Hour), vscID: 2},
 		{chainID: "chain", ts: now.Add(time.Hour), vscID: 1},
+		{chainID: "chain", ts: now.Add(time.Hour), vscID: 3},
+		// this is not possible since the ts is the timestamp of sending,
+		// which means it must be in the same order as vscIDs,
+		// but it still worth testing
+		{chainID: "chain", ts: now.Add(-time.Hour), vscID: 4},
 		{chainID: "chain1", ts: now.Add(time.Hour), vscID: 1},
 		{chainID: "chain2", ts: now.Add(time.Hour), vscID: 1},
 	}
+	chainID := testCases[0].chainID
+	expectedGetAllOrder := []types.VscSendTimestamp{}
+	for _, tc := range testCases {
+		if tc.chainID == chainID {
+			expectedGetAllOrder = append(expectedGetAllOrder, types.VscSendTimestamp{VscId: tc.vscID, Timestamp: tc.ts})
+		}
+	}
+	// sorting by vscID
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].VscId < expectedGetAllOrder[j].VscId
+	})
 
-	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID))
+	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, chainID))
 
 	for _, tc := range testCases {
 		providerKeeper.SetVscSendTimestamp(ctx, tc.chainID, tc.vscID, tc.ts)
 	}
 
-	vscSendTimestamps := providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID)
-	require.Len(t, vscSendTimestamps, 2)
-	i := 1
-	for _, vscSendTimestamp := range vscSendTimestamps {
-		require.Equal(t, vscSendTimestamp.VscId, testCases[i].vscID)
-		require.Equal(t, vscSendTimestamp.Timestamp, testCases[i].ts)
-		i--
-	}
+	// iterate and check all results are returned in the expected order
+	vscSendTimestamps := providerKeeper.GetAllVscSendTimestamps(ctx, chainID)
+	require.Equal(t, expectedGetAllOrder, vscSendTimestamps)
 
-	vscSendTimestamp, found := providerKeeper.GetFirstVscSendTimestamp(ctx, testCases[0].chainID)
+	vscSendTimestamp, found := providerKeeper.GetFirstVscSendTimestamp(ctx, chainID)
 	require.True(t, found)
-	require.Equal(t, vscSendTimestamp.VscId, testCases[1].vscID)
-	require.Equal(t, vscSendTimestamp.Timestamp, testCases[1].ts)
+	require.Equal(t, vscSendTimestamp, expectedGetAllOrder[0])
 
 	// delete VSC send timestamps
-	for _, vscSendTimestamp := range providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID) {
-		providerKeeper.DeleteVscSendTimestamp(ctx, testCases[0].chainID, vscSendTimestamp.VscId)
+	for _, vscSendTimestamp := range providerKeeper.GetAllVscSendTimestamps(ctx, chainID) {
+		providerKeeper.DeleteVscSendTimestamp(ctx, chainID, vscSendTimestamp.VscId)
 	}
 
-	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, testCases[0].chainID))
+	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, chainID))
 }
 
 // TestGetAllConsumerChains tests GetAllConsumerChains behaviour correctness
