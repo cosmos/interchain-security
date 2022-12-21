@@ -198,44 +198,39 @@ func TestKeyAssignmentReplacementCRUD(t *testing.T) {
 }
 
 func TestGetAllKeyAssignmentReplacements(t *testing.T) {
-	chainID := "consumer"
-	tmpkey1 := cryptotestutil.NewCryptoIdentityFromIntSeed(1).TMProtoCryptoPublicKey()
-	tmpkey2 := cryptotestutil.NewCryptoIdentityFromIntSeed(2).TMProtoCryptoPublicKey()
-	tmpkey3 := cryptotestutil.NewCryptoIdentityFromIntSeed(3).TMProtoCryptoPublicKey()
-	testAssignments := []types.KeyAssignmentReplacement{
-		{
-			ProviderAddr: sdk.ConsAddress([]byte("validator-1")),
-			Power:        100,
-			PrevCKey:     &tmpkey1,
-		},
-		{
-			ProviderAddr: sdk.ConsAddress([]byte("validator-2")),
-			Power:        100,
-			PrevCKey:     &tmpkey2,
-		},
-		{
-			ProviderAddr: sdk.ConsAddress([]byte("validator-3")),
-			Power:        100,
-			PrevCKey:     &tmpkey3,
-		},
-	}
-
-	keeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
+	chainID := "consumer-1"
+
+	rand.Seed(time.Now().Unix())
+	numAssignments := 10
+	testAssignments := []types.KeyAssignmentReplacement{}
+	for i := 0; i < numAssignments; i++ {
+		consumerKey := cryptotestutil.NewCryptoIdentityFromIntSeed(i).TMProtoCryptoPublicKey()
+		providerAddr := cryptotestutil.NewCryptoIdentityFromIntSeed(numAssignments + i).SDKConsAddress()
+		testAssignments = append(testAssignments,
+			types.KeyAssignmentReplacement{
+				ProviderAddr: providerAddr,
+				PrevCKey:     &consumerKey,
+				Power:        rand.Int63(),
+			},
+		)
+	}
+	expectedGetAllOrder := testAssignments
+	// sorting by KeyAssignmentReplacement.ProviderAddr
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return bytes.Compare(expectedGetAllOrder[i].ProviderAddr, expectedGetAllOrder[j].ProviderAddr) == -1
+	})
+
+	pk.SetKeyAssignmentReplacement(ctx, "consumer-2", testAssignments[0].ProviderAddr, *testAssignments[0].PrevCKey, testAssignments[0].Power)
 	for _, assignment := range testAssignments {
-		keeper.SetKeyAssignmentReplacement(ctx, chainID, assignment.ProviderAddr, *assignment.PrevCKey, assignment.Power)
+		pk.SetKeyAssignmentReplacement(ctx, chainID, assignment.ProviderAddr, *assignment.PrevCKey, assignment.Power)
 	}
 
-	result := keeper.GetAllKeyAssignmentReplacements(ctx, chainID)
-	require.Len(t, result, len(testAssignments), "incorrect result len - should be %d, got %d", len(testAssignments), len(result))
-
-	for i, res := range result {
-		require.Equal(t, testAssignments[i], res, "mismatched key assignment replacement in case %d", i)
-	}
-
-	result = keeper.GetAllKeyAssignmentReplacements(ctx, chainID)
-	require.Equal(t, testAssignments[0], result[0], "mismatched key assignment replacement in iterate one")
+	result := pk.GetAllKeyAssignmentReplacements(ctx, chainID)
+	require.Len(t, result, len(testAssignments))
+	require.Equal(t, expectedGetAllOrder, result)
 }
 
 func TestConsumerAddrsToPruneCRUD(t *testing.T) {
