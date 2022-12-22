@@ -40,15 +40,14 @@ func (k Keeper) QueryConsumerChains(goCtx context.Context, req *types.QueryConsu
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// convert to array of pointers
 	chains := []*types.Chain{}
-	cb := func(ctx sdk.Context, chainID, clientID string) (stop bool) {
-		chains = append(chains, &types.Chain{
-			ChainId:  chainID,
-			ClientId: clientID,
-		})
-		return false // do not stop the iteration
+	for _, chain := range k.GetAllConsumerChains(ctx) {
+		// prevent implicit memory aliasing
+		c := chain
+		chains = append(chains, &c)
 	}
-	k.IterateConsumerChains(ctx, cb)
 
 	return &types.QueryConsumerChainsResponse{Chains: chains}, nil
 }
@@ -59,9 +58,15 @@ func (k Keeper) QueryConsumerChainStarts(goCtx context.Context, req *types.Query
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	props := k.GetAllConsumerAdditionProps(ctx)
+	var props []*types.ConsumerAdditionProposal
 
-	return &types.QueryConsumerChainStartProposalsResponse{Proposals: &props}, nil
+	for _, prop := range k.GetAllPendingConsumerAdditionProps(ctx) {
+		// prevent implicit memory aliasing
+		p := prop
+		props = append(props, &p)
+	}
+
+	return &types.QueryConsumerChainStartProposalsResponse{Proposals: &types.ConsumerAdditionProposals{Pending: props}}, nil
 }
 
 func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryConsumerChainStopProposalsRequest) (*types.QueryConsumerChainStopProposalsResponse, error) {
@@ -70,9 +75,14 @@ func (k Keeper) QueryConsumerChainStops(goCtx context.Context, req *types.QueryC
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	props := k.GetAllConsumerRemovalProps(ctx)
+	var props []*types.ConsumerRemovalProposal
+	for _, prop := range k.GetAllPendingConsumerRemovalProps(ctx) {
+		// prevent implicit memory aliasing
+		p := prop
+		props = append(props, &p)
+	}
 
-	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &props}, nil
+	return &types.QueryConsumerChainStopProposalsResponse{Proposals: &types.ConsumerRemovalProposals{Pending: props}}, nil
 }
 
 func (k Keeper) QueryValidatorConsumerAddr(goCtx context.Context, req *types.QueryValidatorConsumerAddrRequest) (*types.QueryValidatorConsumerAddrResponse, error) {

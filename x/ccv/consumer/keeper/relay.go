@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"encoding/binary"
 	"fmt"
 	"strconv"
 
@@ -86,46 +85,36 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 // operations that resulted in validator updates included in that VSC have matured on
 // the consumer chain.
 func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
-	store := ctx.KVStore(k.storeKey)
-	maturityIterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
-	defer maturityIterator.Close()
-
 	currentTime := uint64(ctx.BlockTime().UnixNano())
 
-	maturedVscIds := []uint64{}
-	for maturityIterator.Valid() {
-		vscId := types.IdFromPacketMaturityTimeKey(maturityIterator.Key())
-		if currentTime >= binary.BigEndian.Uint64(maturityIterator.Value()) {
-			// construct validator set change packet data
-			vscPacket := ccv.NewVSCMaturedPacketData(vscId)
-
-			// append VSCMatured packet to pending packets
-			// sending packets is attempted each EndBlock
-			// unsent packets remain in the queue until sent
-			k.AppendPendingPacket(ctx, types.ConsumerPacket{
-				Type: types.VscMaturedPacket,
-				Data: vscPacket.GetBytes(),
-			})
-
-			ctx.EventManager().EmitEvent(
-				sdk.NewEvent(
-					ccv.EventTypeVSCMatured,
-					sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-					sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
-					sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
-					sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(vscId))),
-					sdk.NewAttribute(ccv.AttributeTimestamp, strconv.Itoa(int(currentTime))),
-				),
-			)
-
-			maturedVscIds = append(maturedVscIds, vscId)
-		} else {
-			break
+	for _, maturityTime := range k.GetElapsedPacketMaturityTimes(ctx) {
+		if currentTime < maturityTime.MaturityTime {
+			panic(fmt.Errorf("maturity time %d is greater than current time %d", maturityTime.MaturityTime, currentTime))
 		}
-		maturityIterator.Next()
-	}
+		// construct validator set change packet data
+		vscPacket := ccv.NewVSCMaturedPacketData(maturityTime.VscId)
 
-	k.DeletePacketMaturityTimes(ctx, maturedVscIds...)
+		// append VSCMatured packet to pending packets
+		// sending packets is attempted each EndBlock
+		// unsent packets remain in the queue until sent
+		k.AppendPendingPacket(ctx, ccv.ConsumerPacketData{
+			Type: ccv.VscMaturedPacket,
+			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscPacket},
+		})
+
+		k.DeletePacketMaturityTimes(ctx, uint64(maturityTime.VscId))
+
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				ccv.EventTypeVSCMatured,
+				sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+				sdk.NewAttribute(ccv.AttributeChainID, ctx.ChainID()),
+				sdk.NewAttribute(ccv.AttributeConsumerHeight, strconv.Itoa(int(ctx.BlockHeight()))),
+				sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(maturityTime.VscId))),
+				sdk.NewAttribute(ccv.AttributeTimestamp, strconv.Itoa(int(currentTime))),
+			),
+		)
+	}
 }
 
 // QueueSlashPacket appends a slash packet containing the given validator data and slashing info to queue.
@@ -149,9 +138,11 @@ func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, vals
 
 	// append the Slash packet data to pending data packets
 	// to be sent once the CCV channel is established
-	k.AppendPendingPacket(ctx, types.ConsumerPacket{
-		Type: types.SlashPacket,
-		Data: slashPacket.GetBytes(),
+	k.AppendPendingPacket(ctx, ccv.ConsumerPacketData{
+		Type: ccv.SlashPacket,
+		Data: &ccv.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: slashPacket,
+		},
 	})
 
 	ctx.EventManager().EmitEvent(
@@ -182,6 +173,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 
 	pending := k.GetPendingPackets(ctx)
 	for _, p := range pending.GetList() {
+
 		// send packet over IBC
 		err := utils.SendIBCPacket(
 			ctx,
@@ -189,7 +181,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			k.channelKeeper,
 			channelID,          // source channel id
 			ccv.ConsumerPortID, // source port id
-			p.Data,
+			p.GetBytes(),
 			k.GetCCVTimeoutPeriod(ctx),
 		)
 

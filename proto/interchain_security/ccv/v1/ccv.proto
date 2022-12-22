@@ -32,13 +32,6 @@ message ValidatorSetChangePackets {
   ];
 }
 
-
-message UnbondingOp {
-  uint64 id = 1;
-  // consumer chains that are still unbonding
-  repeated string unbonding_consumer_chains = 2;
-}
-
 // This packet is sent from the consumer chain to the provider chain
 // to notify that a VSC packet reached maturity on the consumer chain.
 message VSCMaturedPacketData {
@@ -60,12 +53,37 @@ message SlashPacketData {
   cosmos.staking.v1beta1.InfractionType infraction = 3;
 }
 
-// UnbondingOpsIndex defines a list of unbonding operation ids.
-message UnbondingOpsIndex {
-  repeated uint64 ids = 1;
-}
-
 // MaturedUnbondingOps defines a list of ids corresponding to ids of matured unbonding operations. 
 message MaturedUnbondingOps {
   repeated uint64 ids = 1;
+}
+
+// ConsumerPacketData contains a consumer packet data and a type tag
+message ConsumerPacketData {
+  ConsumerPacketDataType type = 1; 
+
+  oneof data {
+    SlashPacketData slashPacketData = 2;
+    VSCMaturedPacketData vscMaturedPacketData = 3;
+  }
+}
+
+
+// ConsumerPacketDataList is a list of consumer packet data packets.
+message ConsumerPacketDataList {
+  repeated ConsumerPacketData list = 1
+  [ (gogoproto.nullable) = false ];
+}
+
+
+// ConsumerPacketType indicates interchain security specific packet types.
+enum ConsumerPacketDataType {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // UNSPECIFIED packet type
+  CONSUMER_PACKET_TYPE_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "UnspecifiedPacket"];
+  // Slash packet
+  CONSUMER_PACKET_TYPE_SLASH = 1 [(gogoproto.enumvalue_customname) = "SlashPacket"];
+  // VSCMatured packet
+  CONSUMER_PACKET_TYPE_VSCM = 2 [(gogoproto.enumvalue_customname) = "VscMaturedPacket"];
 }

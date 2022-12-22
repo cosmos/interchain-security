@@ -70,32 +70,6 @@ func getSingleByteKeys() [][]byte {
 	return keys[:i]
 }
 
-// Tests the construction and parsing of TsAndChainId keys
-func TestTsAndChainIdKeyAndParse(t *testing.T) {
-	tests := []struct {
-		prefix    byte
-		timestamp time.Time
-		chainID   string
-	}{
-		{prefix: 0x01, timestamp: time.Now(), chainID: "1"},
-		{prefix: 0x02, timestamp: time.Date(
-			2003, 11, 17, 20, 34, 58, 651387237, time.UTC), chainID: "some other ID"},
-		{prefix: 0x03, timestamp: time.Now().Add(5000 * time.Hour), chainID: "some other other chain ID"},
-	}
-
-	for _, test := range tests {
-		key := providertypes.TsAndChainIdKey(test.prefix, test.timestamp, test.chainID)
-		require.NotEmpty(t, key)
-		// Expected bytes = prefix + time length + time bytes + length of chainID
-		expectedLen := 1 + 8 + len(sdk.FormatTimeBytes(time.Time{})) + len(test.chainID)
-		require.Equal(t, expectedLen, len(key))
-		parsedTime, parsedID, err := providertypes.ParseTsAndChainIdKey(test.prefix, key)
-		require.Equal(t, test.timestamp.UTC(), parsedTime.UTC())
-		require.Equal(t, test.chainID, parsedID)
-		require.NoError(t, err)
-	}
-}
-
 // Tests the construction and parsing of ChainIdAndTs keys
 func TestChainIdAndTsKeyAndParse(t *testing.T) {
 	tests := []struct {

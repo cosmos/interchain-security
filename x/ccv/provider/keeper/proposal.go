@@ -35,10 +35,7 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 		return err
 	}
 
-	err := k.SetPendingConsumerAdditionProp(ctx, p)
-	if err != nil {
-		return err
-	}
+	k.SetPendingConsumerAdditionProp(ctx, p)
 
 	return nil
 }
@@ -127,7 +124,7 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 		return err
 	}
 
-	k.SetPendingConsumerRemovalProp(ctx, p.ChainId, p.StopTime)
+	k.SetPendingConsumerRemovalProp(ctx, p)
 	return nil
 }
 
@@ -159,13 +156,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		k.DeleteChannelToChain(ctx, channelID)
 
 		// delete VSC send timestamps
-		var ids []uint64
-		k.IterateVscSendTimestamps(ctx, chainID, func(vscID uint64, ts time.Time) (stop bool) {
-			ids = append(ids, vscID)
-			return false // do not stop the iteration
-		})
-		for _, vscID := range ids {
-			k.DeleteVscSendTimestamp(ctx, chainID, vscID)
+		for _, vscSendTimestamp := range k.GetAllVscSendTimestamps(ctx, chainID) {
+			k.DeleteVscSendTimestamp(ctx, chainID, vscSendTimestamp.VscId)
 		}
 	}
 
@@ -174,16 +166,13 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeletePendingVSCPackets(ctx, chainID)
 
 	// release unbonding operations
-	var vscIDs []uint64
-	// iterate over the consumer chain's unbonding operation VSC ids
-	k.IterateOverUnbondingOpIndex(ctx, chainID, func(vscID uint64, ids []uint64) (stop bool) {
+	for _, unbondingOpsIndex := range k.GetAllUnbondingOpIndexes(ctx, chainID) {
 		// iterate over the unbonding operations for the current VSC ID
 		var maturedIds []uint64
-		for _, id := range ids {
+		for _, id := range unbondingOpsIndex.UnbondingOpIds {
 			unbondingOp, found := k.GetUnbondingOp(ctx, id)
 			if !found {
-				err = fmt.Errorf("could not find UnbondingOp according to index - id: %d", id)
-				return true // stop the iteration
+				return fmt.Errorf("could not find UnbondingOp according to index - id: %d", id)
 			}
 			// remove consumer chain ID from unbonding op record
 			unbondingOp.UnbondingConsumerChains, _ = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
@@ -199,18 +188,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 			}
 		}
 		k.AppendMaturedUnbondingOps(ctx, maturedIds)
-
-		vscIDs = append(vscIDs, vscID)
-		return false // do not stop the iteration
-	})
-
-	if err != nil {
-		return err
-	}
-
-	// clean up indexes
-	for _, id := range vscIDs {
-		k.DeleteUnbondingOpIndex(ctx, chainID, id)
+		k.DeleteUnbondingOpIndex(ctx, chainID, unbondingOpsIndex.VscId)
 	}
 
 	// Remove any existing throttling related entries from the global queue,
@@ -318,35 +296,38 @@ func (k Keeper) MakeConsumerGenesis(ctx sdk.Context, prop *types.ConsumerAdditio
 	return gen, hash, nil
 }
 
-// SetPendingConsumerAdditionProp stores a pending proposal to create a consumer chain client
-func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, clientInfo *types.ConsumerAdditionProposal) error {
+// SetPendingConsumerAdditionProp stores a pending consumer addition proposal.
+//
+// Note that the pending consumer addition proposals are stored under keys with
+// the following format: PendingCAPBytePrefix | spawnTime | chainID
+// Thus, if multiple consumer addition proposal for the same chain will pass at
+// the same time, then only the last one will be stored.
+func (k Keeper) SetPendingConsumerAdditionProp(ctx sdk.Context, prop *types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
-	bz, err := k.cdc.Marshal(clientInfo)
+	bz, err := prop.Marshal()
 	if err != nil {
-		return err
+		panic(fmt.Errorf("failed to marshal consumer addition proposal: %w", err))
 	}
-
-	store.Set(types.PendingCAPKey(clientInfo.SpawnTime, clientInfo.ChainId), bz)
-	return nil
+	store.Set(types.PendingCAPKey(prop.SpawnTime, prop.ChainId), bz)
 }
 
-// GetPendingConsumerAdditionProp retrieves a pending proposal to create a consumer chain client (by spawn time and chain id)
+// GetPendingConsumerAdditionProp retrieves a pending consumer addition proposal
+// by spawn time and chain id.
+//
+// Note: this method is only used in testing
 func (k Keeper) GetPendingConsumerAdditionProp(ctx sdk.Context, spawnTime time.Time,
 	chainID string) (prop types.ConsumerAdditionProposal, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingCAPKey(spawnTime, chainID))
-	if len(bz) == 0 {
+	if bz == nil {
 		return prop, false
 	}
-	k.cdc.MustUnmarshal(bz, &prop)
+	err := prop.Unmarshal(bz)
+	if err != nil {
+		panic(fmt.Errorf("failed to unmarshal consumer addition proposal: %w", err))
+	}
 
 	return prop, true
-}
-
-// PendingConsumerAdditionPropIterator returns an iterator for iterating through pending consumer addition proposals
-func (k Keeper) PendingConsumerAdditionPropIterator(ctx sdk.Context) sdk.Iterator {
-	store := ctx.KVStore(k.storeKey)
-	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
 }
 
 // BeginBlockInit iterates over the pending consumer addition proposals in order, and creates
@@ -355,7 +336,7 @@ func (k Keeper) PendingConsumerAdditionPropIterator(ctx sdk.Context) sdk.Iterato
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-init1
 // Spec tag:[CCV-PCF-BBLOCK-INIT.1]
 func (k Keeper) BeginBlockInit(ctx sdk.Context) {
-	propsToExecute := k.ConsumerAdditionPropsToExecute(ctx)
+	propsToExecute := k.GetConsumerAdditionPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
 		// create consumer client in a cached context to handle errors
@@ -375,68 +356,54 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 	k.DeletePendingConsumerAdditionProps(ctx, propsToExecute...)
 }
 
-// ConsumerAdditionPropsToExecute iterates over the pending consumer addition proposals
-// and returns an ordered list of proposals to be executed, ie. consumer clients to be created.
+// GetConsumerAdditionPropsToExecute returns the pending consumer addition proposals
+// that are ready to be executed, i.e., consumer clients to be created.
 // A prop is included in the returned list if its proposed spawn time has passed.
 //
 // Note: this method is split out from BeginBlockInit to be easily unit tested.
-func (k Keeper) ConsumerAdditionPropsToExecute(ctx sdk.Context) []types.ConsumerAdditionProposal {
-
-	// store the (to be) executed proposals in order
-	propsToExecute := []types.ConsumerAdditionProposal{}
-
-	iterator := k.PendingConsumerAdditionPropIterator(ctx)
-	defer iterator.Close()
-
-	k.IteratePendingConsumerAdditionProps(ctx, func(spawnTime time.Time, prop types.ConsumerAdditionProposal) (stop bool) {
-		if !ctx.BlockTime().Before(spawnTime) {
-			propsToExecute = append(propsToExecute, prop)
-			return false // do not stop the iteration
-		}
-		return true // stop iteration, proposals are ordered by spawn time, so no additional pending props are ready to act upon
-	})
-
-	return propsToExecute
-}
-
-func (k Keeper) IteratePendingConsumerAdditionProps(
-	ctx sdk.Context,
-	cb func(spawnTime time.Time, prop types.ConsumerAdditionProposal) (stop bool),
-) {
-	iterator := k.PendingConsumerAdditionPropIterator(ctx)
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		key := iterator.Key()
-		spawnTime, _, err := types.ParsePendingCAPKey(key)
-		if err != nil {
-			panic(fmt.Errorf("failed to parse pending client key: %w", err))
-		}
-
-		var prop types.ConsumerAdditionProposal
-		k.cdc.MustUnmarshal(iterator.Value(), &prop)
-
-		stop := cb(spawnTime, prop)
-		if stop {
-			break
-		}
-	}
-}
-
-// GetAllConsumerAdditionProps returns all consumer addition proposals separated into matured and pending.
-func (k Keeper) GetAllConsumerAdditionProps(ctx sdk.Context) types.ConsumerAdditionProposals {
-	props := types.ConsumerAdditionProposals{}
-
+func (k Keeper) GetConsumerAdditionPropsToExecute(ctx sdk.Context) (propsToExecute []types.ConsumerAdditionProposal) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		var prop types.ConsumerAdditionProposal
-		k.cdc.MustUnmarshal(iterator.Value(), &prop)
+		err := prop.Unmarshal(iterator.Value())
+		if err != nil {
+			panic(fmt.Errorf("failed to unmarshal consumer addition proposal: %w", err))
+		}
 
-		props.Pending = append(props.Pending, &prop)
+		if !ctx.BlockTime().Before(prop.SpawnTime) {
+			propsToExecute = append(propsToExecute, prop)
+		} else {
+			break
+		}
 	}
+
+	return propsToExecute
+}
+
+// GetAllPendingConsumerAdditionProps gets all pending consumer addition proposals.
+//
+// Note that the pending consumer addition proposals are stored under keys with the following format:
+// PendingCAPBytePrefix | spawnTime.UnixNano() | chainID
+// Thus, the returned array is in spawnTime order. If two proposals have the same spawnTime,
+// then they are ordered by chainID.
+func (k Keeper) GetAllPendingConsumerAdditionProps(ctx sdk.Context) (props []types.ConsumerAdditionProposal) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCAPBytePrefix})
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var prop types.ConsumerAdditionProposal
+		err := prop.Unmarshal(iterator.Value())
+		if err != nil {
+			panic(fmt.Errorf("failed to unmarshal consumer addition proposal: %w", err))
+		}
+
+		props = append(props, prop)
+	}
+
 	return props
 }
 
@@ -449,15 +416,26 @@ func (k Keeper) DeletePendingConsumerAdditionProps(ctx sdk.Context, proposals ..
 	}
 }
 
-// SetPendingConsumerRemovalProp stores a pending proposal to remove and stop a consumer chain
-func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, chainID string, timestamp time.Time) {
+// SetPendingConsumerRemovalProp stores a pending consumer removal proposal.
+//
+// Note that the pending removal addition proposals are stored under keys with
+// the following format: PendingCRPBytePrefix | stopTime | chainID
+// Thus, if multiple removal addition proposal for the same chain will pass at
+// the same time, then only the last one will be stored.
+func (k Keeper) SetPendingConsumerRemovalProp(ctx sdk.Context, prop *types.ConsumerRemovalProposal) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.PendingCRPKey(timestamp, chainID), []byte{})
+	bz, err := prop.Marshal()
+	if err != nil {
+		panic(fmt.Errorf("failed to marshal consumer removal proposal: %w", err))
+	}
+	store.Set(types.PendingCRPKey(prop.StopTime, prop.ChainId), bz)
 }
 
-// GetPendingConsumerRemovalProp returns a boolean if a pending consumer removal proposal
-// exists for the given consumer chain ID and timestamp
-func (k Keeper) GetPendingConsumerRemovalProp(ctx sdk.Context, chainID string, timestamp time.Time) bool {
+// PendingConsumerRemovalPropExists checks whether a pending consumer removal proposal
+// exists for the given consumer chain ID and stopTime
+//
+// Note: this method is only used in testing
+func (k Keeper) PendingConsumerRemovalPropExists(ctx sdk.Context, chainID string, timestamp time.Time) bool {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PendingCRPKey(timestamp, chainID))
 
@@ -474,12 +452,6 @@ func (k Keeper) DeletePendingConsumerRemovalProps(ctx sdk.Context, proposals ...
 	}
 }
 
-// PendingConsumerRemovalPropIterator returns an iterator for iterating through pending consumer removal proposals
-func (k Keeper) PendingConsumerRemovalPropIterator(ctx sdk.Context) sdk.Iterator {
-	store := ctx.KVStore(k.storeKey)
-	return sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
-}
-
 // BeginBlockCCR iterates over the pending consumer removal proposals
 // in order and stop/removes the chain if the stop time has passed,
 // otherwise it will break out of loop and return. Executed proposals are deleted.
@@ -487,7 +459,7 @@ func (k Keeper) PendingConsumerRemovalPropIterator(ctx sdk.Context) sdk.Iterator
 // See: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/methods.md#ccv-pcf-bblock-ccr1
 // Spec tag: [CCV-PCF-BBLOCK-CCR.1]
 func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
-	propsToExecute := k.ConsumerRemovalPropsToExecute(ctx)
+	propsToExecute := k.GetConsumerRemovalPropsToExecute(ctx)
 
 	for _, prop := range propsToExecute {
 		// stop consumer chain in a cached context to handle errors
@@ -507,68 +479,58 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 	k.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
 }
 
-// ConsumerRemovalPropsToExecute iterates over the pending consumer removal proposals
+// GetConsumerRemovalPropsToExecute iterates over the pending consumer removal proposals
 // and returns an ordered list of consumer removal proposals to be executed,
 // ie. consumer chains to be stopped and removed from the provider chain.
 // A prop is included in the returned list if its proposed stop time has passed.
 //
 // Note: this method is split out from BeginBlockCCR to be easily unit tested.
-func (k Keeper) ConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerRemovalProposal {
+func (k Keeper) GetConsumerRemovalPropsToExecute(ctx sdk.Context) []types.ConsumerRemovalProposal {
 
 	// store the (to be) executed consumer removal proposals in order
 	propsToExecute := []types.ConsumerRemovalProposal{}
-
-	k.IteratePendingConsumerRemovalProps(ctx, func(stopTime time.Time, prop types.ConsumerRemovalProposal) (stop bool) {
-		if !ctx.BlockTime().Before(stopTime) {
-			propsToExecute = append(propsToExecute, prop)
-			return false // do not stop the iteration
-		}
-		// No more proposals to check, since they're stored/ordered by timestamp.
-		return true // stop
-	})
-
-	return propsToExecute
-}
-
-func (k Keeper) IteratePendingConsumerRemovalProps(
-	ctx sdk.Context,
-	cb func(stopTime time.Time, prop types.ConsumerRemovalProposal) (stop bool),
-) {
-	iterator := k.PendingConsumerRemovalPropIterator(ctx)
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-
-		key := iterator.Key()
-		stopTime, chainID, err := types.ParsePendingCRPKey(key)
-		if err != nil {
-			panic(fmt.Errorf("failed to parse pending consumer removal proposal key: %w", err))
-		}
-
-		stop := cb(stopTime, types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime})
-		if stop {
-			break
-		}
-	}
-}
-
-// GetAllConsumerRemovalProps returns all consumer removal proposals separated into matured and pending.
-func (k Keeper) GetAllConsumerRemovalProps(ctx sdk.Context) types.ConsumerRemovalProposals {
-	props := types.ConsumerRemovalProposals{}
 
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		key := iterator.Key()
-		stopTime, chainID, err := types.ParsePendingCRPKey(key)
+		var prop types.ConsumerRemovalProposal
+		err := prop.Unmarshal(iterator.Value())
 		if err != nil {
-			panic(fmt.Errorf("failed to parse pending consumer removal proposal key: %w", err))
+			panic(fmt.Errorf("failed to unmarshal consumer removal proposal: %w", err))
 		}
 
-		props.Pending = append(props.Pending,
-			&types.ConsumerRemovalProposal{ChainId: chainID, StopTime: stopTime})
+		// If current block time is equal to or after stop time, proposal is ready to be executed
+		if !ctx.BlockTime().Before(prop.StopTime) {
+			propsToExecute = append(propsToExecute, prop)
+		} else {
+			// No more proposals to check, since they're stored/ordered by timestamp.
+			break
+		}
+	}
+
+	return propsToExecute
+}
+
+// GetAllPendingConsumerRemovalProps iterates through the pending consumer removal proposals.
+//
+// Note that the pending consumer removal proposals are stored under keys with the following format:
+// PendingCRPBytePrefix | stopTime.UnixNano() | chainID
+// Thus, the returned array is in stopTime order.
+func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []types.ConsumerRemovalProposal) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PendingCRPBytePrefix})
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var prop types.ConsumerRemovalProposal
+		err := prop.Unmarshal(iterator.Value())
+		if err != nil {
+			panic(fmt.Errorf("failed to unmarshal consumer removal proposal: %w", err))
+		}
+
+		props = append(props, prop)
 	}
 
 	return props
