@@ -38,7 +38,7 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	return ack
 }
 
-// HandleNonThrottledVSCMaturedPackets handles all VSCMatured packet data that has been queued this block,
+// HandleLeadingVSCMaturedPackets handles all VSCMatured packet data that has been queued this block,
 // but does not need to be throttled. The handled data is then removed from the queue.
 //
 // Note: VSC matured packet data which is queued behind slash packet data CANNOT be
