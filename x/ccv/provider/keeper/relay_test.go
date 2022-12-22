@@ -302,7 +302,7 @@ func TestValidateSlashPacket(t *testing.T) {
 
 	validVscID := uint64(98)
 
-	invalidInfractionsTestCases := []struct {
+	testCases := []struct {
 		name       string
 		packetData ccv.SlashPacketData
 		expectErr  bool
@@ -338,7 +338,7 @@ func TestValidateSlashPacket(t *testing.T) {
 			nil},
 	}
 
-	for _, tc := range invalidInfractionsTestCases {
+	for _, tc := range testCases {
 		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
 			t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
@@ -353,6 +353,81 @@ func TestValidateSlashPacket(t *testing.T) {
 
 		// Setup valset update ID to block height mapping using var instantiated above.
 		providerKeeper.SetValsetUpdateBlockHeight(ctx, validVscID, uint64(100))
+
+		// Test error behavior as specified in tc.
+		err := providerKeeper.ValidateSlashPacket(ctx, "consumer-chain-id", packet, tc.packetData)
+		if tc.expectErr {
+			require.Error(t, err, "expected error in case: '%s'", tc.name)
+			require.ErrorIs(t, err, tc.errType, "incorrect expected error type: '%s' in case: %s", tc.errType, tc.name)
+		} else {
+			require.NoError(t, err, "unexpected error in case: '%s'", tc.name)
+		}
+	}
+
+	validVscID = uint64(10)
+	validDoubleSignVscID := uint64(8)
+	invalidDowntimeSignVscID := uint64(9)
+	// test cases where SetLastDowntimeValsetUpdateId increases monotonically
+	// slash packets where ValsetUpdateId < last downtime ValsetUpdateId are considered invalid
+	outdatedDowntimeTestCases := []struct {
+		name                          string
+		packetData                    ccv.SlashPacketData
+		expectErr                     bool
+		errType                       error
+		setLastDowntimeValsetUpdateId uint64
+	}{
+		{
+			"valid downtime packet with zero vscID",
+			ccv.SlashPacketData{ValsetUpdateId: 0, Infraction: stakingtypes.Downtime},
+			false,
+			nil,
+			0,
+		},
+		{
+			"valid downtime with incremented vscID",
+			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.Downtime},
+			false,
+			nil,
+			0,
+		},
+		{
+			"valid doublesign packet",
+			// valsetUpdateId < last downtime valsetUpdateId but SHOULD pass because this is a dobule sign
+			ccv.SlashPacketData{ValsetUpdateId: validVscID, Infraction: stakingtypes.DoubleSign},
+			false,
+			nil,
+			validVscID,
+		},
+		{
+			"outdated downtime slash packet",
+			// valsetUpdateId < last downtime valsetUpdateId but SHOULD NOT pass
+			ccv.SlashPacketData{ValsetUpdateId: 9, Infraction: stakingtypes.Downtime},
+			true,
+			providertypes.ErrSlashPacketOutdated,
+			validVscID,
+		},
+	}
+
+	for _, tc := range outdatedDowntimeTestCases {
+		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(
+			t, testkeeper.NewInMemKeeperParams(t))
+		defer ctrl.Finish()
+
+		packet := channeltypes.Packet{DestinationChannel: "channel-9"}
+
+		// Pseudo setup ccv channel for channel ID specified in packet.
+		providerKeeper.SetChannelToChain(ctx, "channel-9", "consumer-chain-id")
+
+		// Setup init chain height for consumer (allowing 0 vscID to be valid).
+		providerKeeper.SetInitChainHeight(ctx, "consumer-chain-id", uint64(89))
+
+		// Setup valset update IDs to block heights using vars instantiated above.
+		providerKeeper.SetValsetUpdateBlockHeight(ctx, validDoubleSignVscID, uint64(95))
+		providerKeeper.SetValsetUpdateBlockHeight(ctx, invalidDowntimeSignVscID, uint64(98))
+		providerKeeper.SetValsetUpdateBlockHeight(ctx, validVscID, uint64(100))
+
+		providerKeeper.SetLastDowntimeValsetUpdateId(ctx, "consumer-chain-id", tc.setLastDowntimeValsetUpdateId)
+		require.Equal(t, providerKeeper.GetLastDowntimeValsetUpdateId(ctx, "consumer-chain-id"), tc.setLastDowntimeValsetUpdateId)
 
 		// Test error behavior as specified in tc.
 		err := providerKeeper.ValidateSlashPacket(ctx, "consumer-chain-id", packet, tc.packetData)
@@ -482,8 +557,16 @@ func TestHandleSlashPacket(t *testing.T) {
 		providerKeeper.SetInitChainHeight(ctx, chainId, 5)
 		providerKeeper.SetValsetUpdateBlockHeight(ctx, validVscID, 99)
 
+		// assert GetLastDowntimeValsetUpdateId correctness
+		previousDown := providerKeeper.GetLastDowntimeValsetUpdateId(ctx, chainId)
 		// Execute method and assert expected mock calls.
 		providerKeeper.HandleSlashPacket(ctx, chainId, tc.packetData)
+		if tc.packetData.Infraction == stakingtypes.Downtime {
+			currentDown := providerKeeper.GetLastDowntimeValsetUpdateId(ctx, chainId)
+			require.Equal(t, tc.packetData.ValsetUpdateId, currentDown)
+			require.GreaterOrEqual(t, currentDown, previousDown,
+				"last downtime invalid - current: %d, previous: %d for '%s'", currentDown, previousDown, tc.name)
+		}
 		ctrl.Finish()
 	}
 }

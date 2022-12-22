@@ -897,3 +897,21 @@ func (k Keeper) GetFirstVscSendTimestamp(ctx sdk.Context, chainID string) (vscSe
 
 	return types.VscSendTimestamp{}, false
 }
+
+// SetLastDowntimeValsetUpdateId sets the latest valsetUpdateId when consumer initiated downtime slashing occured on chainID.
+func (k Keeper) SetLastDowntimeValsetUpdateId(ctx sdk.Context, chainID string, valsetUpdateID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, valsetUpdateID)
+	store.Set(types.LastDowntimeValsetUpdateIdKey(chainID), buf)
+}
+
+// GetLastDowntimeValsetUpdateId gets the latest valsetUpdateId when consumer initiated downtime slashing occured on chainID.
+func (k Keeper) GetLastDowntimeValsetUpdateId(ctx sdk.Context, chainID string) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	buf := store.Get(types.LastDowntimeValsetUpdateIdKey(chainID))
+	if buf == nil {
+		return 0
+	}
+	return binary.BigEndian.Uint64(buf)
+}

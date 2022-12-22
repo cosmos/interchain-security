@@ -305,6 +305,10 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 		return providertypes.ErrSlashPacketInfractionTypeInvalid
 	}
 
+	if data.Infraction == stakingtypes.Downtime && data.ValsetUpdateId < k.GetLastDowntimeValsetUpdateId(ctx, chainID) {
+		return providertypes.ErrSlashPacketOutdated
+	}
+
 	return nil
 }
 
@@ -393,6 +397,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		k.stakingKeeper.Jail(ctx, providerConsAddr)
 	}
 	k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
+	k.SetLastDowntimeValsetUpdateId(ctx, chainID, data.ValsetUpdateId)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
