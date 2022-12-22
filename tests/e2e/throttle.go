@@ -694,11 +694,8 @@ func (s CCVTestSuite) TestSlashAllValidators() {
 }
 
 func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
+
 	s.SetupAllCCVChannels()
-
-	// Setup 4 validators with 25% of the total power each.
-	s.setupValidatorPowers()
-
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
 	// Queue up 50 vsc matured packets for each consumer
