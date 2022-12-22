@@ -662,6 +662,16 @@ func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID, ack string) {
 	k.SetSlashAcks(ctx, chainID, acks)
 }
 
+// SlashAckExists checks if a SlashAck for chainID exists for given valConsAddr.
+func (k Keeper) SlashAckExists(ctx sdk.Context, chainID, valConsAddr string) bool {
+	for _, addr := range k.GetSlashAcks(ctx, chainID) {
+		if addr == valConsAddr {
+			return true
+		}
+	}
+	return false
+}
+
 // SetInitChainHeight sets the provider block height when the given consumer chain was initiated
 func (k Keeper) SetInitChainHeight(ctx sdk.Context, chainID string, height uint64) {
 	store := ctx.KVStore(k.storeKey)
@@ -810,7 +820,8 @@ func (k Keeper) SetVscSendTimestamp(
 }
 
 // GetVscSendTimestamp returns a VSC send timestamp by chainID and vscID
-// If a VSCSentTImestamp is available the VSC has not yet matured.
+//
+// Note: This method is used only for testing.
 func (k Keeper) GetVscSendTimestamp(ctx sdk.Context, chainID string, vscID uint64) (time.Time, bool) {
 	store := ctx.KVStore(k.storeKey)
 

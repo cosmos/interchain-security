@@ -63,10 +63,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Send a slash packet from consumer to provider
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
 		tmVal := s.providerChain.Vals.Validators[0]
-		packet, slashData := s.constructSlashPacketFromConsumer(consumer, *tmVal, stakingtypes.Downtime, 1)
-
-		// in the real scenario the VSCTimeoutTimestamp is set when the provider sends a VSCPacket to consumer
-		providerKeeper.SetVscSendTimestamp(s.providerCtx(), consumer.Chain.ChainID, slashData.ValsetUpdateId, customCtx.BlockTime())
+		packet, _ := s.constructSlashPacketFromConsumer(consumer, *tmVal, stakingtypes.Downtime, 1)
 		sendOnConsumerRecvOnProvider(s, consumer.Path, packet)
 
 		// Assert validator 0 is jailed and has no power
@@ -85,9 +82,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Now send a second slash packet from consumer to provider for a different validator.
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
 		tmVal = s.providerChain.Vals.Validators[2]
-		packet, slashData = s.constructSlashPacketFromConsumer(consumer, *tmVal, stakingtypes.Downtime, 2)
-		// in the real scenario the VSCTimeoutTimestamp is set when the provider sends a VSCPacket to consumer
-		providerKeeper.SetVscSendTimestamp(s.providerCtx(), consumer.Chain.ChainID, slashData.ValsetUpdateId, customCtx.BlockTime())
+		packet, _ = s.constructSlashPacketFromConsumer(consumer, *tmVal, stakingtypes.Downtime, 2)
 		sendOnConsumerRecvOnProvider(s, consumer.Path, packet)
 
 		// Require that slash packet has not been handled
@@ -193,13 +188,12 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 
 		tmVal := s.providerChain.Vals.Validators[idx]
 		valsToSlash = append(valsToSlash, *tmVal)
-		packet, slashData := s.constructSlashPacketFromConsumer(
+		packet, _ := s.constructSlashPacketFromConsumer(
 			*bundle,
 			*tmVal,
 			infractionType,
 			3, // use sequence 3, 1 and 2 are used above.
 		)
-		providerKeeper.SetVscSendTimestamp(s.providerCtx(), bundle.Chain.ChainID, slashData.ValsetUpdateId, s.providerCtx().BlockTime())
 		sendOnConsumerRecvOnProvider(s, bundle.Path, packet)
 
 		// Send two trailing VSC matured packets from consumer to provider
@@ -526,17 +520,9 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	tmval1 := s.providerChain.Vals.Validators[1]
 	tmval2 := s.providerChain.Vals.Validators[2]
 	tmval3 := s.providerChain.Vals.Validators[3]
-	packet1, data1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 1)
-	packet2, data2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2)
-	packet3, data3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3)
-
-	// set VSCSentTimestamp on provider so packets are not dropped
-	providerKeeper.SetVscSendTimestamp(s.providerCtx(),
-		s.getFirstBundle().Chain.ChainID, data1.ValsetUpdateId, s.providerCtx().BlockTime())
-	providerKeeper.SetVscSendTimestamp(s.providerCtx(),
-		s.getFirstBundle().Chain.ChainID, data2.ValsetUpdateId, s.providerCtx().BlockTime())
-	providerKeeper.SetVscSendTimestamp(s.providerCtx(),
-		s.getFirstBundle().Chain.ChainID, data3.ValsetUpdateId, s.providerCtx().BlockTime())
+	packet1, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 1)
+	packet2, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2)
+	packet3, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3)
 
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet1)
 	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet2)

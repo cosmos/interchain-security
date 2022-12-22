@@ -305,12 +305,6 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 		return providertypes.ErrSlashPacketInfractionTypeInvalid
 	}
 
-	// VSCMaturedPacket had already been received and processed for this ValsetUpdateId
-	// return error because slash packet is out of date
-	if _, found := k.GetVscSendTimestamp(ctx, chainID, data.ValsetUpdateId); !found {
-		return providertypes.ErrSlashPacketOutdated
-	}
-
 	return nil
 }
 
@@ -355,13 +349,22 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	infractionHeight, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	if !found {
-		k.Logger(ctx).Error("infraction height not found. But was found during slash packet validation")
+		k.Logger(ctx).Error(
+			"infraction height not found buut was found during slash packet validation. Dropping slash packet")
 		// drop packet
 		return
 	}
 
 	switch data.Infraction {
 	case stakingtypes.Downtime:
+		exists := k.SlashAckExists(ctx, chainID, providerConsAddr.String())
+		if exists {
+			k.Logger(ctx).Error(
+				fmt.Sprintf("downtime slash ack for '%s' already exists. Dropping slash packet", providerConsAddr.String()))
+			// drop packet
+			return
+		}
+
 		// set the downtime slash fraction and duration
 		// then append the validator address to the slash ack for its chain id
 		slashFraction = k.slashingKeeper.SlashFractionDowntime(ctx)
