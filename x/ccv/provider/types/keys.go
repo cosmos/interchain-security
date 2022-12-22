@@ -175,7 +175,7 @@ func InitTimeoutTimestampKey(chainID string) []byte {
 // The key has the following format: PendingCAPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCAPKey(timestamp time.Time, chainID string) []byte {
 	ts := uint64(timestamp.UTC().UnixNano())
-	return AppendMany(
+	return utils.AppendMany(
 		// Append the prefix
 		[]byte{PendingCAPBytePrefix},
 		// Append the time
@@ -189,7 +189,7 @@ func PendingCAPKey(timestamp time.Time, chainID string) []byte {
 // The key has the following format: PendingCRPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCRPKey(timestamp time.Time, chainID string) []byte {
 	ts := uint64(timestamp.UTC().UnixNano())
-	return AppendMany(
+	return utils.AppendMany(
 		// Append the prefix
 		[]byte{PendingCRPBytePrefix},
 		// Append the time
@@ -341,14 +341,6 @@ func ParseGlobalSlashEntryKey(bz []byte) (
 	chainID := string(bz[17:])
 
 	return recvTime, chainID, ibcSeqNum
-}
-
-// AppendMany appends a variable number of byte slices together
-func AppendMany(byteses ...[]byte) (out []byte) {
-	for _, bytes := range byteses {
-		out = append(out, bytes...)
-	}
-	return out
 }
 
 // ChainIdAndTsKey returns the key with the following format:
