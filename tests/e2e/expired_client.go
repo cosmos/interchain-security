@@ -3,12 +3,15 @@ package e2e
 import (
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibcexported "github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // TestVSCPacketSendWithExpiredClient tests queueing of VSCPackets when the consumer client is expired.
@@ -104,11 +107,13 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 
 	// relay all VSC packet from provider to consumer
 	relayAllCommittedPackets(s, s.providerChain, s.path, ccv.ProviderPortID, s.path.EndpointB.ChannelID, 2)
+
 	// expire client to provider
 	expireClient(s, Provider)
 
 	// check that the client to the consumer is active
 	checkClientExpired(s, Consumer, false)
+
 	// increment time so that the unbonding period ends on the consumer;
 	// do not try to update the client to the provider since it's expired
 	consumerUnbondingPeriod := s.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(s.consumerCtx())
@@ -119,23 +124,19 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	s.Require().NotEmpty(consumerPackets)
 	s.Require().Equal(2, len(consumerPackets.GetList()), "unexpected number of pending data packets")
 
-	// TODO: reintroduce this section if SlashPackets that are outdated
-	// or do not correspond to any VSCIds awaiting maturation
-	// should not return an errAck and not close the channel
-
 	// try to send slash packet for downtime infraction
-	// addr := ed25519.GenPrivKey().PubKey().Address()
-	// val := abci.Validator{Address: addr}
-	// consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 2, stakingtypes.Downtime)
-	// // try to send slash packet for the same downtime infraction
-	// consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.Downtime)
-	// // try to send slash packet for the double-sign infraction
-	// consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.DoubleSign)
+	addr := ed25519.GenPrivKey().PubKey().Address()
+	val := abci.Validator{Address: addr}
+	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 2, stakingtypes.Downtime)
+	// try to send slash packet for the same downtime infraction
+	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.Downtime)
+	// try to send slash packet for the double-sign infraction
+	consumerKeeper.QueueSlashPacket(s.consumerCtx(), val, 3, stakingtypes.DoubleSign)
 
-	// // check that the packets were added to the list of pending data packets
-	// consumerPackets = consumerKeeper.GetPendingPackets(s.consumerCtx())
-	// s.Require().NotEmpty(consumerPackets)
-	// s.Require().Equal(4, len(consumerPackets.GetList()), "unexpected number of pending data packets")
+	// check that the packets were added to the list of pending data packets
+	consumerPackets = consumerKeeper.GetPendingPackets(s.consumerCtx())
+	s.Require().NotEmpty(consumerPackets)
+	s.Require().Equal(4, len(consumerPackets.GetList()), "unexpected number of pending data packets")
 
 	// upgrade expired client to the consumer
 	upgradeExpiredClient(s, Provider)
@@ -149,7 +150,7 @@ func (s *CCVTestSuite) TestConsumerPacketSendExpiredClient() {
 	s.Require().Equal(0, len(consumerPackets.GetList()), "unexpected number of pending data packets")
 
 	// relay all  packet from consumer to provider
-	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 2)
+	relayAllCommittedPackets(s, s.consumerChain, s.path, ccv.ConsumerPortID, s.path.EndpointA.ChannelID, 4)
 
 	// check that everything works
 	// - bond more tokens on provider to change validator powers

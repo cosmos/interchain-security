@@ -37,10 +37,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		s.SetupAllCCVChannels()
 		s.setupValidatorPowers()
 
-		providerKeeper := s.providerApp.GetProviderKeeper()
 		providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
-
-		consumer := s.getFirstBundle()
 
 		// Use default params (incl replenish period), but set replenish fraction to tc value.
 		params := providertypes.DefaultParams()
@@ -49,9 +46,9 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 
 		// Elapse a replenish period and check for replenishment, so new param is fully in effect.
 		customCtx := s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
-		providerKeeper.CheckForSlashMeterReplenishment(customCtx)
+		s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
 
-		slashMeter := providerKeeper.GetSlashMeter(s.providerCtx())
+		slashMeter := s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
 		s.Require().Equal(tc.expectedMeterBeforeFirstSlash, slashMeter.Int64())
 
 		// Assert that we start out with no jailings
@@ -63,7 +60,8 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Send a slash packet from consumer to provider
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
 		tmVal := s.providerChain.Vals.Validators[0]
-		sendOnConsumerRecvOnProvider(s, consumer.Path, s.constructSlashPacketFromConsumer(consumer, *tmVal, stakingtypes.Downtime, 1))
+		packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Downtime, 1)
+		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
 
 		// Assert validator 0 is jailed and has no power
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
@@ -73,22 +71,23 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		s.Require().Equal(int64(0), lastValPower)
 
 		// Assert expected slash meter and allowance value
-		slashMeter = providerKeeper.GetSlashMeter(s.providerCtx())
+		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
 		s.Require().Equal(tc.expectedMeterAfterFirstSlash, slashMeter.Int64())
 		s.Require().Equal(tc.expectedAllowanceAfterFirstSlash,
-			providerKeeper.GetSlashMeterAllowance(s.providerCtx()).Int64())
+			s.providerApp.GetProviderKeeper().GetSlashMeterAllowance(s.providerCtx()).Int64())
 
 		// Now send a second slash packet from consumer to provider for a different validator.
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
 		tmVal = s.providerChain.Vals.Validators[2]
-		sendOnConsumerRecvOnProvider(s, consumer.Path, s.constructSlashPacketFromConsumer(consumer, *tmVal, stakingtypes.Downtime, 2))
+		packet = s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, stakingtypes.Downtime, 2)
+		sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet)
 
 		// Require that slash packet has not been handled
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
 		s.Require().False(vals[2].IsJailed())
 
 		// Assert slash meter value is still the same
-		slashMeter = providerKeeper.GetSlashMeter(s.providerCtx())
+		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
 		s.Require().Equal(tc.expectedMeterAfterFirstSlash, slashMeter.Int64())
 
 		// Replenish slash meter until it is positive
@@ -98,9 +97,9 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 			customCtx = s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
 
 			// CheckForSlashMeterReplenishment should replenish meter here.
-			slashMeterBefore := providerKeeper.GetSlashMeter(s.providerCtx())
-			providerKeeper.CheckForSlashMeterReplenishment(customCtx)
-			slashMeter = providerKeeper.GetSlashMeter(s.providerCtx())
+			slashMeterBefore := s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
+			s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
+			slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
 			s.Require().True(slashMeter.GT(slashMeterBefore))
 
 			// Check that slash meter is still negative or 0,
@@ -111,7 +110,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		}
 
 		// Meter is positive at this point, and ready to handle the second slash packet.
-		slashMeter = providerKeeper.GetSlashMeter(s.providerCtx())
+		slashMeter = s.providerApp.GetProviderKeeper().GetSlashMeter(s.providerCtx())
 		s.Require().True(slashMeter.IsPositive())
 
 		// Assert validator 2 is jailed once pending slash packets are handled in ccv endblocker.
@@ -497,8 +496,7 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 
 	// Replenish slash meter with default params and new total voting power.
 	customCtx := s.getCtxWithReplenishPeriodElapsed(s.providerCtx())
-	providerKeeper := s.providerApp.GetProviderKeeper()
-	providerKeeper.CheckForSlashMeterReplenishment(customCtx)
+	s.providerApp.GetProviderKeeper().CheckForSlashMeterReplenishment(customCtx)
 
 	// Assert that we start out with no jailings
 	providerStakingKeeper := s.providerApp.GetE2eStakingKeeper()
@@ -516,10 +514,12 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	tmval1 := s.providerChain.Vals.Validators[1]
 	tmval2 := s.providerChain.Vals.Validators[2]
 	tmval3 := s.providerChain.Vals.Validators[3]
-
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 1))
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2))
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3))
+	packet1 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 1)
+	packet2 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2)
+	packet3 := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3)
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet1)
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet2)
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet3)
 
 	// Default slash meter replenish fraction is 0.05, so all sent packets should be handled immediately.
 	vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
