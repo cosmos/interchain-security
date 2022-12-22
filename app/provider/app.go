@@ -101,6 +101,7 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	dbm "github.com/tendermint/tm-db"
 
+	ibctestingutil "github.com/cosmos/interchain-security/ibctesting"
 	ibcprovider "github.com/cosmos/interchain-security/x/ccv/provider"
 	ibcproviderclient "github.com/cosmos/interchain-security/x/ccv/provider/client"
 	ibcproviderkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
@@ -176,10 +177,10 @@ var (
 )
 
 var (
-	_ simapp.App              = (*App)(nil)
-	_ servertypes.Application = (*App)(nil)
-	_ cosmoscmd.CosmosApp     = (*App)(nil)
-	//_ ibctesting.TestingApp   = (*App)(nil)
+	_ simapp.App                = (*App)(nil)
+	_ servertypes.Application   = (*App)(nil)
+	_ cosmoscmd.CosmosApp       = (*App)(nil)
+	_ ibctestingutil.TestingApp = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -833,8 +834,12 @@ func (app *App) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
 }
 
+//// GetStakingKeeper implements the TestingApp interface.
+//func (app *App) GetStakingKeeper() ibcclienttypes.StakingKeeper {
+//	return app.StakingKeeper
+//}
 // GetStakingKeeper implements the TestingApp interface.
-func (app *App) GetStakingKeeper() ibcclienttypes.StakingKeeper {
+func (app *App) GetStakingKeeper() stakingkeeper.Keeper {
 	return app.StakingKeeper
 }
 

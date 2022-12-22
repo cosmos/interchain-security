@@ -267,6 +267,8 @@ github.com/cosmos/cosmos-sdk v0.45.12-0.20221116140330-9c145c827001 h1:p81moZK9w
 github.com/cosmos/cosmos-sdk v0.45.12-0.20221116140330-9c145c827001/go.mod h1:knmcuR38eVg8I8U+AYhTtSLtcsHzYCROaUCbNcUgfDU=
 github.com/cosmos/gaia/v8 v8.0.0-20221209131454-f73f97517b5b h1:lJJZeudSmu+PCna2yDuNnBNcpxKoKcSlwbBj2kOJeu8=
 github.com/cosmos/gaia/v8 v8.0.0-20221209131454-f73f97517b5b/go.mod h1:yTINtn8zJdwQIg4H7cqOY5alJoI9M/sjIoJKrJ39nRM=
+github.com/cosmos/gaia/v8 v8.0.0-20221220202330-699f40387cbf h1:E0cump9LrPS7ZM7QCMgXy4cXk7lPm1I2XkuRkEKCN68=
+github.com/cosmos/gaia/v8 v8.0.0-20221220202330-699f40387cbf/go.mod h1:jn48o2/UWrRERnqIdeFcm6YVTrbDekMs3HMUGiQQIz4=
 github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d/go.mod h1:tSxLoYXyBmiFeKpvmq4dzayMdCjCnu8uqmCysIGBT2Y=
 github.com/cosmos/go-bip39 v1.0.0 h1:pcomnQdrdH22njcAatO0yWojsUnCO3y2tNoV1cb6hHY=
 github.com/cosmos/go-bip39 v1.0.0/go.mod h1:RNJv0H/pOIVgxw6KS7QeX2a0Uo0aKUlfhZ4xuwvCdJw=

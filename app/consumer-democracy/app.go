@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	ibcconsumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	"io"
 	stdlog "log"
 	"net/http"
@@ -53,6 +54,7 @@ import (
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 
 	"github.com/cosmos/cosmos-sdk/x/slashing"
@@ -102,13 +104,11 @@ import (
 	ccvminttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	ibctestingutil "github.com/cosmos/interchain-security/ibctesting"
 	ibcconsumer "github.com/cosmos/interchain-security/x/ccv/consumer"
 	ibcconsumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
-	ibcconsumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
-
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
-	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
 const (
@@ -164,10 +164,10 @@ var (
 )
 
 var (
-	_ simapp.App              = (*App)(nil)
-	_ servertypes.Application = (*App)(nil)
-	_ cosmoscmd.CosmosApp     = (*App)(nil)
-	//_ ibctesting.TestingApp   = (*App)(nil)
+	_ simapp.App                = (*App)(nil)
+	_ servertypes.Application   = (*App)(nil)
+	_ cosmoscmd.CosmosApp       = (*App)(nil)
+	_ ibctestingutil.TestingApp = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -812,8 +812,13 @@ func (app *App) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
 }
 
+//// GetStakingKeeper implements the TestingApp interface.
+//func (app *App) GetStakingKeeper() ibcclienttypes.StakingKeeper {
+//	return app.ConsumerKeeper
+//}
+
 // GetStakingKeeper implements the TestingApp interface.
-func (app *App) GetStakingKeeper() ibcclienttypes.StakingKeeper {
+func (app *App) GetStakingKeeper() stakingkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 

@@ -9,7 +9,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 
-	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
@@ -21,6 +20,7 @@ import (
 	simibc "github.com/cosmos/interchain-security/testutil/simibc"
 
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
+	ibctestingutil "github.com/cosmos/interchain-security/ibctesting"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 )
 
@@ -187,7 +187,7 @@ func (s *CoreSuite) consumerSlash(val sdk.ConsAddress, h int64, isDowntime bool)
 	evts := ctx.EventManager().ABCIEvents()
 	for _, e := range evts[before:] {
 		if e.Type == channeltypes.EventTypeSendPacket {
-			packet, err := channelkeeper.ReconstructPacketFromEvent(e)
+			packet, err := ibctestingutil.ReconstructPacketFromEvent(e)
 			s.Require().NoError(err)
 			s.simibc.Link.AddPacket(s.chainID(C), packet)
 		}

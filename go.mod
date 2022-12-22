@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/cosmos/cosmos-sdk v0.45.12-0.20221116140330-9c145c827001
-	github.com/cosmos/gaia/v8 v8.0.0-20221209131454-f73f97517b5b
+	github.com/cosmos/gaia/v8 v8.0.0-20221220202330-699f40387cbf
 	github.com/cosmos/ibc-go/v3 v3.4.0
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2

@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	ibctestingutil "github.com/cosmos/interchain-security/ibctesting"
 	"io"
 	stdlog "log"
 	"net/http"
@@ -84,7 +86,7 @@ import (
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
-	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	//ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 )
 
 const (
@@ -128,10 +130,10 @@ var (
 )
 
 var (
-	_ simapp.App              = (*App)(nil)
-	_ servertypes.Application = (*App)(nil)
-	_ cosmoscmd.CosmosApp     = (*App)(nil)
-	//_ ibctesting.TestingApp   = (*App)(nil)
+	_ simapp.App                = (*App)(nil)
+	_ servertypes.Application   = (*App)(nil)
+	_ cosmoscmd.CosmosApp       = (*App)(nil)
+	_ ibctestingutil.TestingApp = (*App)(nil)
 )
 
 // App extends an ABCI application, but with most of its parameters exported.
@@ -680,8 +682,13 @@ func (app *App) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
 }
 
+//// GetStakingKeeper implements the TestingApp interface.
+//func (app *App) GetStakingKeeper() ibcclienttypes.StakingKeeper {
+//	return app.ConsumerKeeper
+//}
+
 // GetStakingKeeper implements the TestingApp interface.
-func (app *App) GetStakingKeeper() ibcclienttypes.StakingKeeper {
+func (app *App) GetStakingKeeper() stakingkeeper.Keeper {
 	return app.ConsumerKeeper
 }
 
