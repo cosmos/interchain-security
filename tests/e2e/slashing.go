@@ -379,7 +379,6 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	suite.Require().Equal(uint64(1), (providerKeeper.GetThrottledPacketDataSize(ctx, consumerChainID)))
 }
 
-// TODO: I didn't figure out this test yet -> this no longer works as expected but passes
 // TestHandleSlashPacketDistribution tests the slashing of an undelegation balance
 // by varying the slash packet VSC ID mapping to infraction heights
 // lesser, equal or greater than the undelegation entry creation height

@@ -397,6 +397,10 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		k.stakingKeeper.Jail(ctx, providerConsAddr)
 	}
 	k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
+
+	// LastDowntimeValsetUpdateId increases monotonically
+	// all slash requests that are less than LastDowntimeValsetUpdateId will be dropped
+	// during slash request validation in OnRecvSlashPacket
 	k.SetLastDowntimeValsetUpdateId(ctx, chainID, data.ValsetUpdateId)
 
 	ctx.EventManager().EmitEvent(
