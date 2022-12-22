@@ -307,9 +307,9 @@ func (s *CCVTestSuite) TestPacketSpam() {
 
 	// Recv 500 packets from consumer to provider in same block
 	for _, packet := range packets {
-		slashPacketData := ccvtypes.SlashPacketData{}
-		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &slashPacketData)
-		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, slashPacketData)
+		consumerPacketData := ccvtypes.ConsumerPacketData{}
+		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketData)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
 	// Execute block to handle packets in endblock
@@ -383,21 +383,21 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 
 	// Recv 500 packets from consumer to provider in same block
 	for i, packet := range packets {
+		consumerPacketData := ccvtypes.ConsumerPacketData{}
+		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketData)
 		// Type depends on index packets were appended from above
 		if (i+5)%10 == 0 {
-			vscMaturedPacketData := ccvtypes.VSCMaturedPacketData{}
-			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &vscMaturedPacketData)
+			vscMaturedPacketData := consumerPacketData.GetVscMaturedPacketData()
 			vscMaturedPacketData.ValsetUpdateId = uint64(i + 1000)
-			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(), packet, vscMaturedPacketData)
+			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(), packet, *vscMaturedPacketData)
 		} else {
-			slashPacketData := ccvtypes.SlashPacketData{}
-			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &slashPacketData)
 			// Set valset update id to be 2000 + index to assert ordering
+			slashPacketData := consumerPacketData.GetSlashPacketData()
 			slashPacketData.ValsetUpdateId = uint64(i + 2000)
 			// Set block height mapping so packet is not dropped
 			providerKeeper.SetValsetUpdateBlockHeight(s.providerCtx(),
 				slashPacketData.ValsetUpdateId, uint64(firstBundle.GetCtx().BlockHeight()))
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, slashPacketData)
+			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *slashPacketData)
 		}
 	}
 
@@ -600,9 +600,9 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 
 	// Recv and queue all slash packets.
 	for _, packet := range packets {
-		slashPacketData := ccvtypes.SlashPacketData{}
-		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &slashPacketData)
-		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, slashPacketData)
+		consumerPacketData := ccvtypes.ConsumerPacketData{}
+		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketData)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
 	// We should have 6 pending slash packet entries queued.
@@ -668,9 +668,9 @@ func (s CCVTestSuite) TestSlashAllValidators() {
 
 	// Recv and queue all slash packets.
 	for _, packet := range packets {
-		slashPacketData := ccvtypes.SlashPacketData{}
-		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &slashPacketData)
-		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, slashPacketData)
+		consumerPacketData := ccvtypes.ConsumerPacketData{}
+		ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &consumerPacketData)
+		providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, *consumerPacketData.GetSlashPacketData())
 	}
 
 	// We should have 24 pending slash packet entries queued.

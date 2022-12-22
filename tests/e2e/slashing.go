@@ -241,7 +241,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDoubleSigning() {
 	)
 
 	providerKeeper.HandleSlashPacket(suite.providerCtx(), suite.consumerChain.ChainID,
-		ccv.NewSlashPacketData(
+		*ccv.NewSlashPacketData(
 			abci.Validator{Address: tmVal.Address, Power: 0},
 			uint64(0),
 			stakingtypes.DoubleSign,
@@ -331,7 +331,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	// Expect no error ack if validator does not exist
 	// TODO: this behavior should be changed to return an error ack,
 	// see: https://github.com/cosmos/interchain-security/issues/546
-	ack := providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
+	ack := providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
 	suite.Require().True(ack.Success())
 
 	val := suite.providerChain.Vals.Validators[0]
@@ -359,7 +359,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	valInfo.Address = sdk.ConsAddress(tmAddr).String()
 	providerSlashingKeeper.SetValidatorSigningInfo(ctx, sdk.ConsAddress(tmAddr), valInfo)
 
-	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
+	errAck = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
 	suite.Require().False(errAck.Success())
 
 	// Expect nothing was queued
@@ -368,7 +368,7 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 
 	// expect to queue entries for the slash request
 	slashingPkt.Infraction = stakingtypes.DoubleSign
-	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, slashingPkt)
+	ack = providerKeeper.OnRecvSlashPacket(ctx, packet, *slashingPkt)
 	suite.Require().True(ack.Success())
 	suite.Require().Equal(1, len(providerKeeper.GetAllGlobalSlashEntries(ctx)))
 	suite.Require().Equal(uint64(1), (providerKeeper.GetThrottledPacketDataSize(ctx, consumerChainID)))
@@ -463,7 +463,7 @@ func (suite *CCVTestSuite) TestHandleSlashPacketDistribution() {
 		)
 
 		// slash
-		providerKeeper.HandleSlashPacket(suite.providerChain.GetContext(), suite.consumerChain.ChainID, slashPacket)
+		providerKeeper.HandleSlashPacket(suite.providerChain.GetContext(), suite.consumerChain.ChainID, *slashPacket)
 
 		ubd, found := providerStakingKeeper.GetUnbondingDelegation(suite.providerChain.GetContext(), delAddr, valAddr)
 		suite.Require().True(found)
@@ -520,7 +520,7 @@ func (suite *CCVTestSuite) TestValidatorDowntime() {
 		consumerKeeper.GetHeightValsetUpdateID(ctx, uint64(missedBlockThreshold-sdk.ValidatorUpdateDelay-1)),
 		stakingtypes.Downtime,
 	)
-	expCommit := suite.commitSlashPacket(ctx, packetData)
+	expCommit := suite.commitSlashPacket(ctx, *packetData)
 
 	// Miss 50 blocks and expect a slash packet to be sent
 	for ; height <= missedBlockThreshold; height++ {
@@ -624,7 +624,7 @@ func (suite *CCVTestSuite) TestValidatorDoubleSigning() {
 		suite.consumerApp.GetConsumerKeeper().GetHeightValsetUpdateID(ctx, uint64(infractionHeight-sdk.ValidatorUpdateDelay)),
 		stakingtypes.DoubleSign,
 	)
-	expCommit := suite.commitSlashPacket(ctx, packetData)
+	expCommit := suite.commitSlashPacket(ctx, *packetData)
 
 	// expect to send slash packet when handling double-sign evidence
 	suite.consumerApp.GetE2eEvidenceKeeper().HandleEquivocationEvidence(ctx, e)
