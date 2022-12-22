@@ -91,7 +91,7 @@ func (s *CCVTestSuite) TestRelayAndApplySlashPacket() {
 		}
 
 		// Send slash packet from the first consumer chain
-		packet, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, infractionType, 1)
+		packet := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmVal, infractionType, 1)
 		err = s.getFirstBundle().Path.EndpointA.SendPacket(packet)
 		s.Require().NoError(err)
 

@@ -63,8 +63,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Send a slash packet from consumer to provider
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[0])
 		tmVal := s.providerChain.Vals.Validators[0]
-		packet, _ := s.constructSlashPacketFromConsumer(consumer, *tmVal, stakingtypes.Downtime, 1)
-		sendOnConsumerRecvOnProvider(s, consumer.Path, packet)
+		sendOnConsumerRecvOnProvider(s, consumer.Path, s.constructSlashPacketFromConsumer(consumer, *tmVal, stakingtypes.Downtime, 1))
 
 		// Assert validator 0 is jailed and has no power
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
@@ -82,8 +81,7 @@ func (s *CCVTestSuite) TestBasicSlashPacketThrottling() {
 		// Now send a second slash packet from consumer to provider for a different validator.
 		s.setDefaultValSigningInfo(*s.providerChain.Vals.Validators[2])
 		tmVal = s.providerChain.Vals.Validators[2]
-		packet, _ = s.constructSlashPacketFromConsumer(consumer, *tmVal, stakingtypes.Downtime, 2)
-		sendOnConsumerRecvOnProvider(s, consumer.Path, packet)
+		sendOnConsumerRecvOnProvider(s, consumer.Path, s.constructSlashPacketFromConsumer(consumer, *tmVal, stakingtypes.Downtime, 2))
 
 		// Require that slash packet has not been handled
 		vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
@@ -188,7 +186,7 @@ func (s *CCVTestSuite) TestMultiConsumerSlashPacketThrottling() {
 
 		tmVal := s.providerChain.Vals.Validators[idx]
 		valsToSlash = append(valsToSlash, *tmVal)
-		packet, _ := s.constructSlashPacketFromConsumer(
+		packet := s.constructSlashPacketFromConsumer(
 			*bundle,
 			*tmVal,
 			infractionType,
@@ -305,8 +303,7 @@ func (s *CCVTestSuite) TestPacketSpam() {
 			infractionType = stakingtypes.DoubleSign
 		}
 		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
-		packet, _ := s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum)
-		packets = append(packets, packet)
+		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum))
 	}
 
 	// Recv 500 packets from consumer to provider in same block
@@ -382,8 +379,7 @@ func (s *CCVTestSuite) TestQueueOrdering() {
 			infractionType = stakingtypes.DoubleSign
 		}
 		valToJail := s.providerChain.Vals.Validators[ibcSeqNum%3]
-		packet, _ := s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum)
-		packets = append(packets, packet)
+		packets = append(packets, s.constructSlashPacketFromConsumer(firstBundle, *valToJail, infractionType, ibcSeqNum))
 	}
 
 	// Recv 500 packets from consumer to provider in same block
@@ -520,13 +516,10 @@ func (s *CCVTestSuite) TestSlashingSmallValidators() {
 	tmval1 := s.providerChain.Vals.Validators[1]
 	tmval2 := s.providerChain.Vals.Validators[2]
 	tmval3 := s.providerChain.Vals.Validators[3]
-	packet1, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 1)
-	packet2, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2)
-	packet3, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3)
 
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet1)
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet2)
-	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, packet3)
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 1))
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2))
+	sendOnConsumerRecvOnProvider(s, s.getFirstBundle().Path, s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3))
 
 	// Default slash meter replenish fraction is 0.05, so all sent packets should be handled immediately.
 	vals = providerStakingKeeper.GetAllValidators(s.providerCtx())
@@ -596,13 +589,14 @@ func (s *CCVTestSuite) TestSlashSameValidator() {
 	s.setDefaultValSigningInfo(*tmval2)
 	s.setDefaultValSigningInfo(*tmval3)
 
-	p1, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Downtime, 1)
-	p2, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2)
-	p3, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3)
-	p4, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 4)
-	p5, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.DoubleSign, 5)
-	p6, _ := s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.DoubleSign, 6)
-	packets := []channeltypes.Packet{p1, p2, p3, p4, p5, p6}
+	packets := []channeltypes.Packet{
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.Downtime, 1),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.Downtime, 2),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.Downtime, 3),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval1, stakingtypes.DoubleSign, 4),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval2, stakingtypes.DoubleSign, 5),
+		s.constructSlashPacketFromConsumer(s.getFirstBundle(), *tmval3, stakingtypes.DoubleSign, 6),
+	}
 
 	// Recv and queue all slash packets.
 	for _, packet := range packets {
@@ -651,9 +645,8 @@ func (s CCVTestSuite) TestSlashAllValidators() {
 	// these first 4 packets should jail 100% of the total power.
 	for _, val := range s.providerChain.Vals.Validators {
 		s.setDefaultValSigningInfo(*val)
-		p, _ := s.constructSlashPacketFromConsumer(
-			s.getFirstBundle(), *val, stakingtypes.Downtime, ibcSeqNum)
-		packets = append(packets, p)
+		packets = append(packets, s.constructSlashPacketFromConsumer(
+			s.getFirstBundle(), *val, stakingtypes.Downtime, ibcSeqNum))
 		ibcSeqNum++
 	}
 
@@ -667,9 +660,8 @@ func (s CCVTestSuite) TestSlashAllValidators() {
 			infractionType = stakingtypes.DoubleSign
 		}
 		for i := 0; i < 5; i++ {
-			p, _ := s.constructSlashPacketFromConsumer(
-				s.getFirstBundle(), *val, infractionType, ibcSeqNum)
-			packets = append(packets, p)
+			packets = append(packets, s.constructSlashPacketFromConsumer(
+				s.getFirstBundle(), *val, infractionType, ibcSeqNum))
 			ibcSeqNum++
 		}
 	}
