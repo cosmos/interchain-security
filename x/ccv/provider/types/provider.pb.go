@@ -194,8 +194,7 @@ type GlobalSlashEntry struct {
 	// The provider's consensus address of the validator being slashed.
 	// This field is used to obtain validator power in HandleThrottleQueues.
 	//
-	// This field is not used in the store key, but is persisted in value bytes,
-	// see QueueGlobalSlashEntry.
+	// This field is not used in the store key, but is persisted in value bytes, see QueueGlobalSlashEntry.
 	ProviderValConsAddr []byte `protobuf:"bytes,4,opt,name=provider_val_cons_addr,json=providerValConsAddr,proto3" json:"provider_val_cons_addr,omitempty"`
 }
 

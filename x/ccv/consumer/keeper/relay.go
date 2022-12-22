@@ -102,9 +102,9 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 			// append VSCMatured packet to pending packets
 			// sending packets is attempted each EndBlock
 			// unsent packets remain in the queue until sent
-			k.AppendPendingPacket(ctx, types.ConsumerPacket{
-				Type: types.VscMaturedPacket,
-				Data: vscPacket.GetBytes(),
+			k.AppendPendingPacket(ctx, ccv.ConsumerPacketData{
+				Type: ccv.VscMaturedPacket,
+				Data: &ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscPacket},
 			})
 
 			ctx.EventManager().EmitEvent(
@@ -149,9 +149,11 @@ func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, vals
 
 	// append the Slash packet data to pending data packets
 	// to be sent once the CCV channel is established
-	k.AppendPendingPacket(ctx, types.ConsumerPacket{
-		Type: types.SlashPacket,
-		Data: slashPacket.GetBytes(),
+	k.AppendPendingPacket(ctx, ccv.ConsumerPacketData{
+		Type: ccv.SlashPacket,
+		Data: &ccv.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: slashPacket,
+		},
 	})
 
 	ctx.EventManager().EmitEvent(
@@ -182,6 +184,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 
 	pending := k.GetPendingPackets(ctx)
 	for _, p := range pending.GetList() {
+
 		// send packet over IBC
 		err := utils.SendIBCPacket(
 			ctx,
@@ -189,7 +192,7 @@ func (k Keeper) SendPackets(ctx sdk.Context) {
 			k.channelKeeper,
 			channelID,          // source channel id
 			ccv.ConsumerPortID, // source port id
-			p.Data,
+			p.GetBytes(),
 			k.GetCCVTimeoutPeriod(ctx),
 		)
 

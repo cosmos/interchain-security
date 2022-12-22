@@ -348,7 +348,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		},
 		{
 			"full downtime packet handling, uses init chain height and non-jailed validator",
-			ccv.NewSlashPacketData(abci.Validator{}, 0, stakingtypes.Downtime), // ValsetUpdateId = 0 uses init chain height.
+			*ccv.NewSlashPacketData(abci.Validator{}, 0, stakingtypes.Downtime), // ValsetUpdateId = 0 uses init chain height.
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
@@ -358,7 +358,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		},
 		{
 			"full downtime packet handling, uses valid vscID and jailed validator",
-			ccv.NewSlashPacketData(abci.Validator{}, validVscID, stakingtypes.Downtime),
+			*ccv.NewSlashPacketData(abci.Validator{}, validVscID, stakingtypes.Downtime),
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
@@ -368,7 +368,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		},
 		{
 			"full double sign packet handling, uses init chain height and jailed validator",
-			ccv.NewSlashPacketData(abci.Validator{}, 0, stakingtypes.DoubleSign),
+			*ccv.NewSlashPacketData(abci.Validator{}, 0, stakingtypes.DoubleSign),
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
@@ -378,7 +378,7 @@ func TestHandleSlashPacket(t *testing.T) {
 		},
 		{
 			"full double sign packet handling, uses valid vsc id and non-jailed validator",
-			ccv.NewSlashPacketData(abci.Validator{}, validVscID, stakingtypes.DoubleSign),
+			*ccv.NewSlashPacketData(abci.Validator{}, validVscID, stakingtypes.DoubleSign),
 			func(ctx sdk.Context, mocks testkeeper.MockedKeepers,
 				expectedPacketData ccv.SlashPacketData,
 			) []*gomock.Call {
