@@ -57,3 +57,33 @@ message SlashPacketData {
 message MaturedUnbondingOps {
   repeated uint64 ids = 1;
 }
+
+// ConsumerPacketData contains a consumer packet data and a type tag
+message ConsumerPacketData {
+  ConsumerPacketDataType type = 1; 
+
+  oneof data {
+    SlashPacketData slashPacketData = 2;
+    VSCMaturedPacketData vscMaturedPacketData = 3;
+  }
+}
+
+
+// ConsumerPacketDataList is a list of consumer packet data packets.
+message ConsumerPacketDataList {
+  repeated ConsumerPacketData list = 1
+  [ (gogoproto.nullable) = false ];
+}
+
+
+// ConsumerPacketType indicates interchain security specific packet types.
+enum ConsumerPacketDataType {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // UNSPECIFIED packet type
+  CONSUMER_PACKET_TYPE_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "UnspecifiedPacket"];
+  // Slash packet
+  CONSUMER_PACKET_TYPE_SLASH = 1 [(gogoproto.enumvalue_customname) = "SlashPacket"];
+  // VSCMatured packet
+  CONSUMER_PACKET_TYPE_VSCM = 2 [(gogoproto.enumvalue_customname) = "VscMaturedPacket"];
+}
