@@ -741,8 +741,26 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 			providerKeeper.GetThrottledPacketDataSize(s.providerCtx(), bundle.Chain.ChainID))
 	}
 	// Confirm global queue size is 50 * 5 (50 slash packets for each of 5 consumers)
-	// globalEntries := providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
-	// s.Require().Equal(len(globalEntries), 50*5)
+	globalEntries := providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
+	s.Require().Equal(len(globalEntries), 50*5)
+
+	// Set slash meter to negative value to not allow any slash packets to be handled.
+	providerKeeper.SetSlashMeter(s.providerCtx(), sdktypes.NewInt(-1))
+
+	// Set last full time to block time, so no slash meter replenishment happens on end block.
+	providerKeeper.SetLastSlashMeterFullTime(s.providerCtx(), s.providerCtx().BlockTime())
+
+	// Execute end blocker to dequeue only the leading vsc matured packets.
+	s.providerChain.NextBlock()
+
+	// Confirm queue size is 100 for each consumer-specific queue (50 leading vsc matured are dequeued).
+	for _, bundle := range s.consumerBundles {
+		s.Require().Equal(uint64(100),
+			providerKeeper.GetThrottledPacketDataSize(s.providerCtx(), bundle.Chain.ChainID))
+	}
+
+	// No slash packets handled, global slash queue is same size as last block.
+	s.Require().Equal(len(globalEntries), 50*5)
 }
 
 func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPower bool) {
