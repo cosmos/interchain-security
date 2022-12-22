@@ -109,10 +109,10 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 	ack := executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-1", 1)
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 
-	// Assert that the packet data was handled immediately, not queued
-	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
+	// Assert that the packet data was queued for chain-1
+	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
 
-	// Other queue still empty
+	// chain-2 queue empty
 	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
 
 	// Now queue a slash packet data instance for chain-2, then confirm the on recv method
@@ -122,26 +122,20 @@ func TestOnRecvVSCMaturedPacket(t *testing.T) {
 	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 	require.Equal(t, uint64(2), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
 
-	// Other queue still empty
-	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
+	// Chain-1 still has 1 packet data queued
+	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
 
-	// Receive 5 more vsc matured packets for chain-2, then confirm chain-2 queue size is 7, chain-1 still 0
+	// Receive 5 more vsc matured packets for chain-2, then confirm chain-2 queue size is 7, chain-1 still size 1
 	for i := 0; i < 5; i++ {
 		ack = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", uint64(i+3))
 		require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
 	}
 	require.Equal(t, uint64(7), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
-	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
+	require.Equal(t, uint64(1), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
 
 	// Delete chain-2's data from its queue, then confirm the queue size is 0
 	providerKeeper.DeleteThrottledPacketData(ctx, "chain-2", []uint64{1, 2, 3, 4, 5, 6, 7}...)
 	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
-
-	// Finally, confirm vsc packet data will again be handled immediately
-	ack = executeOnRecvVSCMaturedPacket(t, &providerKeeper, ctx, "channel-2", 8)
-	require.Equal(t, channeltypes.NewResultAcknowledgement([]byte{byte(1)}), ack)
-	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-2"))
-	require.Equal(t, uint64(0), providerKeeper.GetThrottledPacketDataSize(ctx, "chain-1"))
 }
 
 func TestHandleLeadingVSCMaturedPackets(t *testing.T) {

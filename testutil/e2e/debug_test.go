@@ -184,8 +184,8 @@ func TestSlashAllValidators(t *testing.T) {
 	runCCVTestByName(t, "TestSlashAllValidators")
 }
 
-func TestLeadingVSCMaturedAreHandled(t *testing.T) {
-	runCCVTestByName(t, "TestLeadingVSCMaturedAreHandled")
+func TestLeadingVSCMaturedAreDequeued(t *testing.T) {
+	runCCVTestByName(t, "TestLeadingVSCMaturedAreDequeued")
 }
 
 //

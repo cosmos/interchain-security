@@ -693,7 +693,7 @@ func (s CCVTestSuite) TestSlashAllValidators() {
 	// "applying the validator changes would result in empty set".
 }
 
-func (s *CCVTestSuite) TestLeadingVSCMaturedAreHandled() {
+func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 	s.SetupAllCCVChannels()
 
 	// Setup 4 validators with 25% of the total power each.
@@ -701,9 +701,9 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreHandled() {
 
 	providerKeeper := s.providerApp.GetProviderKeeper()
 
-	// Queue up 100 vsc matured packets for each consumer
+	// Queue up 50 vsc matured packets for each consumer
 	for _, bundle := range s.consumerBundles {
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 50; i++ {
 			ibcSeqNum := uint64(i)
 			packet := s.constructVSCMaturedPacketFromConsumer(*bundle, ibcSeqNum)
 			packetData := ccvtypes.VSCMaturedPacketData{}
@@ -711,6 +711,38 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreHandled() {
 			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(), packet, packetData)
 		}
 	}
+
+	// Queue up 50 slash packets for each consumer
+	for _, bundle := range s.consumerBundles {
+		for i := 0; i < 50; i++ {
+			ibcSeqNum := uint64(i)
+			packet := s.constructSlashPacketFromConsumer(*bundle,
+				*s.providerChain.Vals.Validators[0], stakingtypes.Downtime, ibcSeqNum)
+			packetData := ccvtypes.SlashPacketData{}
+			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
+			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, packetData)
+		}
+	}
+
+	// Queue up another 50 vsc matured packets for each consumer
+	for _, bundle := range s.consumerBundles {
+		for i := 0; i < 50; i++ {
+			ibcSeqNum := uint64(i)
+			packet := s.constructVSCMaturedPacketFromConsumer(*bundle, ibcSeqNum)
+			packetData := ccvtypes.VSCMaturedPacketData{}
+			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
+			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(), packet, packetData)
+		}
+	}
+
+	// Confirm queue size is 150 for each consumer-specific queue.
+	for _, bundle := range s.consumerBundles {
+		s.Require().Equal(uint64(150),
+			providerKeeper.GetThrottledPacketDataSize(s.providerCtx(), bundle.Chain.ChainID))
+	}
+	// Confirm global queue size is 50 * 5 (50 slash packets for each of 5 consumers)
+	// globalEntries := providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
+	// s.Require().Equal(len(globalEntries), 50*5)
 }
 
 func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPower bool) {
