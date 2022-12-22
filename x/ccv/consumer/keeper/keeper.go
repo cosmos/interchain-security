@@ -206,24 +206,50 @@ func (k Keeper) DeletePendingChanges(ctx sdk.Context) {
 	store.Delete(types.PendingChangesKey())
 }
 
-// IteratePacketMaturityTime iterates through the VSC packet maturity times set in the store
-func (k Keeper) IteratePacketMaturityTime(ctx sdk.Context, cb func(vscId, timeNs uint64) (stop bool)) {
+// GetElapsedPacketMaturityTimes returns a slice of already elapsed PacketMaturityTimes, sorted by vscIDs,
+// i.e., the slice contains the IDs of the matured VSCPackets
+func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacket []consumertypes.MaturingVSCPacket) {
+	currentTime := uint64(ctx.BlockTime().UnixNano())
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		vscId := binary.BigEndian.Uint64(iterator.Key()[1:])
+		maturityTime := binary.BigEndian.Uint64(iterator.Value())
+
+		// If the maturity time is after the current time, then stop the iteration;
+		// TODO: the iteration over PacketMaturityTimes should be over maturity times,
+		// see https://github.com/cosmos/interchain-security/issues/598
+		if currentTime < maturityTime {
+			break
+		}
+
+		maturingVSCPacket = append(maturingVSCPacket, consumertypes.MaturingVSCPacket{
+			VscId:        vscId,
+			MaturityTime: maturityTime,
+		})
+	}
+	return maturingVSCPacket
+}
+
+// GetAllPacketMaturityTimes returns a slice of all PacketMaturityTimes, sorted by vscIDs.
+func (k Keeper) GetAllPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacket []consumertypes.MaturingVSCPacket) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.PacketMaturityTimeBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		// Extract bytes following the 1 byte prefix
-		seqBytes := iterator.Key()[1:]
-		seq := binary.BigEndian.Uint64(seqBytes)
+		vscId := binary.BigEndian.Uint64(iterator.Key()[1:])
+		maturityTime := binary.BigEndian.Uint64(iterator.Value())
 
-		timeNs := binary.BigEndian.Uint64(iterator.Value())
-
-		stop := cb(seq, timeNs)
-		if stop {
-			break
-		}
+		maturingVSCPacket = append(maturingVSCPacket, consumertypes.MaturingVSCPacket{
+			VscId:        vscId,
+			MaturityTime: maturityTime,
+		})
 	}
+	return maturingVSCPacket
 }
 
 // SetPacketMaturityTime sets the maturity time for a given received VSC packet id
@@ -299,23 +325,27 @@ func (k Keeper) DeleteHeightValsetUpdateID(ctx sdk.Context, height uint64) {
 	store.Delete(types.HeightValsetUpdateIDKey(height))
 }
 
-// IterateHeightToValsetUpdateID iterates over the block height to valset update ID mapping in store
-func (k Keeper) IterateHeightToValsetUpdateID(ctx sdk.Context, cb func(height, vscID uint64) (stop bool)) {
+// GetAllHeightToValsetUpdateIDs returns a list of all the block heights to valset update IDs in the store
+//
+// Note that the block height to vscID mapping is stored under keys with the following format:
+// HeightValsetUpdateIDBytePrefix | height
+// Thus, the returned array is in ascending order of heights.
+func (k Keeper) GetAllHeightToValsetUpdateIDs(ctx sdk.Context) (heightToValsetUpdateIDs []types.HeightToValsetUpdateID) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.HeightValsetUpdateIDBytePrefix})
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		heightBytes := iterator.Key()[1:]
-		height := binary.BigEndian.Uint64(heightBytes)
-
+		height := binary.BigEndian.Uint64(iterator.Key()[1:])
 		vscID := binary.BigEndian.Uint64(iterator.Value())
 
-		stop := cb(height, vscID)
-		if stop {
-			break
-		}
+		heightToValsetUpdateIDs = append(heightToValsetUpdateIDs, types.HeightToValsetUpdateID{
+			Height:         height,
+			ValsetUpdateId: vscID,
+		})
 	}
+
+	return heightToValsetUpdateIDs
 }
 
 // OutstandingDowntime returns the outstanding downtime flag for a given validator
@@ -341,8 +371,12 @@ func (k Keeper) DeleteOutstandingDowntime(ctx sdk.Context, consAddress string) {
 	store.Delete(types.OutstandingDowntimeKey(consAddr))
 }
 
-// IterateOutstandingDowntime iterates over the validator addresses of outstanding downtime flags
-func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address string) (stop bool)) {
+// GetAllOutstandingDowntimes gets an array of the validator addresses of outstanding downtime flags
+//
+// Note that the outstanding downtime flags are stored under keys with the following format:
+// OutstandingDowntimeBytePrefix | consAddress
+// Thus, the returned array is in ascending order of consAddresses.
+func (k Keeper) GetAllOutstandingDowntimes(ctx sdk.Context) (downtimes []consumertypes.OutstandingDowntime) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.OutstandingDowntimeBytePrefix})
 
@@ -350,11 +384,13 @@ func (k Keeper) IterateOutstandingDowntime(ctx sdk.Context, cb func(address stri
 	for ; iterator.Valid(); iterator.Next() {
 		addrBytes := iterator.Key()[1:]
 		addr := sdk.ConsAddress(addrBytes).String()
-		stop := cb(addr)
-		if stop {
-			break
-		}
+
+		downtimes = append(downtimes, consumertypes.OutstandingDowntime{
+			ValidatorConsensusAddress: addr,
+		})
 	}
+
+	return downtimes
 }
 
 // SetCCValidator sets a cross-chain validator under its validator address
@@ -385,6 +421,10 @@ func (k Keeper) DeleteCCValidator(ctx sdk.Context, addr []byte) {
 }
 
 // GetAllCCValidator returns all cross-chain validators
+//
+// Note that the cross-chain validators are stored under keys with the following format:
+// CrossChainValidatorBytePrefix | address
+// Thus, the returned array is in ascending order of addresses.
 func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChainValidator) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, []byte{types.CrossChainValidatorBytePrefix})
@@ -438,32 +478,4 @@ func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...ccv.ConsumerPacke
 	pending := k.GetPendingPackets(ctx)
 	list := append(pending.GetList(), packet...)
 	k.SetPendingPackets(ctx, ccv.ConsumerPacketDataList{List: list})
-}
-
-// GetHeightToValsetUpdateIDs returns all height to valset update id mappings in store
-func (k Keeper) GetHeightToValsetUpdateIDs(ctx sdk.Context) []types.HeightToValsetUpdateID {
-	heightToVCIDs := []types.HeightToValsetUpdateID{}
-	k.IterateHeightToValsetUpdateID(ctx, func(height, vscID uint64) (stop bool) {
-		hv := types.HeightToValsetUpdateID{
-			Height:         height,
-			ValsetUpdateId: vscID,
-		}
-		heightToVCIDs = append(heightToVCIDs, hv)
-		return false // do not stop iteration
-	})
-
-	return heightToVCIDs
-}
-
-// GetOutstandingDowntimes returns all outstanding downtimes in store
-func (k Keeper) GetOutstandingDowntimes(ctx sdk.Context) []consumertypes.OutstandingDowntime {
-	outstandingDowntimes := []types.OutstandingDowntime{}
-	k.IterateOutstandingDowntime(ctx, func(addr string) bool {
-		od := types.OutstandingDowntime{
-			ValidatorConsensusAddress: addr,
-		}
-		outstandingDowntimes = append(outstandingDowntimes, od)
-		return false
-	})
-	return outstandingDowntimes
 }

@@ -32,13 +32,6 @@ message ValidatorSetChangePackets {
   ];
 }
 
-
-message UnbondingOp {
-  uint64 id = 1;
-  // consumer chains that are still unbonding
-  repeated string unbonding_consumer_chains = 2;
-}
-
 // This packet is sent from the consumer chain to the provider chain
 // to notify that a VSC packet reached maturity on the consumer chain.
 message VSCMaturedPacketData {
@@ -58,11 +51,6 @@ message SlashPacketData {
   uint64 valset_update_id = 2;
   // tell if the slashing is for a downtime or a double-signing infraction
   cosmos.staking.v1beta1.InfractionType infraction = 3;
-}
-
-// UnbondingOpsIndex defines a list of unbonding operation ids.
-message UnbondingOpsIndex {
-  repeated uint64 ids = 1;
 }
 
 // MaturedUnbondingOps defines a list of ids corresponding to ids of matured unbonding operations. 
