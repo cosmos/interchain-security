@@ -703,9 +703,10 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 		for i := 0; i < 50; i++ {
 			ibcSeqNum := uint64(i)
 			packet := s.constructVSCMaturedPacketFromConsumer(*bundle, ibcSeqNum)
-			packetData := ccvtypes.VSCMaturedPacketData{}
+			packetData := ccvtypes.ConsumerPacketData{}
 			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
-			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(), packet, packetData)
+			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(),
+				packet, *packetData.GetVscMaturedPacketData())
 		}
 	}
 
@@ -715,9 +716,10 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 			ibcSeqNum := uint64(i)
 			packet := s.constructSlashPacketFromConsumer(*bundle,
 				*s.providerChain.Vals.Validators[0], stakingtypes.Downtime, ibcSeqNum)
-			packetData := ccvtypes.SlashPacketData{}
+			packetData := ccvtypes.ConsumerPacketData{}
 			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
-			providerKeeper.OnRecvSlashPacket(s.providerCtx(), packet, packetData)
+			providerKeeper.OnRecvSlashPacket(s.providerCtx(),
+				packet, *packetData.GetSlashPacketData())
 		}
 	}
 
@@ -726,9 +728,10 @@ func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
 		for i := 0; i < 50; i++ {
 			ibcSeqNum := uint64(i)
 			packet := s.constructVSCMaturedPacketFromConsumer(*bundle, ibcSeqNum)
-			packetData := ccvtypes.VSCMaturedPacketData{}
+			packetData := ccvtypes.ConsumerPacketData{}
 			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
-			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(), packet, packetData)
+			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(),
+				packet, *packetData.GetVscMaturedPacketData())
 		}
 	}
 
