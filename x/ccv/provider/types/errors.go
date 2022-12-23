@@ -19,5 +19,4 @@ var (
 	ErrInvalidConsumerParams              = sdkerrors.Register(ModuleName, 11, "invalid consumer params")
 	ErrSlashPacketInfractionHeightInvalid = sdkerrors.Register(ModuleName, 12, "cannot find infraction height")
 	ErrSlashPacketInfractionTypeInvalid   = sdkerrors.Register(ModuleName, 13, "infraction type invalid")
-	ErrSlashPacketOutdated                = sdkerrors.Register(ModuleName, 14, "slash packet out of date")
 )
