@@ -17,16 +17,6 @@ import (
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
-func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
-	for _, y := range slice {
-		if x != y {
-			newSlice = append(newSlice, y)
-		}
-	}
-
-	return newSlice, len(slice) - len(newSlice)
-}
-
 // OnRecvVSCMaturedPacket handles a VSCMatured packet
 func (k Keeper) OnRecvVSCMaturedPacket(
 	ctx sdk.Context,
@@ -42,17 +32,29 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	// If no packets are in the chain specific throttled packet data queue,
-	// immediately handle the vsc matured packet data.
-	if k.GetThrottledPacketDataSize(ctx, chainID) == 0 {
-		k.HandleVSCMaturedPacket(ctx, chainID, data)
-	} else {
-		// Otherwise queue the packet data (behind one or more throttled slash packet data instances)
-		k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
-	}
+	k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
+}
+
+// HandleLeadingVSCMaturedPackets handles all VSCMatured packet data that has been queued this block,
+// but does not need to be throttled. The handled data is then removed from the queue.
+//
+// Note: VSC matured packet data which is queued behind slash packet data CANNOT be
+// handled until the leading slash packet data has been handled. This is to maintain
+// the "VSC Maturity and Slashing Order" CCV property. If VSC matured packet data DOES NOT
+// trail slash packet data for that consumer, it will be handled in this method,
+// bypassing HandleThrottleQueues.
+func (k Keeper) HandleLeadingVSCMaturedPackets(ctx sdk.Context) {
+
+	for _, chain := range k.GetAllConsumerChains(ctx) {
+		leadingVscMatured, ibcSeqNums := k.GetLeadingVSCMaturedData(ctx, chain.ChainId)
+		for _, data := range leadingVscMatured {
+			k.HandleVSCMaturedPacket(ctx, chain.ChainId, data)
+		}
+		k.DeleteThrottledPacketData(ctx, chain.ChainId, ibcSeqNums...)
+	}
 }
 
 // HandleVSCMaturedPacket handles a VSCMatured packet.
@@ -233,6 +235,8 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	// This ensures the meter value is replenished, and not greater than the allowance (max value)
 	// for the block, before the throttling logic is executed.
 	k.CheckForSlashMeterReplenishment(ctx)
+	// Handle leading vsc matured packets before throttling logic
+	k.HandleLeadingVSCMaturedPackets(ctx)
 	// Execute slash packet throttling logic
 	k.HandleThrottleQueues(ctx)
 }
@@ -425,6 +429,16 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 			}
 		}
 	}
+}
+
+func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
+	for _, y := range slice {
+		if x != y {
+			newSlice = append(newSlice, y)
+		}
+	}
+
+	return newSlice, len(slice) - len(newSlice)
 }
 
 // getMappedInfractionHeight gets the infraction height mapped from val set ID for the given chain ID
