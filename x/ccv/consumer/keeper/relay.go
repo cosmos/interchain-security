@@ -87,14 +87,14 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 	for _, maturityTime := range k.GetElapsedPacketMaturityTimes(ctx) {
 		if ctx.BlockTime().Before(maturityTime.MaturityTime) {
-			panic(fmt.Errorf("maturity time %s is greater than current time %s", maturityTime.MaturityTime, ctx.BlockTime()))
+			panic(fmt.Errorf("maturity time %s is after than current time %s", maturityTime.MaturityTime, ctx.BlockTime()))
 		}
 		// construct validator set change packet data
 		vscPacket := ccv.NewVSCMaturedPacketData(maturityTime.VscId)
 
-		// append VSCMatured packet to pending packets;
-		// sending packets is attempted each EndBlock;
-		// unsent packets remain in the queue until sent
+		// Append VSCMatured packet to pending packets.
+		// Sending packets is attempted each EndBlock.
+		// Unsent packets remain in the queue until sent.
 		k.AppendPendingPacket(ctx, ccv.ConsumerPacketData{
 			Type: ccv.VscMaturedPacket,
 			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscPacket},

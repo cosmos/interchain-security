@@ -221,8 +221,8 @@ func (k Keeper) GetElapsedPacketMaturityTimes(ctx sdk.Context) (maturingVSCPacke
 			panic(fmt.Errorf("failed to unmarshal MaturingVSCPacket: %w", err))
 		}
 
-		// If the maturity time is after the current time, then stop the iteration;
-		// this is possible since the iteration over PacketMaturityTimes is in order
+		// If the current block time is before maturity time then stop the iteration.
+		// This is possible since the iteration over PacketMaturityTimes is in order
 		// of maturity times
 		if ctx.BlockTime().Before(maturingVSCPacket.MaturityTime) {
 			break
