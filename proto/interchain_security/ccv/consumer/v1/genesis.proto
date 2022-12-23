@@ -23,7 +23,7 @@ message GenesisState {
   // ProviderConsensusState filled in on new chain, nil on restart.
   ibc.lightclients.tendermint.v1.ConsensusState provider_consensus_state = 6;
   // MaturingPackets nil on new chain, filled in on restart.
-  repeated MaturingVSCPacket maturing_packets = 7
+  repeated interchain_security.ccv.consumer.v1.MaturingVSCPacket maturing_packets = 7
       [ (gogoproto.nullable) = false ];
   // InitialValset filled in on new chain and on restart.
   repeated .tendermint.abci.ValidatorUpdate initial_val_set = 8
@@ -40,13 +40,6 @@ message GenesisState {
   // LastTransmissionBlockHeight nil on new chain, filled in on restart.
   interchain_security.ccv.consumer.v1.LastTransmissionBlockHeight last_transmission_block_height = 12
   [ (gogoproto.nullable) = false ];
-}
-
-// MaturingVSCPacket defines the genesis information for the
-// unbonding VSC packet
-message MaturingVSCPacket {
-  uint64 vscId = 1;
-  uint64 maturity_time = 2;
 }
 
 // HeightValsetUpdateID defines the genesis information for the mapping 

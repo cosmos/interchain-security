@@ -98,3 +98,11 @@ func SendIBCPacket(
 
 	return channelKeeper.SendPacket(ctx, channelCap, packet)
 }
+
+// AppendMany appends a variable number of byte slices together
+func AppendMany(byteses ...[]byte) (out []byte) {
+	for _, bytes := range byteses {
+		out = append(out, bytes...)
+	}
+	return out
+}

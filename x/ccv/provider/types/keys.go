@@ -7,6 +7,8 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	ccvutils "github.com/cosmos/interchain-security/x/ccv/utils"
 )
 
 type Status int
@@ -173,7 +175,7 @@ func InitTimeoutTimestampKey(chainID string) []byte {
 // The key has the following format: PendingCAPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCAPKey(timestamp time.Time, chainID string) []byte {
 	ts := uint64(timestamp.UTC().UnixNano())
-	return AppendMany(
+	return ccvutils.AppendMany(
 		// Append the prefix
 		[]byte{PendingCAPBytePrefix},
 		// Append the time
@@ -187,7 +189,7 @@ func PendingCAPKey(timestamp time.Time, chainID string) []byte {
 // The key has the following format: PendingCRPBytePrefix | timestamp.UnixNano() | chainID
 func PendingCRPKey(timestamp time.Time, chainID string) []byte {
 	ts := uint64(timestamp.UTC().UnixNano())
-	return AppendMany(
+	return ccvutils.AppendMany(
 		// Append the prefix
 		[]byte{PendingCRPBytePrefix},
 		// Append the time
@@ -306,7 +308,7 @@ func MustParseThrottledPacketDataKey(key []byte) (string, uint64) {
 // GlobalSlashEntryKey returns the key for storing a global slash queue entry.
 func GlobalSlashEntryKey(entry GlobalSlashEntry) []byte {
 	recvTime := uint64(entry.RecvTime.UTC().UnixNano())
-	return AppendMany(
+	return ccvutils.AppendMany(
 		// Append byte prefix
 		[]byte{GlobalSlashEntryBytePrefix},
 		// Append time bz
@@ -341,20 +343,12 @@ func ParseGlobalSlashEntryKey(bz []byte) (
 	return recvTime, chainID, ibcSeqNum
 }
 
-// AppendMany appends a variable number of byte slices together
-func AppendMany(byteses ...[]byte) (out []byte) {
-	for _, bytes := range byteses {
-		out = append(out, bytes...)
-	}
-	return out
-}
-
 // ChainIdAndTsKey returns the key with the following format:
 // bytePrefix | len(chainID) | chainID | timestamp
 func ChainIdAndTsKey(prefix byte, chainID string, timestamp time.Time) []byte {
 	partialKey := ChainIdWithLenKey(prefix, chainID)
 	timeBz := sdk.FormatTimeBytes(timestamp)
-	return AppendMany(
+	return ccvutils.AppendMany(
 		// Append the partialKey
 		partialKey,
 		// Append the time bytes
@@ -366,7 +360,7 @@ func ChainIdAndTsKey(prefix byte, chainID string, timestamp time.Time) []byte {
 // bytePrefix | len(chainID) | chainID
 func ChainIdWithLenKey(prefix byte, chainID string) []byte {
 	chainIdL := len(chainID)
-	return AppendMany(
+	return ccvutils.AppendMany(
 		// Append the prefix
 		[]byte{prefix},
 		// Append the chainID length
@@ -396,7 +390,7 @@ func ParseChainIdAndTsKey(prefix byte, bz []byte) (string, time.Time, error) {
 // bytePrefix | len(chainID) | chainID | uint64(ID)
 func ChainIdAndUintIdKey(prefix byte, chainID string, uintId uint64) []byte {
 	partialKey := ChainIdWithLenKey(prefix, chainID)
-	return AppendMany(
+	return ccvutils.AppendMany(
 		// Append the partialKey
 		partialKey,
 		// Append the uint id bytes
@@ -421,7 +415,7 @@ func ParseChainIdAndUintIdKey(prefix byte, bz []byte) (string, uint64, error) {
 // bytePrefix | len(chainID) | chainID | ConsAddress
 func ChainIdAndConsAddrKey(prefix byte, chainID string, addr sdk.ConsAddress) []byte {
 	partialKey := ChainIdWithLenKey(prefix, chainID)
-	return AppendMany(
+	return ccvutils.AppendMany(
 		// Append the partialKey
 		partialKey,
 		// Append the addr bytes

@@ -64,7 +64,7 @@ func TestInitGenesis(t *testing.T) {
 	matPackets := []consumertypes.MaturingVSCPacket{
 		{
 			VscId:        1,
-			MaturityTime: uint64(time.Now().UnixNano()),
+			MaturityTime: time.Now().UTC(),
 		},
 	}
 	pendingDataPackets := ccv.ConsumerPacketDataList{
@@ -185,7 +185,7 @@ func TestInitGenesis(t *testing.T) {
 				require.True(t, ok)
 				require.Equal(t, provChannelID, gotChannelID)
 
-				require.Equal(t, vscID, ck.GetPacketMaturityTime(ctx, vscID))
+				require.True(t, ck.PacketMaturityTimeExists(ctx, matPackets[0].VscId, matPackets[0].MaturityTime))
 				require.Equal(t, pendingDataPackets, ck.GetPendingPackets(ctx))
 
 				require.Equal(t, gs.OutstandingDowntimeSlashing, ck.GetAllOutstandingDowntimes(ctx))
@@ -236,7 +236,7 @@ func TestExportGenesis(t *testing.T) {
 	matPackets := []consumertypes.MaturingVSCPacket{
 		{
 			VscId:        1,
-			MaturityTime: uint64(time.Now().UnixNano()),
+			MaturityTime: time.Now().UTC(),
 		},
 	}
 

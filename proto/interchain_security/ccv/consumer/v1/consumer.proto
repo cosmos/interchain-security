@@ -9,6 +9,7 @@ import "google/protobuf/any.proto";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 
 // Params defines the parameters for CCV consumer module
 message Params {
@@ -68,3 +69,8 @@ message CrossChainValidator {
   ];
 }
 
+// MaturingVSCPacket contains the maturing time of a received VSCPacket
+message MaturingVSCPacket {
+  uint64 vscId = 1;
+  google.protobuf.Timestamp maturity_time = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}
