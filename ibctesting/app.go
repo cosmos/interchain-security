@@ -14,14 +14,11 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 
 	//"github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/keeper"
@@ -30,14 +27,18 @@ import (
 
 type AppIniter func() (TestingApp, map[string]json.RawMessage)
 
-var DefaultTestingAppInit AppIniter = SetupTestingApp
+var DefaultTestingAppInit AppIniter // AppIniter global variable is set by other setup functions
+
+type StakingKeeper interface {
+	// TODO: define whatever methods that e2e tests need for the staking keeper interface.
+}
 
 type TestingApp interface {
 	abci.Application
 
 	// ibc-go additions
 	GetBaseApp() *baseapp.BaseApp
-	GetStakingKeeper() stakingkeeper.Keeper
+	GetStakingKeeper() StakingKeeper // make this return a staking keeper interface
 	GetIBCKeeper() *keeper.Keeper
 	GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper
 	GetTxConfig() client.TxConfig
@@ -50,12 +51,14 @@ type TestingApp interface {
 	LastBlockHeight() int64
 }
 
-func SetupTestingApp() (TestingApp, map[string]json.RawMessage) {
-	db := dbm.NewMemDB()
-	encCdc := simapp.MakeTestEncodingConfig()
-	app := simapp.NewSimApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encCdc, simapp.EmptyAppOptions{})
-	return app, simapp.NewDefaultGenesisState(encCdc.Marshaler)
-}
+// I commented "SetupTestingApp" because it's just an example app that we don't need.
+
+// func SetupTestingApp() (TestingApp, map[string]json.RawMessage) {
+// 	db := dbm.NewMemDB()
+// 	encCdc := simapp.MakeTestEncodingConfig()
+// 	app := simapp.NewSimApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encCdc, simapp.EmptyAppOptions{})
+// 	return app, simapp.NewDefaultGenesisState(encCdc.Marshaler)
+// }
 
 // SetupWithGenesisValSet initializes a new SimApp with a validator set and genesis accounts
 // that also act as delegators. For simplicity, each validator is bonded with a delegation

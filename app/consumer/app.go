@@ -2,13 +2,14 @@ package app
 
 import (
 	"fmt"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	ibctestingutil "github.com/cosmos/interchain-security/ibctesting"
 	"io"
 	stdlog "log"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/cosmos/interchain-security/ibctesting"
+	ibctestingutil "github.com/cosmos/interchain-security/ibctesting"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -68,6 +69,7 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
+
 	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -688,7 +690,7 @@ func (app *App) GetBaseApp() *baseapp.BaseApp {
 //}
 
 // GetStakingKeeper implements the TestingApp interface.
-func (app *App) GetStakingKeeper() stakingkeeper.Keeper {
+func (app *App) GetStakingKeeper() ibctesting.StakingKeeper {
 	return app.ConsumerKeeper
 }
 
