@@ -693,6 +693,76 @@ func (s CCVTestSuite) TestSlashAllValidators() {
 	// "applying the validator changes would result in empty set".
 }
 
+func (s *CCVTestSuite) TestLeadingVSCMaturedAreDequeued() {
+
+	s.SetupAllCCVChannels()
+	providerKeeper := s.providerApp.GetProviderKeeper()
+
+	// Queue up 50 vsc matured packets for each consumer
+	for _, bundle := range s.consumerBundles {
+		for i := 0; i < 50; i++ {
+			ibcSeqNum := uint64(i)
+			packet := s.constructVSCMaturedPacketFromConsumer(*bundle, ibcSeqNum)
+			packetData := ccvtypes.ConsumerPacketData{}
+			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
+			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(),
+				packet, *packetData.GetVscMaturedPacketData())
+		}
+	}
+
+	// Queue up 50 slash packets for each consumer
+	for _, bundle := range s.consumerBundles {
+		for i := 0; i < 50; i++ {
+			ibcSeqNum := uint64(i)
+			packet := s.constructSlashPacketFromConsumer(*bundle,
+				*s.providerChain.Vals.Validators[0], stakingtypes.Downtime, ibcSeqNum)
+			packetData := ccvtypes.ConsumerPacketData{}
+			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
+			providerKeeper.OnRecvSlashPacket(s.providerCtx(),
+				packet, *packetData.GetSlashPacketData())
+		}
+	}
+
+	// Queue up another 50 vsc matured packets for each consumer
+	for _, bundle := range s.consumerBundles {
+		for i := 0; i < 50; i++ {
+			ibcSeqNum := uint64(i)
+			packet := s.constructVSCMaturedPacketFromConsumer(*bundle, ibcSeqNum)
+			packetData := ccvtypes.ConsumerPacketData{}
+			ccvtypes.ModuleCdc.MustUnmarshalJSON(packet.GetData(), &packetData)
+			providerKeeper.OnRecvVSCMaturedPacket(s.providerCtx(),
+				packet, *packetData.GetVscMaturedPacketData())
+		}
+	}
+
+	// Confirm queue size is 150 for each consumer-specific queue.
+	for _, bundle := range s.consumerBundles {
+		s.Require().Equal(uint64(150),
+			providerKeeper.GetThrottledPacketDataSize(s.providerCtx(), bundle.Chain.ChainID))
+	}
+	// Confirm global queue size is 50 * 5 (50 slash packets for each of 5 consumers)
+	globalEntries := providerKeeper.GetAllGlobalSlashEntries(s.providerCtx())
+	s.Require().Equal(len(globalEntries), 50*5)
+
+	// Set slash meter to negative value to not allow any slash packets to be handled.
+	providerKeeper.SetSlashMeter(s.providerCtx(), sdktypes.NewInt(-1))
+
+	// Set last full time to block time, so no slash meter replenishment happens on end block.
+	providerKeeper.SetLastSlashMeterFullTime(s.providerCtx(), s.providerCtx().BlockTime())
+
+	// Execute end blocker to dequeue only the leading vsc matured packets.
+	s.providerChain.NextBlock()
+
+	// Confirm queue size is 100 for each consumer-specific queue (50 leading vsc matured are dequeued).
+	for _, bundle := range s.consumerBundles {
+		s.Require().Equal(uint64(100),
+			providerKeeper.GetThrottledPacketDataSize(s.providerCtx(), bundle.Chain.ChainID))
+	}
+
+	// No slash packets handled, global slash queue is same size as last block.
+	s.Require().Equal(len(globalEntries), 50*5)
+}
+
 func (s *CCVTestSuite) confirmValidatorJailed(tmVal tmtypes.Validator, checkPower bool) {
 	sdkVal, found := s.providerApp.GetE2eStakingKeeper().GetValidator(
 		s.providerCtx(), sdktypes.ValAddress(tmVal.Address))

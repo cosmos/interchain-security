@@ -184,6 +184,10 @@ func TestSlashAllValidators(t *testing.T) {
 	runCCVTestByName(t, "TestSlashAllValidators")
 }
 
+func TestLeadingVSCMaturedAreDequeued(t *testing.T) {
+	runCCVTestByName(t, "TestLeadingVSCMaturedAreDequeued")
+}
+
 //
 // Unbonding tests
 //
