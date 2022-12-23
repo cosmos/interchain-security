@@ -269,7 +269,9 @@ func (k Keeper) SetPacketMaturityTime(ctx sdk.Context, vscId uint64, maturityTim
 	store.Set(types.PacketMaturityTimeKey(vscId, maturityTime), bz)
 }
 
-// PacketMaturityExists checks whether the packet maturity time for a given vscId and maturityTime exists
+// PacketMaturityExists checks whether the packet maturity time for a given vscId and maturityTime exists.
+//
+// Note: this method is only used in testing.
 func (k Keeper) PacketMaturityTimeExists(ctx sdk.Context, vscId uint64, maturityTime time.Time) bool {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.PacketMaturityTimeKey(vscId, maturityTime))

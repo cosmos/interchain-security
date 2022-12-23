@@ -115,7 +115,7 @@ func TestPacketMaturityTime(t *testing.T) {
 	})
 	expectedGetElapsedOrder := []types.MaturingVSCPacket{}
 	for _, packet := range packets {
-		// only packets with MaturityTime <= now
+		// only packets with MaturityTime before or equal to now
 		if !packet.MaturityTime.After(now) {
 			expectedGetElapsedOrder = append(expectedGetElapsedOrder, packet)
 		}
@@ -127,6 +127,10 @@ func TestPacketMaturityTime(t *testing.T) {
 
 	for _, packet := range packets {
 		ck.SetPacketMaturityTime(ctx, packet.VscId, packet.MaturityTime)
+	}
+
+	for _, packet := range packets {
+		require.True(t, ck.PacketMaturityTimeExists(ctx, packet.VscId, packet.MaturityTime))
 	}
 
 	maturingVSCPackets := ck.GetAllPacketMaturityTimes(ctx)
