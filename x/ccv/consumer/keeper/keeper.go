@@ -446,7 +446,7 @@ func (k Keeper) GetAllCCValidator(ctx sdk.Context) (validators []types.CrossChai
 }
 
 // SetPendingPackets sets the pending CCV packets
-func (k Keeper) SetPendingPackets(ctx sdk.Context, packets types.ConsumerPackets) {
+func (k Keeper) SetPendingPackets(ctx sdk.Context, packets ccv.ConsumerPacketDataList) {
 	store := ctx.KVStore(k.storeKey)
 	bz, err := packets.Marshal()
 	if err != nil {
@@ -456,8 +456,8 @@ func (k Keeper) SetPendingPackets(ctx sdk.Context, packets types.ConsumerPackets
 }
 
 // GetPendingPackets returns the pending CCV packets from the store
-func (k Keeper) GetPendingPackets(ctx sdk.Context) types.ConsumerPackets {
-	var packets types.ConsumerPackets
+func (k Keeper) GetPendingPackets(ctx sdk.Context) ccv.ConsumerPacketDataList {
+	var packets ccv.ConsumerPacketDataList
 
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get([]byte{types.PendingDataPacketsBytePrefix})
@@ -480,8 +480,8 @@ func (k Keeper) DeletePendingDataPackets(ctx sdk.Context) {
 }
 
 // AppendPendingDataPacket appends the given data packet to the pending data packets in store
-func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...types.ConsumerPacket) {
+func (k Keeper) AppendPendingPacket(ctx sdk.Context, packet ...ccv.ConsumerPacketData) {
 	pending := k.GetPendingPackets(ctx)
 	list := append(pending.GetList(), packet...)
-	k.SetPendingPackets(ctx, types.ConsumerPackets{List: list})
+	k.SetPendingPackets(ctx, ccv.ConsumerPacketDataList{List: list})
 }

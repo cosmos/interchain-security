@@ -174,18 +174,26 @@ func (am AppModule) OnRecvPacket(
 ) ibcexported.Acknowledgement {
 	var (
 		ack            ibcexported.Acknowledgement
-		vscMaturedData ccv.VSCMaturedPacketData
-		slashData      ccv.SlashPacketData
+		consumerPacket ccv.ConsumerPacketData
 	)
-	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &vscMaturedData); err == nil {
-		// handle VSCMaturedPacket
-		ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, vscMaturedData)
-	} else if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &slashData); err == nil {
-		// handle SlashPacket
-		ack = am.keeper.OnRecvSlashPacket(ctx, packet, slashData)
-	} else {
+	// unmarshall consumer packet
+	if err := ccv.ModuleCdc.UnmarshalJSON(packet.GetData(), &consumerPacket); err != nil {
 		errAck := channeltypes.NewErrorAcknowledgement("cannot unmarshal CCV packet data")
 		ack = &errAck
+	} else {
+		// TODO: call ValidateBasic method on consumer packet data
+
+		switch consumerPacket.Type {
+		case ccv.VscMaturedPacket:
+			// handle VSCMaturedPacket
+			ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, *consumerPacket.GetVscMaturedPacketData())
+		case ccv.SlashPacket:
+			// handle SlashPacket
+			ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
+		default:
+			errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("invalid consumer packet type: %q", consumerPacket.Type))
+			ack = &errAck
+		}
 	}
 
 	ctx.EventManager().EmitEvent(

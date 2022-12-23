@@ -385,6 +385,20 @@ func (suite *CCVTestSuite) SendEmptyVSCPacket() {
 // commitSlashPacket returns a commit hash for the given slash packet data
 // Note that it must be called before sending the embedding IBC packet.
 func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.SlashPacketData) []byte {
+
+	consumerPacket := ccv.ConsumerPacketData{
+		Type: ccv.SlashPacket,
+		Data: &ccv.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: &packetData,
+		},
+	}
+
+	return suite.commitConsumerPacket(ctx, consumerPacket)
+}
+
+// commitConsumerPacket returns a commit hash for the given consumer packet data
+// Note that it must be called before sending the embedding IBC packet.
+func (suite *CCVTestSuite) commitConsumerPacket(ctx sdk.Context, packetData ccv.ConsumerPacketData) []byte {
 	oldBlockTime := ctx.BlockTime()
 	timeout := uint64(oldBlockTime.Add(ccv.DefaultCCVTimeoutPeriod).UnixNano())
 
@@ -394,20 +408,26 @@ func (suite *CCVTestSuite) commitSlashPacket(ctx sdk.Context, packetData ccv.Sla
 	return channeltypes.CommitPacket(suite.consumerChain.App.AppCodec(), packet)
 }
 
-// constructSlashPacketFromConsumer constructs a slash packet to be sent from consumer to provider,
+// constructSlashPacketFromConsumer constructs an IBC packet embedding
+// slash packet data to be sent from consumer to provider
 func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
 	tmVal tmtypes.Validator, infractionType stakingtypes.InfractionType, ibcSeqNum uint64) channeltypes.Packet {
 
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
-	data := ccv.SlashPacketData{
-		Validator: abci.Validator{
-			Address: tmVal.Address,
-			Power:   tmVal.VotingPower,
+	data := ccv.ConsumerPacketData{
+		Type: ccv.SlashPacket,
+		Data: &ccv.ConsumerPacketData_SlashPacketData{
+			SlashPacketData: &ccv.SlashPacketData{
+				Validator: abci.Validator{
+					Address: tmVal.Address,
+					Power:   tmVal.VotingPower,
+				},
+				ValsetUpdateId: valsetUpdateId,
+				Infraction:     infractionType,
+			},
 		},
-		ValsetUpdateId: valsetUpdateId,
-		Infraction:     infractionType,
 	}
 
 	return channeltypes.NewPacket(data.GetBytes(),
@@ -421,15 +441,20 @@ func (s *CCVTestSuite) constructSlashPacketFromConsumer(bundle icstestingutils.C
 	)
 }
 
-// constructVSCMaturedPacketFromConsumer constructs a VSC Matured packet
-// to be sent from consumer to provider
+// constructVSCMaturedPacketFromConsumer constructs an IBC packet embedding
+// VSC Matured packet data to be sent from consumer to provider
 func (s *CCVTestSuite) constructVSCMaturedPacketFromConsumer(bundle icstestingutils.ConsumerBundle,
 	ibcSeqNum uint64) channeltypes.Packet {
 
 	valsetUpdateId := bundle.GetKeeper().GetHeightValsetUpdateID(
 		bundle.GetCtx(), uint64(bundle.GetCtx().BlockHeight()))
 
-	data := ccv.VSCMaturedPacketData{ValsetUpdateId: valsetUpdateId}
+	data := ccv.ConsumerPacketData{
+		Type: ccv.VscMaturedPacket,
+		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
+			VscMaturedPacketData: &ccv.VSCMaturedPacketData{ValsetUpdateId: valsetUpdateId},
+		},
+	}
 
 	return channeltypes.NewPacket(data.GetBytes(),
 		ibcSeqNum,
