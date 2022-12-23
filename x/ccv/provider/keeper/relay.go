@@ -296,10 +296,6 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 	packet channeltypes.Packet, data ccv.SlashPacketData) error {
 
-	if err := data.ValidateBasic(); err != nil {
-		return err
-	}
-
 	// return error if we cannot find infraction height matching the validator update id
 	if _, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId); !found {
 		return providertypes.ErrSlashPacketInfractionHeightInvalid
