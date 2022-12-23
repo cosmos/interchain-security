@@ -124,10 +124,6 @@ const (
 	// ConsumerAddrsToPruneBytePrefix is the byte prefix that will store the mapping from VSC ids
 	// to consumer validators addresses needed for pruning
 	ConsumerAddrsToPruneBytePrefix
-
-	// LastDowntimeValsetUpdateIdBytePrefix is the byte prefix that will store the mapping from chainID
-	// to valsetUpdateId needed to track that the last valsetUpdateId that had consumer initiated downtime slashing applied
-	LastDowntimeValsetUpdateIdBytePrefix
 )
 
 // PortKey returns the key to the port ID in the store
@@ -438,9 +434,4 @@ func ParseChainIdAndConsAddrKey(prefix byte, bz []byte) (string, sdk.ConsAddress
 	chainID := string(bz[prefixL+8 : prefixL+8+int(chainIdL)])
 	addr := bz[prefixL+8+int(chainIdL):]
 	return chainID, addr, nil
-}
-
-// InitTimeoutTimestampKey returns the key under which the init timeout timestamp for the given chainID is stored.
-func LastDowntimeValsetUpdateIdKey(chainID string) []byte {
-	return append([]byte{LastDowntimeValsetUpdateIdBytePrefix}, []byte(chainID)...)
 }

@@ -10,6 +10,7 @@ import (
 
 	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
 
+	cryptotestutil "github.com/cosmos/interchain-security/testutil/crypto"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
@@ -466,4 +467,46 @@ func TestGetAllUnbondingOps(t *testing.T) {
 	result := pk.GetAllUnbondingOps(ctx)
 	require.Len(t, result, len(ops))
 	require.Equal(t, expectedGetAllOrder, result)
+}
+
+func TestSlashAckExists(t *testing.T) {
+	consumerChain := "consumer-chain-id"
+	pk, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	testCases := []struct {
+		name         string
+		valConsAddr  string
+		expectResult bool
+	}{
+		{
+			"slash ack exists",
+			cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKConsAddress().String(),
+			true,
+		},
+		{
+			"slash ack not exists",
+			cryptotestutil.NewCryptoIdentityFromIntSeed(100).SDKConsAddress().String(),
+			false,
+		},
+		{
+			"slash ack not exists - zero valConsAddr",
+			"",
+			false,
+		},
+	}
+
+	// set some slash acks to use with test cased defined above
+	testAddrSlashAcks := []string{
+		cryptotestutil.NewCryptoIdentityFromIntSeed(0).SDKConsAddress().String(), // does not match any testcase values
+		cryptotestutil.NewCryptoIdentityFromIntSeed(1).SDKConsAddress().String(), // matches testcase value
+		cryptotestutil.NewCryptoIdentityFromIntSeed(2).SDKConsAddress().String(), // does not match any testcase values
+	}
+	pk.SetSlashAcks(ctx, consumerChain, testAddrSlashAcks)
+
+	for _, tc := range testCases {
+		exists := pk.SlashAckExists(ctx, consumerChain, tc.valConsAddr)
+		require.Equal(t, tc.expectResult, exists,
+			"wrong result for case '%s': expected %v - got %v", tc.name, tc.expectResult, exists)
+	}
 }

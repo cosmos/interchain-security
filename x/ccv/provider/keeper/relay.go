@@ -254,14 +254,14 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	}
 
 	if err := k.ValidateSlashPacket(ctx, chainID, packet, data); err != nil {
-		return channeltypes.NewErrorAcknowledgement(
-			fmt.Errorf(
-				"%w error validating slash packet - valsetUpdateId: %d, infraction: %s for chain: %s",
-				err,
-				data.ValsetUpdateId,
-				data.Infraction,
-				chainID).Error(),
-		)
+		ackErr := fmt.Errorf(
+			"%w error validating slash packet - valsetUpdateId: %d, infraction: %s for chain: %s",
+			err,
+			data.ValsetUpdateId,
+			data.Infraction,
+			chainID).Error()
+		k.Logger(ctx).Error(ackErr)
+		return channeltypes.NewErrorAcknowledgement(ackErr)
 	}
 
 	// The slash packet validator address may be known only on the consumer chain,
@@ -303,10 +303,6 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 
 	if data.Infraction != stakingtypes.DoubleSign && data.Infraction != stakingtypes.Downtime {
 		return providertypes.ErrSlashPacketInfractionTypeInvalid
-	}
-
-	if data.Infraction == stakingtypes.Downtime && data.ValsetUpdateId < k.GetLastDowntimeValsetUpdateId(ctx, chainID) {
-		return providertypes.ErrSlashPacketOutdated
 	}
 
 	return nil
@@ -354,7 +350,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	infractionHeight, found := k.getMappedInfractionHeight(ctx, chainID, data.ValsetUpdateId)
 	if !found {
 		k.Logger(ctx).Error(
-			"infraction height not found buut was found during slash packet validation. Dropping slash packet")
+			"infraction height not found but was found during slash packet validation. Dropping slash packet")
 		// drop packet
 		return
 	}
@@ -362,6 +358,9 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	switch data.Infraction {
 	case stakingtypes.Downtime:
 		exists := k.SlashAckExists(ctx, chainID, providerConsAddr.String())
+
+		// dropping the packet prevents the validator
+		// to not be slashed multiple times for downtime without unjailing
 		if exists {
 			k.Logger(ctx).Error(
 				fmt.Sprintf("downtime slash ack for '%s' already exists. Dropping slash packet", providerConsAddr.String()))
@@ -397,11 +396,6 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		k.stakingKeeper.Jail(ctx, providerConsAddr)
 	}
 	k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
-
-	// LastDowntimeValsetUpdateId increases monotonically
-	// all slash requests that are less than LastDowntimeValsetUpdateId will be dropped
-	// during slash request validation in OnRecvSlashPacket
-	k.SetLastDowntimeValsetUpdateId(ctx, chainID, data.ValsetUpdateId)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
