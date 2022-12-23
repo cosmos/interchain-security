@@ -108,38 +108,31 @@ func TestPacketMaturityTime(t *testing.T) {
 			MaturityTime: now.Add(time.Hour),
 		},
 	}
-	expectedGetAllOrder := packets
-	// sorting by MaturityTime
-	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
-		return expectedGetAllOrder[i].MaturityTime.Before(expectedGetAllOrder[j].MaturityTime)
-	})
-	expectedGetElapsedOrder := []types.MaturingVSCPacket{}
-	for _, packet := range packets {
-		// only packets with MaturityTime before or equal to now
-		if !packet.MaturityTime.After(now) {
-			expectedGetElapsedOrder = append(expectedGetElapsedOrder, packet)
-		}
-	}
-	// sorting by MaturityTime
-	sort.Slice(expectedGetElapsedOrder, func(i, j int) bool {
-		return expectedGetAllOrder[i].MaturityTime.Before(expectedGetAllOrder[j].MaturityTime)
-	})
+	// sort by MaturityTime and not by VscId
+	expectedGetAllOrder := []types.MaturingVSCPacket{packets[2], packets[1], packets[0], packets[3]}
+	// only packets with MaturityTime before or equal to now
+	expectedGetElapsedOrder := []types.MaturingVSCPacket{packets[2], packets[1], packets[0]}
 
+	// test SetPacketMaturityTime
 	for _, packet := range packets {
 		ck.SetPacketMaturityTime(ctx, packet.VscId, packet.MaturityTime)
 	}
 
+	// test PacketMaturityTimeExists
 	for _, packet := range packets {
 		require.True(t, ck.PacketMaturityTimeExists(ctx, packet.VscId, packet.MaturityTime))
 	}
 
+	// test GetAllPacketMaturityTimes
 	maturingVSCPackets := ck.GetAllPacketMaturityTimes(ctx)
 	require.Len(t, maturingVSCPackets, len(packets))
 	require.Equal(t, expectedGetAllOrder, maturingVSCPackets)
 
+	// test GetElapsedPacketMaturityTimes
 	elapsedMaturingVSCPackets := ck.GetElapsedPacketMaturityTimes(ctx.WithBlockTime(now))
 	require.Equal(t, expectedGetElapsedOrder, elapsedMaturingVSCPackets)
 
+	// test DeletePacketMaturityTimes
 	ck.DeletePacketMaturityTimes(ctx, packets[0].VscId, packets[0].MaturityTime)
 	require.False(t, ck.PacketMaturityTimeExists(ctx, packets[0].VscId, packets[0].MaturityTime))
 }
