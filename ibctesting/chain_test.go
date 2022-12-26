@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	"github.com/cosmos/ibc-go/v3/testing/mock"
 )
 
@@ -24,11 +24,11 @@ func TestCreateSortedSignerArray(t *testing.T) {
 
 	expected := []tmtypes.PrivValidator{privVal2, privVal1}
 
-	actual := ibctesting.CreateSortedSignerArray(privVal1, privVal2, validator1, validator2)
+	actual := CreateSortedSignerArray(privVal1, privVal2, validator1, validator2)
 	require.Equal(t, expected, actual)
 
 	// swap order
-	actual = ibctesting.CreateSortedSignerArray(privVal2, privVal1, validator2, validator1)
+	actual = CreateSortedSignerArray(privVal2, privVal1, validator2, validator1)
 	require.Equal(t, expected, actual)
 
 	// smaller address
@@ -38,10 +38,10 @@ func TestCreateSortedSignerArray(t *testing.T) {
 
 	expected = []tmtypes.PrivValidator{privVal1, privVal2}
 
-	actual = ibctesting.CreateSortedSignerArray(privVal1, privVal2, validator1, validator2)
+	actual = CreateSortedSignerArray(privVal1, privVal2, validator1, validator2)
 	require.Equal(t, expected, actual)
 
 	// swap order
-	actual = ibctesting.CreateSortedSignerArray(privVal2, privVal1, validator2, validator1)
+	actual = CreateSortedSignerArray(privVal2, privVal1, validator2, validator1)
 	require.Equal(t, expected, actual)
 }

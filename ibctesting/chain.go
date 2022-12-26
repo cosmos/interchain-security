@@ -3,6 +3,7 @@ package ibctesting
 import (
 	"bytes"
 	"fmt"
+	ibcsim "github.com/cosmos/interchain-security/ibcsim"
 	"testing"
 	"time"
 
@@ -34,7 +35,6 @@ import (
 	"github.com/cosmos/ibc-go/v3/modules/core/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/ibc-go/v3/testing/mock"
-	"github.com/cosmos/ibc-go/v3/testing/simapp"
 )
 
 var MaxAccounts = 10
@@ -349,7 +349,7 @@ func (chain *TestChain) SendMsgs(msgs ...sdk.Msg) (*sdk.Result, error) {
 	// ensure the chain has the latest time
 	chain.Coordinator.UpdateTimeForChain(chain)
 
-	_, r, err := simapp.SignAndDeliver(
+	_, r, err := ibcsim.SignAndDeliver(
 		chain.T,
 		chain.TxConfig,
 		chain.App.GetBaseApp(),

@@ -7,8 +7,8 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	"github.com/cosmos/ibc-go/v3/testing/simapp"
 	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	ibcsim "github.com/cosmos/interchain-security/ibcsim"
 	ibctesting "github.com/cosmos/interchain-security/ibctesting"
 	"github.com/stretchr/testify/require"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -31,7 +31,7 @@ func UpdateReceiverClient(sender *ibctesting.Endpoint, receiver *ibctesting.Endp
 
 	require.NoError(receiver.Chain.T, err)
 
-	_, _, err = simapp.SignAndDeliver(
+	_, _, err = ibcsim.SignAndDeliver(
 		receiver.Chain.T,
 		receiver.Chain.TxConfig,
 		receiver.Chain.App.GetBaseApp(),
@@ -63,7 +63,7 @@ func TryRecvPacket(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, p
 
 	RPmsg := channeltypes.NewMsgRecvPacket(packet, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
 
-	_, resWithAck, err := simapp.SignAndDeliver(
+	_, resWithAck, err := ibcsim.SignAndDeliver(
 		receiver.Chain.T,
 		receiver.Chain.TxConfig,
 		receiver.Chain.App.GetBaseApp(),
@@ -102,7 +102,7 @@ func TryRecvAck(sender *ibctesting.Endpoint, receiver *ibctesting.Endpoint, pack
 
 	ackMsg := channeltypes.NewMsgAcknowledgement(p, ack, proof, proofHeight, receiver.Chain.SenderAccount.GetAddress().String())
 
-	_, _, err = simapp.SignAndDeliver(
+	_, _, err = ibcsim.SignAndDeliver(
 		receiver.Chain.T,
 		receiver.Chain.TxConfig,
 		receiver.Chain.App.GetBaseApp(),
