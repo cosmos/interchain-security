@@ -5,10 +5,10 @@ import (
 
 	"testing"
 
-	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	ibctesting "github.com/cosmos/interchain-security/ibctesting"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
@@ -110,7 +110,7 @@ func (f *RelayedPath) EndAndBeginBlock(chainID string, dt time.Duration, preComm
 
 	for _, e := range ebRes.Events {
 		if e.Type == channeltypes.EventTypeSendPacket {
-			packet, _ := channelkeeper.ReconstructPacketFromEvent(e)
+			packet, _ := ibctesting.ReconstructPacketFromEvent(e)
 			// Collect packets
 			f.Link.AddPacket(chainID, packet)
 		}
