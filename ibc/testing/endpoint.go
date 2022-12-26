@@ -31,20 +31,6 @@ type Endpoint struct {
 	ChannelConfig    *ChannelConfig
 }
 
-// NewEndpoint constructs a new endpoint without the counterparty.
-// CONTRACT: the counterparty endpoint must be set by the caller.
-func NewEndpoint(
-	chain *TestChain, clientConfig ClientConfig,
-	connectionConfig *ConnectionConfig, channelConfig *ChannelConfig,
-) *Endpoint {
-	return &Endpoint{
-		Chain:            chain,
-		ClientConfig:     clientConfig,
-		ConnectionConfig: connectionConfig,
-		ChannelConfig:    channelConfig,
-	}
-}
-
 // NewDefaultEndpoint constructs a new endpoint using default values.
 // CONTRACT: the counterparty endpoitn must be set by the caller.
 func NewDefaultEndpoint(chain *TestChain) *Endpoint {
