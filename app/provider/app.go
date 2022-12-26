@@ -839,7 +839,7 @@ func (app *App) GetBaseApp() *baseapp.BaseApp {
 //	return app.StakingKeeper
 //}
 // GetStakingKeeper implements the TestingApp interface.
-func (app *App) GetStakingKeeper() stakingkeeper.Keeper {
+func (app *App) GetStakingKeeper() ibctestingutil.StakingKeeper {
 	return app.StakingKeeper
 }
 

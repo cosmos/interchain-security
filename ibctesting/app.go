@@ -31,6 +31,8 @@ var DefaultTestingAppInit AppIniter // AppIniter global variable is set by other
 
 type StakingKeeper interface {
 	// TODO: define whatever methods that e2e tests need for the staking keeper interface.
+	GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool)
+	UnbondingTime(ctx sdk.Context) time.Duration
 }
 
 type TestingApp interface {

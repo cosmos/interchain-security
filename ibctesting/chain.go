@@ -194,12 +194,12 @@ func (chain *TestChain) GetContext() sdk.Context {
 // GetSimApp returns the SimApp to allow usage ofnon-interface fields.
 // CONTRACT: This function should not be called by third parties implementing
 // their own SimApp.
-func (chain *TestChain) GetSimApp() *simapp.SimApp {
-	app, ok := chain.App.(*simapp.SimApp)
-	require.True(chain.T, ok)
-
-	return app
-}
+//func (chain *TestChain) GetSimApp() *simapp.SimApp {
+//	app, ok := chain.App.(*simapp.SimApp)
+//	require.True(chain.T, ok)
+//
+//	return app
+//}
 
 // QueryProof performs an abci query with the given key and returns the proto encoded merkle proof
 // for the query and the height at which the proof will succeed on a tendermint verifier.

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="317317c5-6152-436a-93e0-d019aecdfd4c" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/app/consumer-democracy/app.go" beforeDir="false" afterPath="$PROJECT_DIR$/app/consumer-democracy/app.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/provider/app.go" beforeDir="false" afterPath="$PROJECT_DIR$/app/provider/app.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ibctesting/app.go" beforeDir="false" afterPath="$PROJECT_DIR$/ibctesting/app.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ibctesting/chain.go" beforeDir="false" afterPath="$PROJECT_DIR$/ibctesting/chain.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/common.go" beforeDir="false" afterPath="$PROJECT_DIR$/tests/e2e/common.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/setup.go" beforeDir="false" afterPath="$PROJECT_DIR$/tests/e2e/setup.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/testutil/ibc_testing/generic_setup.go" beforeDir="false" afterPath="$PROJECT_DIR$/testutil/ibc_testing/generic_setup.go" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
+  </component>
+  <component name="GOROOT" url="file:///usr/local/go" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="2Iav0sq0No3gxpcfWVjuZgZpFa2" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.format.on.save.advertiser.fired&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.watchers.conflict.with.on.save.actions.check.performed&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/lg&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;yarn&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/testutil" />
+      <recent name="$PROJECT_DIR$/testutil/simibc" />
+      <recent name="$PROJECT_DIR$/ibctesting" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Go Test.TestConsumerDemocracyTestSuite in github.com/cosmos/interchain-security/tests/e2e">
+    <configuration name="TestCCVTestSuiteGaia in github.com/cosmos/interchain-security/tests/e2e" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="interchain-security" />
+      <working_directory value="$PROJECT_DIR$/tests/e2e" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/cosmos/interchain-security/tests/e2e" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestCCVTestSuiteGaia\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestConsumerChainProposalHandler in github.com/cosmos/interchain-security/x/ccv/provider" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="interchain-security" />
+      <working_directory value="$PROJECT_DIR$/x/ccv/provider" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/cosmos/interchain-security/x/ccv/provider" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestConsumerChainProposalHandler\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestConsumerDemocracyTestSuite in github.com/cosmos/interchain-security/tests/e2e" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="interchain-security" />
+      <working_directory value="$PROJECT_DIR$/tests/e2e" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/cosmos/interchain-security/tests/e2e" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestConsumerDemocracyTestSuite\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestHandleConsumerAdditionProposal in github.com/cosmos/interchain-security/x/ccv/provider/keeper" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="interchain-security" />
+      <working_directory value="$PROJECT_DIR$/x/ccv/provider/keeper" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/cosmos/interchain-security/x/ccv/provider/keeper" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestHandleConsumerAdditionProposal\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestMakeConsumerGenesis in github.com/cosmos/interchain-security/x/ccv/provider/keeper" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="interchain-security" />
+      <working_directory value="$PROJECT_DIR$/x/ccv/provider/keeper" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/cosmos/interchain-security/x/ccv/provider/keeper" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestMakeConsumerGenesis\E$" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Test.TestConsumerDemocracyTestSuite in github.com/cosmos/interchain-security/tests/e2e" />
+        <item itemvalue="Go Test.TestCCVTestSuiteGaia in github.com/cosmos/interchain-security/tests/e2e" />
+        <item itemvalue="Go Test.TestHandleConsumerAdditionProposal in github.com/cosmos/interchain-security/x/ccv/provider/keeper" />
+        <item itemvalue="Go Test.TestConsumerChainProposalHandler in github.com/cosmos/interchain-security/x/ccv/provider" />
+        <item itemvalue="Go Test.TestMakeConsumerGenesis in github.com/cosmos/interchain-security/x/ccv/provider/keeper" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VgoProject">
+    <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/x/ccv/provider/proposal_handler_test.go</url>
+          <line>93</line>
+          <option name="timeStamp" value="22" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>
