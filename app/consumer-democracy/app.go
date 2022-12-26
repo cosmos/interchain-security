@@ -811,11 +811,6 @@ func (app *App) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
 }
 
-//// GetStakingKeeper implements the TestingApp interface.
-//func (app *App) GetStakingKeeper() ibcclienttypes.StakingKeeper {
-//	return app.ConsumerKeeper
-//}
-
 // GetStakingKeeper implements the TestingApp interface.
 func (app *App) GetStakingKeeper() ibctestingutil.StakingKeeper {
 	return app.ConsumerKeeper
