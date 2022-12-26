@@ -8,8 +8,6 @@ import (
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 
-	// TODO: Remove ibc ref
-	//ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
 	ibcsimapp "github.com/cosmos/interchain-security/ibc/simapp"
 
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"

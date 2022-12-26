@@ -18,8 +18,6 @@ import (
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
 
-	// TODO: Remove ibc ref
-	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ibctestingcore "github.com/cosmos/interchain-security/ibc/core"
 	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
 

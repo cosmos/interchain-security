@@ -11,8 +11,6 @@ import (
 
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	ibctestingcore "github.com/cosmos/interchain-security/ibc/core"
-	// TODO: Remove ibc ref
-	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
 
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"

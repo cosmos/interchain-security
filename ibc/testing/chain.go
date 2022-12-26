@@ -34,8 +34,6 @@ import (
 	"github.com/cosmos/ibc-go/v3/modules/core/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/ibc-go/v3/testing/mock"
-	// TODO: Remove ibc ref
-	//"github.com/cosmos/ibc-go/v3/testing/simapp"
 	ibctestingcore "github.com/cosmos/interchain-security/ibc/core"
 	"github.com/cosmos/interchain-security/ibc/simapp"
 )

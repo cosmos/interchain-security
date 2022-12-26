@@ -3,8 +3,6 @@ package simapp
 import (
 	"github.com/cosmos/cosmos-sdk/std"
 
-	// TODO: Remove simapp ref
-	//simappparams "github.com/cosmos/ibc-go/v3/testing/simapp/params"
 	simappparams "github.com/cosmos/interchain-security/ibc/simapp/params"
 )
 

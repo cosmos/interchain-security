@@ -44,8 +44,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/capability"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	// TODO: Remove simapp ref
-	//simappparams "github.com/cosmos/ibc-go/v3/testing/simapp/params"
 	simappparams "github.com/cosmos/interchain-security/ibc/simapp/params"
 
 	"github.com/cosmos/cosmos-sdk/x/crisis"

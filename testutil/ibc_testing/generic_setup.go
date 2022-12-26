@@ -5,8 +5,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	// TODO: Remove ibc ref
-	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
 	e2eutil "github.com/cosmos/interchain-security/testutil/e2e"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"

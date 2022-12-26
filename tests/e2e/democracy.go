@@ -7,8 +7,6 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	// TODO: Remove ibc ref
-	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 

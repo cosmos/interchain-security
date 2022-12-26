@@ -13,8 +13,6 @@ import (
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
-	// TODO: Remove ibc ref
-	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
 	"github.com/cosmos/interchain-security/testutil/e2e"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"

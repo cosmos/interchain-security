@@ -88,8 +88,6 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	ibctestingcore "github.com/cosmos/interchain-security/ibc/core"
-	// TODO: Remove ibc ref
-	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
 
 	"github.com/gorilla/mux"

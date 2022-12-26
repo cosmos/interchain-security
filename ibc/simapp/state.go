@@ -19,8 +19,6 @@ import (
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	// TODO: Remove simapp ref
-	//simappparams "github.com/cosmos/ibc-go/v3/testing/simapp/params"
 	simappparams "github.com/cosmos/interchain-security/ibc/simapp/params"
 )
 
@@ -99,7 +97,6 @@ func AppStateFn(cdc codec.JSONCodec, simManager *module.SimulationManager) simty
 		notBondedCoins := sdk.NewCoin(stakingState.Params.BondDenom, notBondedTokens)
 		// edit bank state to make it have the not bonded pool tokens
 		bankStateBz, ok := rawState[banktypes.ModuleName]
-		// TODO(fdymylja/jonathan): should we panic in this case
 		if !ok {
 			panic("bank genesis state is missing")
 		}

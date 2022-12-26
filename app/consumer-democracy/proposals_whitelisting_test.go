@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	appConsumer "github.com/cosmos/interchain-security/app/consumer-democracy"
-	// TODO: Remove ibc ref
-	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
 	icstestingutils "github.com/cosmos/interchain-security/testutil/ibc_testing"
 	"github.com/stretchr/testify/require"

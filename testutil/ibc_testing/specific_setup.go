@@ -9,8 +9,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/simapp"
 
-	// TODO: Remove ibc ref
-	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
 	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
 
 	"github.com/tendermint/spm/cosmoscmd"

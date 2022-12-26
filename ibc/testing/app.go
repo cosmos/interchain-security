@@ -25,8 +25,6 @@ import (
 
 	"github.com/cosmos/ibc-go/v3/modules/core/keeper"
 
-	// TODO: Remove simapp ref
-	//"github.com/cosmos/ibc-go/v3/testing/simapp"
 	"github.com/cosmos/interchain-security/ibc/simapp"
 )
 
