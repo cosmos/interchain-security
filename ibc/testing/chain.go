@@ -35,7 +35,9 @@ import (
 	"github.com/cosmos/ibc-go/v3/modules/core/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/cosmos/ibc-go/v3/testing/mock"
-	"github.com/cosmos/ibc-go/v3/testing/simapp"
+	// TODO: Remove ibc ref
+	//"github.com/cosmos/ibc-go/v3/testing/simapp"
+	"github.com/cosmos/interchain-security/ibc/simapp"
 )
 
 var MaxAccounts = 10

@@ -2,6 +2,7 @@ package testing
 
 import (
 	"encoding/json"
+	"github.com/cosmos/interchain-security/ibc/core"
 	"testing"
 	"time"
 
@@ -22,9 +23,11 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/keeper"
-	"github.com/cosmos/ibc-go/v3/testing/simapp"
+
+	// TODO: Remove simapp ref
+	//"github.com/cosmos/ibc-go/v3/testing/simapp"
+	"github.com/cosmos/interchain-security/ibc/simapp"
 )
 
 type AppIniter func() (TestingApp, map[string]json.RawMessage)
@@ -36,7 +39,7 @@ type TestingApp interface {
 
 	// ibc-go additions
 	GetBaseApp() *baseapp.BaseApp
-	GetStakingKeeper() types.StakingKeeper
+	GetStakingKeeper() core.StakingKeeper
 	GetIBCKeeper() *keeper.Keeper
 	GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper
 	GetTxConfig() client.TxConfig

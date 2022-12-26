@@ -18,7 +18,9 @@ import (
 
 	"github.com/cosmos/ibc-go/v3/testing/mock"
 
-	ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	// TODO: Remove ibc ref
+	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
