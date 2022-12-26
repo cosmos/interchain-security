@@ -191,7 +191,8 @@ func (chain *TestChain) GetContext() sdk.Context {
 	return chain.App.GetBaseApp().NewContext(false, chain.CurrentHeader)
 }
 
-// GetSimApp returns the SimApp to allow usage ofnon-interface fields.
+//
+//GetSimApp returns the SimApp to allow usage ofnon-interface fields.
 // CONTRACT: This function should not be called by third parties implementing
 // their own SimApp.
 //func (chain *TestChain) GetSimApp() *simapp.SimApp {

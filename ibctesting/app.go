@@ -22,7 +22,7 @@ import (
 
 	//"github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/keeper"
-	"github.com/cosmos/ibc-go/v3/testing/simapp"
+	"github.com/cosmos/interchain-security/ibcsim"
 )
 
 type AppIniter func() (TestingApp, map[string]json.RawMessage)
@@ -136,7 +136,7 @@ func SetupWithGenesisValSet(t *testing.T, appIniter AppIniter, valSet *tmtypes.V
 		abci.RequestInitChain{
 			ChainId:         chainID,
 			Validators:      []abci.ValidatorUpdate{},
-			ConsensusParams: simapp.DefaultConsensusParams,
+			ConsensusParams: ibcsim.DefaultConsensusParams,
 			AppStateBytes:   stateBytes,
 		},
 	)
