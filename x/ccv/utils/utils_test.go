@@ -4,7 +4,9 @@ import (
 	"testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	ibcsimapp "github.com/cosmos/ibc-go/v3/testing/simapp"
+	// TODO: Remove ibc ref
+	//"github.com/cosmos/ibc-go/v3/testing/simapp"
+	ibcsimapp "github.com/cosmos/interchain-security/ibc/simapp"
 	"github.com/cosmos/interchain-security/x/ccv/utils"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"

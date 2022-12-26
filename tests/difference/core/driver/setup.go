@@ -20,6 +20,7 @@ import (
 
 	// TODO: Remove ibc ref
 	//ibctesting "github.com/cosmos/ibc-go/v3/testing"
+	ibctestingcore "github.com/cosmos/interchain-security/ibc/core"
 	ibctesting "github.com/cosmos/interchain-security/ibc/testing"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -45,7 +46,6 @@ import (
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 
-	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 )
 
@@ -645,7 +645,7 @@ func (b *Builder) endBlock(chainID string) {
 
 	for _, e := range ebRes.Events {
 		if e.Type == channeltypes.EventTypeSendPacket {
-			packet, _ := channelkeeper.ReconstructPacketFromEvent(e)
+			packet, _ := ibctestingcore.ReconstructPacketFromEvent(e)
 			// Collect packets
 			b.link.AddPacket(chainID, packet)
 		}

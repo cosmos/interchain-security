@@ -27,7 +27,6 @@ import (
 	tmversion "github.com/tendermint/tendermint/version"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	channelkeeper "github.com/cosmos/ibc-go/v3/modules/core/04-channel/keeper"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v3/modules/core/23-commitment/types"
 	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
@@ -37,6 +36,7 @@ import (
 	"github.com/cosmos/ibc-go/v3/testing/mock"
 	// TODO: Remove ibc ref
 	//"github.com/cosmos/ibc-go/v3/testing/simapp"
+	ibctestingcore "github.com/cosmos/interchain-security/ibc/core"
 	"github.com/cosmos/interchain-security/ibc/simapp"
 )
 
@@ -289,7 +289,7 @@ func (chain *TestChain) GetSentPacket(sequence uint64, channelID string) (packet
 func (chain *TestChain) setSentPacketsFromEvents(events []abci.Event) {
 	for _, event := range events {
 		if event.Type == channeltypes.EventTypeSendPacket {
-			packet, err := channelkeeper.ReconstructPacketFromEvent(event)
+			packet, err := ibctestingcore.ReconstructPacketFromEvent(event)
 			require.NoError(chain.T, err)
 			sentPacketKey := GetSentPacketKey(packet.GetSequence(), packet.GetSourceChannel())
 			chain.SentPackets[sentPacketKey] = packet
