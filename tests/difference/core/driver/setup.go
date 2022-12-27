@@ -118,7 +118,7 @@ func (b *Builder) consAddr(i int64) sdk.ConsAddress {
 func (b *Builder) getValidatorPK(seedIx int) mock.PV {
 	seed := []byte(b.initState.PKSeeds[seedIx])
 	//lint:ignore SA1019 We don't care because this is only a test.
-	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+	return mock.PV{PrivKey: &cosmosEd25519.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}} //nolint:staticcheck // we want to use these ed25519 keys here
 }
 
 func (b *Builder) getAppBytesAndSenders(chainID string, app ibctesting.TestingApp, genesis map[string]json.RawMessage,

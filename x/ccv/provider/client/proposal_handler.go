@@ -2,8 +2,8 @@ package client
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 
 	"path/filepath"
@@ -193,7 +193,7 @@ type ConsumerAdditionProposalReq struct {
 func ParseConsumerAdditionProposalJSON(proposalFile string) (ConsumerAdditionProposalJSON, error) {
 	proposal := ConsumerAdditionProposalJSON{}
 
-	contents, err := ioutil.ReadFile(filepath.Clean(proposalFile))
+	contents, err := os.ReadFile(filepath.Clean(proposalFile))
 	if err != nil {
 		return proposal, err
 	}
@@ -228,7 +228,7 @@ type ConsumerRemovalProposalReq struct {
 func ParseConsumerRemovalProposalJSON(proposalFile string) (ConsumerRemovalProposalJSON, error) {
 	proposal := ConsumerRemovalProposalJSON{}
 
-	contents, err := ioutil.ReadFile(filepath.Clean(proposalFile))
+	contents, err := os.ReadFile(filepath.Clean(proposalFile))
 	if err != nil {
 		return proposal, err
 	}
