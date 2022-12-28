@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -436,7 +438,7 @@ func New(
 
 	// register slashing module StakingHooks to the consumer keeper
 	app.ConsumerKeeper = *app.ConsumerKeeper.SetHooks(app.SlashingKeeper.Hooks())
-	consumerModule := ibcconsumer.NewAppModule(app.ConsumerKeeper)
+	consumerModule := ibcconsumer.NewAppModule(app.ConsumerKeeper, app.StakingKeeper)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
@@ -625,6 +627,8 @@ func New(
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
 		func(ctx sdk.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
+			fmt.Println("UPGRADING DATA!!!", upgradeName)
+
 			app.IBCKeeper.ConnectionKeeper.SetParams(ctx, ibcconnectiontypes.DefaultParams())
 
 			fromVM := make(map[string]uint64)
@@ -632,6 +636,26 @@ func New(
 			for moduleName, eachModule := range app.MM.Modules {
 				fromVM[moduleName] = eachModule.ConsensusVersion()
 			}
+
+			// TODO: should have a way to read from current node home
+			userHomeDir, err := os.UserHomeDir()
+			if err != nil {
+				stdlog.Println("Failed to get home dir %2", err)
+			}
+			nodeHome := userHomeDir + "/.sovereign/config/genesis.json"
+			fmt.Println("NodeHome:", nodeHome)
+			appState, _, err := genutiltypes.GenesisStateFromGenFile(nodeHome)
+			if err != nil {
+				return fromVM, fmt.Errorf("failed to unmarshal genesis state: %w", err)
+			}
+
+			var consumerGenesis = ibcconsumertypes.GenesisState{}
+			appCodec.MustUnmarshalJSON(appState[ibcconsumertypes.ModuleName], &consumerGenesis)
+
+			fmt.Println("appState[ibcconsumertypes.ModuleName]", string(appState[ibcconsumertypes.ModuleName]))
+			consumerGenesis.PreCCV = true
+			fmt.Println("consumerGenesis", consumerGenesis)
+			app.ConsumerKeeper.InitGenesis(ctx, &consumerGenesis)
 
 			ctx.Logger().Info("start to run module migrations...")
 
@@ -645,7 +669,10 @@ func New(
 	}
 
 	if upgradeInfo.Name == upgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
-		storeUpgrades := store.StoreUpgrades{}
+		fmt.Println("UPGRADING STORAGE!!!", upgradeName)
+		storeUpgrades := store.StoreUpgrades{
+			Added: []string{ibcconsumertypes.ModuleName},
+		}
 
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))

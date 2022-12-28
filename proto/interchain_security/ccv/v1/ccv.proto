@@ -9,14 +9,6 @@ import "cosmos/staking/v1beta1/staking.proto";
 import "gogoproto/gogo.proto";
 import "tendermint/abci/types.proto";
 
-// This packet is to send for preCCV chain, and once it's received consumer chain sends VSCMaturedPacketData
-// and consumer chain becomes preCCV chain as false, and provider chain record preCCV field as false on provider chain
-message ReplaceWholeValidatorSet {
-  repeated .tendermint.abci.ValidatorUpdate initial_val_set = 1
-      [ (gogoproto.nullable) = false ];
-  uint64 valset_update_id = 2;
-}
-
 // This packet is sent from provider chain to consumer chain if the validator
 // set for consumer chain changes (due to new bonding/unbonding messages or
 // slashing events) A VSCMatured packet from consumer chain will be sent

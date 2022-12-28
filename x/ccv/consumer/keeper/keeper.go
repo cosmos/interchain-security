@@ -18,6 +18,7 @@ import (
 	"github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	tmtypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -215,14 +216,30 @@ func (k Keeper) IsPreCCV(ctx sdk.Context) bool {
 	return false
 }
 
-func (k Keeper) SetPreCCV(ctx sdk.Context) {
+func (k Keeper) SetPreCCV(ctx sdk.Context, state *types.GenesisState) {
+	initialValSet := types.GenesisState{
+		InitialValSet: state.InitialValSet,
+	}
+	bz := k.cdc.MustMarshal(&initialValSet)
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.PreCCVKey(), []byte{1})
+	store.Set(types.PreCCVKey(), bz)
 }
 
 func (k Keeper) DeletePreCCV(ctx sdk.Context) {
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.PreCCVKey())
+}
+
+func (k Keeper) GetInitialValSet(ctx sdk.Context) []tmtypes.ValidatorUpdate {
+	store := ctx.KVStore(k.storeKey)
+	initialValSet := types.GenesisState{}
+	bz := store.Get(types.PreCCVKey())
+	if bz != nil {
+		k.cdc.MustUnmarshal(bz, &initialValSet)
+		return initialValSet.InitialValSet
+	}
+
+	return []tmtypes.ValidatorUpdate{}
 }
 
 // IteratePacketMaturityTime iterates through the VSC packet maturity times set in the store

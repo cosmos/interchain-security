@@ -59,10 +59,8 @@ message ConsumerAdditionProposal {
     // This param is a part of the cosmos sdk staking module. In the case of 
     // a ccv enabled consumer chain, the ccv module acts as the staking module.
     int64 historical_entries = 13;
-    string conn_id = 15; // the ID of the connection end on the consumer chain on top of which the CCV channel will be established.
-    string transfer_channel_id = 16; // the ID of a token transfer channel used for the Reward Distribution sub-protocol.
-    // TODO: preCCV field shouldn't be added here? to make sure if it's a new chain with consumer initial validator set
-    // or if initial validator set will be provided from provider chain via packet
+    // string conn_id = 15; // the ID of the connection end on the consumer chain on top of which the CCV channel will be established.
+    // string transfer_channel_id = 16; // the ID of a token transfer channel used for the Reward Distribution sub-protocol.
 }
 
 // ConsumerRemovalProposal is a governance proposal on the provider chain to remove (and stop) a consumer chain.

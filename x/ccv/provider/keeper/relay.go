@@ -161,7 +161,6 @@ func (k Keeper) SendVSCPackets(ctx sdk.Context) {
 
 // SendVSCPacketsToChain sends all queued VSC packets to the specified chain
 func (k Keeper) SendVSCPacketsToChain(ctx sdk.Context, chainID, channelID string) {
-	// TODO: send init genesis packet if target chain is preCCV?
 	pendingPackets := k.GetPendingVSCPackets(ctx, chainID)
 	for _, data := range pendingPackets {
 		// send packet over IBC
