@@ -95,6 +95,8 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
 	k.SetInitTimeoutTimestamp(ctx, chainID, uint64(ts.UnixNano()))
 
+	k.Logger(ctx).Info("created consumer client", "chain-id", chainID, "client-id", clientID)
+
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypeConsumerClientCreated,
@@ -204,6 +206,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	// Note: queued VSC matured packets can be safely removed from the per-chain queue,
 	// since all unbonding operations for this consumer are release above.
 	k.DeleteThrottledPacketDataForConsumer(ctx, chainID)
+
+	k.Logger(ctx).Info("consumer chain stopped", "chainID", chainID)
 
 	return nil
 }
@@ -349,6 +353,7 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		// The cached context is created with a new EventManager so we merge the event
 		// into the original context
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
+		k.Logger(ctx).Info("executed consumer addition proposal", "chain_id", prop.ChainId, "title", prop.Title, "spawn_time", prop.SpawnTime.UTC())
 		// write cache
 		writeFn()
 	}
