@@ -27,7 +27,7 @@ func NewRestartGenesisState(
 	maturingPackets []MaturingVSCPacket,
 	initValSet []abci.ValidatorUpdate,
 	heightToValsetUpdateIDs []HeightToValsetUpdateID,
-	pendingConsumerPackets ConsumerPackets,
+	pendingConsumerPackets ccv.ConsumerPacketDataList,
 	outstandingDowntimes []OutstandingDowntime,
 	lastTransBlockHeight LastTransmissionBlockHeight,
 	params Params,
@@ -133,7 +133,7 @@ func (gs GenesisState) Validate() error {
 			}
 			if len(gs.PendingConsumerPackets.List) != 0 {
 				for _, packet := range gs.PendingConsumerPackets.List {
-					if packet.Type == VscMaturedPacket {
+					if packet.Type == ccv.VscMaturedPacket {
 						return sdkerrors.Wrap(ccv.ErrInvalidGenesis, "pending maturing packets must be empty when handshake isn't completed")
 					}
 				}
@@ -158,7 +158,7 @@ func (gs GenesisState) Validate() error {
 }
 
 func (mat MaturingVSCPacket) Validate() error {
-	if mat.MaturityTime == 0 {
+	if mat.MaturityTime.IsZero() {
 		return sdkerrors.Wrap(ccv.ErrInvalidVSCMaturedTime, "cannot have 0 maturity time")
 	}
 	if mat.VscId == 0 {

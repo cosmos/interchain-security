@@ -16,7 +16,7 @@ TODO: Update `Provider Slashing Warranty` to accommodate that slash requests are
 
 ## Practical/Implementation Properties
 
-One property of this implementation (that probably doesn't need to be in the spec) is that if any of the chain-specific packet data queues become larger than `MaxPendingSlashingPackets (param)`, then the provider binary will panic, and the provider chain will halt. Therefore this param should be set carefully. See [PanicIfTooMuchThrottledPacketData](../x/ccv/provider/keeper/throttle.go#L264) for more details. This behavior is included so that if the provider binaries are queuing up more packet data than machines can handle, the provider chain halts deterministically between validators.
+One property of this implementation (that probably doesn't need to be in the spec) is that if any of the chain-specific packet data queues become larger than `MaxThrottledPackets (param)`, then the provider binary will panic, and the provider chain will halt. Therefore this param should be set carefully. See [PanicIfTooMuchThrottledPacketData](../x/ccv/provider/keeper/throttle.go#L264) for more details. This behavior is included so that if the provider binaries are queuing up more packet data than machines can handle, the provider chain halts deterministically between validators.
 
 ## Data structure - Global entry queue
 
@@ -48,7 +48,7 @@ Upon the provider receiving a VSCMatured packet from any of the established cons
 
 There exists one slash meter on the provider which stores an amount of voting power (integer), corresponding to an allowance of validators that can be jailed/tombstoned over time. This meter is initialized to a certain value on genesis, decremented whenever a slash packet is handled, and periodically replenished as decided by on-chain params.
 
-## Endblocker handling - HandlePendingSlashPackets
+## Endblocker handling - HandleThrottleQueues
 
 Every endblocker the following psuedocode is executed
 
@@ -67,7 +67,7 @@ while meter.IsPositive() && entriesExist() {
      handleSlashPacketAndTrailingVSCMaturedPackets(entry)
      // Delete entry in global queue, delete handled data
      entry.Delete()
-     deletePendingSlashPacketData()
+     deleteThrottledSlashPacketData()
      deleteTrailingVSCMaturedPacketData()
 }
 ```

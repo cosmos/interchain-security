@@ -1,7 +1,10 @@
 package keeper_test
 
 import (
+	"bytes"
+	"sort"
 	"testing"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -83,39 +86,55 @@ func TestPendingChanges(t *testing.T) {
 
 // TestPacketMaturityTime tests getter, setter, and iterator functionality for the packet maturity time of a received VSC packet
 func TestPacketMaturityTime(t *testing.T) {
-
-	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
-	consumerKeeper.SetPacketMaturityTime(ctx, 1, 10)
-	consumerKeeper.SetPacketMaturityTime(ctx, 2, 25)
-	consumerKeeper.SetPacketMaturityTime(ctx, 5, 15)
-	consumerKeeper.SetPacketMaturityTime(ctx, 6, 40)
+	now := time.Now().UTC()
+	packets := []types.MaturingVSCPacket{
+		{
+			VscId:        2,
+			MaturityTime: now,
+		},
+		{
+			VscId:        1,
+			MaturityTime: now.Add(-time.Hour),
+		},
+		{
+			VscId:        5,
+			MaturityTime: now.Add(-2 * time.Hour),
+		},
+		{
+			VscId:        6,
+			MaturityTime: now.Add(time.Hour),
+		},
+	}
+	// sort by MaturityTime and not by VscId
+	expectedGetAllOrder := []types.MaturingVSCPacket{packets[2], packets[1], packets[0], packets[3]}
+	// only packets with MaturityTime before or equal to now
+	expectedGetElapsedOrder := []types.MaturingVSCPacket{packets[2], packets[1], packets[0]}
 
-	consumerKeeper.DeletePacketMaturityTimes(ctx, 6)
+	// test SetPacketMaturityTime
+	for _, packet := range packets {
+		ck.SetPacketMaturityTime(ctx, packet.VscId, packet.MaturityTime)
+	}
 
-	require.Equal(t, uint64(10), consumerKeeper.GetPacketMaturityTime(ctx, 1))
-	require.Equal(t, uint64(25), consumerKeeper.GetPacketMaturityTime(ctx, 2))
-	require.Equal(t, uint64(15), consumerKeeper.GetPacketMaturityTime(ctx, 5))
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 3))
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 6))
+	// test PacketMaturityTimeExists
+	for _, packet := range packets {
+		require.True(t, ck.PacketMaturityTimeExists(ctx, packet.VscId, packet.MaturityTime))
+	}
 
-	orderedTimes := [][]uint64{{1, 10}, {2, 25}, {5, 15}}
-	i := 0
+	// test GetAllPacketMaturityTimes
+	maturingVSCPackets := ck.GetAllPacketMaturityTimes(ctx)
+	require.Len(t, maturingVSCPackets, len(packets))
+	require.Equal(t, expectedGetAllOrder, maturingVSCPackets)
 
-	consumerKeeper.IteratePacketMaturityTime(ctx, func(seq, time uint64) (stop bool) {
-		// require that we iterate through unbonding time in order of sequence
-		require.Equal(t, orderedTimes[i][0], seq)
-		require.Equal(t, orderedTimes[i][1], time)
-		i++
-		return false // do not stop the iteration
-	})
+	// test GetElapsedPacketMaturityTimes
+	elapsedMaturingVSCPackets := ck.GetElapsedPacketMaturityTimes(ctx.WithBlockTime(now))
+	require.Equal(t, expectedGetElapsedOrder, elapsedMaturingVSCPackets)
 
-	// delete all vscs remaining in state
-	consumerKeeper.DeletePacketMaturityTimes(ctx, 1, 2, 5)
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 1))
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 2))
-	require.Equal(t, uint64(0), consumerKeeper.GetPacketMaturityTime(ctx, 5))
+	// test DeletePacketMaturityTimes
+	ck.DeletePacketMaturityTimes(ctx, packets[0].VscId, packets[0].MaturityTime)
+	require.False(t, ck.PacketMaturityTimeExists(ctx, packets[0].VscId, packets[0].MaturityTime))
 }
 
 // TestCrossChainValidator tests the getter, setter, and deletion method for cross chain validator records
@@ -160,35 +179,71 @@ func TestCrossChainValidator(t *testing.T) {
 	require.False(t, found)
 }
 
+// TestGetAllCCValidator tests GetAllCCValidator behaviour correctness
+func TestGetAllCCValidator(t *testing.T) {
+	keeperParams := testkeeper.NewInMemKeeperParams(t)
+	// Explicitly register codec with public key interface
+	keeperParams.RegisterSdkCryptoCodecInterfaces()
+	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, keeperParams)
+	defer ctrl.Finish()
+
+	numValidators := 4
+	validators := []types.CrossChainValidator{}
+	for i := 0; i < numValidators; i++ {
+		validators = append(validators, testkeeper.GetNewCrossChainValidator(t))
+	}
+	// sorting by CrossChainValidator.Address
+	expectedGetAllOrder := validators
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return bytes.Compare(expectedGetAllOrder[i].Address, expectedGetAllOrder[j].Address) == -1
+	})
+
+	for _, val := range validators {
+		ck.SetCCValidator(ctx, val)
+	}
+
+	// iterate and check all results are returned in the expected order
+	result := ck.GetAllCCValidator(ctx)
+	require.Len(t, result, len(validators))
+	require.Equal(t, result, expectedGetAllOrder)
+}
+
 func TestSetPendingPackets(t *testing.T) {
 
 	consumerKeeper, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 	defer ctrl.Finish()
 
 	// prepare test setup
-	dataPackets := []types.ConsumerPacket{
+	dataPackets := []ccv.ConsumerPacketData{
 		{
-			Type: types.VscMaturedPacket,
-			Data: ccv.NewVSCMaturedPacketData(1).GetBytes(),
+			Type: ccv.VscMaturedPacket,
+			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
+				VscMaturedPacketData: ccv.NewVSCMaturedPacketData(1),
+			},
 		},
 		{
-			Type: types.VscMaturedPacket,
-			Data: ccv.NewVSCMaturedPacketData(2).GetBytes(),
+			Type: ccv.VscMaturedPacket,
+			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
+				VscMaturedPacketData: ccv.NewVSCMaturedPacketData(2),
+			},
 		},
 		{
-			Type: types.SlashPacket,
-			Data: ccv.NewSlashPacketData(
+			Type: ccv.SlashPacket,
+			Data: &ccv.ConsumerPacketData_SlashPacketData{SlashPacketData: ccv.NewSlashPacketData(
 				abci.Validator{Address: ed25519.GenPrivKey().PubKey().Address(), Power: int64(0)},
 				3,
 				stakingtypes.DoubleSign,
-			).GetBytes(),
+			),
+			},
 		},
 		{
-			Type: types.VscMaturedPacket,
-			Data: ccv.NewVSCMaturedPacketData(3).GetBytes(),
+			Type: ccv.VscMaturedPacket,
+			Data: &ccv.ConsumerPacketData_VscMaturedPacketData{
+				VscMaturedPacketData: ccv.NewVSCMaturedPacketData(3),
+			},
 		},
 	}
-	consumerKeeper.SetPendingPackets(ctx, types.ConsumerPackets{List: dataPackets})
+	consumerKeeper.SetPendingPackets(ctx, ccv.ConsumerPacketDataList{List: dataPackets})
 
 	storedDataPackets := consumerKeeper.GetPendingPackets(ctx)
 	require.NotEmpty(t, storedDataPackets)
@@ -200,14 +255,19 @@ func TestSetPendingPackets(t *testing.T) {
 		uint64(4),
 		stakingtypes.Downtime,
 	)
-	dataPackets = append(dataPackets, types.ConsumerPacket{Type: types.SlashPacket, Data: slashPacket.GetBytes()})
+	dataPackets = append(dataPackets, ccv.ConsumerPacketData{
+		Type: ccv.SlashPacket,
+		Data: &ccv.ConsumerPacketData_SlashPacketData{SlashPacketData: slashPacket}},
+	)
 	consumerKeeper.AppendPendingPacket(ctx, dataPackets[len(dataPackets)-1])
 	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
 	require.NotEmpty(t, storedDataPackets)
 	require.Equal(t, dataPackets, storedDataPackets.List)
 
 	vscMaturedPakcet := ccv.NewVSCMaturedPacketData(4)
-	dataPackets = append(dataPackets, types.ConsumerPacket{Type: types.VscMaturedPacket, Data: vscMaturedPakcet.GetBytes()})
+	dataPackets = append(dataPackets, ccv.ConsumerPacketData{Type: ccv.VscMaturedPacket,
+		Data: &ccv.ConsumerPacketData_VscMaturedPacketData{VscMaturedPacketData: vscMaturedPakcet}},
+	)
 	consumerKeeper.AppendPendingPacket(ctx, dataPackets[len(dataPackets)-1])
 	storedDataPackets = consumerKeeper.GetPendingPackets(ctx)
 	require.NotEmpty(t, storedDataPackets)
@@ -300,4 +360,75 @@ func TestVerifyProviderChain(t *testing.T) {
 		}
 		ctrl.Finish()
 	}
+}
+
+// TestGetAllHeightToValsetUpdateIDs tests GetAllHeightToValsetUpdateIDs behaviour correctness
+func TestGetAllHeightToValsetUpdateIDs(t *testing.T) {
+	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	cases := []types.HeightToValsetUpdateID{
+		{
+			ValsetUpdateId: 2,
+			Height:         22,
+		},
+		{
+			ValsetUpdateId: 1,
+			Height:         11,
+		},
+		{
+			// normal execution should not have two HeightToValsetUpdateID
+			// with the same ValsetUpdateId, but let's test it anyway
+			ValsetUpdateId: 1,
+			Height:         44,
+		},
+		{
+			ValsetUpdateId: 3,
+			Height:         33,
+		},
+	}
+	expectedGetAllOrder := cases
+	// sorting by Height
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return expectedGetAllOrder[i].Height < expectedGetAllOrder[j].Height
+	})
+
+	for _, c := range cases {
+		ck.SetHeightValsetUpdateID(ctx, c.Height, c.ValsetUpdateId)
+	}
+
+	// iterate and check all results are returned
+	result := ck.GetAllHeightToValsetUpdateIDs(ctx)
+	require.Len(t, result, len(cases))
+	require.Equal(t, expectedGetAllOrder, result)
+}
+
+// TestGetAllOutstandingDowntimes tests GetAllOutstandingDowntimes behaviour correctness
+func TestGetAllOutstandingDowntimes(t *testing.T) {
+	ck, ctx, ctrl, _ := testkeeper.GetConsumerKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+	defer ctrl.Finish()
+
+	addresses := []sdk.ConsAddress{
+		sdk.ConsAddress([]byte("consAddress2")),
+		sdk.ConsAddress([]byte("consAddress1")),
+		sdk.ConsAddress([]byte("consAddress4")),
+		sdk.ConsAddress([]byte("consAddress3")),
+	}
+	expectedGetAllOrder := []types.OutstandingDowntime{}
+	for _, addr := range addresses {
+		expectedGetAllOrder = append(expectedGetAllOrder, types.OutstandingDowntime{ValidatorConsensusAddress: addr.String()})
+	}
+	// sorting by ConsAddress
+	sort.Slice(expectedGetAllOrder, func(i, j int) bool {
+		return bytes.Compare(addresses[i], addresses[j]) == -1
+	})
+
+	for _, addr := range addresses {
+		ck.SetOutstandingDowntime(ctx, addr)
+	}
+
+	// iterate and check all results are returned in the expected order
+	result := ck.GetAllOutstandingDowntimes(ctx)
+	require.Len(t, result, len(addresses))
+	require.Equal(t, result, expectedGetAllOrder)
 }

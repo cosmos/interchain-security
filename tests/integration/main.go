@@ -38,6 +38,11 @@ func main() {
 	dmc.ValidateStringLiterals()
 	dmc.startDocker()
 
+	slash := SlashThrottleTestRun()
+	slash.SetLocalSDKPath(*localSdkPath)
+	slash.ValidateStringLiterals()
+	slash.startDocker()
+
 	if *multiconsumer {
 		mul := MultiConsumerTestRun()
 		mul.SetLocalSDKPath(*localSdkPath)
@@ -53,6 +58,9 @@ func main() {
 
 	wg.Add(1)
 	go dmc.ExecuteSteps(&wg, democracySteps)
+
+	wg.Add(1)
+	go slash.ExecuteSteps(&wg, slashThrottleSteps)
 
 	wg.Wait()
 	fmt.Printf("TOTAL TIME ELAPSED: %v\n", time.Since(start))
@@ -104,6 +112,8 @@ func (tr *TestRun) runStep(step Step, verbose bool) {
 		tr.registerRepresentative(action, verbose)
 	case assignConsumerPubKeyAction:
 		tr.assignConsumerPubKey(action, verbose)
+	case slashThrottleDequeue:
+		tr.waitForSlashThrottleDequeue(action, verbose)
 	default:
 		log.Fatalf(fmt.Sprintf(`unknown action in testRun %s: %#v`, tr.name, action))
 	}

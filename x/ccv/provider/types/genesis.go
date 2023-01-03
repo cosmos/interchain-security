@@ -13,7 +13,7 @@ func NewGenesisState(
 	vscID uint64,
 	vscIdToHeights []ValsetUpdateIdToHeight,
 	consumerStates []ConsumerState,
-	unbondingOps []ccv.UnbondingOp,
+	unbondingOps []UnbondingOp,
 	matureUbdOps *ccv.MaturedUnbondingOps,
 	additionProposals []ConsumerAdditionProposal,
 	removalProposals []ConsumerRemovalProposal,
@@ -122,10 +122,10 @@ func (cs ConsumerState) Validate() error {
 	}
 
 	for _, ubdOpIdx := range cs.UnbondingOpsIndex {
-		if ubdOpIdx.ValsetUpdateId == 0 {
+		if ubdOpIdx.VscId == 0 {
 			return fmt.Errorf("valset update ID cannot be equal to zero")
 		}
-		if len(ubdOpIdx.UnbondingOpIndex) == 0 {
+		if len(ubdOpIdx.UnbondingOpIds) == 0 {
 			return fmt.Errorf("unbonding operation index cannot be empty: %#v", ubdOpIdx)
 		}
 	}

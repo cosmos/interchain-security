@@ -11,7 +11,7 @@ func NewConsumerStates(
 	channelID string,
 	initialHeight uint64,
 	genesis consumertypes.GenesisState,
-	unbondingOpsIndexes []UnbondingOpIndex,
+	unbondingOpsIndexes []VscUnbondingOps,
 	pendingValsetChanges []ccv.ValidatorSetChangePacketData,
 	slashDowntimeAck []string,
 ) ConsumerState {

@@ -99,6 +99,8 @@ func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
 	suite.Require().NotNil(ack, "OnRecvVSCPacket did not return ack")
 	suite.Require().True(ack.Success(), "OnRecvVSCPacket did not return a Success Acknowledgment")
 
+	packetMaturities := consumerKeeper.GetAllPacketMaturityTimes(suite.consumerChain.GetContext())
+
 	// increase time such that first two packets are unbonded but third is not.
 	unbondingPeriod := consumerKeeper.GetUnbondingPeriod(suite.consumerChain.GetContext())
 	// increase time
@@ -106,14 +108,31 @@ func (suite *CCVTestSuite) TestQueueAndSendVSCMaturedPackets() {
 
 	// ensure first two packets are unbonded and VSCMatured packets are queued
 	// unbonded time is deleted
-	time1 := consumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 1)
-	time2 := consumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 2)
-	suite.Require().Equal(uint64(0), time1, "maturity time not deleted for mature packet 1")
-	suite.Require().Equal(uint64(0), time2, "maturity time not deleted for mature packet 2")
-
+	suite.Require().False(
+		consumerKeeper.PacketMaturityTimeExists(
+			suite.consumerChain.GetContext(),
+			packetMaturities[0].VscId,
+			packetMaturities[0].MaturityTime,
+		),
+		"maturity time not deleted for mature packet 1",
+	)
+	suite.Require().False(
+		consumerKeeper.PacketMaturityTimeExists(
+			suite.consumerChain.GetContext(),
+			packetMaturities[1].VscId,
+			packetMaturities[1].MaturityTime,
+		),
+		"maturity time not deleted for mature packet 2",
+	)
 	// ensure that third packet did not get unbonded and is still in store
-	time3 := consumerKeeper.GetPacketMaturityTime(suite.consumerChain.GetContext(), 3)
-	suite.Require().True(time3 > uint64(suite.consumerChain.GetContext().BlockTime().UnixNano()), "maturity time for packet 3 is not after current time")
+	suite.Require().True(
+		consumerKeeper.PacketMaturityTimeExists(
+			suite.consumerChain.GetContext(),
+			packetMaturities[2].VscId,
+			packetMaturities[2].MaturityTime,
+		),
+		"maturity time for packet 3 is not after current time",
+	)
 
 	// check that the packets are committed in state
 	commitments := suite.consumerApp.GetIBCKeeper().ChannelKeeper.GetAllPacketCommitmentsAtChannel(
