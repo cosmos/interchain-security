@@ -190,13 +190,7 @@ func (am AppModule) OnRecvPacket(
 			ack = am.keeper.OnRecvVSCMaturedPacket(ctx, packet, *consumerPacket.GetVscMaturedPacketData())
 		case ccv.SlashPacket:
 			// handle SlashPacket
-			sp := consumerPacket.GetSlashPacketData()
-			if err := sp.ValidateBasic(); err != nil {
-				errAck := channeltypes.NewErrorAcknowledgement("invalid CCV slash packet data")
-				ack = &errAck
-			} else {
-				ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
-			}
+			ack = am.keeper.OnRecvSlashPacket(ctx, packet, *consumerPacket.GetSlashPacketData())
 		default:
 			errAck := channeltypes.NewErrorAcknowledgement(fmt.Sprintf("invalid consumer packet type: %q", consumerPacket.Type))
 			ack = &errAck
