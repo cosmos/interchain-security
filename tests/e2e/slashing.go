@@ -10,6 +10,7 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
+	"github.com/cosmos/interchain-security/x/ccv/utils"
 
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
@@ -374,106 +375,396 @@ func (suite *CCVTestSuite) TestOnRecvSlashPacketErrors() {
 	suite.Require().Equal(uint64(1), (providerKeeper.GetThrottledPacketDataSize(ctx, consumerChainID)))
 }
 
-// TestHandleSlashPacketDistribution tests the slashing of an undelegation balance
-// by varying the slash packet VSC ID mapping to infraction heights
-// lesser, equal or greater than the undelegation entry creation height
-func (suite *CCVTestSuite) TestHandleSlashPacketDistribution() {
-	providerKeeper := suite.providerApp.GetProviderKeeper()
-	providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
-	providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
+// TestSlashUndelegation tests the slashing of an undelegation balance in various scenarios
+func (suite *CCVTestSuite) TestSlashUndelegation() {
+	valIndex := 0
+	bondAmt := sdk.NewInt(10000000)
+	halfBondAmt := bondAmt.Quo(sdk.NewInt(2))
+	slashFactor := suite.providerApp.GetE2eSlashingKeeper().SlashFractionDowntime(suite.providerCtx())
+	slashAmountDec := slashFactor.MulInt(halfBondAmt)
+	slashAmount := slashAmountDec.TruncateInt()
 
-	// choose a validator
-	tmValidator := suite.providerChain.Vals.Validators[0]
-	valAddr, err := sdk.ValAddressFromHex(tmValidator.Address.String())
-	suite.Require().NoError(err)
+	var powerBeforeDelegate int64
+	var powerBeforeUndelegate int64
+	var powerAfterUndelegate int64
+	var delegateConsumerHeight uint64
+	var undelegateConsumerHeight uint64
 
-	validator, found := providerStakingKeeper.GetValidator(suite.providerChain.GetContext(), valAddr)
-	suite.Require().True(found)
+	consumerUnbondingPeriod := suite.consumerApp.GetConsumerKeeper().GetUnbondingPeriod(suite.consumerCtx())
+	fmt.Printf("consumerUnbondingPeriod: %s\n", consumerUnbondingPeriod)
+	providerUnbondingPeriod := suite.providerApp.GetE2eStakingKeeper().UnbondingTime(suite.providerCtx())
+	fmt.Printf("providerUnbondingPeriod: %s\n", providerUnbondingPeriod)
 
-	// unbonding operations parameters
-	delAddr := suite.providerChain.SenderAccount.GetAddress()
-	bondAmt := sdk.NewInt(1000000)
-
-	// new delegator shares used
-	testShares := sdk.Dec{}
-
-	// setup the test with a delegation, a no-op and an undelegation
-	setupOperations := []struct {
-		fn func(suite *CCVTestSuite) error
+	testCases := []struct {
+		name                  string
+		slash                 func(consAddr sdk.ConsAddress)
+		checkDelegatorBalance func(delAddr sdk.AccAddress, initBalance sdk.Int)
 	}{
+		// infraction - delegate - undelegate - slash - mature consumer - mature provider
+		// TODO: this behavior is unexpected
+		// - neither the delegation nor undelegation should be slashed
 		{
-			func(suite *CCVTestSuite) error {
-				testShares, err = providerStakingKeeper.Delegate(suite.providerChain.GetContext(), delAddr, bondAmt, stakingtypes.Unbonded, stakingtypes.Validator(validator), true)
-				return err
+			"infraction before delegate, detected before maturity on consumer",
+			func(consAddr sdk.ConsAddress) {
+				// increment time by half of consumer unbonding period
+				// for the undelegation to not reach maturity yet
+				incrementTime(suite, consumerUnbondingPeriod/2)
+
+				// slash
+				suite.consumerApp.GetConsumerKeeper().Slash(
+					suite.consumerCtx(),
+					consAddr,
+					int64(delegateConsumerHeight)-1,
+					powerBeforeDelegate,
+					sdk.ZeroDec(),
+					stakingtypes.Downtime,
+				)
+
+				// increment time so that the unbonding period ends on the consumer
+				incrementTime(suite, consumerUnbondingPeriod)
+
+				// relay all packets from consumer to provider
+				relayAllCommittedPackets(
+					suite,
+					suite.consumerChain,
+					suite.path,
+					ccv.ConsumerPortID,
+					suite.path.EndpointA.ChannelID,
+					3, // 2 VSCMaturedPackets and 1 SlashPacket
+				)
 			},
-		}, {
-			func(suite *CCVTestSuite) error {
-				return nil
+			func(delAddr sdk.AccAddress, initBalance sdk.Int) {
+				// expectedBalance := initBalance
+				// suite.Require().Equal(
+				// 	expectedBalance,
+				// 	getBalance(suite, suite.providerCtx(), delAddr),
+				// 	"delegator shouldn't have been slashed",
+				// )
 			},
-		}, {
-			// undelegate a quarter of the new shares created
-			func(suite *CCVTestSuite) error {
-				_, err = providerStakingKeeper.Undelegate(suite.providerChain.GetContext(), delAddr, valAddr, testShares.QuoInt64(4))
-				return err
+		},
+		// delegate - infraction - undelegate - slash - mature consumer - mature provider
+		// slash
+		{
+			"infraction after delegate, before undelegate, detected before maturity on consumer",
+			func(consAddr sdk.ConsAddress) {
+				// increment time by half of consumer unbonding period
+				// for the undelegation to not reach maturity yet
+				incrementTime(suite, consumerUnbondingPeriod/2)
+
+				// slash
+				suite.consumerApp.GetConsumerKeeper().Slash(
+					suite.consumerCtx(),
+					consAddr,
+					int64(undelegateConsumerHeight)-1,
+					powerBeforeUndelegate,
+					sdk.ZeroDec(),
+					stakingtypes.Downtime,
+				)
+
+				// increment time so that the unbonding period ends on the consumer
+				incrementTime(suite, consumerUnbondingPeriod)
+
+				// relay all packets from consumer to provider
+				relayAllCommittedPackets(
+					suite,
+					suite.consumerChain,
+					suite.path,
+					ccv.ConsumerPortID,
+					suite.path.EndpointA.ChannelID,
+					3, // 2 VSCMaturedPackets and 1 SlashPacket
+				)
+			},
+			func(delAddr sdk.AccAddress, initBalance sdk.Int) {
+				// infraction before undelegate; slash successful
+				expectedBalance := initBalance.Sub(halfBondAmt).Sub(slashAmount)
+				suite.Require().Equal(
+					expectedBalance,
+					getBalance(suite, suite.providerCtx(), delAddr),
+					"delegator should have been slashed",
+				)
+			},
+		},
+		// delegate - undelegate - infraction - slash - mature consumer - mature provider
+		// no slash
+		{
+			"infraction after undelegate, detected before maturity on consumer",
+			func(consAddr sdk.ConsAddress) {
+				// increment time by half of consumer unbonding period
+				// for the undelegation to not reach maturity yet
+				incrementTime(suite, consumerUnbondingPeriod/2)
+
+				// slash
+				suite.consumerApp.GetConsumerKeeper().Slash(
+					suite.consumerCtx(),
+					consAddr,
+					int64(undelegateConsumerHeight)+1,
+					powerAfterUndelegate,
+					sdk.ZeroDec(),
+					stakingtypes.Downtime,
+				)
+
+				// increment time so that the unbonding period ends on the consumer
+				incrementTime(suite, consumerUnbondingPeriod)
+
+				// relay all packets from consumer to provider
+				relayAllCommittedPackets(
+					suite,
+					suite.consumerChain,
+					suite.path,
+					ccv.ConsumerPortID,
+					suite.path.EndpointA.ChannelID,
+					3,
+				)
+			},
+			func(delAddr sdk.AccAddress, initBalance sdk.Int) {
+				// undelegation occurred before infraction, thus it is not slashed
+				expectedBalance := initBalance.Sub(halfBondAmt)
+				suite.Require().Equal(
+					expectedBalance,
+					getBalance(suite, suite.providerCtx(), delAddr),
+					"delegator shouldn't have been slashed",
+				)
+			},
+		},
+		// delegate - infraction - undelegate - mature consumer - slash - mature provider
+		// slash
+		{
+			"infraction before undelegate, detected after maturity on consumer, before maturity on provider",
+			func(consAddr sdk.ConsAddress) {
+				// increment time so that the unbonding period ends on the consumer
+				incrementTime(suite, consumerUnbondingPeriod+time.Hour)
+
+				// relay all packets from consumer to provider
+				relayAllCommittedPackets(
+					suite,
+					suite.consumerChain,
+					suite.path,
+					ccv.ConsumerPortID,
+					suite.path.EndpointA.ChannelID,
+					2,
+				)
+
+				// slash
+				suite.consumerApp.GetConsumerKeeper().Slash(
+					suite.consumerCtx(),
+					consAddr,
+					int64(undelegateConsumerHeight)-1,
+					powerBeforeUndelegate,
+					sdk.ZeroDec(),
+					stakingtypes.Downtime,
+				)
+
+				// commit state on consumer
+				suite.coordinator.CommitBlock(suite.consumerChain)
+
+				// relay all packets from consumer to provider
+				relayAllCommittedPackets(
+					suite,
+					suite.consumerChain,
+					suite.path,
+					ccv.ConsumerPortID,
+					suite.path.EndpointA.ChannelID,
+					1,
+				)
+			},
+			func(delAddr sdk.AccAddress, initBalance sdk.Int) {
+				// the undelegation was only matured on the consumer,
+				// thus the slash was successful
+				expectedBalance := initBalance.Sub(halfBondAmt).Sub(slashAmount)
+				suite.Require().Equal(
+					expectedBalance,
+					getBalance(suite, suite.providerCtx(), delAddr),
+					"delegator should have been slashed",
+				)
+			},
+		},
+		// delegate - infraction - undelegate - mature consumer - mature provider - slash
+		// no slash
+		{
+			"infraction before undelegate, detected after maturity on both chain",
+			func(consAddr sdk.ConsAddress) {
+				// increment time so that the unbonding period ends on the consumer
+				incrementTime(suite, consumerUnbondingPeriod+time.Hour)
+
+				// relay all packets from consumer to provider
+				relayAllCommittedPackets(
+					suite,
+					suite.consumerChain,
+					suite.path,
+					ccv.ConsumerPortID,
+					suite.path.EndpointA.ChannelID,
+					2,
+				)
+
+				// increment time so that the unbonding period ends on the provider
+				incrementTime(suite, providerUnbondingPeriod)
+
+				// slash
+				suite.consumerApp.GetConsumerKeeper().Slash(
+					suite.consumerCtx(),
+					consAddr,
+					int64(undelegateConsumerHeight)-1,
+					powerBeforeUndelegate,
+					sdk.ZeroDec(),
+					stakingtypes.Downtime,
+				)
+
+				// commit state on consumer
+				suite.coordinator.CommitBlock(suite.consumerChain)
+
+				// relay all packets from consumer to provider
+				relayAllCommittedPackets(
+					suite,
+					suite.consumerChain,
+					suite.path,
+					ccv.ConsumerPortID,
+					suite.path.EndpointA.ChannelID,
+					1,
+				)
+			},
+			func(delAddr sdk.AccAddress, initBalance sdk.Int) {
+				// the undelegation is already matured, thus it is not slashed
+				expectedBalance := initBalance.Sub(halfBondAmt)
+				suite.Require().Equal(
+					expectedBalance,
+					getBalance(suite, suite.providerCtx(), delAddr),
+					"delegator shouldn't have been slashed",
+				)
 			},
 		},
 	}
 
-	// execute the setup operations, distributed uniformly in three blocks.
-	// For each of them, save their current VSC Id value which map correspond respectively
-	// to the block heights lesser, equal and greater than the undelegation creation height.
-	vscIDs := make([]uint64, 0, 3)
-	for _, so := range setupOperations {
-		err := so.fn(suite)
-		suite.Require().NoError(err)
+	for i, tc := range testCases {
+		providerKeeper := suite.providerApp.GetProviderKeeper()
+		providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
+		consumerKeeper := suite.consumerApp.GetConsumerKeeper()
+		providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
 
-		vscIDs = append(vscIDs, providerKeeper.GetValidatorSetUpdateId(suite.providerChain.GetContext()))
-		suite.providerChain.NextBlock()
-	}
+		suite.SetupCCVChannel(suite.path)
 
-	// create validator signing info to test slashing
-	providerSlashingKeeper.SetValidatorSigningInfo(
-		suite.providerChain.GetContext(),
-		sdk.ConsAddress(tmValidator.Address),
-		slashingtypes.ValidatorSigningInfo{Address: tmValidator.Address.String()},
-	)
+		// get the power before delegate
+		validator, _ := suite.getValByIdx(valIndex)
+		powerBeforeDelegate = validator.GetConsensusPower(sdk.DefaultPowerReduction)
 
-	// the test cases verify that only the unbonding tokens get slashed for the VSC ids
-	// mapping to the block heights before and during the undelegation otherwise not.
-	testCases := []struct {
-		expSlash bool
-		vscID    uint64
-	}{
-		{expSlash: true, vscID: vscIDs[0]},
-		{expSlash: true, vscID: vscIDs[1]},
-		{expSlash: false, vscID: vscIDs[2]},
-	}
+		// delegate some tokens
+		delAddr := suite.providerChain.SenderAccount.GetAddress()
+		initBalance, shares, valAddr := delegateByIdx(suite, delAddr, bondAmt, valIndex)
 
-	// save unbonding balance before slashing tests
-	ubd, found := providerStakingKeeper.GetUnbondingDelegation(
-		suite.providerChain.GetContext(), delAddr, valAddr)
-	suite.Require().True(found)
-	ubdBalance := ubd.Entries[0].Balance
+		// commit state on provider
+		suite.coordinator.CommitBlock(suite.providerChain)
 
-	for _, tc := range testCases {
-		slashPacket := ccv.NewSlashPacketData(
-			abci.Validator{Address: tmValidator.Address, Power: tmValidator.VotingPower},
-			tc.vscID,
-			stakingtypes.Downtime,
+		// relay VSCPacket w/ delegation from provider to consumer
+		relayAllCommittedPackets(
+			suite,
+			suite.providerChain,
+			suite.path,
+			ccv.ProviderPortID,
+			suite.path.EndpointB.ChannelID,
+			1,
+			"test: "+tc.name,
 		)
 
-		// slash
-		providerKeeper.HandleSlashPacket(suite.providerChain.GetContext(), suite.consumerChain.ChainID, *slashPacket)
+		// get the height when the consumer "applied" the delegation
+		maturityTimes := consumerKeeper.GetAllPacketMaturityTimes(suite.consumerCtx())
+		suite.Require().Len(maturityTimes, 1, "unexpected number of maturity times; test: "+tc.name)
+		vscID := maturityTimes[0].VscId
+		hToVSCids := consumerKeeper.GetAllHeightToValsetUpdateIDs(suite.consumerCtx())
+		found := false
+		for _, hToVSCid := range hToVSCids {
+			if hToVSCid.ValsetUpdateId == vscID {
+				delegateConsumerHeight = hToVSCid.Height
+				found = true
+				break
+			}
+		}
+		suite.Require().True(found, "cannot find height mapped to vscID; test: "+tc.name)
 
-		ubd, found := providerStakingKeeper.GetUnbondingDelegation(suite.providerChain.GetContext(), delAddr, valAddr)
+		// get the power before undelegate
+		validator = suite.getVal(suite.providerCtx(), valAddr)
+		powerBeforeUndelegate = validator.GetConsensusPower(sdk.DefaultPowerReduction)
+		expectedPowerDelegated := (bondAmt.Quo(sdk.DefaultPowerReduction)).Int64()
+		suite.Require().Equal(
+			powerBeforeDelegate+expectedPowerDelegated,
+			powerBeforeUndelegate,
+			"unexpected power after delegation; test: "+tc.name,
+		)
+
+		// undelegate half of the delegated shares
+		vscID = undelegate(suite, delAddr, valAddr, shares.QuoInt64(2))
+		// - check that staking unbonding op was created and onHold is true
+		checkStakingUnbondingOps(suite, 1, true, true, "test: "+tc.name)
+		// - check that CCV unbonding op was created
+		checkCCVUnbondingOp(suite, suite.providerCtx(), suite.consumerChain.ChainID, vscID, true, "test: "+tc.name)
+		// - check undelegation entry balance
+		ubd, found := providerStakingKeeper.GetUnbondingDelegation(suite.providerCtx(), delAddr, valAddr)
 		suite.Require().True(found)
+		suite.Require().True(ubd.Entries[0].Balance.Equal(bondAmt.Quo(sdk.NewInt(2))))
 
-		isUbdSlashed := ubdBalance.GT(ubd.Entries[0].Balance)
-		suite.Require().True(tc.expSlash == isUbdSlashed)
+		// commit state on provider
+		suite.coordinator.CommitBlock(suite.providerChain)
 
-		// update balance
-		ubdBalance = ubd.Entries[0].Balance
+		// get the power after undelegate
+		validator = suite.getVal(suite.providerCtx(), valAddr)
+		powerAfterUndelegate = validator.GetConsensusPower(sdk.DefaultPowerReduction)
+		expectedPowerDelegated = (bondAmt.Quo(sdk.DefaultPowerReduction).Quo(sdk.NewInt(2))).Int64()
+		suite.Require().Equal(
+			powerBeforeDelegate+expectedPowerDelegated,
+			powerAfterUndelegate,
+			"unexpected power after undelegation; test: "+tc.name,
+		)
+
+		// relay VSCPacket w/ undelegation from provider to consumer
+		relayAllCommittedPackets(
+			suite,
+			suite.providerChain,
+			suite.path,
+			ccv.ProviderPortID,
+			suite.path.EndpointB.ChannelID,
+			1,
+			"test: "+tc.name,
+		)
+
+		// get the height when the consumer "applied" the undelegation
+		maturityTimes = consumerKeeper.GetAllPacketMaturityTimes(suite.consumerCtx())
+		suite.Require().Len(maturityTimes, 2, "unexpected number of maturity times; test: "+tc.name)
+		vscID = maturityTimes[1].VscId
+		hToVSCids = consumerKeeper.GetAllHeightToValsetUpdateIDs(suite.consumerCtx())
+		found = false
+		for _, hToVSCid := range hToVSCids {
+			if hToVSCid.ValsetUpdateId == vscID {
+				undelegateConsumerHeight = hToVSCid.Height
+				found = true
+				break
+			}
+		}
+		suite.Require().True(found, "cannot find height mapped to vscID; test: "+tc.name)
+
+		// create validator signing info to test slashing
+		valConsAddr, err := validator.GetConsAddr()
+		suite.Require().NoError(err, "test: "+tc.name)
+		providerSlashingKeeper.SetValidatorSigningInfo(
+			suite.providerChain.GetContext(),
+			valConsAddr,
+			slashingtypes.ValidatorSigningInfo{Address: valConsAddr.String()},
+		)
+
+		// slash validator on consumer chain
+		consumerKey, found := providerKeeper.GetValidatorConsumerPubKey(suite.providerCtx(), suite.consumerChain.ChainID, valConsAddr)
+		suite.Require().True(found)
+		consumerAddr := utils.TMCryptoPublicKeyToConsAddr(consumerKey)
+		tc.slash(consumerAddr)
+
+		// increment time so that the unbonding period ends on the provider
+		incrementTime(suite, providerUnbondingPeriod)
+
+		tc.checkDelegatorBalance(delAddr, initBalance)
+
+		if i+1 < len(testCases) {
+			// reset suite to reset provider client
+			suite.SetupTest()
+		}
 	}
+
 }
 
 // TestValidatorDowntime tests if a slash packet is sent
