@@ -143,9 +143,12 @@ func TestOnRecvVSCPacket(t *testing.T) {
 		})
 		require.Equal(t, tc.expectedPendingChanges, *actualPendingChanges, "pending changes not equal to expected changes after successful packet receive. case: %s", tc.name)
 
-		expectedTime := uint64(ctx.BlockTime().Add(consumerKeeper.GetUnbondingPeriod(ctx)).UnixNano())
-		maturityTime := consumerKeeper.GetPacketMaturityTime(ctx, tc.newChanges.ValsetUpdateId)
-		require.Equal(t, expectedTime, maturityTime, "packet maturity time has unexpected value for case: %s", tc.name)
+		expectedTime := ctx.BlockTime().Add(consumerKeeper.GetUnbondingPeriod(ctx))
+		require.True(
+			t,
+			consumerKeeper.PacketMaturityTimeExists(ctx, tc.newChanges.ValsetUpdateId, expectedTime),
+			"no packet maturity time for case: %s", tc.name,
+		)
 	}
 }
 

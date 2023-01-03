@@ -63,6 +63,7 @@ const MODEL_INIT_STATE: ModelInitState = {
     downtimeSlashAcks: [],
     tombstoned: [false, false, false, false],
     matureUnbondingOps: [],
+    queue: [],
   },
   staking: {
     delegation: [4000, 3000, 2000, 1000],

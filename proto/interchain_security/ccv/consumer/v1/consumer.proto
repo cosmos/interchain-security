@@ -9,6 +9,7 @@ import "google/protobuf/any.proto";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 
 // Params defines the parameters for CCV consumer module
 message Params {
@@ -68,26 +69,8 @@ message CrossChainValidator {
   ];
 }
 
-// ConsumerPacketType indicates interchain security specific packet types.
-enum ConsumerPacketType {
-  option (gogoproto.goproto_enum_prefix) = false;
-
-  // UNSPECIFIED packet type
-  CONSUMER_PACKET_TYPE_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "UnspecifiedPacket"];
-  // Slash packet
-  CONSUMER_PACKET_TYPE_SLASH = 1 [(gogoproto.enumvalue_customname) = "SlashPacket"];
-  // VSCMatured packet
-  CONSUMER_PACKET_TYPE_VSCM = 2 [(gogoproto.enumvalue_customname) = "VscMaturedPacket"];
-}
-
-// ConsumerPacket contains raw packet bytes and packet type.
-message ConsumerPacket {
-  ConsumerPacketType type = 1; 
-  bytes data = 2;
-}
-
-// ConsumerPackets is a list of data packets.
-message ConsumerPackets {
-  repeated ConsumerPacket list = 1
-  [ (gogoproto.nullable) = false ];
+// MaturingVSCPacket contains the maturing time of a received VSCPacket
+message MaturingVSCPacket {
+  uint64 vscId = 1;
+  google.protobuf.Timestamp maturity_time = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
 }

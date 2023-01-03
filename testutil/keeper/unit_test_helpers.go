@@ -1,8 +1,12 @@
 package keeper
 
 import (
+	"crypto/rand"
+	"encoding/binary"
 	"testing"
 	"time"
+
+	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -10,11 +14,13 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	consumerkeeper "github.com/cosmos/interchain-security/x/ccv/consumer/keeper"
 	consumertypes "github.com/cosmos/interchain-security/x/ccv/consumer/types"
 	providerkeeper "github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	"github.com/cosmos/interchain-security/x/ccv/types"
+	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/crypto"
@@ -39,8 +45,8 @@ type InMemKeeperParams struct {
 
 // NewInMemKeeperParams instantiates in-memory keeper params with default values
 func NewInMemKeeperParams(t testing.TB) InMemKeeperParams {
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
-	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
+	storeKey := sdk.NewKVStoreKey(ccvtypes.StoreKey)
+	memStoreKey := storetypes.NewMemoryStoreKey(ccvtypes.MemStoreKey)
 
 	db := tmdb.NewMemDB()
 	stateStore := store.NewCommitMultiStore(db)
@@ -185,6 +191,31 @@ func GenPubKey() (crypto.PubKey, error) {
 	return cryptocodec.ToTmPubKeyInterface(privKey.PrivKey.PubKey())
 }
 
+// Obtains slash packet data with a newly generated key, and randomized field values
+func GetNewSlashPacketData() ccvtypes.SlashPacketData {
+	b1 := make([]byte, 8)
+	_, _ = rand.Read(b1)
+	b2 := make([]byte, 8)
+	_, _ = rand.Read(b2)
+	b3 := make([]byte, 8)
+	_, _ = rand.Read(b3)
+	return ccvtypes.SlashPacketData{
+		Validator: abci.Validator{
+			Address: ed25519.GenPrivKey().PubKey().Address(),
+			Power:   int64(binary.BigEndian.Uint64(b1)),
+		},
+		ValsetUpdateId: binary.BigEndian.Uint64(b2),
+		Infraction:     stakingtypes.InfractionType(binary.BigEndian.Uint64(b2) % 3),
+	}
+}
+
+// Obtains vsc matured packet data with a newly generated key
+func GetNewVSCMaturedPacketData() ccvtypes.VSCMaturedPacketData {
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
+	return ccvtypes.VSCMaturedPacketData{ValsetUpdateId: binary.BigEndian.Uint64(b)}
+}
+
 // SetupForStoppingConsumerChain registers expected mock calls and corresponding state setup
 // which asserts that a consumer chain was properly stopped from StopConsumerChain().
 func SetupForStoppingConsumerChain(t *testing.T, ctx sdk.Context,
@@ -222,4 +253,15 @@ func GetTestConsumerAdditionProp() *providertypes.ConsumerAdditionProposal {
 	).(*providertypes.ConsumerAdditionProposal)
 
 	return prop
+}
+
+// Obtains a CrossChainValidator with a newly generated key, and randomized field values
+func GetNewCrossChainValidator(t *testing.T) consumertypes.CrossChainValidator {
+	b1 := make([]byte, 8)
+	_, _ = rand.Read(b1)
+	power := int64(binary.BigEndian.Uint64(b1))
+	privKey := ed25519.GenPrivKey()
+	validator, err := consumertypes.NewCCValidator(privKey.PubKey().Address(), power, privKey.PubKey())
+	require.NoError(t, err)
+	return validator
 }

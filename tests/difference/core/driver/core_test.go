@@ -240,7 +240,9 @@ func (s *CoreSuite) matchState() {
 		// TODO: delegations
 		s.Require().Equalf(int64(s.traces.DelegatorTokens()), s.delegatorBalance(), diagnostic+"P del balance mismatch")
 		for j := 0; j < initState.NumValidators; j++ {
-			s.Require().Equalf(s.traces.Jailed(j) != nil, s.isJailed(int64(j)), diagnostic+"P jail status mismatch for val %d", j)
+			a := s.traces.Jailed(j) != nil
+			b := s.isJailed(int64(j))
+			s.Require().Equalf(a, b, diagnostic+"P jail status mismatch for val %d", j)
 		}
 	}
 	if chain == C {
@@ -259,6 +261,7 @@ func (s *CoreSuite) matchState() {
 }
 
 func (s *CoreSuite) executeTrace() {
+
 	for i := range s.traces.Actions() {
 		s.traces.CurrentActionIx = i
 
@@ -309,6 +312,8 @@ func (s *CoreSuite) TestAssumptions() {
 	if maxValsE != maxVals {
 		s.T().Fatal(FAIL_MSG)
 	}
+
+	// TODO: write assumption that checks that throttle params are appropriate
 
 	// Delegator balance is correct
 	s.Require().Equal(int64(initState.InitialDelegatorTokens), s.delegatorBalance())
@@ -385,11 +390,9 @@ func (s *CoreSuite) TestAssumptions() {
 	s.Require().Empty(s.consumerKeeper().GetPendingPackets(s.ctx(C)))
 
 	// Consumer has no maturities
-	s.consumerKeeper().IteratePacketMaturityTime(s.ctx(C),
-		func(vscId uint64, timeNs uint64) (stop bool) {
-			s.T().Fatal(FAIL_MSG)
-			return false // Don't stop
-		})
+	for range s.consumerKeeper().GetAllPacketMaturityTimes(s.ctx(C)) {
+		s.T().Fatal(FAIL_MSG)
+	}
 
 	// Consumer power
 	for i := 0; i < len(initState.ValStates.Status); i++ {
@@ -428,9 +431,10 @@ func (s *CoreSuite) TestTraces() {
 	s.traces = Traces{
 		Data: LoadTraces("traces.json"),
 	}
-	// s.traces.Data = []TraceData{s.traces.Data[69]}
+	shortest := -1
+	shortestLen := 10000000000
 	for i := range s.traces.Data {
-		s.Run(fmt.Sprintf("Trace num: %d", i), func() {
+		if !s.Run(fmt.Sprintf("Trace num: %d", i), func() {
 			// Setup a new pair of chains for each trace
 			s.SetupTest()
 
@@ -448,8 +452,15 @@ func (s *CoreSuite) TestTraces() {
 			// Record information about the trace, for debugging
 			// diagnostics.
 			s.executeTrace()
-		})
+		}) {
+			if s.traces.CurrentActionIx < shortestLen {
+				shortest = s.traces.CurrentTraceIx
+				shortestLen = s.traces.CurrentActionIx
+			}
+		}
 	}
+	fmt.Println("Shortest [traceIx, actionIx]:", shortest, shortestLen)
+
 }
 
 func TestCoreSuite(t *testing.T) {

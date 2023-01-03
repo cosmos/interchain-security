@@ -14,7 +14,6 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	testkeeper "github.com/cosmos/interchain-security/testutil/keeper"
 	"github.com/cosmos/interchain-security/x/ccv/provider"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 )
 
@@ -35,7 +34,7 @@ func TestConsumerChainProposalHandler(t *testing.T) {
 	}{
 		{
 			name: "valid consumer addition proposal",
-			content: types.NewConsumerAdditionProposal(
+			content: providertypes.NewConsumerAdditionProposal(
 				"title", "description", "chainID",
 				clienttypes.NewHeight(2, 3), []byte("gen_hash"), []byte("bin_hash"), now,
 				"0.75",
@@ -50,7 +49,7 @@ func TestConsumerChainProposalHandler(t *testing.T) {
 		},
 		{
 			name: "valid consumer removal proposal",
-			content: types.NewConsumerRemovalProposal(
+			content: providertypes.NewConsumerRemovalProposal(
 				"title", "description", "chainID", now),
 			blockTime:               hourFromNow,
 			expValidConsumerRemoval: true,

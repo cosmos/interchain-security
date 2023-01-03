@@ -20,10 +20,10 @@ func (k Keeper) GetTemplateClient(ctx sdk.Context) *ibctmtypes.ClientState {
 
 // GetTrustingPeriodFraction returns a TrustingPeriodFraction
 // used to compute the provider IBC client's TrustingPeriod as UnbondingPeriod / TrustingPeriodFraction
-func (k Keeper) GetTrustingPeriodFraction(ctx sdk.Context) int64 {
-	var i int64
-	k.paramSpace.Get(ctx, types.KeyTrustingPeriodFraction, &i)
-	return i
+func (k Keeper) GetTrustingPeriodFraction(ctx sdk.Context) string {
+	var f string
+	k.paramSpace.Get(ctx, types.KeyTrustingPeriodFraction, &f)
+	return f
 }
 
 // GetCCVTimeoutPeriod returns the timeout period for sent ibc packets
@@ -52,7 +52,8 @@ func (k Keeper) SetVscTimeoutPeriod(ctx sdk.Context, period time.Duration) {
 	k.paramSpace.Set(ctx, types.KeyVscTimeoutPeriod, period)
 }
 
-// GetSlashMeterReplenishPeriod returns the period for which the slash gas meter is replenished.
+// GetSlashMeterReplenishPeriod returns the period in which:
+// Once the slash meter becomes not-full, the slash meter is replenished after this period.
 func (k Keeper) GetSlashMeterReplenishPeriod(ctx sdk.Context) time.Duration {
 	var p time.Duration
 	k.paramSpace.Get(ctx, types.KeySlashMeterReplenishPeriod, &p)
@@ -68,11 +69,11 @@ func (k Keeper) GetSlashMeterReplenishFraction(ctx sdk.Context) string {
 	return f
 }
 
-// GetMaxPendingSlashingPackets returns the maximum number of pending slash packets that can be queued for a consumer
-// before the provider chain halts.
-func (k Keeper) GetMaxPendingSlashingPackets(ctx sdk.Context) int64 {
+// GetMaxThrottledPackets returns the maximum amount of throttled slash or vsc matured packets
+// that can be queued for a single consumer before the provider chain halts.
+func (k Keeper) GetMaxThrottledPackets(ctx sdk.Context) int64 {
 	var p int64
-	k.paramSpace.Get(ctx, types.KeyMaxPendingSlashPackets, &p)
+	k.paramSpace.Get(ctx, types.KeyMaxThrottledPackets, &p)
 	return p
 }
 
@@ -86,7 +87,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.GetVscTimeoutPeriod(ctx),
 		k.GetSlashMeterReplenishPeriod(ctx),
 		k.GetSlashMeterReplenishFraction(ctx),
-		k.GetMaxPendingSlashingPackets(ctx),
+		k.GetMaxThrottledPackets(ctx),
 	)
 }
 

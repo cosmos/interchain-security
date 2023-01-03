@@ -183,6 +183,7 @@ type ModelInitState = {
     downtimeSlashAcks: number[];
     tombstoned: boolean[];
     matureUnbondingOps: number[];
+    queue: (Slash | VscMatured)[];
   };
 };
 

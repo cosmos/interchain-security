@@ -11,22 +11,11 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
-	"github.com/cosmos/interchain-security/x/ccv/provider/types"
+	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccv "github.com/cosmos/interchain-security/x/ccv/types"
 	utils "github.com/cosmos/interchain-security/x/ccv/utils"
 )
-
-func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
-	for _, y := range slice {
-		if x != y {
-			newSlice = append(newSlice, y)
-		}
-	}
-
-	return newSlice, len(slice) - len(newSlice)
-}
 
 // OnRecvVSCMaturedPacket handles a VSCMatured packet
 func (k Keeper) OnRecvVSCMaturedPacket(
@@ -43,11 +32,29 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
-	// Note: no validation is needed (that'd return an IBC err ack) for recv VSCMatured packets,
-	// since the packet data only includes a valset update id that can take any uint64 value.
+	k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
 
-	k.HandleVSCMaturedPacket(ctx, chainID, data)
-	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+	return ack
+}
+
+// HandleLeadingVSCMaturedPackets handles all VSCMatured packet data that has been queued this block,
+// but does not need to be throttled. The handled data is then removed from the queue.
+//
+// Note: VSC matured packet data which is queued behind slash packet data CANNOT be
+// handled until the leading slash packet data has been handled. This is to maintain
+// the "VSC Maturity and Slashing Order" CCV property. If VSC matured packet data DOES NOT
+// trail slash packet data for that consumer, it will be handled in this method,
+// bypassing HandleThrottleQueues.
+func (k Keeper) HandleLeadingVSCMaturedPackets(ctx sdk.Context) {
+
+	for _, chain := range k.GetAllConsumerChains(ctx) {
+		leadingVscMatured, ibcSeqNums := k.GetLeadingVSCMaturedData(ctx, chain.ChainId)
+		for _, data := range leadingVscMatured {
+			k.HandleVSCMaturedPacket(ctx, chain.ChainId, data)
+		}
+		k.DeleteThrottledPacketData(ctx, chain.ChainId, ibcSeqNums...)
+	}
 }
 
 // HandleVSCMaturedPacket handles a VSCMatured packet.
@@ -110,7 +117,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 			// stop consumer chain and release unbonding
 			return k.StopConsumerChain(ctx, chainID, false)
 		}
-		return sdkerrors.Wrapf(types.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
+		return sdkerrors.Wrapf(providertypes.ErrUnknownConsumerChannelId, "recv ErrorAcknowledgement on unknown channel %s", packet.SourceChannel)
 	}
 	return nil
 }
@@ -139,24 +146,23 @@ func (k Keeper) EndBlockVSU(ctx sdk.Context) {
 	// collect validator updates
 	k.QueueVSCPackets(ctx)
 
-	// try sending VSC packets to all chains
-	// if CCV channel is not established for consumer chain
+	// try sending VSC packets to all registered consumer chains;
+	// if the CCV channel is not established for a consumer chain,
 	// the updates will remain queued until the channel is established
 	k.SendVSCPackets(ctx)
 }
 
-// SendVSCPackets iterates over chains and sends pending VSC packets to
-// consumer chains with established CCV channels
-// if CCV channel is not established for consumer chain
+// SendVSCPackets iterates over all registered consumers and sends pending
+// VSC packets to the chains with established CCV channels.
+// If the CCV channel is not established for a consumer chain,
 // the updates will remain queued until the channel is established
 func (k Keeper) SendVSCPackets(ctx sdk.Context) {
-	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
+	for _, chain := range k.GetAllConsumerChains(ctx) {
 		// check if CCV channel is established and send
-		if channelID, found := k.GetChainToChannel(ctx, chainID); found {
-			k.SendVSCPacketsToChain(ctx, chainID, channelID)
+		if channelID, found := k.GetChainToChannel(ctx, chain.ChainId); found {
+			k.SendVSCPacketsToChain(ctx, chain.ChainId, channelID)
 		}
-		return false // continue iterating chains
-	})
+	}
 }
 
 // SendVSCPacketsToChain sends all queued VSC packets to the specified chain
@@ -197,24 +203,23 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 	// get the validator updates from the staking module
 	valUpdates := k.stakingKeeper.GetValidatorUpdates(ctx)
 
-	k.IterateConsumerChains(ctx, func(ctx sdk.Context, chainID, clientID string) (stop bool) {
+	for _, chain := range k.GetAllConsumerChains(ctx) {
 		// apply the key assignment to the validator updates
-		valUpdates, err := k.ApplyKeyAssignmentToValUpdates(ctx, chainID, valUpdates)
+		valUpdates, err := k.ApplyKeyAssignmentToValUpdates(ctx, chain.ChainId, valUpdates)
 		if err != nil {
-			panic(fmt.Sprintf("could not apply key assignment to validator updates for chain %s: %s", chainID, err.Error()))
+			panic(fmt.Sprintf("could not apply key assignment to validator updates for chain %s: %s", chain.ChainId, err.Error()))
 		}
 
 		// check whether there are changes in the validator set;
 		// note that this also entails unbonding operations
 		// w/o changes in the voting power of the validators in the validator set
-		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chainID, valUpdateID)
+		unbondingOps, _ := k.GetUnbondingOpsFromIndex(ctx, chain.ChainId, valUpdateID)
 		if len(valUpdates) != 0 || len(unbondingOps) != 0 {
 			// construct validator set change packet data
-			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chainID))
-			k.AppendPendingVSCPackets(ctx, chainID, packet)
+			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chain.ChainId))
+			k.AppendPendingVSCPackets(ctx, chain.ChainId, packet)
 		}
-		return false // do not stop the iteration
-	})
+	}
 
 	k.IncrementValidatorSetUpdateId(ctx)
 }
@@ -226,9 +231,18 @@ func (k Keeper) EndBlockCIS(ctx sdk.Context) {
 	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	// set the ValsetUpdateBlockHeight
 	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
+	// Replenish slash meter if necessary, BEFORE executing slash packet throttling logic.
+	// This ensures the meter value is replenished, and not greater than the allowance (max value)
+	// for the block, before the throttling logic is executed.
+	k.CheckForSlashMeterReplenishment(ctx)
+	// Handle leading vsc matured packets before throttling logic
+	k.HandleLeadingVSCMaturedPackets(ctx)
+	// Execute slash packet throttling logic
+	k.HandleThrottleQueues(ctx)
 }
 
-// OnRecvSlashPacket delivers a received slash packet: validates it and then handles it if valid.
+// OnRecvSlashPacket delivers a received slash packet, validates it and
+// then queues the slash packet as pending if valid.
 func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, data ccv.SlashPacketData) exported.Acknowledgement {
 
 	// check that the channel is established, panic if not
@@ -243,8 +257,28 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		return channeltypes.NewErrorAcknowledgement(err.Error())
 	}
 
-	// handle slashing request
-	k.HandleSlashPacket(ctx, chainID, data)
+	// The slash packet validator address may be known only on the consumer chain,
+	// in this case, it must be mapped back to the consensus address on the provider chain
+	consumerConsAddr := sdk.ConsAddress(data.Validator.Address)
+	providerConsAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerConsAddr)
+
+	// Replace data.Validator.Address with the proper provider chain consensus address,
+	// for later use in HandleSlashPacket
+	data.Validator.Address = providerConsAddr.Bytes()
+
+	// Queue a slash entry to the global queue, which will be seen by the throttling logic
+	k.QueueGlobalSlashEntry(ctx, providertypes.NewGlobalSlashEntry(
+		ctx.BlockTime(),   // recv time
+		chainID,           // consumer chain id that sent the packet
+		packet.Sequence,   // IBC sequence number of the packet
+		providerConsAddr)) // Provider consensus address of val to be slashed
+
+	// Queue slash packet data in the same (consumer chain specific) queue as vsc matured packet data,
+	// to enforce order of handling between the two packet data types.
+	k.QueueThrottledSlashPacketData(ctx,
+		chainID,         // consumer chain id that sent the packet
+		packet.Sequence, // IBC sequence number of the packet
+		data)
 
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
@@ -272,12 +306,13 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 // HandleSlashPacket potentially slashes, jails and/or tombstones
 // a misbehaving validator according to infraction type.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
-	// the slash packet validator address may be known only on the consumer chain;
-	// in this case, it must be mapped back to the consensus address on the provider chain
-	consumerAddr := sdk.ConsAddress(data.Validator.Address)
-	providerAddr := k.GetProviderAddrFromConsumerAddr(ctx, chainID, consumerAddr)
-	// get the validator
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, providerAddr)
+
+	// Obtain provider chain consensus address from packet data
+	// (overwritten with proper provider chain cons address in OnRecvSlashPacket)
+	providerConsAddr := sdk.ConsAddress(data.Validator.Address)
+
+	// Obtain validator from staking keeper
+	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, data.Validator.Address)
 
 	// make sure the validator is not yet unbonded;
 	// stakingKeeper.Slash() panics otherwise
@@ -291,11 +326,11 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	}
 
 	// tombstoned validators should not be slashed multiple times.
-	if k.slashingKeeper.IsTombstoned(ctx, providerAddr) {
+	if k.slashingKeeper.IsTombstoned(ctx, providerConsAddr) {
 		// Log and drop packet if validator is tombstoned.
 		k.Logger(ctx).Info(
 			"slash packet dropped because validator is already tombstoned",
-			"validator cons addr", providerAddr,
+			"validator cons addr", providerConsAddr,
 		)
 		return
 	}
@@ -320,19 +355,19 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		// then append the validator address to the slash ack for its chain id
 		slashFraction = k.slashingKeeper.SlashFractionDowntime(ctx)
 		jailTime = ctx.BlockTime().Add(k.slashingKeeper.DowntimeJailDuration(ctx))
-		k.AppendSlashAck(ctx, chainID, providerAddr.String())
+		k.AppendSlashAck(ctx, chainID, providerConsAddr.String())
 	case stakingtypes.DoubleSign:
 		// set double-signing slash fraction and infinite jail duration
 		// then tombstone the validator
 		slashFraction = k.slashingKeeper.SlashFractionDoubleSign(ctx)
 		jailTime = evidencetypes.DoubleSignJailEndTime
-		k.slashingKeeper.Tombstone(ctx, providerAddr)
+		k.slashingKeeper.Tombstone(ctx, providerConsAddr)
 	}
 
 	// slash validator
 	k.stakingKeeper.Slash(
 		ctx,
-		providerAddr,
+		providerConsAddr,
 		int64(infractionHeight),
 		data.Validator.Power,
 		slashFraction,
@@ -341,16 +376,15 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 
 	// jail validator
 	if !validator.IsJailed() {
-		k.stakingKeeper.Jail(ctx, providerAddr)
+		k.stakingKeeper.Jail(ctx, providerConsAddr)
 	}
-	k.slashingKeeper.JailUntil(ctx, providerAddr, jailTime)
+	k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypeExecuteConsumerChainSlash,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-			sdk.NewAttribute(ccv.AttributeValidatorAddress, providerAddr.String()),
-			sdk.NewAttribute(ccv.AttributeValidatorConsumerAddress, consumerAddr.String()),
+			sdk.NewAttribute(sdk.AttributeKeyModule, providertypes.ModuleName),
+			sdk.NewAttribute(ccv.AttributeValidatorAddress, providerConsAddr.String()),
 			sdk.NewAttribute(ccv.AttributeInfractionType, data.Infraction.String()),
 			sdk.NewAttribute(ccv.AttributeInfractionHeight, strconv.Itoa(int(infractionHeight))),
 			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))),
@@ -364,56 +398,47 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 	currentTime := ctx.BlockTime()
 	currentTimeUint64 := uint64(currentTime.UnixNano())
 
-	// iterate over initTimeoutTimestamps
-	var chainIdsToRemove []string
-	k.IterateInitTimeoutTimestamp(ctx, func(chainID string, ts uint64) (stop bool) {
-		if currentTimeUint64 > ts {
+	for _, initTimeoutTimestamp := range k.GetAllInitTimeoutTimestamps(ctx) {
+		if currentTimeUint64 > initTimeoutTimestamp.Timestamp {
 			// initTimeout expired
-			chainIdsToRemove = append(chainIdsToRemove, chainID)
-		}
-		// continue to iterate through all timed out consumers
-		return false
-	})
-	// remove consumers that timed out
-	for _, chainID := range chainIdsToRemove {
-		// stop the consumer chain and unlock the unbonding.
-		// Note that the CCV channel was not established,
-		// thus closeChan is irrelevant
-		err := k.StopConsumerChain(ctx, chainID, false)
-		if err != nil {
-			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+			// stop the consumer chain and unlock the unbonding.
+			// Note that the CCV channel was not established,
+			// thus closeChan is irrelevant
+			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
+			if err != nil {
+				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+			}
 		}
 	}
 
-	// empty slice
-	chainIdsToRemove = nil
-
-	// Iterate over all consumers with established CCV channels and
-	// check if the first vscSendTimestamp in iterator + VscTimeoutPeriod
-	// exceed the current block time.
-	// Checking the first send timestamp for each chain is sufficient since
-	// timestamps are ordered by vsc ID.
-	k.IterateChannelToChain(ctx, func(ctx sdk.Context, _, chainID string) (stop bool) {
-		k.IterateVscSendTimestamps(ctx, chainID, func(_ uint64, ts time.Time) (stop bool) {
-			timeoutTimestamp := ts.Add(k.GetParams(ctx).VscTimeoutPeriod)
+	for _, channelToChain := range k.GetAllChannelToChains(ctx) {
+		// Check if the first vscSendTimestamp in iterator + VscTimeoutPeriod
+		// exceed the current block time.
+		// Checking the first send timestamp for each chain is sufficient since
+		// timestamps are ordered by vsc ID.
+		vscSendTimestamp, found := k.GetFirstVscSendTimestamp(ctx, channelToChain.ChainId)
+		if found {
+			timeoutTimestamp := vscSendTimestamp.Timestamp.Add(k.GetParams(ctx).VscTimeoutPeriod)
 			if currentTime.After(timeoutTimestamp) {
 				// vscTimeout expired
-				chainIdsToRemove = append(chainIdsToRemove, chainID)
+				// stop the consumer chain and release unbondings
+				err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
+				if err != nil {
+					panic(fmt.Errorf("consumer chain failed to stop: %w", err))
+				}
 			}
-			// break iteration since the send timestamps are sorted in descending order
-			return true
-		})
-		// continue to iterate through all consumers
-		return false
-	})
-	// remove consumers that timed out
-	for _, chainID := range chainIdsToRemove {
-		// stop the consumer chain and release unbondings
-		err := k.StopConsumerChain(ctx, chainID, true)
-		if err != nil {
-			panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 		}
 	}
+}
+
+func removeStringFromSlice(slice []string, x string) (newSlice []string, numRemoved int) {
+	for _, y := range slice {
+		if x != y {
+			newSlice = append(newSlice, y)
+		}
+	}
+
+	return newSlice, len(slice) - len(newSlice)
 }
 
 // getMappedInfractionHeight gets the infraction height mapped from val set ID for the given chain ID
