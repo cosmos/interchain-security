@@ -204,10 +204,10 @@ function validatorSetReplication(hist: BlockHistory): boolean {
   // the provider sets vscIDtoH[vscID] to H+1 
   //
   // As a result, for every height hC on the consumer, the active 
-  // vaset was last updated by the VSCPacket with ID vscID = hToVscID[hc]. 
+  // valset was last updated by the VSCPacket with ID vscID = hToVscID[hc]. 
   // This packet was sent by the provider at height hP-1, with hP = vscIDtoH[vscID]. 
   // This means that the consumer valset at height hC MUST match
-  // the provider vaset at height hP.
+  // the provider valset at height hP.
   // 
   // We compare these valsets, which are committed in blocks 
   // hC-1 and hP-1, respectively (the valset is always used at the NEXT height).
