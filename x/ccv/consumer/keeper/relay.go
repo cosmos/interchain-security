@@ -153,7 +153,7 @@ func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, vals
 		},
 	})
 
-	k.Logger(ctx).Debug("queue SlashPacket",
+	k.Logger(ctx).Debug("SlashPacket was queued",
 		"vscID", slashPacket.ValsetUpdateId,
 		"validator cons addr", sdk.ConsAddress(slashPacket.Validator.Address).String(),
 		"infraction", slashPacket.Infraction)
