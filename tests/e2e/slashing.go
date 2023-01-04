@@ -637,7 +637,6 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 	for i, tc := range testCases {
 		providerKeeper := suite.providerApp.GetProviderKeeper()
 		providerStakingKeeper := suite.providerApp.GetE2eStakingKeeper()
-		consumerKeeper := suite.consumerApp.GetConsumerKeeper()
 		providerSlashingKeeper := suite.providerApp.GetE2eSlashingKeeper()
 
 		suite.SetupCCVChannel(suite.path)
@@ -665,19 +664,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 		)
 
 		// get the height when the consumer "applied" the delegation
-		maturityTimes := consumerKeeper.GetAllPacketMaturityTimes(suite.consumerCtx())
-		suite.Require().Len(maturityTimes, 1, "unexpected number of maturity times; test: "+tc.name)
-		vscID := maturityTimes[0].VscId
-		hToVSCids := consumerKeeper.GetAllHeightToValsetUpdateIDs(suite.consumerCtx())
-		found := false
-		for _, hToVSCid := range hToVSCids {
-			if hToVSCid.ValsetUpdateId == vscID {
-				delegateConsumerHeight = hToVSCid.Height
-				found = true
-				break
-			}
-		}
-		suite.Require().True(found, "cannot find height mapped to vscID; test: "+tc.name)
+		delegateConsumerHeight = suite.getHeightOfVSCPacketRecv(suite.getFirstBundle(), 1, 0, "delegateConsumerHeight, test: "+tc.name)
 
 		// get the power before undelegate
 		validator = suite.getVal(suite.providerCtx(), valAddr)
@@ -690,7 +677,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 		)
 
 		// undelegate half of the delegated shares
-		vscID = undelegate(suite, delAddr, valAddr, shares.QuoInt64(2))
+		vscID := undelegate(suite, delAddr, valAddr, shares.QuoInt64(2))
 		// - check that staking unbonding op was created and onHold is true
 		checkStakingUnbondingOps(suite, 1, true, true, "test: "+tc.name)
 		// - check that CCV unbonding op was created
@@ -725,19 +712,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 		)
 
 		// get the height when the consumer "applied" the undelegation
-		maturityTimes = consumerKeeper.GetAllPacketMaturityTimes(suite.consumerCtx())
-		suite.Require().Len(maturityTimes, 2, "unexpected number of maturity times; test: "+tc.name)
-		vscID = maturityTimes[1].VscId
-		hToVSCids = consumerKeeper.GetAllHeightToValsetUpdateIDs(suite.consumerCtx())
-		found = false
-		for _, hToVSCid := range hToVSCids {
-			if hToVSCid.ValsetUpdateId == vscID {
-				undelegateConsumerHeight = hToVSCid.Height
-				found = true
-				break
-			}
-		}
-		suite.Require().True(found, "cannot find height mapped to vscID; test: "+tc.name)
+		undelegateConsumerHeight = suite.getHeightOfVSCPacketRecv(suite.getFirstBundle(), 2, 1, "undelegateConsumerHeight; test: "+tc.name)
 
 		// create validator signing info to test slashing
 		valConsAddr, err := validator.GetConsAddr()
