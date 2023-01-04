@@ -143,7 +143,7 @@ func (k Keeper) ReplenishSlashMeter(ctx sdktypes.Context) {
 		meter = allowance
 	}
 
-	k.Logger(ctx).Debug("replenish slash meter", "meter", meter.Int64())
+	k.Logger(ctx).Debug("slash meter replenished", "meter", meter.Int64())
 	k.SetSlashMeter(ctx, meter)
 }
 
