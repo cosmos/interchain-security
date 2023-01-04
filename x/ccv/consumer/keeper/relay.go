@@ -66,7 +66,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	// Save maturity time and packet
 	maturityTime := ctx.BlockTime().Add(k.GetUnbondingPeriod(ctx))
 	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, maturityTime)
-	k.Logger(ctx).Debug("set packet maturity time", "valsetUpdateId", newChanges.ValsetUpdateId, "utc", maturityTime.UTC(), "timestamp (nano)", uint64(maturityTime.UnixNano()))
+	k.Logger(ctx).Debug("packet maturity time was set", "valsetUpdateId", newChanges.ValsetUpdateId, "utc", maturityTime.UTC(), "timestamp (nano)", uint64(maturityTime.UnixNano()))
 
 	// set height to VSC id mapping
 	k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())+1, newChanges.ValsetUpdateId)
