@@ -29,6 +29,9 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	if !found {
 		// VSCMatured packet was sent on a channel different than any of the established CCV channels;
 		// this should never happen
+		k.Logger(ctx).Error("VSCMaturedPacket received on unknown channel",
+			"channelID", packet.DestinationChannel,
+		)
 		panic(fmt.Errorf("VSCMaturedPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
@@ -125,6 +128,11 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 	if err := ack.GetError(); err != "" {
 		// The VSC packet data could not be successfully decoded.
 		// This should never happen.
+		k.Logger(ctx).Error(
+			"recv ErrorAcknowledgement",
+			"channel", packet.SourceChannel,
+			"error", err,
+		)
 		if chainID, ok := k.GetChannelToChain(ctx, packet.SourceChannel); ok {
 			// stop consumer chain and release unbonding
 			return k.StopConsumerChain(ctx, chainID, false)
@@ -273,6 +281,9 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	if !found {
 		// SlashPacket packet was sent on a channel different than any of the established CCV channels;
 		// this should never happen
+		k.Logger(ctx).Error("SlashPacket received on unknown channel",
+			"channelID", packet.DestinationChannel,
+		)
 		panic(fmt.Errorf("SlashPacket received on unknown channel %s", packet.DestinationChannel))
 	}
 
