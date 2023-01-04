@@ -451,7 +451,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				// vscTimeout expired
 				// stop the consumer chain and release unbondings
 				err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
-				k.Logger(ctx).Info("stopped timed out consumer chain", "chainID", channelToChain.ChainId)
+				k.Logger(ctx).Info("timed out consumer chain was removed", "chainID", channelToChain.ChainId)
 				if err != nil {
 					panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 				}
