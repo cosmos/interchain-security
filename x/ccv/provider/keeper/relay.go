@@ -403,7 +403,7 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.String())
 	}
 	k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
-	k.Logger(ctx).Info("add validator jail time", "jail until", jailTime.UTC(), "provider cons addr", providerConsAddr.String())
+	k.Logger(ctx).Info("validator jail time updated", "jail until", jailTime.UTC(), "provider cons addr", providerConsAddr.String())
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
