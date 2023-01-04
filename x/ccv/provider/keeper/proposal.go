@@ -207,7 +207,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	// since all unbonding operations for this consumer are release above.
 	k.DeleteThrottledPacketDataForConsumer(ctx, chainID)
 
-	k.Logger(ctx).Info("consumer chain stopped", "chainID", chainID)
+	k.Logger(ctx).Info("consumer chain removed from provider", "chainID", chainID)
 
 	return nil
 }
