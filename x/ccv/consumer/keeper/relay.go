@@ -110,7 +110,7 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 
 		k.DeletePacketMaturityTimes(ctx, maturityTime.VscId, maturityTime.MaturityTime)
 
-		k.Logger(ctx).Debug("queue VSCMaturedPacket", "vscID", vscPacket.ValsetUpdateId)
+		k.Logger(ctx).Debug("VSCMaturedPacket was queued", "vscID", vscPacket.ValsetUpdateId)
 
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
