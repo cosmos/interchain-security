@@ -87,7 +87,7 @@ func (k Keeper) DistributeToProviderValidatorSet(ctx sdk.Context) error {
 		}
 
 		k.Logger(ctx).Info("sent block rewards to provider",
-			"total", fpTokens.String(),
+			"fee pool", fpTokens.String(),
 			"to provider", remainingTokens.String(),
 		)
 	}
