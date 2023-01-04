@@ -78,7 +78,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		k.DeleteOutstandingDowntime(ctx, addr)
 	}
 
-	k.Logger(ctx).Debug("handled VSCPacket",
+	k.Logger(ctx).Debug("finished receiving/handling VSCPacket",
 		"vscID", newChanges.ValsetUpdateId,
 		"len updates", len(newChanges.ValidatorUpdates),
 		"len slash acks", len(newChanges.SlashAcks),
