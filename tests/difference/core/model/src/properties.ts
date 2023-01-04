@@ -193,12 +193,24 @@ function validatorSetReplication(hist: BlockHistory): boolean {
   const blocks = hist.blocks;
   let good = true;
 
-  // Each committed block on the consumer chain has a last vscid
+  // Each committed block on the consumer chain has a last vscID
   // received that informs the validator set at the NEXT height.
-  // The validator set is exactly the validator set at the provider
-  // at the NEXT height after the vscid was sent.
-  // We compare these validator sets. The -1's are due to the fact
-  // that the valset is always used at the NEXT height.
+  // Thus, on every received VSCPacket with vscID at height H, 
+  // the consumer sets hToVscID[H+1] to vscID. 
+  //
+  // The consumer valset is exactly the valset on the provider
+  // at the NEXT height after the vscID was sent.
+  // Thus, on every sent VSCPacket with vscID at height H,
+  // the provider sets vscIDtoH[vscID] to H+1 
+  //
+  // As a result, for every height hC on the consumer, the active 
+  // vaset was last updated by the VSCPacket with ID vscID = hToVscID[hc]. 
+  // This packet was sent by the provider at height hP-1, with hP = vscIDtoH[vscID]. 
+  // This means that the consumer valset at height hC MUST match
+  // the provider vaset at height hP.
+  // 
+  // We compare these valsets, which are committed in blocks 
+  // hC-1 and hP-1, respectively (the valset is always used at the NEXT height).
   for (const [hC, b] of blocks[C]) {
     if (hC < 1) {
       // The model starts at consumer height 0, so there is
