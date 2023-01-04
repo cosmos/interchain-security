@@ -163,10 +163,10 @@ func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
 		panic(channelClosedMsg)
 	}
 
-	blockHeight := uint64(ctx.BlockHeight()) + 1
+	blockHeight := uint64(ctx.BlockHeight())
 	vID := am.keeper.GetHeightValsetUpdateID(ctx, blockHeight)
-	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight, vID)
-	am.keeper.Logger(ctx).Debug("block height was mapped to vscID", "height", blockHeight, "vscID", vID)
+	am.keeper.SetHeightValsetUpdateID(ctx, blockHeight+1, vID)
+	am.keeper.Logger(ctx).Debug("block height was mapped to vscID", "height", blockHeight+1, "vscID", vID)
 
 	am.keeper.TrackHistoricalInfo(ctx)
 }
