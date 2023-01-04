@@ -259,7 +259,10 @@ func (k Keeper) SetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID
 	// large for a single consumer chain. This check ensures that binaries would remove a consumer
 	// deterministically if the queue does grow too large.
 	if size >= uint64(k.GetMaxThrottledPackets(ctx)) {
-		k.StopConsumerChain(ctx, consumerChainID, true)
+		err := k.StopConsumerChain(ctx, consumerChainID, true)
+		if err != nil {
+			k.Logger(ctx).Error(fmt.Sprintf("failed to stop consumer chain %s: %s", consumerChainID, err))
+		}
 		// All consumer related data should be deleted in the above call, so return
 		return
 	}
