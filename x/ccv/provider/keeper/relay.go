@@ -324,7 +324,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 	k.Logger(ctx).Info("slash packet received and enqueued",
 		"chainID", chainID,
 		"consumer cons addr", consumerConsAddr.String(),
-		"provider cons addr", sdk.ConsAddress(data.Validator.Address).String(),
+		"provider cons addr", providerConsAddr.String(),
 		"vscID", data.ValsetUpdateId,
 		"infractionType", data.Infraction,
 	)
@@ -433,21 +433,17 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// jail validator
 	if !validator.IsJailed() {
 		k.stakingKeeper.Jail(ctx, providerConsAddr)
-		k.Logger(ctx).Info("validator slashed and jailed",
-			"provider cons addr", providerConsAddr.String(),
-			"infractionHeight", infractionHeight,
-			"infractionType", data.Infraction,
-			"jail until", jailTime.UTC(),
-		)
-	} else {
-		k.Logger(ctx).Info("validator slashed and jail time updated",
-			"provider cons addr", providerConsAddr.String(),
-			"infractionHeight", infractionHeight,
-			"infractionType", data.Infraction,
-			"jail until", jailTime.UTC(),
-		)
+		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.String())
 	}
+
 	k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
+
+	k.Logger(ctx).Info("validator slashed and jail time updated",
+		"provider cons addr", providerConsAddr.String(),
+		"infractionHeight", infractionHeight,
+		"infractionType", data.Infraction,
+		"jail until", jailTime.UTC(),
+	)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -459,7 +455,6 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 			sdk.NewAttribute(ccv.AttributeValSetUpdateID, strconv.Itoa(int(data.ValsetUpdateId))),
 		),
 	)
-	k.Logger(ctx).Debug("handled slash packet", "chainID", chainID, "provider cons addr", providerConsAddr.String(), "infraction type", data.Infraction, "infraction height", infractionHeight)
 }
 
 // EndBlockCCR contains the EndBlock logic needed for
