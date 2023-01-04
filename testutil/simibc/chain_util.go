@@ -11,6 +11,9 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
+// BeginBlock updates the current header and calls the app.BeginBlock() method.
+// The new block height is the previous block height + 1.
+// The new block time is the previous block time + dt.
 func BeginBlock(c *ibctesting.TestChain, dt time.Duration) {
 
 	c.CurrentHeader = tmproto.Header{
