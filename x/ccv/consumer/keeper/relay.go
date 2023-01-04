@@ -70,7 +70,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 
 	// set height to VSC id mapping
 	k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())+1, newChanges.ValsetUpdateId)
-	k.Logger(ctx).Debug("map height to valsetUpdateId", "height", ctx.BlockHeight()+1, "valsetUpdateId", newChanges.ValsetUpdateId)
+	k.Logger(ctx).Debug("block height was mapped to valsetUpdateId", "height", ctx.BlockHeight()+1, "valsetUpdateId", newChanges.ValsetUpdateId)
 
 	// remove outstanding slashing flags of the validators
 	// for which the slashing was acknowledged by the provider chain
