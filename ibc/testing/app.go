@@ -2,9 +2,10 @@ package testing
 
 import (
 	"encoding/json"
-	"github.com/cosmos/interchain-security/ibc/core"
 	"testing"
 	"time"
+
+	"github.com/cosmos/interchain-security/ibc/core"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -18,10 +19,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 
 	"github.com/cosmos/ibc-go/v3/modules/core/keeper"
 
@@ -30,7 +29,7 @@ import (
 
 type AppIniter func() (TestingApp, map[string]json.RawMessage)
 
-var DefaultTestingAppInit AppIniter = SetupTestingApp
+var DefaultTestingAppInit AppIniter
 
 type TestingApp interface {
 	abci.Application
@@ -48,13 +47,6 @@ type TestingApp interface {
 	// Implemented by BaseApp
 	LastCommitID() sdk.CommitID
 	LastBlockHeight() int64
-}
-
-func SetupTestingApp() (TestingApp, map[string]json.RawMessage) {
-	db := dbm.NewMemDB()
-	encCdc := simapp.MakeTestEncodingConfig()
-	app := simapp.NewSimApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encCdc, simapp.EmptyAppOptions{})
-	return app, simapp.NewDefaultGenesisState(encCdc.Marshaler)
 }
 
 // SetupWithGenesisValSet initializes a new SimApp with a validator set and genesis accounts
