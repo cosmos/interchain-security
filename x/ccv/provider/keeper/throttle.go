@@ -40,7 +40,7 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 		// don't handle any more global entries if meter becomes negative in value
 		if meter.IsNegative() {
-			k.Logger(ctx).Debug("negative slash meter value", "meter", meter.Int64())
+			k.Logger(ctx).Debug("negative slash meter value, no more slash packets will be handled", "meter", meter.Int64())
 			break
 		}
 	}
