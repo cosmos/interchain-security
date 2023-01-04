@@ -40,7 +40,7 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 
 		// don't handle any more global entries if meter becomes negative in value
 		if meter.IsNegative() {
-			k.Logger(ctx).Debug("negative slash meter value, no more slash packets will be handled", "meter", meter.Int64())
+			k.Logger(ctx).Info("negative slash meter value, no more slash packets will be handled", "meter", meter.Int64())
 			break
 		}
 	}
@@ -51,7 +51,10 @@ func (k Keeper) HandleThrottleQueues(ctx sdktypes.Context) {
 	// Persist current value for slash meter
 	k.SetSlashMeter(ctx, meter)
 
-	k.Logger(ctx).Debug("handled slash entries", "count", len(handledEntries), "meter", meter.Int64())
+	if len(handledEntries) > 0 {
+		k.Logger(ctx).Info("handled global slash entries", "count", len(handledEntries), "meter", meter.Int64())
+	}
+
 }
 
 // Obtains the effective validator power relevant to a validator consensus address.
@@ -277,8 +280,11 @@ func (k Keeper) SetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID
 // queue for the given consumer chain.
 func (k Keeper) IncrementThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID string) {
 	size := k.GetThrottledPacketDataSize(ctx, consumerChainID)
-	k.Logger(ctx).Debug("increment throttled packets size", "chain-id", consumerChainID, "size", size+1)
 	k.SetThrottledPacketDataSize(ctx, consumerChainID, size+1)
+	k.Logger(ctx).Debug("incremented throttled packets size",
+		"chainID", consumerChainID,
+		"size", size+1,
+	)
 }
 
 // QueueThrottledSlashPacketData queues the slash packet data for a chain-specific throttled packet data queue.

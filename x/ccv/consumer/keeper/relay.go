@@ -66,11 +66,16 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 	// Save maturity time and packet
 	maturityTime := ctx.BlockTime().Add(k.GetUnbondingPeriod(ctx))
 	k.SetPacketMaturityTime(ctx, newChanges.ValsetUpdateId, maturityTime)
-	k.Logger(ctx).Debug("packet maturity time was set", "valsetUpdateId", newChanges.ValsetUpdateId, "utc", maturityTime.UTC(), "timestamp (nano)", uint64(maturityTime.UnixNano()))
+	k.Logger(ctx).Debug("packet maturity time was set",
+		"vscID", newChanges.ValsetUpdateId,
+		"ts (utc)", maturityTime.UTC(),
+		"ts (nano)", uint64(maturityTime.UnixNano()),
+	)
 
 	// set height to VSC id mapping
-	k.SetHeightValsetUpdateID(ctx, uint64(ctx.BlockHeight())+1, newChanges.ValsetUpdateId)
-	k.Logger(ctx).Debug("block height was mapped to valsetUpdateId", "height", ctx.BlockHeight()+1, "valsetUpdateId", newChanges.ValsetUpdateId)
+	blockHeight := uint64(ctx.BlockHeight()) + 1
+	k.SetHeightValsetUpdateID(ctx, blockHeight, newChanges.ValsetUpdateId)
+	k.Logger(ctx).Debug("block height was mapped to vscID", "height", blockHeight, "vscID", newChanges.ValsetUpdateId)
 
 	// remove outstanding slashing flags of the validators
 	// for which the slashing was acknowledged by the provider chain
@@ -78,7 +83,7 @@ func (k Keeper) OnRecvVSCPacket(ctx sdk.Context, packet channeltypes.Packet, new
 		k.DeleteOutstandingDowntime(ctx, addr)
 	}
 
-	k.Logger(ctx).Debug("finished receiving/handling VSCPacket",
+	k.Logger(ctx).Info("finished receiving/handling VSCPacket",
 		"vscID", newChanges.ValsetUpdateId,
 		"len updates", len(newChanges.ValidatorUpdates),
 		"len slash acks", len(newChanges.SlashAcks),
@@ -110,7 +115,7 @@ func (k Keeper) QueueVSCMaturedPackets(ctx sdk.Context) {
 
 		k.DeletePacketMaturityTimes(ctx, maturityTime.VscId, maturityTime.MaturityTime)
 
-		k.Logger(ctx).Debug("VSCMaturedPacket was queued", "vscID", vscPacket.ValsetUpdateId)
+		k.Logger(ctx).Info("VSCMaturedPacket enqueued", "vscID", vscPacket.ValsetUpdateId)
 
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
@@ -153,10 +158,11 @@ func (k Keeper) QueueSlashPacket(ctx sdk.Context, validator abci.Validator, vals
 		},
 	})
 
-	k.Logger(ctx).Debug("SlashPacket was queued",
+	k.Logger(ctx).Info("SlashPacket enqueued",
 		"vscID", slashPacket.ValsetUpdateId,
 		"validator cons addr", sdk.ConsAddress(slashPacket.Validator.Address).String(),
-		"infraction", slashPacket.Infraction)
+		"infraction", slashPacket.Infraction,
+	)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(

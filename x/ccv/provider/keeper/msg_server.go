@@ -71,7 +71,11 @@ func (k msgServer) AssignConsumerKey(goCtx context.Context, msg *types.MsgAssign
 	if err := k.Keeper.AssignConsumerKey(ctx, msg.ChainId, validator, consumerTMPublicKey); err != nil {
 		return nil, err
 	}
-	k.Logger(ctx).Info("assigned consumer key", "chain-id", msg.ChainId, "validator", msg.ProviderAddr, "consumer-key", consumerSDKPublicKey.String())
+	k.Logger(ctx).Info("assigned consumer key",
+		"chainID", msg.ChainId,
+		"validator", msg.ProviderAddr,
+		"consumer-key", consumerSDKPublicKey.String(),
+	)
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(

@@ -33,7 +33,11 @@ func (k Keeper) OnRecvVSCMaturedPacket(
 	}
 
 	k.QueueThrottledVSCMaturedPacketData(ctx, chainID, packet.Sequence, data)
-	k.Logger(ctx).Debug("VSCMaturedPacket received", "chainID", chainID, "seq", packet.Sequence)
+
+	k.Logger(ctx).Info("VSCMaturedPacket received and enqueued",
+		"chainID", chainID,
+		"vscID", data.ValsetUpdateId,
+	)
 
 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 	return ack
@@ -71,6 +75,7 @@ func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv
 	for _, unbondingOp := range unbondingOps {
 		// remove consumer chain ID from unbonding op record
 		unbondingOp.UnbondingConsumerChains, _ = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
+		k.Logger(ctx).Debug("unbonding operation matured on consumer", "chainID", chainID, "opID", unbondingOp.Id)
 
 		// If unbonding op is completely unbonded from all relevant consumer chains
 		if len(unbondingOp.UnbondingConsumerChains) == 0 {
@@ -93,7 +98,10 @@ func (k Keeper) HandleVSCMaturedPacket(ctx sdk.Context, chainID string, data ccv
 	// prune previous consumer validator address that are no longer needed
 	k.PruneKeyAssignments(ctx, chainID, data.ValsetUpdateId)
 
-	k.Logger(ctx).Debug("handled VSCMaturedPacket", "chainID", chainID, "vscid", data.ValsetUpdateId)
+	k.Logger(ctx).Info("VSCMaturedPacket handled",
+		"chainID", chainID,
+		"vscID", data.ValsetUpdateId,
+	)
 }
 
 // CompleteMaturedUnbondingOps attempts to complete all matured unbonding operations
@@ -108,6 +116,7 @@ func (k Keeper) completeMaturedUnbondingOps(ctx sdk.Context) {
 		if err != nil {
 			panic(fmt.Sprintf("could not complete unbonding op: %s", err.Error()))
 		}
+		k.Logger(ctx).Debug("unbonding operation matured on all consumers", "opID", id)
 	}
 }
 
@@ -130,13 +139,14 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) error {
 	chainID, found := k.GetChannelToChain(ctx, packet.SourceChannel)
 	if !found {
-		k.Logger(ctx).Debug("packet timeout, unknown channel:", "channel", packet.SourceChannel)
+		k.Logger(ctx).Error("packet timeout, unknown channel:", "channel", packet.SourceChannel)
 		// abort transaction
 		return sdkerrors.Wrap(
 			channeltypes.ErrInvalidChannelState,
 			packet.SourceChannel,
 		)
 	}
+	k.Logger(ctx).Info("packet timeout, removing the consumer:", "chainID", chainID)
 	// stop consumer chain and release unbondings
 	return k.StopConsumerChain(ctx, chainID, false)
 }
@@ -223,6 +233,12 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 			// construct validator set change packet data
 			packet := ccv.NewValidatorSetChangePacketData(valUpdates, valUpdateID, k.ConsumeSlashAcks(ctx, chain.ChainId))
 			k.AppendPendingVSCPackets(ctx, chain.ChainId, packet)
+			k.Logger(ctx).Info("VSCPacket enqueued:",
+				"chainID", chain.ChainId,
+				"vscID", valUpdateID,
+				"len updates", len(valUpdates),
+				"len unbonding ops", len(unbondingOps),
+			)
 		}
 	}
 
@@ -232,10 +248,12 @@ func (k Keeper) QueueVSCPackets(ctx sdk.Context) {
 // EndBlockCIS contains the EndBlock logic needed for
 // the Consumer Initiated Slashing sub-protocol
 func (k Keeper) EndBlockCIS(ctx sdk.Context) {
-	// get current ValidatorSetUpdateId
-	valUpdateID := k.GetValidatorSetUpdateId(ctx)
 	// set the ValsetUpdateBlockHeight
-	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, uint64(ctx.BlockHeight()+1))
+	blockHeight := uint64(ctx.BlockHeight()) + 1
+	valUpdateID := k.GetValidatorSetUpdateId(ctx)
+	k.SetValsetUpdateBlockHeight(ctx, valUpdateID, blockHeight)
+	k.Logger(ctx).Debug("vscID was mapped to block height", "vscID", valUpdateID, "height", blockHeight)
+
 	// Replenish slash meter if necessary, BEFORE executing slash packet throttling logic.
 	// This ensures the meter value is replenished, and not greater than the allowance (max value)
 	// for the block, before the throttling logic is executed.
@@ -263,7 +281,7 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 			"error", err.Error(),
 			"chainID", chainID,
 			"consumer cons addr", sdk.ConsAddress(data.Validator.Address),
-			"vscid", data.ValsetUpdateId,
+			"vscID", data.ValsetUpdateId,
 			"infractionType", data.Infraction,
 		)
 		return channeltypes.NewErrorAcknowledgement(err.Error())
@@ -292,11 +310,11 @@ func (k Keeper) OnRecvSlashPacket(ctx sdk.Context, packet channeltypes.Packet, d
 		packet.Sequence, // IBC sequence number of the packet
 		data)
 
-	k.Logger(ctx).Debug("slash packet received and enqueued:",
+	k.Logger(ctx).Info("slash packet received and enqueued",
 		"chainID", chainID,
 		"consumer cons addr", consumerConsAddr.String(),
 		"provider cons addr", sdk.ConsAddress(data.Validator.Address).String(),
-		"vscid", data.ValsetUpdateId,
+		"vscID", data.ValsetUpdateId,
 		"infractionType", data.Infraction,
 	)
 
@@ -327,8 +345,12 @@ func (k Keeper) ValidateSlashPacket(ctx sdk.Context, chainID string,
 // a misbehaving validator according to infraction type.
 func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.SlashPacketData) {
 
-	k.Logger(ctx).Debug("handling slash packet", "chainID", chainID, "consumer cons addr",
-		sdk.ConsAddress(data.Validator.Address).String(), "vscid", data.ValsetUpdateId, "infractionType", data.Infraction)
+	k.Logger(ctx).Debug("handling slash packet",
+		"chainID", chainID,
+		"consumer cons addr", sdk.ConsAddress(data.Validator.Address).String(),
+		"vscID", data.ValsetUpdateId,
+		"infractionType", data.Infraction,
+	)
 
 	// Obtain provider chain consensus address from packet data
 	// (overwritten with proper provider chain cons address in OnRecvSlashPacket)
@@ -400,10 +422,21 @@ func (k Keeper) HandleSlashPacket(ctx sdk.Context, chainID string, data ccv.Slas
 	// jail validator
 	if !validator.IsJailed() {
 		k.stakingKeeper.Jail(ctx, providerConsAddr)
-		k.Logger(ctx).Info("validator jailed", "provider cons addr", providerConsAddr.String())
+		k.Logger(ctx).Info("validator slashed and jailed",
+			"provider cons addr", providerConsAddr.String(),
+			"infractionHeight", infractionHeight,
+			"infractionType", data.Infraction,
+			"jail until", jailTime.UTC(),
+		)
+	} else {
+		k.Logger(ctx).Info("validator slashed and jail time updated",
+			"provider cons addr", providerConsAddr.String(),
+			"infractionHeight", infractionHeight,
+			"infractionType", data.Infraction,
+			"jail until", jailTime.UTC(),
+		)
 	}
 	k.slashingKeeper.JailUntil(ctx, providerConsAddr, jailTime)
-	k.Logger(ctx).Info("validator jail time updated", "jail until", jailTime.UTC(), "provider cons addr", providerConsAddr.String())
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -430,9 +463,9 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 			// stop the consumer chain and unlock the unbonding.
 			// Note that the CCV channel was not established,
 			// thus closeChan is irrelevant
-			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
-			k.Logger(ctx).Info("timed out consumer chain was removed - chain was not initialised",
+			k.Logger(ctx).Info("removing timed out consumer chain - chain was not initialised",
 				"chainID", initTimeoutTimestamp.ChainId)
+			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
 			if err != nil {
 				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 			}
@@ -450,8 +483,11 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 			if currentTime.After(timeoutTimestamp) {
 				// vscTimeout expired
 				// stop the consumer chain and release unbondings
+				k.Logger(ctx).Info("removing timed out consumer chain - VSCPacket timed out",
+					"chainID", channelToChain.ChainId,
+					"vscID", vscSendTimestamp.VscId,
+				)
 				err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
-				k.Logger(ctx).Info("timed out consumer chain was removed", "chainID", channelToChain.ChainId)
 				if err != nil {
 					panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 				}
