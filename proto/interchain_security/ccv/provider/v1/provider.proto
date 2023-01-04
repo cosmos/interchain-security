@@ -123,8 +123,8 @@ message Params {
   // This param also serves as a maximum fraction of total voting power that the slash meter can hold.
   string slash_meter_replenish_fraction = 7;
 
-  // The maximum amount of throttled slash or vsc matured packets 
-  // that can be queued for a single consumer before the provider chain halts.
+  // The maximum amount of throttled slash or vsc matured packets
+  // that can be queued for a single consumer before the provider removes that consumer.
   int64 max_throttled_packets = 8;
 }
 

@@ -280,7 +280,7 @@ type Params struct {
 	// This param also serves as a maximum fraction of total voting power that the slash meter can hold.
 	SlashMeterReplenishFraction string `protobuf:"bytes,7,opt,name=slash_meter_replenish_fraction,json=slashMeterReplenishFraction,proto3" json:"slash_meter_replenish_fraction,omitempty"`
 	// The maximum amount of throttled slash or vsc matured packets
-	// that can be queued for a single consumer before the provider chain halts.
+	// that can be queued for a single consumer before the provider removes that consumer.
 	MaxThrottledPackets int64 `protobuf:"varint,8,opt,name=max_throttled_packets,json=maxThrottledPackets,proto3" json:"max_throttled_packets,omitempty"`
 }
 

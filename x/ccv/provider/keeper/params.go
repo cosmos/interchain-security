@@ -70,7 +70,7 @@ func (k Keeper) GetSlashMeterReplenishFraction(ctx sdk.Context) string {
 }
 
 // GetMaxThrottledPackets returns the maximum amount of throttled slash or vsc matured packets
-// that can be queued for a single consumer before the provider chain halts.
+// that can be queued for a single consumer before the provider removes that consumer.
 func (k Keeper) GetMaxThrottledPackets(ctx sdk.Context) int64 {
 	var p int64
 	k.paramSpace.Get(ctx, types.KeyMaxThrottledPackets, &p)

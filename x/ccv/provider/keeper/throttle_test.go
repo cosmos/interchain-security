@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/cosmos/interchain-security/x/ccv/provider/keeper"
 	providertypes "github.com/cosmos/interchain-security/x/ccv/provider/types"
 	ccvtypes "github.com/cosmos/interchain-security/x/ccv/types"
@@ -1072,9 +1073,9 @@ func TestDeleteThrottledPacketDataForConsumer(t *testing.T) {
 	require.Len(t, vscMaturedData, 1)
 }
 
-// TestPanicIfTooMuchThrottledPacketData tests that the provider panics
-// when the number of throttled (queued) packets exceeds the max allowed by params.
-func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
+// TestTooMuchThrottledPacketData tests that the provider removes a consumer when
+// the number of throttled (queued) packets exceeds the max allowed for that consumer by params.
+func TestTooMuchThrottledPacketData(t *testing.T) {
 
 	testCases := []struct {
 		max int64
@@ -1089,7 +1090,7 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		providerKeeper, ctx, ctrl, _ := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
+		providerKeeper, ctx, ctrl, mocks := testkeeper.GetProviderKeeperAndCtx(t, testkeeper.NewInMemKeeperParams(t))
 		defer ctrl.Finish()
 
 		// Set max throttled packets param
@@ -1103,8 +1104,24 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 		providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 0, testkeeper.GetNewSlashPacketData())
 		providerKeeper.QueueThrottledPacketData(ctx, "chain-17", 1, testkeeper.GetNewVSCMaturedPacketData())
 
+		// Setup mock expectations for creating a consumer client, setting the consumer chain, and stopping the consumer chain
+		expectations := []*gomock.Call{}
+		expectations = append(expectations, testkeeper.GetMocksForCreateConsumerClient(ctx, &mocks,
+			"chain-88", clienttypes.NewHeight(2, 3))...)
+		expectations = append(expectations, testkeeper.GetMocksForSetConsumerChain(ctx, &mocks, "chain-88")...)
+		expectations = append(expectations, testkeeper.GetMocksForStopConsumerChain(ctx, &mocks)...) // Consumer should be stopped once
+		gomock.InOrder(expectations...)
+
+		// Create a consumer client and set the consumer chain
+		additionProp := testkeeper.GetTestConsumerAdditionProp()
+		additionProp.ChainId = "chain-88"
+		additionProp.InitialHeight = clienttypes.NewHeight(2, 3)
+		err := providerKeeper.CreateConsumerClient(ctx, additionProp)
+		require.NoError(t, err)
+		err = providerKeeper.SetConsumerChain(ctx, "channelID")
+		require.NoError(t, err)
+
 		// Queue packet data instances until we reach the max (some slash packets, some VSC matured packets)
-		reachedMax := false
 		for i := 0; i < int(tc.max); i++ {
 			randBool := rand.Intn(2) == 0
 			var data interface{}
@@ -1113,17 +1130,11 @@ func TestPanicIfTooMuchThrottledPacketData(t *testing.T) {
 			} else {
 				data = testkeeper.GetNewVSCMaturedPacketData()
 			}
-			// Panic only if we've reached the max
-			if i == int(tc.max-1) {
-				require.Panics(t, func() {
-					providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
-				})
-				reachedMax = true
-			} else {
-				providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
-			}
+			providerKeeper.QueueThrottledPacketData(ctx, "chain-88", uint64(i), data)
 		}
-		require.True(t, reachedMax)
+		// Once all packet data is queued, the provider should have stopped the consumer chain.
+		// This is asserted in the mock expectations above.
+		ctrl.Finish()
 	}
 }
 

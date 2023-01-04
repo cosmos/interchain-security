@@ -256,10 +256,12 @@ func (k Keeper) GetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID
 func (k Keeper) SetThrottledPacketDataSize(ctx sdktypes.Context, consumerChainID string, size uint64) {
 
 	// Sanity check to ensure that the chain-specific throttled packet data queue does not grow too
-	// large for a single consumer chain. This check ensures that binaries would panic deterministically
-	// if the queue does grow too large.
+	// large for a single consumer chain. This check ensures that binaries would remove a consumer
+	// deterministically if the queue does grow too large.
 	if size >= uint64(k.GetMaxThrottledPackets(ctx)) {
-		panic(fmt.Sprintf("throttled packet data queue for chain %s is too large: %d", consumerChainID, size))
+		k.StopConsumerChain(ctx, consumerChainID, true)
+		// All consumer related data should be deleted in the above call, so return
+		return
 	}
 
 	store := ctx.KVStore(k.storeKey)
@@ -531,11 +533,11 @@ func (k Keeper) GetLastSlashMeterFullTime(ctx sdktypes.Context) time.Time {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(providertypes.LastSlashMeterFullTimeKey())
 	if bz == nil {
-		panic("last slash replenish time not set")
+		panic("last slash meter full time not set")
 	}
 	time, err := sdktypes.ParseTimeBytes(bz)
 	if err != nil {
-		panic(fmt.Sprintf("failed to parse last slash meter replenish time: %s", err))
+		panic(fmt.Sprintf("failed to parse last slash meter full time: %s", err))
 	}
 	return time.UTC()
 }
