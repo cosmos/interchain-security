@@ -431,7 +431,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 			// Note that the CCV channel was not established,
 			// thus closeChan is irrelevant
 			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
-			k.Logger(ctx).Info("stopped timed out consumer chain - chain was not initialised",
+			k.Logger(ctx).Info("timed out consumer chain was removed - chain was not initialised",
 				"chainID", initTimeoutTimestamp.ChainId)
 			if err != nil {
 				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
