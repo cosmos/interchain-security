@@ -657,6 +657,8 @@ class Model {
       undelegationQ: this.staking.undelegationQ,
       delegatorTokens: this.staking.delegatorTokens,
       consumerPower: this.ccvC.consumerPower,
+      vscIDtoH: this.ccvP.vscIDtoH,
+      hToVscID: this.ccvC.hToVscID
     });
   };
 

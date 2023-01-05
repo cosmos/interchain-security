@@ -37,6 +37,12 @@ func (k Keeper) HandleConsumerAdditionProposal(ctx sdk.Context, p *types.Consume
 
 	k.SetPendingConsumerAdditionProp(ctx, p)
 
+	k.Logger(ctx).Info("consumer addition proposal enqueued",
+		"chainID", p.ChainId,
+		"title", p.Title,
+		"spawn time", p.SpawnTime.UTC(),
+	)
+
 	return nil
 }
 
@@ -95,6 +101,11 @@ func (k Keeper) CreateConsumerClient(ctx sdk.Context, prop *types.ConsumerAdditi
 	ts := ctx.BlockTime().Add(k.GetParams(ctx).InitTimeoutPeriod)
 	k.SetInitTimeoutTimestamp(ctx, chainID, uint64(ts.UnixNano()))
 
+	k.Logger(ctx).Info("consumer chain registered (client created)",
+		"chainID", chainID,
+		"clientID", clientID,
+	)
+
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			ccv.EventTypeConsumerClientCreated,
@@ -125,6 +136,13 @@ func (k Keeper) HandleConsumerRemovalProposal(ctx sdk.Context, p *types.Consumer
 	}
 
 	k.SetPendingConsumerRemovalProp(ctx, p)
+
+	k.Logger(ctx).Info("consumer removal proposal enqueued",
+		"chainID", p.ChainId,
+		"title", p.Title,
+		"stop time", p.StopTime.UTC(),
+	)
+
 	return nil
 }
 
@@ -204,6 +222,8 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	// Note: queued VSC matured packets can be safely removed from the per-chain queue,
 	// since all unbonding operations for this consumer are release above.
 	k.DeleteThrottledPacketDataForConsumer(ctx, chainID)
+
+	k.Logger(ctx).Info("consumer chain removed from provider", "chainID", chainID)
 
 	return nil
 }
@@ -351,6 +371,12 @@ func (k Keeper) BeginBlockInit(ctx sdk.Context) {
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 		// write cache
 		writeFn()
+
+		k.Logger(ctx).Info("executed consumer addition proposal",
+			"chainID", prop.ChainId,
+			"title", prop.Title,
+			"spawn time", prop.SpawnTime.UTC(),
+		)
 	}
 	// delete the executed proposals
 	k.DeletePendingConsumerAdditionProps(ctx, propsToExecute...)
@@ -474,6 +500,12 @@ func (k Keeper) BeginBlockCCR(ctx sdk.Context) {
 		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
 		// write cache
 		writeFn()
+
+		k.Logger(ctx).Info("executed consumer removal proposal",
+			"chainID", prop.ChainId,
+			"title", prop.Title,
+			"stop time", prop.StopTime.UTC(),
+		)
 	}
 	// delete the executed proposals
 	k.DeletePendingConsumerRemovalProps(ctx, propsToExecute...)
