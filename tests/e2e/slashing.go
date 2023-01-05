@@ -396,9 +396,9 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 	fmt.Printf("providerUnbondingPeriod: %s\n", providerUnbondingPeriod)
 
 	testCases := []struct {
-		name                  string
-		slash                 func(consAddr sdk.ConsAddress)
-		checkDelegatorBalance func(delAddr sdk.AccAddress, initBalance sdk.Int)
+		name             string
+		slash            func(consAddr sdk.ConsAddress)
+		expSlashOccurred bool
 	}{
 		// infraction - delegate - undelegate - slash - mature consumer - mature provider
 		// TODO: this behavior is unexpected
@@ -433,14 +433,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 					3, // 2 VSCMaturedPackets and 1 SlashPacket
 				)
 			},
-			func(delAddr sdk.AccAddress, initBalance sdk.Int) {
-				// expectedBalance := initBalance
-				// suite.Require().Equal(
-				// 	expectedBalance,
-				// 	getBalance(suite, suite.providerCtx(), delAddr),
-				// 	"delegator shouldn't have been slashed",
-				// )
-			},
+			true, // TODO: this should be false!
 		},
 		// delegate - infraction - undelegate - slash - mature consumer - mature provider
 		// slash
@@ -474,15 +467,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 					3, // 2 VSCMaturedPackets and 1 SlashPacket
 				)
 			},
-			func(delAddr sdk.AccAddress, initBalance sdk.Int) {
-				// infraction before undelegate; slash successful
-				expectedBalance := initBalance.Sub(halfBondAmt).Sub(slashAmount)
-				suite.Require().Equal(
-					expectedBalance,
-					getBalance(suite, suite.providerCtx(), delAddr),
-					"delegator should have been slashed",
-				)
-			},
+			true,
 		},
 		// delegate - undelegate - infraction - slash - mature consumer - mature provider
 		// no slash
@@ -516,15 +501,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 					3,
 				)
 			},
-			func(delAddr sdk.AccAddress, initBalance sdk.Int) {
-				// undelegation occurred before infraction, thus it is not slashed
-				expectedBalance := initBalance.Sub(halfBondAmt)
-				suite.Require().Equal(
-					expectedBalance,
-					getBalance(suite, suite.providerCtx(), delAddr),
-					"delegator shouldn't have been slashed",
-				)
-			},
+			false,
 		},
 		// delegate - infraction - undelegate - mature consumer - slash - mature provider
 		// slash
@@ -567,16 +544,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 					1,
 				)
 			},
-			func(delAddr sdk.AccAddress, initBalance sdk.Int) {
-				// the undelegation was only matured on the consumer,
-				// thus the slash was successful
-				expectedBalance := initBalance.Sub(halfBondAmt).Sub(slashAmount)
-				suite.Require().Equal(
-					expectedBalance,
-					getBalance(suite, suite.providerCtx(), delAddr),
-					"delegator should have been slashed",
-				)
-			},
+			true,
 		},
 		// delegate - infraction - undelegate - mature consumer - mature provider - slash
 		// no slash
@@ -622,15 +590,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 					1,
 				)
 			},
-			func(delAddr sdk.AccAddress, initBalance sdk.Int) {
-				// the undelegation is already matured, thus it is not slashed
-				expectedBalance := initBalance.Sub(halfBondAmt)
-				suite.Require().Equal(
-					expectedBalance,
-					getBalance(suite, suite.providerCtx(), delAddr),
-					"delegator shouldn't have been slashed",
-				)
-			},
+			false,
 		},
 	}
 
@@ -732,7 +692,22 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 		// increment time so that the unbonding period ends on the provider
 		incrementTime(suite, providerUnbondingPeriod)
 
-		tc.checkDelegatorBalance(delAddr, initBalance)
+		var expectedBalance sdk.Int
+		var errMsg string
+		if tc.expSlashOccurred {
+			// infraction before undelegate; slash successful
+			expectedBalance = initBalance.Sub(halfBondAmt).Sub(slashAmount)
+			errMsg = "delegator should have been slashed"
+		} else {
+			// the undelegation is already matured, thus it is not slashed
+			expectedBalance = initBalance.Sub(halfBondAmt)
+			errMsg = "delegator should not have been slashed"
+		}
+		suite.Require().Equal(
+			expectedBalance,
+			getBalance(suite, suite.providerCtx(), delAddr),
+			errMsg,
+		)
 
 		if i+1 < len(testCases) {
 			// reset suite to reset provider client
