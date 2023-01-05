@@ -19,7 +19,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		// and claims the returned capability
 		err := k.BindPort(ctx, ccv.ProviderPortID)
 		if err != nil {
-			panic(fmt.Sprintf("could not claim port capability: %v", err))
+			// If the binding fails, the chain MUST NOT start
+			panic(fmt.Errorf("could not claim port capability: %v", err))
 		}
 	}
 
@@ -114,7 +115,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 			cs.ChannelId = channelId
 			cs.InitialHeight, found = k.GetInitChainHeight(ctx, chain.ChainId)
 			if !found {
-				panic(fmt.Errorf("cannot find genesis for consumer chain %s with client %s", chain.ChainId, chain.ClientId))
+				panic(fmt.Errorf("cannot find init height for consumer chain %s", chain.ChainId))
 			}
 			cs.SlashDowntimeAck = k.GetSlashAcks(ctx, chain.ChainId)
 		}
@@ -126,7 +127,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	matureUbdOps, err := k.GetMaturedUnbondingOps(ctx)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to get matured unbonding operations: %s", err))
 	}
 
 	// ConsumerAddrsToPrune are added only for registered consumer chains
