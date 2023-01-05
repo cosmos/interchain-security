@@ -6,6 +6,7 @@ import {
   BlockHistory,
   stakingWithoutSlashing,
   bondBasedConsumerVotingPower,
+  validatorSetReplication,
 } from './properties.js';
 import { Model } from './model.js';
 import {
@@ -322,6 +323,10 @@ function gen(seconds: number, checkProperties: boolean) {
       if (checkProperties) {
         // Checking properties is flagged because it is computationally
         // expensive.
+        if (!validatorSetReplication(hist)) {
+          dumpTrace(`${DIR}trace_${i}.json`, actions, events);
+          throw 'validatorSetReplication property failure, trace written.';
+        }
         if (!bondBasedConsumerVotingPower(hist)) {
           dumpTrace(`${DIR}trace_${i}.json`, actions, events);
           throw 'bondBasedConsumerVotingPower property failure, trace written.';
