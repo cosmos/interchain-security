@@ -1,7 +1,11 @@
 package crypto
 
 import (
+	"bytes"
 	"encoding/binary"
+	"encoding/hex"
+	"fmt"
+	"math/rand"
 
 	ibcmock "github.com/cosmos/ibc-go/v3/testing/mock"
 
@@ -13,6 +17,7 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkstakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	tmcrypto "github.com/tendermint/tendermint/crypto"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -23,11 +28,14 @@ import (
 // 'root' private key.
 type CryptoIdentity struct {
 	ibcmock.PV
+	OpAddress sdk.ValAddress
 }
 
 func NewCryptoIdentityFromBytesSeed(seed []byte) *CryptoIdentity {
 	//lint:ignore SA1019 We don't care because this is only a test.
 	privKey := ibcmock.PV{PrivKey: &sdkcryptokeys.PrivKey{Key: cryptoEd25519.NewKeyFromSeed(seed)}}
+	rand.Uint64()
+	sdk.ValAddressFromHex("")
 	return &CryptoIdentity{PV: privKey}
 }
 
@@ -89,4 +97,33 @@ func (v *CryptoIdentity) SDKValAddress() sdktypes.ValAddress {
 
 func (v *CryptoIdentity) SDKConsAddress() sdktypes.ConsAddress {
 	return sdktypes.ConsAddress(v.SDKPubKey().Address())
+}
+
+func CreateOpAddressFromByteSeed(seed []byte) {
+
+	opAddressSeed := make([]byte, 40)
+	copy(opAddressSeed, seed)
+	// add 8 random bytes to seed
+	// binary.LittleEndian.PutUint64(opAddressSeed[32:], rand.Uint64())
+	// seedHex := hex.EncodeToString(opAddressSeed)
+	var buffer bytes.Buffer
+
+	buffer.WriteString(hex.EncodeToString(opAddressSeed[:20]))
+
+	res, err := sdk.ValAddressFromHex(buffer.String())
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(res.String())
+	fmt.Println(len(res.Bytes()))
+
+	// account addresss generation taken from cosmos-sdk/simapp/test_helpers
+
+	// var addresses []sdk.ValAddress
+	// var buffer bytes.Buffer
+
+	// var seed []byte
+
+	// buffer.WriteString("A58856F0FD53BF058B4909A21AEC019107BA6") // base address string
+	// buffer.WriteString(string(rand.))
 }
