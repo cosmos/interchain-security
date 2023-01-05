@@ -28,18 +28,15 @@ func (k Keeper) EndBlockRD(ctx sdk.Context) {
 
 	// Try to send rewards to provider
 	cachedCtx, writeCache := ctx.CacheContext()
-	defer func() {
-		if r := recover(); r != nil {
-			k.Logger(ctx).Error("attempt to sent rewards to provider failed", "error", r)
-		} else {
-			// The cached context is created with a new EventManager so we merge the event
-			// into the original context
-			ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
-			// write cache
-			writeCache()
-		}
-	}()
-	k.SendRewardsToProvider(cachedCtx)
+	if err := k.SendRewardsToProvider(cachedCtx); err != nil {
+		k.Logger(ctx).Error("attempt to sent rewards to provider failed", "error", err)
+	} else {
+		// The cached context is created with a new EventManager so we merge the event
+		// into the original context
+		ctx.EventManager().EmitEvents(cachedCtx.EventManager().Events())
+		// write cache
+		writeCache()
+	}
 }
 
 // DistributeRewardsInternally splits the block rewards according to the
@@ -111,7 +108,7 @@ func (k Keeper) DistributeRewardsInternally(ctx sdk.Context) bool {
 
 // SendRewardsToProvider attempts to send to the provider (via IBC)
 // all the block rewards allocated for the provider
-func (k Keeper) SendRewardsToProvider(ctx sdk.Context) {
+func (k Keeper) SendRewardsToProvider(ctx sdk.Context) error {
 	// empty out the toSendToProviderTokens address
 	ch := k.GetDistributionTransmissionChannel(ctx)
 	transferChannel, found := k.channelKeeper.GetChannel(ctx, transfertypes.PortID, ch)
@@ -134,7 +131,7 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) {
 				timeoutTimestamp,
 			)
 			if err != nil {
-				panic(err)
+				return err
 			}
 		}
 
@@ -149,6 +146,8 @@ func (k Keeper) SendRewardsToProvider(ctx sdk.Context) {
 		Height: ctx.BlockHeight(),
 	}
 	k.SetLastTransmissionBlockHeight(ctx, newLtbh)
+
+	return nil
 }
 
 func (k Keeper) GetLastTransmissionBlockHeight(ctx sdk.Context) types.LastTransmissionBlockHeight {
