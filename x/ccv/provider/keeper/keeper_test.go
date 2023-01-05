@@ -117,6 +117,9 @@ func TestSlashAcks(t *testing.T) {
 
 	for _, c := range chains {
 		require.Equal(t, p, providerKeeper.GetSlashAcks(ctx, c))
+		providerKeeper.DeleteSlashAcks(ctx, c)
+		acks = providerKeeper.GetSlashAcks(ctx, c)
+		require.Len(t, acks, 0)
 	}
 }
 
@@ -377,11 +380,14 @@ func TestVscSendTimestamp(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, vscSendTimestamp, expectedGetAllOrder[0])
 
-	// delete VSC send timestamps
-	for _, vscSendTimestamp := range providerKeeper.GetAllVscSendTimestamps(ctx, chainID) {
-		providerKeeper.DeleteVscSendTimestamp(ctx, chainID, vscSendTimestamp.VscId)
+	// delete first VSC send timestamp
+	providerKeeper.DeleteVscSendTimestamp(ctx, chainID, vscSendTimestamp.VscId)
+	for _, vst := range providerKeeper.GetAllVscSendTimestamps(ctx, chainID) {
+		require.NotEqual(t, vscSendTimestamp, vst)
 	}
 
+	// delete all VSC send timestamps
+	providerKeeper.DeleteVscSendTimestampsForConsumer(ctx, chainID)
 	require.Empty(t, providerKeeper.GetAllVscSendTimestamps(ctx, chainID))
 }
 

@@ -64,27 +64,24 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 }
 
 // RegisterRESTRoutes implements AppModuleBasic interface
-// TODO
 func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the ibc-provider module.
-// TODO
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	err := providertypes.RegisterQueryHandlerClient(context.Background(), mux, providertypes.NewQueryClient(clientCtx))
 	if err != nil {
+		// same behavior as in cosmos-sdk
 		panic(err)
 	}
 }
 
 // GetTxCmd implements AppModuleBasic interface
-// TODO
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
 	return cli.GetTxCmd()
 }
 
 // GetQueryCmd implements AppModuleBasic interface
-// TODO
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 	return cli.NewQueryCmd()
 }
@@ -123,7 +120,6 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 }
 
 // RegisterServices registers module services.
-// TODO
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	providertypes.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	providertypes.RegisterQueryServer(cfg.QueryServer(), am.keeper)
@@ -175,7 +171,6 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 // AppModuleSimulation functions
 
 // GenerateGenesisState creates a randomized GenState of the transfer module.
-// TODO
 func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 }
 
@@ -185,13 +180,11 @@ func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedP
 }
 
 // RandomizedParams creates randomized provider param changes for the simulator.
-// TODO
 func (AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
 	return nil
 }
 
 // RegisterStoreDecoder registers a decoder for provider module's types
-// TODO
 func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
 }
 

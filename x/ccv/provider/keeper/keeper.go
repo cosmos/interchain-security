@@ -655,6 +655,12 @@ func (k Keeper) ConsumeSlashAcks(ctx sdk.Context, chainID string) (acks []string
 	return
 }
 
+// DeleteSlashAcks deletes the slash acks for a given chain ID
+func (k Keeper) DeleteSlashAcks(ctx sdk.Context, chainID string) {
+	store := ctx.KVStore(k.storeKey)
+	store.Delete(types.SlashAcksKey(chainID))
+}
+
 // AppendSlashAck appends the given slash ack to the given chain ID slash acks in store
 func (k Keeper) AppendSlashAck(ctx sdk.Context, chainID, ack string) {
 	acks := k.GetSlashAcks(ctx, chainID)
@@ -861,6 +867,23 @@ func (k Keeper) GetAllVscSendTimestamps(ctx sdk.Context, chainID string) (vscSen
 	}
 
 	return vscSendTimestamps
+}
+
+// DeleteVscSendTimestampsForConsumer deletes all VSC send timestamps for a given consumer chain
+func (k Keeper) DeleteVscSendTimestampsForConsumer(ctx sdk.Context, consumerChainID string) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.ChainIdWithLenKey(types.VscSendTimestampBytePrefix, consumerChainID))
+	defer iterator.Close()
+
+	keysToDel := [][]byte{}
+	for ; iterator.Valid(); iterator.Next() {
+		keysToDel = append(keysToDel, iterator.Key())
+	}
+
+	// Delete data for this consumer
+	for _, key := range keysToDel {
+		store.Delete(key)
+	}
 }
 
 // GetFirstVscSendTimestamp gets the vsc send timestamp with the lowest vscID for the given chainID.

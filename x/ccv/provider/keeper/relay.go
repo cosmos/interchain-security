@@ -473,6 +473,10 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				"chainID", initTimeoutTimestamp.ChainId)
 			err := k.StopConsumerChain(ctx, initTimeoutTimestamp.ChainId, false)
 			if err != nil {
+				if ccv.ErrConsumerChainNotFound.Is(err) {
+					// consumer chain not found
+					continue
+				}
 				panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 			}
 		}
@@ -483,6 +487,7 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 		// exceed the current block time.
 		// Checking the first send timestamp for each chain is sufficient since
 		// timestamps are ordered by vsc ID.
+		// Note: GetFirstVscSendTimestamp panics if the internal state is invalid
 		vscSendTimestamp, found := k.GetFirstVscSendTimestamp(ctx, channelToChain.ChainId)
 		if found {
 			timeoutTimestamp := vscSendTimestamp.Timestamp.Add(k.GetParams(ctx).VscTimeoutPeriod)
@@ -495,6 +500,10 @@ func (k Keeper) EndBlockCCR(ctx sdk.Context) {
 				)
 				err := k.StopConsumerChain(ctx, channelToChain.ChainId, true)
 				if err != nil {
+					if ccv.ErrConsumerChainNotFound.Is(err) {
+						// consumer chain not found
+						continue
+					}
 					panic(fmt.Errorf("consumer chain failed to stop: %w", err))
 				}
 			}

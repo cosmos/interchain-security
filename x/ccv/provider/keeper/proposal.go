@@ -163,24 +163,35 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 	k.DeleteConsumerClientId(ctx, chainID)
 	k.DeleteConsumerGenesis(ctx, chainID)
 	k.DeleteInitTimeoutTimestamp(ctx, chainID)
+	// Note: this call panics if the key assignment state is invalid
 	k.DeleteKeyAssignments(ctx, chainID)
 
 	// close channel and delete the mappings between chain ID and channel ID
 	if channelID, found := k.GetChainToChannel(ctx, chainID); found {
 		if closeChan {
-			k.CloseChannel(ctx, channelID)
+			// Close the channel for the given channel ID on the condition
+			// that the channel exists and isn't already in the CLOSED state
+			channel, found := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
+			if found && channel.State != channeltypes.CLOSED {
+				err := k.chanCloseInit(ctx, channelID)
+				if err != nil {
+					k.Logger(ctx).Error("channel to consumer chain could not be closed",
+						"chainID", chainID,
+						"channelID", channelID,
+						"error", err.Error(),
+					)
+				}
+			}
 		}
 		k.DeleteChainToChannel(ctx, chainID)
 		k.DeleteChannelToChain(ctx, channelID)
 
 		// delete VSC send timestamps
-		for _, vscSendTimestamp := range k.GetAllVscSendTimestamps(ctx, chainID) {
-			k.DeleteVscSendTimestamp(ctx, chainID, vscSendTimestamp.VscId)
-		}
+		k.DeleteVscSendTimestampsForConsumer(ctx, chainID)
 	}
 
 	k.DeleteInitChainHeight(ctx, chainID)
-	k.ConsumeSlashAcks(ctx, chainID)
+	k.DeleteSlashAcks(ctx, chainID)
 	k.DeletePendingVSCPackets(ctx, chainID)
 
 	// release unbonding operations
@@ -190,7 +201,13 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 		for _, id := range unbondingOpsIndex.UnbondingOpIds {
 			unbondingOp, found := k.GetUnbondingOp(ctx, id)
 			if !found {
+				// This can happen only if the internal state is corrupted.
+				// TODO: we should probably panic here
+				k.Logger(ctx).Error("internal state corrupted; could not find UnbondingOp",
+					"ID", id,
+				)
 				return fmt.Errorf("could not find UnbondingOp according to index - id: %d", id)
+
 			}
 			// remove consumer chain ID from unbonding op record
 			unbondingOp.UnbondingConsumerChains, _ = removeStringFromSlice(unbondingOp.UnbondingConsumerChains, chainID)
@@ -211,6 +228,7 @@ func (k Keeper) StopConsumerChain(ctx sdk.Context, chainID string, closeChan boo
 
 	// Remove any existing throttling related entries from the global queue,
 	// only for this consumer.
+	// Note: this call panics if the throttling state is invalid
 	k.DeleteGlobalSlashEntriesForConsumer(ctx, chainID)
 
 	if k.GetThrottledPacketDataSize(ctx, chainID) > 0 {
@@ -566,18 +584,6 @@ func (k Keeper) GetAllPendingConsumerRemovalProps(ctx sdk.Context) (props []type
 	}
 
 	return props
-}
-
-// CloseChannel closes the channel for the given channel ID on the condition
-// that the channel exists and isn't already in the CLOSED state
-func (k Keeper) CloseChannel(ctx sdk.Context, channelID string) {
-	channel, found := k.channelKeeper.GetChannel(ctx, ccv.ProviderPortID, channelID)
-	if found && channel.State != channeltypes.CLOSED {
-		err := k.chanCloseInit(ctx, channelID)
-		if err != nil {
-			panic(fmt.Errorf("channel (id: %s) could not be closed: %w", channelID, err))
-		}
-	}
 }
 
 // CreateConsumerClientInCachedCtx creates a consumer client
