@@ -467,6 +467,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 					3, // 2 VSCMaturedPackets and 1 SlashPacket
 				)
 			},
+			// infraction before undelegate; slash successful
 			true,
 		},
 		// delegate - undelegate - infraction - slash - mature consumer - mature provider
@@ -501,6 +502,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 					3,
 				)
 			},
+			// undelegation occurred before infraction, thus it is not slashed
 			false,
 		},
 		// delegate - infraction - undelegate - mature consumer - slash - mature provider
@@ -544,6 +546,8 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 					1,
 				)
 			},
+			// the undelegation was only matured on the consumer,
+			// thus the slash was successful
 			true,
 		},
 		// delegate - infraction - undelegate - mature consumer - mature provider - slash
@@ -590,6 +594,7 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 					1,
 				)
 			},
+			// the undelegation is already matured, thus it is not slashed
 			false,
 		},
 	}
@@ -695,11 +700,9 @@ func (suite *CCVTestSuite) TestSlashUndelegation() {
 		var expectedBalance sdk.Int
 		var errMsg string
 		if tc.expSlashOccurred {
-			// infraction before undelegate; slash successful
 			expectedBalance = initBalance.Sub(halfBondAmt).Sub(slashAmount)
 			errMsg = "delegator should have been slashed"
 		} else {
-			// the undelegation is already matured, thus it is not slashed
 			expectedBalance = initBalance.Sub(halfBondAmt)
 			errMsg = "delegator should not have been slashed"
 		}
